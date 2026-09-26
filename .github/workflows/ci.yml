@@ -1,0 +1,57 @@
+# The steps below mirror `npm run check` one-to-one so a failure points at
+# exactly one tool. If you change the "check" script in package.json, change this file too.
+#
+# The job runs on Linux, macOS and Windows because the team develops on all three.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: npm run check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node (from .nvmrc)
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install (npm ci fails if the lockfile is out of sync)
+        run: npm ci
+
+      - name: Format (prettier)
+        run: npm run format:check
+
+      - name: Lint (eslint, zero warnings)
+        run: npm run lint
+
+      - name: Typecheck (tsc -b)
+        run: npm run typecheck
+
+      - name: Dead code and dependencies (knip)
+        run: npm run knip
+
+      - name: Tests with coverage thresholds
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build

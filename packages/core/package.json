@@ -1,0 +1,23 @@
+{
+  "name": "@eternalus/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Deterministic game simulation. Pure TypeScript: no DOM, no React, no Canvas.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "5.0.2",
+    "vitest": "5.0.2"
+  }
+}

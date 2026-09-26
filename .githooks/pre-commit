@@ -1,0 +1,12 @@
+#!/bin/sh
+# Git runs this hook because `npm install` sets `core.hooksPath` to .githooks.
+# Hook logic lives in the npm script "check:quick"; edit that instead.
+echo "[pre-commit] npm run check:quick (typecheck + lint on the whole project)"
+if ! npm run check:quick; then
+  echo ""
+  echo "[pre-commit] BLOCKED: npm run check:quick failed."
+  echo "  The failing step is printed above: 'typecheck' (tsc -b) or 'lint' (eslint)."
+  echo "  Reproduce with:  npm run typecheck   and   npm run lint"
+  echo "  Fix the cause. Never bypass with --no-verify: CI runs the same checks."
+  exit 1
+fi

@@ -1,0 +1,26 @@
+/* Global CSS: design tokens and reset ONLY. Component styles live in co-located *.module.css files. */
+:root {
+  --color-bg: #0e1116;
+  --color-text: #e6e8eb;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  overflow: hidden;
+}

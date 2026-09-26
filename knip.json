@@ -1,0 +1,29 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "packages/core": {
+      "project": ["src/**/*.ts"]
+    },
+    "apps/client": {
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@eternalus/core"]
+    }
+  },
+  "ignoreExportsUsedInFile": false,
+  "includeEntryExports": false,
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "optionalPeerDependencies": "error",
+    "unlisted": "error",
+    "binaries": "error",
+    "unresolved": "error",
+    "exports": "error",
+    "nsExports": "error",
+    "types": "error",
+    "nsTypes": "error",
+    "enumMembers": "error",
+    "duplicates": "error"
+  }
+}

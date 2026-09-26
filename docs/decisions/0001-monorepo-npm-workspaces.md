@@ -1,0 +1,19 @@
+# 0001. Monorepo with npm workspaces and TypeScript project references
+
+- Status: accepted
+- Date: 2026-09-26
+
+## Context
+
+We have a pure simulation and a browser client that must share types while keeping a strict boundary. The team is small, uses npm already, and runs many AI agents that need simple, predictable tooling.
+
+## Decision
+
+Use a single repository with **npm workspaces** (`packages/core`, `apps/client`) and **TypeScript project references** built with `tsc -b`. Core is consumed as TypeScript source through its `exports` map (`@eternalus/core` → `src/index.ts`); Vite compiles it. No Nx/Turborepo/pnpm.
+
+## Consequences
+
+- One install, one lockfile, one `npm run check`. Packages typecheck in dependency order.
+- The `exports` map makes deep imports into core unresolvable, backing architecture rule 3.
+- No task caching: if checks become slow, revisit (e.g. Turborepo) with a new ADR.
+- Adding a package means adding it to the root `tsconfig.json` references and `knip.json`.
