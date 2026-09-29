@@ -2,4 +2,19 @@
  * Public API of `@eternalus/core`. Other packages may import only from here.
  * Anything not exported from this file is internal to the simulation.
  */
-export {};
+/**
+ * Public API of `@eternalus/core`. Other packages may import only from here.
+ * Anything not exported from this file is internal to the simulation.
+ */
+export { MAP_1 } from './content/maps/map1';
+export type {
+  FeatureOwner,
+  MapDefinition,
+  MapFeature,
+  MapFeatureKind,
+  MapLane,
+  MapTerrain,
+  MapTerrainKind,
+  TeamId,
+} from './content/maps/mapDefinition';
+export type { Polygon, Rect, Vec2 } from './utils/geometry';
