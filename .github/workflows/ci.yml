@@ -55,3 +55,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Docs (frontmatter, links, index)
+        run: npm run docs:check

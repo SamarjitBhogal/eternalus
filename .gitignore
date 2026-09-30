@@ -24,5 +24,10 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-# Agent worktrees (see docs/agent-workflow.md)
+# Agent worktrees (see docs/agents/running-agents.md)
 .worktrees/
+.claude/worktrees/
+
+# Personal agent settings and a private inbox (see docs/agents/tool-setup.md, INBOX.md)
+.claude/settings.local.json
+INBOX.local.md

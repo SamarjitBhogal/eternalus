@@ -17,7 +17,7 @@
     "prepare": "git config core.hooksPath .githooks",
     "dev": "npm run dev -w @eternalus/client",
     "build": "tsc -b && npm run build --workspaces --if-present",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run knip && npm run test:coverage && npm run build",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run knip && npm run test:coverage && npm run build && npm run docs:check",
     "check:quick": "npm run typecheck && npm run lint",
     "test": "npm run test --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspaces --if-present",
@@ -25,6 +25,8 @@
     "lint:fix": "eslint --max-warnings 0 --fix .",
     "typecheck": "tsc -b",
     "knip": "knip",
+    "docs:check": "node scripts/docs/check-docs.mjs",
+    "docs:index": "node scripts/docs/check-docs.mjs --write",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

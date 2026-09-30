@@ -57,5 +57,13 @@ export default defineConfig(
     extends: [tseslint.configs.disableTypeChecked],
   },
 
+  {
+    // Zero-dependency Node scripts (agent hooks, docs check). Plain ESM, no type checking.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly', Buffer: 'readonly', URL: 'readonly' },
+    },
+  },
+
   prettier,
 );
