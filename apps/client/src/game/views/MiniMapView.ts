@@ -1,7 +1,7 @@
 import type { MapDefinition } from '@eternalus/core';
 
 import type { Renderer } from '../engine/Renderer';
-import type { ScreenRect, WorldRect } from '../engine/Renderer.types';
+import type { ScreenRect, WorldPoint, WorldRect } from '../engine/Renderer.types';
 import {
   MINI_MAP_BACKGROUND_COLOR,
   MINI_MAP_BORDER_COLOR,
@@ -38,6 +38,31 @@ export class MiniMapView {
       y: screenHeight - margin - height,
       width,
       height,
+    };
+  }
+
+  /**
+   * Turns a click on the screen into the map position it points at, or returns `null` if the
+   * click was outside the mini map. Screen positions are in canvas pixels.
+   */
+  public worldPointAt(
+    screenX: number,
+    screenY: number,
+    screenWidth: number,
+    screenHeight: number,
+  ): WorldPoint | null {
+    const area = this.areaFor(screenWidth, screenHeight);
+    const isInside =
+      screenX >= area.x &&
+      screenX <= area.x + area.width &&
+      screenY >= area.y &&
+      screenY <= area.y + area.height;
+    if (!isInside) {
+      return null;
+    }
+    return {
+      x: ((screenX - area.x) / area.width) * this.map.width,
+      y: ((screenY - area.y) / area.height) * this.map.height,
     };
   }
 

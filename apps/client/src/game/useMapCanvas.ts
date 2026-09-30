@@ -6,19 +6,22 @@ import { Renderer } from './engine/Renderer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneView } from './views/SceneView';
+
 /** Colour behind the map, only visible if the view ever reaches past the map's edges. */
 const BACKGROUND_COLOR = '#2b2620';
 
 /** Where the main view starts looking: the Light team's side of map-1, in world units. */
 const CAMERA_START_CENTER = { x: 320, y: 450 };
 
-/** How much of the map the main view shows across the screen, in world units. */
+/** How much of the map the main view shows left to right, in world units. TUNE: zoom. */
 const CAMERA_VISIBLE_WIDTH = 800;
 
+/** How much of the map the main view shows top to bottom, in world units. TUNE: zoom. */
 const CAMERA_VISIBLE_HEIGHT = 900;
+
 /**
- * Draws a zoomed-in view of map-1 plus a mini map of the whole map, and redraws them whenever
- * the window is resized.
+ * Draws a zoomed-in view of map-1 plus a mini map of the whole map. Redraws when the window
+ * is resized, and clicking the mini map moves the camera to that spot.
  * Temporary wiring until `Match` and `GameLoop` exist and take over drawing.
  */
 export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): void {
@@ -45,10 +48,24 @@ export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): vo
       miniMap.draw(renderer, canvas.width, canvas.height, view);
     };
 
+    const jumpToClick = (event: MouseEvent): void => {
+      // The click is in CSS pixels; the canvas may have more real pixels, so scale it up.
+      const bounds = canvas.getBoundingClientRect();
+      const screenX = (event.clientX - bounds.left) * (canvas.width / bounds.width);
+      const screenY = (event.clientY - bounds.top) * (canvas.height / bounds.height);
+      const target = miniMap.worldPointAt(screenX, screenY, canvas.width, canvas.height);
+      if (target !== null) {
+        camera.lookAt(target);
+        draw();
+      }
+    };
+
     draw();
     window.addEventListener('resize', draw);
+    canvas.addEventListener('click', jumpToClick);
     return () => {
       window.removeEventListener('resize', draw);
+      canvas.removeEventListener('click', jumpToClick);
       renderer.destroy();
       camera.destroy();
     };

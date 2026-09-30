@@ -102,4 +102,25 @@ describe('MiniMapView', () => {
     // The mini map drew the obstacles too, without any change to MiniMapView.
     expect(drawObstacles).toHaveBeenCalledWith(renderer);
   });
+
+  it('turns a click on the mini map into the map position under it', () => {
+    const miniMap = createMiniMap();
+    const area = miniMap.areaFor(1000, 800);
+
+    // Clicking the exact centre of the mini map points at the centre of the map.
+    const point = miniMap.worldPointAt(
+      area.x + area.width / 2,
+      area.y + area.height / 2,
+      1000,
+      800,
+    );
+
+    expect(point?.x).toBeCloseTo(MAP_1.width / 2);
+    expect(point?.y).toBeCloseTo(MAP_1.height / 2);
+  });
+
+  it('ignores clicks outside the mini map', () => {
+    // The top-left corner of the screen is far from the mini map.
+    expect(createMiniMap().worldPointAt(10, 10, 1000, 800)).toBeNull();
+  });
 });
