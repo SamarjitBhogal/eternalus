@@ -1,3 +1,13 @@
+---
+title: 0001. Monorepo with npm workspaces and TypeScript project references
+description: Why the repo is one npm-workspaces monorepo with tsc -b project references and core consumed as TypeScript source; read this before adding a package or build tooling.
+audience: [humans, agents]
+status: active
+owner: sholtzman
+last-reviewed: 2026-09-30
+tags: [adr, monorepo, tooling]
+---
+
 # 0001. Monorepo with npm workspaces and TypeScript project references
 
 - Status: accepted

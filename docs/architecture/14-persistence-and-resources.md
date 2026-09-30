@@ -1,0 +1,477 @@
+---
+title: Persistence and resources
+description: The "single access with a controller in front" design for local data and assets - the PersistenceController facade over repositories and the StorageAdapter port (IndexedDB, memory, later HTTP), schema versioning and migrations, transactions as units of work, versioned DTOs with validation-on-read and quarantine, quota and eviction, export/import, replays, the record catalogue, and the ResourceController with its manifest, loaders and cache; read this before touching apps/client/src/data/.
+audience: [humans, agents]
+status: draft
+owner: sholtzman
+last-reviewed: 2026-09-30
+tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
+paths: ['apps/client/src/data/**']
+related:
+  [
+    'docs/architecture/03-game-model.md',
+    'docs/architecture/09-hardware-abstraction.md',
+    'docs/architecture/12-game-story-and-match-director.md',
+    'docs/architecture/13-game-interface.md',
+    'docs/plan/phase-5-meta-ui-and-persistence.md',
+    'docs/research/persistence-input-diagnostics-research.md',
+  ]
+---
+
+# Persistence and resources
+
+**Purpose.** Read this when something must survive a reload (a profile, a loadout, settings and
+keybindings, match history, a replay) or must be loaded from disk (a sprite atlas, a sound, a
+JSON file). The requirements doc asks for a "database configuration: single access with a
+controller in front"; the decision is IndexedDB behind ONE `PersistenceController` facade with
+repositories and a `StorageAdapter` port, and assets through ONE `ResourceController` (D3,
+ADR 0005, AP-08). No server. Local data is a cache the player can export
+([research A, "What this means"](../research/persistence-input-diagnostics-research.md#what-this-means-for-eternalus-a)).
+Every block is a **sketch**; no data code exists yet.
+
+## 1. Where it sits and the one-door rule
+
+`apps/client/src/data/` is L3 (the facades and repositories) with L1 adapters inside it
+([01](01-layered-oop-model.md) §3). It imports core as `import type` only (the domain types that
+cross the DTO boundary) and `data/`; never `game/`, `ui/` or `bridge/`. Consequences that make
+this a layer and not a folder: `IndexedDbStorageAdapter` is the only file that names
+`indexedDB`/`IDBDatabase`; the loaders are the only `fetch`, `createImageBitmap` and audio
+decoding callers; nothing reads `localStorage`; `SessionController` and the screens reach storage
+only through the facade (plan Phase 5, sprint 5.1). Progress and status leave `data/` through
+callbacks that `SessionController` turns into bridge events (`loading-progress`,
+`persistence-status`, [13](13-game-interface.md) §5).
+
+```text
+data/persistence/   PersistenceController.ts (facade), StorageAdapter.ts (port + .contract.ts), IndexedDbStorageAdapter.ts
+                    (+ idbPromises.ts), MemoryStorageAdapter.ts, schema/migrations.ts, repositories/<Name>Repository.ts
+                    (interface) + Storage<Name>Repository.ts (class), dto/<Name>Dto.ts (+ validate/upgrade/mappers),
+                    StorageError.ts, EvictionPolicy.ts, profileExport.ts
+data/resources/     ResourceController.ts, AssetManifest.ts, AssetCache.ts, loaders/ImageLoader.ts, AudioLoader.ts, JsonLoader.ts
+```
+
+## 2. `PersistenceController`
+
+The facade is the only entry point. Its API is async and grouped by repository, so a caller reads
+`persistence.loadouts.listByProfile(id)` and never sees a transaction, a store name or a DTO.
+
+```ts
+// Sketch: apps/client/src/data/persistence/PersistenceController.ts
+export type PersistenceStatus = 'opening' | 'ready' | 'degraded'; // degraded = MemoryStorageAdapter fallback, nothing survives the session
+
+export class PersistenceController {
+  public readonly profiles: ProfileRepository;
+  public readonly loadouts: LoadoutRepository;
+  public readonly settings: SettingsRepository;
+  public readonly matches: MatchHistoryRepository;
+  public readonly replays: ReplayRepository;
+
+  public constructor(deps: {
+    adapter: StorageAdapter; // IndexedDbStorageAdapter in the browser, MemoryStorageAdapter in tests
+    fallback: () => StorageAdapter; // built only when open() fails (§10)
+    schema: StorageSchema; // DB_NAME, DB_VERSION, MIGRATIONS
+    eviction: EvictionPolicy;
+    storage: Pick<StorageManager, 'persist' | 'persisted' | 'estimate'> | null; // navigator.storage, feature-detected
+    now: () => number; // wall-clock ms for playedAt and quarantinedAt; main.tsx passes the engine Clock's now (data/ may not import engine/)
+    logger: Logger;
+    knownActions: ReadonlySet<string>; // for the bindings validator; main.tsx injects it from keybindings.ts
+  }) {}
+
+  public open(): Promise<PersistenceStatus>; // migrations, versionchange handling, persist() on first launch
+  public get status(): PersistenceStatus;
+  public onStatusChange(
+    handler: (status: PersistenceStatus, detail: string | null) => void,
+  ): Unsubscribe;
+  public unitOfWork(
+    stores: readonly StoreName[],
+    work: (tx: StorageTx) => Promise<void>,
+    options?: { durability: 'relaxed' | 'strict' },
+  ): Promise<void>;
+  public saveMatchResult(input: SaveMatchResultInput): Promise<MatchRecordId>; // §6: history + profile stats + replay, atomically
+  public exportProfile(profileId: ProfileId): Promise<ProfileExportV1>; // §9
+  public importProfile(json: unknown): Promise<ImportReport>;
+  public estimate(): Promise<{ usage: number; quota: number; persisted: boolean } | null>;
+  public close(): void;
+}
+```
+
+SOLID: the controller has one reason to change (how the database is opened and kept healthy,
+SRP); it depends on the `StorageAdapter` port and the repository interfaces, never on IndexedDB
+(DIP); a caller that needs one repository takes that interface, not the facade (ISP); `main.tsx`
+injects the adapter (rule D, no singleton). The single place of change for "a new persisted
+record" is one repository property here plus one migration entry (§5).
+
+## 3. Repositories
+
+A repository "mediates between the domain and data mapping layers using a collection-like
+interface" ([research A3](../research/persistence-input-diagnostics-research.md#a3-patterns-repository-unit-of-work-facade-dtos-migrations-replays)).
+Each is an `interface` plus one class over the port (`StorageProfileRepository`); test doubles
+are unnecessary because `MemoryStorageAdapter` makes the real class fast in Node (LSP at the
+adapter, not the repository). Repositories return domain types mapped from DTOs at their boundary
+(§8) and never class instances from core.
+
+| Repository               | Store(s)   | Domain type it returns                                                | Methods (sketch)                                                                                                                |
+| ------------------------ | ---------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `ProfileRepository`      | `profiles` | `Profile` (name, aggregate stats, achievements, timestamps)           | `get(id)`, `list()`, `create(name)`, `save(profile)`, `applyMatch(tx, profileId, result, achievements)` (inside a unit of work) |
+| `LoadoutRepository`      | `loadouts` | core `Loadout` (repaired by `repairLoadout` when content moved)       | `listByProfile(profileId)`, `getByProfileAndClass(profileId, classId)`, `save(profileId, loadout)`, `delete(id)`                |
+| `SettingsRepository`     | `settings` | `Settings` = `{ bindings, audio, accessibility, developer, storage }` | `load(profileId)` (defaults for missing groups), `saveGroup(profileId, group, value)`                                           |
+| `MatchHistoryRepository` | `matches`  | `MatchHistoryRecord` (core `MatchResult` + identity and time)         | `listByProfile(profileId, { limit, before })` newest first via `by_profile_and_date`, `get(id)`, `append(tx, record)`           |
+| `ReplayRepository`       | `replays`  | core `Replay` ([03](03-game-model.md) §9)                             | `get(matchId)`, `put(tx, matchId, profileId, replay)`, `listOldest(count)` (for eviction), `delete(matchId)`                    |
+
+## 4. `StorageAdapter` and its adapters
+
+```ts
+// Sketch: apps/client/src/data/persistence/StorageAdapter.ts (the port from 09 §7, completed)
+export interface StorageAdapter {
+  open(schema: StorageSchema): Promise<void>; // runs the migration ladder to schema.version
+  get<T>(store: StoreName, key: IDBValidKey): Promise<T | undefined>; // short-hands: one readonly transaction
+  getAll<T>(store: StoreName, query?: IndexQuery): Promise<readonly T[]>;
+  transaction(
+    stores: readonly StoreName[],
+    mode: 'readonly' | 'readwrite',
+    work: (tx: StorageTx) => Promise<void>,
+    options?: TxOptions,
+  ): Promise<void>;
+  onVersionChange(handler: () => void): Unsubscribe; // another tab wants to upgrade: save, close, reload prompt
+  estimate(): Promise<{ usage: number; quota: number } | null>; // navigator.storage.estimate(); null in memory
+  close(): void;
+}
+export type IndexQuery = {
+  readonly index?: string;
+  readonly range?: KeyRangeSpec;
+  readonly limit?: number;
+  readonly direction?: 'next' | 'prev';
+};
+export interface StorageTx {
+  get<T>(store: StoreName, key: IDBValidKey): Promise<T | undefined>;
+  getAll<T>(store: StoreName, query?: IndexQuery): Promise<readonly T[]>;
+  put<T>(store: StoreName, value: T): Promise<void>; // value must be structured-clone-safe
+  delete(store: StoreName, key: IDBValidKey): Promise<void>;
+}
+```
+
+`IndexedDbStorageAdapter` (**MVP**) wraps `indexedDB` with the promise helpers below and maps
+native errors to `StorageError` (§10). `MemoryStorageAdapter` (**MVP**) serves tests, the
+`?memory` dev flag and the runtime fallback, and `structuredClone`s every value so non-cloneable
+data fails in tests too. `HttpStorageAdapter` (**post-MVP**) is a server behind the same port and
+contract suite; the repositories do not change. The zero-dependency promise wrapper is the whole
+reason not to add `idb` ([research A1](../research/persistence-input-diagnostics-research.md#a1-indexeddb-fundamentals-and-browser-behaviour)):
+
+```ts
+// Sketch: apps/client/src/data/persistence/idbPromises.ts (~30 lines, the only IDB plumbing)
+export function requestToPromise<T>(req: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error ?? new Error('IndexedDB request failed'));
+  });
+}
+export function transactionDone(tx: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'));
+    tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
+  });
+}
+export function openDatabase(
+  name: string,
+  version: number,
+  migrate: MigrateFn,
+  onVersionChange: () => void,
+): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(name, version); // 'VersionError' when the stored version is newer
+    req.onupgradeneeded = (e) => migrate(req.result, e.oldVersion, req.transaction!);
+    req.onblocked = () => reject(new StorageError('blocked', 'upgrade blocked by another tab'));
+    req.onsuccess = () => {
+      req.result.onversionchange = () => {
+        req.result.close();
+        onVersionChange();
+      };
+      resolve(req.result);
+    };
+    req.onerror = () => reject(StorageError.fromNative(req.error));
+  });
+}
+```
+
+The one rule to teach the team, from idb's README: never `await` anything unrelated between the
+requests of one transaction, or it auto-commits ([research A1](../research/persistence-input-diagnostics-research.md#a1-indexeddb-fundamentals-and-browser-behaviour)).
+
+## 5. Schema versioning and migrations
+
+`DB_VERSION` is one integer; the ladder is data both adapters interpret, so a migration test runs
+in Node on `MemoryStorageAdapter` and in the browser (or an IndexedDB fake) on
+`IndexedDbStorageAdapter`.
+
+```ts
+// Sketch: apps/client/src/data/persistence/schema/migrations.ts — the ONLY file that alters stores (02 §9)
+export const DB_NAME = 'eternalus';
+export const DB_VERSION = 1;
+export type Migration = {
+  readonly version: number; // upgrades version - 1 → version
+  readonly createStores?: readonly {
+    name: StoreName;
+    keyPath: string | readonly string[];
+    autoIncrement?: boolean;
+  }[];
+  readonly createIndexes?: readonly {
+    store: StoreName;
+    name: string;
+    keyPath: string | readonly string[];
+    unique?: boolean;
+  }[];
+  readonly transform?: {
+    readonly store: StoreName;
+    readonly upgrade: (record: unknown) => unknown;
+  }; // eager record rewrite via cursor
+};
+export const MIGRATIONS: readonly Migration[] = [
+  {
+    version: 1,
+    createStores: [
+      { name: 'profiles', keyPath: 'id' },
+      { name: 'loadouts', keyPath: 'id' },
+      { name: 'settings', keyPath: ['profileId', 'group'] },
+      { name: 'matches', keyPath: 'id' },
+      { name: 'replays', keyPath: 'matchId' },
+      { name: 'meta', keyPath: 'key' },
+      { name: 'quarantine', keyPath: 'id', autoIncrement: true },
+    ],
+    createIndexes: [
+      { store: 'loadouts', name: 'by_profile', keyPath: 'profileId' },
+      { store: 'loadouts', name: 'by_profile_and_class', keyPath: ['profileId', 'classId'] },
+      { store: 'matches', name: 'by_profile', keyPath: 'profileId' },
+      { store: 'matches', name: 'by_profile_and_date', keyPath: ['profileId', 'playedAt'] },
+      { store: 'replays', name: 'by_played_at', keyPath: 'playedAt' },
+      { store: 'quarantine', name: 'by_store', keyPath: 'store' },
+    ],
+  },
+];
+```
+
+- `IndexedDbStorageAdapter.open` runs `for (const m of MIGRATIONS) if (oldVersion < m.version) apply(m)`
+  inside `onupgradeneeded`, the only place stores and indexes may change. Changing a `keyPath`
+  means a new store plus a `transform` copy, never an in-place edit.
+- `versionchange` (another tab opened a newer version): the adapter closes its connection and
+  the controller reports `degraded` with a "reload to continue" detail; a save never starts in
+  `beforeunload`. `blocked`: the opener surfaces the same prompt. `VersionError` (this build is
+  older than the stored schema): a typed error, never a hang, and the memory fallback (§10).
+- Record-level shape changes that need no new store are handled lazily on read by
+  `upgrade<Name>Dto()` keyed on the DTO's `schemaVersion` (§8); eager rewrites use `transform`.
+  The v1 store list is the research's plus `quarantine` (plan Phase 5, sprint 5.1); the two
+  extra indexes are `Recommendation:`s.
+
+## 6. Transactions as units of work
+
+A use case is one `readwrite` transaction spanning the stores it touches, so a crash leaves
+either everything or nothing ([research A3](../research/persistence-input-diagnostics-research.md#a3-patterns-repository-unit-of-work-facade-dtos-migrations-replays),
+ES-10). `PersistenceController.unitOfWork` opens it; repositories expose `tx`-taking methods
+for use inside it and plain methods that open their own short transaction.
+
+```ts
+// Sketch: the one use case that touches three stores
+public async saveMatchResult(input: SaveMatchResultInput): Promise<MatchRecordId> {
+  const id = crypto.randomUUID(); // client-side identity; core never sees it
+  await this.unitOfWork(['matches', 'profiles', 'replays'], async (tx) => {
+    await this.matches.append(tx, toMatchHistoryRecord(id, input, this.now()));
+    await this.profiles.applyMatch(tx, input.profileId, input.result, input.achievements);
+    if (input.replay !== null) await this.replays.put(tx, id, input.profileId, input.replay);
+  }, { durability: 'strict' }); // match results flush; autosaves (settings, loadouts) use 'relaxed'
+  return id;
+}
+```
+
+Scoping only the stores a unit of work needs lets non-overlapping transactions run in parallel;
+`durability` follows the research (`'relaxed'` for quickly changing records, `'strict'` for the
+records the player would miss).
+
+## 7. Record catalogue
+
+Every stored value is a versioned, structured-clone-safe DTO (`…DtoV1`): plain objects, arrays,
+numbers, strings, booleans, `null`; no class instances, functions, `Map`s or `Date`s
+([research A1, structured clone](../research/persistence-input-diagnostics-research.md#a1-indexeddb-fundamentals-and-browser-behaviour)).
+Wall-clock fields exist only here, never in core.
+
+| Store        | Key                  | DTO                       | Fields (sketch)                                                                                                                                                                                                                                                                                                                                                                                            | Status                                |
+| ------------ | -------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `profiles`   | `id`                 | `ProfileDtoV1`            | `schemaVersion: 1`, `id`, `name`, `createdAt`, `lastPlayedAt`, `stats { matches, wins, losses, kills, deaths, assists, structuresDestroyed, playTimeTicks }`, `achievements: { id, matchId, unlockedAt }[]`                                                                                                                                                                                                | **MVP**; achievements **MVP-if-time** |
+| `loadouts`   | `id`                 | `SavedLoadoutDtoV1`       | `schemaVersion`, `id`, `profileId`, `classId`, `name`, `updatedAt`, `loadout: LoadoutDtoV1` (mirrors core `Loadout`, [05](05-abilities-weapons-and-loadouts.md) §12: `primaryWeaponId`, `abilities[3]`, `ultimate`, `artifacts[2]`, …)                                                                                                                                                                     | **MVP**                               |
+| `settings`   | `[profileId, group]` | `SettingsGroupDtoV1`      | `schemaVersion`, `profileId`, `group: 'bindings' \| 'audio' \| 'accessibility' \| 'developer' \| 'storage'`, `value`: bindings `{ preset, bindings: BindingDtoV1[] }` (`{ action, chords: ChordDtoV1[] }`, [13](13-game-interface.md) §6); audio `{ master, music, sfx }`; accessibility `{ reducedMotion }`; developer `{ menuEnabled, assertLevel }`; storage `{ recordSimulatedMatches, storeReplays }` | **MVP**                               |
+| `matches`    | `id`                 | `MatchHistoryRecordDtoV1` | as in [mechanics-ideas §8](../reference/suggestions/mechanics-ideas.md#8-match-history-record-contents): `id`, `profileId`, `playedAt`, `durationTicks`, `tickRate`, `seed`, `mapPresetId`, `configHash`, `coreVersion`, `contentVersion`, `isSimulation`, `result`, `player`, `legends: LegendScoreDtoV1[]`, `teams`, `timeline`, `achievements`, `replayId`                                              | **MVP**                               |
+| `replays`    | `matchId`            | `ReplayDtoV1`             | `schemaVersion`, `matchId`, `profileId`, `playedAt`, `replay: Replay` (core: `versions { core, content, schema }`, `seed`, `config`, `commands[{ tick, command }]`, `checkpoints[{ tick, hash }]`)                                                                                                                                                                                                         | **MVP** (cut line 9 in the plan)      |
+| `meta`       | `key`                | `MetaDtoV1`               | `key: 'schema'`, `dbVersion`, `coreVersion`, `contentVersion`, `persistRequestedAt`, `lastOpenedAt`                                                                                                                                                                                                                                                                                                        | **MVP**                               |
+| `quarantine` | `id` (auto)          | `QuarantineRecordDtoV1`   | `id`, `store`, `key`, `reason`, `quarantinedAt`, `value: unknown`                                                                                                                                                                                                                                                                                                                                          | **MVP**                               |
+
+Replays store seed + command log + versions, never full state ([research A3](../research/persistence-input-diagnostics-research.md#a3-patterns-repository-unit-of-work-facade-dtos-migrations-replays)):
+`ReplayRecorder` in core records the commands that enter through `Simulation.enqueueCommand`
+(the human's `intent`s and `dev-*` commands); bot commands are regenerated by `AiSystem` from the
+seed, so a 20-minute match is hundreds of kilobytes at most (`Recommendation:` estimate; measure
+in Phase 5). `versions` let `runReplay` refuse a replay recorded under other content or schema.
+
+## 8. DTO ↔ domain mapping, validation-on-read, quarantine
+
+Stored data is never trusted (ES-08). Every read goes through a type guard and, if needed, a
+version upgrade; every write goes through a mapper. Both live in `dto/`, one file per record.
+
+```ts
+// Sketch: apps/client/src/data/persistence/dto/SavedLoadoutDto.ts and repositories/StorageLoadoutRepository.ts
+export function validateSavedLoadoutDto(value: unknown): { ok: true; dto: SavedLoadoutDtoV1 } | { ok: false; reason: string };
+export function upgradeSavedLoadoutDto(dto: SavedLoadoutDtoAnyVersion): SavedLoadoutDtoV1; // lazy per-record ladder on schemaVersion
+export function toLoadout(dto: SavedLoadoutDtoV1): Loadout; // core type
+export function fromLoadout(profileId: ProfileId, loadout: Loadout, now: number): SavedLoadoutDtoV1;
+
+private async readOrQuarantine<T>(tx: StorageTx, store: StoreName, key: IDBValidKey, validate: Validator<T>): Promise<T | null> {
+  const raw = await tx.get<unknown>(store, key);
+  if (raw === undefined) return null;
+  const checked = validate(raw);
+  if (checked.ok) return checked.dto;
+  await tx.put('quarantine', { store, key, reason: checked.reason, quarantinedAt: this.now(), value: raw });
+  await tx.delete(store, key);
+  this.logger.log(makeLogRecord('WARN', 'client.persistence', 'record quarantined', { store: String(store), reason: checked.reason })); // 15 §4
+  return null; // the caller substitutes a default: autoBuildLoadout, DEFAULT_CHORDS, a fresh profile
+}
+```
+
+A corrupt record is copied to `quarantine`, removed from the live store, logged at WARN through
+`Logger` and replaced by a default; it is never fatal and no screen can crash on stored data
+(plan Phase 5, sprint 5.1). Semantic checks that need knowledge `data/` may not import are
+injected: the bindings validator receives `knownActions` from `main.tsx`, and `LoadoutRepository`
+calls core's `repairLoadout` (public API) for content ids that no longer exist.
+
+## 9. Durable storage, quota, eviction, export and import
+
+- `navigator.storage.persist()` is requested once at first launch (recorded in `meta`);
+  `persisted()` and `estimate()` run at every boot and feed the storage panel of `SettingsScreen`.
+  Safari deletes all script-writable storage after seven days of Safari use without interaction
+  on the site, private windows keep IndexedDB in memory only, and best-effort origins are evicted
+  whole under storage pressure; the boot screen shows a one-line warning when not persisted
+  ([research A1, quotas and eviction](../research/persistence-input-diagnostics-research.md#a1-indexeddb-fundamentals-and-browser-behaviour)).
+  Everything is feature-detected (`storage: null` in Node).
+- `QuotaExceededError` (mapped to `StorageError('quota-exceeded')`) triggers the injected
+  `EvictionPolicy`: `OldestReplaysFirstEvictionPolicy` deletes the `N` oldest replays via
+  `by_played_at`, the write is retried once, and a second failure degrades with a warning.
+  Replays are the largest records, so they go first; history rows (about 3 KB each) stay.
+- `exportProfile(id)` returns `ProfileExportV1 = { formatVersion: 1, schemaVersion, exportedAt, coreVersion, contentVersion, profile, loadouts, settings, matches, replays? }`
+  as JSON for download; `importProfile(json)` validates through the same guards and upgrades,
+  refuses a tampered file naming the field, and writes in one unit of work. Import is the
+  player's answer to eviction, so it shares the read path rather than duplicating it (DRY).
+
+## 10. Error-handling policy
+
+`StorageError` is the one error type that leaves `data/`; its `kind` drives the policy. Core
+fails fast; the edges degrade and never swallow (CP-12).
+
+| `kind`           | Raised when                                              | Controller does                                                        | Status shown by `persistenceSlice`              |
+| ---------------- | -------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------- |
+| `unavailable`    | `indexedDB` missing, open rejected, private-mode failure | builds the `fallback()` `MemoryStorageAdapter`, reopens, logs at ERROR | `degraded`: "progress will not be saved"        |
+| `version`        | stored schema newer than `DB_VERSION`                    | no downgrade attempt; fallback as above                                | `degraded`: "newer data found; update the game" |
+| `blocked`        | another tab holds an old connection during upgrade       | waits, then fallback                                                   | "close other tabs and reload"                   |
+| `quota-exceeded` | a write exceeds the origin quota                         | eviction policy, one retry, then warn                                  | `ready` with a storage warning                  |
+| `aborted`        | transaction aborted (shutdown, disk removed)             | the unit of work rejects; nothing partial; caller may retry            | transient banner                                |
+| `data-clone`     | a non-cloneable value reached `put`                      | a bug: throws in tests, logs at ERROR in the browser                   | —                                               |
+| `corrupt`        | a record failed validation                               | quarantine (§8)                                                        | none (logged)                                   |
+
+## 11. `ResourceController`
+
+The single access for game resources, mirroring the persistence design: one facade, a manifest
+as the registry, one loader per asset type, one cache.
+
+```ts
+// Sketch: apps/client/src/data/resources/AssetManifest.ts — the ONLY list of assets (02 §9); a script checks files, bytes, hash and licence in CI
+export type AssetType = 'image' | 'audio' | 'json';
+export type AssetGroup = 'boot' | 'menu' | 'match';
+export type AssetManifestEntry = {
+  readonly id: AssetId;
+  readonly url: string;
+  readonly type: AssetType;
+  readonly group: AssetGroup;
+  readonly bytes: number;
+  readonly hash: string;
+  readonly licence: string;
+  readonly source: string;
+};
+export const ASSET_MANIFEST = {
+  version: '1',
+  assets: [/* one line per asset */],
+} as const satisfies AssetManifest;
+
+// Sketch: apps/client/src/data/resources/ResourceController.ts
+export interface AssetLoader<T> {
+  readonly type: AssetType;
+  load(entry: AssetManifestEntry, onBytes: (loaded: number) => void): Promise<T>;
+}
+export class ImageLoader implements AssetLoader<ImageBitmap> {} // fetch → blob → createImageBitmap (crops sprite frames from a sheet)
+export class AudioLoader implements AssetLoader<AudioBuffer> {} // fetch → arrayBuffer → injected decode (WebAudioOutput's decodeAudioData)
+export class JsonLoader implements AssetLoader<Json> {} // fetch → json → injected validator (atlas frame tables; content stays TS in core)
+export class AssetCache {
+  get<T>(id: AssetId): T;
+  has(id: AssetId): boolean;
+  set(id: AssetId, group: AssetGroup, value: unknown): void;
+  release(group: AssetGroup): void;
+} // Flyweight: one decoded object shared by every view
+export class ResourceController {
+  public constructor(deps: {
+    manifest: AssetManifest;
+    loaders: readonly AssetLoader<unknown>[];
+    cache: AssetCache;
+    fetch: typeof fetch;
+    logger: Logger;
+  }) {}
+  public load(group: AssetGroup, onProgress: (p: LoadProgress) => void): Promise<void>; // LoadProgress = { group, loadedBytes, totalBytes, failed: AssetId[] }
+  public get<T>(id: AssetId): T; // throws on an unknown id at boot, never mid-frame
+  public release(group: AssetGroup): void; // ImageBitmap.close(), drop buffers
+}
+```
+
+- Progress is byte-based from the manifest (`loadedBytes / totalBytes`), monotonic, and ends at
+  the manifest sum; `SessionController` publishes it as `loading-progress` for `BootScreen`
+  ([research A4](../research/persistence-input-diagnostics-research.md#a4-game-resources-manifests-preloading-caching-progress)).
+- Decoders are injected (`createImageBitmap`, the audio decode function, `fetch`), so loader
+  tests run in Node with fakes; the cache deduplicates concurrent loads of one id. The typed
+  `ASSET_MANIFEST` is the source of truth; the plan's generated `assets/manifest.json` and the
+  CI check (files exist, bytes and hash match, `licence` present, ids unique) come from one
+  script in `scripts/` (`Recommendation:`).
+- No service worker and no Cache API for the MVP: hashed file names from Vite give HTTP caching
+  for free; revisit only if offline play becomes a requirement (research A4). Content and
+  tuning are TypeScript data in core (`ContentCatalogue`), not assets; the only JSON assets are
+  atlas frame tables. The manifest's `licence` and `source` feed `AboutScreen` and the asset
+  policy check (plan Phase 6, sprint 6.3).
+
+## 12. Tests
+
+- **Adapter contract suite** (`StorageAdapter.contract.ts` exporting `describeStorageAdapter(name, factory)`,
+  [09](09-hardware-abstraction.md) §9): CRUD round trips of structured-cloneable DTOs, index and
+  range queries, `readonly` isolation, abort rollback (an error mid-work leaves 0 writes),
+  `close` then `open`. Runs against `MemoryStorageAdapter` in Node and `IndexedDbStorageAdapter`
+  against an IndexedDB fake (`Recommendation:` `fake-indexeddb`, a dev dependency needing
+  approval per `AGENTS.md`; fallback: a hand-written fake of the used subset).
+- **Migrations**: open at v1, seed fixtures, reopen with a test `Migration` at v2 adding an
+  index and a `transform`; 100 % of records survive; v2 data under v1 code fails with
+  `StorageError('version')`, never a hang.
+- **Validation, quarantine, units of work**: a corrupt-record fixture set (bad shape, unknown
+  content id, unknown action, future version) yields defaults, one quarantine row each and 0
+  throws; `saveMatchResult` is atomic on both adapters; the stored replay reproduces the final
+  hash in core's replay harness ([15](15-diagnostics-and-runtime-testing.md) §7).
+- **Quota, persist, export/import**: exactly one `persist()` call on a fake `navigator.storage`;
+  a simulated quota error evicts replays in date order; export → clear → import round-trips equal
+  DTOs; a tampered file is refused naming the field.
+- **Resources**: a fake `fetch` streams bytes and each loader reports progress; one failed asset
+  is a typed error, not a failed group; two parallel `get`s load once; every manifest entry has a
+  file, matching bytes and a licence.
+
+## 13. Recipes
+
+| I am adding…                  | Files                                                                                                                                | Plus                                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts` | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures     |
+| A field or a settings group   | bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; or one `group` literal with its `value` DTO and default             | a fixture at the old version in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
+| An asset or a storage backend | one `ASSET_MANIFEST` line with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                 | nothing else (views ask by id); one line in `main.tsx`                                                        |
+
+## Related
+
+- [03-game-model.md](03-game-model.md) and [12-game-story-and-match-director.md](12-game-story-and-match-director.md): `Replay`, `runReplay`, `GameConfig`, `MatchResult`.
+- [09-hardware-abstraction.md](09-hardware-abstraction.md): the `StorageAdapter` port and contract tests.
+- [13-game-interface.md](13-game-interface.md) and [15-diagnostics-and-runtime-testing.md](15-diagnostics-and-runtime-testing.md): `SessionController`, `persistenceSlice`, `loadingSlice`, bindings, `Logger`, replay fixtures.
+- [../reference/game-design/08-loadout.md](../reference/game-design/08-loadout.md), [11-mvp-scope.md](../reference/game-design/11-mvp-scope.md), [10-art-and-lore.md](../reference/game-design/10-art-and-lore.md): loadouts saved to the profile, the boot menu, the asset policy.
+- [../reference/suggestions/mechanics-ideas.md](../reference/suggestions/mechanics-ideas.md): the match history DTO, sim mode, achievements.
+- [../plan/phase-5-meta-ui-and-persistence.md](../plan/phase-5-meta-ui-and-persistence.md): sprints 5.1 and 5.2.
+- Research: [persistence A1–A4](../research/persistence-input-diagnostics-research.md#a-persistence-designed-like-a-dbms); [ES-10](../requirements/05-engineering-standards.md).

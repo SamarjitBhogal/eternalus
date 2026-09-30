@@ -1,3 +1,13 @@
+---
+title: 0002. Style React with CSS Modules
+description: Why React components use co-located CSS Modules with camelCase class names and global CSS is limited to tokens and reset; read this before styling UI.
+audience: [humans, agents]
+status: active
+owner: sholtzman
+last-reviewed: 2026-09-30
+tags: [adr, ui, css]
+---
+
 # 0002. Style React with CSS Modules
 
 - Status: accepted
