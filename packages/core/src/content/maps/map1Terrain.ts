@@ -1,4 +1,4 @@
-import type { MapTerrain } from './mapDefinition';
+import type { MapTerrain } from './maps.types';
 
 /**
  * The terrain of Map 1: out-of-bounds corners, the rift and the capital walls.

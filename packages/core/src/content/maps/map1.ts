@@ -1,4 +1,4 @@
-import type { MapDefinition } from './mapDefinition';
+import type { MapDefinition } from './maps.types';
 import { MAP_1_TERRAIN } from './map1Terrain';
 
 /**
