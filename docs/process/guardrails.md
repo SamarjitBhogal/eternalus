@@ -1,3 +1,29 @@
+---
+title: Guardrails
+description: Every automated guardrail in the repository (TypeScript, ESLint, knip, Prettier, coverage ratchet, git hooks, CI, docs check, agent hooks), what a failure looks like, how to fix it properly and the ADR procedure for changing one; read this when a check fails or before proposing to change a rule.
+audience: [humans, agents]
+status: active
+owner: sholtzman
+last-reviewed: 2026-09-30
+tags: [process, guardrails, ci, tooling]
+paths:
+  [
+    'eslint.config.js',
+    'tsconfig*.json',
+    '**/vitest.config.ts',
+    '.githooks/**',
+    '.github/workflows/**',
+    'scripts/**',
+    '.claude/settings.json',
+  ]
+related:
+  [
+    'docs/process/sdlc.md',
+    'docs/agents/tool-setup.md',
+    'docs/decisions/0008-docs-structure-and-frontmatter.md',
+  ]
+---
+
 # Guardrails
 
 Every rule that matters is enforced by **git hooks and CI**, which apply to every human and every
@@ -20,6 +46,8 @@ AI tool on macOS, Linux and Windows. Everything else is policy, checked in revie
 | Coverage ratchet           | Minimum coverage per package                                                                                                                       | Vitest V8 coverage                                 | `packages/core/vitest.config.ts`, `apps/client/vitest.config.ts`   | `ERROR: Coverage for lines (78%) does not meet global threshold (80%)`                      | Add tests. Never lower the threshold                                  |
 | Pre-commit / pre-push      | `npm run check:quick` (typecheck + lint) on the whole project                                                                                      | git hooks (`core.hooksPath`)                       | `.githooks/pre-commit`, `.githooks/pre-push`, `check:quick` script | `[pre-commit] BLOCKED: npm run check:quick failed.`                                         | Run the named command and fix the errors                              |
 | CI gate                    | `npm run check` on Linux, macOS and Windows, one named step per tool                                                                               | GitHub Actions                                     | `.github/workflows/ci.yml`                                         | Red step, e.g. "Lint (eslint, zero warnings)"                                               | Reproduce locally with the same npm script                            |
+| Docs check                 | Frontmatter schema, relative links and anchors, generated index in `docs/README.md`                                                                | `scripts/docs/check-docs.mjs` (zero deps)          | `scripts/docs/check-docs.mjs`, `package.json` (`docs:check`)       | `error: docs/x.md: broken link "../y.md"`                                                   | Fix the link/frontmatter; `npm run docs:index` regenerates the index  |
+| Agent hooks (Claude Code)  | Per-file Prettier + ESLint after every edit; `check:quick` before an agent stops                                                                   | Claude Code hooks → `scripts/hooks/*.mjs`          | `.claude/settings.json`                                            | `[post-edit] ESLint failed for …` / `[stop-check] Checks failing`                           | Fix the finding; never bypass. Details: `docs/agents/tool-setup.md`   |
 | Lockfile in sync           | `npm ci` fails if `package-lock.json` doesn't match `package.json`                                                                                 | npm (CI install step)                              | `.github/workflows/ci.yml`                                         | `npm ci can only install packages when your package.json and package-lock.json are in sync` | Run `npm install` and commit both files; never hand-edit the lockfile |
 | Exact versions / engines   | `save-exact`, `engine-strict`, `packageManager`                                                                                                    | npm                                                | `.npmrc`, `package.json`                                           | `EBADENGINE Unsupported engine`                                                             | Switch to the Node version in `.nvmrc`                                |
 
@@ -55,11 +83,12 @@ Coverage thresholds live in each package's `vitest.config.ts`. **They may only g
   (`rm -rf`, `export`, single-quoted arguments) to `package.json` scripts. Use a Node script
   instead.
 - **Planned change:** upgrade `pre-push` to the full `npm run check` once the team agrees.
+- `npm run check` also runs `npm run docs:check`; docs-only PRs are gated by it too.
 
 ## 4. Changing a guardrail
 
 1. Explain the problem the guardrail causes, with a concrete example.
-2. Write an ADR in `docs/decisions/` (copy `0000-template.md`): context, decision, consequences.
+2. Write an ADR in `docs/decisions/` (copy `0000-template.md`, or run the `/adr` skill): context, decision, consequences.
 3. Open a PR containing the ADR and the config change. Update this file's table in the same PR.
 4. A maintainer reviews and approves.
 5. Loosening a rule needs a stronger justification than tightening one. Coverage thresholds only

@@ -104,12 +104,15 @@ systems/
   coupling.
 - No `.only` or `.skip`, and every test asserts something. **(enforced)** Avoid `.todo`.
 - Coverage thresholds live in each package's `vitest.config.ts` and only go up (the ratchet,
-  see `docs/guardrails.md`). **(enforced)** Today: core 80%, client 45–50%.
+  see `docs/process/guardrails.md`). **(enforced)** Today: core 80%, client 45–50%.
 
 ## 7. Git workflow
 
-- `main` is always green. Work on a branch: `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`
-  plus a short name, e.g. `feat/health-system`.
+- `main` is always green and only receives one PR per plan phase. Day-to-day work happens on
+  task branches (`feat/`, `fix/`, `docs/`, `refactor/`, `chore/` plus a short name, e.g.
+  `feat/health-system`) created from the current phase branch `phase/<n>-<name>` and merged into
+  it by PR. The full model, including how the next phase stacks on a phase PR that is still
+  waiting for review, is in `docs/process/git-workflow.md` (ADR 0007).
 - Conventional Commits with a scope:
   `core`, `client`, `ui`, `engine`, `bridge`, `ai`, `tooling`, `ci`, `docs`, `deps`.
   Example: `fix(engine): clamp frame delta after tab switch`.
@@ -127,5 +130,6 @@ systems/
 - [ ] No guardrails weakened (or the change is explained in an ADR).
 - [ ] No new dependencies (or explicitly approved).
 - [ ] Public APIs documented with TSDoc.
-- [ ] Relevant docs updated.
+- [ ] Relevant docs updated (frontmatter `last-reviewed` bumped; `npm run docs:check` green).
+- [ ] `docs/plan/PROGRESS.md` entry appended.
 - [ ] PR template complete.

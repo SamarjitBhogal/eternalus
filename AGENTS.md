@@ -1,20 +1,33 @@
 # AGENTS.md
 
 Rules for every AI coding agent (and human) working in this repository. This file is the single
-source of agent instructions. Tool-specific files (e.g. `CLAUDE.md`) only point
-here. Package rules live in `packages/core/AGENTS.md` and `apps/client/AGENTS.md`;
-read the one nearest to the files you edit.
+source of agent instructions. Tool-specific files (`CLAUDE.md`, `GEMINI.md`,
+`.github/copilot-instructions.md`) only point here. Package rules live in
+`packages/core/AGENTS.md` and `apps/client/AGENTS.md`; read the one nearest to the files you edit.
 
 Eternalus is a browser-only 2D game: TypeScript monorepo, custom Canvas 2D engine, React UI,
 single player vs. AI bots, no server. **The repo is scaffolding only:** the client renders an
 empty canvas inside a Redux provider and core has no code yet. The architecture below is the
 plan; follow it when adding code.
 
+## Read first (in this order)
+
+1. This file, then the nearest package `AGENTS.md`.
+2. `docs/architecture/02-code-structure.md`, then the architecture doc whose `paths:`
+   frontmatter matches the files you will touch (`docs/architecture/README.md` lists them).
+3. The current phase doc in `docs/plan/` and the last entry of `docs/plan/PROGRESS.md`.
+4. Your task brief (issue, prompt, or an open item in `INBOX.md`).
+
+Full documentation map: `docs/README.md`. Recipes for adding things: `docs/architecture/17-extension-recipes.md`.
+Skills (`.claude/skills/`, mirrored in `.agents/skills/`): `new-entity`, `new-system`,
+`new-ability`, `new-screen`, `new-content`, `pr-review`, `doc-gardening`, `verify`, `adr`.
+
 ## Definition of done
 
 1. Run `npm run check:quick` (typecheck + lint) after each meaningful edit.
 2. Run `npm run check` before declaring a task done, and report the result verbatim.
 3. A task with any failing check is **not done**. Say so; do not hide or work around it.
+4. Append an entry to `docs/plan/PROGRESS.md` (date, phase/sprint, branch, what, checks, next).
 
 ## Git: never commit or push unless asked
 
@@ -22,13 +35,14 @@ plan; follow it when adding code.
   human explicitly asks for it in the current task.** Leave changes uncommitted in the working
   tree for the human to review. Permission given for one task does not carry over to the next.
 - When asked to commit: use Conventional Commits with an allowed scope (below), keep commits
-  small, work on a branch (`feat/`, `fix/`, `docs/`, `refactor/`, `chore/` + short name), never
-  on `main`.
+  small, work on a task branch (`feat/`, `fix/`, `docs/`, `refactor/`, `chore/` + short name)
+  created from the current **phase branch** (`phase/<n>-<name>`), never on `main`. Phase
+  branches merge into `main` by one PR per phase (`docs/process/git-workflow.md`).
 - Never use `--no-verify`, `git push --force`, `git reset --hard`, or delete branches.
 - Commit scopes: `core`, `client`, `ui`, `engine`, `bridge`, `ai`, `tooling`, `ci`, `docs`, `deps`.
   Example: `feat(core): add health system`.
 - One task per branch. Parallel agents each use their own branch and git worktree
-  (see `docs/agent-workflow.md`).
+  (see `docs/agents/running-agents.md`).
 
 ## Forbidden actions
 
@@ -38,15 +52,17 @@ plan; follow it when adding code.
   - skipped (`.skip`, `.only`, `.todo`) or deleted tests, or weakened assertions,
   - lowered coverage thresholds.
 - If a guardrail blocks a legitimate change, **stop and explain why**. A human decides whether
-  to change it through an ADR in `docs/decisions/`.
+  to change it through an ADR in `docs/decisions/` (`/adr` skill drafts one).
 - No new dependencies without explicit human approval. Never hand-edit `package-lock.json`.
 - Stay in scope: change only what the task needs. No drive-by refactors, renames, or
   reformatting of untouched files.
 - Never invent library APIs. Check the installed types in `node_modules` first.
-- Never make product or game-design decisions. If requirements are unclear, ask.
+- Never make product or game-design decisions. Every gameplay number traces to
+  `docs/reference/` or `docs/requirements/`; if requirements are unclear, ask (or add an
+  `INBOX.md` question for the product owner).
 - Never add copyrighted assets (images, sounds, fonts) the team has no licence for.
 
-## Architecture (planned; full version: `docs/architecture.md`)
+## Architecture (planned; full version: `docs/architecture/`)
 
 1. `packages/core` (`@eternalus/core`) is the simulation: pure TypeScript. No React, DOM, Canvas
    or Node APIs.
@@ -55,30 +71,44 @@ plan; follow it when adding code.
 4. No import cycles.
 5. `apps/client/src/ui/` imports only from `bridge/`, `ui/`, `styles/`. Never `game/` or core.
 6. `game/views/` only reads snapshots (`import type` from core) and draws through `Renderer`.
-7. Only `game/engine/Renderer.ts` touches the Canvas 2D context.
+7. Only `game/engine/render/Canvas2dRenderer.ts` touches the Canvas 2D context.
 8. core never uses `Math.random`, `Date`, `performance.now`, `setTimeout` or `setInterval`.
-   Use a seeded RNG and tick counts.
+   Use the seeded RNG and tick counts.
 9. The simulation advances in fixed ticks (30/s). Input and bots produce `Command`s, applied
-   on the next tick.
+   on the next tick. Developer-menu actions are Commands too (replayable).
 10. Game state is the single source of truth. React shows throttled snapshots via the store.
-11. Tuning numbers and display names live in `packages/core/src/content/`, looked up by ID.
-12. Systems talk through typed `GameEvents`, never by calling each other.
+11. Tuning numbers, display names and world parameters (`numLanes`, towers per lane, …) live in
+    `packages/core/src/content/` and `config/`, looked up by ID and injected; never in code.
+12. Systems talk through typed `GameEvents`, never by calling each other. Variation by kind
+    goes through strategies and registries, never `switch (kind)`.
+13. Persisted data and assets go through one facade each: `PersistenceController` and
+    `ResourceController` in `apps/client/src/data/`.
+14. Entities: shallow inheritance (≤ 3 levels below `Entity`) for taxonomy, components for
+    state, strategies for behaviour, systems for per-tick logic (ADR 0006).
 
 TypeScript and ESLint catch parts of rules 1–3 and 8; everything else is checked in review.
 
 ## Where code goes
 
-| Code                                  | Location                                       |
-| ------------------------------------- | ---------------------------------------------- |
-| Game rules, entities, systems, bots   | `packages/core/src/`                           |
-| Tuning numbers, display names         | `packages/core/src/content/`                   |
-| Loop, renderer, camera, asset loading | `apps/client/src/game/engine/`                 |
-| Drawing game objects                  | `apps/client/src/game/views/`                  |
-| Keyboard/mouse → Commands             | `apps/client/src/game/input/`                  |
-| Menus, HUD, reusable React pieces     | `apps/client/src/ui/{screens,hud,components}/` |
-| Game ↔ React events and store         | `apps/client/src/bridge/`                      |
+| Code                                       | Location                                        |
+| ------------------------------------------ | ----------------------------------------------- |
+| Game rules, entities, components, systems  | `packages/core/src/`                            |
+| Tuning numbers, display names, definitions | `packages/core/src/content/`                    |
+| World/match parameters (`numLanes`, caps)  | `packages/core/src/config/`                     |
+| Map generation, world grid, flow fields    | `packages/core/src/map/`                        |
+| Physics, collision                         | `packages/core/src/physics/`                    |
+| Bots and controllers                       | `packages/core/src/ai/`                         |
+| Runtime invariants, logger port            | `packages/core/src/diagnostics/`                |
+| Loop, renderer, camera, devices, audio     | `apps/client/src/game/engine/`                  |
+| Drawing game objects, minimap              | `apps/client/src/game/views/`                   |
+| Keyboard/mouse/gamepad → InputAction       | `apps/client/src/game/input/`                   |
+| Match composition root, session controller | `apps/client/src/game/`                         |
+| Menus, HUD, reusable React pieces          | `apps/client/src/ui/{screens,hud,components}/`  |
+| Game ↔ React events and store              | `apps/client/src/bridge/`                       |
+| Persistence (IndexedDB) and asset loading  | `apps/client/src/data/{persistence,resources}/` |
 
-If nothing fits, propose a location and ask. Do not invent new top-level folders.
+If nothing fits, propose a location and ask. Do not invent new top-level folders. The full
+decision table is in `docs/architecture/02-code-structure.md`.
 
 ## Coding standards (full version: `CONTRIBUTING.md`)
 
@@ -95,7 +125,7 @@ If nothing fits, propose a location and ask. Do not invent new top-level folders
 - TSDoc on every exported class and public method.
 - No magic numbers in gameplay code (put them in `content/`, mark provisional ones `// TUNE:`).
 - No commented-out code. TODOs need an owner: `// TODO(name): description`.
-- Never use `console` in app code (lint fails).
+- Never use `console` in app code (lint fails); log through the `Logger` port.
 - Keep files short (~300 lines) and functions small (~60 lines); split them when they grow.
 
 ## Testing
@@ -106,9 +136,17 @@ If nothing fits, propose a location and ask. Do not invent new top-level folders
 - Tests are deterministic: seed any randomness, and advance time only by stepping the
   simulation or a fake frame scheduler, never with real timers.
 - Every test asserts something. Coverage thresholds only ever go up.
+- Core behaviour also gets a determinism check (same seed + commands → same `StateHasher` hash);
+  runtime invariants get a test that deliberately triggers them.
+
+## Documentation
+
+- Every doc under `docs/` has YAML frontmatter (`title`, `description`, `audience`, `status`,
+  `owner`, `last-reviewed`, `tags`, optional `paths`, `related`); `npm run docs:check` enforces it.
+- When behaviour, layout or workflow changes, update the governing doc and bump `last-reviewed`.
 
 ## Commands
 
 `npm run check` (everything, same as CI) · `npm run check:quick` · `npm run test` ·
-`npm run lint` · `npm run typecheck` · `npm run knip` ·
-`npm run format`. Full list: `README.md`.
+`npm run lint` · `npm run typecheck` · `npm run knip` · `npm run docs:check` ·
+`npm run docs:index` · `npm run format`. Full list: `README.md`.

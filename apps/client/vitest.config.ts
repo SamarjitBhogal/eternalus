@@ -4,7 +4,7 @@ import viteConfig from './vite.config.ts';
 
 /**
  * Coverage thresholds follow a ratchet: they may only go up.
- * See docs/guardrails.md#2-coverage-ratchet.
+ * See docs/process/guardrails.md#2-coverage-ratchet.
  */
 export default mergeConfig(
   viteConfig,
