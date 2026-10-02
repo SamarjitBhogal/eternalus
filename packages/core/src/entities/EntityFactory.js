@@ -16,7 +16,9 @@ export class EntityFactory {
     const entity = new EntityConstructor(id, definitionId);
 
     if (!(entity instanceof Entity)) {
-      throw new Error(`Invalid entity registration for "${kind}": constructor must create an Entity.`);
+      throw new Error(
+        `Invalid entity registration for "${kind}": constructor must create an Entity.`,
+      );
     }
 
     entity.spawn(spawnContext);

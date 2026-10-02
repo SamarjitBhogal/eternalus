@@ -30,6 +30,22 @@ class ConcreteEntity extends Entity {
   }
 }
 
+class IncompleteEntity extends Entity {
+  installComponents() {}
+}
+
+class HooklessEntity extends Entity {
+  get kind() {
+    return 'hookless';
+  }
+
+  get family() {
+    return 'hookless-family';
+  }
+
+  installComponents() {}
+}
+
 describe('Entity', () => {
   it('is abstract-by-convention and cannot be constructed directly', () => {
     expect(() => new Entity('entity-1', 'test-definition')).toThrow(
@@ -69,5 +85,19 @@ describe('Entity', () => {
 
     expect(() => entity.retire()).toThrow('Entity retire requires a removal cause.');
     expect(() => entity.retire('')).toThrow('Entity retire requires a removal cause.');
+  });
+
+  it('requires subclasses to define kind and family', () => {
+    const entity = new IncompleteEntity('entity-5', 'test-definition');
+
+    expect(() => entity.kind).toThrow('Entity subclasses must define a kind.');
+    expect(() => entity.family).toThrow('Entity subclasses must define a family.');
+  });
+
+  it('provides no-op lifecycle hooks by default', () => {
+    const entity = new HooklessEntity('entity-6', 'test-definition');
+
+    expect(() => entity.spawn({})).not.toThrow();
+    expect(() => entity.retire('cleanup', {})).not.toThrow();
   });
 });

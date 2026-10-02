@@ -4,6 +4,14 @@ import { Legend } from './Legend.js';
 import { Mob } from './Mob.js';
 import { Unit } from './Unit.js';
 
+class ConcreteUnit extends Unit {
+  get kind() {
+    return 'concrete-unit';
+  }
+
+  installComponents() {}
+}
+
 class ConcreteLegend extends Legend {
   get kind() {
     return 'concrete-legend';
@@ -34,9 +42,11 @@ describe('Unit family hierarchy', () => {
   });
 
   it('assigns expected family values to concrete subclasses', () => {
+    const unit = new ConcreteUnit('unit-2', 'unit-definition');
     const legend = new ConcreteLegend('legend-2', 'legend-definition');
     const mob = new ConcreteMob('mob-2', 'mob-definition');
 
+    expect(unit.family).toBe('unit');
     expect(legend.family).toBe('legend');
     expect(mob.family).toBe('mob');
   });
