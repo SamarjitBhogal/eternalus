@@ -1,4 +1,4 @@
-import type { Polygon, Vec2 } from '../../utils/geometry';
+import type { Polygon, Vec2 } from '../../utils/geometry.types';
 
 /** The two playable teams. */
 export type TeamId = 'light' | 'dark';

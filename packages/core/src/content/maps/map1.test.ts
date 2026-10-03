@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Vec2 } from '../../utils/geometry';
+import type { Vec2 } from '../../utils/geometry.types';
 import { MAP_1 } from './map1';
 
 const isInsideMap = (point: Vec2): boolean =>

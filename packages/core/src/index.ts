@@ -16,5 +16,5 @@ export type {
   MapTerrain,
   MapTerrainKind,
   TeamId,
-} from './content/maps/mapDefinition';
-export type { Polygon, Rect, Vec2 } from './utils/geometry';
+} from './content/maps/maps.types';
+export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
