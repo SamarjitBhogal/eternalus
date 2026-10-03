@@ -21,7 +21,7 @@ related:
 ## Purpose
 
 Read this when you pick up a Phase 4 task or review the Phase 4 PR. Phase 4 replaces the
-placeholder Legend with the three MVP classes (**Assault** (rename pending), **Sentinel**,
+placeholder Legend with the three MVP classes (**Warrior** (rename pending), **Sentinel**,
 **Magus**), adds the ability framework the requirements doc demands to be "extremely simple"
 to extend (a new ability is one `AbilityEffect` strategy plus one content entry plus one
 `AbilityRegistry` line), the MVP ability set and ultimates from the game doc, weapons and
@@ -38,18 +38,18 @@ ability tree are **post-MVP** (D11, D12) and only get extension points here.
 - **Depends on:** Phase 2 (`DamagePipeline`, `StatusEffectRuntime`), Phase 3
   (`BotLegendController` emitting `cast-ability`, `checkpoint-reached` and `camp-cleared` XP
   events). INBOX decisions needed by week 7: the third ability per class, one ultimate per
-  class, the Assault artifact.
+  class, the Warrior artifact.
 
 ## Sprint 4.1 — Legend family and class definitions
 
 Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
 
 - [ ] **`Legend` abstract** (3 abilities + ultimate, 2 artifact slots, `Loadout`,
-      `Progression`, aether) + **`Assault`, `Sentinel`, `Magus` concrete** with
+      `Progression`, aether) + **`Warrior`, `Sentinel`, `Magus` concrete** with
       `LegendDefinition` content; `[Flying]` reserved as a content id with no class. Owner: _.
       Test: each class spawns with its components; the class chain depth is 3. Done when:
-      renaming `Assault` touches the class, its imports and one display name.
-- [ ] **Sizes and movement profiles** (`TUNE`, game doc "Entity Class Specifics": Assault ≈
+      renaming `Warrior` touches the class, its imports and one display name.
+- [ ] **Sizes and movement profiles** (`TUNE`, game doc "Entity Class Specifics": Warrior ≈
       medium minion size, Magus ≈ heavy minion, Sentinel very large; Sentinel low base speed,
       highest `maxSpeed`, slow acceleration, up to 1 minute to full speed; Magus floats or walks
       as a `MovementStrategy` flag). Owner: _. Test: a Sentinel reaches `maxSpeed` after the
@@ -99,7 +99,7 @@ touches three places — and abilities cost ≤ 0.5 ms per tick with 20 Legends 
 Owner: _ (sim lane A + B). Week 8. Every ability below is `TUNE` from the game doc's Abilities
 and Ultimate Abilities tables; N/X values are content placeholders until balance (Phase 6).
 
-- [ ] **Assault**: `Veil` (invisible for N s), `Blade Runner` (dash; varieties Physical:
+- [ ] **Warrior**: `Veil` (invisible for N s), `Blade Runner` (dash; varieties Physical:
       knockback in path + stun at the end / Magical: flame trail + burn at the end, loadout
       configurable); third ability per INBOX. Ultimate `Fury` (over-max attack speed for N s,
       dash on press, N× damage, knockback). Owner: _. Test: one scenario test per ability and
@@ -141,7 +141,7 @@ Owner: _ (sim lane). Week 8.
       by id.
 - [ ] **`ArtifactDefinition` content + gadget slots Z/C** (`TUNE`: Sentinel Mortar with impact
       and air-burst modes; Magus Soul Orb (pending) with Cast Forward and Follower; the second
-      Sentinel artifact and the Assault artifact per INBOX). Owner: _. Test: artifacts are
+      Sentinel artifact and the Warrior artifact per INBOX). Owner: _. Test: artifacts are
       abilities with a gadget slot restriction. Done when: no separate artifact runtime exists.
 
 **Success metric:** every named weapon and artifact in the reference doc has a content entry and
@@ -180,7 +180,7 @@ Owner: _ (sim lane B). Week 8.
       lockout applies. Done when: `Revive` is an `AbilityEffect` bound to the class default
       action. Cut line 10 in the roadmap.
 - [ ] **Pick-up/throw (MVP-if-time)** (`Carry` component + `PickUpStrategy` per class:
-      Assault `Pick Up` low weight, Sentinel `Grab` high weight applying `crushed`, Magus
+      Warrior `Pick Up` low weight, Sentinel `Grab` high weight applying `crushed`, Magus
       `Levitate` medium weight; heavier objects slow the carrier). Owner: _. Test: weight limits
       per class; thrown objects use the projectile swept path. Done when: `Grasp` (Flying) is a
       strategy id with no implementation.

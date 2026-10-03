@@ -33,16 +33,16 @@ related:
 **Recommendation: cut form change from the MVP, and build the Eternal form with the mechanism form change will use later.** The Eternal form (final hit on the GreaterBoss, **MVP-if-time**) already needs "abilities, attacks and stats change" for one Legend. If that is implemented as a **definition swap**, form change at buildings later is content plus one interaction class, which is the product owner's litmus test.
 
 ```ts
-// packages/core/src/content/forms/assaultEternal.ts (sketch; folder proposed)
+// packages/core/src/content/forms/warriorEternal.ts (sketch; folder proposed)
 export const ASSAULT_ETERNAL = {
-  id: 'assault-eternal',
+  id: 'warrior-eternal',
   displayName: 'Eternal', // rename pending (OQ-06)
-  forClassId: 'assault',
+  forClassId: 'warrior',
   statMultipliers: { maxHealth: 3, damage: 2, abilityPotency: 1.5, size: 1.5 }, // balancing.md
   controlResistance: 0.25, // knockback and stun durations × 0.25 (game doc: reduction)
   abilityIds: ['veil-prime', 'blade-runner-prime', 'hamstring-prime'],
   ultimateId: 'fury-prime',
-  sprite: { atlas: 'legends', key: 'assault-eternal' },
+  sprite: { atlas: 'legends', key: 'warrior-eternal' },
   endsOn: ['death'], // form change adds 'timer' and 'interact'
 } satisfies FormDefinition;
 ```
@@ -67,7 +67,7 @@ export const ASSAULT_ETERNAL = {
 
 ## 3. Pick-up and throw: scope for the MVP
 
-**Sources.** Game doc, Default interactives: "All units can pick up and throw objects ... The heavier the object, the slower you move while holding it. Some things are too heavy for certain classes." Levitate (medium max, pull or throw), Grab (high max, picking up enemies applies "crushed"), Pick Up (low max, suplex an enemy Assault from behind), Grasp (Flying, post-MVP). Map: felled trees "can be picked up by strong enough characters, depending on tree size". The requirements MVP list never mentions it, so the reference docs mark it **MVP-if-time**, and the plan's cut order puts it second (`../../plan/README.md` §4).
+**Sources.** Game doc, Default interactives: "All units can pick up and throw objects ... The heavier the object, the slower you move while holding it. Some things are too heavy for certain classes." Levitate (medium max, pull or throw), Grab (high max, picking up enemies applies "crushed"), Pick Up (low max, suplex an enemy Warrior from behind), Grasp (Flying, post-MVP). Map: felled trees "can be picked up by strong enough characters, depending on tree size". The requirements MVP list never mentions it, so the reference docs mark it **MVP-if-time**, and the plan's cut order puts it second (`../../plan/README.md` §4).
 
 **Recommendation: three tiers, ship tier 1 in MVP-full, defer tier 2.**
 
@@ -81,9 +81,9 @@ Numbers for tier 1 (`Recommendation:`, masses in the units `balancing.md` uses: 
 
 | Rule                     | Formula or value                                                                                                                                                  |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Carry capacity           | Assault 60 (low), Magus 150 (medium), Sentinel 500 (high)                                                                                                         |
+| Carry capacity           | Warrior 60 (low), Magus 150 (medium), Sentinel 500 (high)                                                                                                         |
 | Object weights           | felled sapling 40, felled oak trunk 120, boulder 200, wall chunk 300; a `weight` field on `ObstacleDefinition`                                                    |
-| Can pick up              | `object.weight <= carrier.capacity` (the game doc's "a Tank can pick up a wall chunk; an Assault cannot": 300 > 60)                                               |
+| Can pick up              | `object.weight <= carrier.capacity` (the game doc's "a Tank can pick up a wall chunk; an Warrior cannot": 300 > 60)                                               |
 | Speed while carrying     | `maxSpeed × (1 − 0.5 × weight / capacity)` (the game doc's "the heavier, the slower")                                                                             |
 | Throw range              | `2 + 8 × (1 − weight / capacity)` metres, along the aim; Levitate throws 25% further                                                                              |
 | Impact                   | Physical damage `0.4 × weight` in a radius of the object's footprint, knockback impulse `weight × 4`, structure multiplier 1.0 (a hurled wall chunk hurts a gate) |

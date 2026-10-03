@@ -26,16 +26,16 @@ Players pick one of four classes. The MVP ships three; the Flying class is **pos
 in the game doc; brief decision D12). The game doc's later tables use the shorthand **Tank**
 (Sentinel), **Mage** (Magus) and **Air** (Flying); these docs use the class names.
 
-| Class                    | Code name  | Build and movement                                                  | Weapon bias   | Damage focus                       | Ability stats               | Other                                                          | Status       |
-| ------------------------ | ---------- | ------------------------------------------------------------------- | ------------- | ---------------------------------- | --------------------------- | -------------------------------------------------------------- | ------------ |
-| Assault (rename pending) | `Assault`  | Lighter, lower health, faster                                       | Light weapons | Split between magic and physical   | Better light ability stats  | —                                                              | **MVP**      |
-| Sentinel                 | `Sentinel` | Heavy, slower (low base speed; see movement profile), more powerful | Heavy weapons | Physical                           | Better heavy ability stats  | —                                                              | **MVP**      |
-| Magus                    | `Magus`    | Magical; floats or walks                                            | Staves        | Magic, with a higher ability focus | Better medium ability stats | Applies buffs or debuffs; can revive allies (if not destroyed) | **MVP**      |
-| Flying (rename pending)  | `[Flying]` | Air-based; moves primarily in the air, like a jet or helicopter     | —             | Ability damage and range           | —                           | Can melee physically if desired, but it is risky               | **post-MVP** |
+| Class                      | Code name  | Build and movement                                                  | Weapon bias   | Damage focus                       | Ability stats               | Other                                                          | Status       |
+| -------------------------- | ---------- | ------------------------------------------------------------------- | ------------- | ---------------------------------- | --------------------------- | -------------------------------------------------------------- | ------------ |
+| Warrior (formerly Assault) | `Warrior`  | Lighter, lower health, faster                                       | Light weapons | Split between magic and physical   | Better light ability stats  | —                                                              | **MVP**      |
+| Sentinel                   | `Sentinel` | Heavy, slower (low base speed; see movement profile), more powerful | Heavy weapons | Physical                           | Better heavy ability stats  | —                                                              | **MVP**      |
+| Magus                      | `Magus`    | Magical; floats or walks                                            | Staves        | Magic, with a higher ability focus | Better medium ability stats | Applies buffs or debuffs; can revive allies (if not destroyed) | **MVP**      |
+| Flying (rename pending)    | `[Flying]` | Air-based; moves primarily in the air, like a jet or helicopter     | —             | Ability damage and range           | —                           | Can melee physically if desired, but it is risky               | **post-MVP** |
 
 Notes:
 
-- "Assault" and "Flying" are placeholders. The requirements doc spells the flying class "arial"
+- "Warrior" and "Flying" are placeholders. The requirements doc spells the flying class "arial"
   and also asks for a new name. The code name stays stable; the display name lives in content, so
   a rename is a class rename plus its imports and nothing else (requirements doc: "should be very
   easy").
@@ -52,9 +52,9 @@ optional subclass only when behaviour is unique.
 
 | Class    | Sub-class   | Focus                                                               | Status       |
 | -------- | ----------- | ------------------------------------------------------------------- | ------------ |
-| Assault  | Assassin    | Lighter, higher burst damage                                        | **post-MVP** |
-| Assault  | Knight      | Balanced weight, balanced damage                                    | **post-MVP** |
-| Assault  | Paladin     | Heavier, higher sustain damage                                      | **post-MVP** |
+| Warrior  | Assassin    | Lighter, higher burst damage                                        | **post-MVP** |
+| Warrior  | Knight      | Balanced weight, balanced damage                                    | **post-MVP** |
+| Warrior  | Paladin     | Heavier, higher sustain damage                                      | **post-MVP** |
 | Sentinel | Colossus    | Melee focus, extra resistance                                       | **post-MVP** |
 | Sentinel | TBD         | TBD                                                                 | **post-MVP** |
 | Magus    | Necromancer | Debuff focus; Revive nearby fallen entities to fight for their team | **post-MVP** |
@@ -64,7 +64,7 @@ optional subclass only when behaviour is unique.
 | Flying   | Strafe      | Lower health, higher burst damage, faster                           | **post-MVP** |
 
 **Open question** (OQ in `12-open-questions.md`): should each class's sub-classes follow a
-generic damage / balance / support split, or mix it up? The current list is mixed: Assault's
+generic damage / balance / support split, or mix it up? The current list is mixed: Warrior's
 three are a weight/damage-curve spread, Magus's three are a debuff/buff/self split, Sentinel has
 one named entry.
 
@@ -94,20 +94,20 @@ special case.
 | Magus    | Necromancy              | The lower your health, the stronger you become. All undead abilities are amplified. Revived allies have increased power and negation for N seconds. | **MVP** |
 
 The loadout has one "passive ability or aura" slot (see `08-loadout.md`), so Magus chooses
-between Studious and Necromancy. Assault has no passive in the source. Wrecking Run is the
+between Studious and Necromancy. Warrior has no passive in the source. Wrecking Run is the
 in-fiction name for the Sentinel movement profile below.
 
 ## Default interactives: pick up and throw
 
 All units can pick up and throw objects, and the interaction looks different for each class. The
 heavier the object, the slower you move while holding it. Some things are too heavy for certain
-classes: a Sentinel can pick up a wall chunk; an Assault cannot.
+classes: a Sentinel can pick up a wall chunk; an Warrior cannot.
 
 | Class    | Name     | Description                                                                                                                                                                                                                        | Weight max           | Status          |
 | -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | --------------- |
 | Magus    | Levitate | The selected object floats and can be pulled toward the user or thrown away.                                                                                                                                                       | Medium               | **MVP-if-time** |
 | Sentinel | Grab     | Grabs the object and can hold or throw it. Picking up enemies applies the "crushed" debuff.                                                                                                                                        | High                 | **MVP-if-time** |
-| Assault  | Pick Up  | Picks up the object. Try picking up an enemy Assault from behind (suplex for a break-neck finisher).                                                                                                                               | Low                  | **MVP-if-time** |
+| Warrior  | Pick Up  | Picks up the object. Try picking up an enemy Warrior from behind (suplex for a break-neck finisher).                                                                                                                               | Low                  | **MVP-if-time** |
 | Flying   | Grasp    | Target an object, mob, or player; swoop down, grab it, and take off with it. Picking up enemies stuns them briefly (they can soon fight you off). Has a cooldown. Careful trying this on a heavy Sentinel who is paying attention. | Depends on sub-class | **post-MVP**    |
 
 Rules that go with them (game doc):
@@ -131,7 +131,7 @@ size, and sizes line up with minion weight classes.
 
 | Class    | Size relative to minions                                         | Reference height `TUNE` |
 | -------- | ---------------------------------------------------------------- | ----------------------- |
-| Assault  | Smallest; a little bigger than a light minion, ~ a medium minion | ~7 ft (Master Chief)    |
+| Warrior  | Smallest; a little bigger than a light minion, ~ a medium minion | ~7 ft (Master Chief)    |
 | Magus    | Quite a bit larger; ~ a heavy minion                             | ~10 ft (Hades, Smite)   |
 | Sentinel | Very large                                                       | ~15 ft (an elephant)    |
 
@@ -146,7 +146,7 @@ class profiles it describes:
 
 | Class    | Base speed | maxSpeed  | Acceleration | Mass | Notes from the source                                                                                                                         |
 | -------- | ---------- | --------- | ------------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Assault  | high       | —         | —            | low  | "Lighter, faster"; would benefit most from mounts (post-MVP) because the map is huge.                                                         |
+| Warrior  | high       | —         | —            | low  | "Lighter, faster"; would benefit most from mounts (post-MVP) because the map is huge.                                                         |
 | Magus    | —          | —         | —            | —    | "floats or walks"; no numbers given.                                                                                                          |
 | Sentinel | low        | very high | slow         | high | "one of the highest maxSpeed stats but their acceleration is just slow"; needs a lot of runway; can break through harder walls at high speed. |
 
@@ -155,16 +155,16 @@ Sentinel specifics from the Walls section (`03-structures-and-defenses.md` has t
 through a Stronghold wall costs 50% `TUNE` of total health and does 50% `TUNE` of the sentinel's
 total damage to the wall segment(s) contacted. All values are `TUNE` and the "—" cells are simply
 unspecified in the source; `Recommendation:` fill them in `content/legends/*` with the class
-table's qualitative ordering (Assault fastest base, Sentinel highest max) and let balancing move
+table's qualitative ordering (Warrior fastest base, Sentinel highest max) and let balancing move
 them.
 
-Mounts (horse-like entities that let Assault-type characters cross the map quickly, with
+Mounts (horse-like entities that let Warrior-type characters cross the map quickly, with
 different Light and Dark skins) are **post-MVP** (orange). The Sentinel does not need one: it
 crosses the map on foot by reaching maxSpeed.
 
 ## Engineering notes
 
-- Taxonomy (brief decision D4, ADR 0006): `Entity → Unit → Legend → Assault | Sentinel | Magus |
+- Taxonomy (brief decision D4, ADR 0006): `Entity → Unit → Legend → Warrior | Sentinel | Magus |
 [Flying]`. `Legend` is abstract and owns the shared contract (3 abilities + ultimate, 2 gadget
   slots for artifacts, `Loadout`, `Progression`, aether); the concrete classes are thin and hold
   only what is truly class-specific in behaviour (for example Magus's Revive default action).

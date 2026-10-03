@@ -12,13 +12,13 @@ related:
 
 # 0006. Entity model: shallow inheritance plus composition
 
-- Status: accepted (product owner decision 2026-09-30 for D4/D11; D10 pending confirmation, DEC-03)
+- Status: accepted (product owner decision 2026-09-30 for D4/D11; D10 confirmed 2026-10-03, DEC-03)
 - Date: 2026-09-30
 
 ## Context
 
 The requirements document prescribes an inheritance tree (`Entity` → user character →
-Assault/Sentinel/Magus/Arial; `Entity` → mob → heavy/medium/light; `Entity` → neutral entity →
+Warrior/Sentinel/Magus/Arial; `Entity` → mob → heavy/medium/light; `Entity` → neutral entity →
 camps and bosses → mini/greater boss) and wants "new idea? add a new class". `CONTRIBUTING.md`
 §3 limits inheritance to three levels below the root and prefers composition for cross-cutting
 behaviour. The game doc adds sub-classes (Assassin/Knight/Paladin, Colossus, Necromancer/Druid/
@@ -29,7 +29,7 @@ Mage, Hover/Strafe), which would be a fourth level, and mechanics where a unit c
 
 1. **Taxonomy by inheritance, behaviour by composition.** `Entity` → `Unit` → `Legend`/`Mob`/
    `Boss`; `Entity` → `Structure`; `Entity` → `Zone`; `Entity` → `Obstacle`; `Entity` →
-   `Projectile`. Concrete Legends (`Assault`, `Sentinel`, `Magus`) and mobs (`LightMob`,
+   `Projectile`. Concrete Legends (`Warrior`, `Sentinel`, `Magus`) and mobs (`LightMob`,
    `MediumMob`, `HeavyMob`) are leaves at depth 3. State lives in components (`Health`,
    `Movement`, `Combat`, `Team`, …); behaviour that varies by kind is a strategy chosen from
    content; per-tick logic lives in systems; the numbers live in Type Object definitions.

@@ -11,7 +11,7 @@ related: ['docs/architecture/06-map-and-minimap.md', 'docs/architecture/03-game-
 
 # 0009. Config-driven map generation
 
-- Status: accepted (product owner decision, 2026-09-30; `feat/map` reconciliation pending, DEC-04)
+- Status: accepted (product owner decision, 2026-09-30; DEC-04 on 2026-10-03: `feat/map` is merged into `main` and may be changed to fit this ADR, reviewer Aryan Walanj)
 - Date: 2026-09-30
 
 ## Context

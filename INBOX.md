@@ -8,46 +8,36 @@ agent cannot finish stay open with a note. Every session starts by reading this 
 (`scripts/hooks/session-start.mjs` reports the number of open items).
 
 Format: one checkbox per item. Put decisions under "Decisions", tasks under "Requests",
-review comments under "Feedback".
+review comments under "Feedback". Answered decisions are recorded in
+`docs/reference/game-design/13-owner-decisions-log.md` and then moved to _Done_ here.
 
 ## Decisions needed from Sam
 
-Answering these unblocks Phase 1. Recommended picks are marked; reply inline
-(`Decision: …`) or tick the box and write the answer under it.
+Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Decision: …`).
 
-- [ ] **DEC-01 Term end date and demo date.** The plan assumes ~10 working weeks from
-      2026-10-05 (`docs/plan/README.md`). Give the real dates so sprints can be re-cut.
-- [ ] **DEC-02 Confirm React/Redux with the instructor.** Decided D2 (keep), but the course rule
-      "only JS/HTML/CSS" should be confirmed in writing. If refused: fallback is a vanilla DOM UI
-      layer behind the same bridge (only `apps/client/src/ui/` changes).
-- [ ] **DEC-03 Team-as-property (D10).** The requirements doc's tree has a "neutral entity"
-      branch; the architecture models team as a component and camps/bosses as `Structure`/`Boss`
-      with `team: 'neutral'` because revives and ascension change a unit's team. Accept, or insist
-      on a `NeutralEntity` base class? (Recommended: accept.)
-- [ ] **DEC-04 `feat/map` reconciliation.** Aryan's branch hardcodes Map 1 coordinates. Proposal:
-      merge it as an authored _preset_ behind `MapGenerator`, or ask for it to be reworked into
-      the generator before merge? (`docs/architecture/06-map-and-minimap.md` "review notes";
-      recommended: merge types now, replace `MAP_1` data with generator output in Phase 1.3.)
-- [ ] **DEC-05 Sprint length and phase reviewers.** Proposal: 1-week sprints; each phase PR
-      reviewed by a different teammate (rotation in `docs/plan/README.md`). Name the reviewers.
-- [ ] **DEC-06 World scale.** Proposal: 1 world unit = 1 metre; Legend radii from the size notes
-      (Assault ≈ 1.1 m, Magus ≈ 1.5 m, Sentinel ≈ 2.3 m). Accept or give numbers.
-- [ ] **DEC-07 MVP cut line.** `docs/plan/README.md` defines MVP-core vs MVP-full and the cut
-      order (corner camps → manual turret control → pick-up/throw → art polish). Confirm the order.
-- [ ] **DEC-08 Naming picks.** `docs/reference/suggestions/naming.md` proposes names for every
-      placeholder (Assault, Flying, Enchantment, horde, buff tower, spawner tower, profile screen,
-      Studious, Death Ray, Fury's god, the bow…). Pick or defer; picks go into content as display
-      names, so nothing in code waits on them.
-- [ ] **DEC-09 Discrepancy resolutions.** `docs/reference/suggestions/discrepancies.md` lists the
-      open conflicts between the two source docs (which towers spawn what, camps "from the start"
-      vs "after cooldown", capture-point checkpoints vs zones). Decide the ones marked _open_.
-- [ ] **DEC-10 INBOX visibility.** This file is committed (teammates can see the queue). If you
-      prefer it private, say so and it moves to a gitignored `INBOX.local.md`.
+- [ ] **DEC-11 (was DISC-19 / DISC-39) — third ability and single ultimate per class.** The game
+      doc names only **two** abilities per MVP class (Warrior: Veil, Blade Runner; Sentinel: Rip &
+      Tear, Slam; Magus: Imbue, Shockwave) while the rule is "3 abilities + 1 ultimate". It also
+      lists **two ultimates** for Magus (Death Ray, Nova) and Sentinel (Berserk, Meteor Fall) and
+      one for Warrior (Fury). Needed before Phase 4 content is written.
+      Options: (a) **Recommended** — third abilities from `suggestions/more-abilities.md`:
+      Warrior **Hamstring**, Sentinel **Shield Wall**, Magus **Sanctuary**; MVP ultimates
+      Death Ray (Magus), Berserk (Sentinel), Fury (Warrior); Nova / Meteor Fall / Eclipse become
+      loadout-selectable alternative ultimates post-MVP. (b) Keep both ultimates per class as a
+      loadout choice in the MVP (more content, more balancing). (c) Your own picks.
+- [ ] **DEC-12 (was DISC-33) — corner-camp crystal timers.** "Crystals" are the unbreakable
+      crystals inside the four **corner camps** (game doc, "Outer (Corner) Camps" and "Minion
+      Buffs on Boss Spawn"): the crystal respawns the camp's mini-boss **300 s** after it dies,
+      and once the central boss has spawned it also emits light/medium waves toward your lanes
+      every **240 s**. Accept both timers as TUNE starting values? (Corner camps are first in the
+      cut order, so this only matters if time allows.)
+- [ ] **DEC-13 (was DISC-34) — match length.** Left blank in the last batch. Proposal:
+      `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
+      summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
 
 ## Requests for the agent
 
-- [ ] _(example)_ Phase 1, sprint 1.1: implement `SeededRandom` + `StateHasher` with tests
-      per `docs/plan/phase-1-simulation-kernel-and-world.md`.
+- [ ] _(none open — the S1 work packages are in `docs/agents/prompts/2026-10-03-ultracode-sessions.md`)_
 
 ## Feedback
 
@@ -55,5 +45,14 @@ Answering these unblocks Phase 1. Recommended picks are marked; reply inline
 
 ## Done
 
+- 2026-10-03 — **DEC-01…DEC-10 and the discrepancy answers** recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md`; plan re-cut to four two-week sprints
+  ending 2026-11-27 (`docs/plan/README.md` §0); ADR 0004/0006/0009 statuses updated; 32
+  discrepancy rows marked decided; the owner's interface flow written up in
+  `docs/reference/game-design/14-interface-and-screen-flow.md`; `SessionPhase` extended with
+  `character-select` / `pre-launch` / `match-loading` in `docs/architecture/13-game-interface.md`;
+  Assault → **Warrior** adopted (class `Warrior`, content id `warrior`); new ideas (Tower
+  Guardians, weapon upgrades, level visuals, team skins) logged with MVP status. Branch
+  `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
-  (see `docs/changelog/2026-09-30-phase-0-foundation.md`).
+  (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).

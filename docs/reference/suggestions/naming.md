@@ -21,7 +21,7 @@ Conventions used here: **Recommended** = the author's pick; every option carries
 
 ## Classes
 
-### Assault (rename pending) — MVP
+### Warrior (formerly Assault) — MVP
 
 The class is lighter, lower health, faster, with light weapons and damage split between magic and physical. Its sub-classes are Assassin, Knight and Paladin, so the class name has to sit above a stealthy, a balanced and a sustained fighter without being any one of them.
 
@@ -52,9 +52,9 @@ The game doc labels all sub-class names as pending, so every row has options; th
 
 | Class    | Working name | Focus (from the game doc)                                          | Recommended     | Alternates                                                | Why                                                                                                                       |
 | -------- | ------------ | ------------------------------------------------------------------ | --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Assault  | Assassin     | Lighter, higher burst                                              | **Shade**       | Wraith, Nightblade, Cutthroat                             | One word, stealth-coded, pairs with the Veil ability                                                                      |
-| Assault  | Knight       | Balanced weight and damage                                         | **Blade**       | Duelist, Sellsword, Lancer                                | The balanced fighter defined by its weapon, not its armour; avoids "Knight" (too Light-coded)                             |
-| Assault  | Paladin      | Heavier, higher sustain                                            | **Templar**     | Zealot, Crusader, Justicar                                | Keeps the holy-warrior flavour without borrowing the Light team's own art descriptor ("paladin armour")                   |
+| Warrior  | Assassin     | Lighter, higher burst                                              | **Shade**       | Wraith, Nightblade, Cutthroat                             | One word, stealth-coded, pairs with the Veil ability                                                                      |
+| Warrior  | Knight       | Balanced weight and damage                                         | **Blade**       | Duelist, Sellsword, Lancer                                | The balanced fighter defined by its weapon, not its armour; avoids "Knight" (too Light-coded)                             |
+| Warrior  | Paladin      | Heavier, higher sustain                                            | **Templar**     | Zealot, Crusader, Justicar                                | Keeps the holy-warrior flavour without borrowing the Light team's own art descriptor ("paladin armour")                   |
 | Sentinel | Colossus     | Melee focus, extra resistance                                      | **Colossus**    | Bulwark, Goliath, Juggernaut                              | Keep: already thematic and it names the size fantasy (a 15 ft Sentinel)                                                   |
 | Sentinel | (TBD)        | (TBD) — proposal: siege focus, mortar and structure damage, slower | **Breaker**     | Warden (control focus), Bastion (support focus), Ironclad | Gives the tank line a damage/balance/support split: Colossus (balance), Breaker (damage vs structures), Bastion (support) |
 | Magus    | Necromancer  | Debuff focus; revives fallen entities                              | **Necromancer** | Revenant, Gravecaller, Lich                               | Keep: the Necromancy passive already exists and the name is instantly understood                                          |
@@ -191,7 +191,7 @@ A very long beam that lasts N seconds; two opposing beams lock together and exte
 | Annihilation  | Plain; the safe fallback                                                                                                                                            |
 | Final Verse   | Poetic; pairs with Litany/Erudition if those are picked                                                                                                             |
 
-### The god invoked by Fury (Assault ultimate) — MVP
+### The god invoked by Fury (Warrior ultimate) — MVP
 
 "Imbue yourself with the light of [god name]." Both teams use the same Fury, so the god must be one both factions could invoke; in the lore they once shared one realm.
 
@@ -273,11 +273,11 @@ Code identifier stays `DeveloperMenu` (`apps/client/src/ui/hud/DeveloperMenu`).
 
 | Placeholder (today)               | Recommended pick                           | Alternates                                     | MVP status  |
 | --------------------------------- | ------------------------------------------ | ---------------------------------------------- | ----------- |
-| Assault (class)                   | Vanguard                                   | Striker, Duelist, Reaver, Warden, Champion     | MVP         |
+| Warrior (class)                   | Vanguard                                   | Striker, Duelist, Reaver, Warden, Champion     | MVP         |
 | Flying (class)                    | Harrier                                    | Skyborne, Zephyr, Valkyr, Corsair              | post-MVP    |
-| Assault / Assassin                | Shade                                      | Wraith, Nightblade, Cutthroat                  | post-MVP    |
-| Assault / Knight                  | Blade                                      | Duelist, Sellsword, Lancer                     | post-MVP    |
-| Assault / Paladin                 | Templar                                    | Zealot, Crusader, Justicar                     | post-MVP    |
+| Warrior / Assassin                | Shade                                      | Wraith, Nightblade, Cutthroat                  | post-MVP    |
+| Warrior / Knight                  | Blade                                      | Duelist, Sellsword, Lancer                     | post-MVP    |
+| Warrior / Paladin                 | Templar                                    | Zealot, Crusader, Justicar                     | post-MVP    |
 | Sentinel / Colossus               | Colossus (keep)                            | Bulwark, Goliath, Juggernaut                   | post-MVP    |
 | Sentinel / second sub-class (TBD) | Breaker (siege focus)                      | Warden, Bastion, Ironclad                      | post-MVP    |
 | Magus / Necromancer               | Necromancer (keep)                         | Revenant, Gravecaller, Lich                    | post-MVP    |
@@ -306,20 +306,20 @@ Names that are already decided and are not reopened here: Eternal (the central b
 
 ## In-code naming convention (keeps renames cheap)
 
-The requirements doc wants a rename of "Assault" to be "just change the class name, then change the import statements and the header of whatever inherited from it". The convention below makes that true, and makes the _display_ rename even cheaper. It serves the Open/Closed and Single Responsibility principles: a name shown to players is data with one place of change (the content definition); a name used by code is a symbol that tooling renames; an identifier stored on disk or in a replay never changes at all.
+The requirements doc wants a rename of "Warrior" to be "just change the class name, then change the import statements and the header of whatever inherited from it". The convention below makes that true, and makes the _display_ rename even cheaper. It serves the Open/Closed and Single Responsibility principles: a name shown to players is data with one place of change (the content definition); a name used by code is a symbol that tooling renames; an identifier stored on disk or in a replay never changes at all.
 
-1. **Display names live in content definitions.** Every definition in `packages/core/src/content/` carries `displayName` (and, only if the owner accepts a faction pair such as Beacon/Pyre, an optional `displayNameByTeam`). The HUD, the loadout screen, the announcer and the Chronicle read `displayName` through the snapshot; no React component or view contains a gameplay name string. Changing "Assault" to "Vanguard" on screen is a one-line content change and no test that checks behaviour breaks.
-2. **Code identifiers use the stable internal name.** The class is `Assault` (`packages/core/src/entities/Assault.ts`) until the owner decides otherwise. If the owner does want the class identifier renamed, it is a mechanical rename-symbol in the IDE plus a file rename, exactly what the requirements doc describes. It needs no ADR because no behaviour and no data changes.
-3. **kebab-case content IDs never change once used** (`CONTRIBUTING.md` §2). `'assault'` is the content ID of the class forever, even if the class becomes Vanguard, because IDs are stored in saved loadouts, match history rows, replays and test fixtures. A renamed ID would need a persistence migration and would silently break replays.
+1. **Display names live in content definitions.** Every definition in `packages/core/src/content/` carries `displayName` (and, only if the owner accepts a faction pair such as Beacon/Pyre, an optional `displayNameByTeam`). The HUD, the loadout screen, the announcer and the Chronicle read `displayName` through the snapshot; no React component or view contains a gameplay name string. Changing "Warrior" to "Vanguard" on screen is a one-line content change and no test that checks behaviour breaks.
+2. **Code identifiers use the stable internal name.** The class is `Warrior` (`packages/core/src/entities/Warrior.ts`) until the owner decides otherwise. If the owner does want the class identifier renamed, it is a mechanical rename-symbol in the IDE plus a file rename, exactly what the requirements doc describes. It needs no ADR because no behaviour and no data changes.
+3. **kebab-case content IDs never change once used** (`CONTRIBUTING.md` §2). `'warrior'` is the content ID of the class forever, even if the class becomes Vanguard, because IDs are stored in saved loadouts, match history rows, replays and test fixtures. A renamed ID would need a persistence migration and would silently break replays.
 4. **Registries map IDs to classes**, so a class rename touches the one registry line and nothing else (`EntityRegistry`, `AbilityRegistry`, `ViewRegistry`).
 5. **Events, commands and status-effect IDs follow the same rule**: kebab-case strings that describe the thing, never the display name (`'buff-tower'`, not `'ward'`).
 
 Sketch (not code that exists):
 
 ```ts
-// packages/core/src/content/legends/assault.ts (sketch)
+// packages/core/src/content/legends/warrior.ts (sketch)
 export const ASSAULT_LEGEND = {
-  id: 'assault', // stable content ID: never renamed once used
+  id: 'warrior', // stable content ID: never renamed once used
   displayName: 'Vanguard', // proposed; change freely, nothing else moves
   displayNameByTeam: undefined, // optional faction pair, e.g. { light: 'Templar', dark: 'Reaver' }
   role: 'balance',
@@ -328,7 +328,7 @@ export const ASSAULT_LEGEND = {
 } satisfies LegendDefinition;
 
 // packages/core/src/entities/EntityRegistry.ts (sketch): the only line that knows the class
-registry.register('assault', (definition, ctx) => new Assault(definition, ctx));
+registry.register('warrior', (definition, ctx) => new Warrior(definition, ctx));
 ```
 
 Renaming a class identifier, step by step: rename the class symbol and its file (IDE), update the one registry line, run `npm run check`. Content IDs, save data, replays and display names are untouched. `../../architecture/17-extension-recipes.md` has the matching recipes for adding a class, an ability or a structure; a rename is the degenerate case of those recipes where nothing new is added.

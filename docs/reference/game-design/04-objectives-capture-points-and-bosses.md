@@ -120,7 +120,7 @@ summon the boss. **The boss belongs to no team** (`team = 'neutral'`).
 - **The whole team gets XP on the boss kill.**
 - **The player who lands the final hit becomes an Eternal**: their class is upgraded with new
   abilities and animations (the source says "Mage Prime, Tank Prime, Assassin Prime, etc.";
-  the Form change table says "Assault′, Sentinel′, Magus′") as they grow in size and stature.
+  the Form change table says "Warrior′, Sentinel′, Magus′") as they grow in size and stature.
 - **An Eternal player has a massively increased health bar, greatly increased damage output,
   and knockback/stun reduction; they die once their health bar is depleted** (no revive back to
   Eternal).

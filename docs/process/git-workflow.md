@@ -27,9 +27,9 @@ commit conventions themselves are in `CONTRIBUTING.md` §7; this doc is about br
   approval, green CI on three OSes, linear history, no force-push (`guardrails.md` §5).
 - **Sam Holtzman** is product owner and lead architect: owns the plan, the phase branches,
   the ADRs and the INBOX.
-- Every phase PR has a named reviewer (Phase 0: SamarjitBhogal). Task PRs inside a phase are
-  reviewed by any teammate plus, for agent-written code, the `pr-review` skill or the
-  `architecture-reviewer` subagent first.
+- Every PR names its reviewer: **the feature owner picks whoever cares about the feature** when
+  opening it (DEC-05; Phase 0 was SamarjitBhogal, map changes go to Aryan Walanj). Agent-written
+  code gets the `pr-review` skill or the `architecture-reviewer` subagent first.
 
 ## 2. Branch types
 

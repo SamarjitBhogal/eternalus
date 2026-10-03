@@ -100,7 +100,7 @@ Owner: _ (sim lane B). Week 5. Depends on 2.2.
       only the swept test, never overlap-only.
 - [ ] **`Turret` + `TurretController` + ammo data** (`TUNE`: heavy ammo 1 bolt / 10 s, default
       1 bolt / 5 s; auto ammo switch: heavy for Sentinels and heavy minions; predictive fire on
-      auto; manual control by an Assault Legend through `InputAction`s `turret-enter`,
+      auto; manual control by an Warrior Legend through `InputAction`s `turret-enter`,
       `turret-exit`, `turret-switch-ammo`, all rebindable). Owner: _. Test: cadence 300 / 150
       ticks at 30 TPS; ammo choice follows the target's definition tag; predictive aim hits a
       unit moving at constant velocity. Done when: changing ammo specifics is a content edit

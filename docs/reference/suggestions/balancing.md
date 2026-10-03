@@ -28,11 +28,11 @@ related:
 
 ## Reference anchor values (level 1)
 
-`Recommendation:` all values. Collider radii follow the game doc's size headcanon (Assault about 7 ft, Magus about 10 ft, Sentinel about 15 ft; Assault ≈ a medium minion, Magus ≈ a heavy minion).
+`Recommendation:` all values. Collider radii follow the game doc's size headcanon (Warrior about 7 ft, Magus about 10 ft, Sentinel about 15 ft; Warrior ≈ a medium minion, Magus ≈ a heavy minion).
 
 | Legend   | Max health | Max aether | Base speed / sprint max (m/s) | Acceleration (m/s²) | Basic attack (damage / interval)       | Mass | Radius (m) |
 | -------- | ---------- | ---------- | ----------------------------- | ------------------- | -------------------------------------- | ---- | ---------- |
-| Assault  | 650        | 100        | 5.0 / 6.5                     | 12                  | 45 physical / 0.7 s (64 DPS)           | 80   | 0.5        |
+| Warrior  | 650        | 100        | 5.0 / 6.5                     | 12                  | 45 physical / 0.7 s (64 DPS)           | 80   | 0.5        |
 | Sentinel | 1100       | 80         | 3.5 / 9.0 (Wrecking Run ramp) | 3 (normal)          | 90 physical / 1.2 s (75 DPS)           | 400  | 1.2        |
 | Magus    | 550        | 140        | 4.0 / 5.0                     | 8                   | 40 magical, 8 m range / 0.9 s (44 DPS) | 120  | 0.8        |
 
@@ -44,7 +44,7 @@ The Sentinel's numbers encode the game doc's note that its _base_ speed is low b
 | Medium (Footman)                    | 400        | 28 / 1.2 s        | 3.2         | 90   | 0.5        | 45         | 8                               |
 | Heavy (Goliath)                     | 1200       | 70 / 1.6 s        | 2.8         | 250  | 0.8        | 120        | 4                               |
 
-Sanity checks: a level-1 Legend kills a light minion in about 2.3 s and a full light horde alone in about 40 s without abilities; a full light horde attacking one Assault does 192 DPS and kills it in under 4 s, so diving hordes at level 1 must not be viable. Heavy minions deal double damage to breakable walls and gates (see "Structure damage multipliers").
+Sanity checks: a level-1 Legend kills a light minion in about 2.3 s and a full light horde alone in about 40 s without abilities; a full light horde attacking one Warrior does 192 DPS and kills it in under 4 s, so diving hordes at level 1 must not be viable. Heavy minions deal double damage to breakable walls and gates (see "Structure damage multipliers").
 
 ## Horde sizes and spawn cadence — MVP
 
@@ -129,7 +129,7 @@ Guards (`TUNE` "respawn every 2 minutes", "don't leave the tower's perimeter"; c
 | default | 150 physical | —                | 5 s             | 30 m/s           | everything else                  |
 | heavy   | 500 physical | concussion 1.5 s | 10 s            | 24 m/s           | Sentinels, heavy minions, bosses |
 
-Range 14 m. Targeting (`Recommendation:`, after the published turret rules cited in `../../research/game-architecture-and-performance-research.md#7-game-ai-for-bots`): keep the current target until it dies or leaves range; otherwise prefer a Legend that damaged an allied Legend in the last 3 s, then heavy units, then the nearest enemy. A level-1 Assault survives about 21 s under one turret and a Sentinel about 22 s under heavy fire, so walking through a gate without minions is a losing trade at level 1. Turret positions are placed by the `MapGenerator` (two per gate, one per wall corner) rather than traced.
+Range 14 m. Targeting (`Recommendation:`, after the published turret rules cited in `../../research/game-architecture-and-performance-research.md#7-game-ai-for-bots`): keep the current target until it dies or leaves range; otherwise prefer a Legend that damaged an allied Legend in the last 3 s, then heavy units, then the nearest enemy. A level-1 Warrior survives about 21 s under one turret and a Sentinel about 22 s under heavy fire, so walking through a gate without minions is a losing trade at level 1. Turret positions are placed by the `MapGenerator` (two per gate, one per wall corner) rather than traced.
 
 ## Sentinel wall sprint — MVP
 
@@ -160,7 +160,7 @@ Ownership effects (`Recommendation:`, per owned point, team-wide): −5% ability
 
 ## Mini-boss and Greater Boss relative to Legends — MVP
 
-Express boss stats as multiples of a reference Legend rather than absolute numbers, so retuning Legends or the XP curve never silently detunes bosses. `refHealth(L) = 650 × 1.08^(L − 1)` is the level-L Assault's max health from the anchor table; the expected level at spawn is a content value.
+Express boss stats as multiples of a reference Legend rather than absolute numbers, so retuning Legends or the XP curve never silently detunes bosses. `refHealth(L) = 650 × 1.08^(L − 1)` is the level-L Warrior's max health from the anchor table; the expected level at spawn is a content value.
 
 | Boss                        | Spawn (planned 20-min match) | Expected Legend level | Health                  | Hit damage                                                                | Moves                                                                | Restriction                                                        | Rewards                                                                        |
 | --------------------------- | ---------------------------- | --------------------- | ----------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
@@ -171,14 +171,14 @@ Express boss stats as multiples of a reference Legend rather than absolute numbe
 
 ## Aether costs and cooldowns for the 3 + 1 abilities — MVP
 
-The game doc gives each MVP class only two abilities (Assault: Veil, Blade Runner; Sentinel: Rip & Tear, Slam; Magus: Imbue, Shockwave) and one to two ultimates; the third ability in each row below is the proposal from `more-abilities.md` (DISC-19). Aether: max 100 / 80 / 140 (Assault / Sentinel / Magus) at level 1, +10 per level; regeneration 2 per second, +50% inside an allied BuffTower or Stronghold aura. Ultimates cost no aether; they charge a 0–100 meter. Cooldowns start at cast. All `Recommendation:`.
+The game doc gives each MVP class only two abilities (Warrior: Veil, Blade Runner; Sentinel: Rip & Tear, Slam; Magus: Imbue, Shockwave) and one to two ultimates; the third ability in each row below is the proposal from `more-abilities.md` (DISC-19). Aether: max 100 / 80 / 140 (Warrior / Sentinel / Magus) at level 1, +10 per level; regeneration 2 per second, +50% inside an allied BuffTower or Stronghold aura. Ultimates cost no aether; they charge a 0–100 meter. Cooldowns start at cast. All `Recommendation:`.
 
 | Class    | Ability                            | Cooldown | Aether | Level-1 magnitude                                                                                                                                                          |
 | -------- | ---------------------------------- | -------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Assault  | Veil                               | 20 s     | 40     | invisible 5 s; attacking or taking damage ends it                                                                                                                          |
-| Assault  | Blade Runner                       | 12 s     | 35     | dash 8 m in 0.3 s; 120 damage to units in the path; Physical: knockback 2 m + stun 0.5 s at the end; Magical: flame trail 3 s + burn                                       |
-| Assault  | Hamstring (proposed third)         | 9 s      | 25     | thrown blade, 12 m; 80 damage + bleed 3 stacks max                                                                                                                         |
-| Assault  | Fury (ultimate)                    | meter    | 0      | 8 s; attack speed 300%; damage × 1.5 with knockback 1 m; dash 3 m on the dash key, 1 s internal cooldown                                                                   |
+| Warrior  | Veil                               | 20 s     | 40     | invisible 5 s; attacking or taking damage ends it                                                                                                                          |
+| Warrior  | Blade Runner                       | 12 s     | 35     | dash 8 m in 0.3 s; 120 damage to units in the path; Physical: knockback 2 m + stun 0.5 s at the end; Magical: flame trail 3 s + burn                                       |
+| Warrior  | Hamstring (proposed third)         | 9 s      | 25     | thrown blade, 12 m; 80 damage + bleed 3 stacks max                                                                                                                         |
+| Warrior  | Fury (ultimate)                    | meter    | 0      | 8 s; attack speed 300%; damage × 1.5 with knockback 1 m; dash 3 m on the dash key, 1 s internal cooldown                                                                   |
 | Sentinel | Rip & Tear                         | 10 s     | 30     | 3 m cone; 90 damage + bleed; targets under 30% health take double and are dragged 1.5 m toward you                                                                         |
 | Sentinel | Slam                               | 16 s     | 50     | radius 4 m; 150 damage; knockback 3 m; knockup 0.8 s; × 2 against structures and obstacles                                                                                 |
 | Sentinel | Shield Wall (proposed third)       | 18 s     | 40     | a 4 m wall obstacle for 6 s, 800 health                                                                                                                                    |
@@ -207,7 +207,7 @@ XP sources (`Recommendation:`): minion kill 20 / 45 / 120 shared equally among a
 
 ## Eternal (final-hit) stat multipliers — MVP
 
-`TUNE` from the game doc: massively increased health, greatly increased damage, knockback and stun reduction, new abilities and animations, larger stature, dies once the bar is depleted. `Recommendation:` max health × 3 (and set to full on transformation), damage × 2, ability potency × 1.5, size × 1.5, knockback distance × 0.25, stun and concussion duration × 0.25, cannot be revived, form ends at death (option: hard cap 180 s so an unkillable Eternal cannot stall a match). The "Prime" ability set is a `LegendDefinition` swap (`assault-eternal`, `sentinel-eternal`, `magus-eternal`) rather than a modifier on the base class; `mechanics-ideas.md` explains why that one mechanism also serves form change later.
+`TUNE` from the game doc: massively increased health, greatly increased damage, knockback and stun reduction, new abilities and animations, larger stature, dies once the bar is depleted. `Recommendation:` max health × 3 (and set to full on transformation), damage × 2, ability potency × 1.5, size × 1.5, knockback distance × 0.25, stun and concussion duration × 0.25, cannot be revived, form ends at death (option: hard cap 180 s so an unkillable Eternal cannot stall a match). The "Prime" ability set is a `LegendDefinition` swap (`warrior-eternal`, `sentinel-eternal`, `magus-eternal`) rather than a modifier on the base class; `mechanics-ideas.md` explains why that one mechanism also serves form change later.
 
 ## The balance knobs (all in `packages/core/src/content/`)
 

@@ -98,7 +98,7 @@ Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
       `[0, max]`; `Movement` never exceeds `maxSpeed`. Done when: each component's invariants are
       asserted inside the component (data + invariants), not in systems.
 - [ ] **Type Object definitions v1 + content** (`UnitDefinition`, `MobDefinition`; a
-      `training-dummy` LightMob and a `placeholder-assault` Legend definition; `satisfies Record<Id, Definition>`; `validateContent()`). Owner: _. Test: a dangling `definitionId`
+      `training-dummy` LightMob and a `placeholder-warrior` Legend definition; `satisfies Record<Id, Definition>`; `validateContent()`). Owner: _. Test: a dangling `definitionId`
       fails validation; definitions are frozen. Done when: no tuning number exists outside
       `content/` (all marked `// TUNE:`).
 - [ ] **`EntityFactory` + `EntityRegistry`** (kind → factory). Owner: _. Test: registering a
@@ -106,8 +106,8 @@ Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
       Done when: the product owner's litmus test holds ("new class + content entry + registry
       line, nothing else changes").
 - [ ] **`Unit` family roots**: `Unit` (abstract), `Mob` (abstract) + `LightMob`, `Legend`
-      (abstract) + `Assault` (placeholder, no abilities). Owner: _. Test: factory spawns each
-      with the right components. Done when: `Assault` is renamable by changing the class name,
+      (abstract) + `Warrior` (placeholder, no abilities). Owner: _. Test: factory spawns each
+      with the right components. Done when: `Warrior` is renamable by changing the class name,
       its imports and its content display name only.
 - [ ] **`MovementSystem`** (acceleration → velocity → position; velocity clamp). Owner: _.
       Test: a dummy reaches `maxSpeed` after `maxSpeed / acceleration` ticks; a `stop` command

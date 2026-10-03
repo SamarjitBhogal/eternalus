@@ -23,7 +23,7 @@ default). The MVP ships "simple loadout options (weapons, some ability options, 
 ## Weapon rules
 
 - **Non-unique weapons are not class-specific**: any class can use any weapon available to
-  another class. The class table's "weapon bias" (light weapons for Assault, heavy for Sentinel,
+  another class. The class table's "weapon bias" (light weapons for Warrior, heavy for Sentinel,
   staves for Magus) is a bias, not a restriction.
 - **Each class has one unique weapon** it can use if desired.
 - Weapons have a **damage type** (physical, magical, or both), a **reach** and optionally a
@@ -62,7 +62,7 @@ mechanics that are not otherwise required. The bow's name is a naming to-do.
 | -------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Sentinel | Barricades (needs work) | Think Cabrakan's arm walls. Walk on all fours? The walls can be pressed together in front of you, but you cannot move while doing so. Heavy but slow melee damage on swing. Greatly increases character weight. Passively acts as super-heavy armour: a moving obstacle with high penetration protection and knock-back absorption. | **post-MVP** (open question "Barricades needs work")              |
 | Magus    | Staff                   | Melee attacks do physical damage; ranged attacks do magical damage. Increases the potency of spells (abilities).                                                                                                                                                                                                                    | **MVP**                                                           |
-| Assault  | Short blades            | Close-range, fast melee with deadly passive abilities. Can be thrown, but must be retrieved or regenerate over time.                                                                                                                                                                                                                | **MVP-if-time** (throw/retrieve needs a projectile that persists) |
+| Warrior  | Short blades            | Close-range, fast melee with deadly passive abilities. Can be thrown, but must be retrieved or regenerate over time.                                                                                                                                                                                                                | **MVP-if-time** (throw/retrieve needs a projectile that persists) |
 
 Barricades touches several systems at once (movement lock, `mass` change, a moving collider,
 knockback absorption); that is why it is "needs work" and post-MVP. Its ingredients all exist as
@@ -80,7 +80,7 @@ calls them **gadgets**: "z and c for gadgets"). "Gadget" is the slot; "artifact"
 | Sentinel | (TBD)              | Second Sentinel artifact not yet defined.                                                 | —                                                                                                                                                          | open question   |
 | Magus    | Soul Orb (pending) | "Arc Soul from D2" (Destiny 2).                                                           | (names pending) **Cast Forward**: cast on any surface as a turret (health based or time based?). **Follower**: summons the orb beside you as an assistant. | **MVP-if-time** |
 
-Assault has no artifact in the source; proposals are in `../suggestions/more-weapons.md`.
+Warrior has no artifact in the source; proposals are in `../suggestions/more-weapons.md`.
 Scope: the requirements doc's MVP controls include Z/C for gadgets, so the slots and bindings
 are **MVP**; the artifacts that fill them are **MVP-if-time** (one per class is the target).
 
