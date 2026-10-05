@@ -127,3 +127,20 @@ The example below is fenced so it is not read as a real entry.
   open the PR into the phase branch with reviewer Aryan Walanj. The owner answers DEC-14–DEC-16.
   Once session B lands `config/`, swap the local `MapConfig`/`DEFAULT_MAP_CONFIG` for
   `GameConfig` (owner: sholtzman).
+
+### 2026-10-05 — Phase 1 / sprint 1.3 (session A, re-review) — feat/map-generator — sholtzman + Claude Code
+
+- What was done: the reviewer's second pass found that at aspect ratios other than 16:9, lanes
+  could run back through their own wall ring (N1). Lanes now leave each gate straight through
+  a 20-unit apron and only bend eastwards. The validator rejects lanes that run west or through
+  walls, turrets or Strongholds. Seeds are limited to 0…2³²−1 and lane profiles are validated.
+  Corrected overstated wording (world size, the B1 argument, which DEC-14 items were judged
+  better) in the audit §6, INBOX DEC-14/15, arch 06 §10 and the PR description. The golden map
+  hash changed on purpose (lane apron).
+- Checks run: `npm run check` → exit 0. "All matched files use Prettier code style!"; lint,
+  typecheck clean; knip clean apart from the existing configuration hint; core "Test Files 8
+  passed (8) / Tests 96 passed (96)", statements 97.84 %, branches 87.03 %; client "Test Files
+  7 passed (7) / Tests 36 passed (36)", statements 80.78 %, branches 74.35 %; "✓ built";
+  "Checked 93 Markdown files under docs/. Documentation check passed."
+- Next step: unchanged from the entry above (push both branches, open the PR with reviewer
+  Aryan Walanj; the owner answers DEC-14–DEC-16).

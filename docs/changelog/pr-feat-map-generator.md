@@ -61,7 +61,8 @@ and every deliberate difference from architecture 06.
   middle-lane wobble is gone (the middle lane is straight).
 - Map-1's look is now `content/maps/presets/map1Preset.ts`: out-of-bounds corners, a rift
   width profile and lane bends only, in fractions of the world size. It works with any odd
-  `numLanes` and any world size. The traced rift wobble became a symmetric change of width, so
+  `numLanes` and scales with the world (layout lengths stay absolute, so very small worlds such
+  as 800 × 450 are rejected). The traced rift wobble became a symmetric change of width, so
   the whole map (features, terrain, lanes) is mirror-symmetric and the validator checks it.
 - `numLanes` must be odd and ≥ 1 (the Cathedral needs a middle lane), and today ≤ 7: gates are
   spread evenly over a 140° arc and a gate narrower than `wallRing.minGateOpening` between its
@@ -94,7 +95,11 @@ stood at the base commit, without the author's reasoning, and returned _fits aft
 Every finding (F1–F18) and its outcome is in the audit, §6. The fixed bugs: gates sealed at 7+
 lanes, walls leaking in the walkability grid, the default map not mirror-symmetric, glyph
 code touching the 2D context outside `Canvas2dRenderer`, and content objects frozen by
-`generate()`.
+`generate()`. A second pass found that at aspect ratios other than 16:9, lanes could double
+back through their own walls (N1). Lanes now leave each gate straight through a short apron and
+only bend eastwards. The validator rejects any lane that runs west or through a wall, turret or
+Stronghold, and a test replays the old lane shape to prove it is caught. The second pass's
+verdict was _fits, no blockers_ once N1 was fixed (audit §6, re-review).
 
 ## Stacking note
 
