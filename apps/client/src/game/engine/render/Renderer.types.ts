@@ -6,6 +6,7 @@ export type DrawContext = Pick<
   CanvasRenderingContext2D,
   | 'beginPath'
   | 'closePath'
+  | 'ellipse'
   | 'fill'
   | 'fillRect'
   | 'fillStyle'
@@ -13,6 +14,7 @@ export type DrawContext = Pick<
   | 'lineTo'
   | 'lineWidth'
   | 'moveTo'
+  | 'rect'
   | 'stroke'
   | 'strokeRect'
   | 'strokeStyle'
@@ -36,3 +38,17 @@ export type WorldRect = {
   readonly width: number;
   readonly height: number;
 };
+
+/** The marker shapes the renderer can draw. `ring` is outlined; the others are filled. */
+export type GlyphShape = 'dot' | 'square' | 'diamond' | 'ring';
+
+/** A marker: its shape and its size (width and height). */
+export type GlyphSpec = { readonly shape: GlyphShape; readonly size: number };
+
+/** Traces one glyph's outline around a centre, with half its width and height. */
+export type GlyphTracer = (
+  context: DrawContext,
+  center: WorldPoint,
+  halfWidth: number,
+  halfHeight: number,
+) => void;

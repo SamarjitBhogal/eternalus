@@ -27,10 +27,10 @@ export type MapConfig = {
 export type MapGeneratorConfig = { readonly map: MapConfig };
 
 /** Creates the seeded RNG for one generation run. */
-export type RngFactory = (seed: number) => Rng;
+type RngFactory = (seed: number) => Rng;
 
 /** Creates the lane strategy for a lane profile. */
-export type LaneShapeFactory = (profile: readonly LaneKnot[]) => LaneShape;
+type LaneShapeFactory = (profile: readonly LaneKnot[]) => LaneShape;
 
 /** Everything the generator can be given instead of the defaults; tests swap these. */
 export type MapGeneratorDeps = {

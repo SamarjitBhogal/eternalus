@@ -2,7 +2,7 @@ import { DEFAULT_MAP_CONFIG, MapGenerator } from '@eternalus/core';
 import { type RefObject, useEffect } from 'react';
 
 import { Camera } from './engine/Camera';
-import { Renderer } from './engine/Renderer';
+import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneView } from './views/SceneView';
@@ -30,7 +30,7 @@ const CAMERA_VISIBLE_HEIGHT = 900;
 export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): void {
   useEffect(() => {
     const canvas = canvasRef.current;
-    const renderer = canvas === null ? null : Renderer.fromCanvas(canvas);
+    const renderer = canvas === null ? null : Canvas2dRenderer.fromCanvas(canvas);
     if (canvas === null || renderer === null) {
       return undefined;
     }
@@ -45,7 +45,7 @@ export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): vo
       const pixelRatio = window.devicePixelRatio;
       canvas.width = Math.round(canvas.clientWidth * pixelRatio);
       canvas.height = Math.round(canvas.clientHeight * pixelRatio);
-      renderer.resize(canvas.width, canvas.height);
+      renderer.resize(canvas.width, canvas.height, pixelRatio);
       const view = camera.visibleArea(map.width, map.height);
       renderer.clear(BACKGROUND_COLOR);
       renderer.showWorldArea(view);
