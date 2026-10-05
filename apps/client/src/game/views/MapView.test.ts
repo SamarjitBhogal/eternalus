@@ -1,10 +1,13 @@
-import { MAP_1 } from '@eternalus/core';
+import { DEFAULT_MAP_CONFIG, MapGenerator } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Renderer } from '../engine/Renderer';
 import type { DrawContext } from '../engine/Renderer.types';
 import { MapView } from './MapView';
 import { GROUND_COLOR, TEAM_COLORS } from './MapView.constants';
+
+/** The default generated map, the same one the game draws. */
+const MAP_1 = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 1);
 
 /** A pretend canvas. Tests run without a browser, so every drawing tool does nothing. */
 const createFakeContext = (): DrawContext => ({
@@ -37,7 +40,7 @@ describe('MapView', () => {
     const fillPolygon = vi.spyOn(renderer, 'fillPolygon');
     new MapView(MAP_1).draw(renderer);
 
-    // One fill for the ground plus one per terrain shape (grey edges, rift, walls).
+    // One fill for the ground plus one per terrain shape (grey edges and rift pieces).
     expect(fillPolygon).toHaveBeenCalledTimes(1 + MAP_1.terrain.length);
     // The first fill is the ground, so everything else sits on top of it.
     expect(fillPolygon.mock.calls[0]?.[1]).toBe(GROUND_COLOR);
@@ -49,7 +52,7 @@ describe('MapView', () => {
     const strokePath = vi.spyOn(renderer, 'strokePath');
     new MapView(MAP_1).draw(renderer);
 
-    // Map-1 has three lanes, so three lines.
+    // The default config has three lanes, so three lines.
     expect(strokePath).toHaveBeenCalledTimes(MAP_1.lanes.length);
   });
 
@@ -59,7 +62,7 @@ describe('MapView', () => {
     const fillSquare = vi.spyOn(renderer, 'fillSquare');
     new MapView(MAP_1).draw(renderer);
 
-    // One square per feature: capitals, buildings, cathedral, crossings, objectives.
+    // One square per feature: strongholds, towers, walls, camps, capture points, obstacles.
     expect(fillSquare).toHaveBeenCalledTimes(MAP_1.features.length);
     // The colour is the third thing passed to fillSquare; collect them all.
     const colors = fillSquare.mock.calls.map((call) => call[2]);

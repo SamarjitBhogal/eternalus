@@ -1,4 +1,4 @@
-import { MAP_1 } from '@eternalus/core';
+import { DEFAULT_MAP_CONFIG, MapGenerator } from '@eternalus/core';
 import { type RefObject, useEffect } from 'react';
 
 import { Camera } from './engine/Camera';
@@ -10,7 +10,10 @@ import { SceneView } from './views/SceneView';
 /** Colour behind the map, only visible if the view ever reaches past the map's edges. */
 const BACKGROUND_COLOR = '#2b2620';
 
-/** Where the main view starts looking: the Light team's side of map-1, in world units. */
+/** Seed for the generated map until `Match` owns the match seed. */
+const MAP_SEED = 1;
+
+/** Where the main view starts looking: the Light team's side of the map, in world units. */
 const CAMERA_START_CENTER = { x: 320, y: 450 };
 
 /** How much of the map the main view shows left to right, in world units. TUNE: zoom. */
@@ -20,7 +23,7 @@ const CAMERA_VISIBLE_WIDTH = 800;
 const CAMERA_VISIBLE_HEIGHT = 900;
 
 /**
- * Draws a zoomed-in view of map-1 plus a mini map of the whole map. Redraws when the window
+ * Draws a zoomed-in view of the generated map plus a mini map of the whole map. Redraws when the window
  * is resized, and clicking the mini map moves the camera to that spot.
  * Temporary wiring until `Match` and `GameLoop` exist and take over drawing.
  */
@@ -31,17 +34,19 @@ export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): vo
     if (canvas === null || renderer === null) {
       return undefined;
     }
+    // TODO(sholtzman): use createDefaultGameConfig() once session B's config/ lands.
+    const map = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, MAP_SEED);
     const camera = new Camera(CAMERA_START_CENTER, CAMERA_VISIBLE_WIDTH, CAMERA_VISIBLE_HEIGHT);
     // Add new layers (obstacles, units) to this list and they appear in both views.
-    const scene = new SceneView([new MapView(MAP_1)]);
-    const miniMap = new MiniMapView(MAP_1, scene);
+    const scene = new SceneView([new MapView(map)]);
+    const miniMap = new MiniMapView(map, scene);
 
     const draw = (): void => {
       const pixelRatio = window.devicePixelRatio;
       canvas.width = Math.round(canvas.clientWidth * pixelRatio);
       canvas.height = Math.round(canvas.clientHeight * pixelRatio);
       renderer.resize(canvas.width, canvas.height);
-      const view = camera.visibleArea(MAP_1.width, MAP_1.height);
+      const view = camera.visibleArea(map.width, map.height);
       renderer.clear(BACKGROUND_COLOR);
       renderer.showWorldArea(view);
       scene.draw(renderer);

@@ -1,4 +1,4 @@
-import { MAP_1 } from '@eternalus/core';
+import { DEFAULT_MAP_CONFIG, MapGenerator } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Renderer } from '../engine/Renderer';
@@ -8,6 +8,9 @@ import { MiniMapView } from './MiniMapView';
 import { MINI_MAP_BORDER_COLOR, MINI_MAP_VIEW_BOX_COLOR } from './MiniMapView.constants';
 import { SceneView } from './SceneView';
 import type { WorldLayer } from './SceneView.types';
+
+/** The default generated map, the same one the game draws. */
+const MAP_1 = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 1);
 
 /** A pretend camera view: the part of the map the main screen is showing, in map units. */
 const VIEW = { x: 0, y: 200, width: 640, height: 360 };

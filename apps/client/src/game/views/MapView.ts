@@ -14,7 +14,7 @@ import {
 
 /** Team features use their team colour; neutral ones use the colour for their kind. */
 const featureColor = (feature: MapFeature): string =>
-  feature.owner === 'neutral' ? NEUTRAL_FEATURE_COLORS[feature.kind] : TEAM_COLORS[feature.owner];
+  feature.team === 'neutral' ? NEUTRAL_FEATURE_COLORS[feature.kind] : TEAM_COLORS[feature.team];
 
 /**
  * Draws a map layout: ground, then terrain, then lanes, then features on top.
