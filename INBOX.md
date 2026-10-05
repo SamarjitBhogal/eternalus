@@ -35,9 +35,38 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
 
+- [ ] **DEC-14 — map generator differs from architecture 06 (feat/map-generator).** An
+      independent review judged these better than the written design; sign off or reject each
+      (details: `docs/reviews/2026-10-05-map-code-audit.md` §4 and §6, architecture 06 §10):
+      (a) **camps split unevenly** when `campsPerSide` does not divide by `numLanes - 1`
+      (leftovers to the middle corridors) instead of rejecting the config, so the default 6 camps
+      survive `numLanes: 5`; (b) **presets give a lane profile and a symmetric rift width
+      profile** in fractions of the world, not per-lane traced paths, so `map-1` works for any
+      odd lane count and world size; (c) **gates are centred on each lane exit** (exits spread
+      evenly over a 140° arc) with walls filling the rest, so gate count always equals lane count,
+      plus a minimum gate opening that rejects configs whose turrets would seal a gate (today:
+      `numLanes` ≤ 7); (d) lanes are traced for Light only and mirrored, and `WorldMap` counts
+      overlapping footprint stamps. Recommendation: accept all four and fold them into arch 06.
+- [ ] **DEC-15 — camp weights by depth (DISC-42) in practice.** The default map yields 4 light +
+      2 heavy camps per side and no medium ones; with one camp per corridor (`numLanes` ≥ 7) every
+      camp is heavy. Proposal: keep depth-based weights but define the classes by position in the
+      corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
+      class in content. Pick one.
+- [ ] **DEC-16 — tooling: lint ignores agent worktrees.** ESLint's flat config does not read
+      `.gitignore`, so linting from the main checkout also lints every `.worktrees/*` checkout and
+      one unfinished worktree blocks every push from the main checkout. Proposal: add
+      `.worktrees/` and `.claude/worktrees/` to `globalIgnores` in `eslint.config.js` (each
+      worktree is still linted by its own hooks and CI).
+
 ## Requests for the agent
 
-- [ ] _(none open — the S1 work packages are in `docs/agents/prompts/2026-10-03-ultracode-sessions.md`)_
+- [ ] **Session B (from session A, 2026-10-05):** (1) add `utils/deterministicMath.ts`
+      (architecture 01 rule 8); the map code keeps its only `Math.cos`/`Math.sin` in
+      `utils/geometry.ts` `polarPoint` until then. (2) `GameConfig.map` must keep the field names
+      of the local `MapConfig` in `packages/core/src/map/MapGenerator.types.ts`; session A will
+      then delete the local type (both are exported as `MapConfig`, so the swap must happen in one
+      change). (3) The map's nav cell size is content (`DEFAULT_MAP_LAYOUT.navCellSize`) until it
+      has a `GameConfig` home.
 
 ## Feedback
 

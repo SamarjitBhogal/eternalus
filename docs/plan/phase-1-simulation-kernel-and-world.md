@@ -143,7 +143,7 @@ Owner: _ (the `feat/map` author) with sholtzman. Weeks 1–2. Depends on `GameCo
       `numLanes` 3 → 5 yields 5 lanes and `5 × spawnTowersPerLane` SpawnerTower slots per team;
       every light slot has a dark mirror within epsilon; `campsPerSide` camps sit in the
       `numLanes - 1` gaps between lanes. Done when: no coordinate is hand-written in code.
-- [x] _(feat/map-generator, pending merge)_ **`WorldMap` runtime grid** (`Uint8Array` walkability/cost grid derived from the
+- [ ] _(feat/map-generator: done except the grid resolution, which is content until B's `GameConfig` lands)_ **`WorldMap` runtime grid** (`Uint8Array` walkability/cost grid derived from the
       definition; footprint stamping/unstamping; bounds). Owner: _. Test: stamping a footprint
       blocks exactly its cells; unstamping restores them. Done when: the grid resolution is a
       config value, not a literal.

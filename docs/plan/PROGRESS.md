@@ -100,3 +100,30 @@ The example below is fenced so it is not read as a real entry.
 - Next step: push the branch, PR into `main`; create `phase/1-simulation-kernel-and-world`;
   start sessions B and D (then A, F, E, G; C after B; H in week 2) per the prompts file; close
   `copilot/implement-entity-modules` with the review-R text; answer DEC-11…DEC-13.
+
+### 2026-10-05 — Phase 1 / sprint 1.3 (session A) — feat/map-generator — sholtzman + Claude Code
+
+- What was done: audited the merged `feat/map`/`feat/map-view` code
+  (`docs/reviews/2026-10-05-map-code-audit.md`). Replaced the hand-traced `MAP_1` with a pure,
+  deterministic `MapGenerator` + `MapBuilder` (strongholds, lanes, towers on `t` bands, wall
+  ring with a gate per lane and turrets, camps by depth per DISC-42, capture points with the
+  Cathedral on the middle lane, a symmetric rift with a bridge gap per lane, seeded obstacles),
+  the `teams/` module, the `map-1` preset (fractions of the world, lane profile, rift width
+  profile) and the `WorldMap` walkability grid. Client: `Renderer` port + `Canvas2dRenderer`,
+  `RecordingRenderer`, glyph-based map and minimap drawing. An independent reviewer agent
+  checked the branch against the base-commit architecture. Its findings F1–F18 (sealed gates at
+  7+ lanes, leaky walls, an asymmetric default map and others) were fixed and recorded in audit
+  §6. Architecture 02 and 06 (§10), the core and client `AGENTS.md`, sprint 1.3 checkboxes,
+  INBOX (DEC-14–DEC-16, requests to session B) and the PR description
+  (`docs/changelog/pr-feat-map-generator.md`) were updated.
+- Checks run (worktree `.worktrees/map-generator`, Node 24.21.0): `npm run check` → exit 0.
+  "All matched files use Prettier code style!"; lint clean; typecheck clean; knip clean apart
+  from the existing configuration hint "@eternalus/core apps/client knip.json Remove from
+  ignoreDependencies"; core "Test Files 8 passed (8) / Tests 91 passed (91)", coverage
+  statements 97.92 %, branches 86.26 %; client "Test Files 7 passed (7) / Tests 36 passed (36)",
+  statements 80.78 %, branches 74.35 %; "✓ built"; "Checked 93 Markdown files under docs/.
+  Documentation check passed."
+- Next step: push `phase/1-simulation-kernel-and-world` (from `main`) and `feat/map-generator`,
+  open the PR into the phase branch with reviewer Aryan Walanj. The owner answers DEC-14–DEC-16.
+  Once session B lands `config/`, swap the local `MapConfig`/`DEFAULT_MAP_CONFIG` for
+  `GameConfig` (owner: sholtzman).

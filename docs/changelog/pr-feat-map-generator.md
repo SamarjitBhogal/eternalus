@@ -59,33 +59,42 @@ and every deliberate difference from architecture 06.
   the world). The traced north lane bends, the corner objectives (320, 80), the Cathedral (800, 450)
   and the lane crossings (y = 100 / 450 / 800) are kept, and a test checks them. The traced
   middle-lane wobble is gone (the middle lane is straight).
-- Map-1's look is now `content/maps/presets/map1Preset.ts`: out-of-bounds corners, the rift
-  centre line and lane bends only. It works with any odd `numLanes`.
-- `numLanes` must be odd and ≥ 1 (the Cathedral needs a middle lane). `cornerCamps` must be even.
-  Invalid configs throw `MapGenerationError` naming the field.
-- New `WorldMap.fromDefinition(map, cellSize, isBlocking)`: a walkability grid with
-  `stampFootprint`/`clearFootprint`.
+- Map-1's look is now `content/maps/presets/map1Preset.ts`: out-of-bounds corners, a rift
+  width profile and lane bends only, in fractions of the world size. It works with any odd
+  `numLanes` and any world size. The traced rift wobble became a symmetric change of width, so
+  the whole map (features, terrain, lanes) is mirror-symmetric and the validator checks it.
+- `numLanes` must be odd and ≥ 1 (the Cathedral needs a middle lane), and today ≤ 7: gates are
+  spread evenly over a 140° arc and a gate narrower than `wallRing.minGateOpening` between its
+  turrets is rejected. `cornerCamps` must be even. The seed must be a whole number. Invalid
+  configs or layout content throw `MapGenerationError` naming the field.
+- New `WorldMap.fromDefinition(map, cellSize, isBlocking)` (core-internal): a walkability grid
+  that blocks every cell a shape touches, with reference-counted `stampFootprint`/
+  `clearFootprint`. Cell size 5 units (content).
 - Client: `engine/Renderer.ts` → `engine/render/Canvas2dRenderer.ts` (implements the
   `engine/render/Renderer.ts` interface). `fillSquare` → `drawWorldGlyph`; new `drawGlyph` for
   minimap markers. `resize` takes the device pixel ratio. `WorldLayer` gains `drawMinimap`.
   `MapView` styles features through `FEATURE_STYLES`. The mini map draws each feature's own
   `minimapGlyph`.
-- Public API (`@eternalus/core`): adds `MapGenerator`, `MapGenerationError`, `WorldMap`,
-  `DEFAULT_MAP_CONFIG` and the types `MapConfig`, `MapGeneratorConfig`, `PlayableTeam`, `Team`,
+- Public API (`@eternalus/core`): adds `MapGenerator`, `DEFAULT_MAP_CONFIG` and the types `MapConfig`, `MapGeneratorConfig`, `PlayableTeam`, `Team`,
   `MinimapGlyph`, `MinimapGlyphShape`, `MinimapColourRole`; removes `MAP_1`.
 
 ## Decisions for the owner
 
-Architecture 06 §10 rows **D5** (uneven camp split instead of rejecting it), **D6** (preset as lane
-profile + rift centre line, so `map-1` works for any lane count) and **D7** (gates centred on
-lane exits) differ from the written design. In each case the written design would break the
-ADR 0009 litmus test, or could put two lanes through one gate. They are marked _pending owner
-decision_.
+INBOX DEC-14 asks the owner to sign off the four places where an independent review found
+the code structured better than architecture 06: the uneven camp split (D5), gates centred on
+evenly spread exits with a minimum opening (D7), Light-only lane tracing mirrored to Dark, and
+reference-counted footprint stamps. The preset model (D6) is in the same item. DEC-15 covers
+camp weights; the default map has no medium camps. DEC-16 is the lint/worktree tooling fix
+(not changed here).
 
-Tooling (not changed here): ESLint's flat config does not read `.gitignore`, so `npm run lint`
-from the main checkout also lints `.worktrees/*`, and one in-progress worktree blocks every
-push from the main checkout. Proposed fix: add `.worktrees/` and `.claude/worktrees/` to
-`globalIgnores` in `eslint.config.js`.
+## Independent review
+
+Before this PR a separate reviewer agent checked the branch against the architecture as it
+stood at the base commit, without the author's reasoning, and returned _fits after rework_.
+Every finding (F1–F18) and its outcome is in the audit, §6. The fixed bugs: gates sealed at 7+
+lanes, walls leaking in the walkability grid, the default map not mirror-symmetric, glyph
+code touching the 2D context outside `Canvas2dRenderer`, and content objects frozen by
+`generate()`.
 
 ## Stacking note
 
@@ -95,16 +104,22 @@ This branch is cut from `docs/inbox-decisions-2026-10-03` (the phase branch was 
 
 ## How it was tested
 
-- New core tests: `MapGenerator.test.ts` covers determinism, a seed changing only obstacles,
-  frozen output, mirror symmetry and unique ids and containment for both grounds, numLanes 3 → 5
-  (5 lanes, 5 capture points, 5 + 5 towers and 5 gates per team, camps over 4 corridors), N
-  towers per lane with SpawnerTowers in front, gates at the lane ends, turrets per ring corner,
-  capture points on the centre line, DISC-42 weight ordering, rift gaps and bridges, obstacles
-  off the lanes, the map-1 golden coordinates and every validation error. Plus `WorldMap`,
-  `MapRandom`, `LaneGeometry`, `campPlacement`, `wallRing`, `geometry` and the public API.
+- New core tests: `MapGenerator.test.ts` covers determinism plus a golden FNV-1a hash, a seed
+  changing only obstacles, frozen output that never freezes content, full mirror symmetry
+  (features, terrain, lanes, footprints) for 1–7 lanes on both grounds, unique ids and
+  containment, numLanes 3 → 5 (5 lanes, 5 capture points, 5 + 5 towers and 5 gates per team,
+  camps over 4 corridors), N towers per lane with SpawnerTowers in front, gates at both lane
+  ends, turrets per ring corner, capture points on the centre line, DISC-42 weight ordering, rift
+  gaps and bridges, lanes walked in 1-unit steps outside terrain, obstacles off the lanes, the
+  map-1 golden coordinates, a 3200 × 1800 world, sealed-gate rejection, and every config,
+  seed and layout validation error. `WorldMap.test.ts`: flood fill proves every lane connects
+  both Strongholds (1/3/5/7 lanes, both grounds), closed gates seal the ring, and a wall thinner
+  than a cell blocks crossing (this test fails on the old raster). Plus `MapRandom`,
+  `LaneGeometry`, `campPlacement`, `wallRing`, `geometry` and the public API.
 - Client tests: `Canvas2dRenderer` glyph tracing, DPR-scaled minimap glyphs and outlined rings;
-  `MapView` styles and minimap glyphs through a recording `Renderer`; the minimap proof test
-  (config-only change → new features in the mini map's draw calls); `SceneView` minimap order.
+  `RecordingRenderer`; `MapView` styles and minimap glyphs; the minimap proof (config-only
+  change → new features drawn, and a never-seen `beacon` definition drawn with its own glyph);
+  `SceneView` minimap order.
 - `npm run check`: result in `docs/plan/PROGRESS.md` (2026-10-05 entry) and in the PR
   conversation.
 
