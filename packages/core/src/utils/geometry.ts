@@ -1,7 +1,11 @@
-import type { Polygon, Vec2 } from './geometry.types';
+import type { Polygon, Rect, Vec2 } from './geometry.types';
 
-/** Straight-line distance between two points. */
-export const distance = (a: Vec2, b: Vec2): number => Math.hypot(b.x - a.x, b.y - a.y);
+/** Straight-line distance between two points (`sqrt` is exactly rounded, so it is deterministic). */
+export const distance = (a: Vec2, b: Vec2): number => {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return Math.sqrt(dx * dx + dy * dy);
+};
 
 /** The point a fraction `t` of the way from `a` to `b`. */
 export const lerpPoint = (a: Vec2, b: Vec2, t: number): Vec2 => ({
@@ -9,7 +13,13 @@ export const lerpPoint = (a: Vec2, b: Vec2, t: number): Vec2 => ({
   y: a.y + (b.y - a.y) * t,
 });
 
-/** The point `radius` away from `centre` in direction `angle` (radians, 0 = east, clockwise on screen). */
+/**
+ * The point `radius` away from `centre` in direction `angle` (radians, 0 = east, clockwise on
+ * screen). This is the only place in the map code that uses `Math.cos`/`Math.sin`.
+ *
+ * TODO(sholtzman): route through `utils/deterministicMath.ts` once session B adds it
+ * (architecture 01 rule 8); the golden-hash test in `MapGenerator.test.ts` catches drift.
+ */
 export const polarPoint = (centre: Vec2, radius: number, angle: number): Vec2 => ({
   x: centre.x + Math.cos(angle) * radius,
   y: centre.y + Math.sin(angle) * radius,
@@ -56,3 +66,60 @@ export const distanceToPath = (point: Vec2, path: readonly Vec2[]): number =>
       next === undefined ? distance(point, current) : distanceToSegment(point, current, next);
     return Math.min(best, candidate);
   }, Number.POSITIVE_INFINITY);
+
+/** Which side of the line `a`→`b` the point `c` is on: positive, negative or 0 (on the line). */
+const orientation = (a: Vec2, b: Vec2, c: Vec2): number =>
+  (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+
+/** Whether segments `a`–`b` and `c`–`d` touch or cross (collinear overlaps count). */
+const doSegmentsIntersect = (a: Vec2, b: Vec2, c: Vec2, d: Vec2): boolean => {
+  const isWithin = (p: Vec2, q: Vec2, r: Vec2): boolean =>
+    Math.min(p.x, q.x) <= r.x &&
+    r.x <= Math.max(p.x, q.x) &&
+    Math.min(p.y, q.y) <= r.y &&
+    r.y <= Math.max(p.y, q.y);
+  const o1 = orientation(a, b, c);
+  const o2 = orientation(a, b, d);
+  const o3 = orientation(c, d, a);
+  const o4 = orientation(c, d, b);
+  if (o1 * o2 < 0 && o3 * o4 < 0) {
+    return true;
+  }
+  return (
+    (o1 === 0 && isWithin(a, b, c)) ||
+    (o2 === 0 && isWithin(a, b, d)) ||
+    (o3 === 0 && isWithin(c, d, a)) ||
+    (o4 === 0 && isWithin(c, d, b))
+  );
+};
+
+/** The four corners of a rectangle, clockwise from the top-left. */
+const rectCorners = (rect: Rect): Polygon => [
+  { x: rect.x, y: rect.y },
+  { x: rect.x + rect.width, y: rect.y },
+  { x: rect.x + rect.width, y: rect.y + rect.height },
+  { x: rect.x, y: rect.y + rect.height },
+];
+
+/**
+ * Whether a polygon covers any part of a rectangle: a vertex inside the rectangle, the
+ * rectangle inside the polygon, or crossing edges. Used to mark grid cells conservatively, so
+ * a wall thinner than a cell still blocks it.
+ */
+export const doesPolygonOverlapRect = (polygon: Polygon, rect: Rect): boolean => {
+  const corners = rectCorners(rect);
+  const isInsideRect = (point: Vec2): boolean =>
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.width &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.height;
+  if (polygon.some(isInsideRect) || corners.some((corner) => isPointInPolygon(corner, polygon))) {
+    return true;
+  }
+  return polygon.some((start, index) => {
+    const end = polygon[(index + 1) % polygon.length] ?? start;
+    return corners.some((corner, cornerIndex) =>
+      doSegmentsIntersect(start, end, corner, corners[(cornerIndex + 1) % 4] ?? corner),
+    );
+  });
+};

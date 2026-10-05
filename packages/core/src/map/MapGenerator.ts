@@ -6,6 +6,7 @@ import { MapGenerationError } from './MapGenerationError';
 import type { MapGeneratorConfig, MapGeneratorDeps } from './MapGenerator.types';
 import { validateMapConfig } from './validateMapConfig';
 import { validateMapDefinition } from './validateMapDefinition';
+import { validateMapLayout } from './validateMapLayout';
 
 /**
  * Turns `GameConfig.map` and a seed into a `MapDefinition` (ADR 0009). Pure and deterministic:
@@ -22,11 +23,16 @@ export class MapGenerator {
   }
 
   /**
-   * Generates a frozen map. Throws `MapGenerationError` naming the rule when the config is
-   * invalid, the preset is unknown, or the preset's ground does not fit the configured lanes.
+   * Generates a frozen map. Throws `MapGenerationError` naming the rule when the config, the
+   * layout content or the seed is invalid, the preset is unknown, or the result breaks a map
+   * rule (a lane through terrain, a sealed gate, lost symmetry).
    */
   public generate(config: MapGeneratorConfig, seed: number): MapDefinition {
     validateMapConfig(config.map);
+    validateMapLayout(this.deps.layout);
+    if (!Number.isSafeInteger(seed)) {
+      throw new MapGenerationError(`The map seed must be a whole number, got ${String(seed)}`);
+    }
     const { presetId } = config.map;
     const preset = presetId === undefined ? undefined : this.deps.presets[presetId];
     if (presetId !== undefined && preset === undefined) {

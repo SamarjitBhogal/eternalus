@@ -16,9 +16,9 @@ export class ProfileLaneShape implements LaneShape {
     this.knots = knots;
   }
 
-  /** Gate on the wall ring, then every bend outside the ring, then the centre-line crossing. */
+  /** Gate on the wall ring at the exit angle, then every bend outside the ring, then the centre line. */
   public traceLightHalf(input: LaneTraceInput): readonly Vec2[] {
-    const { stronghold, centreX, lateralOffset, ringRadius } = input;
+    const { stronghold, centreX, lateralOffset, ringRadius, exitAngle } = input;
     const span = centreX - stronghold.x;
     const bends = this.knots
       .map((knot) => ({
@@ -27,12 +27,6 @@ export class ProfileLaneShape implements LaneShape {
       }))
       .filter((point) => distance(point, stronghold) > ringRadius);
     const centre = { x: centreX, y: stronghold.y + lateralOffset };
-    const aim = bends[0] ?? centre;
-    const gate = polarPoint(
-      stronghold,
-      ringRadius,
-      Math.atan2(aim.y - stronghold.y, aim.x - stronghold.x),
-    );
-    return [gate, ...bends, centre];
+    return [polarPoint(stronghold, ringRadius, exitAngle), ...bends, centre];
   }
 }

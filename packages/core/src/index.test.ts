@@ -4,12 +4,7 @@ import * as core from './index';
 
 describe('@eternalus/core public API', () => {
   it('exports the map generator API as runtime values', () => {
-    expect(Object.keys(core).sort()).toEqual([
-      'DEFAULT_MAP_CONFIG',
-      'MapGenerationError',
-      'MapGenerator',
-      'WorldMap',
-    ]);
+    expect(Object.keys(core).sort()).toEqual(['DEFAULT_MAP_CONFIG', 'MapGenerator']);
   });
 
   it('generates the default map-1 from the default config', () => {

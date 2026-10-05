@@ -1,5 +1,5 @@
 import type { MapLayout } from '../content/maps/maps.types';
-import { polarPoint } from '../utils/geometry';
+import { distance, polarPoint } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { WallRing, WallRingPiece } from './MapBuilder.types';
 
@@ -66,6 +66,10 @@ export const buildWallRing = (
     kind: arc.laneIndex === undefined ? 'wall-segment' : 'gate',
     ...(arc.laneIndex === undefined ? {} : { laneIndex: arc.laneIndex }),
     position: polarPoint(centre, ring.radius, (arc.start + arc.end) / 2),
+    width: distance(
+      polarPoint(centre, ring.radius, arc.start),
+      polarPoint(centre, ring.radius, arc.end),
+    ),
     footprint: arcFootprint(centre, ring, arc),
   }));
   return { pieces, vertices: arcs.map((arc) => polarPoint(centre, ring.radius, arc.start)) };

@@ -4,11 +4,13 @@ import { DEFAULT_MAP_CONFIG } from '../content/maps/defaultMapConfig';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import type { Vec2 } from '../utils/geometry.types';
 import { MapGenerator } from './MapGenerator';
+import type { MapConfig } from './MapGenerator.types';
 import { WorldMap } from './WorldMap';
 
 const isBlocking = (definitionId: string): boolean =>
-  MAP_FEATURE_DEFINITIONS[definitionId]?.blocksMovement ?? false;
+  MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false;
 
 /** A 100 x 50 map with one rift square and nothing else. */
 const SMALL_MAP: MapDefinition = {
@@ -31,6 +33,68 @@ const SMALL_MAP: MapDefinition = {
     },
   ],
   features: [],
+};
+
+type Ground = 'map-1' | 'generated';
+
+const generate = (overrides: Partial<MapConfig> = {}, ground: Ground = 'map-1'): MapDefinition => {
+  const config: { -readonly [K in keyof MapConfig]: MapConfig[K] } = {
+    ...DEFAULT_MAP_CONFIG,
+    ...overrides,
+  };
+  if (ground === 'generated') {
+    delete config.presetId;
+  }
+  return new MapGenerator().generate({ map: config }, 7);
+};
+
+const cellIndex = (grid: WorldMap, point: Vec2): number => {
+  const cell = grid.cellAt(point);
+  return cell === null ? -1 : cell.row * grid.cols + cell.col;
+};
+
+const isWalkableAt = (grid: WorldMap, point: Vec2): boolean => {
+  const cell = grid.cellAt(point);
+  return cell !== null && grid.isWalkable(cell.col, cell.row);
+};
+
+/** Three quarters of the way from a gate's Stronghold to the gate: inside the wall ring. */
+const insideGate = (map: MapDefinition, gate: Vec2 | undefined): Vec2 => {
+  const point = gate ?? { x: 0, y: 0 };
+  const stronghold =
+    map.features.find(
+      (feature) =>
+        feature.kind === 'stronghold' &&
+        Math.sign(feature.position.x - map.width / 2) === Math.sign(point.x - map.width / 2),
+    )?.position ?? point;
+  return {
+    x: stronghold.x + (point.x - stronghold.x) * 0.75,
+    y: stronghold.y + (point.y - stronghold.y) * 0.75,
+  };
+};
+
+/** Every cell reachable from `start` through walkable cells, moving up, down, left or right. */
+const floodFill = (grid: WorldMap, start: Vec2): ReadonlySet<number> => {
+  const first = cellIndex(grid, start);
+  const seen = new Set<number>(grid.walkable[first] === 1 ? [first] : []);
+  const queue = [...seen];
+  for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
+    const col = next % grid.cols;
+    const row = Math.floor(next / grid.cols);
+    for (const [dc, dr] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const index = (row + dr) * grid.cols + col + dc;
+      if (grid.isWalkable(col + dc, row + dr) && !seen.has(index)) {
+        seen.add(index);
+        queue.push(index);
+      }
+    }
+  }
+  return seen;
 };
 
 const SQUARE = [
@@ -80,6 +144,21 @@ describe('WorldMap', () => {
     expect(grid.walkable).toEqual(before);
   });
 
+  it('blocks every cell a wall thinner than a cell passes through, leaving no gap', () => {
+    const open: MapDefinition = { ...SMALL_MAP, terrain: [] };
+    const grid = WorldMap.fromDefinition(open, 10, isBlocking);
+    // A diagonal wall 2 units thick from the top edge to the bottom edge.
+    grid.stampFootprint([
+      { x: 30, y: 0 },
+      { x: 32, y: 0 },
+      { x: 72, y: 50 },
+      { x: 70, y: 50 },
+    ]);
+    const reached = floodFill(grid, { x: 5, y: 45 });
+
+    expect(reached.has(cellIndex(grid, { x: 95, y: 5 }))).toBe(false);
+  });
+
   it('keeps a cell blocked until every overlapping stamp is cleared', () => {
     const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
     grid.stampFootprint(SQUARE);
@@ -112,20 +191,52 @@ describe('WorldMap', () => {
     expect(grid.cellAt({ x: -1, y: 12 })).toBeNull();
   });
 
-  it('blocks blocking features of a generated map and leaves lanes walkable', () => {
-    const map = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 7);
+  it('blocks the footprints of blocking features on a generated map', () => {
+    const map = generate();
     const grid = WorldMap.fromDefinition(map, DEFAULT_MAP_LAYOUT.navCellSize, isBlocking);
-    const stronghold = map.features.find((feature) => feature.id === 'light-stronghold');
-    const spawner = map.features.find((feature) => feature.kind === 'spawner-tower');
-    const capturePoint = map.features.find((feature) => feature.kind === 'capture-point');
-    const walkableAt = (x: number, y: number): boolean => {
-      const cell = grid.cellAt({ x, y });
-      return cell !== null && grid.isWalkable(cell.col, cell.row);
-    };
+    const at = (id: string): Vec2 =>
+      map.features.find((feature) => feature.id === id)?.position ?? { x: -1, y: -1 };
 
-    expect(walkableAt(stronghold?.position.x ?? 0, stronghold?.position.y ?? 0)).toBe(false);
-    expect(walkableAt(spawner?.position.x ?? 0, spawner?.position.y ?? 0)).toBe(false);
+    expect(isWalkableAt(grid, at('light-stronghold'))).toBe(false);
+    expect(isWalkableAt(grid, at('dark-spawner-tower-lane-0-0'))).toBe(false);
+    expect(isWalkableAt(grid, at('light-turret-0'))).toBe(false);
     // Capture points sit in the rift's bridge gaps, so the lane can cross the rift there.
-    expect(walkableAt(capturePoint?.position.x ?? 0, capturePoint?.position.y ?? 0)).toBe(true);
+    expect(isWalkableAt(grid, at('capture-point-lane-0'))).toBe(true);
+  });
+
+  it.each([
+    [1, 'map-1'],
+    [3, 'map-1'],
+    [5, 'map-1'],
+    [7, 'map-1'],
+    [3, 'generated'],
+    [5, 'generated'],
+    [7, 'generated'],
+  ] as const)(
+    'connects each Stronghold to the enemy one along every lane (%i lanes, %s ground)',
+    (numLanes, ground) => {
+      const map = generate({ numLanes, campsPerSide: numLanes > 1 ? 6 : 0 }, ground);
+      const grid = WorldMap.fromDefinition(map, DEFAULT_MAP_LAYOUT.navCellSize, isBlocking);
+
+      for (const lane of map.lanes) {
+        const light = insideGate(map, lane.path[0]);
+        const dark = insideGate(map, lane.path.at(-1));
+        const reached = floodFill(grid, light);
+        expect(reached.has(cellIndex(grid, dark))).toBe(true);
+      }
+    },
+  );
+
+  it('seals the Stronghold when every gate is closed (no gaps in the wall ring)', () => {
+    for (const ground of ['map-1', 'generated'] as const) {
+      const map = generate({}, ground);
+      const grid = WorldMap.fromDefinition(map, DEFAULT_MAP_LAYOUT.navCellSize, isBlocking);
+      for (const gate of map.features.filter((feature) => feature.kind === 'gate')) {
+        grid.stampFootprint(gate.footprint ?? []);
+      }
+      const reached = floodFill(grid, insideGate(map, map.lanes[0]?.path[0]));
+
+      expect(reached.has(cellIndex(grid, { x: map.width / 2, y: map.height / 2 }))).toBe(false);
+    }
   });
 });

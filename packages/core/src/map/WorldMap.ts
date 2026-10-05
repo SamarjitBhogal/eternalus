@@ -1,11 +1,12 @@
 import type { MapDefinition } from '../content/maps/maps.types';
-import { isPointInPolygon } from '../utils/geometry';
+import { doesPolygonOverlapRect } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
+import { CELL_EDGE_SLACK } from './WorldMap.constants';
 import type { BlockingRule } from './WorldMap.types';
 
 /**
- * The per-match walkability grid derived from a `MapDefinition`. Rift and out-of-bounds terrain
- * and the footprints of blocking features are unwalkable. Footprints can be stamped and cleared
+ * The per-match walkability grid derived from a `MapDefinition`. Every cell touched by rift or
+ * out-of-bounds terrain or by the footprint of a blocking feature is unwalkable. Footprints can be stamped and cleared
  * later (a wall falls, a tree is felled) without touching the definition. No pathing yet.
  */
 export class WorldMap {
@@ -64,7 +65,7 @@ export class WorldMap {
     return col >= 0 && row >= 0 && col < this.cols && row < this.rows ? { col, row } : null;
   }
 
-  /** Blocks every cell whose centre lies inside `footprint`. Returns the cells that changed. */
+  /** Blocks every cell `footprint` covers any part of. Returns the cells that changed. */
   public stampFootprint(footprint: Polygon): readonly number[] {
     return this.cellsInside(footprint).filter((cell) => {
       this.stamps[cell] = (this.stamps[cell] ?? 0) + 1;
@@ -88,7 +89,10 @@ export class WorldMap {
     return hasChanged;
   }
 
-  /** Indices of the cells whose centres lie inside `polygon`. */
+  /**
+   * Indices of every cell the polygon covers any part of (conservative), so a wall thinner than
+   * a cell still blocks every cell it passes through and leaves no gap to slip through.
+   */
   private cellsInside(polygon: Polygon): number[] {
     const xs = polygon.map((point) => point.x);
     const ys = polygon.map((point) => point.y);
@@ -99,8 +103,14 @@ export class WorldMap {
     const cells: number[] = [];
     for (let row = firstRow; row <= lastRow; row += 1) {
       for (let col = firstCol; col <= lastCol; col += 1) {
-        const centre = { x: (col + 0.5) * this.cellSize, y: (row + 0.5) * this.cellSize };
-        if (isPointInPolygon(centre, polygon)) {
+        // Shrunk by a hair so a shape that only touches a cell's edge does not claim it.
+        const cell = {
+          x: col * this.cellSize + this.cellSize * CELL_EDGE_SLACK,
+          y: row * this.cellSize + this.cellSize * CELL_EDGE_SLACK,
+          width: this.cellSize * (1 - 2 * CELL_EDGE_SLACK),
+          height: this.cellSize * (1 - 2 * CELL_EDGE_SLACK),
+        };
+        if (doesPolygonOverlapRect(polygon, cell)) {
           cells.push(row * this.cols + col);
         }
       }

@@ -86,7 +86,7 @@ export type MapFeatureDefinition = {
   /** Radius of the round footprint in world units; 0 for features without one. */
   readonly footprintRadius: number;
   /** Whether the footprint blocks walking in the `WorldMap` grid. */
-  readonly blocksMovement: boolean;
+  readonly isBlocking: boolean;
 };
 
 /**
@@ -119,8 +119,12 @@ export type MapLayout = {
   readonly wallRing: {
     readonly radius: number;
     readonly thickness: number;
+    /** The arc facing the enemy over which the gates are spread evenly (architecture 06 §3). */
+    readonly exitArcDegrees: number;
     readonly gateArcDegrees: number;
     readonly maxSegmentArcDegrees: number;
+    /** Narrowest walkable gap a gate may leave between its two turrets. */
+    readonly minGateOpening: number;
   };
   readonly camps: {
     readonly band: readonly [number, number];
@@ -155,18 +159,24 @@ export type MapLayout = {
   };
 };
 
+/** The rift's half-width at a height. `y` is a fraction of the world height (0 top, 1 bottom). */
+export type RiftWidthKnot = { readonly y: number; readonly halfWidth: number };
+
 /**
  * An authored look for a map. It may shape the ground and bend the lanes, but it never places
  * a structure: towers, gates, camps and capture points always come from the generator, so a
- * preset honours every `MapConfig` count by construction.
+ * preset honours every `MapConfig` count by construction. Positions are fractions of the world
+ * size, so a preset also works at any world size.
  */
 export type MapPreset = {
   readonly id: string;
   readonly displayName: string;
-  /** Out-of-bounds polygons on the Light (west) half; the generator mirrors them east. */
+  /** Out-of-bounds polygons on the Light (west) half, in fractions of the world size. */
   readonly westOutOfBounds: readonly Polygon[];
-  /** The rift's centre line from top to bottom; gaps are cut wherever a lane crosses it. */
-  readonly riftCentreline: readonly Vec2[];
+  /**
+   * The rift's width from top to bottom. The rift is centred on the symmetry axis, so the map
+   * stays mirror-symmetric; a bridge gap is cut wherever a lane crosses it.
+   */
+  readonly riftProfile: readonly RiftWidthKnot[];
   readonly laneProfile?: readonly LaneKnot[];
-  readonly laneEdgeMargin?: number;
 };

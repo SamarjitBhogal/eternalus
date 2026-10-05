@@ -32,8 +32,9 @@ export const validateMapConfig = (config: MapConfig): void => {
   if (config.campsPerSide > 0 && config.numLanes < 2) {
     problems.push('map.campsPerSide must be 0 with one lane (camps sit between lanes)');
   }
-  if (!(config.worldWidth > 0) || !(config.worldHeight > 0)) {
-    problems.push('map.worldWidth and map.worldHeight must be > 0');
+  const isSize = (value: number): boolean => Number.isFinite(value) && value > 0;
+  if (!isSize(config.worldWidth) || !isSize(config.worldHeight)) {
+    problems.push('map.worldWidth and map.worldHeight must be finite and > 0');
   }
   if (problems.length > 0) {
     throw new MapGenerationError(`Invalid map config: ${problems.join('; ')}`);

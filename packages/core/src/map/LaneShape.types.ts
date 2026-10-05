@@ -7,6 +7,8 @@ export type LaneTraceInput = {
   /** How far the lane sits from the Stronghold's row where it crosses the centre line. */
   readonly lateralOffset: number;
   readonly ringRadius: number;
+  /** Direction of the lane's gate from the Stronghold, in radians (0 = east). */
+  readonly exitAngle: number;
 };
 
 /** Strategy that decides a lane's route. New lane styles are new classes (OCP). */

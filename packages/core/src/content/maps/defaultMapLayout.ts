@@ -13,7 +13,14 @@ export const DEFAULT_MAP_LAYOUT: MapLayout = {
   laneEdgeMargin: 100,
   laneProfile: [{ u: 0.55, v: 1 }],
   laneBands: { spawner: [0.3, 0.4], buff: [0.14, 0.22] },
-  wallRing: { radius: 100, thickness: 10, gateArcDegrees: 24, maxSegmentArcDegrees: 45 },
+  wallRing: {
+    radius: 100,
+    thickness: 10,
+    exitArcDegrees: 140,
+    gateArcDegrees: 24,
+    maxSegmentArcDegrees: 45,
+    minGateOpening: 12,
+  },
   camps: {
     band: [0.38, 0.85],
     // DISC-42: lighter near the lanes, heavier deeper into the Unknown.
@@ -36,7 +43,7 @@ export const DEFAULT_MAP_LAYOUT: MapLayout = {
     ],
   },
   footprintSides: 12,
-  navCellSize: 10,
+  navCellSize: 5,
   definitionIds: {
     stronghold: 'stronghold',
     spawnerTower: 'spawner-tower',

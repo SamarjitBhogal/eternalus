@@ -1,7 +1,8 @@
 import type { MapDefinition } from '../content/maps/maps.types';
-import { isPointInPolygon, lerpPoint } from '../utils/geometry';
+import { distance, isPointInPolygon, lerpPoint } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapGenerationError } from './MapGenerationError';
+import { findAsymmetries } from './mapSymmetry';
 
 /** Spacing of the points checked along each lane, in world units. */
 const LANE_SAMPLE_STEP = 5;
@@ -12,10 +13,7 @@ const lanePoints = (path: readonly Vec2[]): Vec2[] =>
     if (to === undefined) {
       return [from];
     }
-    const steps = Math.max(
-      1,
-      Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / LANE_SAMPLE_STEP),
-    );
+    const steps = Math.max(1, Math.ceil(distance(from, to) / LANE_SAMPLE_STEP));
     return Array.from({ length: steps }, (_, step) => lerpPoint(from, to, step / steps));
   });
 
@@ -54,12 +52,17 @@ const findProblems = (map: MapDefinition): string[] => {
       problems.push(`lane '${lane.id}' runs through terrain '${blocker.id}'`);
     }
   }
+  const asymmetric = findAsymmetries(map);
+  if (asymmetric.length > 0) {
+    problems.push(`not mirror-symmetric: ${asymmetric.slice(0, 5).join(', ')}`);
+  }
   return problems;
 };
 
 /**
  * Checks a generated map: unique ids, everything inside the world, no team feature inside
- * terrain and no lane running through the rift or out of bounds. A preset whose ground does
+ * terrain, no lane running through the rift or out of bounds, and mirror symmetry of every
+ * feature, terrain shape and lane. A preset whose ground does
  * not fit the configured lanes fails here with a message naming the lane and the terrain.
  */
 export const validateMapDefinition = (map: MapDefinition): void => {

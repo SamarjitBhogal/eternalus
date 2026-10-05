@@ -1,8 +1,8 @@
 import type { CampWeightClass, MapLayout } from '../content/maps/maps.types';
 import { distanceToPath } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
-import type { LaneGeometry } from './LaneGeometry';
-import type { CampSlot } from './MapBuilder.types';
+import type { CampLayoutInput, CampSlot } from './MapBuilder.types';
+import { MapGenerationError } from './MapGenerationError';
 
 /**
  * Splits `total` camps over `corridors` corridors as evenly as possible. Leftover camps go to
@@ -23,30 +23,25 @@ export const distributeCamps = (total: number, corridors: number): readonly numb
 
 /**
  * Camp spots on the Light half. Corridor `c` lies between lanes `c` and `c + 1`; its camps are
- * spread east-west across `layout.camps.band` and step from one lane towards the other, so
- * some sit near a lane and some deep in the Unknown. `depth` is the distance to the nearest
- * lane divided by half the corridor's width there (0 at a lane, 1 in the middle).
+ * spread east-west across `band` and step from one lane towards the other, so some sit near a
+ * lane and some deep in the Unknown. `depth` is the distance to the nearest lane divided by
+ * half the corridor's width there (0 at a lane, 1 in the middle).
  */
-export const placeCampSlots = (
-  lightHalves: readonly LaneGeometry[],
-  lanePaths: readonly (readonly Vec2[])[],
-  counts: readonly number[],
-  span: { readonly stronghold: Vec2; readonly centreX: number },
-  band: MapLayout['camps']['band'],
-): readonly CampSlot[] =>
-  counts.flatMap((count, corridorIndex) => {
-    const upper = lightHalves[corridorIndex];
-    const lower = lightHalves[corridorIndex + 1];
+export const placeCampSlots = (input: CampLayoutInput): readonly CampSlot[] =>
+  input.counts.flatMap((count, corridorIndex) => {
+    const upper = input.lightHalves[corridorIndex];
+    const lower = input.lightHalves[corridorIndex + 1];
     if (upper === undefined || lower === undefined) {
-      return [];
+      throw new MapGenerationError(`Corridor ${String(corridorIndex)} has no lane on one side`);
     }
+    const { band, stronghold, centreX } = input;
     return Array.from({ length: count }, (_, index): CampSlot => {
       const u = band[0] + ((index + 0.5) / count) * (band[1] - band[0]);
-      const x = span.stronghold.x + u * (span.centreX - span.stronghold.x);
+      const x = stronghold.x + u * (centreX - stronghold.x);
       const top = upper.yAtX(x);
       const bottom = lower.yAtX(x);
       const position = { x, y: top + ((index + 1) / (count + 1)) * (bottom - top) };
-      const nearest = Math.min(...lanePaths.map((path) => distanceToPath(position, path)));
+      const nearest = Math.min(...input.lanePaths.map((path) => distanceToPath(position, path)));
       return { corridorIndex, index, position, depth: nearest / (Math.abs(bottom - top) / 2) };
     });
   });
@@ -57,3 +52,17 @@ export const campDefinitionFor = (
   classes: readonly CampWeightClass[],
 ): string | undefined =>
   classes.filter((weightClass) => depth >= weightClass.minDepth).at(-1)?.definitionId;
+
+/**
+ * Corner camp spots on the Light half: alternately the top and bottom corner, stepping inwards
+ * after each pair. `count` is the total for both halves (validated even).
+ */
+export const cornerCampPositions = (
+  count: number,
+  corner: MapLayout['cornerCamps'],
+  worldHeight: number,
+): readonly Vec2[] =>
+  Array.from({ length: count / 2 }, (_, index) => ({
+    x: corner.insetX + Math.floor(index / 2) * corner.stepX,
+    y: index % 2 === 0 ? corner.insetY : worldHeight - corner.insetY,
+  }));

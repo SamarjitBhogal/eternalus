@@ -1,71 +1,78 @@
-import { lerpPoint } from '../utils/geometry';
-import type { Polygon, Vec2 } from '../utils/geometry.types';
+import type { RiftWidthKnot } from '../content/maps/maps.types';
+import type { Polygon } from '../utils/geometry.types';
 
 /** Smallest rift piece worth keeping, in world units; thinner slivers are dropped. */
 const MIN_PIECE_HEIGHT = 1;
 
-/** The centre line's x at height `y` (the line runs top to bottom). */
-export const centrelineXAtY = (centreline: readonly Vec2[], y: number): number => {
-  const index = centreline.findIndex(
-    (point, i) => y >= point.y && y <= (centreline[i + 1]?.y ?? point.y),
-  );
-  const from = centreline[Math.max(index, 0)] ?? { x: 0, y };
-  const to = centreline[Math.max(index, 0) + 1] ?? from;
-  return to.y === from.y ? from.x : lerpPoint(from, to, (y - from.y) / (to.y - from.y)).x;
+/** The world the rift is carved into, and how wide each lane's bridge gap is. */
+export type RiftArea = {
+  readonly width: number;
+  readonly height: number;
+  readonly bridgeWidth: number;
 };
 
-/** One strip of rift between heights `top` and `bottom`, `halfWidth` either side of the line. */
+/** The rift's half-width at height `y` (world units), interpolated between knots. */
+const riftHalfWidthAt = (profile: readonly RiftWidthKnot[], y: number): number => {
+  const index = profile.findIndex((knot, i) => y >= knot.y && y <= (profile[i + 1]?.y ?? knot.y));
+  const from = profile[Math.max(index, 0)];
+  const to = profile[Math.max(index, 0) + 1] ?? from;
+  if (from === undefined || to === undefined || to.y === from.y) {
+    return from?.halfWidth ?? 0;
+  }
+  return from.halfWidth + ((y - from.y) / (to.y - from.y)) * (to.halfWidth - from.halfWidth);
+};
+
+/** One strip of rift between two heights, centred on the symmetry axis (self-mirroring). */
 const riftStrip = (
-  centreline: readonly Vec2[],
-  top: number,
-  bottom: number,
-  halfWidth: number,
+  profile: readonly RiftWidthKnot[],
+  centreX: number,
+  heights: { readonly top: number; readonly bottom: number },
 ): Polygon => {
-  const heights = [
-    top,
-    ...centreline.map((point) => point.y).filter((y) => y > top && y < bottom),
-    bottom,
+  const ys = [
+    heights.top,
+    ...profile.map((knot) => knot.y).filter((y) => y > heights.top && y < heights.bottom),
+    heights.bottom,
   ];
-  const centre = heights.map((y) => ({ x: centrelineXAtY(centreline, y), y }));
   return [
-    ...centre.map((point) => ({ x: point.x - halfWidth, y: point.y })),
-    ...centre.reverse().map((point) => ({ x: point.x + halfWidth, y: point.y })),
+    ...ys.map((y) => ({ x: centreX - riftHalfWidthAt(profile, y), y })),
+    ...[...ys].reverse().map((y) => ({ x: centreX + riftHalfWidthAt(profile, y), y })),
   ];
 };
 
 /**
- * The rift as strips along its centre line, with a gap `bridgeWidth` tall wherever a lane
- * crosses (at each height in `crossings`). The gaps are where the bridges go.
+ * The rift as strips along the symmetry axis, `profile` wide (heights in world units), with a
+ * gap `bridgeWidth` tall wherever a lane crosses (at each height in `crossings`). The gaps are
+ * where the bridges go. Every strip mirrors onto itself, so the map stays symmetric.
  */
 export const carveRift = (
-  centreline: readonly Vec2[],
+  profile: readonly RiftWidthKnot[],
   crossings: readonly number[],
-  size: { readonly height: number; readonly halfWidth: number; readonly bridgeWidth: number },
+  area: RiftArea,
 ): readonly Polygon[] => {
   const gaps = [...crossings].sort((a, b) => a - b);
   const edges = [
     0,
-    ...gaps.flatMap((y) => [y - size.bridgeWidth / 2, y + size.bridgeWidth / 2]),
-    size.height,
+    ...gaps.flatMap((y) => [y - area.bridgeWidth / 2, y + area.bridgeWidth / 2]),
+    area.height,
   ];
   const pieces: Polygon[] = [];
   for (let index = 0; index < edges.length; index += 2) {
     const top = Math.max(edges[index] ?? 0, 0);
-    const bottom = Math.min(edges[index + 1] ?? size.height, size.height);
+    const bottom = Math.min(edges[index + 1] ?? area.height, area.height);
     if (bottom - top >= MIN_PIECE_HEIGHT) {
-      pieces.push(riftStrip(centreline, top, bottom, size.halfWidth));
+      pieces.push(riftStrip(profile, area.width / 2, { top, bottom }));
     }
   }
   return pieces;
 };
 
-/** A straight rift down the middle of the world, used when no preset shapes it. */
-export const defaultCentreline = (width: number, height: number): readonly Vec2[] => [
-  { x: width / 2, y: 0 },
-  { x: width / 2, y: height },
+/** A rift of constant half-width, used when no preset shapes it (heights as fractions). */
+export const defaultRiftProfile = (halfWidth: number): readonly RiftWidthKnot[] => [
+  { y: 0, halfWidth },
+  { y: 1, halfWidth },
 ];
 
-/** Two corner triangles on the west edge, used when no preset shapes the bounds. */
+/** Two corner triangles on the west edge (world units), used when no preset shapes the bounds. */
 export const defaultWestBounds = (cornerSize: number, height: number): readonly Polygon[] => [
   [
     { x: 0, y: 0 },

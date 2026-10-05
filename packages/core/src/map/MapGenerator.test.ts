@@ -2,13 +2,23 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_MAP_CONFIG } from '../content/maps/defaultMapConfig';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
-import type { MapDefinition, MapFeature, MapFeatureKind } from '../content/maps/maps.types';
-import { distanceToPath, isPointInPolygon } from '../utils/geometry';
+import type {
+  MapDefinition,
+  MapFeature,
+  MapFeatureKind,
+  MapLayout,
+} from '../content/maps/maps.types';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import { MAP_1_PRESET } from '../content/maps/presets/map1Preset';
+import { distanceToPath, isPointInPolygon, lerpPoint } from '../utils/geometry';
 import { MapGenerationError } from './MapGenerationError';
 import { MapGenerator } from './MapGenerator';
+import { findAsymmetries } from './mapSymmetry';
 import type { MapConfig } from './MapGenerator.types';
 
 const SEED = 1234;
+/** FNV-1a of the default map's JSON at SEED; see the golden-hash test. */
+const GOLDEN_HASH = 672_747_009;
 const EPSILON = 1e-6;
 
 type Ground = 'map-1' | 'generated';
@@ -76,6 +86,15 @@ describe('MapGenerator', () => {
       expect(mirror?.laneId).toBe(feature.laneId);
       expect(mirror?.position.x).toBeCloseTo(map.width - feature.position.x, 6);
       expect(mirror?.position.y).toBeCloseTo(feature.position.y, 6);
+      // Same footprint shape, mirrored (corner order may differ).
+      for (const point of feature.footprint ?? []) {
+        const twin = mirror?.footprint?.find(
+          (other) =>
+            Math.abs(other.x - (map.width - point.x)) < EPSILON &&
+            Math.abs(other.y - point.y) < EPSILON,
+        );
+        expect(twin).toBeDefined();
+      }
     }
   });
 
@@ -176,6 +195,7 @@ describe('MapGenerator', () => {
       expect(lane.path[0]?.x).toBeCloseTo(gate('light')?.position.x ?? Number.NaN, 6);
       expect(lane.path[0]?.y).toBeCloseTo(gate('light')?.position.y ?? Number.NaN, 6);
       expect(lane.path.at(-1)?.x).toBeCloseTo(gate('dark')?.position.x ?? Number.NaN, 6);
+      expect(lane.path.at(-1)?.y).toBeCloseTo(gate('dark')?.position.y ?? Number.NaN, 6);
     }
   });
 
@@ -225,6 +245,18 @@ describe('MapGenerator', () => {
         shapes.some((shape) => isPointInPolygon(feature.position, shape)),
       ),
     ).toBe(false);
+    // Walk every lane in 1-unit steps: no step may land in the rift or out of bounds.
+    const lanePoints = map.lanes.flatMap((lane) =>
+      lane.path.slice(1).flatMap((to, index) => {
+        const from = lane.path[index] ?? to;
+        const steps = Math.ceil(Math.abs(to.x - from.x) + Math.abs(to.y - from.y));
+        return Array.from({ length: steps }, (_, step) => lerpPoint(from, to, step / steps));
+      }),
+    );
+    expect(lanePoints.length).toBeGreaterThan(1000);
+    expect(
+      lanePoints.filter((point) => shapes.some((shape) => isPointInPolygon(point, shape))),
+    ).toEqual([]);
     expect(map.terrain.filter((piece) => piece.kind === 'rift').length).toBeGreaterThan(0);
   });
 
@@ -294,8 +326,37 @@ describe('MapGenerator', () => {
     ['camps with a single lane', { numLanes: 1 }],
     ['an empty world', { worldWidth: 0 }],
     ['an unknown preset', { presetId: 'no-such-map' }],
+    ['an endless world', { worldWidth: Number.POSITIVE_INFINITY }],
   ])('rejects %s with a MapGenerationError', (_, overrides) => {
     expect(() => generate(overrides)).toThrow(MapGenerationError);
+  });
+
+  it('rejects a seed that is not a whole number', () => {
+    expect(() => generate({}, 2.5)).toThrow(/seed must be a whole number/);
+  });
+
+  it.each<[string, Partial<MapLayout>]>([
+    ['spawner band behind the buff band', { laneBands: { spawner: [0.1, 0.2], buff: [0.3, 0.4] } }],
+    [
+      'unsorted camp weight classes',
+      {
+        camps: {
+          band: [0.4, 0.8],
+          weightClasses: [
+            { minDepth: 0, definitionId: 'forest-camp-light' },
+            { minDepth: 0.9, definitionId: 'forest-camp-heavy' },
+            { minDepth: 0.5, definitionId: 'forest-camp-medium' },
+          ],
+        },
+      },
+    ],
+    ['a two-sided footprint', { footprintSides: 2 }],
+  ])('rejects layout content with %s', (_, overrides) => {
+    const generator = new MapGenerator({ layout: { ...DEFAULT_MAP_LAYOUT, ...overrides } });
+
+    expect(() => generator.generate({ map: DEFAULT_MAP_CONFIG }, SEED)).toThrow(
+      /Invalid map layout/,
+    );
   });
 
   it('allows a single lane when there are no camps', () => {
@@ -314,15 +375,15 @@ describe('MapGenerator', () => {
           // Out of bounds over the whole middle band of the west half: every lane runs into it.
           westOutOfBounds: [
             [
-              { x: 300, y: 0 },
-              { x: 700, y: 0 },
-              { x: 700, y: 900 },
-              { x: 300, y: 900 },
+              { x: 0.2, y: 0 },
+              { x: 0.45, y: 0 },
+              { x: 0.45, y: 1 },
+              { x: 0.2, y: 1 },
             ],
           ],
-          riftCentreline: [
-            { x: 800, y: 0 },
-            { x: 800, y: 900 },
+          riftProfile: [
+            { y: 0, halfWidth: 7 },
+            { y: 1, halfWidth: 7 },
           ],
         },
       },
@@ -331,6 +392,66 @@ describe('MapGenerator', () => {
     expect(() =>
       generator.generate({ map: { ...DEFAULT_MAP_CONFIG, presetId: 'flooded-west' } }, SEED),
     ).toThrow(/runs through terrain/);
+  });
+
+  it('refuses to build a gate its turrets would close (too many lanes for the ring)', () => {
+    expect(() => generate({ numLanes: 9 })).toThrow(/minGateOpening/);
+    const narrowArc = new MapGenerator({
+      layout: {
+        ...DEFAULT_MAP_LAYOUT,
+        wallRing: { ...DEFAULT_MAP_LAYOUT.wallRing, exitArcDegrees: 40 },
+      },
+    });
+    expect(() => narrowArc.generate({ map: { ...DEFAULT_MAP_CONFIG, numLanes: 5 } }, SEED)).toThrow(
+      /gate of lane-\d/,
+    );
+  });
+
+  it.each([1, 3, 5, 7])(
+    'is mirror-symmetric in every feature, terrain shape and lane (%i lanes)',
+    (numLanes) => {
+      for (const ground of GROUNDS) {
+        const map = generate({ numLanes, campsPerSide: numLanes > 1 ? 6 : 0 }, SEED, ground);
+        expect(findAsymmetries(map)).toEqual([]);
+      }
+    },
+  );
+
+  it('never freezes or shares the content it reads', () => {
+    const map = generate();
+    const tower = map.features.find((feature) => feature.kind === 'spawner-tower');
+
+    expect(Object.isFrozen(MAP_FEATURE_DEFINITIONS['spawner-tower']?.minimapGlyph)).toBe(false);
+    expect(Object.isFrozen(MAP_1_PRESET.westOutOfBounds[0])).toBe(false);
+    expect(tower?.minimapGlyph).not.toBe(MAP_FEATURE_DEFINITIONS['spawner-tower']?.minimapGlyph);
+  });
+
+  it('scales a preset to any world size', () => {
+    const map = generate({ worldWidth: 3200, worldHeight: 1800 });
+    const westBounds = map.terrain.find((piece) => piece.id === 'west-bounds-0');
+
+    expect(map.width).toBe(3200);
+    expect(westBounds?.shape[1]).toEqual({ x: 550, y: 0 });
+    expect(findAsymmetries(map)).toEqual([]);
+  });
+
+  it('only uses terrain polygons with at least three points', () => {
+    for (const ground of GROUNDS) {
+      const map = generate({ numLanes: 5 }, SEED, ground);
+      expect(map.terrain.every((piece) => piece.shape.length >= 3)).toBe(true);
+    }
+  });
+
+  it('matches its golden hash, so a change in output (or in platform maths) is caught', () => {
+    // FNV-1a over the JSON of the default map. If you change generation on purpose,
+    // update this number in the same commit and say why in the PR.
+    const json = JSON.stringify(generate());
+    let hash = 0x811c9dc5;
+    for (let index = 0; index < json.length; index += 1) {
+      hash = Math.imul(hash ^ json.charCodeAt(index), 0x01000193) >>> 0;
+    }
+
+    expect(hash).toBe(GOLDEN_HASH);
   });
 
   it('rejects a feature that names an unknown definition', () => {

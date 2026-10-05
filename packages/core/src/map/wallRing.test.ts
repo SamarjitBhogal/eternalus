@@ -3,7 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { distance } from '../utils/geometry';
 import { buildWallRing } from './wallRing';
 
-const RING = { radius: 100, thickness: 10, gateArcDegrees: 24, maxSegmentArcDegrees: 45 };
+const RING = {
+  radius: 100,
+  thickness: 10,
+  exitArcDegrees: 140,
+  gateArcDegrees: 24,
+  maxSegmentArcDegrees: 45,
+  minGateOpening: 12,
+};
 const CENTRE = { x: 0, y: 0 };
 
 describe('buildWallRing', () => {
@@ -18,6 +25,13 @@ describe('buildWallRing', () => {
       expect(gate.position.x).toBeCloseTo(Math.cos(angle) * RING.radius);
       expect(gate.position.y).toBeCloseTo(Math.sin(angle) * RING.radius);
     });
+  });
+
+  it('reports each gate as wide as the chord of its arc', () => {
+    const [gate] = buildWallRing(CENTRE, [0], RING).pieces.filter((piece) => piece.kind === 'gate');
+
+    // A 24 degree gate on a ring of radius 100: chord = 2 x 100 x sin(12 degrees).
+    expect(gate?.width).toBeCloseTo(41.58, 2);
   });
 
   it('has one corner per piece, all on the ring', () => {

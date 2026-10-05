@@ -16,10 +16,8 @@ export type {
   MinimapGlyph,
   MinimapGlyphShape,
 } from './content/maps/maps.types';
-export { MapGenerationError } from './map/MapGenerationError';
 export { MapGenerator } from './map/MapGenerator';
 export type { MapConfig, MapGeneratorConfig } from './map/MapGenerator.types';
-export { WorldMap } from './map/WorldMap';
 export type { PlayableTeam, Team } from './teams/teams.types';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
 
