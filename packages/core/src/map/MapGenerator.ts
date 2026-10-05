@@ -1,12 +1,12 @@
 import type { MapDefinition } from '../content/maps/maps.types';
 import { deepFreeze } from './deepFreeze';
 import { MapBuilder } from './MapBuilder';
-import { MAP_GENERATOR_DEFAULTS } from './MapGenerator.constants';
+import { MAP_GENERATOR_DEFAULTS, MAX_SEED } from './MapGenerator.constants';
 import { MapGenerationError } from './MapGenerationError';
 import type { MapGeneratorConfig, MapGeneratorDeps } from './MapGenerator.types';
 import { validateMapConfig } from './validateMapConfig';
 import { validateMapDefinition } from './validateMapDefinition';
-import { validateMapLayout } from './validateMapLayout';
+import { validateLaneProfile, validateMapLayout } from './validateMapLayout';
 
 /**
  * Turns `GameConfig.map` and a seed into a `MapDefinition` (ADR 0009). Pure and deterministic:
@@ -30,14 +30,17 @@ export class MapGenerator {
   public generate(config: MapGeneratorConfig, seed: number): MapDefinition {
     validateMapConfig(config.map);
     validateMapLayout(this.deps.layout);
-    if (!Number.isSafeInteger(seed)) {
-      throw new MapGenerationError(`The map seed must be a whole number, got ${String(seed)}`);
+    if (!Number.isInteger(seed) || seed < 0 || seed > MAX_SEED) {
+      throw new MapGenerationError(
+        `The map seed must be a whole number from 0 to ${String(MAX_SEED)}, got ${String(seed)}`,
+      );
     }
     const { presetId } = config.map;
     const preset = presetId === undefined ? undefined : this.deps.presets[presetId];
     if (presetId !== undefined && preset === undefined) {
       throw new MapGenerationError(`Unknown map preset '${presetId}' (map.presetId)`);
     }
+    validateLaneProfile(preset?.laneProfile ?? [], `preset '${presetId ?? ''}' laneProfile`);
     const map = new MapBuilder({
       config: config.map,
       seed,

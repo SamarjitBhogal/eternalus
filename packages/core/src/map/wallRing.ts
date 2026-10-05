@@ -1,11 +1,10 @@
 import type { MapLayout } from '../content/maps/maps.types';
-import { distance, polarPoint } from '../utils/geometry';
+import { distance, polarPoint, RADIANS_PER_DEGREE } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { WallRing, WallRingPiece } from './MapBuilder.types';
 
 type Arc = { readonly start: number; readonly end: number; readonly laneIndex?: number };
 
-const DEGREES = Math.PI / 180;
 /** Gates never take more than this share of the gap to their neighbour, so they never overlap. */
 const MAX_GATE_SHARE_OF_GAP = 0.4;
 
@@ -39,14 +38,14 @@ const ringArcs = (gateAngles: readonly number[], ring: MapLayout['wallRing']): A
     return next.angle - gate.angle + (index === gates.length - 1 ? 2 * Math.PI : 0);
   });
   const halfGate = Math.min(
-    (ring.gateArcDegrees * DEGREES) / 2,
+    (ring.gateArcDegrees * RADIANS_PER_DEGREE) / 2,
     Math.min(...gaps) * MAX_GATE_SHARE_OF_GAP,
   );
   return gates.flatMap((gate, index) => {
     const nextStart = gate.angle + (gaps[index] ?? 0) - halfGate;
     return [
       { start: gate.angle - halfGate, end: gate.angle + halfGate, laneIndex: gate.laneIndex },
-      ...splitArc(gate.angle + halfGate, nextStart, ring.maxSegmentArcDegrees * DEGREES),
+      ...splitArc(gate.angle + halfGate, nextStart, ring.maxSegmentArcDegrees * RADIANS_PER_DEGREE),
     ];
   });
 };

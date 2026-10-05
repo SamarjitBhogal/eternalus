@@ -125,6 +125,8 @@ export type MapLayout = {
     readonly maxSegmentArcDegrees: number;
     /** Narrowest walkable gap a gate may leave between its two turrets. */
     readonly minGateOpening: number;
+    /** How far a lane runs straight out of its gate before it may bend. */
+    readonly laneApron: number;
   };
   readonly camps: {
     readonly band: readonly [number, number];
@@ -166,7 +168,8 @@ export type RiftWidthKnot = { readonly y: number; readonly halfWidth: number };
  * An authored look for a map. It may shape the ground and bend the lanes, but it never places
  * a structure: towers, gates, camps and capture points always come from the generator, so a
  * preset honours every `MapConfig` count by construction. Positions are fractions of the world
- * size, so a preset also works at any world size.
+ * size, so a preset scales with the world; layout lengths (Stronghold inset, wall ring, corner
+ * camps) stay absolute, so very small worlds are rejected by validation.
  */
 export type MapPreset = {
   readonly id: string;
@@ -174,8 +177,10 @@ export type MapPreset = {
   /** Out-of-bounds polygons on the Light (west) half, in fractions of the world size. */
   readonly westOutOfBounds: readonly Polygon[];
   /**
-   * The rift's width from top to bottom. The rift is centred on the symmetry axis, so the map
-   * stays mirror-symmetric; a bridge gap is cut wherever a lane crosses it.
+   * The rift's width from top to bottom: `y` as a fraction of the world height, `halfWidth`
+   * in world units (the rift does not get wider in a bigger world). The rift is centred on the
+   * symmetry axis, so the map stays mirror-symmetric; a bridge gap is cut wherever a lane
+   * crosses it.
    */
   readonly riftProfile: readonly RiftWidthKnot[];
   readonly laneProfile?: readonly LaneKnot[];

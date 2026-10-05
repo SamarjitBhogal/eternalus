@@ -10,7 +10,14 @@ import type {
 } from '../content/maps/maps.types';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { MAP_1_PRESET } from '../content/maps/presets/map1Preset';
-import { distanceToPath, isPointInPolygon, lerpPoint } from '../utils/geometry';
+import {
+  distance,
+  distanceToPath,
+  isPointInPolygon,
+  lerpPoint,
+  polarPoint,
+} from '../utils/geometry';
+import type { LaneShape } from './LaneShape.types';
 import { MapGenerationError } from './MapGenerationError';
 import { MapGenerator } from './MapGenerator';
 import { findAsymmetries } from './mapSymmetry';
@@ -18,7 +25,7 @@ import type { MapConfig } from './MapGenerator.types';
 
 const SEED = 1234;
 /** FNV-1a of the default map's JSON at SEED; see the golden-hash test. */
-const GOLDEN_HASH = 672_747_009;
+const GOLDEN_HASH = 798_224_052;
 const EPSILON = 1e-6;
 
 type Ground = 'map-1' | 'generated';
@@ -296,8 +303,9 @@ describe('MapGenerator', () => {
   it('keeps the traced map-1 lane bends and corner objectives from feat/map', () => {
     const map = generate();
     const north = map.lanes[0]?.path ?? [];
+    // The first traced bend, (180, 350), lies inside the gate apron (112 units from the
+    // Stronghold; ring 100 + apron 20), so lanes leave the gate straight and skip it.
     const traced = [
-      { x: 180, y: 350 },
       { x: 295, y: 315 },
       { x: 480, y: 175 },
       { x: 645, y: 115 },
@@ -333,6 +341,8 @@ describe('MapGenerator', () => {
 
   it('rejects a seed that is not a whole number', () => {
     expect(() => generate({}, 2.5)).toThrow(/seed must be a whole number/);
+    expect(() => generate({}, -1)).toThrow(/seed must be a whole number/);
+    expect(() => generate({}, 2 ** 32)).toThrow(/seed must be a whole number/);
   });
 
   it.each<[string, Partial<MapLayout>]>([
@@ -351,6 +361,15 @@ describe('MapGenerator', () => {
       },
     ],
     ['a two-sided footprint', { footprintSides: 2 }],
+    [
+      'lane bends out of order',
+      {
+        laneProfile: [
+          { u: 0.6, v: 1 },
+          { u: 0.3, v: 0.5 },
+        ],
+      },
+    ],
   ])('rejects layout content with %s', (_, overrides) => {
     const generator = new MapGenerator({ layout: { ...DEFAULT_MAP_LAYOUT, ...overrides } });
 
@@ -433,6 +452,50 @@ describe('MapGenerator', () => {
     expect(map.width).toBe(3200);
     expect(westBounds?.shape[1]).toEqual({ x: 550, y: 0 });
     expect(findAsymmetries(map)).toEqual([]);
+  });
+
+  it.each([
+    [1600, 1800, 5],
+    [1600, 1400, 7],
+    [2400, 900, 3],
+  ])(
+    'keeps lanes out of their own walls in a %ix%i world with %i lanes',
+    (worldWidth, worldHeight, numLanes) => {
+      for (const ground of GROUNDS) {
+        const map = generate({ worldWidth, worldHeight, numLanes }, SEED, ground);
+        expect(map.lanes).toHaveLength(numLanes);
+        for (const lane of map.lanes) {
+          expect(
+            lane.path.every(
+              (point, index) => index === 0 || point.x >= (lane.path[index - 1]?.x ?? 0),
+            ),
+          ).toBe(true);
+        }
+      }
+    },
+  );
+
+  it('rejects lanes that turn back through their own wall ring', () => {
+    // The pre-review lane shape: keeps every bend outside the ring, even ones behind the gate.
+    const looseShape: LaneShape = {
+      traceLightHalf: ({ stronghold, centreX, lateralOffset, ringRadius, exitAngle }) => {
+        const bends = MAP_1_PRESET.laneProfile
+          ?.map((knot) => ({
+            x: stronghold.x + knot.u * (centreX - stronghold.x),
+            y: stronghold.y + knot.v * lateralOffset,
+          }))
+          .filter((point) => distance(point, stronghold) > ringRadius);
+        return [
+          polarPoint(stronghold, ringRadius, exitAngle),
+          ...(bends ?? []),
+          { x: centreX, y: stronghold.y + lateralOffset },
+        ];
+      },
+    };
+    const generator = new MapGenerator({ createLaneShape: () => looseShape });
+    const config = { map: { ...DEFAULT_MAP_CONFIG, worldHeight: 1800, numLanes: 5 } };
+
+    expect(() => generator.generate(config, SEED)).toThrow(/runs (west|through)/);
   });
 
   it('only uses terrain polygons with at least three points', () => {

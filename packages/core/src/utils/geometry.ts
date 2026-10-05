@@ -1,5 +1,8 @@
 import type { Polygon, Rect, Vec2 } from './geometry.types';
 
+/** Radians per degree; angles in content are authored in degrees. */
+export const RADIANS_PER_DEGREE = Math.PI / 180;
+
 /** Straight-line distance between two points (`sqrt` is exactly rounded, so it is deterministic). */
 export const distance = (a: Vec2, b: Vec2): number => {
   const dx = b.x - a.x;

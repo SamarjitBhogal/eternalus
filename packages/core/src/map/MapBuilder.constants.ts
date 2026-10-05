@@ -11,6 +11,3 @@ export const NEUTRAL_SIDES: readonly [MirrorSide, MirrorSide] = [
   { idPrefix: 'west', team: 'neutral' },
   { idPrefix: 'east', team: 'neutral' },
 ];
-
-/** Radians per degree; layout angles are authored in degrees. */
-export const RADIANS_PER_DEGREE = Math.PI / 180;

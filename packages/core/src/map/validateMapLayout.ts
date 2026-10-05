@@ -1,4 +1,4 @@
-import type { MapLayout } from '../content/maps/maps.types';
+import type { LaneKnot, MapLayout } from '../content/maps/maps.types';
 import { MapGenerationError } from './MapGenerationError';
 
 const isFraction = (value: number): boolean => value >= 0 && value <= 1;
@@ -47,10 +47,29 @@ const layoutRules = (layout: MapLayout): readonly (readonly [boolean, string])[]
 };
 
 /**
+ * Rejects a lane profile whose bends are not ordered west to east (`u` strictly rising inside
+ * (0, 1)) or whose sideways share `v` is outside [0, 1]. `name` says where the profile came from.
+ */
+export const validateLaneProfile = (profile: readonly LaneKnot[], name: string): void => {
+  const isBroken = profile.some(
+    (knot, index) =>
+      !(knot.u > 0 && knot.u < 1) ||
+      !(knot.v >= 0 && knot.v <= 1) ||
+      knot.u <= (profile[index - 1]?.u ?? 0),
+  );
+  if (isBroken) {
+    throw new MapGenerationError(
+      `Invalid map layout: ${name} needs 0 < u < 1 rising from bend to bend and 0 <= v <= 1`,
+    );
+  }
+};
+
+/**
  * Rejects map layout content the generator cannot honour, naming the field and the rule, so a
  * content typo fails before any map is built.
  */
 export const validateMapLayout = (layout: MapLayout): void => {
+  validateLaneProfile(layout.laneProfile, 'laneProfile');
   const problems = layoutRules(layout)
     .filter(([isBroken]) => isBroken)
     .map(([, message]) => message);

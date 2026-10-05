@@ -16,17 +16,26 @@ export class ProfileLaneShape implements LaneShape {
     this.knots = knots;
   }
 
-  /** Gate on the wall ring at the exit angle, then every bend outside the ring, then the centre line. */
+  /**
+   * The gate on the wall ring, a point straight out of it (`apron` further along the exit
+   * angle, so the lane clears the gate's turrets), every bend beyond the apron that moves the
+   * lane further east, then the centre-line crossing. x never decreases, as `LaneShape` requires.
+   */
   public traceLightHalf(input: LaneTraceInput): readonly Vec2[] {
-    const { stronghold, centreX, lateralOffset, ringRadius, exitAngle } = input;
+    const { stronghold, centreX, lateralOffset, ringRadius, exitAngle, apron } = input;
     const span = centreX - stronghold.x;
-    const bends = this.knots
-      .map((knot) => ({
-        x: stronghold.x + knot.u * span,
-        y: stronghold.y + knot.v * lateralOffset,
-      }))
-      .filter((point) => distance(point, stronghold) > ringRadius);
+    const gate = polarPoint(stronghold, ringRadius, exitAngle);
+    const exit = polarPoint(stronghold, ringRadius + apron, exitAngle);
     const centre = { x: centreX, y: stronghold.y + lateralOffset };
-    return [polarPoint(stronghold, ringRadius, exitAngle), ...bends, centre];
+    const path: Vec2[] = [gate, exit];
+    for (const knot of this.knots) {
+      const bend = { x: stronghold.x + knot.u * span, y: stronghold.y + knot.v * lateralOffset };
+      const last = path[path.length - 1] ?? exit;
+      const isAhead = bend.x > last.x && bend.x < centreX;
+      if (isAhead && distance(bend, stronghold) > ringRadius + apron) {
+        path.push(bend);
+      }
+    }
+    return [...path, centre];
   }
 }

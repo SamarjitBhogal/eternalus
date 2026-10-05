@@ -9,6 +9,8 @@ export type LaneTraceInput = {
   readonly ringRadius: number;
   /** Direction of the lane's gate from the Stronghold, in radians (0 = east). */
   readonly exitAngle: number;
+  /** How far the lane runs straight out of its gate before it may bend. */
+  readonly apron: number;
 };
 
 /** Strategy that decides a lane's route. New lane styles are new classes (OCP). */

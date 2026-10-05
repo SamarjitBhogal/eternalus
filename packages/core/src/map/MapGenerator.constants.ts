@@ -13,3 +13,6 @@ export const MAP_GENERATOR_DEFAULTS: MapGeneratorDeps = {
   createRng: (seed) => new MapRandom(seed),
   createLaneShape: (profile) => new ProfileLaneShape(profile),
 };
+
+/** Largest seed: seeds are unsigned 32-bit, so larger values would alias smaller ones. */
+export const MAX_SEED = 0xffff_ffff;

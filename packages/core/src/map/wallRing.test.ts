@@ -10,6 +10,7 @@ const RING = {
   gateArcDegrees: 24,
   maxSegmentArcDegrees: 45,
   minGateOpening: 12,
+  laneApron: 20,
 };
 const CENTRE = { x: 0, y: 0 };
 

@@ -51,7 +51,11 @@ export const wallRingSpecs = (input: WallRingInput): readonly MirroredFeatureSpe
   const { layout, definitions } = input;
   const ids = layout.definitionIds;
   const ring = buildWallRing(input.stronghold, input.exitAngles, layout.wallRing);
-  const turretRadius = definitions[ids.turret]?.footprintRadius ?? 0;
+  const turret = definitions[ids.turret];
+  if (turret === undefined) {
+    throw new MapGenerationError(`Wall ring uses unknown turret definition '${ids.turret}'`);
+  }
+  const turretRadius = turret.footprintRadius;
   let wallIndex = 0;
   const pieces = ring.pieces.map((piece): MirroredFeatureSpec => {
     if (piece.laneIndex === undefined) {

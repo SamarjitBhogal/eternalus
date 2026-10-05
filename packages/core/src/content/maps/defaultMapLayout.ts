@@ -20,6 +20,7 @@ export const DEFAULT_MAP_LAYOUT: MapLayout = {
     gateArcDegrees: 24,
     maxSegmentArcDegrees: 45,
     minGateOpening: 12,
+    laneApron: 20,
   },
   camps: {
     band: [0.38, 0.85],

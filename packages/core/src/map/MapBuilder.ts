@@ -8,7 +8,8 @@ import {
 } from './campPlacement';
 import { createMapFeature } from './createMapFeature';
 import { LaneGeometry } from './LaneGeometry';
-import { NEUTRAL_SIDES, RADIANS_PER_DEGREE, TEAM_SIDES } from './MapBuilder.constants';
+import { RADIANS_PER_DEGREE } from '../utils/geometry';
+import { NEUTRAL_SIDES, TEAM_SIDES } from './MapBuilder.constants';
 import type {
   FeatureSpec,
   MapBuildInput,
@@ -70,6 +71,7 @@ export class MapBuilder {
         lateralOffset: (index - (numLanes - 1) / 2) * spacing,
         ringRadius: this.input.layout.wallRing.radius,
         exitAngle,
+        apron: this.input.layout.wallRing.laneApron,
       });
       const darkHalf = half.slice(0, -1).map((point) => mirrorPoint(point, worldWidth));
       this.lightHalves.push(new LaneGeometry(half));
