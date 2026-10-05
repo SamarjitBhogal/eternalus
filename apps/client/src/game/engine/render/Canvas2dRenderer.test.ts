@@ -1,7 +1,7 @@
 import { describe, expect, it, type Mock, vi } from 'vitest';
 
 import { Canvas2dRenderer } from './Canvas2dRenderer';
-import type { DrawContext } from './Renderer.types';
+import type { DrawContext } from './Canvas2dRenderer.types';
 
 /** The canvas drawing tools the tests watch. */
 type DrawMethod =

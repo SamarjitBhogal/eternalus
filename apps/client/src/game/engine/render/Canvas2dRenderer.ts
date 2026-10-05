@@ -1,6 +1,7 @@
-import { GLYPH_OUTLINE_WIDTH, GLYPH_TRACERS, OUTLINED_GLYPHS } from './Canvas2dRenderer.constants';
+import { FULL_TURN, GLYPH_OUTLINE_WIDTH, OUTLINED_GLYPHS } from './Canvas2dRenderer.constants';
+import type { DrawContext, GlyphHalfSize, GlyphTracer } from './Canvas2dRenderer.types';
 import type { Renderer } from './Renderer';
-import type { DrawContext, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.types';
+import type { GlyphShape, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.types';
 
 /**
  * The Canvas 2D implementation of the `Renderer` port and the only class that touches
@@ -17,10 +18,29 @@ export class Canvas2dRenderer implements Renderer {
   private offsetX = 0;
   private offsetY = 0;
   private pixelRatio = 1;
+  /** How each glyph shape is traced. A new shape is one entry here, never a branch in code. */
+  private readonly glyphTracers: Readonly<Record<GlyphShape, GlyphTracer>>;
 
   /** Creates a renderer that draws through the given context. */
   public constructor(context: DrawContext) {
     this.context = context;
+    const ellipse: GlyphTracer = (center, halfWidth, halfHeight) => {
+      context.ellipse(center.x, center.y, halfWidth, halfHeight, 0, 0, FULL_TURN);
+    };
+    this.glyphTracers = {
+      dot: ellipse,
+      ring: ellipse,
+      square: (center, halfWidth, halfHeight) => {
+        context.rect(center.x - halfWidth, center.y - halfHeight, halfWidth * 2, halfHeight * 2);
+      },
+      diamond: (center, halfWidth, halfHeight) => {
+        context.moveTo(center.x, center.y - halfHeight);
+        context.lineTo(center.x + halfWidth, center.y);
+        context.lineTo(center.x, center.y + halfHeight);
+        context.lineTo(center.x - halfWidth, center.y);
+        context.closePath();
+      },
+    };
   }
 
   /** Creates a renderer for a canvas, or returns `null` if 2D drawing is unavailable. */
@@ -108,11 +128,11 @@ export class Canvas2dRenderer implements Renderer {
 
   /** Draws a marker centred on a world position, sized in world units (scales with zoom). */
   public drawWorldGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void {
+    const half = glyph.size / 2;
     this.paintGlyph(
       glyph,
       center,
-      (glyph.size / 2) * this.scaleX,
-      (glyph.size / 2) * this.scaleY,
+      { width: half * this.scaleX, height: half * this.scaleY },
       color,
     );
   }
@@ -120,7 +140,7 @@ export class Canvas2dRenderer implements Renderer {
   /** Draws a marker centred on a world position, sized in CSS pixels (minimap markers). */
   public drawGlyph(glyph: GlyphSpec, center: WorldPoint, color: string): void {
     const half = (glyph.size / 2) * this.pixelRatio;
-    this.paintGlyph(glyph, center, half, half, color);
+    this.paintGlyph(glyph, center, { width: half, height: half }, color);
   }
 
   /** Converts a world position to a screen position in device pixels. */
@@ -141,12 +161,11 @@ export class Canvas2dRenderer implements Renderer {
   private paintGlyph(
     glyph: GlyphSpec,
     center: WorldPoint,
-    halfWidth: number,
-    halfHeight: number,
+    half: GlyphHalfSize,
     color: string,
   ): void {
     this.context.beginPath();
-    GLYPH_TRACERS[glyph.shape](this.context, this.toScreen(center), halfWidth, halfHeight);
+    this.glyphTracers[glyph.shape](this.toScreen(center), half.width, half.height);
     if (OUTLINED_GLYPHS.has(glyph.shape)) {
       this.context.strokeStyle = color;
       this.context.lineWidth = GLYPH_OUTLINE_WIDTH * this.pixelRatio;

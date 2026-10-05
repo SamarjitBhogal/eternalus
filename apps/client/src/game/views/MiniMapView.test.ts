@@ -1,9 +1,14 @@
-import { DEFAULT_MAP_CONFIG, type MapConfig, MapGenerator } from '@eternalus/core';
+import {
+  DEFAULT_MAP_CONFIG,
+  type MapDefinition,
+  type MapFeature,
+  MapGenerator,
+} from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Canvas2dRenderer } from '../engine/render/Canvas2dRenderer';
-import type { Renderer } from '../engine/render/Renderer';
-import type { DrawContext } from '../engine/render/Renderer.types';
+import { RecordingRenderer } from '../engine/render/RecordingRenderer';
+import type { DrawContext } from '../engine/render/Canvas2dRenderer.types';
 import { MapView } from './MapView';
 import { MiniMapView } from './MiniMapView';
 import { MINI_MAP_BORDER_COLOR, MINI_MAP_VIEW_BOX_COLOR } from './MiniMapView.constants';
@@ -15,24 +20,6 @@ const MAP = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 1);
 
 /** A pretend camera view: the part of the map the main screen is showing, in map units. */
 const VIEW = { x: 0, y: 200, width: 640, height: 360 };
-
-/** A fake renderer that records every call; views only ever see the `Renderer` port. */
-const createRecordingRenderer = () =>
-  ({
-    resize: vi.fn<Renderer['resize']>(),
-    fitWorld: vi.fn<Renderer['fitWorld']>(),
-    fitWorldInArea: vi.fn<Renderer['fitWorldInArea']>(),
-    showWorldArea: vi.fn<Renderer['showWorldArea']>(),
-    clear: vi.fn<Renderer['clear']>(),
-    fillScreenRect: vi.fn<Renderer['fillScreenRect']>(),
-    strokeScreenRect: vi.fn<Renderer['strokeScreenRect']>(),
-    fillPolygon: vi.fn<Renderer['fillPolygon']>(),
-    strokePath: vi.fn<Renderer['strokePath']>(),
-    drawWorldGlyph: vi.fn<Renderer['drawWorldGlyph']>(),
-    drawGlyph: vi.fn<Renderer['drawGlyph']>(),
-    toScreen: vi.fn<Renderer['toScreen']>((point) => point),
-    destroy: vi.fn<Renderer['destroy']>(),
-  }) satisfies Renderer;
 
 /** A mini map whose scene is just the map, like in the real game today. */
 const createMiniMap = (): MiniMapView => new MiniMapView(MAP, new MapView(MAP));
@@ -150,30 +137,50 @@ describe('MiniMapView', () => {
 
   it('shows new map features with no view code change (ADR 0009 minimap proof)', () => {
     // Draw the mini map of a generated map and keep only the marker calls.
-    const glyphCalls = (map: MapConfig) => {
-      const generated = new MapGenerator().generate({ map }, 1);
-      const renderer = createRecordingRenderer();
-      new MiniMapView(generated, new SceneView([new MapView(generated)])).draw(
-        renderer,
-        1000,
-        800,
-        VIEW,
-      );
-      return { generated, calls: renderer.drawGlyph.mock.calls };
+    const minimapGlyphs = (map: MapDefinition) => {
+      const renderer = new RecordingRenderer();
+      new MiniMapView(map, new SceneView([new MapView(map)])).draw(renderer, 1000, 800, VIEW);
+      return renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));
     };
-    const base = glyphCalls(DEFAULT_MAP_CONFIG);
-    // Only config changes: one more BuffTower per lane and two more lanes.
-    const more = glyphCalls({ ...DEFAULT_MAP_CONFIG, numLanes: 5, buffTowersPerLane: 2 });
-
-    // Every generated feature appears once on the mini map, with its own glyph and position.
-    expect(more.calls).toHaveLength(more.generated.features.length);
-    expect(more.calls.length).toBeGreaterThan(base.calls.length);
-    const buffTowers = more.calls.filter((call) =>
-      more.generated.features.some(
-        (feature) => feature.kind === 'buff-tower' && feature.position === call[1],
-      ),
+    const base = minimapGlyphs(MAP);
+    // Only config changes: two more lanes and one more BuffTower per lane.
+    const more = new MapGenerator().generate(
+      { map: { ...DEFAULT_MAP_CONFIG, numLanes: 5, buffTowersPerLane: 2 } },
+      1,
     );
-    // 5 lanes x 2 BuffTowers x 2 teams.
+    const moreGlyphs = minimapGlyphs(more);
+
+    // Every generated feature appears once on the mini map, at its own position.
+    expect(moreGlyphs).toHaveLength(more.features.length);
+    expect(moreGlyphs.length).toBeGreaterThan(base.length);
+    const buffTowers = more.features.filter((feature) => feature.kind === 'buff-tower');
+    // 5 lanes x 2 BuffTowers x 2 teams, each drawn where it stands.
     expect(buffTowers).toHaveLength(20);
+    for (const tower of buffTowers) {
+      expect(moreGlyphs).toContainEqual([tower.minimapGlyph, tower.position, expect.any(String)]);
+    }
+  });
+
+  it('draws a definition no client code has ever seen, with its own glyph', () => {
+    // A brand-new content definition: a "beacon" with a glyph unlike any other.
+    const beacon: MapFeature = {
+      id: 'west-beacon-0',
+      kind: 'obstacle',
+      team: 'neutral',
+      definitionId: 'beacon',
+      position: { x: 400, y: 450 },
+      minimapGlyph: { shape: 'diamond', size: 11, colourRole: 'terrain' },
+    };
+    const withBeacon: MapDefinition = { ...MAP, features: [...MAP.features, beacon] };
+    const renderer = new RecordingRenderer();
+    new MiniMapView(withBeacon, new SceneView([new MapView(withBeacon)])).draw(
+      renderer,
+      1000,
+      800,
+      VIEW,
+    );
+    const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));
+
+    expect(glyphs).toContainEqual([beacon.minimapGlyph, beacon.position, expect.any(String)]);
   });
 });
