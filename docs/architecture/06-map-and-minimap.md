@@ -4,13 +4,15 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-05
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
     'packages/core/src/map/**',
     'packages/core/src/content/maps/**',
-    'apps/client/src/game/views/MinimapView*',
+    'packages/core/src/teams/**',
+    'apps/client/src/game/views/MiniMapView*',
+    'apps/client/src/game/views/MapView*',
   ]
 related:
   [
@@ -28,8 +30,10 @@ related:
 grids that pathing and collision read (`WorldMap`), or when you wonder why the minimap needs no
 code for a new structure kind. It records decision D7 (ADR 0009): the map is **generated from
 config** by a pure `MapGenerator`; hand-traced coordinates are never the source of truth. All code
-below is a sketch; the repo has no map generator yet (the `feat/map` branch has a hand-traced
-`MAP_1`, reviewed in §9).
+below is the design sketch. The generator now exists in `packages/core/src/map/` (branch
+`feat/map-generator`, which replaced `feat/map`'s hand-traced `MAP_1`, reviewed in §9). Where the
+code differs from a sketch here, §10 says how and why. When the two disagree, §10 and the code
+are the truth.
 
 ## 1. The decision and the litmus test
 
@@ -356,6 +360,8 @@ filters entities by the player team's `Vision` snapshot before drawing.
 ## 9. Review notes for the `feat/map` branch
 
 Written for the PR review; the branch is a good first step and most of it survives.
+**Status (2026-10-05):** acted on by `feat/map-generator`; see
+[the map code audit](../reviews/2026-10-05-map-code-audit.md) for what changed.
 
 **Keep**
 
@@ -386,6 +392,25 @@ Written for the PR review; the branch is a good first step and most of it surviv
 - File names: `mapDefinition.ts` holds only types, so the repo convention makes it
   `MapDefinition.types.ts` under `map/` (`CONTRIBUTING.md` §3.1).
 
+## 10. Implementation notes (`feat/map-generator`, 2026-10-05)
+
+The generator follows §1–§8 with the differences below. Full reasoning is in
+[the map code audit](../reviews/2026-10-05-map-code-audit.md) §4 (row numbers match).
+
+| #   | Topic                      | As implemented                                                                                                                                                                                           | Status                      |
+| --- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| D1  | `MapFeature` (§4)          | Flat: `{ id, kind, team, definitionId, position, minimapGlyph, laneId?, footprint? }` (integration contract §2.2).                                                                                       | Contract                    |
+| D2  | Type location (§4, §9)     | `packages/core/src/content/maps/maps.types.ts` (map types, `MapFeatureDefinition`, `MapLayout`, `MapPreset`).                                                                                            | Contract                    |
+| D3  | Teams (§9)                 | `packages/core/src/teams/teams.types.ts`: `PlayableTeam`, `Team`.                                                                                                                                        | Contract                    |
+| D4  | Minimap (§8)               | `MinimapGlyph` is in `content/maps/maps.types.ts`. `WorldLayer.drawMinimap` (implemented by `MapView`) draws each feature's glyph. `ViewRegistry`/`EntityView.drawGlyph` arrive with session H.          | Interim                     |
+| D5  | Camp split (§2, §3 step 5) | `campsPerSide` is spread as evenly as possible over the `numLanes - 1` corridors, leftovers to the middle corridors first. It is not rejected when it does not divide.                                   | **Pending owner decision**  |
+| D6  | Presets (§5)               | A preset gives a lane profile (bends `(u, v)` scaled per lane), a rift centre line (one bridge gap is cut per lane) and west out-of-bounds polygons (mirrored), so `map-1` works for any odd `numLanes`. | **Pending owner decision**  |
+| D7  | Wall ring (§3 step 4)      | Gates are centred on each lane's exit angle. Wall segments fill the remaining arcs, split at `maxSegmentArcDegrees`. Turrets stand on every ring corner, so gate count = `numLanes` by construction.     | **Pending owner decision**  |
+| D8  | Constructor (§1)           | `new MapGenerator(deps?)` with `layout`, `definitions`, `presets`, `createRng`, `createLaneShape`, all defaulted.                                                                                        | Superset                    |
+| D9  | `MapConfig` (§2)           | Contract counts and world size only. Layout knobs are `MapLayout` content (`DEFAULT_MAP_LAYOUT`).                                                                                                        | Contract                    |
+| D10 | Kernel stand-ins           | `MapRandom` (mulberry32), a local `MapConfig`/`DEFAULT_MAP_CONFIG` and `validateMapConfig` stand in for session B's `SeededRandom`, `GameConfig` and `validateGameConfig`. `navCellSize` is content.     | Interim (`TODO(sholtzman)`) |
+| D11 | Renderer port (08 §4)      | `engine/render/Renderer.ts` (interface) and `Canvas2dRenderer.ts`. The method set is `feat/map-view`'s plus `drawWorldGlyph`/`drawGlyph`. Layers and sprites come with session H.                        | Interim                     |
+
 ## Related
 
 - [03 Game model](./03-game-model.md)
@@ -394,5 +419,6 @@ Written for the PR review; the branch is a good first step and most of it surviv
 - [10 Physics](./10-physics.md) (grid resolution, colliders, `SpatialHash`)
 - [11 Game AI](./11-game-ai.md) (flow-field following)
 - [17 Extension recipes](./17-extension-recipes.md)
+- [Map code audit (2026-10-05)](../reviews/2026-10-05-map-code-audit.md)
 - [Research: game architecture and performance](../research/game-architecture-and-performance-research.md)
 - [Reference: map](../reference/game-design/05-map.md)

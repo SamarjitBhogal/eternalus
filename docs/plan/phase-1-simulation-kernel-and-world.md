@@ -4,7 +4,7 @@ description: Sprint checklists for the deterministic simulation kernel, the firs
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-05
 tags: [plan, phase-1, simulation, map, engine, input]
 paths: ['packages/core/src/**', 'apps/client/src/game/**', 'apps/client/src/bridge/**']
 related:
@@ -132,18 +132,18 @@ places (class, content entry, registry line); coverage in `packages/core` ≥ 82
 Owner: _ (the `feat/map` author) with sholtzman. Weeks 1–2. Depends on `GameConfig`, `Vec2`,
 `SeededRandom` from 1.1 (day-1 API). Follows [06-map-and-minimap.md](../architecture/06-map-and-minimap.md).
 
-- [ ] **Reconcile `feat/map` with D7**: keep the `MapDefinition` types that survive (lanes as
+- [x] _(feat/map-generator, pending merge)_ **Reconcile `feat/map` with D7**: keep the `MapDefinition` types that survive (lanes as
       straight polylines per the game doc's MVP rule, structure slots, camp slots, capture zones,
       rift, bridges, bounds); turn hand-traced Map 1 coordinates into golden expectations with a
       tolerance, or drop them. Owner: _. Test: the generated three-lane map matches every kept
       coordinate within tolerance. Done when: `feat/map` is closed or merged into the phase
       branch with no hand-traced data as a runtime source.
-- [ ] **`MapGenerator` (pure: `GameConfig` + seed → `MapDefinition`) with `MapBuilder`
+- [x] _(feat/map-generator, pending merge)_ **`MapGenerator` (pure: `GameConfig` + seed → `MapDefinition`) with `MapBuilder`
       (Builder) and `LaneGeometry`** + mirror-symmetry helpers (light ↔ dark). Owner: _. Test:
       `numLanes` 3 → 5 yields 5 lanes and `5 × spawnTowersPerLane` SpawnerTower slots per team;
       every light slot has a dark mirror within epsilon; `campsPerSide` camps sit in the
       `numLanes - 1` gaps between lanes. Done when: no coordinate is hand-written in code.
-- [ ] **`WorldMap` runtime grid** (`Uint8Array` walkability/cost grid derived from the
+- [x] _(feat/map-generator, pending merge)_ **`WorldMap` runtime grid** (`Uint8Array` walkability/cost grid derived from the
       definition; footprint stamping/unstamping; bounds). Owner: _. Test: stamping a footprint
       blocks exactly its cells; unstamping restores them. Done when: the grid resolution is a
       config value, not a literal.

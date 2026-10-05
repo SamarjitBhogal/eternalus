@@ -12,20 +12,22 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 ## Folders
 
-**Today** core contains only `src/index.ts` (no exports yet) and a placeholder test. The folders
-below are the **planned** layout; create them as code is added.
+**Today** core contains `content/maps/`, `map/`, `teams/` and `utils/` (the generated map,
+Sprint 1). The other folders below are the **planned** layout; create them as code is added.
 
-| Folder          | Holds                                                              | May import                      |
-| --------------- | ------------------------------------------------------------------ | ------------------------------- |
-| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs  | `content/`, `utils/` (types)    |
-| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants            | `utils/` only                   |
-| `components/`   | Data owned by entities (`Transform`, `Movement`)                   | `utils/`, `content/`            |
-| `entities/`     | `Entity` root class and factories                                  | `components/`, `content/`, ...  |
-| `commands/`     | `Command` union and `applyCommand`                                 | `state/`, `entities/`, `utils/` |
-| `state/`        | `GameState`, `GameEvents`, `GameSnapshot`                          | lower layers                    |
-| `systems/`      | Per-tick logic implementing `System`. Never import another system. | everything except `ai/`         |
-| `ai/`           | Bot controllers. They only return `Command`s.                      | `state/`, `commands/`, `utils/` |
-| `Simulation.ts` | Composes everything; the only thing the client drives              | everything                      |
+| Folder          | Holds                                                               | May import                                |
+| --------------- | ------------------------------------------------------------------- | ----------------------------------------- |
+| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs   | `content/`, `utils/` and `teams/` (types) |
+| `teams/`        | `PlayableTeam` and `Team`, shared by every layer                    | nothing                                   |
+| `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers | `content/`, `teams/`, `utils/`            |
+| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants             | `utils/` only                             |
+| `components/`   | Data owned by entities (`Transform`, `Movement`)                    | `utils/`, `content/`                      |
+| `entities/`     | `Entity` root class and factories                                   | `components/`, `content/`, ...            |
+| `commands/`     | `Command` union and `applyCommand`                                  | `state/`, `entities/`, `utils/`           |
+| `state/`        | `GameState`, `GameEvents`, `GameSnapshot`                           | lower layers                              |
+| `systems/`      | Per-tick logic implementing `System`. Never import another system.  | everything except `ai/`                   |
+| `ai/`           | Bot controllers. They only return `Command`s.                       | `state/`, `commands/`, `utils/`           |
+| `Simulation.ts` | Composes everything; the only thing the client drives               | everything                                |
 
 These import rules are checked in review.
 
@@ -43,7 +45,7 @@ These import rules are checked in review.
 
 - Each test sits next to its source file: `src/systems/MovementSystem.ts` +
   `src/systems/MovementSystem.test.ts`. Test files are excluded from the published types.
-- `src/index.test.ts` is a placeholder that only checks the public API is empty. Replace it with
-  real tests once core has code.
+- `src/index.test.ts` pins the public API surface (the runtime exports of `src/index.ts`);
+  update it in the same change whenever an export is added or removed.
 - Coverage thresholds (80% lines/branches/functions/statements) live in `vitest.config.ts` and
   only go up.

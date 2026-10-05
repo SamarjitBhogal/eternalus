@@ -8,8 +8,8 @@ Package-specific rules. The root `AGENTS.md` still applies.
 - `ui/` (React) never imports `game/` or core. It reads data with store selectors from `bridge/`.
 - `game/` never imports `ui/`. It publishes to the event bus in `bridge/`.
 - `bridge/` imports neither `game/` nor `ui/`.
-- Only the renderer (planned `game/engine/Renderer.ts`) may call `getContext` or use
-  `CanvasRenderingContext2D`.
+- Only `game/engine/render/Canvas2dRenderer.ts` may call `getContext` or use
+  `CanvasRenderingContext2D`. Views type against the `Renderer` port (`render/Renderer.ts`).
 - `game/views/` uses `import type` only from core, and draws through `Renderer` methods.
 - `game/engine/` is generic: it never imports views, input, `Match`, or bridge.
 
