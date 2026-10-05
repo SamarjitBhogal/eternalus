@@ -39,6 +39,7 @@ const layoutRules = (layout: MapLayout): readonly (readonly [boolean, string])[]
       !(wallRing.exitArcDegrees > 0 && wallRing.exitArcDegrees < 180),
       'wallRing.exitArcDegrees must be between 0 and 180',
     ],
+    [!(wallRing.laneApron >= 0), 'wallRing.laneApron must be >= 0'],
     [
       obstacles.choices.some((choice) => !(choice.weight > 0)),
       'obstacles.choices weights must be > 0',

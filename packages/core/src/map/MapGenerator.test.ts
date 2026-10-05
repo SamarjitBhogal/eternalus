@@ -361,6 +361,7 @@ describe('MapGenerator', () => {
       },
     ],
     ['a two-sided footprint', { footprintSides: 2 }],
+    ['a negative lane apron', { wallRing: { ...DEFAULT_MAP_LAYOUT.wallRing, laneApron: -1 } }],
     [
       'lane bends out of order',
       {
@@ -445,7 +446,7 @@ describe('MapGenerator', () => {
     expect(tower?.minimapGlyph).not.toBe(MAP_FEATURE_DEFINITIONS['spawner-tower']?.minimapGlyph);
   });
 
-  it('scales a preset to any world size', () => {
+  it('scales a preset to a larger world (3200 x 1800)', () => {
     const map = generate({ worldWidth: 3200, worldHeight: 1800 });
     const westBounds = map.terrain.find((piece) => piece.id === 'west-bounds-0');
 

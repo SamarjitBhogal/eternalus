@@ -144,3 +144,8 @@ The example below is fenced so it is not read as a real entry.
   "Checked 93 Markdown files under docs/. Documentation check passed."
 - Next step: unchanged from the entry above (push both branches, open the PR with reviewer
   Aryan Walanj; the owner answers DEC-14–DEC-16).
+- Follow-up (same day): the reviewer's targeted N1 check confirmed the fix (all probed worlds
+  generate, lanes never touch a wall, turret or Stronghold, every lane connects). Its two nits
+  were fixed: `wallRing.laneApron` is now validated (the rule had not been applied; the new test
+  fails without it), and a test title no longer claims "any world size". `npm run check` → exit
+  0; core "Tests 97 passed (97)", client "Tests 36 passed (36)"; "Documentation check passed."
