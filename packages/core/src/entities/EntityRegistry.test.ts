@@ -3,13 +3,17 @@ import { describe, expect, it } from 'vitest';
 import { Entity } from './Entity';
 import { EntityRegistry } from './EntityRegistry';
 
+class Marker {
+  public readonly tag = 'marker';
+}
+
 class RegistryEntity extends Entity {
   public readonly kind = 'registry-entity';
 
   public readonly family = 'test-family';
 
   protected installComponents(): void {
-    this.addComponent('marker', true);
+    this.addComponent(new Marker());
   }
 }
 

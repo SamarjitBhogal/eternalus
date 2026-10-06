@@ -11,7 +11,7 @@ export abstract class Entity {
   /** The concrete class id; the `EntityRegistry` key. */
   public abstract readonly kind: string;
 
-  private readonly components = new Map<ComponentType, unknown>();
+  private readonly components = new Map<ComponentType, object>();
 
   /**
    * @param id - Unique id of this entity instance.
@@ -42,28 +42,29 @@ export abstract class Entity {
     this.components.clear();
   }
 
-  /** Stores `component` under `type`, replacing any previous one. */
-  public addComponent(type: ComponentType, component: unknown): void {
-    this.components.set(type, component);
+  /** Stores `component` under its own class, replacing any previous one of that class. */
+  public addComponent(component: object): void {
+    this.components.set(component.constructor as ComponentType, component);
   }
 
-  /** Returns the component for `type`; a missing component is a bug and throws. */
-  public getComponent(type: ComponentType): unknown {
-    const component = this.components.get(type);
+  /** Returns the component of class `type`; a missing component is a bug and throws. */
+  public getComponent<T extends object>(type: ComponentType<T>): T {
+    const component = this.findComponent(type);
 
     if (component === undefined) {
-      throw new Error(`Missing component for type "${String(type)}".`);
+      throw new Error(`Missing component "${type.name}".`);
     }
 
     return component;
   }
 
-  /** Returns the component for `type`, or `undefined` if absent. */
-  public findComponent(type: ComponentType): unknown {
-    return this.components.get(type);
+  /** Returns the component of class `type`, or `undefined` if absent. */
+  public findComponent<T extends object>(type: ComponentType<T>): T | undefined {
+    // Safe: addComponent keys every component by its own class.
+    return this.components.get(type) as T | undefined;
   }
 
-  /** Whether a component is stored under `type`. */
+  /** Whether a component of class `type` is attached. */
   public hasComponent(type: ComponentType): boolean {
     return this.components.has(type);
   }
