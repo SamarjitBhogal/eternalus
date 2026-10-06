@@ -23,12 +23,27 @@ describe('EntityFactory', () => {
     const factory = new EntityFactory(registry);
 
     const spawnContext = { tick: 42 };
-    const entity = factory.create('factory-entity', 'entity-1', 'factory-definition', spawnContext);
+    const entity = factory.create('factory-entity', 'factory-definition', spawnContext);
 
     expect(entity).toBeInstanceOf(FactoryEntity);
     expect(entity.id).toBe('entity-1');
     expect(entity.definitionId).toBe('factory-definition');
     expect((entity as FactoryEntity).spawnPayload).toEqual(spawnContext);
+  });
+
+  it('assigns unique sequential ids per factory, skipping failed lookups', () => {
+    const registry = new EntityRegistry();
+    registry.register('factory-entity', FactoryEntity);
+    const factory = new EntityFactory(registry);
+
+    const first = factory.create('factory-entity', 'definition', {});
+    expect(() => factory.create('unknown-kind', 'definition', {})).toThrow();
+    const second = factory.create('factory-entity', 'definition', {});
+
+    expect([first.id, second.id]).toEqual(['entity-1', 'entity-2']);
+    expect(new EntityFactory(registry).create('factory-entity', 'definition', {}).id).toBe(
+      'entity-1',
+    );
   });
 
   it('uses an empty registry by default', () => {
@@ -41,7 +56,7 @@ describe('EntityFactory', () => {
     const registry = new EntityRegistry();
     const factory = new EntityFactory(registry);
 
-    expect(() => factory.create('unknown-kind', 'entity-2', 'definition', {})).toThrow(
+    expect(() => factory.create('unknown-kind', 'definition', {})).toThrow(
       'Unknown entity kind "unknown-kind".',
     );
 
@@ -50,7 +65,7 @@ describe('EntityFactory', () => {
     registry.register('bad-kind', TamperedEntity);
     Object.setPrototypeOf(TamperedEntity.prototype, Object.prototype);
 
-    expect(() => factory.create('bad-kind', 'entity-3', 'definition', {})).toThrow(
+    expect(() => factory.create('bad-kind', 'definition', {})).toThrow(
       'Invalid entity registration for "bad-kind": constructor must create an Entity.',
     );
   });
