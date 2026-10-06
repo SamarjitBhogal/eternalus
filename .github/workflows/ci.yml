@@ -41,6 +41,9 @@ jobs:
       - name: Format (prettier)
         run: npm run format:check
 
+      - name: No JavaScript files (TypeScript only)
+        run: npm run check:no-js
+
       - name: Lint (eslint, zero warnings)
         run: npm run lint
 
