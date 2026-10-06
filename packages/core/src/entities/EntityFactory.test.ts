@@ -1,24 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { Entity } from './Entity.js';
-import { EntityFactory } from './EntityFactory.js';
-import { EntityRegistry } from './EntityRegistry.js';
+import { Entity } from './Entity';
+import { EntityFactory } from './EntityFactory';
+import { EntityRegistry } from './EntityRegistry';
 
 class FactoryEntity extends Entity {
-  constructor(id, definitionId) {
-    super(id, definitionId);
-    this.spawnPayload = undefined;
-  }
+  public spawnPayload: unknown = undefined;
 
-  get kind() {
-    return 'factory-entity';
-  }
+  public readonly kind = 'factory-entity';
 
-  get family() {
-    return 'test-family';
-  }
+  public readonly family = 'test-family';
 
-  installComponents(context) {
+  protected installComponents(context: unknown): void {
     this.spawnPayload = context;
   }
 }
@@ -35,7 +28,13 @@ describe('EntityFactory', () => {
     expect(entity).toBeInstanceOf(FactoryEntity);
     expect(entity.id).toBe('entity-1');
     expect(entity.definitionId).toBe('factory-definition');
-    expect(entity.spawnPayload).toEqual(spawnContext);
+    expect((entity as FactoryEntity).spawnPayload).toEqual(spawnContext);
+  });
+
+  it('uses an empty registry by default', () => {
+    const factory = new EntityFactory();
+
+    expect(factory.registry.has('factory-entity')).toBe(false);
   });
 
   it('fails with clear errors for unknown kinds and invalid registrations', () => {
@@ -45,7 +44,12 @@ describe('EntityFactory', () => {
     expect(() => factory.create('unknown-kind', 'entity-2', 'definition', {})).toThrow(
       'Unknown entity kind "unknown-kind".',
     );
-    registry._constructors.set('bad-kind', class BadEntity {});
+
+    // Passes registration, then its prototype chain is cut so instances are no longer Entities.
+    class TamperedEntity extends FactoryEntity {}
+    registry.register('bad-kind', TamperedEntity);
+    Object.setPrototypeOf(TamperedEntity.prototype, Object.prototype);
+
     expect(() => factory.create('bad-kind', 'entity-3', 'definition', {})).toThrow(
       'Invalid entity registration for "bad-kind": constructor must create an Entity.',
     );
