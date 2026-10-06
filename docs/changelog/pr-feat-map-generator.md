@@ -110,6 +110,20 @@ This branch is cut from `docs/inbox-decisions-2026-10-03` (the phase branch was 
 `main` before that docs PR merged), so the diff shows the docs commit until that PR lands and
 `main` is merged into the phase branch.
 
+## Pre-PR gate (`AGENTS.md`, ADR 0010)
+
+- **Critic:** an independent `architecture-reviewer`, given only the branch, the base commit and
+  the design docs as of the base, ran three passes. The final verdict: fits the architecture, no
+  blockers. Its four better-than-design items were signed off by the owner (DEC-14) and are now
+  in architecture 06.
+- **Ponytail:** `/ponytail-review` on the code diff found four candidates. Applied: obstacle
+  scatter takes one keep-out zone instead of a one-item list. Reverted after trying: inlining
+  `MapBuilder.ids()`, which made the file longer. Kept because the architecture or the brief
+  requires them: the injected RNG factory (architecture 06 §1, session B's `SeededRandom`) and the
+  deprecated `TeamId`/`FeatureOwner` aliases (prompt A step 1). Net −1 line.
+- **Re-check:** `npm run check` on the post-ponytail code exits 0. Core "Tests 97 passed (97)",
+  client "Tests 36 passed (36)", "Documentation check passed."
+
 ## How it was tested
 
 - New core tests: `MapGenerator.test.ts` covers determinism plus a golden FNV-1a hash, a seed

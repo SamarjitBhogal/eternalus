@@ -163,3 +163,6 @@ The example below is fenced so it is not read as a real entry.
   typecheck and knip clean; core "Tests 97 passed (97)", client "Tests 36 passed (36)"; "✓ built"; "Documentation check passed."
 - Next step: the human pushes `feat/map-generator`; run the new pre-PR gate's ponytail step on
   PR #8; merge `main` (now with PR #9) into the phase branch and resolve any conflict.
+- Follow-up (same day): pre-PR gate run on this branch. Ponytail review of the code diff: one cut
+  applied (single keep-out zone), one reverted as longer, two kept for the architecture and the
+  brief; `npm run check` → exit 0 (core 97/97, client 36/36). Gate results in the PR description.
