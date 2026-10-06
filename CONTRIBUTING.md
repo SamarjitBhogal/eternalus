@@ -133,3 +133,5 @@ systems/
 - [ ] Relevant docs updated (frontmatter `last-reviewed` bumped; `npm run docs:check` green).
 - [ ] `docs/plan/PROGRESS.md` entry appended.
 - [ ] PR template complete.
+- [ ] Pre-PR gate passed after all of the above (`AGENTS.md`, ADR 0010): critic, ponytail,
+      `npm run check` re-run on the post-ponytail code.

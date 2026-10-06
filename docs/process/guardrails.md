@@ -4,7 +4,7 @@ description: Every automated guardrail in the repository (TypeScript, ESLint, kn
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [process, guardrails, ci, tooling]
 paths:
   [
@@ -50,6 +50,9 @@ AI tool on macOS, Linux and Windows. Everything else is policy, checked in revie
 | Agent hooks (Claude Code)  | Per-file Prettier + ESLint after every edit; `check:quick` before an agent stops                                                                   | Claude Code hooks → `scripts/hooks/*.mjs`          | `.claude/settings.json`                                            | `[post-edit] ESLint failed for …` / `[stop-check] Checks failing`                           | Fix the finding; never bypass. Details: `docs/agents/tool-setup.md`   |
 | Lockfile in sync           | `npm ci` fails if `package-lock.json` doesn't match `package.json`                                                                                 | npm (CI install step)                              | `.github/workflows/ci.yml`                                         | `npm ci can only install packages when your package.json and package-lock.json are in sync` | Run `npm install` and commit both files; never hand-edit the lockfile |
 | Exact versions / engines   | `save-exact`, `engine-strict`, `packageManager`                                                                                                    | npm                                                | `.npmrc`, `package.json`                                           | `EBADENGINE Unsupported engine`                                                             | Switch to the Node version in `.nvmrc`                                |
+| Pre-PR gate                | After the Definition of done: independent critic, ponytail pass, `npm run check` re-run, then the PR                                               | Review (no hook); PR template checklist            | `AGENTS.md`, ADR 0010, `.github/pull_request_template.md`          | PR opened without the gate results in its description                                       | Run the gate; record critic verdict, ponytail cuts and the check      |
+| Ponytail level and scope   | Ponytail at `lite`; subagent injection limited to coding subagents                                                                                 | Claude Code plugin `ponytail@ponytail` + env       | `.claude/settings.json` (`env`), ADR 0010                          | Reviewer or doc agent output shaped by ponytail                                             | Check `PONYTAIL_SUBAGENT_MATCHER`; never widen it to reviewers        |
+| Doc longevity              | Design docs state intent, name value sources, keep interim state in one status note; records never rewritten                                       | Review (no tool); OG-12 guard on bulk edits        | `docs/requirements/03-organization-guidelines.md` OG-12, ADR 0011  | Copied tuning numbers, a target design replaced by interim code, a rewritten record         | Revert the edit; state the rule and point at the source               |
 
 ## 2. Coverage ratchet
 

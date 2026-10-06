@@ -29,6 +29,40 @@ Skills (`.claude/skills/`, mirrored in `.agents/skills/`): `new-entity`, `new-sy
 3. A task with any failing check is **not done**. Say so; do not hide or work around it.
 4. Append an entry to `docs/plan/PROGRESS.md` (date, phase/sprint, branch, what, checks, next).
 
+## Before opening a PR (pre-PR gate, ADR 0010)
+
+After everything in the Definition of done, never instead of it, and in this order:
+
+1. **Critic.** An independent reviewer (the `architecture-reviewer` subagent, not your session)
+   gets only the branch, its base commit and the governing docs **as they stood at the base
+   commit**, not your reasoning. Each difference between code and design is a **violation**
+   (rework, re-run the critic until no blockers), **acceptable** (forced by a binding contract or
+   an allowed interim stand-in; note it in the PR) or **better than the design** (tell the human
+   in chat and add it to `INBOX.md`; once signed off, update the design docs in the same PR).
+2. **Ponytail.** `/ponytail-review` on the branch diff, then apply the accepted cuts with
+   `/ponytail`. Architecture and ADRs outrank ponytail (see "Ponytail" below); tests are never
+   deleted or weakened.
+3. **Re-check.** `npm run check` again on the post-ponytail code, result reported verbatim. If
+   ponytail changed structure, not just lines, the critic re-checks that diff.
+4. **Open the PR** only when all of the above pass; its description records the critic verdict,
+   the ponytail cuts and the final check output.
+
+Tools without the ponytail plugin stop after the Definition of done and hand the branch to a
+Claude Code session for the gate.
+
+## Ponytail (ADR 0010)
+
+The `ponytail@ponytail` Claude Code plugin runs at level **lite** in this repo
+(`.claude/settings.json`). Its hooks inject the ruleset into the main session and into the coding
+subagents those settings list; the `architecture-reviewer` and `doc-gardener` subagents run
+without it. Its ladder (does this need to exist, reuse what is here, root-cause fixes, no new
+dependencies) applies. Where it conflicts with this file or an ADR, **the architecture wins**:
+ports with one implementation, strategies and registries, numbers in `content/`/`config/`,
+companion files, TSDoc and validation at boundaries stay. A ponytail cut that would change the
+design is raised as a better-than-design item, not applied. `ponytail:` comments mark deliberate
+shortcuts (name the ceiling and the upgrade path); `/ponytail-debt` and `/ponytail-audit` run at
+phase exit.
+
 ## Git: never commit or push unless asked
 
 - **Do not run `git commit`, `git push`, `git merge`, `git rebase` or `git tag` unless the
@@ -144,6 +178,11 @@ decision table is in `docs/architecture/02-code-structure.md`.
 - Every doc under `docs/` has YAML frontmatter (`title`, `description`, `audience`, `status`,
   `owner`, `last-reviewed`, `tags`, optional `paths`, `related`); `npm run docs:check` enforces it.
 - When behaviour, layout or workflow changes, update the governing doc and bump `last-reviewed`.
+- Docs must outlive the code they describe (OG-12, ADR 0011): design docs state intent,
+  invariants and extension points; they name where a value lives instead of copying it; interim
+  state goes in one "Implementation status" note, never into the design text; historical records
+  (accepted ADRs, dated changelogs, `PROGRESS.md` entries, dated reviews, prompts that have run)
+  are never rewritten.
 
 ## Commands
 
