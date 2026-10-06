@@ -15,14 +15,8 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 ## Folders
 
-**Today** the client contains:
-
-| File                      | Holds                                                                |
-| ------------------------- | -------------------------------------------------------------------- |
-| `src/main.tsx`            | Mounts React: `<Provider store={store}><GameCanvas /></Provider>`    |
-| `src/game/GameCanvas.tsx` | Renders the full-screen `<canvas>` (plus its `.module.css` and test) |
-| `src/bridge/store.ts`     | The single Redux store (no slices yet)                               |
-| `src/styles/global.css`   | Global CSS variables and reset                                       |
+**Today**: the source tree, not this file, shows what exists;
+`docs/architecture/06-map-and-minimap.md` §10 lists the map slice's interim pieces.
 
 **Planned** layout (create folders as code is added):
 

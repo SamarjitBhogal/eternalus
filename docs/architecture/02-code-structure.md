@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-05
+last-reviewed: 2026-10-06
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -20,8 +20,9 @@ related:
 **Purpose.** Read this when you are about to create a file and need to know which folder it goes
 in, what that folder may import, how the file must be named and split, and which registry line
 makes the new code reachable. The tree below is the **planned** layout (decided, D6 and ADR 0006);
-folders are created when their first class arrives. Today core holds only `src/index.ts` and the
-client only `main.tsx`, `game/GameCanvas.tsx`, `bridge/store.ts` and `styles/global.css`.
+folders are created when their first class arrives, so the source tree, not this list, shows what
+exists today; the map slice's interim pieces are in
+[06-map-and-minimap.md](06-map-and-minimap.md) §10.
 
 ## 1. Principles
 
@@ -164,7 +165,9 @@ called out in the PR. Planned surface: `Simulation` and `SimulationOptions`; the
 `createDefaultGameConfig`; `ContentCatalogue` and `loadDefaultContent()` (read-only definitions for
 the loadout screen); `Loadout`, `validateLoadout`, `autoBuildLoadout`; `PlayerController` and
 `InputIntent`; the `Logger` and `LogRecord` types; `DiagnosticEvent`; `Replay` and `runReplay`;
-the ID types. Systems, entities, components and strategies stay internal.
+`MapGenerator`, the `MapDefinition` types, `PlayableTeam` and `Team`
+([integration contract](../agents/prompts/2026-10-03-ultracode-sessions.md) §2.2); the ID types.
+Systems, entities, components and strategies stay internal.
 
 ## 7. Content, config, constants, settings
 

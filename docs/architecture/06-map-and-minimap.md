@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-05
+last-reviewed: 2026-10-06
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -29,10 +29,10 @@ related:
 (lanes, towers, walls, camps, capture points, the rift, obstacles), when you touch the runtime
 grids that pathing and collision read (`WorldMap`), or when you wonder why the minimap needs no
 code for a new structure kind. It records decision D7 (ADR 0009): the map is **generated from
-config** by a pure `MapGenerator`; hand-traced coordinates are never the source of truth. All code
-below is the design sketch. The generator now exists in `packages/core/src/map/` (branch
-`feat/map-generator`, which replaced `feat/map`'s hand-traced `MAP_1`, reviewed in §9). Where the
-code differs from a sketch here, §10 says how and why.
+config** by a pure `MapGenerator`; hand-traced coordinates are never the source of truth. Code
+below is the design sketch unless it is labelled a contract. The generator now exists in
+`packages/core/src/map/` (branch `feat/map-generator`, which replaced `feat/map`'s hand-traced
+`MAP_1`, reviewed in §9). Where the code is still interim, §10 says so.
 
 ## 1. The decision and the litmus test
 
@@ -66,36 +66,33 @@ strategy and the `Rng` factory arrive by constructor injection, so tests can swa
 ## 2. Map configuration (`GameConfig.map`)
 
 ```ts
-// packages/core/src/config/GameConfig.types.ts (sketch, map part only)
-export type SymmetryAxis = 'vertical' | 'horizontal'; // 'vertical' = mirror west <-> east
-
+// GameConfig.map (contract: integration contract §2.2; owned by config/)
 export type MapConfig = {
-  readonly numLanes: number; // TUNE: 3 (requirements doc MVP)
-  readonly spawnTowersPerLane: number; // TUNE: 1
-  readonly buffTowersPerLane: number; // TUNE: 1
-  readonly campsPerSide: number; // TUNE: 6; split evenly over the numLanes - 1 corridors
-  readonly cornerCamps: number; // TUNE: 4 (game doc "Outer (Corner) Camps"); MVP-if-time
+  readonly numLanes: number;
+  readonly spawnTowersPerLane: number;
+  readonly buffTowersPerLane: number;
+  readonly campsPerSide: number;
+  readonly cornerCamps: number; // MVP-if-time
   readonly worldWidth: number; // world units (10-physics.md §1)
   readonly worldHeight: number;
-  readonly symmetryAxis: SymmetryAxis; // light on the west, dark on the east (as in feat/map)
-  readonly strongholdInset: number; // team edge to stronghold centre
-  readonly wallRing: { readonly radius: number; readonly segments: number }; // gates = numLanes
-  readonly laneSpread: number; // lateral distance between adjacent lane corridors
-  readonly laneWidth: number;
-  readonly laneBands: {
-    readonly spawner: readonly [number, number]; // t band for front-line towers, TUNE [0.3, 0.45]
-    readonly buff: readonly [number, number]; // t band for second-line towers, TUNE [0.12, 0.25]
-  };
-  readonly rift: { readonly halfWidth: number; readonly bridgeWidth: number };
-  readonly obstacleDensity: number; // scattered obstacles per 10k square units, TUNE
+  readonly presetId?: string; // an authored look (§5)
 };
 ```
 
-`validateGameConfig()` rejects: `numLanes < 1`; an even `numLanes` (the Cathedral needs a middle
-lane; **Recommendation:** keep this rule for the MVP rather than invent an off-lane Cathedral);
-`campsPerSide % (numLanes - 1) !== 0`; a `laneSpread` that would put an outer lane outside the wall
-ring (every lane must exit through its own gate); any negative size. Errors name the field and the
-rule so a config typo fails at boot, not mid-match.
+Counts and the world size are config; how the map is laid out is content. `MapLayout` in
+`content/maps/` (the default is `DEFAULT_MAP_LAYOUT`) holds the Stronghold inset, the wall ring,
+the lane bands and lane profile, camp bands and weight classes, rift sizes and obstacle rules,
+each marked `TUNE` there. The map is always mirrored west ↔ east (Light west, Dark east), so there
+is no symmetry setting.
+
+`validateGameConfig()` rejects, naming the field and the rule: `numLanes < 1` or even (the
+Cathedral needs a middle lane; **Recommendation:** keep this rule for the MVP rather than invent an
+off-lane Cathedral); negative or fractional counts; an odd `cornerCamps` (corner camps are
+mirrored); camps with a single lane; a world that is not a positive, finite size. Generation also
+rejects layout content that breaks its own rules and any map whose gates would be closed by their
+own turrets (use fewer lanes or a larger ring). `campsPerSide` does not have to divide by the
+corridors: it is split as evenly as possible, leftovers to the middle corridors (DEC-14). A config
+typo fails at boot, not mid-match.
 
 ## 3. `MapGenerator` and the `MapBuilder`
 
@@ -112,52 +109,63 @@ flowchart LR
 
 1. **placeStrongholds**: light at `(strongholdInset, worldHeight / 2)`, dark at its mirror.
 2. **layLanes**: lane `i`'s light gate sits on the wall ring at an angle spread evenly over the arc
-   facing the enemy; the `LaneShape` strategy traces the lane from that gate to the mirrored dark
-   gate. The MVP `StraightLaneShape` returns a 4-point polyline (gate → fan-out point → mirrored
-   fan-out point → mirrored gate), so every segment is straight, as the game doc asks ("lanes are
-   kept straight to simplify collision detection"). `PolylineLaneShape` (authored paths) and a
-   Bézier shape are **post-MVP** implementations of the same interface (OCP: new shape, new class).
+   facing the enemy. The `LaneShape` strategy traces only the Light half, from the gate to where
+   the lane crosses the symmetry axis, and the generator mirrors it, so every lane is symmetric by
+   construction (DEC-14). The MVP shape, `ProfileLaneShape`, runs straight out of the gate for an
+   apron, so the lane clears the gate's turrets, then through the bends of a lane profile that
+   move it east. A one-bend profile is the MVP straight lane; a preset's bends give the hand-drawn
+   look for any lane count (§5). Every segment is straight, as the game doc asks ("lanes are kept
+   straight to simplify collision detection"). A Bézier shape is a **post-MVP** implementation of
+   the same interface (OCP: new shape, new class).
 3. **placeLaneStructures**: per lane and team, `spawnTowersPerLane` `spawner-tower` features at
    parametric positions `t` spread evenly inside `laneBands.spawner`, and `buffTowersPerLane`
    `buff-tower` features inside `laneBands.buff`. `t` is the arc-length fraction from the team's
    own gate (`t = 0`) to the enemy gate (`t = 1`): "front line" and "second line" are bands, not
    coordinates, so N per lane works for any N.
-4. **raiseWalls**: a ring polygon of `wallRing.segments` vertices around each stronghold; the
-   segment crossed by lane `i` becomes a `gate` (gate count = lane exits = `numLanes`); the other
-   segments are `wall-segment`s; a `turret` sits on every ring vertex.
-5. **placeCamps**: each of the `numLanes - 1` corridors between adjacent lanes receives
-   `campsPerSide / (numLanes - 1)` `camp` features per side along the corridor midline within the
-   team's half; `cornerCamps` `corner-camp` features go in the map corners (MVP-if-time).
+4. **raiseWalls**: one `gate` centred on each lane's exit; `wall-segment`s fill the rest of the
+   ring, split so that none spans more than a maximum arc; a `turret` sits on every ring corner.
+   Gate count equals `numLanes` and every lane leaves through its own gate by construction; a
+   gate that its own turrets would close is rejected (§2, DEC-14).
+5. **placeCamps**: `campsPerSide` is split over the `numLanes - 1` corridors between adjacent
+   lanes as evenly as possible, leftovers to the middle corridors (DEC-14). In a corridor, camps
+   spread across the team's half and step from one lane towards the other; a camp's weight class
+   follows its depth into the Unknown, lighter near a lane and heavier deeper (DISC-42).
+   `cornerCamps` `corner-camp` features go in the map corners (MVP-if-time).
 6. **placeCapturePoints**: one `capture-point` at `t = 0.5` of each lane; the middle lane's is
    emitted as `cathedral`.
-7. **carveRiftAndBounds**: the rift polygon runs along the symmetry axis with a `rift.bridgeWidth`
-   gap where each lane crosses it (bridge-segment obstacles fill the gaps when enabled);
-   out-of-bounds polygons close the corners.
+7. **carveRiftAndBounds**: the rift runs along the symmetry axis, centred on it (a preset may vary
+   its width, §5), with a `rift.bridgeWidth` gap where each lane crosses it (bridge-segment
+   obstacles fill the gaps when enabled); out-of-bounds polygons close the corners, west shapes
+   mirrored east.
 8. **scatterObstacles**: seeded scatter of tree/rock obstacles on walkable ground away from lanes
    and features; rejected samples still consume the `Rng` in a fixed order, so output is
    reproducible per seed.
 9. **build**: assign ids (`light-spawner-tower-lane-0-0`), validate (§7) and freeze.
 
-Symmetry is not a step: every team feature is placed for `light` and mirrored with
-`mirror(point, symmetryAxis, size)` from `map/symmetry.ts`. That is the DRY fix for the
-hand-traced branch, where each dark coordinate was typed by hand.
+Symmetry is not a step: every team feature and every lane is placed for `light` and mirrored with
+`mirrorPoint` from `map/symmetry.ts`, and the validator checks the result. That is the DRY fix for
+the hand-traced branch, where each dark coordinate was typed by hand.
 
 ```ts
-// packages/core/src/map/LaneShape.ts (sketch)
+// packages/core/src/map/LaneShape.types.ts (contract)
 export interface LaneShape {
-  trace(lightGate: Vec2, darkGate: Vec2, laneIndex: number, config: MapConfig): readonly Vec2[];
+  /** The Light half, gate to axis crossing, x never decreasing; the generator mirrors it. */
+  traceLightHalf(input: LaneTraceInput): readonly Vec2[];
 }
-// LaneGeometry wraps a traced path: length, pointAt(t), tangentAt(t), corridor polygon.
+// LaneTraceInput: the Stronghold, the axis, the lane's sideways offset, the ring, the exit angle
+// and the apron. LaneGeometry (sketch) wraps a traced path: length, pointAt(t), tangentAt(t),
+// corridor polygon.
 ```
 
 ## 4. `MapDefinition` types
 
 The `feat/map` branch already has `MapDefinition`, `MapFeature`, `MapTerrain`, `MapLane`, `Vec2`
-and `Polygon`. We keep those names and evolve `MapFeature` into a discriminated union so the kind
-carries what `EntityFactory` needs:
+and `Polygon`. We keep those names. `MapFeature` is the flat shape fixed by the integration
+contract (§2.2), and the content definition it names (`definitionId`) carries what `EntityFactory`
+needs:
 
 ```ts
-// packages/core/src/map/MapDefinition.types.ts (sketch)
+// packages/core/src/content/maps/maps.types.ts (contract)
 export type MapFeatureKind =
   | 'spawner-tower'
   | 'buff-tower'
@@ -171,25 +179,16 @@ export type MapFeatureKind =
   | 'corner-camp'
   | 'obstacle';
 
-type FeatureBase = {
+export type MapFeature = {
   readonly id: string;
-  readonly owner: TeamId; // 'light' | 'dark' | 'neutral' from the shared teams module (§9)
-  readonly definitionId: string; // content id, e.g. 'spawner-tower', 'oak-tree'
+  readonly kind: MapFeatureKind;
+  readonly team: Team; // 'light' | 'dark' | 'neutral', from teams/teams.types.ts
+  readonly definitionId: string; // content id, e.g. 'spawner-tower', 'tree'
   readonly position: Vec2;
+  readonly minimapGlyph: MinimapGlyph; // §8
+  readonly laneId?: string; // lane structures, gates, capture points, bridges
+  readonly footprint?: Polygon; // when the definition has a size
 };
-export type LaneFeature = FeatureBase & {
-  readonly kind: 'spawner-tower' | 'buff-tower' | 'gate' | 'capture-point' | 'cathedral';
-  readonly laneIndex: number;
-  readonly t: number; // arc-length fraction from the owner's gate
-};
-export type WallFeature = FeatureBase & {
-  readonly kind: 'wall-segment' | 'turret';
-  readonly footprint: Polygon; // the segment's collider; turrets use the definition footprint
-  readonly ringIndex: number;
-};
-// StrongholdFeature, CampFeature { corridorIndex } and ObstacleFeature { rotation } follow suit.
-export type MapFeature =
-  LaneFeature | WallFeature | StrongholdFeature | CampFeature | ObstacleFeature;
 
 export type MapTerrainKind = 'out-of-bounds' | 'rift'; // ground polygons that are not entities
 export type MapLane = {
@@ -230,23 +229,24 @@ definition and one registry line (the product owner's litmus test).
 ## 5. Authored presets (`content/maps/`)
 
 Designers will want the hand-drawn look of the team sketch. Presets are allowed, but they are
-**overrides of generator inputs, never coordinates of features**:
+**overrides of generator inputs, never coordinates of features** (DEC-14):
 
 ```ts
-// packages/core/src/content/maps/map1.ts (sketch of the evolved file)
-export const MAP_1_PRESET = {
-  id: 'map-1',
-  displayName: 'Map 1', // TUNE: placeholder name
-  config: { numLanes: 3, laneSpread: 300 }, // partial MapConfig merged over defaults
-  laneShape: 'polyline', // selects the LaneShape strategy
-  lanePaths: { 'lane-0': [/* light half only; the dark half is mirrored */] },
-} satisfies MapPreset;
+// packages/core/src/content/maps/maps.types.ts (contract)
+export type MapPreset = {
+  readonly id: string;
+  readonly displayName: string;
+  readonly westOutOfBounds: readonly Polygon[]; // fractions of the world; mirrored east
+  readonly riftProfile: readonly RiftWidthKnot[]; // width along the axis; the rift stays centred
+  readonly laneProfile?: readonly LaneKnot[]; // bends shared by every lane, scaled per lane
+};
 ```
 
-The generator still places towers, gates, camps and capture points by `t` along whatever path a
-preset supplies, and `validateMapDefinition` still enforces symmetry. A preset cannot break the
-`NUM_LANES` litmus test: `numLanes: 5` with a preset that lists three paths fails validation with
-a clear message instead of silently drawing the wrong map.
+A preset never lists a lane, so it cannot fix the lane count: the generator still places lanes,
+towers, gates, camps and capture points from `MapConfig`, and the bridge gaps follow wherever the
+lanes cross. Shapes are fractions of the world size, so a preset scales with the world; layout
+lengths stay absolute, so a world too small for them is rejected. Ground that would block a
+configured lane fails validation naming the lane and the terrain instead of drawing the wrong map.
 
 ## 6. `WorldMap` runtime
 
@@ -256,14 +256,14 @@ a clear message instead of silently drawing the wrong map.
 ```ts
 // packages/core/src/map/WorldMap.ts (sketch)
 export class WorldMap {
-  static fromDefinition(def: MapDefinition, cellSize: number): WorldMap;
+  static fromDefinition(def: MapDefinition, cellSize: number, isBlocking: BlockingRule): WorldMap;
   readonly cols: number;
   readonly rows: number;
   readonly walkable: Uint8Array; // 1 = walkable
   readonly cost: Uint8Array; // 1..254 movement cost, 255 = blocked (Emerson's cost stamps)
   stampFootprint(footprint: Polygon, cost: number): readonly number[]; // returns dirty cells
   clearFootprint(footprint: Polygon): readonly number[];
-  flowField(laneIndex: number, team: TeamId): FlowField; // cached, dirty-flagged
+  flowField(laneIndex: number, team: Team): FlowField; // cached, dirty-flagged
   rebuildDirty(cellBudget: number): void; // time-sliced; PathingSystem calls it each tick
 }
 export type FlowField = { readonly integration: Uint16Array; readonly direction: Int8Array };
@@ -277,20 +277,28 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
 - Destructible terrain events (`07-structures-obstacles-and-destructibles.md` §10) re-flag cells
   through `stampFootprint`/`clearFootprint`; affected fields are marked dirty and rebuilt over
   several ticks with a cell budget (Dirty Flag; time slicing as in Supreme Commander 2).
+- Footprint stamps are reference-counted over a separate terrain layer, so clearing one
+  footprint never re-opens a cell that another footprint or terrain still covers; every cell a
+  shape touches is blocked, so a wall thinner than a cell leaves no gap (DEC-14).
 - Typed arrays keep the hot data allocation-free and transferable (D8).
 
 ## 7. Generator tests (`packages/core/src/map/MapGenerator.test.ts`)
 
 - **Mirror invariant** (kept from `feat/map`, generalised): for every `light` feature there is
-  exactly one `dark` feature of the same kind and `laneIndex`/`t`/`ringIndex` at
-  `mirror(position)`; neutral features are self-mirrored or paired. Light is west, dark is east.
+  exactly one `dark` feature of the same kind, definition and lane at the mirrored position;
+  neutral features, terrain shapes and lanes are self-mirrored or paired. Light is west, dark is
+  east.
 - **Counts follow config**: `numLanes = 5, spawnTowersPerLane = 2` yields 5 lanes, 10 spawner
   towers per team, 5 gates per ring, 5 capture points (1 cathedral), `campsPerSide` camps per side.
 - **Determinism**: two `generate(config, seed)` calls are deep-equal; a different seed changes
   only obstacle scatter, never team features.
 - **Containment**: every point lies inside the world; no team feature overlaps the rift or
   out-of-bounds terrain; every lane crosses its ring exactly at its gate.
-- **Validation**: even `numLanes`, uneven camps or a preset with the wrong lane count throws.
+- **Connectivity**: on the `WorldMap` grid every lane joins the two Strongholds, and closing the
+  gates seals each ring (no gap between wall pieces).
+- **Validation**: every rule in §2 throws with its field named, as do ground that blocks a lane,
+  a lane that runs west or through a structure, and a lost mirror twin. A golden hash pins the
+  default map, so any change in output is a deliberate one.
 
 ## 8. Minimap
 
@@ -310,9 +318,9 @@ The minimap is **the same scene drawn smaller**, not a second scene graph
   the entity's `team`, not from the glyph.
 
 ```ts
-// packages/core/src/content/minimapGlyph.types.ts (sketch)
+// packages/core/src/content/maps/maps.types.ts (contract)
 export type MinimapGlyph = {
-  readonly shape: 'dot' | 'square' | 'diamond' | 'ring' | 'footprint';
+  readonly shape: 'dot' | 'square' | 'diamond' | 'ring';
   readonly size: number; // minimap pixels
   readonly colourRole: 'team' | 'neutral' | 'objective' | 'terrain' | 'obstacle';
 };
@@ -359,8 +367,10 @@ filters entities by the player team's `Vision` snapshot before drawing.
 ## 9. Review notes for the `feat/map` branch
 
 Written for the PR review; the branch is a good first step and most of it survives.
-**Status (2026-10-05):** acted on by `feat/map-generator`; see
-[the map code audit](../reviews/2026-10-05-map-code-audit.md) for what changed.
+**Status (2026-10-05):** acted on by `feat/map-generator` (PR #8); see
+[the map code audit](../reviews/2026-10-05-map-code-audit.md) for what changed. These notes are a
+record: where they differ from §1–§8 (for example per-lane `lanePaths` in presets), §1–§8 are
+the design (DEC-14).
 
 **Keep**
 
@@ -391,24 +401,24 @@ Written for the PR review; the branch is a good first step and most of it surviv
 - File names: `mapDefinition.ts` holds only types, so the repo convention makes it
   `MapDefinition.types.ts` under `map/` (`CONTRIBUTING.md` §3.1).
 
-## 10. Implementation notes (`feat/map-generator`, 2026-10-05)
+## 10. Implementation status
 
-The generator follows §1–§8 with the differences below. Full reasoning is in
-[the map code audit](../reviews/2026-10-05-map-code-audit.md) §4 and §6 (row numbers match).
+The design points that differ from the 2026-09-30 sketch were signed off by the owner on
+2026-10-06 (DEC-14, [decisions log](../reference/game-design/13-owner-decisions-log.md)) and are
+part of §2–§6; why each one differs is recorded in
+[the map code audit](../reviews/2026-10-05-map-code-audit.md) §4 and §6.
 
-| #   | Topic                      | As implemented                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Status                                          |
-| --- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| D1  | `MapFeature` (§4)          | Flat: `{ id, kind, team, definitionId, position, minimapGlyph, laneId?, footprint? }` (integration contract §2.2).                                                                                                                                                                                                                                                                                                                                                                                                                                     | Contract                                        |
-| D2  | Type location (§4, §9)     | `packages/core/src/content/maps/maps.types.ts` (map types, `MapFeatureDefinition`, `MapLayout`, `MapPreset`).                                                                                                                                                                                                                                                                                                                                                                                                                                          | Contract                                        |
-| D3  | Teams (§9)                 | `packages/core/src/teams/teams.types.ts`: `PlayableTeam`, `Team`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Contract                                        |
-| D4  | Minimap (§8)               | `MinimapGlyph` is in `content/maps/maps.types.ts`. `WorldLayer.drawMinimap` (implemented by `MapView`) draws each feature's glyph. `ViewRegistry`/`EntityView.drawGlyph` arrive with session H.                                                                                                                                                                                                                                                                                                                                                        | Interim                                         |
-| D5  | Camp split (§2, §3 step 5) | `campsPerSide` is spread as evenly as possible over the `numLanes - 1` corridors, leftovers to the middle corridors first. It is not rejected when it does not divide.                                                                                                                                                                                                                                                                                                                                                                                 | **Pending owner decision** (INBOX DEC-14)       |
-| D6  | Presets (§5)               | A preset gives a lane profile (bends `(u, v)` scaled per lane), a rift **width profile** centred on the symmetry axis (one bridge gap is cut per lane) and west out-of-bounds polygons (mirrored), all in fractions of the world size, so `map-1` works for any odd `numLanes`, scales with the world (layout lengths stay absolute) and the map stays mirror-symmetric (checked by `validateMapDefinition`).                                                                                                                                          | **Pending owner decision** (INBOX DEC-14)       |
-| D7  | Wall ring (§3 step 4)      | Exits are spread evenly over `wallRing.exitArcDegrees` facing the enemy (§3 step 2). A gate is centred on each exit, wall segments fill the remaining arcs (split at `maxSegmentArcDegrees`), turrets stand on every ring corner, so gate count = `numLanes` by construction. Lanes leave each gate straight for `laneApron` and then only bend eastwards; the validator rejects a lane that runs west or through a wall, turret or Stronghold. A gate narrower than `wallRing.minGateOpening` between its turrets is rejected (today `numLanes` ≤ 7). | **Pending owner decision** (INBOX DEC-14)       |
-| D8  | Constructor (§1)           | `new MapGenerator(deps?)` with `layout`, `definitions`, `presets`, `createRng`, `createLaneShape`, all defaulted.                                                                                                                                                                                                                                                                                                                                                                                                                                      | Superset                                        |
-| D9  | `MapConfig` (§2)           | Contract counts and world size only. Layout knobs are `MapLayout` content (`DEFAULT_MAP_LAYOUT`).                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Contract                                        |
-| D10 | Kernel stand-ins           | `MapRandom` (mulberry32), a local `MapConfig`/`DEFAULT_MAP_CONFIG` and `validateMapConfig` stand in for session B's `SeededRandom`, `GameConfig` and `validateGameConfig`. `navCellSize` (5 units) is content. `Math.cos`/`Math.sin` live only in `utils/geometry.ts` `polarPoint` until `deterministicMath.ts` exists; a golden hash test catches drift.                                                                                                                                                                                              | Interim (`TODO(sholtzman)`, INBOX request to B) |
-| D11 | Renderer port (08 §4)      | `engine/render/Renderer.ts` (interface) and `Canvas2dRenderer.ts`. The method set is `feat/map-view`'s plus `drawWorldGlyph`/`drawGlyph`. Layers and sprites come with session H.                                                                                                                                                                                                                                                                                                                                                                      | Interim                                         |
+Still interim:
+
+| Topic                     | Today                                                                                          | Until                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Minimap (§8)              | `MiniMapView` draws each layer's `drawMinimap`; `MapView` draws every feature's `minimapGlyph` | Session H's `ViewRegistry`, `EntityView` and the snapshot-driven `MinimapView` |
+| Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                 | Session B's `SeededRandom`, `GameConfig` and `validateGameConfig`              |
+| Trigonometry (§3)         | `Math.cos`/`Math.sin` only in `utils/geometry.ts`; the golden-hash test catches drift          | `utils/deterministicMath.ts` (session B)                                       |
+| Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                              | A `GameConfig` field                                                           |
+| `WorldMap` (§6)           | Walkability grid with stamping                                                                 | Cost grid and flow fields (Phase 3)                                            |
+| Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                              | Session H's layers and sprites                                                 |
+| Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                  | The owner's answer to DEC-15                                                   |
 
 ## Related
 

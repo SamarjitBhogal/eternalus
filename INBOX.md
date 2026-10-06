@@ -35,23 +35,6 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
 
-- [ ] **DEC-14 — map generator differs from architecture 06 (feat/map-generator).** Sign off
-      or reject each (details: `docs/reviews/2026-10-05-map-code-audit.md` §4 and §6,
-      architecture 06 §10). An independent review judged (a), (c) and (d) **better than the
-      written design** and (b) **acceptable** (what prompt A asked for):
-      (a) **camps split unevenly** when `campsPerSide` does not divide by `numLanes - 1`
-      (leftovers to the middle corridors) instead of rejecting the config, so the default 6 camps
-      survive `numLanes: 5`; (b) **presets give a lane profile and a symmetric rift width
-      profile** in fractions of the world, not per-lane traced paths, so `map-1` works for any
-      odd lane count and scales with the world (tested 1600×900 to 3200×1800, 1600×1800 and
-      2400×900; layout lengths are absolute, so very small worlds such as 800×450 are rejected);
-      (c) **gates are centred on each lane exit** (exits spread evenly over a 140° arc, as
-      arch 06 §3 says) with walls filling the rest, so gate count always equals lane count. The
-      written fixed-segment ring only manages that if `segments` and its rotation are retuned for
-      each lane count (with 8 segments, 7 evenly spread exits must share segments). A minimum gate
-      opening rejects configs whose turrets would seal a gate (today `numLanes` ≤ 7);
-      (d) lanes are traced for Light only and mirrored, and `WorldMap` counts overlapping
-      footprint stamps. Recommendation: accept all four and fold them into arch 06.
 - [ ] **DEC-15 — camp weights by depth (DISC-42) in practice.** The default map yields 4 light +
       2 heavy camps per side and no medium ones; with one camp per corridor (`numLanes` ≥ 7) every
       camp is heavy. Proposal: keep depth-based weights but define the classes by position in the
@@ -80,6 +63,9 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Done
 
+- 2026-10-06 — **DEC-14** (map generator refinements a–d) signed off by the owner; recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and folded into
+  `docs/architecture/06-map-and-minimap.md`. Branch `feat/map-generator` (PR #8).
 - 2026-10-03 — **DEC-01…DEC-10 and the discrepancy answers** recorded in
   `docs/reference/game-design/13-owner-decisions-log.md`; plan re-cut to four two-week sprints
   ending 2026-11-27 (`docs/plan/README.md` §0); ADR 0004/0006/0009 statuses updated; 32

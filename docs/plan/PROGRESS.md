@@ -149,3 +149,17 @@ The example below is fenced so it is not read as a real entry.
   were fixed: `wallRing.laneApron` is now validated (the rule had not been applied; the new test
   fails without it), and a test title no longer claims "any world size". `npm run check` → exit
   0; core "Tests 97 passed (97)", client "Tests 36 passed (36)"; "Documentation check passed."
+
+### 2026-10-06 — Phase 1 / sprint 1.3 (session A, docs) — feat/map-generator — sholtzman + Claude Code
+
+- What was done: the owner signed off DEC-14 (the four map-generator refinements the critic
+  judged better than architecture 06); recorded in the decisions log and INBOX. A first
+  automated doc sweep corroded the docs (target designs replaced by interim code, tuning values
+  copied into architecture 06) and was reverted before commit. Redone surgically: architecture 06
+  §2–§6 now carry DEC-14 as design text and §10 lists only interim items; 32 other living docs got
+  minimal corrections (contract type names, superseded design, stale "no code yet" claims), each
+  checked by an independent reviewer against OG-12 (`chore/pre-pr-gate`). No record was edited.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 97 passed (97)", client "Tests 36 passed (36)"; "✓ built"; "Documentation check passed."
+- Next step: the human pushes `feat/map-generator`; run the new pre-PR gate's ponytail step on
+  PR #8; merge `main` (now with PR #9) into the phase branch and resolve any conflict.

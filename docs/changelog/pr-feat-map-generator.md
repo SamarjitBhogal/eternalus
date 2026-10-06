@@ -4,7 +4,7 @@ description: The pull-request description for feat/map-generator into phase/1-si
 audience: [humans]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-05
+last-reviewed: 2026-10-06
 tags: [changelog, pull-request, map, minimap, renderer]
 related:
   [
@@ -56,7 +56,8 @@ and every deliberate difference from architecture 06.
 - Lane ids are `lane-0`… (north to south); feature ids look like `light-spawner-tower-lane-0-0`,
   `dark-gate-lane-2` or `west-camp-corridor-1-0`.
 - Layout: the Strongholds sit at x = 130 / 1470, not 55 / 1545 (the wall ring must fit inside
-  the world). The traced north lane bends, the corner objectives (320, 80), the Cathedral (800, 450)
+  the world). The traced north lane bends (all but the first, which now falls inside the gate
+  apron, DEC-14 c), the corner objectives (320, 80), the Cathedral (800, 450)
   and the lane crossings (y = 100 / 450 / 800) are kept, and a test checks them. The traced
   middle-lane wobble is gone (the middle lane is straight).
 - Map-1's look is now `content/maps/presets/map1Preset.ts`: out-of-bounds corners, a rift
@@ -66,7 +67,7 @@ and every deliberate difference from architecture 06.
   the whole map (features, terrain, lanes) is mirror-symmetric and the validator checks it.
 - `numLanes` must be odd and ≥ 1 (the Cathedral needs a middle lane), and today ≤ 7: gates are
   spread evenly over a 140° arc and a gate narrower than `wallRing.minGateOpening` between its
-  turrets is rejected. `cornerCamps` must be even. The seed must be a whole number. Invalid
+  turrets is rejected. `cornerCamps` must be even. The seed must be an unsigned 32-bit integer. Invalid
   configs or layout content throw `MapGenerationError` naming the field.
 - New `WorldMap.fromDefinition(map, cellSize, isBlocking)` (core-internal): a walkability grid
   that blocks every cell a shape touches, with reference-counted `stampFootprint`/
@@ -81,10 +82,12 @@ and every deliberate difference from architecture 06.
 
 ## Decisions for the owner
 
-INBOX DEC-14 asks the owner to sign off the four places where an independent review found
-the code structured better than architecture 06: the uneven camp split (D5), gates centred on
-evenly spread exits with a minimum opening (D7), Light-only lane tracing mirrored to Dark, and
-reference-counted footprint stamps. The preset model (D6) is in the same item. DEC-15 covers
+The owner signed off INBOX DEC-14 on 2026-10-06
+(`docs/reference/game-design/13-owner-decisions-log.md`), so the four places where an
+independent review found the code structured better than architecture 06 are now the design:
+the uneven camp split (D5), gates centred on evenly spread exits with a minimum opening (D7),
+Light-only lane tracing mirrored to Dark, and reference-counted footprint stamps. The preset
+model (D6) was in the same item. Still open: DEC-15 covers
 camp weights; the default map has no medium camps. DEC-16 is the lint/worktree tooling fix
 (not changed here).
 
@@ -111,14 +114,16 @@ This branch is cut from `docs/inbox-decisions-2026-10-03` (the phase branch was 
 
 - New core tests: `MapGenerator.test.ts` covers determinism plus a golden FNV-1a hash, a seed
   changing only obstacles, frozen output that never freezes content, full mirror symmetry
-  (features, terrain, lanes, footprints) for 1–7 lanes on both grounds, unique ids and
+  (features, terrain, lanes) for 1–7 lanes and mirrored footprints on the default config, on
+  both grounds, unique ids and
   containment, numLanes 3 → 5 (5 lanes, 5 capture points, 5 + 5 towers and 5 gates per team,
   camps over 4 corridors), N towers per lane with SpawnerTowers in front, gates at both lane
   ends, turrets per ring corner, capture points on the centre line, DISC-42 weight ordering, rift
   gaps and bridges, lanes walked in 1-unit steps outside terrain, obstacles off the lanes, the
-  map-1 golden coordinates, a 3200 × 1800 world, sealed-gate rejection, and every config,
-  seed and layout validation error. `WorldMap.test.ts`: flood fill proves every lane connects
-  both Strongholds (1/3/5/7 lanes, both grounds), closed gates seal the ring, and a wall thinner
+  map-1 golden coordinates, a 3200 × 1800 world, sealed-gate rejection, every config and
+  seed validation error, and a sample of layout validation errors. `WorldMap.test.ts`: flood
+  fill proves every lane connects both Strongholds (1/3/5/7 lanes on `map-1`, 3/5/7 on the
+  generated ground), closed gates seal the ring, and a wall thinner
   than a cell blocks crossing (this test fails on the old raster). Plus `MapRandom`,
   `LaneGeometry`, `campPlacement`, `wallRing`, `geometry` and the public API.
 - Client tests: `Canvas2dRenderer` glyph tracing, DPR-scaled minimap glyphs and outlined rings;
