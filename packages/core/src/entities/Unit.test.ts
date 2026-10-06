@@ -4,11 +4,15 @@ import { Legend } from './Legend';
 import { Mob } from './Mob';
 import { Unit } from './Unit';
 
+class Marker {
+  public readonly tag = 'marker';
+}
+
 class ConcreteUnit extends Unit {
   public readonly kind = 'concrete-unit';
 
   protected installComponents(): void {
-    this.addComponent('marker', true);
+    this.addComponent(new Marker());
   }
 }
 
@@ -16,7 +20,7 @@ class ConcreteLegend extends Legend {
   public readonly kind = 'concrete-legend';
 
   protected installComponents(): void {
-    this.addComponent('marker', true);
+    this.addComponent(new Marker());
   }
 }
 
@@ -24,7 +28,7 @@ class ConcreteMob extends Mob {
   public readonly kind = 'concrete-mob';
 
   protected installComponents(): void {
-    this.addComponent('marker', true);
+    this.addComponent(new Marker());
   }
 }
 
