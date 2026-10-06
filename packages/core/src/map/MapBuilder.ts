@@ -197,12 +197,10 @@ export class MapBuilder {
         blocked: this.terrain.map((piece) => piece.shape),
         lanes: this.lanes.map((lane) => lane.path),
         occupied: this.features.map((feature) => feature.position),
-        keepOut: [
-          {
-            centre: this.stronghold,
-            radius: layout.wallRing.radius + layout.obstacles.featureClearance,
-          },
-        ],
+        keepOut: {
+          centre: this.stronghold,
+          radius: layout.wallRing.radius + layout.obstacles.featureClearance,
+        },
       },
       layout.obstacles,
     );

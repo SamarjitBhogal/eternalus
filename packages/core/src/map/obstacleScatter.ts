@@ -11,7 +11,8 @@ export type ScatterArea = {
   readonly blocked: readonly Polygon[];
   readonly lanes: readonly (readonly Vec2[])[];
   readonly occupied: readonly Vec2[];
-  readonly keepOut: readonly { readonly centre: Vec2; readonly radius: number }[];
+  /** A circle obstacles stay out of (the Stronghold and its wall ring). */
+  readonly keepOut: { readonly centre: Vec2; readonly radius: number };
 };
 
 const pickChoice = (roll: number, choices: readonly ObstacleChoice[]): string | undefined => {
@@ -46,7 +47,7 @@ export const scatterObstacles = (
       [...area.occupied, ...placed.map((slot) => slot.position)].every(
         (other) => distance(position, other) >= rules.featureClearance,
       ) &&
-      area.keepOut.every((zone) => distance(position, zone.centre) >= zone.radius);
+      distance(position, area.keepOut.centre) >= area.keepOut.radius;
     if (isClear && definitionId !== undefined) {
       placed.push({ definitionId, position });
     }
