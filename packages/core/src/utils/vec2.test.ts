@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
 import { SeededRandom } from './SeededRandom';
-import { add, dot, length, normalize, scale, sub } from './vec2';
+import {
+  add,
+  addInto,
+  dot,
+  length,
+  normalize,
+  normalizeInto,
+  scale,
+  scaleInto,
+  sub,
+  subInto,
+} from './vec2';
+import type { MutableVec2 } from './vec2.types';
 
 describe('vec2', () => {
   it('computes small known cases', () => {
@@ -32,5 +44,37 @@ describe('vec2', () => {
       expect(dot(a, b)).toBe(dot(b, a));
       expect(length(normalize(a))).toBeCloseTo(1, 12);
     }
+  });
+
+  describe('in-place forms', () => {
+    it('write into out, return out and agree with the immutable forms', () => {
+      const rng = new SeededRandom(2);
+      const coordinate = (): number => rng.nextFloat() * 2000 - 1000;
+      const out: MutableVec2 = { x: 0, y: 0 };
+      for (let index = 0; index < 1000; index += 1) {
+        const a = { x: coordinate(), y: coordinate() };
+        const b = { x: coordinate(), y: coordinate() };
+        const factor = coordinate() / 100;
+        expect(addInto(out, a, b)).toBe(out);
+        expect(out).toEqual(add(a, b));
+        expect(subInto(out, a, b)).toEqual(sub(a, b));
+        expect(scaleInto(out, a, factor)).toEqual(scale(a, factor));
+        expect(normalizeInto(out, a)).toEqual(normalize(a));
+      }
+    });
+
+    it('allow out to be one of the inputs', () => {
+      const v: MutableVec2 = { x: 3, y: 4 };
+      addInto(v, v, { x: 1, y: 1 });
+      expect(v).toEqual({ x: 4, y: 5 });
+      subInto(v, { x: 10, y: 10 }, v);
+      expect(v).toEqual({ x: 6, y: 5 });
+      scaleInto(v, v, 2);
+      expect(v).toEqual({ x: 12, y: 10 });
+      normalizeInto(v, { x: 0, y: -2 });
+      expect(v).toEqual({ x: 0, y: -1 });
+      normalizeInto(v, { x: 0, y: 0 });
+      expect(v).toEqual({ x: 0, y: 0 });
+    });
   });
 });
