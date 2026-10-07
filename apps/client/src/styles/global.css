@@ -22,7 +22,8 @@
   /* Text on --theme-primary (≥ 4.5:1 for every team: neutral 8.6, light 8.7, dark 5.6). */
   --theme-on-primary: var(--team-neutral-on-primary);
 
-  /* Surfaces and text (text on surfaces ≥ 4.5:1). */
+  /* Surfaces and text: body text on surfaces ≥ 4.5:1. --theme-primary is text only in large
+     headings (Panel and menu titles), where 3:1 applies (Dark primary on surface-0: 3.35:1). */
   --surface-0: #0e1116;
   --surface-1: #161b22;
   --surface-2: #222a35;

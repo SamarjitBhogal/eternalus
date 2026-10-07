@@ -90,6 +90,13 @@ describe('SessionController transition table', () => {
     });
   }
 
+  it('cannot repeat a match setup that was never made', () => {
+    const { context } = withFakeStates();
+    expect(() => {
+      context.repeatMatchSetup();
+    }).toThrow('No match setup to repeat');
+  });
+
   it('refuses to transition after destroy', () => {
     const { context, controller } = withFakeStates();
     controller.destroy();

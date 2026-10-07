@@ -27,6 +27,8 @@ function setUp(
   const themeRoot: Pick<HTMLElement, 'dataset'> = { dataset: {} };
   const phases: SessionPhase[] = [];
   const stopRecording = bus.on('session-phase', ({ phase }) => phases.push(phase));
+  // A fresh seed per setup, so a rematch that rebuilt the setup would show a different seed.
+  let seed = 41;
   const controller = new SessionController({
     bus,
     clock,
@@ -34,7 +36,7 @@ function setUp(
     catalogue: placeholderCatalogue,
     matchConfig: PLACEHOLDER_MATCH_CONFIG,
     playerName: 'Tester',
-    seedSource: () => 42,
+    seedSource: () => ++seed,
     createRng: (seed) => new LcgRng(seed),
     themeRoot,
   });
