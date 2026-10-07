@@ -34,16 +34,6 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 - [ ] **DEC-13 (was DISC-34) — match length.** Left blank in the last batch. Proposal:
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
-- [ ] **Session B (2026-10-06) — two better-than-design items in the simulation kernel.**
-      Signed off before the PR opens: the design docs (03 §5, 15 §4) are updated in that PR, with
-      Sam's OK for the doc edit; declined: session B reworks the code. (1) **Snapshot entity
-      shape:** `EntitySnapshot` groups its fields as `transform` (`x`, `y`, `radius`), `health`
-      (`current`, `max`) and `team`, each `null` when
-      the entity lacks that component, instead of architecture 03 §5's flat `x`, `y`, `radius`,
-      `health`, `maxHealth`, `team`; an entity is never given made-up values. Session H codes
-      against it. **Recommended:** adopt. (2) **`makeLogRecord`** takes its optional `attributes`,
-      `tick` and `eventName` as one options object instead of 15 §4's positional arguments (four
-      parameters at most, CONTRIBUTING §4). **Recommended:** adopt. Branch `feat/sim-kernel`.
 
 ## Requests for the agent
 
@@ -55,17 +45,27 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `validateGameConfig` (same rules); `MapRandom` / `map/Rng.types.ts` → `utils/Rng.types.ts`
       and `SeededRandom` (`next()` is `nextFloat()`); `polarPoint` → `utils/deterministicMath.ts`;
       `DEFAULT_MAP_LAYOUT.navCellSize` → `config.map.navCellSize`; delete the local `MapConfig` in
-      the same merge (both branches export `MapConfig` from `index.ts`).
-- [ ] **Sam (from session B, 2026-10-06):** the sprint 1.1 determinism lint (02 §11:
-      `no-restricted-properties` for `Math.sin/cos/atan2/exp/pow` in core with an override for
-      `utils/deterministicMath.ts`) is not added: `eslint.config.js` is outside B's files and A's
-      `utils/geometry.ts` still calls `Math.cos`/`Math.sin` until its swap. Add it after A's
-      merge (it tightens a guardrail).
-- [ ] **Docs owner (from session B, 2026-10-06):** fold the simulation-kernel deltas listed in
-      `docs/changelog/pr-feat-sim-kernel.md` ("Differences from the design") into 02 §2/§9,
-      03 §2–§9 and 15 §4/§7, as design text once the decisions above are signed off and as an
-      "Implementation status" note for the interim ones; document the replay fixture format in
-      15 §7 (closes the sprint 1.1 replay checkbox).
+      the same merge (both branches export `MapConfig` from `index.ts`). (3) The determinism lint
+      (ADR 0012) lands with PR #13: `utils/geometry.ts` must call `utils/deterministicMath.ts`
+      instead of `Math.cos`/`Math.sin` in the merge, or lint fails.
+- [ ] **Session C (from session B, 2026-10-07; owner-approved, DEC-18):** the simulation kernel
+      (PR #13) leaves these to session C. The B-owned lines named here are C's to change, an
+      exception to the ownership table (`docs/agents/prompts/2026-10-03-ultracode-sessions.md`
+      §2.6). Read 03 §12 and 15 §13 ("Implementation status")
+      first. (1) `Simulation.ts`: pass `createDefaultEntityRegistry()` to its `EntityFactory`
+      (marked `TODO`) so `dev-spawn` finds kinds. (2) `commands/defaultCommandHandlers.ts` and
+      `commands/handlers/`: replace the `UnsupportedCommandHandler` lines for `move` and `stop`
+      with real handlers when `MovementSystem` lands (recipe R16); the other unsupported commands
+      wait for their systems. (3) `commands/handlers/DevSpawnHandler.ts` and
+      `DevRemoveEntityHandler.ts`: hand spawns and removals to `SpawnSystem` / `DeathSystem`
+      (marked `TODO`; 03 §4 makes `DeathSystem` the only `entity-removed` emitter).
+      (4) `state/StateHasher.ts`: add every new component's simulation fields to `fieldsOf`
+      (03 §9). (5) `entities/EntityFactory.ts`: take ids from `utils/IdGenerator` (03 §2).
+      (6) With the `InvariantRunner`: add `GameState.recentCommands` (recorded by
+      `Simulation.step()`), `LogRecord.context` in `diagnostics/Logger.types.ts`, and report
+      violations with the `invariant-violated` `DiagnosticEvent` already declared (15 §4–§5).
+      (7) `state/GameEvents.types.ts`: import `ShieldBar` from `components/Health.types.ts` once
+      `Health` has shields.
 
 ## Feedback
 
@@ -73,6 +73,12 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Done
 
+- 2026-10-07 — **Session B's simulation kernel items** signed off and done: the snapshot shape
+  (DEC-15) and the `makeLogRecord` options object (DEC-16) folded into 03 §5 and 15 §4; the
+  determinism lint (DEC-17, ADR 0012) added; the kernel's design differences (DEC-18) folded into
+  02, 03, 15 and 17 R16, with "Implementation status" sections in 03 and 15; the replay fixture
+  format written into 15 §7. Recorded in `docs/reference/game-design/13-owner-decisions-log.md`.
+  Branch `feat/sim-kernel` (PR #13).
 - 2026-10-03 — **DEC-01…DEC-10 and the discrepancy answers** recorded in
   `docs/reference/game-design/13-owner-decisions-log.md`; plan re-cut to four two-week sprints
   ending 2026-11-27 (`docs/plan/README.md` §0); ADR 0004/0006/0009 statuses updated; 32
