@@ -1,0 +1,8 @@
+.list {
+  margin: 0 0 var(--space-5);
+  padding-left: var(--space-5);
+}
+
+.muted {
+  color: var(--text-muted);
+}
