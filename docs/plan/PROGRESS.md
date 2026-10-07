@@ -145,3 +145,17 @@ The example below is fenced so it is not read as a real entry.
   (37)" at 100%, client "Tests 27 passed (27)", "✓ built", "Documentation check passed."
 - Next step: the human pushes the phase branch; start the Sprint 1 sessions per
   `docs/agents/prompts/2026-10-03-ultracode-sessions.md`.
+
+### 2026-10-06 — Phase 1 / sprint 1.1 — feat/sim-kernel — sholtzman + Claude Code
+
+- What was done: first deliverable of session B: `packages/core/src/config/` with
+  `GameConfig.types.ts` (integration contract §2.2, plus `map.navCellSize` as the nav grid's
+  config home requested by session A), `createDefaultGameConfig(overrides)` (deep merge, frozen)
+  and `validateGameConfig(unknown)` throwing `ConfigValidationError` with the field path. The map
+  rules are session A's `validateMapConfig` rules, so A can delete its stand-ins. **Sam: this
+  commit is ready to merge into the phase branch early to unblock session A.**
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 78 passed (78)" at 100% coverage; client "Tests 27 passed (27)"; "✓ built in 235ms";
+  "Documentation check passed."
+- Next step: session B continues with `utils/`, `state/`, `commands/`, `diagnostics/` and
+  `Simulation` on the same branch.
