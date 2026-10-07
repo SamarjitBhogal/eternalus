@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-07
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -57,7 +57,7 @@ Nothing outside core mutates state; nothing inside core reads the wall clock.
 export class GameState {
   public readonly config: GameConfig;
   public readonly rng: SeededRandom; // the only source of randomness
-  public readonly entities: EntityStore; // deterministic, ascending-id iteration
+  public readonly entities: EntityStore; // deterministic, creation-order iteration
   public readonly world: WorldMap; // grid, cost field, flow fields, structures index
   public readonly teams: Readonly<Record<TeamId, TeamState>>; // score, structures alive, buffs
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
@@ -72,14 +72,15 @@ export class GameState {
 }
 ```
 
-`EntityStore` keeps entities in slots indexed by a monotonically increasing `EntityId` from
-`IdGenerator`, with a free list so slots are reused but ids never are; `forEach` visits in
-ascending id order, which is the iteration order every system uses (research
+`EntityStore` keeps entities in insertion order (DEC-18), which is creation order: every `EntityId`
+comes from a monotonically increasing counter (`utils/IdGenerator`) and is never reused. `forEach`
+visits in that order, which is the iteration order every system uses (research
 [§1](../research/game-architecture-and-performance-research.md#1-fixed-timestep-interpolation-and-determinism)).
-`remove(id, cause)` is the only way out and always carries a `RemovalCause`
-(`'died' | 'despawned' | 'consumed' | 'dev-removed' | 'match-ended'`, plus the killer for
-`'died'`); an invariant checks no entity disappears any other way. The store never exposes a `Map`
-for iteration.
+Ids are strings (`entity-12`), so code that needs a total order compares them as strings or keeps
+store order; it never sorts them as numbers. `remove(id, cause)` is the only way out and always
+carries a `RemovalCause` (`'died' | 'despawned' | 'consumed' | 'dev-removed' | 'match-ended'`, plus
+the killer for `'died'`); an invariant checks no entity disappears any other way. The store never
+exposes a `Map` for iteration.
 
 `GameState` is mutable only inside `Simulation.step()`, and only through component methods that
 guard their own invariants (`Health.applyDamage` clamps; `Team.setTeam` emits `team-changed`).
@@ -93,7 +94,7 @@ actor's id. Player input, bots and the developer menu produce the same union, so
 command log is a complete replay and cheats are replayable too.
 
 ```ts
-// Sketch: packages/core/src/commands/Command.types.ts
+// Sketch: packages/core/src/commands/Command.types.ts (fields per type in `CommandPayloads`)
 export type Command =
   | { readonly type: 'move'; readonly actorId: EntityId; readonly direction: Vec2 }
   | { readonly type: 'stop'; readonly actorId: EntityId }
@@ -104,18 +105,19 @@ export type Command =
       readonly slot: AbilitySlot;
       readonly aim: Aim;
     }
+  | { readonly type: 'intent'; readonly actorId: EntityId; readonly intent: InputIntent } // the human's per-tick input (11 §4.1)
   | { readonly type: 'pick-up'; readonly actorId: EntityId; readonly targetId: EntityId }
   | { readonly type: 'throw'; readonly actorId: EntityId; readonly aim: Aim }
   | { readonly type: 'interact'; readonly actorId: EntityId; readonly targetId: EntityId }
-  | { readonly type: 'dev-spawn-legend'; readonly team: TeamId; readonly definitionId: LegendId }
-  | { readonly type: 'dev-remove-legend'; readonly entityId: EntityId }
   | {
-      readonly type: 'dev-spawn-mobs';
+      readonly type: 'dev-spawn';
+      readonly kind: EntityKind;
+      readonly definitionId: string;
       readonly team: TeamId;
-      readonly definitionId: MobId;
-      readonly count: number;
       readonly at: Vec2;
+      readonly count: number;
     }
+  | { readonly type: 'dev-remove-entity'; readonly entityId: EntityId }
   | {
       readonly type: 'dev-set-controller';
       readonly entityId: EntityId;
@@ -124,13 +126,18 @@ export type Command =
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
 
-- `CommandQueue.enqueue(command)` stamps the command with `tick + 1`; `CommandApplySystem` drains
-  exactly the commands stamped for the current tick, in enqueue order. The client enqueues the
-  human's commands first, then controllers enqueue in ascending actor id during `AiSystem`, so the
-  order is deterministic.
-- `applyCommand(command, ctx)` is an exhaustive `switch`: adding a member to the union is a
-  compile error until its case exists. It validates (actor alive, slot ready, caps such as
-  `maxLegendsPerTeam` not exceeded) and emits `command-rejected` with a reason instead of throwing.
+- `CommandQueue` is drained once (DEC-18), at the start of each `step()`, in enqueue order; a
+  command enqueued while a step runs (a bot deciding during `AiSystem`) waits for the next drain, so
+  every command applies exactly one tick boundary after it was issued. The client enqueues the
+  human's commands first, then controllers enqueue in store order during `AiSystem`, so the order is
+  deterministic.
+- `applyCommand(command, handlers, ctx)` dispatches to the handler registered for
+  `command.type` (DEC-18): one `CommandHandler` class per type in `commands/handlers/`, listed in
+  `commands/defaultCommandHandlers.ts` (the single place of change, 02 §9). The registry's type
+  needs a handler for every union member, so a new command does not compile until its handler
+  exists. A handler validates (actor alive, slot ready, caps such as `maxLegendsPerTeam` not
+  exceeded) and returns a `CommandRejectReason` instead of throwing; `applyCommand` announces it
+  as `command-rejected`.
 - `dev-*` commands are the developer menu (requirements: add/remove Legends, spawn mobs from
   chosen origins, sim mode). They are ordinary commands so they appear in the log, respect the
   caps, and are covered by the same tests. `Match` only forwards them when the developer menu is
@@ -142,15 +149,17 @@ export type Command =
 // Sketch: packages/core/src/state/GameEvents.ts
 export class GameEvents {
   public on<K extends keyof GameEventMap>(type: K, handler: GameEventHandler<K>): Unsubscribe;
+  public off<K extends keyof GameEventMap>(type: K, handler: GameEventHandler<K>): void;
   public emit<K extends keyof GameEventMap>(type: K, payload: GameEventMap[K]): void; // synchronous
+  public recentEvents(): readonly TimedEvent[];
 }
 ```
 
 Events are synchronous, emitted during the tick and delivered to listeners in subscription order;
-listeners that need to change state defer the change to their own system's pass (Nystrom's
-Observer plus a deferred queue, research §2). `GameState.recentEvents` keeps the last few hundred
-in a `RingBuffer` for invariant reports. Payload objects for high-frequency events
-(`damage-applied`) may be pooled (Recommendation, profile first).
+listeners that need to change state defer the change to their own system's pass (Nystrom's Observer
+plus a deferred queue, research §2). `GameEvents` keeps the most recent events in a `RingBuffer`
+(`recentEvents()`, capacity in `GameEvents.constants.ts`) for invariant reports. Payload objects for
+high-frequency events (`damage-applied`) may be pooled (Recommendation, profile first).
 
 | Event                               | Payload                                                | Emitted by                        | Typical listeners                                                  |
 | ----------------------------------- | ------------------------------------------------------ | --------------------------------- | ------------------------------------------------------------------ |
@@ -176,6 +185,9 @@ in a `RingBuffer` for invariant reports. Payload objects for high-frequency even
 
 Systems subscribe in their constructor and never call another system. `Simulation.on()` exposes
 the same channel to the client; the bridge re-publishes a throttled subset to React.
+`GameEventMap` (`state/GameEvents.types.ts`) lives below `commands/`, so a payload that carries a
+higher layer's value types it structurally: `command-rejected.command` is `{ type: string }`,
+`ability-cast.slot` a string.
 
 ## 5. `Snapshot`
 
@@ -188,33 +200,40 @@ can be `postMessage`d to a Worker later without change (decided, D8; research §
 export type Snapshot = {
   readonly tick: number;
   readonly phase: MatchPhase;
-  readonly entities: readonly EntitySnapshot[]; // ascending id
+  readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
   readonly teams: Readonly<Record<TeamId, TeamSnapshot>>;
   readonly player: PlayerSnapshot | null; // HUD data for the human Legend
   readonly mapRevision: number; // increments when destructible terrain changed
 };
 
+// One group per component; a group is null when the entity has no such component, so a view
+// never draws a made-up value (DEC-15).
 export type EntitySnapshot = {
   readonly id: EntityId;
   readonly kind: EntityKind;
   readonly family: EntityFamily;
   readonly definitionId: string;
-  readonly team: TeamId;
-  readonly x: number;
-  readonly y: number;
-  readonly facing: number;
-  readonly radius: number;
-  readonly health: number;
-  readonly maxHealth: number;
-  readonly shieldBars: readonly number[];
+  readonly team: TeamId | null;
+  readonly transform: {
+    readonly x: number;
+    readonly y: number;
+    readonly radius: number;
+    readonly facing: number;
+  } | null;
+  readonly health: {
+    readonly current: number;
+    readonly max: number;
+    readonly shieldBars: readonly number[];
+  } | null;
   readonly statusIds: readonly StatusEffectId[];
   readonly anim: AnimState;
 };
 ```
 
 `Match` keeps the two latest snapshots (`previous`, `current`); `SceneView.draw(previous, current,
-alpha)` walks both id-sorted arrays together and lerps positions (the research's "two positions per
+alpha)` pairs the entities of both by id (both arrays are in store order; an entity spawned or
+removed between them is in one only) and lerps positions (the research's "two positions per
 entity, stored in the snapshot, never in the entity"). `mapRevision` lets `TerrainView` and
 `MinimapView` rebuild their cached layers only when terrain changed (Dirty Flag).
 
@@ -275,9 +294,9 @@ JavaScript-specific hazards and their rules (research §1, table "Determinism pi
 
 | Hazard                                    | Rule in core                                                                                                             | Enforcement                                                       |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| `Math.random()`                           | Only `GameState.rng` (`SeededRandom`, sfc32, seeded from the match seed); systems receive it through `SystemContext`     | ESLint `no-restricted-properties` (exists)                        |
+| `Math.random()`                           | Only `GameState.rng` (`SeededRandom`, sfc32, seeded from the match seed); systems reach it as `SystemContext.state.rng`  | ESLint `no-restricted-properties` (exists)                        |
 | `Date`, `performance.now`, timers         | Time is `tick`; durations are ticks converted from seconds at load                                                       | tsconfig (no DOM/Node types); planned `no-restricted-globals`     |
-| `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (ascending id) or arrays built in tick order            | Review; `EntityStore` API exposes no `Map`                        |
+| `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (creation order) or arrays built in tick order          | Review; `EntityStore` API exposes no `Map`                        |
 | `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                 | Review; `utils/compareById`                                       |
 | Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles | ESLint `no-restricted-properties` with a file override (ADR 0012) |
 | Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                            | Design + `InvariantSystem`                                        |
@@ -288,12 +307,14 @@ JavaScript-specific hazards and their rules (research §1, table "Determinism pi
 `StateHasher` computes a 32-bit FNV-1a hash (offset basis `0x811c9dc5`, prime `0x01000193`,
 `Math.imul`; research
 [persistence C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests))
-over a canonical serialisation: `tick`, the RNG state, then every entity in ascending id order
-(`id`, `kind`, position bits, health, team, phase-relevant component fields). `Simulation.hash()`
-is cheap enough to call every N ticks in tests and on demand from the developer menu.
+over a canonical serialisation of its own (DEC-18): `tick`, `phase`, the RNG state, then every
+entity in store order with its component fields in a fixed order, including state the client never
+sees (velocity). It does not hash the snapshot, so the hash covers what the snapshot leaves out; a
+component with simulation state adds its fields in `StateHasher`. `Simulation.hash()` is cheap
+enough to call every N ticks in tests and on demand from the developer menu.
 
 ```ts
-// Sketch: packages/core/src/commands/Replay.types.ts
+// Sketch: packages/core/src/diagnostics/Replay.types.ts
 export type Replay = {
   readonly versions: { readonly core: string; readonly content: string; readonly schema: number };
   readonly seed: number;
@@ -303,10 +324,12 @@ export type Replay = {
 };
 ```
 
-A replay is seed + config + command log + versions; `runReplay(replay, deps)` builds a
-`Simulation`, feeds the commands at their ticks, and compares `hash()` at each checkpoint. Replays
-are the regression-test format (fixtures under `__fixtures__/`), the bug-report format (the
-developer menu can dump one) and the match-history record persisted by `ReplayRepository`.
+A replay is seed + config + command log + versions; `runReplay(replay, createTarget)` builds a
+fresh `Simulation` through the factory it is given (so `diagnostics/` never imports
+`Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
+Replays are the regression-test format (fixtures under `__fixtures__/`, format in
+[15](15-diagnostics-and-runtime-testing.md) §7), the bug-report format (the developer menu can dump
+one) and the match-history record persisted by `ReplayRepository`.
 
 ## 10. `GameConfig`
 
@@ -315,24 +338,22 @@ flow fields and the spawn schedule follow. Config is a plain object, validated o
 `Simulation` and never imported as a global (rule A in 01-layered-oop-model.md §4).
 
 ```ts
-// Sketch: packages/core/src/config/GameConfig.types.ts
+// packages/core/src/config/GameConfig.types.ts (integration contract §2.2)
 export type GameConfig = {
   readonly tickRate: number;
-  readonly map: MapConfig; // 06 §2: numLanes, spawnTowersPerLane, buffTowersPerLane, campsPerSide, cornerCamps, world size, lanes, rift
+  readonly map: MapConfig; // 06 §2: lane, tower and camp counts, world size, nav cell size, preset
   readonly match: MatchConfig;
   readonly limits: LimitsConfig;
-  readonly mapPreset: MapPresetId;
 };
 
 export type MatchConfig = {
+  readonly legendsPerTeam: number;
   readonly legendsPerLane: number;
-  readonly roversPerTeam: number;
   readonly countdownSeconds: number;
-  readonly hordeSpawnIntervalSeconds: number;
-  readonly initialHordes: number;
-  readonly hordeSizes: Readonly<Record<MobWeightClass, number>>;
-  readonly capturePoints: CapturePointConfig;
-  readonly timeline: readonly MatchTimelineEntry[];
+  readonly hordeSizes: { readonly light: number; readonly medium: number; readonly heavy: number };
+  readonly initialHordesPerTeam: number;
+  readonly plannedMatchSeconds: number;
+  // planned with their systems: hordeSpawnIntervalSeconds, capturePoints, timeline
 };
 
 export type LimitsConfig = {
@@ -341,30 +362,33 @@ export type LimitsConfig = {
 };
 ```
 
-| Field                             | MVP default (`TUNE`)                                                                                           | Source                           |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `tickRate`                        | 30                                                                                                             | decided, D9                      |
-| `numLanes`                        | 3                                                                                                              | requirements doc, MVP list       |
-| `spawnTowersPerLane`              | 1                                                                                                              | requirements doc                 |
-| `buffTowersPerLane`               | 1                                                                                                              | requirements doc                 |
-| `campsPerSide`                    | 6 (placed between lanes)                                                                                       | requirements doc                 |
-| `cornerCamps`                     | 4, **MVP-if-time** (0 disables)                                                                                | game doc, Outer (Corner) Camps   |
-| `legendsPerLane`, `roversPerTeam` | 3 and 1 (10 v 10)                                                                                              | game doc, Minions and lanes      |
-| `maxLegendsPerTeam`               | 10                                                                                                             | requirements doc, developer menu |
-| `maxUnitsPerTeam`                 | 144 (engineered for hundreds)                                                                                  | requirements doc                 |
-| `countdownSeconds`                | 60 (only the initial hordes spawn)                                                                             | requirements doc                 |
-| `hordeSpawnIntervalSeconds`       | 60                                                                                                             | requirements doc                 |
-| `initialHordes`                   | 3, one per lane, from the stronghold (48 light units)                                                          | requirements doc                 |
-| `hordeSizes`                      | light 16, medium 8, heavy 4                                                                                    | requirements doc                 |
-| `capturePoints`                   | `{ perLane: 1, checkpoints: 3, ... }`; the middle one is the Cathedral                                         | game doc, Capture zones          |
-| `timeline`                        | `[{ at: 'quarter', event: 'spawn-mini-bosses', lanes: 'outer' }, { at: 'mid', event: 'summon-greater-boss' }]` | game doc                         |
+The MVP defaults live in `config/defaultGameConfig.ts` (marked `TUNE` where provisional) and the
+requirement ceilings in `config/GameConfig.constants.ts`; this table records where each comes from.
 
-`validateGameConfig(config)` returns a list of problems (integers where required, `tickRate`
-within a sane range, `maxUnitsPerTeam >= initialHordes * hordeSizes.light`, timeline entries
-ordered, `campsPerSide` divisible by the number of gaps between lanes; the last two are
-`Recommendation:`), and `Simulation` refuses to start on any problem. Time fields are authored in
-seconds and converted to ticks once at construction, so systems only ever see ticks. `Match`
-builds the config from a `MapPreset` plus developer-menu overrides; tests build it inline with
+| Field                                     | Meaning                                                                | Source                                     |
+| ----------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
+| `tickRate`                                | the one supported rate                                                 | decided, D9                                |
+| `numLanes`                                | odd, so the Cathedral sits on the middle lane                          | requirements doc, MVP list; 06 §2          |
+| `spawnTowersPerLane`, `buffTowersPerLane` | per lane and team                                                      | requirements doc                           |
+| `campsPerSide`                            | placed between lanes                                                   | requirements doc                           |
+| `cornerCamps`                             | **MVP-if-time**; 0 disables                                            | game doc, Outer (Corner) Camps             |
+| `legendsPerTeam`, `legendsPerLane`        | the lane Legends plus the Rover                                        | game doc, Minions and lanes; contract §2.1 |
+| `maxLegendsPerTeam`, `maxUnitsPerTeam`    | caps the developer menu and spawners respect                           | requirements doc, developer menu           |
+| `countdownSeconds`                        | only the initial hordes spawn                                          | requirements doc                           |
+| `hordeSizes`, `initialHordesPerTeam`      | one initial horde per lane, from the stronghold                        | requirements doc                           |
+| `plannedMatchSeconds`                     | the target match length                                                | DEC-13 (pending)                           |
+| `capturePoints`, `timeline` (planned)     | one capture point per lane, the middle one the Cathedral; timed events | game doc, Capture zones; 12                |
+
+`validateGameConfig(config: unknown)` throws a `ConfigValidationError` naming the first offending
+field (`path`) and its `rule` (integration contract §2.2), and returns the config typed when every
+rule holds; `Simulation` validates in its constructor, so it never starts on a bad config. The rules
+live in `config/validateGameConfig.ts`, cross-field rules after the fields they read: whole numbers
+where counts are meant, `tickRate` the supported rate, caps within the requirement ceilings, the map
+rules of 06 §2. `Recommendation:` once `timeline` exists, entries ordered and `maxUnitsPerTeam >=
+initialHordesPerTeam * hordeSizes.light`. How uneven camp counts spread over the corridors is the
+map generator's concern (06 §2), not a config rule. Time fields are authored in seconds and
+converted to ticks once at construction, so systems only ever see ticks. `Match` builds the config
+from a `MapPreset` plus developer-menu overrides; tests build it inline with
 `createDefaultGameConfig({ map: { numLanes: 5 } })` and assert the derived counts.
 
 ## 11. Content by ID, never embedded
@@ -375,6 +399,30 @@ snapshots, replays and hashes therefore contain only ids, and a definition can b
 hot-reloaded in development, research §9) without touching a running `GameState`. The client
 loads the same catalogue through `loadDefaultContent()` for the loadout screen and for sprites, so
 a view never needs anything from the entity beyond its `definitionId`.
+
+## 12. Implementation status
+
+The simulation kernel (sprint 1.1, PR #13) implements §2–§10 as written, with these interim gaps,
+each closed by the session or phase named:
+
+- `Simulation` takes `(config, seed, logger, systems = [])` (Sprint 1 brief); it becomes
+  `SimulationOptions` when content and `debug` arrive (four parameters at most, CONTRIBUTING §4).
+  No `exportReplay()` or `dispose()` yet. Its `EntityFactory` has an empty registry until session
+  C passes `createDefaultEntityRegistry()` (marked `TODO` in `Simulation.ts`).
+- `move`, `stop`, `attack-target`, `cast-ability`, `intent` and `dev-set-controller` are routed to
+  `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
+  `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
+- `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
+  `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
+- `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
+  `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
+  (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
+  `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
+- `GameState` has no `world`, `teams`, `hordes` or `recentCommands` yet; `EntityFactory` keeps its
+  own id counter until session C switches it to `IdGenerator`.
+- `Replay` has no `versions` yet (they arrive with the content catalogue).
+- The team type is `FeatureOwner` from `content/maps/maps.types.ts` until session A's
+  `teams/teams.types.ts` lands.
 
 ## Related
 
