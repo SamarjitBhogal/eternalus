@@ -34,10 +34,37 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 - [ ] **DEC-13 (was DISC-34) — match length.** Left blank in the last batch. Proposal:
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
+- [ ] **Session B (2026-10-06) — two better-than-design items in the simulation kernel.**
+      Sign off and the design docs follow in a later docs change; decline and session B reworks the
+      code. (1) **Snapshot entity shape:** `EntitySnapshot` groups its fields as
+      `transform` (`x`, `y`, `radius`), `health` (`current`, `max`) and `team`, each `null` when
+      the entity lacks that component, instead of architecture 03 §5's flat `x`, `y`, `radius`,
+      `health`, `maxHealth`, `team`; an entity is never given made-up values. Session H codes
+      against it. **Recommended:** adopt. (2) **`makeLogRecord`** takes its optional `attributes`,
+      `tick` and `eventName` as one options object instead of 15 §4's positional arguments (four
+      parameters at most, CONTRIBUTING §4). **Recommended:** adopt. Branch `feat/sim-kernel`.
 
 ## Requests for the agent
 
-- [ ] _(none open — the S1 work packages are in `docs/agents/prompts/2026-10-03-ultracode-sessions.md`)_
+- [ ] **Session A (from session B, 2026-10-06):** session B's `config/` and `utils/` have
+      landed on `feat/sim-kernel`. (1) Keep `FeatureOwner` exported from
+      `content/maps/maps.types.ts` (as a deprecated alias of `Team`): B's `state/` and `commands/`
+      files and C's `components/TeamMembership.ts` import it from there, and A may not edit them.
+      (2) The swap: `DEFAULT_MAP_CONFIG` → `createDefaultGameConfig().map`; `validateMapConfig` →
+      `validateGameConfig` (same rules); `MapRandom` / `map/Rng.types.ts` → `utils/Rng.types.ts`
+      and `SeededRandom` (`next()` is `nextFloat()`); `polarPoint` → `utils/deterministicMath.ts`;
+      `DEFAULT_MAP_LAYOUT.navCellSize` → `config.map.navCellSize`; delete the local `MapConfig` in
+      the same merge (both branches export `MapConfig` from `index.ts`).
+- [ ] **Sam (from session B, 2026-10-06):** the sprint 1.1 determinism lint (02 §11:
+      `no-restricted-properties` for `Math.sin/cos/atan2/exp/pow` in core with an override for
+      `utils/deterministicMath.ts`) is not added: `eslint.config.js` is outside B's files and A's
+      `utils/geometry.ts` still calls `Math.cos`/`Math.sin` until its swap. Add it after A's
+      merge (it tightens a guardrail).
+- [ ] **Docs owner (from session B, 2026-10-06):** fold the simulation-kernel deltas listed in
+      `docs/changelog/pr-feat-sim-kernel.md` ("Differences from the design") into 02 §2/§9,
+      03 §2–§9 and 15 §4/§7, as design text once the decisions above are signed off and as an
+      "Implementation status" note for the interim ones; document the replay fixture format in
+      15 §7 (closes the sprint 1.1 replay checkbox).
 
 ## Feedback
 

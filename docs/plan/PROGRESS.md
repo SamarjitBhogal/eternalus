@@ -159,3 +159,20 @@ The example below is fenced so it is not read as a real entry.
   "Documentation check passed."
 - Next step: session B continues with `utils/`, `state/`, `commands/`, `diagnostics/` and
   `Simulation` on the same branch.
+
+### 2026-10-06 — Phase 1 / sprint 1.1 — feat/sim-kernel — sholtzman + Claude Code
+
+- What was done: session B's simulation kernel in `packages/core`: `utils/` (`SeededRandom`
+  sfc32 + `Rng` port, `deterministicMath`, `vec2`, `fnv1a`, `RingBuffer`, `IdGenerator`),
+  `state/` (`GameState`, `EntityStore`, `GameEvents` with the 03 §4 catalogue, snapshots,
+  `StateHasher`), `commands/` (union, queue, handler registry; dev-spawn honours the caps),
+  `diagnostics/` (`Logger` port, replay harness, golden fixture), `Simulation` +
+  `SystemPipeline`; core coverage threshold 80 → 85. Ticked six sprint 1.1 items; SeededRandom
+  (lint ban), Vec2 (mutating variants), replay (15 §7 format) and Logger (`DiagnosticEvent`)
+  stay open. Asked in `INBOX.md`: two better-than-design sign-offs, session A's swap, the lint
+  ban, design-doc deltas. PR body: `docs/changelog/pr-feat-sim-kernel.md`.
+- Checks run: sprint metric: 10 seeds × 3,000 ticks, identical hashes every 100 ticks, twice,
+  in 367–377 ms (Apple M4 Pro, 24 GB, Node 24.21.0, Vitest 5.0.2). Final `npm run check`: see
+  the PR body's pre-PR gate section.
+- Next step: Sam pushes `feat/sim-kernel` and opens the PR into the phase branch; session A
+  swaps its stand-ins after the merge; session C starts on the merged kernel.
