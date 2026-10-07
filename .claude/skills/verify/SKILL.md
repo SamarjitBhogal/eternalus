@@ -19,3 +19,5 @@ verbatim". This skill is that step.
    guardrail (thresholds, lint rules, `@ts-ignore`, skipped tests).
 4. If everything passes, append the `docs/plan/PROGRESS.md` entry for the task (date,
    phase/sprint, branch, what, checks run, next step).
+5. Verify is the Definition of done, not the end: before a PR is opened, the pre-PR gate in
+   `AGENTS.md` follows (critic, ponytail, then this skill again on the post-ponytail code).

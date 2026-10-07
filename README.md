@@ -44,7 +44,8 @@ npm run check      # the full quality gate, the same as CI
 | `npm run dev`                     | Client dev server (Vite)                                          |
 | `npm run build`                   | Typecheck and build every package                                 |
 | `npm run check`                   | **Everything**: format, lint, typecheck, knip, tests, build, docs |
-| `npm run check:quick`             | Typecheck + lint (what the pre-commit and pre-push hooks run)     |
+| `npm run check:quick`             | No-JS + typecheck + lint (what the git hooks run)                 |
+| `npm run check:no-js`             | Fails on tracked JS files (TypeScript only; tooling allowlisted)  |
 | `npm run test`                    | Vitest in every workspace                                         |
 | `npm run test:coverage`           | Tests with coverage thresholds                                    |
 | `npm run lint`                    | ESLint with `--max-warnings 0`                                    |

@@ -12,8 +12,9 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 ## Folders
 
-**Today** core contains `content/maps/`, `map/`, `teams/` and `utils/` (the generated map,
-Sprint 1). The other folders below are the **planned** layout; create them as code is added.
+**Today** core contains `components/`, `content/maps/`, `entities/`, `map/`, `teams/` and `utils/`
+(the first entities and the generated map, Sprint 1). The other folders below are the **planned**
+layout; create them as code is added.
 
 | Folder          | Holds                                                               | May import                                |
 | --------------- | ------------------------------------------------------------------- | ----------------------------------------- |
@@ -21,7 +22,7 @@ Sprint 1). The other folders below are the **planned** layout; create them as co
 | `teams/`        | `PlayableTeam` and `Team`, shared by every layer                    | nothing                                   |
 | `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers | `content/`, `teams/`, `utils/`            |
 | `utils/`        | Generic helpers: vector math, `SeededRandom`, constants             | `utils/` only                             |
-| `components/`   | Data owned by entities (`Transform`, `Movement`)                    | `utils/`, `content/`                      |
+| `components/`   | Data owned by entities (`Transform`, `Movement`)                    | `utils/`, `content/`, `teams/` (types)    |
 | `entities/`     | `Entity` root class and factories                                   | `components/`, `content/`, ...            |
 | `commands/`     | `Command` union and `applyCommand`                                  | `state/`, `entities/`, `utils/`           |
 | `state/`        | `GameState`, `GameEvents`, `GameSnapshot`                           | lower layers                              |

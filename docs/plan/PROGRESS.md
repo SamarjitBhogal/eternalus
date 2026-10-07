@@ -87,6 +87,12 @@ The example below is fenced so it is not read as a real entry.
   SamarjitBhogal, hold the team walkthrough (sprint 0.5, week 1) and answer the INBOX decisions
   DEC-01–DEC-10; owner: sholtzman.
 
+### 2026-10-02 — Phase 1 / sprint 1.2 — copilot/implement-entity-modules — claudiodh + Copilot Coding Agent
+
+- What was done: added foundational `packages/core/src/entities/*.js` modules (`Entity`, `Unit`, `Legend`, `Mob`, `EntityRegistry`, `EntityFactory`) plus focused `.test.js` coverage for abstract construction, family contracts, lifecycle order, component helpers, registry/factory behavior and unknown kind/cause errors; updated `packages/core/vitest.config.ts` so core discovers `.test.js` and includes `.js` sources in coverage; kept `packages/core/src/index.ts` unchanged (no public API export yet).
+- Checks run: `npm run test -w @eternalus/core` → `Test Files 5 passed (5), Tests 13 passed (13)`; `npm run check:quick` → passed (`typecheck` + `lint`); `npm run check` → passed (`format:check`, `lint`, `typecheck`, `knip`, `test:coverage`, `build`, `docs:check`).
+- Next step: wire concrete entity kinds and content definitions into the registry as Sprint 1.2 entity implementation continues; owner: sim lane.
+
 ### 2026-10-03 — Phase 0 follow-up / INBOX batch 1 — docs/inbox-decisions-2026-10-03 — sholtzman + Claude (Cowork)
 
 - What was done: recorded the owner's INBOX answers (DEC-01…DEC-10, 32 discrepancies) in
@@ -150,6 +156,18 @@ The example below is fenced so it is not read as a real entry.
   fails without it), and a test title no longer claims "any world size". `npm run check` → exit
   0; core "Tests 97 passed (97)", client "Tests 36 passed (36)"; "Documentation check passed."
 
+### 2026-10-05 — Phase 1 / sprint 1.2 — refactor/implement-entity-modules — SamarjitBhogal + Claude Code
+
+- What was done: ported `packages/core/src/entities/*.js` one-to-one to TypeScript (`Entity`, `Unit`, `Legend`, `Mob`, `EntityRegistry`, `EntityFactory`, plus `Entity.types.ts` and `EntityRegistry.types.ts`) with `.test.ts` ports of every JS test and a few added cases; deleted the JS files; reverted `packages/core/vitest.config.ts` to `.ts`-only globs. Added `npm run check:no-js` (`scripts/checks/no-js.mjs`): fails on any tracked/staged `.js`/`.jsx`/`.mjs`/`.cjs` except `eslint.config.js` and `scripts/**/*.mjs`; it runs in `check:quick` (git hooks), `check` and CI. Documented in `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, `docs/process/guardrails.md`.
+- Checks run: `npm run check` → exit 0 (format, no-js, lint, typecheck, knip, core tests 20/20 at 100% coverage, client 27/27, build, docs 87 files passed). Guard self-tested: staging `packages/core/src/x.js` makes `check:no-js` exit 1.
+- Next step: wire concrete entity kinds and content definitions into the registry; owner: sim lane.
+
+### 2026-10-05 — Phase 1 / sprint 1.2 — refactor/implement-entity-modules — SamarjitBhogal + Claude Code
+
+- What was done: addressed the PR #4 review on entity ids. `EntityFactory.create(kind, definitionId, spawnContext)` no longer takes an id; the factory assigns `entity-<n>` from a per-factory counter (`EntityFactory.constants.ts`), so ids are unique per match and deterministic for replays (no `Math.random`). Added a test for sequential, per-factory ids.
+- Checks run: `npm run check` → exit 0 (core 21/21 tests, 100% coverage).
+- Next step: wire concrete entity kinds and content definitions into the registry; owner: sim lane.
+
 ### 2026-10-06 — Phase 1 / sprint 1.3 (session A, docs) — feat/map-generator — sholtzman + Claude Code
 
 - What was done: the owner signed off DEC-14 (the four map-generator refinements the critic
@@ -166,3 +184,45 @@ The example below is fenced so it is not read as a real entry.
 - Follow-up (same day): pre-PR gate run on this branch. Ponytail review of the code diff: one cut
   applied (single keep-out zone), one reverted as longer, two kept for the architecture and the
   brief; `npm run check` → exit 0 (core 97/97, client 36/36). Gate results in the PR description.
+
+### 2026-10-06 — Process / pre-PR gate — chore/pre-pr-gate — sholtzman + Claude Code
+
+- What was done: owner decision to add a pre-PR gate after the Definition of done (independent
+  architecture critic, ponytail pass, `npm run check` re-run, then the PR) — ADR 0010, `AGENTS.md`
+  "Before opening a PR" and "Ponytail", CONTRIBUTING §8, checklists §1/§4, PR template, git
+  workflow, guardrails table, harness doc, `verify`/`pr-review` skills. Ponytail runs at `lite`,
+  injected into the main session and coding subagents only (`.claude/settings.json` env; matcher
+  pipe-tested). Documentation longevity rule OG-12 and ADR 0011 after a doc sweep corroded
+  architecture docs. Every changed doc was reviewed independently against OG-12.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 7 passed (7)", client "Tests 27 passed (27)"; "✓ built"; "Documentation check passed."
+- Next step: the human pushes `chore/pre-pr-gate` and opens it into `main` after PR #5; in the
+  first new session, confirm ponytail starts at `lite` (per-project mode flag).
+
+### 2026-10-06 — Phase 1 / sprint 1 setup — phase/1-simulation-kernel-and-world — sholtzman + Claude Code
+
+- What was done: brought the phase branch up to date for the Sprint 1 sessions by merging
+  `origin/main` (`4cff2a7`), `origin/docs/inbox-decisions-2026-10-03` (`3fab2df`) and
+  `origin/chore/pre-pr-gate` (`bdf2e37`). Conflicts: this log (every entry kept, oldest first) and
+  `docs/process/guardrails.md` (`last-reviewed` → 2026-10-06; all 22 table rows kept). The agent's
+  own `git fetch` failed on keychain auth; merged refs from the human's 18:15 fetch.
+- Checks run: `npm ci` → ok; `npm run docs:index` → "Documentation check passed." (no changes);
+  `npm run check` → exit 0: Prettier clean, lint/typecheck/knip clean, core "Tests 37 passed
+  (37)" at 100%, client "Tests 27 passed (27)", "✓ built", "Documentation check passed."
+- Next step: the human pushes the phase branch; start the Sprint 1 sessions per
+  `docs/agents/prompts/2026-10-03-ultracode-sessions.md`.
+
+### 2026-10-07 — Phase 1 / sprint 1 integration — feat/map-generator, chore/pre-pr-gate, docs/inbox-decisions-2026-10-03 — sholtzman + Claude Code
+
+- What was done: resolved the merge conflicts of PR #5 (`docs/inbox-decisions-2026-10-03` →
+  `main`), PR #10 (`chore/pre-pr-gate` → `main`) and PR #8 (`feat/map-generator` →
+  `phase/1-simulation-kernel-and-world`) with merge commits, no rebase and no force. This log
+  keeps every entry from both sides verbatim, oldest first; `guardrails.md` takes 2026-10-06 and
+  `main`'s updated pre-commit row. In #8, `components/TeamMembership.ts` now takes `Team` from
+  `teams/teams.types.ts` (#8 moved the team type out of `maps.types.ts`), and
+  `packages/core/AGENTS.md` lists the folders that exist after the merge.
+- Checks run: `npm run check` → `EXIT=0` on each merged branch: #5 and #10 core "Tests 37 passed
+  (37)", client "Tests 27 passed (27)"; #8 core "Tests 127 passed (127)", client "Tests 36 passed
+  (36)"; "Documentation check passed." on all three.
+- Next step: Sam pushes the three branches, merges #5 then #10 into `main` (merge commits) and #8
+  into the phase branch; `feat/sim-kernel` (#13) re-syncs with the phase branch after #8.

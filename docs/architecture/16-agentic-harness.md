@@ -54,7 +54,8 @@ flowchart LR
   D --> F[Stop hook: npm run check:quick]
   F -->|exit 2, once| D
   F --> G[verify skill: npm run check, PROGRESS entry]
-  G --> H[PR into the phase branch]
+  G --> G2[pre-PR gate, ADR 0010: critic, ponytail, npm run check again]
+  G2 --> H[PR into the phase branch]
   H --> I[pr-review or architecture-reviewer, then a human]
   I --> J[CI on three OSes]
 ```
@@ -195,7 +196,9 @@ found agents "reliably skew positive when grading their own work" and recommends
 evaluator separate from the generator (research §3); the same section warns that reviewers
 over-report by construction, so ours is told to report correctness and scope gaps only, and one
 2026 ablation found a second reviewer agent lowering success (research §4, second-hand), which is
-why the reviewer's output goes to a human rather than back into an automatic fix loop. The
+why the reviewer's output on a PR goes to a human rather than back into an automatic fix loop;
+before the PR, the pre-PR critic's violations do go back to the author for rework
+([ADR 0010](../decisions/0010-pre-pr-critic-and-ponytail-gate.md)). The
 review step is not optional ([../agents/README.md](../agents/README.md) §3): the author agent is
 never the only reviewer, and a human walks the checklist before merge (AI-05, AI-07).
 

@@ -4,7 +4,7 @@ description: Branch model, naming, the stacked-phase procedure that lets work co
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [process, git, branching, pull-requests]
 related:
   [
@@ -97,6 +97,7 @@ gitGraph
 git switch phase/2-structures-and-combat && git pull
 git switch -c feat/health-shield-bars
 # implement + tests; npm run check must pass
+# pre-PR gate (AGENTS.md, ADR 0010): critic → /ponytail → npm run check again
 git add -A && git commit -m "feat(core): add Health component with layered shield bars"
 git push -u origin feat/health-shield-bars
 # open PR → base: phase/2-structures-and-combat; fill the PR template; link the issue
@@ -114,7 +115,10 @@ git push -u origin feat/health-shield-bars
 - Title = the squash commit message: Conventional Commits with an allowed scope
   (`core`, `client`, `ui`, `engine`, `bridge`, `ai`, `tooling`, `ci`, `docs`, `deps`).
 - Body = the template (`.github/pull_request_template.md`): summary, why, how tested,
-  checklist. Guardrail changes link an ADR; new dependencies are justified per line.
+  checklist, and the pre-PR gate results (critic verdict, ponytail cuts, the re-run check).
+  Guardrail changes link an ADR; new dependencies are justified per line.
+- No PR is opened before the pre-PR gate passes (`AGENTS.md` "Before opening a PR", ADR 0010).
+  It comes after every other check, never instead of one.
 - Reviewers walk `docs/agents/checklists.md` §2 for AI-written code.
 - A phase PR additionally includes: the phase exit checklist (§4 of the same file), the
   measured success metrics, and the changelog entry in `docs/changelog/`.
