@@ -1,4 +1,4 @@
-import type { FeatureOwner } from '../content/maps/maps.types';
+import type { Team } from '../teams/teams.types';
 
 /**
  * Which side an entity fights for. Team is a component, not a class (DEC-03 / D10), because it
@@ -7,15 +7,15 @@ import type { FeatureOwner } from '../content/maps/maps.types';
  */
 export class TeamMembership {
   /** @param currentTeam - The team at spawn. */
-  public constructor(private currentTeam: FeatureOwner) {}
+  public constructor(private currentTeam: Team) {}
 
   /** The current team. */
-  public get team(): FeatureOwner {
+  public get team(): Team {
     return this.currentTeam;
   }
 
   /** Changes team and returns the previous one, so the caller can emit `team-changed`. */
-  public setTeam(next: FeatureOwner): FeatureOwner {
+  public setTeam(next: Team): Team {
     const previous = this.currentTeam;
     this.currentTeam = next;
     return previous;
