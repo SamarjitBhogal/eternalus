@@ -26,6 +26,24 @@ export type { LogAttributes, Logger, LogRecord, SeverityText } from './diagnosti
 export { makeLogRecord } from './diagnostics/makeLogRecord';
 export { MemoryLogger } from './diagnostics/MemoryLogger';
 export { NullLogger } from './diagnostics/NullLogger';
+export { runReplay } from './diagnostics/replay';
+export type {
+  Replay,
+  ReplayOutcome,
+  ReplayTarget,
+  ReplayTargetFactory,
+} from './diagnostics/Replay.types';
+export { Simulation } from './Simulation';
+export type { EntityId, RemovalCause } from './state/EntityStore.types';
+export type {
+  GameEventHandler,
+  GameEventMap,
+  GameEventType,
+  Unsubscribe,
+} from './state/GameEvents.types';
+export type { MatchPhase } from './state/GameState.types';
+export type { EntitySnapshot, Snapshot } from './state/Snapshot.types';
+export { StateHasher } from './state/StateHasher';
 export type {
   FeatureOwner,
   MapDefinition,
