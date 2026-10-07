@@ -1,8 +1,13 @@
+import {
+  MAX_LEGENDS_PER_TEAM,
+  MAX_UNITS_PER_TEAM,
+  SUPPORTED_TICK_RATE,
+} from './GameConfig.constants';
 import type { DeepPartial, GameConfig } from './GameConfig.types';
 
 /** MVP defaults (architecture 03 §10, requirements doc MVP list, integration contract §2.2). */
 const DEFAULT_GAME_CONFIG: GameConfig = {
-  tickRate: 30, // decided, D9
+  tickRate: SUPPORTED_TICK_RATE,
   map: {
     numLanes: 3,
     spawnTowersPerLane: 1,
@@ -23,8 +28,8 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
     plannedMatchSeconds: 1200, // TUNE: DEC-13 pending
   },
   limits: {
-    maxLegendsPerTeam: 10,
-    maxUnitsPerTeam: 144,
+    maxLegendsPerTeam: MAX_LEGENDS_PER_TEAM,
+    maxUnitsPerTeam: MAX_UNITS_PER_TEAM,
   },
 };
 
