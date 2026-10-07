@@ -1,3 +1,4 @@
+import type { DiagnosticEventName } from './DiagnosticEvent.types';
 import type { SEVERITY } from './Logger.constants';
 
 /** A severity name; its number is `SEVERITY[name]`. */
@@ -13,8 +14,8 @@ export type LogRecord = {
   readonly body: string;
   /** Instrumentation scope, e.g. `core.commands`, `core.invariants`. */
   readonly scope: string;
-  /** Set when the record reports a typed event, e.g. `command-rejected`. */
-  readonly eventName?: string;
+  /** Set when the record reports a `DiagnosticEvent`, e.g. `command-rejected`. */
+  readonly eventName?: DiagnosticEventName;
   /** The tick: core's only notion of time. `null` for records made outside a tick. */
   readonly tick: number | null;
   /** Wall-clock time, stamped by the client's logger from the engine clock; never by core. */

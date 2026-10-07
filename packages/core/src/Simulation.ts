@@ -51,8 +51,7 @@ export class Simulation {
       logger.log(
         makeLogRecord('INFO', 'core.commands', `Rejected ${command.type}: ${reason}`, {
           tick: this.state.tick,
-          eventName: 'command-rejected',
-          attributes: { commandType: command.type, reason },
+          event: { name: 'command-rejected', attributes: { commandType: command.type, reason } },
         }),
       );
     });

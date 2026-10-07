@@ -1,25 +1,28 @@
+import type { DiagnosticEvent } from './DiagnosticEvent.types';
 import { SEVERITY } from './Logger.constants';
 import type { LogAttributes, LogRecord, SeverityText } from './Logger.types';
 
-/** Optional parts of a record. */
-type LogDetails = {
-  readonly attributes?: LogAttributes;
-  readonly tick?: number;
-  readonly eventName?: string;
-};
+/**
+ * Optional parts of a record: a tick, and either free attributes or a typed `DiagnosticEvent`
+ * (whose name becomes `eventName` and whose fields become the attributes).
+ */
+type LogDetails = { readonly tick?: number } & (
+  | { readonly attributes?: LogAttributes; readonly event?: never }
+  | { readonly event: DiagnosticEvent; readonly attributes?: never }
+);
 
 /** Builds a `LogRecord`; the one place records are made, so every record has the same shape. */
 export const makeLogRecord = (
   level: SeverityText,
   scope: string,
   body: string,
-  { attributes = {}, tick, eventName }: LogDetails = {},
+  { tick, attributes, event }: LogDetails = {},
 ): LogRecord => ({
   severityNumber: SEVERITY[level],
   severityText: level,
   body,
   scope,
-  ...(eventName === undefined ? {} : { eventName }),
+  ...(event === undefined ? {} : { eventName: event.name }),
   tick: tick ?? null,
-  attributes,
+  attributes: event?.attributes ?? attributes ?? {},
 });
