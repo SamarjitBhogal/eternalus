@@ -19,5 +19,5 @@
 .button:hover,
 .button:focus-visible {
   background: var(--theme-primary);
-  color: var(--text-on-theme);
+  color: var(--theme-on-primary);
 }

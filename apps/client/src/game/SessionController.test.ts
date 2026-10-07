@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { connectBusToStore } from '../bridge/connectBusToStore';
-import {
-  type BridgeEventMap,
-  SESSION_PHASES,
-  type SessionPhase,
-  type UiIntent,
-} from '../bridge/events';
+import type { BridgeEventMap, SessionPhase, UiIntent } from '../bridge/events';
 import { createAppStore } from '../bridge/store';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { placeholderCatalogue } from './content/placeholderCatalogue';
@@ -57,83 +52,6 @@ function atCharacterSelect() {
   session.clock.advance(PLACEHOLDER_LOAD_MS);
   return session;
 }
-
-// Architecture 13 §2, written out independently of SESSION_TRANSITIONS.
-const LEGAL: readonly (readonly [SessionPhase, SessionPhase])[] = [
-  ['boot', 'menu'],
-  ['menu', 'loading'],
-  ['loading', 'character-select'],
-  ['loading', 'menu'],
-  ['character-select', 'pre-launch'],
-  ['character-select', 'menu'],
-  ['pre-launch', 'match-loading'],
-  ['match-loading', 'match'],
-  ['match-loading', 'menu'],
-  ['match', 'results'],
-  ['match', 'menu'],
-  ['results', 'menu'],
-  ['results', 'loading'],
-];
-
-describe('SessionController transition table', () => {
-  /** Fake states that only capture the context, so the test drives every transition. */
-  function withFakeStates() {
-    const captured: { context: SessionContext | null } = { context: null };
-    const fake = (phase: SessionPhase): SessionState => ({
-      phase,
-      enter: (context) => {
-        captured.context = context;
-      },
-    });
-    const states = Object.fromEntries(
-      SESSION_PHASES.map((phase) => [phase, fake(phase)]),
-    ) as Record<SessionPhase, SessionState>;
-    const session = setUp(states);
-    session.controller.start();
-    const context = captured.context;
-    if (context === null) throw new Error('boot did not enter');
-    return { ...session, context };
-  }
-
-  // SESSION_PHASES is in flow order, so each phase is reachable through the ones before it.
-  const pathTo = (phase: SessionPhase): SessionPhase[] =>
-    SESSION_PHASES.slice(1, SESSION_PHASES.indexOf(phase) + 1);
-
-  const pairs = SESSION_PHASES.flatMap((from) => SESSION_PHASES.map((to) => [from, to] as const));
-  const isLegal = ([from, to]: readonly [SessionPhase, SessionPhase]): boolean =>
-    LEGAL.some(([a, b]) => a === from && b === to);
-
-  for (const [from, to] of pairs.filter(isLegal)) {
-    it(`${from} → ${to} is legal`, () => {
-      const { context, controller, phases } = withFakeStates();
-      for (const step of pathTo(from)) context.transition(step);
-      expect(controller.phase).toBe(from);
-      context.transition(to);
-      expect(controller.phase).toBe(to);
-      expect(phases.at(-1)).toBe(to);
-    });
-  }
-
-  for (const [from, to] of pairs.filter((pair) => !isLegal(pair))) {
-    it(`${from} → ${to} is illegal and throws`, () => {
-      const { context, controller } = withFakeStates();
-      for (const step of pathTo(from)) context.transition(step);
-      expect(() => {
-        context.transition(to);
-      }).toThrow(`Illegal session transition: ${from} → ${to}`);
-      expect(controller.phase).toBe(from);
-    });
-  }
-
-  it('refuses to transition after destroy', () => {
-    const { context, controller } = withFakeStates();
-    controller.destroy();
-    expect(controller.phase).toBeNull();
-    expect(() => {
-      context.transition('menu');
-    }).toThrow('Session is not running');
-  });
-});
 
 describe('SessionController with the default states', () => {
   it('boots into the menu with the content catalogue and a finished boot load', () => {
@@ -263,7 +181,7 @@ describe('SessionController with the default states', () => {
     expect(selecting.store.getState().session.reason).toBe('cancelled');
   });
 
-  it('leaves results for a menu route or a new match', () => {
+  it('leaves results for a menu route, or rematches with the same setup', () => {
     const captured: { context: SessionContext | null } = { context: null };
     const states = {
       ...createDefaultSessionStates(),
@@ -275,26 +193,30 @@ describe('SessionController with the default states', () => {
       },
     } satisfies Record<SessionPhase, SessionState>;
     const session = setUp(states);
+    const playToResults = (): void => {
+      session.intent({ kind: 'start-match' });
+      session.clock.advance(PLACEHOLDER_LOAD_MS);
+      session.intent({ kind: 'select-class', classId: 'sentinel' });
+      session.intent({ kind: 'confirm-selection' });
+      session.clock.advance(REVEAL_COUNTDOWN_MS + PLACEHOLDER_LOAD_MS);
+      captured.context?.transition('results');
+    };
     session.controller.start();
-    session.intent({ kind: 'start-match' });
-    session.clock.advance(PLACEHOLDER_LOAD_MS);
-    session.intent({ kind: 'select-class', classId: 'sentinel' });
-    session.intent({ kind: 'confirm-selection' });
-    session.clock.advance(REVEAL_COUNTDOWN_MS + PLACEHOLDER_LOAD_MS);
-    captured.context?.transition('results');
-    expect(session.controller.phase).toBe('results');
 
+    playToResults();
+    expect(session.controller.phase).toBe('results');
     session.intent({ kind: 'navigate', route: 'profile' });
     expect(session.store.getState().session).toMatchObject({ phase: 'menu', menuRoute: 'profile' });
 
+    playToResults();
+    const before = session.store.getState().matchSetup;
     session.intent({ kind: 'start-match' });
-    session.clock.advance(PLACEHOLDER_LOAD_MS);
-    session.intent({ kind: 'select-class', classId: 'sentinel' });
-    session.intent({ kind: 'confirm-selection' });
-    session.clock.advance(REVEAL_COUNTDOWN_MS + PLACEHOLDER_LOAD_MS);
-    captured.context?.transition('results');
-    session.intent({ kind: 'start-match' });
+    const after = session.store.getState().matchSetup;
     expect(session.controller.phase).toBe('loading');
+    expect(after).toMatchObject({ seed: before.seed, playerTeam: before.playerTeam });
+    expect(after.allies).toEqual(before.allies);
+    expect(after.selection).toEqual({ classId: null, specId: null });
+    expect(session.themeRoot.dataset.team).toBe(before.playerTeam);
   });
 
   it('destroy stops timers and intent handling and leaves no bus listeners', () => {

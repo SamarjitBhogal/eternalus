@@ -28,11 +28,10 @@ export function connectBusToStore(
     bus.on('loading-progress', (progress) =>
       dispatch(loadingSlice.actions.progressChanged(progress)),
     ),
+    // Every published setup starts clean: no selection or countdowns left from a previous one.
     bus.on('match-setup', (draft) => {
-      if (draft === null) {
-        dispatch(setup.reset());
-        return;
-      }
+      dispatch(setup.reset());
+      if (draft === null) return;
       dispatch(setup.setTeam({ seed: draft.seed, playerTeam: draft.playerTeam }));
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
     }),

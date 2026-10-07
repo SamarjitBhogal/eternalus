@@ -1,9 +1,9 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { Team } from '../domain.types';
-import type { ContentCatalogue } from '../events';
+import type { DisplayCatalogue } from '../events';
 
-const initialState: ContentCatalogue = {
+const initialState: DisplayCatalogue = {
   legendClasses: [],
   backgroundSets: [],
   profileDisplayName: '',
@@ -14,7 +14,7 @@ export const contentSlice = createSlice({
   name: 'content',
   initialState,
   reducers: {
-    catalogueLoaded: (_state, action: PayloadAction<ContentCatalogue>) => action.payload,
+    catalogueLoaded: (_state, action: PayloadAction<DisplayCatalogue>) => action.payload,
   },
   selectors: {
     selectLegendClasses: (state) => state.legendClasses,

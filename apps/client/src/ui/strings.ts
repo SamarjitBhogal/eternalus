@@ -1,5 +1,11 @@
 import type { MenuRoute, SessionPhase } from '../bridge/events';
 
+/** Banner text per `session.reason`; reasons without an entry show no banner. */
+const REASON_BANNERS: Readonly<Record<string, string>> = {
+  'select-timeout': 'Match cancelled: no character selected.',
+  cancelled: 'Match cancelled.',
+};
+
 /**
  * UI labels (architecture 13 §1). Game names (classes, the profile screen's "Chronicle") come
  * from content through the store, never from here.
@@ -14,11 +20,7 @@ export const STRINGS = {
     settings: 'Settings',
     about: 'About / credits',
   },
-  /** Banner text per `session.reason`; reasons without an entry show no banner. */
-  reasonBanners: {
-    'select-timeout': 'Match cancelled: no character selected.',
-    cancelled: 'Match cancelled.',
-  } as Readonly<Record<string, string>>,
+  reasonBanners: REASON_BANNERS,
   comingSoon: 'Coming in sprint 2.',
   about: {
     title: 'About / credits',
@@ -30,6 +32,7 @@ export const STRINGS = {
   profile: { history: 'Match history and achievements appear here.' },
   results: {
     title: 'Match results',
+    // TODO(sam): verdict lines are core content (content/narrative/, selectVerdictLine) once it exists.
     noResult: 'No result recorded.',
     draw: 'Draw.',
     winner: { light: 'Light wins.', dark: 'Dark wins.' },

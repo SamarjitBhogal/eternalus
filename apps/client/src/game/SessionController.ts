@@ -1,4 +1,4 @@
-import type { SessionPhase } from '../bridge/events';
+import type { MatchSetupDraft, SessionPhase } from '../bridge/events';
 import { SESSION_TRANSITIONS } from './SessionController.constants';
 import type {
   SessionContext,
@@ -6,6 +6,7 @@ import type {
   SessionState,
 } from './SessionController.types';
 import { buildMatchSetup } from './session/buildMatchSetup';
+import { IllegalSessionTransition } from './session/IllegalSessionTransition';
 
 /**
  * Owns the session phase machine (architecture 13 §2): boot → menu → loading → character-select
@@ -15,6 +16,7 @@ import { buildMatchSetup } from './session/buildMatchSetup';
  */
 export class SessionController {
   private current: SessionState | null = null;
+  private setup: MatchSetupDraft | null = null;
   private stopListening = (): void => undefined;
   private readonly context: SessionContext;
 
@@ -28,7 +30,20 @@ export class SessionController {
         this.transition(to, reason ?? null);
       },
       newMatchSetup: () => {
-        this.newMatchSetup();
+        const seed = deps.seedSource();
+        this.publishSetup(
+          buildMatchSetup({
+            seed,
+            rng: deps.createRng(seed),
+            legendClasses: this.context.catalogue.legendClasses,
+            legendsPerTeam: deps.matchConfig.legendsPerTeam,
+            playerName: deps.playerName,
+          }),
+        );
+      },
+      repeatMatchSetup: () => {
+        if (this.setup === null) throw new Error('No match setup to repeat');
+        this.publishSetup(this.setup);
       },
       clearMatchSetup: () => {
         this.clearMatchSetup();
@@ -61,7 +76,7 @@ export class SessionController {
     const from = this.current;
     if (from === null) throw new Error(`Session is not running; cannot enter '${to}'`);
     if (!SESSION_TRANSITIONS[from.phase].includes(to)) {
-      throw new Error(`Illegal session transition: ${from.phase} → ${to}`);
+      throw new IllegalSessionTransition(from.phase, to);
     }
     from.exit?.(this.context);
     this.enter(to, reason);
@@ -71,23 +86,17 @@ export class SessionController {
     const state = this.deps.states[phase];
     this.current = state;
     this.deps.bus.emit('session-phase', { phase, reason });
-    state.enter(this.context);
+    state.enter?.(this.context);
   }
 
-  private newMatchSetup(): void {
-    const seed = this.deps.seedSource();
-    const setup = buildMatchSetup({
-      seed,
-      rng: this.deps.createRng(seed),
-      legendClasses: this.context.catalogue.legendClasses,
-      legendsPerTeam: this.deps.matchConfig.legendsPerTeam,
-      playerName: this.deps.playerName,
-    });
+  private publishSetup(setup: MatchSetupDraft): void {
+    this.setup = setup;
     this.deps.themeRoot.dataset.team = setup.playerTeam;
     this.deps.bus.emit('match-setup', setup);
   }
 
   private clearMatchSetup(): void {
+    this.setup = null;
     delete this.deps.themeRoot.dataset.team;
     this.deps.bus.emit('match-setup', null);
   }

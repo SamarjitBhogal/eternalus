@@ -1,4 +1,4 @@
-import type { ContentCatalogue } from '../../bridge/events';
+import type { DisplayCatalogue } from '../../bridge/events';
 
 /**
  * Port: where the display-ready content catalogue comes from. `placeholderCatalogue` until core
@@ -6,5 +6,5 @@ import type { ContentCatalogue } from '../../bridge/events';
  */
 export interface CatalogueSource {
   /** Returns the catalogue; called once at construction of the session. */
-  load(): ContentCatalogue;
+  load(): DisplayCatalogue;
 }

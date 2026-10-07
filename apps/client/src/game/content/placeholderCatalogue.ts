@@ -1,9 +1,9 @@
-import type { ContentCatalogue } from '../../bridge/events';
+import type { DisplayCatalogue } from '../../bridge/events';
 import type { CatalogueSource } from './CatalogueSource.types';
 
 // Class names, blurbs and sub-classes from docs/reference/game-design/01-classes-and-subclasses.md;
 // "Chronicle" from docs/reference/suggestions/naming.md (accepted as a working name, decisions log).
-const PLACEHOLDER_CONTENT: ContentCatalogue = {
+const PLACEHOLDER_CONTENT: DisplayCatalogue = {
   legendClasses: [
     {
       classId: 'warrior',

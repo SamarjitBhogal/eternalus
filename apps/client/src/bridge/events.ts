@@ -80,7 +80,7 @@ export type BackgroundSet = {
 };
 
 /** Display-ready content projected into the store at boot. */
-export type ContentCatalogue = {
+export type DisplayCatalogue = {
   readonly legendClasses: readonly LegendClassCard[];
   readonly backgroundSets: readonly BackgroundSet[];
   /** Themed display name of the profile screen ("Chronicle", naming.md). */
@@ -120,7 +120,7 @@ export type BridgeEventMap = {
   'session-phase': { readonly phase: SessionPhase; readonly reason: string | null };
   'menu-route': { readonly route: MenuRoute };
   overlay: { readonly overlay: Overlay | null };
-  'content-catalogue': ContentCatalogue;
+  'content-catalogue': DisplayCatalogue;
   'loading-progress': LoadingProgress;
   /** `null` clears the setup (back to the menu). */
   'match-setup': MatchSetupDraft | null;

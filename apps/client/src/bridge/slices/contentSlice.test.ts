@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ContentCatalogue } from '../events';
+import type { DisplayCatalogue } from '../events';
 import { contentSlice } from './contentSlice';
 
-const CATALOGUE: ContentCatalogue = {
+const CATALOGUE: DisplayCatalogue = {
   legendClasses: [{ classId: 'warrior', displayName: 'Warrior', blurb: 'Fast.', specs: [] }],
   backgroundSets: [
     { id: 'menu', team: 'neutral', layers: [] },

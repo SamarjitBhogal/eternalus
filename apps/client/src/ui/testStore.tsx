@@ -2,12 +2,12 @@ import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Provider } from 'react-redux';
 
-import type { ContentCatalogue, MenuRoute, SessionPhase } from '../bridge/events';
+import type { DisplayCatalogue, MenuRoute, SessionPhase } from '../bridge/events';
 import { sessionSlice } from '../bridge/slices/sessionSlice';
 import { createAppStore, type RootState } from '../bridge/store';
 
 /** A small catalogue for UI tests (ui/ may not import the game's placeholder catalogue). */
-export const TEST_CONTENT: ContentCatalogue = {
+export const TEST_CONTENT: DisplayCatalogue = {
   legendClasses: [
     { classId: 'warrior', displayName: 'Warrior', blurb: 'Quick and light.', specs: [] },
     { classId: 'magus', displayName: 'Magus', blurb: 'Casts and revives.', specs: [] },

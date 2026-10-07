@@ -5,17 +5,22 @@
   --team-light-primary: #d9a93a;
   --team-light-secondary: #f6f1e4;
   --team-light-accent: #3d6fd6;
+  --team-light-on-primary: #0e1116;
   --team-dark-primary: #c0303a;
   --team-dark-secondary: #0c0709;
   --team-dark-accent: #6b2fa0;
+  --team-dark-on-primary: #ffffff;
   --team-neutral-primary: #9fb0c6;
   --team-neutral-secondary: #e6e8eb;
   --team-neutral-accent: #253246;
+  --team-neutral-on-primary: #0e1116;
 
   /* The active theme: neutral by default, switched by data-team on <html> (SessionController). */
   --theme-primary: var(--team-neutral-primary);
   --theme-secondary: var(--team-neutral-secondary);
   --theme-accent: var(--team-neutral-accent);
+  /* Text on --theme-primary (≥ 4.5:1 for every team: neutral 8.6, light 8.7, dark 5.6). */
+  --theme-on-primary: var(--team-neutral-on-primary);
 
   /* Surfaces and text (text on surfaces ≥ 4.5:1). */
   --surface-0: #0e1116;
@@ -24,7 +29,6 @@
   --surface-scrim: rgb(14 17 22 / 78%);
   --text-primary: #e6e8eb;
   --text-muted: #a3adbb;
-  --text-on-theme: #0e1116;
   --focus-ring: #ffd36b;
 
   /* Kept from the scaffold; aliases of the tokens above. */
@@ -55,12 +59,14 @@
   --theme-primary: var(--team-light-primary);
   --theme-secondary: var(--team-light-secondary);
   --theme-accent: var(--team-light-accent);
+  --theme-on-primary: var(--team-light-on-primary);
 }
 
 :root[data-team='dark'] {
   --theme-primary: var(--team-dark-primary);
   --theme-secondary: var(--team-dark-secondary);
   --theme-accent: var(--team-dark-accent);
+  --theme-on-primary: var(--team-dark-on-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {

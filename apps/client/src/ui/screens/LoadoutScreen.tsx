@@ -7,7 +7,7 @@ import { Button } from '../components/Button';
 import { Panel } from '../components/Panel';
 import { ScreenFrame } from '../components/ScreenFrame';
 import { STRINGS } from '../strings';
-import styles from './MenuPage.module.css';
+import styles from './LoadoutScreen.module.css';
 
 /** Loadouts shell: the classes, read-only, until loadout editing lands in sprint 2. */
 export function LoadoutScreen(): ReactElement {
@@ -15,9 +15,9 @@ export function LoadoutScreen(): ReactElement {
   return (
     <ScreenFrame>
       <Panel title={STRINGS.loadouts.title}>
-        <p className={styles.muted}>{STRINGS.comingSoon}</p>
+        <p className={styles.note}>{STRINGS.comingSoon}</p>
         <h3>{STRINGS.loadouts.classesTitle}</h3>
-        <ul className={styles.list}>
+        <ul>
           {legendClasses.map((card) => (
             <li key={card.classId}>
               <strong>{card.displayName}</strong>: {card.blurb}

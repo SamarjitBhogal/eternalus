@@ -1,4 +1,4 @@
-import type { BridgeEventMap, ContentCatalogue, SessionPhase, UiIntent } from '../bridge/events';
+import type { BridgeEventMap, DisplayCatalogue, SessionPhase, UiIntent } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
@@ -8,11 +8,13 @@ import type { Rng } from './session/Rng.types';
 export interface SessionContext {
   readonly bus: TypedEventBus<BridgeEventMap>;
   readonly clock: SessionClock;
-  readonly catalogue: ContentCatalogue;
+  readonly catalogue: DisplayCatalogue;
   /** Moves to `to` (exit current → enter next); throws on a pair not in `SESSION_TRANSITIONS`. */
   transition(to: SessionPhase, reason?: string): void;
   /** Draws a new seed and team, builds both rosters, themes the page and publishes the setup. */
   newMatchSetup(): void;
+  /** Publishes the current setup again, unchanged (a rematch, architecture 13 §2). */
+  repeatMatchSetup(): void;
   /** Drops the setup and the team theme. */
   clearMatchSetup(): void;
 }
@@ -20,7 +22,7 @@ export interface SessionContext {
 /** One session phase's behaviour (State pattern). One instance per phase, reused across visits. */
 export interface SessionState {
   readonly phase: SessionPhase;
-  enter(context: SessionContext): void;
+  enter?(context: SessionContext): void;
   exit?(context: SessionContext): void;
   handleIntent?(intent: UiIntent, context: SessionContext): void;
 }

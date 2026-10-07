@@ -7,7 +7,7 @@ import { Button } from '../components/Button';
 import { Panel } from '../components/Panel';
 import { ScreenFrame } from '../components/ScreenFrame';
 import { STRINGS } from '../strings';
-import styles from './MenuPage.module.css';
+import styles from './ProfileScreen.module.css';
 
 /** Profile shell, titled with its content display name ("Chronicle"); history lands in sprint 2. */
 export function ProfileScreen(): ReactElement {
@@ -15,7 +15,7 @@ export function ProfileScreen(): ReactElement {
   return (
     <ScreenFrame>
       <Panel title={title}>
-        <p className={styles.muted}>{STRINGS.comingSoon}</p>
+        <p className={styles.note}>{STRINGS.comingSoon}</p>
         <p>{STRINGS.profile.history}</p>
         <Button
           autoFocus
