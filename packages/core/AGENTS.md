@@ -12,22 +12,29 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 ## Folders
 
-**Today** core contains only `src/index.ts` (no exports yet) and a placeholder test. The folders
-below are the **planned** layout; create them as code is added.
+Core is **L2 Domain**, the innermost layer of the program (`docs/architecture/01-layered-oop-model.md`):
+it imports nothing outside itself, and the client depends on it, never the reverse. Inside core,
+modules form rings from the inside out: `utils/` and `teams/`, then `content/`, then `components/`,
+then `entities/`, then `systems/`, `state/`, `commands/`, `ai/` and `Simulation.ts`. A module may
+import its own ring and the rings inside it, never one further out; ESLint enforces this
+(`eslint.config.js`, "Core module rings" in `docs/process/guardrails.md`). Folders not built yet
+are created as code is added.
 
-| Folder          | Holds                                                              | May import                      |
-| --------------- | ------------------------------------------------------------------ | ------------------------------- |
-| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs  | `content/`, `utils/` (types)    |
-| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants            | `utils/` only                   |
-| `components/`   | Data owned by entities (`Transform`, `Movement`)                   | `utils/`, `content/`            |
-| `entities/`     | `Entity` root class and factories                                  | `components/`, `content/`, ...  |
-| `commands/`     | `Command` union and `applyCommand`                                 | `state/`, `entities/`, `utils/` |
-| `state/`        | `GameState`, `GameEvents`, `GameSnapshot`                          | lower layers                    |
-| `systems/`      | Per-tick logic implementing `System`. Never import another system. | everything except `ai/`         |
-| `ai/`           | Bot controllers. They only return `Command`s.                      | `state/`, `commands/`, `utils/` |
-| `Simulation.ts` | Composes everything; the only thing the client drives              | everything                      |
+| Folder          | Holds                                                                                                   | May import                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs; `ContentCatalogue` and `validation/` | `content/`, `utils/`, `teams/` (types)        |
+| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants                                                 | `utils/` only                                 |
+| `teams/`        | The `Team` / `PlayableTeam` types                                                                       | `teams/`, `utils/`                            |
+| `components/`   | Data owned by entities (`Transform`, `Movement`)                                                        | `utils/`, `teams/`, `content/`                |
+| `entities/`     | `Entity` root, families, concrete kinds, registry and factory                                           | `components/`, `content/`, `teams/`, `utils/` |
+| `commands/`     | `Command` union and `applyCommand`                                                                      | `state/`, `entities/`, `utils/`               |
+| `state/`        | `GameState`, `GameEvents`, `GameSnapshot`                                                               | lower layers                                  |
+| `systems/`      | Per-tick logic implementing `System`. Never import another system.                                      | everything except `ai/`                       |
+| `ai/`           | Bot controllers. They only return `Command`s.                                                           | `state/`, `commands/`, `utils/`               |
+| `Simulation.ts` | Composes everything; the only thing the client drives                                                   | everything                                    |
 
-These import rules are checked in review.
+ESLint enforces the rules for `utils/`, `teams/`, `content/`, `components/` and `entities/`; the rest
+are checked in review.
 
 ## Adding code
 
@@ -43,7 +50,7 @@ These import rules are checked in review.
 
 - Each test sits next to its source file: `src/systems/MovementSystem.ts` +
   `src/systems/MovementSystem.test.ts`. Test files are excluded from the published types.
-- `src/index.test.ts` is a placeholder that only checks the public API is empty. Replace it with
-  real tests once core has code.
+- `src/index.test.ts` checks exactly which runtime values the public API exports.
+- `src/entities/playerScenarios.test.ts` plays player stories through the real entity layer.
 - Coverage thresholds (80% lines/branches/functions/statements) live in `vitest.config.ts` and
   only go up.
