@@ -145,3 +145,19 @@ The example below is fenced so it is not read as a real entry.
   (37)" at 100%, client "Tests 27 passed (27)", "✓ built", "Documentation check passed."
 - Next step: the human pushes the phase branch; start the Sprint 1 sessions per
   `docs/agents/prompts/2026-10-03-ultracode-sessions.md`.
+
+### 2026-10-07 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
+
+- What was done: entity half of sprint 1.2 (session C items 1–4, 6), all as classes. `Collider`
+  (circle); `Health` layered shields (5500 example); `Entity` API renamed to doc 04; `Unit` installs
+  its components from a runtime-checked `UnitSpawnContext`; `Warrior`/`Sentinel`/`Magus`,
+  `Light`/`Medium`/`HeavyMob`; `DefaultEntityRegistry`; content `legends/*`, `mobs/*`,
+  `training-dummy` in frozen `ContentCatalogue`s; `ContentValidator` + rule classes replace
+  `validateContent()`. ESLint now enforces the core module rings (guardrails, core `AGENTS.md`).
+  `teams/teams.types.ts` is byte-identical to `feat/map-generator`. Tests beside every file plus
+  `entities/playerScenarios.test.ts` (player stories).
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (Prettier clean,
+  lint/typecheck/knip clean, core "Tests 117 passed (117)" at 100%, client "Tests 27 passed (27)",
+  "✓ built", "Documentation check passed.").
+- Next step: pre-PR gate, then PR into the phase branch. Blocked on session B: `MovementSystem`,
+  `DeathSystem`, `InvariantSystem`, `IdGenerator`/`ObjectPool`; owner: sim lane.
