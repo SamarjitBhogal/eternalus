@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import { validateGameConfig } from '../../config/validateGameConfig';
 import type { FeatureOwner } from '../../content/maps/maps.types';
 import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
@@ -56,7 +57,13 @@ const contextWithDummy = (
   registry.register('grunt', Grunt);
   registry.register('hero', Hero);
   return {
-    state: new GameState(createDefaultGameConfig({ limits }), 1),
+    // One Legend and no initial hordes, so the small caps below are valid configs.
+    state: new GameState(
+      validateGameConfig(
+        createDefaultGameConfig({ limits, match: { legendsPerTeam: 1, initialHordesPerTeam: 0 } }),
+      ),
+      1,
+    ),
     factory: new EntityFactory(registry),
   };
 };

@@ -337,7 +337,8 @@ flow fields and the spawn schedule follow. Config is a plain object, validated o
 `Simulation` and never imported as a global (rule A in 01-layered-oop-model.md §4).
 
 ```ts
-// packages/core/src/config/GameConfig.types.ts (integration contract §2.2)
+// Sketch of the target: the integration contract §2.2 fields (config/GameConfig.types.ts) plus
+// the three planned MatchConfig fields
 export type GameConfig = {
   readonly tickRate: number;
   readonly map: MapConfig; // 06 §2: lane, tower and camp counts, world size, nav cell size, preset

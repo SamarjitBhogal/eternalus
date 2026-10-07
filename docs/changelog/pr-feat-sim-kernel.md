@@ -79,8 +79,11 @@ determinism lint (ADR 0012) makes `polarPoint` use them in the merge; `utils/vec
 `content/maps/maps.types.ts`: `commands/Command.types.ts`, `state/EntityStore.ts`,
 `state/GameEvents.types.ts`, `state/Snapshot.types.ts` (and C's `TeamMembership`) import it.
 Merging both branches conflicts in `index.ts`, `index.test.ts`, `packages/core/AGENTS.md`,
-`PROGRESS.md`, `INBOX.md`, the decisions log and the generated `docs/README.md` index (re-run
-`npm run docs:index`), and exports `MapConfig` twice until your local type is deleted.
+`PROGRESS.md`, `INBOX.md`, the decisions log, architecture 01, 02, 03, 10, 15 and 17 (this
+branch's new text still says `TeamId` where yours says `Team`) and the generated `docs/README.md`
+index (re-run `npm run docs:index`), and exports `MapConfig` twice until your local type is
+deleted. At the merge, also reconcile 03 §10's camp-divisibility `Recommendation:` with your
+DEC-14.
 
 **Session C (entities):** the owner-approved `INBOX.md` request "Session C (from session B)"
 lists your follow-ups and the B-owned lines you may change for them (DEC-18): the entity
@@ -105,8 +108,8 @@ grouped, nullable `EntitySnapshot` (03 §5); `makeLogRecord`'s options object wi
 `DiagnosticEvent`s (15 §4); the determinism lint (ADR 0012); command dispatch through a handler
 registry and a queue drained once per step (03 §3, 17 R16); a store iterating in creation order
 with string ids (03 §2); `StateHasher` serialising state itself, velocity included (03 §9); the
-replay harness in `diagnostics/` with a target factory and typed `.ts` fixtures (15 §7, which
-also allows `diagnostics/` the types of `commands/` and `config/`); ports in `.types.ts` files
+replay harness in `diagnostics/` with a target factory and typed `.ts` fixtures (15 §7; 15 §1
+and 02 §2 allow `diagnostics/` the types of `commands/` and `config/`); ports in `.types.ts` files
 (01 §3); `GameConfig` in the integration contract's shape with `map.navCellSize` (03 §10).
 
 **Interim, recorded in 03 §12 and 15 §13** (critic: acceptable):
@@ -127,7 +130,9 @@ also allows `diagnostics/` the types of `commands/` and `config/`); ports in `.t
 - `GameState` has no `world`, `teams`, `hordes` or `recentCommands`; `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline`; `Replay` has no `versions`,
   `ReplayOutcome` no `ok` or `violations`; no `LogRecord.context` yet.
-- `campsPerSide` divisibility (03 §10 `Recommendation:`) is not checked.
+- `campsPerSide` divisibility (03 §10 `Recommendation:`) is not checked. Two of the map rules
+  `validateGameConfig` enforces (even `cornerCamps`, no camps with one lane) come from session A's
+  `validateMapConfig` and its unmerged 06 §2; base 06 §2 states only the odd `numLanes` rule.
 - `IdGenerator`, `vec2.ts` and `deterministicMath.ts` are reachable only from tests until
   sessions A and C adopt them. The team type is `FeatureOwner` until session A's `teams/`.
 - The golden fixture's checkpoint hashes were regenerated once in this PR when `StateHasher`
@@ -188,7 +193,9 @@ also allows `diagnostics/` the types of `commands/` and `config/`); ports in `.t
   the divisibility Recommendation without a decision; recent events, port file names and entity
   order were described two ways across docs; session C's handoff had five gaps. Fixed in
   `70a8efc`, `16ad292` and the commit that updates this body.
-- Pass 5: _pending_
+- Pass 5: **NO BLOCKERS**; every pass-4 item resolved. Its last notes are applied in the commit
+  that fills this line: the 03 §10 block relabelled as a sketch, the full merge-conflict list for
+  session A, the provenance of two map rules, one citation, and valid configs in the cap tests.
 
 **Ponytail.** `/ponytail-review` on the core diff found two cuts, both applied in `e821994`:
 
@@ -220,7 +227,7 @@ Functions    : 100% ( 147/147 )
 Lines        : 100% ( 413/413 )
  Test Files  6 passed (6)
       Tests  27 passed (27)
-✓ built in 70ms
+✓ built in 69ms
 Checked 95 Markdown files under docs/.
 Documentation check passed.
 ```
