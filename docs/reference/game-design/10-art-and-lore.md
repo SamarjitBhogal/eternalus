@@ -83,7 +83,7 @@ tracked in `12-open-questions.md`.
 
 | Placeholder                                                | Kind                                        | Status                                            |
 | ---------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------- |
-| Assault (rename pending)                                   | Class                                       | open                                              |
+| Warrior (formerly Assault)                                 | Class                                       | open                                              |
 | Flying (rename pending) / "arial"                          | Class (post-MVP)                            | open (`[STATUS: idea-pending]`)                   |
 | All sub-class names                                        | Sub-classes (post-MVP)                      | open                                              |
 | Enchantment (rename pending)                               | Form change (post-MVP)                      | open                                              |

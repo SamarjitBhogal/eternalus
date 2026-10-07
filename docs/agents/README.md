@@ -4,7 +4,7 @@ description: How AI coding agents (Claude Code, Codex/ChatGPT, Gemini/Antigravit
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-03
 tags: [agents, harness, process]
 related: ['docs/architecture/16-agentic-harness.md', 'docs/requirements/04-agentic-instructions.md']
 ---

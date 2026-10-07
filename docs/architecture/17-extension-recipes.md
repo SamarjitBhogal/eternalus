@@ -486,11 +486,11 @@ readonly actorId: EntityId; ... }`, serialisable, ids only); `core/commands/appl
 
 ### R26. Rename a class or a display name
 
-- **When:** a placeholder is decided (`Assault (rename pending)`, `Flying`, the bow) or a class
+- **When:** a placeholder is decided (`Warrior (formerly Assault)`, `Flying`, the bow) or a class
   name reads badly. Three different things: a display name, a class identifier, a content id.
 - **Files:** display name: the `displayName` line in the content file, nothing else. Class: an
   IDE rename of the symbol and its file, its imports and the `extends` clauses of subclasses.
-  Content id (`'assault'`): **never** once used, because replays, loadouts and match history
+  Content id (`'warrior'`): **never** once used, because replays, loadouts and match history
   reference it (a persistence migration plus new replay fixtures if the team insists;
   `Recommendation:` do not).
 - **Registry line:** the one registry line that names the class (the rename tool updates it).
@@ -524,8 +524,8 @@ the following. Each row is a missing seam; the fix is the seam, not the feature.
 | A4  | A system importing or calling a sibling system                                                                | Hidden ordering coupling; the pipeline order lies   | A `GameEvent` (R17) plus a deferred pass in the listener; the order in `defaultSystemPipeline.ts`                                                |
 | A5  | `ui/` importing core values, `game/` or an entity class                                                       | Two sources of truth; React re-renders at 60 Hz     | A `Snapshot` field, a bridge event and a selector (R19)                                                                                          |
 | A6  | A second registry for the same concept (a `Map<kind, ...>` in a system, a list of classes in a view)          | The single place of change was duplicated           | The one registry of 02 §9; delete the copy                                                                                                       |
-| A7  | A fourth inheritance level (`Assassin extends Assault`) or a subclass for a data-only difference              | Taxonomy used for behaviour                         | A sibling kind whose definition `extends` the parent's data (R2), a component (R12), a strategy (R13)                                            |
-| A8  | `new Assault(...)` outside `defaultEntityRegistry.ts`; `new Canvas2dRenderer()` outside `Match` or `main.tsx` | The factory or the composition root was bypassed    | `EntityFactory.spawn` (R1–R7); constructor injection from the root (R25)                                                                         |
+| A7  | A fourth inheritance level (`Assassin extends Warrior`) or a subclass for a data-only difference              | Taxonomy used for behaviour                         | A sibling kind whose definition `extends` the parent's data (R2), a component (R12), a strategy (R13)                                            |
+| A8  | `new Warrior(...)` outside `defaultEntityRegistry.ts`; `new Canvas2dRenderer()` outside `Match` or `main.tsx` | The factory or the composition root was bypassed    | `EntityFactory.spawn` (R1–R7); constructor injection from the root (R25)                                                                         |
 | A9  | A cheat, test hook or bot that mutates state without a `Command`                                              | The replay log no longer replays                    | A `dev-*` command (R24) or a controller (R18)                                                                                                    |
 | A10 | `Math.random`, `Date`, timers or `Math.atan2` in core; an `onTick` method on an entity                        | Determinism or the system/entity split is broken    | The seeded `Rng`, tick counts, `deterministicMath.ts`; a component (R12) plus a system (R11)                                                     |
 

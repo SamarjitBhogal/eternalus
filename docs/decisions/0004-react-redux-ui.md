@@ -11,7 +11,7 @@ related: ['docs/architecture/13-game-interface.md', 'docs/decisions/0002-css-mod
 
 # 0004. React and Redux Toolkit for menus and HUD
 
-- Status: accepted (product owner decision, 2026-09-30; instructor confirmation pending, DEC-02)
+- Status: accepted (product owner decision, 2026-09-30; instructor confirmation received, DEC-02, 2026-10-03)
 - Date: 2026-09-30
 
 ## Context

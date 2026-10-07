@@ -50,7 +50,7 @@ The architecture (`../../architecture/05-abilities-weapons-and-loadouts.md`, `..
 export const HAMSTRING = {
   id: 'hamstring',
   displayName: 'Hamstring',
-  classId: 'assault',
+  classId: 'warrior',
   slot: 'ability', // 'ability' | 'ultimate' | 'default-action' | 'passive'
   cooldownSeconds: 9, // TUNE: Recommendation in balancing.md
   aetherCost: 25, // TUNE: Recommendation in balancing.md
@@ -78,9 +78,9 @@ export const HAMSTRING = {
 
 Single place of change (OCP): a new ability that recombines these kinds is one content file plus a catalogue line; a new effect kind is one `<Kind>Effect` class plus one `defaultAbilityRegistry.ts` line; nothing in `AbilitySystem` changes.
 
-## 2. Assault (rename pending) — MVP class
+## 2. Warrior (formerly Assault) — MVP class
 
-The game doc gives Assault **Veil** (invisibility) and **Blade Runner** (dash, Physical/Magical varieties) and the ultimate **Fury**. The class is "lighter, lower health, faster", damage split between magic and physical, "better light ability stats", with short blades that "can be thrown" as its unique weapon. The missing third ability should give it a ranged poke and a reason to pick a damage type, without another dash.
+The game doc gives Warrior **Veil** (invisibility) and **Blade Runner** (dash, Physical/Magical varieties) and the ultimate **Fury**. The class is "lighter, lower health, faster", damage split between magic and physical, "better light ability stats", with short blades that "can be thrown" as its unique weapon. The missing third ability should give it a ranged poke and a reason to pick a damage type, without another dash.
 
 | Ability                     | Effect (one line)                                                                                                                         | Damage type                           | Varieties (loadout)                                                                                        | Counterplay                                                                                                     | Composes                           | Status                         |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------ |
@@ -96,7 +96,7 @@ Alternative ultimate (a loadout choice next to Fury, like Berserk/Meteor Fall fo
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------ | --------------- |
 | Eclipse  | A 10 m dome of dusk for 6 s: allies inside are invisible while they stay inside, enemies inside are blinded and cannot see the minimap area. | None        | **Dusk**: as described. **Umbra**: 6 m dome, enemies inside are also slowed 30%. | Leave the dome; Scry or Eagle Eye marks through it (`marked` beats `invisible`); it does not move. | zone, buff, debuff | **MVP-if-time** |
 
-Why Eclipse: Fury is selfish damage; a support ultimate gives the Assault line a role split before sub-classes exist, and it is pure content (three existing effect kinds).
+Why Eclipse: Fury is selfish damage; a support ultimate gives the Warrior line a role split before sub-classes exist, and it is pure content (three existing effect kinds).
 
 ## 3. Sentinel — MVP class
 
@@ -154,8 +154,8 @@ Sub-classes are data (`LegendSpecDefinition`) that override ability ids, so a si
 
 | Sub-class (working name → proposed) | Signature ability | Effect (one line)                                                                                                 | Composes                    |
 | ----------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| Assault / Assassin → Shade          | Sever             | Backstab a marked or bleeding target for 30% of its missing health; resets Shadowstep on a kill.                  | damage, buff                |
-| Assault / Paladin → Templar         | Aegis of Dawn     | A 6 m aura for 5 s: allies inside take 20% less damage and are healed for 20% of the damage you deal.             | zone, buff, heal            |
+| Warrior / Assassin → Shade          | Sever             | Backstab a marked or bleeding target for 30% of its missing health; resets Shadowstep on a kill.                  | damage, buff                |
+| Warrior / Paladin → Templar         | Aegis of Dawn     | A 6 m aura for 5 s: allies inside take 20% less damage and are healed for 20% of the damage you deal.             | zone, buff, heal            |
 | Sentinel / Colossus                 | Unyielding        | Passive: while below 30% health, knockback and stun do not affect you and Slam costs no aether (once per 30 s).   | buff (conditional)          |
 | Magus / Necromancer                 | Raise Dead        | Raise up to three intact minion corpses within 6 m as neutral-turned-allied wraiths for 12 s (team changes: D10). | revive, summon              |
 | Magus / Druid → Hierophant          | Hymn of Wards     | Channel 3 s: every ally within 8 m gains a shield bar equal to 15% of its max health for 6 s.                     | buff (shield)               |

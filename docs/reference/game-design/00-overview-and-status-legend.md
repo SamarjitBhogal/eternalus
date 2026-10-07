@@ -39,7 +39,7 @@ Key facts at a glance (all tuning values are quoted from the source docs and mar
 | Fact                | Value                                                                                                          | Source                     |
 | ------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------- |
 | Teams               | `light`, `dark`, plus `neutral` for camps and bosses                                                           | requirements doc, MVP list |
-| Legends             | 10 per team (3 per lane + 1 Rover); MVP classes Assault (rename pending), Sentinel, Magus                      | game doc, requirements doc |
+| Legends             | 10 per team (3 per lane + 1 Rover); MVP classes Warrior (formerly Assault), Sentinel, Magus                    | game doc, requirements doc |
 | Lane units          | Minions in hordes of 16 (light), 8 (medium), 4 (heavy) `TUNE`                                                  | requirements doc           |
 | Structures per team | Stronghold with walls, gates and turrets; per lane 1 SpawnerTower and 1 BuffTower                              | requirements doc, game doc |
 | Neutral             | 6 forest camps per side, 3 central capture points (middle one is the Cathedral), corner camps with mini-bosses | requirements doc, game doc |

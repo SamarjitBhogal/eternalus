@@ -63,7 +63,7 @@ export abstract class Structure extends Entity {
 | `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; team buffs, enemy debuff aura (10% health/damage, TUNE); shield source | MVP                                 |
 | `WallSegment`  | none                                 | Ring collider; unbreakable until the rule in §3 passes                              | MVP                                 |
 | `Gate`         | `GateState`, `Combat` (fire defence) | Opens for allies/hordes, closes otherwise; burns enemies passing through            | MVP (fire: MVP-if-time)             |
-| `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Assault Legends may take manual control                           | MVP (manual: MVP-if-time)           |
+| `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                           | MVP (manual: MVP-if-time)           |
 | `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates after cooldown                   | MVP (corner: MVP-if-time)           |
 | `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                | MVP (boss summon: per plan phase 3) |
 
@@ -168,7 +168,7 @@ alive and in range, prefer by a data priority list, switch ammo to the first `Am
 whose `preferredTargetClasses` includes the target's class, and aim predictively (target position
 
 - velocity × time-to-impact, solved in two iterations with deterministic vector math, no `atan2`).
-  Manual mode (MVP-if-time): an Assault Legend issues the `turret-toggle-control` and
+  Manual mode (MVP-if-time): an Warrior Legend issues the `turret-toggle-control` and
   `turret-switch-ammo` `InputAction`s (bound to P and T by default, rebindable, never hard-coded);
   the turret then fires where the player aims until they leave, and auto resumes. Ammo is data:
   changing rates or adding a third ammo is a content entry, matching the doc's "couple lines" wish.
@@ -271,7 +271,7 @@ export type ObstacleDefinition = {
   `fell.damage`, cells under the trunk are re-flagged (`terrain-changed`, "breaks the ground"), and
   the obstacle becomes a `felled-trunk` obstacle with `weight = trunkWeight` that a unit with
   `Carry.capacity >= weight` can pick up (`Carry` component, `PickUpStrategy` per class:
-  Assault low, Magus medium, Sentinel high; **MVP-if-time**).
+  Warrior low, Magus medium, Sentinel high; **MVP-if-time**).
 
 ## 10. Destructible terrain pipeline
 

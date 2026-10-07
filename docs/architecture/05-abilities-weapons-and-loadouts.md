@@ -251,7 +251,7 @@ const END = { kind: 'circle', radius: 1.5 } as const;
 export const BLADE_RUNNER = {
   id: 'blade-runner',
   displayName: 'Blade Runner',
-  classId: 'assault',
+  classId: 'warrior',
   slot: 'ability',
   cooldownSeconds: 12,
   aetherCost: 35, // TUNE: Recommendation in balancing.md
@@ -582,7 +582,7 @@ by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks 
 | Staff (`magus-staff`)                       | staff      | melee physical, ranged magical; `grants: ['spell-potency']`                             | magus     | MVP                     |
 | Wuuthrad (`wuuthrad`)                       | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time             |
 | Lightbringer (`lightbringer`)               | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time             |
-| Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | assault   | MVP-if-time             |
+| Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
 | Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
 
 ## 11. Artifacts (gadgets Z and C)
@@ -594,7 +594,7 @@ air burst, physical or magical; Soul Orb: Cast Forward as a `summon` turret or F
 game doc's "selected before spawn". Casting is `cast-ability { slot: 'gadget-1' }` from the
 `gadget-1` / `gadget-2` `InputAction`s; there is no artifact runtime, no artifact system and no
 second HUD path (Phase 4.4's done-when). Slots are **MVP**; Mortar and Soul Orb are
-**MVP-if-time**; the second Sentinel artifact and the Assault artifact are INBOX decisions
+**MVP-if-time**; the second Sentinel artifact and the Warrior artifact are INBOX decisions
 ([more-weapons.md](../reference/suggestions/more-weapons.md)).
 
 ## 12. Loadout

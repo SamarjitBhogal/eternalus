@@ -45,13 +45,13 @@ and [§4](../research/game-architecture-and-performance-research.md#4-spatial-pa
 - **World unit.** **Recommendation:** 1 world unit = 1 metre. It makes the game doc's sizes and
   speeds ("N m/s") usable directly and keeps tuning legible; rendering scales through `Camera`.
   The `feat/map` branch's 1600 × 900 world is re-read as metres (a 1.6 km × 0.9 km map; TUNE).
-- **Character sizes.** The game doc gives heights: Assault ~7 ft (Master Chief), Magus ~10 ft
+- **Character sizes.** The game doc gives heights: Warrior ~7 ft (Master Chief), Magus ~10 ft
   (Hades), Sentinel ~15 ft (an elephant). A top-down footprint radius is what physics needs:
 
 | Unit                    | Height (game doc)      | Footprint radius (**Recommendation**, TUNE) | Notes                                 |
 | ----------------------- | ---------------------- | ------------------------------------------- | ------------------------------------- |
-| light minion            | (smaller than Assault) | 0.4 m                                       | horde of 16                           |
-| Assault / medium minion | ~7 ft (2.1 m)          | 0.5 m                                       | "a little bigger than a light minion" |
+| light minion            | (smaller than Warrior) | 0.4 m                                       | horde of 16                           |
+| Warrior / medium minion | ~7 ft (2.1 m)          | 0.5 m                                       | "a little bigger than a light minion" |
 | Magus / heavy minion    | ~10 ft (3.0 m)         | 0.8 m                                       | "equivalent in size to Heavy minions" |
 | Sentinel                | ~15 ft (4.6 m)         | 1.5 m                                       | largest unit; sets the hash cell size |
 | projectile (bolt)       | n/a                    | 0.15 m                                      | swept, never overlap-tested only      |
@@ -101,7 +101,7 @@ fullSpeedFraction`; physics only reports speed.
 
 ```ts
 export class Carry {
-  readonly capacity: number; // content: Assault low, Magus medium, Sentinel high (TUNE)
+  readonly capacity: number; // content: Warrior low, Magus medium, Sentinel high (TUNE)
   carriedId: EntityId | null;
   carriedWeight: number; // 0 when empty
 }
