@@ -178,3 +178,21 @@ The example below is fenced so it is not read as a real entry.
   NO BLOCKERS after three passes; ponytail cut two test-only getters (−14 lines).
 - Next step: Sam pushes `feat/sim-kernel` and opens the PR into the phase branch; session A
   swaps its stand-ins after the merge; session C starts on the merged kernel.
+
+### 2026-10-07 — Phase 1 / sprint 1.1 — feat/sim-kernel — sholtzman + Claude Code
+
+- What was done: follow-ups on PR #13 after the owner's sign-off (DEC-15…DEC-18, decisions log):
+  determinism lint with ADR 0012 and an `exp` wrapper; in-place `Vec2` forms; `DiagnosticEvent`
+  types and typed log records; 03 §10's initial-hordes cap rule; the kernel design folded into
+  architecture 01, 02, 03, 10, 15 and 17 with "Implementation status" sections in 03 and 15;
+  replay fixture format in 15 §7; session C's follow-ups in `INBOX.md` and its prompt. All ten
+  sprint 1.1 items ticked. Correction: the 2026-10-06 entry above had its "Checks run" line
+  completed in place (it first pointed at the PR body) before the branch was pushed; this log is
+  append-only, so that edit is recorded here.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 204 passed (204)" at 100%; client "Tests 27 passed (27)"; "✓ built in 70ms";
+  "Documentation check passed." Sprint metric: 10 seeds × 3,000 ticks, identical hashes, in
+  356–360 ms (Apple M4 Pro, 24 GB, Node 24.21.0). Pre-PR gate on the follow-ups: critic pass 4
+  found one blocker (stale PR body and PROGRESS), fixed; ponytail found nothing to cut.
+- Next step: Sam pushes the follow-ups to PR #13 and updates its description; session A swaps
+  its stand-ins after the merge; session C starts from its `INBOX.md` request.
