@@ -370,7 +370,7 @@ builds the config from a `MapPreset` plus developer-menu overrides; tests build 
 ## 11. Content by ID, never embedded
 
 Entities carry a `definitionId`; systems resolve it through the injected `ContentCatalogue`
-(`content.legend('assault')`), which returns a shared immutable definition (Flyweight). State,
+(`content.legend('warrior')`), which returns a shared immutable definition (Flyweight). State,
 snapshots, replays and hashes therefore contain only ids, and a definition can be re-tuned (or
 hot-reloaded in development, research §9) without touching a running `GameState`. The client
 loads the same catalogue through `loadDefaultContent()` for the loadout screen and for sprites, so

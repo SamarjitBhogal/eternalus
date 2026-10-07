@@ -93,6 +93,20 @@ The example below is fenced so it is not read as a real entry.
 - Checks run: `npm run test -w @eternalus/core` → `Test Files 5 passed (5), Tests 13 passed (13)`; `npm run check:quick` → passed (`typecheck` + `lint`); `npm run check` → passed (`format:check`, `lint`, `typecheck`, `knip`, `test:coverage`, `build`, `docs:check`).
 - Next step: wire concrete entity kinds and content definitions into the registry as Sprint 1.2 entity implementation continues; owner: sim lane.
 
+### 2026-10-03 — Phase 0 follow-up / INBOX batch 1 — docs/inbox-decisions-2026-10-03 — sholtzman + Claude (Cowork)
+
+- What was done: recorded the owner's INBOX answers (DEC-01…DEC-10, 32 discrepancies) in
+  `docs/reference/game-design/13-owner-decisions-log.md`; re-cut the plan to four two-week
+  sprints ending at the 2026-11-27 presentation (`docs/plan/README.md` §0); extended
+  `SessionPhase` with the character-select / pre-launch / match-loading flow; renamed Assault →
+  Warrior across the docs; wrote the Sprint 1 session prompts
+  (`docs/agents/prompts/2026-10-03-ultracode-sessions.md`); opened DEC-11…DEC-13 in `INBOX.md`.
+- Checks run: `npm run format:check`, `npm run docs:check` (see the commit for the verbatim
+  lines); CI repeats `npm run check` on the PR.
+- Next step: push the branch, PR into `main`; create `phase/1-simulation-kernel-and-world`;
+  start sessions B and D (then A, F, E, G; C after B; H in week 2) per the prompts file; close
+  `copilot/implement-entity-modules` with the review-R text; answer DEC-11…DEC-13.
+
 ### 2026-10-05 — Phase 1 / sprint 1.2 — refactor/implement-entity-modules — SamarjitBhogal + Claude Code
 
 - What was done: ported `packages/core/src/entities/*.js` one-to-one to TypeScript (`Entity`, `Unit`, `Legend`, `Mob`, `EntityRegistry`, `EntityFactory`, plus `Entity.types.ts` and `EntityRegistry.types.ts`) with `.test.ts` ports of every JS test and a few added cases; deleted the JS files; reverted `packages/core/vitest.config.ts` to `.ts`-only globs. Added `npm run check:no-js` (`scripts/checks/no-js.mjs`): fails on any tracked/staged `.js`/`.jsx`/`.mjs`/`.cjs` except `eslint.config.js` and `scripts/**/*.mjs`; it runs in `check:quick` (git hooks), `check` and CI. Documented in `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, `docs/process/guardrails.md`.
