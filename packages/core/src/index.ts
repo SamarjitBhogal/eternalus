@@ -2,6 +2,14 @@
  * Public API of `@eternalus/core`. Other packages may import only from here.
  * Anything not exported from this file is internal to the simulation.
  */
+export type {
+  AbilitySlot,
+  Aim,
+  Command,
+  CommandRejectReason,
+  CommandType,
+  InputIntent,
+} from './commands/Command.types';
 export { ConfigValidationError } from './config/ConfigValidationError';
 export { createDefaultGameConfig } from './config/defaultGameConfig';
 export type {
