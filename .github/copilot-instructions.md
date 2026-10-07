@@ -6,7 +6,10 @@ agent and code review read `AGENTS.md` natively; this file only restates the six
 most often broken, so they are never lost.
 
 1. **Run `npm run check`** before declaring anything done and report the result verbatim. A
-   failing check means the task is not done.
+   failing check means the task is not done. No PR is opened until the pre-PR gate in
+   `AGENTS.md` has also passed (critic, ponytail, re-run check; ADR 0010). Without the ponytail plugin
+   (`copilot plugin install ponytail@ponytail` for Copilot CLI), hand the branch to a session that
+   has it.
 2. **No `any`, no `@ts-ignore`, no `eslint-disable` without a named rule and a reason**, no
    skipped or weakened tests, no lowered coverage thresholds.
 3. **No new dependencies** without explicit human approval; never hand-edit `package-lock.json`.

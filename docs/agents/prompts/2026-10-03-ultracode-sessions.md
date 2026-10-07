@@ -4,7 +4,7 @@ description: Copy-paste prompts for parallel Claude Code sessions, one per git w
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-03
+last-reviewed: 2026-10-06
 tags: [agents, prompts, sprint-1, phase-1, worktrees]
 related:
   [
@@ -226,7 +226,10 @@ task branch as you complete each deliverable (Conventional Commits with an allow
 commits); never push, never merge, never touch main or the phase branch. Finish with
 `npm run check` (verbatim result), an entry in docs/plan/PROGRESS.md, the sprint checkbox(es)
 ticked in docs/plan/phase-1-simulation-kernel-and-world.md, and a PR description written to
-docs/changelog/pr-<branch-name>.md using .github/pull_request_template.md.
+docs/changelog/pr-<branch-name>.md using .github/pull_request_template.md. Then run the pre-PR
+gate in AGENTS.md "Before opening a PR" (added 2026-10-06, ADR 0010): an independent critic
+against the base commit's design docs, /ponytail-review + /ponytail on your diff, and
+npm run check again on the post-ponytail code; record all three results in the PR description.
 ```
 
 ### A — `feat/map-generator`: audit and fix the map code against the architecture (reviewer: Aryan Walanj)

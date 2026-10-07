@@ -18,3 +18,10 @@
 - [ ] No new dependencies, **or** each one justified here in one line and approved by a human
 - [ ] Changes stay within the scope of the task
 - [ ] Docs updated where behaviour or workflow changed
+
+### Pre-PR gate (`AGENTS.md`, ADR 0010), after everything above
+
+- [ ] Architecture critic run against the base commit's design docs: verdict and any
+      better-than-design items (signed off and folded into the docs) noted below
+- [ ] `/ponytail-review` + `/ponytail` run on the diff: cuts applied and net lines noted below
+- [ ] `npm run check` re-run on the post-ponytail code and passes (result pasted below)

@@ -118,3 +118,17 @@ The example below is fenced so it is not read as a real entry.
 - What was done: addressed the PR #4 review on entity ids. `EntityFactory.create(kind, definitionId, spawnContext)` no longer takes an id; the factory assigns `entity-<n>` from a per-factory counter (`EntityFactory.constants.ts`), so ids are unique per match and deterministic for replays (no `Math.random`). Added a test for sequential, per-factory ids.
 - Checks run: `npm run check` → exit 0 (core 21/21 tests, 100% coverage).
 - Next step: wire concrete entity kinds and content definitions into the registry; owner: sim lane.
+
+### 2026-10-06 — Process / pre-PR gate — chore/pre-pr-gate — sholtzman + Claude Code
+
+- What was done: owner decision to add a pre-PR gate after the Definition of done (independent
+  architecture critic, ponytail pass, `npm run check` re-run, then the PR) — ADR 0010, `AGENTS.md`
+  "Before opening a PR" and "Ponytail", CONTRIBUTING §8, checklists §1/§4, PR template, git
+  workflow, guardrails table, harness doc, `verify`/`pr-review` skills. Ponytail runs at `lite`,
+  injected into the main session and coding subagents only (`.claude/settings.json` env; matcher
+  pipe-tested). Documentation longevity rule OG-12 and ADR 0011 after a doc sweep corroded
+  architecture docs. Every changed doc was reviewed independently against OG-12.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 7 passed (7)", client "Tests 27 passed (27)"; "✓ built"; "Documentation check passed."
+- Next step: the human pushes `chore/pre-pr-gate` and opens it into `main` after PR #5; in the
+  first new session, confirm ponytail starts at `lite` (per-project mode flag).
