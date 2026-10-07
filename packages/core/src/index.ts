@@ -21,6 +21,11 @@ export type {
 } from './config/GameConfig.types';
 export { validateGameConfig } from './config/validateGameConfig';
 export { MAP_1 } from './content/maps/map1';
+export { SEVERITY } from './diagnostics/Logger.constants';
+export type { LogAttributes, Logger, LogRecord, SeverityText } from './diagnostics/Logger.types';
+export { makeLogRecord } from './diagnostics/makeLogRecord';
+export { MemoryLogger } from './diagnostics/MemoryLogger';
+export { NullLogger } from './diagnostics/NullLogger';
 export type {
   FeatureOwner,
   MapDefinition,
