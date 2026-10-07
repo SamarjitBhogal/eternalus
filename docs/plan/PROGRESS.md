@@ -104,3 +104,9 @@ The example below is fenced so it is not read as a real entry.
 - What was done: addressed the PR #4 review on entity ids. `EntityFactory.create(kind, definitionId, spawnContext)` no longer takes an id; the factory assigns `entity-<n>` from a per-factory counter (`EntityFactory.constants.ts`), so ids are unique per match and deterministic for replays (no `Math.random`). Added a test for sequential, per-factory ids.
 - Checks run: `npm run check` → exit 0 (core 21/21 tests, 100% coverage).
 - Next step: wire concrete entity kinds and content definitions into the registry; owner: sim lane.
+
+### 2026-10-06 — Phase 1 / sprint 1.2 — main (uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done: added `.github/CODEOWNERS` with `*` owned by all five repo collaborators, so GitHub auto-requests their review on every new PR (author is skipped automatically).
+- Checks run: `npm run check` → passed (docs 87 files passed).
+- Next step: commit on a `chore/` branch and merge to `main` (CODEOWNERS is read from the PR base branch); optionally enable "Require review from Code Owners" in branch protection; owner: SamarjitBhogal.
