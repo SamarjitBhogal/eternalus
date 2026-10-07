@@ -27,12 +27,10 @@ export class FakeSessionClock implements SessionClock {
   public advance(ms: number): void {
     const end = this.time + ms;
     for (;;) {
-      const due = this.pending.filter((timer) => timer.dueAt <= end);
-      const next = due.reduce<(typeof due)[number] | undefined>(
-        (earliest, timer) =>
-          earliest === undefined || timer.dueAt < earliest.dueAt ? timer : earliest,
-        undefined,
-      );
+      // A stable sort keeps scheduling order among timers due at the same time.
+      const next = this.pending
+        .filter((timer) => timer.dueAt <= end)
+        .sort((a, b) => a.dueAt - b.dueAt)[0];
       if (next === undefined) break;
       this.pending = this.pending.filter((timer) => timer !== next);
       this.time = next.dueAt;
