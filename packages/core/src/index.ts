@@ -24,3 +24,5 @@ export type {
   TeamId,
 } from './content/maps/maps.types';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
+export { SeededRandom } from './utils/SeededRandom';
+export type { SeededRandomState } from './utils/SeededRandom.types';

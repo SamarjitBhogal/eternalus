@@ -7,6 +7,7 @@ describe('@eternalus/core public API', () => {
     expect(Object.keys(core).sort()).toEqual([
       'ConfigValidationError',
       'MAP_1',
+      'SeededRandom',
       'createDefaultGameConfig',
       'validateGameConfig',
     ]);
