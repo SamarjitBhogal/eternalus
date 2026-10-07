@@ -172,7 +172,9 @@ The example below is fenced so it is not read as a real entry.
   stay open. Asked in `INBOX.md`: two better-than-design sign-offs, session A's swap, the lint
   ban, design-doc deltas. PR body: `docs/changelog/pr-feat-sim-kernel.md`.
 - Checks run: sprint metric: 10 seeds × 3,000 ticks, identical hashes every 100 ticks, twice,
-  in 367–377 ms (Apple M4 Pro, 24 GB, Node 24.21.0, Vitest 5.0.2). Final `npm run check`: see
-  the PR body's pre-PR gate section.
+  in 367–377 ms (Apple M4 Pro, 24 GB, Node 24.21.0, Vitest 5.0.2). `npm run check` → `EXIT=0`:
+  "All matched files use Prettier code style!"; core "Tests 197 passed (197)" at 100%; client
+  "Tests 27 passed (27)"; "✓ built in 69ms"; "Documentation check passed." Pre-PR gate: critic
+  NO BLOCKERS after three passes; ponytail cut two test-only getters (−14 lines).
 - Next step: Sam pushes `feat/sim-kernel` and opens the PR into the phase branch; session A
   swaps its stand-ins after the merge; session C starts on the merged kernel.

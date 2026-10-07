@@ -65,19 +65,20 @@ field names plus `navCellSize: 5` and `presetId: 'map-1'`; `validateGameConfig` 
 `utils/Rng.types.ts` replaces `map/Rng.types.ts`; `utils/deterministicMath.ts` has `sin`, `cos`,
 `atan2`, `sqrt`, `pow`; `utils/vec2.ts` has `add`, `sub`, `scale`, `dot`, `length`,
 `normalize` (your `distance`/`lerpPoint` stay in `geometry.ts`). Keep `FeatureOwner` exported
-from `content/maps/maps.types.ts`: `commands/Command.types.ts`, `state/GameEvents.types.ts`,
-`state/Snapshot.types.ts`, `commands/handlers/DevSpawnHandler.ts` (and C's `TeamMembership`)
-import it. Merging both branches conflicts in `index.ts`, `index.test.ts`,
-`packages/core/AGENTS.md`, `PROGRESS.md` and `INBOX.md`, and exports `MapConfig` twice until
-your local type is deleted.
+from `content/maps/maps.types.ts`: `commands/Command.types.ts`, `state/EntityStore.ts`,
+`state/GameEvents.types.ts`, `state/Snapshot.types.ts` (and C's `TeamMembership`) import it.
+Merging both branches conflicts in `index.ts`, `index.test.ts`, `packages/core/AGENTS.md`,
+`PROGRESS.md`, `INBOX.md` and the generated `docs/README.md` index (re-run
+`npm run docs:index`), and exports `MapConfig` twice until your local type is deleted.
 
 **Session C (entities):** one line in `Simulation.ts` (marked `TODO`) passes your
 `createDefaultEntityRegistry()`; until then `dev-spawn` through `Simulation` rejects
 `unknown-kind`. `dev-spawn` hands the factory the spawn context `{ team, position }` and counts
-`Unit` / `Legend` instances per team for the caps (`EntityStore.countOnTeam`). `move`, `stop`, `attack-target`,
-`cast-ability`, `intent` and `dev-set-controller` reject `not-supported` through the shared
-`UnsupportedCommandHandler`; replace their lines in `commands/defaultCommandHandlers.ts` with
-real handlers as their systems land (the registry type forces one handler per type). Systems
+`Unit` / `Legend` instances per team for the caps (`EntityStore.countOnTeam`). `move`, `stop`,
+`attack-target`, `cast-ability`, `intent` and `dev-set-controller` reject `not-supported`
+through the shared `UnsupportedCommandHandler`; replace their lines in
+`commands/defaultCommandHandlers.ts` with real handlers as their systems land (the registry type
+forces one handler per type). Systems
 implement `System` (`systems/System.types.ts`: `name`, `update({ state, logger })`) and draw
 randomness only from `state.rng`. `GameEventMap` already declares `entity-died`,
 `invariant-violated`, `team-changed` and the rest of 03 §4. `EntityStore.remove(id, cause)`
@@ -99,9 +100,10 @@ contract, or is an interim stand-in.
 
 - `GameConfig` follows §2.2, not 03 §10 (no timeline, no `mapPreset`); `map.navCellSize` is
   added at session A's request; validation throws on the first problem (brief) and adds A's map
-  rules (odd lanes, even corner camps, no camps with one lane; 06 §2). 06 §2's divisibility
-  recommendation is not implemented (06 §2 marks it a Recommendation; session A's unmerged
-  DEC-14 splits camps unevenly instead).
+  rules (odd lanes, even corner camps, no camps with one lane; 06 §2). The divisibility rule
+  (`campsPerSide % (numLanes - 1)`) is not implemented: 03 §10, which governs `config/`, marks
+  it `Recommendation:`; 06 §2 states it without a qualifier; the brief's rule list omits it and
+  session A's unmerged DEC-14 splits camps unevenly instead.
 - `Simulation` is positional `(config, seed, logger, systems)` per the brief; no
   `SimulationOptions`, `exportReplay()` or `dispose()` yet.
 - Commands: names per the brief (`dev-spawn`, `dev-remove-entity`); a typed registry object
@@ -126,8 +128,9 @@ contract, or is an interim stand-in.
   regenerated once in this PR when `StateHasher` started hashing velocity (same seed, config and
   command log; 15 §7 allows it for an intended change). `diagnostics/` imports types from
   `commands/` and `config/`, beyond 02 §2's `state/` and `utils/` (forced by the replay format).
-- Logger port in `Logger.types.ts` (brief); no `LogRecord.context` or `DiagnosticEvent` types
-  (they arrive with the invariants).
+- Ports in `.types.ts` files: `Logger.types.ts` (brief) and `utils/Rng.types.ts` (01 §3 names
+  `utils/Rng.ts`; same convention, and session A's stand-in uses it too). Logger: no
+  `LogRecord.context` or `DiagnosticEvent` types (they arrive with the invariants).
 - The `Math.sin/cos/atan2/exp/pow` lint ban is not added (`eslint.config.js` is outside this
   session; see `INBOX.md`). `exp` is not wrapped (the brief's list omits it).
 - `IdGenerator`, `vec2.ts` and `deterministicMath.ts` are reachable only from tests until
@@ -165,15 +168,56 @@ fields and `makeLogRecord`'s options object.
 
 ### Pre-PR gate (`AGENTS.md`, ADR 0010), after everything above
 
-- [ ] Architecture critic run against the base commit's design docs: verdict and any
+- [x] Architecture critic run against the base commit's design docs: verdict and any
       better-than-design items (signed off and folded into the docs) noted below
-- [ ] `/ponytail-review` + `/ponytail` run on the diff: cuts applied and net lines noted below
-- [ ] `npm run check` re-run on the post-ponytail code and passes (result pasted below)
+- [x] `/ponytail-review` + `/ponytail` run on the diff: cuts applied and net lines noted below
+- [x] `npm run check` re-run on the post-ponytail code and passes (result pasted below)
 
-**Critic.** _pending_
+**Critic.** The `architecture-reviewer` subagent ran three passes against the docs at base
+`27e7e12`, seeing only the branch and those docs.
 
-**Ponytail.** _pending_
+- Pass 1: one blocker (Definition-of-done docs missing) and eleven violations: incomplete 03 §4
+  event catalogue, no `Rng` port, no caps on `dev-spawn`, hash missing velocity, duplicated
+  ceilings, missing sibling and compile-time tests, and doc nits. Reworked in
+  `1b3990c`..`75608be`.
+- Pass 2: one blocker (knip failed on two exported local types) and minor notes
+  (`commands/` importing `components/`, PR wording). Fixed in `97ae286`..`bba76b0`.
+- Pass 3: **NO BLOCKERS**. Its last notes are applied: `EntityFamily` renamed to `EntityClass`,
+  and PR body corrections. The critic said the rename needs no further pass.
+- Better than the design, awaiting sign-off in `INBOX.md` (design docs not yet updated):
+  - the nested, nullable `EntitySnapshot` fields;
+  - `makeLogRecord`'s options object.
 
-**Final check.** _pending_
+**Ponytail.** `/ponytail-review` on the core diff found two cuts, both applied in `e821994`:
+
+- the `RingBuffer.size` and `CommandQueue.size` getters, which only tests read;
+- net −14 lines (10 source, 4 test assertions on the removed getters; the same behaviour is
+  still asserted through `toArray()` and `drain()`).
+
+Kept because the architecture outranks ponytail:
+
+- `IdGenerator`, `SystemPipeline` and the `StateHasher` class (named by the brief, 02 and §2.2);
+- `SeededRandom.fromState` (the brief asks for a saveable state);
+- `NullLogger`, `GameEvents.recentEvents` and `EntityStore.get`.
+
+**Final check** (`npm run check` at the head of the branch, `EXIT=0`):
+
+```text
+All matched files use Prettier code style!
+> eslint --max-warnings 0 .
+> tsc -b
+> knip            (no issues; one configuration hint about apps/client ignoreDependencies)
+ Test Files  36 passed (36)
+      Tests  197 passed (197)
+Statements   : 100% ( 413/413 )
+Branches     : 100% ( 167/167 )
+Functions    : 100% ( 141/141 )
+Lines        : 100% ( 394/394 )
+ Test Files  6 passed (6)
+      Tests  27 passed (27)
+✓ built in 69ms
+Checked 94 Markdown files under docs/.
+Documentation check passed.
+```
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
