@@ -92,6 +92,19 @@ export function describeStorageAdapter(name: string, make: () => StorageAdapter)
       expect(read).toBeUndefined();
     });
 
+    it('runs a transaction after the ones started before it', async () => {
+      const adapter = await opened();
+
+      const write = adapter.transaction(['items'], 'readwrite', async (tx) => {
+        await Promise.resolve(); // the write lands after the read below has been started
+        await tx.put('items', { id: 'a' });
+      });
+      const read = adapter.transaction(['items'], 'readonly', (tx) => tx.get('items', 'a'));
+      await write;
+
+      expect(await read).toEqual({ id: 'a' });
+    });
+
     it('refuses writes in a readonly transaction', async () => {
       const adapter = await opened();
 

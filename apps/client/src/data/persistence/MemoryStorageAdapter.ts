@@ -17,6 +17,7 @@ export class MemoryStorageAdapter implements StorageAdapter {
   private readonly nextIds = new Map<string, number>();
   private version = 0;
   private isOpen = false;
+  private queue: Promise<unknown> = Promise.resolve();
 
   /** Runs the migrations above the stored version; refuses a schema older than the data. */
   public open(schema: StorageSchema): Promise<void> {
@@ -40,15 +41,33 @@ export class MemoryStorageAdapter implements StorageAdapter {
     return Promise.resolve();
   }
 
-  /** Runs `work` on copies of `stores` and commits them only if it resolves. */
-  public async transaction<T>(
+  /**
+   * Runs `work` on copies of `stores` and commits them only if it resolves. Transactions run
+   * one at a time in call order, as IndexedDB runs overlapping read-write transactions.
+   */
+  public transaction<T>(
     stores: readonly string[],
     mode: 'readonly' | 'readwrite',
     work: (tx: StorageTx) => Promise<T>,
   ): Promise<T> {
     if (!this.isOpen) {
-      throw new Error('storage is not open');
+      return Promise.reject(new Error('storage is not open'));
     }
+    const result = this.queue.then(() => this.run(stores, mode, work));
+    this.queue = result.catch(() => undefined);
+    return result;
+  }
+
+  /** Closes the adapter; the data stays for the next `open`. */
+  public close(): void {
+    this.isOpen = false;
+  }
+
+  private async run<T>(
+    stores: readonly string[],
+    mode: 'readonly' | 'readwrite',
+    work: (tx: StorageTx) => Promise<T>,
+  ): Promise<T> {
     const draft = new Map(stores.map((name) => [name, new Map(this.storeData(name))]));
     const scoped = (store: string): Map<string, unknown> => {
       const records = draft.get(store);
@@ -79,11 +98,6 @@ export class MemoryStorageAdapter implements StorageAdapter {
       draft.forEach((records, name) => this.data.set(name, records));
     }
     return result;
-  }
-
-  /** Closes the adapter; the data stays for the next `open`. */
-  public close(): void {
-    this.isOpen = false;
   }
 
   private storeData(name: string): Map<string, unknown> {
