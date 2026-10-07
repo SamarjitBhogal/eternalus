@@ -87,6 +87,12 @@ The example below is fenced so it is not read as a real entry.
   SamarjitBhogal, hold the team walkthrough (sprint 0.5, week 1) and answer the INBOX decisions
   DEC-01–DEC-10; owner: sholtzman.
 
+### 2026-10-02 — Phase 1 / sprint 1.2 — copilot/implement-entity-modules — claudiodh + Copilot Coding Agent
+
+- What was done: added foundational `packages/core/src/entities/*.js` modules (`Entity`, `Unit`, `Legend`, `Mob`, `EntityRegistry`, `EntityFactory`) plus focused `.test.js` coverage for abstract construction, family contracts, lifecycle order, component helpers, registry/factory behavior and unknown kind/cause errors; updated `packages/core/vitest.config.ts` so core discovers `.test.js` and includes `.js` sources in coverage; kept `packages/core/src/index.ts` unchanged (no public API export yet).
+- Checks run: `npm run test -w @eternalus/core` → `Test Files 5 passed (5), Tests 13 passed (13)`; `npm run check:quick` → passed (`typecheck` + `lint`); `npm run check` → passed (`format:check`, `lint`, `typecheck`, `knip`, `test:coverage`, `build`, `docs:check`).
+- Next step: wire concrete entity kinds and content definitions into the registry as Sprint 1.2 entity implementation continues; owner: sim lane.
+
 ### 2026-10-03 — Phase 0 follow-up / INBOX batch 1 — docs/inbox-decisions-2026-10-03 — sholtzman + Claude (Cowork)
 
 - What was done: recorded the owner's INBOX answers (DEC-01…DEC-10, 32 discrepancies) in
@@ -100,3 +106,21 @@ The example below is fenced so it is not read as a real entry.
 - Next step: push the branch, PR into `main`; create `phase/1-simulation-kernel-and-world`;
   start sessions B and D (then A, F, E, G; C after B; H in week 2) per the prompts file; close
   `copilot/implement-entity-modules` with the review-R text; answer DEC-11…DEC-13.
+
+### 2026-10-05 — Phase 1 / sprint 1.2 — refactor/implement-entity-modules — SamarjitBhogal + Claude Code
+
+- What was done: ported `packages/core/src/entities/*.js` one-to-one to TypeScript (`Entity`, `Unit`, `Legend`, `Mob`, `EntityRegistry`, `EntityFactory`, plus `Entity.types.ts` and `EntityRegistry.types.ts`) with `.test.ts` ports of every JS test and a few added cases; deleted the JS files; reverted `packages/core/vitest.config.ts` to `.ts`-only globs. Added `npm run check:no-js` (`scripts/checks/no-js.mjs`): fails on any tracked/staged `.js`/`.jsx`/`.mjs`/`.cjs` except `eslint.config.js` and `scripts/**/*.mjs`; it runs in `check:quick` (git hooks), `check` and CI. Documented in `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, `docs/process/guardrails.md`.
+- Checks run: `npm run check` → exit 0 (format, no-js, lint, typecheck, knip, core tests 20/20 at 100% coverage, client 27/27, build, docs 87 files passed). Guard self-tested: staging `packages/core/src/x.js` makes `check:no-js` exit 1.
+- Next step: wire concrete entity kinds and content definitions into the registry; owner: sim lane.
+
+### 2026-10-05 — Phase 1 / sprint 1.2 — refactor/implement-entity-modules — SamarjitBhogal + Claude Code
+
+- What was done: addressed the PR #4 review on entity ids. `EntityFactory.create(kind, definitionId, spawnContext)` no longer takes an id; the factory assigns `entity-<n>` from a per-factory counter (`EntityFactory.constants.ts`), so ids are unique per match and deterministic for replays (no `Math.random`). Added a test for sequential, per-factory ids.
+- Checks run: `npm run check` → exit 0 (core 21/21 tests, 100% coverage).
+- Next step: wire concrete entity kinds and content definitions into the registry; owner: sim lane.
+
+### 2026-10-06 — Phase 1 / sprint 1.2 — main (uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done: added `.github/CODEOWNERS` with `*` owned by all five repo collaborators, so GitHub auto-requests their review on every new PR (author is skipped automatically).
+- Checks run: `npm run check` → passed (docs 87 files passed).
+- Next step: commit on a `chore/` branch and merge to `main` (CODEOWNERS is read from the PR base branch); optionally enable "Require review from Code Owners" in branch protection; owner: SamarjitBhogal.
