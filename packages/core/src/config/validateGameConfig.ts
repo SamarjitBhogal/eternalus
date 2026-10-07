@@ -97,6 +97,15 @@ const RULES: readonly Rule[] = [
   count('match.hordeSizes.heavy'),
   count('match.initialHordesPerTeam'),
   positive('match.plannedMatchSeconds'),
+  {
+    path: 'limits.maxUnitsPerTeam',
+    rule: 'must fit the initial hordes (match.initialHordesPerTeam * match.hordeSizes.light)',
+    isValid: (value, config) =>
+      // Safe: all three fields passed their own rules above.
+      (value as number) >=
+      (valueAt(config, 'match.initialHordesPerTeam') as number) *
+        (valueAt(config, 'match.hordeSizes.light') as number),
+  },
 ];
 
 /**

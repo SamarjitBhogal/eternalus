@@ -26,6 +26,10 @@ describe('validateGameConfig', () => {
     expect(validateGameConfig(config)).toBe(config);
   });
 
+  it('accepts a unit cap that exactly fits the initial hordes', () => {
+    expect(failurePath({ limits: { maxUnitsPerTeam: 48 } })).toBeNull();
+  });
+
   it('accepts a five-lane map with two spawner towers per lane', () => {
     expect(failurePath({ map: { numLanes: 5, spawnTowersPerLane: 2 } })).toBeNull();
   });
@@ -70,6 +74,8 @@ describe('validateGameConfig', () => {
     ['match.hordeSizes.heavy', { match: { hordeSizes: { heavy: Number.NaN } } }],
     ['match.initialHordesPerTeam', { match: { initialHordesPerTeam: -3 } }],
     ['match.plannedMatchSeconds', { match: { plannedMatchSeconds: 0 } }],
+    ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 47 } }],
+    ['limits.maxUnitsPerTeam', { match: { initialHordesPerTeam: 10 } }],
   ])('rejects a bad %s', (path, overrides) => {
     expect(failurePath(overrides)).toBe(path);
   });
