@@ -33,13 +33,17 @@
       "Bash(git branch *)",
       "Bash(git branch)",
       "Bash(git show *)",
-      "Bash(git worktree list)"
+      "Bash(git worktree list)",
+      "Bash(git push -u origin *)",
+      "Bash(gh pr create *)"
     ],
     "deny": [
-      "Bash(git push *)",
-      "Bash(git push)",
       "Bash(git push --force*)",
       "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * main*)",
+      "Bash(git push * phase/*)",
       "Bash(git commit --no-verify*)",
       "Bash(git commit -n *)",
       "Bash(git reset --hard*)",
