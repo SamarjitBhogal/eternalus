@@ -1,70 +1,79 @@
-import { MAP_1 } from '@eternalus/core';
-import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_MAP_CONFIG, MapGenerator } from '@eternalus/core';
+import { describe, expect, it } from 'vitest';
 
-import { Renderer } from '../engine/Renderer';
-import type { DrawContext } from '../engine/Renderer.types';
+import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { MapView } from './MapView';
-import { GROUND_COLOR, TEAM_COLORS } from './MapView.constants';
+import {
+  FEATURE_STYLES,
+  GROUND_COLOR,
+  MINIMAP_ROLE_COLORS,
+  TEAM_COLORS,
+} from './MapView.constants';
 
-/** A pretend canvas. Tests run without a browser, so every drawing tool does nothing. */
-const createFakeContext = (): DrawContext => ({
-  beginPath: vi.fn(),
-  closePath: vi.fn(),
-  fill: vi.fn(),
-  fillRect: vi.fn(),
-  lineTo: vi.fn(),
-  moveTo: vi.fn(),
-  stroke: vi.fn(),
-  strokeRect: vi.fn(),
-  fillStyle: '',
-  strokeStyle: '',
-  lineWidth: 1,
-  lineJoin: 'miter',
-});
+/** The default generated map, the same one the game draws. */
+const MAP = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 1);
 
-/** A renderer on a 1600 x 900 screen showing the whole of map-1. */
-const createRenderer = (): Renderer => {
-  const renderer = new Renderer(createFakeContext());
-  renderer.resize(1600, 900);
-  renderer.fitWorld(MAP_1.width, MAP_1.height);
+const footprintKinds = new Set(
+  Object.entries(FEATURE_STYLES)
+    .filter(([, style]) => style.shape === 'footprint')
+    .map(([kind]) => kind),
+);
+
+/** Draws the map for the main view and returns the recorded calls. */
+const drawMain = (): RecordingRenderer => {
+  const renderer = new RecordingRenderer();
+  new MapView(MAP).draw(renderer);
   return renderer;
 };
 
 describe('MapView', () => {
-  it('draws the ground first, then every terrain shape', () => {
-    const renderer = createRenderer();
-    // Spy on fillPolygon to record every shape MapView fills.
-    const fillPolygon = vi.spyOn(renderer, 'fillPolygon');
-    new MapView(MAP_1).draw(renderer);
+  it('draws the ground first, then every terrain shape, then footprint features', () => {
+    const fills = drawMain().calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args] : [],
+    );
+    const footprints = MAP.features.filter((feature) => footprintKinds.has(feature.kind));
 
-    // One fill for the ground plus one per terrain shape (grey edges, rift, walls).
-    expect(fillPolygon).toHaveBeenCalledTimes(1 + MAP_1.terrain.length);
+    // One fill for the ground, one per terrain shape, one per wall segment or gate.
+    expect(fills).toHaveLength(1 + MAP.terrain.length + footprints.length);
     // The first fill is the ground, so everything else sits on top of it.
-    expect(fillPolygon.mock.calls[0]?.[1]).toBe(GROUND_COLOR);
+    expect(fills[0]?.[1]).toBe(GROUND_COLOR);
   });
 
   it('draws one line per lane', () => {
-    const renderer = createRenderer();
-    // Spy on strokePath to record every line MapView draws.
-    const strokePath = vi.spyOn(renderer, 'strokePath');
-    new MapView(MAP_1).draw(renderer);
+    const lines = drawMain().calls.filter((call) => call.op === 'strokePath');
 
-    // Map-1 has three lanes, so three lines.
-    expect(strokePath).toHaveBeenCalledTimes(MAP_1.lanes.length);
+    expect(lines).toHaveLength(MAP.lanes.length);
   });
 
-  it('draws one marker per feature, in team colours for team features', () => {
-    const renderer = createRenderer();
-    // Spy on fillSquare to record every marker MapView draws.
-    const fillSquare = vi.spyOn(renderer, 'fillSquare');
-    new MapView(MAP_1).draw(renderer);
+  it('draws one glyph per other feature, styled by kind, in team colours for team features', () => {
+    const glyphs = drawMain().calls.flatMap((call) =>
+      call.op === 'drawWorldGlyph' ? [call.args] : [],
+    );
+    const glyphFeatures = MAP.features.filter((feature) => !footprintKinds.has(feature.kind));
+    const tower = MAP.features.find((feature) => feature.id === 'light-spawner-tower-lane-0-0');
 
-    // One square per feature: capitals, buildings, cathedral, crossings, objectives.
-    expect(fillSquare).toHaveBeenCalledTimes(MAP_1.features.length);
-    // The colour is the third thing passed to fillSquare; collect them all.
-    const colors = fillSquare.mock.calls.map((call) => call[2]);
-    // Both teams' colours must appear, so team buildings are coloured correctly.
-    expect(colors).toContain(TEAM_COLORS.light);
-    expect(colors).toContain(TEAM_COLORS.dark);
+    expect(glyphs).toHaveLength(glyphFeatures.length);
+    expect(glyphs).toContainEqual([
+      FEATURE_STYLES['spawner-tower'],
+      tower?.position,
+      TEAM_COLORS.light,
+    ]);
+    expect(glyphs.map((args) => args[2])).toContain(TEAM_COLORS.dark);
+  });
+
+  it('draws the mini map with each feature’s own minimap glyph', () => {
+    const renderer = new RecordingRenderer();
+    new MapView(MAP).drawMinimap(renderer);
+    const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));
+
+    expect(glyphs).toHaveLength(MAP.features.length);
+    MAP.features.forEach((feature, index) => {
+      expect(glyphs[index]?.[0]).toBe(feature.minimapGlyph);
+      expect(glyphs[index]?.[1]).toBe(feature.position);
+    });
+    const cathedral = MAP.features.findIndex((feature) => feature.kind === 'cathedral');
+    expect(glyphs[cathedral]?.[2]).toBe(MINIMAP_ROLE_COLORS.objective);
+    const darkStronghold = MAP.features.findIndex((feature) => feature.id === 'dark-stronghold');
+    expect(glyphs[darkStronghold]?.[2]).toBe(TEAM_COLORS.dark);
   });
 });

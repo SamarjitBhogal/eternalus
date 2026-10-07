@@ -4,7 +4,7 @@ description: The four-layer model, who may import whom, ports and adapters, the 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, layers, solid, rules, ports-and-adapters]
 paths: ['packages/core/src/**', 'apps/client/src/**']
 related:
@@ -21,8 +21,8 @@ related:
 import_. It defines the four layers, the dependency rules between them, the ports (interfaces) each
 layer owns, the twelve architecture rules and their enforcement, the engine-portability contract
 (what survives a later move to Unity or Unreal) and the SOLID principle each boundary serves. It
-supersedes the layering sections of the old `docs/architecture.md`; nothing described here exists
-as code yet (the repo is scaffolding), so every snippet is a **sketch** of what we will build.
+supersedes the layering sections of the old `docs/architecture.md`. It describes the target design
+(`docs/plan/` tracks how much of it is built), so every snippet is a **sketch** of what we will build.
 
 ## 1. The four layers
 

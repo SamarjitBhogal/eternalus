@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -68,7 +68,7 @@ What this means (brief decision D7; details in `../../architecture/06-map-and-mi
   the `ViewRegistry` for each entity kind's minimap glyph; a new entity kind registers one
   view and appears on both, with no minimap code change.
 - Changing `numLanes` from 3 to 5 must produce a valid, symmetric map with 5 SpawnerTowers and 5
-  BuffTowers per team and 3 more central capture points; that is the acceptance test.
+  BuffTowers per team and 5 central capture points (one per lane); that is the acceptance test.
 
 ## MVP layout summary
 
@@ -98,9 +98,10 @@ A schematic of one half of the map (Light side; the Dark side mirrors it). Not t
 ```
 
 Placement rules the generator follows: SpawnerTower ahead of BuffTower on every lane; camps
-equidistant between adjacent lanes; capture points on the lane centre line at the map's centre;
-the rift along the centre line between the two territories with one bridge per lane; corner
-camps outside the lanes behind impassable rifts.
+between adjacent lanes, lighter near a lane and heavier deeper into the Unknown (DISC-42);
+capture points on the lane centre line at the map's centre; the rift along the centre line
+between the two territories with one bridge per lane; corner camps outside the lanes behind
+impassable rifts.
 
 ## Obstacles and destructible terrain
 
@@ -127,21 +128,23 @@ The team's `feat/map` branch traced Map 1 by hand as `packages/core/src/content/
 and `map1Terrain.ts`: a **1600 × 900 world-unit** rectangle, **Light on the west, Dark on the
 east**, with named objectives (`north-west-objective`, …) and polygon bounds for the corner
 regions, marked `TUNE: provisional shapes traced from the team's layout sketch`. Treat it as
-**provisional data only**: under D7 those coordinates become either generator inputs (world
-size, lane spacing, corner-region shape) or a preset under `content/maps/` that the generator
-validates, never a hand-authored map that the code depends on. The east/west orientation is a
-`GameConfig` value with the same status.
+**provisional data only**: under D7 those coordinates become generator inputs (world size, lane
+spacing) and a preset under `content/maps/presets/` that the generator validates (`map-1`: corner
+regions, rift width, lane bends; DEC-14), never a hand-authored map that the code depends on. The
+east/west orientation is fixed, not a `GameConfig` value (integration contract §2.2).
 
 ## Engineering notes
 
-- `packages/core/src/map/`: `MapGenerator` (with a `MapBuilder` inside), `MapDefinition` types,
-  `WorldMap` (runtime grid, nav cost grid, flow fields), `LaneGeometry`, symmetry helpers.
-  Presets live in `content/maps/`.
+- `packages/core/src/map/`: `MapGenerator` (with a `MapBuilder` inside), `WorldMap` (runtime
+  grid, nav cost grid, flow fields), `LaneGeometry`, symmetry helpers. `MapDefinition` and the
+  other map types live in `content/maps/maps.types.ts` (integration contract §2.2), presets in
+  `content/maps/`.
 - Single place of change: a new placed thing (say, a shrine) is one `Structure` or `Obstacle`
   subclass or content kind, one placement rule in the generator, one view registration. The
   minimap never changes.
 - Straight lanes are an MVP simplification, not a model constraint: `LaneGeometry` is a
-  polyline so curved lanes later are data.
+  polyline, so bends are data (a lane profile of straight segments, DEC-14) and curved lanes
+  later are one more `LaneShape` class.
 - Determinism: the generator is pure (config + seed in, definition out) and is tested with
   golden hashes of the generated definition.
 

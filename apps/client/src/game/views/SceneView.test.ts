@@ -1,25 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { Renderer } from '../engine/Renderer';
-import type { DrawContext } from '../engine/Renderer.types';
+import type { Renderer } from '../engine/render/Renderer';
 import { SceneView } from './SceneView';
 import type { WorldLayer } from './SceneView.types';
 
-/** A pretend canvas. Tests run without a browser, so every drawing tool does nothing. */
-const createFakeContext = (): DrawContext => ({
-  beginPath: vi.fn(),
-  closePath: vi.fn(),
-  fill: vi.fn(),
-  fillRect: vi.fn(),
-  lineTo: vi.fn(),
-  moveTo: vi.fn(),
-  stroke: vi.fn(),
-  strokeRect: vi.fn(),
-  fillStyle: '',
-  strokeStyle: '',
-  lineWidth: 1,
-  lineJoin: 'miter',
-});
+/** Layers here never draw, so the renderer is never called; any object will do. */
+const RENDERER = {} as Renderer;
 
 describe('SceneView', () => {
   it('draws every layer in list order, bottom first', () => {
@@ -31,13 +17,30 @@ describe('SceneView', () => {
       draw: (): void => {
         drawn.push(name);
       },
+      drawMinimap: (): void => {
+        drawn.push(`${name} (minimap)`);
+      },
     });
 
-    // Build a scene with three layers and draw it.
-    new SceneView([layer('map'), layer('obstacles'), layer('units')]).draw(
-      new Renderer(createFakeContext()),
-    );
-    // Layers must be drawn in list order: map at the bottom, units on top.
-    expect(drawn).toEqual(['map', 'obstacles', 'units']);
+    // Build a scene with three layers and draw it, then draw its mini map.
+    const scene = new SceneView([layer('map'), layer('obstacles'), layer('units')]);
+    scene.draw(RENDERER);
+    scene.drawMinimap(RENDERER);
+    // Layers must be drawn in list order: map at the bottom, units on top, in both views.
+    expect(drawn).toEqual([
+      'map',
+      'obstacles',
+      'units',
+      'map (minimap)',
+      'obstacles (minimap)',
+      'units (minimap)',
+    ]);
+  });
+
+  it('passes the renderer to every layer', () => {
+    const draw = vi.fn();
+    new SceneView([{ draw, drawMinimap: vi.fn() }]).draw(RENDERER);
+
+    expect(draw).toHaveBeenCalledWith(RENDERER);
   });
 });

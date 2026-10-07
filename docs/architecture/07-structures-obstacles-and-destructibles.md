@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -218,7 +218,7 @@ the middle one.
 
 ```ts
 export class Capturable {
-  ownerTeam: TeamId; // 'neutral' at match start
+  ownerTeam: Team; // 'neutral' at match start
   progress: number; // -1..1, negative = dark, positive = light (TUNE rate per unit inside)
   checkpoint: 0 | 1 | 2 | 3;
   lockedBy: EntityId | null; // a living MiniBoss locks the zone
@@ -312,9 +312,9 @@ These are the requirements doc's runtime checks ("entity passes through an unbre
 ## 12. Minimap appearance
 
 Every `StructureDefinition` and `ObstacleDefinition` carries an optional `minimapGlyph`
-(`06-map-and-minimap.md` §8). `WallSegment`s use `shape: 'footprint'` so the ring is drawn as its
-polygon; towers use team-coloured squares; camps neutral dots; capture points rings whose colour
-follows `Capturable.ownerTeam`. No view code per kind: the default `EntityView.drawGlyph` handles all.
+(`06-map-and-minimap.md` §8). `WallSegment`s and towers use team-coloured glyphs; camps neutral
+dots; capture points rings whose colour follows `Capturable.ownerTeam`. No view code per kind: the
+default `EntityView.drawGlyph` handles all.
 
 ## 13. Extension recipe: a new structure type
 
@@ -323,7 +323,7 @@ follows `Capturable.ownerTeam`. No view code per kind: the default `EntityView.d
 2. Add a subclass under `entities/structures/` **only** if its lifecycle differs (otherwise reuse
    an existing class with the new definition). Depth stays ≤ 3 below `Entity`.
 3. Add the kind to `MapFeatureKind` and one `EntityRegistry` line (feature kind → factory).
-4. Add a `MapBuilder` step or a preset feature so the generator places it.
+4. Add a `MapBuilder` step so the generator places it (presets never place features, DEC-14).
 5. Optional: an `EntityView` in `ViewRegistry` for the main canvas; the minimap needs nothing.
 6. Tests: the definition validates, the mirror test still passes, the minimap glyph test counts it.
 

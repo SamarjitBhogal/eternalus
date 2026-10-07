@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -40,8 +40,8 @@ registry line); nothing else changes** (CP-10 in
 [../requirements/02-coding-principles.md](../requirements/02-coding-principles.md)). If a recipe
 needs a fourth kind of change to existing code, a seam is missing: fix the seam, not the
 feature, then update the recipe. Paths follow the planned tree of
-[02-code-structure.md](02-code-structure.md); the repo has no game code yet, so every file named
-below is a **sketch**. `core/` means `packages/core/src/`, `client/` means `apps/client/src/`.
+[02-code-structure.md](02-code-structure.md); a file named below that is not in the tree yet is a
+**sketch**. `core/` means `packages/core/src/`, `client/` means `apps/client/src/`.
 
 ## 1. How to read a recipe
 
@@ -152,7 +152,8 @@ R14 "new view" and R16 "new command".
   and kinds are data; felling, burning and throwing are **MVP-if-time** interactions.
 - **Files:** `core/content/obstacles/<id>.ts` (`ObstacleDefinition`: `kind`, `footprint`,
   `health` (`null` = unbreakable), `weight`, `fell?`, `minimapGlyph`) + `obstacleCatalogue.ts`
-  line; a scatter entry in the preset (`core/content/maps/`) or a placed feature (R14). A new
+  line; a scatter entry in the `MapLayout` obstacle rules (`core/content/maps/`; a preset never
+  places features, DEC-14) or a placed feature (R14). A new
   `kind` is one union member and no `switch` on it may exist (A1); a new interaction is a
   `PickUpStrategy` (R13) or an effect kind (R8), never an `Obstacle` subclass.
 - **Registry line:** none: `obstacle` is already registered.
@@ -282,10 +283,11 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 
 - **When:** something the generator must place (a new structure, zone or fixed obstacle). This
   is also OG-05's "new view" recipe, because seeing it needs no view code.
-- **Files:** `core/map/MapDefinition.types.ts`: one `MapFeatureKind` member (and a feature type
-  if it carries new fields); `core/map/MapBuilder.ts`: a step, placed for `light` and mirrored
-  through `symmetry.ts`, or a preset feature in `core/content/maps/`; the definition it spawns
-  (R5, R6, R7) with a `minimapGlyph`.
+- **Files:** `core/content/maps/maps.types.ts`: one `MapFeatureKind` member (`MapFeature` stays
+  flat, integration contract §2.2, so new data goes on the definition it names);
+  `core/map/MapBuilder.ts`: a step, placed for `light` and mirrored through `symmetry.ts` (a
+  preset never places features, DEC-14); the definition it spawns (R5, R6, R7) with a
+  `minimapGlyph`.
 - **Registry line:** `defaultEntityRegistry.ts`: `EntityFactory.fromFeature` is the only reader
   of feature kinds and asks the registry for `definition.kind`.
 - **Tests:** `MapGenerator.test.ts` (mirror, counts follow config, determinism, containment);
@@ -294,15 +296,15 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   bespoke main-canvas look is optional: `client/game/views/<Name>View.ts` plus a
   `defaultViewRegistry.ts` line.
 - **Docs:** the kind table in 06 §4; `../reference/game-design/05-map.md`.
-- **Skill:** `new-entity` (`new-content` for a preset) · [06 §4](06-map-and-minimap.md#4-mapdefinition-types), [06 §8](06-map-and-minimap.md#8-minimap).
+- **Skill:** `new-entity` · [06 §4](06-map-and-minimap.md#4-mapdefinition-types), [06 §8](06-map-and-minimap.md#8-minimap).
 
 ### R15. Change `numLanes`, `spawnTowersPerLane` or `buffTowersPerLane`
 
 - **When:** the shape of the world changes (the requirements doc's acceptance test). The same
   recipe covers `campsPerSide`, `cornerCamps`, the unit caps and the timeline.
-- **Files:** no code. Change the default in `core/config/createDefaultGameConfig()`, a preset's
-  `config` override in `core/content/maps/`, or a developer-menu override that `Match` merges
-  before `validateGameConfig()`. A new **field** is one `GameConfig.types.ts` line, one
+- **Files:** no code. Change the default in `core/config/createDefaultGameConfig()` or a
+  developer-menu override that `Match` merges before `validateGameConfig()` (a preset carries no
+  counts, DEC-14). A new **field** is one `GameConfig.types.ts` line, one
   validation rule and one `MapBuilder` reader. (03 §10 and 06 §2 nest the fields under
   `GameConfig.map`, `GameConfig.match` and `GameConfig.limits`.)
 - **Registry line:** none.
