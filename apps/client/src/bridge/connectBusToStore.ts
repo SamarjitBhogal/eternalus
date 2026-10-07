@@ -5,6 +5,7 @@ import { loadingSlice } from './slices/loadingSlice';
 import { matchSetupSlice } from './slices/matchSetupSlice';
 import { matchSlice } from './slices/matchSlice';
 import { sessionSlice } from './slices/sessionSlice';
+import { settingsSlice } from './slices/settingsSlice';
 import type { AppDispatch } from './store';
 import type { TypedEventBus } from './TypedEventBus';
 
@@ -42,6 +43,7 @@ export function connectBusToStore(
     bus.on('match-clock', (clock) => dispatch(matchSlice.actions.clockChanged(clock))),
     bus.on('hud-state', (hud) => dispatch(hudSlice.actions.hudStateChanged(hud))),
     bus.on('announcement', (line) => dispatch(hudSlice.actions.announced(line))),
+    bus.on('settings', (settings) => dispatch(settingsSlice.actions.settingsChanged(settings))),
   ];
   return () => {
     for (const unsubscribe of unsubscribers) unsubscribe();

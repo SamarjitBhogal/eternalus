@@ -99,6 +99,16 @@ describe('connectBusToStore', () => {
     ]);
   });
 
+  it('copies the settings state', () => {
+    const { bus, store } = connected();
+    const settings = {
+      ...store.getState().settings,
+      audio: { master: 0.5, music: 0.25, effects: 1 },
+    };
+    bus.emit('settings', settings);
+    expect(store.getState().settings).toEqual(settings);
+  });
+
   it('unsubscribes every handler on disconnect', () => {
     const { bus, store, disconnect } = connected();
     expect(bus.listenerCount()).toBeGreaterThan(0);

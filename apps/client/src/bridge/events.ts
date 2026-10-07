@@ -6,6 +6,7 @@
 import type { InputAction, InputChord } from './Binding.types';
 import type { LegendClassId, PlayableTeam, Team } from './domain.types';
 import type { Announcement, HudSnapshot } from './slices/hudSlice';
+import type { SettingsPatch, SettingsSliceState } from './slices/settingsSlice';
 
 /** Every session phase, in flow order (architecture 13 §2). */
 export const SESSION_PHASES = [
@@ -38,8 +39,16 @@ export type UiIntent =
   | { readonly kind: 'leave-match' }
   | { readonly kind: 'open-overlay'; readonly overlay: Overlay }
   | { readonly kind: 'close-overlay' }
-  | { readonly kind: 'update-binding'; readonly action: InputAction; readonly chord: InputChord }
-  | { readonly kind: 'reset-bindings' };
+  | {
+      readonly kind: 'update-binding';
+      readonly action: InputAction;
+      readonly chord: InputChord;
+      /** What to do when the chord is already bound to another action. */
+      readonly onConflict: 'swap' | 'replace';
+    }
+  /** `action: null` resets every binding. */
+  | { readonly kind: 'reset-bindings'; readonly action: InputAction | null }
+  | { readonly kind: 'update-settings'; readonly patch: SettingsPatch };
 
 /** One Legend shown on the selection and loading screens, built before the simulation exists. */
 export type RosterEntry = {
@@ -130,4 +139,6 @@ export type BridgeEventMap = {
   'match-clock': MatchClock;
   'hud-state': HudSnapshot;
   announcement: Announcement;
+  /** The whole settings state, published whenever it changes. */
+  settings: SettingsSliceState;
 };
