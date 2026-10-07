@@ -132,3 +132,16 @@ The example below is fenced so it is not read as a real entry.
   typecheck and knip clean; core "Tests 7 passed (7)", client "Tests 27 passed (27)"; "✓ built"; "Documentation check passed."
 - Next step: the human pushes `chore/pre-pr-gate` and opens it into `main` after PR #5; in the
   first new session, confirm ponytail starts at `lite` (per-project mode flag).
+
+### 2026-10-06 — Phase 1 / sprint 1 setup — phase/1-simulation-kernel-and-world — sholtzman + Claude Code
+
+- What was done: brought the phase branch up to date for the Sprint 1 sessions by merging
+  `origin/main` (`4cff2a7`), `origin/docs/inbox-decisions-2026-10-03` (`3fab2df`) and
+  `origin/chore/pre-pr-gate` (`bdf2e37`). Conflicts: this log (every entry kept, oldest first) and
+  `docs/process/guardrails.md` (`last-reviewed` → 2026-10-06; all 22 table rows kept). The agent's
+  own `git fetch` failed on keychain auth; merged refs from the human's 18:15 fetch.
+- Checks run: `npm ci` → ok; `npm run docs:index` → "Documentation check passed." (no changes);
+  `npm run check` → exit 0: Prettier clean, lint/typecheck/knip clean, core "Tests 37 passed
+  (37)" at 100%, client "Tests 27 passed (27)", "✓ built", "Documentation check passed."
+- Next step: the human pushes the phase branch; start the Sprint 1 sessions per
+  `docs/agents/prompts/2026-10-03-ultracode-sessions.md`.
