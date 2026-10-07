@@ -97,8 +97,8 @@ a test double so the code that depends on the port can be tested in Node.
 
 | Port             | Owned by (file)                                      | Layer | Adapters (production / test)                                         | Injected by                             |
 | ---------------- | ---------------------------------------------------- | ----- | -------------------------------------------------------------------- | --------------------------------------- |
-| `Rng`            | `packages/core/src/utils/Rng.ts`                     | L2    | `SeededRandom` (sfc32) / `SeededRandom` with a fixed seed            | `Simulation` from the match seed        |
-| `Logger`         | `packages/core/src/diagnostics/Logger.ts`            | L2    | `ConsoleSink`, `RingBufferSink` (client) / `MemoryLogger`            | `Match` into `Simulation`               |
+| `Rng`            | `packages/core/src/utils/Rng.types.ts`               | L2    | `SeededRandom` (sfc32) / `SeededRandom` with a fixed seed            | `Simulation` from the match seed        |
+| `Logger`         | `packages/core/src/diagnostics/Logger.types.ts`      | L2    | `ConsoleSink`, `RingBufferSink` (client) / `MemoryLogger`            | `Match` into `Simulation`               |
 | `Renderer`       | `apps/client/src/game/engine/render/Renderer.ts`     | L1    | `Canvas2dRenderer` / `RecordingRenderer`                             | `Match` into views                      |
 | `FrameScheduler` | `apps/client/src/game/engine/loop/FrameScheduler.ts` | L1    | `RafFrameScheduler` / `FakeFrameScheduler`                           | `Match` into `GameLoop`                 |
 | `InputDevice`    | `apps/client/src/game/engine/input/InputDevice.ts`   | L1    | `KeyboardDevice`, `MouseDevice`, `GamepadDevice` / `FakeInputDevice` | `Match` into `InputMapper`              |

@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-07
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -244,8 +244,8 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   `packages/core`).
 - Steering and aiming work with vectors, never angles: facing is a unit vector, rotation is a
   2 × 2 multiply, "turn toward" is a normalised lerp. `atan2` is for display only (client side).
-- Fixed iteration order everywhere: entities by ascending id, hash query results sorted by id,
-  pairs `(a < b)`, comparators that tie-break by id, no `Map` iteration in hot paths.
+- Fixed iteration order everywhere: entities in store (creation) order (DEC-18), hash query results
+  sorted by id, pairs `(a < b)`, comparators that tie-break by id, no `Map` iteration in hot paths.
 - No `Math.random` in physics; the only randomness (obstacle scatter, jitter for coincident
   centres if ever needed) comes from the seeded `Rng` owned by `GameState`.
 - Same machine, same browser: replays are bit-exact and `Simulation.hash()` proves it;

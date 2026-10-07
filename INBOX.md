@@ -51,18 +51,28 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 - [ ] **Session C (from session B, 2026-10-07; owner-approved, DEC-18):** the simulation kernel
       (PR #13) leaves these to session C. The B-owned lines named here are C's to change, an
       exception to the ownership table (`docs/agents/prompts/2026-10-03-ultracode-sessions.md`
-      §2.6). Read 03 §12 and 15 §13 ("Implementation status")
-      first. (1) `Simulation.ts`: pass `createDefaultEntityRegistry()` to its `EntityFactory`
-      (marked `TODO`) so `dev-spawn` finds kinds. (2) `commands/defaultCommandHandlers.ts` and
-      `commands/handlers/`: replace the `UnsupportedCommandHandler` lines for `move` and `stop`
-      with real handlers when `MovementSystem` lands (recipe R16); the other unsupported commands
-      wait for their systems. (3) `commands/handlers/DevSpawnHandler.ts` and
-      `DevRemoveEntityHandler.ts`: hand spawns and removals to `SpawnSystem` / `DeathSystem`
-      (marked `TODO`; 03 §4 makes `DeathSystem` the only `entity-removed` emitter).
+      §2.6). Read 03 §12 and 15 §13 ("Implementation status") first.
+      (1) `Simulation.ts`: pass `createDefaultEntityRegistry()` to its `EntityFactory` (marked
+      `TODO`) so `dev-spawn` finds kinds; make `systems/defaultSystemPipeline.ts` (02 §9) the
+      default of its `systems` parameter; wire `DebugConfig` there too, and if that takes the
+      constructor past four parameters switch to `SimulationOptions` (03 §6, CONTRIBUTING §4)
+      and tell session H in this file.
+      (2) `commands/defaultCommandHandlers.ts` and `commands/handlers/`: replace the
+      `UnsupportedCommandHandler` lines for `move` and `stop` with real handlers when
+      `MovementSystem` lands (recipe R16); the other unsupported commands wait for their systems.
+      `commands/` may not import `components/` (02 §2): reach `Movement` through a `state/`
+      helper, as `EntityStore.countOnTeam` reaches `TeamMembership`, or ask Sam here to widen
+      `commands/`'s imports first.
+      (3) `commands/handlers/DevRemoveEntityHandler.ts`: hand removal to your `DeathSystem` (marked
+      `TODO`; 03 §4 makes it the only `entity-removed` emitter). `DevSpawnHandler` keeps spawning
+      directly until `SpawnSystem` exists (a later phase).
       (4) `state/StateHasher.ts`: add every new component's simulation fields to `fieldsOf`
-      (03 §9). (5) `entities/EntityFactory.ts`: take ids from `utils/IdGenerator` (03 §2).
+      (03 §9).
+      (5) `entities/EntityFactory.ts`: take ids from `utils/IdGenerator` (03 §2).
       (6) With the `InvariantRunner`: add `GameState.recentCommands` (recorded by
-      `Simulation.step()`), `LogRecord.context` in `diagnostics/Logger.types.ts`, and report
+      `Simulation.step()`), typed structurally like `GameEventMap`'s `command-rejected`
+      (`{ tick: number; command: { readonly type: string } }`) because `state/` may not import
+      `commands/` (03 §4); add `LogRecord.context` in `diagnostics/Logger.types.ts`; report
       violations with the `invariant-violated` `DiagnosticEvent` already declared (15 §4–§5).
       (7) `state/GameEvents.types.ts`: import `ShieldBar` from `components/Health.types.ts` once
       `Health` has shields.

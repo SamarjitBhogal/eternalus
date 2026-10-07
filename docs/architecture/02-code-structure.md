@@ -20,8 +20,7 @@ related:
 **Purpose.** Read this when you are about to create a file and need to know which folder it goes
 in, what that folder may import, how the file must be named and split, and which registry line
 makes the new code reachable. The tree below is the **planned** layout (decided, D6 and ADR 0006);
-folders are created when their first class arrives. Today core holds only `src/index.ts` and the
-client only `main.tsx`, `game/GameCanvas.tsx`, `bridge/store.ts` and `styles/global.css`.
+folders are created when their first class arrives.
 
 ## 1. Principles
 

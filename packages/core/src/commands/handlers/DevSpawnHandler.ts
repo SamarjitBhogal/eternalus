@@ -33,7 +33,7 @@ export class DevSpawnHandler implements CommandHandler<'dev-spawn'> {
     ) {
       return 'cap-exceeded';
     }
-    // TODO(sholtzman): hand spawns to SpawnSystem (03 §8 deferral) once session C adds it.
+    // TODO(sholtzman): hand spawns to SpawnSystem (03 §8 deferral) once it exists.
     for (let spawned = 0; spawned < count; spawned += 1) {
       const entity = factory.create(kind, definitionId, { team, position: at });
       state.entities.add(entity);

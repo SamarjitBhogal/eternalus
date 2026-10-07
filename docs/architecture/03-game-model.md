@@ -62,8 +62,7 @@ export class GameState {
   public readonly teams: Readonly<Record<TeamId, TeamState>>; // score, structures alive, buffs
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
-  public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context
-  public readonly recentEvents: RingBuffer<TimedEvent>;
+  public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
 
   public get tick(): number;
   public get phase(): MatchPhase;
@@ -353,7 +352,9 @@ export type MatchConfig = {
   readonly hordeSizes: { readonly light: number; readonly medium: number; readonly heavy: number };
   readonly initialHordesPerTeam: number;
   readonly plannedMatchSeconds: number;
-  // planned with their systems: hordeSpawnIntervalSeconds, capturePoints, timeline
+  readonly hordeSpawnIntervalSeconds: number;
+  readonly capturePoints: CapturePointConfig;
+  readonly timeline: readonly MatchTimelineEntry[];
 };
 
 export type LimitsConfig = {
@@ -377,16 +378,16 @@ requirement ceilings in `config/GameConfig.constants.ts`; this table records whe
 | `countdownSeconds`                        | only the initial hordes spawn                                          | requirements doc                           |
 | `hordeSizes`, `initialHordesPerTeam`      | one initial horde per lane, from the stronghold                        | requirements doc                           |
 | `plannedMatchSeconds`                     | the target match length                                                | DEC-13 (pending)                           |
-| `capturePoints`, `timeline` (planned)     | one capture point per lane, the middle one the Cathedral; timed events | game doc, Capture zones; 12                |
+| `capturePoints`, `timeline`               | one capture point per lane, the middle one the Cathedral; timed events | game doc, Capture zones; 12                |
 
 `validateGameConfig(config: unknown)` throws a `ConfigValidationError` naming the first offending
 field (`path`) and its `rule` (integration contract §2.2), and returns the config typed when every
 rule holds; `Simulation` validates in its constructor, so it never starts on a bad config. The rules
 live in `config/validateGameConfig.ts`, cross-field rules after the fields they read: whole numbers
-where counts are meant, `tickRate` the supported rate, caps within the requirement ceilings, the map
-rules of 06 §2. `Recommendation:` once `timeline` exists, entries ordered and `maxUnitsPerTeam >=
-initialHordesPerTeam * hordeSizes.light`. How uneven camp counts spread over the corridors is the
-map generator's concern (06 §2), not a config rule. Time fields are authored in seconds and
+where counts are meant, `tickRate` the supported rate, caps within the requirement ceilings,
+`maxUnitsPerTeam >= initialHordesPerTeam * hordeSizes.light`, the map rules of 06 §2; timeline
+entries ordered and `campsPerSide` divisible by the number of gaps between lanes are
+`Recommendation:`. Time fields are authored in seconds and
 converted to ticks once at construction, so systems only ever see ticks. `Match` builds the config
 from a `MapPreset` plus developer-menu overrides; tests build it inline with
 `createDefaultGameConfig({ map: { numLanes: 5 } })` and assert the derived counts.
@@ -419,7 +420,10 @@ each closed by the session or phase named:
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
 - `GameState` has no `world`, `teams`, `hordes` or `recentCommands` yet; `EntityFactory` keeps its
-  own id counter until session C switches it to `IdGenerator`.
+  own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
+  `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
+- `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),
+  until `CommandApplySystem` heads the default `SystemPipeline` (§1).
 - `Replay` has no `versions` yet (they arrive with the content catalogue).
 - The team type is `FeatureOwner` from `content/maps/maps.types.ts` until session A's
   `teams/teams.types.ts` lands.

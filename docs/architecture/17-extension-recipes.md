@@ -471,7 +471,7 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 - **When:** a new platform capability (haptics, a second storage backend, a server, a Worker).
   Core defines only `Rng` and `Logger`; everything else is an L1 port owned by its consumer.
 - **Files:** the port `interface` beside its consumer (`client/game/engine/<area>/<Port>.ts`,
-  `client/data/persistence/StorageAdapter.ts`, `core/diagnostics/Logger.ts`); the adapter
+  `client/data/persistence/StorageAdapter.ts`, `core/diagnostics/Logger.types.ts`); the adapter
   `<Tech><Port>.ts`, the only file touching the API; a test double (`Fake`, `Null`, `Memory` or
   `Recording` + port) as a real class in `src/`; the contract suite `<Port>.contract.ts` exporting
   `describe<Port>(name, factory)` (02 §8, 09 §9, 14 §4) imported by every adapter test; the
