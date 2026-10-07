@@ -1,10 +1,10 @@
 ---
 title: Organization guidelines
-description: How the repository and its documentation are organised and why (OG-01 to OG-11), where a new file, doc or decision goes, which docs each kind of change must touch, the doc frontmatter schema and hygiene rules; read when you add something and are not sure where it belongs.
+description: How the repository and its documentation are organised and why (OG-01 to OG-12), where a new file, doc or decision goes, which docs each kind of change must touch, the doc frontmatter schema and hygiene rules; read when you add something and are not sure where it belongs.
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [requirements, organization, docs, repo-layout]
 paths: ['docs/**', 'packages/**', 'apps/**']
 related:
@@ -121,6 +121,7 @@ If nothing fits, propose a location in the PR and ask; do not invent a top-level
 | Bug fix                                        | The regression test (and replay fixture if it came from a replay); `PROGRESS.md`                                                      |
 | Decision or requirement change                 | ADR first; then the catalogue or principle doc, with `last-reviewed` bumped                                                           |
 | Phase completion                               | Phase doc checklist closed; `docs/changelog/<date>-phase-<n>.md`; `docs/README.md` index regenerated; `last-reviewed` on touched docs |
+| Edit to many docs at once (sweep, rename)      | The OG-12 guard before commit; an independent reviewer of the diff                                                                    |
 
 ### OG-07 Frontmatter schema
 
@@ -181,6 +182,40 @@ related: ['docs/architecture/03-game-model.md'] # optional
     without reading git history.
   - **Inbox** (root `INBOX.md`): the only free-form file; anyone drops ideas, questions and links
     there; gardening moves them into suggestions, the backlog, an ADR or the bin.
+
+### OG-12 Documents outlive the code
+
+- **Requirement.** Documentation is written to stay true for years, not until the next commit.
+  - **Design docs state intent.** Architecture docs, ADRs and reference docs describe decisions,
+    invariants, responsibilities, boundaries, extension points and why. They do not restate what
+    the code or content already says.
+  - **One source per value.** Tuning numbers, limits and defaults are named by where they live
+    (for example `DEFAULT_MAP_LAYOUT.wallRing`), never copied into prose; a gameplay number the
+    owner set lives in `docs/reference/` or `docs/requirements/`, and content cites it. An example
+    value is marked "e.g." and follows from a rule stated next to it.
+  - **Code blocks are contracts or sketches.** A block in a design doc is either a stable
+    contract (a port, a type at a boundary) labelled as such, or a labelled sketch.
+    Implementation detail is not copied.
+  - **The target design stays the design.** Interim states (stand-ins, partial implementations,
+    work owned by another session) go in one short "Implementation status" section of the doc, or
+    in `docs/plan/`, never into the design text itself.
+  - **Design text changes for three reasons only:** a decision (an ADR or an owner decision,
+    cited by ID), a contract change, or a factual error (a wrong name, path or rule). Each edit is
+    the smallest change at the place it applies.
+  - **Records are never rewritten.** Accepted ADR bodies, dated changelog entries, `PROGRESS.md`
+    entries, dated reviews and prompts that have been run are kept as written; corrections are
+    appended (OG-09).
+  - **Structure is stable.** Headings are link anchors: renaming or removing one updates every
+    inbound link in the same change (`npm run docs:check` checks only links under `docs/`).
+    Frontmatter keys and meaning do not change in passing.
+  - **Bulk edits are guarded.** A change that touches many docs (an agent sweep, a rename) is
+    checked before commit: headings and frontmatter unchanged except `last-reviewed`, no record
+    rewritten, every edit traceable to one of the three reasons above, and an independent reviewer
+    reads the diff against this rule.
+- **Why.** On 2026-10-06 an automated sweep that only checked whether statements matched the code
+  replaced a target design with an interim API and copied tuning values into an architecture doc
+  (ADR 0011). A doc that mirrors the code goes stale with every commit; a doc that states intent
+  and points at the source stays correct.
 
 ## Git naming
 

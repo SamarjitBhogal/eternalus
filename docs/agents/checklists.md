@@ -4,7 +4,7 @@ description: The Definition of Done for agent tasks, the AI-PR review checklist,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [agents, process, review, checklist]
 related:
   [
@@ -34,6 +34,10 @@ written with an agent (AI-PR review), check a design (architecture review) or cl
       bumped; `docs/plan/PROGRESS.md` entry appended; the sprint checkbox ticked.
 - [ ] Commits (if the human asked for them) are Conventional Commits with an allowed scope, on
       a task branch off the phase branch. Nothing was pushed by the agent.
+- [ ] Then the pre-PR gate (`AGENTS.md` "Before opening a PR", ADR 0010): critic against the
+      base commit's design docs (violations reworked, better-than-design items signed off and
+      folded into the docs), `/ponytail-review` + `/ponytail`, `npm run check` re-run and green.
+      Only then is the PR opened.
 
 ## 2. AI-PR review checklist (reviewer: human or `pr-review` skill / `architecture-reviewer`)
 
@@ -81,6 +85,8 @@ written with an agent (AI-PR review), check a design (architecture review) or cl
 - [ ] Changelog entry for the phase in `docs/changelog/`; ADRs for decisions made during the phase.
 - [ ] Phase PR into `main` opened with the demo script from the phase doc; reviewer assigned;
       next phase branch created from this phase branch (`docs/process/git-workflow.md`).
+- [ ] `/ponytail-audit` run on the whole repo and `/ponytail-debt` harvested; accepted cuts
+      and every `ponytail:` shortcut turned into backlog entries or INBOX items.
 - [ ] Retrospective held; findings turned into INBOX items or backlog entries.
 
 ## Related

@@ -4,7 +4,7 @@ description: Line-by-line explanation of the committed agent configuration (Clau
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [agents, harness, tooling, claude-code, codex, gemini, copilot, cursor]
 paths:
   [
@@ -72,6 +72,15 @@ agent in a loop. Personal overrides go in `.claude/settings.local.json` (gitigno
 Frontmatter uses only the portable fields (`name`, `description`, `allowed-tools`, and
 `disable-model-invocation` for `adr`), so the same files are valid for the Agent Skills spec.
 `.agents/skills/<name>/SKILL.md` are pointer stubs for the other tools.
+
+### Plugins
+
+| Plugin              | Install (once per machine)                                                                  | Used for                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ponytail@ponytail` | `/plugin marketplace add DietrichGebert/ponytail`, then `/plugin install ponytail@ponytail` | Step 2 of the pre-PR gate (`AGENTS.md`, ADR 0010): `/ponytail-review` on the branch diff, `/ponytail` to apply |
+
+The gate needs the plugin; a session without it stops after the Definition of Done and hands the
+branch to a session that has it.
 
 ### Subagents (`.claude/agents/*.md`)
 

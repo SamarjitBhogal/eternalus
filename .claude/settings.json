@@ -1,4 +1,8 @@
 {
+  "env": {
+    "PONYTAIL_DEFAULT_MODE": "lite",
+    "PONYTAIL_SUBAGENT_MATCHER": "^(general-purpose|test-writer|fork|claude)$"
+  },
   "permissions": {
     "allow": [
       "Read",
@@ -89,5 +93,8 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "ponytail@ponytail": true
   }
 }
