@@ -35,6 +35,18 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
 
+- [ ] **Session D (feat/session-shell-home), better than design — no `useAppDispatch`.** The
+      §2.3 contract and `apps/client/AGENTS.md` ask for `useAppSelector` **and**
+      `useAppDispatch`. D ships only `useAppSelector`: `ui/` never writes the store
+      (architecture 13 §5, "every state change has one path"; components call `emitIntent`), and
+      knip fails the build on an unused export. Leaving the hook out makes the rule structural.
+      Options: (a) **Recommended** — accept; update §2.3's successor, `apps/client/AGENTS.md`
+      "Adding code" and architecture 13 §5 to say "`useAppSelector` only; the UI emits intents".
+      (b) Add `useAppDispatch` back when a first caller exists.
+      Also found by the critic: architecture 13 §2's `character-select` row says it "builds the
+      rosters … assigns `playerTeam`", while the `menu` and `loading` rows (and reference 14 §5)
+      put the setup at "Start match"; D follows the latter. The row needs a one-line fix.
+
 ## Requests for the agent
 
 - [ ] _(none open — the S1 work packages are in `docs/agents/prompts/2026-10-03-ultracode-sessions.md`)_

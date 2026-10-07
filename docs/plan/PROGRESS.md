@@ -145,3 +145,29 @@ The example below is fenced so it is not read as a real entry.
   (37)" at 100%, client "Tests 27 passed (27)", "✓ built", "Documentation check passed."
 - Next step: the human pushes the phase branch; start the Sprint 1 sessions per
   `docs/agents/prompts/2026-10-03-ultracode-sessions.md`.
+
+### 2026-10-06 — Phase 1 / sprint 1 session D — feat/session-shell-home — sholtzman + Claude Code
+
+- What was done: the client session shell and home screen
+  (`docs/agents/prompts/2026-10-03-ultracode-sessions.md` §3 D). `bridge/`: the §2.3 event map
+  and types (`events.ts`), `TypedEventBus` + the `eventBus` singleton and `emitIntent`, the seven
+  slices in `combineSlices` (E/F/G/H own the matchSetup/settings/hud/match bodies),
+  `useAppSelector`, `connectBusToStore`, `createAppStore` for fixtures. `game/`: the
+  `SessionClock` port with `PerformanceSessionClock`/`FakeSessionClock` and a shared contract
+  suite; `SessionController` (State pattern, the 13-pair table of architecture 13 §2, one state
+  class per phase listed only in `defaultSessionStates.ts`, 60 s select / 10 s reveal countdowns,
+  `select-timeout` cancel, rematch with the same setup, `IllegalSessionTransition`); a seeded team
+  draw (`LcgRng` behind an `Rng` port until core's `SeededRandom`; seeds are mixed after a test
+  showed consecutive seeds all drew Light); 10 + 10 rosters with the player as Rover; `data-team`
+  theming; the placeholder catalogue behind `CatalogueSource`. `ui/`: `App.tsx` (phase → screen,
+  menu route → screen), `MainMenuScreen`, About/Loadout/Profile/Results shells, `Button`,
+  `MenuList`, `Panel`, `ThemedBackground`, `ScreenFrame`, `PlaceholderScreen`; §2.4 tokens in
+  `global.css`. `main.tsx` composes everything. Client coverage thresholds 45/50/45/45 → 55.
+  Session F's settings intents/event/reducer added at F's request. Pre-PR gate: critic (FAIL on
+  missing docs only; code findings fixed), ponytail (2 cuts applied, 1 rejected).
+- Checks run: `npm run check` → exit 0 (see the PR description for the verbatim tail); client
+  "Tests 187 passed (187)"; home screen rendered in headless Chrome against `npm run dev`.
+- Next step: Sam pushes and opens the PR into the phase branch (reviewer: a UI-minded
+  teammate); E/G replace their `PlaceholderScreen` lines in `App.tsx`; after F merges, add
+  `SettingsScreen` to `MENU_SCREENS` and F's `SettingsController` wiring in `main.tsx`. Sam:
+  the `useAppDispatch` item in `INBOX.md`.
