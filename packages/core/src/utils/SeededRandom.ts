@@ -1,4 +1,5 @@
 import { fnv1a } from './fnv1a';
+import type { Rng } from './Rng.types';
 import { MAX_SEED, UINT32_RANGE, WARM_UP_DRAWS } from './SeededRandom.constants';
 import type { SeededRandomState } from './SeededRandom.types';
 
@@ -11,7 +12,7 @@ const isUint32 = (value: unknown): value is number =>
  * derives an independent stream (map generation, team assignment, AI) whose sequence depends only
  * on the seed and the name, never on how many numbers the parent has drawn.
  */
-export class SeededRandom {
+export class SeededRandom implements Rng {
   private a = 0;
   private b = 0;
   private c = 0;

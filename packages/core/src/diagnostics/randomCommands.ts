@@ -1,6 +1,6 @@
 import type { Command } from '../commands/Command.types';
 import type { Snapshot } from '../state/Snapshot.types';
-import type { SeededRandom } from '../utils/SeededRandom';
+import type { Rng } from '../utils/Rng.types';
 
 /** Share of commands aimed at a live entity; the rest name an id that does not exist. */
 const LIVE_TARGET_SHARE = 0.9;
@@ -10,7 +10,7 @@ const MISSING_ID_RANGE = 1000;
 const RANDOM_SPREAD = 100;
 
 /** One item of a non-empty list, chosen by `rng`. */
-const pick = <T>(rng: SeededRandom, items: readonly T[]): T =>
+const pick = <T>(rng: Rng, items: readonly T[]): T =>
   // Safe: nextInt stays within the list (and throws for an empty one).
   items[rng.nextInt(0, items.length - 1)] as T;
 
@@ -20,7 +20,7 @@ const pick = <T>(rng: SeededRandom, items: readonly T[]): T =>
  * state and snapshot always give the same command. `spawnKinds` must not be empty.
  */
 export const randomCommand = (
-  rng: SeededRandom,
+  rng: Rng,
   snapshot: Snapshot,
   spawnKinds: readonly string[],
 ): Command => {
