@@ -104,7 +104,7 @@ systems/
   coupling.
 - No `.only` or `.skip`, and every test asserts something. **(enforced)** Avoid `.todo`.
 - Coverage thresholds live in each package's `vitest.config.ts` and only go up (the ratchet,
-  see `docs/process/guardrails.md`). **(enforced)** Today: core 80%, client 45–50%.
+  see `docs/process/guardrails.md`). **(enforced)** Today: core 85%, client 45–50%.
 
 ## 7. Git workflow
 
