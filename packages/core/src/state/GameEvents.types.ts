@@ -7,15 +7,18 @@ import type { MatchPhase } from './GameState.types';
  * Who or what dealt damage (architecture 05 §9). Lives here until `combat/` exists; move it to
  * `combat/DamageSource.types.ts` then.
  */
-export type DamageSource = {
+type DamageSource = {
   readonly attackerId: EntityId | null;
   readonly kind: 'weapon' | 'ability' | 'status' | 'structure' | 'environment';
   /** The weapon, ability, status or structure definition id. */
   readonly definitionId: string;
 };
 
-/** One shield layer on a structure or unit (architecture 07 §2). */
-export type ShieldBar = {
+/**
+ * One shield layer on a structure or unit (architecture 07 §2). Its design home is
+ * `components/Health.types.ts` (session C); import it from there once `Health` has shields.
+ */
+type ShieldBar = {
   readonly sourceId: EntityId;
   readonly current: number;
   readonly max: number;
