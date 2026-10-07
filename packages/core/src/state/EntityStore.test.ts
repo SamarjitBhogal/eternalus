@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { TeamMembership } from '../components/TeamMembership';
+import type { FeatureOwner } from '../content/maps/maps.types';
 import { Entity } from '../entities/Entity';
+import { Legend } from '../entities/Legend';
+import { Unit } from '../entities/Unit';
 import { EntityStore } from './EntityStore';
 
 class Dummy extends Entity {
@@ -14,6 +18,22 @@ class Dummy extends Entity {
 
   protected override onRetire(cause: string): void {
     this.retiredWith = cause;
+  }
+}
+
+class Grunt extends Unit {
+  public readonly kind = 'grunt';
+
+  protected installComponents(team: unknown): void {
+    this.addComponent(new TeamMembership(team as FeatureOwner));
+  }
+}
+
+class Hero extends Legend {
+  public readonly kind = 'hero';
+
+  protected installComponents(team: unknown): void {
+    this.addComponent(new TeamMembership(team as FeatureOwner));
   }
 }
 
@@ -77,5 +97,23 @@ describe('EntityStore', () => {
       }
     });
     expect(visited).toEqual(['entity-1', 'entity-3']);
+  });
+
+  it('counts live entities of a family on a team', () => {
+    const store = storeWith('entity-1');
+    const members: [Entity, FeatureOwner][] = [
+      [new Grunt('entity-2', 'grunt'), 'light'],
+      [new Grunt('entity-3', 'grunt'), 'dark'],
+      [new Hero('entity-4', 'hero'), 'light'],
+    ];
+    for (const [entity, team] of members) {
+      entity.spawn(team);
+      store.add(entity);
+    }
+    expect(store.countOnTeam('light', Unit)).toBe(2);
+    expect(store.countOnTeam('light', Legend)).toBe(1);
+    expect(store.countOnTeam('dark', Unit)).toBe(1);
+    expect(store.countOnTeam('dark', Legend)).toBe(0);
+    expect(store.countOnTeam('neutral', Entity)).toBe(0);
   });
 });

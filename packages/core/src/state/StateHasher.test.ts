@@ -21,6 +21,15 @@ class Soldier extends Entity {
   }
 }
 
+class Bare extends Entity {
+  public readonly kind = 'bare';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    // No components: every component field hashes as null.
+  }
+}
+
 const stateWithSoldier = (seed = 1): { state: GameState; soldier: Soldier } => {
   const state = new GameState(createDefaultGameConfig(), seed);
   const soldier = new Soldier('entity-1', 'soldier-definition');
@@ -73,5 +82,14 @@ describe('StateHasher', () => {
 
   it('differs between seeds', () => {
     expect(hasher.hash(stateWithSoldier(1).state)).not.toBe(hasher.hash(stateWithSoldier(2).state));
+  });
+
+  it('hashes entities without components, and tells them apart from those with', () => {
+    const { state } = stateWithSoldier();
+    const before = hasher.hash(state);
+    const bare = new Bare('entity-2', 'bare-definition');
+    bare.spawn({});
+    state.entities.add(bare);
+    expect(hasher.hash(state)).not.toBe(before);
   });
 });
