@@ -7,4 +7,4 @@ export type EntityId = Entity['id'];
 export type RemovalCause = 'died' | 'despawned' | 'consumed' | 'dev-removed' | 'match-ended';
 
 /** An entity class, concrete or abstract, used to ask "how many of these?" (`Unit`, `Legend`). */
-export type EntityFamily = abstract new (id: string, definitionId: string) => Entity;
+export type EntityClass = abstract new (id: string, definitionId: string) => Entity;

@@ -1,7 +1,7 @@
 import { TeamMembership } from '../components/TeamMembership';
 import type { FeatureOwner } from '../content/maps/maps.types';
 import type { Entity } from '../entities/Entity';
-import type { EntityFamily, EntityId, RemovalCause } from './EntityStore.types';
+import type { EntityClass, EntityId, RemovalCause } from './EntityStore.types';
 
 /**
  * Every live entity of a match, kept in insertion order. Systems iterate with `forEach`, so the
@@ -45,11 +45,11 @@ export class EntityStore {
     return entity;
   }
 
-  /** How many live entities of class `family` (e.g. `Unit`, `Legend`) fight for `team`. */
-  public countOnTeam(team: FeatureOwner, family: EntityFamily): number {
+  /** How many live instances of `entityClass` (e.g. `Unit`, `Legend`) fight for `team`. */
+  public countOnTeam(team: FeatureOwner, entityClass: EntityClass): number {
     let total = 0;
     this.entities.forEach((entity) => {
-      if (entity instanceof family && entity.findComponent(TeamMembership)?.team === team) {
+      if (entity instanceof entityClass && entity.findComponent(TeamMembership)?.team === team) {
         total += 1;
       }
     });
