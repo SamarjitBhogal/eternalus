@@ -10,9 +10,7 @@ describe('CommandQueue', () => {
     const queue = new CommandQueue();
     queue.enqueue(remove('entity-2'));
     queue.enqueue(remove('entity-1'));
-    expect(queue.size).toBe(2);
     expect(queue.drain()).toEqual([remove('entity-2'), remove('entity-1')]);
-    expect(queue.size).toBe(0);
     expect(queue.drain()).toEqual([]);
   });
 

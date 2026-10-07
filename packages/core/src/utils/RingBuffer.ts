@@ -15,11 +15,6 @@ export class RingBuffer<T> {
     }
   }
 
-  /** Number of items held, at most `capacity`. */
-  public get size(): number {
-    return this.items.length;
-  }
-
   /** Adds `item`, dropping the oldest item when full. */
   public push(item: T): void {
     if (this.items.length < this.capacity) {

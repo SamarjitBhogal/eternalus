@@ -8,11 +8,6 @@ import type { Command } from './Command.types';
 export class CommandQueue {
   private pending: Command[] = [];
 
-  /** Number of commands waiting. */
-  public get size(): number {
-    return this.pending.length;
-  }
-
   /** Queues `command` for the next drain. */
   public enqueue(command: Command): void {
     this.pending.push(command);

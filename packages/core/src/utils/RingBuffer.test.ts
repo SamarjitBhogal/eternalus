@@ -7,7 +7,6 @@ describe('RingBuffer', () => {
     const buffer = new RingBuffer<number>(3);
     buffer.push(1);
     buffer.push(2);
-    expect(buffer.size).toBe(2);
     expect(buffer.toArray()).toEqual([1, 2]);
   });
 
@@ -16,7 +15,6 @@ describe('RingBuffer', () => {
     for (let item = 1; item <= 7; item += 1) {
       buffer.push(item);
     }
-    expect(buffer.size).toBe(3);
     expect(buffer.toArray()).toEqual([5, 6, 7]);
   });
 
