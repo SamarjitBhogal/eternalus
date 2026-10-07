@@ -38,6 +38,35 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 ## Requests for the agent
 
 - [ ] _(none open — the S1 work packages are in `docs/agents/prompts/2026-10-03-ultracode-sessions.md`)_
+- [ ] **F → D (2026-10-06, `feat/settings-keybindings`): settings intents and the `settings`
+      event in D-owned bridge files.** Session F cannot edit these (§2.6). Types only, so D can
+      add them before F merges:
+      `bridge/events.ts` — `update-binding` gains `readonly onConflict: 'swap' | 'replace'`
+      (`BindingConflictPolicy` in `Binding.types.ts`); `reset-bindings` gains
+      `readonly action: InputAction | null` (`null` = all); new member
+      `{ readonly kind: 'update-settings'; readonly patch: SettingsPatch }` (`SettingsPatch` is
+      exported by `bridge/slices/settingsSlice.ts`); `BridgeEventMap` gains
+      `settings: SettingsSliceState`. `bridge/connectBusToStore.ts` — one line:
+      `bus.on('settings', (s) => dispatch(settingsSlice.actions.settingsChanged(s)))` (the
+      reducer is in F's slice body). Without these the settings screen has no way to reach the
+      game: the §2.3 intents carry no conflict policy, no per-action reset and no audio, video or
+      accessibility change.
+- [ ] **F → D (2026-10-06, after F merges): wire settings in `main.tsx` and `ui/App.tsx`.**
+      `main.tsx`: build `new PersistenceController({ adapter: new MemoryStorageAdapter(),
+knownActions: new Set(INPUT_ACTIONS), now: () => Date.now() })`, `await persistence.open()`,
+      then `new SettingsController({ bus: eventBus, persistence }).start()` (F's
+      `game/input/SettingsController.ts`: loads the saved settings, publishes `settings`, applies
+      the settings intents and saves). `ui/App.tsx`: menu route `'settings'` →
+      `<SettingsScreen />` from `ui/screens/SettingsScreen.tsx`.
+- [ ] **F → G (2026-10-06): mount the pause overlay.** `ui/screens/MatchScreen.tsx` renders
+      `<PauseOverlay />` from `ui/hud/PauseOverlay.tsx` unconditionally; it renders nothing
+      unless `session.overlay` is `'pause'` or `'settings'`.
+- [ ] **F → H (2026-10-06): input in the match.** `Match` builds `KeyboardDevice` (attached to
+      `window`, `isBound` from the bindings) and `MouseDevice` (attached to the canvas), merges
+      them into one `InputSnapshot` per frame, calls `InputMapper.resolve` then `toIntent`,
+      re-reads bindings on every `settings` bus event (`mapper.setBindings(s.bindings)`), and
+      toggles the pause overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`),
+      so the pause key is the player's binding, not a literal Esc.
 
 ## Feedback
 
