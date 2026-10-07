@@ -1,9 +1,45 @@
 import type { FeatureOwner } from '../content/maps/maps.types';
+import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
+import type { MatchPhase } from './GameState.types';
+
+/**
+ * Who or what dealt damage (architecture 05 §9). Lives here until `combat/` exists; move it to
+ * `combat/DamageSource.types.ts` then.
+ */
+export type DamageSource = {
+  readonly attackerId: EntityId | null;
+  readonly kind: 'weapon' | 'ability' | 'status' | 'structure' | 'environment';
+  /** The weapon, ability, status or structure definition id. */
+  readonly definitionId: string;
+};
+
+/** One shield layer on a structure or unit (architecture 07 §2). */
+export type ShieldBar = {
+  readonly sourceId: EntityId;
+  readonly current: number;
+  readonly max: number;
+};
+
+/** A horde's announcement payload. */
+type HordePayload = {
+  readonly hordeId: string;
+  readonly lane: string;
+  readonly team: FeatureOwner;
+  readonly memberIds: readonly EntityId[];
+};
+
+/** A status effect's announcement payload. */
+type StatusPayload = {
+  readonly entityId: EntityId;
+  readonly statusId: string;
+  readonly sourceId: EntityId | null;
+};
 
 /**
  * Every event the simulation can emit, by name (architecture 03 §4). The single place of change
  * for events: an emitter adds its line here. Emitting a name that is not listed does not compile.
+ * Ids of things that have no type yet (lanes, hordes, statuses, abilities) are plain strings.
  */
 export type GameEventMap = {
   readonly 'entity-spawned': {
@@ -12,10 +48,68 @@ export type GameEventMap = {
     readonly team: FeatureOwner;
   };
   readonly 'entity-removed': { readonly entityId: EntityId; readonly cause: RemovalCause };
+  readonly 'damage-applied': {
+    readonly targetId: EntityId;
+    readonly amount: number;
+    readonly absorbed: number;
+    readonly source: DamageSource;
+  };
+  readonly 'entity-died': { readonly entityId: EntityId; readonly killer: DamageSource };
+  readonly 'structure-destroyed': {
+    readonly entityId: EntityId;
+    readonly kind: string;
+    readonly team: FeatureOwner;
+    readonly lane: string | null;
+  };
+  readonly 'shield-bars-changed': {
+    readonly entityId: EntityId;
+    readonly bars: readonly ShieldBar[];
+  };
+  readonly 'capture-progress': {
+    readonly pointId: string;
+    readonly team: FeatureOwner;
+    readonly progress: number;
+    readonly checkpoint: number;
+  };
+  readonly 'capture-point-owner-changed': {
+    readonly pointId: string;
+    readonly from: FeatureOwner;
+    readonly to: FeatureOwner;
+  };
+  readonly 'phase-changed': { readonly from: MatchPhase; readonly to: MatchPhase };
+  /** `slot` is an `AbilitySlot` (typed loosely: `state/` sits below `commands/`). */
+  readonly 'ability-cast': {
+    readonly casterId: EntityId;
+    readonly abilityId: string;
+    readonly slot: string;
+  };
+  readonly 'status-applied': StatusPayload;
+  readonly 'status-expired': StatusPayload;
+  readonly 'horde-spawned': HordePayload;
+  readonly 'horde-dissolved': HordePayload;
+  readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
+  readonly 'team-changed': {
+    readonly entityId: EntityId;
+    readonly from: FeatureOwner;
+    readonly to: FeatureOwner;
+    readonly cause: string;
+  };
+  readonly 'boss-summoned': { readonly entityId: EntityId; readonly kind: string };
   /** `command` is the rejected `Command` (typed loosely: `state/` sits below `commands/`). */
   readonly 'command-rejected': {
     readonly command: { readonly type: string };
     readonly reason: string;
+  };
+  readonly 'collision-anomaly': {
+    readonly entityId: EntityId;
+    readonly from: Vec2;
+    readonly to: Vec2;
+    readonly colliderId: string;
+  };
+  readonly 'invariant-violated': {
+    readonly invariantId: string;
+    readonly tick: number;
+    readonly details: Readonly<Record<string, number | string | boolean>>;
   };
   readonly 'tick-completed': { readonly tick: number };
 };

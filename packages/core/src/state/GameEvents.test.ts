@@ -61,4 +61,13 @@ describe('GameEvents', () => {
     expect(recent[0]).toEqual({ tick: 3, type: 'tick-completed', payload: { tick: 3 } });
     expect(recent.at(-1)?.tick).toBe(total - 1);
   });
+
+  it('refuses unknown event names and wrong payloads at compile time', () => {
+    const events = new GameEvents(() => 0);
+    // @ts-expect-error -- 'unit-exploded' is not in GameEventMap.
+    events.emit('unit-exploded', { tick: 1 });
+    // @ts-expect-error -- tick-completed carries a number tick, not a string.
+    events.emit('tick-completed', { tick: 'one' });
+    expect(events.recentEvents()).toHaveLength(2);
+  });
 });

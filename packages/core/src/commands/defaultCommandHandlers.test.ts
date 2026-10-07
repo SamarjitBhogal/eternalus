@@ -5,7 +5,9 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
 import { applyCommand } from './applyCommand';
 import type { Command } from './Command.types';
+import type { CommandHandlers } from './CommandHandler.types';
 import { createDefaultCommandHandlers } from './defaultCommandHandlers';
+import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler';
 
 const NOT_YET_SUPPORTED: readonly Command[] = [
   { type: 'move', actorId: 'entity-1', direction: { x: 0, y: -1 } },
@@ -39,4 +41,19 @@ describe('createDefaultCommandHandlers', () => {
       expect(reasons).toEqual(['not-supported']);
     },
   );
+
+  it('does not compile without a handler for every command type', () => {
+    const unsupported = new UnsupportedCommandHandler();
+    // @ts-expect-error -- 'move' has no handler, so this is not a complete registry.
+    const handlers: CommandHandlers = {
+      stop: unsupported,
+      'attack-target': unsupported,
+      'cast-ability': unsupported,
+      intent: unsupported,
+      'dev-spawn': unsupported,
+      'dev-remove-entity': unsupported,
+      'dev-set-controller': unsupported,
+    };
+    expect(Object.keys(handlers)).not.toContain('move');
+  });
 });
