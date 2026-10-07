@@ -74,7 +74,7 @@ your local type is deleted.
 **Session C (entities):** one line in `Simulation.ts` (marked `TODO`) passes your
 `createDefaultEntityRegistry()`; until then `dev-spawn` through `Simulation` rejects
 `unknown-kind`. `dev-spawn` hands the factory the spawn context `{ team, position }` and counts
-`Unit` / `Legend` instances per team for the caps. `move`, `stop`, `attack-target`,
+`Unit` / `Legend` instances per team for the caps (`EntityStore.countOnTeam`). `move`, `stop`, `attack-target`,
 `cast-ability`, `intent` and `dev-set-controller` reject `not-supported` through the shared
 `UnsupportedCommandHandler`; replace their lines in `commands/defaultCommandHandlers.ts` with
 real handlers as their systems land (the registry type forces one handler per type). Systems
@@ -84,7 +84,8 @@ randomness only from `state.rng`. `GameEventMap` already declares `entity-died`,
 retires the entity; the dev handlers spawn and remove directly until `SpawnSystem` /
 `DeathSystem` exist (`TODO`s mark both). `utils/IdGenerator` is ready for `EntityFactory`'s
 counter. `StateHasher` hashes `Transform`, `Health`, `TeamMembership` and `Movement`; a new
-component with simulation state adds its fields in `StateHasher.fieldsOf`.
+component with simulation state needs its fields in `StateHasher.fieldsOf`, which is in `state/`
+(B's), so ask through `INBOX.md` "Requests for the agent".
 
 **Session H (match):** build `new Simulation(createDefaultGameConfig(), seed, logger)`, call
 `enqueueCommand` then `step()` once per tick, and keep the previous and current `snapshot()` for
@@ -99,7 +100,8 @@ contract, or is an interim stand-in.
 - `GameConfig` follows §2.2, not 03 §10 (no timeline, no `mapPreset`); `map.navCellSize` is
   added at session A's request; validation throws on the first problem (brief) and adds A's map
   rules (odd lanes, even corner camps, no camps with one lane; 06 §2). 06 §2's divisibility
-  recommendation is not implemented (DEC-14 splits camps unevenly).
+  recommendation is not implemented (06 §2 marks it a Recommendation; session A's unmerged
+  DEC-14 splits camps unevenly instead).
 - `Simulation` is positional `(config, seed, logger, systems)` per the brief; no
   `SimulationOptions`, `exportReplay()` or `dispose()` yet.
 - Commands: names per the brief (`dev-spawn`, `dev-remove-entity`); a typed registry object
@@ -108,16 +110,22 @@ contract, or is an interim stand-in.
 - `EntityStore` iterates in insertion order with the base branch's string ids, not ascending
   numeric slots.
 - Dev handlers spawn and remove directly (03 §4/§8 give that to `SpawnSystem`/`DeathSystem`,
-  session C).
+  session C). `dev-spawn` caps: Legends count toward `maxUnitsPerTeam` too (glossary: a unit is
+  a Legend, Mob or Boss), and a spawn that would pass a cap is rejected whole (03 §3), not
+  clipped.
 - `GameEventMap` payloads use strings for ids without a type yet; `command-rejected` and
   `ability-cast` type `command`/`slot` loosely because `state/` sits below `commands/`;
-  `DamageSource` and `ShieldBar` live in `GameEvents.types.ts` until `combat/` exists.
+  `DamageSource` (until `combat/` exists) and `ShieldBar` (until C's `Health.types.ts` has
+  shields) are local types of `GameEvents.types.ts`.
 - The snapshot holds the current tick only; the client keeps previous and current (03 §5).
   `snapshot()` sits on `GameState` (no `SnapshotSystem` yet); `MatchPhase` sits in `state/`.
 - `GameState` has no `teams` or `recentCommands` yet (nothing to hold).
 - Replay: `diagnostics/replay.ts` (brief) with `recordReplay`/`runReplay` and a target factory
   (keeps `diagnostics/` from importing `Simulation`); no versions, `configHash`, `ok` or
-  `violations` yet; the golden fixture is a typed `.ts` file.
+  `violations` yet; the golden fixture is a typed `.ts` file. Its checkpoint hashes were
+  regenerated once in this PR when `StateHasher` started hashing velocity (same seed, config and
+  command log; 15 §7 allows it for an intended change). `diagnostics/` imports types from
+  `commands/` and `config/`, beyond 02 §2's `state/` and `utils/` (forced by the replay format).
 - Logger port in `Logger.types.ts` (brief); no `LogRecord.context` or `DiagnosticEvent` types
   (they arrive with the invariants).
 - The `Math.sin/cos/atan2/exp/pow` lint ban is not added (`eslint.config.js` is outside this
@@ -126,13 +134,15 @@ contract, or is an interim stand-in.
   sessions A and C adopt them.
 - `CONTRIBUTING.md` and `docs/process/guardrails.md` carry a copy of the coverage threshold and
   were updated with it.
+- `systems/` holds `SystemPipeline.test.ts` besides the two files the brief names (tests sit
+  next to their file).
 
 Better than the design, awaiting sign-off (`INBOX.md`): the nested, nullable `EntitySnapshot`
 fields and `makeLogRecord`'s options object.
 
 ## How it was tested
 
-- 195 core tests, 100% statements/branches/functions/lines; threshold raised 80 → 85 (brief).
+- 197 core tests, 100% statements/branches/functions/lines; threshold raised 80 → 85 (brief).
 - Determinism: 10 seeds × 3,000 ticks of seeded random commands with a test `WanderSystem`
   (spawns, jitters, 32+ live entities), recorded twice and replayed, identical at every 100-tick
   checkpoint: 367–377 ms on an Apple M4 Pro (24 GB, Node 24.21.0). A golden replay

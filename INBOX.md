@@ -35,9 +35,10 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
 - [ ] **Session B (2026-10-06) — two better-than-design items in the simulation kernel.**
-      Sign off and the design docs follow in a later docs change; decline and session B reworks the
-      code. (1) **Snapshot entity shape:** `EntitySnapshot` groups its fields as
-      `transform` (`x`, `y`, `radius`), `health` (`current`, `max`) and `team`, each `null` when
+      Signed off before the PR opens: the design docs (03 §5, 15 §4) are updated in that PR, with
+      Sam's OK for the doc edit; declined: session B reworks the code. (1) **Snapshot entity
+      shape:** `EntitySnapshot` groups its fields as `transform` (`x`, `y`, `radius`), `health`
+      (`current`, `max`) and `team`, each `null` when
       the entity lacks that component, instead of architecture 03 §5's flat `x`, `y`, `radius`,
       `health`, `maxHealth`, `team`; an entity is never given made-up values. Session H codes
       against it. **Recommended:** adopt. (2) **`makeLogRecord`** takes its optional `attributes`,
