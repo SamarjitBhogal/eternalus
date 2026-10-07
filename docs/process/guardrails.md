@@ -58,7 +58,7 @@ AI tool on macOS, Linux and Windows. Everything else is policy, checked in revie
 
 Coverage thresholds live in each package's `vitest.config.ts`. **They may only go up.**
 
-- `core`: 85% for lines, branches, functions and statements (raised from 80% with the simulation kernel).
+- `core`: 85% for lines, branches, functions and statements.
 - `client`: 45% lines, functions and statements, 50% branches, because Canvas and React-mounting
   code are hard to unit test in Node. Raise it as tests are added.
 - Both packages currently have one placeholder test each (`packages/core/src/index.test.ts`,

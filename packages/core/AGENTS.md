@@ -17,19 +17,19 @@ Package-specific rules. The root `AGENTS.md` still applies.
 `entities/`, and `content/maps/`. The other folders below are the **planned** layout; create them
 as code is added.
 
-| Folder          | Holds                                                              | May import                      |
-| --------------- | ------------------------------------------------------------------ | ------------------------------- |
-| `config/`       | `GameConfig`, `createDefaultGameConfig()`, `validateGameConfig()`  | `utils/`                        |
-| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs  | `content/`, `utils/` (types)    |
-| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants            | `utils/` only                   |
-| `components/`   | Data owned by entities (`Transform`, `Movement`)                   | `utils/`, `content/`            |
-| `entities/`     | `Entity` root class and factories                                  | `components/`, `content/`, ...  |
-| `commands/`     | `Command` union, `CommandQueue`, `applyCommand` + handler registry | `state/`, `entities/`, `utils/` |
-| `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher` | lower layers                    |
-| `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams  | `state/`, `utils/`; types above |
-| `systems/`      | Per-tick logic implementing `System`. Never import another system. | everything except `ai/`         |
-| `ai/`           | Bot controllers. They only return `Command`s.                      | `state/`, `commands/`, `utils/` |
-| `Simulation.ts` | Composes everything; the only thing the client drives              | everything                      |
+| Folder          | Holds                                                              | May import                                             |
+| --------------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
+| `config/`       | `GameConfig`, `createDefaultGameConfig()`, `validateGameConfig()`  | `utils/`                                               |
+| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs  | `content/`, `utils/` (types)                           |
+| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants            | `utils/` only                                          |
+| `components/`   | Data owned by entities (`Transform`, `Movement`)                   | `utils/`, `content/`                                   |
+| `entities/`     | `Entity` root class and factories                                  | `components/`, `content/`, ...                         |
+| `commands/`     | `Command` union, `CommandQueue`, `applyCommand` + handler registry | `state/`, `entities/`, `utils/`                        |
+| `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher` | lower layers                                           |
+| `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams  | `state/`, `utils/`, types of `commands/` and `config/` |
+| `systems/`      | Per-tick logic implementing `System`. Never import another system. | everything except `ai/`                                |
+| `ai/`           | Bot controllers. They only return `Command`s.                      | `state/`, `commands/`, `utils/`                        |
+| `Simulation.ts` | Composes everything; the only thing the client drives              | everything                                             |
 
 These import rules are checked in review.
 
