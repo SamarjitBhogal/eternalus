@@ -27,15 +27,13 @@ export type InputAction =
   | 'toggle-developer-menu'
   | 'toggle-perf-overlay';
 
-/** The kind of hardware a chord comes from. Gamepad chords are post-MVP; the shape allows them. */
-export type InputDeviceKind = 'keyboard' | 'mouse' | 'gamepad';
-
 /**
  * One physical input that triggers an action. Two chords are the same input when their `device`
  * and `code` match; `label` is only what the player sees.
  */
 export type InputChord = {
-  readonly device: InputDeviceKind;
+  /** The hardware it comes from. Gamepad chords are post-MVP; the shape already allows them. */
+  readonly device: 'keyboard' | 'mouse' | 'gamepad';
   /**
    * Keyboard: `KeyboardEvent.code` (`'KeyW'`), so bindings survive keyboard layouts. Mouse:
    * `MouseEvent.button` as a string (`'0'` main … `'3'`/`'4'` side buttons). Gamepad: the
