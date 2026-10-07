@@ -273,15 +273,15 @@ requestAnimationFrame(t)
 Same seed + same command log = same match, bit for bit, on the same machine and browser. The
 JavaScript-specific hazards and their rules (research §1, table "Determinism pitfalls"):
 
-| Hazard                                    | Rule in core                                                                                                             | Enforcement                                                   |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| `Math.random()`                           | Only `GameState.rng` (`SeededRandom`, sfc32, seeded from the match seed); systems receive it through `SystemContext`     | ESLint `no-restricted-properties` (exists)                    |
-| `Date`, `performance.now`, timers         | Time is `tick`; durations are ticks converted from seconds at load                                                       | tsconfig (no DOM/Node types); planned `no-restricted-globals` |
-| `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (ascending id) or arrays built in tick order            | Review; `EntityStore` API exposes no `Map`                    |
-| `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                 | Review; `utils/compareById`                                   |
-| Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles | Planned `no-restricted-properties` with a file override       |
-| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                            | Design + `InvariantSystem`                                    |
-| Floats                                    | Doubles are fine for single-machine replays; revisit fixed point only for networked lockstep                             | None needed                                                   |
+| Hazard                                    | Rule in core                                                                                                             | Enforcement                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| `Math.random()`                           | Only `GameState.rng` (`SeededRandom`, sfc32, seeded from the match seed); systems receive it through `SystemContext`     | ESLint `no-restricted-properties` (exists)                        |
+| `Date`, `performance.now`, timers         | Time is `tick`; durations are ticks converted from seconds at load                                                       | tsconfig (no DOM/Node types); planned `no-restricted-globals`     |
+| `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (ascending id) or arrays built in tick order            | Review; `EntityStore` API exposes no `Map`                        |
+| `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                 | Review; `utils/compareById`                                       |
+| Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles | ESLint `no-restricted-properties` with a file override (ADR 0012) |
+| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                            | Design + `InvariantSystem`                                        |
+| Floats                                    | Doubles are fine for single-machine replays; revisit fixed point only for networked lockstep                             | None needed                                                       |
 
 ## 9. `StateHasher` and replays
 

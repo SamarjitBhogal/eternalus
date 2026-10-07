@@ -6,7 +6,7 @@
  * machine always agrees with itself (so single-machine replays are exact), but V8, SpiderMonkey
  * and JavaScriptCore, or one engine on two CPUs, may differ in the last bits. If cross-browser
  * replays ever matter, replace these bodies with table or polynomial approximations here and
- * nowhere else; every caller already goes through this file.
+ * nowhere else; ESLint keeps every other core file from calling `Math` directly (ADR 0012).
  */
 
 /** Sine of an angle in radians. */

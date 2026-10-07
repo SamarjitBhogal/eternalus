@@ -273,10 +273,10 @@ changes the shape of the world, it is config. If a player may change it, it is a
 },
 ```
 
-- Determinism lint for core grows the same way: `no-restricted-globals` for `Date` and
-  `performance`, and `no-restricted-properties` for `Math.sin`, `Math.cos`, `Math.atan2`,
-  `Math.exp` and `Math.pow`, with an override that allows them only in
-  `packages/core/src/utils/deterministicMath.ts`.
+- Determinism lint for core: `no-restricted-properties` bans `Math.random` everywhere in core and
+  `Math.sin`, `Math.cos`, `Math.atan2`, `Math.exp` and `Math.pow` outside
+  `packages/core/src/utils/deterministicMath.ts` (ADR 0012); `no-restricted-globals` for `Date`
+  and `performance` is the next step of the same block.
 - The tree, the tables in this doc and the lint blocks must agree; a PR that adds a folder updates
   all three ([01-layered-oop-model.md](01-layered-oop-model.md) §7).
 
