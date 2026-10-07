@@ -43,6 +43,7 @@ export class Simulation {
     systems: readonly System[] = [],
   ) {
     this.state = new GameState(validateGameConfig(config), seed);
+    // TODO(sholtzman): pass session C's createDefaultEntityRegistry() so dev-spawn finds kinds.
     this.commandContext = { state: this.state, factory: new EntityFactory() };
     this.systemContext = { state: this.state, logger };
     this.pipeline = new SystemPipeline(systems);

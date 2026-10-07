@@ -11,6 +11,7 @@ export class DevRemoveEntityHandler implements CommandHandler<'dev-remove-entity
     if (!state.entities.has(entityId)) {
       return 'unknown-entity';
     }
+    // TODO(sholtzman): hand removal to DeathSystem (03 §4, the only emitter) once session C adds it.
     state.entities.remove(entityId, 'dev-removed');
     state.events.emit('entity-removed', { entityId, cause: 'dev-removed' });
     return null;

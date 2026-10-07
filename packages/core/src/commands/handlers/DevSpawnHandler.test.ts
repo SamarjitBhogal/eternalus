@@ -7,6 +7,8 @@ import type { FeatureOwner } from '../../content/maps/maps.types';
 import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
+import { Legend } from '../../entities/Legend';
+import { Unit } from '../../entities/Unit';
 import { GameState } from '../../state/GameState';
 import type { Vec2 } from '../../utils/geometry.types';
 import type { Command } from '../Command.types';
@@ -24,11 +26,37 @@ class Dummy extends Entity {
   }
 }
 
-const contextWithDummy = (): CommandContext => {
+const installAt = (entity: Entity, context: unknown): void => {
+  const { team, position } = context as { team: FeatureOwner; position: Vec2 };
+  entity.addComponent(new Transform(position, 0.5));
+  entity.addComponent(new TeamMembership(team));
+};
+
+class Grunt extends Unit {
+  public readonly kind = 'grunt';
+
+  protected installComponents(context: unknown): void {
+    installAt(this, context);
+  }
+}
+
+class Hero extends Legend {
+  public readonly kind = 'hero';
+
+  protected installComponents(context: unknown): void {
+    installAt(this, context);
+  }
+}
+
+const contextWithDummy = (
+  limits = { maxUnitsPerTeam: 144, maxLegendsPerTeam: 10 },
+): CommandContext => {
   const registry = new EntityRegistry();
   registry.register('dummy', Dummy);
+  registry.register('grunt', Grunt);
+  registry.register('hero', Hero);
   return {
-    state: new GameState(createDefaultGameConfig(), 1),
+    state: new GameState(createDefaultGameConfig({ limits }), 1),
     factory: new EntityFactory(registry),
   };
 };
@@ -71,5 +99,30 @@ describe('DevSpawnHandler', () => {
     const context = contextWithDummy();
     expect(new DevSpawnHandler().handle(spawn(overrides), context)).toBe(reason);
     expect(context.state.entities.size).toBe(0);
+  });
+
+  it('counts units per team and refuses a spawn that would pass maxUnitsPerTeam', () => {
+    const context = contextWithDummy({ maxUnitsPerTeam: 3, maxLegendsPerTeam: 3 });
+    const handler = new DevSpawnHandler();
+    expect(handler.handle(spawn({ kind: 'grunt', count: 2 }), context)).toBeNull();
+    expect(handler.handle(spawn({ kind: 'hero', count: 1, team: 'light' }), context)).toBeNull();
+    expect(handler.handle(spawn({ kind: 'grunt', count: 2 }), context)).toBe('cap-exceeded');
+    expect(handler.handle(spawn({ kind: 'hero', count: 1 }), context)).toBeNull();
+    expect(handler.handle(spawn({ kind: 'grunt', count: 1 }), context)).toBe('cap-exceeded');
+    expect(context.state.entities.size).toBe(4);
+  });
+
+  it('refuses a Legend spawn that would pass maxLegendsPerTeam', () => {
+    const context = contextWithDummy({ maxUnitsPerTeam: 144, maxLegendsPerTeam: 2 });
+    const handler = new DevSpawnHandler();
+    expect(handler.handle(spawn({ kind: 'hero', count: 2 }), context)).toBeNull();
+    expect(handler.handle(spawn({ kind: 'hero', count: 1 }), context)).toBe('cap-exceeded');
+    expect(handler.handle(spawn({ kind: 'hero', count: 2, team: 'light' }), context)).toBeNull();
+  });
+
+  it('does not count non-unit entities against the unit cap', () => {
+    const context = contextWithDummy({ maxUnitsPerTeam: 1, maxLegendsPerTeam: 1 });
+    expect(new DevSpawnHandler().handle(spawn({ count: 5 }), context)).toBeNull();
+    expect(new DevSpawnHandler().handle(spawn({ kind: 'grunt', count: 1 }), context)).toBeNull();
   });
 });
