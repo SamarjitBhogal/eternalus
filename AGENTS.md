@@ -146,6 +146,8 @@ decision table is in `docs/architecture/02-code-structure.md`.
 
 ## Coding standards (full version: `CONTRIBUTING.md`)
 
+- TypeScript only: no `.js`/`.jsx`/`.mjs`/`.cjs` files (`npm run check:no-js`, run by the git
+  hooks and CI). Only `eslint.config.js` and `scripts/**/*.mjs` tooling are allowlisted.
 - No `any`: use `unknown` and narrow. `type` for data shapes, `interface` for contracts that
   classes implement. String-literal unions, never `enum`. `readonly` by default.
 - Naming: `PascalCase` classes/types/components, `camelCase` functions/variables,
@@ -186,6 +188,6 @@ decision table is in `docs/architecture/02-code-structure.md`.
 
 ## Commands
 
-`npm run check` (everything, same as CI) · `npm run check:quick` · `npm run test` ·
-`npm run lint` · `npm run typecheck` · `npm run knip` · `npm run docs:check` ·
+`npm run check` (everything, same as CI) · `npm run check:quick` · `npm run check:no-js` ·
+`npm run test` · `npm run lint` · `npm run typecheck` · `npm run knip` · `npm run docs:check` ·
 `npm run docs:index` · `npm run format`. Full list: `README.md`.

@@ -116,7 +116,7 @@ systems/
 - Conventional Commits with a scope:
   `core`, `client`, `ui`, `engine`, `bridge`, `ai`, `tooling`, `ci`, `docs`, `deps`.
   Example: `fix(engine): clamp frame delta after tab switch`.
-- Pre-commit and pre-push hooks run `npm run check:quick` (typecheck + lint). **(enforced)**
+- Pre-commit and pre-push hooks run `npm run check:quick` (no-JS check + typecheck + lint). **(enforced)**
 - Small PRs, squash-merged, one approval, green CI.
 - Never commit to `main`, force-push shared branches, or bypass hooks with `--no-verify`
   (CI runs the same checks anyway).
