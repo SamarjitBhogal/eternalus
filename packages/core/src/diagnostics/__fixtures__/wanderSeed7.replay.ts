@@ -330,19 +330,19 @@ export const WANDER_SEED_7: Replay = {
   checkpoints: [
     {
       tick: 0,
-      hash: 28348451,
+      hash: 2109758146,
     },
     {
       tick: 100,
-      hash: 3302447490,
+      hash: 1027027320,
     },
     {
       tick: 200,
-      hash: 2467697060,
+      hash: 1270352718,
     },
     {
       tick: 300,
-      hash: 395266383,
+      hash: 1902630959,
     },
   ],
 };

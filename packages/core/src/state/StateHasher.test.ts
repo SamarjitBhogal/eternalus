@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
+import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -16,6 +17,7 @@ class Soldier extends Entity {
     this.addComponent(new Transform({ x: 3, y: 4 }, 0.5));
     this.addComponent(new Health(100));
     this.addComponent(new TeamMembership('light'));
+    this.addComponent(new Movement({ maxSpeed: 2, acceleration: 0.5, mass: 1 }));
   }
 }
 
@@ -55,6 +57,12 @@ describe('StateHasher', () => {
     ],
     ['health', (_, soldier) => soldier.getComponent(Health).applyDamage(1)],
     ['a team', (_, soldier) => soldier.getComponent(TeamMembership).setTeam('dark')],
+    [
+      'a velocity the client never sees',
+      (_, soldier) => {
+        soldier.getComponent(Movement).accelerateToward({ x: 1, y: 0 });
+      },
+    ],
     ['an entity removal', (state) => state.entities.remove('entity-1', 'died')],
   ])('changes when %s changes', (_, change) => {
     const { state, soldier } = stateWithSoldier();
