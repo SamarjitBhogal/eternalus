@@ -38,6 +38,6 @@ describe('applyCommand', () => {
     ctx.state.events.on('command-rejected', (payload) => rejected.push(payload));
     const command = { type: 'stop', actorId: 'entity-3' } as const;
     applyCommand(command, createDefaultCommandHandlers(), ctx);
-    expect(rejected).toEqual([{ command, reason: 'not-supported' }]);
+    expect(rejected).toEqual([{ command, reason: 'unknown-entity' }]);
   });
 });

@@ -10,8 +10,6 @@ import { createDefaultCommandHandlers } from './defaultCommandHandlers';
 import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler';
 
 const NOT_YET_SUPPORTED: readonly Command[] = [
-  { type: 'move', actorId: 'entity-1', direction: { x: 0, y: -1 } },
-  { type: 'stop', actorId: 'entity-1' },
   { type: 'attack-target', actorId: 'entity-1', targetId: 'entity-2' },
   {
     type: 'cast-ability',

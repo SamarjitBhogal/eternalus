@@ -1,5 +1,7 @@
+import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
+import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from '../entities/Entity';
 import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
 
@@ -66,6 +68,21 @@ export class EntityStore {
       }
     });
     return total;
+  }
+
+  /**
+   * Points the entity's `Movement` along `direction` (zero to slow to a stop). Lets `commands/`
+   * steer without importing `components/`, as `countOnTeam` reaches `TeamMembership`.
+   *
+   * @returns `false` when the entity is unknown or cannot move.
+   */
+  public steer(id: EntityId, direction: Vec2): boolean {
+    const movement = this.entities.get(id)?.findComponent(Movement);
+    if (movement === undefined) {
+      return false;
+    }
+    movement.steer(direction);
+    return true;
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */
