@@ -29,29 +29,29 @@ class ConcreteEntity extends Entity {
 
   public readonly kind = 'test-kind';
 
-  public readonly family = 'obstacle';
+  public readonly family = 'test-family';
 
-  protected attachComponents(context: unknown): void {
-    this.calls.push(['attach-components', context]);
-    this.add(new TestHealth(10));
+  protected installComponents(context: unknown): void {
+    this.calls.push(['install-components', context]);
+    this.addComponent(new TestHealth(10));
   }
 
   protected override onSpawn(context: unknown): void {
     this.calls.push(['on-spawn', context]);
   }
 
-  protected override onRemove(cause: string, context: unknown): void {
-    this.calls.push(['on-remove', cause, context]);
+  protected override onRetire(cause: string, context: unknown): void {
+    this.calls.push(['on-retire', cause, context]);
   }
 }
 
 class HooklessEntity extends Entity {
   public readonly kind = 'hookless';
 
-  public readonly family = 'zone';
+  public readonly family = 'hookless-family';
 
-  protected attachComponents(): void {
-    this.add(new Marker());
+  protected installComponents(): void {
+    this.addComponent(new Marker());
   }
 }
 
@@ -70,32 +70,32 @@ describe('Entity', () => {
     entity.retire('destroyed', { remove: true });
 
     expect(calls).toEqual([
-      ['attach-components', { spawn: true }],
+      ['install-components', { spawn: true }],
       ['on-spawn', { spawn: true }],
-      ['on-remove', 'destroyed', { remove: true }],
+      ['on-retire', 'destroyed', { remove: true }],
     ]);
-    expect(entity.has(TestHealth)).toBe(false);
+    expect(entity.hasComponent(TestHealth)).toBe(false);
   });
 
   it('provides component access helpers', () => {
     const entity = new ConcreteEntity('entity-3', 'test-definition', []);
     const component = new TestMovement(5);
-    entity.add(component);
+    entity.addComponent(component);
 
-    expect(entity.has(TestMovement)).toBe(true);
-    expect(entity.find(TestMovement)).toBe(component);
+    expect(entity.hasComponent(TestMovement)).toBe(true);
+    expect(entity.findComponent(TestMovement)).toBe(component);
     // The return type is TestMovement, so `.speed` type-checks with no cast.
-    expect(entity.get(TestMovement).speed).toBe(5);
-    expect(entity.find(Missing)).toBeUndefined();
-    expect(() => entity.get(Missing)).toThrow('Missing component "Missing".');
+    expect(entity.getComponent(TestMovement).speed).toBe(5);
+    expect(entity.findComponent(Missing)).toBeUndefined();
+    expect(() => entity.getComponent(Missing)).toThrow('Missing component "Missing".');
   });
 
   it('replaces a component of the same class', () => {
     const entity = new ConcreteEntity('entity-7', 'test-definition', []);
-    entity.add(new TestMovement(1));
-    entity.add(new TestMovement(2));
+    entity.addComponent(new TestMovement(1));
+    entity.addComponent(new TestMovement(2));
 
-    expect(entity.get(TestMovement).speed).toBe(2);
+    expect(entity.getComponent(TestMovement).speed).toBe(2);
   });
 
   it('requires a removal cause when retiring an entity', () => {
@@ -113,8 +113,8 @@ describe('Entity', () => {
   it('requires subclasses to define kind and family at compile time', () => {
     // @ts-expect-error -- abstract kind and family are not implemented
     class IncompleteEntity extends Entity {
-      protected attachComponents(): void {
-        this.add(new Marker());
+      protected installComponents(): void {
+        this.addComponent(new Marker());
       }
     }
 
@@ -125,8 +125,8 @@ describe('Entity', () => {
     const entity = new HooklessEntity('entity-6', 'test-definition');
 
     entity.spawn({});
-    expect(entity.has(Marker)).toBe(true);
+    expect(entity.hasComponent(Marker)).toBe(true);
     entity.retire('cleanup', {});
-    expect(entity.has(Marker)).toBe(false);
+    expect(entity.hasComponent(Marker)).toBe(false);
   });
 });

@@ -32,20 +32,20 @@ describe('Structure', () => {
 
     tower.spawn({ definition: DEFINITION, position: { x: 300, y: 450 }, team: 'light' });
 
-    expect(tower.get(Transform).position).toEqual({ x: 300, y: 450 });
-    expect(tower.get(Health).base).toBe(1000);
-    expect(tower.get(TeamMembership).team).toBe('light');
-    expect(tower.get(Collider).layer).toBe('structure');
-    expect(tower.get(Collider).isStatic).toBe(true);
+    expect(tower.getComponent(Transform).position).toEqual({ x: 300, y: 450 });
+    expect(tower.getComponent(Health).current).toBe(1000);
+    expect(tower.getComponent(TeamMembership).team).toBe('light');
+    expect(tower.getComponent(Collider).layer).toBe('structure');
+    expect(tower.getComponent(Collider).isStatic).toBe(true);
   });
 
   it('takes layered shields on its health, as buff towers will grant them', () => {
     const tower = new FakeTower('entity-1', 'fake-buff-tower');
     tower.spawn({ definition: DEFINITION, position: { x: 0, y: 0 }, team: 'dark' });
 
-    tower.get(Health).addShield('buff-tower-2', 1500);
+    tower.getComponent(Health).addShield('buff-tower-2', 1500);
 
-    expect(tower.get(Health).total).toBe(2500);
+    expect(tower.getComponent(Health).total).toBe(2500);
   });
 
   it('needs a team', () => {

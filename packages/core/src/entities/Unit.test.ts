@@ -63,14 +63,14 @@ describe('Unit family hierarchy', () => {
 
     unit.spawn({ definition: DEFINITION, position: { x: 3, y: 4 }, team: 'dark' });
 
-    expect(unit.get(Transform).position).toEqual({ x: 3, y: 4 });
-    expect(unit.get(Transform).radius).toBe(0.5);
-    expect(unit.get(Health).base).toBe(50);
-    expect(unit.get(Movement).maxSpeed).toBe(0.2);
-    expect(unit.get(TeamMembership).team).toBe('dark');
-    expect(unit.get(Collider).shape).toEqual({ kind: 'circle', radius: 0.5 });
-    expect(unit.get(Collider).layer).toBe('unit');
-    expect(unit.get(Vision).radius).toBe(12);
+    expect(unit.getComponent(Transform).position).toEqual({ x: 3, y: 4 });
+    expect(unit.getComponent(Transform).radius).toBe(0.5);
+    expect(unit.getComponent(Health).current).toBe(50);
+    expect(unit.getComponent(Movement).maxSpeed).toBe(0.2);
+    expect(unit.getComponent(TeamMembership).team).toBe('dark');
+    expect(unit.getComponent(Collider).shape).toEqual({ kind: 'circle', radius: 0.5 });
+    expect(unit.getComponent(Collider).layer).toBe('unit');
+    expect(unit.getComponent(Vision).radius).toBe(12);
   });
 
   it('rejects a definition that is not its own', () => {
@@ -85,7 +85,7 @@ describe('Unit family hierarchy', () => {
     expect(() => {
       spawnWith({ ...DEFINITION, kind: 'other-kind' });
     }).toThrow('got definition "concrete-definition" (other-kind)');
-    expect(unit.has(Transform)).toBe(false);
+    expect(unit.hasComponent(Transform)).toBe(false);
   });
 
   it('accepts any context like Entity does, and rejects one that is not a placed spawn context', () => {

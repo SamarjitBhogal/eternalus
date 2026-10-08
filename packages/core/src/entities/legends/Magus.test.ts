@@ -24,9 +24,9 @@ describe('Magus', () => {
 
     entity.spawn({ definition, position: { x: 0, y: 0 }, team: 'light' });
 
-    expect(entity.get(Health).base).toBe(definition.baseHealth);
-    expect(entity.get(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
-    expect(entity.get(Collider).shape.radius).toBe(definition.footprintRadius);
+    expect(entity.getComponent(Health).current).toBe(definition.baseHealth);
+    expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
+    expect(entity.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
   });
 
   it('refuses another class definition', () => {

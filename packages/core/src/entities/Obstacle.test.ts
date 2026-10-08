@@ -33,10 +33,10 @@ describe('Obstacle', () => {
 
     tree.spawn({ definition: TREE, position: { x: 5, y: 5 } });
 
-    expect(tree.get(Transform).position).toEqual({ x: 5, y: 5 });
-    expect(tree.get(Collider).layer).toBe('obstacle');
-    expect(tree.get(Collider).isStatic).toBe(true);
-    expect(tree.has(TeamMembership)).toBe(false);
+    expect(tree.getComponent(Transform).position).toEqual({ x: 5, y: 5 });
+    expect(tree.getComponent(Collider).layer).toBe('obstacle');
+    expect(tree.getComponent(Collider).isStatic).toBe(true);
+    expect(tree.hasComponent(TeamMembership)).toBe(false);
   });
 
   it('gets health only when it can break', () => {
@@ -46,7 +46,7 @@ describe('Obstacle', () => {
     tree.spawn({ definition: TREE, position: { x: 0, y: 0 } });
     rock.spawn({ definition: ROCK, position: { x: 0, y: 0 } });
 
-    expect(tree.get(Health).base).toBe(400);
-    expect(rock.has(Health)).toBe(false);
+    expect(tree.getComponent(Health).current).toBe(400);
+    expect(rock.hasComponent(Health)).toBe(false);
   });
 });

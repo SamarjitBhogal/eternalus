@@ -25,10 +25,10 @@ describe('LightMob', () => {
 
     dummy.spawn({ definition, position: { x: 0, y: 0 }, team: 'neutral' });
 
-    expect(dummy.get(Health).base).toBe(definition.baseHealth);
-    expect(dummy.get(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
-    expect(dummy.get(Collider).shape.radius).toBe(definition.footprintRadius);
-    expect(dummy.get(Vision).radius).toBe(definition.visionRadius);
+    expect(dummy.getComponent(Health).current).toBe(definition.baseHealth);
+    expect(dummy.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
+    expect(dummy.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
+    expect(dummy.getComponent(Vision).radius).toBe(definition.visionRadius);
   });
 
   it('refuses a Legend definition', () => {

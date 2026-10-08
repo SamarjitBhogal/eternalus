@@ -30,8 +30,8 @@ describe('Zone', () => {
 
     point.spawn({ definition: DEFINITION, position: { x: 800, y: 450 }, team: 'neutral' });
 
-    expect(point.get(Transform).radius).toBe(12);
-    expect(point.get(TeamMembership).team).toBe('neutral');
-    expect(point.has(Collider)).toBe(false);
+    expect(point.getComponent(Transform).radius).toBe(12);
+    expect(point.getComponent(TeamMembership).team).toBe('neutral');
+    expect(point.hasComponent(Collider)).toBe(false);
   });
 });

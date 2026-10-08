@@ -34,17 +34,17 @@ const spawnUnit = (
 
 /** One tick of movement toward `direction`, as `MovementSystem` will do it. */
 const stepToward = (unit: Entity, direction: Vec2): void => {
-  const movement = unit.get(Movement);
+  const movement = unit.getComponent(Movement);
   movement.accelerateToward(direction);
-  unit.get(Transform).moveBy(movement.velocity);
+  unit.getComponent(Transform).moveBy(movement.velocity);
 };
 
 /** Ticks a unit needs to run `metres` east from a standstill. */
 const ticksToRun = (unit: Entity, metres: number): number => {
-  const start = unit.get(Transform).position.x;
+  const start = unit.getComponent(Transform).position.x;
   let ticks = 0;
 
-  while (unit.get(Transform).position.x - start < metres) {
+  while (unit.getComponent(Transform).position.x - start < metres) {
     stepToward(unit, EAST);
     ticks += 1;
   }
@@ -86,19 +86,19 @@ describe('Player scenarios', () => {
 
       const player = spawnUnit(factory, 'warrior', 'dark', capital);
 
-      expect(player.get(Transform).position).toEqual(capital);
-      expect(player.get(Health).base).toBe(LEGEND_CLASSES.get('warrior').baseHealth);
-      expect(player.get(Movement).speed).toBe(0);
-      expect(player.get(TeamMembership).team).toBe('dark');
+      expect(player.getComponent(Transform).position).toEqual(capital);
+      expect(player.getComponent(Health).current).toBe(LEGEND_CLASSES.get('warrior').baseHealth);
+      expect(player.getComponent(Movement).speed).toBe(0);
+      expect(player.getComponent(TeamMembership).team).toBe('dark');
     });
 
     it('treats teammates as allies, the other team and neutral camps as enemies', () => {
       const factory = new EntityFactory(new DefaultEntityRegistry());
-      const player = spawnUnit(factory, 'magus', 'light').get(TeamMembership);
+      const player = spawnUnit(factory, 'magus', 'light').getComponent(TeamMembership);
 
-      const teammate = spawnUnit(factory, 'sentinel', 'light').get(TeamMembership);
-      const enemy = spawnUnit(factory, 'warrior', 'dark').get(TeamMembership);
-      const campMob = spawnUnit(factory, 'training-dummy', 'neutral').get(TeamMembership);
+      const teammate = spawnUnit(factory, 'sentinel', 'light').getComponent(TeamMembership);
+      const enemy = spawnUnit(factory, 'warrior', 'dark').getComponent(TeamMembership);
+      const campMob = spawnUnit(factory, 'training-dummy', 'neutral').getComponent(TeamMembership);
 
       expect(player.isAlly(teammate)).toBe(true);
       expect(player.isEnemy(enemy)).toBe(true);
@@ -124,7 +124,9 @@ describe('Player scenarios', () => {
         stepToward(sentinel, EAST);
       }
 
-      expect(sentinel.get(Movement).speed).toBe(LEGEND_CLASSES.get('sentinel').movement.maxSpeed);
+      expect(sentinel.getComponent(Movement).speed).toBe(
+        LEGEND_CLASSES.get('sentinel').movement.maxSpeed,
+      );
     });
 
     it('stops the player at once when they let go of the keys', () => {
@@ -132,12 +134,12 @@ describe('Player scenarios', () => {
       const player = spawnUnit(factory, 'warrior', 'light');
       stepToward(player, EAST);
       stepToward(player, EAST);
-      const stoppedAt = player.get(Transform).position;
+      const stoppedAt = player.getComponent(Transform).position;
 
       stepToward(player, { x: 0, y: 0 });
 
-      expect(player.get(Movement).speed).toBe(0);
-      expect(player.get(Transform).position).toEqual(stoppedAt);
+      expect(player.getComponent(Movement).speed).toBe(0);
+      expect(player.getComponent(Transform).position).toEqual(stoppedAt);
     });
 
     it('moves the same way on every run (deterministic)', () => {
@@ -149,7 +151,7 @@ describe('Player scenarios', () => {
           stepToward(player, tick < 45 ? EAST : { x: 1, y: 1 });
         }
 
-        return player.get(Transform).position;
+        return player.getComponent(Transform).position;
       };
 
       expect(run()).toEqual(run());
@@ -160,7 +162,7 @@ describe('Player scenarios', () => {
     it('kills a Legend when damage reaches its base health and reports the overkill', () => {
       const factory = new EntityFactory(new DefaultEntityRegistry());
       const warrior = spawnUnit(factory, 'warrior', 'light');
-      const health = warrior.get(Health);
+      const health = warrior.getComponent(Health);
 
       health.applyDamage(LEGEND_CLASSES.get('warrior').baseHealth - 1);
       expect(health.isDead).toBe(false);
@@ -172,30 +174,34 @@ describe('Player scenarios', () => {
     it('removes a dead unit only with a cause, and it keeps nothing afterwards', () => {
       const factory = new EntityFactory(new DefaultEntityRegistry());
       const mob = spawnUnit(factory, 'training-dummy', 'dark');
-      mob.get(Health).applyDamage(1000);
+      mob.getComponent(Health).applyDamage(1000);
 
       expect(() => {
         mob.retire('');
       }).toThrow('requires a removal cause');
       mob.retire('killed');
 
-      expect(mob.has(Health)).toBe(false);
-      expect(mob.has(Transform)).toBe(false);
+      expect(mob.hasComponent(Health)).toBe(false);
+      expect(mob.hasComponent(Transform)).toBe(false);
     });
 
     it('lets a Magus revive a fallen enemy mob to fight for the Magus team', () => {
       const factory = new EntityFactory(new DefaultEntityRegistry());
       const magus = spawnUnit(factory, 'magus', 'light');
       const fallen = spawnUnit(factory, 'training-dummy', 'dark');
-      fallen.get(Health).applyDamage(1000);
+      fallen.getComponent(Health).applyDamage(1000);
 
-      const reviveHealth = fallen.get(Health).baseMax;
-      fallen.get(Health).heal(reviveHealth);
-      const previousTeam = fallen.get(TeamMembership).setTeam(magus.get(TeamMembership).team);
+      const reviveHealth = fallen.getComponent(Health).max;
+      fallen.getComponent(Health).heal(reviveHealth);
+      const previousTeam = fallen
+        .getComponent(TeamMembership)
+        .setTeam(magus.getComponent(TeamMembership).team);
 
       expect(previousTeam).toBe('dark');
-      expect(fallen.get(Health).isDead).toBe(false);
-      expect(fallen.get(TeamMembership).isAlly(magus.get(TeamMembership))).toBe(true);
+      expect(fallen.getComponent(Health).isDead).toBe(false);
+      expect(fallen.getComponent(TeamMembership).isAlly(magus.getComponent(TeamMembership))).toBe(
+        true,
+      );
     });
   });
 
@@ -206,7 +212,7 @@ describe('Player scenarios', () => {
       const horde = Array.from({ length: 16 }, () => spawnUnit(factory, 'training-dummy', 'dark'));
 
       expect(new Set(horde.map((mob) => mob.id)).size).toBe(16);
-      expect(horde.every((mob) => mob.get(TeamMembership).team === 'dark')).toBe(true);
+      expect(horde.every((mob) => mob.getComponent(TeamMembership).team === 'dark')).toBe(true);
     });
 
     it('gives the same ids on every replay of the same spawns', () => {

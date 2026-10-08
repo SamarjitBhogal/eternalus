@@ -8,7 +8,7 @@ import type {
 } from './SpawnContextReader.types';
 
 /**
- * Reads the spawn context an entity receives in `attachComponents`, and fails fast when it is not
+ * Reads the spawn context an entity receives in `installComponents`, and fails fast when it is not
  * the context that entity needs.
  *
  * @remarks `Entity.spawn` takes `unknown`, so every family accepts the same input as `Entity`

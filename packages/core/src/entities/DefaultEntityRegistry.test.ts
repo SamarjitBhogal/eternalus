@@ -89,11 +89,11 @@ describe('DefaultEntityRegistry', () => {
       const entity = factory.create(definition.kind, definition.id, spawnContext(definition));
 
       expect(entity.kind).toBe(definition.kind);
-      expect(entity.get(Transform).position).toEqual({ x: 10, y: 20 });
-      expect(entity.get(Health).base).toBe(definition.baseHealth);
-      expect(entity.get(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
-      expect(entity.get(TeamMembership).team).toBe('light');
-      expect(entity.get(Collider).shape.radius).toBe(definition.footprintRadius);
+      expect(entity.getComponent(Transform).position).toEqual({ x: 10, y: 20 });
+      expect(entity.getComponent(Health).current).toBe(definition.baseHealth);
+      expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
+      expect(entity.getComponent(TeamMembership).team).toBe('light');
+      expect(entity.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
     }
   });
 
@@ -136,7 +136,7 @@ describe('DefaultEntityRegistry', () => {
     );
 
     expect(entity).toBeInstanceOf(FakeMob);
-    expect(entity.get(Health).base).toBe(fakeDefinition.baseHealth);
+    expect(entity.getComponent(Health).current).toBe(fakeDefinition.baseHealth);
     expect(depthBelowEntity(FakeMob)).toBe(2);
   });
 });

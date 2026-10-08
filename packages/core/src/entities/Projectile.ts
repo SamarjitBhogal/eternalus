@@ -24,14 +24,16 @@ export class Projectile extends Entity {
    *
    * @throws Error when the context is not a placed context for this projectile's definition.
    */
-  protected attachComponents(context: unknown): void {
+  protected installComponents(context: unknown): void {
     const { definition, position, team } = new SpawnContextReader(
       this,
     ).placed<ProjectileDefinition>(context);
 
-    this.add(new Transform(position, definition.footprintRadius));
-    this.add(new Movement(definition.movement));
-    this.add(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'projectile'));
-    this.add(new TeamMembership(team));
+    this.addComponent(new Transform(position, definition.footprintRadius));
+    this.addComponent(new Movement(definition.movement));
+    this.addComponent(
+      new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'projectile'),
+    );
+    this.addComponent(new TeamMembership(team));
   }
 }

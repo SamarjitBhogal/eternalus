@@ -9,9 +9,9 @@ class FactoryEntity extends Entity {
 
   public readonly kind = 'factory-entity';
 
-  public readonly family = 'obstacle';
+  public readonly family = 'test-family';
 
-  protected attachComponents(context: unknown): void {
+  protected installComponents(context: unknown): void {
     this.spawnPayload = context;
   }
 }

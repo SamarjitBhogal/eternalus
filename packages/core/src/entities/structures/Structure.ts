@@ -38,15 +38,15 @@ export abstract class Structure extends Entity {
    *
    * @throws Error when the context is not a placed context for this structure's definition.
    */
-  protected attachComponents(context: unknown): void {
+  protected installComponents(context: unknown): void {
     const { definition, position, team } = new SpawnContextReader(this).placed<StructureDefinition>(
       context,
     );
 
-    this.add(new Transform(position, definition.footprintRadius));
-    this.add(new Health(definition.baseHealth));
-    this.add(new TeamMembership(team));
-    this.add(
+    this.addComponent(new Transform(position, definition.footprintRadius));
+    this.addComponent(new Health(definition.baseHealth));
+    this.addComponent(new TeamMembership(team));
+    this.addComponent(
       new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'structure', true),
     );
   }

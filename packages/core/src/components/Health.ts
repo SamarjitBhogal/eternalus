@@ -3,28 +3,28 @@ import type { DamageBreakdown, ShieldBar } from './Health.types';
 type MutableShieldBar = { -readonly [Key in keyof ShieldBar]: ShieldBar[Key] };
 
 /**
- * Hit points: a base bar plus layered shield bars (one per living allied BuffTower). Damage
- * drains the shield bars first, oldest bar first, then the base. `base` always stays between 0
- * and `baseMax`, and every bar between 0 and its own `max`.
+ * Hit points: a health bar plus layered shield bars (one per living allied BuffTower). Damage
+ * drains the shield bars first, oldest bar first, then health. `current` always stays between 0
+ * and `max`, and every bar between 0 and its own `max`.
  */
 export class Health {
-  private baseValue: number;
+  private currentValue: number;
 
   private readonly shieldBars: MutableShieldBar[] = [];
 
   /**
-   * Creates health at full base health, with no shield bars.
+   * Creates health at full health, with no shield bars.
    *
-   * @param baseMax - Full base health; must be positive.
+   * @param max - Full health (the base bar, without shields); must be positive.
    */
-  public constructor(public readonly baseMax: number) {
-    Health.checkPositive(baseMax, 'base max');
-    this.baseValue = baseMax;
+  public constructor(public readonly max: number) {
+    Health.checkPositive(max, 'max');
+    this.currentValue = max;
   }
 
-  /** Base health left, between 0 and `baseMax`. */
-  public get base(): number {
-    return this.baseValue;
+  /** Health left on the base bar, between 0 and `max`. Shield bars are in `shields`. */
+  public get current(): number {
+    return this.currentValue;
   }
 
   /** A copy of the shield bars, in the order they drain. */
@@ -32,17 +32,17 @@ export class Health {
     return this.shieldBars.map((bar) => ({ ...bar }));
   }
 
-  /** Base health plus every shield bar's current value. */
+  /** Health plus every shield bar's current value. */
   public get total(): number {
-    return this.shieldBars.reduce((sum, bar) => sum + bar.current, this.baseValue);
+    return this.shieldBars.reduce((sum, bar) => sum + bar.current, this.currentValue);
   }
 
-  /** Whether base health has reached 0. */
+  /** Whether health has reached 0. */
   public get isDead(): boolean {
-    return this.baseValue === 0;
+    return this.currentValue === 0;
   }
 
-  /** Drains shield bars first, then base health, and reports where the damage went. */
+  /** Drains shield bars first, then health, and reports where the damage went. */
   public applyDamage(amount: number): DamageBreakdown {
     Health.checkAmount(amount, 'damage');
     let remaining = amount;
@@ -55,16 +55,16 @@ export class Health {
       remaining -= absorbed;
     }
 
-    const toBase = Math.min(remaining, this.baseValue);
-    this.baseValue -= toBase;
+    const toBase = Math.min(remaining, this.currentValue);
+    this.currentValue -= toBase;
     return { toShields, toBase, overflow: remaining - toBase };
   }
 
-  /** Restores up to `amount` base health (never above `baseMax`) and returns how much. */
+  /** Restores up to `amount` health (never above `max`) and returns how much. */
   public heal(amount: number): number {
     Health.checkAmount(amount, 'heal');
-    const restored = Math.min(amount, this.baseMax - this.baseValue);
-    this.baseValue += restored;
+    const restored = Math.min(amount, this.max - this.currentValue);
+    this.currentValue += restored;
     return restored;
   }
 
@@ -79,7 +79,7 @@ export class Health {
     this.shieldBars.push({ sourceId, current: max, max });
   }
 
-  /** Drops the bar granted by `sourceId`, whatever it had left. Never touches base or other bars. */
+  /** Drops the bar granted by `sourceId`, whatever it had left. Never touches health or other bars. */
   public removeShield(sourceId: string): void {
     const index = this.shieldBars.findIndex((bar) => bar.sourceId === sourceId);
 

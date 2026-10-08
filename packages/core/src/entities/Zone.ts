@@ -33,12 +33,12 @@ export abstract class Zone extends Entity {
    *
    * @throws Error when the context is not a placed context for this zone's definition.
    */
-  protected attachComponents(context: unknown): void {
+  protected installComponents(context: unknown): void {
     const { definition, position, team } = new SpawnContextReader(this).placed<ZoneDefinition>(
       context,
     );
 
-    this.add(new Transform(position, definition.radius));
-    this.add(new TeamMembership(team));
+    this.addComponent(new Transform(position, definition.radius));
+    this.addComponent(new TeamMembership(team));
   }
 }

@@ -11,7 +11,7 @@ import { SpawnContextReader } from './SpawnContextReader';
 /**
  * Abstract base for mobile entities (Legends, mobs, bosses). Installs the shared unit
  * components from the unit's definition: `Transform`, `Health`, `Movement`, `TeamMembership`,
- * a circle `Collider` and `Vision`. Families add their own components by overriding `attachComponents`
+ * a circle `Collider` and `Vision`. Families add their own components by overriding `installComponents`
  * and calling `super`.
  */
 export abstract class Unit extends Entity {
@@ -32,16 +32,16 @@ export abstract class Unit extends Entity {
    *
    * @throws Error when the context is not a placed context for this unit's definition.
    */
-  protected attachComponents(context: unknown): void {
+  protected installComponents(context: unknown): void {
     const { definition, position, team } = new SpawnContextReader(this).placed<UnitDefinition>(
       context,
     );
 
-    this.add(new Transform(position, definition.footprintRadius));
-    this.add(new Health(definition.baseHealth));
-    this.add(new Movement(definition.movement));
-    this.add(new TeamMembership(team));
-    this.add(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
-    this.add(new Vision(definition.visionRadius));
+    this.addComponent(new Transform(position, definition.footprintRadius));
+    this.addComponent(new Health(definition.baseHealth));
+    this.addComponent(new Movement(definition.movement));
+    this.addComponent(new TeamMembership(team));
+    this.addComponent(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
+    this.addComponent(new Vision(definition.visionRadius));
   }
 }

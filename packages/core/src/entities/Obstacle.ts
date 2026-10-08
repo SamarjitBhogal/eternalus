@@ -25,18 +25,18 @@ export class Obstacle extends Entity {
    *
    * @throws Error when the context is not a positioned context for this obstacle's definition.
    */
-  protected attachComponents(context: unknown): void {
+  protected installComponents(context: unknown): void {
     const { definition, position } = new SpawnContextReader(this).positioned<ObstacleDefinition>(
       context,
     );
 
-    this.add(new Transform(position, definition.footprintRadius));
-    this.add(
+    this.addComponent(new Transform(position, definition.footprintRadius));
+    this.addComponent(
       new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'obstacle', true),
     );
 
     if (definition.health !== null) {
-      this.add(new Health(definition.health));
+      this.addComponent(new Health(definition.health));
     }
   }
 }

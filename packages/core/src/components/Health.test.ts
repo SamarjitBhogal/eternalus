@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { Health } from './Health';
 
 describe('Health', () => {
-  it('starts full and loses base health from damage', () => {
+  it('starts full and loses health from damage', () => {
     const health = new Health(100);
 
-    expect(health.base).toBe(100);
+    expect(health.current).toBe(100);
     expect(health.applyDamage(30)).toEqual({ toShields: 0, toBase: 30, overflow: 0 });
-    expect(health.base).toBe(70);
+    expect(health.current).toBe(70);
     expect(health.isDead).toBe(false);
   });
 
@@ -16,16 +16,16 @@ describe('Health', () => {
     const health = new Health(50);
 
     expect(health.applyDamage(80)).toEqual({ toShields: 0, toBase: 50, overflow: 30 });
-    expect(health.base).toBe(0);
+    expect(health.current).toBe(0);
     expect(health.isDead).toBe(true);
   });
 
-  it('heals base health up to its max and reports only what was restored', () => {
+  it('heals up to max and reports only what was restored', () => {
     const health = new Health(100);
     health.applyDamage(10);
 
     expect(health.heal(25)).toBe(10);
-    expect(health.base).toBe(100);
+    expect(health.current).toBe(100);
   });
 
   it('matches the worked example: 1000 base + 3 bars of 1500 = 5500', () => {
@@ -39,7 +39,7 @@ describe('Health', () => {
     // 2000 damage empties the oldest bar and takes 500 from the next; base is untouched.
     expect(health.applyDamage(2000)).toEqual({ toShields: 2000, toBase: 0, overflow: 0 });
     expect(health.shields.map((bar) => bar.current)).toEqual([0, 1000, 1500]);
-    expect(health.base).toBe(1000);
+    expect(health.current).toBe(1000);
     expect(health.total).toBe(3500);
   });
 
@@ -53,7 +53,7 @@ describe('Health', () => {
     health.removeShield('not-a-source');
 
     expect(health.shields).toEqual([{ sourceId: 'buff-tower-2', current: 150, max: 150 }]);
-    expect(health.base).toBe(100);
+    expect(health.current).toBe(100);
   });
 
   it('never heals shield bars', () => {
@@ -75,7 +75,7 @@ describe('Health', () => {
   });
 
   it('rejects invalid values and a second bar from the same source', () => {
-    expect(() => new Health(0)).toThrow('base max must be a positive number');
+    expect(() => new Health(0)).toThrow('max must be a positive number');
 
     const health = new Health(10);
     expect(() => health.applyDamage(-1)).toThrow('damage must be a finite number');

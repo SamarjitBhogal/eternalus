@@ -8,7 +8,7 @@ class ReaderEntity extends Entity {
 
   public readonly family = 'obstacle';
 
-  protected attachComponents(): void {
+  protected installComponents(): void {
     // The reader is tested directly; spawning is not needed.
   }
 }

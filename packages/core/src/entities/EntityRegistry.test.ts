@@ -10,10 +10,10 @@ class Marker {
 class RegistryEntity extends Entity {
   public readonly kind = 'registry-entity';
 
-  public readonly family = 'obstacle';
+  public readonly family = 'test-family';
 
-  protected attachComponents(): void {
-    this.add(new Marker());
+  protected installComponents(): void {
+    this.addComponent(new Marker());
   }
 }
 
