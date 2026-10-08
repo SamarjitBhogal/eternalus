@@ -22,7 +22,7 @@ export type {
   MatchConfig,
 } from './config/GameConfig.types';
 export { validateGameConfig } from './config/validateGameConfig';
-export { LEGEND_CLASSES } from './content/legends/legendClasses';
+export { LEGEND_CLASSES } from './content/legends/legendCatalogue';
 export type {
   DamageFocus,
   DefaultActionId,

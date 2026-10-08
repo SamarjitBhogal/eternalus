@@ -17,7 +17,7 @@ export const SENTINEL = {
   pickUp: 'grab',
   passiveOptions: ['wrecking-run'],
   defaultAction: null,
-  referenceHeight: 4.6, // ~15 ft (an elephant)
+  referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
   footprintRadius: 1.25, // DEC-06
   visionRadius: 25, // TUNE
   movement: {

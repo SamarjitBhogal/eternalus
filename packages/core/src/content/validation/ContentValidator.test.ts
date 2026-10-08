@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
-import { LEGEND_CLASSES } from '../legends/legendClasses';
+import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import type { UnitDefinition } from '../units/units.types';
 import { ContentValidator } from './ContentValidator';
 import type { UnitDefinitionRule } from './ContentValidator.types';

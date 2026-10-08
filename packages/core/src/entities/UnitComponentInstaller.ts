@@ -7,6 +7,7 @@ import { Vision } from '../components/Vision';
 import type { UnitDefinition } from '../content/units/units.types';
 import { SpawnContextReader } from './SpawnContextReader';
 import type { Unit } from './Unit';
+import type { UnitSpawnContext } from './Unit.types';
 
 /**
  * Installs the components every unit has, from a `UnitSpawnContext`: `Transform`, `Health`,
@@ -26,9 +27,8 @@ export class UnitComponentInstaller {
    * @throws Error when the context is not a placed context for this unit's definition.
    */
   public install(context: unknown): void {
-    const { definition, position, team } = new SpawnContextReader(this.unit).placed<UnitDefinition>(
-      context,
-    );
+    const reader = new SpawnContextReader(this.unit);
+    const { definition, position, team }: UnitSpawnContext = reader.placed<UnitDefinition>(context);
 
     this.unit.addComponent(new Transform(position, definition.footprintRadius));
     this.unit.addComponent(new Health(definition.baseHealth));

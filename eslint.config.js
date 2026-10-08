@@ -97,8 +97,14 @@ export default defineConfig(
       folders: 'components',
       outside: 'entities|systems|state|commands|ai|Simulation',
     },
-    { ring: 'entities', folders: 'entities', outside: 'systems|state|commands|ai|Simulation' },
-  ].map(({ ring, folders, outside }) => ({
+    // 02 section 2: entities may import state/ for types only (e.g. a spawn context's events).
+    {
+      ring: 'entities',
+      folders: 'entities',
+      outside: 'systems|commands|ai|Simulation',
+      typesOnly: 'state',
+    },
+  ].map(({ ring, folders, outside, typesOnly }) => ({
     files: [`packages/core/src/${folders}/**/*.ts`],
     ignores: ['**/*.test.ts'],
     rules: {
@@ -111,6 +117,15 @@ export default defineConfig(
               regex: `(^|/)(${outside})(/|$)`,
               message: `${ring} is an inner module of core and must not import an outer module.`,
             },
+            ...(typesOnly === undefined
+              ? []
+              : [
+                  {
+                    regex: `(^|/)(${typesOnly})(/|$)`,
+                    allowTypeImports: true,
+                    message: `${ring} may import only types from ${typesOnly}/.`,
+                  },
+                ]),
           ],
         },
       ],

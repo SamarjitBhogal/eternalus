@@ -17,7 +17,7 @@ export const MAGUS = {
   pickUp: 'levitate',
   passiveOptions: ['studious', 'necromancy'],
   defaultAction: 'revive',
-  referenceHeight: 3, // ~10 ft (Hades)
+  referenceHeight: 3, // TUNE: ~10 ft (Hades)
   footprintRadius: 0.75, // DEC-06
   visionRadius: 25, // TUNE
   movement: {

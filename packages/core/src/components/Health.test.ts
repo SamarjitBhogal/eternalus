@@ -90,4 +90,19 @@ describe('Health', () => {
     }).toThrow('already has a shield from "buff-tower-1"');
     expect(health.total).toBe(15);
   });
+
+  it('keeps shield bars in source id order, whatever order the towers granted them', () => {
+    const health = new Health(100);
+    health.addShield('buff-tower-3', 10);
+    health.addShield('buff-tower-1', 10);
+    health.addShield('buff-tower-2', 10);
+
+    health.applyDamage(15);
+
+    expect(health.shields.map(({ sourceId, current }) => [sourceId, current])).toEqual([
+      ['buff-tower-1', 0],
+      ['buff-tower-2', 5],
+      ['buff-tower-3', 10],
+    ]);
+  });
 });

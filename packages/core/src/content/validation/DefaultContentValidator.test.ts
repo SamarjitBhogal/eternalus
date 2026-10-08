@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ContentCatalogue } from '../ContentCatalogue';
-import { LEGEND_CLASSES } from '../legends/legendClasses';
+import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { UNIT_DEFINITIONS } from '../units/unitDefinitions';
 import { ContentValidator } from './ContentValidator';
 import { DefaultContentValidator } from './DefaultContentValidator';
