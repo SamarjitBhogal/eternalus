@@ -292,3 +292,17 @@ The example below is fenced so it is not read as a real entry.
   "Tests 295 passed (295)" (statements 98.78%, branches 91.48%, functions 99.1%, lines 98.69%);
   client "Tests 36 passed (36)"; "✓ built in 79ms"; "Documentation check passed."
 - Next step: Sam pushes `feat/sim-kernel`; PR #13 then merges into the phase branch.
+
+### 2026-10-08 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
+
+- What was done: DEC-16, accepted by the owner in chat. `eslint.config.js` adds `.worktrees/` and
+  `.claude/worktrees/` to `globalIgnores`. Before, `eslint --debug .` from the main checkout
+  linted 727 files under `.worktrees/` besides the main tree's 174. A probe file with a lint error
+  under `.worktrees/` is now reported as ignored, and the same file outside it is still linted.
+  Recorded in the decisions log (batch 2026-10-08), moved to Done in `INBOX.md`, and noted in
+  `docs/agents/running-agents.md` §3.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 295 passed (295)"; client "Tests 36 passed (36)";
+  "✓ built in 237ms"; "Documentation check passed."
+- Next step: the human reviews and commits; the PR into the phase branch touches
+  `eslint.config.js` line 24 only, away from PR #14's module-ring hunk (line 78 on).

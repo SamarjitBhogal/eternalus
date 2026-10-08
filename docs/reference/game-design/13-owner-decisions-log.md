@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-08
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,12 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-10-08 (INBOX DEC-16, tooling)
+
+| ID     | Decision                                                                                                                                                                                                            | Affects                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| DEC-16 | **Root lint skips agent worktrees:** `.worktrees/` and `.claude/worktrees/` are in ESLint's `globalIgnores`, because flat config does not read `.gitignore`. Each worktree is still linted by its own hooks and CI. | `eslint.config.js`; `docs/agents/running-agents.md` §3 |
 
 ## Batch 2026-10-07 (INBOX, simulation kernel, PR #13)
 

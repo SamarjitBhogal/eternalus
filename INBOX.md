@@ -41,11 +41,6 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
       class in content. Pick one. Note: "depth" is the distance to the nearest lane over half the
       corridor's height, so in tall worlds with steep lanes every camp reads as light.
-- [ ] **DEC-16 — tooling: lint ignores agent worktrees.** ESLint's flat config does not read
-      `.gitignore`, so linting from the main checkout also lints every `.worktrees/*` checkout and
-      one unfinished worktree blocks every push from the main checkout. Proposal: add
-      `.worktrees/` and `.claude/worktrees/` to `globalIgnores` in `eslint.config.js` (each
-      worktree is still linted by its own hooks and CI).
 
 ## Requests for the agent
 
@@ -93,6 +88,9 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Done
 
+- 2026-10-08 — **DEC-16** (lint ignores agent worktrees) accepted by the owner in chat:
+  `eslint.config.js` adds `.worktrees/` and `.claude/worktrees/` to `globalIgnores`; recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md`. Branch `chore/lint-ignore-worktrees`.
 - 2026-10-07 — **Session B's simulation kernel items** signed off and done: the snapshot shape
   (DEC-17) and the `makeLogRecord` options object (DEC-18) folded into 03 §5 and 15 §4; the
   determinism lint (DEC-19, ADR 0012) added; the kernel's design differences (DEC-20) folded into
