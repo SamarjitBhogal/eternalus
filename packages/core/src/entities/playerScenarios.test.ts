@@ -12,7 +12,10 @@ import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { UNIT_DEFINITIONS } from '../content/units/unitDefinitions';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { NullLogger } from '../diagnostics/NullLogger';
 import { LEGEND_CLASSES } from '../index';
+import { Simulation } from '../Simulation';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { DefaultEntityRegistry } from './DefaultEntityRegistry';
@@ -129,12 +132,13 @@ describe('Player scenarios', () => {
       );
     });
 
-    it('stops the player at once when they let go of the keys', () => {
+    it('halts at once on a hard stop (a zero direction straight to the component)', () => {
       const factory = new EntityFactory(new DefaultEntityRegistry());
       const player = spawnUnit(factory, 'warrior', 'light');
       stepToward(player, EAST);
       stepToward(player, EAST);
-      const stoppedAt = player.getComponent(Transform).position;
+      const { x, y } = player.getComponent(Transform).position;
+      const stoppedAt = { x, y };
 
       stepToward(player, { x: 0, y: 0 });
 
@@ -223,6 +227,87 @@ describe('Player scenarios', () => {
 
       expect(ids()).toEqual(ids());
       expect(ids()).toEqual(['entity-1', 'entity-2', 'entity-3', 'entity-4']);
+    });
+  });
+
+  describe('playing a match through the simulation', () => {
+    const newMatch = (seed = 1): Simulation =>
+      new Simulation({
+        config: createDefaultGameConfig(),
+        seed,
+        logger: new NullLogger(),
+        debug: { assertLevel: 'heavy', heavyEvery: 1, throwOnViolation: true },
+      });
+
+    const joinAsWarrior = (sim: Simulation): void => {
+      sim.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team: 'light',
+        at: { x: 85, y: 450 },
+        count: 1,
+      });
+      sim.step();
+    };
+
+    const playerX = (sim: Simulation): number => sim.snapshot().entities[0]?.transform?.x ?? NaN;
+
+    it('walks east while the player holds the key, and coasts to a stop on release', () => {
+      const sim = newMatch();
+      joinAsWarrior(sim);
+
+      sim.enqueueCommand({ type: 'move', actorId: 'entity-1', direction: { x: 1, y: 0 } });
+      for (let tick = 0; tick < 30; tick += 1) {
+        sim.step();
+      }
+      const afterOneSecond = playerX(sim);
+      expect(afterOneSecond).toBeGreaterThan(85);
+
+      sim.enqueueCommand({ type: 'stop', actorId: 'entity-1' });
+      sim.step();
+      const firstTickAfterRelease = playerX(sim);
+      expect(firstTickAfterRelease).toBeGreaterThan(afterOneSecond);
+
+      for (let tick = 0; tick < 30; tick += 1) {
+        sim.step();
+      }
+      const rested = playerX(sim);
+      sim.step();
+      expect(playerX(sim)).toBe(rested);
+    });
+
+    it('tells the player why an order was refused instead of failing silently', () => {
+      const sim = newMatch();
+      const reasons: string[] = [];
+      sim.on('command-rejected', ({ reason }) => reasons.push(reason));
+      joinAsWarrior(sim);
+
+      sim.enqueueCommand({ type: 'move', actorId: 'entity-99', direction: { x: 1, y: 0 } });
+      sim.enqueueCommand({ type: 'move', actorId: 'entity-1', direction: { x: Number.NaN, y: 0 } });
+      sim.step();
+
+      expect(reasons).toEqual(['unknown-entity', 'invalid-direction']);
+    });
+
+    it('plays the same match the same way twice (same seed and orders, same hash)', () => {
+      const play = (): number => {
+        const sim = newMatch(7);
+        joinAsWarrior(sim);
+        for (let tick = 0; tick < 90; tick += 1) {
+          if (tick % 30 === 0) {
+            sim.enqueueCommand({
+              type: 'move',
+              actorId: 'entity-1',
+              direction: tick === 30 ? { x: 0, y: 1 } : { x: 1, y: -1 },
+            });
+          }
+          sim.step();
+        }
+        return sim.hash();
+      };
+
+      expect(play()).toBe(play());
     });
   });
 });

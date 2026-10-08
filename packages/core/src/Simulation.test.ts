@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Command } from './commands/Command.types';
 import { ConfigValidationError } from './config/ConfigValidationError';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { UNIT_DEFINITIONS } from './content/units/unitDefinitions';
 import type { Logger } from './diagnostics/Logger.types';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
@@ -166,5 +167,49 @@ describe('Simulation', () => {
       () =>
         new Simulation({ config: createDefaultGameConfig(), seed: -1, logger: new NullLogger() }),
     ).toThrow(RangeError);
+  });
+
+  it('runs the default pipeline when no systems are given: move commands move units', () => {
+    const sim = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+      debug: { assertLevel: 'heavy', heavyEvery: 1, throwOnViolation: true },
+    });
+    sim.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at: { x: 0, y: 0 },
+      count: 1,
+    });
+    sim.step();
+    sim.enqueueCommand({ type: 'move', actorId: 'entity-1', direction: { x: 1, y: 0 } });
+    sim.step();
+    sim.step();
+
+    expect(sim.snapshot().entities[0]?.transform?.x).toBeGreaterThan(0);
+  });
+
+  it('builds entities from the content it is given', () => {
+    const tough = { ...UNIT_DEFINITIONS.get('warrior'), baseHealth: 5000 };
+    const sim = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+      content: { has: (id) => id === 'warrior', get: () => tough },
+    });
+    sim.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'light',
+      at: { x: 0, y: 0 },
+      count: 1,
+    });
+    sim.step();
+
+    expect(sim.snapshot().entities[0]?.health).toEqual({ current: 5000, max: 5000 });
   });
 });

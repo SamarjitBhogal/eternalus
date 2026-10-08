@@ -2,7 +2,7 @@ import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 
 /** A kebab-case invariant id, e.g. `health-within-bounds`. */
-export type InvariantId = string;
+type InvariantId = string;
 
 /** How bad a violation is; `fatal` means the state can no longer be trusted. */
 export type InvariantSeverity = 'warn' | 'error' | 'fatal';
