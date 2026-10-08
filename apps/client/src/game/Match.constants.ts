@@ -15,3 +15,6 @@ export const FOLLOW_VIEW_HEIGHT = 36;
 
 /** The match seed until match setup (session E) chooses one. */
 export const PLACEHOLDER_MATCH_SEED = 1;
+
+/** How many log records the match keeps for bug reports and the overlay (architecture 15 §5). */
+export const LOG_RING_CAPACITY = 512;

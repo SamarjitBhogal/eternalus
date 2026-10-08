@@ -1,12 +1,20 @@
-import { createDefaultGameConfig, MapGenerator, NullLogger, Simulation } from '@eternalus/core';
+import { createDefaultGameConfig, MapGenerator, SEVERITY, Simulation } from '@eternalus/core';
 import { type RefObject, useEffect } from 'react';
 
+import { ConsoleSink } from '../data/logging/ConsoleSink';
+import { RingBufferSink } from '../data/logging/RingBufferSink';
+import { SinkLogger } from '../data/logging/SinkLogger';
 import { Camera } from './engine/Camera';
 import { RafFrameScheduler } from './engine/loop/RafFrameScheduler';
 import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import { IdleIntentSource } from './IdleIntentSource';
 import { Match } from './Match';
-import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, PLACEHOLDER_MATCH_SEED } from './Match.constants';
+import {
+  FOLLOW_VIEW_HEIGHT,
+  FOLLOW_VIEW_WIDTH,
+  LOG_RING_CAPACITY,
+  PLACEHOLDER_MATCH_SEED,
+} from './Match.constants';
 
 /**
  * Creates a `Match` on the canvas when it mounts and destroys it on unmount: a Warrior at the
@@ -24,12 +32,16 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, PLACEHOLDER_MATCH_SEED);
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
+    // Warnings and worse reach the console; everything is kept for bug reports and the overlay.
+    const logger = new SinkLogger(
+      () => performance.now(),
+      [
+        { sink: new ConsoleSink(), minSeverity: SEVERITY.WARN },
+        { sink: new RingBufferSink(LOG_RING_CAPACITY), minSeverity: SEVERITY.TRACE },
+      ],
+    );
     const match = new Match({
-      simulation: new Simulation({
-        config,
-        seed: PLACEHOLDER_MATCH_SEED,
-        logger: new NullLogger(),
-      }),
+      simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger }),
       map,
       tickRate: config.tickRate,
       scheduler: new RafFrameScheduler({
