@@ -1,73 +1,140 @@
 import { MAP_1 } from '@eternalus/core';
-import { type RefObject, useEffect } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 
-import { Camera } from './engine/Camera';
 import { Renderer } from './engine/Renderer';
+import { MapExplorer } from './MapExplorer';
+import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneView } from './views/SceneView';
+import { SceneryView } from './views/SceneryView';
 
-/** Colour behind the map, only visible if the view ever reaches past the map's edges. */
-const BACKGROUND_COLOR = '#2b2620';
+/** Wires presentation-only pan, zoom, minimap navigation and cathedral inspection. */
+export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): {
+  readonly isInterior: boolean;
+  readonly overview: () => void;
+} {
+  const [isInterior, setIsInterior] = useState(false);
+  const resetRef = useRef<() => void>(() => undefined);
 
-/** Where the main view starts looking: the Light team's side of map-1, in world units. */
-const CAMERA_START_CENTER = { x: 320, y: 450 };
-
-/** How much of the map the main view shows left to right, in world units. TUNE: zoom. */
-const CAMERA_VISIBLE_WIDTH = 800;
-
-/** How much of the map the main view shows top to bottom, in world units. TUNE: zoom. */
-const CAMERA_VISIBLE_HEIGHT = 900;
-
-/**
- * Draws a zoomed-in view of map-1 plus a mini map of the whole map. Redraws when the window
- * is resized, and clicking the mini map moves the camera to that spot.
- * Temporary wiring until `Match` and `GameLoop` exist and take over drawing.
- */
-export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): void {
   useEffect(() => {
     const canvas = canvasRef.current;
     const renderer = canvas === null ? null : Renderer.fromCanvas(canvas);
-    if (canvas === null || renderer === null) {
-      return undefined;
-    }
-    const camera = new Camera(CAMERA_START_CENTER, CAMERA_VISIBLE_WIDTH, CAMERA_VISIBLE_HEIGHT);
-    // Add new layers (obstacles, units) to this list and they appear in both views.
-    const scene = new SceneView([new MapView(MAP_1)]);
-    const miniMap = new MiniMapView(MAP_1, scene);
+    if (canvas === null || renderer === null) return undefined;
+    const explorer = new MapExplorer(MAP_1);
+    const createScene = (): SceneView =>
+      new SceneView([
+        new MapView(explorer.currentMap),
+        new SceneryView(explorer.currentMap, 'detail'),
+      ]);
+    let scene = createScene();
+    let miniMap = new MiniMapView(explorer.currentMap, scene);
+    let drag: { x: number; y: number; distance: number } | null = null;
 
     const draw = (): void => {
-      const pixelRatio = window.devicePixelRatio;
-      canvas.width = Math.round(canvas.clientWidth * pixelRatio);
-      canvas.height = Math.round(canvas.clientHeight * pixelRatio);
+      const ratio = window.devicePixelRatio;
+      canvas.width = Math.round(canvas.clientWidth * ratio);
+      canvas.height = Math.round(canvas.clientHeight * ratio);
       renderer.resize(canvas.width, canvas.height);
-      const view = camera.visibleArea(MAP_1.width, MAP_1.height);
-      renderer.clear(BACKGROUND_COLOR);
+      const view = explorer.areaFor(canvas.width / canvas.height);
+      renderer.clear(EXPLORER_SETTINGS.background);
       renderer.showWorldArea(view);
       scene.draw(renderer);
       miniMap.draw(renderer, canvas.width, canvas.height, view);
     };
+    const rebuild = (): void => {
+      scene = createScene();
+      miniMap = new MiniMapView(explorer.currentMap, scene);
+      setIsInterior(explorer.isInterior);
+      draw();
+    };
+    resetRef.current = (): void => {
+      explorer.overview();
+      rebuild();
+    };
 
-    const jumpToClick = (event: MouseEvent): void => {
-      // The click is in CSS pixels; the canvas may have more real pixels, so scale it up.
+    const screenPoint = (event: MouseEvent): { x: number; y: number } => {
       const bounds = canvas.getBoundingClientRect();
-      const screenX = (event.clientX - bounds.left) * (canvas.width / bounds.width);
-      const screenY = (event.clientY - bounds.top) * (canvas.height / bounds.height);
-      const target = miniMap.worldPointAt(screenX, screenY, canvas.width, canvas.height);
+      return {
+        x: ((event.clientX - bounds.left) * canvas.width) / bounds.width,
+        y: ((event.clientY - bounds.top) * canvas.height) / bounds.height,
+      };
+    };
+    const pointerDown = (event: PointerEvent): void => {
+      if (event.button !== 0) return;
+      const point = screenPoint(event);
+      const target = miniMap.worldPointAt(point.x, point.y, canvas.width, canvas.height);
       if (target !== null) {
-        camera.lookAt(target);
+        explorer.lookAt(target);
+        explorer.zoomBy(2);
         draw();
+        return;
       }
+      drag = { x: event.clientX, y: event.clientY, distance: 0 };
+      canvas.setPointerCapture(event.pointerId);
+    };
+    const pointerMove = (event: PointerEvent): void => {
+      if (drag === null) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      const area = explorer.areaFor(canvas.clientWidth / canvas.clientHeight);
+      explorer.pan(
+        (-dx * area.width) / canvas.clientWidth,
+        (-dy * area.height) / canvas.clientHeight,
+        canvas.clientWidth / canvas.clientHeight,
+      );
+      drag = { x: event.clientX, y: event.clientY, distance: drag.distance + Math.hypot(dx, dy) };
+      draw();
+    };
+    const pointerUp = (event: PointerEvent): void => {
+      if (drag !== null && drag.distance < 5) {
+        const point = screenPoint(event);
+        const area = explorer.areaFor(canvas.width / canvas.height);
+        if (
+          explorer.enterAt({
+            x: area.x + (point.x / canvas.width) * area.width,
+            y: area.y + (point.y / canvas.height) * area.height,
+          })
+        )
+          rebuild();
+      }
+      drag = null;
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    };
+    const cancelDrag = (): void => {
+      drag = null;
+    };
+    const wheel = (event: WheelEvent): void => {
+      event.preventDefault();
+      explorer.zoomBy(Math.exp(-event.deltaY * EXPLORER_SETTINGS.wheelSensitivity));
+      draw();
     };
 
     draw();
     window.addEventListener('resize', draw);
-    canvas.addEventListener('click', jumpToClick);
+    window.addEventListener('blur', cancelDrag);
+    canvas.addEventListener('pointerdown', pointerDown);
+    canvas.addEventListener('pointermove', pointerMove);
+    canvas.addEventListener('pointerup', pointerUp);
+    canvas.addEventListener('pointercancel', cancelDrag);
+    canvas.addEventListener('wheel', wheel, { passive: false });
     return () => {
       window.removeEventListener('resize', draw);
-      canvas.removeEventListener('click', jumpToClick);
+      window.removeEventListener('blur', cancelDrag);
+      canvas.removeEventListener('pointerdown', pointerDown);
+      canvas.removeEventListener('pointermove', pointerMove);
+      canvas.removeEventListener('pointerup', pointerUp);
+      canvas.removeEventListener('pointercancel', cancelDrag);
+      canvas.removeEventListener('wheel', wheel);
+      resetRef.current = (): void => undefined;
       renderer.destroy();
-      camera.destroy();
     };
   }, [canvasRef]);
+
+  return {
+    isInterior,
+    overview: (): void => {
+      resetRef.current();
+    },
+  };
 }

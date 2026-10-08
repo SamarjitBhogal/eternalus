@@ -1,3 +1,4 @@
+import { SceneryView } from './SceneryView';
 import { MAP_1 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -122,5 +123,35 @@ describe('MiniMapView', () => {
   it('ignores clicks outside the mini map', () => {
     // The top-left corner of the screen is far from the mini map.
     expect(createMiniMap().worldPointAt(10, 10, 1000, 800)).toBeNull();
+  });
+});
+
+describe('MiniMapView with decorated maps', () => {
+  it('clamps a letterboxed viewport outline to the map bounds', () => {
+    const renderer = new Renderer(createFakeContext());
+    const strokePath = vi.spyOn(renderer, 'strokePath');
+    createMiniMap().draw(renderer, 1000, 800, {
+      x: -100,
+      y: -200,
+      width: MAP_1.width + 200,
+      height: MAP_1.height + 400,
+    });
+    expect(strokePath.mock.calls.find((call) => call[1] === MINI_MAP_VIEW_BOX_COLOR)?.[0]).toEqual([
+      { x: 0, y: 0 },
+      { x: MAP_1.width, y: 0 },
+      { x: MAP_1.width, y: MAP_1.height },
+      { x: 0, y: MAP_1.height },
+      { x: 0, y: 0 },
+    ]);
+  });
+
+  it('draws the cathedral architecture through the same scenery layer on the minimap', () => {
+    const renderer = new Renderer(createFakeContext());
+    const fillPolygon = vi.spyOn(renderer, 'fillPolygon');
+    const scene = new SceneView([new MapView(MAP_1), new SceneryView(MAP_1, 'detail')]);
+    new MiniMapView(MAP_1, scene).draw(renderer, 1000, 800, VIEW);
+    const roof = MAP_1.scenery?.find((piece) => piece.id === 'cathedral-nave-roof');
+    expect(roof).toBeDefined();
+    expect(fillPolygon).toHaveBeenCalledWith(roof?.shape, roof?.color);
   });
 });

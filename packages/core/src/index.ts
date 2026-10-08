@@ -6,10 +6,15 @@
  * Public API of `@eternalus/core`. Other packages may import only from here.
  * Anything not exported from this file is internal to the simulation.
  */
-export { MAP_1 } from './content/maps/map1';
+import { MAP_1 as MAP_1_LAYOUT } from './content/maps/map1';
+import { MapLayout } from './map/MapLayout';
+
+/** The enlarged, decorated battlefield; original authored anchors remain proportional. */
+export const MAP_1 = new MapLayout().build(MAP_1_LAYOUT);
 export type {
   FeatureOwner,
   MapDefinition,
+  MapDecoration,
   MapFeature,
   MapFeatureKind,
   MapLane,

@@ -80,13 +80,17 @@ export class MiniMapView {
     renderer.fillScreenRect(area, MINI_MAP_BACKGROUND_COLOR);
     renderer.fitWorldInArea(this.map.width, this.map.height, area);
     this.scene.draw(renderer);
+    const left = Math.max(0, view.x);
+    const top = Math.max(0, view.y);
+    const right = Math.min(this.map.width, view.x + view.width);
+    const bottom = Math.min(this.map.height, view.y + view.height);
     renderer.strokePath(
       [
-        { x: view.x, y: view.y },
-        { x: view.x + view.width, y: view.y },
-        { x: view.x + view.width, y: view.y + view.height },
-        { x: view.x, y: view.y + view.height },
-        { x: view.x, y: view.y },
+        { x: left, y: top },
+        { x: right, y: top },
+        { x: right, y: bottom },
+        { x: left, y: bottom },
+        { x: left, y: top },
       ],
       MINI_MAP_VIEW_BOX_COLOR,
       MINI_MAP_VIEW_BOX_WIDTH,

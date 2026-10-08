@@ -65,8 +65,8 @@ export const MAP_1: MapDefinition = {
     { id: 'light-capital', kind: 'capital', owner: 'light', position: { x: 55, y: 450 } },
     { id: 'dark-capital', kind: 'capital', owner: 'dark', position: { x: 1545, y: 450 } },
     { id: 'grand-cathedral', kind: 'cathedral', owner: 'neutral', position: { x: 800, y: 450 } },
-    { id: 'north-crossing', kind: 'crossing', owner: 'neutral', position: { x: 800, y: 95 } },
-    { id: 'south-crossing', kind: 'crossing', owner: 'neutral', position: { x: 800, y: 805 } },
+    { id: 'north-crossing', kind: 'capture-point', owner: 'neutral', position: { x: 800, y: 95 } },
+    { id: 'south-crossing', kind: 'capture-point', owner: 'neutral', position: { x: 800, y: 805 } },
     {
       id: 'light-structure-1',
       kind: 'team-structure',

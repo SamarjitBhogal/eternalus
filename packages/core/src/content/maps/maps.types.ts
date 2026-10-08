@@ -8,7 +8,13 @@ export type FeatureOwner = TeamId | 'neutral';
 
 /** The kinds of places that can appear on a map. */
 export type MapFeatureKind =
-  'capital' | 'team-structure' | 'capture-point' | 'cathedral' | 'crossing' | 'side-objective';
+  | 'camp'
+  | 'capital'
+  | 'team-structure'
+  | 'capture-point'
+  | 'cathedral'
+  | 'crossing'
+  | 'side-objective';
 
 /** A single named place on the map, such as a capital or the cathedral. */
 export type MapFeature = {
@@ -46,4 +52,17 @@ export type MapDefinition = {
   readonly lanes: readonly MapLane[];
   readonly terrain: readonly MapTerrain[];
   readonly features: readonly MapFeature[];
+  readonly scenery?: readonly MapDecoration[];
+  readonly presentationScale?: number;
+  readonly groundColor?: string;
+  readonly interior?: MapDefinition;
+  readonly interiorEntry?: { readonly halfWidth: number; readonly halfHeight: number };
+};
+
+/** A presentation-only polygon; it never changes collision, ownership or gameplay. */
+export type MapDecoration = {
+  readonly id: string;
+  readonly shape: Polygon;
+  readonly color: string;
+  readonly layer: 'ground' | 'detail';
 };

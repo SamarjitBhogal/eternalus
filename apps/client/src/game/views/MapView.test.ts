@@ -38,7 +38,11 @@ describe('MapView', () => {
     new MapView(MAP_1).draw(renderer);
 
     // One fill for the ground plus one per terrain shape (grey edges, rift, walls).
-    expect(fillPolygon).toHaveBeenCalledTimes(1 + MAP_1.terrain.length);
+    expect(fillPolygon).toHaveBeenCalledTimes(
+      1 +
+        MAP_1.terrain.length +
+        (MAP_1.scenery?.filter((piece) => piece.layer === 'ground').length ?? 0),
+    );
     // The first fill is the ground, so everything else sits on top of it.
     expect(fillPolygon.mock.calls[0]?.[1]).toBe(GROUND_COLOR);
   });

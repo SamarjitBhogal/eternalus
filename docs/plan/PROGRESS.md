@@ -104,3 +104,65 @@ The example below is fenced so it is not read as a real entry.
 - What was done: addressed the PR #4 review on entity ids. `EntityFactory.create(kind, definitionId, spawnContext)` no longer takes an id; the factory assigns `entity-<n>` from a per-factory counter (`EntityFactory.constants.ts`), so ids are unique per match and deterministic for replays (no `Math.random`). Added a test for sequential, per-factory ids.
 - Checks run: `npm run check` → exit 0 (core 21/21 tests, 100% coverage).
 - Next step: wire concrete entity kinds and content definitions into the registry; owner: sim lane.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: preserved all original map anchors and lanes; enlarged the preview to 12,800 ×
+  7,200; added snowy/lava capture fortresses, cathedral village, twelve neutral camp clearings,
+  deterministic scenery and an explorable cathedral interior through focused OOP builders.
+  Added aspect-correct zoom/pan, minimap navigation and viewport-bound regression tests;
+  updated the governing map docs. No dependencies, commits or pushes.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 41/41,
+  client 32/32; core coverage 100%; client lines 64.25%; build passed);
+  `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser check → `PASS: cathedral entry/exit, wheel zoom, drag pan, minimap navigation, desktop and narrow-screen rendering.`
+  Initial lint/unused-export findings were fixed without changing guardrails.
+- Next step: map owner reviews the visual direction; future simulation work connects doorway
+  collision, capture logic and neutral camp enemies to the existing presentation anchors.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: enlarged both home strongholds and the cathedral exterior; expanded the
+  cathedral interior to 1,800 × 2,200 with library, sacristy, vestry, reliquary, chapels and
+  garden cloisters. Replaced broad biome bands with layered snow pockets and curved lava
+  rivers with four bridges; added mountain borders, inland hills, lakes, varied trees and
+  boulders. Replaced the square city grid with winding streets and housing clusters; removed
+  the top-left title. Preserved original objectives, anchors and lane geometry. Added an
+  additive interior-entry footprint to MapDefinition. No dependencies, commits or pushes.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 33/33; core lines 100%, branches 98.02%; client lines 64.55%; production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser result: `PASS: title removed, cathedral entry/exit, wheel zoom, desktop and narrow-screen rendering.`
+  Initial sandbox-only Vitest cache errors were resolved by running checks outside the sandbox.
+- Next step: map owner reviews the updated environment. Mountain collision, player movement,
+  capture behaviour and neutral enemies remain future simulation work.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced repeated mountain peak icons with connected curved ridgelines,
+  blended slope shading, foothills and erosion grooves; softened inland hills. Cathedral
+  entry now starts at 1.65× zoom while leaving restores the world overview. Added regression
+  assertions for continuous full-edge mountain coverage, interior camera size and panning.
+  Updated the governing map documentation. No dependencies, commits or pushes.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 33/33; coverage thresholds and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser result: `PASS: mountain overview and enlarged interior render; cathedral entry works.`
+- Next step: map owner reviews the smoother mountain presentation and closer cathedral view.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced the ribbon mountain border with a field of overlapping rock masses
+  varying in width, height, summit position and facets, including snow on taller peaks.
+  Preserved landmark visibility by drawing mountains before fortified objectives. Rebuilt
+  the cathedral interior as a circular rotunda with radial room entrances and a clear central
+  capture court; added a neutral presentation capture anchor at (900, 1100). Kept the closer
+  interior camera. Added tests for mountain size variation and edge coverage, circular floor
+  geometry, capture-anchor position and furniture clearance. Updated governing map docs.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 33/33; coverage thresholds and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser results: `PASS: mountain field and circular capture hall render; cathedral entry works.`
+  `PASS: final radial room entrances render and cathedral exit restores overview.`
+- Next step: map owner reviews the mountain field and circular interior. Capture rules and
+  mountain collision remain future simulation work. Changes remain uncommitted.

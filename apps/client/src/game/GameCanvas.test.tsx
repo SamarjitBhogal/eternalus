@@ -15,5 +15,8 @@ describe('GameCanvas', () => {
       </Provider>,
     );
     expect(html).toContain('<canvas');
+    expect(html).not.toContain('<h1');
+    expect(html).not.toContain('ETERNALUS / WORLD PREVIEW');
+    expect(html).toContain('World overview');
   });
 });

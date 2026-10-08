@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-07
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -131,6 +131,29 @@ regions, marked `TUNE: provisional shapes traced from the team's layout sketch`.
 size, lane spacing, corner-region shape) or a preset under `content/maps/` that the generator
 validates, never a hand-authored map that the code depends on. The east/west orientation is a
 `GameConfig` value with the same status.
+
+## Current map preview (2026-10-07)
+
+The map owner's current brief preserves every square and the original three lane paths.
+The public `MAP_1` applies an eightfold uniform presentation scale to the 1600 × 900 sketch,
+producing a **12,800 × 7,200** battlefield. Original feature IDs, ownership and proportional
+positions remain intact. `MapLayout` assembles this preview; it is not the planned configurable
+simulation `MapGenerator`.
+
+- North capture point (`north-crossing`): snowy stone fortress.
+- Centre capture point (`grand-cathedral`): large cathedral surrounded by village streets,
+  houses and market stalls.
+- South capture point (`south-crossing`): basalt fortress with lava/forge accents.
+- Twelve additional neutral camp clearings (six per side), with tents, supplies and fires;
+  the four original corner objective squares are retained.
+- Shared deterministic polygon scenery: varied tree canopies and pines, boulders, lakes, hills, and a perimeter field of overlapping mountains with varied sizes, summit positions, rock faces and occasional snow on taller peaks. Snow pockets surround the northern point; lava rivers and four bridges surround the southern point. Layered translucent fringes soften both biome transitions.
+  Decorations are visual data and do not imply colliders, capture rules or enemy spawns.
+
+The client preview supports drag panning, wheel zoom, minimap navigation and a world-overview
+button. The top-left title has been removed. Huge fortified home bases retain the original west/east anchors, and the enlarged cathedral sits within an irregular village with winding streets. Clicking the cathedral opens its enlarged 1,800 × 2,200 interior (nave, pews, columns, chapels, library, sacristy, vestry, reliquary, garden cloisters and
+altar). The interior is arranged around a circular rotunda with an open central capture court and rooms connected radially. The neutral interior capture anchor is at the world centre; capture rules remain future work. Entry starts at a 1.65× closer view; panning and wheel zoom reach the remaining rooms. The leave button returns outside. This is **presentation navigation**, pending the
+future player movement, doorway and collision systems. No external assets or dependencies were
+added. The original control-binding requirements still govern future gameplay input.
 
 ## Engineering notes
 

@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-07
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -385,6 +385,26 @@ Written for the PR review; the branch is a good first step and most of it surviv
   `Object.keys(core)` changes with it.
 - File names: `mapDefinition.ts` holds only types, so the repo convention makes it
   `MapDefinition.types.ts` under `map/` (`CONTRIBUTING.md` §3.1).
+
+## 10. Implemented presentation preview (2026-10-07)
+
+The map owner's latest brief asks to preserve and dress the existing authored squares.
+`MapLayout` scales every original anchor and polygon uniformly by the presentation value in
+`content/maps/map1Scenery.ts`, adds twelve neutral camp anchors, and assembles deterministic
+decorative polygons through focused builder classes. `MapDecorationBuilder` supplies shared
+polygon assembly, irregular blobs and smoothed ribbons. Landscape, perimeter mountains, strongholds, village buildings and cathedral exteriors/interiors have separate builders. Decorative landforms and major footprint sizes are authored in `content/maps/map1Landforms.ts`.
+The public API still exposes `MAP_1`; its map definition now also carries optional scenery,
+presentation scale, interior, ground colour and an interior-entry footprint. The entry footprint scales with the enlarged cathedral and is consumed by the preview controller. These are additive API fields.
+
+`MapView` draws ground scenery beneath terrain and markers. `SceneryView` draws detail polygons
+through `Renderer`; `SceneView` shares those layers with `MiniMapView`. The preview's
+`MapExplorer` owns aspect-correct pan/zoom and cathedral inspection without mutating map data.
+Minimap viewport outlines are clamped to the world bounds for letterboxed views. Cathedral entry applies the configured interior zoom; leaving restores the world overview. Mountain borders use overlapping irregular rock masses with deterministic variations in width, height, summit position and surface shading. The cathedral interior uses circular floor geometry and radial room connections around a furniture-free capture court with a neutral presentation anchor.
+
+This implementation provides the authored environment preview, not the simulation's config
+generator, obstacle entities, colliders, capture logic or neutral AI. D7's planned generator
+remains future work. When it arrives, it should reuse the presentation templates while placing
+gameplay anchors from configuration.
 
 ## Related
 

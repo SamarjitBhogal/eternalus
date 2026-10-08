@@ -1,3 +1,4 @@
+import { SceneryView } from './SceneryView';
 import type { Renderer } from '../engine/Renderer';
 import type { MapDefinition, MapFeature } from '@eternalus/core';
 
@@ -38,8 +39,9 @@ export class MapView implements WorldLayer {
         { x: width, y: height },
         { x: 0, y: height },
       ],
-      GROUND_COLOR,
+      this.map.groundColor ?? GROUND_COLOR,
     );
+    new SceneryView(this.map, 'ground').draw(renderer);
     for (const piece of this.map.terrain) {
       renderer.fillPolygon(piece.shape, TERRAIN_COLORS[piece.kind]);
     }
@@ -47,7 +49,11 @@ export class MapView implements WorldLayer {
       renderer.strokePath(lane.path, LANE_COLOR, LANE_WIDTH);
     }
     for (const feature of this.map.features) {
-      renderer.fillSquare(feature.position, FEATURE_SIZES[feature.kind], featureColor(feature));
+      renderer.fillSquare(
+        feature.position,
+        FEATURE_SIZES[feature.kind] * (this.map.presentationScale ?? 1),
+        featureColor(feature),
+      );
     }
   }
 }
