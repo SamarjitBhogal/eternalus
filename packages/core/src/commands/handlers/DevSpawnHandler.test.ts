@@ -4,7 +4,7 @@ import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { validateGameConfig } from '../../config/validateGameConfig';
-import type { FeatureOwner } from '../../content/maps/maps.types';
+import type { Team } from '../../teams/teams.types';
 import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
@@ -21,14 +21,14 @@ class Dummy extends Entity {
   public readonly family = 'test';
 
   protected installComponents(context: unknown): void {
-    const { team, position } = context as { team: FeatureOwner; position: Vec2 };
+    const { team, position } = context as { team: Team; position: Vec2 };
     this.addComponent(new Transform(position, 0.5));
     this.addComponent(new TeamMembership(team));
   }
 }
 
 const installAt = (entity: Entity, context: unknown): void => {
-  const { team, position } = context as { team: FeatureOwner; position: Vec2 };
+  const { team, position } = context as { team: Team; position: Vec2 };
   entity.addComponent(new Transform(position, 0.5));
   entity.addComponent(new TeamMembership(team));
 };

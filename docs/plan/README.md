@@ -4,7 +4,7 @@ description: The Eternalus MVP roadmap; read this to know which phase we are in,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [plan, roadmap, sprints, metrics]
 related:
   [
@@ -181,7 +181,8 @@ Targets are project-level; the phase docs say when each is first measured. Numbe
 
 Five students plus agents. Names known today: **Sam Holtzman** (product owner, lead architect,
 `sholtzman`) and **SamarjitBhogal** (`main` maintainer, merges phase PRs, Phase 0 reviewer). The
-`feat/map` author owns the map reconciliation. The other lanes are assigned at the Phase 0
+lead architect reconciles the `feat/map` code with the architecture; its author, **Aryan
+Walanj**, reviews those changes (DEC-04). The other lanes are assigned at the Phase 0
 walkthrough; record them in [PROGRESS.md](PROGRESS.md).
 
 | Phase | Builds                                     | Reviews architecture and design                 | Reviews tests and guardrails | Merges to `main` |

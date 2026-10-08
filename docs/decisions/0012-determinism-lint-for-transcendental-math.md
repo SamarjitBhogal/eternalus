@@ -17,7 +17,7 @@ related:
 
 # 0012. Determinism lint for transcendental Math
 
-- Status: accepted (product owner decision, 2026-10-07, DEC-17)
+- Status: accepted (product owner decision, 2026-10-07, DEC-19)
 - Date: 2026-10-07
 
 ## Context

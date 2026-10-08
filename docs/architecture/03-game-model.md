@@ -59,7 +59,7 @@ export class GameState {
   public readonly rng: SeededRandom; // the only source of randomness
   public readonly entities: EntityStore; // deterministic, creation-order iteration
   public readonly world: WorldMap; // grid, cost field, flow fields, structures index
-  public readonly teams: Readonly<Record<TeamId, TeamState>>; // score, structures alive, buffs
+  public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
@@ -71,7 +71,7 @@ export class GameState {
 }
 ```
 
-`EntityStore` keeps entities in insertion order (DEC-18), which is creation order: every `EntityId`
+`EntityStore` keeps entities in insertion order (DEC-20), which is creation order: every `EntityId`
 comes from a monotonically increasing counter (`utils/IdGenerator`) and is never reused. `forEach`
 visits in that order, which is the iteration order every system uses (research
 [§1](../research/game-architecture-and-performance-research.md#1-fixed-timestep-interpolation-and-determinism)).
@@ -112,7 +112,7 @@ export type Command =
       readonly type: 'dev-spawn';
       readonly kind: EntityKind;
       readonly definitionId: string;
-      readonly team: TeamId;
+      readonly team: Team;
       readonly at: Vec2;
       readonly count: number;
     }
@@ -125,13 +125,13 @@ export type Command =
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
 
-- `CommandQueue` is drained once (DEC-18), at the start of each `step()`, in enqueue order; a
+- `CommandQueue` is drained once (DEC-20), at the start of each `step()`, in enqueue order; a
   command enqueued while a step runs (a bot deciding during `AiSystem`) waits for the next drain, so
   every command applies exactly one tick boundary after it was issued. The client enqueues the
   human's commands first, then controllers enqueue in store order during `AiSystem`, so the order is
   deterministic.
 - `applyCommand(command, handlers, ctx)` dispatches to the handler registered for
-  `command.type` (DEC-18): one `CommandHandler` class per type in `commands/handlers/`, listed in
+  `command.type` (DEC-20): one `CommandHandler` class per type in `commands/handlers/`, listed in
   `commands/defaultCommandHandlers.ts` (the single place of change, 02 §9). The registry's type
   needs a handler for every union member, so a new command does not compile until its handler
   exists. A handler validates (actor alive, slot ready, caps such as `maxLegendsPerTeam` not
@@ -201,19 +201,19 @@ export type Snapshot = {
   readonly phase: MatchPhase;
   readonly entities: readonly EntitySnapshot[]; // store (creation) order
   readonly hordes: readonly HordeSnapshot[];
-  readonly teams: Readonly<Record<TeamId, TeamSnapshot>>;
+  readonly teams: Readonly<Record<Team, TeamSnapshot>>;
   readonly player: PlayerSnapshot | null; // HUD data for the human Legend
   readonly mapRevision: number; // increments when destructible terrain changed
 };
 
 // One group per component; a group is null when the entity has no such component, so a view
-// never draws a made-up value (DEC-15).
+// never draws a made-up value (DEC-17).
 export type EntitySnapshot = {
   readonly id: EntityId;
   readonly kind: EntityKind;
   readonly family: EntityFamily;
   readonly definitionId: string;
-  readonly team: TeamId | null;
+  readonly team: Team | null;
   readonly transform: {
     readonly x: number;
     readonly y: number;
@@ -291,22 +291,22 @@ requestAnimationFrame(t)
 Same seed + same command log = same match, bit for bit, on the same machine and browser. The
 JavaScript-specific hazards and their rules (research §1, table "Determinism pitfalls"):
 
-| Hazard                                    | Rule in core                                                                                                             | Enforcement                                                       |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| `Math.random()`                           | Only `GameState.rng` (`SeededRandom`, sfc32, seeded from the match seed); systems reach it as `SystemContext.state.rng`  | ESLint `no-restricted-properties` (exists)                        |
-| `Date`, `performance.now`, timers         | Time is `tick`; durations are ticks converted from seconds at load                                                       | tsconfig (no DOM/Node types); planned `no-restricted-globals`     |
-| `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (creation order) or arrays built in tick order          | Review; `EntityStore` API exposes no `Map`                        |
-| `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                 | Review; `utils/compareById`                                       |
-| Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles | ESLint `no-restricted-properties` with a file override (ADR 0012) |
-| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                            | Design + `InvariantSystem`                                        |
-| Floats                                    | Doubles are fine for single-machine replays; revisit fixed point only for networked lockstep                             | None needed                                                       |
+| Hazard                                    | Rule in core                                                                                                                                                                                                | Enforcement                                                       |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `Math.random()`                           | Only seeded RNGs: `GameState.rng` (`SeededRandom`, sfc32, seeded from the match seed), which systems reach as `SystemContext.state.rng`, and the `Rng` that `MapGenerator` creates from its seed (ADR 0009) | ESLint `no-restricted-properties` (exists)                        |
+| `Date`, `performance.now`, timers         | Time is `tick`; durations are ticks converted from seconds at load                                                                                                                                          | tsconfig (no DOM/Node types); planned `no-restricted-globals`     |
+| `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (creation order) or arrays built in tick order                                                                                             | Review; `EntityStore` API exposes no `Map`                        |
+| `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                                                                                                    | Review; `utils/compareById`                                       |
+| Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles                                                                                    | ESLint `no-restricted-properties` with a file override (ADR 0012) |
+| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                                                                                                               | Design + `InvariantSystem`                                        |
+| Floats                                    | Doubles are fine for single-machine replays; revisit fixed point only for networked lockstep                                                                                                                | None needed                                                       |
 
 ## 9. `StateHasher` and replays
 
 `StateHasher` computes a 32-bit FNV-1a hash (offset basis `0x811c9dc5`, prime `0x01000193`,
 `Math.imul`; research
 [persistence C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests))
-over a canonical serialisation of its own (DEC-18): `tick`, `phase`, the RNG state, then every
+over a canonical serialisation of its own (DEC-20): `tick`, `phase`, the RNG state, then every
 entity in store order with its component fields in a fixed order, including state the client never
 sees (velocity). It does not hash the snapshot, so the hash covers what the snapshot leaves out; a
 component with simulation state adds its fields in `StateHasher`. `Simulation.hash()` is cheap
@@ -341,7 +341,7 @@ flow fields and the spawn schedule follow. Config is a plain object, validated o
 // the three planned MatchConfig fields
 export type GameConfig = {
   readonly tickRate: number;
-  readonly map: MapConfig; // 06 §2: lane, tower and camp counts, world size, nav cell size, preset
+  readonly map: MapConfig; // 06 §2: counts, world size, nav cell size and preset; lane and rift layout is MapLayout content
   readonly match: MatchConfig;
   readonly limits: LimitsConfig;
 };
@@ -387,10 +387,11 @@ rule holds; `Simulation` validates in its constructor, so it never starts on a b
 live in `config/validateGameConfig.ts`, cross-field rules after the fields they read: whole numbers
 where counts are meant, `tickRate` the supported rate, caps within the requirement ceilings,
 `maxUnitsPerTeam >= initialHordesPerTeam * hordeSizes.light`, the map rules of 06 §2; timeline
-entries ordered and `campsPerSide` divisible by the number of gaps between lanes are
-`Recommendation:`. Time fields are authored in seconds and
-converted to ticks once at construction, so systems only ever see ticks. `Match` builds the config
-from a `MapPreset` plus developer-menu overrides; tests build it inline with
+entries ordered is a `Recommendation:`, and `campsPerSide` need not divide by the corridors
+(DEC-14). Time fields are authored in seconds and converted to ticks once at construction, so
+systems only ever see ticks. `Match` builds the config from `createDefaultGameConfig()` plus
+developer-menu overrides (`map.presetId` picks a `MapPreset`, which shapes the ground and the lanes
+but never sets a count, DEC-14); tests build it inline with
 `createDefaultGameConfig({ map: { numLanes: 5 } })` and assert the derived counts.
 
 ## 11. Content by ID, never embedded
@@ -426,8 +427,8 @@ each closed by the session or phase named:
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),
   until `CommandApplySystem` heads the default `SystemPipeline` (§1).
 - `Replay` has no `versions` yet (they arrive with the content catalogue).
-- The team type is `FeatureOwner` from `content/maps/maps.types.ts` until session A's
-  `teams/teams.types.ts` lands.
+- `map/` still reads its own `MapConfig`, `DEFAULT_MAP_CONFIG`, `MapRandom` and
+  `validateMapConfig` until session A swaps to `GameConfig` and `SeededRandom` (06 §10).
 
 ## Related
 

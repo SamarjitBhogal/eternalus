@@ -376,7 +376,7 @@ Deliver:
    MovementSystem determinism; the "add a fourth Legend class touches one content file, one
    class file and one registry line" check as a test over the registry.
 7. index.ts exports; packages/core/AGENTS.md folder table; docs/architecture/04 bumps.
-8. Session B handoff (added 2026-10-07, DEC-18): do the open INBOX.md request "Session C (from
+8. Session B handoff (added 2026-10-07, DEC-20): do the open INBOX.md request "Session C (from
    session B)"; the B-owned lines it names in Simulation.ts, commands/, state/ and diagnostics/
    are yours to change (an owner-approved exception to §2.6). Read 03 §12 and 15 §13 first.
 Out of scope: abilities, combat, structures' behaviour, AI, map placement (A/H), client.

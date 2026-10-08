@@ -1,4 +1,4 @@
-import type { FeatureOwner } from '../content/maps/maps.types';
+import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
 import type { MatchPhase } from './GameState.types';
@@ -28,7 +28,7 @@ type ShieldBar = {
 type HordePayload = {
   readonly hordeId: string;
   readonly lane: string;
-  readonly team: FeatureOwner;
+  readonly team: Team;
   readonly memberIds: readonly EntityId[];
 };
 
@@ -48,7 +48,7 @@ export type GameEventMap = {
   readonly 'entity-spawned': {
     readonly entityId: EntityId;
     readonly kind: string;
-    readonly team: FeatureOwner;
+    readonly team: Team;
   };
   readonly 'entity-removed': { readonly entityId: EntityId; readonly cause: RemovalCause };
   readonly 'damage-applied': {
@@ -61,7 +61,7 @@ export type GameEventMap = {
   readonly 'structure-destroyed': {
     readonly entityId: EntityId;
     readonly kind: string;
-    readonly team: FeatureOwner;
+    readonly team: Team;
     readonly lane: string | null;
   };
   readonly 'shield-bars-changed': {
@@ -70,14 +70,14 @@ export type GameEventMap = {
   };
   readonly 'capture-progress': {
     readonly pointId: string;
-    readonly team: FeatureOwner;
+    readonly team: Team;
     readonly progress: number;
     readonly checkpoint: number;
   };
   readonly 'capture-point-owner-changed': {
     readonly pointId: string;
-    readonly from: FeatureOwner;
-    readonly to: FeatureOwner;
+    readonly from: Team;
+    readonly to: Team;
   };
   readonly 'phase-changed': { readonly from: MatchPhase; readonly to: MatchPhase };
   /** `slot` is an `AbilitySlot` (typed loosely: `state/` sits below `commands/`). */
@@ -93,8 +93,8 @@ export type GameEventMap = {
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
   readonly 'team-changed': {
     readonly entityId: EntityId;
-    readonly from: FeatureOwner;
-    readonly to: FeatureOwner;
+    readonly from: Team;
+    readonly to: Team;
     readonly cause: string;
   };
   readonly 'boss-summoned': { readonly entityId: EntityId; readonly kind: string };

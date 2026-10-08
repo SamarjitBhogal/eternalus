@@ -1,5 +1,5 @@
 import { TeamMembership } from '../components/TeamMembership';
-import type { FeatureOwner } from '../content/maps/maps.types';
+import type { Team } from '../teams/teams.types';
 import type { Entity } from '../entities/Entity';
 import type { EntityClass, EntityId, RemovalCause } from './EntityStore.types';
 
@@ -46,7 +46,7 @@ export class EntityStore {
   }
 
   /** How many live instances of `entityClass` (e.g. `Unit`, `Legend`) fight for `team`. */
-  public countOnTeam(team: FeatureOwner, entityClass: EntityClass): number {
+  public countOnTeam(team: Team, entityClass: EntityClass): number {
     let total = 0;
     this.entities.forEach((entity) => {
       if (entity instanceof entityClass && entity.findComponent(TeamMembership)?.team === team) {

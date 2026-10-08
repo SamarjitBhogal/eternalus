@@ -42,19 +42,19 @@ and [§4](../research/game-architecture-and-performance-research.md#4-spatial-pa
 - **2D top-down.** Positions are `Vec2` in world units; there is no vertical axis in the MVP.
   `Transform.height` exists as a scalar reserved for the Flying class, `Grasp` drops and
   `Firestorm` altitude (**post-MVP**); the MVP never reads it.
-- **World unit.** **Recommendation:** 1 world unit = 1 metre. It makes the game doc's sizes and
-  speeds ("N m/s") usable directly and keeps tuning legible; rendering scales through `Camera`.
-  The `feat/map` branch's 1600 × 900 world is re-read as metres (a 1.6 km × 0.9 km map; TUNE).
+- **World unit.** 1 world unit = 1 metre ([DEC-06](../reference/game-design/13-owner-decisions-log.md)).
+  It makes the game doc's sizes and speeds ("N m/s") usable directly and keeps tuning legible;
+  rendering scales through `Camera`. The map's world size (`MapConfig`, `06` §2) is in metres too.
 - **Character sizes.** The game doc gives heights: Warrior ~7 ft (Master Chief), Magus ~10 ft
   (Hades), Sentinel ~15 ft (an elephant). A top-down footprint radius is what physics needs:
 
-| Unit                    | Height (game doc)      | Footprint radius (**Recommendation**, TUNE) | Notes                                 |
-| ----------------------- | ---------------------- | ------------------------------------------- | ------------------------------------- |
-| light minion            | (smaller than Warrior) | 0.4 m                                       | horde of 16                           |
-| Warrior / medium minion | ~7 ft (2.1 m)          | 0.5 m                                       | "a little bigger than a light minion" |
-| Magus / heavy minion    | ~10 ft (3.0 m)         | 0.8 m                                       | "equivalent in size to Heavy minions" |
-| Sentinel                | ~15 ft (4.6 m)         | 1.5 m                                       | largest unit; sets the hash cell size |
-| projectile (bolt)       | n/a                    | 0.15 m                                      | swept, never overlap-tested only      |
+| Unit                    | Height (game doc)      | Footprint radius (TUNE; Legends per DEC-06, others **Recommendation**) | Notes                                 |
+| ----------------------- | ---------------------- | ---------------------------------------------------------------------- | ------------------------------------- |
+| light minion            | (smaller than Warrior) | 0.4 m                                                                  | horde of 16                           |
+| Warrior / medium minion | ~7 ft (2.1 m)          | 0.5 m                                                                  | "a little bigger than a light minion" |
+| Magus / heavy minion    | ~10 ft (3.0 m)         | 0.75 m                                                                 | "equivalent in size to Heavy minions" |
+| Sentinel                | ~15 ft (4.6 m)         | 1.25 m                                                                 | largest unit; sets the hash cell size |
+| projectile (bolt)       | n/a                    | 0.15 m                                                                 | swept, never overlap-tested only      |
 
 Radii are `Collider` content per definition; systems never contain a size.
 
@@ -141,7 +141,7 @@ generator). `Zone`s have no collider.
 
 ## 5. Broad phase: `SpatialHash`
 
-Uniform grid over the map, cell size = the largest unit diameter (3 m with the radii above,
+Uniform grid over the map, cell size = the largest unit diameter (from the radii above,
 TUNE) so a query touches only the 9 surrounding cells. Storage is dense typed arrays rebuilt every
 tick by counting sort (Muller's layout): `cellStart: Int32Array(cols × rows + 1)`,
 `entries: Int32Array(maxEntities)`; zero allocation after construction.
@@ -244,9 +244,9 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   `packages/core`).
 - Steering and aiming work with vectors, never angles: facing is a unit vector, rotation is a
   2 × 2 multiply, "turn toward" is a normalised lerp. `atan2` is for display only (client side).
-- Fixed iteration order everywhere: entities in store (creation) order (DEC-18), hash query results
+- Fixed iteration order everywhere: entities in store (creation) order (DEC-20), hash query results
   sorted by id, pairs `(a < b)`, comparators that tie-break by id, no `Map` iteration in hot paths.
-- No `Math.random` in physics; the only randomness (obstacle scatter, jitter for coincident
+- No `Math.random` in physics; the only randomness (jitter for coincident
   centres if ever needed) comes from the seeded `Rng` owned by `GameState`.
 - Same machine, same browser: replays are bit-exact and `Simulation.hash()` proves it;
   cross-browser exactness is what the wrappers buy. Fixed-point integers are not needed unless the

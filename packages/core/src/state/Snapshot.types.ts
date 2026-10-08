@@ -1,4 +1,4 @@
-import type { FeatureOwner } from '../content/maps/maps.types';
+import type { Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 import type { MatchPhase } from './GameState.types';
 
@@ -11,7 +11,7 @@ export type EntitySnapshot = {
   readonly kind: string;
   readonly family: string;
   readonly definitionId: string;
-  readonly team: FeatureOwner | null;
+  readonly team: Team | null;
   readonly transform: { readonly x: number; readonly y: number; readonly radius: number } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
 };

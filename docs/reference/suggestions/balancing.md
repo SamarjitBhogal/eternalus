@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -69,11 +69,11 @@ Recommended spawn table (Option A):
 
 Unit cap: `maxUnitsPerTeam: 144` (`TUNE`, requirements doc) lives in `GameConfig`. `SpawnSystem` skips a spawn at the cap and emits `spawn-suppressed` (an invariant counts these; more than 5% of attempted spawns suppressed in a soak run means the cadence is too high). At an average minion lifetime of 2 minutes, Option A keeps about 120 units alive per team, under the cap. The requirements doc's own arithmetic (3 lanes × 3 hordes of 16 = 144) is where the cap comes from, so treat it as a ceiling, not a target.
 
-Camps (neutral): `TUNE` 6 forest camps per side between the lanes, inactive until the countdown ends (requirements doc). `Recommendation:` per side, the 3 camps between each pair of lanes are one light camp nearest the Stronghold (4 light), one medium camp (2 medium + 2 light) and one heavy camp nearest the centre (1 heavy + 2 medium); a cleared camp respawns 120 s later; leash radius 6 m; clearing a camp gives the mob XP plus a 50 XP bonus to the clearing Legends. Corner camps (MVP-if-time): the crystal respawns its boss every 300 s after a death (`TUNE`, game doc "every 5 minutes").
+Camps (neutral): `TUNE` 6 forest camps per side between the lanes, inactive until the countdown ends (requirements doc). Camps are lighter nearest a lane and heavier deeper into the Unknown (DISC-42, which declined the Stronghold-to-centre order first proposed here). `Recommendation:` a light camp is 4 light, a medium camp 2 medium + 2 light and a heavy camp 1 heavy + 2 medium; a cleared camp respawns 120 s later; leash radius 6 m; clearing a camp gives the mob XP plus a 50 XP bonus to the clearing Legends. Corner camps (MVP-if-time): the crystal respawns its boss every 300 s after a death (`TUNE`, game doc "every 5 minutes").
 
 ## Minion strength-by-distance curve — MVP
 
-Source: "the closer to home, the stronger the minion; strength evens out in the middle, which prevents early rushes" (game doc). `Recommendation:` measure position as `t` = lane progress from the minion's home Stronghold (0) to the enemy Stronghold (1), taken from the lane's integration field (flow-field distance) rather than Euclidean distance, so curved lanes work later and straight MVP lanes give identical results. Then:
+Source: "the closer to home, the stronger the minion; strength evens out in the middle, which prevents early rushes" (game doc). `Recommendation:` measure position as `t` = lane progress from the minion's home Stronghold (0) to the enemy Stronghold (1), taken from the lane's integration field (flow-field distance) rather than Euclidean distance, so it follows the bends of MVP lanes (DEC-14) and works unchanged for curved lanes later. Then:
 
 ```text
 m(t) = clamp(1 + k · (1 − 2t), mMin, mMax)      k = 0.5, mMin = 0.75, mMax = 1.5

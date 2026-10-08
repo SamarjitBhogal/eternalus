@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { TeamMembership } from '../components/TeamMembership';
-import type { FeatureOwner } from '../content/maps/maps.types';
+import type { Team } from '../teams/teams.types';
 import { Entity } from '../entities/Entity';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
@@ -25,7 +25,7 @@ class Grunt extends Unit {
   public readonly kind = 'grunt';
 
   protected installComponents(team: unknown): void {
-    this.addComponent(new TeamMembership(team as FeatureOwner));
+    this.addComponent(new TeamMembership(team as Team));
   }
 }
 
@@ -33,7 +33,7 @@ class Hero extends Legend {
   public readonly kind = 'hero';
 
   protected installComponents(team: unknown): void {
-    this.addComponent(new TeamMembership(team as FeatureOwner));
+    this.addComponent(new TeamMembership(team as Team));
   }
 }
 
@@ -101,7 +101,7 @@ describe('EntityStore', () => {
 
   it('counts live entities of a family on a team', () => {
     const store = storeWith('entity-1');
-    const members: [Entity, FeatureOwner][] = [
+    const members: [Entity, Team][] = [
       [new Grunt('entity-2', 'grunt'), 'light'],
       [new Grunt('entity-3', 'grunt'), 'dark'],
       [new Hero('entity-4', 'hero'), 'light'],

@@ -33,7 +33,7 @@ handler registry, the `Logger` port, and the `Simulation` facade with a `SystemP
 replay harness. Pure TypeScript, no new dependencies. The first commit (`config/`) can merge
 early to unblock session A.
 
-Follow-ups pushed after the PR opened (owner decisions of 2026-10-07, DEC-15…DEC-18 in the
+Follow-ups pushed after the PR opened (owner decisions of 2026-10-07, DEC-17…DEC-20 in the
 decisions log): the two better-than-design items are signed off and folded into 03 §5 and
 15 §4; the determinism lint is added (ADR 0012) with an `exp` wrapper; in-place `Vec2` variants,
 `DiagnosticEvent` types and the replay fixture format (15 §7) finish sprint 1.1; the kernel's
@@ -68,25 +68,16 @@ New exports of `@eternalus/core` (an API change; `index.test.ts` pins the runtim
 | `MemoryLogger`, `NullLogger`                                                         | class    | Test and benchmark doubles.                                                                                       |
 | `runReplay`, `Replay`, `ReplayOutcome`, `ReplayTarget`, `ReplayTargetFactory`        | function | `runReplay(replay, (config, seed) => new Simulation(...))`.                                                       |
 
-**Session A (map):** see the `INBOX.md` request "Session A (from session B)". Short form:
-`createDefaultGameConfig().map` has your field names plus `navCellSize: 5` and `presetId: 'map-1'`;
-`validateGameConfig` carries every `validateMapConfig` rule; `SeededRandom.nextFloat()` replaces
-`MapRandom.next()` and `utils/Rng.types.ts` replaces `map/Rng.types.ts`;
-`utils/deterministicMath.ts` has `sin`, `cos`, `atan2`, `exp`, `sqrt`, `pow`, and the
-determinism lint (ADR 0012) makes `polarPoint` use them in the merge; `utils/vec2.ts` has `add`,
-`sub`, `scale`, `normalize` (each with an in-place `*Into` form), `dot` and `length` (your
-`distance`/`lerpPoint` stay in `geometry.ts`). Keep `FeatureOwner` exported from
-`content/maps/maps.types.ts`: `commands/Command.types.ts`, `state/EntityStore.ts`,
-`state/GameEvents.types.ts`, `state/Snapshot.types.ts` (and C's `TeamMembership`) import it.
-Merging both branches conflicts in `index.ts`, `index.test.ts`, `packages/core/AGENTS.md`,
-`PROGRESS.md`, `INBOX.md`, the decisions log, architecture 01, 02, 03, 10, 15 and 17 (this
-branch's new text still says `TeamId` where yours says `Team`) and the generated `docs/README.md`
-index (re-run `npm run docs:index`), and exports `MapConfig` twice until your local type is
-deleted. At the merge, also reconcile 03 §10's camp-divisibility `Recommendation:` with your
-DEC-14.
+**Session A (map):** PR #8 is merged into the phase branch and this branch has merged it in
+(see "Re-sync with the phase branch" below). What is left for you is the `INBOX.md` request
+"Session A (from session B)": swap `DEFAULT_MAP_CONFIG`, `MapRandom` / `map/Rng.types.ts`,
+`validateMapConfig` and `DEFAULT_MAP_LAYOUT.navCellSize` for `createDefaultGameConfig().map`,
+`SeededRandom` / `utils/Rng.types.ts` (`next()` is `nextFloat()`), `validateGameConfig` and
+`config.map.navCellSize`, then delete the local `MapConfig`. `utils/vec2.ts` has `add`, `sub`,
+`scale`, `normalize` (each with an in-place `*Into` form), `dot` and `length`.
 
 **Session C (entities):** the owner-approved `INBOX.md` request "Session C (from session B)"
-lists your follow-ups and the B-owned lines you may change for them (DEC-18): the entity
+lists your follow-ups and the B-owned lines you may change for them (DEC-20): the entity
 registry and default pipeline in `Simulation.ts`, `move`/`stop` handlers, removal through
 `DeathSystem`, `StateHasher.fieldsOf`, `IdGenerator` ids, `recentCommands` and
 `LogRecord.context`. Also useful: systems implement `System` (`systems/System.types.ts`: `name`,
@@ -103,7 +94,7 @@ interpolation (03 §5). Entity ids are strings in insertion order (`entity-10` s
 
 Judged against the docs at the base commit (`27e7e12`).
 
-**Decided on 2026-10-07, now the design** (DEC-15…DEC-18, folded into the docs in this PR): the
+**Decided on 2026-10-07, now the design** (DEC-17…DEC-20, folded into the docs in this PR): the
 grouped, nullable `EntitySnapshot` (03 §5); `makeLogRecord`'s options object with typed
 `DiagnosticEvent`s (15 §4); the determinism lint (ADR 0012); command dispatch through a handler
 registry and a queue drained once per step (03 §3, 17 R16); a store iterating in creation order
@@ -130,18 +121,37 @@ and 02 §2 allow `diagnostics/` the types of `commands/` and `config/`); ports i
 - `GameState` has no `world`, `teams`, `hordes` or `recentCommands`; `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline`; `Replay` has no `versions`,
   `ReplayOutcome` no `ok` or `violations`; no `LogRecord.context` yet.
-- `campsPerSide` divisibility (03 §10 `Recommendation:`) is not checked. Two of the map rules
-  `validateGameConfig` enforces (even `cornerCamps`, no camps with one lane) come from session A's
-  `validateMapConfig` and its unmerged 06 §2; base 06 §2 states only the odd `numLanes` rule.
+- `campsPerSide` need not divide by the corridors (DEC-14); `validateGameConfig` enforces the
+  other map rules of 06 §2.
 - `IdGenerator`, `vec2.ts` and `deterministicMath.ts` are reachable only from tests until
-  sessions A and C adopt them. The team type is `FeatureOwner` until session A's `teams/`.
+  sessions A and C adopt them. `map/` keeps its own `MapConfig`, `DEFAULT_MAP_CONFIG`,
+  `MapRandom` and `validateMapConfig` until session A's swap; the public API exports only
+  `config/`'s `MapConfig`.
 - The golden fixture's checkpoint hashes were regenerated once in this PR when `StateHasher`
   started hashing velocity (same seed, config and command log; 15 §7 allows it for an intended
   change). `systems/` holds `SystemPipeline.test.ts` besides the two files the brief names.
 
+## Re-sync with the phase branch (2026-10-07)
+
+After PR #8 merged, `phase/1-simulation-kernel-and-world` was merged into this branch:
+
+- Kernel files and tests use `Team` from `teams/teams.types.ts` instead of `FeatureOwner`
+  (removed from `maps.types.ts` by #8; `index.ts` keeps #8's deprecated aliases).
+- `index.ts` exports both sides' API, `MapConfig` only from `config/`, and drops `MAP_1` (#8
+  deleted it); `index.test.ts` pins the union and checks that the default `GameConfig` generates
+  the same map as the map's stand-in config.
+- The determinism lint (ADR 0012) now covers #8's code: `polarPoint` in `utils/geometry.ts` and
+  one wall-ring test call `utils/deterministicMath.ts` (the change its own `TODO` asked for).
+- Session B's decisions are renumbered DEC-17…DEC-20: #8's open INBOX items already use DEC-15 and
+  DEC-16.
+- Docs: both sides' edits kept in 01, 02, 03, 10, 15, 17, `packages/core/AGENTS.md`, the
+  decisions log (both batches), `INBOX.md` (session A's requests to B moved to Done) and this
+  log; 03 §10 cites DEC-14 for camp division; 03 §12 and 06 §10 drop the rows the merge resolved.
+
 ## How it was tested
 
-- 204 core tests, 100% statements/branches/functions/lines; threshold raised 80 → 85 (brief).
+- 295 core tests after the re-sync (statements 98.78%, branches 91.48%, functions 99.1%, lines
+  98.69%, the map code included); the kernel's own files are at 100%; threshold raised 80 → 85.
 - Determinism: 10 seeds × 3,000 ticks of seeded random commands with a test `WanderSystem`
   (spawns, jitters, 32+ live entities), recorded twice and replayed, identical at every 100-tick
   checkpoint: 356–377 ms over four runs on an Apple M4 Pro (24 GB, Node 24.21.0). A golden replay
@@ -161,11 +171,11 @@ and 02 §2 allow `diagnostics/` the types of `commands/` and `config/`); ports i
 - [x] Tests added or updated (bug fixes include a test that failed before the fix)
 - [x] No guardrail changes, **or** justified here with a link to the ADR: coverage threshold
       raised 80 → 85 (ratchet up only; session B brief); determinism lint added,
-      [ADR 0012](../decisions/0012-determinism-lint-for-transcendental-math.md) (DEC-17)
+      [ADR 0012](../decisions/0012-determinism-lint-for-transcendental-math.md) (DEC-19)
 - [x] No new dependencies, **or** each one justified here in one line and approved by a human
 - [x] Changes stay within the scope of the task
 - [x] Docs updated where behaviour or workflow changed (`packages/core/AGENTS.md`; architecture
-      01, 02, 03, 10, 15, 17; ADR 0012; guardrails; decisions log DEC-15…DEC-18; `INBOX.md`)
+      01, 02, 03, 10, 15, 17; ADR 0012; guardrails; decisions log DEC-17…DEC-20; `INBOX.md`)
 
 ### Pre-PR gate (`AGENTS.md`, ADR 0010), after everything above
 
@@ -186,7 +196,7 @@ and 02 §2 allow `diagnostics/` the types of `commands/` and `config/`); ports i
 - Pass 3: **NO BLOCKERS**. Its last notes are applied: `EntityFamily` renamed to `EntityClass`,
   and PR body corrections. The critic said the rename needs no further pass.
 - Better than the design: the nested, nullable `EntitySnapshot` fields and `makeLogRecord`'s
-  options object, raised in `INBOX.md`, signed off by the owner on 2026-10-07 (DEC-15, DEC-16)
+  options object, raised in `INBOX.md`, signed off by the owner on 2026-10-07 (DEC-17, DEC-18)
   and folded into 03 §5 and 15 §4 in this PR.
 - Pass 4 (on the post-sign-off follow-ups `abd2c07`..`6316809`): one blocker (this PR body and
   PROGRESS were stale) and minor items: 03 §10 had dropped base's initial-hordes cap rule and
@@ -219,16 +229,16 @@ All matched files use Prettier code style!
 > eslint --max-warnings 0 .
 > tsc -b
 > knip            (no issues; one configuration hint about apps/client ignoreDependencies)
- Test Files  36 passed (36)
-      Tests  204 passed (204)
-Statements   : 100% ( 434/434 )
-Branches     : 100% ( 169/169 )
-Functions    : 100% ( 147/147 )
-Lines        : 100% ( 413/413 )
- Test Files  6 passed (6)
-      Tests  27 passed (27)
-✓ built in 69ms
-Checked 95 Markdown files under docs/.
+ Test Files  42 passed (42)
+      Tests  295 passed (295)
+Statements   : 98.78% ( 979/991 )
+Branches     : 91.48% ( 451/493 )
+Functions    : 99.1% ( 332/335 )
+Lines        : 98.69% ( 907/919 )
+ Test Files  7 passed (7)
+      Tests  36 passed (36)
+✓ built in 79ms
+Checked 97 Markdown files under docs/.
 Documentation check passed.
 ```
 

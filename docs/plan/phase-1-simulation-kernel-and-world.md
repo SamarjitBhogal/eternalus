@@ -4,7 +4,7 @@ description: Sprint checklists for the deterministic simulation kernel, the firs
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [plan, phase-1, simulation, map, engine, input]
 paths: ['packages/core/src/**', 'apps/client/src/game/**', 'apps/client/src/bridge/**']
 related:
@@ -132,18 +132,19 @@ places (class, content entry, registry line); coverage in `packages/core` ≥ 82
 Owner: _ (the `feat/map` author) with sholtzman. Weeks 1–2. Depends on `GameConfig`, `Vec2`,
 `SeededRandom` from 1.1 (day-1 API). Follows [06-map-and-minimap.md](../architecture/06-map-and-minimap.md).
 
-- [ ] **Reconcile `feat/map` with D7**: keep the `MapDefinition` types that survive (lanes as
+- [x] _(feat/map-generator, pending merge)_ **Reconcile `feat/map` with D7**: keep the `MapDefinition` types that survive (lanes as
       straight polylines per the game doc's MVP rule, structure slots, camp slots, capture zones,
       rift, bridges, bounds); turn hand-traced Map 1 coordinates into golden expectations with a
       tolerance, or drop them. Owner: _. Test: the generated three-lane map matches every kept
       coordinate within tolerance. Done when: `feat/map` is closed or merged into the phase
-      branch with no hand-traced data as a runtime source.
-- [ ] **`MapGenerator` (pure: `GameConfig` + seed → `MapDefinition`) with `MapBuilder`
+      branch with no hand-traced data as the source of truth (traced shapes only as a preset,
+      ADR 0009).
+- [x] _(feat/map-generator, pending merge)_ **`MapGenerator` (pure: `GameConfig` + seed → `MapDefinition`) with `MapBuilder`
       (Builder) and `LaneGeometry`** + mirror-symmetry helpers (light ↔ dark). Owner: _. Test:
       `numLanes` 3 → 5 yields 5 lanes and `5 × spawnTowersPerLane` SpawnerTower slots per team;
       every light slot has a dark mirror within epsilon; `campsPerSide` camps sit in the
       `numLanes - 1` gaps between lanes. Done when: no coordinate is hand-written in code.
-- [ ] **`WorldMap` runtime grid** (`Uint8Array` walkability/cost grid derived from the
+- [ ] _(feat/map-generator: done except the cost grid and the grid resolution, which is content until B's `GameConfig` lands)_ **`WorldMap` runtime grid** (`Uint8Array` walkability/cost grid derived from the
       definition; footprint stamping/unstamping; bounds). Owner: _. Test: stamping a footprint
       blocks exactly its cells; unstamping restores them. Done when: the grid resolution is a
       config value, not a literal.
@@ -158,8 +159,9 @@ Owner: _ (the `feat/map` author) with sholtzman. Weeks 1–2. Depends on `GameCo
       `collision-anomaly`. Owner: _. Test: a unit at 10× `maxSpeed` cannot cross a wall segment;
       1,000 ticks of seeded random movement raise 0 anomalies. Done when: the anomaly listener
       logs entity id, tick, from/to and collider id.
-- [ ] **Map preset `content/maps/standard-three-lane`** (the default `GameConfig` map values).
-      Owner: _. Test: preset validates. Done when: a second preset needs only a content file.
+- [ ] **Map preset `map-1` in `content/maps/presets/`** (a lane profile, a rift width profile and
+      out-of-bounds shapes; never counts, which stay in `GameConfig.map`, DEC-14).
+      Owner: _. Test: preset validates. Done when: a second preset needs only content, no code.
 
 **Success metric:** changing `numLanes` from 3 to 5 and `spawnTowersPerLane` from 1 to 2 in a
 test regenerates lanes, slots, grid and symmetry with 0 code changes; anomalies in the random
@@ -258,7 +260,8 @@ laptop; a teammate who did not write the code walks the map in the browser with 
 1. All five sprint metrics pass and are recorded in [PROGRESS.md](PROGRESS.md) with the machine
    they were measured on.
 2. The demo script below runs end to end for a reviewer who did not build it.
-3. `feat/map` is reconciled (merged or closed) and no hand-traced coordinate is a runtime source.
+3. `feat/map` is reconciled (merged or closed) and no hand-traced coordinate is the source of
+   truth (traced shapes only as a preset, ADR 0009).
 4. Architecture docs 03, 04, 06, 08, 09, 10, 13 and 15 are updated where the code deviated, or
    an ADR explains the deviation.
 5. The phase PR into `main` is approved by sholtzman (architecture) and one lane reviewer
@@ -269,7 +272,7 @@ laptop; a teammate who did not write the code walks the map in the browser with 
 1. `npm run dev`, open `http://localhost:5173/?dev=1`: the generated three-lane map and minimap.
 2. Walk the placeholder Legend with WASD; run into the rift edge; the overlay shows 0 anomalies.
 3. Developer menu → spawn 300 dummies; `PerfOverlay` shows tick p95 ≤ 4 ms and 60 fps.
-4. Edit `numLanes` to 5 in the config preset, reload: five lanes on the map and the minimap.
+4. Edit `numLanes` to 5 in the default `GameConfig`, reload: five lanes on the map and the minimap.
 5. `npm run test`: the replay determinism test and the "new feature appears on minimap" test.
 
 ## Risks

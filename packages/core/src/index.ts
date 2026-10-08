@@ -2,10 +2,8 @@
  * Public API of `@eternalus/core`. Other packages may import only from here.
  * Anything not exported from this file is internal to the simulation.
  */
-/**
- * Public API of `@eternalus/core`. Other packages may import only from here.
- * Anything not exported from this file is internal to the simulation.
- */
+import type { PlayableTeam, Team } from './teams/teams.types';
+
 export type {
   AbilitySlot,
   Aim,
@@ -24,7 +22,18 @@ export type {
   MatchConfig,
 } from './config/GameConfig.types';
 export { validateGameConfig } from './config/validateGameConfig';
-export { MAP_1 } from './content/maps/map1';
+export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
+export type {
+  MapDefinition,
+  MapFeature,
+  MapFeatureKind,
+  MapLane,
+  MapTerrain,
+  MapTerrainKind,
+  MinimapColourRole,
+  MinimapGlyph,
+  MinimapGlyphShape,
+} from './content/maps/maps.types';
 export type {
   DiagnosticEvent,
   DiagnosticEventMap,
@@ -42,6 +51,8 @@ export type {
   ReplayTarget,
   ReplayTargetFactory,
 } from './diagnostics/Replay.types';
+export { MapGenerator } from './map/MapGenerator';
+export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {
@@ -53,16 +64,21 @@ export type {
 export type { MatchPhase } from './state/GameState.types';
 export type { EntitySnapshot, Snapshot } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
-export type {
-  FeatureOwner,
-  MapDefinition,
-  MapFeature,
-  MapFeatureKind,
-  MapLane,
-  MapTerrain,
-  MapTerrainKind,
-  TeamId,
-} from './content/maps/maps.types';
+export type { PlayableTeam, Team } from './teams/teams.types';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
 export { SeededRandom } from './utils/SeededRandom';
 export type { SeededRandomState } from './utils/SeededRandom.types';
+
+/**
+ * The two playable teams.
+ *
+ * @deprecated Use `PlayableTeam`. Kept for one release for code written against `feat/map`.
+ */
+export type TeamId = PlayableTeam;
+
+/**
+ * Who owns a map feature when the match starts.
+ *
+ * @deprecated Use `Team`. Kept for one release for code written against `feat/map`.
+ */
+export type FeatureOwner = Team;

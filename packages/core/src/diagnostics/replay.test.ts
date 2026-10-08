@@ -4,7 +4,7 @@ import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import type { FeatureOwner } from '../content/maps/maps.types';
+import type { Team } from '../teams/teams.types';
 import { Entity } from '../entities/Entity';
 import { Simulation } from '../Simulation';
 import type { System, SystemContext } from '../systems/System.types';
@@ -25,7 +25,7 @@ class Walker extends Entity {
   public readonly family = 'test';
 
   protected installComponents(context: unknown): void {
-    const { position, team } = context as { position: Vec2; team: FeatureOwner };
+    const { position, team } = context as { position: Vec2; team: Team };
     this.addComponent(new Transform(position, 0.5));
     this.addComponent(new Health(100));
     this.addComponent(new TeamMembership(team));

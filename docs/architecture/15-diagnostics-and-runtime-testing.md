@@ -34,7 +34,7 @@ true. Every block is a **sketch**; the facts come from
 ## 1. Where it sits
 
 `packages/core/src/diagnostics/` (L2) may import `state/` and `utils/`, plus the types of
-`commands/` and `config/` that the replay format carries ([02](02-code-structure.md) §2, DEC-18).
+`commands/` and `config/` that the replay format carries ([02](02-code-structure.md) §2, DEC-20).
 It contains `Invariant.ts`, `InvariantRunner.ts`, `invariants/<Fact>Invariant.ts`,
 `defaultInvariants.ts` (the registry), `Logger.types.ts` (port) with `Logger.constants.ts`,
 `makeLogRecord.ts`, `MemoryLogger.ts` (test double) and `NullLogger.ts`, `Profiler.ts` (port) with
@@ -124,7 +124,7 @@ canonical (`07` §11, `05` §16 and `12` §12 use them).
 | `TeamUnitCapInvariant` (`team-unit-cap`)                                               | tick           | error        | living `Unit`s per playable team ≤ `config.limits.maxUnitsPerTeam` (144, `TUNE`); living `Legend`s per team ≤ `config.limits.maxLegendsPerTeam` (10, `TUNE`); `spawn-suppressed` counted, never exceeded                                                                                                                                                                                                     | requirements                |
 | `FiniteTransformsInvariant` (`finite-transforms`)                                      | tick           | fatal        | `Number.isFinite` for every `Transform.position`, `facing` and `Movement.velocity` component; `\|velocity\| ≤ maxSpeed + impulse bound`                                                                                                                                                                                                                                                                      | 10 §11                      |
 | `HordeMembershipConsistentInvariant` (`horde-membership-consistent`)                   | periodic       | error        | every id in a `Horde` is a living `Mob` whose `hordeId` points back; every mob with a `hordeId` is in exactly one horde; the leader is the lowest surviving id; no empty horde exists (it must have dissolved with `horde-dissolved`)                                                                                                                                                                        | 04 §7                       |
-| `CaptureProgressBoundsInvariant` (`capture-progress-bounds`)                           | tick           | error        | `0 ≤ Capturable.progress ≤ 1`, `checkpoint ∈ {1, 2, 3}`, `ownerTeam` a `TeamId`; a locked zone (living mini-boss) never changes owner (`LockedZoneOwnerInvariant`, 12 §12)                                                                                                                                                                                                                                   | 04 §3, 07 §7                |
+| `CaptureProgressBoundsInvariant` (`capture-progress-bounds`)                           | tick           | error        | `0 ≤ Capturable.progress ≤ 1`, `checkpoint ∈ {1, 2, 3}`, `ownerTeam` a `Team`; a locked zone (living mini-boss) never changes owner (`LockedZoneOwnerInvariant`, 12 §12)                                                                                                                                                                                                                                     | 04 §3, 07 §7                |
 | `CooldownAndAetherBoundsInvariant` (`cooldown-aether-bounds`)                          | tick           | error        | for every `AbilityRuntime`: `0 ≤ cooldownRemainingTicks ≤ cooldownTicks`; `0 ≤ aether ≤ maxAether`; ultimate charge `∈ [0, 1]` (formerly 05 §16's `AetherWithinBounds`, folded in)                                                                                                                                                                                                                           | 05 §6                       |
 | `SnapshotHashMatchesStateInvariant` (`snapshot-hash-matches-state`)                    | periodic       | fatal        | `StateHasher.hashSnapshot(snapshot)` over the canonical subset (tick, ids, positions, health, team, phase) equals `StateHasher.hash(state)` over the same subset: `SnapshotSystem` dropped or staled nothing; runs after the snapshot of the previous tick, so it lags by one                                                                                                                                | 03 §5, §9                   |
 | `TickAdvancedOnceInvariant` (`tick-advanced-once`)                                     | tick           | fatal        | the newest `tick-completed` in `recentEvents` carries `tick - 1` (the runner executes before `SnapshotSystem` and the emit) and the `CommandQueue` holds nothing stamped ≤ `tick` (drained)                                                                                                                                                                                                                  | research C1                 |
@@ -181,7 +181,7 @@ export function makeLogRecord(
     | { readonly attributes?: LogRecord['attributes'] } // a free record
     | { readonly event: DiagnosticEvent } // eventName and attributes come from the event
   ),
-): LogRecord; // the one constructor of records; an options object keeps it at four parameters (DEC-16)
+): LogRecord; // the one constructor of records; an options object keeps it at four parameters (DEC-18)
 export class MemoryLogger implements Logger {
   public readonly records: LogRecord[] = [];
 } // the test double
@@ -271,7 +271,7 @@ regenerated from the seed. `StateHasher` is FNV-1a 32-bit (offset basis `0x811c9
 entity in store order with its component fields ([03](03-game-model.md) §9).
 
 ```ts
-// packages/core/src/diagnostics/Replay.types.ts and replay.ts (DEC-18)
+// packages/core/src/diagnostics/Replay.types.ts and replay.ts (DEC-20)
 export interface ReplayTarget {
   readonly tick: number;
   enqueueCommand(command: Command): void;
@@ -341,7 +341,7 @@ export type SimMatchOptions = {
   readonly seed: number;
   readonly config: GameConfig;
   readonly content: ContentCatalogue;
-  readonly profiles: Readonly<Record<PlayableTeamId, AiProfileId>>;
+  readonly profiles: Readonly<Record<PlayableTeam, AiProfileId>>;
   readonly maxTicks: number; // safety cap; the match normally ends by victory
   readonly assertLevel: AssertLevel;
   readonly heavyEvery?: number;

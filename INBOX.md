@@ -35,20 +35,30 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
 
+- [ ] **DEC-15 — camp weights by depth (DISC-42) in practice.** The default map yields 4 light +
+      2 heavy camps per side and no medium ones; with one camp per corridor (`numLanes` ≥ 7) every
+      camp is heavy. Proposal: keep depth-based weights but define the classes by position in the
+      corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
+      class in content. Pick one. Note: "depth" is the distance to the nearest lane over half the
+      corridor's height, so in tall worlds with steep lanes every camp reads as light.
+- [ ] **DEC-16 — tooling: lint ignores agent worktrees.** ESLint's flat config does not read
+      `.gitignore`, so linting from the main checkout also lints every `.worktrees/*` checkout and
+      one unfinished worktree blocks every push from the main checkout. Proposal: add
+      `.worktrees/` and `.claude/worktrees/` to `globalIgnores` in `eslint.config.js` (each
+      worktree is still linted by its own hooks and CI).
+
 ## Requests for the agent
 
-- [ ] **Session A (from session B, 2026-10-06):** session B's `config/` and `utils/` have
-      landed on `feat/sim-kernel`. (1) Keep `FeatureOwner` exported from
-      `content/maps/maps.types.ts` (as a deprecated alias of `Team`): B's `state/` and `commands/`
-      files and C's `components/TeamMembership.ts` import it from there, and A may not edit them.
-      (2) The swap: `DEFAULT_MAP_CONFIG` → `createDefaultGameConfig().map`; `validateMapConfig` →
-      `validateGameConfig` (same rules); `MapRandom` / `map/Rng.types.ts` → `utils/Rng.types.ts`
-      and `SeededRandom` (`next()` is `nextFloat()`); `polarPoint` → `utils/deterministicMath.ts`;
-      `DEFAULT_MAP_LAYOUT.navCellSize` → `config.map.navCellSize`; delete the local `MapConfig` in
-      the same merge (both branches export `MapConfig` from `index.ts`). (3) The determinism lint
-      (ADR 0012) lands with PR #13: `utils/geometry.ts` must call `utils/deterministicMath.ts`
-      instead of `Math.cos`/`Math.sin` in the merge, or lint fails.
-- [ ] **Session C (from session B, 2026-10-07; owner-approved, DEC-18):** the simulation kernel
+- [ ] **Session A (from session B, updated 2026-10-07):** PR #13 merged the phase branch with
+      `feat/map-generator`: B's files and `components/TeamMembership.ts` now use `Team` from
+      `teams/teams.types.ts`, `polarPoint` and the wall-ring test call
+      `utils/deterministicMath.ts`, and `index.ts` exports only `config/`'s `MapConfig`. Left for
+      session A, the stand-in swap: `DEFAULT_MAP_CONFIG` → `createDefaultGameConfig().map`;
+      `validateMapConfig` → `validateGameConfig` (same rules plus `navCellSize`); `MapRandom` /
+      `map/Rng.types.ts` → `SeededRandom` and `utils/Rng.types.ts` (`next()` is `nextFloat()`);
+      `DEFAULT_MAP_LAYOUT.navCellSize` → `config.map.navCellSize`; then delete the local
+      `MapConfig` in `map/MapGenerator.types.ts`.
+- [ ] **Session C (from session B, 2026-10-07; owner-approved, DEC-20):** the simulation kernel
       (PR #13) leaves these to session C. The B-owned lines named here are C's to change, an
       exception to the ownership table (`docs/agents/prompts/2026-10-03-ultracode-sessions.md`
       §2.6). Read 03 §12 and 15 §13 ("Implementation status") first.
@@ -84,11 +94,17 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 ## Done
 
 - 2026-10-07 — **Session B's simulation kernel items** signed off and done: the snapshot shape
-  (DEC-15) and the `makeLogRecord` options object (DEC-16) folded into 03 §5 and 15 §4; the
-  determinism lint (DEC-17, ADR 0012) added; the kernel's design differences (DEC-18) folded into
+  (DEC-17) and the `makeLogRecord` options object (DEC-18) folded into 03 §5 and 15 §4; the
+  determinism lint (DEC-19, ADR 0012) added; the kernel's design differences (DEC-20) folded into
   02, 03, 15 and 17 R16, with "Implementation status" sections in 03 and 15; the replay fixture
   format written into 15 §7. Recorded in `docs/reference/game-design/13-owner-decisions-log.md`.
   Branch `feat/sim-kernel` (PR #13).
+- 2026-10-07 — **Session A's requests to session B** done: `utils/deterministicMath.ts` (now used
+  by `polarPoint`), `GameConfig.map` keeps the field names of the map's local `MapConfig`, and the
+  nav cell size lives in `config.map.navCellSize`. Branch `feat/sim-kernel` (PR #13).
+- 2026-10-06 — **DEC-14** (map generator refinements a–d) signed off by the owner; recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and folded into
+  `docs/architecture/06-map-and-minimap.md`. Branch `feat/map-generator` (PR #8).
 - 2026-10-03 — **DEC-01…DEC-10 and the discrepancy answers** recorded in
   `docs/reference/game-design/13-owner-decisions-log.md`; plan re-cut to four two-week sprints
   ending 2026-11-27 (`docs/plan/README.md` §0); ADR 0004/0006/0009 statuses updated; 32

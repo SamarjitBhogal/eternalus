@@ -1,4 +1,4 @@
-import type { FeatureOwner } from '../content/maps/maps.types';
+import type { Team } from '../teams/teams.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 
@@ -44,7 +44,7 @@ type CommandPayloads = {
   readonly 'dev-spawn': {
     readonly kind: string;
     readonly definitionId: string;
-    readonly team: FeatureOwner;
+    readonly team: Team;
     readonly at: Vec2;
     readonly count: number;
   };
