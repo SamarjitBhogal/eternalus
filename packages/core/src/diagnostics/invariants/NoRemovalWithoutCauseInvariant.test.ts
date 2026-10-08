@@ -69,4 +69,14 @@ describe('NoRemovalWithoutCauseInvariant', () => {
 
     expect(messages(state)).toEqual([]);
   });
+
+  it('flags a store whose size no longer matches spawns minus removals (injected)', () => {
+    const state = stateWithCrates(2);
+    state.advanceTick();
+    Reflect.set(state.entities, 'added', 3);
+
+    expect(messages(state)).toEqual([
+      'The store holds 2 entities; spawns and removals this tick give 5.',
+    ]);
+  });
 });

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
+
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -16,10 +18,7 @@ describe('DefaultSystemPipeline', () => {
   it('moves, then removes the dead, then checks invariants, in that order', () => {
     const logger = new MemoryLogger();
     const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(
-        { assertLevel: 'heavy', heavyEvery: 1, throwOnViolation: true },
-        logger,
-      ),
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
     );
     const state = new GameState(createDefaultGameConfig(), 1);
     const factory = new EntityFactory(new DefaultEntityRegistry(), UNIT_DEFINITIONS);

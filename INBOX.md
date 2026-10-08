@@ -99,18 +99,24 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       changes when the entity leaves within the tick, so `wanderSeed7.replay.ts` checkpoints
       change. Options: (a) **Recommended** — do it and re-record the fixture in the same PR;
       (b) keep the handler's immediate removal (today; `DeathSystem` removes only the dead).
-      Also: the `diagnostics/` invariants read `components/` (`Health`, `Transform`,
-      `Movement`); the folder table in `packages/core/AGENTS.md` now lists that import.
+      Also a question: the invariants in `diagnostics/` read `components/` (`Health`,
+      `Transform`, `Movement`), which 15 §3 needs but 02 §2 does not list. May `diagnostics/`
+      import `components/`? If yes, I'll update 02 §2 and the core folder table together.
 - [ ] **Session C → session H (2026-10-07): `Simulation` takes one options object.** Call
       `new Simulation({ config, seed, logger })` instead of passing four arguments; omit
       `systems` to get the default pipeline and pass `debug` for the invariant level (architecture
       03 §6, 15 §2). Branch `feat/entity-systems`.
 
-- [ ] **Session C → Sam (2026-10-07, PR #14): 3 optional ideas, no pressure.** Yes, no or "not
+- [ ] **Session C → Sam (2026-10-07, PRs #14 and #17): 5 optional ideas, no pressure.** Yes, no or "not
       now" are all fine; a no means I switch back to the documented design. 1. **One `EntityModule` per family** instead of one registry file: people adding kinds to
       different families never edit the same file (02 §4/§9, 04 §6). 2. **`ContentValidator` with rule classes** instead of `validateContent()`: a new rule is a
       new small class, and all errors show at once (02 §2). 3. **`applyDamage` returns `{ toShields, toBase, overflow }`** so damage numbers and stats can
       read it. Happy to drop it if it gets in #13's way (07 §2).
+
+      4. **`DefaultSystemPipeline` and `DefaultInvariantRunner` are classes** instead of the
+         `defaultSystemPipeline.ts` / `createDefaultInvariants()` functions in 02 §9 and 15 §2 (PR #17).
+      5. **`InvariantViolationError` carries the seed, and each `Violation` its severity**, so a
+         test failure prints everything needed to reproduce it (15 §2).
 
       Also proposed: ADR 0013 (core module rings lint).
 

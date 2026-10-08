@@ -33,20 +33,31 @@ describe('FiniteTransformsInvariant', () => {
     expect(new FiniteTransformsInvariant().check(state)).toEqual([]);
   });
 
-  it('flags a NaN position, an infinite velocity and a speed above maxSpeed (injected)', () => {
+  it('flags a NaN position and an infinite velocity (injected)', () => {
     const { state, runner } = setUp();
     Reflect.set(runner.getComponent(Transform).position, 'x', Number.NaN);
-    const movement = runner.getComponent(Movement);
-    Reflect.set(movement.velocity, 'y', Number.POSITIVE_INFINITY);
-    Reflect.set(movement, 'currentSpeed', 5);
+    Reflect.set(runner.getComponent(Movement).velocity, 'y', Number.POSITIVE_INFINITY);
 
     const violations = new FiniteTransformsInvariant().check(state);
 
     expect(violations.map((v) => v.message)).toEqual([
       'Entity "entity-1" has a non-finite position (NaN, 1).',
       'Entity "entity-1" has a non-finite velocity (0, Infinity).',
-      'Entity "entity-1" moves at 5, above its maxSpeed 2.',
     ]);
     expect(violations.every((v) => v.severity === 'fatal')).toBe(true);
+  });
+
+  it('flags a velocity longer than maxSpeed, and allows float rounding at the limit', () => {
+    const { state, runner } = setUp();
+    const velocity = runner.getComponent(Movement).velocity;
+
+    Reflect.set(velocity, 'x', 2 * (1 + 1e-12));
+    expect(new FiniteTransformsInvariant().check(state)).toEqual([]);
+
+    Reflect.set(velocity, 'x', 1.5);
+    Reflect.set(velocity, 'y', 1.5);
+    expect(new FiniteTransformsInvariant().check(state).map((v) => v.message)).toEqual([
+      'Entity "entity-1" has a velocity above maxSpeed (1.5, 1.5).',
+    ]);
   });
 });

@@ -423,6 +423,10 @@ each closed by the session or phase named:
   `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
+- `Movement` works in per-tick units: `advance()` adds `acceleration` toward the heading and
+  turns the velocity straight onto it (no `|dv|` clamp), and without a heading it slows by
+  `acceleration` per tick instead of applying friction (10 §2). Impulses, friction and the
+  `dv` clamp arrive with knockback (Phase 2).
 - `GameState` has no `world`, `teams` or `hordes` yet; it keeps `recentCommands` and the seed for
   diagnostic reports. `EntityFactory` takes ids from `IdGenerator`. `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).

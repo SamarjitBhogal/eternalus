@@ -319,6 +319,6 @@ The example below is fenced so it is not read as a real entry.
   heading, collider and vision (recorded replay checkpoints unchanged); `ShieldBar` shared.
   Player scenarios now also play through the `Simulation`.
 - Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
-  446 passed (446)", client "Tests 36 passed (36)", "✓ built", "Documentation check passed.").
+  449 passed (449)", client "Tests 36 passed (36)", "✓ built", "Documentation check passed.").
 - Next step: Sam decides the `dev-remove-entity` deferral (INBOX); `ObjectPool`, the remaining
   sprint 1.2 invariants and the pre-PR gate; owner: claudiodh.

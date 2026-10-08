@@ -7,6 +7,8 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
+
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
@@ -236,7 +238,7 @@ describe('Player scenarios', () => {
         config: createDefaultGameConfig(),
         seed,
         logger: new NullLogger(),
-        debug: { assertLevel: 'heavy', heavyEvery: 1, throwOnViolation: true },
+        debug: TEST_DEBUG_CONFIG,
       });
 
     const joinAsWarrior = (sim: Simulation): void => {

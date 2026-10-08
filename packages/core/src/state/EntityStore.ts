@@ -13,6 +13,8 @@ import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './Entit
 export class EntityStore {
   private readonly entities = new Map<EntityId, Entity>();
   private readonly removals: RemovalRecord[] = [];
+  private added = 0;
+  private sizeAtStart = 0;
 
   /** Number of live entities. */
   public get size(): number {
@@ -25,6 +27,7 @@ export class EntityStore {
       throw new Error(`Entity "${entity.id}" is already in the store.`);
     }
     this.entities.set(entity.id, entity);
+    this.added += 1;
   }
 
   /** The entity with `id`, or `undefined` if it is not (or no longer) in the world. */
@@ -54,9 +57,21 @@ export class EntityStore {
     return [...this.removals];
   }
 
-  /** Forgets this tick's removals. Called once per tick by `GameState.advanceTick()`. */
-  public clearRemovedThisTick(): void {
+  /** How many entities were added this tick. */
+  public addedThisTick(): number {
+    return this.added;
+  }
+
+  /** How many entities were in the store when this tick began. */
+  public sizeAtTickStart(): number {
+    return this.sizeAtStart;
+  }
+
+  /** Starts a new tick's bookkeeping. Called once per tick by `GameState.advanceTick()`. */
+  public beginTick(): void {
     this.removals.length = 0;
+    this.added = 0;
+    this.sizeAtStart = this.entities.size;
   }
 
   /** How many live instances of `entityClass` (e.g. `Unit`, `Legend`) fight for `team`. */

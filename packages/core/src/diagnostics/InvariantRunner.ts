@@ -1,9 +1,9 @@
 import type { GameState } from '../state/GameState';
-import type { Invariant, InvariantSeverity, Violation } from './Invariant.types';
-import { REPORTED_COMMANDS, REPORTED_EVENTS } from './InvariantRunner.constants';
+import type { Invariant, Violation } from './Invariant.types';
+import { LOG_LEVEL_OF, REPORTED_COMMANDS, REPORTED_EVENTS } from './InvariantRunner.constants';
 import type { AssertLevel, DebugConfig } from './InvariantRunner.types';
 import { InvariantViolationError } from './InvariantViolationError';
-import type { Logger, SeverityText } from './Logger.types';
+import type { Logger } from './Logger.types';
 import { makeLogRecord } from './makeLogRecord';
 
 /**
@@ -71,7 +71,7 @@ export class InvariantRunner {
     const { invariantId, entityId, message, details, severity } = violation;
     state.events.emit('invariant-violated', { invariantId, tick: state.tick, details });
     this.logger.log(
-      makeLogRecord(InvariantRunner.levelOf(severity), 'core.invariants', message, {
+      makeLogRecord(LOG_LEVEL_OF[severity], 'core.invariants', message, {
         tick: state.tick,
         event: {
           name: 'invariant-violated',
@@ -83,15 +83,6 @@ export class InvariantRunner {
         },
       }),
     );
-  }
-
-  private static levelOf(severity: InvariantSeverity): SeverityText {
-    const levels: Readonly<Record<InvariantSeverity, SeverityText>> = {
-      warn: 'WARN',
-      error: 'ERROR',
-      fatal: 'FATAL',
-    };
-    return levels[severity];
   }
 
   private static checked(config: DebugConfig): DebugConfig {

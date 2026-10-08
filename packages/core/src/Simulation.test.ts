@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
+
 import type { Command } from './commands/Command.types';
 import { ConfigValidationError } from './config/ConfigValidationError';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
@@ -174,7 +176,7 @@ describe('Simulation', () => {
       config: createDefaultGameConfig(),
       seed: 1,
       logger: new NullLogger(),
-      debug: { assertLevel: 'heavy', heavyEvery: 1, throwOnViolation: true },
+      debug: TEST_DEBUG_CONFIG,
     });
     sim.enqueueCommand({
       type: 'dev-spawn',

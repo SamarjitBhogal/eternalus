@@ -136,7 +136,7 @@ describe('EntityStore', () => {
       { entityId: 'a', cause: 'died' },
       { entityId: 'b', cause: 'dev-removed' },
     ]);
-    store.clearRemovedThisTick();
+    store.beginTick();
     expect(store.removedThisTick()).toEqual([]);
   });
 

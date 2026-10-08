@@ -5,8 +5,8 @@ import { REMOVAL_CAUSES } from './NoRemovalWithoutCauseInvariant.constants';
 
 /**
  * `no-removal-without-cause` (architecture 15 §3): this tick's store removals and this tick's
- * `entity-removed` events are the same set, each with a valid `RemovalCause`, and no removed
- * entity is still in the store.
+ * `entity-removed` events are the same set, each with a valid `RemovalCause`; no removed entity is
+ * still in the store; and the store's size changed by exactly spawned minus removed.
  */
 export class NoRemovalWithoutCauseInvariant implements Invariant {
   public readonly id = 'no-removal-without-cause';
@@ -18,10 +18,9 @@ export class NoRemovalWithoutCauseInvariant implements Invariant {
   /** Flags removals without a valid cause or event, events without a removal, and leftovers. */
   public check(state: GameState): readonly Violation[] {
     const removed = state.entities.removedThisTick();
-    const announced: RemovalRecord[] = state.events
-      .recentEvents()
-      .filter((event) => event.tick === state.tick)
-      .flatMap((event) => (event.type === 'entity-removed' ? [event.payload] : []));
+    const announced = state.removalsAnnouncedThisTick();
+    const { entities } = state;
+    const expectedSize = entities.sizeAtTickStart() + entities.addedThisTick() - removed.length;
 
     return [
       ...removed
@@ -36,7 +35,18 @@ export class NoRemovalWithoutCauseInvariant implements Invariant {
       ...removed
         .filter(({ entityId }) => state.entities.has(entityId))
         .map((record) => this.violation(record, 'is still in the store after its removal')),
+      ...(entities.size === expectedSize ? [] : [this.sizeViolation(entities.size, expectedSize)]),
     ];
+  }
+
+  private sizeViolation(size: number, expected: number): Violation {
+    return {
+      invariantId: this.id,
+      severity: this.severity,
+      message: `The store holds ${String(size)} entities; spawns and removals this tick give ${String(expected)}.`,
+      entityId: null,
+      details: { size, expected },
+    };
   }
 
   private violation({ entityId, cause }: RemovalRecord, problem: string): Violation {
