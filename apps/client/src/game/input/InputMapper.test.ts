@@ -2,16 +2,22 @@ import { describe, expect, it } from 'vitest';
 
 import type { Binding } from '../../bridge/Binding.types';
 import type { InputSnapshot } from '../engine/input/InputDevice.types';
+import type { Projection } from '../engine/input/Projection.types';
 import { InputMapper } from './InputMapper';
 import { PRESETS } from './keybindings';
 
 const holding = (...keys: string[]): InputSnapshot => ({
   keys: new Set(keys),
   keyLabels: new Map(),
+  mouseButtons: 0,
+  pointer: null,
 });
 
+/** A world ten times the canvas, so a projected point is easy to read. */
+const TIMES_TEN: Projection = { screenToWorld: ({ x, y }) => ({ x: x * 10, y: y * 10 }) };
+
 const intentOf = (mapper: InputMapper, ...keys: string[]) =>
-  mapper.toIntent(mapper.resolve(holding(...keys)));
+  mapper.toIntent(mapper.resolve(holding(...keys)), TIMES_TEN);
 
 describe('InputMapper', () => {
   it('turns W held into a move straight up, (0, -1)', () => {
@@ -79,5 +85,39 @@ describe('InputMapper', () => {
       'move-up',
       'sprint',
     ]);
+  });
+
+  it('presses attack with the left mouse button and a gadget with the back button', () => {
+    const bindings: Binding[] = [
+      ...PRESETS.wasd,
+      { action: 'gadget-1', chords: [{ device: 'mouse', button: 3 }] },
+    ];
+    const mapper = new InputMapper(bindings);
+
+    const actions = mapper.resolve({ ...holding(), mouseButtons: 1 | 8 });
+
+    expect([...actions.pressed].sort()).toEqual(['attack', 'gadget-1']);
+    expect(mapper.toIntent(actions, TIMES_TEN).triggered).toEqual(['gadget-1']);
+  });
+
+  it('aims at the world point under the pointer, and at nothing when it is off the canvas', () => {
+    const mapper = new InputMapper(PRESETS.wasd);
+
+    const onCanvas = mapper.toIntent(
+      mapper.resolve({ ...holding(), pointer: { x: 3, y: 4 } }),
+      TIMES_TEN,
+    );
+
+    expect(onCanvas.aim).toEqual({ x: 30, y: 40 });
+    expect(intentOf(mapper).aim).toBeNull();
+  });
+
+  it('indexes gamepad chords without matching them yet (no GamepadDevice)', () => {
+    const mapper = new InputMapper([
+      { action: 'attack', chords: [{ device: 'gamepad', button: 0 }] },
+      { action: 'move-up', chords: [{ device: 'gamepad-axis', axis: 1, sign: -1, deadzone: 0.2 }] },
+    ]);
+
+    expect(mapper.resolve({ ...holding(), mouseButtons: 1 }).held.size).toBe(0);
   });
 });

@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { fakeKeyEvent } from './fakeKeyEvent';
+import { describeInputDevice } from './InputDevice.contract';
 import type { MutableInputSnapshot } from './InputDevice.types';
 import { KeyboardDevice } from './KeyboardDevice';
 
-const emptySnapshot = (): MutableInputSnapshot => ({ keys: new Set(), keyLabels: new Map() });
+const emptySnapshot = (): MutableInputSnapshot => ({
+  keys: new Set(),
+  keyLabels: new Map(),
+  mouseButtons: 0,
+  pointer: null,
+});
 
 const setUp = (bound: readonly string[] = ['KeyW']) => {
   const target = new EventTarget();
@@ -18,17 +24,17 @@ const setUp = (bound: readonly string[] = ['KeyW']) => {
   return { target, keyboard, held };
 };
 
+describeInputDevice('KeyboardDevice', () => {
+  const { target, keyboard } = setUp();
+  return {
+    device: keyboard,
+    target,
+    press: () => target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW')),
+    release: () => target.dispatchEvent(fakeKeyEvent('keyup', 'KeyW')),
+  };
+});
+
 describe('KeyboardDevice', () => {
-  it('reports a key held after key-down and clears it after key-up', () => {
-    const { target, held } = setUp();
-
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW'));
-    expect([...held()]).toEqual(['KeyW']);
-
-    target.dispatchEvent(fakeKeyEvent('keyup', 'KeyW'));
-    expect(held().size).toBe(0);
-  });
-
   it('keeps the key label seen at press, for prompts', () => {
     const { target, keyboard } = setUp();
     target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW', { key: 'z' }));
@@ -47,36 +53,6 @@ describe('KeyboardDevice', () => {
     target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW', { repeat: true }));
 
     expect(held().size).toBe(0);
-  });
-
-  it('leaves nothing held after releaseAll', () => {
-    const { target, keyboard, held } = setUp();
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW'));
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyD'));
-
-    keyboard.releaseAll();
-
-    expect(held().size).toBe(0);
-  });
-
-  it('hears nothing after detach', () => {
-    const { target, keyboard, held } = setUp();
-    keyboard.detach();
-
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW'));
-
-    expect(held().size).toBe(0);
-  });
-
-  it('adds to a snapshot without removing what another device wrote', () => {
-    const { target, keyboard } = setUp();
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW'));
-    const snapshot = emptySnapshot();
-    snapshot.keys.add('KeyQ');
-
-    keyboard.writeInto(snapshot);
-
-    expect([...snapshot.keys].sort()).toEqual(['KeyQ', 'KeyW']);
   });
 
   it('cancels the browser default only for bound keys, never for Ctrl chords or Tab', () => {

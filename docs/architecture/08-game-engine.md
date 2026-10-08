@@ -288,7 +288,8 @@ interim differences, each closed by the session named:
   `game/engine/time/`. `useMatch` stamps log records with `performance.now()` until it is wired.
 - `Camera` keeps its `lookAt`/`visibleArea` API and adds `track` (smooth follow), `zoomTo`
   (clamped), `contains` (culling) and `worldToScreen`/`screenToWorld` with an explicit
-  `Viewport`; the `Projection` port and `MinimapProjection` arrive with the minimap work.
+  `Viewport`. Input's `Projection` port (`screenToWorld` only, 09 §11) is implemented by `Match`
+  over the camera; `worldToScreen` on it and `MinimapProjection` arrive with the minimap work.
 - `ViewRegistry` resolves kind, then family, then `DefaultEntityView`, and reports each unknown kind
   once; `LegendView` is the placeholder Legend look. Entity markers on the minimap are the
   minimap work's (SCRUM-151); `EntityLayer.drawMinimap` draws nothing until then.

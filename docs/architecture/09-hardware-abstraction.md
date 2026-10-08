@@ -279,21 +279,27 @@ layer is the seam:
 
 ## 11. Implementation status
 
-The keyboard slice (branch `feat/player-input`) implements §2 and §3 for movement, with these
-interim differences:
+The keyboard and mouse slice (branch `feat/player-input`) implements §2, §3 and §9 for the
+keyboard and mouse, with these interim differences:
 
-- `InputSnapshot` has only `keys` and `keyLabels`; the mouse, wheel and gamepad fields arrive with
-  their devices. `InputDevice` has no `poll()` yet (the keyboard is event-driven; the gamepad
-  needs it). There is no `MouseDevice`, `FakeInputDevice` or shared contract suite yet;
-  `KeyboardDevice.test.ts` covers the contract's five rules.
-- `InputMapper` indexes keyboard chords by code itself (no injected `BindingResolver`) and leaves
-  `aim` empty until the mouse and `Projection` exist. `toIntent` takes no projection yet.
-- `DeviceIntentSource` (in `game/`, beside `Match`) merges the devices and feeds `Match` through its `IntentSource` port.
-  `Match` turns the intent's `move` into `move`/`stop` commands itself until core's
-  `PlayerController` handles the `intent` command (11 §4.1); see `INBOX.md`.
+- `InputSnapshot` has `keys`, `keyLabels`, `mouseButtons` and `pointer`; `wheel` and `gamepads`
+  arrive with the actions and the device that need them. `InputDevice` has no `poll()` yet (both
+  devices are event-driven; the gamepad needs it). There is no `FakeInputDevice`; the
+  `describeInputDevice` contract suite (`engine/input/InputDevice.contract.ts`) runs for both
+  devices, and auto-repeat is tested in the keyboard's own tests (the mouse has none).
+- `InputMapper` indexes chords by `chordKey` itself (no injected `BindingResolver`, no exported
+  `chordKey` until the settings screen needs conflict detection) and has no `clientActions` yet.
+  `toIntent` projects the pointer through a `Projection` port that lives in `engine/input/`
+  with only `screenToWorld` (02 §3 lets `game/input/` import `engine/input/` types only);
+  `Match` implements it with its `Camera`.
+- `DeviceIntentSource` (in `game/`, beside `Match`) merges the devices and feeds `Match` through
+  its `IntentSource` port. `Match` turns the intent's `move` into `move`/`stop` commands itself
+  and drops `aim` and `triggered` until core's `PlayerController` handles the `intent` command
+  (11 §4.1); see `INBOX.md`.
 - `useMatch`, not `Match`, releases the devices on `blur` and hidden `visibilitychange` (keeps
   `Match` free of browser APIs, §10; sign-off asked in `INBOX.md`), and binds the `wasd`
-  preset until the settings screen supplies the player's saved bindings.
+  preset until the settings screen supplies the player's saved bindings. A minimap click is
+  also an `attack` press until the minimap consumes its clicks (SCRUM-151).
 
 ## Related
 

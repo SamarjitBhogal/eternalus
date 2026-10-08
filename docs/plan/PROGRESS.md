@@ -351,3 +351,16 @@ The example below is fenced so it is not read as a real entry.
   449 passed (449)", client "Tests 111 passed (111)", "✓ built", "Documentation check passed.").
 - Next step: core `PlayerController` for the `intent` command (INBOX, Sam's TODO); `MouseDevice`;
   pre-PR gate; owner: claudiodh.
+
+### 2026-10-08 — Phase 1 / sprint 1.5 — feat/player-input (mouse) — claudiodh + Claude Code
+
+- What was done: `MouseDevice` (buttons bitmask with side buttons, pointer on the canvas, pointer
+  capture, `contextmenu`/`auxclick`/non-primary presses cancelled); the shared
+  `describeInputDevice` contract suite for both devices (09 §9); `InputMapper` matches mouse
+  chords by `chordKey` and aims through a `Projection` port that `Match` implements with its
+  camera; `useMatch` attaches the mouse to the canvas. 09 §11 and 08 §11 updated; the
+  `KeyboardDevice` / `MouseDevice` box is ticked.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 127 passed (127)", "✓ built", "Documentation check passed.").
+- Next step: core `PlayerController` consumes `aim` and `triggered` (INBOX); pre-PR gate on the
+  mouse commits; owner: claudiodh.

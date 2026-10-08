@@ -1,17 +1,18 @@
 import type { AbilitySlot, InputIntent } from '@eternalus/core';
 
-import type { Binding, InputAction } from '../../bridge/Binding.types';
+import type { Binding, InputAction, InputChord } from '../../bridge/Binding.types';
 import type { InputSnapshot } from '../engine/input/InputDevice.types';
-import { MOVE_AXES, SLOT_ACTIONS } from './InputMapper.constants';
+import type { Projection } from '../engine/input/Projection.types';
+import { MOUSE_BUTTON_BITS, MOVE_AXES, SLOT_ACTIONS } from './InputMapper.constants';
 import type { ActionState } from './InputMapper.types';
 
 /**
  * Turns device state into player actions and actions into an `InputIntent` (architecture 13
  * §6.2). Bindings are data, so rebinding is a `setBindings` call and no key name lives here.
- * Only keyboard chords match until the mouse and gamepad devices exist.
+ * Keyboard and mouse chords match; gamepad chords wait for `GamepadDevice` (post-MVP).
  */
 export class InputMapper {
-  private actionsByCode = new Map<string, InputAction[]>();
+  private actionsByChord = new Map<string, InputAction[]>();
 
   private lastHeld: ReadonlySet<InputAction> = new Set();
 
@@ -22,41 +23,49 @@ export class InputMapper {
 
   /** Replaces the bindings; called on every settings save. */
   public setBindings(bindings: readonly Binding[]): void {
-    this.actionsByCode = new Map();
+    this.actionsByChord = new Map();
     for (const { action, chords } of bindings) {
       for (const chord of chords) {
-        if (chord.device === 'keyboard') {
-          this.actionsByCode.set(chord.code, [
-            ...(this.actionsByCode.get(chord.code) ?? []),
-            action,
-          ]);
-        }
+        const key = InputMapper.chordKey(chord);
+        this.actionsByChord.set(key, [...(this.actionsByChord.get(key) ?? []), action]);
       }
     }
   }
 
   /** Whether a key code is bound to any action. */
   public isBound(code: string): boolean {
-    return this.actionsByCode.has(code);
+    return this.actionsByChord.has(`keyboard:${code}`);
   }
 
   /** The actions held now and the ones that started or ended since the previous call. */
   public resolve(snapshot: InputSnapshot): ActionState {
     const held = new Set<InputAction>();
-    for (const code of snapshot.keys) {
-      this.actionsByCode.get(code)?.forEach((action) => held.add(action));
-    }
+    const add = (key: string): void => {
+      this.actionsByChord.get(key)?.forEach((action) => held.add(action));
+    };
+    snapshot.keys.forEach((code) => {
+      add(`keyboard:${code}`);
+    });
+    MOUSE_BUTTON_BITS.forEach((bit, button) => {
+      if ((snapshot.mouseButtons & bit) !== 0) {
+        add(`mouse:${String(button)}`);
+      }
+    });
     const previous = this.lastHeld;
     this.lastHeld = held;
     return {
       held,
       pressed: new Set([...held].filter((action) => !previous.has(action))),
       released: new Set([...previous].filter((action) => !held.has(action))),
+      pointer: snapshot.pointer,
     };
   }
 
-  /** The intent: one normalised move vector and the ability slots pressed this frame. */
-  public toIntent(actions: ActionState): InputIntent {
+  /**
+   * The intent: one normalised move vector, the world point under the pointer and the ability
+   * slots pressed this frame.
+   */
+  public toIntent(actions: ActionState, projection: Projection): InputIntent {
     let x = 0;
     let y = 0;
     for (const [action, dx, dy] of MOVE_AXES) {
@@ -70,8 +79,21 @@ export class InputMapper {
     return {
       // Opposite keys cancel out, which leaves a zero vector that must not be divided.
       move: length === 0 ? { x: 0, y: 0 } : { x: x / length, y: y / length },
-      aim: null,
+      aim: actions.pointer === null ? null : projection.screenToWorld(actions.pointer),
       triggered,
     };
+  }
+
+  /** The index key of a chord, e.g. `keyboard:KeyW` or `mouse:3` (architecture 13 §6.2). */
+  private static chordKey(chord: InputChord): string {
+    switch (chord.device) {
+      case 'keyboard':
+        return `keyboard:${chord.code}`;
+      case 'mouse':
+      case 'gamepad':
+        return `${chord.device}:${String(chord.button)}`;
+      case 'gamepad-axis':
+        return `gamepad-axis:${String(chord.axis)}:${String(chord.sign)}`;
+    }
   }
 }

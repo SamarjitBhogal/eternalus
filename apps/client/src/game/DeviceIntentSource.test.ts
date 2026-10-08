@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { Camera } from './engine/Camera';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import type { InputDevice, MutableInputSnapshot } from './engine/input/InputDevice.types';
+import type { Projection } from './engine/input/Projection.types';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
@@ -17,6 +18,8 @@ import { Match } from './Match';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
+
+const IDENTITY: Projection = { screenToWorld: (point) => point };
 
 /** A device that always holds the same keys and counts its releases. */
 class HeldKeys implements InputDevice {
@@ -54,10 +57,10 @@ describe('DeviceIntentSource', () => {
     const { target, input } = setUp();
 
     target.dispatchEvent(fakeKeyEvent('keydown', 'KeyD'));
-    expect(input.read().move).toEqual({ x: 1, y: 0 });
+    expect(input.read(IDENTITY).move).toEqual({ x: 1, y: 0 });
 
     target.dispatchEvent(fakeKeyEvent('keyup', 'KeyD'));
-    expect(input.read().move).toEqual({ x: 0, y: 0 });
+    expect(input.read(IDENTITY).move).toEqual({ x: 0, y: 0 });
   });
 
   it('merges every device into one intent', () => {
@@ -66,7 +69,7 @@ describe('DeviceIntentSource', () => {
       new InputMapper(PRESETS.wasd),
     );
 
-    const { move } = input.read();
+    const { move } = input.read(IDENTITY);
 
     expect(move.x).toBeCloseTo(Math.SQRT1_2);
     expect(move.y).toBeCloseTo(-Math.SQRT1_2);

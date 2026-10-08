@@ -19,3 +19,6 @@ export const SLOT_ACTIONS: readonly (InputAction & AbilitySlot)[] = [
   'gadget-1',
   'gadget-2',
 ];
+
+/** `PointerEvent.buttons` bit of each mouse chord button (0 left, 1 middle, 2 right, 3 back, 4 forward). */
+export const MOUSE_BUTTON_BITS: readonly number[] = [1, 4, 2, 8, 16];

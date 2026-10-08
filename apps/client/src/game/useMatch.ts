@@ -8,6 +8,7 @@ import { Camera } from './engine/Camera';
 import { RafFrameScheduler } from './engine/loop/RafFrameScheduler';
 import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
+import { MouseDevice } from './engine/input/MouseDevice';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
@@ -22,7 +23,8 @@ import {
 
 /**
  * Creates a `Match` on the canvas when it mounts and destroys it on unmount: a Warrior at the
- * Light stronghold on the generated map, walked with the default keys (WASD), the camera following
+ * Light stronghold on the generated map, walked with the default keys (WASD) and aimed with the
+ * mouse, the camera following
  * it and the minimap in its corner. Placeholder wiring until match setup (session E) passes the
  * player's choices and the settings screen passes the player's saved bindings.
  */
@@ -47,7 +49,8 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
     );
     const mapper = new InputMapper(PRESETS.wasd);
     const keyboard = new KeyboardDevice((code) => mapper.isBound(code));
-    const input = new DeviceIntentSource([keyboard], mapper);
+    const mouse = new MouseDevice();
+    const input = new DeviceIntentSource([keyboard, mouse], mapper);
     let match: Match;
     try {
       match = new Match({
@@ -101,6 +104,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
 
     resize();
     keyboard.attach(window);
+    mouse.attach(canvas);
     match.start();
     window.addEventListener('resize', resize);
     window.addEventListener('blur', releaseInput);
@@ -112,6 +116,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
       document.removeEventListener('visibilitychange', releaseInputWhenHidden);
       canvas.removeEventListener('click', lookAtMinimapClick);
       keyboard.detach();
+      mouse.detach();
       match.destroy();
       renderer.destroy();
       camera.destroy();

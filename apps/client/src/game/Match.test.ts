@@ -11,6 +11,7 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 
 import { Camera } from './engine/Camera';
+import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
@@ -24,7 +25,10 @@ const SEED = 1;
 class ScriptedIntent implements IntentSource {
   public move: Vec2 = { x: 0, y: 0 };
 
-  public read(): InputIntent {
+  public projection: Projection | null = null;
+
+  public read(projection: Projection): InputIntent {
+    this.projection = projection;
     return { move: this.move, aim: null, triggered: [] };
   }
 }
@@ -222,6 +226,20 @@ describe('Match', () => {
     match.render(0);
 
     expect(camera.visibleArea(map.width, map.height)).not.toEqual(lookedAt);
+  });
+
+  it('projects the pointer through the camera: the canvas centre is the camera centre', () => {
+    const { match, input, camera, map } = setUp();
+    match.resize(1280, 720, 2);
+    match.tick();
+    match.tick();
+    const view = camera.visibleArea(map.width, map.height);
+
+    // 640 × 360 CSS pixels on a 2× display is the middle of the 1280 × 720 device-pixel canvas.
+    const aim = input.projection?.screenToWorld({ x: 320, y: 180 });
+
+    expect(aim?.x).toBeCloseTo(view.x + view.width / 2);
+    expect(aim?.y).toBeCloseTo(view.y + view.height / 2);
   });
 
   it('refuses a map without a stronghold for the player team', () => {
