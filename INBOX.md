@@ -90,7 +90,8 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 - 2026-10-08 — **DEC-16** (lint ignores agent worktrees) accepted by the owner in chat:
   `eslint.config.js` adds `.worktrees/` and `.claude/worktrees/` to `globalIgnores`; recorded in
-  `docs/reference/game-design/13-owner-decisions-log.md`. Branch `chore/lint-ignore-worktrees`.
+  `docs/reference/game-design/13-owner-decisions-log.md` and ADR 0014. Branch
+  `chore/lint-ignore-worktrees` (PR #20).
 - 2026-10-07 — **Session B's simulation kernel items** signed off and done: the snapshot shape
   (DEC-17) and the `makeLogRecord` options object (DEC-18) folded into 03 §5 and 15 §4; the
   determinism lint (DEC-19, ADR 0012) added; the kernel's design differences (DEC-20) folded into
