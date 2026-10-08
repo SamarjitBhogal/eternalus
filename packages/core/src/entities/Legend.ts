@@ -1,14 +1,11 @@
-import type { LegendKind } from '../content/legends/legends.types';
-import type { EntityFamily } from './Entity.types';
 import { Unit } from './Unit';
 
 /** Abstract base for entities of the `legend` family. */
 export abstract class Legend extends Unit {
-  /** The content kind of this class; one of `LegendKind`. */
-  public abstract override readonly kind: LegendKind;
-
   /** Always `'legend'`. */
-  public readonly family: EntityFamily = 'legend';
+  public override get family(): string {
+    return 'legend';
+  }
 
   /**
    * @param id - Unique id of this entity instance.

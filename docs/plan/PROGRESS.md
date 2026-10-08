@@ -229,14 +229,15 @@ The example below is fenced so it is not read as a real entry.
 
 ### 2026-10-07 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
 
-- What was done: entity foundation of sprint 1.2 (SCRUM-16), all as classes. Every family base:
-  `Unit`, `Legend`, `Mob`, `Structure`, `Zone` (abstract), `Obstacle`, `Projectile` on one
-  runtime-checked `SpawnContextReader`; `Collider`, `Vision`, layered shields on `Health`; the
-  characters `Warrior`/`Sentinel`/`Magus` with traits from `01-classes`; `LightMob` + the
-  training dummy only (other mobs: SCRUM-59). One `EntityModule` per family installed by
-  `DefaultEntityRegistry`; frozen `ContentCatalogue`s and a rule-based `ContentValidator`. ESLint
-  enforces the core module rings. Tests beside every file plus `entities/playerScenarios.test.ts`.
-- Checks run (Node 22, `npm_config_engine_strict=false`): see the PR for the final
-  `npm run check` output after merging the phase branch.
-- Next step: pre-PR gate, then review. Blocked on session B (#13): `MovementSystem`,
-  `DeathSystem`, `InvariantSystem`; owner: sim lane.
+- What was done: entity foundation of sprint 1.2 (SCRUM-16), all as classes, keeping main's
+  `Entity`/`Unit`/`Legend`/`Mob` contract that `feat/sim-kernel` builds on. New family bases
+  `Structure`, `Zone`, `Obstacle`, `Projectile` on a runtime-checked `SpawnContextReader`;
+  `UnitComponentInstaller`; `Collider`, `Vision`, layered shields on `Health`; the characters
+  `Warrior`/`Sentinel`/`Magus` with traits from `01-classes`; `LightMob` + the training dummy only
+  (other mobs: SCRUM-59). One `EntityModule` per family installed by `DefaultEntityRegistry`;
+  frozen `ContentCatalogue`s, rule-based `ContentValidator`, ESLint core module rings.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  227 passed (227)", client "Tests 36 passed (36)", "✓ built", "Documentation check passed.");
+  a trial merge with `feat/sim-kernel` conflicts only in `index.ts`, `index.test.ts` and this log.
+- Next step: pre-PR gate, then review. Session B (#13) adds `MovementSystem`, `DeathSystem`,
+  `InvariantSystem`; owner: sim lane.

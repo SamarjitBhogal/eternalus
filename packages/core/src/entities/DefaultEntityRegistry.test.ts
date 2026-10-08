@@ -14,7 +14,8 @@ import { EntityRegistry } from './EntityRegistry';
 import type { EntityModule } from './EntityRegistry.types';
 import { LegendEntityModule } from './legends/LegendEntityModule';
 import { Warrior } from './legends/Warrior';
-import { Unit } from './Unit';
+import { Mob } from './Mob';
+import { UnitComponentInstaller } from './UnitComponentInstaller';
 import type { UnitSpawnContext } from './Unit.types';
 
 const MAX_DEPTH_BELOW_ENTITY = 3;
@@ -114,10 +115,12 @@ describe('DefaultEntityRegistry', () => {
 
   it('adds a new kind with a class, a content entry and one registry line', () => {
     // 1. The class.
-    class FakeMob extends Unit {
+    class FakeMob extends Mob {
       public readonly kind = 'fake-mob';
 
-      public readonly family = 'mob';
+      protected installComponents(context: unknown): void {
+        new UnitComponentInstaller(this).install(context);
+      }
     }
     // 2. The content entry.
     const fakeDefinition: UnitDefinition = {
@@ -137,6 +140,6 @@ describe('DefaultEntityRegistry', () => {
 
     expect(entity).toBeInstanceOf(FakeMob);
     expect(entity.getComponent(Health).current).toBe(fakeDefinition.baseHealth);
-    expect(depthBelowEntity(FakeMob)).toBe(2);
+    expect(depthBelowEntity(FakeMob)).toBe(MAX_DEPTH_BELOW_ENTITY);
   });
 });

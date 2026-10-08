@@ -1,14 +1,11 @@
-import type { MobKind } from '../content/mobs/mobs.types';
-import type { EntityFamily } from './Entity.types';
 import { Unit } from './Unit';
 
 /** Abstract base for entities of the `mob` family. */
 export abstract class Mob extends Unit {
-  /** The content kind of this class; one of `MobKind`. */
-  public abstract override readonly kind: MobKind;
-
   /** Always `'mob'`. */
-  public readonly family: EntityFamily = 'mob';
+  public override get family(): string {
+    return 'mob';
+  }
 
   /**
    * @param id - Unique id of this entity instance.
