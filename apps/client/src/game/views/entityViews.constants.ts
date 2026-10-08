@@ -1,5 +1,3 @@
-import type { GlyphSpec } from '../engine/render/Renderer.types';
-
 /** Colour of entities that belong to no player team (camps, bosses, obstacles). */
 export const NEUTRAL_ENTITY_COLOR = '#d9d2c3';
 
@@ -14,9 +12,3 @@ export const LEGEND_OUTLINE_COLOR = '#ffffff';
 
 /** How much wider than the Legend its outline is. */
 export const LEGEND_OUTLINE_SCALE = 1.25;
-
-/** Minimap marker for an entity, in CSS pixels. TUNE. */
-export const MINIMAP_ENTITY_GLYPH: GlyphSpec = { shape: 'dot', size: 3 };
-
-/** Minimap marker for a Legend: bigger, so players are easy to find. TUNE. */
-export const MINIMAP_LEGEND_GLYPH: GlyphSpec = { shape: 'dot', size: 5 };

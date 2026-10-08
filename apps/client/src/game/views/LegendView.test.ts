@@ -2,11 +2,7 @@ import type { EntitySnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
-import {
-  LEGEND_OUTLINE_COLOR,
-  MINIMAP_ENTITY_GLYPH,
-  MINIMAP_LEGEND_GLYPH,
-} from './entityViews.constants';
+import { FOCUS_RING_COLOR, LEGEND_OUTLINE_COLOR } from './entityViews.constants';
 import { LegendView } from './LegendView';
 import { TEAM_COLORS } from './MapView.constants';
 
@@ -34,14 +30,13 @@ describe('LegendView', () => {
     ]);
   });
 
-  it('shows a bigger minimap dot than other entities', () => {
+  it("adds the focus ring on top when it is the player's Legend", () => {
     const renderer = new RecordingRenderer();
 
-    new LegendView().drawMinimap({ entity: WARRIOR, position: AT, isFocused: true }, renderer);
+    new LegendView().draw({ entity: WARRIOR, position: AT, isFocused: true }, renderer);
 
-    expect(renderer.calls).toEqual([
-      { op: 'drawGlyph', args: [MINIMAP_LEGEND_GLYPH, AT, TEAM_COLORS.light] },
-    ]);
-    expect(MINIMAP_LEGEND_GLYPH.size).toBeGreaterThan(MINIMAP_ENTITY_GLYPH.size);
+    expect(renderer.calls.at(-1)).toMatchObject({
+      args: [{ shape: 'ring' }, AT, FOCUS_RING_COLOR],
+    });
   });
 });

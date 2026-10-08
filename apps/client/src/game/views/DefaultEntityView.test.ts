@@ -3,11 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { DefaultEntityView } from './DefaultEntityView';
-import {
-  FOCUS_RING_COLOR,
-  MINIMAP_ENTITY_GLYPH,
-  NEUTRAL_ENTITY_COLOR,
-} from './entityViews.constants';
+import { FOCUS_RING_COLOR, NEUTRAL_ENTITY_COLOR } from './entityViews.constants';
 import { TEAM_COLORS } from './MapView.constants';
 
 const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
@@ -53,11 +49,11 @@ describe('DefaultEntityView', () => {
     const view = new DefaultEntityView();
 
     view.draw({ entity: dummy('neutral'), position: AT, isFocused: false }, renderer);
-    view.drawMinimap({ entity: dummy(null), position: AT, isFocused: false }, renderer);
+    view.draw({ entity: dummy(null), position: AT, isFocused: false }, renderer);
 
     expect(renderer.calls).toEqual([
       { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: 0.8 }, AT, NEUTRAL_ENTITY_COLOR] },
-      { op: 'drawGlyph', args: [MINIMAP_ENTITY_GLYPH, AT, NEUTRAL_ENTITY_COLOR] },
+      { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: 0.8 }, AT, NEUTRAL_ENTITY_COLOR] },
     ]);
   });
 });

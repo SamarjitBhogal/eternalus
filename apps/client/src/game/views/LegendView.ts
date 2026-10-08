@@ -1,16 +1,11 @@
 import type { Renderer } from '../engine/render/Renderer';
-import type { GlyphSpec } from '../engine/render/Renderer.types';
 import { DefaultEntityView } from './DefaultEntityView';
 import type { EntityDrawState } from './EntityView.types';
-import {
-  LEGEND_OUTLINE_COLOR,
-  LEGEND_OUTLINE_SCALE,
-  MINIMAP_LEGEND_GLYPH,
-} from './entityViews.constants';
+import { LEGEND_OUTLINE_COLOR, LEGEND_OUTLINE_SCALE } from './entityViews.constants';
 
 /**
  * The placeholder look for Legends (the characters): the default disc with a white outline, so a
- * player stands out among mobs, and a bigger minimap dot. Final class art replaces it later.
+ * player stands out among mobs. Final class art replaces it later.
  */
 export class LegendView extends DefaultEntityView {
   /** Draws the white outline, then the team disc and focus ring on top. */
@@ -22,9 +17,5 @@ export class LegendView extends DefaultEntityView {
       LEGEND_OUTLINE_COLOR,
     );
     super.draw(state, renderer);
-  }
-
-  protected override minimapGlyph(): GlyphSpec {
-    return MINIMAP_LEGEND_GLYPH;
   }
 }

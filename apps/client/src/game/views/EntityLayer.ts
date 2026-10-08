@@ -9,8 +9,8 @@ import type { ViewRegistry } from './ViewRegistry';
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
  * (architecture 08 §8). Positions are interpolated between the previous and current snapshot by
- * `alpha`; an entity that appeared this tick draws where it is (no ghost from the origin). The
- * main view draws back to front by `y`; the minimap draws in snapshot order.
+ * `alpha`; an entity that appeared this tick draws where it is (no ghost from the origin). It
+ * draws back to front by `y`.
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
@@ -47,11 +47,9 @@ export class EntityLayer implements WorldLayer {
     }
   }
 
-  /** Draws every entity's minimap marker. */
-  public drawMinimap(renderer: Renderer): void {
-    for (const state of this.states) {
-      this.views.viewFor(state.entity).drawMinimap(state, renderer);
-    }
+  /** Draws nothing: entity markers on the minimap belong to the minimap work (SCRUM-151). */
+  public drawMinimap(): void {
+    // Intentionally empty; WorldLayer requires the method.
   }
 
   private static positionOf(

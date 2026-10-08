@@ -2,9 +2,9 @@ import type { EntitySnapshot, Snapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
-import type { RecordedCall } from '../engine/render/RecordingRenderer.types';
 import { DefaultViewRegistry } from './DefaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
+import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
 
@@ -28,14 +28,8 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
 class SpyView implements EntityView {
   public readonly drawn: EntityDrawState[] = [];
 
-  public readonly minimap: EntityDrawState[] = [];
-
   public draw(state: EntityDrawState): void {
     this.drawn.push(state);
-  }
-
-  public drawMinimap(state: EntityDrawState): void {
-    this.minimap.push(state);
   }
 }
 
@@ -67,24 +61,21 @@ describe('EntityLayer', () => {
 
     layer.show(null, snapshot(1, [unit('low', 0, 9), unit('high', 0, 1), placeless]), 0, 'low');
     layer.draw(new RecordingRenderer());
-    layer.drawMinimap(new RecordingRenderer());
 
     expect(spy.drawn.map((state) => [state.entity.id, state.isFocused])).toEqual([
       ['high', false],
       ['low', true],
     ]);
-    expect(spy.minimap.map((state) => state.entity.id)).toEqual(['low', 'high']);
   });
 
-  it('draws through the default registry: one glyph per entity on the minimap', () => {
+  it('leaves the minimap alone (entity markers belong to the minimap work)', () => {
     const layer = new EntityLayer(new DefaultViewRegistry());
     const renderer = new RecordingRenderer();
-    const glyphs = (calls: readonly RecordedCall[]): number =>
-      calls.filter((call) => call.op === 'drawGlyph').length;
 
-    layer.show(null, snapshot(1, [unit('a', 1, 1), unit('b', 2, 2), unit('c', 3, 3)]), 0, null);
-    layer.drawMinimap(renderer);
+    layer.show(null, snapshot(1, [unit('a', 1, 1), unit('b', 2, 2)]), 0, null);
+    const asSceneLayer: WorldLayer = layer;
+    asSceneLayer.drawMinimap(renderer);
 
-    expect(glyphs(renderer.calls)).toBe(3);
+    expect(renderer.calls).toEqual([]);
   });
 });
