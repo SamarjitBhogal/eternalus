@@ -1,11 +1,20 @@
 import { describe, expect, it, type Mock, vi } from 'vitest';
 
-import { Renderer } from './Renderer';
-import type { DrawContext } from './Renderer.types';
+import { Canvas2dRenderer } from './Canvas2dRenderer';
+import type { DrawContext } from './Canvas2dRenderer.types';
 
 /** The canvas drawing tools the tests watch. */
 type DrawMethod =
-  'beginPath' | 'closePath' | 'fill' | 'fillRect' | 'lineTo' | 'moveTo' | 'stroke' | 'strokeRect';
+  | 'beginPath'
+  | 'closePath'
+  | 'ellipse'
+  | 'fill'
+  | 'fillRect'
+  | 'lineTo'
+  | 'moveTo'
+  | 'rect'
+  | 'stroke'
+  | 'strokeRect';
 
 /** A pretend canvas plus a spy for each drawing tool. */
 type FakeContext = {
@@ -21,10 +30,12 @@ const createFakeContext = (): FakeContext => {
   const spies = {
     beginPath: vi.fn(),
     closePath: vi.fn(),
+    ellipse: vi.fn(),
     fill: vi.fn(),
     fillRect: vi.fn(),
     lineTo: vi.fn(),
     moveTo: vi.fn(),
+    rect: vi.fn(),
     stroke: vi.fn(),
     strokeRect: vi.fn(),
   };
@@ -43,14 +54,14 @@ const createFakeContext = (): FakeContext => {
  * so the scale is 5 (500 / 100) and there is a 250 px gap on the left ((1000 - 500) / 2).
  * Most tests below use these numbers.
  */
-const createFittedRenderer = (context: DrawContext): Renderer => {
-  const renderer = new Renderer(context);
+const createFittedRenderer = (context: DrawContext): Canvas2dRenderer => {
+  const renderer = new Canvas2dRenderer(context);
   renderer.resize(1000, 500);
   renderer.fitWorld(100, 100);
   return renderer;
 };
 
-describe('Renderer', () => {
+describe('Canvas2dRenderer', () => {
   it('scales and centres the world to fit the screen', () => {
     const renderer = createFittedRenderer(createFakeContext().context);
 
@@ -119,13 +130,55 @@ describe('Renderer', () => {
     expect(spies.beginPath).not.toHaveBeenCalled();
   });
 
-  it('fills a square centred on a world position', () => {
+  it('fills a square glyph sized in world units, centred on a world position', () => {
     const { context, spies } = createFakeContext();
-    createFittedRenderer(context).fillSquare({ x: 50, y: 50 }, 10, '#0000ff');
+    createFittedRenderer(context).drawWorldGlyph(
+      { shape: 'square', size: 10 },
+      { x: 50, y: 50 },
+      '#0000ff',
+    );
 
     // A 10-unit square centred at (50, 50) has its top-left at (45, 45) in the world,
     // which is (250 + 45 x 5, 45 x 5) = (475, 225) on screen, and 10 x 5 = 50 px wide.
-    expect(spies.fillRect).toHaveBeenCalledWith(475, 225, 50, 50);
+    expect(spies.rect).toHaveBeenCalledWith(475, 225, 50, 50);
+    expect(spies.fill).toHaveBeenCalledOnce();
+    expect(context.fillStyle).toBe('#0000ff');
+  });
+
+  it('sizes minimap glyphs in CSS pixels, scaled by the pixel ratio, not the zoom', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = createFittedRenderer(context);
+    renderer.resize(1000, 500, 2);
+    renderer.drawGlyph({ shape: 'dot', size: 4 }, { x: 50, y: 50 }, '#00ff00');
+
+    // A 4 px dot at pixel ratio 2 has a radius of 4 device pixels, whatever the zoom (5x).
+    expect(spies.ellipse).toHaveBeenCalledWith(500, 250, 4, 4, 0, 0, 2 * Math.PI);
+    expect(spies.fill).toHaveBeenCalledOnce();
+  });
+
+  it('outlines ring glyphs instead of filling them', () => {
+    const { context, spies } = createFakeContext();
+    createFittedRenderer(context).drawGlyph({ shape: 'ring', size: 6 }, { x: 0, y: 0 }, '#ff0000');
+
+    expect(spies.stroke).toHaveBeenCalledOnce();
+    expect(spies.fill).not.toHaveBeenCalled();
+    expect(context.strokeStyle).toBe('#ff0000');
+  });
+
+  it('traces diamond glyphs through their four tips', () => {
+    const { context, spies } = createFakeContext();
+    createFittedRenderer(context).drawGlyph(
+      { shape: 'diamond', size: 10 },
+      { x: 0, y: 0 },
+      '#ff0000',
+    );
+
+    // Centre (0, 0) is (250, 0) on screen; the tips are 5 px away.
+    expect(spies.moveTo).toHaveBeenCalledWith(250, -5);
+    expect(spies.lineTo).toHaveBeenCalledWith(255, 0);
+    expect(spies.lineTo).toHaveBeenCalledWith(250, 5);
+    expect(spies.lineTo).toHaveBeenCalledWith(245, 0);
+    expect(spies.closePath).toHaveBeenCalledOnce();
   });
 
   it('fits the world inside one area of the screen', () => {
@@ -171,13 +224,13 @@ describe('Renderer', () => {
     const renderer = createFittedRenderer(context);
     // Show a square 100 x 100 part of the world on the wide 1000 x 500 screen.
     renderer.showWorldArea({ x: 0, y: 0, width: 100, height: 100 });
-    renderer.fillSquare({ x: 50, y: 50 }, 10, '#0000ff');
+    renderer.drawWorldGlyph({ shape: 'square', size: 10 }, { x: 50, y: 50 }, '#0000ff');
 
     // Left-right is stretched 10x (1000 / 100) but up-down only 5x (500 / 100),
     // so the whole area still fills the screen...
     expect(renderer.toScreen({ x: 100, y: 100 })).toEqual({ x: 1000, y: 500 });
     // ...and a square is drawn twice as wide as it is tall (100 x 50 px).
-    expect(spies.fillRect).toHaveBeenCalledWith(450, 225, 100, 50);
+    expect(spies.rect).toHaveBeenCalledWith(450, 225, 100, 50);
   });
 
   it('returns null when the canvas has no 2D context', () => {
@@ -185,6 +238,6 @@ describe('Renderer', () => {
     const canvas = { getContext: () => null } as unknown as HTMLCanvasElement;
 
     // The renderer says "can't draw" instead of crashing.
-    expect(Renderer.fromCanvas(canvas)).toBeNull();
+    expect(Canvas2dRenderer.fromCanvas(canvas)).toBeNull();
   });
 });

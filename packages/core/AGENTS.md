@@ -12,29 +12,37 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 ## Folders
 
+**Today** core contains `components/`, `content/maps/`, `entities/`, `map/`, `teams/` and `utils/`
+(the first entities and the generated map, Sprint 1). The other folders below are the **planned**
+layout; create them as code is added.
+
+| Folder          | Holds                                                               | May import                                |
+| --------------- | ------------------------------------------------------------------- | ----------------------------------------- |
+| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs   | `content/`, `utils/` and `teams/` (types) |
+| `teams/`        | `PlayableTeam` and `Team`, shared by every layer                    | nothing                                   |
+| `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers | `content/`, `teams/`, `utils/`            |
+| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants             | `utils/` only                             |
+| `components/`   | Data owned by entities (`Transform`, `Movement`)                    | `utils/`, `content/`, `teams/` (types)    |
+| `entities/`     | `Entity` root class and factories                                   | `components/`, `content/`, ...            |
+| `commands/`     | `Command` union and `applyCommand`                                  | `state/`, `entities/`, `utils/`           |
+| `state/`        | `GameState`, `GameEvents`, `GameSnapshot`                           | lower layers                              |
+| `systems/`      | Per-tick logic implementing `System`. Never import another system.  | everything except `ai/`                   |
+| `ai/`           | Bot controllers. They only return `Command`s.                       | `state/`, `commands/`, `utils/`           |
+| `Simulation.ts` | Composes everything; the only thing the client drives               | everything                                |
+
+These import rules are checked in review.
+
+## Module rings
+
 Core is **L2 Domain**, the innermost layer of the program (`docs/architecture/01-layered-oop-model.md`):
 it imports nothing outside itself, and the client depends on it, never the reverse. Inside core,
-modules form rings from the inside out: `utils/` and `teams/`, then `content/`, then `components/`,
-then `entities/`, then `systems/`, `state/`, `commands/`, `ai/` and `Simulation.ts`. A module may
-import its own ring and the rings inside it, never one further out; ESLint enforces this
-(`eslint.config.js`, "Core module rings" in `docs/process/guardrails.md`). Folders not built yet
-are created as code is added.
-
-| Folder          | Holds                                                                                                   | May import                                    |
-| --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs; `ContentCatalogue` and `validation/` | `content/`, `utils/`, `teams/` (types)        |
-| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants                                                 | `utils/` only                                 |
-| `teams/`        | The `Team` / `PlayableTeam` types                                                                       | `teams/`, `utils/`                            |
-| `components/`   | Data owned by entities (`Transform`, `Movement`)                                                        | `utils/`, `teams/`, `content/`                |
-| `entities/`     | `Entity` root, families, concrete kinds, registry and factory                                           | `components/`, `content/`, `teams/`, `utils/` |
-| `commands/`     | `Command` union and `applyCommand`                                                                      | `state/`, `entities/`, `utils/`               |
-| `state/`        | `GameState`, `GameEvents`, `GameSnapshot`                                                               | lower layers                                  |
-| `systems/`      | Per-tick logic implementing `System`. Never import another system.                                      | everything except `ai/`                       |
-| `ai/`           | Bot controllers. They only return `Command`s.                                                           | `state/`, `commands/`, `utils/`               |
-| `Simulation.ts` | Composes everything; the only thing the client drives                                                   | everything                                    |
-
-ESLint enforces the rules for `utils/`, `teams/`, `content/`, `components/` and `entities/`; the rest
-are checked in review.
+modules form rings from the inside out: `utils/` and `teams/`, then `content/`, then
+`components/`, then `entities/`, then `systems/`, `state/`, `commands/`, `ai/` and
+`Simulation.ts`. A module may import its own ring and the rings inside it, never one further out.
+ESLint enforces this for `utils/`, `teams/`, `content/`, `components/` and `entities/`
+(`eslint.config.js`, "Core module rings"). A failure reads
+`'../entities/Unit' import is restricted ... content is an inner module of core`; fix it by moving
+the code outward or passing the data in from the outer module.
 
 ## Adding code
 
@@ -50,7 +58,7 @@ are checked in review.
 
 - Each test sits next to its source file: `src/systems/MovementSystem.ts` +
   `src/systems/MovementSystem.test.ts`. Test files are excluded from the published types.
-- `src/index.test.ts` checks exactly which runtime values the public API exports.
-- `src/entities/playerScenarios.test.ts` plays player stories through the real entity layer.
+- `src/index.test.ts` pins the public API surface (the runtime exports of `src/index.ts`);
+  update it in the same change whenever an export is added or removed.
 - Coverage thresholds (80% lines/branches/functions/statements) live in `vitest.config.ts` and
   only go up.

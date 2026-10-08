@@ -1,4 +1,4 @@
-import type { WorldPoint, WorldRect } from './Renderer.types';
+import type { WorldPoint, WorldRect } from './render/Renderer.types';
 
 /**
  * Decides which part of the world is on screen. It looks at a centre point and shows a fixed

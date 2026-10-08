@@ -35,9 +35,27 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
 
+- [ ] **DEC-15 — camp weights by depth (DISC-42) in practice.** The default map yields 4 light +
+      2 heavy camps per side and no medium ones; with one camp per corridor (`numLanes` ≥ 7) every
+      camp is heavy. Proposal: keep depth-based weights but define the classes by position in the
+      corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
+      class in content. Pick one. Note: "depth" is the distance to the nearest lane over half the
+      corridor's height, so in tall worlds with steep lanes every camp reads as light.
+- [ ] **DEC-16 — tooling: lint ignores agent worktrees.** ESLint's flat config does not read
+      `.gitignore`, so linting from the main checkout also lints every `.worktrees/*` checkout and
+      one unfinished worktree blocks every push from the main checkout. Proposal: add
+      `.worktrees/` and `.claude/worktrees/` to `globalIgnores` in `eslint.config.js` (each
+      worktree is still linted by its own hooks and CI).
+
 ## Requests for the agent
 
-- [ ] _(none open — the S1 work packages are in `docs/agents/prompts/2026-10-03-ultracode-sessions.md`)_
+- [ ] **Session B (from session A, 2026-10-05):** (1) add `utils/deterministicMath.ts`
+      (architecture 01 rule 8); the map code keeps its only `Math.cos`/`Math.sin` in
+      `utils/geometry.ts` `polarPoint` until then. (2) `GameConfig.map` must keep the field names
+      of the local `MapConfig` in `packages/core/src/map/MapGenerator.types.ts`; session A will
+      then delete the local type (both are exported as `MapConfig`, so the swap must happen in one
+      change). (3) The map's nav cell size is content (`DEFAULT_MAP_LAYOUT.navCellSize`) until it
+      has a `GameConfig` home.
 
 ## Feedback
 
@@ -45,6 +63,9 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Done
 
+- 2026-10-06 — **DEC-14** (map generator refinements a–d) signed off by the owner; recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and folded into
+  `docs/architecture/06-map-and-minimap.md`. Branch `feat/map-generator` (PR #8).
 - 2026-10-03 — **DEC-01…DEC-10 and the discrepancy answers** recorded in
   `docs/reference/game-design/13-owner-decisions-log.md`; plan re-cut to four two-week sprints
   ending 2026-11-27 (`docs/plan/README.md` §0); ADR 0004/0006/0009 statuses updated; 32

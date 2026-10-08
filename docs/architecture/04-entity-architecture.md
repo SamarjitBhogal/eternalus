@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -143,7 +143,7 @@ fields. Each component guards its own invariants so a bug shows up where it happ
 | `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`   | cooldown never negative                                                  | `canAttack(tick)`, `setTarget`, `beginAttack`                                                     |
 | `Abilities`     | `slots: Record<AbilitySlot, AbilityRuntime>`                                     | one runtime per slot                                                     | `runtime(slot)`, `forEachReady`                                                                   |
 | `Progression`   | `xp`, `level`, `curveId`                                                         | level never decreases; xp ≥ 0                                            | `addXp(amount) → levelsGained`                                                                    |
-| `Team`          | `team: TeamId`                                                                   | transitions emit `team-changed`                                          | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                         |
+| `Team`          | `team: Team` (type from `teams/teams.types.ts`)                                  | transitions emit `team-changed`                                          | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                         |
 | `Collider`      | `shape: Circle \| ConvexPolygon`, `layer`, `isSolid`                             | shape convex                                                             | `bounds()`                                                                                        |
 | `StatusEffects` | `active: StatusEffectRuntime[]`                                                  | stacks ≤ `maxStacks`; no duplicates when `stacking: 'refresh'`           | `apply(definition, sourceId, tick)`, `expire`, `has(flag)`                                        |
 | `Carry`         | `carriedId: EntityId \| null`, `maxWeight`, `pickUpStrategy`                     | carried entity exists and is carryable                                   | `canCarry(target)`, `pickUp`, `release`                                                           |
@@ -185,7 +185,7 @@ export type EntityDefinitionBase = {
   readonly displayName: string; // 'Warrior (formerly Assault)' lives here, not in code
   readonly extends?: string; // single parent, same family
   readonly sprite: SpriteRef;
-  readonly minimapGlyph: MinimapGlyphId;
+  readonly minimapGlyph?: MinimapGlyph; // 06 §8; absent = DEFAULT_MINIMAP_GLYPH
 };
 
 export type LegendDefinition = EntityDefinitionBase & {

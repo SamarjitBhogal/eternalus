@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-03
+last-reviewed: 2026-10-06
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,12 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-10-06 (INBOX DEC-14, map generator)
+
+| ID     | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Affects                                                                                                                           |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-14 | **All four map-generator refinements signed off** (2026-10-06), so they are now the design: (a) `campsPerSide` is split as evenly as possible over the corridors, leftovers to the middle ones, never rejected for not dividing; (b) presets give a lane profile, a symmetric rift width profile and west out-of-bounds polygons in fractions of the world, never per-lane paths; (c) exits are spread evenly over an arc, one gate centred on each, walls fill the rest, a minimum gate opening rejects configs whose turrets would seal a gate, lanes leave each gate straight for an apron; (d) lanes are traced for Light and mirrored, and `WorldMap` reference-counts footprint stamps over a separate terrain layer. | `docs/architecture/06-map-and-minimap.md` (folded into §1–§8), ADR 0009 status, `docs/reviews/2026-10-05-map-code-audit.md` §4/§6 |
 
 ## Batch 2026-10-03 (INBOX DEC-01…DEC-10 and the discrepancy answers)
 

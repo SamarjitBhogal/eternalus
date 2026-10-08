@@ -107,6 +107,55 @@ The example below is fenced so it is not read as a real entry.
   start sessions B and D (then A, F, E, G; C after B; H in week 2) per the prompts file; close
   `copilot/implement-entity-modules` with the review-R text; answer DEC-11…DEC-13.
 
+### 2026-10-05 — Phase 1 / sprint 1.3 (session A) — feat/map-generator — sholtzman + Claude Code
+
+- What was done: audited the merged `feat/map`/`feat/map-view` code
+  (`docs/reviews/2026-10-05-map-code-audit.md`). Replaced the hand-traced `MAP_1` with a pure,
+  deterministic `MapGenerator` + `MapBuilder` (strongholds, lanes, towers on `t` bands, wall
+  ring with a gate per lane and turrets, camps by depth per DISC-42, capture points with the
+  Cathedral on the middle lane, a symmetric rift with a bridge gap per lane, seeded obstacles),
+  the `teams/` module, the `map-1` preset (fractions of the world, lane profile, rift width
+  profile) and the `WorldMap` walkability grid. Client: `Renderer` port + `Canvas2dRenderer`,
+  `RecordingRenderer`, glyph-based map and minimap drawing. An independent reviewer agent
+  checked the branch against the base-commit architecture. Its findings F1–F18 (sealed gates at
+  7+ lanes, leaky walls, an asymmetric default map and others) were fixed and recorded in audit
+  §6. Architecture 02 and 06 (§10), the core and client `AGENTS.md`, sprint 1.3 checkboxes,
+  INBOX (DEC-14–DEC-16, requests to session B) and the PR description
+  (`docs/changelog/pr-feat-map-generator.md`) were updated.
+- Checks run (worktree `.worktrees/map-generator`, Node 24.21.0): `npm run check` → exit 0.
+  "All matched files use Prettier code style!"; lint clean; typecheck clean; knip clean apart
+  from the existing configuration hint "@eternalus/core apps/client knip.json Remove from
+  ignoreDependencies"; core "Test Files 8 passed (8) / Tests 91 passed (91)", coverage
+  statements 97.92 %, branches 86.26 %; client "Test Files 7 passed (7) / Tests 36 passed (36)",
+  statements 80.78 %, branches 74.35 %; "✓ built"; "Checked 93 Markdown files under docs/.
+  Documentation check passed."
+- Next step: push `phase/1-simulation-kernel-and-world` (from `main`) and `feat/map-generator`,
+  open the PR into the phase branch with reviewer Aryan Walanj. The owner answers DEC-14–DEC-16.
+  Once session B lands `config/`, swap the local `MapConfig`/`DEFAULT_MAP_CONFIG` for
+  `GameConfig` (owner: sholtzman).
+
+### 2026-10-05 — Phase 1 / sprint 1.3 (session A, re-review) — feat/map-generator — sholtzman + Claude Code
+
+- What was done: the reviewer's second pass found that at aspect ratios other than 16:9, lanes
+  could run back through their own wall ring (N1). Lanes now leave each gate straight through
+  a 20-unit apron and only bend eastwards. The validator rejects lanes that run west or through
+  walls, turrets or Strongholds. Seeds are limited to 0…2³²−1 and lane profiles are validated.
+  Corrected overstated wording (world size, the B1 argument, which DEC-14 items were judged
+  better) in the audit §6, INBOX DEC-14/15, arch 06 §10 and the PR description. The golden map
+  hash changed on purpose (lane apron).
+- Checks run: `npm run check` → exit 0. "All matched files use Prettier code style!"; lint,
+  typecheck clean; knip clean apart from the existing configuration hint; core "Test Files 8
+  passed (8) / Tests 96 passed (96)", statements 97.84 %, branches 87.03 %; client "Test Files
+  7 passed (7) / Tests 36 passed (36)", statements 80.78 %, branches 74.35 %; "✓ built";
+  "Checked 93 Markdown files under docs/. Documentation check passed."
+- Next step: unchanged from the entry above (push both branches, open the PR with reviewer
+  Aryan Walanj; the owner answers DEC-14–DEC-16).
+- Follow-up (same day): the reviewer's targeted N1 check confirmed the fix (all probed worlds
+  generate, lanes never touch a wall, turret or Stronghold, every lane connects). Its two nits
+  were fixed: `wallRing.laneApron` is now validated (the rule had not been applied; the new test
+  fails without it), and a test title no longer claims "any world size". `npm run check` → exit
+  0; core "Tests 97 passed (97)", client "Tests 36 passed (36)"; "Documentation check passed."
+
 ### 2026-10-05 — Phase 1 / sprint 1.2 — refactor/implement-entity-modules — SamarjitBhogal + Claude Code
 
 - What was done: ported `packages/core/src/entities/*.js` one-to-one to TypeScript (`Entity`, `Unit`, `Legend`, `Mob`, `EntityRegistry`, `EntityFactory`, plus `Entity.types.ts` and `EntityRegistry.types.ts`) with `.test.ts` ports of every JS test and a few added cases; deleted the JS files; reverted `packages/core/vitest.config.ts` to `.ts`-only globs. Added `npm run check:no-js` (`scripts/checks/no-js.mjs`): fails on any tracked/staged `.js`/`.jsx`/`.mjs`/`.cjs` except `eslint.config.js` and `scripts/**/*.mjs`; it runs in `check:quick` (git hooks), `check` and CI. Documented in `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, `docs/process/guardrails.md`.
@@ -118,6 +167,23 @@ The example below is fenced so it is not read as a real entry.
 - What was done: addressed the PR #4 review on entity ids. `EntityFactory.create(kind, definitionId, spawnContext)` no longer takes an id; the factory assigns `entity-<n>` from a per-factory counter (`EntityFactory.constants.ts`), so ids are unique per match and deterministic for replays (no `Math.random`). Added a test for sequential, per-factory ids.
 - Checks run: `npm run check` → exit 0 (core 21/21 tests, 100% coverage).
 - Next step: wire concrete entity kinds and content definitions into the registry; owner: sim lane.
+
+### 2026-10-06 — Phase 1 / sprint 1.3 (session A, docs) — feat/map-generator — sholtzman + Claude Code
+
+- What was done: the owner signed off DEC-14 (the four map-generator refinements the critic
+  judged better than architecture 06); recorded in the decisions log and INBOX. A first
+  automated doc sweep corroded the docs (target designs replaced by interim code, tuning values
+  copied into architecture 06) and was reverted before commit. Redone surgically: architecture 06
+  §2–§6 now carry DEC-14 as design text and §10 lists only interim items; 32 other living docs got
+  minimal corrections (contract type names, superseded design, stale "no code yet" claims), each
+  checked by an independent reviewer against OG-12 (`chore/pre-pr-gate`). No record was edited.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 97 passed (97)", client "Tests 36 passed (36)"; "✓ built"; "Documentation check passed."
+- Next step: the human pushes `feat/map-generator`; run the new pre-PR gate's ponytail step on
+  PR #8; merge `main` (now with PR #9) into the phase branch and resolve any conflict.
+- Follow-up (same day): pre-PR gate run on this branch. Ponytail review of the code diff: one cut
+  applied (single keep-out zone), one reverted as longer, two kept for the architecture and the
+  brief; `npm run check` → exit 0 (core 97/97, client 36/36). Gate results in the PR description.
 
 ### 2026-10-06 — Process / pre-PR gate — chore/pre-pr-gate — sholtzman + Claude Code
 
@@ -146,18 +212,31 @@ The example below is fenced so it is not read as a real entry.
 - Next step: the human pushes the phase branch; start the Sprint 1 sessions per
   `docs/agents/prompts/2026-10-03-ultracode-sessions.md`.
 
+### 2026-10-07 — Phase 1 / sprint 1 integration — feat/map-generator, chore/pre-pr-gate, docs/inbox-decisions-2026-10-03 — sholtzman + Claude Code
+
+- What was done: resolved the merge conflicts of PR #5 (`docs/inbox-decisions-2026-10-03` →
+  `main`), PR #10 (`chore/pre-pr-gate` → `main`) and PR #8 (`feat/map-generator` →
+  `phase/1-simulation-kernel-and-world`) with merge commits, no rebase and no force. This log
+  keeps every entry from both sides verbatim, oldest first; `guardrails.md` takes 2026-10-06 and
+  `main`'s updated pre-commit row. In #8, `components/TeamMembership.ts` now takes `Team` from
+  `teams/teams.types.ts` (#8 moved the team type out of `maps.types.ts`), and
+  `packages/core/AGENTS.md` lists the folders that exist after the merge.
+- Checks run: `npm run check` → `EXIT=0` on each merged branch: #5 and #10 core "Tests 37 passed
+  (37)", client "Tests 27 passed (27)"; #8 core "Tests 127 passed (127)", client "Tests 36 passed
+  (36)"; "Documentation check passed." on all three.
+- Next step: Sam pushes the three branches, merges #5 then #10 into `main` (merge commits) and #8
+  into the phase branch; `feat/sim-kernel` (#13) re-syncs with the phase branch after #8.
+
 ### 2026-10-07 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
 
-- What was done: entity half of sprint 1.2 (session C items 1–4, 6), all as classes. `Collider`
-  (circle); `Health` layered shields (5500 example); `Entity` API renamed to doc 04; `Unit` installs
-  its components from a runtime-checked `UnitSpawnContext`; `Warrior`/`Sentinel`/`Magus`,
-  `Light`/`Medium`/`HeavyMob`; `DefaultEntityRegistry`; content `legends/*`, `mobs/*`,
-  `training-dummy` in frozen `ContentCatalogue`s; `ContentValidator` + rule classes replace
-  `validateContent()`. ESLint now enforces the core module rings (guardrails, core `AGENTS.md`).
-  `teams/teams.types.ts` is byte-identical to `feat/map-generator`. Tests beside every file plus
-  `entities/playerScenarios.test.ts` (player stories).
-- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (Prettier clean,
-  lint/typecheck/knip clean, core "Tests 117 passed (117)" at 100%, client "Tests 27 passed (27)",
-  "✓ built", "Documentation check passed.").
-- Next step: pre-PR gate, then PR into the phase branch. Blocked on session B: `MovementSystem`,
-  `DeathSystem`, `InvariantSystem`, `IdGenerator`/`ObjectPool`; owner: sim lane.
+- What was done: entity foundation of sprint 1.2 (SCRUM-16), all as classes. Every family base:
+  `Unit`, `Legend`, `Mob`, `Structure`, `Zone` (abstract), `Obstacle`, `Projectile` on one
+  runtime-checked `SpawnContextReader`; `Collider`, `Vision`, layered shields on `Health`; the
+  characters `Warrior`/`Sentinel`/`Magus` with traits from `01-classes`; `LightMob` + the
+  training dummy only (other mobs: SCRUM-59). One `EntityModule` per family installed by
+  `DefaultEntityRegistry`; frozen `ContentCatalogue`s and a rule-based `ContentValidator`. ESLint
+  enforces the core module rings. Tests beside every file plus `entities/playerScenarios.test.ts`.
+- Checks run (Node 22, `npm_config_engine_strict=false`): see the PR for the final
+  `npm run check` output after merging the phase branch.
+- Next step: pre-PR gate, then review. Blocked on session B (#13): `MovementSystem`,
+  `DeathSystem`, `InvariantSystem`; owner: sim lane.
