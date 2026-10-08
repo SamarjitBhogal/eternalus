@@ -1,3 +1,5 @@
+import type { PlayerChoice } from './Match.types';
+
 /** Colour behind the map, only visible if the view ever reaches past the map's edges. */
 export const BACKGROUND_COLOR = '#2b2620';
 
@@ -12,6 +14,9 @@ export const FOLLOW_VIEW_WIDTH = 64;
 
 /** How much of the world the following camera shows top to bottom (16:9 with the width). TUNE. */
 export const FOLLOW_VIEW_HEIGHT = 36;
+
+/** The player's choices until match setup (session E) provides them. */
+export const PLACEHOLDER_PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 
 /** The match seed until match setup (session E) chooses one. */
 export const PLACEHOLDER_MATCH_SEED = 1;

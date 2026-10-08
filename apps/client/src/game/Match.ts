@@ -1,4 +1,10 @@
-import type { EntityId, MapDefinition, Snapshot, Vec2 } from '@eternalus/core';
+import {
+  type EntityId,
+  makeLogRecord,
+  type MapDefinition,
+  type Snapshot,
+  type Vec2,
+} from '@eternalus/core';
 
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
@@ -20,7 +26,7 @@ import { SceneView } from './views/SceneView';
 export class Match implements LoopTarget {
   private readonly loop: GameLoop;
 
-  private readonly entities = new EntityLayer(new DefaultViewRegistry());
+  private readonly entities: EntityLayer;
 
   private readonly scene: SceneView;
 
@@ -48,7 +54,20 @@ export class Match implements LoopTarget {
    * @throws Error when the map has no stronghold for the player's team.
    */
   public constructor(private readonly deps: MatchDeps) {
-    const { simulation, map, tickRate, scheduler, camera, player } = deps;
+    const { simulation, map, tickRate, scheduler, camera, player, logger } = deps;
+    // Find the spawn point first: if the map has none, nothing has been subscribed yet.
+    const spawnPoint = Match.strongholdOf(map, player.team);
+    this.entities = new EntityLayer(
+      new DefaultViewRegistry((kind) => {
+        logger.log(
+          makeLogRecord(
+            'WARN',
+            'client.views',
+            `No view for kind "${kind}"; drawing the default view.`,
+          ),
+        );
+      }),
+    );
     this.scene = new SceneView([new MapView(map), this.entities]);
     this.miniMap = new MiniMapView(map, this.scene);
     const tickMs = 1000 / tickRate;
@@ -62,7 +81,6 @@ export class Match implements LoopTarget {
       }
     });
 
-    const spawnPoint = Match.strongholdOf(map, player.team);
     simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: player.legend,
@@ -136,7 +154,10 @@ export class Match implements LoopTarget {
     return true;
   }
 
-  /** Stops the loop and the event subscription. The owner destroys the renderer and camera. */
+  /**
+   * Stops the loop and the event subscription. The renderer and camera are injected, so their
+   * owner (`useMatch`) destroys them.
+   */
   public destroy(): void {
     this.loop.destroy();
     this.stopListening();
@@ -147,16 +168,17 @@ export class Match implements LoopTarget {
       return;
     }
     const { move } = this.deps.input.read();
+    const isMoving = move.x !== 0 || move.y !== 0;
+    // Any movement brings the camera back to the player, even a key held since before a click.
+    this.isFollowing ||= isMoving;
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
       return;
     }
-    const isMoving = move.x !== 0 || move.y !== 0;
     this.deps.simulation.enqueueCommand(
       isMoving
         ? { type: 'move', actorId: this.playerId, direction: move }
         : { type: 'stop', actorId: this.playerId },
     );
-    this.isFollowing ||= isMoving;
     this.lastMove = move;
   }
 

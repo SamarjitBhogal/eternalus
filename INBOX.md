@@ -120,6 +120,12 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
       Also proposed: ADR 0013 (core module rings lint).
 
+- [ ] **Session H → Sam and session F (2026-10-07, PR #18): two notes, no pressure.** (1) The log
+      sinks (`SinkLogger`, `ConsoleSink`, `RingBufferSink`) are new files in
+      `apps/client/src/data/logging/`, where 15 §4 puts them; that folder is session F's, so F
+      should know they exist. (2) `GameLoop`'s first frame only sets the time origin, so 08 §3's
+      `runFrames(2, 16.7)` example gives 0 ticks, not 1 (recorded in 08 §11). OK to keep?
+
 ## Feedback
 
 - [ ] _(none yet)_

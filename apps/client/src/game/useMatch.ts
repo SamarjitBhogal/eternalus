@@ -14,6 +14,7 @@ import {
   FOLLOW_VIEW_WIDTH,
   LOG_RING_CAPACITY,
   PLACEHOLDER_MATCH_SEED,
+  PLACEHOLDER_PLAYER,
 } from './Match.constants';
 
 /**
@@ -31,6 +32,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
     }
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, PLACEHOLDER_MATCH_SEED);
+    // The match points the camera at the player's spawn, so its start point does not matter.
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
     // Warnings and worse reach the console; everything is kept for bug reports and the overlay.
     const logger = new SinkLogger(
@@ -40,21 +42,30 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
         { sink: new RingBufferSink(LOG_RING_CAPACITY), minSeverity: SEVERITY.TRACE },
       ],
     );
-    const match = new Match({
-      simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger }),
-      map,
-      tickRate: config.tickRate,
-      scheduler: new RafFrameScheduler({
-        requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),
-        cancelAnimationFrame: (handle) => {
-          window.cancelAnimationFrame(handle);
-        },
-      }),
-      renderer,
-      camera,
-      input: new IdleIntentSource(),
-      player: { legend: 'warrior', team: 'light' },
-    });
+    let match: Match;
+    try {
+      match = new Match({
+        simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger }),
+        map,
+        tickRate: config.tickRate,
+        scheduler: new RafFrameScheduler({
+          requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),
+          cancelAnimationFrame: (handle) => {
+            window.cancelAnimationFrame(handle);
+          },
+        }),
+        renderer,
+        camera,
+        input: new IdleIntentSource(),
+        player: PLACEHOLDER_PLAYER,
+        logger,
+      });
+    } catch (error) {
+      // Nothing else was created yet: release what was, then let the error surface.
+      renderer.destroy();
+      camera.destroy();
+      throw error;
+    }
 
     const resize = (): void => {
       const pixelRatio = window.devicePixelRatio;

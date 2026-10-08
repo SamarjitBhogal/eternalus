@@ -331,8 +331,10 @@ The example below is fenced so it is not read as a real entry.
   `Camera` follow, zoom, culling and world↔screen; `Match` composition root with the player's
   Warrior at the Light stronghold and an `IntentSource` port; `useMatch` replaces `useMapCanvas`;
   `SinkLogger`, `ConsoleSink`, `RingBufferSink`. Minimap untouched (SCRUM-151, Aryan); keyboard
-  left to session F. 08 §11 records the interim differences.
+  left to session F. 08 §11 records the interim differences. After the pre-PR critic: cleanup
+  is proven by tests, unknown kinds are logged once, and the GameLoop and Logger sinks plan items
+  stay open (the Clock is session D's; the overlay cannot read the ring buffer yet).
 - Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
-  449 passed (449)", client "Tests 81 passed (81)", "✓ built", "Documentation check passed.").
+  449 passed (449)", client "Tests 83 passed (83)", "✓ built", "Documentation check passed.").
 - Next step: pre-PR gate, then the PR (after #14 and #17); input session F for WASD; owner:
   claudiodh.

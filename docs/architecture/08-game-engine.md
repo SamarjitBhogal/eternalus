@@ -296,6 +296,14 @@ interim differences, each closed by the session named:
   input session F); no `InputMapper`, `MatchBridge` or `PerfMonitor` yet, and no `MatchScreen`
   (sessions D, E, G). `GameCanvas` owns the `Match` through `useMatch`, which replaced
   `useMapCanvas`. The player's Legend spawns with a `dev-spawn` command until `SpawnSystem` exists.
+- The first frame after `start()` only sets the time origin (elapsed 0), so §3's
+  `runFrames(2, 16.7)` gives no tick until the second frame's elapsed time adds up; this avoids
+  counting the time between `start()` and the first real frame. Owner sign-off asked in `INBOX.md`.
+- `Match.destroy()` stops the loop and its subscription; the renderer and camera are injected, so
+  `useMatch` (their owner) destroys them, including when the `Match` constructor throws.
+  `EntityLayer` does not cull yet (`Camera.contains` exists for it).
+- The log sinks live in `apps/client/src/data/logging/` as 15 §4 places them; session F owns
+  `data/**` (new files only, noted in `INBOX.md`). The overlay cannot read the `RingBufferSink` yet.
 - `Canvas2dRenderer` scales X and Y separately, so a window that is not 16:9 stretches the
   following camera's 64 × 36 m view.
 

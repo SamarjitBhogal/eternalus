@@ -3,11 +3,12 @@ import {
   type InputIntent,
   type MapDefinition,
   MapGenerator,
+  MemoryLogger,
   NullLogger,
   Simulation,
   type Vec2,
 } from '@eternalus/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
@@ -36,6 +37,16 @@ const setUp = (map?: MapDefinition) => {
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
+  const logger = new MemoryLogger();
+  const unsubscribes = { count: 0 };
+  const subscribe = simulation.on.bind(simulation);
+  vi.spyOn(simulation, 'on').mockImplementation((type, handler) => {
+    const unsubscribe = subscribe(type, handler);
+    return () => {
+      unsubscribes.count += 1;
+      unsubscribe();
+    };
+  });
   const match = new Match({
     simulation,
     map: generated,
@@ -45,12 +56,24 @@ const setUp = (map?: MapDefinition) => {
     camera,
     input,
     player: { legend: 'warrior', team: 'light' },
+    logger,
   });
   match.resize(1280, 720, 1);
   const lightStronghold = generated.features.find(
     (feature) => feature.kind === 'stronghold' && feature.team === 'light',
   );
-  return { match, simulation, scheduler, renderer, camera, input, map: generated, lightStronghold };
+  return {
+    match,
+    simulation,
+    scheduler,
+    renderer,
+    camera,
+    input,
+    logger,
+    unsubscribes,
+    map: generated,
+    lightStronghold,
+  };
 };
 
 const playerX = (match: Match): number =>
@@ -153,8 +176,8 @@ describe('Match', () => {
     expect(camera.visibleArea(map.width, map.height)).not.toEqual(lookedAt);
   });
 
-  it('stops the loop and its subscription on destroy', () => {
-    const { match, scheduler, simulation } = setUp();
+  it('stops the loop and its subscription on destroy: 0 scheduled frames, 0 listeners', () => {
+    const { match, scheduler, simulation, unsubscribes } = setUp();
     match.start();
 
     match.destroy();
@@ -162,6 +185,43 @@ describe('Match', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
+    expect(unsubscribes.count).toBe(1);
+  });
+
+  it('logs once for each kind it has to draw with the default view', () => {
+    const { match, simulation, logger } = setUp();
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'light-mob',
+      definitionId: 'training-dummy',
+      team: 'dark',
+      at: { x: 100, y: 100 },
+      count: 2,
+    });
+    match.tick();
+
+    match.render(0);
+    match.render(0);
+
+    expect(
+      logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
+    ).toEqual([
+      ['WARN', 'client.views', 'No view for kind "light-mob"; drawing the default view.'],
+    ]);
+  });
+
+  it('follows again when the player keeps moving after a minimap click', () => {
+    const { match, camera, input, map } = setUp();
+    match.tick();
+    input.move = { x: 1, y: 0 };
+    match.tick();
+
+    match.lookAtMinimapPoint(1280 * 0.8, 720 * 0.8);
+    const lookedAt = camera.visibleArea(map.width, map.height);
+    match.tick();
+    match.render(0);
+
+    expect(camera.visibleArea(map.width, map.height)).not.toEqual(lookedAt);
   });
 
   it('refuses a map without a stronghold for the player team', () => {
@@ -171,6 +231,24 @@ describe('Match', () => {
       features: map.features.filter((feature) => feature.team !== 'light'),
     };
 
-    expect(() => setUp(withoutLight)).toThrow(`Map "${map.id}" has no light stronghold`);
+    const config = createDefaultGameConfig();
+    const simulation = new Simulation({ config, seed: SEED, logger: new NullLogger() });
+    const on = vi.spyOn(simulation, 'on');
+
+    expect(
+      () =>
+        new Match({
+          simulation,
+          map: withoutLight,
+          tickRate: config.tickRate,
+          scheduler: new FakeFrameScheduler(),
+          renderer: new RecordingRenderer(),
+          camera: new Camera({ x: 0, y: 0 }, 10, 10),
+          input: new ScriptedIntent(),
+          player: { legend: 'warrior', team: 'light' },
+          logger: new MemoryLogger(),
+        }),
+    ).toThrow(`Map "${map.id}" has no light stronghold`);
+    expect(on).not.toHaveBeenCalled();
   });
 });

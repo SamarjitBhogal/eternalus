@@ -3,7 +3,7 @@ import type { Logger, LogRecord } from '@eternalus/core';
 import type { SinkRoute } from './LogSink.types';
 
 /**
- * The client's `Logger` (architecture 15 §4): stamps each record with the wall-clock time and
+ * The client's `Logger` (architecture 15 §4): stamps each record with the engine clock's time and
  * fans it out to every sink whose severity and scope filters it passes. Core never sees a sink.
  */
 export class SinkLogger implements Logger {

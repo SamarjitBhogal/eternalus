@@ -1,6 +1,7 @@
 import type {
   InputIntent,
   LegendKind,
+  Logger,
   MapDefinition,
   PlayableTeam,
   Simulation,
@@ -20,7 +21,7 @@ export interface IntentSource {
 }
 
 /** Which Legend the player plays and on which team. */
-type PlayerChoice = {
+export type PlayerChoice = {
   readonly legend: LegendKind;
   readonly team: PlayableTeam;
 };
@@ -37,4 +38,6 @@ export type MatchDeps = {
   readonly camera: Camera;
   readonly input: IntentSource;
   readonly player: PlayerChoice;
+  /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
+  readonly logger: Logger;
 };

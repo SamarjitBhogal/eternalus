@@ -174,7 +174,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
 [09-hardware-abstraction.md](../architecture/09-hardware-abstraction.md) and
 [13-game-interface.md](../architecture/13-game-interface.md).
 
-- [x] **`GameLoop` + `FrameScheduler` port + `RafFrameScheduler` + `Clock`** with the
+- [ ] **`GameLoop` + `FrameScheduler` port + `RafFrameScheduler` + `Clock`** with the
       accumulator clamped at `5 × TICK_MS` (existing design). Owner: _. Test: a fake scheduler
       advancing 100 ms yields 3 ticks; a 1 s gap is clamped to 5 ticks; `alpha ∈ [0, 1)`. Done
       when: the loop never touches `requestAnimationFrame` directly.
@@ -203,7 +203,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       bridge; `destroy()` tears everything down). Owner: _. Test: create/destroy leaves 0 live
       listeners and 0 scheduled frames. Done when: `main.tsx` mounts `MatchScreen` behind the
       Redux `Provider`.
-- [x] **Logger sinks**: `ConsoleSink` (the only `console` user, with a named `eslint-disable`
+- [ ] **Logger sinks**: `ConsoleSink` (the only `console` user, with a named `eslint-disable`
       reason) and `RingBufferSink`. Owner: _. Test: records route by severity. Done when: the
       overlay can read the ring buffer.
 
