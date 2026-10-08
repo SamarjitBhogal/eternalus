@@ -1,3 +1,4 @@
+import { cos, sin } from './deterministicMath';
 import type { Polygon, Rect, Vec2 } from './geometry.types';
 
 /** Radians per degree; angles in content are authored in degrees. */
@@ -18,14 +19,12 @@ export const lerpPoint = (a: Vec2, b: Vec2, t: number): Vec2 => ({
 
 /**
  * The point `radius` away from `centre` in direction `angle` (radians, 0 = east, clockwise on
- * screen). This is the only place in the map code that uses `Math.cos`/`Math.sin`.
- *
- * TODO(sholtzman): route through `utils/deterministicMath.ts` once session B adds it
- * (architecture 01 rule 8); the golden-hash test in `MapGenerator.test.ts` catches drift.
+ * screen). The map code's only trigonometry, through `utils/deterministicMath.ts` (ADR 0012); the
+ * golden-hash test in `MapGenerator.test.ts` catches drift.
  */
 export const polarPoint = (centre: Vec2, radius: number, angle: number): Vec2 => ({
-  x: centre.x + Math.cos(angle) * radius,
-  y: centre.y + Math.sin(angle) * radius,
+  x: centre.x + cos(angle) * radius,
+  y: centre.y + sin(angle) * radius,
 });
 
 /** A regular polygon with `sides` corners around `centre`, used as a round footprint. */
