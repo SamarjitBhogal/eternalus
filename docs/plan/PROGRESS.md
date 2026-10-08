@@ -322,3 +322,17 @@ The example below is fenced so it is not read as a real entry.
   449 passed (449)", client "Tests 36 passed (36)", "✓ built", "Documentation check passed.").
 - Next step: Sam decides the `dev-remove-entity` deferral (INBOX); `ObjectPool`, the remaining
   sprint 1.2 invariants and the pre-PR gate; owner: claudiodh.
+
+### 2026-10-07 — Phase 1 / sprints 1.4–1.5 — feat/engine-loop-match — claudiodh + Claude Code
+
+- What was done: session H's first pieces (SCRUM-154), stacked on `feat/entity-systems`.
+  `GameLoop` + `FrameScheduler` port (`RafFrameScheduler`, `FakeFrameScheduler`); entity views
+  (`DefaultEntityView`, `LegendView`), `ViewRegistry`/`DefaultViewRegistry`, `EntityLayer`;
+  `Camera` follow, zoom, culling and world↔screen; `Match` composition root with the player's
+  Warrior at the Light stronghold and an `IntentSource` port; `useMatch` replaces `useMapCanvas`;
+  `SinkLogger`, `ConsoleSink`, `RingBufferSink`. Minimap untouched (SCRUM-151, Aryan); keyboard
+  left to session F. 08 §11 records the interim differences.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 81 passed (81)", "✓ built", "Documentation check passed.").
+- Next step: pre-PR gate, then the PR (after #14 and #17); input session F for WASD; owner:
+  claudiodh.

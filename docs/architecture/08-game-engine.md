@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-07
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -277,6 +277,27 @@ The design keeps the move cheap:
   views, the loop or the renderer.
 - `SharedArrayBuffer` is not planned (needs cross-origin isolation headers); revisit only if
   snapshots exceed the ~10 KiB per message rule of thumb.
+
+## 11. Implementation status
+
+Session H's first pieces (branch `feat/engine-loop-match`) implement §2, §5, §7 and §8 with these
+interim differences, each closed by the session named:
+
+- `FrameScheduler`, `RafFrameScheduler`, `FakeFrameScheduler` and `GameLoop` live in
+  `game/engine/loop/` (session H's folder); the `Clock` is session D's `SessionClock` in
+  `game/engine/time/`. `useMatch` stamps log records with `performance.now()` until it is wired.
+- `Camera` keeps its `lookAt`/`visibleArea` API and adds `track` (smooth follow), `zoomTo`
+  (clamped), `contains` (culling) and `worldToScreen`/`screenToWorld` with an explicit
+  `Viewport`; the `Projection` port and `MinimapProjection` arrive with the minimap work.
+- `ViewRegistry` resolves kind, then family, then `DefaultEntityView`, and reports each unknown kind
+  once; `LegendView` is the placeholder Legend look. Entity markers on the minimap are the
+  minimap work's (SCRUM-151); `EntityLayer.drawMinimap` draws nothing until then.
+- `Match` takes the player's intent through an `IntentSource` port (`IdleIntentSource` until the
+  input session F); no `InputMapper`, `MatchBridge` or `PerfMonitor` yet, and no `MatchScreen`
+  (sessions D, E, G). `GameCanvas` owns the `Match` through `useMatch`, which replaced
+  `useMapCanvas`. The player's Legend spawns with a `dev-spawn` command until `SpawnSystem` exists.
+- `Canvas2dRenderer` scales X and Y separately, so a window that is not 16:9 stretches the
+  following camera's 64 × 36 m view.
 
 ## Related
 

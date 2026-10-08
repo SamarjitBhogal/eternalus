@@ -174,7 +174,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
 [09-hardware-abstraction.md](../architecture/09-hardware-abstraction.md) and
 [13-game-interface.md](../architecture/13-game-interface.md).
 
-- [ ] **`GameLoop` + `FrameScheduler` port + `RafFrameScheduler` + `Clock`** with the
+- [x] **`GameLoop` + `FrameScheduler` port + `RafFrameScheduler` + `Clock`** with the
       accumulator clamped at `5 × TICK_MS` (existing design). Owner: _. Test: a fake scheduler
       advancing 100 ms yields 3 ticks; a 1 s gap is clamped to 5 ticks; `alpha ∈ [0, 1)`. Done
       when: the loop never touches `requestAnimationFrame` directly.
@@ -182,10 +182,10 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       entities, overlay), DPR-aware sizing, integer draw coordinates. Owner: _. Test: a fake 2D
       context records draw calls; the ESLint rule fails a `getContext` call outside
       `Canvas2dRenderer`. Done when: it is the only file that names `CanvasRenderingContext2D`.
-- [ ] **`Camera`** (world ↔ screen, culling rectangle, follow target, zoom clamp). Owner: _.
+- [x] **`Camera`** (world ↔ screen, culling rectangle, follow target, zoom clamp). Owner: _.
       Test: world → screen → world round-trips; the culling rect excludes off-screen points.
       Done when: views never compute screen coordinates themselves.
-- [ ] **`SceneView` + `ViewRegistry` + `EntityView`** (draw order in one place; kind → view).
+- [x] **`SceneView` + `ViewRegistry` + `EntityView`** (draw order in one place; kind → view).
       Owner: _. Test: an unknown kind draws a debug glyph and logs once; adding a kind is one
       registry line. Done when: no `switch` on entity kind exists in `views/`.
 - [ ] **`TerrainView`** (pre-rendered chunks from `MapDefinition`, dirty flags). Owner: _.
@@ -203,7 +203,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       bridge; `destroy()` tears everything down). Owner: _. Test: create/destroy leaves 0 live
       listeners and 0 scheduled frames. Done when: `main.tsx` mounts `MatchScreen` behind the
       Redux `Provider`.
-- [ ] **Logger sinks**: `ConsoleSink` (the only `console` user, with a named `eslint-disable`
+- [x] **Logger sinks**: `ConsoleSink` (the only `console` user, with a named `eslint-disable`
       reason) and `RingBufferSink`. Owner: _. Test: records route by severity. Done when: the
       overlay can read the ring buffer.
 
