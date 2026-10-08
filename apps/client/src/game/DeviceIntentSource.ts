@@ -1,8 +1,8 @@
 import type { InputIntent } from '@eternalus/core';
 
-import type { InputDevice, MutableInputSnapshot } from '../engine/input/InputDevice.types';
-import type { IntentSource } from '../Match.types';
-import type { InputMapper } from './InputMapper';
+import type { InputDevice, MutableInputSnapshot } from './engine/input/InputDevice.types';
+import type { IntentSource } from './Match.types';
+import type { InputMapper } from './input/InputMapper';
 
 /**
  * The player's intent from real devices: each tick it merges what every device holds into one

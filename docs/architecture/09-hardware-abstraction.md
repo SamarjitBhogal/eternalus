@@ -288,10 +288,11 @@ interim differences:
   `KeyboardDevice.test.ts` covers the contract's five rules.
 - `InputMapper` indexes keyboard chords by code itself (no injected `BindingResolver`) and leaves
   `aim` empty until the mouse and `Projection` exist. `toIntent` takes no projection yet.
-- `DeviceIntentSource` merges the devices and feeds `Match` through its `IntentSource` port.
+- `DeviceIntentSource` (in `game/`, beside `Match`) merges the devices and feeds `Match` through its `IntentSource` port.
   `Match` turns the intent's `move` into `move`/`stop` commands itself until core's
   `PlayerController` handles the `intent` command (11 §4.1); see `INBOX.md`.
-- `useMatch` releases the devices on `blur` and hidden `visibilitychange` and binds the `wasd`
+- `useMatch`, not `Match`, releases the devices on `blur` and hidden `visibilitychange` (keeps
+  `Match` free of browser APIs, §10; sign-off asked in `INBOX.md`), and binds the `wasd`
   preset until the settings screen supplies the player's saved bindings.
 
 ## Related

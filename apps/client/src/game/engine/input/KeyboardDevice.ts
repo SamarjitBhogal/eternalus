@@ -1,8 +1,6 @@
 import type { InputDevice, MutableInputSnapshot } from './InputDevice.types';
 import { NEVER_PREVENTED_CODES } from './KeyboardDevice.constants';
 
-const isKeyboardEvent = (event: Event): event is KeyboardEvent => 'code' in event && 'key' in event;
-
 /**
  * The keyboard (architecture 09 §2). Keys are tracked by `KeyboardEvent.code`, the physical key,
  * so bindings work on any layout; `KeyboardEvent.key` is kept as the label. Auto-repeat is ignored.
@@ -51,7 +49,7 @@ export class KeyboardDevice implements InputDevice {
   }
 
   private readonly onKeyDown = (event: Event): void => {
-    if (!isKeyboardEvent(event)) {
+    if (!KeyboardDevice.isKeyboardEvent(event)) {
       return;
     }
     const code = KeyboardDevice.codeOf(event);
@@ -64,7 +62,7 @@ export class KeyboardDevice implements InputDevice {
   };
 
   private readonly onKeyUp = (event: Event): void => {
-    if (isKeyboardEvent(event)) {
+    if (KeyboardDevice.isKeyboardEvent(event)) {
       this.held.delete(KeyboardDevice.codeOf(event));
     }
   };
@@ -73,6 +71,10 @@ export class KeyboardDevice implements InputDevice {
     return (
       this.isBound(code) && !event.ctrlKey && !event.metaKey && !NEVER_PREVENTED_CODES.has(code)
     );
+  }
+
+  private static isKeyboardEvent(event: Event): event is KeyboardEvent {
+    return 'code' in event && 'key' in event;
   }
 
   /** Mobile virtual keyboards send an empty `code`; the key is the best stand-in. */

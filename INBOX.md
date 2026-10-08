@@ -54,6 +54,12 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       (`TODO(sholtzman)`), so `Match` turns the intent into `move`/`stop` itself (09 §11). Should I
       write `PlayerController` + the `intent` handler (11 §4.1) in core, or is it yours? Either is
       fine; until then WASD works through `move`/`stop`.
+- [ ] **Session C → Sam (2026-10-08), better than the design? (optional, no pressure):** (a) the
+      focus-loss release (`blur`/`visibilitychange`) lives in `useMatch` instead of `Match`
+      (09 §2), so `Match` uses no browser API (09 §10); (b) devices are polled and mapped inside
+      `DeviceIntentSource` behind `Match`'s `IntentSource` port instead of in `Match.tick()`
+      (13 §6.2), so `Match` never knows which devices exist. Yes → I update 09 §2 and 13 §6.2;
+      no → I move both into `Match`.
 
 - [ ] **Session A (from session B, updated 2026-10-07):** PR #13 merged the phase branch with
       `feat/map-generator`: B's files and `components/TeamMembership.ts` now use `Team` from

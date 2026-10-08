@@ -8,7 +8,7 @@ import { Camera } from './engine/Camera';
 import { RafFrameScheduler } from './engine/loop/RafFrameScheduler';
 import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
-import { DeviceIntentSource } from './input/DeviceIntentSource';
+import { DeviceIntentSource } from './DeviceIntentSource';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { Match } from './Match';

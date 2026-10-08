@@ -26,9 +26,10 @@ export class InputMapper {
     for (const { action, chords } of bindings) {
       for (const chord of chords) {
         if (chord.device === 'keyboard') {
-          const actions = this.actionsByCode.get(chord.code) ?? [];
-          actions.push(action);
-          this.actionsByCode.set(chord.code, actions);
+          this.actionsByCode.set(chord.code, [
+            ...(this.actionsByCode.get(chord.code) ?? []),
+            action,
+          ]);
         }
       }
     }

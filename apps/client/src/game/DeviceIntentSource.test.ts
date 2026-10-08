@@ -7,16 +7,16 @@ import {
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
-import { Camera } from '../engine/Camera';
-import { fakeKeyEvent } from '../engine/input/fakeKeyEvent';
-import type { InputDevice, MutableInputSnapshot } from '../engine/input/InputDevice.types';
-import { KeyboardDevice } from '../engine/input/KeyboardDevice';
-import { FakeFrameScheduler } from '../engine/loop/FakeFrameScheduler';
-import { RecordingRenderer } from '../engine/render/RecordingRenderer';
-import { Match } from '../Match';
+import { Camera } from './engine/Camera';
+import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
+import type { InputDevice, MutableInputSnapshot } from './engine/input/InputDevice.types';
+import { KeyboardDevice } from './engine/input/KeyboardDevice';
+import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
+import { RecordingRenderer } from './engine/render/RecordingRenderer';
+import { Match } from './Match';
 import { DeviceIntentSource } from './DeviceIntentSource';
-import { InputMapper } from './InputMapper';
-import { PRESETS } from './keybindings';
+import { InputMapper } from './input/InputMapper';
+import { PRESETS } from './input/keybindings';
 
 /** A device that always holds the same keys and counts its releases. */
 class HeldKeys implements InputDevice {
