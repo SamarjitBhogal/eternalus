@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { LEGEND_CLASSES } from '../legends/legendClasses';
-import { MOB_DEFINITIONS } from '../mobs/mobDefinitions';
+import { LEGEND_CLASSES } from '../legends/legendCatalogue';
+import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
 import { UnknownDefinitionError } from '../UnknownDefinitionError';
 import { UNIT_DEFINITIONS } from './unitDefinitions';
 

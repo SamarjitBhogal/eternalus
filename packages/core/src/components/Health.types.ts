@@ -17,3 +17,6 @@ export type DamageBreakdown = {
   /** Damage left over after everything reached 0. */
   readonly overflow: number;
 };
+
+/** A shield bar as `Health` stores it: the same fields, but `current` changes as damage lands. */
+export type MutableShieldBar = { -readonly [Key in keyof ShieldBar]: ShieldBar[Key] };

@@ -1,10 +1,8 @@
-import type { DamageBreakdown, ShieldBar } from './Health.types';
-
-type MutableShieldBar = { -readonly [Key in keyof ShieldBar]: ShieldBar[Key] };
+import type { DamageBreakdown, MutableShieldBar, ShieldBar } from './Health.types';
 
 /**
  * Hit points: a health bar plus layered shield bars (one per living allied BuffTower). Damage
- * drains the shield bars first, oldest bar first, then health. `current` always stays between 0
+ * drains the shield bars first, in source id order, then health. `current` always stays between 0
  * and `max`, and every bar between 0 and its own `max`.
  */
 export class Health {
@@ -76,7 +74,13 @@ export class Health {
       throw new Error(`Health already has a shield from "${sourceId}".`);
     }
 
-    this.shieldBars.push({ sourceId, current: max, max });
+    // Bars stay in source (tower) id order, so damage drains them in a fixed order (07 section 2).
+    const index = this.shieldBars.findIndex((bar) => bar.sourceId > sourceId);
+    this.shieldBars.splice(index === -1 ? this.shieldBars.length : index, 0, {
+      sourceId,
+      current: max,
+      max,
+    });
   }
 
   /** Drops the bar granted by `sourceId`, whatever it had left. Never touches health or other bars. */

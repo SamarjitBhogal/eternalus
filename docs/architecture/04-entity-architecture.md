@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-07
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -305,6 +305,27 @@ client-side (views) and pooled there; mobs may be pooled later if profiling show
 Untouched: every system, every other class, `LoadoutScreen` (lists classes from the catalogue),
 `LegendView` (draws by `definitionId`), the minimap, keybindings, the store. The content
 validation test and the replay fixtures pass unchanged. The `new-entity` skill walks these steps.
+
+## 13. Implementation status
+
+Sprint 1.2 (PR #14) implements §1–§3, §5 and §6 with these interim differences, each closed by the
+session or phase named:
+
+- `Entity`, `Unit`, `Legend` and `Mob` keep the sprint 1 API (`installComponents`, `onRetire`,
+  `addComponent`/`getComponent`/`findComponent`/`hasComponent`, `family` as a string) because the
+  simulation kernel (PR #13) builds on it. Concrete units install the `Unit` set through
+  `UnitComponentInstaller`; family bases `Structure`, `Zone`, `Obstacle` and `Projectile` install
+  theirs in `installComponents`. Every family reads its spawn context through `SpawnContextReader`,
+  which checks it at runtime because `spawn` takes `unknown`.
+- The registry is `DefaultEntityRegistry`, built from one `EntityModule` per family instead of a
+  single `defaultEntityRegistry.ts`; content validation is `ContentValidator` with rule classes,
+  run when `UNIT_DEFINITIONS` loads. Both await the owner's sign-off in `INBOX.md`.
+- Units install `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider` and
+  `Vision`; `Combat`, `StatusEffects` and `Carry` arrive with their systems (Phase 2–3). The team
+  component is `TeamMembership` because the type `Team` owns that name.
+- Shipped kinds: `warrior`, `sentinel`, `magus`, `light-mob` (the training dummy only),
+  `obstacle` and `projectile`. Other mobs are SCRUM-59; structures and zones get concrete kinds in
+  Phase 2 and 3.
 
 ## Related
 

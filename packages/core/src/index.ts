@@ -4,7 +4,7 @@
  */
 import type { PlayableTeam, Team } from './teams/teams.types';
 
-export { LEGEND_CLASSES } from './content/legends/legendClasses';
+export { LEGEND_CLASSES } from './content/legends/legendCatalogue';
 export type {
   DamageFocus,
   DefaultActionId,

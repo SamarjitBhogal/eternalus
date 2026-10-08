@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LEGEND_CLASSES } from '../legends/legendClasses';
+import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { PositiveStatsRule } from './PositiveStatsRule';
 
 const WARRIOR = LEGEND_CLASSES.get('warrior');

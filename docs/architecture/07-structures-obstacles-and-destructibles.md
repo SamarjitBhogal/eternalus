@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-07
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -338,6 +338,19 @@ Nothing in `StructureSystem`, `DamagePipeline`, `SpawnSystem` or `MinimapView` c
   that emits `form-change-requested`; the Legend side is a `LegendSpecDefinition` swap (D11).
 - **Bridges** across the rift as `bridge-segment` obstacles are MVP-if-time; until then the rift
   gaps are plain walkable ground.
+
+## 13. Implementation status
+
+Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered shields on
+`Health`, with these interim differences:
+
+- `Structure` and `Obstacle` use a circle `Collider` from `footprintRadius`; convex polygon
+  footprints arrive with the structures in Phase 2. No concrete structure kind or content exists yet.
+- `Health` keeps `current`/`max` for the base bar and adds `shields`, `total`, `addShield` and
+  `removeShield`; bars stay in source id order. `applyDamage` returns a `DamageBreakdown`
+  (`toShields`, `toBase`, `overflow`) instead of the overflow alone, pending the owner's sign-off.
+- `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
+  `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
 ## Related
 

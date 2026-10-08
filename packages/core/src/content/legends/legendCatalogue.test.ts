@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LEGEND_CLASSES } from './legendClasses';
+import { LEGEND_CLASSES } from './legendCatalogue';
 import type { LegendKind } from './legends.types';
 
 const TICKS_PER_SECOND = 30;

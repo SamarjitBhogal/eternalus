@@ -17,7 +17,7 @@ export const WARRIOR = {
   pickUp: 'pick-up',
   passiveOptions: [],
   defaultAction: null,
-  referenceHeight: 2.1, // ~7 ft (Master Chief)
+  referenceHeight: 2.1, // TUNE: ~7 ft (Master Chief)
   footprintRadius: 0.5, // DEC-06
   visionRadius: 25, // TUNE
   movement: {
