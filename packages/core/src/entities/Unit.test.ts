@@ -5,6 +5,7 @@ import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { Vision } from '../components/Vision';
 import type { UnitDefinition } from '../content/units/units.types';
 import { Legend } from './Legend';
 import { Mob } from './Mob';
@@ -30,6 +31,7 @@ const DEFINITION: UnitDefinition = {
   displayName: 'Concrete Unit',
   baseHealth: 50,
   footprintRadius: 0.5,
+  visionRadius: 12,
   movement: { maxSpeed: 0.2, acceleration: 0.05, mass: 1 },
 };
 
@@ -68,6 +70,7 @@ describe('Unit family hierarchy', () => {
     expect(unit.get(TeamMembership).team).toBe('dark');
     expect(unit.get(Collider).shape).toEqual({ kind: 'circle', radius: 0.5 });
     expect(unit.get(Collider).layer).toBe('unit');
+    expect(unit.get(Vision).radius).toBe(12);
   });
 
   it('rejects a definition that is not its own', () => {
@@ -85,7 +88,7 @@ describe('Unit family hierarchy', () => {
     expect(unit.has(Transform)).toBe(false);
   });
 
-  it('accepts any context like Entity does, and rejects one that is not a UnitSpawnContext', () => {
+  it('accepts any context like Entity does, and rejects one that is not a placed spawn context', () => {
     const position = { x: 0, y: 0 };
     const notContexts: unknown[] = [
       undefined,
@@ -99,7 +102,7 @@ describe('Unit family hierarchy', () => {
     for (const context of notContexts) {
       expect(() => {
         new ConcreteUnit('unit-5', 'concrete-definition').spawn(context);
-      }).toThrow('needs a UnitSpawnContext (definition, position, team)');
+      }).toThrow(/needs a spawn context with (a definition and a position|a team)/);
     }
   });
 });

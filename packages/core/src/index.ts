@@ -19,5 +19,13 @@ export type {
 } from './content/maps/maps.types';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
 export { LEGEND_CLASSES } from './content/legends/legendClasses';
-export type { LegendDefinition, LegendKind } from './content/legends/legends.types';
+export type {
+  DamageFocus,
+  DefaultActionId,
+  LegendDefinition,
+  LegendKind,
+  PassiveId,
+  PickUpStyle,
+  WeaponBias,
+} from './content/legends/legends.types';
 export type { PlayableTeam, Team } from './teams/teams.types';

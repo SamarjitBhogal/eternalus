@@ -6,7 +6,7 @@ import { UnknownDefinitionError } from '../UnknownDefinitionError';
 import { UNIT_DEFINITIONS } from './unitDefinitions';
 
 describe('UNIT_DEFINITIONS', () => {
-  it('holds every Legend class and then every mob, once each', () => {
+  it('holds every Legend class and then every mob (the training dummy), once each', () => {
     expect(UNIT_DEFINITIONS.ids).toEqual([...LEGEND_CLASSES.ids, ...MOB_DEFINITIONS.ids]);
   });
 

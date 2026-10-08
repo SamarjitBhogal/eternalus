@@ -60,4 +60,43 @@ describe('LEGEND_CLASSES', () => {
     expect(ticksToTopSpeed('warrior')).toBeLessThan(ticksToTopSpeed('magus'));
     expect(ticksToTopSpeed('magus')).toBeLessThan(ticksToTopSpeed('sentinel'));
   });
+
+  it('gives each class the weapon bias, damage focus and pick-up style from 01-classes', () => {
+    const traits = LEGEND_CLASSES.all().map(({ id, weaponBias, damageFocus, pickUp }) => ({
+      id,
+      weaponBias,
+      damageFocus,
+      pickUp,
+    }));
+
+    expect(traits).toEqual([
+      { id: 'warrior', weaponBias: 'light', damageFocus: 'mixed', pickUp: 'pick-up' },
+      { id: 'sentinel', weaponBias: 'heavy', damageFocus: 'physical', pickUp: 'grab' },
+      { id: 'magus', weaponBias: 'staff', damageFocus: 'magic', pickUp: 'levitate' },
+    ]);
+  });
+
+  it('gives the passives and default action from 01-classes (Warrior has no passive)', () => {
+    expect(LEGEND_CLASSES.get('warrior').passiveOptions).toEqual([]);
+    expect(LEGEND_CLASSES.get('sentinel').passiveOptions).toEqual(['wrecking-run']);
+    expect(LEGEND_CLASSES.get('magus').passiveOptions).toEqual(['studious', 'necromancy']);
+    expect(LEGEND_CLASSES.all().map((legend) => legend.defaultAction)).toEqual([
+      null,
+      null,
+      'revive',
+    ]);
+  });
+
+  it('orders reference heights like the game doc: Warrior, then Magus, then Sentinel', () => {
+    const height = (kind: LegendKind): number => LEGEND_CLASSES.get(kind).referenceHeight;
+
+    expect(height('warrior')).toBeLessThan(height('magus'));
+    expect(height('magus')).toBeLessThan(height('sentinel'));
+  });
+
+  it('lets every Legend see further than its own footprint', () => {
+    for (const legend of LEGEND_CLASSES.all()) {
+      expect(legend.visionRadius).toBeGreaterThan(legend.footprintRadius);
+    }
+  });
 });

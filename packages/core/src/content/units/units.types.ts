@@ -20,5 +20,7 @@ export type UnitDefinition = {
   readonly baseHealth: number;
   /** Collider circle radius in world units. */
   readonly footprintRadius: number;
+  /** Sight radius in world units. */
+  readonly visionRadius: number;
   readonly movement: MovementProfile;
 };

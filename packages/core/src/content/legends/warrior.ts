@@ -12,7 +12,14 @@ export const WARRIOR = {
   displayName: 'Warrior',
   roleBlurb: 'Lighter, lower health, faster.',
   baseHealth: 600, // TUNE
+  weaponBias: 'light',
+  damageFocus: 'mixed',
+  pickUp: 'pick-up',
+  passiveOptions: [],
+  defaultAction: null,
+  referenceHeight: 2.1, // ~7 ft (Master Chief)
   footprintRadius: 0.5, // DEC-06
+  visionRadius: 25, // TUNE
   movement: {
     maxSpeed: 0.2, // TUNE: 6 m/s at 30 ticks/s
     acceleration: 0.05, // TUNE: top speed after 4 ticks

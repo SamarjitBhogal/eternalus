@@ -11,6 +11,9 @@ import { DefaultEntityRegistry } from './DefaultEntityRegistry';
 import { Entity } from './Entity';
 import { EntityFactory } from './EntityFactory';
 import { EntityRegistry } from './EntityRegistry';
+import type { EntityModule } from './EntityRegistry.types';
+import { LegendEntityModule } from './legends/LegendEntityModule';
+import { Warrior } from './legends/Warrior';
 import { Unit } from './Unit';
 import type { UnitSpawnContext } from './Unit.types';
 
@@ -42,6 +45,33 @@ const spawnContext = (definition: UnitDefinition): UnitSpawnContext => ({
 describe('DefaultEntityRegistry', () => {
   it('is an EntityRegistry, so it works anywhere a registry is expected', () => {
     expect(new DefaultEntityRegistry()).toBeInstanceOf(EntityRegistry);
+  });
+
+  it('installs every shipped module: Legends, mobs, obstacles and projectiles', () => {
+    const registry = new DefaultEntityRegistry();
+
+    for (const kind of ['warrior', 'sentinel', 'magus', 'light-mob', 'obstacle', 'projectile']) {
+      expect(registry.has(kind)).toBe(true);
+    }
+  });
+
+  it('installs only the modules it is given', () => {
+    class OnlyWarriorModule implements EntityModule {
+      public register(target: EntityRegistry): void {
+        target.register('warrior', Warrior);
+      }
+    }
+
+    const registry = new DefaultEntityRegistry([new OnlyWarriorModule()]);
+
+    expect(registry.has('warrior')).toBe(true);
+    expect(registry.has('magus')).toBe(false);
+  });
+
+  it('refuses two modules that register the same kind', () => {
+    expect(
+      () => new DefaultEntityRegistry([new LegendEntityModule(), new LegendEntityModule()]),
+    ).toThrow('Entity kind "warrior" is already registered.');
   });
 
   it('registers a class for every unit definition kind', () => {
@@ -91,7 +121,7 @@ describe('DefaultEntityRegistry', () => {
     }
     // 2. The content entry.
     const fakeDefinition: UnitDefinition = {
-      ...UNIT_DEFINITIONS.get('heavy-mob'),
+      ...UNIT_DEFINITIONS.get('training-dummy'),
       id: 'fake-mob',
       kind: 'fake-mob',
     };

@@ -12,7 +12,14 @@ export const SENTINEL = {
   displayName: 'Sentinel',
   roleBlurb: 'Heavy and powerful; needs a long runway to reach a very high top speed.',
   baseHealth: 1200, // TUNE
+  weaponBias: 'heavy',
+  damageFocus: 'physical',
+  pickUp: 'grab',
+  passiveOptions: ['wrecking-run'],
+  defaultAction: null,
+  referenceHeight: 4.6, // ~15 ft (an elephant)
   footprintRadius: 1.25, // DEC-06
+  visionRadius: 25, // TUNE
   movement: {
     maxSpeed: 0.3, // TUNE: 9 m/s at 30 ticks/s
     acceleration: 0.0002, // TUNE: top speed after 1500 ticks (50 s)

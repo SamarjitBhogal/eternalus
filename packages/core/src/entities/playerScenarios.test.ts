@@ -98,7 +98,7 @@ describe('Player scenarios', () => {
 
       const teammate = spawnUnit(factory, 'sentinel', 'light').get(TeamMembership);
       const enemy = spawnUnit(factory, 'warrior', 'dark').get(TeamMembership);
-      const campMob = spawnUnit(factory, 'heavy-mob', 'neutral').get(TeamMembership);
+      const campMob = spawnUnit(factory, 'training-dummy', 'neutral').get(TeamMembership);
 
       expect(player.isAlly(teammate)).toBe(true);
       expect(player.isEnemy(enemy)).toBe(true);
@@ -171,7 +171,7 @@ describe('Player scenarios', () => {
 
     it('removes a dead unit only with a cause, and it keeps nothing afterwards', () => {
       const factory = new EntityFactory(new DefaultEntityRegistry());
-      const mob = spawnUnit(factory, 'light-mob', 'dark');
+      const mob = spawnUnit(factory, 'training-dummy', 'dark');
       mob.get(Health).applyDamage(1000);
 
       expect(() => {
@@ -186,7 +186,7 @@ describe('Player scenarios', () => {
     it('lets a Magus revive a fallen enemy mob to fight for the Magus team', () => {
       const factory = new EntityFactory(new DefaultEntityRegistry());
       const magus = spawnUnit(factory, 'magus', 'light');
-      const fallen = spawnUnit(factory, 'medium-mob', 'dark');
+      const fallen = spawnUnit(factory, 'training-dummy', 'dark');
       fallen.get(Health).applyDamage(1000);
 
       const reviveHealth = fallen.get(Health).baseMax;
@@ -200,10 +200,10 @@ describe('Player scenarios', () => {
   });
 
   describe('a horde leaving the spawner', () => {
-    it('spawns 16 light mobs with unique ids, all on the spawner team', () => {
+    it('spawns 16 light mobs (training dummies) with unique ids, all on the spawner team', () => {
       const factory = new EntityFactory(new DefaultEntityRegistry());
 
-      const horde = Array.from({ length: 16 }, () => spawnUnit(factory, 'light-mob', 'dark'));
+      const horde = Array.from({ length: 16 }, () => spawnUnit(factory, 'training-dummy', 'dark'));
 
       expect(new Set(horde.map((mob) => mob.id)).size).toBe(16);
       expect(horde.every((mob) => mob.get(TeamMembership).team === 'dark')).toBe(true);
@@ -212,7 +212,7 @@ describe('Player scenarios', () => {
     it('gives the same ids on every replay of the same spawns', () => {
       const ids = (): string[] => {
         const factory = new EntityFactory(new DefaultEntityRegistry());
-        return Array.from({ length: 4 }, () => spawnUnit(factory, 'heavy-mob', 'light').id);
+        return Array.from({ length: 4 }, () => spawnUnit(factory, 'training-dummy', 'light').id);
       };
 
       expect(ids()).toEqual(ids());
