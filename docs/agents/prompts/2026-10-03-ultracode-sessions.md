@@ -4,7 +4,7 @@ description: Copy-paste prompts for parallel Claude Code sessions, one per git w
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-07
 tags: [agents, prompts, sprint-1, phase-1, worktrees]
 related:
   [
@@ -376,6 +376,9 @@ Deliver:
    MovementSystem determinism; the "add a fourth Legend class touches one content file, one
    class file and one registry line" check as a test over the registry.
 7. index.ts exports; packages/core/AGENTS.md folder table; docs/architecture/04 bumps.
+8. Session B handoff (added 2026-10-07, DEC-20): do the open INBOX.md request "Session C (from
+   session B)"; the B-owned lines it names in Simulation.ts, commands/, state/ and diagnostics/
+   are yours to change (an owner-approved exception to §2.6). Read 03 §12 and 15 §13 first.
 Out of scope: abilities, combat, structures' behaviour, AI, map placement (A/H), client.
 Done when: npm run check passes; coverage threshold not lowered; PROGRESS entry; PR
 description notes the Copilot branch supersession.

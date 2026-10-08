@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-07
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -33,11 +33,13 @@ true. Every block is a **sketch**; the facts come from
 
 ## 1. Where it sits
 
-`packages/core/src/diagnostics/` (L2) may import `state/` and `utils/` only
-([02](02-code-structure.md) §2). It contains `Invariant.ts`, `InvariantRunner.ts`,
-`invariants/<Fact>Invariant.ts`, `defaultInvariants.ts` (the registry), `Logger.ts` (port),
-`MemoryLogger.ts` (test double), `Profiler.ts` (port) with `NullProfiler.ts`,
-`DiagnosticEvent.types.ts`, `runSimMatch.ts` and the soak and property harnesses. The
+`packages/core/src/diagnostics/` (L2) may import `state/` and `utils/`, plus the types of
+`commands/` and `config/` that the replay format carries ([02](02-code-structure.md) §2, DEC-20).
+It contains `Invariant.ts`, `InvariantRunner.ts`, `invariants/<Fact>Invariant.ts`,
+`defaultInvariants.ts` (the registry), `Logger.types.ts` (port) with `Logger.constants.ts`,
+`makeLogRecord.ts`, `MemoryLogger.ts` (test double) and `NullLogger.ts`, `Profiler.ts` (port) with
+`NullProfiler.ts`, `DiagnosticEvent.types.ts`, `replay.ts` with `Replay.types.ts`,
+`randomCommands.ts`, `runSimMatch.ts` and the soak and property harnesses. The
 `InvariantSystem` lives in `systems/` and runs after `MatchDirectorSystem`, before
 `SnapshotSystem` ([03](03-game-model.md) §1). Client-side pieces sit behind ports: sinks in
 `apps/client/src/data/logging/` ([09](09-hardware-abstraction.md) §8), `PerfMonitor` in
@@ -115,7 +117,7 @@ canonical (`07` §11, `05` §16 and `12` §12 use them).
 | Class (`id`)                                                                           | Cadence        | Severity     | Definition (what must hold after every tick)                                                                                                                                                                                                                                                                                                                                                                 | Source                      |
 | -------------------------------------------------------------------------------------- | -------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
 | `NoEntityInsideUnbreakableColliderInvariant` (`no-entity-inside-unbreakable-collider`) | periodic       | error        | for every entity with a solid circle `Collider`, no `StaticColliderIndex` entry with `isUnbreakable` overlaps it by more than the skin (SAT, [10](10-physics.md) §7); candidates from `SpatialHash`, so O(units × nearby statics)                                                                                                                                                                            | requirements, 10 §7         |
-| `NoPassThroughUnbreakableInvariant` (`no-pass-through-unbreakable`)                    | tick           | error        | `state.recentEvents` holds no `collision-anomaly` for this tick: the post-resolution re-cast of every swept segment crossed no unbreakable collider, closed gate or map bound                                                                                                                                                                                                                                | requirements, 10 §7, 07 §11 |
+| `NoPassThroughUnbreakableInvariant` (`no-pass-through-unbreakable`)                    | tick           | error        | `state.events.recentEvents()` holds no `collision-anomaly` for this tick: the post-resolution re-cast of every swept segment crossed no unbreakable collider, closed gate or map bound                                                                                                                                                                                                                       | requirements, 10 §7, 07 §11 |
 | `NoRemovalWithoutCauseInvariant` (`no-removal-without-cause`)                          | tick           | fatal        | `entities.removedThisTick` (ids and causes recorded by `EntityStore.remove`, cleared by `advanceTick()`) equals the set of this tick's `entity-removed` events, each with a `RemovalCause` from the union (`died` with its `DamageSource`, `expired` with the lifetime rule, `consumed`, `despawned`, `map-change`, `dev-removed`, `match-ended`; DISC-59); the store's count delta equals spawned − removed | requirements, 03 §2         |
 | `NoDeathWithoutKillerInvariant` (`no-death-without-killer`)                            | tick           | error        | every `entity-died` carries a `DamageSource` of kind `entity`, `structure`, `status` (with its applier), `environment`, `self` or `script`, resolvable in the store or in this tick's removals; a missing or unknown source is the violation, not a non-entity one (DISC-46)                                                                                                                                 | requirements, 05 §9         |
 | `HealthWithinBoundsInvariant` (`health-within-bounds`)                                 | tick           | error        | `0 ≤ Health.current ≤ Health.base`; every shield bar `0 ≤ current ≤ max`; the effective total never exceeds `base + Σ bar.max`; bar count ≤ living allied `BuffTower`s is the periodic `ShieldBarsMatchLivingTowersInvariant` (07 §11)                                                                                                                                                                       | 04 §3, 07 §2                |
@@ -138,14 +140,15 @@ stay side-effect free, and the state hash is identical with the runner on or off
 ## 4. `Logger` port and client sinks
 
 ```ts
-// Sketch: packages/core/src/diagnostics/Logger.ts (public API, 02 §6)
+// packages/core/src/diagnostics/: Logger.constants.ts, Logger.types.ts, DiagnosticEvent.types.ts,
+// makeLogRecord.ts, MemoryLogger.ts, NullLogger.ts (public API, 02 §6)
 export const SEVERITY = { TRACE: 1, DEBUG: 5, INFO: 9, WARN: 13, ERROR: 17, FATAL: 21 } as const; // OpenTelemetry ranges: TRACE 1–4 … FATAL 21–24
 export type LogRecord = {
   readonly severityNumber: number;
   readonly severityText: keyof typeof SEVERITY;
   readonly body: string;
   readonly scope: string; // instrumentation scope: 'core.collision', 'core.invariants', 'client.persistence'
-  readonly eventName?: string; // typed events: 'invariant-violated', 'command-rejected'
+  readonly eventName?: DiagnosticEventName; // set when the record reports a DiagnosticEvent
   readonly tick: number | null; // core sets the tick (its only notion of time); client records set null
   readonly timestampMs?: number; // stamped by the client's SinkLogger from the engine Clock (09 §6); never by core
   readonly attributes: Readonly<Record<string, string | number | boolean | null>>; // seed, entityId, system, invariantId, ...
@@ -157,16 +160,32 @@ export type LogRecord = {
 export interface Logger {
   log(record: LogRecord): void;
 }
+// The structured diagnostics core reports (FR-102); the single place of change for them.
+export type DiagnosticEventMap = {
+  readonly 'command-rejected': { readonly commandType: string; readonly reason: string };
+  readonly 'invariant-violated': {
+    readonly invariantId: InvariantId;
+    readonly entityId: EntityId | null;
+    readonly seed: number;
+    readonly tick: number;
+  };
+};
+export type DiagnosticEvent = {
+  [K in keyof DiagnosticEventMap]: { readonly name: K; readonly attributes: DiagnosticEventMap[K] };
+}[keyof DiagnosticEventMap];
 export function makeLogRecord(
   level: keyof typeof SEVERITY,
   scope: string,
   body: string,
-  attributes?: LogRecord['attributes'],
-  tick?: number,
-): LogRecord; // the one constructor of records
+  details?: { readonly tick?: number } & (
+    | { readonly attributes?: LogRecord['attributes'] } // a free record
+    | { readonly event: DiagnosticEvent } // eventName and attributes come from the event
+  ),
+): LogRecord; // the one constructor of records; an options object keeps it at four parameters (DEC-18)
 export class MemoryLogger implements Logger {
   public readonly records: LogRecord[] = [];
 } // the test double
+export class NullLogger implements Logger {} // discards; benchmarks and tests that ignore logs
 
 // Sketch: apps/client/src/data/logging/LogSink.ts and siblings
 export interface LogSink {
@@ -199,8 +218,9 @@ short sink names are the ones in [01](01-layered-oop-model.md) §3,
 `InvariantRunner.report(v, state)` does two things in a fixed order: it emits
 `invariant-violated { invariantId, tick, details }` on `GameEvents` ([03](03-game-model.md) §4),
 and it logs one `LogRecord` at `ERROR` (`FATAL` for fatal invariants) with `scope:
-'core.invariants'`, `attributes: { invariantId, entityId, seed, tick }` and `context` filled from
-`state.recentCommands` and `state.recentEvents` (the last 32 commands and 128 events copied out
+'core.invariants'`, the `invariant-violated` `DiagnosticEvent` (attributes `invariantId`,
+`entityId`, `seed`, `tick`) and `context` filled from `state.recentCommands` and
+`state.events.recentEvents()` (the last 32 commands and 128 events copied out
 of ring buffers that hold 512, `TUNE`, plan Phase 1). That record is the bug report: seed + tick
 
 - recent commands reproduce the moment, and `Simulation.exportReplay()` reproduces the whole match.
@@ -244,44 +264,70 @@ headless bench (`npm run bench`, plan Phase 1) injects a `Profiler` backed by `p
 
 A replay is seed + `GameConfig` + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
-`ReplayRecorder` (core) records every command that enters through `Simulation.enqueueCommand`
-and a `StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); bots are
+Recording captures every command that enters through `Simulation.enqueueCommand` and a
+`StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); bots are
 regenerated from the seed. `StateHasher` is FNV-1a 32-bit (offset basis `0x811c9dc5`, prime
-`0x01000193`, `Math.imul`) over a canonical serialisation: tick, RNG state, then every entity in
-ascending id order.
+`0x01000193`, `Math.imul`) over its own canonical serialisation: tick, phase, RNG state, then every
+entity in store order with its component fields ([03](03-game-model.md) §9).
 
 ```ts
-// Sketch: packages/core/src/commands/runReplay.ts and a fixture test
+// packages/core/src/diagnostics/Replay.types.ts and replay.ts (DEC-20)
+export interface ReplayTarget {
+  readonly tick: number;
+  enqueueCommand(command: Command): void;
+  step(): void;
+  hash(): number;
+  snapshot(): Snapshot;
+} // the slice of Simulation a replay drives
+export type ReplayTargetFactory = (config: GameConfig, seed: number) => ReplayTarget; // e.g. (config, seed) => new Simulation(config, seed, logger, systems)
 export type ReplayOutcome = {
   readonly ok: boolean;
   readonly firstDivergence: { tick: number; expected: number; actual: number } | null;
   readonly finalHash: number;
-  readonly violations: readonly Violation[];
+  readonly violations: readonly Violation[]; // with the InvariantRunner
 };
-export function runReplay(
-  replay: Replay,
-  deps: { content: ContentCatalogue; logger: Logger; debug?: DebugConfig },
-): ReplayOutcome; // refuses mismatched versions or configHash
+export function recordReplay(
+  plan: { config; seed; ticks; checkpointEvery; commandsFor(tick, snapshot): readonly Command[] },
+  createTarget: ReplayTargetFactory,
+): Replay;
+export function runReplay(replay: Replay, createTarget: ReplayTargetFactory): ReplayOutcome; // stops at the first divergence; refuses mismatched versions
 
-// packages/core/src/diagnostics/replayFixtures.test.ts — walks every __fixtures__/*.replay.json in core
-it.each(loadReplayFixtures())('$name reproduces its checkpoint hashes', ({ replay }) => {
-  const outcome = runReplay(replay, {
-    content: loadDefaultContent(),
-    logger: new MemoryLogger(),
-    debug: { assertLevel: 'heavy', heavyEvery: 1, throwOnViolation: true },
-  });
+// next to the fixture, in the test that owns it
+it('still reproduces the committed wander-seed-7 fixture', () => {
+  const outcome = runReplay(WANDER_SEED_7, createTarget);
   expect(outcome.firstDivergence).toBeNull();
-  expect(outcome.finalHash).toBe(replay.checkpoints.at(-1)?.hash);
+  expect(outcome.finalHash).toBe(WANDER_SEED_7.checkpoints.at(-1)?.hash);
 });
 ```
+
+`runReplay` builds a fresh target through the factory it is given, so `diagnostics/` never
+imports `Simulation` and the test chooses the systems the match runs.
+
+**Fixture format.** A golden replay is a TypeScript module next to the test that replays it:
+`__fixtures__/<camelCaseName>.replay.ts`, exporting one `SCREAMING_SNAKE` constant typed `Replay`
+(the first is `diagnostics/__fixtures__/wanderSeed7.replay.ts`, `WANDER_SEED_7`). Core has no
+Node types, so a test imports its fixtures instead of reading files from disk. The module holds
+plain data only (numbers, strings, arrays, objects), the same data a developer-menu dump writes
+as `<name>.replay.json` ([13](13-game-interface.md) §4), so a dump becomes a fixture by wrapping
+it in that constant.
+
+- `config` is the full config the match ran with, written out, never a call to
+  `createDefaultGameConfig()`, so changing a default cannot silently change a fixture.
+- `commands` are in enqueue order; each `tick` is the number of completed steps when the command
+  was enqueued, so it applies in that step.
+- `checkpoints` ascend: the first at tick 0, before any step, then every `checkpointEvery` ticks,
+  the last at the final tick.
+- The fixture records inputs, not the pipeline: the test that owns it states which systems its
+  replay target runs.
 
 Golden replays are committed fixtures next to the test that owns them: `full-match-seed-7`
 ([12](12-game-story-and-match-director.md) §12), `every-mvp-ability`
 ([05](05-abilities-weapons-and-loadouts.md) §16), `three-hundred-dummies` (plan Phase 1), and one
 per bug fixed from a replay (`AGENTS.md`: every bug fix comes with a test that failed before it).
 A mismatch is a bug or an intended rules change; only the second regenerates the fixture, through
-an explicit `npm run replay:regen <fixture>` (`Recommendation:`) whose diff is reviewed, never
-through `vitest -u`. The developer menu's "save as fixture" writes this format ([13](13-game-interface.md) §4).
+an explicit `npm run replay:regen <fixture>` (`Recommendation:`) whose diff is reviewed (only the
+checkpoint hashes may change), never through `vitest -u`. The developer menu's "save as fixture"
+writes this format ([13](13-game-interface.md) §4).
 
 ## 8. Soak tests
 
@@ -362,8 +408,8 @@ generator for M ticks, run heavy invariants every tick, and report the failing s
 reproducible bug report even without shrinking (research C3).
 
 ```ts
-// Sketch: packages/core/src/diagnostics/randomCommands.ts and a property test
-export function* seededCommandStream(rng: Rng, snapshot: () => Snapshot): Generator<Command> {} // plausible commands only: move/cast/attack for living Legends, dev-spawn-mobs within caps, dev-set-controller, dev-set-assert-level
+// packages/core/src/diagnostics/randomCommands.ts and a property test
+export function randomCommand(rng: Rng, snapshot: Snapshot, spawnKinds: readonly string[]): Command; // plausible commands: mostly aimed at living entities, some at missing ids so rejections are exercised; dev-spawn of the given kinds
 it.each(range(1, 25))('seed %i: 1,500 ticks of random commands keep every invariant', (seed) => {
   const sim = new Simulation({
     config,
@@ -372,9 +418,9 @@ it.each(range(1, 25))('seed %i: 1,500 ticks of random commands keep every invari
     logger,
     debug: { assertLevel: 'heavy', heavyEvery: 1, throwOnViolation: true },
   });
-  const commands = seededCommandStream(new SeededRandom(seed), () => sim.snapshot());
+  const rng = new SeededRandom(seed).fork('commands');
   for (let t = 0; t < 1_500; t++) {
-    for (const c of take(commands, 3)) sim.enqueueCommand(c);
+    for (let i = 0; i < 3; i++) sim.enqueueCommand(randomCommand(rng, sim.snapshot(), kinds));
     sim.step();
   }
 });
@@ -424,6 +470,15 @@ determinism recipe (run twice, compare hashes every 30 ticks) is ES-04.
 Nothing else changes: the runner, the sinks, the overlay and the menu are generic over `id`.
 A new sink is a class passing the `LogSink` contract plus one line in `Match`; a new measure is
 one `Profiler` label.
+
+## 13. Implementation status
+
+The simulation kernel (sprint 1.1, PR #13) delivers the `Logger` port and doubles,
+`DiagnosticEvent.types.ts`, the replay harness and its fixture format (§7), and `randomCommand`
+(§9). Not built yet: `Invariant`, `InvariantRunner`, `invariants/`, `InvariantSystem`,
+`DebugConfig` and `LogRecord.context` with `GameState.recentCommands` (session C, sprint 1.2); the
+`Profiler` port; `runSimMatch` and the soak harness. `Replay` has no `versions` and
+`ReplayOutcome` no `ok` or `violations` until the content catalogue and the runner exist.
 
 ## Related
 

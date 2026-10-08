@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { cos, sin } from '../utils/deterministicMath';
 import { distance } from '../utils/geometry';
 import { buildWallRing } from './wallRing';
 
@@ -23,8 +24,8 @@ describe('buildWallRing', () => {
     expect(gates.map((gate) => gate.laneIndex)).toEqual([0, 1, 2]);
     gates.forEach((gate, index) => {
       const angle = exits[gate.laneIndex ?? index] ?? 0;
-      expect(gate.position.x).toBeCloseTo(Math.cos(angle) * RING.radius);
-      expect(gate.position.y).toBeCloseTo(Math.sin(angle) * RING.radius);
+      expect(gate.position.x).toBeCloseTo(cos(angle) * RING.radius);
+      expect(gate.position.y).toBeCloseTo(sin(angle) * RING.radius);
     });
   });
 

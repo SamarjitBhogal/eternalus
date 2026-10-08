@@ -43,40 +43,40 @@ Legend can walk around the generated map. No combat, no AI, no structures beyond
 Owner: _ (sim lane). Week 1. Everything here is pure TypeScript in `packages/core/src/`
 ([03-game-model.md](../architecture/03-game-model.md)).
 
-- [ ] **`GameConfig` + `validateGameConfig()`** in `config/` (`numLanes`, `spawnTowersPerLane`,
+- [x] **`GameConfig` + `validateGameConfig()`** in `config/` (`numLanes`, `spawnTowersPerLane`,
       `buffTowersPerLane`, `campsPerSide`, `tickRate`, unit caps 10 Legends / 144 units per team,
       match timeline). Owner: _. Test: the default passes; `numLanes: 0` and a cap above 144 fail
       with a message naming the field. Done when: `Simulation` only accepts a validated config.
-- [ ] **`SeededRandom`** (sfc32, per
+- [x] **`SeededRandom`** (sfc32, per
       [research §1](../research/game-architecture-and-performance-research.md#determinism-pitfalls-specific-to-javascript))
       and **deterministic math wrappers** in `utils/`. Owner: _. Test: known-answer sequence for
       seed 1; two instances with one seed agree for 10,000 draws; wrapped `sin/cos/atan2` agree
       run to run. Done when: lint bans `Math.sin/cos/atan2/pow/exp` in core outside `utils/`.
-- [ ] **`Vec2` and geometry helpers** (immutable API plus mutating variants for hot loops).
+- [x] **`Vec2` and geometry helpers** (immutable API plus mutating variants for hot loops).
       Owner: _. Test: 1,000 seeded vectors through add/sub/scale/length/normalize/dot. Done when:
       no angle (`atan2`) is needed by any caller; steering works on vectors only.
-- [ ] **`GameState`** aggregate root + `Snapshot` types (previous and current position per
+- [x] **`GameState`** aggregate root + `Snapshot` types (previous and current position per
       entity, structured-clone-safe, D8). Owner: _. Test: `structuredClone(snapshot)` succeeds and
       equals the original. Done when: no class instance or function leaks into a snapshot.
-- [ ] **`Command` union + `CommandQueue` + `applyCommand()`** in `commands/` (discriminated
+- [x] **`Command` union + `CommandQueue` + `applyCommand()`** in `commands/` (discriminated
       union, commands stamped with tick and sequence). Owner: _. Test: exhaustive `switch`
       compile test; queue drains in (tick, sequence) order. Done when: a new command kind is one
       union member plus one `applyCommand` case and nothing else.
-- [ ] **`GameEvents`** typed channel with a ring buffer of the last 512 events. Owner: _. Test:
+- [x] **`GameEvents`** typed channel with a ring buffer of the last 512 events. Owner: _. Test:
       handlers run in subscription order; `off()` stops delivery; ring buffer overwrites oldest.
       Done when: systems never hold references to each other (only to `GameEvents`).
-- [ ] **`Simulation` facade** (`enqueueCommand`, `step`, `snapshot`, `on`) + **`SystemPipeline`**
+- [x] **`Simulation` facade** (`enqueueCommand`, `step`, `snapshot`, `on`) + **`SystemPipeline`**
       (ordered registration). Owner: _. Test: `step()` advances the tick exactly once, drains the
       queue, runs systems in registration order. Done when: the step order in
       [03-game-model.md](../architecture/03-game-model.md) reads as a list in code.
-- [ ] **`StateHasher`** (FNV-1a over a canonical serialization, sorted keys). Owner: _. Test:
+- [x] **`StateHasher`** (FNV-1a over a canonical serialization, sorted keys). Owner: _. Test:
       equal states hash equal; one changed field changes the hash. Done when: `Simulation.hash()`
       is exposed for tests and the developer menu.
-- [ ] **Replay record and replay test harness** (`ReplayRecorder`: seed + command log + content
+- [x] **Replay record and replay test harness** (`ReplayRecorder`: seed + command log + content
       version; `replay(fixture)` helper; seeded random command generator). Owner: _. Test: 10
       seeds × 3,000 ticks, hash every 100 ticks, two runs identical. Done when: the fixture format
       is documented in [15-diagnostics-and-runtime-testing.md](../architecture/15-diagnostics-and-runtime-testing.md).
-- [ ] **`Logger` port + `DiagnosticEvent` types** in `diagnostics/` (OpenTelemetry severity
+- [x] **`Logger` port + `DiagnosticEvent` types** in `diagnostics/` (OpenTelemetry severity
       numbers, per [research C2](../research/persistence-input-diagnostics-research.md#c2-structured-logging-timing-memory-and-a-developer-overlay)).
       Owner: _. Test: a fake sink receives records with tick and attributes. Done when: core has
       no `console` and no sink.
