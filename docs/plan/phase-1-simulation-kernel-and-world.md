@@ -214,7 +214,7 @@ frame and no frame above 50 ms during a 60 s run on the reference laptop (`PerfO
 
 Owner: _ (client lane + one sim-lane reviewer). Week 3. Depends on 1.2 and 1.4.
 
-- [ ] **Keybindings data** in one file (`InputAction` ids, `Binding` keyed by
+- [x] **Keybindings data** in one file (`InputAction` ids, `Binding` keyed by
       `KeyboardEvent.code`, presets `wasd` and `arrows`). Owner: _. Test: every action has a
       default; no duplicate codes within a preset. Done when: no key name appears anywhere else.
 - [ ] **`KeyboardDevice` / `MouseDevice`** (engine adapters; clear held input on `blur` and

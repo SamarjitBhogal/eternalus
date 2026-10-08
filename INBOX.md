@@ -49,6 +49,12 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Requests for the agent
 
+- [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
+      `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
+      (`TODO(sholtzman)`), so `Match` turns the intent into `move`/`stop` itself (09 §11). Should I
+      write `PlayerController` + the `intent` handler (11 §4.1) in core, or is it yours? Either is
+      fine; until then WASD works through `move`/`stop`.
+
 - [ ] **Session A (from session B, updated 2026-10-07):** PR #13 merged the phase branch with
       `feat/map-generator`: B's files and `components/TeamMembership.ts` now use `Team` from
       `teams/teams.types.ts`, `polarPoint` and the wall-ring test call

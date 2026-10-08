@@ -292,8 +292,8 @@ interim differences, each closed by the session named:
 - `ViewRegistry` resolves kind, then family, then `DefaultEntityView`, and reports each unknown kind
   once; `LegendView` is the placeholder Legend look. Entity markers on the minimap are the
   minimap work's (SCRUM-151); `EntityLayer.drawMinimap` draws nothing until then.
-- `Match` takes the player's intent through an `IntentSource` port (`IdleIntentSource` until the
-  input session F); no `InputMapper`, `MatchBridge` or `PerfMonitor` yet, and no `MatchScreen`
+- `Match` takes the player's intent through an `IntentSource` port (`DeviceIntentSource` with the
+  keyboard, 09 §11); no `MatchBridge` or `PerfMonitor` yet, and no `MatchScreen`
   (sessions D, E, G). `GameCanvas` owns the `Match` through `useMatch`, which replaced
   `useMapCanvas`. The player's Legend spawns with a `dev-spawn` command until `SpawnSystem` exists.
 - The first frame after `start()` only sets the time origin (elapsed 0), so §3's

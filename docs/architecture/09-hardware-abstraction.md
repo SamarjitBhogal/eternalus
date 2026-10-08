@@ -4,7 +4,7 @@ description: The ports-and-adapters layer that isolates the game from the browse
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-08
 tags: [architecture, hal, input, ports, adapters, keybindings]
 paths:
   [
@@ -276,6 +276,23 @@ layer is the seam:
 - What makes that true today: rule 1 (core has no DOM), rule 7 (one class touches the canvas),
   the `Command` stream (input is data), content by id (assets are looked up, never imported), and
   the contract suites (they become the acceptance tests for the new adapters).
+
+## 11. Implementation status
+
+The keyboard slice (branch `feat/player-input`) implements §2 and §3 for movement, with these
+interim differences:
+
+- `InputSnapshot` has only `keys` and `keyLabels`; the mouse, wheel and gamepad fields arrive with
+  their devices. `InputDevice` has no `poll()` yet (the keyboard is event-driven; the gamepad
+  needs it). There is no `MouseDevice`, `FakeInputDevice` or shared contract suite yet;
+  `KeyboardDevice.test.ts` covers the contract's five rules.
+- `InputMapper` indexes keyboard chords by code itself (no injected `BindingResolver`) and leaves
+  `aim` empty until the mouse and `Projection` exist. `toIntent` takes no projection yet.
+- `DeviceIntentSource` merges the devices and feeds `Match` through its `IntentSource` port.
+  `Match` turns the intent's `move` into `move`/`stop` commands itself until core's
+  `PlayerController` handles the `intent` command (11 §4.1); see `INBOX.md`.
+- `useMatch` releases the devices on `blur` and hidden `visibilitychange` and binds the `wasd`
+  preset until the settings screen supplies the player's saved bindings.
 
 ## Related
 
