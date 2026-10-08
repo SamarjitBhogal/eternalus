@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-07
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -410,15 +410,14 @@ part of §2–§6; why each one differs is recorded in
 
 Still interim:
 
-| Topic                     | Today                                                                                          | Until                                                                          |
-| ------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Minimap (§8)              | `MiniMapView` draws each layer's `drawMinimap`; `MapView` draws every feature's `minimapGlyph` | Session H's `ViewRegistry`, `EntityView` and the snapshot-driven `MinimapView` |
-| Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                 | Session B's `SeededRandom`, `GameConfig` and `validateGameConfig`              |
-| Trigonometry (§3)         | `Math.cos`/`Math.sin` only in `utils/geometry.ts`; the golden-hash test catches drift          | `utils/deterministicMath.ts` (session B)                                       |
-| Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                              | A `GameConfig` field                                                           |
-| `WorldMap` (§6)           | Walkability grid with stamping                                                                 | Cost grid and flow fields (Phase 3)                                            |
-| Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                              | Session H's layers and sprites                                                 |
-| Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                  | The owner's answer to DEC-15                                                   |
+| Topic                     | Today                                                                                          | Until                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Minimap (§8)              | `MiniMapView` draws each layer's `drawMinimap`; `MapView` draws every feature's `minimapGlyph` | Session H's `ViewRegistry`, `EntityView` and the snapshot-driven `MinimapView`                     |
+| Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                 | Session A's swap to session B's `SeededRandom`, `GameConfig` and `validateGameConfig` (`INBOX.md`) |
+| Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                              | Session A's swap to `config.map.navCellSize`                                                       |
+| `WorldMap` (§6)           | Walkability grid with stamping                                                                 | Cost grid and flow fields (Phase 3)                                                                |
+| Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                              | Session H's layers and sprites                                                                     |
+| Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                  | The owner's answer to DEC-15                                                                       |
 
 ## Related
 

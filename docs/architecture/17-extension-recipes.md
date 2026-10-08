@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-07
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -320,15 +320,17 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 
 - **When:** a new way to change intent: a player action, a bot decision or a developer cheat.
   Every change of intent is a command so that the log replays (03 §3).
-- **Files:** `core/commands/Command.types.ts`: one union member (`{ readonly type: '<kebab>';
-readonly actorId: EntityId; ... }`, serialisable, ids only); `core/commands/applyCommand.ts`:
-  its `case` (validate, then apply or emit `command-rejected { reason }`); one producer:
-  `PlayerController` from an `InputIntent` field (R21), another controller (R18) or the
+- **Files:** `core/commands/Command.types.ts`: one `CommandPayloads` line for `'<kebab>'` (its
+  fields, usually `readonly actorId: EntityId` first; serialisable, ids only);
+  `core/commands/handlers/<Name>Handler.ts`: a class implementing `CommandHandler<'<kebab>'>`
+  that validates, applies and returns `null`, or returns a `CommandRejectReason` (DEC-20); one
+  producer: `PlayerController` from an `InputIntent` field (R21), another controller (R18) or the
   `DeveloperMenu` (R24).
-- **Registry line:** the union member: the exhaustive `switch` in `applyCommand` fails to compile
-  until the case exists, which is the point.
-- **Tests:** `applyCommand.test.ts` (the accepted path and every rejection reason); the
-  exhaustive-switch compile test; a replay fixture that contains the command.
+- **Registry line:** the handler in `core/commands/defaultCommandHandlers.ts`: the registry's type
+  fails to compile until every command type has one, which is the point.
+- **Tests:** `<Name>Handler.test.ts` (the accepted path and every rejection reason); the
+  registry compile test in `defaultCommandHandlers.test.ts`; a replay fixture that contains the
+  command.
 - **Docs:** the union sketch in 03 §3; `../reference/game-design/09-controls.md` if a player
   can issue it.
 - **Skill:** `new-system` (core) or `new-screen` (developer menu) · [03 §3](03-game-model.md#3-commands).
@@ -471,7 +473,7 @@ readonly actorId: EntityId; ... }`, serialisable, ids only); `core/commands/appl
 - **When:** a new platform capability (haptics, a second storage backend, a server, a Worker).
   Core defines only `Rng` and `Logger`; everything else is an L1 port owned by its consumer.
 - **Files:** the port `interface` beside its consumer (`client/game/engine/<area>/<Port>.ts`,
-  `client/data/persistence/StorageAdapter.ts`, `core/diagnostics/Logger.ts`); the adapter
+  `client/data/persistence/StorageAdapter.ts`, `core/diagnostics/Logger.types.ts`); the adapter
   `<Tech><Port>.ts`, the only file touching the API; a test double (`Fake`, `Null`, `Memory` or
   `Recording` + port) as a real class in `src/`; the contract suite `<Port>.contract.ts` exporting
   `describe<Port>(name, factory)` (02 §8, 09 §9, 14 §4) imported by every adapter test; the
