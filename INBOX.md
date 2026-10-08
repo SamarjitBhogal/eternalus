@@ -86,6 +86,25 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       violations with the `invariant-violated` `DiagnosticEvent` already declared (15 §4–§5).
       (7) `state/GameEvents.types.ts`: import `ShieldBar` from `components/Health.types.ts` once
       `Health` has shields.
+      **Status (session C, 2026-10-07, branch `feat/entity-systems`):** (1), (2), (4), (5), (6)
+      and (7) done. `Simulation` now takes `SimulationOptions` (`config`, `seed`, `logger`,
+      `systems?`, `debug?`, `content?`) and builds `DefaultSystemPipeline` (movement, death,
+      invariants) when `systems` is omitted; its factory uses `DefaultEntityRegistry` (a class,
+      not `createDefaultEntityRegistry()`) and the unit catalogue. (2) steers through
+      `EntityStore.steer`; new reject reasons `invalid-direction` and `not-movable`. (6) ships
+      `no-removal-without-cause`, `health-within-bounds` and `finite-transforms` (the 15 §3 name
+      for the prompt's NaN-transform check). **(3) is still open**: see the request below.
+- [ ] **Session C → Sam (2026-10-07): deferring `dev-remove-entity` to `DeathSystem`.** Routing
+      the removal through `DeathSystem` (a removal request in `state/`, drained by the system)
+      changes when the entity leaves within the tick, so `wanderSeed7.replay.ts` checkpoints
+      change. Options: (a) **Recommended** — do it and re-record the fixture in the same PR;
+      (b) keep the handler's immediate removal (today; `DeathSystem` removes only the dead).
+      Also: the `diagnostics/` invariants read `components/` (`Health`, `Transform`,
+      `Movement`); the folder table in `packages/core/AGENTS.md` now lists that import.
+- [ ] **Session C → session H (2026-10-07): `Simulation` takes one options object.** Call
+      `new Simulation({ config, seed, logger })` instead of passing four arguments; omit
+      `systems` to get the default pipeline and pass `debug` for the invariant level (architecture
+      03 §6, 15 §2). Branch `feat/entity-systems`.
 
 ## Feedback
 

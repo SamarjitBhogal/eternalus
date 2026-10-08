@@ -408,21 +408,23 @@ a view never needs anything from the entity beyond its `definitionId`.
 The simulation kernel (sprint 1.1, PR #13) implements §2–§10 as written, with these interim gaps,
 each closed by the session or phase named:
 
-- `Simulation` takes `(config, seed, logger, systems = [])` (Sprint 1 brief); it becomes
-  `SimulationOptions` when content and `debug` arrive (four parameters at most, CONTRIBUTING §4).
-  No `exportReplay()` or `dispose()` yet. Its `EntityFactory` has an empty registry until session
-  C passes `createDefaultEntityRegistry()` (marked `TODO` in `Simulation.ts`).
-- `move`, `stop`, `attack-target`, `cast-ability`, `intent` and `dev-set-controller` are routed to
-  `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
+- `Simulation` takes `SimulationOptions` (`config`, `seed`, `logger`, `systems?`, `debug?`,
+  `content?`); `content` is a `DefinitionSource` (the unit catalogue by default) until the full
+  `ContentCatalogue` arrives. No `exportReplay()` or `dispose()` yet. Its `EntityFactory` uses
+  `DefaultEntityRegistry`; omitting `systems` gives `DefaultSystemPipeline` (movement, death,
+  invariants).
+- `move` and `stop` steer through `EntityStore.steer`; `attack-target`, `cast-ability`, `intent`
+  and `dev-set-controller` are routed to `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
-  `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
+  `entity-removed` themselves; `DeathSystem` removes only entities whose health reached 0 until
+  `dev-remove-entity` is routed through it (open in `INBOX.md`) and `SpawnSystem` exists.
 - `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
-- `GameState` has no `world`, `teams`, `hordes` or `recentCommands` yet; `EntityFactory` keeps its
-  own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
+- `GameState` has no `world`, `teams` or `hordes` yet; it keeps `recentCommands` and the seed for
+  diagnostic reports. `EntityFactory` takes ids from `IdGenerator`. `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),
   until `CommandApplySystem` heads the default `SystemPipeline` (§1).
