@@ -212,6 +212,57 @@ The example below is fenced so it is not read as a real entry.
 - Next step: the human pushes the phase branch; start the Sprint 1 sessions per
   `docs/agents/prompts/2026-10-03-ultracode-sessions.md`.
 
+### 2026-10-06 — Phase 1 / sprint 1.1 — feat/sim-kernel — sholtzman + Claude Code
+
+- What was done: first deliverable of session B: `packages/core/src/config/` with
+  `GameConfig.types.ts` (integration contract §2.2, plus `map.navCellSize` as the nav grid's
+  config home requested by session A), `createDefaultGameConfig(overrides)` (deep merge, frozen)
+  and `validateGameConfig(unknown)` throwing `ConfigValidationError` with the field path. The map
+  rules are session A's `validateMapConfig` rules, so A can delete its stand-ins. **Sam: this
+  commit is ready to merge into the phase branch early to unblock session A.**
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 78 passed (78)" at 100% coverage; client "Tests 27 passed (27)"; "✓ built in 235ms";
+  "Documentation check passed."
+- Next step: session B continues with `utils/`, `state/`, `commands/`, `diagnostics/` and
+  `Simulation` on the same branch.
+
+### 2026-10-06 — Phase 1 / sprint 1.1 — feat/sim-kernel — sholtzman + Claude Code
+
+- What was done: session B's simulation kernel in `packages/core`: `utils/` (`SeededRandom`
+  sfc32 + `Rng` port, `deterministicMath`, `vec2`, `fnv1a`, `RingBuffer`, `IdGenerator`),
+  `state/` (`GameState`, `EntityStore`, `GameEvents` with the 03 §4 catalogue, snapshots,
+  `StateHasher`), `commands/` (union, queue, handler registry; dev-spawn honours the caps),
+  `diagnostics/` (`Logger` port, replay harness, golden fixture), `Simulation` +
+  `SystemPipeline`; core coverage threshold 80 → 85. Ticked six sprint 1.1 items; SeededRandom
+  (lint ban), Vec2 (mutating variants), replay (15 §7 format) and Logger (`DiagnosticEvent`)
+  stay open. Asked in `INBOX.md`: two better-than-design sign-offs, session A's swap, the lint
+  ban, design-doc deltas. PR body: `docs/changelog/pr-feat-sim-kernel.md`.
+- Checks run: sprint metric: 10 seeds × 3,000 ticks, identical hashes every 100 ticks, twice,
+  in 367–377 ms (Apple M4 Pro, 24 GB, Node 24.21.0, Vitest 5.0.2). `npm run check` → `EXIT=0`:
+  "All matched files use Prettier code style!"; core "Tests 197 passed (197)" at 100%; client
+  "Tests 27 passed (27)"; "✓ built in 69ms"; "Documentation check passed." Pre-PR gate: critic
+  NO BLOCKERS after three passes; ponytail cut two test-only getters (−14 lines).
+- Next step: Sam pushes `feat/sim-kernel` and opens the PR into the phase branch; session A
+  swaps its stand-ins after the merge; session C starts on the merged kernel.
+
+### 2026-10-07 — Phase 1 / sprint 1.1 — feat/sim-kernel — sholtzman + Claude Code
+
+- What was done: follow-ups on PR #13 after the owner's sign-off (DEC-15…DEC-18, decisions log):
+  determinism lint with ADR 0012 and an `exp` wrapper; in-place `Vec2` forms; `DiagnosticEvent`
+  types and typed log records; 03 §10's initial-hordes cap rule; the kernel design folded into
+  architecture 01, 02, 03, 10, 15 and 17 with "Implementation status" sections in 03 and 15;
+  replay fixture format in 15 §7; session C's follow-ups in `INBOX.md` and its prompt. All ten
+  sprint 1.1 items ticked. Correction: the 2026-10-06 entry above had its "Checks run" line
+  completed in place (it first pointed at the PR body) before the branch was pushed; this log is
+  append-only, so that edit is recorded here.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 204 passed (204)" at 100%; client "Tests 27 passed (27)"; "✓ built in 70ms";
+  "Documentation check passed." Sprint metric: 10 seeds × 3,000 ticks, identical hashes, in
+  356–360 ms (Apple M4 Pro, 24 GB, Node 24.21.0). Pre-PR gate on the follow-ups: critic pass 4
+  found one blocker (stale PR body and PROGRESS), fixed; ponytail found nothing to cut.
+- Next step: Sam pushes the follow-ups to PR #13 and updates its description; session A swaps
+  its stand-ins after the merge; session C starts from its `INBOX.md` request.
+
 ### 2026-10-07 — Phase 1 / sprint 1 integration — feat/map-generator, chore/pre-pr-gate, docs/inbox-decisions-2026-10-03 — sholtzman + Claude Code
 
 - What was done: resolved the merge conflicts of PR #5 (`docs/inbox-decisions-2026-10-03` →
@@ -226,6 +277,21 @@ The example below is fenced so it is not read as a real entry.
   (36)"; "Documentation check passed." on all three.
 - Next step: Sam pushes the three branches, merges #5 then #10 into `main` (merge commits) and #8
   into the phase branch; `feat/sim-kernel` (#13) re-syncs with the phase branch after #8.
+
+### 2026-10-07 — Phase 1 / sprint 1.1 — feat/sim-kernel — sholtzman + Claude Code
+
+- What was done: re-synced PR #13 with the phase branch after PR #8 (the map generator) merged.
+  Kernel files use `Team` from `teams/teams.types.ts`; `index.ts` exports both APIs with
+  `MapConfig` only from `config/` and without the deleted `MAP_1`; `polarPoint` and one wall-ring
+  test call `utils/deterministicMath.ts` so #8's code passes the determinism lint (ADR 0012); both
+  sides' doc edits kept (01, 02, 03, 10, 15, 17, core `AGENTS.md`, decisions log, `INBOX.md`), 03
+  §12 and 06 §10 updated for what the merge resolved. Correction to the 2026-10-07 entries above:
+  session B's decisions recorded there as DEC-15…DEC-18 are DEC-17…DEC-20, because #8's open
+  INBOX items already use DEC-15 and DEC-16.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 295 passed (295)" (statements 98.78%, branches 91.48%, functions 99.1%, lines 98.69%);
+  client "Tests 36 passed (36)"; "✓ built in 79ms"; "Documentation check passed."
+- Next step: Sam pushes `feat/sim-kernel`; PR #13 then merges into the phase branch.
 
 ### 2026-10-07 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
 
