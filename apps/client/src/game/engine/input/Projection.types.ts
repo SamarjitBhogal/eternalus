@@ -1,5 +1,4 @@
-import type { Vec2 } from '@eternalus/core';
-
+import type { WorldPoint } from '../render/Renderer.types';
 import type { ScreenPoint } from './InputDevice.types';
 
 /**
@@ -8,5 +7,5 @@ import type { ScreenPoint } from './InputDevice.types';
  */
 export interface Projection {
   /** The world point under a canvas point (CSS pixels). */
-  screenToWorld(point: ScreenPoint): Vec2;
+  screenToWorld(point: ScreenPoint): WorldPoint;
 }

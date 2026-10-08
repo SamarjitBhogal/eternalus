@@ -1,5 +1,10 @@
 import type { InputDevice, MutableInputSnapshot, ScreenPoint } from './InputDevice.types';
-import { POINTER_EVENTS, PRIMARY_BUTTON, SUPPRESSED_EVENTS } from './MouseDevice.constants';
+import {
+  POINTER_EVENTS,
+  PRIMARY_BUTTON,
+  PRIMARY_BUTTON_BIT,
+  SUPPRESSED_EVENTS,
+} from './MouseDevice.constants';
 
 /**
  * The mouse on the canvas (architecture 09 §2). Buttons come from the `buttons` bitmask, so the
@@ -59,13 +64,18 @@ export class MouseDevice implements InputDevice {
       this.pointer = null;
       return;
     }
+    // A second button pressed while one is held arrives as a pointermove (a chorded press).
+    const newButtons = event.buttons & ~this.buttons;
     this.buttons = event.buttons;
     this.pointer = { x: event.offsetX, y: event.offsetY };
     if (event.type === 'pointerdown') {
       MouseDevice.capture(event);
-      if (event.button !== PRIMARY_BUTTON) {
-        event.preventDefault();
-      }
+    }
+    const isNonPrimaryPress =
+      (event.type === 'pointerdown' && event.button !== PRIMARY_BUTTON) ||
+      (newButtons & ~PRIMARY_BUTTON_BIT) !== 0;
+    if (isNonPrimaryPress) {
+      event.preventDefault();
     }
   };
 

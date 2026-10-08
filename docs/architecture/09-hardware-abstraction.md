@@ -291,7 +291,8 @@ keyboard and mouse, with these interim differences:
   `chordKey` until the settings screen needs conflict detection) and has no `clientActions` yet.
   `toIntent` projects the pointer through a `Projection` port that lives in `engine/input/`
   with only `screenToWorld` (02 §3 lets `game/input/` import `engine/input/` types only);
-  `Match` implements it with its `Camera`.
+  `Match` implements it with its `Camera`. `ActionState` carries the snapshot's `pointer` so
+  `toIntent` can project it (13 §6.2's sketch has only the three action sets).
 - `DeviceIntentSource` (in `game/`, beside `Match`) merges the devices and feeds `Match` through
   its `IntentSource` port. `Match` turns the intent's `move` into `move`/`stop` commands itself
   and drops `aim` and `triggered` until core's `PlayerController` handles the `intent` command

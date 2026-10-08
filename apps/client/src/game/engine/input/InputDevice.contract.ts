@@ -68,6 +68,8 @@ export const describeInputDevice = (name: string, make: () => InputDeviceHarness
 
       expect(snapshot.keys.has('other-device')).toBe(true);
       expect(snapshot.mouseButtons & 16).toBe(16);
+      // The device's own input was added on top of the other device's.
+      expect(snapshot.keys.size > 1 || snapshot.mouseButtons !== 16).toBe(true);
     });
   });
 };

@@ -1,6 +1,6 @@
 /** A fake pointer event for Node tests, which have `Event` but no `PointerEvent`. */
 export const fakePointerEvent = (
-  type: 'pointerdown' | 'pointerup' | 'pointermove' | 'pointerleave',
+  type: 'pointerdown' | 'pointerup' | 'pointermove' | 'pointercancel' | 'pointerleave',
   options: {
     readonly buttons?: number;
     readonly button?: number;

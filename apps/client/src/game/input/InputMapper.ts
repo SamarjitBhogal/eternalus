@@ -34,7 +34,7 @@ export class InputMapper {
 
   /** Whether a key code is bound to any action. */
   public isBound(code: string): boolean {
-    return this.actionsByChord.has(`keyboard:${code}`);
+    return this.actionsByChord.has(InputMapper.chordKey({ device: 'keyboard', code, label: '' }));
   }
 
   /** The actions held now and the ones that started or ended since the previous call. */
@@ -44,13 +44,13 @@ export class InputMapper {
       this.actionsByChord.get(key)?.forEach((action) => held.add(action));
     };
     snapshot.keys.forEach((code) => {
-      add(`keyboard:${code}`);
+      add(InputMapper.chordKey({ device: 'keyboard', code, label: '' }));
     });
-    MOUSE_BUTTON_BITS.forEach((bit, button) => {
+    for (const [button, bit] of MOUSE_BUTTON_BITS) {
       if ((snapshot.mouseButtons & bit) !== 0) {
-        add(`mouse:${String(button)}`);
+        add(InputMapper.chordKey({ device: 'mouse', button }));
       }
-    });
+    }
     const previous = this.lastHeld;
     this.lastHeld = held;
     return {

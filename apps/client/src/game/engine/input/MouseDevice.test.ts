@@ -86,6 +86,20 @@ describe('MouseDevice', () => {
     ]);
   });
 
+  it('cancels a chorded non-primary press (middle while left is held), and drops on cancel', () => {
+    const { target, read } = setUp();
+    target.dispatchEvent(fakePointerEvent('pointerdown', { buttons: LEFT }));
+    const chord = fakePointerEvent('pointermove', { buttons: LEFT | 4 });
+    const plainMove = fakePointerEvent('pointermove', { buttons: LEFT | 4 });
+
+    target.dispatchEvent(chord);
+    target.dispatchEvent(plainMove);
+    target.dispatchEvent(fakePointerEvent('pointercancel'));
+
+    expect([chord.defaultPrevented, plainMove.defaultPrevented]).toEqual([true, false]);
+    expect(read().mouseButtons).toBe(0);
+  });
+
   it('keeps the pointer through releaseAll, so aiming survives a focus loss', () => {
     const { target, mouse, read } = setUp();
     target.dispatchEvent(fakePointerEvent('pointerdown', { buttons: LEFT, x: 10, y: 20 }));
