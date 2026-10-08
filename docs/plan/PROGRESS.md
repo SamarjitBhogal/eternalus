@@ -307,3 +307,18 @@ The example below is fenced so it is not read as a real entry.
   "Tests 295 passed (295)" (statements 98.78%, branches 91.48%, functions 99.1%, lines 98.69%);
   client "Tests 36 passed (36)"; "✓ built in 79ms"; "Documentation check passed."
 - Next step: Sam pushes `feat/sim-kernel`; PR #13 then merges into the phase branch.
+
+### 2026-10-08 — Phase 1 / sprint 1 session D — feat/session-shell-home — sholtzman + Claude Code
+
+- What was done: resolved PR #12's merge conflicts by merging `origin/phase/1-simulation-kernel-and-world`
+  (`b0e9dea`, after PRs #13 and #15) into `feat/session-shell-home`; merge commit, no rebase and no
+  force. Conflicts were docs only: this log (every entry from both sides kept verbatim, oldest
+  first; 12 base + 1 + 4 = 17 entries) and `docs/README.md` (regenerated with `npm run docs:index`;
+  the changelog table lists both `pr-feat-session-shell-home.md` and `pr-feat-sim-kernel.md`).
+  `INBOX.md` and the phase-1 plan auto-merged; no code changes were needed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 295 passed (295)" (statements 98.78%, branches 91.48%);
+  client "Tests 197 passed (197)" (statements 90.13%, branches 88.23%); "✓ built in 94ms";
+  "Documentation check passed."
+- Next step: review and merge PR #12. Follow-up: core now exports `SeededRandom`, so the client's
+  `LcgRng` stand-in can be swapped at the `createRng` line in `main.tsx` (its own task).
