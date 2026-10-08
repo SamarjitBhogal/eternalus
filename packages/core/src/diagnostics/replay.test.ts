@@ -56,7 +56,7 @@ class WanderSystem implements System {
 }
 
 const createTarget: ReplayTargetFactory = (config, seed) =>
-  new Simulation(config, seed, new NullLogger(), [new WanderSystem()]);
+  new Simulation({ config, seed, logger: new NullLogger(), systems: [new WanderSystem()] });
 
 const recordRandomMatch = (seed: number, ticks: number, commandEvery: number): Replay => {
   const commandRng = new SeededRandom(seed).fork('commands');

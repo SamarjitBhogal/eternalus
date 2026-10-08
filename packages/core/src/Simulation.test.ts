@@ -14,7 +14,7 @@ const stop = (actorId: string): Command => ({ type: 'stop', actorId });
 const simulation = (
   systems: readonly System[] = [],
   logger: Logger = new NullLogger(),
-): Simulation => new Simulation(createDefaultGameConfig(), 1, logger, systems);
+): Simulation => new Simulation({ config: createDefaultGameConfig(), seed: 1, logger, systems });
 
 describe('Simulation', () => {
   it('advances exactly one tick per step and announces it', () => {
@@ -85,14 +85,39 @@ describe('Simulation', () => {
     ]);
   });
 
-  it('rejects dev-spawn of a kind no registry knows yet', () => {
+  it('spawns a Warrior through the default entity registry and its content', () => {
+    const sim = simulation();
+    sim.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'light',
+      at: { x: 10, y: 20 },
+      count: 1,
+    });
+    sim.step();
+
+    expect(sim.snapshot().entities).toEqual([
+      {
+        id: 'entity-1',
+        kind: 'warrior',
+        family: 'legend',
+        definitionId: 'warrior',
+        team: 'light',
+        transform: { x: 10, y: 20, radius: 0.5 },
+        health: { current: 600, max: 600 },
+      },
+    ]);
+  });
+
+  it('rejects dev-spawn of a kind no registry knows', () => {
     const sim = simulation();
     const reasons: string[] = [];
     sim.on('command-rejected', ({ reason }) => reasons.push(reason));
     sim.enqueueCommand({
       type: 'dev-spawn',
-      kind: 'warrior',
-      definitionId: 'warrior',
+      kind: 'dragon',
+      definitionId: 'dragon',
       team: 'light',
       at: { x: 0, y: 0 },
       count: 1,
@@ -114,9 +139,12 @@ describe('Simulation', () => {
 
   it('hashes equal runs equal and a different seed differently', () => {
     const run = (seed: number): number => {
-      const sim = new Simulation(createDefaultGameConfig(), seed, new NullLogger(), [
-        { name: 'draw', update: ({ state }) => state.rng.nextFloat() },
-      ]);
+      const sim = new Simulation({
+        config: createDefaultGameConfig(),
+        seed,
+        logger: new NullLogger(),
+        systems: [{ name: 'draw', update: ({ state }) => state.rng.nextFloat() }],
+      });
       for (let step = 0; step < 30; step += 1) {
         sim.step();
       }
@@ -128,12 +156,15 @@ describe('Simulation', () => {
 
   it('refuses an invalid config before anything runs', () => {
     const config = createDefaultGameConfig({ map: { numLanes: 0 } });
-    expect(() => new Simulation(config, 1, new NullLogger())).toThrow(ConfigValidationError);
+    expect(() => new Simulation({ config, seed: 1, logger: new NullLogger() })).toThrow(
+      ConfigValidationError,
+    );
   });
 
   it('refuses an invalid seed', () => {
-    expect(() => new Simulation(createDefaultGameConfig(), -1, new NullLogger())).toThrow(
-      RangeError,
-    );
+    expect(
+      () =>
+        new Simulation({ config: createDefaultGameConfig(), seed: -1, logger: new NullLogger() }),
+    ).toThrow(RangeError);
   });
 });

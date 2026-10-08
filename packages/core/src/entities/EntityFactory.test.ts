@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Entity } from './Entity';
 import { EntityFactory } from './EntityFactory';
 import { EntityRegistry } from './EntityRegistry';
+import { IdGenerator } from '../utils/IdGenerator';
 
 class FactoryEntity extends Entity {
   public spawnPayload: unknown = undefined;
@@ -68,5 +69,33 @@ describe('EntityFactory', () => {
     expect(() => factory.create('bad-kind', 'definition', {})).toThrow(
       'Invalid entity registration for "bad-kind": constructor must create an Entity.',
     );
+  });
+
+  it('takes ids from the IdGenerator it is given', () => {
+    const registry = new EntityRegistry();
+    registry.register('factory-entity', FactoryEntity);
+    const factory = new EntityFactory(registry, undefined, new IdGenerator(41));
+
+    expect(factory.create('factory-entity', 'definition', {}).id).toBe('entity-42');
+  });
+
+  it('adds the definition from its definition source to the spawn context', () => {
+    const registry = new EntityRegistry();
+    registry.register('factory-entity', FactoryEntity);
+    const definition = { id: 'known', kind: 'factory-entity' };
+    const source = { has: (id: string): boolean => id === 'known', get: (): object => definition };
+    const factory = new EntityFactory(registry, source);
+
+    const known = factory.create('factory-entity', 'known', { team: 'light' }) as FactoryEntity;
+    const unknown = factory.create('factory-entity', 'other', { team: 'dark' }) as FactoryEntity;
+    const given = factory.create('factory-entity', 'known', {
+      definition: 'kept',
+    }) as FactoryEntity;
+    const notAnObject = factory.create('factory-entity', 'known', 7) as FactoryEntity;
+
+    expect(known.spawnPayload).toEqual({ team: 'light', definition });
+    expect(unknown.spawnPayload).toEqual({ team: 'dark' });
+    expect(given.spawnPayload).toEqual({ definition: 'kept' });
+    expect(notAnObject.spawnPayload).toBe(7);
   });
 });

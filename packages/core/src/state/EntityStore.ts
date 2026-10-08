@@ -1,7 +1,7 @@
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
 import type { Entity } from '../entities/Entity';
-import type { EntityClass, EntityId, RemovalCause } from './EntityStore.types';
+import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
 
 /**
  * Every live entity of a match, kept in insertion order. Systems iterate with `forEach`, so the
@@ -10,6 +10,7 @@ import type { EntityClass, EntityId, RemovalCause } from './EntityStore.types';
  */
 export class EntityStore {
   private readonly entities = new Map<EntityId, Entity>();
+  private readonly removals: RemovalRecord[] = [];
 
   /** Number of live entities. */
   public get size(): number {
@@ -42,7 +43,18 @@ export class EntityStore {
     }
     entity.retire(cause);
     this.entities.delete(id);
+    this.removals.push({ entityId: id, cause });
     return entity;
+  }
+
+  /** Every removal of the current tick, in order (read by `NoRemovalWithoutCauseInvariant`). */
+  public removedThisTick(): readonly RemovalRecord[] {
+    return [...this.removals];
+  }
+
+  /** Forgets this tick's removals. Called once per tick by `GameState.advanceTick()`. */
+  public clearRemovedThisTick(): void {
+    this.removals.length = 0;
   }
 
   /** How many live instances of `entityClass` (e.g. `Unit`, `Legend`) fight for `team`. */
