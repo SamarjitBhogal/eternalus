@@ -106,16 +106,13 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `systems` to get the default pipeline and pass `debug` for the invariant level (architecture
       03 §6, 15 §2). Branch `feat/entity-systems`.
 
-- [ ] **Session C → Sam (2026-10-07, PR #14): three better-than-design items to sign off.** The
-      pre-PR critic classed these as improvements over the written design; once you accept them,
-      the design docs change in the same PR (ADR 0010). (a) `DefaultEntityRegistry` is built from
-      one `EntityModule` per family instead of a single `defaultEntityRegistry.ts`, so a family adds
-      kinds without editing anyone else's file (02 §4/§9, 04 §6 would change). (b) Content
-      validation is a `ContentValidator` with injected rule classes instead of a `validateContent()`
-      function; it runs when `UNIT_DEFINITIONS` loads (02 §2). (c) `Health.applyDamage` returns a
-      `DamageBreakdown` (`toShields`, `toBase`, `overflow`) instead of the overflow alone (07 §2).
-      Also proposed: ADR 0013 (core module rings lint). Recorded meanwhile in the "Implementation
-      status" notes of 04 and 07.
+- [ ] **Session C → Sam (2026-10-07, PR #14): 3 optional ideas, no pressure.** Yes, no or "not
+      now" are all fine; a no means I switch back to the documented design. 1. **One `EntityModule` per family** instead of one registry file: people adding kinds to
+      different families never edit the same file (02 §4/§9, 04 §6). 2. **`ContentValidator` with rule classes** instead of `validateContent()`: a new rule is a
+      new small class, and all errors show at once (02 §2). 3. **`applyDamage` returns `{ toShields, toBase, overflow }`** so damage numbers and stats can
+      read it. Happy to drop it if it gets in #13's way (07 §2).
+
+      Also proposed: ADR 0013 (core module rings lint).
 
 ## Feedback
 
