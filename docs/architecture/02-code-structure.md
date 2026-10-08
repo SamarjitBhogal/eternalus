@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -20,8 +20,9 @@ related:
 **Purpose.** Read this when you are about to create a file and need to know which folder it goes
 in, what that folder may import, how the file must be named and split, and which registry line
 makes the new code reachable. The tree below is the **planned** layout (decided, D6 and ADR 0006);
-folders are created when their first class arrives. Today core holds only `src/index.ts` and the
-client only `main.tsx`, `game/GameCanvas.tsx`, `bridge/store.ts` and `styles/global.css`.
+folders are created when their first class arrives, so the source tree, not this list, shows what
+exists today; the map slice's interim pieces are in
+[06-map-and-minimap.md](06-map-and-minimap.md) §10.
 
 ## 1. Principles
 
@@ -43,12 +44,13 @@ core/src/
   config/              GameConfig + validateGameConfig() + createDefaultGameConfig()
   content/             Type Object definitions by kebab-case ID, one subfolder per family
   utils/               Vec2, geometry, SeededRandom, deterministicMath, fnv1a, IdGenerator, RingBuffer
+  teams/               PlayableTeam, Team (shared by every layer; contract §2.2, 2026-10-03)
   state/               GameState, EntityStore, GameEvents, Snapshot types, StateHasher
   commands/            Command union, CommandQueue, applyCommand(), Replay, runReplay()
   entities/            Entity root + families, EntityFactory, EntityRegistry, strategies, ProjectilePool
   components/          Transform, Health, Movement, Combat, Abilities, Progression, Team, Collider, ...
   systems/             System interface, one class per system, SystemPipeline, defaultSystemPipeline
-  map/                 MapGenerator (+ MapBuilder), MapDefinition, WorldMap, LaneGeometry, symmetry
+  map/                 MapGenerator (+ MapBuilder), WorldMap, LaneGeometry, symmetry (types: content/maps)
   physics/             SpatialHash, Circle, ConvexPolygon, sat, sweptTests, Kinematics, CollisionResolver
   ai/                  Controller interface + controllers, Perception queries, aggro rules (data)
   abilities/           Ability, AbilityRuntime, effects/, restrictions/, AbilityRegistry
@@ -61,14 +63,15 @@ core/src/
 | Folder          | Responsibility                                                                                          | May import                                                                  | Key classes and files                                                                                                                                                                                                  |
 | --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `utils/`        | Generic, pure helpers with no game vocabulary                                                           | `utils/`                                                                    | `Vec2`, `geometry.ts`, `SeededRandom` (implements `Rng`), `deterministicMath.ts`, `fnv1a.ts`, `IdGenerator`, `RingBuffer`                                                                                              |
+| `teams/`        | The team vocabulary every layer shares                                                                  | nothing                                                                     | `teams.types.ts` (`PlayableTeam`, `Team`)                                                                                                                                                                              |
 | `config/`       | The world and match parameters, their defaults and validation                                           | `utils/`                                                                    | `GameConfig` (type), `validateGameConfig()`, `createDefaultGameConfig()`, `MatchTimelineEntry`                                                                                                                         |
-| `content/`      | Immutable definitions keyed by ID; `ContentCatalogue` resolves `extends` and validates cross-references | `content/`, `utils/` (types), `config/` (types)                             | `ContentCatalogue`, `validateContent()`, `legends/`, `mobs/`, `bosses/`, `structures/`, `abilities/`, `weapons/`, `artifacts/`, `status-effects/`, `obstacles/`, `maps/`, `ai/profiles/`, `narrative/`, `progression/` |
+| `content/`      | Immutable definitions keyed by ID; `ContentCatalogue` resolves `extends` and validates cross-references | `content/`, `utils/`, `teams/` and `config/` (types)                        | `ContentCatalogue`, `validateContent()`, `legends/`, `mobs/`, `bosses/`, `structures/`, `abilities/`, `weapons/`, `artifacts/`, `status-effects/`, `obstacles/`, `maps/`, `ai/profiles/`, `narrative/`, `progression/` |
 | `components/`   | State owned by entities plus the small invariants that guard it                                         | `utils/`, `content/` (types)                                                | `Transform`, `Health`, `Movement`, `Combat`, `Abilities`, `Progression`, `Team`, `Collider`, `StatusEffects`, `Carry`, `Loadout`, `Vision`, `Spawner`, `Capturable`                                                    |
 | `physics/`      | Shapes, broad and narrow phase, sweeps, kinematics; no entity knowledge                                 | `utils/`, `components/` (types)                                             | `SpatialHash`, `Circle`, `ConvexPolygon`, `sat.ts`, `sweptTests.ts`, `Kinematics`, `CollisionResolver`                                                                                                                 |
 | `entities/`     | Identity and lifecycle: the family classes, factories, registries and strategy catalogues               | `components/`, `content/`, `utils/`, `state/` (types), `physics/` (shapes)  | `Entity`, `Unit`, `Legend`, `Mob`, `Boss`, `Structure`, `Zone`, `Obstacle`, `Projectile`, `EntityFactory`, `EntityRegistry`, `StrategyRegistry`, `ProjectilePool`                                                      |
 | `state/`        | The aggregate root, the event channel, snapshot DTOs and hashing                                        | `utils/`, `config/` (types), `content/` (types), `components/`, `entities/` | `GameState`, `EntityStore`, `GameEvents`, `GameEventMap`, `Snapshot.types.ts`, `StateHasher`                                                                                                                           |
 | `commands/`     | Everything a player, bot or developer menu can ask for, and how it is applied                           | `state/`, `entities/`, `utils/`                                             | `Command.types.ts`, `CommandQueue`, `applyCommand.ts`, `Replay.types.ts`, `runReplay.ts`                                                                                                                               |
-| `map/`          | Config + seed → `MapDefinition`; the runtime `WorldMap` with cost grid and flow fields                  | `config/`, `content/`, `utils/`, `physics/`                                 | `MapGenerator`, `MapBuilder`, `MapDefinition.types.ts`, `WorldMap`, `LaneGeometry`, `symmetry.ts`                                                                                                                      |
+| `map/`          | Config + seed → `MapDefinition`; the runtime `WorldMap` with cost grid and flow fields                  | `config/`, `content/`, `teams/`, `utils/`, `physics/`                       | `MapGenerator`, `MapBuilder`, `WorldMap`, `LaneGeometry`, `symmetry.ts` (map types in `content/maps/maps.types.ts`)                                                                                                    |
 | `combat/`       | Damage resolution, death causes, status-effect maths                                                    | `components/`, `content/`, `state/`, `utils/`                               | `DamagePipeline`, `DamageSource.types.ts`, `DeathResolver`, `StatusEffectRuntime`                                                                                                                                      |
 | `abilities/`    | Ability behaviour built from effect and restriction strategies                                          | `combat/`, `components/`, `content/`, `state/`, `utils/`                    | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                                                      |
 | `loadout/`      | The loadout model and its validation against content                                                    | `content/`, `utils/`                                                        | `Loadout.types.ts`, `validateLoadout.ts`, `autoBuildLoadout.ts`                                                                                                                                                        |
@@ -162,7 +165,9 @@ called out in the PR. Planned surface: `Simulation` and `SimulationOptions`; the
 `createDefaultGameConfig`; `ContentCatalogue` and `loadDefaultContent()` (read-only definitions for
 the loadout screen); `Loadout`, `validateLoadout`, `autoBuildLoadout`; `PlayerController` and
 `InputIntent`; the `Logger` and `LogRecord` types; `DiagnosticEvent`; `Replay` and `runReplay`;
-the ID types. Systems, entities, components and strategies stay internal.
+`MapGenerator`, the `MapDefinition` types, `PlayableTeam` and `Team`
+([integration contract](../agents/prompts/2026-10-03-ultracode-sessions.md) §2.2); the ID types.
+Systems, entities, components and strategies stay internal.
 
 ## 7. Content, config, constants, settings
 

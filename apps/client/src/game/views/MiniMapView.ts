@@ -1,7 +1,7 @@
 import type { MapDefinition } from '@eternalus/core';
 
-import type { Renderer } from '../engine/Renderer';
-import type { ScreenRect, WorldPoint, WorldRect } from '../engine/Renderer.types';
+import type { Renderer } from '../engine/render/Renderer';
+import type { ScreenRect, WorldPoint, WorldRect } from '../engine/render/Renderer.types';
 import {
   MINI_MAP_BACKGROUND_COLOR,
   MINI_MAP_BORDER_COLOR,
@@ -15,8 +15,9 @@ import type { WorldLayer } from './SceneView.types';
 
 /**
  * Draws a small copy of the whole map in the bottom-right corner of the screen, with a box
- * showing which part the main view is looking at. It draws the same scene as the main view,
- * so anything added to the scene later (obstacles, units) shows up here automatically.
+ * showing which part the main view is looking at. It draws the same scene as the main view
+ * (each layer's `drawMinimap`, which uses every feature's `minimapGlyph`), so anything added to
+ * the scene or the map later (obstacles, units, new structures) shows up here automatically.
  */
 export class MiniMapView {
   private readonly map: MapDefinition;
@@ -79,7 +80,7 @@ export class MiniMapView {
     const area = this.areaFor(screenWidth, screenHeight);
     renderer.fillScreenRect(area, MINI_MAP_BACKGROUND_COLOR);
     renderer.fitWorldInArea(this.map.width, this.map.height, area);
-    this.scene.draw(renderer);
+    this.scene.drawMinimap(renderer);
     renderer.strokePath(
       [
         { x: view.x, y: view.y },

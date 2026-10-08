@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -59,7 +59,7 @@ export class GameState {
   public readonly rng: SeededRandom; // the only source of randomness
   public readonly entities: EntityStore; // deterministic, ascending-id iteration
   public readonly world: WorldMap; // grid, cost field, flow fields, structures index
-  public readonly teams: Readonly<Record<TeamId, TeamState>>; // score, structures alive, buffs
+  public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context
@@ -107,11 +107,11 @@ export type Command =
   | { readonly type: 'pick-up'; readonly actorId: EntityId; readonly targetId: EntityId }
   | { readonly type: 'throw'; readonly actorId: EntityId; readonly aim: Aim }
   | { readonly type: 'interact'; readonly actorId: EntityId; readonly targetId: EntityId }
-  | { readonly type: 'dev-spawn-legend'; readonly team: TeamId; readonly definitionId: LegendId }
+  | { readonly type: 'dev-spawn-legend'; readonly team: Team; readonly definitionId: LegendId }
   | { readonly type: 'dev-remove-legend'; readonly entityId: EntityId }
   | {
       readonly type: 'dev-spawn-mobs';
-      readonly team: TeamId;
+      readonly team: Team;
       readonly definitionId: MobId;
       readonly count: number;
       readonly at: Vec2;
@@ -190,7 +190,7 @@ export type Snapshot = {
   readonly phase: MatchPhase;
   readonly entities: readonly EntitySnapshot[]; // ascending id
   readonly hordes: readonly HordeSnapshot[];
-  readonly teams: Readonly<Record<TeamId, TeamSnapshot>>;
+  readonly teams: Readonly<Record<Team, TeamSnapshot>>;
   readonly player: PlayerSnapshot | null; // HUD data for the human Legend
   readonly mapRevision: number; // increments when destructible terrain changed
 };
@@ -200,7 +200,7 @@ export type EntitySnapshot = {
   readonly kind: EntityKind;
   readonly family: EntityFamily;
   readonly definitionId: string;
-  readonly team: TeamId;
+  readonly team: Team;
   readonly x: number;
   readonly y: number;
   readonly facing: number;
@@ -273,15 +273,15 @@ requestAnimationFrame(t)
 Same seed + same command log = same match, bit for bit, on the same machine and browser. The
 JavaScript-specific hazards and their rules (research §1, table "Determinism pitfalls"):
 
-| Hazard                                    | Rule in core                                                                                                             | Enforcement                                                   |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| `Math.random()`                           | Only `GameState.rng` (`SeededRandom`, sfc32, seeded from the match seed); systems receive it through `SystemContext`     | ESLint `no-restricted-properties` (exists)                    |
-| `Date`, `performance.now`, timers         | Time is `tick`; durations are ticks converted from seconds at load                                                       | tsconfig (no DOM/Node types); planned `no-restricted-globals` |
-| `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (ascending id) or arrays built in tick order            | Review; `EntityStore` API exposes no `Map`                    |
-| `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                 | Review; `utils/compareById`                                   |
-| Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles | Planned `no-restricted-properties` with a file override       |
-| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                            | Design + `InvariantSystem`                                    |
-| Floats                                    | Doubles are fine for single-machine replays; revisit fixed point only for networked lockstep                             | None needed                                                   |
+| Hazard                                    | Rule in core                                                                                                                                                                                             | Enforcement                                                   |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `Math.random()`                           | Only seeded RNGs: `GameState.rng` (`SeededRandom`, sfc32, seeded from the match seed), which systems receive through `SystemContext`, and the `Rng` that `MapGenerator` creates from its seed (ADR 0009) | ESLint `no-restricted-properties` (exists)                    |
+| `Date`, `performance.now`, timers         | Time is `tick`; durations are ticks converted from seconds at load                                                                                                                                       | tsconfig (no DOM/Node types); planned `no-restricted-globals` |
+| `Map`/`Set`/object iteration order        | Never drive simulation order from a `Map`; iterate `EntityStore` (ascending id) or arrays built in tick order                                                                                            | Review; `EntityStore` API exposes no `Map`                    |
+| `Array.prototype.sort` comparators        | Comparators are pure and total; ties broken by entity id                                                                                                                                                 | Review; `utils/compareById`                                   |
+| Transcendental `Math.*`                   | `sin`, `cos`, `atan2`, `exp`, `pow` only through `utils/deterministicMath.ts`; steering works with vectors, never angles                                                                                 | Planned `no-restricted-properties` with a file override       |
+| Update order and removal during iteration | Fixed `SystemPipeline` order; spawns and removals are deferred to `SpawnSystem`/`DeathSystem`                                                                                                            | Design + `InvariantSystem`                                    |
+| Floats                                    | Doubles are fine for single-machine replays; revisit fixed point only for networked lockstep                                                                                                             | None needed                                                   |
 
 ## 9. `StateHasher` and replays
 
@@ -318,10 +318,9 @@ flow fields and the spawn schedule follow. Config is a plain object, validated o
 // Sketch: packages/core/src/config/GameConfig.types.ts
 export type GameConfig = {
   readonly tickRate: number;
-  readonly map: MapConfig; // 06 §2: numLanes, spawnTowersPerLane, buffTowersPerLane, campsPerSide, cornerCamps, world size, lanes, rift
+  readonly map: MapConfig; // 06 §2: counts, world size and preset; lane and rift layout is MapLayout content
   readonly match: MatchConfig;
   readonly limits: LimitsConfig;
-  readonly mapPreset: MapPresetId;
 };
 
 export type MatchConfig = {
@@ -361,10 +360,12 @@ export type LimitsConfig = {
 
 `validateGameConfig(config)` returns a list of problems (integers where required, `tickRate`
 within a sane range, `maxUnitsPerTeam >= initialHordes * hordeSizes.light`, timeline entries
-ordered, `campsPerSide` divisible by the number of gaps between lanes; the last two are
+ordered; the last is a
 `Recommendation:`), and `Simulation` refuses to start on any problem. Time fields are authored in
 seconds and converted to ticks once at construction, so systems only ever see ticks. `Match`
-builds the config from a `MapPreset` plus developer-menu overrides; tests build it inline with
+builds the config from `createDefaultGameConfig()` plus developer-menu overrides (`map.presetId`
+picks a `MapPreset`, which shapes the ground and the lanes but never sets a count, DEC-14); tests
+build it inline with
 `createDefaultGameConfig({ map: { numLanes: 5 } })` and assert the derived counts.
 
 ## 11. Content by ID, never embedded

@@ -1,4 +1,4 @@
-import type { Renderer } from '../engine/Renderer';
+import type { Renderer } from '../engine/render/Renderer';
 import type { WorldLayer } from './SceneView.types';
 
 /**
@@ -14,10 +14,17 @@ export class SceneView implements WorldLayer {
     this.layers = layers;
   }
 
-  /** Draws every layer, bottom first. */
+  /** Draws every layer for the main view, bottom first. */
   public draw(renderer: Renderer): void {
     for (const layer of this.layers) {
       layer.draw(renderer);
+    }
+  }
+
+  /** Draws every layer for the mini map, bottom first. */
+  public drawMinimap(renderer: Renderer): void {
+    for (const layer of this.layers) {
+      layer.drawMinimap(renderer);
     }
   }
 }

@@ -4,7 +4,7 @@ description: Proposals that resolve or extend mechanics the sources leave open, 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [reference, suggestions, mechanics, ai, developer-menu, achievements, persistence]
 paths:
   [
@@ -213,7 +213,7 @@ export type SimMatchOptions = {
   readonly seed: number;
   readonly config: GameConfig;
   readonly content: ContentCatalogue;
-  readonly profiles: Readonly<Record<TeamId, AiProfileId>>;
+  readonly profiles: Readonly<Record<PlayableTeam, AiProfileId>>;
   readonly maxTicks: number; // safety cap; the match normally ends by victory
   readonly assertLevel: AssertLevel;
 };
@@ -285,9 +285,9 @@ export type MatchHistoryRecordDtoV1 = {
   readonly contentVersion: string;
   readonly isSimulation: boolean; // §6
   readonly result: {
-    readonly winner: TeamId | null;
+    readonly winner: PlayableTeam | null;
     readonly condition: 'stronghold-destroyed' | 'score-cap' | 'forfeit' | 'aborted';
-    readonly playerTeam: TeamId;
+    readonly playerTeam: PlayableTeam;
     readonly playerWon: boolean;
   };
   readonly player: {
@@ -299,7 +299,7 @@ export type MatchHistoryRecordDtoV1 = {
   readonly legends: readonly LegendScoreDtoV1[]; // 20 rows, see below
   readonly teams: Readonly<
     Record<
-      TeamId,
+      PlayableTeam,
       {
         readonly score: number;
         readonly structuresDestroyed: number;
@@ -319,7 +319,7 @@ export type MatchHistoryRecordDtoV1 = {
 
 export type LegendScoreDtoV1 = {
   readonly entityId: number;
-  readonly team: TeamId;
+  readonly team: PlayableTeam;
   readonly classId: string;
   readonly controller: 'player' | 'bot' | 'rover';
   readonly kills: number;

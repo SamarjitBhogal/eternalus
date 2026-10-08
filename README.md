@@ -5,11 +5,12 @@ server. It is a TypeScript monorepo (npm workspaces) with a React + CSS Modules 
 engine on the HTML5 Canvas 2D API, driving a deterministic simulation at a fixed 30 ticks per
 second.
 
-**Status:** the repository is scaffolding plus a complete design and delivery plan (Phase 0).
-The client renders an empty full-screen canvas inside a Redux provider, and `@eternalus/core`
-has no code yet. The design is in [docs/architecture/](docs/architecture/README.md), the
-requirements in [docs/requirements/](docs/requirements/README.md) and the plan in
-[docs/plan/](docs/plan/README.md). Start at the [documentation map](docs/README.md).
+**Status:** Phase 1 is under way, on top of the Phase 0 scaffolding and the complete design and
+delivery plan. `@eternalus/core` has the seeded map generator, and the client draws the generated
+map and its minimap on a full-screen canvas inside a Redux provider. The design is in
+[docs/architecture/](docs/architecture/README.md), the requirements in
+[docs/requirements/](docs/requirements/README.md) and the plan in [docs/plan/](docs/plan/README.md).
+Start at the [documentation map](docs/README.md).
 
 ## Prerequisites
 
@@ -57,7 +58,7 @@ npm run check      # the full quality gate, the same as CI
 ## Repository layout
 
 ```
-packages/core/   @eternalus/core    game simulation, pure TypeScript (empty for now)
+packages/core/   @eternalus/core    game simulation, pure TypeScript
 apps/client/     @eternalus/client  Vite + React app: canvas, Redux store, UI
 .githooks/       pre-commit and pre-push hooks
 .claude/         Claude Code harness: settings (permissions, hooks), skills, subagents
