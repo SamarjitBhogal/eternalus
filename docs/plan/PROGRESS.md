@@ -306,3 +306,15 @@ The example below is fenced so it is not read as a real entry.
   "✓ built in 237ms"; "Documentation check passed."
 - Next step: the human reviews and commits; the PR into the phase branch touches
   `eslint.config.js` line 24 only, away from PR #14's module-ring hunk (line 78 on).
+
+### 2026-10-08 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
+
+- What was done: pre-PR gate on DEC-16. The critic found no blockers and one major: a change to
+  `eslint.config.js` needs an ADR (`docs/agents/checklists.md`, `guardrails.md` §4). The owner
+  chose to add one: ADR 0014, a "Lint scope" row in the guardrails table, and ADR 0014 named in
+  the DEC-16 row and the config comment. Ponytail: "Lean already. Ship." Correction to the entry
+  above: its next step ("the human reviews and commits") was overtaken, because the owner asked
+  for the commit and the PR in the same session.
+- Checks run: see the PR description for the verbatim `npm run check` output after the ADR.
+- Next step: review and merge the PR into the phase branch. Whichever of it and PR #14 merges
+  second keeps both `PROGRESS.md` entries (#14's first).
