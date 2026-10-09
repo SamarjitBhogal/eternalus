@@ -429,3 +429,23 @@ The example below is fenced so it is not read as a real entry.
   24.21.0, Linux). Pre-PR gate not run yet.
 - Next step: rehearse the demo; after #14–#19 merge, open the PR into the phase branch through the
   pre-PR gate, or drop the branch when Phase 3 lands.
+
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype (pre-PR gate) — SamarjitBhogal + Claude Code
+
+- What was done: ran the pre-PR gate (ADR 0010) on the prototype. Critic pass 1 found one blocker
+  (the Match default-view warning test had lost its exact assertion; restored with an `obstacle`
+  through test-injected content) and several should-fix items, all fixed: `AiSystem` asks each
+  entity on a cadence (`decideEveryTicks: 5`, architecture 11 §6, staggered by store position) and
+  throws on an unregistered controller; the follower sends `stop` only while it is steering
+  (`EntityStore.isSteering`); deterministic `distance`/`length` instead of `Math.hypot`; the light
+  minion cites `balancing.md` and states its speed and mass departures; PROTO-01 now asks the
+  owner to confirm them and where `AiSystem` belongs. Ponytail: one cut (−2 lines). Correction to
+  the entry above: it is dated 2026-10-09 but the work was done on 2026-10-08; this log is
+  append-only, so the date is corrected here.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)" (statements 99.03%, branches 93.55%); client "Tests 292 passed (292)"
+  (statements 92.61%, branches 93.35%); "✓ built in 162ms"; "Documentation check passed." (Node
+  24.21.0, Linux). Critic pass 2: NO BLOCKERS. Headless Chrome: the escort trails the player and
+  settles around it.
+- Next step: Samarjit commits and pushes the rework, then opens the PR into the phase branch with
+  `docs/changelog/pr-feat-minion-follow-prototype.md` as its description.

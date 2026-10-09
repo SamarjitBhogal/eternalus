@@ -12,4 +12,6 @@ export type FollowLeaderProfile = {
   readonly separationWeight: number;
   /** Steering shorter than this is treated as "stay put", so followers settle instead of jitter. */
   readonly minSteer: number;
+  /** How often a follower decides, in ticks (architecture 11 §6). */
+  readonly decideEveryTicks: number;
 };

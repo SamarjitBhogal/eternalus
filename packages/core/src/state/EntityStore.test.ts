@@ -165,6 +165,19 @@ describe('EntityStore', () => {
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
   });
 
+  it('reports whether an entity is steering', () => {
+    const store = storeWith('still');
+    const walker = new Walker('walker', 'walker-definition');
+    walker.spawn({});
+    store.add(walker);
+
+    expect(store.isSteering('walker')).toBe(false);
+    store.steer('walker', { x: 1, y: 0 });
+    expect(store.isSteering('walker')).toBe(true);
+    expect(store.isSteering('still')).toBe(false);
+    expect(store.isSteering('nobody')).toBe(false);
+  });
+
   it('reads position, team and controller for ai/, and nothing for bare or unknown entities', () => {
     const store = storeWith('bare');
     const escort = new Escort('escort', 'escort-definition');

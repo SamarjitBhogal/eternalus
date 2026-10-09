@@ -1,14 +1,17 @@
 import type { Command } from '../commands/Command.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import { distance } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
+import { length } from '../utils/vec2';
 import type { Controller } from './Controller.types';
 import type { FollowLeaderProfile } from './FollowLeaderController.types';
 
 /**
  * Prototype decision (2026-10-08, demo): a follower walks to the nearest Legend of its team and
- * keeps a little space from that Legend and from other followers. Phase 3's `MinionController` (lane marching, aggro)
- * replaces it; nothing else depends on it.
+ * keeps a little space from that Legend and from other followers. Phase 3's `MinionController`
+ * (lane marching, aggro) replaces it; nothing else depends on it. It sends a command only when
+ * something changes: a `move` while it has somewhere to go, one `stop` when it arrives.
  *
  * @remarks ponytail: scans every entity per decision, O(n²) per tick. Doc 11 §3 wants
  * `Perception` over `SpatialHash`; swap the scan once `SpatialHash` exists.
@@ -18,6 +21,11 @@ export class FollowLeaderController implements Controller {
 
   /** @param profile - Distances and weights; the controller holds no numbers of its own. */
   public constructor(private readonly profile: FollowLeaderProfile) {}
+
+  /** The profile's decision cadence. */
+  public get cadenceTicks(): number {
+    return this.profile.decideEveryTicks;
+  }
 
   /** Steers toward the nearest allied Legend, or stops when close enough or leaderless. */
   public decide(state: GameState, entityId: EntityId): readonly Command[] {
@@ -39,35 +47,36 @@ export class FollowLeaderController implements Controller {
       }
       const dx = at.x - self.x;
       const dy = at.y - self.y;
-      const distance = Math.hypot(dx, dy);
+      const gap = distance(at, self);
       const isLegend = other.family === 'legend';
-      if (isLegend && distance < leaderDistance) {
+      if (isLegend && gap < leaderDistance) {
         leader = at;
-        leaderDistance = distance;
+        leaderDistance = gap;
       }
       if (
-        distance > 0 &&
-        distance < separationRadius &&
+        gap > 0 &&
+        gap < separationRadius &&
         (isLegend || store.controllerOf(other.id) === this.id)
       ) {
-        // Away from the neighbour, stronger the closer it is (full weight at contact, 0 at the radius).
-        const strength = (separationWeight * (separationRadius - distance)) / separationRadius;
-        pushX -= (dx / distance) * strength;
-        pushY -= (dy / distance) * strength;
+        // Away from the neighbour: full weight at contact, nothing at the radius.
+        const strength = (separationWeight * (separationRadius - gap)) / separationRadius;
+        pushX -= (dx / gap) * strength;
+        pushY -= (dy / gap) * strength;
       }
     });
-    const stop: Command = { type: 'stop', actorId: entityId };
+    // A stop only when the follower is still steering, so a settled escort sends nothing.
+    const stop: readonly Command[] = store.isSteering(entityId)
+      ? [{ type: 'stop', actorId: entityId }]
+      : [];
     if (leader === undefined) {
-      return [stop];
+      return stop;
     }
-    let x = pushX;
-    let y = pushY;
     if (leaderDistance > followDistance) {
-      x += (leader.x - self.x) / leaderDistance;
-      y += (leader.y - self.y) / leaderDistance;
+      pushX += (leader.x - self.x) / leaderDistance;
+      pushY += (leader.y - self.y) / leaderDistance;
     }
-    return Math.hypot(x, y) < minSteer
-      ? [stop]
-      : [{ type: 'move', actorId: entityId, direction: { x, y } }];
+    return length({ x: pushX, y: pushY }) < minSteer
+      ? stop
+      : [{ type: 'move', actorId: entityId, direction: { x: pushX, y: pushY } }];
   }
 }

@@ -7,4 +7,5 @@ export const FOLLOW_LEADER_PROFILE = {
   separationRadius: 1.2, // TUNE: a bit over two light-mob footprints
   separationWeight: 1.5, // TUNE:
   minSteer: 0.25, // TUNE:
+  decideEveryTicks: 5, // TUNE: the minion cadence of architecture 11 §6
 } as const;

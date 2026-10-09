@@ -33,10 +33,58 @@ class ScriptedIntent implements IntentSource {
   }
 }
 
-const setUp = (map?: MapDefinition) => {
+/** Where a test `Simulation` finds definitions, when a test needs kinds the shipped content lacks. */
+type Content = NonNullable<ConstructorParameters<typeof Simulation>[0]['content']>;
+
+/**
+ * A rock (kind `obstacle`, which has no view of its own) plus the two units every match spawns,
+ * with speeds already per tick as the simulation sees them.
+ */
+const CONTENT_WITH_A_ROCK: Content = (() => {
+  const movement = { maxSpeed: 0.2, acceleration: 0.05, mass: 1 };
+  const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movement };
+  const definitions = [
+    { id: 'warrior', kind: 'warrior', displayName: 'Warrior', ...unit },
+    {
+      id: 'light-minion',
+      kind: 'light-mob',
+      displayName: 'Minion',
+      controller: 'follow-leader',
+      ...unit,
+    },
+    {
+      id: 'rock',
+      kind: 'obstacle',
+      displayName: 'Rock',
+      obstacleType: 'rock',
+      footprintRadius: 1,
+      health: null,
+      isBurnable: false,
+      weight: 1,
+    },
+  ];
+  const byId = new Map(definitions.map((definition) => [definition.id, definition]));
+  return {
+    has: (id: string) => byId.has(id),
+    get: (id: string) => {
+      const definition = byId.get(id);
+      if (definition === undefined) {
+        throw new Error(`No test definition "${id}".`);
+      }
+      return definition;
+    },
+  };
+})();
+
+const setUp = (map?: MapDefinition, content?: Content) => {
   const config = createDefaultGameConfig();
   const generated = map ?? new MapGenerator().generate(config, SEED);
-  const simulation = new Simulation({ config, seed: SEED, logger: new NullLogger() });
+  const simulation = new Simulation({
+    config,
+    seed: SEED,
+    logger: new NullLogger(),
+    ...(content === undefined ? {} : { content }),
+  });
   const scheduler = new FakeFrameScheduler();
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
@@ -220,6 +268,26 @@ describe('Match', () => {
     expect(unsubscribes.count).toBe(1);
   });
 
+  it('logs once for each kind it has to draw with the default view', () => {
+    const { match, simulation, logger } = setUp(undefined, CONTENT_WITH_A_ROCK);
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'obstacle',
+      definitionId: 'rock',
+      team: 'neutral',
+      at: { x: 100, y: 100 },
+      count: 2,
+    });
+    match.tick();
+
+    match.render(0);
+    match.render(0);
+
+    expect(
+      logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
+    ).toEqual([['WARN', 'client.views', 'No view for kind "obstacle"; drawing the default view.']]);
+  });
+
   it('draws mobs with their own view, so the escort and other mobs log no default-view warning', () => {
     const { match, simulation, logger } = setUp();
     simulation.enqueueCommand({
@@ -232,6 +300,7 @@ describe('Match', () => {
     });
     match.tick();
 
+    match.render(0);
     match.render(0);
 
     expect(logger.records.filter(({ severityText }) => severityText === 'WARN')).toEqual([]);

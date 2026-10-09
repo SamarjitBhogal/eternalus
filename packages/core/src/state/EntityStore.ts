@@ -115,6 +115,12 @@ export class EntityStore {
     return this.entities.get(id)?.findComponent(TeamMembership)?.team;
   }
 
+  /** Whether the entity has a heading to move along (`false` when stopped, unknown or immovable). */
+  public isSteering(id: EntityId): boolean {
+    const heading = this.entities.get(id)?.findComponent(Movement)?.heading;
+    return heading !== undefined && (heading.x !== 0 || heading.y !== 0);
+  }
+
   /** The id of the controller that drives the entity, or `undefined` when nothing does. */
   public controllerOf(id: EntityId): string | undefined {
     return this.entities.get(id)?.findComponent(Brain)?.controllerId;

@@ -9,6 +9,8 @@ import type { GameState } from '../state/GameState';
 export interface Controller {
   /** Kebab-case id that unit definitions name in `controller`. */
   readonly id: string;
+  /** How often an entity is asked, in ticks (architecture 11 §6); a content value, never a literal. */
+  readonly cadenceTicks: number;
   /** Reads `state` only and returns the commands for `entityId` for the next tick. */
   decide(state: GameState, entityId: EntityId): readonly Command[];
 }

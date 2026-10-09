@@ -8,7 +8,13 @@ import { GameState } from '../state/GameState';
 import type { Vec2 } from '../utils/geometry.types';
 import { FollowLeaderController } from './FollowLeaderController';
 
-const PROFILE = { followDistance: 2, separationRadius: 1, separationWeight: 1, minSteer: 0.25 };
+const PROFILE = {
+  followDistance: 2,
+  separationRadius: 1,
+  separationWeight: 1,
+  minSteer: 0.25,
+  decideEveryTicks: 5,
+};
 
 const setup = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
@@ -53,11 +59,13 @@ describe('FollowLeaderController', () => {
     ]);
   });
 
-  it('stops once inside the follow distance', () => {
+  it('stops once inside the follow distance, and only if it is still moving', () => {
     const { state, legend, minion } = setup();
     legend({ x: 1.5, y: 0 });
     const id = minion({ x: 0, y: 0 });
 
+    expect(controller.decide(state, id)).toEqual([]);
+    state.entities.steer(id, { x: 1, y: 0 });
     expect(controller.decide(state, id)).toEqual([{ type: 'stop', actorId: id }]);
   });
 
@@ -65,8 +73,13 @@ describe('FollowLeaderController', () => {
     const { state, legend, minion } = setup();
     legend({ x: 5, y: 0 }, 'dark');
     const id = minion({ x: 0, y: 0 });
+    state.entities.steer(id, { x: 0, y: 1 });
 
     expect(controller.decide(state, id)).toEqual([{ type: 'stop', actorId: id }]);
+  });
+
+  it('decides at the cadence of its profile', () => {
+    expect(controller.cadenceTicks).toBe(PROFILE.decideEveryTicks);
   });
 
   it('pushes away from a crowding follower, but not from other mobs', () => {

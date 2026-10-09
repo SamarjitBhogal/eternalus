@@ -27,6 +27,7 @@ describe('AiSystem', () => {
     const second = spawn('light-mob', 'light-minion');
     const stopper: Controller = {
       id: 'follow-leader',
+      cadenceTicks: 1,
       decide: (_state, entityId) => [{ type: 'stop', actorId: entityId }],
     };
     const queued: Command[] = [];
@@ -39,16 +40,45 @@ describe('AiSystem', () => {
     ]);
   });
 
-  it('skips entities whose controller is not registered', () => {
+  it('asks each entity only on its own cadence tick, spread by store position', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const ids = [0, 1, 2].map(() => {
+      const entity = factory.create('light-mob', 'light-minion', {
+        position: { x: 0, y: 0 },
+        team: 'light',
+      });
+      state.entities.add(entity);
+      return entity.id;
+    });
+    const asked: string[] = [];
+    const recorder: Controller = {
+      id: 'follow-leader',
+      cadenceTicks: 3,
+      decide: (_state, entityId) => {
+        asked.push(entityId);
+        return [];
+      },
+    };
+    const system = new AiSystem([recorder], () => undefined);
+
+    for (let tick = 0; tick < 3; tick += 1) {
+      system.update({ state });
+      expect(asked).toHaveLength(tick + 1);
+      state.advanceTick();
+    }
+    expect([...asked].sort()).toEqual([...ids].sort());
+  });
+
+  it('throws when an entity names a controller that is not registered', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
     state.entities.add(
       factory.create('light-mob', 'light-minion', { position: { x: 0, y: 0 }, team: 'light' }),
     );
-    const queued: Command[] = [];
 
-    new AiSystem([], (command) => queued.push(command)).update({ state });
-
-    expect(queued).toEqual([]);
+    expect(() => {
+      new AiSystem([], () => undefined).update({ state });
+    }).toThrow('names unknown controller "follow-leader"');
   });
 });

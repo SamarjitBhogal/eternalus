@@ -6,8 +6,8 @@ import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
- * The tick's systems in their fixed order: decisions (AI), movement, then death, then invariants last. This is
- * the one place a system is added, at its position in the tick (architecture 02 §9).
+ * The tick's systems in their fixed order: decisions (AI), movement, then death, then invariants
+ * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /**
