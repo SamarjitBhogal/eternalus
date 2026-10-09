@@ -1,4 +1,4 @@
-import type { InputDevice, MutableInputSnapshot, PointerPosition } from './InputDevice.types';
+import type { InputDevice, MutableInputSnapshot, ScreenPoint } from './InputDevice.types';
 import {
   BUTTON_BITS,
   MAIN_BUTTON,
@@ -13,7 +13,7 @@ import {
  */
 export class MouseDevice implements InputDevice {
   private buttons = 0;
-  private pointer: PointerPosition | null = null;
+  private pointer: ScreenPoint | null = null;
   private target: EventTarget | null = null;
 
   /** Starts listening to pointer events on `target`, normally the game canvas. */

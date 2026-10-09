@@ -1,5 +1,5 @@
 /** A pointer position in CSS pixels, relative to the element the device is attached to. */
-export type PointerPosition = { readonly x: number; readonly y: number };
+export type ScreenPoint = { readonly x: number; readonly y: number };
 
 /**
  * Everything the attached devices hold right now, merged into one value. Raw device state only:
@@ -11,14 +11,14 @@ export type InputSnapshot = {
   /** `MouseEvent.button` of every mouse button held: 0 main, 1 wheel, 2 secondary, 3/4 side. */
   readonly mouseButtons: ReadonlySet<number>;
   /** The last pointer position, or `null` before the pointer has moved over the target. */
-  readonly pointer: PointerPosition | null;
+  readonly pointer: ScreenPoint | null;
 };
 
 /** The snapshot devices write into. Each frame starts from an empty one. */
 export type MutableInputSnapshot = {
   keys: Set<string>;
   mouseButtons: Set<number>;
-  pointer: PointerPosition | null;
+  pointer: ScreenPoint | null;
 };
 
 /**

@@ -1,4 +1,4 @@
-import type { InputDevice, MutableInputSnapshot, PointerPosition } from './InputDevice.types';
+import type { InputDevice, MutableInputSnapshot, ScreenPoint } from './InputDevice.types';
 
 /**
  * A scriptable `InputDevice` for tests: `press('KeyW')`, `pressButton(3)`, `movePointer(…)`.
@@ -7,7 +7,7 @@ import type { InputDevice, MutableInputSnapshot, PointerPosition } from './Input
 export class FakeInputDevice implements InputDevice {
   private readonly keys = new Set<string>();
   private readonly buttons = new Set<number>();
-  private pointer: PointerPosition | null = null;
+  private pointer: ScreenPoint | null = null;
   private isAttached = false;
 
   /** Starts reporting input. The target is ignored. */
@@ -46,7 +46,7 @@ export class FakeInputDevice implements InputDevice {
   }
 
   /** Moves the pointer to `position` (CSS pixels on the target). */
-  public movePointer(position: PointerPosition): void {
+  public movePointer(position: ScreenPoint): void {
     if (this.isAttached) {
       this.pointer = position;
     }
