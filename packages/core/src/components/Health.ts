@@ -95,6 +95,7 @@ export class Health {
   /**
    * Whether entity id `a` was created after `b`. Factory ids count up (`entity-9`, `entity-10`), so
    * a longer id is newer and ids of one length compare as text.
+   * ponytail: relies on the factory's `entity-N` ids; compare `IdGenerator` numbers if ids change.
    */
   private static isCreatedAfter(a: string, b: string): boolean {
     return a.length !== b.length ? a.length > b.length : a > b;

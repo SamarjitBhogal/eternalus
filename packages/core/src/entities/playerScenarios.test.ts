@@ -27,7 +27,7 @@ import { EntityFactory } from './EntityFactory';
 const EAST: Vec2 = { x: 1, y: 0 };
 
 /** The shipped unit definitions as the simulation loads them (speeds per tick at 30 ticks/s). */
-const UNIT_DEFINITIONS = loadDefaultContent(30);
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 /** Spawns `definitionId` the way a spawn command will: by the definition's kind. */
 const spawnUnit = (

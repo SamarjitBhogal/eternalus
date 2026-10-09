@@ -10,7 +10,7 @@ import { GameState } from '../state/GameState';
 import { DeathSystem } from './DeathSystem';
 import type { SystemContext } from './System.types';
 
-const UNIT_DEFINITIONS = loadDefaultContent(30);
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 const setUp = (): SystemContext => {
   const state = new GameState(createDefaultGameConfig(), 1);

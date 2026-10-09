@@ -10,7 +10,7 @@ import { GameState } from '../../state/GameState';
 import type { CommandContext } from '../CommandHandler.types';
 import { MoveHandler } from './MoveHandler';
 
-const UNIT_DEFINITIONS = loadDefaultContent(30);
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 class Rock extends Entity {
   public readonly kind = 'rock';

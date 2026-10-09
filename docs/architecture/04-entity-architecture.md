@@ -218,8 +218,7 @@ class with `check(definition, content): readonly string[]`, so a rule sees the w
 can check the ids a definition names (dangling references), and the validator reports every
 broken rule at once in one `ContentValidationError`. The rules are listed in one file,
 `content/defaultContentRules.ts` (`createDefaultContentRules()`); a new rule is a class and one
-line there. Content files author times and speeds in seconds; `loadDefaultContent()` converts them
-to ticks once, so systems only see ticks.
+line there.
 
 ## 6. `EntityFactory` and `EntityRegistry`
 
@@ -322,10 +321,8 @@ session or phase named:
 
 - `Entity`, `Unit`, `Legend` and `Mob` keep the sprint 1 API (`installComponents`, `onRetire`,
   `addComponent`/`getComponent`/`findComponent`/`hasComponent`, `family` as a string) because the
-  simulation kernel (PR #13) builds on it. `EntityFactory.create(kind, definitionId, placement)`
-  stands in for §6's `spawn`: it resolves the definition, checks its kind once and passes it to
-  `entity.spawn`, where `SpawnContextReader` narrows the position and team because `spawn` takes
-  `unknown`. Adding the entity to the store stays with the caller until `SpawnSystem` exists.
+  simulation kernel (PR #13) builds on it. Every family reads its spawn context through
+  `SpawnContextReader`, which checks it at runtime because `spawn` takes `unknown`.
 - Units install `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider` and
   `Vision`; `Combat`, `StatusEffects` and `Carry` arrive with their systems (Phase 2–3). The team
   component is `TeamMembership` because the type `Team` owns that name.
