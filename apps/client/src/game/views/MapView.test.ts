@@ -1,4 +1,4 @@
-import { DEFAULT_MAP_CONFIG, MapGenerator } from '@eternalus/core';
+import { DEFAULT_MAP_CONFIG, type MapDecoration, MapGenerator } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
@@ -37,6 +37,26 @@ describe('MapView', () => {
     expect(fills).toHaveLength(1 + MAP.terrain.length + footprints.length);
     // The first fill is the ground, so everything else sits on top of it.
     expect(fills[0]?.[1]).toBe(GROUND_COLOR);
+  });
+
+  it('draws ground scenery right after the ground, under the terrain, and skips detail scenery', () => {
+    const shape = [
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 0, y: 10 },
+    ];
+    const scenery: readonly MapDecoration[] = [
+      { id: 'meadow', shape, color: '#010101', layer: 'ground' },
+      { id: 'roof', shape, color: '#020202', layer: 'detail' },
+    ];
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, scenery).draw(renderer);
+    const colors = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[1]] : [],
+    );
+
+    expect(colors.slice(0, 2)).toEqual([GROUND_COLOR, '#010101']);
+    expect(colors).not.toContain('#020202');
   });
 
   it('draws one line per lane', () => {

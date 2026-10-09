@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-08
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -132,6 +132,26 @@ regions, marked `TUNE: provisional shapes traced from the team's layout sketch`.
 spacing) and a preset under `content/maps/presets/` that the generator validates (`map-1`: corner
 regions, rift width, lane bends; DEC-14), never a hand-authored map that the code depends on. The
 east/west orientation is fixed, not a `GameConfig` value (integration contract §2.2).
+
+## Map 1 scenery
+
+The generated map is dressed with presentation-only scenery (`MapSceneryBuilder`), authored in
+map-1's 1600 × 900 sketch and stretched to the configured world size. It never adds colliders,
+capture rules or spawns; every gameplay anchor still comes from the generator.
+
+- Northern capture point: snowy stone fortress inside snow pockets.
+- Cathedral: Gothic exterior surrounded by village streets, houses and market stalls.
+- Southern capture point: basalt fortress ringed by lava rivers with four bridges.
+- Strongholds: large fortified compounds under the generated wall ring; towers get small forts.
+- Camps and corner camps: clearings with tents, supplies and a fire.
+- Trees, boulders, lakes, hills and a perimeter of overlapping mountains, all deterministic.
+
+Navigation (presentation only): drag to pan, scroll to zoom, click the minimap to jump, and
+**World overview** shows the whole battlefield; walking (WASD) returns to the following camera.
+Clicking the cathedral opens its 1,800 × 2,200 interior: a circular rotunda with an open central
+capture court, pews and columns, and radially connected rooms (library, sacristy, chapels,
+vestry, reliquary, garden cloisters, altar). **Leave cathedral** returns outside. Capture rules,
+doorways and collision for the interior remain future work.
 
 ## Engineering notes
 

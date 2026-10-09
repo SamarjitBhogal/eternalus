@@ -1,4 +1,4 @@
-import type { MapDefinition, MapFeature } from '@eternalus/core';
+import type { MapDecoration, MapDefinition, MapFeature } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import {
@@ -12,19 +12,22 @@ import {
   TERRAIN_COLORS,
 } from './MapView.constants';
 import type { WorldLayer } from './SceneView.types';
+import { SceneryView } from './SceneryView';
 
 /**
- * Draws a map layout: ground, then terrain, then lanes, then features on top. Features are
+ * Draws a map layout: ground, then ground scenery, then terrain, then lanes, then features on top. Features are
  * drawn by looking their kind up in `FEATURE_STYLES` (main view) or by their own
  * `minimapGlyph` (mini map), so no code here branches on a feature kind.
  * It only reads map data and never changes it.
  */
 export class MapView implements WorldLayer {
   private readonly map: MapDefinition;
+  private readonly groundScenery: SceneryView;
 
-  /** Creates a view for one map. */
-  public constructor(map: MapDefinition) {
+  /** Creates a view for one map; `scenery` supplies its ground-layer decorations. */
+  public constructor(map: MapDefinition, scenery: readonly MapDecoration[] = []) {
     this.map = map;
+    this.groundScenery = new SceneryView(scenery, 'ground');
   }
 
   /** Draws the whole map for the main view. */
@@ -65,7 +68,7 @@ export class MapView implements WorldLayer {
     return MINIMAP_ROLE_COLORS[role];
   }
 
-  /** The ground, the terrain shapes and the lanes, shared by both views. */
+  /** The ground, its scenery, the terrain shapes and the lanes, shared by both views. */
   private drawGround(renderer: Renderer): void {
     const { width, height } = this.map;
     renderer.fillPolygon(
@@ -77,6 +80,7 @@ export class MapView implements WorldLayer {
       ],
       GROUND_COLOR,
     );
+    this.groundScenery.draw(renderer);
     for (const piece of this.map.terrain) {
       renderer.fillPolygon(piece.shape, TERRAIN_COLORS[piece.kind]);
     }

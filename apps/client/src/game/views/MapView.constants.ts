@@ -8,24 +8,24 @@ import type {
 import type { FeatureStyle } from './MapView.types';
 
 /** Colour of the playable ground. */
-export const GROUND_COLOR = '#cc9f66';
+export const GROUND_COLOR = '#596345';
 
 /** Colour of the lane paths. */
-export const LANE_COLOR = '#5a3f22';
+export const LANE_COLOR = '#9a8b6d';
 
 /** Width of the lane paths in screen pixels. */
-export const LANE_WIDTH = 1.5;
+export const LANE_WIDTH = 5;
 
 /** Colour of each kind of terrain shape. */
 export const TERRAIN_COLORS: Readonly<Record<MapTerrainKind, string>> = {
-  'out-of-bounds': '#6e6e6e',
-  rift: '#960096',
+  'out-of-bounds': '#293731',
+  rift: '#252b2c',
 };
 
 /** Colour of team-owned features. Neutral features use `NEUTRAL_FEATURE_COLORS`. */
 export const TEAM_COLORS: Readonly<Record<PlayableTeam, string>> = {
-  light: '#00d8ff',
-  dark: '#4b0096',
+  light: '#6db9bc',
+  dark: '#aa718f',
 };
 
 /** Colour of neutral features, by kind. */
@@ -36,7 +36,7 @@ export const NEUTRAL_FEATURE_COLORS: Readonly<Record<MapFeatureKind, string>> = 
   'wall-segment': '#e6d2a0',
   gate: '#e6d2a0',
   turret: '#ffffff',
-  camp: '#2f6b2a',
+  camp: '#d5b77b',
   'corner-camp': '#e68200',
   'capture-point': '#aa0000',
   cathedral: '#aa0000',
@@ -54,9 +54,9 @@ export const FEATURE_STYLES: Readonly<Record<MapFeatureKind, FeatureStyle>> = {
   'wall-segment': { shape: 'footprint', size: 0 },
   gate: { shape: 'footprint', size: 0 },
   turret: { shape: 'dot', size: 14 },
-  camp: { shape: 'dot', size: 22 },
+  camp: { shape: 'dot', size: 26 },
   'corner-camp': { shape: 'ring', size: 45 },
-  'capture-point': { shape: 'ring', size: 30 },
+  'capture-point': { shape: 'ring', size: 45 },
   cathedral: { shape: 'diamond', size: 110 },
   obstacle: { shape: 'dot', size: 14 },
 };

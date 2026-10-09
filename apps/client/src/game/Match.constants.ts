@@ -1,7 +1,7 @@
 import type { PlayerChoice } from './Match.types';
 
 /** Colour behind the map, only visible if the view ever reaches past the map's edges. */
-export const BACKGROUND_COLOR = '#2b2620';
+export const BACKGROUND_COLOR = '#202927';
 
 /** The loop's frame clamp, in ticks: a frame may run at most this many (architecture 08 §2). */
 export const MAX_TICKS_PER_FRAME = 5;
@@ -29,6 +29,9 @@ export const PLACEHOLDER_MATCH_SEED = 1;
 
 /** How many log records the match keeps for bug reports and the overlay (architecture 15 §5). */
 export const LOG_RING_CAPACITY = 512;
+
+/** Width over height of the drawing area before the first resize reports the real one. */
+export const DEFAULT_ASPECT = 16 / 9;
 
 /**
  * PROTOTYPE(PROTO-01) TEMPORARY: demo code. Delete with `Match.spawnEscort` when Phase 2's
