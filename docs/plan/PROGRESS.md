@@ -434,3 +434,15 @@ The example below is fenced so it is not read as a real entry.
 - Checks run: see the PR description for the verbatim `npm run check` output after the ADR.
 - Next step: review and merge the PR into the phase branch. Whichever of it and PR #14 merges
   second keeps both `PROGRESS.md` entries (#14's first).
+
+### 2026-10-09 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
+
+- What was done: re-synced PR #20 with the phase branch twice: after PR #12, and after PRs #14,
+  #17, #18 and #19. Merge commits only. Conflicts kept both sides, newest first: `INBOX.md`
+  (session D's open item; the PR #14 and DEC-16 Done entries), this log, and the decisions log's
+  two 2026-10-08 batches. ADR 0014 is still free on every remote branch (0013 is reserved by
+  DEC-24, 0015 by `feat/settings-keybindings`).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 442 passed (442)"; client "Tests 289 passed (289)"; "✓ built in 218ms"; "Documentation
+  check passed."
+- Next step: the human pushes; PR #20 (approved) merges into the phase branch.
