@@ -7,7 +7,11 @@ import { SinkLogger } from '../data/logging/SinkLogger';
 import { Camera } from './engine/Camera';
 import { RafFrameScheduler } from './engine/loop/RafFrameScheduler';
 import { Canvas2dRenderer } from './engine/render/Canvas2dRenderer';
-import { IdleIntentSource } from './IdleIntentSource';
+import { KeyboardDevice } from './engine/input/KeyboardDevice';
+import { MouseDevice } from './engine/input/MouseDevice';
+import { DeviceIntentSource } from './DeviceIntentSource';
+import { InputMapper } from './input/InputMapper';
+import { PRESETS } from './input/keybindings';
 import { Match } from './Match';
 import {
   FOLLOW_VIEW_HEIGHT,
@@ -19,9 +23,10 @@ import {
 
 /**
  * Creates a `Match` on the canvas when it mounts and destroys it on unmount: a Warrior at the
- * Light stronghold on the generated map, the camera following it and the minimap in its corner.
- * Placeholder wiring until match setup (session E) passes the player's choices and the input
- * session (F) replaces `IdleIntentSource` with the keyboard.
+ * Light stronghold on the generated map, walked with the default keys (WASD) and aimed with the
+ * mouse, the camera following
+ * it and the minimap in its corner. Placeholder wiring until match setup (session E) passes the
+ * player's choices and the settings screen passes the player's saved bindings.
  */
 export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
   useEffect(() => {
@@ -42,6 +47,10 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
         { sink: new RingBufferSink(LOG_RING_CAPACITY), minSeverity: SEVERITY.TRACE },
       ],
     );
+    const mapper = new InputMapper(PRESETS.wasd);
+    const keyboard = new KeyboardDevice((code) => mapper.isBound(code));
+    const mouse = new MouseDevice();
+    const input = new DeviceIntentSource([keyboard, mouse], mapper);
     let match: Match;
     try {
       match = new Match({
@@ -56,7 +65,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
         }),
         renderer,
         camera,
-        input: new IdleIntentSource(),
+        input,
         player: PLACEHOLDER_PLAYER,
         logger,
       });
@@ -83,13 +92,31 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): void {
       );
     };
 
+    // No key-up arrives for keys held while the tab loses focus, so release them all (09 §2).
+    const releaseInput = (): void => {
+      input.releaseAll();
+    };
+    const releaseInputWhenHidden = (): void => {
+      if (document.hidden) {
+        input.releaseAll();
+      }
+    };
+
     resize();
+    keyboard.attach(window);
+    mouse.attach(canvas);
     match.start();
     window.addEventListener('resize', resize);
+    window.addEventListener('blur', releaseInput);
+    document.addEventListener('visibilitychange', releaseInputWhenHidden);
     canvas.addEventListener('click', lookAtMinimapClick);
     return () => {
       window.removeEventListener('resize', resize);
+      window.removeEventListener('blur', releaseInput);
+      document.removeEventListener('visibilitychange', releaseInputWhenHidden);
       canvas.removeEventListener('click', lookAtMinimapClick);
+      keyboard.detach();
+      mouse.detach();
       match.destroy();
       renderer.destroy();
       camera.destroy();

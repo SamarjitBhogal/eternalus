@@ -6,6 +6,7 @@ import {
   type Vec2,
 } from '@eternalus/core';
 
+import type { Projection } from './engine/input/Projection.types';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import {
@@ -52,6 +53,22 @@ export class Match implements LoopTarget {
   private screenWidth = 0;
 
   private screenHeight = 0;
+
+  private pixelRatio = 1;
+
+  /** Canvas CSS pixels → device pixels → the world point the camera shows there. */
+  private readonly projection: Projection = {
+    screenToWorld: (point) =>
+      this.deps.camera.screenToWorld(
+        { x: point.x * this.pixelRatio, y: point.y * this.pixelRatio },
+        {
+          worldWidth: this.deps.map.width,
+          worldHeight: this.deps.map.height,
+          screenWidth: this.screenWidth,
+          screenHeight: this.screenHeight,
+        },
+      ),
+  };
 
   /**
    * Creates the match, queues the player's spawn and points the camera at the spawn point.
@@ -117,6 +134,7 @@ export class Match implements LoopTarget {
   public resize(screenWidth: number, screenHeight: number, pixelRatio: number): void {
     this.screenWidth = screenWidth;
     this.screenHeight = screenHeight;
+    this.pixelRatio = pixelRatio;
     this.deps.renderer.resize(screenWidth, screenHeight, pixelRatio);
   }
 
@@ -172,7 +190,7 @@ export class Match implements LoopTarget {
     if (this.playerId === null) {
       return;
     }
-    const { move } = this.deps.input.read();
+    const { move } = this.deps.input.read(this.projection);
     const isMoving = move.x !== 0 || move.y !== 0;
     // Any movement brings the camera back to the player, even a key held since before a click.
     this.isFollowing ||= isMoving;

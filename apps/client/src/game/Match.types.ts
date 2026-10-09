@@ -8,6 +8,7 @@ import type {
 } from '@eternalus/core';
 
 import type { Camera } from './engine/Camera';
+import type { Projection } from './engine/input/Projection.types';
 import type { FrameScheduler } from './engine/loop/FrameScheduler.types';
 import type { Renderer } from './engine/render/Renderer';
 
@@ -16,8 +17,8 @@ import type { Renderer } from './engine/render/Renderer';
  * session (keyboard, mouse, rebinding) implements it; `Match` never reads a device itself.
  */
 export interface IntentSource {
-  /** The player's intent for this tick. */
-  read(): InputIntent;
+  /** The player's intent for this tick; `projection` turns the pointer into a world point. */
+  read(projection: Projection): InputIntent;
 }
 
 /** Which Legend the player plays and on which team. */

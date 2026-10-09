@@ -60,6 +60,18 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Requests for the agent
 
+- [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
+      `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
+      (`TODO(sholtzman)`), so `Match` turns the intent into `move`/`stop` itself (09 §11). Should I
+      write `PlayerController` + the `intent` handler (11 §4.1) in core, or is it yours? Either is
+      fine; until then WASD works through `move`/`stop`.
+- [ ] **Session C → Sam (2026-10-08), better than the design? (optional, no pressure):** (a) the
+      focus-loss release (`blur`/`visibilitychange`) lives in `useMatch` instead of `Match`
+      (09 §2), so `Match` uses no browser API (09 §10); (b) devices are polled and mapped inside
+      `DeviceIntentSource` behind `Match`'s `IntentSource` port instead of in `Match.tick()`
+      (13 §6.2), so `Match` never knows which devices exist. Yes → I update 09 §2 and 13 §6.2;
+      no → I move both into `Match`.
+
 - [ ] **Session A (from session B, updated 2026-10-07):** PR #13 merged the phase branch with
       `feat/map-generator`: B's files and `components/TeamMembership.ts` now use `Team` from
       `teams/teams.types.ts`, `polarPoint` and the wall-ring test call
@@ -186,6 +198,29 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
   - The log sinks live in `data/logging/` (15 §4); the overlay cannot read the ring buffer yet.
   - `Canvas2dRenderer` scales X and Y separately, so a window that is not 16:9 stretches the
     64 × 36 m view.
+
+  In #19 (input), 08 §11 would add that `Match` implements input's `Projection` port
+  (`screenToWorld` only) over the camera and takes the intent from `DeviceIntentSource`; and 09
+  §11 would record:
+  - `InputSnapshot` has `keys`, `keyLabels`, `mouseButtons` and `pointer`; `wheel` and
+    `gamepads` come with what needs them. No `poll()` and no `FakeInputDevice` yet; the
+    `describeInputDevice` contract suite runs for both devices.
+  - `InputMapper` indexes chords by `chordKey` itself (no injected `BindingResolver`) and has no
+    `clientActions` yet. `Projection` lives in `engine/input/` with only `screenToWorld`
+    (02 §3 lets `game/input/` import `engine/input/` types only). `ActionState` carries the
+    pointer so `toIntent` can project it.
+  - `Match` turns the intent's `move` into `move`/`stop` and drops `aim` and `triggered` until
+    core's `PlayerController` handles `intent` (11 §4.1).
+  - `useMatch` releases the devices on `blur`/hidden `visibilitychange` and binds the `wasd`
+    preset until settings supply saved bindings. A minimap click is also an `attack` press until
+    the minimap consumes its clicks (SCRUM-151).
+
+- [ ] **Session C → session F (2026-10-09, PR #19): `bridge/Binding.types.ts` now has the 13 §6.1
+      shapes.** `INPUT_ACTIONS` (same 21 ids; `InputAction` derives from it), and `InputChord` is
+      the union (keyboard `code`/`label`/`modifiers?`, mouse `button` 0–4, `gamepad`,
+      `gamepad-axis`). The defaults are in `game/input/keybindings.ts` (`DEFAULT_CHORDS`, presets
+      `wasd`/`arrows`), and `InputMapper.setBindings` takes the saved bindings. `settingsSlice`,
+      `events.ts` and `hudSlice` compile unchanged.
 
 ## Feedback
 
