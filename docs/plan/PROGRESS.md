@@ -308,6 +308,35 @@ The example below is fenced so it is not read as a real entry.
   client "Tests 36 passed (36)"; "✓ built in 79ms"; "Documentation check passed."
 - Next step: Sam pushes `feat/sim-kernel`; PR #13 then merges into the phase branch.
 
+### 2026-10-07 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
+
+- What was done: entity foundation of sprint 1.2 (SCRUM-16), all as classes, keeping main's
+  `Entity`/`Unit`/`Legend`/`Mob` contract that `feat/sim-kernel` builds on. New family bases
+  `Structure`, `Zone`, `Obstacle`, `Projectile` on a runtime-checked `SpawnContextReader`;
+  `UnitComponentInstaller`; `Collider`, `Vision`, layered shields on `Health`; the characters
+  `Warrior`/`Sentinel`/`Magus` with traits from `01-classes`; `LightMob` + the training dummy only
+  (other mobs: SCRUM-59). One `EntityModule` per family installed by `DefaultEntityRegistry`;
+  frozen `ContentCatalogue`s, rule-based `ContentValidator`, ESLint core module rings.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  227 passed (227)", client "Tests 36 passed (36)", "✓ built", "Documentation check passed.");
+  a trial merge with `feat/sim-kernel` conflicts only in `index.ts`, `index.test.ts` and this log.
+- Next step: pre-PR gate, then review. Session B (#13) adds `MovementSystem`, `DeathSystem`,
+  `InvariantSystem`; owner: sim lane.
+
+### 2026-10-08 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
+
+- What was done: the PR #14 review (Sam, 2026-10-08). Registry back to
+  `createDefaultEntityRegistry()` (DEC-21); content rules get the catalogue, are listed in
+  `content/defaultContentRules.ts` and run once from `loadDefaultContent()`, which also converts
+  speeds authored per second to per tick (DEC-22); `EntityFactory` resolves definitions by id,
+  checks their kind once and takes ids from `IdGenerator`, `dev-spawn` rejects
+  `unknown-definition`, and `Simulation` spawns a Warrior; `Unit` installs the unit components;
+  `StateHasher` hashes shields, colliders and vision; `ShieldBar` shared with `GameEvents`;
+  shields in creation order; `EntityDefinitionBase`; `deepFreeze` in `utils/`; ring lint, ADR
+  0013 and the AGENTS section removed (DEC-24). DEC-21…24 logged; proposals in `INBOX.md`.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (see the PR).
+- Next step: Sam re-reviews #14; then merge it into #17, #18 and #19; owner: claudiodh.
+
 ### 2026-10-08 — Phase 1 / sprint 1 session D — feat/session-shell-home — sholtzman + Claude Code
 
 - What was done: resolved PR #12's merge conflicts by merging `origin/phase/1-simulation-kernel-and-world`

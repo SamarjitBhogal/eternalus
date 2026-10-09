@@ -1,14 +1,5 @@
+import type { MovementProfile } from '../content/units/units.types';
 import type { Vec2 } from '../utils/geometry.types';
-
-/** Movement stats from the unit's definition. All values must be positive. */
-export type MovementStats = {
-  /** Top speed in world units per tick. */
-  readonly maxSpeed: number;
-  /** Speed gained per tick while accelerating. */
-  readonly acceleration: number;
-  /** How hard the unit is to push (knockback, Sentinel sprint-through). */
-  readonly mass: number;
-};
 
 const STOPPED: Vec2 = { x: 0, y: 0 };
 
@@ -27,7 +18,12 @@ export class Movement {
 
   private currentVelocity: Vec2 = STOPPED;
 
-  public constructor(stats: MovementStats) {
+  /**
+   * Creates a stopped movement component from a unit's movement profile.
+   *
+   * @param stats - The unit definition's movement profile; every value must be positive.
+   */
+  public constructor(stats: MovementProfile) {
     for (const [name, value] of Object.entries(stats)) {
       if (!(value > 0) || !Number.isFinite(value)) {
         throw new Error(`Movement ${name} must be a positive number, got ${String(value)}.`);

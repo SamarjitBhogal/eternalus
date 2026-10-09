@@ -85,20 +85,42 @@ describe('Simulation', () => {
     ]);
   });
 
-  it('rejects dev-spawn of a kind no registry knows yet', () => {
+  it('spawns a Warrior through dev-spawn with its definition from the default content', () => {
     const sim = simulation();
-    const reasons: string[] = [];
-    sim.on('command-rejected', ({ reason }) => reasons.push(reason));
+    const spawned: string[] = [];
+    sim.on('entity-spawned', ({ kind }) => spawned.push(kind));
     sim.enqueueCommand({
       type: 'dev-spawn',
       kind: 'warrior',
       definitionId: 'warrior',
       team: 'light',
+      at: { x: 3, y: 4 },
+      count: 1,
+    });
+    sim.step();
+    expect(spawned).toEqual(['warrior']);
+    expect(sim.snapshot().entities).toMatchObject([
+      { kind: 'warrior', definitionId: 'warrior', team: 'light', transform: { x: 3, y: 4 } },
+    ]);
+  });
+
+  it.each([
+    ['unknown-kind', { kind: 'dragon', definitionId: 'warrior' }],
+    ['unknown-definition', { kind: 'warrior', definitionId: 'no-such-legend' }],
+    ['unknown-definition', { kind: 'warrior', definitionId: 'magus' }],
+  ])('rejects dev-spawn with %s instead of throwing out of step()', (reason, names) => {
+    const sim = simulation();
+    const reasons: string[] = [];
+    sim.on('command-rejected', ({ reason: rejected }) => reasons.push(rejected));
+    sim.enqueueCommand({
+      type: 'dev-spawn',
+      ...names,
+      team: 'light',
       at: { x: 0, y: 0 },
       count: 1,
     });
     sim.step();
-    expect(reasons).toEqual(['unknown-kind']);
+    expect(reasons).toEqual([reason]);
     expect(sim.snapshot().entities).toEqual([]);
   });
 

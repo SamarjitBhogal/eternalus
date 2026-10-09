@@ -11,7 +11,7 @@ class Marker {
 class ConcreteUnit extends Unit {
   public readonly kind = 'concrete-unit';
 
-  protected installComponents(): void {
+  protected override installComponents(): void {
     this.addComponent(new Marker());
   }
 }
@@ -19,7 +19,7 @@ class ConcreteUnit extends Unit {
 class ConcreteLegend extends Legend {
   public readonly kind = 'concrete-legend';
 
-  protected installComponents(): void {
+  protected override installComponents(): void {
     this.addComponent(new Marker());
   }
 }
@@ -27,7 +27,7 @@ class ConcreteLegend extends Legend {
 class ConcreteMob extends Mob {
   public readonly kind = 'concrete-mob';
 
-  protected installComponents(): void {
+  protected override installComponents(): void {
     this.addComponent(new Marker());
   }
 }

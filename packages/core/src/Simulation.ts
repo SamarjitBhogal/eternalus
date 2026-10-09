@@ -7,6 +7,8 @@ import type { GameConfig } from './config/GameConfig.types';
 import { validateGameConfig } from './config/validateGameConfig';
 import type { Logger } from './diagnostics/Logger.types';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { loadDefaultContent } from './content/loadDefaultContent';
+import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
@@ -43,8 +45,13 @@ export class Simulation {
     systems: readonly System[] = [],
   ) {
     this.state = new GameState(validateGameConfig(config), seed);
-    // TODO(sholtzman): pass session C's createDefaultEntityRegistry() so dev-spawn finds kinds.
-    this.commandContext = { state: this.state, factory: new EntityFactory() };
+    this.commandContext = {
+      state: this.state,
+      factory: new EntityFactory(
+        createDefaultEntityRegistry(),
+        loadDefaultContent(this.state.config.tickRate),
+      ),
+    };
     this.systemContext = { state: this.state, logger };
     this.pipeline = new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
