@@ -463,6 +463,7 @@ The example below is fenced so it is not read as a real entry.
   "Tests 459 passed (459)"; client "Tests 292 passed (292)"; "✓ built in 165ms"; "Documentation
   check passed." (Node 24.21.0, Linux).
 - Next step: update the PR #23 description on GitHub from the doc; reviewers check the markers.
+
 ### 2026-10-08 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
 
 - What was done: DEC-16, accepted by the owner in chat. `eslint.config.js` adds `.worktrees/` and
@@ -500,3 +501,20 @@ The example below is fenced so it is not read as a real entry.
   "Tests 442 passed (442)"; client "Tests 289 passed (289)"; "✓ built in 218ms"; "Documentation
   check passed."
 - Next step: the human pushes; PR #20 (approved) merges into the phase branch.
+
+### 2026-10-09 — Phase 1 / plan audit — feat/minion-follow-prototype — SamarjitBhogal + Claude Code
+
+- What was done: audited the Phase 1 plan against the local working tree (open PRs not counted)
+  and ticked six items whose code and tests are in place: `DeathSystem` with `RemovalCause`, the
+  `map-1` preset, `GameLoop` + `FrameScheduler`, `MinimapView`, the logger sinks and the coverage
+  ratchet (core 85, client 55). Still open: `SpatialHash`, `CollisionSystem`, `ObjectPool`, the
+  unique-id and live-reference invariants, the `WorldMap` cost grid and its wiring into
+  `Simulation`, the renderer's three layers and `getContext` lint rule, `TerrainView`, the bridge
+  clock publish, `PlayerController`, collision for the placeholder Legend, `PerfOverlay`,
+  `DeveloperMenu` and `npm run bench`. None of the open PRs (#22, #23, #24) adds `SpatialHash`,
+  collision or `WorldMap` wiring, which Phase 3 minions need. Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)"; client "Tests 292 passed (292)"; "✓ built in 230ms"; "Documentation
+  check passed." Also restored a blank line in this log that the `c563c01` conflict resolution
+  dropped (Prettier failed on it at HEAD).
+- Next step: pick up `SpatialHash` and `CollisionSystem` v1 (sprint 1.3) before more minion work.
