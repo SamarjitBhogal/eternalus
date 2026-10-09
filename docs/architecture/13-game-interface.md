@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-09
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths: ['apps/client/src/ui/**', 'apps/client/src/bridge/**', 'apps/client/src/game/input/**']
 related:
@@ -28,8 +28,7 @@ snapshots through one bus and one store, rule 10), how the UI talks back (intent
 `Command`s, rule 9) and how controls stay data (requirements doc: "no hard-coded controls;
 configurable via settings", and prompts that "change dynamically to reflect whatever keybindings
 they chose"). React + Redux Toolkit + Vite are decided (D2, ADR 0004; confirmed with the
-instructor, DEC-02). The client today has nothing under `ui/` or `game/input/` and only an empty
-store in `bridge/`; everything below is a **sketch**.
+instructor, DEC-02). Code blocks below are **sketches**; §10 says what is built.
 
 ## 1. Where it sits
 
@@ -38,9 +37,9 @@ store in `bridge/`; everything below is a **sketch**.
 - `bridge/` (L3) is the one store and the one event bus, the two allowed singletons (rule D in
   [01](01-layered-oop-model.md) §4). It imports core as `import type` only and never `game/`,
   `ui/` or `data/`, so client-side display types it needs are defined in `bridge/` (§5).
-- `game/input/` (L3) turns device snapshots into `InputIntent`s (§6); `game/SessionController.ts`
-  and `game/MatchBridge.ts` ([12](12-game-story-and-match-director.md) §8) are the only producers
-  of bridge events. `main.tsx` is the only place `game/` and `ui/` meet: it builds the
+- `game/input/` (L3) turns device snapshots into `InputIntent`s (§6); `game/SessionController.ts`,
+  `game/MatchBridge.ts` ([12](12-game-story-and-match-director.md) §8) and
+  `game/settings/SettingsController.ts` (§6.3) are the only producers of bridge events. `main.tsx` is the only place `game/` and `ui/` meet: it builds the
   controllers and mounts `<Provider store={store}><App viewport={<GameCanvas … />} /></Provider>`;
   `GameCanvas.tsx` (L3) owns the canvas elements and hands them to `SessionController`, `App`
   (`ui/App.tsx`) maps the session phase to a screen and passes the viewport into `MatchScreen`.
@@ -94,16 +93,16 @@ export class SessionController {
 }
 ```
 
-| From               | To                          | Trigger                                                                                                                                    | Work done in `enter`/`exit`                                                                                                                                                                |
-| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `boot`             | `menu`                      | manifest loaded (`boot` group), `persistence.open()` resolved (`ready` or `degraded`)                                                      | creates the default profile on first boot; loads settings and bindings into `settingsSlice` and `InputMapper`; projects the content catalogue (`loadDefaultContent()`) into `contentSlice` |
-| `menu`             | `loading`                   | `ui-intent { kind: 'start-match' }`                                                                                                        | builds `MatchSetup` (seed, `GameConfig` from the preset plus developer overrides, random `playerTeam`, the saved or auto-built `Loadout`)                                                  |
-| `loading`          | `character-select` / `menu` | selection-screen asset group loaded / cancelled or failed                                                                                  | loads the `selection` asset group (themed background set for the player's team) and shows `LoadingScreen`; the `MatchSetup` draft (seed, config, `playerTeam`) already exists from `menu`  |
-| `character-select` | `pre-launch` / `menu`       | player confirmed a class before the 60 s `SessionClock` countdown ended / countdown expired with no selection (`reason: 'select-timeout'`) | builds the rosters from content (allies + enemies), assigns `playerTeam` from the setup RNG stream, starts the countdown through the injected `SessionClock`                               |
-| `pre-launch`       | `match-loading`             | 10 s `SessionClock` reveal elapsed                                                                                                         | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                               |
-| `match-loading`    | `match` / `menu`            | `match` asset group loaded / failed                                                                                                        | `createMatch(setup)`, `match.start()`; on failure logs and returns to `menu` with a banner                                                                                                 |
-| `match`            | `results` / `menu`          | `match-ended { result }` from `Simulation.on`, a `Simulation.step()` exception, `forfeit` / `leave-match`                                  | `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                          |
-| `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                | releases the `match` asset group                                                                                                                                                           |
+| From               | To                          | Trigger                                                                                                                                    | Work done in `enter`/`exit`                                                                                                                                                                                 |
+| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `boot`             | `menu`                      | manifest loaded (`boot` group), `persistence.open()` resolved (`ready` or `degraded`)                                                      | creates the default profile on first boot (settings and bindings load beside the phase machine, in `SettingsController`, §6.3); projects the content catalogue (`loadDefaultContent()`) into `contentSlice` |
+| `menu`             | `loading`                   | `ui-intent { kind: 'start-match' }`                                                                                                        | builds `MatchSetup` (seed, `GameConfig` from the preset plus developer overrides, random `playerTeam`, the saved or auto-built `Loadout`)                                                                   |
+| `loading`          | `character-select` / `menu` | selection-screen asset group loaded / cancelled or failed                                                                                  | loads the `selection` asset group (themed background set for the player's team) and shows `LoadingScreen`; the `MatchSetup` draft (seed, config, `playerTeam`) already exists from `menu`                   |
+| `character-select` | `pre-launch` / `menu`       | player confirmed a class before the 60 s `SessionClock` countdown ended / countdown expired with no selection (`reason: 'select-timeout'`) | builds the rosters from content (allies + enemies), assigns `playerTeam` from the setup RNG stream, starts the countdown through the injected `SessionClock`                                                |
+| `pre-launch`       | `match-loading`             | 10 s `SessionClock` reveal elapsed                                                                                                         | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                                                |
+| `match-loading`    | `match` / `menu`            | `match` asset group loaded / failed                                                                                                        | `createMatch(setup)`, `match.start()`; on failure logs and returns to `menu` with a banner                                                                                                                  |
+| `match`            | `results` / `menu`          | `match-ended { result }` from `Simulation.on`, a `Simulation.step()` exception, `forfeit` / `leave-match`                                  | `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                                           |
+| `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                | releases the `match` asset group                                                                                                                                                                            |
 
 The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The
 table is the test (`SessionController.test.ts` walks every pair with fake states, a
@@ -179,7 +178,8 @@ Simulation.on / snapshot → MatchBridge (throttle, project) → eventBus.emit �
   `bridge/store.ts` dispatches each event to its slice; components subscribe to memoised
   selectors (`createSelector`, ES-09), so React renders at UI rates, not 30 or 60 Hz.
 - **UI → game.** A component emits one `ui-intent`; `SessionController` handles session and
-  persistence intents, `Match` handles match intents and turns gameplay ones into `Command`s.
+  persistence intents, `SettingsController` the settings intents in every phase (§6.3), `Match`
+  handles match intents and turns gameplay ones into `Command`s.
   `ui/` never writes the store directly, so every state change has one path.
 - **Single place of change.** `bridge/events.ts` lists every message; `store.ts` lists every
   slice in `combineSlices(...)`; `hooks.ts` exports `useAppSelector`/`useAppDispatch` via
@@ -368,9 +368,19 @@ click) enters listen mode in the `useBindingCapture` hook: the next React `keydo
 `contextmenu` and `auxclick` suppressed) becomes an `InputChord`; Enter saves. A conflict
 (`chordKey` already bound) is reported before saving and offers swap or refuse (`Recommendation:`
 swap after a confirm); each row has reset-to-default, the screen a global reset and the presets.
-Saving emits `set-bindings`; `SessionController` writes the DTO through
-`PersistenceController.settings` ([14](14-persistence-and-resources.md) §7), updates
-`settingsSlice.bindings` and calls `InputMapper.setBindings`. Bindings are per profile.
+**Invariant:** every edit (a rebind, however its conflict is resolved, or a reset of one action
+or all) leaves no input bound to two actions; `BindingResolver.conflicts()` is the check, and the
+defaults and presets are tested against it.
+
+Settings are not a session phase: the menu's settings route and the in-match pause overlay change
+them alike. So `SettingsController` (`game/settings/`), not `SessionController`, is their one
+writer. At start it loads the saved settings through `PersistenceController`
+([14](14-persistence-and-resources.md) §7), fills in defaults (from `keybindings.ts`) and
+publishes the whole settings on the `settings` bus event; each settings intent from the UI
+becomes new settings, published the same way and saved. The store follows through
+`connectBusToStore`, and `Match` re-reads bindings on the same event
+(`InputMapper.setBindings`). A load that fails starts from defaults with a warning; a save that
+fails is logged. Bindings are per profile.
 
 ### 6.4 Dynamic prompts
 
@@ -451,6 +461,29 @@ it('rebinds move-up from W to Up Arrow and every prompt follows', () => {
 
 Nothing else changes: the OCP litmus test holds because the registries (`App.tsx`, `events.ts`,
 `combineSlices`, `INPUT_ACTIONS`) are the only lists.
+
+## 10. Implementation status
+
+Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
+and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver`, `InputMapper`,
+`KeyboardDevice` and `MouseDevice`, `SettingsController`, `settingsSlice`, `KeyGlyph`, `Prompt`,
+`SettingsScreen` and `PauseOverlay`. Interim gaps:
+
+- The live message list is `bridge/events.ts`; the §5 sketch predates the Sprint 1 contract
+  (`docs/agents/prompts/2026-10-03-ultracode-sessions.md` §2.3). Settings travel as
+  `update-binding { action, chord, onConflict: 'swap' | 'replace' }`, `reset-bindings { action }`
+  and `update-settings { patch }`; the conflict dialog offers swap or replace, and Cancel refuses.
+- `InputChord` is the contract's flat `{ device, code, label }` (a mouse chord's `code` is the
+  button number) rather than §6.1's per-device union; modifiers and gamepad axes come with
+  `GamepadDevice` (post-MVP).
+- No presets on the settings screen yet (`PRESETS` exists in `keybindings.ts`) and no
+  `clientActions`: `Match` reads client-only edges from `ActionState.pressed`.
+- The developer-menu default is F1 (Sprint 1 brief), not Backquote.
+- Settings and pause labels sit in `ui/screens/SettingsScreen.strings.ts` and
+  `ui/hud/PauseOverlay.strings.ts` until they join `ui/strings.ts` (§7).
+- Boot does not wait for the settings: the store has no bindings until the first `settings`
+  event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
+  or the `degraded` path of [14](14-persistence-and-resources.md) §10.
 
 ## Related
 

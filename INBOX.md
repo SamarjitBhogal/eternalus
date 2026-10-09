@@ -97,22 +97,26 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       violations with the `invariant-violated` `DiagnosticEvent` already declared (15 §4–§5).
       (7) `state/GameEvents.types.ts`: import `ShieldBar` from `components/Health.types.ts` once
       `Health` has shields.
-- [ ] **F → D (2026-10-06, after F merges): wire settings in `main.tsx` and `ui/App.tsx`.**
-      `main.tsx`: build `new PersistenceController({ adapter: new MemoryStorageAdapter(),
-knownActions: new Set(INPUT_ACTIONS), now: () => Date.now() })`, `await persistence.open()`,
-      then `new SettingsController({ bus: eventBus, persistence }).start()` (F's
-      `game/input/SettingsController.ts`: loads the saved settings, publishes `settings`, applies
-      the settings intents and saves). `ui/App.tsx`: menu route `'settings'` →
-      `<SettingsScreen />` from `ui/screens/SettingsScreen.tsx`.
 - [ ] **F → G (2026-10-06): mount the pause overlay.** `ui/screens/MatchScreen.tsx` renders
       `<PauseOverlay />` from `ui/hud/PauseOverlay.tsx` unconditionally; it renders nothing
       unless `session.overlay` is `'pause'` or `'settings'`.
-- [ ] **F → H (2026-10-06): input in the match.** `Match` builds `KeyboardDevice` (attached to
-      `window`, `isBound` from the bindings) and `MouseDevice` (attached to the canvas), merges
-      them into one `InputSnapshot` per frame, calls `InputMapper.resolve` then `toIntent`,
-      re-reads bindings on every `settings` bus event (`mapper.setBindings(s.bindings)`), and
-      toggles the pause overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`),
-      so the pause key is the player's binding, not a literal Esc.
+- [ ] **F → PR #19 `feat/player-input` (claudiodh), 2026-10-08: F's input layer is canonical**
+      (owner decision). Both branches add `bridge/Binding.types.ts`,
+      `game/input/{keybindings,InputMapper}*` and `game/engine/input/*`; after F merges, #19
+      keeps its `Match`/`DeviceIntentSource` wiring and drops its copies of those files. F's
+      `InputMapper` takes the same calls (`new InputMapper(bindings)`, `resolve`,
+      `toIntent(actions, projection)` returning core's `InputIntent`, `isBound`) and
+      `Projection.types.ts` has the same shape and path. To adapt: `DeviceIntentSource` resets
+      `snapshot.mouseButtons` with `.clear()` (a `Set` of `MouseEvent.button` numbers, not a
+      bitmask) and drops `keyLabels`; build `new KeyboardDevice((code) => mapper.isBound(code))`;
+      chords are the §2.3 flat `{ device, code, label }` (mouse `code` is the button as a string).
+      Also re-read bindings on each `settings` bus event (`mapper.setBindings(s.bindings)`) and
+      toggle the pause overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`).
+
+- [ ] **F → whoever next edits `ui/strings.ts` (2026-10-08): one strings file.** Fold
+      `ui/screens/SettingsScreen.strings.ts` and `ui/hud/PauseOverlay.strings.ts` into `STRINGS`
+      (architecture 13 §7), reuse `STRINGS.back`, and point `KeyGlyph`'s unbound dash at the same
+      entry. Left out of F's PR because `ui/strings.ts` is session D's file.
 
 ## Feedback
 
@@ -120,6 +124,12 @@ knownActions: new Set(INPUT_ACTIONS), now: () => Date.now() })`, `await persiste
 
 ## Done
 
+- 2026-10-08 — **Session F owner decisions DEC-25…DEC-29** (agent pushes, canonical input layer,
+  `SettingsController`, snapshot shape, conflict-free edits) recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and folded into ADR 0013 and
+  architecture 02, 09 and 13 on `feat/settings-keybindings`.
+- 2026-10-08 — **F → D: settings wiring in `main.tsx` and `ui/App.tsx`**: done on
+  `feat/settings-keybindings` (owner-approved: the second branch to merge adds it, PR #12).
 - 2026-10-08 — **F → D: settings intents and the `settings` event** (session F's request of
   2026-10-06): `update-binding` `onConflict`, per-action `reset-bindings`, `update-settings`,
   `BridgeEventMap.settings` and the `connectBusToStore` line landed in D's 5accc85 (PR #12).

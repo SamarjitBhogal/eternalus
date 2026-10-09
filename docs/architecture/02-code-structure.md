@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-09
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -91,6 +91,7 @@ client/src/
   game/engine/                L1: loop/, render/, camera/, input/, audio/, time/
   game/views/                 SceneView (draw order), EntityView + ViewRegistry, TerrainView, MinimapView
   game/input/                 keybindings.ts (INPUT_ACTIONS + DEFAULT_CHORDS), InputMapper
+  game/settings/              SettingsController: settings intents → settings event + persistence
   bridge/                     store.ts, eventBus.ts, events.ts, Binding.types.ts, slices/*, selectors/*
   data/persistence/           PersistenceController, repositories/*, StorageAdapter, adapters, schema/, dto/*
   data/resources/             ResourceController, AssetManifest, loaders/, AssetCache
@@ -109,6 +110,7 @@ client/src/
 | `game/engine/input/`                         | Raw device state, no game vocabulary                        | Browser APIs, `engine/`                                 | `InputDevice` (port), `KeyboardDevice`, `MouseDevice`, `GamepadDevice`, `FakeInputDevice`, `DeviceState.types.ts`                                                   |
 | `game/views/`                                | Draw snapshots; the draw order lives in `SceneView` only    | core `import type`, `engine/` port types, `views/`      | `SceneView`, `EntityView`, `ViewRegistry`, `defaultViewRegistry.ts`, `LegendView`, `MobView`, `StructureView`, `TerrainView`, `MinimapView`                         |
 | `game/input/`                                | Bindings as data and device → `InputAction` → `InputIntent` | `engine/input/` types, core `import type`               | `keybindings.ts`, `InputMapper`, `BindingResolver` (types in `bridge/Binding.types.ts`)                                                                             |
+| `game/settings/`                             | Settings and bindings in every session phase (13 §6.3)      | core, `input/`, `bridge/`                               | `SettingsController`, `settingsState.ts` (persistence reached through a structural port)                                                                            |
 | `game/Match.ts`, `game/SessionController.ts` | Composition root and session flow                           | core, `engine/`, `views/`, `input/`, `bridge/`, `data/` | `Match`, `SessionController`                                                                                                                                        |
 | `bridge/`                                    | The one store and the one event bus; display-ready slices   | core `import type`, `bridge/`                           | `store.ts`, `eventBus.ts`, `events.ts`, `Binding.types.ts`, `slices/matchSlice.ts`, `slices/sessionSlice.ts`, `slices/settingsSlice.ts`, `selectors/*`              |
 | `data/persistence/`                          | One facade over IndexedDB; repositories; DTOs; migrations   | core `import type`, `data/`                             | `PersistenceController`, `StorageAdapter` (port), `IndexedDbStorageAdapter`, `MemoryStorageAdapter`, `repositories/*Repository.ts`, `schema/migrations.ts`, `dto/*` |
