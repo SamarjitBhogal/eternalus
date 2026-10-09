@@ -524,3 +524,13 @@ The example below is fenced so it is not read as a real entry.
   "Tests 442 passed (442)"; client "Tests 289 passed (289)"; "✓ built in 218ms"; "Documentation
   check passed."
 - Next step: the human pushes; PR #20 (approved) merges into the phase branch.
+
+### 2026-10-09 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects (merge of phase/1) — sholtzman + Claude Code
+
+- What was done: re-synced PR #22 with the phase branch after PR #20 merged. Merge commit only.
+  The one conflict was this log; every entry from both sides was kept, oldest first: 32 entries
+  (24 shared, 5 from this branch, 3 from the phase branch).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 449 passed (449)"; client "Tests 301 passed (301)"; "✓ built in 225ms"; "Documentation
+  check passed."
+- Next step: the human pushes; PR #22 (approved) merges, then PRs #23 and #24 re-sync.
