@@ -35,7 +35,7 @@ describe('SpawnContextReader', () => {
     }
   });
 
-  it('rejects a context without a usable definition or position', () => {
+  it('rejects a context without a usable position', () => {
     const missing: unknown[] = [
       undefined,
       42,
@@ -46,7 +46,7 @@ describe('SpawnContextReader', () => {
 
     for (const context of missing) {
       expect(() => reader.positioned(context)).toThrow(
-        'Entity "entity-1" needs a spawn context with a definition and a position.',
+        'Entity "entity-1" needs a spawn context with a position.',
       );
     }
   });

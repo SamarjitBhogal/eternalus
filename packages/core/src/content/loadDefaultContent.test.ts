@@ -1,20 +1,26 @@
 import { describe, expect, it } from 'vitest';
 
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { loadDefaultContent } from './loadDefaultContent';
 import { MOB_DEFINITIONS } from './mobs/mobCatalogue';
 import { UnknownDefinitionError } from './UnknownDefinitionError';
 
+const TICK_RATE = createDefaultGameConfig().tickRate;
+
 describe('loadDefaultContent', () => {
   it('holds every Legend class and then every mob (the training dummy), once each', () => {
-    expect(loadDefaultContent(30).ids).toEqual([...LEGEND_CLASSES.ids, ...MOB_DEFINITIONS.ids]);
+    expect(loadDefaultContent(TICK_RATE).ids).toEqual([
+      ...LEGEND_CLASSES.ids,
+      ...MOB_DEFINITIONS.ids,
+    ]);
   });
 
-  it('converts speeds from per second to per tick: the Warrior runs 6 m/s = 0.2 m per tick', () => {
-    const warrior = loadDefaultContent(30).get('warrior').movement;
+  it('converts speeds from per second to per tick: the Warrior runs 6 m/s', () => {
+    const warrior = loadDefaultContent(TICK_RATE).get('warrior').movement;
 
-    expect(warrior.maxSpeed).toBeCloseTo(0.2);
-    expect(warrior.acceleration).toBeCloseTo(45 / 900);
+    expect(warrior.maxSpeed).toBeCloseTo(6 / TICK_RATE);
+    expect(warrior.acceleration).toBeCloseTo(45 / TICK_RATE ** 2);
     expect(warrior.mass).toBe(LEGEND_CLASSES.get('warrior').movement.mass);
   });
 
@@ -27,7 +33,7 @@ describe('loadDefaultContent', () => {
   });
 
   it('freezes the loaded definitions and leaves the authored ones untouched', () => {
-    const content = loadDefaultContent(30);
+    const content = loadDefaultContent(TICK_RATE);
 
     for (const definition of content.all()) {
       expect(Object.isFrozen(definition)).toBe(true);
@@ -37,6 +43,6 @@ describe('loadDefaultContent', () => {
   });
 
   it('throws UnknownDefinitionError for a dangling definition id', () => {
-    expect(() => loadDefaultContent(30).get('no-such-unit')).toThrow(UnknownDefinitionError);
+    expect(() => loadDefaultContent(TICK_RATE).get('no-such-unit')).toThrow(UnknownDefinitionError);
   });
 });

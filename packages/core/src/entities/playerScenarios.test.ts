@@ -12,6 +12,7 @@ import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -22,7 +23,7 @@ import { EntityFactory } from './EntityFactory';
 const EAST: Vec2 = { x: 1, y: 0 };
 
 /** The shipped unit definitions as the simulation loads them (speeds per tick at 30 ticks/s). */
-const UNIT_DEFINITIONS = loadDefaultContent(30);
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 /** Spawns `definitionId` the way a spawn command will: by the definition's kind. */
 const spawnUnit = (

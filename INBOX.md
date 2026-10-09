@@ -93,14 +93,27 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 - [ ] **Session C → Sam (2026-10-08, PR #14 review): proposed, design text unchanged until you
       answer.** Each one is how the code works today; say yes (I update the doc) or no (I change
-      the code). 1. `passiveOptions`: a class chooses between passives (Magus: Studious or Necromancy),
-      while 04 §5 has a single `passiveId`. 2. `obstacleType`: `ObstacleDefinition.kind` stays `'obstacle'` (the entity class) and
-      tree/rock/bridge go to `obstacleType`. It fixes the conflict between 04 §1/§5 and 07 §9. 3. `Collider` fields: 04 §3 → 10 §4's `isStatic`/`isEnabled`/`isUnbreakable`. 4. Shield naming: 04 §3 → 07 §2's `shields`/`addShield`/`removeShield`. 5. **Doc conflict:** 10 §4 puts collider shapes in `physics/`, but 02 §2 forbids
-      `components/` → `physics/`. Meanwhile they stay in `components/Collider.types.ts`. 6. `packages/core/AGENTS.md` folder table: `content/` is "Data only", but it now also has
-      `ContentCatalogue`, the validator and `loadDefaultContent()`. Proposed wording:
-      "Definitions keyed by kebab-case id, plus the catalogue, its rules and the loader". 7. 03 §12 still says `Simulation` has an empty registry; PR #14 wires
-      `createDefaultEntityRegistry()` and `loadDefaultContent()`. Proposed: drop that line. 8. The core lint (ADR 0013) comes back as its own PR with an ADR for your sign-off, encoding
-      02 §2's per-folder import lists, not rings.
+      the code).
+  - (1) `passiveOptions`: a class chooses between passives (Magus: Studious or Necromancy),
+    while 04 §5 has a single `passiveId`.
+  - (2) `obstacleType`: `ObstacleDefinition.kind` stays `'obstacle'` (the entity class) and
+    tree/rock/bridge go to `obstacleType`. It fixes the conflict between 04 §1/§5 and 07 §9.
+  - (3) `Collider` fields: 04 §3 → 10 §4's `isStatic`/`isEnabled`/`isUnbreakable`.
+  - (4) Shield naming: 04 §3 → 07 §2's `shields`/`addShield`/`removeShield`.
+  - (5) **Doc conflict:** 10 §4 puts collider shapes in `physics/`, but 02 §2 forbids
+    `components/` → `physics/`. Meanwhile they stay in `components/Collider.types.ts`.
+  - (6) `packages/core/AGENTS.md` folder table: `content/` is "Data only", but it now also has
+    `ContentCatalogue`, the validator and `loadDefaultContent()`. Proposed wording: "Definitions
+    keyed by kebab-case id, plus the catalogue, its rules and the loader".
+  - (7) 03 §12 still says `Simulation` has an empty registry; PR #14 wires
+    `createDefaultEntityRegistry()` and `loadDefaultContent()`. Proposed: drop that line.
+  - (8) The core lint (ADR 0013) comes back as its own PR with an ADR for your sign-off, encoding
+    02 §2's per-folder import lists, not rings.
+  - (9) 07 §13 still says shield bars stay in "source id order"; per your optional item they now
+    keep tower creation order (DEC-20). Proposed: reword that note.
+  - (10) 04 §13: `EntityFactory.create(kind, definitionId, placement)` stands in for 04 §6's
+    `spawn` (it resolves the definition and checks its kind once; adding to the store stays with
+    the caller until `SpawnSystem`). Proposed: add that as an implementation-status note.
 
 ## Feedback
 
