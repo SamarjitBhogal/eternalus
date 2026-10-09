@@ -160,6 +160,33 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
     `spawn` (it resolves the definition and checks its kind once; adding to the store stays with
     the caller until `SpawnSystem`). Proposed: add that as an implementation-status note.
 
+- [ ] **Session H → Sam and session F (2026-10-07, PR #18): two notes, no pressure.** (1) The log
+      sinks (`SinkLogger`, `ConsoleSink`, `RingBufferSink`) are new files in
+      `apps/client/src/data/logging/`, where 15 §4 puts them; that folder is session F's, so F
+      should know they exist. (2) `GameLoop`'s first frame only sets the time origin, so 08 §3's
+      `runFrames(2, 16.7)` example gives 0 ticks, not 1 (recorded in 08 §11). OK to keep?
+
+- [ ] **Session C/H → Sam (2026-10-09, PRs #18 and #19): proposed "Implementation status" notes
+      for 08 (§11) and 09 (§11).** AGENTS.md asks for one, your #14 rule asks for approval first,
+      so the docs stay unchanged until you say yes. Interim differences in #18:
+  - `FrameScheduler`, `RafFrameScheduler`, `FakeFrameScheduler` and `GameLoop` live in
+    `game/engine/loop/`; the `Clock` is session D's `SessionClock`. `useMatch` stamps log
+    records with `performance.now()` until it is wired.
+  - `Camera` keeps `lookAt`/`visibleArea` and adds `track`, `zoomTo` (clamped), `contains` and
+    `worldToScreen`/`screenToWorld` with an explicit `Viewport`; `MinimapProjection` arrives
+    with the minimap work (SCRUM-151), which also draws entity markers.
+  - `ViewRegistry` resolves kind, then family, then `DefaultEntityView` and reports each
+    unknown kind once (built by `views/defaultViewRegistry.ts`); `LegendView` is a placeholder.
+  - `Match` takes the player's intent through an `IntentSource` port; no `MatchBridge`,
+    `PerfMonitor` or `MatchScreen` yet. `GameCanvas` owns the `Match` through `useMatch`. The
+    player's Legend spawns with `dev-spawn` until `SpawnSystem` exists.
+  - The first frame after `start()` only sets the time origin (asked below).
+  - `Match.destroy()` stops the loop and its subscription; `useMatch` destroys the injected
+    renderer and camera. `EntityLayer` does not cull yet.
+  - The log sinks live in `data/logging/` (15 §4); the overlay cannot read the ring buffer yet.
+  - `Canvas2dRenderer` scales X and Y separately, so a window that is not 16:9 stretches the
+    64 × 36 m view.
+
 ## Feedback
 
 - [ ] _(none yet)_

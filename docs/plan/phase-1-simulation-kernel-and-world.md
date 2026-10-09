@@ -182,10 +182,10 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       entities, overlay), DPR-aware sizing, integer draw coordinates. Owner: _. Test: a fake 2D
       context records draw calls; the ESLint rule fails a `getContext` call outside
       `Canvas2dRenderer`. Done when: it is the only file that names `CanvasRenderingContext2D`.
-- [ ] **`Camera`** (world ↔ screen, culling rectangle, follow target, zoom clamp). Owner: _.
+- [x] **`Camera`** (world ↔ screen, culling rectangle, follow target, zoom clamp). Owner: _.
       Test: world → screen → world round-trips; the culling rect excludes off-screen points.
       Done when: views never compute screen coordinates themselves.
-- [ ] **`SceneView` + `ViewRegistry` + `EntityView`** (draw order in one place; kind → view).
+- [x] **`SceneView` + `ViewRegistry` + `EntityView`** (draw order in one place; kind → view).
       Owner: _. Test: an unknown kind draws a debug glyph and logs once; adding a kind is one
       registry line. Done when: no `switch` on entity kind exists in `views/`.
 - [ ] **`TerrainView`** (pre-rendered chunks from `MapDefinition`, dirty flags). Owner: _.
