@@ -5,10 +5,14 @@ import { Provider } from 'react-redux';
 import { connectBusToStore } from './bridge/connectBusToStore';
 import { eventBus } from './bridge/eventBus';
 import { store } from './bridge/store';
+import { MemoryStorageAdapter } from './data/persistence/MemoryStorageAdapter';
+import { PersistenceController } from './data/persistence/PersistenceController';
 import { placeholderCatalogue } from './game/content/placeholderCatalogue';
 import { PLACEHOLDER_MATCH_CONFIG, PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
 import { GameCanvas } from './game/GameCanvas';
+import { INPUT_ACTIONS } from './game/input/keybindings';
+import { SettingsController } from './game/input/SettingsController';
 import { SessionController } from './game/SessionController';
 import { createDefaultSessionStates } from './game/session/defaultSessionStates';
 import { LcgRng } from './game/session/LcgRng';
@@ -34,6 +38,14 @@ const session = new SessionController({
   themeRoot: document.documentElement,
 });
 session.start();
+
+// Settings load in the background; the slice holds defaults until they arrive.
+const persistence = new PersistenceController({
+  adapter: new MemoryStorageAdapter(),
+  knownActions: new Set(INPUT_ACTIONS),
+  now: () => Date.now(),
+});
+void persistence.open().then(() => new SettingsController({ bus: eventBus, persistence }).start());
 
 createRoot(rootElement).render(
   <StrictMode>
