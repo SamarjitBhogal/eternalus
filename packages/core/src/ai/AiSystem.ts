@@ -10,6 +10,9 @@ import type { Controller } from './Controller.types';
  * An entity is due when `(tick + its store position) % cadenceTicks === 0`, which spreads
  * decisions across ticks (11 §6; ids are strings, so the store position stands in for the id).
  *
+ * PROTOTYPE(PROTO-01) TEMPORARY: replace with the designed `AiSystem` (11 §1, §6: decision
+ * budget, round-robin cursor, `entityId` stagger, brains in state) in the folder the owner picks.
+ *
  * @remarks ponytail: no per-tick decision budget or round-robin cursor yet (11 §6); add them when
  * unit counts grow past the prototype's handful.
  */

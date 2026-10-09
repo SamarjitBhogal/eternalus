@@ -1,6 +1,9 @@
 import type { MobDefinition } from './mobs.types';
 
 /**
+ * PROTOTYPE(PROTO-01) TEMPORARY: demo content. Replace with Phase 3's light lane-minion definition
+ * (sprint 3.1) and its `minion` controller; keep the `light-minion` id only if the owner agrees.
+ *
  * Prototype light minion that escorts its team's Legend (controller `follow-leader`). Prototype
  * decision (2026-10-08) for the demo; the lane minions of Phase 3 replace it. Health and radius
  * are the light-minion anchors of `docs/reference/suggestions/balancing.md` ("Reference anchor

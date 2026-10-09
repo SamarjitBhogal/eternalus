@@ -45,6 +45,7 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
   const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movement };
   const definitions = [
     { id: 'warrior', kind: 'warrior', displayName: 'Warrior', ...unit },
+    // PROTOTYPE(PROTO-01) TEMPORARY: only because the demo escort spawns in every match.
     {
       id: 'light-minion',
       kind: 'light-mob',
@@ -144,6 +145,7 @@ describe('Match', () => {
     expect(player?.transform).toMatchObject(lightStronghold?.position ?? {});
   });
 
+  // PROTOTYPE(PROTO-01) TEMPORARY: tests the demo escort; delete with `Match.spawnEscort`.
   it('spawns the prototype escort around the player, and the escort walks after the player', () => {
     const { match, input, lightStronghold } = setUp();
     const home = lightStronghold?.position ?? { x: Number.NaN, y: Number.NaN };

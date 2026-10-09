@@ -2,6 +2,9 @@
  * Marks an entity as driven by a controller (architecture 11 §2): `AiSystem` asks the
  * controller registered under `controllerId` what this entity does next.
  *
+ * PROTOTYPE(PROTO-01) TEMPORARY: delete; brains become plain data in `state.ai.brains` with
+ * memory and an RNG stream (architecture 11 §2), hashed by `StateHasher`.
+ *
  * @remarks Prototype: doc 11 keeps brains as plain data in `state.ai.brains` with memory and an
  * RNG stream. The follow-leader prototype is stateless, so only the controller id is needed.
  */

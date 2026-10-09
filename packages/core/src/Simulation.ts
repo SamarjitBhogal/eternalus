@@ -58,6 +58,8 @@ export class Simulation {
       ),
     };
     this.systemContext = { state: this.state, logger };
+    // PROTOTYPE(PROTO-01) TEMPORARY: replace this hand-built controller list with
+    // `ai/defaultControllerRegistry.ts` (11 §2) and `FollowLeaderController` with `MinionController`.
     this.pipeline =
       systems === undefined
         ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), [

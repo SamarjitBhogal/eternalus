@@ -1,3 +1,4 @@
+// PROTOTYPE(PROTO-01) TEMPORARY: tests demo code; delete with `FollowLeaderController.ts`.
 import { describe, expect, it } from 'vitest';
 
 import type { Command } from '../commands/Command.types';

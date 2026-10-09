@@ -41,6 +41,15 @@ player's Legend, was chosen by SamarjitBhogal on 2026-10-08 as a **prototype dec
 replaced** by the real Phase 3 systems. It is recorded as **PROTO-01** in `INBOX.md` for the
 product owner (sholtzman) to confirm. No design document was changed.
 
+## Finding the prototype code
+
+All prototype code is temporary. Every piece carries the marker `PROTOTYPE(PROTO-01) TEMPORARY`,
+followed by what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'` lists all of them: the follow
+controller, its profile and tests, the light-minion definition, the escort spawn in `Match`, and
+the interim shapes of `AiSystem`, `Brain`, the `EntityStore` read helpers, the `Unit` brain
+attach, the `Simulation` controller list and `DefaultSystemPipeline`'s `decide` parameter. Agents
+must not build on or extend marked code.
+
 ## What replaces it (PROTO-01)
 
 | Prototype piece                                                     | Replaced by                                                    |

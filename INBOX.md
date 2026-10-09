@@ -75,6 +75,11 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `DefaultSystemPipeline`, which splits the tick order across two files (02 §9). Should
       `AiSystem` stay in `ai/`, or may `systems/` import `ai/` types?
       Decision needed: keep the escort behind a dev flag after Phase 3, or delete it then?
+      **Finding the code:** all prototype code is temporary. Every piece carries the marker
+      `PROTOTYPE(PROTO-01) TEMPORARY`, followed by what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'`
+      lists them all. Agents: do not build on or extend marked code; replace it with the named
+      design piece. Proposal (needs your approval, since it edits `AGENTS.md`): add this marker
+      convention to `AGENTS.md` so every future prototype uses it.
 
 ## Requests for the agent
 

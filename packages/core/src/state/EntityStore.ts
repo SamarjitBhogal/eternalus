@@ -103,6 +103,9 @@ export class EntityStore {
   }
 
   /**
+   * PROTOTYPE(PROTO-01) TEMPORARY: delete this and the three helpers below; controllers read
+   * through `Perception` over `SpatialHash` (11 §3).
+   *
    * The entity's live position, for `ai/`, which may not import `components/`. Read it, do not
    * keep it: it changes as the entity moves.
    */

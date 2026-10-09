@@ -49,6 +49,7 @@ export abstract class Unit extends Entity {
     this.addComponent(new TeamMembership(team));
     this.addComponent(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
     this.addComponent(new Vision(definition.visionRadius));
+    // PROTOTYPE(PROTO-01) TEMPORARY: delete; `EntityFactory` attaches brains in state (11 §2).
     if (definition.controller !== undefined) {
       this.addComponent(new Brain(definition.controller));
     }

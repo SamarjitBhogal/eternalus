@@ -1,4 +1,6 @@
 /**
+ * PROTOTYPE(PROTO-01) TEMPORARY: demo code. Delete with `FollowLeaderController.ts`.
+ *
  * Tuning for the prototype follow-leader controller, in world units. Prototype decision
  * (2026-10-08): minions escort their team's Legend for the demo; Phase 3's `MinionController`
  * (lane marching, aggro) replaces it.

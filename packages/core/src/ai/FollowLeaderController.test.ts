@@ -1,3 +1,4 @@
+// PROTOTYPE(PROTO-01) TEMPORARY: tests demo code; delete with `FollowLeaderController.ts`.
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';

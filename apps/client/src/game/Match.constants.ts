@@ -31,6 +31,9 @@ export const PLACEHOLDER_MATCH_SEED = 1;
 export const LOG_RING_CAPACITY = 512;
 
 /**
+ * PROTOTYPE(PROTO-01) TEMPORARY: demo code. Delete with `Match.spawnEscort` when Phase 2's
+ * `SpawnSystem` and Phase 3's lane hordes land.
+ *
  * Prototype decision (2026-10-08, demo): minions that escort the player, spawned around the
  * player's spawn point until Phase 2's `SpawnSystem` and Phase 3's lane hordes replace them.
  */

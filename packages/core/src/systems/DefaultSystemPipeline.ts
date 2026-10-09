@@ -14,7 +14,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
    * Creates the pipeline.
    *
    * @param invariants - The runner the last system checks with.
-   * @param decide - Systems that run first, before movement: `AiSystem`, which `systems/` may not
+   * @param decide - PROTOTYPE(PROTO-01) TEMPORARY: remove once the owner decides where `AiSystem`
+   *   lives and it is registered like any other system. Systems that run first, before movement: `AiSystem`, which `systems/` may not
    *   import, so `Simulation` passes it in.
    */
   public constructor(invariants: InvariantRunner, decide: readonly System[] = []) {

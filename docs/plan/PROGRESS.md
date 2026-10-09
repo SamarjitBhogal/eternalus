@@ -449,3 +449,17 @@ The example below is fenced so it is not read as a real entry.
   settles around it.
 - Next step: Samarjit commits and pushes the rework, then opens the PR into the phase branch with
   `docs/changelog/pr-feat-minion-follow-prototype.md` as its description.
+
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype (markers) — SamarjitBhogal + Claude Code
+
+- What was done: marked every piece of the escort prototype as temporary with
+  `PROTOTYPE(PROTO-01) TEMPORARY` plus what replaces it (18 markers, 16 files; comments only): the
+  follow controller, its profile and tests, the light-minion definition and its catalogue line,
+  the escort spawn and its tests in `Match`, and the interim `AiSystem`, `Brain`, `EntityStore`
+  read helpers, `Unit` brain attach, `Simulation` controller list and `DefaultSystemPipeline`
+  `decide` parameter. The convention is explained in PROTO-01 (`INBOX.md`) and the PR #23
+  description doc, with a proposal to add it to `AGENTS.md` once the owner approves.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)"; client "Tests 292 passed (292)"; "✓ built in 165ms"; "Documentation
+  check passed." (Node 24.21.0, Linux).
+- Next step: update the PR #23 description on GitHub from the doc; reviewers check the markers.

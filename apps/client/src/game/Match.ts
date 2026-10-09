@@ -112,6 +112,7 @@ export class Match implements LoopTarget {
       at: spawnPoint,
       count: 1,
     });
+    // PROTOTYPE(PROTO-01) TEMPORARY: demo escort; delete with `spawnEscort`.
     Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
     camera.lookAt(spawnPoint);
@@ -208,6 +209,8 @@ export class Match implements LoopTarget {
   }
 
   /**
+   * PROTOTYPE(PROTO-01) TEMPORARY: demo code; `SpawnSystem` replaces it.
+   *
    * Prototype (2026-10-08, demo): queues the escort minions in a ring around `center`, one spawn
    * each so they start apart. Phase 2's `SpawnSystem` replaces this.
    */

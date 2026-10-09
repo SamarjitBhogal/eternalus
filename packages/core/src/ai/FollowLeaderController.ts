@@ -8,6 +8,9 @@ import type { Controller } from './Controller.types';
 import type { FollowLeaderProfile } from './FollowLeaderController.types';
 
 /**
+ * PROTOTYPE(PROTO-01) TEMPORARY: demo code. Delete this file, its `.types.ts` and tests, and
+ * `content/ai/followLeaderProfile.ts` when Phase 3's `MinionController` (sprint 3.3) lands.
+ *
  * Prototype decision (2026-10-08, demo): a follower walks to the nearest Legend of its team and
  * keeps a little space from that Legend and from other followers. Phase 3's `MinionController`
  * (lane marching, aggro) replaces it; nothing else depends on it. It sends a command only when

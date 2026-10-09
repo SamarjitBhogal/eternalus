@@ -1,5 +1,6 @@
 import { ContentCatalogue } from '../ContentCatalogue';
 import type { MobDefinition } from './mobs.types';
+// PROTOTYPE(PROTO-01) TEMPORARY: the demo escort minion; delete with `lightMinion.ts`.
 import { LIGHT_MINION } from './lightMinion';
 import { TRAINING_DUMMY } from './trainingDummy';
 
