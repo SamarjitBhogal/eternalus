@@ -73,23 +73,30 @@ const recordRandomMatch = (seed: number, ticks: number, commandEvery: number): R
   );
 };
 
+/** The 30,000-tick soak below needs more than Vitest's 5 s default on CI's Windows runners. */
+const SOAK_TIMEOUT_MS = 30_000;
+
 describe('replay', () => {
-  it('reproduces 10 seeds x 3,000 ticks of random commands, identical at every checkpoint', () => {
-    for (let seed = 1; seed <= 10; seed += 1) {
-      const first = recordRandomMatch(seed, 3000, 3);
-      const second = recordRandomMatch(seed, 3000, 3);
-      expect(second).toEqual(first);
-      expect(first.checkpoints).toHaveLength(31);
-      let replayed: ReplayTarget | undefined;
-      const outcome = runReplay(first, (config, matchSeed) => {
-        replayed = createTarget(config, matchSeed);
-        return replayed;
-      });
-      expect(outcome.firstDivergence).toBeNull();
-      expect(outcome.finalHash).toBe(first.checkpoints.at(-1)?.hash);
-      expect(replayed?.snapshot().entities.length).toBeGreaterThan(MAX_WALKERS / 2);
-    }
-  });
+  it(
+    'reproduces 10 seeds x 3,000 ticks of random commands, identical at every checkpoint',
+    () => {
+      for (let seed = 1; seed <= 10; seed += 1) {
+        const first = recordRandomMatch(seed, 3000, 3);
+        const second = recordRandomMatch(seed, 3000, 3);
+        expect(second).toEqual(first);
+        expect(first.checkpoints).toHaveLength(31);
+        let replayed: ReplayTarget | undefined;
+        const outcome = runReplay(first, (config, matchSeed) => {
+          replayed = createTarget(config, matchSeed);
+          return replayed;
+        });
+        expect(outcome.firstDivergence).toBeNull();
+        expect(outcome.finalHash).toBe(first.checkpoints.at(-1)?.hash);
+        expect(replayed?.snapshot().entities.length).toBeGreaterThan(MAX_WALKERS / 2);
+      }
+    },
+    SOAK_TIMEOUT_MS,
+  );
 
   it('gives different seeds different matches', () => {
     expect(recordRandomMatch(1, 300, 3).checkpoints.at(-1)).not.toEqual(
