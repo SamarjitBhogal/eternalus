@@ -3,10 +3,13 @@ import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { Entity } from '../entities/Entity';
+import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
 import { EntityStore } from './EntityStore';
+import type { RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
-import type { MatchPhase } from './GameState.types';
+import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
+import type { MatchPhase, RecordedCommand } from './GameState.types';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
 
 /**
@@ -21,6 +24,8 @@ export class GameState {
   /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
   public readonly phase: MatchPhase = 'countdown';
   private currentTick = 0;
+  private readonly recent = new RingBuffer<RecordedCommand>(RECENT_COMMAND_CAPACITY);
+  private readonly announcedRemovals: RemovalRecord[] = [];
 
   /**
    * @param config - A config that passed `validateGameConfig()`.
@@ -28,10 +33,14 @@ export class GameState {
    */
   public constructor(
     public readonly config: GameConfig,
-    seed: number,
+    /** The match seed, kept for diagnostic reports (seed + tick reproduce the moment). */
+    public readonly seed: number,
   ) {
     this.rng = new SeededRandom(seed);
     this.events = new GameEvents(() => this.currentTick);
+    this.events.on('entity-removed', (removal) => {
+      this.announcedRemovals.push(removal);
+    });
   }
 
   /** Number of ticks completed. */
@@ -39,9 +48,26 @@ export class GameState {
     return this.currentTick;
   }
 
-  /** Counts one completed tick. Called once per `Simulation.step()`. */
+  /** Counts one completed tick and starts the next tick's bookkeeping. Called once per `Simulation.step()`. */
   public advanceTick(): void {
     this.currentTick += 1;
+    this.entities.beginTick();
+    this.announcedRemovals.length = 0;
+  }
+
+  /** Every `entity-removed` event of the current tick, in order (whatever the ring buffer keeps). */
+  public removalsAnnouncedThisTick(): readonly RemovalRecord[] {
+    return [...this.announcedRemovals];
+  }
+
+  /** Records a command applied this tick, for diagnostic reports. Called by `Simulation.step()`. */
+  public recordCommand(command: RecordedCommand['command']): void {
+    this.recent.push({ tick: this.currentTick, command });
+  }
+
+  /** The most recently applied commands, oldest first. */
+  public recentCommands(): readonly RecordedCommand[] {
+    return this.recent.toArray();
   }
 
   /** The current state as a structured-clone-safe snapshot. */

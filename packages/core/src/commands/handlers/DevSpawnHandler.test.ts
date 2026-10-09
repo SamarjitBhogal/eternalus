@@ -5,6 +5,7 @@ import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { validateGameConfig } from '../../config/validateGameConfig';
 import type { Team } from '../../teams/teams.types';
+import { ContentCatalogue } from '../../content/ContentCatalogue';
 import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { EntityRegistry } from '../../entities/EntityRegistry';
@@ -36,7 +37,7 @@ const installAt = (entity: Entity, context: unknown): void => {
 class Grunt extends Unit {
   public readonly kind = 'grunt';
 
-  protected installComponents(context: unknown): void {
+  protected override installComponents(context: unknown): void {
     installAt(this, context);
   }
 }
@@ -44,7 +45,7 @@ class Grunt extends Unit {
 class Hero extends Legend {
   public readonly kind = 'hero';
 
-  protected installComponents(context: unknown): void {
+  protected override installComponents(context: unknown): void {
     installAt(this, context);
   }
 }
@@ -64,18 +65,24 @@ const contextWithDummy = (
       ),
       1,
     ),
-    factory: new EntityFactory(registry),
+    factory: new EntityFactory(
+      registry,
+      new ContentCatalogue(
+        ['dummy', 'grunt', 'hero'].map((kind) => ({ id: kind, kind, displayName: kind })),
+      ),
+    ),
   };
 };
 
 const spawn = (overrides: Partial<Command<'dev-spawn'>> = {}): Command<'dev-spawn'> => ({
   type: 'dev-spawn',
   kind: 'dummy',
-  definitionId: 'training-dummy',
   team: 'dark',
   at: { x: 10, y: 20 },
   count: 2,
   ...overrides,
+  // Each test kind is built from the definition of the same id unless a test says otherwise.
+  definitionId: overrides.definitionId ?? overrides.kind ?? 'dummy',
 });
 
 describe('DevSpawnHandler', () => {
@@ -98,6 +105,8 @@ describe('DevSpawnHandler', () => {
 
   it.each<[string, Partial<Command<'dev-spawn'>>]>([
     ['unknown-kind', { kind: 'dragon' }],
+    ['unknown-definition', { definitionId: 'no-such-definition' }],
+    ['unknown-definition', { kind: 'grunt', definitionId: 'hero' }],
     ['invalid-count', { count: 0 }],
     ['invalid-count', { count: 1.5 }],
     ['invalid-position', { at: { x: Number.NaN, y: 0 } }],

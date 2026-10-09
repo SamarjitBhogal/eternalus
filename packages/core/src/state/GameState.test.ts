@@ -92,4 +92,32 @@ describe('GameState', () => {
     const snapshot = state.snapshot();
     expect(structuredClone(snapshot)).toEqual(snapshot);
   });
+
+  it('keeps the seed for reports', () => {
+    expect(new GameState(createDefaultGameConfig(), 77).seed).toBe(77);
+  });
+
+  it('records applied commands with their tick, oldest first', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    state.recordCommand({ type: 'stop' });
+    state.advanceTick();
+    state.recordCommand({ type: 'move' });
+
+    expect(state.recentCommands()).toEqual([
+      { tick: 0, command: { type: 'stop' } },
+      { tick: 1, command: { type: 'move' } },
+    ]);
+  });
+
+  it("forgets the tick's removals when the tick advances", () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const entity = new Marker('entity-1', 'marker');
+    entity.spawn({});
+    state.entities.add(entity);
+    state.entities.remove('entity-1', 'died');
+
+    state.advanceTick();
+
+    expect(state.entities.removedThisTick()).toEqual([]);
+  });
 });

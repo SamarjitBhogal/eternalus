@@ -1,12 +1,12 @@
 import { type ReactElement, useRef } from 'react';
 
 import styles from './GameCanvas.module.css';
-import { useMapCanvas } from './useMapCanvas';
+import { useMatch } from './useMatch';
 
-/** The canvas the game will render into. */
+/** The canvas the match renders into; it owns the match for as long as it is mounted. */
 export function GameCanvas(): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useMapCanvas(canvasRef);
+  useMatch(canvasRef);
 
   return <canvas ref={canvasRef} className={styles.canvas} />;
 }

@@ -308,6 +308,92 @@ The example below is fenced so it is not read as a real entry.
   client "Tests 36 passed (36)"; "✓ built in 79ms"; "Documentation check passed."
 - Next step: Sam pushes `feat/sim-kernel`; PR #13 then merges into the phase branch.
 
+### 2026-10-07 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
+
+- What was done: entity foundation of sprint 1.2 (SCRUM-16), all as classes, keeping main's
+  `Entity`/`Unit`/`Legend`/`Mob` contract that `feat/sim-kernel` builds on. New family bases
+  `Structure`, `Zone`, `Obstacle`, `Projectile` on a runtime-checked `SpawnContextReader`;
+  `UnitComponentInstaller`; `Collider`, `Vision`, layered shields on `Health`; the characters
+  `Warrior`/`Sentinel`/`Magus` with traits from `01-classes`; `LightMob` + the training dummy only
+  (other mobs: SCRUM-59). One `EntityModule` per family installed by `DefaultEntityRegistry`;
+  frozen `ContentCatalogue`s, rule-based `ContentValidator`, ESLint core module rings.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  227 passed (227)", client "Tests 36 passed (36)", "✓ built", "Documentation check passed.");
+  a trial merge with `feat/sim-kernel` conflicts only in `index.ts`, `index.test.ts` and this log.
+- Next step: pre-PR gate, then review. Session B (#13) adds `MovementSystem`, `DeathSystem`,
+  `InvariantSystem`; owner: sim lane.
+
+### 2026-10-07 — Phase 1 / sprint 1.2 — feat/entity-systems — claudiodh + Claude Code
+
+- What was done: session B's handoff to session C (`INBOX.md`), stacked on `feat/sim-kernel` and
+  the entity foundation. `Simulation` takes `SimulationOptions` and builds `DefaultSystemPipeline`
+  (`MovementSystem`, `DeathSystem`, `InvariantSystem`); `EntityFactory` uses `IdGenerator` and a
+  `DefinitionSource`; `MoveHandler`/`StopHandler`; `InvariantRunner` + `DebugConfig` with
+  `no-removal-without-cause`, `health-within-bounds`, `finite-transforms`, each with a test that
+  triggers it; `GameState.recentCommands`, `LogRecord.context`; `StateHasher` fields for shields,
+  heading, collider and vision (recorded replay checkpoints unchanged); `ShieldBar` shared.
+  Player scenarios now also play through the `Simulation`.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 36 passed (36)", "✓ built", "Documentation check passed.").
+- Next step: Sam decides the `dev-remove-entity` deferral (INBOX); `ObjectPool`, the remaining
+  sprint 1.2 invariants and the pre-PR gate; owner: claudiodh.
+
+### 2026-10-07 — Phase 1 / sprints 1.4–1.5 — feat/engine-loop-match — claudiodh + Claude Code
+
+- What was done: session H's first pieces (SCRUM-154), stacked on `feat/entity-systems`.
+  `GameLoop` + `FrameScheduler` port (`RafFrameScheduler`, `FakeFrameScheduler`); entity views
+  (`DefaultEntityView`, `LegendView`), `ViewRegistry`/`DefaultViewRegistry`, `EntityLayer`;
+  `Camera` follow, zoom, culling and world↔screen; `Match` composition root with the player's
+  Warrior at the Light stronghold and an `IntentSource` port; `useMatch` replaces `useMapCanvas`;
+  `SinkLogger`, `ConsoleSink`, `RingBufferSink`. Minimap untouched (SCRUM-151, Aryan); keyboard
+  left to session F. 08 §11 records the interim differences. After the pre-PR critic: cleanup
+  is proven by tests, unknown kinds are logged once, and the GameLoop and Logger sinks plan items
+  stay open (the Clock is session D's; the overlay cannot read the ring buffer yet).
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 83 passed (83)", "✓ built", "Documentation check passed.").
+- Next step: pre-PR gate, then the PR (after #14 and #17); input session F for WASD; owner:
+  claudiodh.
+
+### 2026-10-08 — Phase 1 / sprint 1.5 — feat/player-input — claudiodh + Claude Code
+
+- What was done: WASD movement in the browser (SCRUM-158, SCRUM-217), stacked on
+  `feat/engine-loop-match`. `bridge/Binding.types.ts` (`INPUT_ACTIONS`, `InputChord`, `Binding`);
+  `game/input/keybindings.ts` with every default and the `wasd`/`arrows` presets;
+  `InputDevice` port and `KeyboardDevice`; `InputMapper` (bindings → actions → `InputIntent`);
+  `DeviceIntentSource` replaces `IdleIntentSource` in `useMatch`, with focus-loss release.
+  09 §11 records the interim differences; a player scenario walks the Warrior with W.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 111 passed (111)", "✓ built", "Documentation check passed.").
+- Next step: core `PlayerController` for the `intent` command (INBOX, Sam's TODO); `MouseDevice`;
+  pre-PR gate; owner: claudiodh.
+
+### 2026-10-08 — Phase 1 / sprint 1.5 — feat/player-input (mouse) — claudiodh + Claude Code
+
+- What was done: `MouseDevice` (buttons bitmask with side buttons, pointer on the canvas, pointer
+  capture, `contextmenu`/`auxclick`/non-primary presses cancelled); the shared
+  `describeInputDevice` contract suite for both devices (09 §9); `InputMapper` matches mouse
+  chords by `chordKey` and aims through a `Projection` port that `Match` implements with its
+  camera; `useMatch` attaches the mouse to the canvas. 09 §11 and 08 §11 updated; the
+  `KeyboardDevice` / `MouseDevice` box is ticked.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 127 passed (127)", "✓ built", "Documentation check passed.").
+- Next step: core `PlayerController` consumes `aim` and `triggered` (INBOX); pre-PR gate on the
+  mouse commits; owner: claudiodh.
+
+### 2026-10-08 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
+
+- What was done: the PR #14 review (Sam, 2026-10-08). Registry back to
+  `createDefaultEntityRegistry()` (DEC-21); content rules get the catalogue, are listed in
+  `content/defaultContentRules.ts` and run once from `loadDefaultContent()`, which also converts
+  speeds authored per second to per tick (DEC-22); `EntityFactory` resolves definitions by id,
+  checks their kind once and takes ids from `IdGenerator`, `dev-spawn` rejects
+  `unknown-definition`, and `Simulation` spawns a Warrior; `Unit` installs the unit components;
+  `StateHasher` hashes shields, colliders and vision; `ShieldBar` shared with `GameEvents`;
+  shields in creation order; `EntityDefinitionBase`; `deepFreeze` in `utils/`; ring lint, ADR
+  0013 and the AGENTS section removed (DEC-24). DEC-21…24 logged; proposals in `INBOX.md`.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (see the PR).
+- Next step: Sam re-reviews #14; then merge it into #17, #18 and #19; owner: claudiodh.
+
 ### 2026-10-08 — Phase 1 / sprint 1 session D — feat/session-shell-home — sholtzman + Claude Code
 
 - What was done: resolved PR #12's merge conflicts by merging `origin/phase/1-simulation-kernel-and-world`

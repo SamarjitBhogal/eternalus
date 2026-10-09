@@ -18,6 +18,9 @@ export class DevSpawnHandler implements CommandHandler<'dev-spawn'> {
     if (EntityClass === undefined) {
       return 'unknown-kind';
     }
+    if (!factory.canCreate(kind, definitionId)) {
+      return 'unknown-definition';
+    }
     if (!Number.isInteger(count) || count < 1) {
       return 'invalid-count';
     }
