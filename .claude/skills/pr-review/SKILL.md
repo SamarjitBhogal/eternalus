@@ -10,6 +10,14 @@ Independent review is part of the harness: agents grade their own work generousl
 second pass by a different agent or a human is required before merge
 (`docs/agents/checklists.md`). This skill produces a structured review; it never edits.
 
+## As the pre-PR gate critic
+
+When this review is step 1 of the pre-PR gate (`AGENTS.md`, ADR 0010), judge the code against
+the governing docs **as they stood at the base commit** (`git show <base>:<doc>`), not against
+docs the branch edited, and do not use the author's reasoning as evidence. Classify every
+difference as `violation` (rework), `acceptable` (forced by a binding contract or an allowed
+interim stand-in) or `better-than-design` (needs the human's sign-off before the docs change).
+
 ## Procedure
 
 1. Identify the diff: `git diff <base>...<head>` (base = the phase branch for task PRs, `main`

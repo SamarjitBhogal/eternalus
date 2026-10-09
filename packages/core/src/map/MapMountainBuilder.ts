@@ -70,11 +70,6 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       })),
     }));
   }
-  private variation(x: number, y: number): number {
-    return (
-      (Math.imul(Math.floor(x) + 17, 73856093) ^ Math.imul(Math.floor(y) + 29, 19349663)) >>> 0
-    );
-  }
   private mountain(id: string, x: number, y: number, rx: number, ry: number, n: number): void {
     const point = (dx: number, dy: number) => ({ x: x + dx * rx, y: y + dy * ry });
     const peak = point(-0.35 + (n % 7) * 0.08, -0.85);

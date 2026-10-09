@@ -1,19 +1,26 @@
-import type { MapDefinition } from '@eternalus/core';
-import type { Renderer } from '../engine/Renderer';
+import type { MapDecoration, MapDecorationLayer } from '@eternalus/core';
+
+import type { Renderer } from '../engine/render/Renderer';
 import type { WorldLayer } from './SceneView.types';
 
-/** Paints authored scenery through the renderer in both the battlefield and minimap. */
+/** Paints one layer of presentation-only map scenery, in the main view and the mini map. */
 export class SceneryView implements WorldLayer {
-  /** Selects a visual layer; scenery never changes gameplay state. */
-  public constructor(
-    private readonly map: MapDefinition,
-    private readonly layer: 'ground' | 'detail',
-  ) {}
+  private readonly pieces: readonly MapDecoration[];
 
-  /** Draws immutable polygon decorations in their authored order. */
+  /** Keeps only the pieces on `layer`; scenery never changes gameplay state. */
+  public constructor(scenery: readonly MapDecoration[], layer: MapDecorationLayer) {
+    this.pieces = scenery.filter((piece) => piece.layer === layer);
+  }
+
+  /** Draws the polygons in their authored order. */
   public draw(renderer: Renderer): void {
-    for (const piece of this.map.scenery ?? []) {
-      if (piece.layer === this.layer) renderer.fillPolygon(piece.shape, piece.color);
+    for (const piece of this.pieces) {
+      renderer.fillPolygon(piece.shape, piece.color);
     }
+  }
+
+  /** The mini map shows the same scenery, scaled down. */
+  public drawMinimap(renderer: Renderer): void {
+    this.draw(renderer);
   }
 }

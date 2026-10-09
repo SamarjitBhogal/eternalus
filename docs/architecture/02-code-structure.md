@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-07
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -20,8 +20,9 @@ related:
 **Purpose.** Read this when you are about to create a file and need to know which folder it goes
 in, what that folder may import, how the file must be named and split, and which registry line
 makes the new code reachable. The tree below is the **planned** layout (decided, D6 and ADR 0006);
-folders are created when their first class arrives. Today core holds only `src/index.ts` and the
-client only `main.tsx`, `game/GameCanvas.tsx`, `bridge/store.ts` and `styles/global.css`.
+folders are created when their first class arrives, so the source tree, not this list, shows what
+exists today; the map slice's interim pieces are in
+[06-map-and-minimap.md](06-map-and-minimap.md) §10.
 
 ## 1. Principles
 
@@ -43,40 +44,42 @@ core/src/
   config/              GameConfig + validateGameConfig() + createDefaultGameConfig()
   content/             Type Object definitions by kebab-case ID, one subfolder per family
   utils/               Vec2, geometry, SeededRandom, deterministicMath, fnv1a, IdGenerator, RingBuffer
+  teams/               PlayableTeam, Team (shared by every layer; contract §2.2, 2026-10-03)
   state/               GameState, EntityStore, GameEvents, Snapshot types, StateHasher
-  commands/            Command union, CommandQueue, applyCommand(), Replay, runReplay()
+  commands/            Command union, CommandQueue, applyCommand() and its handler registry
   entities/            Entity root + families, EntityFactory, EntityRegistry, strategies, ProjectilePool
   components/          Transform, Health, Movement, Combat, Abilities, Progression, Team, Collider, ...
   systems/             System interface, one class per system, SystemPipeline, defaultSystemPipeline
-  map/                 MapGenerator (+ MapBuilder), MapDefinition, WorldMap, LaneGeometry, symmetry
+  map/                 MapGenerator (+ MapBuilder), WorldMap, LaneGeometry, symmetry (types: content/maps)
   physics/             SpatialHash, Circle, ConvexPolygon, sat, sweptTests, Kinematics, CollisionResolver
   ai/                  Controller interface + controllers, Perception queries, aggro rules (data)
   abilities/           Ability, AbilityRuntime, effects/, restrictions/, AbilityRegistry
   combat/              DamagePipeline, DamageSource, DeathResolver, StatusEffectRuntime
   match/               MatchDirector, MatchPhase states, MatchTimeline, Scoring, VictoryConditions, MatchResult
   loadout/             Loadout model, validateLoadout(), autoBuildLoadout()
-  diagnostics/         Invariant, InvariantRunner, invariants/, Logger port, DiagnosticEvent types
+  diagnostics/         Invariant, InvariantRunner, invariants/, Logger port, DiagnosticEvent types, replay
 ```
 
-| Folder          | Responsibility                                                                                          | May import                                                                  | Key classes and files                                                                                                                                                                                                  |
-| --------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `utils/`        | Generic, pure helpers with no game vocabulary                                                           | `utils/`                                                                    | `Vec2`, `geometry.ts`, `SeededRandom` (implements `Rng`), `deterministicMath.ts`, `fnv1a.ts`, `IdGenerator`, `RingBuffer`                                                                                              |
-| `config/`       | The world and match parameters, their defaults and validation                                           | `utils/`                                                                    | `GameConfig` (type), `validateGameConfig()`, `createDefaultGameConfig()`, `MatchTimelineEntry`                                                                                                                         |
-| `content/`      | Immutable definitions keyed by ID; `ContentCatalogue` resolves `extends` and validates cross-references | `content/`, `utils/` (types), `config/` (types)                             | `ContentCatalogue`, `validateContent()`, `legends/`, `mobs/`, `bosses/`, `structures/`, `abilities/`, `weapons/`, `artifacts/`, `status-effects/`, `obstacles/`, `maps/`, `ai/profiles/`, `narrative/`, `progression/` |
-| `components/`   | State owned by entities plus the small invariants that guard it                                         | `utils/`, `content/` (types)                                                | `Transform`, `Health`, `Movement`, `Combat`, `Abilities`, `Progression`, `Team`, `Collider`, `StatusEffects`, `Carry`, `Loadout`, `Vision`, `Spawner`, `Capturable`                                                    |
-| `physics/`      | Shapes, broad and narrow phase, sweeps, kinematics; no entity knowledge                                 | `utils/`, `components/` (types)                                             | `SpatialHash`, `Circle`, `ConvexPolygon`, `sat.ts`, `sweptTests.ts`, `Kinematics`, `CollisionResolver`                                                                                                                 |
-| `entities/`     | Identity and lifecycle: the family classes, factories, registries and strategy catalogues               | `components/`, `content/`, `utils/`, `state/` (types), `physics/` (shapes)  | `Entity`, `Unit`, `Legend`, `Mob`, `Boss`, `Structure`, `Zone`, `Obstacle`, `Projectile`, `EntityFactory`, `EntityRegistry`, `StrategyRegistry`, `ProjectilePool`                                                      |
-| `state/`        | The aggregate root, the event channel, snapshot DTOs and hashing                                        | `utils/`, `config/` (types), `content/` (types), `components/`, `entities/` | `GameState`, `EntityStore`, `GameEvents`, `GameEventMap`, `Snapshot.types.ts`, `StateHasher`                                                                                                                           |
-| `commands/`     | Everything a player, bot or developer menu can ask for, and how it is applied                           | `state/`, `entities/`, `utils/`                                             | `Command.types.ts`, `CommandQueue`, `applyCommand.ts`, `Replay.types.ts`, `runReplay.ts`                                                                                                                               |
-| `map/`          | Config + seed → `MapDefinition`; the runtime `WorldMap` with cost grid and flow fields                  | `config/`, `content/`, `utils/`, `physics/`                                 | `MapGenerator`, `MapBuilder`, `MapDefinition.types.ts`, `WorldMap`, `LaneGeometry`, `symmetry.ts`                                                                                                                      |
-| `combat/`       | Damage resolution, death causes, status-effect maths                                                    | `components/`, `content/`, `state/`, `utils/`                               | `DamagePipeline`, `DamageSource.types.ts`, `DeathResolver`, `StatusEffectRuntime`                                                                                                                                      |
-| `abilities/`    | Ability behaviour built from effect and restriction strategies                                          | `combat/`, `components/`, `content/`, `state/`, `utils/`                    | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                                                      |
-| `loadout/`      | The loadout model and its validation against content                                                    | `content/`, `utils/`                                                        | `Loadout.types.ts`, `validateLoadout.ts`, `autoBuildLoadout.ts`                                                                                                                                                        |
-| `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                 | `state/` (read), `commands/`, `content/` (types), `utils/`                  | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                  |
-| `match/`        | Phases, timeline, scoring, victory                                                                      | `state/`, `config/`, `utils/`                                               | `MatchDirector`, `MatchPhase.types.ts`, `MatchTimeline`, `Scoring`, `VictoryConditions`, `MatchResult.types.ts`                                                                                                        |
-| `diagnostics/`  | Invariants, the runner, the `Logger` port and diagnostic event types                                    | `state/`, `utils/`                                                          | `Invariant`, `InvariantRunner`, `invariants/*Invariant.ts`, `Logger`, `DiagnosticEvent.types.ts`                                                                                                                       |
-| `systems/`      | Per-tick logic; one class per system; the ordered pipeline                                              | Everything below it except another system                                   | `System`, `SystemContext.types.ts`, `SystemPipeline`, `defaultSystemPipeline.ts`, `*System.ts`                                                                                                                         |
-| `Simulation.ts` | Composes the above; the only thing the client drives                                                    | Everything                                                                  | `Simulation`                                                                                                                                                                                                           |
+| Folder          | Responsibility                                                                                            | May import                                                                  | Key classes and files                                                                                                                                                                                                  |
+| --------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `utils/`        | Generic, pure helpers with no game vocabulary                                                             | `utils/`                                                                    | `Vec2`, `vec2.ts` (immutable and in-place forms), `geometry.ts`, `SeededRandom` (implements `Rng`), `deterministicMath.ts`, `fnv1a.ts`, `IdGenerator`, `RingBuffer`                                                    |
+| `teams/`        | The team vocabulary every layer shares                                                                    | nothing                                                                     | `teams.types.ts` (`PlayableTeam`, `Team`)                                                                                                                                                                              |
+| `config/`       | The world and match parameters, their defaults and validation                                             | `utils/`                                                                    | `GameConfig` (type), `validateGameConfig()`, `createDefaultGameConfig()`, `MatchTimelineEntry`                                                                                                                         |
+| `content/`      | Immutable definitions keyed by ID; `ContentCatalogue` resolves `extends` and validates cross-references   | `content/`, `utils/`, `teams/` and `config/` (types)                        | `ContentCatalogue`, `validateContent()`, `legends/`, `mobs/`, `bosses/`, `structures/`, `abilities/`, `weapons/`, `artifacts/`, `status-effects/`, `obstacles/`, `maps/`, `ai/profiles/`, `narrative/`, `progression/` |
+| `components/`   | State owned by entities plus the small invariants that guard it                                           | `utils/`, `content/` and `teams/` (types)                                   | `Transform`, `Health`, `Movement`, `Combat`, `Abilities`, `Progression`, `Team`, `Collider`, `StatusEffects`, `Carry`, `Loadout`, `Vision`, `Spawner`, `Capturable`                                                    |
+| `physics/`      | Shapes, broad and narrow phase, sweeps, kinematics; no entity knowledge                                   | `utils/`, `components/` (types)                                             | `SpatialHash`, `Circle`, `ConvexPolygon`, `sat.ts`, `sweptTests.ts`, `Kinematics`, `CollisionResolver`                                                                                                                 |
+| `entities/`     | Identity and lifecycle: the family classes, factories, registries and strategy catalogues                 | `components/`, `content/`, `utils/`, `state/` (types), `physics/` (shapes)  | `Entity`, `Unit`, `Legend`, `Mob`, `Boss`, `Structure`, `Zone`, `Obstacle`, `Projectile`, `EntityFactory`, `EntityRegistry`, `StrategyRegistry`, `ProjectilePool`                                                      |
+| `state/`        | The aggregate root, the event channel, snapshot DTOs and hashing                                          | `utils/`, `config/` (types), `content/` (types), `components/`, `entities/` | `GameState`, `EntityStore`, `GameEvents`, `GameEventMap`, `Snapshot.types.ts`, `StateHasher`                                                                                                                           |
+| `commands/`     | Everything a player, bot or developer menu can ask for, and how it is applied                             | `state/`, `entities/`, `utils/`                                             | `Command.types.ts`, `CommandQueue`, `applyCommand.ts`, `CommandHandler.types.ts`, `handlers/*Handler.ts`, `defaultCommandHandlers.ts`                                                                                  |
+| `map/`          | Config + seed → `MapDefinition`; the runtime `WorldMap` with cost grid and flow fields                    | `config/`, `content/`, `teams/`, `utils/`, `physics/`                       | `MapGenerator`, `MapBuilder`, `WorldMap`, `LaneGeometry`, `symmetry.ts` (map types in `content/maps/maps.types.ts`)                                                                                                    |
+| `combat/`       | Damage resolution, death causes, status-effect maths                                                      | `components/`, `content/`, `state/`, `utils/`                               | `DamagePipeline`, `DamageSource.types.ts`, `DeathResolver`, `StatusEffectRuntime`                                                                                                                                      |
+| `abilities/`    | Ability behaviour built from effect and restriction strategies                                            | `combat/`, `components/`, `content/`, `state/`, `utils/`                    | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                                                      |
+| `loadout/`      | The loadout model and its validation against content                                                      | `content/`, `utils/`                                                        | `Loadout.types.ts`, `validateLoadout.ts`, `autoBuildLoadout.ts`                                                                                                                                                        |
+| `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                   | `state/` (read), `commands/`, `content/` (types), `utils/`                  | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                  |
+| `match/`        | Phases, timeline, scoring, victory                                                                        | `state/`, `config/`, `utils/`                                               | `MatchDirector`, `MatchPhase.types.ts`, `MatchTimeline`, `Scoring`, `VictoryConditions`, `MatchResult.types.ts`                                                                                                        |
+| `diagnostics/`  | Invariants, the runner, the `Logger` port, diagnostic event types, the replay and property-test harnesses | `state/`, `utils/`; types of `commands/` and `config/` (DEC-20)             | `Invariant`, `InvariantRunner`, `invariants/*Invariant.ts`, `Logger.types.ts`, `DiagnosticEvent.types.ts`, `replay.ts`, `Replay.types.ts`, `randomCommands.ts`                                                         |
+| `systems/`      | Per-tick logic; one class per system; the ordered pipeline                                                | Everything below it except another system                                   | `System`, `SystemContext.types.ts`, `SystemPipeline`, `defaultSystemPipeline.ts`, `*System.ts`                                                                                                                         |
+| `Simulation.ts` | Composes the above; the only thing the client drives                                                      | Everything                                                                  | `Simulation`                                                                                                                                                                                                           |
 
 ## 3. `apps/client/src/` (L4, L3 and L1)
 
@@ -162,7 +165,9 @@ called out in the PR. Planned surface: `Simulation` and `SimulationOptions`; the
 `createDefaultGameConfig`; `ContentCatalogue` and `loadDefaultContent()` (read-only definitions for
 the loadout screen); `Loadout`, `validateLoadout`, `autoBuildLoadout`; `PlayerController` and
 `InputIntent`; the `Logger` and `LogRecord` types; `DiagnosticEvent`; `Replay` and `runReplay`;
-the ID types. Systems, entities, components and strategies stay internal.
+`MapGenerator`, the `MapDefinition` types, `PlayableTeam` and `Team`
+([integration contract](../agents/prompts/2026-10-03-ultracode-sessions.md) §2.2); the ID types.
+Systems, entities, components and strategies stay internal.
 
 ## 7. Content, config, constants, settings
 
@@ -201,7 +206,9 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                               | A definition (legend, mob, ability, weapon, ...)          |
 | `SystemPipeline` order      | `core/src/systems/defaultSystemPipeline.ts`                                    | A system, at its position in the tick                     |
 | `GameEventMap`              | `core/src/state/GameEvents.types.ts`                                           | An event name and payload type                            |
-| `Command` union             | `core/src/commands/Command.types.ts`                                           | A command (the exhaustive `switch` then demands its case) |
+| `Command` union             | `core/src/commands/Command.types.ts`                                           | A command (the handler registry then demands its handler) |
+| Command handlers            | `core/src/commands/defaultCommandHandlers.ts`                                  | A handler for a command type                              |
+| Diagnostic events           | `core/src/diagnostics/DiagnosticEvent.types.ts`                                | A diagnostic event name and its attributes                |
 | Built-in invariants         | `core/src/diagnostics/defaultInvariants.ts`                                    | An invariant                                              |
 | `MatchTimeline`             | `core/src/config/GameConfig` `timeline`                                        | A scheduled match event                                   |
 | `ViewRegistry`              | `client/src/game/views/defaultViewRegistry.ts`                                 | A view for an entity family or kind                       |
@@ -215,29 +222,29 @@ changes the shape of the world, it is config. If a player may change it, it is a
 
 ## 10. I am adding X → it goes in Y
 
-| I am adding...                                  | It goes in...                                                                   | Plus                                                          |
-| ----------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| A tuning number or display name                 | `core/content/<family>/<id>.ts`                                                 | nothing else                                                  |
-| A world parameter (`numLanes`)                  | `core/config/GameConfig`                                                        | a `validateGameConfig()` check, a map test                    |
-| A new legend, mob, structure, boss class        | `core/entities/<family>/<Name>.ts` + a definition in `content/`                 | `defaultEntityRegistry.ts` line                               |
-| A variant of an existing kind (new mob flavour) | `core/content/mobs/<id>.ts` only                                                | catalogue line                                                |
-| Per-entity state                                | `core/components/<Name>.ts`                                                     | attach it in the family's `attachComponents()`                |
-| Per-tick behaviour                              | `core/systems/<Name>System.ts`                                                  | `defaultSystemPipeline.ts` line                               |
-| Behaviour that varies by kind                   | `core/entities/strategies/<Name><Family>Strategy.ts`                            | `defaultStrategyRegistry.ts` line, strategy id in content     |
-| An ability, effect, restriction                 | `core/content/abilities/<id>.ts`; `core/abilities/effects                       | restrictions/<Name>.ts`                                       | `defaultAbilityRegistry.ts` line for a new class |
-| A weapon, artifact, status effect               | `core/content/weapons                                                           | artifacts                                                     | status-effects/<id>.ts`                          | catalogue line |
-| A command                                       | `core/commands/Command.types.ts`, `applyCommand.ts` case                        | a producer (`InputMapper`, controller, developer menu)        |
-| An event                                        | `core/state/GameEvents.types.ts`                                                | emitter and listeners                                         |
-| A runtime check                                 | `core/diagnostics/invariants/<Fact>Invariant.ts`                                | `defaultInvariants.ts` line                                   |
-| A bot behaviour                                 | `core/ai/<Name>Controller.ts` or a behaviour-tree node                          | aggro numbers in `content/`                                   |
-| Something drawn on the canvas                   | `client/game/views/<Name>View.ts`                                               | `defaultViewRegistry.ts` line; draw order in `SceneView`      |
-| A key or mouse action                           | `client/game/input/keybindings.ts`                                              | `InputMapper` mapping to an `InputIntent` field               |
-| A screen or HUD element                         | `client/ui/screens/<Name>Screen.tsx` or `ui/hud/<Name>.tsx`                     | selector; slice if new data; bridge event if new game data    |
-| Data React needs from the game                  | `client/bridge/events.ts` + `slices/<name>Slice.ts`                             | publish (throttled) from `Match`'s `MatchBridge`              |
-| A persisted record                              | `client/data/persistence/dto/<Name>Dto.ts` + `repositories/<Name>Repository.ts` | `schema/migrations.ts` step, `PersistenceController` accessor |
-| An image, sound or JSON asset                   | `client/assets/` + `AssetManifest.ts` line                                      | licence noted in the PR                                       |
-| A CSS token                                     | `client/styles/global.css`                                                      | nothing else                                                  |
-| A rule change to tooling                        | an ADR in `docs/decisions/`                                                     | the config change in the same PR                              |
+| I am adding...                                  | It goes in...                                                                   | Plus                                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| A tuning number or display name                 | `core/content/<family>/<id>.ts`                                                 | nothing else                                                                             |
+| A world parameter (`numLanes`)                  | `core/config/GameConfig`                                                        | a `validateGameConfig()` check, a map test                                               |
+| A new legend, mob, structure, boss class        | `core/entities/<family>/<Name>.ts` + a definition in `content/`                 | `defaultEntityRegistry.ts` line                                                          |
+| A variant of an existing kind (new mob flavour) | `core/content/mobs/<id>.ts` only                                                | catalogue line                                                                           |
+| Per-entity state                                | `core/components/<Name>.ts`                                                     | attach it in the family's `attachComponents()`                                           |
+| Per-tick behaviour                              | `core/systems/<Name>System.ts`                                                  | `defaultSystemPipeline.ts` line                                                          |
+| Behaviour that varies by kind                   | `core/entities/strategies/<Name><Family>Strategy.ts`                            | `defaultStrategyRegistry.ts` line, strategy id in content                                |
+| An ability, effect, restriction                 | `core/content/abilities/<id>.ts`; `core/abilities/effects                       | restrictions/<Name>.ts`                                                                  | `defaultAbilityRegistry.ts` line for a new class |
+| A weapon, artifact, status effect               | `core/content/weapons                                                           | artifacts                                                                                | status-effects/<id>.ts`                          | catalogue line |
+| A command                                       | `core/commands/Command.types.ts` + `commands/handlers/<Name>Handler.ts`         | `defaultCommandHandlers.ts` line; a producer (`InputMapper`, controller, developer menu) |
+| An event                                        | `core/state/GameEvents.types.ts`                                                | emitter and listeners                                                                    |
+| A runtime check                                 | `core/diagnostics/invariants/<Fact>Invariant.ts`                                | `defaultInvariants.ts` line                                                              |
+| A bot behaviour                                 | `core/ai/<Name>Controller.ts` or a behaviour-tree node                          | aggro numbers in `content/`                                                              |
+| Something drawn on the canvas                   | `client/game/views/<Name>View.ts`                                               | `defaultViewRegistry.ts` line; draw order in `SceneView`                                 |
+| A key or mouse action                           | `client/game/input/keybindings.ts`                                              | `InputMapper` mapping to an `InputIntent` field                                          |
+| A screen or HUD element                         | `client/ui/screens/<Name>Screen.tsx` or `ui/hud/<Name>.tsx`                     | selector; slice if new data; bridge event if new game data                               |
+| Data React needs from the game                  | `client/bridge/events.ts` + `slices/<name>Slice.ts`                             | publish (throttled) from `Match`'s `MatchBridge`                                         |
+| A persisted record                              | `client/data/persistence/dto/<Name>Dto.ts` + `repositories/<Name>Repository.ts` | `schema/migrations.ts` step, `PersistenceController` accessor                            |
+| An image, sound or JSON asset                   | `client/assets/` + `AssetManifest.ts` line                                      | licence noted in the PR                                                                  |
+| A CSS token                                     | `client/styles/global.css`                                                      | nothing else                                                                             |
+| A rule change to tooling                        | an ADR in `docs/decisions/`                                                     | the config change in the same PR                                                         |
 
 ## 11. How knip and ESLint relate to the tree
 
@@ -273,10 +280,10 @@ changes the shape of the world, it is config. If a player may change it, it is a
 },
 ```
 
-- Determinism lint for core grows the same way: `no-restricted-globals` for `Date` and
-  `performance`, and `no-restricted-properties` for `Math.sin`, `Math.cos`, `Math.atan2`,
-  `Math.exp` and `Math.pow`, with an override that allows them only in
-  `packages/core/src/utils/deterministicMath.ts`.
+- Determinism lint for core: `no-restricted-properties` bans `Math.random` everywhere in core and
+  `Math.sin`, `Math.cos`, `Math.atan2`, `Math.exp` and `Math.pow` outside
+  `packages/core/src/utils/deterministicMath.ts` (ADR 0012); `no-restricted-globals` for `Date`
+  and `performance` is the next step of the same block.
 - The tree, the tables in this doc and the lint blocks must agree; a PR that adds a folder updates
   all three ([01-layered-oop-model.md](01-layered-oop-model.md) §7).
 

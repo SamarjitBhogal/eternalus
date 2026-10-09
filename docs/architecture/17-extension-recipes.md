@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-07
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -40,8 +40,8 @@ registry line); nothing else changes** (CP-10 in
 [../requirements/02-coding-principles.md](../requirements/02-coding-principles.md)). If a recipe
 needs a fourth kind of change to existing code, a seam is missing: fix the seam, not the
 feature, then update the recipe. Paths follow the planned tree of
-[02-code-structure.md](02-code-structure.md); the repo has no game code yet, so every file named
-below is a **sketch**. `core/` means `packages/core/src/`, `client/` means `apps/client/src/`.
+[02-code-structure.md](02-code-structure.md); a file named below that is not in the tree yet is a
+**sketch**. `core/` means `packages/core/src/`, `client/` means `apps/client/src/`.
 
 ## 1. How to read a recipe
 
@@ -152,7 +152,8 @@ R14 "new view" and R16 "new command".
   and kinds are data; felling, burning and throwing are **MVP-if-time** interactions.
 - **Files:** `core/content/obstacles/<id>.ts` (`ObstacleDefinition`: `kind`, `footprint`,
   `health` (`null` = unbreakable), `weight`, `fell?`, `minimapGlyph`) + `obstacleCatalogue.ts`
-  line; a scatter entry in the preset (`core/content/maps/`) or a placed feature (R14). A new
+  line; a scatter entry in the `MapLayout` obstacle rules (`core/content/maps/`; a preset never
+  places features, DEC-14) or a placed feature (R14). A new
   `kind` is one union member and no `switch` on it may exist (A1); a new interaction is a
   `PickUpStrategy` (R13) or an effect kind (R8), never an `Obstacle` subclass.
 - **Registry line:** none: `obstacle` is already registered.
@@ -282,10 +283,11 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 
 - **When:** something the generator must place (a new structure, zone or fixed obstacle). This
   is also OG-05's "new view" recipe, because seeing it needs no view code.
-- **Files:** `core/map/MapDefinition.types.ts`: one `MapFeatureKind` member (and a feature type
-  if it carries new fields); `core/map/MapBuilder.ts`: a step, placed for `light` and mirrored
-  through `symmetry.ts`, or a preset feature in `core/content/maps/`; the definition it spawns
-  (R5, R6, R7) with a `minimapGlyph`.
+- **Files:** `core/content/maps/maps.types.ts`: one `MapFeatureKind` member (`MapFeature` stays
+  flat, integration contract §2.2, so new data goes on the definition it names);
+  `core/map/MapBuilder.ts`: a step, placed for `light` and mirrored through `symmetry.ts` (a
+  preset never places features, DEC-14); the definition it spawns (R5, R6, R7) with a
+  `minimapGlyph`.
 - **Registry line:** `defaultEntityRegistry.ts`: `EntityFactory.fromFeature` is the only reader
   of feature kinds and asks the registry for `definition.kind`.
 - **Tests:** `MapGenerator.test.ts` (mirror, counts follow config, determinism, containment);
@@ -294,15 +296,15 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   bespoke main-canvas look is optional: `client/game/views/<Name>View.ts` plus a
   `defaultViewRegistry.ts` line.
 - **Docs:** the kind table in 06 §4; `../reference/game-design/05-map.md`.
-- **Skill:** `new-entity` (`new-content` for a preset) · [06 §4](06-map-and-minimap.md#4-mapdefinition-types), [06 §8](06-map-and-minimap.md#8-minimap).
+- **Skill:** `new-entity` · [06 §4](06-map-and-minimap.md#4-mapdefinition-types), [06 §8](06-map-and-minimap.md#8-minimap).
 
 ### R15. Change `numLanes`, `spawnTowersPerLane` or `buffTowersPerLane`
 
 - **When:** the shape of the world changes (the requirements doc's acceptance test). The same
   recipe covers `campsPerSide`, `cornerCamps`, the unit caps and the timeline.
-- **Files:** no code. Change the default in `core/config/createDefaultGameConfig()`, a preset's
-  `config` override in `core/content/maps/`, or a developer-menu override that `Match` merges
-  before `validateGameConfig()`. A new **field** is one `GameConfig.types.ts` line, one
+- **Files:** no code. Change the default in `core/config/createDefaultGameConfig()` or a
+  developer-menu override that `Match` merges before `validateGameConfig()` (a preset carries no
+  counts, DEC-14). A new **field** is one `GameConfig.types.ts` line, one
   validation rule and one `MapBuilder` reader. (03 §10 and 06 §2 nest the fields under
   `GameConfig.map`, `GameConfig.match` and `GameConfig.limits`.)
 - **Registry line:** none.
@@ -318,15 +320,17 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 
 - **When:** a new way to change intent: a player action, a bot decision or a developer cheat.
   Every change of intent is a command so that the log replays (03 §3).
-- **Files:** `core/commands/Command.types.ts`: one union member (`{ readonly type: '<kebab>';
-readonly actorId: EntityId; ... }`, serialisable, ids only); `core/commands/applyCommand.ts`:
-  its `case` (validate, then apply or emit `command-rejected { reason }`); one producer:
-  `PlayerController` from an `InputIntent` field (R21), another controller (R18) or the
+- **Files:** `core/commands/Command.types.ts`: one `CommandPayloads` line for `'<kebab>'` (its
+  fields, usually `readonly actorId: EntityId` first; serialisable, ids only);
+  `core/commands/handlers/<Name>Handler.ts`: a class implementing `CommandHandler<'<kebab>'>`
+  that validates, applies and returns `null`, or returns a `CommandRejectReason` (DEC-20); one
+  producer: `PlayerController` from an `InputIntent` field (R21), another controller (R18) or the
   `DeveloperMenu` (R24).
-- **Registry line:** the union member: the exhaustive `switch` in `applyCommand` fails to compile
-  until the case exists, which is the point.
-- **Tests:** `applyCommand.test.ts` (the accepted path and every rejection reason); the
-  exhaustive-switch compile test; a replay fixture that contains the command.
+- **Registry line:** the handler in `core/commands/defaultCommandHandlers.ts`: the registry's type
+  fails to compile until every command type has one, which is the point.
+- **Tests:** `<Name>Handler.test.ts` (the accepted path and every rejection reason); the
+  registry compile test in `defaultCommandHandlers.test.ts`; a replay fixture that contains the
+  command.
 - **Docs:** the union sketch in 03 §3; `../reference/game-design/09-controls.md` if a player
   can issue it.
 - **Skill:** `new-system` (core) or `new-screen` (developer menu) · [03 §3](03-game-model.md#3-commands).
@@ -469,7 +473,7 @@ readonly actorId: EntityId; ... }`, serialisable, ids only); `core/commands/appl
 - **When:** a new platform capability (haptics, a second storage backend, a server, a Worker).
   Core defines only `Rng` and `Logger`; everything else is an L1 port owned by its consumer.
 - **Files:** the port `interface` beside its consumer (`client/game/engine/<area>/<Port>.ts`,
-  `client/data/persistence/StorageAdapter.ts`, `core/diagnostics/Logger.ts`); the adapter
+  `client/data/persistence/StorageAdapter.ts`, `core/diagnostics/Logger.types.ts`); the adapter
   `<Tech><Port>.ts`, the only file touching the API; a test double (`Fake`, `Null`, `Memory` or
   `Recording` + port) as a real class in `src/`; the contract suite `<Port>.contract.ts` exporting
   `describe<Port>(name, factory)` (02 §8, 09 §9, 14 §4) imported by every adapter test; the
@@ -486,11 +490,11 @@ readonly actorId: EntityId; ... }`, serialisable, ids only); `core/commands/appl
 
 ### R26. Rename a class or a display name
 
-- **When:** a placeholder is decided (`Assault (rename pending)`, `Flying`, the bow) or a class
+- **When:** a placeholder is decided (`Warrior (formerly Assault)`, `Flying`, the bow) or a class
   name reads badly. Three different things: a display name, a class identifier, a content id.
 - **Files:** display name: the `displayName` line in the content file, nothing else. Class: an
   IDE rename of the symbol and its file, its imports and the `extends` clauses of subclasses.
-  Content id (`'assault'`): **never** once used, because replays, loadouts and match history
+  Content id (`'warrior'`): **never** once used, because replays, loadouts and match history
   reference it (a persistence migration plus new replay fixtures if the team insists;
   `Recommendation:` do not).
 - **Registry line:** the one registry line that names the class (the rename tool updates it).
@@ -524,8 +528,8 @@ the following. Each row is a missing seam; the fix is the seam, not the feature.
 | A4  | A system importing or calling a sibling system                                                                | Hidden ordering coupling; the pipeline order lies   | A `GameEvent` (R17) plus a deferred pass in the listener; the order in `defaultSystemPipeline.ts`                                                |
 | A5  | `ui/` importing core values, `game/` or an entity class                                                       | Two sources of truth; React re-renders at 60 Hz     | A `Snapshot` field, a bridge event and a selector (R19)                                                                                          |
 | A6  | A second registry for the same concept (a `Map<kind, ...>` in a system, a list of classes in a view)          | The single place of change was duplicated           | The one registry of 02 §9; delete the copy                                                                                                       |
-| A7  | A fourth inheritance level (`Assassin extends Assault`) or a subclass for a data-only difference              | Taxonomy used for behaviour                         | A sibling kind whose definition `extends` the parent's data (R2), a component (R12), a strategy (R13)                                            |
-| A8  | `new Assault(...)` outside `defaultEntityRegistry.ts`; `new Canvas2dRenderer()` outside `Match` or `main.tsx` | The factory or the composition root was bypassed    | `EntityFactory.spawn` (R1–R7); constructor injection from the root (R25)                                                                         |
+| A7  | A fourth inheritance level (`Assassin extends Warrior`) or a subclass for a data-only difference              | Taxonomy used for behaviour                         | A sibling kind whose definition `extends` the parent's data (R2), a component (R12), a strategy (R13)                                            |
+| A8  | `new Warrior(...)` outside `defaultEntityRegistry.ts`; `new Canvas2dRenderer()` outside `Match` or `main.tsx` | The factory or the composition root was bypassed    | `EntityFactory.spawn` (R1–R7); constructor injection from the root (R25)                                                                         |
 | A9  | A cheat, test hook or bot that mutates state without a `Command`                                              | The replay log no longer replays                    | A `dev-*` command (R24) or a controller (R18)                                                                                                    |
 | A10 | `Math.random`, `Date`, timers or `Math.atan2` in core; an `onTick` method on an entity                        | Determinism or the system/entity split is broken    | The seeded `Rng`, tick counts, `deterministicMath.ts`; a component (R12) plus a system (R11)                                                     |
 

@@ -58,7 +58,7 @@ Numbers are quoted from the sources and are `TUNE` (they live in `GameConfig`/co
 | ------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------- |
 | 10 v 10 Legends, all bots except 1 user-controlled Legend; 3 per lane + 1 Rover per team                                  | **MVP**         | requirements; game doc                   |
 | 2 teams (light, dark): allied team, enemy team, randomly chosen for the player; neutral camps/bosses                      | **MVP**         | requirements                             |
-| 3 classes: Assault (rename pending), Sentinel, Magus                                                                      | **MVP**         | requirements; game doc                   |
+| 3 classes: Warrior (formerly Assault), Sentinel, Magus                                                                    | **MVP**         | requirements; game doc                   |
 | Flying class, mounts, sub-classes                                                                                         | **post-MVP**    | game doc (orange); brief D11/D12         |
 | Minion hordes of 16 (light), 8 (medium), 4 (heavy)                                                                        | **MVP**         | requirements                             |
 | Minions spawn from towers every 1 minute; 48 units at match start from the Stronghold (3 hordes, 1 per lane)              | **MVP**         | requirements                             |
@@ -68,7 +68,7 @@ Numbers are quoted from the sources and are `TUNE` (they live in `GameConfig`/co
 | Guards per structure; respawn every 2 minutes; never leave the perimeter                                                  | **MVP**         | game doc                                 |
 | AI-controlled hordes, AI-controlled non-player units; enemy Rover as a hard bot                                           | **MVP**         | requirements; game doc                   |
 | Entity stat set: health, speed, maxSpeed, acceleration, mass (Sentinel: low base speed, high maxSpeed, slow acceleration) | **MVP**         | game doc ("included in MVP if possible") |
-| Class character sizes (Assault ≈ medium minion, Magus ≈ heavy minion, Sentinel very large)                                | **MVP**         | game doc                                 |
+| Class character sizes (Warrior ≈ medium minion, Magus ≈ heavy minion, Sentinel very large)                                | **MVP**         | game doc                                 |
 | Max 10 Legends per team; max 144 units per team without crashing; engineered for hundreds                                 | **MVP**         | requirements                             |
 
 ### Legends, abilities, loadout

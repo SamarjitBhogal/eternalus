@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-08
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -53,7 +53,7 @@ classDiagram
   Unit <|-- Legend
   Unit <|-- Mob
   Unit <|-- Boss
-  Legend <|-- Assault
+  Legend <|-- Warrior
   Legend <|-- Sentinel
   Legend <|-- Magus
   Mob <|-- LightMob
@@ -75,7 +75,7 @@ classDiagram
 | Family (abstract)       | Concrete kinds (`EntityKind`)                                                                      | Installs                                                                                                           | Owned per tick by                                              | Status                                                   |
 | ----------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
 | `Unit`                  | (abstract: mobile things)                                                                          | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`       | `MovementSystem`, `CollisionSystem`, `CombatSystem`            | MVP                                                      |
-| `Legend`                | `assault` (rename pending), `sentinel`, `magus`; `flying` reserved                                 | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `flying` **post-MVP** (D12)                         |
+| `Legend`                | `warrior` (rename pending), `sentinel`, `magus`; `flying` reserved                                 | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `flying` **post-MVP** (D12)                         |
 | `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                             | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                           | `HordeSystem`, `PathingSystem`, `MinionController`             | MVP                                                      |
 | `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                          | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                              | `BossController`                                               | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
 | `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral` | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed | `StructureSystem`, `SpawnSystem`, `TurretController`           | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
@@ -143,7 +143,7 @@ fields. Each component guards its own invariants so a bug shows up where it happ
 | `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`   | cooldown never negative                                                  | `canAttack(tick)`, `setTarget`, `beginAttack`                                                     |
 | `Abilities`     | `slots: Record<AbilitySlot, AbilityRuntime>`                                     | one runtime per slot                                                     | `runtime(slot)`, `forEachReady`                                                                   |
 | `Progression`   | `xp`, `level`, `curveId`                                                         | level never decreases; xp ≥ 0                                            | `addXp(amount) → levelsGained`                                                                    |
-| `Team`          | `team: TeamId`                                                                   | transitions emit `team-changed`                                          | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                         |
+| `Team`          | `team: Team` (type from `teams/teams.types.ts`)                                  | transitions emit `team-changed`                                          | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                         |
 | `Collider`      | `shape: Circle \| ConvexPolygon`, `layer`, `isSolid`                             | shape convex                                                             | `bounds()`                                                                                        |
 | `StatusEffects` | `active: StatusEffectRuntime[]`                                                  | stacks ≤ `maxStacks`; no duplicates when `stacking: 'refresh'`           | `apply(definition, sourceId, tick)`, `expire`, `has(flag)`                                        |
 | `Carry`         | `carriedId: EntityId \| null`, `maxWeight`, `pickUpStrategy`                     | carried entity exists and is carryable                                   | `canCarry(target)`, `pickUp`, `release`                                                           |
@@ -166,7 +166,7 @@ A strategy is a stateless, shared object selected by a definition field and reso
 | `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `AggroPriorityTargetingStrategy` (data-driven priority list), `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks)    | `definition.targeting` |
 | `AttackStrategy`    | `attack(self, target, weapon, ctx): void`          | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                         | `weapon.attack`        |
 | `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `FlowFieldMovementStrategy` (hordes), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movement`  |
-| `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Assault), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                        | `definition.pickUp`    |
+| `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                        | `definition.pickUp`    |
 
 Strategies use the seeded `Rng` from the context and vectors only (no angles), so they stay
 deterministic. Adding a strategy is a class and a `defaultStrategyRegistry.ts` line.
@@ -180,12 +180,12 @@ copy-down by `ContentCatalogue` so the runtime never walks a chain (research §9
 ```ts
 // Sketch: packages/core/src/content/EntityDefinition.types.ts
 export type EntityDefinitionBase = {
-  readonly id: string; // 'assault', never renamed once used
+  readonly id: string; // 'warrior', never renamed once used
   readonly kind: EntityKind; // which concrete class builds it
-  readonly displayName: string; // 'Assault (rename pending)' lives here, not in code
+  readonly displayName: string; // 'Warrior (formerly Assault)' lives here, not in code
   readonly extends?: string; // single parent, same family
   readonly sprite: SpriteRef;
-  readonly minimapGlyph: MinimapGlyphId;
+  readonly minimapGlyph?: MinimapGlyph; // 06 §8; absent = DEFAULT_MINIMAP_GLYPH
 };
 
 export type LegendDefinition = EntityDefinitionBase & {
@@ -212,6 +212,14 @@ export type LegendDefinition = EntityDefinitionBase & {
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).
 
+**Validation (DEC-22).** `loadDefaultContent()` builds the catalogues and runs `ContentValidator`
+once, at load, never at import time. The validator knows no rule in particular: each rule is a
+class with `check(definition, content): readonly string[]`, so a rule sees the whole catalogue and
+can check the ids a definition names (dangling references), and the validator reports every
+broken rule at once in one `ContentValidationError`. The rules are listed in one file,
+`content/defaultContentRules.ts` (`createDefaultContentRules()`); a new rule is a class and one
+line there.
+
 ## 6. `EntityFactory` and `EntityRegistry`
 
 ```ts
@@ -224,7 +232,7 @@ export class EntityRegistry {
 // Sketch: packages/core/src/entities/defaultEntityRegistry.ts — the ONLY file that names concrete classes
 export function createDefaultEntityRegistry(): EntityRegistry {
   const registry = new EntityRegistry();
-  registry.register('assault', (id, def) => new Assault(id, def));
+  registry.register('warrior', (id, def) => new Warrior(id, def));
   registry.register('sentinel', (id, def) => new Sentinel(id, def));
   registry.register('magus', (id, def) => new Magus(id, def));
   registry.register('light-mob', (id, def) => new LightMob(id, def));
@@ -236,7 +244,7 @@ export function createDefaultEntityRegistry(): EntityRegistry {
 `EntityFactory.spawn(definitionId, params, ctx)` looks the definition up in the `ContentCatalogue`,
 asks the registry for `definition.kind`, takes a fresh id from `IdGenerator` (or a pooled instance
 for projectiles), runs `entity.spawn(ctx)` and adds it to the `EntityStore`. Systems, controllers
-and `applyCommand` only ever call the factory; `new Assault(...)` appears in exactly one file.
+and `applyCommand` only ever call the factory; `new Warrior(...)` appears in exactly one file.
 That is the OCP in one sentence: a new kind touches the registry file and nothing that consumes
 entities.
 
@@ -264,18 +272,18 @@ old design would have said `NeutralEntity` now says `team === 'neutral'`.
 Assassin/Knight/Paladin, Colossus, Necromancer/Druid/Mage and Hover/Strafe arrive after the MVP
 as `LegendSpecDefinition` data (stat modifiers, ability overrides, pick-up strategy, skin) that the
 existing class consumes; no new code class. Only unique behaviour earns a class, and note the
-depth budget: `Entity → Unit → Legend → Assault` already uses the three levels, so an
-`Assassin extends Assault` is forbidden. A behaviour-unique specialisation becomes a **sibling**
+depth budget: `Entity → Unit → Legend → Warrior` already uses the three levels, so an
+`Assassin extends Warrior` is forbidden. A behaviour-unique specialisation becomes a **sibling**
 concrete kind under `Legend` (`Necromancer extends Legend`) whose definition `extends: 'magus'`
 for its data; shared behaviour is reached through strategies and components, never through a
 fourth inheritance level.
 
 ## 10. Renaming is cheap by rule
 
-Display names live in content (`displayName: 'Assault (rename pending)'`), so a rename the
+Display names live in content (`displayName: 'Warrior (formerly Assault)'`), so a rename the
 players see is a one-line content change. Renaming the class is a file rename plus the imports
 and the `extends` clause of its subclasses (an IDE refactor), exactly as the requirements doc asks.
-The content **id** (`'assault'`) is the one thing that does not change once used, because replays,
+The content **id** (`'warrior'`) is the one thing that does not change once used, because replays,
 loadouts and match history reference it; if the team ever insists, that is a persistence migration
 (Recommendation: do not).
 
@@ -305,6 +313,22 @@ client-side (views) and pooled there; mobs may be pooled later if profiling show
 Untouched: every system, every other class, `LoadoutScreen` (lists classes from the catalogue),
 `LegendView` (draws by `definitionId`), the minimap, keybindings, the store. The content
 validation test and the replay fixtures pass unchanged. The `new-entity` skill walks these steps.
+
+## 13. Implementation status
+
+Sprint 1.2 (PR #14) implements §1–§3, §5 and §6 with these interim differences, each closed by the
+session or phase named:
+
+- `Entity`, `Unit`, `Legend` and `Mob` keep the sprint 1 API (`installComponents`, `onRetire`,
+  `addComponent`/`getComponent`/`findComponent`/`hasComponent`, `family` as a string) because the
+  simulation kernel (PR #13) builds on it. Every family reads its spawn context through
+  `SpawnContextReader`, which checks it at runtime because `spawn` takes `unknown`.
+- Units install `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider` and
+  `Vision`; `Combat`, `StatusEffects` and `Carry` arrive with their systems (Phase 2–3). The team
+  component is `TeamMembership` because the type `Team` owns that name.
+- Shipped kinds: `warrior`, `sentinel`, `magus`, `light-mob` (the training dummy only),
+  `obstacle` and `projectile`. Other mobs are SCRUM-59; structures and zones get concrete kinds in
+  Phase 2 and 3.
 
 ## Related
 

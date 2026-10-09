@@ -8,46 +8,219 @@ agent cannot finish stay open with a note. Every session starts by reading this 
 (`scripts/hooks/session-start.mjs` reports the number of open items).
 
 Format: one checkbox per item. Put decisions under "Decisions", tasks under "Requests",
-review comments under "Feedback".
+review comments under "Feedback". Answered decisions are recorded in
+`docs/reference/game-design/13-owner-decisions-log.md` and then moved to _Done_ here.
 
 ## Decisions needed from Sam
 
-Answering these unblocks Phase 1. Recommended picks are marked; reply inline
-(`Decision: …`) or tick the box and write the answer under it.
+Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Decision: …`).
 
-- [ ] **DEC-01 Term end date and demo date.** The plan assumes ~10 working weeks from
-      2026-10-05 (`docs/plan/README.md`). Give the real dates so sprints can be re-cut.
-- [ ] **DEC-02 Confirm React/Redux with the instructor.** Decided D2 (keep), but the course rule
-      "only JS/HTML/CSS" should be confirmed in writing. If refused: fallback is a vanilla DOM UI
-      layer behind the same bridge (only `apps/client/src/ui/` changes).
-- [ ] **DEC-03 Team-as-property (D10).** The requirements doc's tree has a "neutral entity"
-      branch; the architecture models team as a component and camps/bosses as `Structure`/`Boss`
-      with `team: 'neutral'` because revives and ascension change a unit's team. Accept, or insist
-      on a `NeutralEntity` base class? (Recommended: accept.)
-- [ ] **DEC-04 `feat/map` reconciliation.** Aryan's branch hardcodes Map 1 coordinates. Proposal:
-      merge it as an authored _preset_ behind `MapGenerator`, or ask for it to be reworked into
-      the generator before merge? (`docs/architecture/06-map-and-minimap.md` "review notes";
-      recommended: merge types now, replace `MAP_1` data with generator output in Phase 1.3.)
-- [ ] **DEC-05 Sprint length and phase reviewers.** Proposal: 1-week sprints; each phase PR
-      reviewed by a different teammate (rotation in `docs/plan/README.md`). Name the reviewers.
-- [ ] **DEC-06 World scale.** Proposal: 1 world unit = 1 metre; Legend radii from the size notes
-      (Assault ≈ 1.1 m, Magus ≈ 1.5 m, Sentinel ≈ 2.3 m). Accept or give numbers.
-- [ ] **DEC-07 MVP cut line.** `docs/plan/README.md` defines MVP-core vs MVP-full and the cut
-      order (corner camps → manual turret control → pick-up/throw → art polish). Confirm the order.
-- [ ] **DEC-08 Naming picks.** `docs/reference/suggestions/naming.md` proposes names for every
-      placeholder (Assault, Flying, Enchantment, horde, buff tower, spawner tower, profile screen,
-      Studious, Death Ray, Fury's god, the bow…). Pick or defer; picks go into content as display
-      names, so nothing in code waits on them.
-- [ ] **DEC-09 Discrepancy resolutions.** `docs/reference/suggestions/discrepancies.md` lists the
-      open conflicts between the two source docs (which towers spawn what, camps "from the start"
-      vs "after cooldown", capture-point checkpoints vs zones). Decide the ones marked _open_.
-- [ ] **DEC-10 INBOX visibility.** This file is committed (teammates can see the queue). If you
-      prefer it private, say so and it moves to a gitignored `INBOX.local.md`.
+- [ ] **DEC-11 (was DISC-19 / DISC-39) — third ability and single ultimate per class.** The game
+      doc names only **two** abilities per MVP class (Warrior: Veil, Blade Runner; Sentinel: Rip &
+      Tear, Slam; Magus: Imbue, Shockwave) while the rule is "3 abilities + 1 ultimate". It also
+      lists **two ultimates** for Magus (Death Ray, Nova) and Sentinel (Berserk, Meteor Fall) and
+      one for Warrior (Fury). Needed before Phase 4 content is written.
+      Options: (a) **Recommended** — third abilities from `suggestions/more-abilities.md`:
+      Warrior **Hamstring**, Sentinel **Shield Wall**, Magus **Sanctuary**; MVP ultimates
+      Death Ray (Magus), Berserk (Sentinel), Fury (Warrior); Nova / Meteor Fall / Eclipse become
+      loadout-selectable alternative ultimates post-MVP. (b) Keep both ultimates per class as a
+      loadout choice in the MVP (more content, more balancing). (c) Your own picks.
+- [ ] **DEC-12 (was DISC-33) — corner-camp crystal timers.** "Crystals" are the unbreakable
+      crystals inside the four **corner camps** (game doc, "Outer (Corner) Camps" and "Minion
+      Buffs on Boss Spawn"): the crystal respawns the camp's mini-boss **300 s** after it dies,
+      and once the central boss has spawned it also emits light/medium waves toward your lanes
+      every **240 s**. Accept both timers as TUNE starting values? (Corner camps are first in the
+      cut order, so this only matters if time allows.)
+- [ ] **DEC-13 (was DISC-34) — match length.** Left blank in the last batch. Proposal:
+      `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
+      summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
+
+- [ ] **DEC-15 — camp weights by depth (DISC-42) in practice.** The default map yields 4 light +
+      2 heavy camps per side and no medium ones; with one camp per corridor (`numLanes` ≥ 7) every
+      camp is heavy. Proposal: keep depth-based weights but define the classes by position in the
+      corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
+      class in content. Pick one. Note: "depth" is the distance to the nearest lane over half the
+      corridor's height, so in tall worlds with steep lanes every camp reads as light.
+- [ ] **DEC-16 — tooling: lint ignores agent worktrees.** ESLint's flat config does not read
+      `.gitignore`, so linting from the main checkout also lints every `.worktrees/*` checkout and
+      one unfinished worktree blocks every push from the main checkout. Proposal: add
+      `.worktrees/` and `.claude/worktrees/` to `globalIgnores` in `eslint.config.js` (each
+      worktree is still linted by its own hooks and CI).
+- [ ] **Session D (feat/session-shell-home), better than design — no `useAppDispatch`.** The
+      §2.3 contract and `apps/client/AGENTS.md` ask for `useAppSelector` **and**
+      `useAppDispatch`. D ships only `useAppSelector`: `ui/` never writes the store
+      (architecture 13 §5, "every state change has one path"; components call `emitIntent`), and
+      knip fails the build on an unused export. Leaving the hook out makes the rule structural.
+      Options: (a) **Recommended** — accept; update §2.3's successor, `apps/client/AGENTS.md`
+      "Adding code" and architecture 13 §5 to say "`useAppSelector` only; the UI emits intents".
+      (b) Add `useAppDispatch` back when a first caller exists.
+      Also found by the critic: architecture 13 §2's `character-select` row says it "builds the
+      rosters … assigns `playerTeam`", while the `menu` and `loading` rows (and reference 14 §5)
+      put the setup at "Start match"; D follows the latter. The row needs a one-line fix.
 
 ## Requests for the agent
 
-- [ ] _(example)_ Phase 1, sprint 1.1: implement `SeededRandom` + `StateHasher` with tests
-      per `docs/plan/phase-1-simulation-kernel-and-world.md`.
+- [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
+      `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
+      (`TODO(sholtzman)`), so `Match` turns the intent into `move`/`stop` itself (09 §11). Should I
+      write `PlayerController` + the `intent` handler (11 §4.1) in core, or is it yours? Either is
+      fine; until then WASD works through `move`/`stop`.
+- [ ] **Session C → Sam (2026-10-08), better than the design? (optional, no pressure):** (a) the
+      focus-loss release (`blur`/`visibilitychange`) lives in `useMatch` instead of `Match`
+      (09 §2), so `Match` uses no browser API (09 §10); (b) devices are polled and mapped inside
+      `DeviceIntentSource` behind `Match`'s `IntentSource` port instead of in `Match.tick()`
+      (13 §6.2), so `Match` never knows which devices exist. Yes → I update 09 §2 and 13 §6.2;
+      no → I move both into `Match`.
+
+- [ ] **Session A (from session B, updated 2026-10-07):** PR #13 merged the phase branch with
+      `feat/map-generator`: B's files and `components/TeamMembership.ts` now use `Team` from
+      `teams/teams.types.ts`, `polarPoint` and the wall-ring test call
+      `utils/deterministicMath.ts`, and `index.ts` exports only `config/`'s `MapConfig`. Left for
+      session A, the stand-in swap: `DEFAULT_MAP_CONFIG` → `createDefaultGameConfig().map`;
+      `validateMapConfig` → `validateGameConfig` (same rules plus `navCellSize`); `MapRandom` /
+      `map/Rng.types.ts` → `SeededRandom` and `utils/Rng.types.ts` (`next()` is `nextFloat()`);
+      `DEFAULT_MAP_LAYOUT.navCellSize` → `config.map.navCellSize`; then delete the local
+      `MapConfig` in `map/MapGenerator.types.ts`.
+- [ ] **Session C (from session B, 2026-10-07; owner-approved, DEC-20):** the simulation kernel
+      (PR #13) leaves these to session C. The B-owned lines named here are C's to change, an
+      exception to the ownership table (`docs/agents/prompts/2026-10-03-ultracode-sessions.md`
+      §2.6). Read 03 §12 and 15 §13 ("Implementation status") first.
+      (1) `Simulation.ts`: pass `createDefaultEntityRegistry()` to its `EntityFactory` (marked
+      `TODO`) so `dev-spawn` finds kinds; make `systems/defaultSystemPipeline.ts` (02 §9) the
+      default of its `systems` parameter; wire `DebugConfig` there too, and if that takes the
+      constructor past four parameters switch to `SimulationOptions` (03 §6, CONTRIBUTING §4)
+      and tell session H in this file.
+      (2) `commands/defaultCommandHandlers.ts` and `commands/handlers/`: replace the
+      `UnsupportedCommandHandler` lines for `move` and `stop` with real handlers when
+      `MovementSystem` lands (recipe R16); the other unsupported commands wait for their systems.
+      `commands/` may not import `components/` (02 §2): reach `Movement` through a `state/`
+      helper, as `EntityStore.countOnTeam` reaches `TeamMembership`, or ask Sam here to widen
+      `commands/`'s imports first.
+      (3) `commands/handlers/DevRemoveEntityHandler.ts`: hand removal to your `DeathSystem` (marked
+      `TODO`; 03 §4 makes it the only `entity-removed` emitter). `DevSpawnHandler` keeps spawning
+      directly until `SpawnSystem` exists (a later phase).
+      (4) `state/StateHasher.ts`: add every new component's simulation fields to `fieldsOf`
+      (03 §9).
+      (5) `entities/EntityFactory.ts`: take ids from `utils/IdGenerator` (03 §2).
+      (6) With the `InvariantRunner`: add `GameState.recentCommands` (recorded by
+      `Simulation.step()`), typed structurally like `GameEventMap`'s `command-rejected`
+      (`{ tick: number; command: { readonly type: string } }`) because `state/` may not import
+      `commands/` (03 §4); add `LogRecord.context` in `diagnostics/Logger.types.ts`; report
+      violations with the `invariant-violated` `DiagnosticEvent` already declared (15 §4–§5).
+      (7) `state/GameEvents.types.ts`: import `ShieldBar` from `components/Health.types.ts` once
+      `Health` has shields.
+      **Status (session C, 2026-10-07, branch `feat/entity-systems`):** (1), (2), (4), (5), (6)
+      and (7) done. `Simulation` now takes `SimulationOptions` (`config`, `seed`, `logger`,
+      `systems?`, `debug?`, `content?`) and builds `DefaultSystemPipeline` (movement, death,
+      invariants) when `systems` is omitted; its factory uses `createDefaultEntityRegistry()` and
+      `loadDefaultContent()` (PR #14, DEC-21/22). (2) steers through
+      `EntityStore.steer`; new reject reasons `invalid-direction` and `not-movable`. (6) ships
+      `no-removal-without-cause`, `health-within-bounds` and `finite-transforms` (the 15 §3 name
+      for the prompt's NaN-transform check). **(3) is still open**: see the request below.
+- [ ] **Session C → Sam (2026-10-07): deferring `dev-remove-entity` to `DeathSystem`.** Routing
+      the removal through `DeathSystem` (a removal request in `state/`, drained by the system)
+      changes when the entity leaves within the tick, so `wanderSeed7.replay.ts` checkpoints
+      change. Options: (a) **Recommended** — do it and re-record the fixture in the same PR;
+      (b) keep the handler's immediate removal (today; `DeathSystem` removes only the dead).
+      Also a question: the invariants in `diagnostics/` read `components/` (`Health`,
+      `Transform`, `Movement`), which 15 §3 needs but 02 §2 does not list. May `diagnostics/`
+      import `components/`? If yes, I'll update 02 §2 and the core folder table together.
+- [ ] **Session C → session H (2026-10-07): `Simulation` takes one options object.** Call
+      `new Simulation({ config, seed, logger })` instead of passing four arguments; omit
+      `systems` to get the default pipeline and pass `debug` for the invariant level (architecture
+      03 §6, 15 §2). Branch `feat/entity-systems`.
+
+- [ ] **Session C → Sam (2026-10-07, PR #17): 2 optional ideas, no pressure.** Yes, no or "not
+      now" are all fine; a no means I switch back to the documented design. 1. **`DefaultSystemPipeline` and `DefaultInvariantRunner` are classes** instead of the
+      `defaultSystemPipeline.ts` / `createDefaultInvariants()` functions in 02 §9 and 15 §2. 2. **`InvariantViolationError` carries the seed, and each `Violation` its severity**, so a
+      test failure prints everything needed to reproduce it (15 §2).
+
+- [ ] **Session C → Sam (2026-10-08, PR #14 review): proposed, design text unchanged until you
+      answer.** Each one is how the code works today; say yes (I update the doc) or no (I change
+      the code).
+  - (1) `passiveOptions`: a class chooses between passives (Magus: Studious or Necromancy),
+    while 04 §5 has a single `passiveId`.
+  - (2) `obstacleType`: `ObstacleDefinition.kind` stays `'obstacle'` (the entity class) and
+    tree/rock/bridge go to `obstacleType`. It fixes the conflict between 04 §1/§5 and 07 §9.
+  - (3) `Collider` fields: 04 §3 → 10 §4's `isStatic`/`isEnabled`/`isUnbreakable`.
+  - (4) Shield naming: 04 §3 → 07 §2's `shields`/`addShield`/`removeShield`.
+  - (5) **Doc conflict:** 10 §4 puts collider shapes in `physics/`, but 02 §2 forbids
+    `components/` → `physics/`. Meanwhile they stay in `components/Collider.types.ts`.
+  - (6) `packages/core/AGENTS.md` folder table: `content/` is "Data only", but it now also has
+    `ContentCatalogue`, the validator and `loadDefaultContent()`. Proposed wording: "Definitions
+    keyed by kebab-case id, plus the catalogue, its rules and the loader".
+  - (7) 03 §12 "Implementation status" is out of date, and PRs #14 and #17 leave it unchanged
+    until you approve new text. Proposed replacement for its bullets:
+    - `Simulation` takes `SimulationOptions` (`config`, `seed`, `logger`, `systems?`, `debug?`,
+      `content?`); `content` is a `DefinitionSource`, `loadDefaultContent(config.tickRate)` by
+      default. Its `EntityFactory` uses `createDefaultEntityRegistry()`; omitting `systems` gives
+      `DefaultSystemPipeline` (movement, death, invariants). No `exportReplay()` or `dispose()`.
+    - `move` and `stop` steer through `EntityStore.steer`; `attack-target`, `cast-ability`,
+      `intent` and `dev-set-controller` stay `not-supported` until their systems exist.
+    - `DeathSystem` removes only entities whose health reached 0 until `dev-remove-entity` is
+      routed through it (open below) and `SpawnSystem` exists.
+    - `Movement` works per tick: `advance()` accelerates along the heading with no `|dv|` clamp,
+      and without a heading slows by `acceleration` per tick instead of friction (10 §2);
+      impulses, friction and the clamp arrive with knockback (Phase 2).
+    - `GameState` keeps `recentCommands` and the seed for diagnostic reports; no `world`,
+      `teams` or `hordes` yet.
+  - (8) The core lint (ADR 0013) comes back as its own PR with an ADR for your sign-off, encoding
+    02 §2's per-folder import lists, not rings.
+  - (9) 07 §13 still says shield bars stay in "source id order"; per your optional item they now
+    keep tower creation order (DEC-20). Proposed: reword that note.
+  - (10) 04 §13: `EntityFactory.create(kind, definitionId, placement)` stands in for 04 §6's
+    `spawn` (it resolves the definition and checks its kind once; adding to the store stays with
+    the caller until `SpawnSystem`). Proposed: add that as an implementation-status note.
+
+- [ ] **Session H → Sam and session F (2026-10-07, PR #18): two notes, no pressure.** (1) The log
+      sinks (`SinkLogger`, `ConsoleSink`, `RingBufferSink`) are new files in
+      `apps/client/src/data/logging/`, where 15 §4 puts them; that folder is session F's, so F
+      should know they exist. (2) `GameLoop`'s first frame only sets the time origin, so 08 §3's
+      `runFrames(2, 16.7)` example gives 0 ticks, not 1 (recorded in 08 §11). OK to keep?
+
+- [ ] **Session C/H → Sam (2026-10-09, PRs #18 and #19): proposed "Implementation status" notes
+      for 08 (§11) and 09 (§11).** AGENTS.md asks for one, your #14 rule asks for approval first,
+      so the docs stay unchanged until you say yes. Interim differences in #18:
+  - `FrameScheduler`, `RafFrameScheduler`, `FakeFrameScheduler` and `GameLoop` live in
+    `game/engine/loop/`; the `Clock` is session D's `SessionClock`. `useMatch` stamps log
+    records with `performance.now()` until it is wired.
+  - `Camera` keeps `lookAt`/`visibleArea` and adds `track`, `zoomTo` (clamped), `contains` and
+    `worldToScreen`/`screenToWorld` with an explicit `Viewport`; `MinimapProjection` arrives
+    with the minimap work (SCRUM-151), which also draws entity markers.
+  - `ViewRegistry` resolves kind, then family, then `DefaultEntityView` and reports each
+    unknown kind once (built by `views/defaultViewRegistry.ts`); `LegendView` is a placeholder.
+  - `Match` takes the player's intent through an `IntentSource` port; no `MatchBridge`,
+    `PerfMonitor` or `MatchScreen` yet. `GameCanvas` owns the `Match` through `useMatch`. The
+    player's Legend spawns with `dev-spawn` until `SpawnSystem` exists.
+  - The first frame after `start()` only sets the time origin (asked below).
+  - `Match.destroy()` stops the loop and its subscription; `useMatch` destroys the injected
+    renderer and camera. `EntityLayer` does not cull yet.
+  - The log sinks live in `data/logging/` (15 §4); the overlay cannot read the ring buffer yet.
+  - `Canvas2dRenderer` scales X and Y separately, so a window that is not 16:9 stretches the
+    64 × 36 m view.
+
+  In #19 (input), 08 §11 would add that `Match` implements input's `Projection` port
+  (`screenToWorld` only) over the camera and takes the intent from `DeviceIntentSource`; and 09
+  §11 would record:
+  - `InputSnapshot` has `keys`, `keyLabels`, `mouseButtons` and `pointer`; `wheel` and
+    `gamepads` come with what needs them. No `poll()` and no `FakeInputDevice` yet; the
+    `describeInputDevice` contract suite runs for both devices.
+  - `InputMapper` indexes chords by `chordKey` itself (no injected `BindingResolver`) and has no
+    `clientActions` yet. `Projection` lives in `engine/input/` with only `screenToWorld`
+    (02 §3 lets `game/input/` import `engine/input/` types only). `ActionState` carries the
+    pointer so `toIntent` can project it.
+  - `Match` turns the intent's `move` into `move`/`stop` and drops `aim` and `triggered` until
+    core's `PlayerController` handles `intent` (11 §4.1).
+  - `useMatch` releases the devices on `blur`/hidden `visibilitychange` and binds the `wasd`
+    preset until settings supply saved bindings. A minimap click is also an `attack` press until
+    the minimap consumes its clicks (SCRUM-151).
+
+- [ ] **Session C → session F (2026-10-09, PR #19): `bridge/Binding.types.ts` now has the 13 §6.1
+      shapes.** `INPUT_ACTIONS` (same 21 ids; `InputAction` derives from it), and `InputChord` is
+      the union (keyboard `code`/`label`/`modifiers?`, mouse `button` 0–4, `gamepad`,
+      `gamepad-axis`). The defaults are in `game/input/keybindings.ts` (`DEFAULT_CHORDS`, presets
+      `wasd`/`arrows`), and `InputMapper.setBindings` takes the saved bindings. `settingsSlice`,
+      `events.ts` and `hudSlice` compile unchanged.
 
 ## Feedback
 
@@ -55,5 +228,34 @@ Answering these unblocks Phase 1. Recommended picks are marked; reply inline
 
 ## Done
 
+- 2026-10-08 — **Session C's optional ideas** answered in the PR #14 review and done: one
+  `EntityModule` per family declined (back to `createDefaultEntityRegistry()`, DEC-21);
+  `ContentValidator` with rule classes accepted with fixes (rules get the catalogue, listed in
+  `content/defaultContentRules.ts`, run once from `loadDefaultContent()`, DEC-22, folded into 04 §5
+  and 05 §2–§3); `applyDamage` returning `{ toShields, toBase, overflow }` accepted (DEC-23, 07 §2);
+  ADR 0013 split into its own PR (DEC-24). Recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md`. Branch
+  `feat/entity-collider-and-concrete-kinds` (PR #14).
+- 2026-10-07 — **Session B's simulation kernel items** signed off and done: the snapshot shape
+  (DEC-17) and the `makeLogRecord` options object (DEC-18) folded into 03 §5 and 15 §4; the
+  determinism lint (DEC-19, ADR 0012) added; the kernel's design differences (DEC-20) folded into
+  02, 03, 15 and 17 R16, with "Implementation status" sections in 03 and 15; the replay fixture
+  format written into 15 §7. Recorded in `docs/reference/game-design/13-owner-decisions-log.md`.
+  Branch `feat/sim-kernel` (PR #13).
+- 2026-10-07 — **Session A's requests to session B** done: `utils/deterministicMath.ts` (now used
+  by `polarPoint`), `GameConfig.map` keeps the field names of the map's local `MapConfig`, and the
+  nav cell size lives in `config.map.navCellSize`. Branch `feat/sim-kernel` (PR #13).
+- 2026-10-06 — **DEC-14** (map generator refinements a–d) signed off by the owner; recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and folded into
+  `docs/architecture/06-map-and-minimap.md`. Branch `feat/map-generator` (PR #8).
+- 2026-10-03 — **DEC-01…DEC-10 and the discrepancy answers** recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md`; plan re-cut to four two-week sprints
+  ending 2026-11-27 (`docs/plan/README.md` §0); ADR 0004/0006/0009 statuses updated; 32
+  discrepancy rows marked decided; the owner's interface flow written up in
+  `docs/reference/game-design/14-interface-and-screen-flow.md`; `SessionPhase` extended with
+  `character-select` / `pre-launch` / `match-loading` in `docs/architecture/13-game-interface.md`;
+  Assault → **Warrior** adopted (class `Warrior`, content id `warrior`); new ideas (Tower
+  Guardians, weapon upgrades, level visuals, team skins) logged with MVP status. Branch
+  `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
-  (see `docs/changelog/2026-09-30-phase-0-foundation.md`).
+  (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).

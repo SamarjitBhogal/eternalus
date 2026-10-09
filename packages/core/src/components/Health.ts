@@ -1,22 +1,38 @@
+import type { DamageBreakdown, MutableShieldBar, ShieldBar } from './Health.types';
+
 /**
- * Hit points. `current` always stays between 0 and `max`.
- * Shield bars from BuffTowers are added in sprint 2.1.
+ * Hit points: a health bar plus layered shield bars (one per living allied BuffTower). Damage
+ * drains the shield bars first, in tower creation order, then health. `current` always stays between 0
+ * and `max`, and every bar between 0 and its own `max`.
  */
 export class Health {
   private currentValue: number;
 
-  /** @param max - Full health; must be positive. The entity starts at full health. */
-  public constructor(public readonly max: number) {
-    if (!(max > 0) || !Number.isFinite(max)) {
-      throw new Error(`Health max must be a positive number, got ${String(max)}.`);
-    }
+  private readonly shieldBars: MutableShieldBar[] = [];
 
+  /**
+   * Creates health at full health, with no shield bars.
+   *
+   * @param max - Full health (the base bar, without shields); must be positive.
+   */
+  public constructor(public readonly max: number) {
+    Health.checkPositive(max, 'max');
     this.currentValue = max;
   }
 
-  /** Health left, between 0 and `max`. */
+  /** Health left on the base bar, between 0 and `max`. Shield bars are in `shields`. */
   public get current(): number {
     return this.currentValue;
+  }
+
+  /** A copy of the shield bars, in the order they drain. */
+  public get shields(): readonly ShieldBar[] {
+    return this.shieldBars.map((bar) => ({ ...bar }));
+  }
+
+  /** Health plus every shield bar's current value. */
+  public get total(): number {
+    return this.shieldBars.reduce((sum, bar) => sum + bar.current, this.currentValue);
   }
 
   /** Whether health has reached 0. */
@@ -24,20 +40,71 @@ export class Health {
     return this.currentValue === 0;
   }
 
-  /** Removes up to `amount` health and returns how much was actually removed. */
-  public applyDamage(amount: number): number {
+  /** Drains shield bars first, then health, and reports where the damage went. */
+  public applyDamage(amount: number): DamageBreakdown {
     Health.checkAmount(amount, 'damage');
-    const dealt = Math.min(amount, this.currentValue);
-    this.currentValue -= dealt;
-    return dealt;
+    let remaining = amount;
+    let toShields = 0;
+
+    for (const bar of this.shieldBars) {
+      const absorbed = Math.min(remaining, bar.current);
+      bar.current -= absorbed;
+      toShields += absorbed;
+      remaining -= absorbed;
+    }
+
+    const toBase = Math.min(remaining, this.currentValue);
+    this.currentValue -= toBase;
+    return { toShields, toBase, overflow: remaining - toBase };
   }
 
-  /** Restores up to `amount` health (never above `max`) and returns how much was restored. */
+  /** Restores up to `amount` health (never above `max`) and returns how much. */
   public heal(amount: number): number {
     Health.checkAmount(amount, 'heal');
     const restored = Math.min(amount, this.max - this.currentValue);
     this.currentValue += restored;
     return restored;
+  }
+
+  /** Adds a full shield bar granted by `sourceId`. One bar per source; a second add throws. */
+  public addShield(sourceId: string, max: number): void {
+    Health.checkPositive(max, 'shield max');
+
+    if (this.shieldBars.some((bar) => bar.sourceId === sourceId)) {
+      throw new Error(`Health already has a shield from "${sourceId}".`);
+    }
+
+    // Bars stay in tower creation order (07 §2, DEC-20), so damage drains them in a fixed order.
+    const index = this.shieldBars.findIndex((bar) => Health.isCreatedAfter(bar.sourceId, sourceId));
+    this.shieldBars.splice(index === -1 ? this.shieldBars.length : index, 0, {
+      sourceId,
+      current: max,
+      max,
+    });
+  }
+
+  /** Drops the bar granted by `sourceId`, whatever it had left. Never touches health or other bars. */
+  public removeShield(sourceId: string): void {
+    const index = this.shieldBars.findIndex((bar) => bar.sourceId === sourceId);
+
+    if (index !== -1) {
+      this.shieldBars.splice(index, 1);
+    }
+  }
+
+  /**
+   * Whether entity id `a` was created after `b`. Factory ids count up (`entity-9`, `entity-10`), so
+   * a longer id is newer and ids of one length compare as text.
+   * ponytail: relies on the factory's `entity-N` ids; compare `IdGenerator` numbers if ids change.
+   */
+  private static isCreatedAfter(a: string, b: string): boolean {
+    return a.length !== b.length ? a.length > b.length : a > b;
+  }
+
+  private static checkPositive(value: number, name: string): void {
+    if (!(value > 0) || !Number.isFinite(value)) {
+      throw new Error(`Health ${name} must be a positive number, got ${String(value)}.`);
+    }
   }
 
   private static checkAmount(amount: number, kind: string): void {

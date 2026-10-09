@@ -5,9 +5,12 @@ import { MapDecorationBuilder } from './MapDecorationBuilder';
 
 /** Encloses each original home-base anchor in a sprawling fortified compound. */
 export class MapStrongholdBuilder extends MapDecorationBuilder {
-  /** Extends the stronghold inward while keeping its original central keep. */
+  /**
+   * Extends the stronghold inward while keeping its original central keep. The compound is on
+   * the ground layer so the generated wall ring, gates and turrets stay visible on top of it.
+   */
   public build(feature: MapFeature): readonly MapDecoration[] {
-    const isWest = feature.owner === 'light';
+    const isWest = feature.team === 'light';
     const x = isWest ? 32 : 1348;
     const y = feature.position.y - S.strongholdHeight / 2;
     const accent = isWest ? P.light : P.dark;
@@ -116,6 +119,6 @@ export class MapStrongholdBuilder extends MapDecorationBuilder {
     );
     this.blob(`${id}-fountain-basin`, x + 175, feature.position.y, 14, 11, P.stoneDark);
     this.blob(`${id}-fountain-water`, x + 175, feature.position.y, 10, 7, '#628e87');
-    return this.pieces;
+    return this.pieces.map((piece) => ({ ...piece, layer: 'ground' }));
   }
 }

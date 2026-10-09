@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-08
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -110,8 +110,10 @@ Content files follow [02-code-structure.md §4](02-code-structure.md#4-naming):
 `content/abilities/bladeRunner.ts` exports `BLADE_RUNNER` written against `AbilityAuthoring`
 (the same shape with seconds instead of ticks, `satisfies` for compile-time checks,
 [research §9](../research/game-architecture-and-performance-research.md#9-config-driven-and-data-driven-design));
-`abilityCatalogue.ts` lists them. `ContentCatalogue` resolves `extends`, converts seconds to ticks
-and runs `validateContent()`: every `effects[].kind` and `restrictions[].kind` is registered, every
+`abilityCatalogue.ts` lists them. `loadDefaultContent()` builds the catalogues (resolving `extends`
+and converting seconds to ticks) and runs `ContentValidator` once with the rule classes listed in
+`content/defaultContentRules.ts` (04 §5, DEC-22). Each rule's `check(definition, content)` sees the
+whole catalogue, so the rules cover: every `effects[].kind` and `restrictions[].kind` is registered, every
 `statusId`, `definitionId` and `projectileId` resolves, every variety patch path exists, each
 `LegendDefinition.abilityIds` entry has `slot: 'ability'`, its `ultimateId` has `slot: 'ultimate'`
 and its `allowedArtifactIds` have `slot: 'gadget'`. A typo fails at boot, never mid-match.
@@ -122,7 +124,7 @@ and its `allowedArtifactIds` have `slot: 'gadget'`. A typo fails at boot, never 
 // Sketch: packages/core/src/abilities/AbilityEffect.ts
 export interface AbilityEffect<S extends AbilityEffectSpec = AbilityEffectSpec> {
   readonly kind: S['kind']; // the AbilityRegistry key, e.g. 'knockback'
-  validate(spec: S, content: ContentCatalogue): readonly ContentProblem[]; // at load
+  validate(spec: S, content: ContentCatalogue): readonly ContentProblem[]; // at load, from a content rule (§2)
   apply(spec: S, cast: CastContext): void; // during AbilitySystem's pass, this tick
 }
 
@@ -251,7 +253,7 @@ const END = { kind: 'circle', radius: 1.5 } as const;
 export const BLADE_RUNNER = {
   id: 'blade-runner',
   displayName: 'Blade Runner',
-  classId: 'assault',
+  classId: 'warrior',
   slot: 'ability',
   cooldownSeconds: 12,
   aetherCost: 35, // TUNE: Recommendation in balancing.md
@@ -582,7 +584,7 @@ by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks 
 | Staff (`magus-staff`)                       | staff      | melee physical, ranged magical; `grants: ['spell-potency']`                             | magus     | MVP                     |
 | Wuuthrad (`wuuthrad`)                       | battle-axe | melee physical, long reach; heavy: `concussion`; `damageMultipliers.sentinel`           | —         | MVP-if-time             |
 | Lightbringer (`lightbringer`)               | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time             |
-| Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | assault   | MVP-if-time             |
+| Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
 | Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
 
 ## 11. Artifacts (gadgets Z and C)
@@ -594,7 +596,7 @@ air burst, physical or magical; Soul Orb: Cast Forward as a `summon` turret or F
 game doc's "selected before spawn". Casting is `cast-ability { slot: 'gadget-1' }` from the
 `gadget-1` / `gadget-2` `InputAction`s; there is no artifact runtime, no artifact system and no
 second HUD path (Phase 4.4's done-when). Slots are **MVP**; Mortar and Soul Orb are
-**MVP-if-time**; the second Sentinel artifact and the Assault artifact are INBOX decisions
+**MVP-if-time**; the second Sentinel artifact and the Warrior artifact are INBOX decisions
 ([more-weapons.md](../reference/suggestions/more-weapons.md)).
 
 ## 12. Loadout

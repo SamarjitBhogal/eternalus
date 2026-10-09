@@ -1,24 +1,31 @@
-import type { MapDefinition, Vec2 } from '@eternalus/core';
-import type { WorldRect } from './engine/Renderer.types';
+import type { CathedralInterior, MapDefinition, Vec2 } from '@eternalus/core';
+
+import type { WorldRect } from './engine/render/Renderer.types';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
-/** Owns presentation-only camera navigation and cathedral entry for the map preview. */
+/**
+ * Owns the free, presentation-only view of the map: aspect-correct pan and zoom over the whole
+ * battlefield, and stepping into the cathedral's interior. It never changes map data.
+ */
 export class MapExplorer {
   private center: Vec2;
   private zoom = 1;
   private isInside = false;
 
-  /** Starts with an overview of the original three-lane battlefield. */
-  public constructor(private readonly map: MapDefinition) {
+  /** Starts with an overview of the battlefield; `interior` is `null` when there is none. */
+  public constructor(
+    private readonly map: MapDefinition,
+    private readonly interior: CathedralInterior | null,
+  ) {
     this.center = { x: map.width / 2, y: map.height / 2 };
   }
 
-  /** The immutable map currently being explored. */
+  /** The map currently being explored: the battlefield or the cathedral interior. */
   public get currentMap(): MapDefinition {
-    return this.isInside ? (this.map.interior ?? this.map) : this.map;
+    return this.isInside && this.interior !== null ? this.interior.map : this.map;
   }
 
-  /** Whether the preview is showing the cathedral interior. */
+  /** Whether the view is inside the cathedral. */
   public get isInterior(): boolean {
     return this.isInside;
   }
@@ -39,7 +46,15 @@ export class MapExplorer {
     return { x, y, width, height };
   }
 
-  /** Moves the preview camera; clamping is applied when its visible area is requested. */
+  /** Takes over from another view (the following camera) without jumping. */
+  public showArea(area: WorldRect, aspect: number): void {
+    const map = this.currentMap;
+    this.center = { x: area.x + area.width / 2, y: area.y + area.height / 2 };
+    this.zoom = 1;
+    this.zoomBy(Math.max(map.width, map.height * aspect) / area.width);
+  }
+
+  /** Moves the view; clamping is applied when its visible area is requested. */
   public lookAt(point: Vec2): void {
     this.center = point;
   }
@@ -50,23 +65,19 @@ export class MapExplorer {
     this.center = { x: area.x + area.width / 2 + dx, y: area.y + area.height / 2 + dy };
   }
 
-  /** Zooms within a bounded range so a large battlefield can be explored in detail. */
+  /** Zooms within a bounded range so the battlefield can be explored in detail. */
   public zoomBy(factor: number): void {
     this.zoom = Math.max(1, Math.min(EXPLORER_SETTINGS.maxZoom, this.zoom * factor));
   }
 
   /** Enters only when the selected world point falls inside the cathedral footprint. */
   public enterAt(point: Vec2): boolean {
-    const cathedral = this.map.features.find((feature) => feature.kind === 'cathedral');
-    const halfSize = EXPLORER_SETTINGS.cathedralHalfSize * (this.map.presentationScale ?? 1);
-    const halfWidth = this.map.interiorEntry?.halfWidth ?? halfSize;
-    const halfHeight = this.map.interiorEntry?.halfHeight ?? halfSize;
+    const entry = this.interior?.entry;
     if (
       this.isInside ||
-      this.map.interior === undefined ||
-      cathedral === undefined ||
-      Math.abs(point.x - cathedral.position.x) > halfWidth ||
-      Math.abs(point.y - cathedral.position.y) > halfHeight
+      entry === undefined ||
+      Math.abs(point.x - entry.center.x) > entry.halfWidth ||
+      Math.abs(point.y - entry.center.y) > entry.halfHeight
     )
       return false;
     this.isInside = true;

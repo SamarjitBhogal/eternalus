@@ -1,0 +1,6 @@
+import { ContentCatalogue } from '../ContentCatalogue';
+import type { MobDefinition } from './mobs.types';
+import { TRAINING_DUMMY } from './trainingDummy';
+
+/** Every mob definition. Real mobs are added here by the mob work (SCRUM-59). */
+export const MOB_DEFINITIONS = new ContentCatalogue<MobDefinition>([TRAINING_DUMMY]);

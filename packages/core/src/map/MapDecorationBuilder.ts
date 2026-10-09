@@ -1,9 +1,16 @@
-import type { MapDecoration } from '../content/maps/maps.types';
+import type { MapDecoration, MapDecorationLayer } from '../content/maps/maps.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 
 /** Shared polygon assembly for authored map scenery and interior architecture. */
 export abstract class MapDecorationBuilder {
   protected readonly pieces: MapDecoration[] = [];
+
+  /** A repeatable pseudo-random number for a position, so scenery varies without an RNG. */
+  protected variation(x: number, y: number): number {
+    return (
+      (Math.imul(Math.floor(x) + 17, 73856093) ^ Math.imul(Math.floor(y) + 29, 19349663)) >>> 0
+    );
+  }
 
   protected blob(
     id: string,
@@ -12,7 +19,7 @@ export abstract class MapDecorationBuilder {
     rx: number,
     ry: number,
     color: string,
-    layer: 'ground' | 'detail' = 'detail',
+    layer: MapDecorationLayer = 'detail',
   ): void {
     const ring = [
       [1, 0],
@@ -48,7 +55,7 @@ export abstract class MapDecorationBuilder {
     path: readonly Vec2[],
     width: number,
     color: string,
-    layer: 'ground' | 'detail' = 'ground',
+    layer: MapDecorationLayer = 'ground',
   ): void {
     const left: Vec2[] = [];
     const right: Vec2[] = [];
@@ -91,7 +98,7 @@ export abstract class MapDecorationBuilder {
     id: string,
     shape: Polygon,
     color: string,
-    layer: 'ground' | 'detail' = 'detail',
+    layer: MapDecorationLayer = 'detail',
   ): void {
     this.pieces.push({ id, shape, color, layer });
   }
@@ -103,7 +110,7 @@ export abstract class MapDecorationBuilder {
     width: number,
     height: number,
     color: string,
-    layer: 'ground' | 'detail' = 'detail',
+    layer: MapDecorationLayer = 'detail',
   ): void {
     this.polygon(
       id,

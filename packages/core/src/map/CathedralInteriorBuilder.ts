@@ -1,10 +1,26 @@
-import { MapDecorationBuilder } from './MapDecorationBuilder';
-import type { MapDefinition } from '../content/maps/maps.types';
 import { LANDMARK_SETTINGS as S } from '../content/maps/map1Landforms';
-/** Arranges furnished rooms around a circular cathedral rotunda and open capture court. */
+import { SKETCH_HEIGHT, SKETCH_WIDTH } from '../content/maps/map1Scenery';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import { cos, sin } from '../utils/deterministicMath';
+import type { MapDefinition } from '../content/maps/maps.types';
+import type { CathedralInterior } from './CathedralInteriorBuilder.types';
+import { MapDecorationBuilder } from './MapDecorationBuilder';
+
+/**
+ * Arranges furnished rooms around a circular cathedral rotunda and open capture court. The
+ * interior is presentation only: it has no lanes or terrain, and its one capture-point anchor
+ * is a marker, not a simulated objective.
+ */
 export class CathedralInteriorBuilder extends MapDecorationBuilder {
-  /** Returns an explorable radial interior with a central capture-point anchor. */
-  public build(): MapDefinition {
+  /**
+   * Returns the interior of `world`'s cathedral and the footprint that leads into it, or `null`
+   * when the generated map has no cathedral.
+   */
+  public build(world: MapDefinition): CathedralInterior | null {
+    const cathedral = world.features.find((feature) => feature.kind === 'cathedral');
+    const capture = MAP_FEATURE_DEFINITIONS['capture-point'];
+    if (cathedral === undefined || capture === undefined) return null;
+    this.rect('interior-ground', 0, 0, S.interiorWidth, S.interiorHeight, '#242a2b', 'ground');
     this.circle('rotunda-wall', 900, 1100, 650, 650, '#c5bda5');
     this.circle('rotunda-floor', 900, 1100, 632, 632, '#938e7c');
     this.circle('rotunda-inner-inlay', 900, 1100, 540, 540, '#a09a85');
@@ -17,24 +33,34 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
     this.circle('capture-point-centre', 900, 1100, 57, 57, '#c5bda5');
     this.rect('entry-door', 850, 1930, 100, 20, '#d5b77b');
     return {
-      id: 'grand-cathedral-interior',
-      displayName: 'Grand Cathedral · Interior',
-      groundColor: '#242a2b',
-      width: S.interiorWidth,
-      height: S.interiorHeight,
-      lanes: [],
-      terrain: [],
-      features: [
-        {
-          id: 'cathedral-interior-capture',
-          kind: 'capture-point',
-          owner: 'neutral',
-          position: { x: 900, y: 1100 },
-        },
-      ],
+      map: {
+        id: 'grand-cathedral-interior',
+        displayName: 'Grand Cathedral · Interior',
+        width: S.interiorWidth,
+        height: S.interiorHeight,
+        seed: world.seed,
+        lanes: [],
+        terrain: [],
+        features: [
+          {
+            id: 'cathedral-interior-capture',
+            kind: 'capture-point',
+            team: 'neutral',
+            definitionId: capture.id,
+            position: { x: 900, y: 1100 },
+            minimapGlyph: { ...capture.minimapGlyph },
+          },
+        ],
+      },
       scenery: this.pieces,
+      entry: {
+        center: cathedral.position,
+        halfWidth: (S.cathedralHalfWidth * world.width) / SKETCH_WIDTH,
+        halfHeight: (S.cathedralHalfHeight * world.height) / SKETCH_HEIGHT,
+      },
     };
   }
+
   private rooms(): void {
     const rooms = [
       ['library', 420, 620, '#85735c'],
@@ -105,13 +131,13 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
   private hall(): void {
     for (let i = 0; i < 16; i++) {
       const angle = (i * Math.PI) / 8;
-      const x = 900 + Math.cos(angle) * 470;
-      const y = 1100 + Math.sin(angle) * 470;
+      const x = 900 + cos(angle) * 470;
+      const y = 1100 + sin(angle) * 470;
       this.circle(`column-shadow-${String(i)}`, x + 8, y + 9, 27, 27, '#625f54');
       this.circle(`column-${String(i)}`, x, y, 26, 26, '#c5bda5');
       this.circle(`column-cap-${String(i)}`, x - 3, y - 3, 16, 16, '#e0d6bd');
-      const px = 900 + Math.cos(angle) * 335;
-      const py = 1100 + Math.sin(angle) * 335;
+      const px = 900 + cos(angle) * 335;
+      const py = 1100 + sin(angle) * 335;
       this.rect(`pew-${String(i)}`, px - 44, py - 12, 88, 24, '#574538');
       this.rect(`pew-highlight-${String(i)}`, px - 44, py - 12, 88, 5, '#94765b');
     }
@@ -120,8 +146,8 @@ export class CathedralInteriorBuilder extends MapDecorationBuilder {
     this.polygon(
       id,
       Array.from({ length: 64 }, (_, i) => ({
-        x: x + Math.cos((i * Math.PI) / 32) * rx,
-        y: y + Math.sin((i * Math.PI) / 32) * ry,
+        x: x + cos((i * Math.PI) / 32) * rx,
+        y: y + sin((i * Math.PI) / 32) * ry,
       })),
       color,
     );
