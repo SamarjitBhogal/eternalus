@@ -196,7 +196,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       structure kind in `ViewRegistry` makes it appear on both the map and the minimap with zero
       minimap code changes; a `numLanes: 5` definition draws five lanes. Done when: the minimap
       has no per-kind code.
-- [ ] **Bridge event bus + first Redux slice (match clock)**: `TypedEventBus<BridgeEventMap>`,
+- [ ] _(feat/session-shell-home, pending merge: `TypedEventBus<BridgeEventMap>`, `matchSlice.clock` and the typed hook done; the every-6th-tick publish and its 30 → 5 test belong to `MatchBridge`, session H)_ **Bridge event bus + first Redux slice (match clock)**: `TypedEventBus<BridgeEventMap>`,
       `matchSlice` (its `clock` field), publish every 6th tick, typed hooks. Owner: _. Test: 30 ticks → 5
       dispatches; the selector formats `mm:ss`. Done when: `ui/` imports only `bridge/`.
 - [ ] **`Match` composition root + `MatchScreen` shell** (sim + loop + renderer + views +
@@ -237,7 +237,7 @@ Owner: _ (client lane + one sim-lane reviewer). Week 3. Depends on 1.2 and 1.4.
 - [ ] **Headless bench `npm run bench`** (`Recommendation:` Node script in core: 300 dummies ×
       3,000 ticks, prints p50/p95 tick time). Owner: _. Test: the script runs in CI without
       asserting a time (times are asserted locally). Done when: the number is in PROGRESS.
-- [ ] **Coverage ratchet**: core 80 → 82, client 45/50 → 55/55 (`Recommendation:`). Owner: _.
+- [ ] _(feat/session-shell-home, pending merge: client 45/50/45/45 → 55/55/55/55 done; core 80 → 82 open)_ **Coverage ratchet**: core 80 → 82, client 45/50 → 55/55 (`Recommendation:`). Owner: _.
       Test: `npm run test:coverage`. Done when: thresholds are committed in the same PR.
 
 **Success metric:** p95 tick time ≤ 4 ms with 300 dummies in `npm run bench` on the reference

@@ -1,0 +1,24 @@
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: fit-content;
+}
+
+.title {
+  margin: 0;
+  color: var(--theme-primary);
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: normal;
+  letter-spacing: 0.12em;
+}
+
+.banner {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--theme-primary);
+  border-radius: var(--radius-sm);
+  background: var(--surface-scrim);
+  color: var(--text-primary);
+}

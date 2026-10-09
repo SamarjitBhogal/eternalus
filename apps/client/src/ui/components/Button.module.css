@@ -1,0 +1,23 @@
+.button {
+  min-width: 12rem;
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--theme-primary);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) ease-out,
+    color var(--motion-fast) ease-out;
+}
+
+.button:hover,
+.button:focus-visible {
+  background: var(--theme-primary);
+  color: var(--theme-on-primary);
+}
