@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { DefaultEntityView } from './DefaultEntityView';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { LegendView } from './LegendView';
+import { MobView } from './MobView';
 import { ViewRegistry } from './ViewRegistry';
 
 const entity = (kind: string, family: string): EntitySnapshot => ({
@@ -17,14 +18,16 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
 });
 
 describe('createDefaultViewRegistry', () => {
-  it('draws every Legend with the Legend view and anything else with the default view', () => {
+  it('draws Legends with the Legend view, mobs with the mob view, and the rest by default', () => {
     const registry = createDefaultViewRegistry();
 
     expect(registry).toBeInstanceOf(ViewRegistry);
     expect(registry.viewFor(entity('warrior', 'legend'))).toBeInstanceOf(LegendView);
     expect(registry.viewFor(entity('sentinel', 'legend'))).toBeInstanceOf(LegendView);
-    expect(registry.viewFor(entity('light-mob', 'mob'))).toBeInstanceOf(DefaultEntityView);
+    expect(registry.viewFor(entity('light-mob', 'mob'))).toBeInstanceOf(MobView);
     expect(registry.viewFor(entity('light-mob', 'mob'))).not.toBeInstanceOf(LegendView);
+    expect(registry.viewFor(entity('pillar', 'obstacle'))).toBeInstanceOf(DefaultEntityView);
+    expect(registry.viewFor(entity('pillar', 'obstacle'))).not.toBeInstanceOf(MobView);
   });
 
   it('passes unknown kinds to the reporter it is given', () => {

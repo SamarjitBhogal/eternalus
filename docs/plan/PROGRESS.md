@@ -409,6 +409,61 @@ The example below is fenced so it is not read as a real entry.
 - Next step: review and merge PR #12. Follow-up: core now exports `SeededRandom`, so the client's
   `LcgRng` stand-in can be swapped at the `createRng` line in `main.tsx` (its own task).
 
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype — SamarjitBhogal + Claude Code
+
+- What was done: prototype for the demo, stacked on `feat/player-input` (#19 → #18 → #17 → #14) and synced
+  with the phase branch after PR #12, and again after #14, #17, #18 and #19 merged (merge commits;
+  `MobView` now registered in `createDefaultViewRegistry()`).
+  Minions escort the player's Legend: `ai/Controller.types.ts`, `ai/AiSystem.ts` (runs first,
+  queues decisions for the next tick), `ai/FollowLeaderController.ts` (walk to the nearest allied
+  Legend, keep space from it and from other followers), `components/Brain.ts` (installed by `Unit`
+  when a definition names a `controller`), `EntityStore.positionOf/teamOf/controllerOf` for `ai/`,
+  `content/mobs/lightMinion.ts`, `content/ai/followLeaderProfile.ts`; `Match` spawns six
+  minions around the player; `views/MobView.ts` draws mobs on a dark outline (the default view
+  painted them in the team colour, invisible on their own Stronghold). Checked in headless Chrome:
+  the escort shows, trails the player while it walks and settles around it. Prototype decision, to be replaced by Phase 3's `MinionController`,
+  `SpawnSystem` and `Perception`: recorded as PROTO-01 in `INBOX.md`; no design doc changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 456 passed (456)" (statements 99.03%, branches 93.46%); client "Tests 291 passed (291)"
+  (statements 92.51%, branches 93.35%); "✓ built in 152ms"; "Documentation check passed." (Node
+  24.21.0, Linux). Pre-PR gate not run yet.
+- Next step: rehearse the demo; after #14–#19 merge, open the PR into the phase branch through the
+  pre-PR gate, or drop the branch when Phase 3 lands.
+
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype (pre-PR gate) — SamarjitBhogal + Claude Code
+
+- What was done: ran the pre-PR gate (ADR 0010) on the prototype. Critic pass 1 found one blocker
+  (the Match default-view warning test had lost its exact assertion; restored with an `obstacle`
+  through test-injected content) and several should-fix items, all fixed: `AiSystem` asks each
+  entity on a cadence (`decideEveryTicks: 5`, architecture 11 §6, staggered by store position) and
+  throws on an unregistered controller; the follower sends `stop` only while it is steering
+  (`EntityStore.isSteering`); deterministic `distance`/`length` instead of `Math.hypot`; the light
+  minion cites `balancing.md` and states its speed and mass departures; PROTO-01 now asks the
+  owner to confirm them and where `AiSystem` belongs. Ponytail: one cut (−2 lines). Correction to
+  the entry above: it is dated 2026-10-09 but the work was done on 2026-10-08; this log is
+  append-only, so the date is corrected here.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)" (statements 99.03%, branches 93.55%); client "Tests 292 passed (292)"
+  (statements 92.61%, branches 93.35%); "✓ built in 162ms"; "Documentation check passed." (Node
+  24.21.0, Linux). Critic pass 2: NO BLOCKERS. Headless Chrome: the escort trails the player and
+  settles around it.
+- Next step: Samarjit commits and pushes the rework, then opens the PR into the phase branch with
+  `docs/changelog/pr-feat-minion-follow-prototype.md` as its description.
+
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype (markers) — SamarjitBhogal + Claude Code
+
+- What was done: marked every piece of the escort prototype as temporary with
+  `PROTOTYPE(PROTO-01) TEMPORARY` plus what replaces it (18 markers, 16 files; comments only): the
+  follow controller, its profile and tests, the light-minion definition and its catalogue line,
+  the escort spawn and its tests in `Match`, and the interim `AiSystem`, `Brain`, `EntityStore`
+  read helpers, `Unit` brain attach, `Simulation` controller list and `DefaultSystemPipeline`
+  `decide` parameter. The convention is explained in PROTO-01 (`INBOX.md`) and the PR #23
+  description doc, with a proposal to add it to `AGENTS.md` once the owner approves.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)"; client "Tests 292 passed (292)"; "✓ built in 165ms"; "Documentation
+  check passed." (Node 24.21.0, Linux).
+- Next step: update the PR #23 description on GitHub from the doc; reviewers check the markers.
+
 ### 2026-10-08 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
 
 - What was done: DEC-16, accepted by the owner in chat. `eslint.config.js` adds `.worktrees/` and
@@ -446,3 +501,20 @@ The example below is fenced so it is not read as a real entry.
   "Tests 442 passed (442)"; client "Tests 289 passed (289)"; "✓ built in 218ms"; "Documentation
   check passed."
 - Next step: the human pushes; PR #20 (approved) merges into the phase branch.
+
+### 2026-10-09 — Phase 1 / plan audit — feat/minion-follow-prototype — SamarjitBhogal + Claude Code
+
+- What was done: audited the Phase 1 plan against the local working tree (open PRs not counted)
+  and ticked six items whose code and tests are in place: `DeathSystem` with `RemovalCause`, the
+  `map-1` preset, `GameLoop` + `FrameScheduler`, `MinimapView`, the logger sinks and the coverage
+  ratchet (core 85, client 55). Still open: `SpatialHash`, `CollisionSystem`, `ObjectPool`, the
+  unique-id and live-reference invariants, the `WorldMap` cost grid and its wiring into
+  `Simulation`, the renderer's three layers and `getContext` lint rule, `TerrainView`, the bridge
+  clock publish, `PlayerController`, collision for the placeholder Legend, `PerfOverlay`,
+  `DeveloperMenu` and `npm run bench`. None of the open PRs (#22, #23, #24) adds `SpatialHash`,
+  collision or `WorldMap` wiring, which Phase 3 minions need. Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)"; client "Tests 292 passed (292)"; "✓ built in 230ms"; "Documentation
+  check passed." Also restored a blank line in this log that the `c563c01` conflict resolution
+  dropped (Prettier failed on it at HEAD).
+- Next step: pick up `SpatialHash` and `CollisionSystem` v1 (sprint 1.3) before more minion work.

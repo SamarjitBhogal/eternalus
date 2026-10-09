@@ -1,5 +1,6 @@
 import { DefaultEntityView } from './DefaultEntityView';
 import { LegendView } from './LegendView';
+import { MobView } from './MobView';
 import { ViewRegistry } from './ViewRegistry';
 
 /**
@@ -11,5 +12,6 @@ import { ViewRegistry } from './ViewRegistry';
 export const createDefaultViewRegistry = (onUnknownKind?: (kind: string) => void): ViewRegistry => {
   const registry = new ViewRegistry(new DefaultEntityView(), onUnknownKind);
   registry.registerFamily('legend', new LegendView());
+  registry.registerFamily('mob', new MobView());
   return registry;
 };

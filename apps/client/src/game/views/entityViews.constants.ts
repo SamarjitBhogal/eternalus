@@ -12,3 +12,9 @@ export const LEGEND_OUTLINE_COLOR = '#ffffff';
 
 /** How much wider than the Legend its outline is. */
 export const LEGEND_OUTLINE_SCALE = 1.25;
+
+/** Colour of the outline that keeps mobs visible on their own team's ground (the Stronghold). */
+export const MOB_OUTLINE_COLOR = '#1b1b1b';
+
+/** How much wider than the mob its outline is. */
+export const MOB_OUTLINE_SCALE = 1.35;
