@@ -409,7 +409,7 @@ The example below is fenced so it is not read as a real entry.
 - Next step: review and merge PR #12. Follow-up: core now exports `SeededRandom`, so the client's
   `LcgRng` stand-in can be swapped at the `createRng` line in `main.tsx` (its own task).
 
-### 2026-10-09 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype — SamarjitBhogal + Claude Code
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype — SamarjitBhogal + Claude Code
 
 - What was done: prototype for the demo, stacked on `feat/player-input` (#19 → #18 → #17 → #14) and synced
   with the phase branch after PR #12, and again after #14, #17, #18 and #19 merged (merge commits;
@@ -463,3 +463,40 @@ The example below is fenced so it is not read as a real entry.
   "Tests 459 passed (459)"; client "Tests 292 passed (292)"; "✓ built in 165ms"; "Documentation
   check passed." (Node 24.21.0, Linux).
 - Next step: update the PR #23 description on GitHub from the doc; reviewers check the markers.
+### 2026-10-08 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
+
+- What was done: DEC-16, accepted by the owner in chat. `eslint.config.js` adds `.worktrees/` and
+  `.claude/worktrees/` to `globalIgnores`. Before, `eslint --debug .` from the main checkout
+  linted 727 files under `.worktrees/` besides the main tree's 174. A probe file with a lint error
+  under `.worktrees/` is now reported as ignored, and the same file outside it is still linted.
+  Recorded in the decisions log (batch 2026-10-08), moved to Done in `INBOX.md`, and noted in
+  `docs/agents/running-agents.md` §3.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 295 passed (295)"; client "Tests 36 passed (36)";
+  "✓ built in 237ms"; "Documentation check passed."
+- Next step: the human reviews and commits; the PR into the phase branch touches
+  `eslint.config.js` line 24 only, away from PR #14's module-ring hunk (line 78 on).
+
+### 2026-10-08 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
+
+- What was done: pre-PR gate on DEC-16. The critic found no blockers and one major: a change to
+  `eslint.config.js` needs an ADR (`docs/agents/checklists.md`, `guardrails.md` §4). The owner
+  chose to add one: ADR 0014, a "Lint scope" row in the guardrails table, and ADR 0014 named in
+  the DEC-16 row and the config comment. Ponytail: "Lean already. Ship." Correction to the entry
+  above: its next step ("the human reviews and commits") was overtaken, because the owner asked
+  for the commit and the PR in the same session.
+- Checks run: see the PR description for the verbatim `npm run check` output after the ADR.
+- Next step: review and merge the PR into the phase branch. Whichever of it and PR #14 merges
+  second keeps both `PROGRESS.md` entries (#14's first).
+
+### 2026-10-09 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
+
+- What was done: re-synced PR #20 with the phase branch twice: after PR #12, and after PRs #14,
+  #17, #18 and #19. Merge commits only. Conflicts kept both sides, newest first: `INBOX.md`
+  (session D's open item; the PR #14 and DEC-16 Done entries), this log, and the decisions log's
+  two 2026-10-08 batches. ADR 0014 is still free on every remote branch (0013 is reserved by
+  DEC-24, 0015 by `feat/settings-keybindings`).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 442 passed (442)"; client "Tests 289 passed (289)"; "✓ built in 218ms"; "Documentation
+  check passed."
+- Next step: the human pushes; PR #20 (approved) merges into the phase branch.

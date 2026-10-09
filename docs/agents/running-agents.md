@@ -4,7 +4,7 @@ description: For humans who run coding agents (Claude Code, Codex, Gemini/Antigr
 audience: [humans]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-08
 tags: [agents, process, review, git]
 related: ['docs/agents/README.md', 'docs/agents/checklists.md', 'docs/process/git-workflow.md']
 ---
@@ -61,7 +61,8 @@ npm install
 # start the agent in this directory (or: claude --worktree health-system)
 ```
 
-- `.worktrees/` and `.claude/worktrees/` are gitignored.
+- `.worktrees/` and `.claude/worktrees/` are gitignored, and the root ESLint config ignores them
+  too, so one unfinished worktree never fails lint in another checkout (DEC-16).
 - Give parallel agents tasks that touch **different files**, or expect merge conflicts.
 - Clean up when merged: `git worktree remove .worktrees/health-system`.
 
