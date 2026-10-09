@@ -1,3 +1,4 @@
+import { deepFreeze } from '../utils/deepFreeze';
 import type { IdentifiedDefinition } from './ContentCatalogue.types';
 import { ContentValidationError } from './ContentValidationError';
 import { UnknownDefinitionError } from './UnknownDefinitionError';
@@ -25,7 +26,7 @@ export class ContentCatalogue<Definition extends IdentifiedDefinition> {
         throw new ContentValidationError(`Duplicate definition id "${definition.id}".`);
       }
 
-      this.definitions.set(definition.id, ContentCatalogue.freezeDeep(definition));
+      this.definitions.set(definition.id, deepFreeze(definition));
     }
   }
 
@@ -57,14 +58,5 @@ export class ContentCatalogue<Definition extends IdentifiedDefinition> {
     }
 
     return definition;
-  }
-
-  private static freezeDeep<Value>(value: Value): Value {
-    if (typeof value === 'object' && value !== null && !Object.isFrozen(value)) {
-      Object.freeze(value);
-      Object.values(value).forEach((child: unknown) => ContentCatalogue.freezeDeep(child));
-    }
-
-    return value;
   }
 }

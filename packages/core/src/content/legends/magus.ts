@@ -11,7 +11,7 @@ export const MAGUS = {
   kind: 'magus',
   displayName: 'Magus',
   roleBlurb: 'Magical; applies buffs or debuffs and can revive allies.',
-  baseHealth: 800, // TUNE
+  baseHealth: 800, // TUNE:
   weaponBias: 'staff',
   damageFocus: 'magic',
   pickUp: 'levitate',
@@ -19,10 +19,10 @@ export const MAGUS = {
   defaultAction: 'revive',
   referenceHeight: 3, // TUNE: ~10 ft (Hades)
   footprintRadius: 0.75, // DEC-06
-  visionRadius: 25, // TUNE
+  visionRadius: 25, // TUNE:
   movement: {
-    maxSpeed: 0.15, // TUNE: 4.5 m/s at 30 ticks/s
-    acceleration: 0.025, // TUNE: top speed after 6 ticks
-    mass: 2, // TUNE
+    maxSpeed: 4.5, // TUNE: m/s
+    acceleration: 22.5, // TUNE: m/s², top speed after 0.2 s (6 ticks)
+    mass: 2, // TUNE:
   },
 } as const satisfies LegendDefinition;

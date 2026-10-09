@@ -7,7 +7,6 @@ describe('@eternalus/core public API', () => {
     expect(Object.keys(core).sort()).toEqual([
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
-      'LEGEND_CLASSES',
       'MapGenerator',
       'MemoryLogger',
       'NullLogger',
@@ -20,10 +19,6 @@ describe('@eternalus/core public API', () => {
       'runReplay',
       'validateGameConfig',
     ]);
-  });
-
-  it('exposes the Legend classes in character-select order', () => {
-    expect(core.LEGEND_CLASSES.ids).toEqual(['warrior', 'sentinel', 'magus']);
   });
 
   it('generates the default map-1 from the default config', () => {

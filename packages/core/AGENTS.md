@@ -35,19 +35,6 @@ are the **planned** layout; create them as code is added.
 
 These import rules are checked in review.
 
-## Module rings
-
-Core is **L2 Domain**, the innermost layer of the program (`docs/architecture/01-layered-oop-model.md`):
-it imports nothing outside itself, and the client depends on it, never the reverse. Inside core,
-modules form rings from the inside out: `utils/` and `teams/`, then `content/`, then
-`components/`, then `entities/`, then `systems/`, `state/`, `commands/`, `ai/` and
-`Simulation.ts`. A module may import its own ring and the rings inside it, never one further out; `entities/` may also import
-types from `state/` (02 §2). ADR 0013 records the rule.
-ESLint enforces this for `utils/`, `teams/`, `content/`, `components/` and `entities/`
-(`eslint.config.js`, "Core module rings"). A failure reads
-`'../entities/Unit' import is restricted ... content is an inner module of core`; fix it by moving
-the code outward or passing the data in from the outer module.
-
 ## Adding code
 
 - New system: create `src/systems/<Name>System.ts` and its test, then register it in the

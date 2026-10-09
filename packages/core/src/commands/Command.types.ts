@@ -69,6 +69,7 @@ export type Command<K extends CommandType = CommandType> = {
 export type CommandRejectReason =
   | 'unknown-entity'
   | 'unknown-kind'
+  | 'unknown-definition'
   | 'invalid-count'
   | 'invalid-position'
   | 'cap-exceeded'
