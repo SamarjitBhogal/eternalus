@@ -89,27 +89,27 @@ every checkpoint, twice in a row, in under 20 s on CI.
 Owner: _ (sim lane). Week 2. Depends on 1.1 (`GameState`, `GameEvents`, `SystemPipeline`).
 Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
 
-- [ ] **`Entity` root** (abstract: `id`, `kind`, `definitionId`, components; Template Method
+- [x] **`Entity` root** (abstract: `id`, `kind`, `definitionId`, components; Template Method
       lifecycle hooks `onSpawn`/`onRemove`). Owner: _. Test: hooks fire in order for a subclass.
       Done when: depth below `Entity` is checked by a test that walks the class chain (max 3).
-- [ ] **Component catalogue v1**: `Transform`, `Health`, `Movement` (`speed`, `maxSpeed`,
+- [x] **Component catalogue v1**: `Transform`, `Health`, `Movement` (`speed`, `maxSpeed`,
       `acceleration`, `mass` — from the game doc's "Entity Class Specifics"), `Team`
       (`light | dark | neutral`, D10), `Collider` (circle). Owner: _. Test: `Health` clamps to
       `[0, max]`; `Movement` never exceeds `maxSpeed`. Done when: each component's invariants are
       asserted inside the component (data + invariants), not in systems.
-- [ ] **Type Object definitions v1 + content** (`UnitDefinition`, `MobDefinition`; a
+- [ ] _(feat/entity-collider-and-concrete-kinds: done except the dangling-id test. Unit definitions name no other ids yet, so it is a `dev-spawn` rejection (`unknown-definition`) until the first rule that checks references lands with abilities)_ **Type Object definitions v1 + content** (`UnitDefinition`, `MobDefinition`; a
       `training-dummy` LightMob and a `placeholder-warrior` Legend definition; `satisfies Record<Id, Definition>`; `validateContent()`). Owner: _. Test: a dangling `definitionId`
       fails validation; definitions are frozen. Done when: no tuning number exists outside
       `content/` (all marked `// TUNE:`).
-- [ ] **`EntityFactory` + `EntityRegistry`** (kind → factory). Owner: _. Test: registering a
+- [x] _(feat/entity-collider-and-concrete-kinds, pending merge)_ **`EntityFactory` + `EntityRegistry`** (kind → factory). Owner: _. Test: registering a
       fake kind in the test and spawning it works with one registry line; unknown kind throws.
       Done when: the product owner's litmus test holds ("new class + content entry + registry
       line, nothing else changes").
-- [ ] **`Unit` family roots**: `Unit` (abstract), `Mob` (abstract) + `LightMob`, `Legend`
+- [x] **`Unit` family roots**: `Unit` (abstract), `Mob` (abstract) + `LightMob`, `Legend`
       (abstract) + `Warrior` (placeholder, no abilities). Owner: _. Test: factory spawns each
       with the right components. Done when: `Warrior` is renamable by changing the class name,
       its imports and its content display name only.
-- [ ] **`MovementSystem`** (acceleration → velocity → position; velocity clamp). Owner: _.
+- [x] **`MovementSystem`** (acceleration → velocity → position; velocity clamp). Owner: _.
       Test: a dummy reaches `maxSpeed` after `maxSpeed / acceleration` ticks; a `stop` command
       decelerates. Done when: no `atan2` and no allocation per unit per tick.
 - [ ] **`DeathSystem` with `RemovalCause`** (the only removal path; emits `entity-removed`
@@ -182,10 +182,10 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       entities, overlay), DPR-aware sizing, integer draw coordinates. Owner: _. Test: a fake 2D
       context records draw calls; the ESLint rule fails a `getContext` call outside
       `Canvas2dRenderer`. Done when: it is the only file that names `CanvasRenderingContext2D`.
-- [ ] **`Camera`** (world ↔ screen, culling rectangle, follow target, zoom clamp). Owner: _.
+- [x] **`Camera`** (world ↔ screen, culling rectangle, follow target, zoom clamp). Owner: _.
       Test: world → screen → world round-trips; the culling rect excludes off-screen points.
       Done when: views never compute screen coordinates themselves.
-- [ ] **`SceneView` + `ViewRegistry` + `EntityView`** (draw order in one place; kind → view).
+- [x] **`SceneView` + `ViewRegistry` + `EntityView`** (draw order in one place; kind → view).
       Owner: _. Test: an unknown kind draws a debug glyph and logs once; adding a kind is one
       registry line. Done when: no `switch` on entity kind exists in `views/`.
 - [ ] **`TerrainView`** (pre-rendered chunks from `MapDefinition`, dirty flags). Owner: _.

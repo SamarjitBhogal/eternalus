@@ -12,7 +12,7 @@ related:
     'docs/architecture/09-hardware-abstraction.md',
     'docs/architecture/13-game-interface.md',
     'docs/architecture/14-persistence-and-resources.md',
-    'docs/decisions/0013-agents-push-task-branches-and-open-prs.md',
+    'docs/decisions/0015-agents-push-task-branches-and-open-prs.md',
   ]
 ---
 
@@ -144,7 +144,7 @@ Each is recorded in the "Implementation status" notes (09 §11, 13 §10, 14 §14
   `game/input/{keybindings,InputMapper}*` and `game/engine/input/*`. The owner made this
   branch's versions canonical (DEC-26); `InputMapper` takes #19's calls. #19 then drops its copies
   and adapts `DeviceIntentSource` (INBOX has the steps).
-- **Guardrail change (ADR 0013, accepted; DEC-25):** `.claude/settings.json` lets agents push
+- **Guardrail change (ADR 0015, accepted; DEC-25):** `.claude/settings.json` lets agents push
   `feat|fix|docs|refactor|chore/*` branches and open PRs; force pushes, `:`/`+` refspecs,
   deletions, `--no-verify`, `main`/`phase/` pushes and `gh pr merge` are denied. Patterns are
   best-effort: extra arguments after a task-branch name (`--tags`, `--prune`) are not denied.
@@ -157,9 +157,9 @@ Each is recorded in the "Implementation status" notes (09 §11, 13 §10, 14 §14
 
 - [x] `npm run check` passes locally
 - [x] Tests added or updated (bug fixes include a test that failed before the fix)
-- [x] No guardrail changes, **or** justified here with a link to the ADR: ADR 0013 (push rules)
+- [x] No guardrail changes, **or** justified here with a link to the ADR: ADR 0015 (push rules)
 - [x] No new dependencies, **or** each one justified here in one line and approved by a human
-- [x] Changes stay within the scope of the task (plus the owner-approved wiring and ADR 0013)
+- [x] Changes stay within the scope of the task (plus the owner-approved wiring and ADR 0015)
 - [x] Docs updated where behaviour or workflow changed (02, 09, 13, 14, decisions log,
       PROGRESS, phase-1 sprint 1.5, INBOX, tool-setup, git-workflow)
 

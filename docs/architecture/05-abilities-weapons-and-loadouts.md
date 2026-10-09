@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-08
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -110,8 +110,10 @@ Content files follow [02-code-structure.md §4](02-code-structure.md#4-naming):
 `content/abilities/bladeRunner.ts` exports `BLADE_RUNNER` written against `AbilityAuthoring`
 (the same shape with seconds instead of ticks, `satisfies` for compile-time checks,
 [research §9](../research/game-architecture-and-performance-research.md#9-config-driven-and-data-driven-design));
-`abilityCatalogue.ts` lists them. `ContentCatalogue` resolves `extends`, converts seconds to ticks
-and runs `validateContent()`: every `effects[].kind` and `restrictions[].kind` is registered, every
+`abilityCatalogue.ts` lists them. `loadDefaultContent()` builds the catalogues (resolving `extends`
+and converting seconds to ticks) and runs `ContentValidator` once with the rule classes listed in
+`content/defaultContentRules.ts` (04 §5, DEC-22). Each rule's `check(definition, content)` sees the
+whole catalogue, so the rules cover: every `effects[].kind` and `restrictions[].kind` is registered, every
 `statusId`, `definitionId` and `projectileId` resolves, every variety patch path exists, each
 `LegendDefinition.abilityIds` entry has `slot: 'ability'`, its `ultimateId` has `slot: 'ultimate'`
 and its `allowedArtifactIds` have `slot: 'gadget'`. A typo fails at boot, never mid-match.
@@ -122,7 +124,7 @@ and its `allowedArtifactIds` have `slot: 'gadget'`. A typo fails at boot, never 
 // Sketch: packages/core/src/abilities/AbilityEffect.ts
 export interface AbilityEffect<S extends AbilityEffectSpec = AbilityEffectSpec> {
   readonly kind: S['kind']; // the AbilityRegistry key, e.g. 'knockback'
-  validate(spec: S, content: ContentCatalogue): readonly ContentProblem[]; // at load
+  validate(spec: S, content: ContentCatalogue): readonly ContentProblem[]; // at load, from a content rule (§2)
   apply(spec: S, cast: CastContext): void; // during AbilitySystem's pass, this tick
 }
 

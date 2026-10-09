@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-08
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -79,13 +79,19 @@ buff tower 150%, a wall 200%, each as a separate bar that absorbs damage before 
 ```ts
 // packages/core/src/components/Health.ts (sketch)
 export type ShieldBar = { readonly sourceId: EntityId; current: number; readonly max: number };
+/** Where one hit's damage went (DEC-23): shields, base, and what was left once both were empty. */
+export type DamageBreakdown = {
+  readonly toShields: number;
+  readonly toBase: number;
+  readonly overflow: number;
+};
 export class Health {
   base: number; // current base health
   readonly baseMax: number;
   readonly shields: ShieldBar[]; // one per living allied BuffTower, in tower id order
   get total(): number; // base + sum(shields.current)
-  /** Drains shields first (newest bar last), then base. Returns the overflow that killed it. */
-  applyDamage(amount: number): number;
+  /** Drains shields first (newest bar last), then base, and says where the damage went. */
+  applyDamage(amount: number): DamageBreakdown;
   addShield(sourceId: EntityId, max: number): void;
   removeShield(sourceId: EntityId): void; // drops the bar; never touches base or other bars
 }
@@ -338,6 +344,18 @@ Nothing in `StructureSystem`, `DamagePipeline`, `SpawnSystem` or `MinimapView` c
   that emits `form-change-requested`; the Legend side is a `LegendSpecDefinition` swap (D11).
 - **Bridges** across the rift as `bridge-segment` obstacles are MVP-if-time; until then the rift
   gaps are plain walkable ground.
+
+## 13. Implementation status
+
+Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered shields on
+`Health`, with these interim differences:
+
+- `Structure` and `Obstacle` use a circle `Collider` from `footprintRadius`; convex polygon
+  footprints arrive with the structures in Phase 2. No concrete structure kind or content exists yet.
+- `Health` keeps `current`/`max` for the base bar and adds `shields`, `total`, `addShield` and
+  `removeShield`; bars stay in source id order.
+- `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
+  `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
 ## Related
 

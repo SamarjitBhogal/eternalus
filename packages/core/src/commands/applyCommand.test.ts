@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import { EntityFactory } from '../entities/EntityFactory';
+import { EntityRegistry } from '../entities/EntityRegistry';
 import { GameState } from '../state/GameState';
 import { applyCommand } from './applyCommand';
 import type { CommandContext, CommandHandlers } from './CommandHandler.types';
@@ -9,7 +11,7 @@ import { createDefaultCommandHandlers } from './defaultCommandHandlers';
 
 const context = (): CommandContext => ({
   state: new GameState(createDefaultGameConfig(), 1),
-  factory: new EntityFactory(),
+  factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
 });
 
 describe('applyCommand', () => {
@@ -38,6 +40,6 @@ describe('applyCommand', () => {
     ctx.state.events.on('command-rejected', (payload) => rejected.push(payload));
     const command = { type: 'stop', actorId: 'entity-3' } as const;
     applyCommand(command, createDefaultCommandHandlers(), ctx);
-    expect(rejected).toEqual([{ command, reason: 'not-supported' }]);
+    expect(rejected).toEqual([{ command, reason: 'unknown-entity' }]);
   });
 });

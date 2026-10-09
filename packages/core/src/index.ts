@@ -22,6 +22,7 @@ export type {
   MatchConfig,
 } from './config/GameConfig.types';
 export { validateGameConfig } from './config/validateGameConfig';
+export type { LegendKind } from './content/legends/legends.types';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {
   MapDefinition,

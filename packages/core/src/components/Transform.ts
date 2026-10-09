@@ -1,8 +1,9 @@
 import type { Vec2 } from '../utils/geometry.types';
+import type { MutableVec2 } from '../utils/vec2.types';
 
 /** Where an entity is and how much room it takes. Position must always be a finite point. */
 export class Transform {
-  private currentPosition: Vec2;
+  private readonly currentPosition: MutableVec2;
 
   /**
    * @param position - Starting point in world units.
@@ -16,31 +17,34 @@ export class Transform {
       throw new Error(`Transform radius must be a positive number, got ${String(radius)}.`);
     }
 
-    this.currentPosition = Transform.checkedPoint(position);
+    Transform.assertFinite(position.x, position.y);
+    this.currentPosition = { x: position.x, y: position.y };
   }
 
-  /** The current position. */
+  /** The current position. Read it, but do not keep it: moves update it in place. */
   public get position(): Vec2 {
     return this.currentPosition;
   }
 
   /** Moves to `position`. */
   public moveTo(position: Vec2): void {
-    this.currentPosition = Transform.checkedPoint(position);
+    this.place(position.x, position.y);
   }
 
-  /** Moves by `delta` from the current position. */
+  /** Moves by `delta` from the current position, without allocating. */
   public moveBy(delta: Vec2): void {
-    this.moveTo({ x: this.currentPosition.x + delta.x, y: this.currentPosition.y + delta.y });
+    this.place(this.currentPosition.x + delta.x, this.currentPosition.y + delta.y);
   }
 
-  private static checkedPoint(point: Vec2): Vec2 {
-    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) {
-      throw new Error(
-        `Transform position must be finite, got (${String(point.x)}, ${String(point.y)}).`,
-      );
-    }
+  private place(x: number, y: number): void {
+    Transform.assertFinite(x, y);
+    this.currentPosition.x = x;
+    this.currentPosition.y = y;
+  }
 
-    return { x: point.x, y: point.y };
+  private static assertFinite(x: number, y: number): void {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      throw new Error(`Transform position must be finite, got (${String(x)}, ${String(y)}).`);
+    }
   }
 }

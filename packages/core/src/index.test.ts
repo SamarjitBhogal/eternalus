@@ -36,7 +36,11 @@ describe('@eternalus/core public API', () => {
   });
 
   it('runs a simulation from the default config', () => {
-    const sim = new core.Simulation(core.createDefaultGameConfig(), 1, new core.NullLogger());
+    const sim = new core.Simulation({
+      config: core.createDefaultGameConfig(),
+      seed: 1,
+      logger: new core.NullLogger(),
+    });
     sim.step();
     expect(sim.snapshot()).toEqual({ tick: 1, phase: 'countdown', entities: [] });
   });

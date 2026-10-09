@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { ContentCatalogue } from '../content/ContentCatalogue';
 import { EntityFactory } from '../entities/EntityFactory';
+import { EntityRegistry } from '../entities/EntityRegistry';
 import { GameState } from '../state/GameState';
 import { applyCommand } from './applyCommand';
 import type { Command } from './Command.types';
@@ -10,8 +12,6 @@ import { createDefaultCommandHandlers } from './defaultCommandHandlers';
 import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler';
 
 const NOT_YET_SUPPORTED: readonly Command[] = [
-  { type: 'move', actorId: 'entity-1', direction: { x: 0, y: -1 } },
-  { type: 'stop', actorId: 'entity-1' },
   { type: 'attack-target', actorId: 'entity-1', targetId: 'entity-2' },
   {
     type: 'cast-ability',
@@ -36,7 +36,7 @@ describe('createDefaultCommandHandlers', () => {
       state.events.on('command-rejected', ({ reason }) => reasons.push(reason));
       applyCommand(command, createDefaultCommandHandlers(), {
         state,
-        factory: new EntityFactory(),
+        factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])),
       });
       expect(reasons).toEqual(['not-supported']);
     },

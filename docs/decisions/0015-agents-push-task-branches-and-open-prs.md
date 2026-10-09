@@ -1,5 +1,5 @@
 ---
-title: 0013. Agents push task branches and open PRs
+title: 0015. Agents push task branches and open PRs
 description: Claude Code sessions may push their own task branch and open its pull request when the human asks, while force pushes, pushes to protected branches and merges stay human-only; read this before pushing from an agent session or changing the push rules in .claude/settings.json.
 audience: [humans, agents]
 status: active
@@ -16,7 +16,7 @@ related:
   ]
 ---
 
-# 0013. Agents push task branches and open PRs
+# 0015. Agents push task branches and open PRs
 
 - Status: accepted (product owner decision in the session F chat, 2026-10-07; accepted 2026-10-08)
 - Date: 2026-10-07
