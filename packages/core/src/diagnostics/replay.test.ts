@@ -73,8 +73,8 @@ const recordRandomMatch = (seed: number, ticks: number, commandEvery: number): R
   );
 };
 
-/** The 30,000-tick soak below needs more than Vitest's 5 s default on CI's Windows runners. */
-const SOAK_TIMEOUT_MS = 30_000;
+/** The phase 1 budget for the 30,000-tick soak below: under 20 s on CI (Vitest's default is 5 s). */
+const SOAK_TIMEOUT_MS = 20_000;
 
 describe('replay', () => {
   it(
