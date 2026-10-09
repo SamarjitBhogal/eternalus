@@ -322,3 +322,29 @@ The example below is fenced so it is not read as a real entry.
   "Documentation check passed."
 - Next step: review and merge PR #12. Follow-up: core now exports `SeededRandom`, so the client's
   `LcgRng` stand-in can be swapped at the `createRng` line in `main.tsx` (its own task).
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings — sholtzman + Claude Code
+
+- What was done: keybindings as data (`keybindings.ts`, presets `wasd`/`arrows`, `rebind` with
+  swap/replace, resets), `BindingResolver`, `InputMapper` → core `InputIntent` through a
+  `Projection` port, `KeyboardDevice`/`MouseDevice`/`FakeInputDevice` with the `InputDevice`
+  contract; the `PersistenceController` facade (settings only) over `StorageAdapter` and
+  `MemoryStorageAdapter` with its contract, `SettingsDtoV1` validation and quarantine;
+  `settingsSlice` body; `SettingsController` in `game/settings/` (owner sign-off DEC-27 after the
+  critic rated it better than the design); `KeyGlyph`, `Prompt`, `SettingsScreen` (tabs,
+  press-to-bind incl. mouse side buttons, conflict dialog, resets, audio/video/accessibility) and
+  `PauseOverlay`; `main.tsx`/`App.tsx` wiring after merging D's PR #12. Owner decisions
+  DEC-25…DEC-29: agents push task branches and open PRs (ADR 0013, accepted; `.claude/settings.json`
+  tightened after the critic), F's input layer is canonical over PR #19 (INBOX handover), snapshot
+  shape and conflict-free edits folded into 09 and 13. Fixed a memory-adapter bug (overlapping
+  transactions committed stale copies; the ordering test failed before the fix). Design docs 02,
+  09, 13, 14 updated with one "Implementation status" note each; sprint 1.5 boxes for keybindings
+  data and keyboard/mouse devices ticked. Pre-PR gate: critic passes 1–3 (not ready → ready →
+  ready), ponytail cuts 1 and 3 applied (−9 lines), cut 2 reverted for a build warning.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 295 passed (295)" (lines 98.69%); client "Tests 345
+  passed (345)" (statements 90.97%, branches 85.75%, lines 91.13%); "✓ built in 88ms";
+  "Documentation check passed."
+- Next step: push `feat/settings-keybindings` and open its PR into the phase branch (description
+  in `docs/changelog/pr-feat-settings-keybindings.md`); PR #19 adapts to F's input layer after
+  F merges; G mounts `<PauseOverlay />` in `MatchScreen`.
