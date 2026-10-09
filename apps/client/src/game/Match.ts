@@ -9,9 +9,14 @@ import {
 import type { Projection } from './engine/input/Projection.types';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
-import { BACKGROUND_COLOR, CAMERA_SMOOTHING, MAX_TICKS_PER_FRAME } from './Match.constants';
+import {
+  BACKGROUND_COLOR,
+  CAMERA_SMOOTHING,
+  MAX_TICKS_PER_FRAME,
+  MS_PER_SECOND,
+} from './Match.constants';
 import type { MatchDeps } from './Match.types';
-import { DefaultViewRegistry } from './views/DefaultViewRegistry';
+import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
@@ -75,7 +80,7 @@ export class Match implements LoopTarget {
     // Find the spawn point first: if the map has none, nothing has been subscribed yet.
     const spawnPoint = Match.strongholdOf(map, player.team);
     this.entities = new EntityLayer(
-      new DefaultViewRegistry((kind) => {
+      createDefaultViewRegistry((kind) => {
         logger.log(
           makeLogRecord(
             'WARN',
@@ -87,7 +92,7 @@ export class Match implements LoopTarget {
     );
     this.scene = new SceneView([new MapView(map), this.entities]);
     this.miniMap = new MiniMapView(map, this.scene);
-    const tickMs = 1000 / tickRate;
+    const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,

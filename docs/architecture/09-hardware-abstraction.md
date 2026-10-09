@@ -4,7 +4,7 @@ description: The ports-and-adapters layer that isolates the game from the browse
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-09-30
 tags: [architecture, hal, input, ports, adapters, keybindings]
 paths:
   [
@@ -276,31 +276,6 @@ layer is the seam:
 - What makes that true today: rule 1 (core has no DOM), rule 7 (one class touches the canvas),
   the `Command` stream (input is data), content by id (assets are looked up, never imported), and
   the contract suites (they become the acceptance tests for the new adapters).
-
-## 11. Implementation status
-
-The keyboard and mouse slice (branch `feat/player-input`) implements §2, §3 and §9 for the
-keyboard and mouse, with these interim differences:
-
-- `InputSnapshot` has `keys`, `keyLabels`, `mouseButtons` and `pointer`; `wheel` and `gamepads`
-  arrive with the actions and the device that need them. `InputDevice` has no `poll()` yet (both
-  devices are event-driven; the gamepad needs it). There is no `FakeInputDevice`; the
-  `describeInputDevice` contract suite (`engine/input/InputDevice.contract.ts`) runs for both
-  devices, and auto-repeat is tested in the keyboard's own tests (the mouse has none).
-- `InputMapper` indexes chords by `chordKey` itself (no injected `BindingResolver`, no exported
-  `chordKey` until the settings screen needs conflict detection) and has no `clientActions` yet.
-  `toIntent` projects the pointer through a `Projection` port that lives in `engine/input/`
-  with only `screenToWorld` (02 §3 lets `game/input/` import `engine/input/` types only);
-  `Match` implements it with its `Camera`. `ActionState` carries the snapshot's `pointer` so
-  `toIntent` can project it (13 §6.2's sketch has only the three action sets).
-- `DeviceIntentSource` (in `game/`, beside `Match`) merges the devices and feeds `Match` through
-  its `IntentSource` port. `Match` turns the intent's `move` into `move`/`stop` commands itself
-  and drops `aim` and `triggered` until core's `PlayerController` handles the `intent` command
-  (11 §4.1); see `INBOX.md`.
-- `useMatch`, not `Match`, releases the devices on `blur` and hidden `visibilitychange` (keeps
-  `Match` free of browser APIs, §10; sign-off asked in `INBOX.md`), and binds the `wasd`
-  preset until the settings screen supplies the player's saved bindings. A minimap click is
-  also an `attack` press until the minimap consumes its clicks (SCRUM-151).
 
 ## Related
 

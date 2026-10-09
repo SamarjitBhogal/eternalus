@@ -149,8 +149,21 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
   - (6) `packages/core/AGENTS.md` folder table: `content/` is "Data only", but it now also has
     `ContentCatalogue`, the validator and `loadDefaultContent()`. Proposed wording: "Definitions
     keyed by kebab-case id, plus the catalogue, its rules and the loader".
-  - (7) 03 §12 still says `Simulation` has an empty registry; PR #14 wires
-    `createDefaultEntityRegistry()` and `loadDefaultContent()`. Proposed: drop that line.
+  - (7) 03 §12 "Implementation status" is out of date, and PRs #14 and #17 leave it unchanged
+    until you approve new text. Proposed replacement for its bullets:
+    - `Simulation` takes `SimulationOptions` (`config`, `seed`, `logger`, `systems?`, `debug?`,
+      `content?`); `content` is a `DefinitionSource`, `loadDefaultContent(config.tickRate)` by
+      default. Its `EntityFactory` uses `createDefaultEntityRegistry()`; omitting `systems` gives
+      `DefaultSystemPipeline` (movement, death, invariants). No `exportReplay()` or `dispose()`.
+    - `move` and `stop` steer through `EntityStore.steer`; `attack-target`, `cast-ability`,
+      `intent` and `dev-set-controller` stay `not-supported` until their systems exist.
+    - `DeathSystem` removes only entities whose health reached 0 until `dev-remove-entity` is
+      routed through it (open below) and `SpawnSystem` exists.
+    - `Movement` works per tick: `advance()` accelerates along the heading with no `|dv|` clamp,
+      and without a heading slows by `acceleration` per tick instead of friction (10 §2);
+      impulses, friction and the clamp arrive with knockback (Phase 2).
+    - `GameState` keeps `recentCommands` and the seed for diagnostic reports; no `world`,
+      `teams` or `hordes` yet.
   - (8) The core lint (ADR 0013) comes back as its own PR with an ADR for your sign-off, encoding
     02 §2's per-folder import lists, not rings.
   - (9) 07 §13 still says shield bars stay in "source id order"; per your optional item they now
@@ -164,6 +177,50 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `apps/client/src/data/logging/`, where 15 §4 puts them; that folder is session F's, so F
       should know they exist. (2) `GameLoop`'s first frame only sets the time origin, so 08 §3's
       `runFrames(2, 16.7)` example gives 0 ticks, not 1 (recorded in 08 §11). OK to keep?
+
+- [ ] **Session C/H → Sam (2026-10-09, PRs #18 and #19): proposed "Implementation status" notes
+      for 08 (§11) and 09 (§11).** AGENTS.md asks for one, your #14 rule asks for approval first,
+      so the docs stay unchanged until you say yes. Interim differences in #18:
+  - `FrameScheduler`, `RafFrameScheduler`, `FakeFrameScheduler` and `GameLoop` live in
+    `game/engine/loop/`; the `Clock` is session D's `SessionClock`. `useMatch` stamps log
+    records with `performance.now()` until it is wired.
+  - `Camera` keeps `lookAt`/`visibleArea` and adds `track`, `zoomTo` (clamped), `contains` and
+    `worldToScreen`/`screenToWorld` with an explicit `Viewport`; `MinimapProjection` arrives
+    with the minimap work (SCRUM-151), which also draws entity markers.
+  - `ViewRegistry` resolves kind, then family, then `DefaultEntityView` and reports each
+    unknown kind once (built by `views/defaultViewRegistry.ts`); `LegendView` is a placeholder.
+  - `Match` takes the player's intent through an `IntentSource` port; no `MatchBridge`,
+    `PerfMonitor` or `MatchScreen` yet. `GameCanvas` owns the `Match` through `useMatch`. The
+    player's Legend spawns with `dev-spawn` until `SpawnSystem` exists.
+  - The first frame after `start()` only sets the time origin (asked below).
+  - `Match.destroy()` stops the loop and its subscription; `useMatch` destroys the injected
+    renderer and camera. `EntityLayer` does not cull yet.
+  - The log sinks live in `data/logging/` (15 §4); the overlay cannot read the ring buffer yet.
+  - `Canvas2dRenderer` scales X and Y separately, so a window that is not 16:9 stretches the
+    64 × 36 m view.
+
+  In #19 (input), 08 §11 would add that `Match` implements input's `Projection` port
+  (`screenToWorld` only) over the camera and takes the intent from `DeviceIntentSource`; and 09
+  §11 would record:
+  - `InputSnapshot` has `keys`, `keyLabels`, `mouseButtons` and `pointer`; `wheel` and
+    `gamepads` come with what needs them. No `poll()` and no `FakeInputDevice` yet; the
+    `describeInputDevice` contract suite runs for both devices.
+  - `InputMapper` indexes chords by `chordKey` itself (no injected `BindingResolver`) and has no
+    `clientActions` yet. `Projection` lives in `engine/input/` with only `screenToWorld`
+    (02 §3 lets `game/input/` import `engine/input/` types only). `ActionState` carries the
+    pointer so `toIntent` can project it.
+  - `Match` turns the intent's `move` into `move`/`stop` and drops `aim` and `triggered` until
+    core's `PlayerController` handles `intent` (11 §4.1).
+  - `useMatch` releases the devices on `blur`/hidden `visibilitychange` and binds the `wasd`
+    preset until settings supply saved bindings. A minimap click is also an `attack` press until
+    the minimap consumes its clicks (SCRUM-151).
+
+- [ ] **Session C → session F (2026-10-09, PR #19): `bridge/Binding.types.ts` now has the 13 §6.1
+      shapes.** `INPUT_ACTIONS` (same 21 ids; `InputAction` derives from it), and `InputChord` is
+      the union (keyboard `code`/`label`/`modifiers?`, mouse `button` 0–4, `gamepad`,
+      `gamepad-axis`). The defaults are in `game/input/keybindings.ts` (`DEFAULT_CHORDS`, presets
+      `wasd`/`arrows`), and `InputMapper.setBindings` takes the saved bindings. `settingsSlice`,
+      `events.ts` and `hudSlice` compile unchanged.
 
 ## Feedback
 

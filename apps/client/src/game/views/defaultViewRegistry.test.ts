@@ -2,7 +2,7 @@ import type { EntitySnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { DefaultEntityView } from './DefaultEntityView';
-import { DefaultViewRegistry } from './DefaultViewRegistry';
+import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { LegendView } from './LegendView';
 import { ViewRegistry } from './ViewRegistry';
 
@@ -16,9 +16,9 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   health: null,
 });
 
-describe('DefaultViewRegistry', () => {
+describe('createDefaultViewRegistry', () => {
   it('draws every Legend with the Legend view and anything else with the default view', () => {
-    const registry = new DefaultViewRegistry();
+    const registry = createDefaultViewRegistry();
 
     expect(registry).toBeInstanceOf(ViewRegistry);
     expect(registry.viewFor(entity('warrior', 'legend'))).toBeInstanceOf(LegendView);
@@ -30,7 +30,7 @@ describe('DefaultViewRegistry', () => {
   it('passes unknown kinds to the reporter it is given', () => {
     const unknown: string[] = [];
 
-    new DefaultViewRegistry((kind) => unknown.push(kind)).viewFor(
+    createDefaultViewRegistry((kind) => unknown.push(kind)).viewFor(
       entity('projectile', 'projectile'),
     );
 
