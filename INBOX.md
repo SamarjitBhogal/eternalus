@@ -137,8 +137,21 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
   - (6) `packages/core/AGENTS.md` folder table: `content/` is "Data only", but it now also has
     `ContentCatalogue`, the validator and `loadDefaultContent()`. Proposed wording: "Definitions
     keyed by kebab-case id, plus the catalogue, its rules and the loader".
-  - (7) 03 §12 still says `Simulation` has an empty registry; PR #14 wires
-    `createDefaultEntityRegistry()` and `loadDefaultContent()`. Proposed: drop that line.
+  - (7) 03 §12 "Implementation status" is out of date, and PRs #14 and #17 leave it unchanged
+    until you approve new text. Proposed replacement for its bullets:
+    - `Simulation` takes `SimulationOptions` (`config`, `seed`, `logger`, `systems?`, `debug?`,
+      `content?`); `content` is a `DefinitionSource`, `loadDefaultContent(config.tickRate)` by
+      default. Its `EntityFactory` uses `createDefaultEntityRegistry()`; omitting `systems` gives
+      `DefaultSystemPipeline` (movement, death, invariants). No `exportReplay()` or `dispose()`.
+    - `move` and `stop` steer through `EntityStore.steer`; `attack-target`, `cast-ability`,
+      `intent` and `dev-set-controller` stay `not-supported` until their systems exist.
+    - `DeathSystem` removes only entities whose health reached 0 until `dev-remove-entity` is
+      routed through it (open below) and `SpawnSystem` exists.
+    - `Movement` works per tick: `advance()` accelerates along the heading with no `|dv|` clamp,
+      and without a heading slows by `acceleration` per tick instead of friction (10 §2);
+      impulses, friction and the clamp arrive with knockback (Phase 2).
+    - `GameState` keeps `recentCommands` and the seed for diagnostic reports; no `world`,
+      `teams` or `hordes` yet.
   - (8) The core lint (ADR 0013) comes back as its own PR with an ADR for your sign-off, encoding
     02 §2's per-folder import lists, not rings.
   - (9) 07 §13 still says shield bars stay in "source id order"; per your optional item they now

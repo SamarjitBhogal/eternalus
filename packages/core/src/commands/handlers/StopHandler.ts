@@ -1,7 +1,6 @@
 import type { Command, CommandRejectReason } from '../Command.types';
 import type { CommandContext, CommandHandler } from '../CommandHandler.types';
-
-const NO_HEADING = { x: 0, y: 0 };
+import { NO_HEADING } from './StopHandler.constants';
 
 /** Drops an entity's heading; `MovementSystem` then slows it to a stop, one tick at a time. */
 export class StopHandler implements CommandHandler<'stop'> {
