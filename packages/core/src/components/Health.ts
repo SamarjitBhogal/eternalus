@@ -2,7 +2,7 @@ import type { DamageBreakdown, MutableShieldBar, ShieldBar } from './Health.type
 
 /**
  * Hit points: a health bar plus layered shield bars (one per living allied BuffTower). Damage
- * drains the shield bars first, in source id order, then health. `current` always stays between 0
+ * drains the shield bars first, in tower creation order, then health. `current` always stays between 0
  * and `max`, and every bar between 0 and its own `max`.
  */
 export class Health {
