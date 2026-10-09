@@ -6,7 +6,13 @@ status: draft
 owner: sholtzman
 last-reviewed: 2026-10-09
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
-paths: ['apps/client/src/ui/**', 'apps/client/src/bridge/**', 'apps/client/src/game/input/**']
+paths:
+  [
+    'apps/client/src/ui/**',
+    'apps/client/src/bridge/**',
+    'apps/client/src/game/input/**',
+    'apps/client/src/game/settings/**',
+  ]
 related:
   [
     'docs/architecture/08-game-engine.md',
@@ -479,8 +485,6 @@ and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver
 - No presets on the settings screen yet (`PRESETS` exists in `keybindings.ts`) and no
   `clientActions`: `Match` reads client-only edges from `ActionState.pressed`.
 - The developer-menu default is F1 (Sprint 1 brief), not Backquote.
-- Settings and pause labels sit in `ui/screens/SettingsScreen.strings.ts` and
-  `ui/hud/PauseOverlay.strings.ts` until they join `ui/strings.ts` (§7).
 - Boot does not wait for the settings: the store has no bindings until the first `settings`
   event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
   or the `degraded` path of [14](14-persistence-and-resources.md) §10.

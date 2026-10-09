@@ -113,11 +113,6 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       Also re-read bindings on each `settings` bus event (`mapper.setBindings(s.bindings)`) and
       toggle the pause overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`).
 
-- [ ] **F → whoever next edits `ui/strings.ts` (2026-10-08): one strings file.** Fold
-      `ui/screens/SettingsScreen.strings.ts` and `ui/hud/PauseOverlay.strings.ts` into `STRINGS`
-      (architecture 13 §7), reuse `STRINGS.back`, and point `KeyGlyph`'s unbound dash at the same
-      entry. Left out of F's PR because `ui/strings.ts` is session D's file.
-
 ## Feedback
 
 - [ ] _(none yet)_

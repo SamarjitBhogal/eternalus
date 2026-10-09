@@ -76,7 +76,8 @@ export interface InputDevice {
 ```
 
 - **`KeyboardDevice`** keys on `KeyboardEvent.code` (physical key, layout independent: the right
-  choice for gamepad-like controls) and records `KeyboardEvent.key` as the label for prompts;
+  choice for gamepad-like controls); the label prompts show is captured into the chord at bind
+  time (13 §6.3), so the device keeps no labels;
   tracks `keydown`/`keyup` rather than auto-repeat (`event.repeat` is ignored); calls
   `preventDefault()` only for bound codes and never for `Tab`, `F5`, `F12` or Ctrl/Meta chords;
   falls back to `key` when `code === ''` (mobile virtual keyboards).
@@ -167,8 +168,8 @@ Rebinding is pure data flow: the settings screen enters listen mode, the next `k
 (ignoring `repeat` and `Escape`), `pointerdown` or gamepad pressed-edge becomes a chord, conflicts
 are detected with a `Map<chordKey, InputAction>`, and the new `Binding[]` is saved as a versioned
 DTO and pushed to `InputMapper.setBindings`. Prompts never hard-code keys: `<KeyGlyph
-action="ability-1" />` renders the label (`keyLabels` for keyboard, a glyph table by gamepad
-family) of the current binding, so tutorials update themselves (requirements doc). The mouse side
+action="ability-1" />` renders the label of the current binding (captured at bind time for
+keyboard and mouse, a glyph table by gamepad family), so tutorials update themselves (requirements doc). The mouse side
 button for a gadget is `{ device: 'mouse', button: 3 }`, no special case.
 
 ## 4. Display
