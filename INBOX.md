@@ -86,14 +86,21 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       violations with the `invariant-violated` `DiagnosticEvent` already declared (15 §4–§5).
       (7) `state/GameEvents.types.ts`: import `ShieldBar` from `components/Health.types.ts` once
       `Health` has shields.
+      **Status (2026-10-08):** PR #14 does (1)'s registry, (4) for shields, colliders and vision,
+      (5) and (7). PR #17 (owner claudiodh) does the rest of (1), (2), (4)'s movement heading and
+      (6). (3) waits on Sam: routing `dev-remove-entity` through `DeathSystem` changes the
+      recorded replay checkpoints (question in PR #17).
 
-- [ ] **Session C → Sam (2026-10-07, PR #14): 3 optional ideas, no pressure.** Yes, no or "not
-      now" are all fine; a no means I switch back to the documented design. 1. **One `EntityModule` per family** instead of one registry file: people adding kinds to
-      different families never edit the same file (02 §4/§9, 04 §6). 2. **`ContentValidator` with rule classes** instead of `validateContent()`: a new rule is a
-      new small class, and all errors show at once (02 §2). 3. **`applyDamage` returns `{ toShields, toBase, overflow }`** so damage numbers and stats can
-      read it. Happy to drop it if it gets in #13's way (07 §2).
-
-      Also proposed: ADR 0013 (core module rings lint).
+- [ ] **Session C → Sam (2026-10-08, PR #14 review): proposed, design text unchanged until you
+      answer.** Each one is how the code works today; say yes (I update the doc) or no (I change
+      the code). 1. `passiveOptions`: a class chooses between passives (Magus: Studious or Necromancy),
+      while 04 §5 has a single `passiveId`. 2. `obstacleType`: `ObstacleDefinition.kind` stays `'obstacle'` (the entity class) and
+      tree/rock/bridge go to `obstacleType`. It fixes the conflict between 04 §1/§5 and 07 §9. 3. `Collider` fields: 04 §3 → 10 §4's `isStatic`/`isEnabled`/`isUnbreakable`. 4. Shield naming: 04 §3 → 07 §2's `shields`/`addShield`/`removeShield`. 5. **Doc conflict:** 10 §4 puts collider shapes in `physics/`, but 02 §2 forbids
+      `components/` → `physics/`. Meanwhile they stay in `components/Collider.types.ts`. 6. `packages/core/AGENTS.md` folder table: `content/` is "Data only", but it now also has
+      `ContentCatalogue`, the validator and `loadDefaultContent()`. Proposed wording:
+      "Definitions keyed by kebab-case id, plus the catalogue, its rules and the loader". 7. 03 §12 still says `Simulation` has an empty registry; PR #14 wires
+      `createDefaultEntityRegistry()` and `loadDefaultContent()`. Proposed: drop that line. 8. The core lint (ADR 0013) comes back as its own PR with an ADR for your sign-off, encoding
+      02 §2's per-folder import lists, not rings.
 
 ## Feedback
 
@@ -101,6 +108,14 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Done
 
+- 2026-10-08 — **Session C's optional ideas** answered in the PR #14 review and done: one
+  `EntityModule` per family declined (back to `createDefaultEntityRegistry()`, DEC-21);
+  `ContentValidator` with rule classes accepted with fixes (rules get the catalogue, listed in
+  `content/defaultContentRules.ts`, run once from `loadDefaultContent()`, DEC-22, folded into 04 §5
+  and 05 §2–§3); `applyDamage` returning `{ toShields, toBase, overflow }` accepted (DEC-23, 07 §2);
+  ADR 0013 split into its own PR (DEC-24). Recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md`. Branch
+  `feat/entity-collider-and-concrete-kinds` (PR #14).
 - 2026-10-07 — **Session B's simulation kernel items** signed off and done: the snapshot shape
   (DEC-17) and the `makeLogRecord` options object (DEC-18) folded into 03 §5 and 15 §4; the
   determinism lint (DEC-19, ADR 0012) added; the kernel's design differences (DEC-20) folded into

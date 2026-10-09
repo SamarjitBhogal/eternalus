@@ -48,4 +48,23 @@ describe('ContentValidator', () => {
       new ContentValidator([]).validate(LEGEND_CLASSES);
     }).not.toThrow();
   });
+
+  it('gives every rule the whole catalogue, so a rule can check the ids a definition names', () => {
+    class KnownMagusRule implements UnitDefinitionRule {
+      public check(
+        definition: UnitDefinition,
+        content: ContentCatalogue<UnitDefinition>,
+      ): readonly string[] {
+        return content.has('magus') ? [] : [`${definition.id} needs a magus to revive it`];
+      }
+    }
+    const validator = new ContentValidator([new KnownMagusRule()]);
+
+    expect(() => {
+      validator.validate(LEGEND_CLASSES);
+    }).not.toThrow();
+    expect(() => {
+      validator.validate(new ContentCatalogue([LEGEND_CLASSES.get('warrior')]));
+    }).toThrow('warrior: warrior needs a magus to revive it');
+  });
 });

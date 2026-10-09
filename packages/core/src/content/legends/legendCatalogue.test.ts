@@ -3,12 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { LEGEND_CLASSES } from './legendCatalogue';
 import type { LegendKind } from './legends.types';
 
-const TICKS_PER_SECOND = 30;
-
-/** Ticks of constant acceleration from a standstill to top speed. */
-const ticksToTopSpeed = (kind: LegendKind): number => {
+/** Seconds of constant acceleration from a standstill to top speed (content is per second). */
+const secondsToTopSpeed = (kind: LegendKind): number => {
   const { maxSpeed, acceleration } = LEGEND_CLASSES.get(kind).movement;
-  return Math.ceil(maxSpeed / acceleration);
+  return maxSpeed / acceleration;
 };
 
 describe('LEGEND_CLASSES', () => {
@@ -52,13 +50,13 @@ describe('LEGEND_CLASSES', () => {
 
     expect(sentinel.movement.maxSpeed).toBeGreaterThan(warrior.movement.maxSpeed);
     expect(sentinel.movement.maxSpeed).toBeGreaterThan(magus.movement.maxSpeed);
-    expect(ticksToTopSpeed('sentinel') / TICKS_PER_SECOND).toBeGreaterThanOrEqual(30);
-    expect(ticksToTopSpeed('sentinel') / TICKS_PER_SECOND).toBeLessThanOrEqual(60);
+    expect(secondsToTopSpeed('sentinel')).toBeGreaterThanOrEqual(30);
+    expect(secondsToTopSpeed('sentinel')).toBeLessThanOrEqual(60);
   });
 
   it('gets the Warrior to top speed fastest', () => {
-    expect(ticksToTopSpeed('warrior')).toBeLessThan(ticksToTopSpeed('magus'));
-    expect(ticksToTopSpeed('magus')).toBeLessThan(ticksToTopSpeed('sentinel'));
+    expect(secondsToTopSpeed('warrior')).toBeLessThan(secondsToTopSpeed('magus'));
+    expect(secondsToTopSpeed('magus')).toBeLessThan(secondsToTopSpeed('sentinel'));
   });
 
   it('gives each class the weapon bias, damage focus and pick-up style from 01-classes', () => {

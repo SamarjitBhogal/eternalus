@@ -1,3 +1,4 @@
+import type { ShieldBar } from '../components/Health.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
@@ -12,16 +13,6 @@ type DamageSource = {
   readonly kind: 'weapon' | 'ability' | 'status' | 'structure' | 'environment';
   /** The weapon, ability, status or structure definition id. */
   readonly definitionId: string;
-};
-
-/**
- * One shield layer on a structure or unit (architecture 07 §2). Its design home is
- * `components/Health.types.ts` (session C); import it from there once `Health` has shields.
- */
-type ShieldBar = {
-  readonly sourceId: EntityId;
-  readonly current: number;
-  readonly max: number;
 };
 
 /** A horde's announcement payload. */

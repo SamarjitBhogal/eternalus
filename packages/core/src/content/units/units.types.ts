@@ -1,21 +1,21 @@
-/** How a unit moves, in world units (metres) and ticks. All values must be positive. */
+import type { EntityDefinitionBase } from '../EntityDefinition.types';
+
+/**
+ * How a unit moves. All values must be positive. Content files author speeds per second (the game
+ * doc's "N m/s"); `loadDefaultContent` converts them to per tick once, so systems only see ticks
+ * (architecture 03 §10, 10 §2).
+ */
 export type MovementProfile = {
-  /** Top speed in world units per tick. */
+  /** Top speed: metres per second in content files, metres per tick once loaded. */
   readonly maxSpeed: number;
-  /** Speed gained per tick while accelerating. */
+  /** Speed gained while accelerating: m/s² in content files, metres per tick² once loaded. */
   readonly acceleration: number;
   /** How hard the unit is to push (knockback, Sentinel sprint-through). */
   readonly mass: number;
 };
 
 /** What every unit definition (Legend or mob) has. Shared, immutable and keyed by `id`. */
-export type UnitDefinition = {
-  /** Kebab-case content id; never renamed once used. */
-  readonly id: string;
-  /** Which concrete entity class builds it (the `EntityRegistry` key). */
-  readonly kind: string;
-  /** The name players see. Renaming a unit changes only this. */
-  readonly displayName: string;
+export type UnitDefinition = EntityDefinitionBase & {
   /** Full base health. */
   readonly baseHealth: number;
   /** Collider circle radius in world units. */

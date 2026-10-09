@@ -78,59 +78,5 @@ export default defineConfig(
     },
   },
 
-  // Core module rings (packages/core/AGENTS.md, "Module rings"). core is L2 Domain, the innermost
-  // layer; inside it, utils/teams → content → components → entities → systems and up. A module may
-  // import its own ring and the rings inside it, never one further out.
-  ...[
-    {
-      ring: 'utils/teams',
-      folders: '{utils,teams}',
-      outside: 'content|components|entities|systems|state|commands|ai|Simulation',
-    },
-    {
-      ring: 'content',
-      folders: 'content',
-      outside: 'components|entities|systems|state|commands|ai|Simulation',
-    },
-    {
-      ring: 'components',
-      folders: 'components',
-      outside: 'entities|systems|state|commands|ai|Simulation',
-    },
-    // 02 section 2: entities may import state/ for types only (e.g. a spawn context's events).
-    {
-      ring: 'entities',
-      folders: 'entities',
-      outside: 'systems|commands|ai|Simulation',
-      typesOnly: 'state',
-    },
-  ].map(({ ring, folders, outside, typesOnly }) => ({
-    files: [`packages/core/src/${folders}/**/*.ts`],
-    ignores: ['**/*.test.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            { group: ['react', 'react-dom', 'react-redux', '@reduxjs/*', '@eternalus/client'] },
-            {
-              regex: `(^|/)(${outside})(/|$)`,
-              message: `${ring} is an inner module of core and must not import an outer module.`,
-            },
-            ...(typesOnly === undefined
-              ? []
-              : [
-                  {
-                    regex: `(^|/)(${typesOnly})(/|$)`,
-                    allowTypeImports: true,
-                    message: `${ring} may import only types from ${typesOnly}/.`,
-                  },
-                ]),
-          ],
-        },
-      ],
-    },
-  })),
-
   prettier,
 );

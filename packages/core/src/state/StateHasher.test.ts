@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
 import { GameState } from './GameState';
@@ -18,6 +20,18 @@ class Soldier extends Entity {
     this.addComponent(new Health(100));
     this.addComponent(new TeamMembership('light'));
     this.addComponent(new Movement({ maxSpeed: 2, acceleration: 0.5, mass: 1 }));
+  }
+}
+
+class Scout extends Entity {
+  public readonly kind = 'scout';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Health(100));
+    this.addComponent(new Movement({ maxSpeed: 2, acceleration: 0.5, mass: 1 }));
+    this.addComponent(new Collider({ kind: 'circle', radius: 0.5 }, 'unit'));
+    this.addComponent(new Vision(10));
   }
 }
 
@@ -90,6 +104,37 @@ describe('StateHasher', () => {
     const bare = new Bare('entity-2', 'bare-definition');
     bare.spawn({});
     state.entities.add(bare);
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it.each<[string, (scout: Scout) => void]>([
+    [
+      'a shield bar',
+      (scout) => {
+        scout.getComponent(Health).addShield('buff-tower-1', 50);
+      },
+    ],
+    [
+      'a collider being disabled',
+      (scout) => {
+        scout.getComponent(Collider).disable();
+      },
+    ],
+    [
+      'a reveal',
+      (scout) => {
+        scout.getComponent(Vision).revealUntil(90);
+      },
+    ],
+  ])('changes when %s changes on an entity that has it', (_, change) => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const scout = new Scout('entity-1', 'scout-definition');
+    scout.spawn({});
+    state.entities.add(scout);
+    const before = hasher.hash(state);
+
+    change(scout);
+
     expect(hasher.hash(state)).not.toBe(before);
   });
 });

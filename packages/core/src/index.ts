@@ -22,16 +22,7 @@ export type {
   MatchConfig,
 } from './config/GameConfig.types';
 export { validateGameConfig } from './config/validateGameConfig';
-export { LEGEND_CLASSES } from './content/legends/legendCatalogue';
-export type {
-  DamageFocus,
-  DefaultActionId,
-  LegendDefinition,
-  LegendKind,
-  PassiveId,
-  PickUpStyle,
-  WeaponBias,
-} from './content/legends/legends.types';
+export type { LegendKind } from './content/legends/legends.types';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {
   MapDefinition,

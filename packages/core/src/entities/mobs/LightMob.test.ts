@@ -4,7 +4,7 @@ import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
 import { Movement } from '../../components/Movement';
 import { Vision } from '../../components/Vision';
-import { UNIT_DEFINITIONS } from '../../content/units/unitDefinitions';
+import { MOB_DEFINITIONS } from '../../content/mobs/mobCatalogue';
 import { Mob } from '../Mob';
 import { Unit } from '../Unit';
 import { LightMob } from './LightMob';
@@ -20,7 +20,7 @@ describe('LightMob', () => {
   });
 
   it('builds the training dummy with the stats of its definition', () => {
-    const definition = UNIT_DEFINITIONS.get('training-dummy');
+    const definition = MOB_DEFINITIONS.get('training-dummy');
     const dummy = new LightMob('entity-1', 'training-dummy');
 
     dummy.spawn({ definition, position: { x: 0, y: 0 }, team: 'neutral' });
@@ -29,17 +29,5 @@ describe('LightMob', () => {
     expect(dummy.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
     expect(dummy.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
     expect(dummy.getComponent(Vision).radius).toBe(definition.visionRadius);
-  });
-
-  it('refuses a Legend definition', () => {
-    const entity = new LightMob('entity-1', 'warrior');
-
-    expect(() => {
-      entity.spawn({
-        definition: UNIT_DEFINITIONS.get('warrior'),
-        position: { x: 0, y: 0 },
-        team: 'light',
-      });
-    }).toThrow('got definition "warrior" (warrior)');
   });
 });

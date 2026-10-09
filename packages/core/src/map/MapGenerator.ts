@@ -1,5 +1,5 @@
 import type { MapDefinition } from '../content/maps/maps.types';
-import { deepFreeze } from './deepFreeze';
+import { deepFreeze } from '../utils/deepFreeze';
 import { MapBuilder } from './MapBuilder';
 import { MAP_GENERATOR_DEFAULTS, MAX_SEED } from './MapGenerator.constants';
 import { MapGenerationError } from './MapGenerationError';

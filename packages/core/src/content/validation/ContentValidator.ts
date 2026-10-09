@@ -8,7 +8,7 @@ import type { UnitDefinitionRule } from './ContentValidator.types';
  * rule at once.
  *
  * @remarks The validator knows no rule in particular (dependency inversion): rules are injected,
- * so adding a rule is a new `UnitDefinitionRule` class and one line where the rules are listed.
+ * so adding a rule is a new `UnitDefinitionRule` class and one line in `defaultContentRules.ts`.
  */
 export class ContentValidator {
   /**
@@ -27,7 +27,9 @@ export class ContentValidator {
     const problems = catalogue
       .all()
       .flatMap((definition) =>
-        this.rules.flatMap((rule) => rule.check(definition).map((m) => `${definition.id}: ${m}`)),
+        this.rules.flatMap((rule) =>
+          rule.check(definition, catalogue).map((m) => `${definition.id}: ${m}`),
+        ),
       );
 
     if (problems.length > 0) {
