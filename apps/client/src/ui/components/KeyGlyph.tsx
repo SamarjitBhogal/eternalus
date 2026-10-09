@@ -3,12 +3,10 @@ import type { ReactElement } from 'react';
 import type { InputAction } from '../../bridge/Binding.types';
 import { useAppSelector } from '../../bridge/hooks';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
+import { STRINGS } from '../strings';
 import styles from './KeyGlyph.module.css';
 
 const { selectBindingLabel } = settingsSlice.selectors;
-
-/** The text shown for an action that has no binding. */
-const UNBOUND = '—';
 
 /**
  * The key or button currently bound to `action`, as a `<kbd>`: `<KeyGlyph action="ability-1"/>`.
@@ -16,5 +14,5 @@ const UNBOUND = '—';
  */
 export function KeyGlyph({ action }: { readonly action: InputAction }): ReactElement {
   const label = useAppSelector((state) => selectBindingLabel(state, action));
-  return <kbd className={styles.glyph}>{label ?? UNBOUND}</kbd>;
+  return <kbd className={styles.glyph}>{label ?? STRINGS.unbound}</kbd>;
 }

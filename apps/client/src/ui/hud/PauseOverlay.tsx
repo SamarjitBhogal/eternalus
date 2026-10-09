@@ -5,7 +5,7 @@ import { useAppSelector } from '../../bridge/hooks';
 import { Button } from '../components/Button';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import styles from './PauseOverlay.module.css';
-import { PAUSE_STRINGS as STRINGS } from './PauseOverlay.strings';
+import { STRINGS } from '../strings';
 
 /**
  * The in-match pause overlay: Resume, Settings (the settings screen embedded) and Leave match.
@@ -23,7 +23,7 @@ export function PauseOverlay(): ReactElement | null {
         role="dialog"
         aria-modal="true"
         aria-labelledby={overlay === 'pause' ? titleId : undefined}
-        aria-label={overlay === 'pause' ? undefined : STRINGS.settings}
+        aria-label={overlay === 'pause' ? undefined : STRINGS.pause.settings}
         className={styles.dialog}
       >
         {overlay === 'settings' ? (
@@ -31,7 +31,7 @@ export function PauseOverlay(): ReactElement | null {
         ) : (
           <>
             <h2 id={titleId} className={styles.title}>
-              {STRINGS.title}
+              {STRINGS.pause.title}
             </h2>
             <div className={styles.actions}>
               <Button
@@ -39,21 +39,21 @@ export function PauseOverlay(): ReactElement | null {
                   emitIntent({ kind: 'close-overlay' });
                 }}
               >
-                {STRINGS.resume}
+                {STRINGS.pause.resume}
               </Button>
               <Button
                 onClick={() => {
                   emitIntent({ kind: 'open-overlay', overlay: 'settings' });
                 }}
               >
-                {STRINGS.settings}
+                {STRINGS.pause.settings}
               </Button>
               <Button
                 onClick={() => {
                   emitIntent({ kind: 'leave-match' });
                 }}
               >
-                {STRINGS.leave}
+                {STRINGS.pause.leave}
               </Button>
             </div>
           </>

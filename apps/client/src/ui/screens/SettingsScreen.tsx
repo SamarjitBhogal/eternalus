@@ -4,15 +4,16 @@ import { emitIntent } from '../../bridge/eventBus';
 import { Button } from '../components/Button';
 import { Panel } from '../components/Panel';
 import { ScreenFrame } from '../components/ScreenFrame';
+import { STRINGS } from '../strings';
 import type { ScreenProps } from './screen.types';
-import {
-  SETTINGS_STRINGS as STRINGS,
-  SETTINGS_TABS,
-  type SettingsTab,
-} from './SettingsScreen.strings';
 import styles from './SettingsScreen.module.css';
 import { SettingsScreenControls } from './SettingsScreenControls';
 import { SettingsScreenOptions } from './SettingsScreenOptions';
+
+/** The sections, in tab order. */
+const TABS = ['controls', 'audio', 'video', 'accessibility'] as const;
+
+type SettingsTab = (typeof TABS)[number];
 
 /**
  * Settings: Controls (press-to-bind), Audio, Video and Accessibility tabs. The menu shows it as a
@@ -26,9 +27,9 @@ export function SettingsScreen({
   const tabId = (each: SettingsTab): string => `${id}-${each}`;
 
   const panel = (
-    <Panel title={STRINGS.title}>
-      <div role="tablist" aria-label={STRINGS.tablist} className={styles.tabs}>
-        {SETTINGS_TABS.map((each) => (
+    <Panel title={STRINGS.settings.title}>
+      <div role="tablist" aria-label={STRINGS.settings.tablist} className={styles.tabs}>
+        {TABS.map((each) => (
           <button
             key={each}
             id={tabId(each)}
@@ -41,7 +42,7 @@ export function SettingsScreen({
               setTab(each);
             }}
           >
-            {STRINGS.tabs[each]}
+            {STRINGS.settings.tabs[each]}
           </button>
         ))}
       </div>

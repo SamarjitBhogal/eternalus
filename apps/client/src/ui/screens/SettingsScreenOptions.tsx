@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
 import { type SettingsPatch, settingsSlice } from '../../bridge/slices/settingsSlice';
-import { SETTINGS_STRINGS as STRINGS, type SettingsTab } from './SettingsScreen.strings';
+import { STRINGS } from '../strings';
 import styles from './SettingsScreenOptions.module.css';
 
 const { selectAccessibility, selectAudio, selectVideo } = settingsSlice.selectors;
@@ -23,7 +23,7 @@ function update(patch: SettingsPatch): void {
 export function SettingsScreenOptions({
   tab,
 }: {
-  readonly tab: Exclude<SettingsTab, 'controls'>;
+  readonly tab: 'audio' | 'video' | 'accessibility';
 }): ReactElement {
   const audio = useAppSelector(selectAudio);
   const video = useAppSelector(selectVideo);
@@ -34,7 +34,7 @@ export function SettingsScreenOptions({
       <div className={styles.options}>
         {VOLUMES.map((field) => (
           <label key={field} className={styles.field}>
-            <span>{STRINGS.volume[field]}</span>
+            <span>{STRINGS.settings.volume[field]}</span>
             <input
               type="range"
               min={0}
@@ -55,7 +55,7 @@ export function SettingsScreenOptions({
     return (
       <div className={styles.options}>
         <label className={styles.field}>
-          <span>{STRINGS.fullscreen}</span>
+          <span>{STRINGS.settings.fullscreen}</span>
           <input
             type="checkbox"
             checked={video.fullscreen}
@@ -65,7 +65,7 @@ export function SettingsScreenOptions({
           />
         </label>
         <label className={styles.field}>
-          <span>{STRINGS.renderScale}</span>
+          <span>{STRINGS.settings.renderScale}</span>
           <select
             value={video.renderScale}
             onChange={(event) => {
@@ -85,7 +85,7 @@ export function SettingsScreenOptions({
   return (
     <div className={styles.options}>
       <label className={styles.field}>
-        <span>{STRINGS.reduceMotion}</span>
+        <span>{STRINGS.settings.reduceMotion}</span>
         <input
           type="checkbox"
           checked={accessibility.reduceMotion}
@@ -95,7 +95,7 @@ export function SettingsScreenOptions({
         />
       </label>
       <label className={styles.field}>
-        <span>{STRINGS.colourBlindMode}</span>
+        <span>{STRINGS.settings.colourBlindMode}</span>
         <input
           type="checkbox"
           checked={accessibility.colourBlindMode}

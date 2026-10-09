@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
-import { ACTION_LABELS, SETTINGS_STRINGS as STRINGS } from './SettingsScreen.strings';
+import { ACTION_LABELS, STRINGS } from '../strings';
 import styles from './SettingsScreenControls.module.css';
 import { CAPTURE_EXEMPT, useBindingCapture } from './useBindingCapture';
 
@@ -46,7 +46,7 @@ export function SettingsScreenControls(): ReactElement {
               >
                 <span className={styles.action}>{ACTION_LABELS[action]}</span>
                 <span className={styles.chords}>
-                  {state.step === 'listening' && isCapturing && STRINGS.listening}
+                  {state.step === 'listening' && isCapturing && STRINGS.settings.listening}
                   {pending?.action === action && (
                     <kbd className={styles.chord}>{pending.chord.label}</kbd>
                   )}
@@ -63,24 +63,29 @@ export function SettingsScreenControls(): ReactElement {
               <button
                 type="button"
                 className={styles.reset}
-                aria-label={STRINGS.resetLabel(ACTION_LABELS[action])}
+                aria-label={STRINGS.settings.resetLabel(ACTION_LABELS[action])}
                 {...exempt}
                 onClick={() => {
                   emitIntent({ kind: 'reset-bindings', action });
                 }}
               >
-                {STRINGS.reset}
+                {STRINGS.settings.reset}
               </button>
             </li>
           );
         })}
       </ul>
       {pending !== null && (
-        <div role="alertdialog" aria-label={STRINGS.title} className={styles.dialog} {...exempt}>
+        <div
+          role="alertdialog"
+          aria-label={STRINGS.settings.title}
+          className={styles.dialog}
+          {...exempt}
+        >
           <p>
             {conflict === null
-              ? STRINGS.confirm
-              : STRINGS.conflict(pending.chord.label, ACTION_LABELS[conflict])}
+              ? STRINGS.settings.confirm
+              : STRINGS.settings.conflict(pending.chord.label, ACTION_LABELS[conflict])}
           </p>
           {conflict === null ? (
             <button
@@ -90,7 +95,7 @@ export function SettingsScreenControls(): ReactElement {
                 capture.save('swap');
               }}
             >
-              {STRINGS.save}
+              {STRINGS.settings.save}
             </button>
           ) : (
             <>
@@ -101,7 +106,7 @@ export function SettingsScreenControls(): ReactElement {
                   capture.save('swap');
                 }}
               >
-                {STRINGS.swap}
+                {STRINGS.settings.swap}
               </button>
               <button
                 type="button"
@@ -109,12 +114,12 @@ export function SettingsScreenControls(): ReactElement {
                   capture.save('replace');
                 }}
               >
-                {STRINGS.replace}
+                {STRINGS.settings.replace}
               </button>
             </>
           )}
           <button type="button" onClick={capture.cancel}>
-            {STRINGS.cancel}
+            {STRINGS.settings.cancel}
           </button>
         </div>
       )}
@@ -126,7 +131,7 @@ export function SettingsScreenControls(): ReactElement {
           emitIntent({ kind: 'reset-bindings', action: null });
         }}
       >
-        {STRINGS.resetAll}
+        {STRINGS.settings.resetAll}
       </button>
     </div>
   );

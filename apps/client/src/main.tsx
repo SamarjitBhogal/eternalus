@@ -1,3 +1,4 @@
+import { type Logger, makeLogRecord, NullLogger } from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -10,8 +11,6 @@ import { PersistenceController } from './data/persistence/PersistenceController'
 import { placeholderCatalogue } from './game/content/placeholderCatalogue';
 import { PLACEHOLDER_MATCH_CONFIG, PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
-import { type Logger, makeLogRecord, NullLogger } from '@eternalus/core';
-
 import { GameCanvas } from './game/GameCanvas';
 import { INPUT_ACTIONS } from './game/input/keybindings';
 import { SettingsController } from './game/settings/SettingsController';

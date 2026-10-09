@@ -1,6 +1,6 @@
 import type { BindingConflictPolicy, InputAction, InputChord } from '../../bridge/Binding.types';
 import type { UiIntent } from '../../bridge/events';
-import { KEY_LABELS, MOUSE_BUTTON_LABELS } from './SettingsScreen.strings';
+import { KEY_LABELS, MOUSE_BUTTON_LABELS } from '../strings';
 
 /**
  * Where press-to-bind is (architecture 13 §6.3): nothing selected, waiting for an input for
