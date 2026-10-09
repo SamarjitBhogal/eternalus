@@ -1,3 +1,4 @@
+import { Brain } from '../components/Brain';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -11,7 +12,8 @@ import { SpawnContextReader } from './SpawnContextReader';
 /**
  * Abstract base for entities of the `unit` family. It installs the components every unit has
  * (architecture 04 §1): `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider`
- * on the unit layer and `Vision`, from a definition, a position and a team.
+ * on the unit layer and `Vision`, from a definition, a position and a team; plus a `Brain` when the
+ * definition names a controller.
  */
 export abstract class Unit extends Entity {
   /** Always `'unit'`. */
@@ -47,5 +49,8 @@ export abstract class Unit extends Entity {
     this.addComponent(new TeamMembership(team));
     this.addComponent(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
     this.addComponent(new Vision(definition.visionRadius));
+    if (definition.controller !== undefined) {
+      this.addComponent(new Brain(definition.controller));
+    }
   }
 }

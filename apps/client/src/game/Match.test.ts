@@ -15,7 +15,7 @@ import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
-import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
+import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, PROTOTYPE_ESCORT } from './Match.constants';
 import type { IntentSource } from './Match.types';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
@@ -94,6 +94,34 @@ describe('Match', () => {
     const player = match.snapshot.entities.find((entity) => entity.id === match.playerEntityId);
     expect(player).toMatchObject({ kind: 'warrior', family: 'legend', team: 'light' });
     expect(player?.transform).toMatchObject(lightStronghold?.position ?? {});
+  });
+
+  it('spawns the prototype escort around the player, and the escort walks after the player', () => {
+    const { match, input, lightStronghold } = setUp();
+    const home = lightStronghold?.position ?? { x: Number.NaN, y: Number.NaN };
+    match.tick();
+    const escortX = () =>
+      match.snapshot.entities
+        .filter((entity) => entity.definitionId === PROTOTYPE_ESCORT.definitionId)
+        .map((entity) => entity.transform?.x ?? Number.NaN);
+
+    expect(escortX()).toHaveLength(PROTOTYPE_ESCORT.count);
+    for (const entity of match.snapshot.entities.filter((e) => e.family === 'mob')) {
+      const distance = Math.hypot(
+        (entity.transform?.x ?? 0) - home.x,
+        (entity.transform?.y ?? 0) - home.y,
+      );
+      expect(distance).toBeCloseTo(PROTOTYPE_ESCORT.spawnRadius, 1);
+      expect(entity.team).toBe('light');
+    }
+
+    input.move = { x: 1, y: 0 };
+    for (let tick = 0; tick < 90; tick += 1) {
+      match.tick();
+    }
+    for (const x of escortX()) {
+      expect(x).toBeGreaterThan(home.x + PROTOTYPE_ESCORT.spawnRadius);
+    }
   });
 
   it('walks east while the intent says east, and coasts to a stop when it is released', () => {
@@ -192,7 +220,7 @@ describe('Match', () => {
     expect(unsubscribes.count).toBe(1);
   });
 
-  it('logs once for each kind it has to draw with the default view', () => {
+  it('draws mobs with their own view, so the escort and other mobs log no default-view warning', () => {
     const { match, simulation, logger } = setUp();
     simulation.enqueueCommand({
       type: 'dev-spawn',
@@ -205,13 +233,8 @@ describe('Match', () => {
     match.tick();
 
     match.render(0);
-    match.render(0);
 
-    expect(
-      logger.records.map(({ severityText, scope, body }) => [severityText, scope, body]),
-    ).toEqual([
-      ['WARN', 'client.views', 'No view for kind "light-mob"; drawing the default view.'],
-    ]);
+    expect(logger.records.filter(({ severityText }) => severityText === 'WARN')).toEqual([]);
   });
 
   it('follows again when the player keeps moving after a minimap click', () => {

@@ -23,3 +23,14 @@ export const PLACEHOLDER_MATCH_SEED = 1;
 
 /** How many log records the match keeps for bug reports and the overlay (architecture 15 §5). */
 export const LOG_RING_CAPACITY = 512;
+
+/**
+ * Prototype decision (2026-10-08, demo): minions that escort the player, spawned around the
+ * player's spawn point until Phase 2's `SpawnSystem` and Phase 3's lane hordes replace them.
+ */
+export const PROTOTYPE_ESCORT = {
+  definitionId: 'light-minion',
+  kind: 'light-mob',
+  count: 6, // TUNE
+  spawnRadius: 2, // TUNE: metres from the player's spawn point
+} as const;

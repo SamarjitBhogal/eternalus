@@ -58,6 +58,18 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       rosters … assigns `playerTeam`", while the `menu` and `loading` rows (and reference 14 §5)
       put the setup at "Start match"; D follows the latter. The row needs a one-line fix.
 
+- [ ] **PROTO-01 — prototype escort minions (demo, 2026-10-09; branch `feat/minion-follow-prototype`).**
+      For the prototype demo, Samarjit chose minions that **follow the player's Legend** instead
+      of marching down lanes (option b). This is a **prototype decision to be replaced** by the
+      real Phase 3 systems; it is not in the design docs and they were not changed. Stand-ins to
+      remove: `ai/FollowLeaderController.ts` + `content/ai/followLeaderProfile.ts` (→
+      `MinionController`, sprint 3.3), `content/mobs/lightMinion.ts` numbers (all `TUNE`
+      placeholders, no source in `docs/reference/`: please supply minion stats), the
+      `PROTOTYPE_ESCORT` spawn in `apps/client/src/game/Match.ts` (→ `SpawnSystem` / hordes),
+      the brute-force scan (→ `Perception` over `SpatialHash`), `Brain` as a component with only
+      a controller id (→ `state.ai.brains`, 11 §2) and the missing `AiSystem` cadence (11 §6).
+      Decision needed: keep the escort behind a dev flag after Phase 3, or delete it then?
+
 ## Requests for the agent
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an

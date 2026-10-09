@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { Brain } from '../components/Brain';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
+import { Transform } from '../components/Transform';
 import type { Team } from '../teams/teams.types';
 import { Entity } from '../entities/Entity';
 import { Legend } from '../entities/Legend';
@@ -44,6 +46,17 @@ class Hero extends Legend {
 
   protected override installComponents(team: unknown): void {
     this.addComponent(new TeamMembership(team as Team));
+  }
+}
+
+class Escort extends Entity {
+  public readonly kind = 'escort';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Transform({ x: 2, y: 3 }, 0.5));
+    this.addComponent(new TeamMembership('dark'));
+    this.addComponent(new Brain('follow-leader'));
   }
 }
 
@@ -150,5 +163,21 @@ describe('EntityStore', () => {
     expect(walker.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
     expect(store.steer('still', { x: 1, y: 0 })).toBe(false);
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
+  });
+
+  it('reads position, team and controller for ai/, and nothing for bare or unknown entities', () => {
+    const store = storeWith('bare');
+    const escort = new Escort('escort', 'escort-definition');
+    escort.spawn({});
+    store.add(escort);
+
+    expect(store.positionOf('escort')).toEqual({ x: 2, y: 3 });
+    expect(store.teamOf('escort')).toBe('dark');
+    expect(store.controllerOf('escort')).toBe('follow-leader');
+    for (const id of ['bare', 'nobody']) {
+      expect(store.positionOf(id)).toBeUndefined();
+      expect(store.teamOf(id)).toBeUndefined();
+      expect(store.controllerOf(id)).toBeUndefined();
+    }
   });
 });

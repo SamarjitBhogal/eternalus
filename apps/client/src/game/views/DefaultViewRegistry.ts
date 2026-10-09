@@ -1,5 +1,6 @@
 import { DefaultEntityView } from './DefaultEntityView';
 import { LegendView } from './LegendView';
+import { MobView } from './MobView';
 import { ViewRegistry } from './ViewRegistry';
 
 /** The registry with every shipped entity view. This is the one place a view is registered. */
@@ -12,5 +13,6 @@ export class DefaultViewRegistry extends ViewRegistry {
   public constructor(onUnknownKind?: (kind: string) => void) {
     super(new DefaultEntityView(), onUnknownKind);
     this.registerFamily('legend', new LegendView());
+    this.registerFamily('mob', new MobView());
   }
 }

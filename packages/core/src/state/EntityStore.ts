@@ -1,5 +1,7 @@
+import { Brain } from '../components/Brain';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
+import { Transform } from '../components/Transform';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from '../entities/Entity';
@@ -98,6 +100,24 @@ export class EntityStore {
     }
     movement.steer(direction);
     return true;
+  }
+
+  /**
+   * The entity's live position, for `ai/`, which may not import `components/`. Read it, do not
+   * keep it: it changes as the entity moves.
+   */
+  public positionOf(id: EntityId): Vec2 | undefined {
+    return this.entities.get(id)?.findComponent(Transform)?.position;
+  }
+
+  /** The entity's team, or `undefined` when it is unknown or has no team. */
+  public teamOf(id: EntityId): Team | undefined {
+    return this.entities.get(id)?.findComponent(TeamMembership)?.team;
+  }
+
+  /** The id of the controller that drives the entity, or `undefined` when nothing does. */
+  public controllerOf(id: EntityId): string | undefined {
+    return this.entities.get(id)?.findComponent(Brain)?.controllerId;
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */

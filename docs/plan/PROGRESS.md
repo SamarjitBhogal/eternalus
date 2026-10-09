@@ -408,3 +408,23 @@ The example below is fenced so it is not read as a real entry.
   "Documentation check passed."
 - Next step: review and merge PR #12. Follow-up: core now exports `SeededRandom`, so the client's
   `LcgRng` stand-in can be swapped at the `createRng` line in `main.tsx` (its own task).
+
+### 2026-10-09 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype — SamarjitBhogal + Claude Code
+
+- What was done: prototype for the demo, stacked on `feat/player-input` (#19 → #18 → #17 → #14) and synced
+  with the phase branch after PR #12 (merge commit).
+  Minions escort the player's Legend: `ai/Controller.types.ts`, `ai/AiSystem.ts` (runs first,
+  queues decisions for the next tick), `ai/FollowLeaderController.ts` (walk to the nearest allied
+  Legend, keep space from it and from other followers), `components/Brain.ts` (installed by `Unit`
+  when a definition names a `controller`), `EntityStore.positionOf/teamOf/controllerOf` for `ai/`,
+  `content/mobs/lightMinion.ts`, `content/ai/followLeaderProfile.ts`; `Match` spawns six
+  minions around the player; `views/MobView.ts` draws mobs on a dark outline (the default view
+  painted them in the team colour, invisible on their own Stronghold). Checked in headless Chrome:
+  the escort shows, trails the player while it walks and settles around it. Prototype decision, to be replaced by Phase 3's `MinionController`,
+  `SpawnSystem` and `Perception`: recorded as PROTO-01 in `INBOX.md`; no design doc changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 456 passed (456)" (statements 99.03%, branches 93.46%); client "Tests 291 passed (291)"
+  (statements 92.49%, branches 93.35%); "✓ built in 146ms"; "Documentation check passed." (Node
+  24.21.0, Linux). Pre-PR gate not run yet.
+- Next step: rehearse the demo; after #14–#19 merge, open the PR into the phase branch through the
+  pre-PR gate, or drop the branch when Phase 3 lands.

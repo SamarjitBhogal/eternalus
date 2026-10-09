@@ -9,7 +9,12 @@ import {
 import type { Projection } from './engine/input/Projection.types';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
-import { BACKGROUND_COLOR, CAMERA_SMOOTHING, MAX_TICKS_PER_FRAME } from './Match.constants';
+import {
+  BACKGROUND_COLOR,
+  CAMERA_SMOOTHING,
+  MAX_TICKS_PER_FRAME,
+  PROTOTYPE_ESCORT,
+} from './Match.constants';
 import type { MatchDeps } from './Match.types';
 import { DefaultViewRegistry } from './views/DefaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
@@ -106,6 +111,7 @@ export class Match implements LoopTarget {
       at: spawnPoint,
       count: 1,
     });
+    Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
     camera.lookAt(spawnPoint);
   }
@@ -198,6 +204,32 @@ export class Match implements LoopTarget {
         : { type: 'stop', actorId: this.playerId },
     );
     this.lastMove = move;
+  }
+
+  /**
+   * Prototype (2026-10-08, demo): queues the escort minions in a ring around `center`, one spawn
+   * each so they start apart. Phase 2's `SpawnSystem` replaces this.
+   */
+  private static spawnEscort(
+    simulation: MatchDeps['simulation'],
+    team: MatchDeps['player']['team'],
+    center: Vec2,
+  ): void {
+    const { definitionId, kind, count, spawnRadius } = PROTOTYPE_ESCORT;
+    for (let index = 0; index < count; index += 1) {
+      const angle = (2 * Math.PI * index) / count;
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind,
+        definitionId,
+        team,
+        at: {
+          x: center.x + spawnRadius * Math.cos(angle),
+          y: center.y + spawnRadius * Math.sin(angle),
+        },
+        count: 1,
+      });
+    }
   }
 
   private static strongholdOf(map: MapDefinition, team: MatchDeps['player']['team']): Vec2 {

@@ -1,9 +1,12 @@
+import { AiSystem } from './ai/AiSystem';
+import { FollowLeaderController } from './ai/FollowLeaderController';
 import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { validateGameConfig } from './config/validateGameConfig';
+import { FOLLOW_LEADER_PROFILE } from './content/ai/followLeaderProfile';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
@@ -57,7 +60,11 @@ export class Simulation {
     this.systemContext = { state: this.state, logger };
     this.pipeline =
       systems === undefined
-        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger))
+        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), [
+            new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
+              this.queue.enqueue(command);
+            }),
+          ])
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
