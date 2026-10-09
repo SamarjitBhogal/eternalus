@@ -1,0 +1,14 @@
+.glyph {
+  display: inline-block;
+  min-width: 1.75em;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--text-muted);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.875em;
+  line-height: 1.5;
+  text-align: center;
+}

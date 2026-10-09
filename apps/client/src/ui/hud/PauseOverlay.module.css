@@ -1,0 +1,29 @@
+.scrim {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-scrim);
+  pointer-events: auto;
+}
+
+.dialog {
+  min-width: 20rem;
+  max-width: min(48rem, 90vw);
+  padding: var(--space-5);
+  border: 1px solid var(--theme-primary);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display);
+  text-align: center;
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-2);
+}
