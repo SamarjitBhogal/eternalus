@@ -1,7 +1,10 @@
 /**
- * Every named player action (architecture 13 §6.1). The game never reads a raw key: devices are
- * mapped to these ids through bindings, and `<KeyGlyph action="…"/>` shows their current key.
+ * Keybinding type contracts (architecture 13 §6.1). They live in `bridge/` because `ui/` needs
+ * `InputAction` for `<KeyGlyph action>` and may not import `game/`. Default chords live in
+ * `game/input/keybindings.ts`, never here.
  */
+
+/** Every rebindable player or client action. Adding one is one literal here plus its default chords. */
 export const INPUT_ACTIONS = [
   'move-up',
   'move-down',
@@ -26,10 +29,10 @@ export const INPUT_ACTIONS = [
   'toggle-perf-overlay',
 ] as const;
 
-/** One named player action. */
+/** One rebindable player or client action. */
 export type InputAction = (typeof INPUT_ACTIONS)[number];
 
-/** One physical input that can trigger an action (architecture 09 §3). */
+/** One physical input that can trigger an action (architecture 09 §3, 13 §6.1). */
 export type InputChord =
   | {
       readonly device: 'keyboard';
