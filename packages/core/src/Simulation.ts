@@ -4,11 +4,11 @@ import type { CommandContext, CommandHandlers } from './commands/CommandHandler.
 import { CommandQueue } from './commands/CommandQueue';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { validateGameConfig } from './config/validateGameConfig';
-import { UNIT_DEFINITIONS } from './content/units/unitDefinitions';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
-import { DefaultEntityRegistry } from './entities/DefaultEntityRegistry';
+import { loadDefaultContent } from './content/loadDefaultContent';
+import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
@@ -44,12 +44,15 @@ export class Simulation {
     logger,
     systems,
     debug = RELEASE_DEBUG_CONFIG,
-    content = UNIT_DEFINITIONS,
+    content,
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed);
     this.commandContext = {
       state: this.state,
-      factory: new EntityFactory(new DefaultEntityRegistry(), content),
+      factory: new EntityFactory(
+        createDefaultEntityRegistry(),
+        content ?? loadDefaultContent(this.state.config.tickRate),
+      ),
     };
     this.systemContext = { state: this.state, logger };
     this.pipeline =

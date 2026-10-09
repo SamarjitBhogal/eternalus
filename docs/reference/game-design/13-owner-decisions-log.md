@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-08
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,15 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-10-08 (INBOX, entity foundation, PR #14 review)
+
+| ID     | Decision                                                                                                                                                                                                                                                                                    | Affects                                                                                                   |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| DEC-21 | **One `EntityModule` per family declined.** The registry stays the documented `entities/defaultEntityRegistry.ts` exporting `createDefaultEntityRegistry()`, the one file that names concrete classes.                                                                                      | `docs/architecture/04-entity-architecture.md` §6, `02-code-structure.md` §4, `17-extension-recipes.md` R1 |
+| DEC-22 | **`ContentValidator` with rule classes accepted, with fixes:** a rule is `check(definition, content)` so dangling-id rules can be written; the rules are listed in `content/defaultContentRules.ts`; validation runs once from `loadDefaultContent()`, never at import time.                | `04-entity-architecture.md` §5, `05-abilities-weapons-and-loadouts.md` §2–§3                              |
+| DEC-23 | **`Health.applyDamage` returns `{ toShields, toBase, overflow }`** (a `DamageBreakdown`), so damage numbers and stats can read where a hit went.                                                                                                                                            | `07-structures-obstacles-and-destructibles.md` §2                                                         |
+| DEC-24 | **The core lint (proposed ADR 0013) moves to its own PR**, enforced only after the owner signs its ADR off. It encodes 02 §2's per-folder import lists rather than rings, and hoists the shared React/Redux ban list into a constant so no `no-restricted-imports` block silently drops it. | `eslint.config.js`, a new ADR                                                                             |
 
 ## Batch 2026-10-07 (INBOX, simulation kernel, PR #13)
 

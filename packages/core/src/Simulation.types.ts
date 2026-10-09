@@ -16,6 +16,6 @@ export type SimulationOptions = {
   readonly systems?: readonly System[];
   /** Invariant settings for the default pipeline; `RELEASE_DEBUG_CONFIG` when omitted. */
   readonly debug?: DebugConfig;
-  /** Where entity definitions are found by id; every unit definition when omitted. */
+  /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
 };

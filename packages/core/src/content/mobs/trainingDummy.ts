@@ -8,12 +8,12 @@ export const TRAINING_DUMMY = {
   id: 'training-dummy',
   kind: 'light-mob',
   displayName: 'Training Dummy',
-  baseHealth: 100, // TUNE
-  footprintRadius: 0.4, // TUNE
-  visionRadius: 10, // TUNE
+  baseHealth: 100, // TUNE:
+  footprintRadius: 0.4, // TUNE:
+  visionRadius: 10, // TUNE:
   movement: {
-    maxSpeed: 0.1, // TUNE: 3 m/s at 30 ticks/s
-    acceleration: 0.05, // TUNE
-    mass: 0.5, // TUNE
+    maxSpeed: 3, // TUNE: m/s
+    acceleration: 45, // TUNE: m/s²
+    mass: 0.5, // TUNE:
   },
 } as const satisfies MobDefinition;

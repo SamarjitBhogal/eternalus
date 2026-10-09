@@ -74,8 +74,8 @@ export class Health {
       throw new Error(`Health already has a shield from "${sourceId}".`);
     }
 
-    // Bars stay in source (tower) id order, so damage drains them in a fixed order (07 section 2).
-    const index = this.shieldBars.findIndex((bar) => bar.sourceId > sourceId);
+    // Bars stay in tower creation order (07 §2, DEC-20), so damage drains them in a fixed order.
+    const index = this.shieldBars.findIndex((bar) => Health.isCreatedAfter(bar.sourceId, sourceId));
     this.shieldBars.splice(index === -1 ? this.shieldBars.length : index, 0, {
       sourceId,
       current: max,
@@ -90,6 +90,14 @@ export class Health {
     if (index !== -1) {
       this.shieldBars.splice(index, 1);
     }
+  }
+
+  /**
+   * Whether entity id `a` was created after `b`. Factory ids count up (`entity-9`, `entity-10`), so
+   * a longer id is newer and ids of one length compare as text.
+   */
+  private static isCreatedAfter(a: string, b: string): boolean {
+    return a.length !== b.length ? a.length > b.length : a > b;
   }
 
   private static checkPositive(value: number, name: string): void {

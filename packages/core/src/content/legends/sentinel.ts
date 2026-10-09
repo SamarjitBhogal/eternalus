@@ -11,7 +11,7 @@ export const SENTINEL = {
   kind: 'sentinel',
   displayName: 'Sentinel',
   roleBlurb: 'Heavy and powerful; needs a long runway to reach a very high top speed.',
-  baseHealth: 1200, // TUNE
+  baseHealth: 1200, // TUNE:
   weaponBias: 'heavy',
   damageFocus: 'physical',
   pickUp: 'grab',
@@ -19,10 +19,10 @@ export const SENTINEL = {
   defaultAction: null,
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
   footprintRadius: 1.25, // DEC-06
-  visionRadius: 25, // TUNE
+  visionRadius: 25, // TUNE:
   movement: {
-    maxSpeed: 0.3, // TUNE: 9 m/s at 30 ticks/s
-    acceleration: 0.0002, // TUNE: top speed after 1500 ticks (50 s)
-    mass: 6, // TUNE
+    maxSpeed: 9, // TUNE: m/s
+    acceleration: 0.18, // TUNE: m/s², top speed after 50 s
+    mass: 6, // TUNE:
   },
 } as const satisfies LegendDefinition;

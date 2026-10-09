@@ -1,11 +1,12 @@
 import type { Vec2 } from '../utils/geometry.types';
+import { NEVER_REVEALED } from './Vision.constants';
 
 /**
  * How far an entity sees, and until which tick it is revealed to the enemy (for example by a
  * scouting ability). Fog of war and targeting read it; it never moves anything.
  */
 export class Vision {
-  private revealedUntilTickValue = -1;
+  private revealedUntilTickValue = NEVER_REVEALED;
 
   /**
    * Creates vision with a sight radius, not revealed to anyone.
@@ -18,7 +19,7 @@ export class Vision {
     }
   }
 
-  /** The last tick this entity is revealed on; -1 when it has never been revealed. */
+  /** The last tick this entity is revealed on; `NEVER_REVEALED` when it has never been revealed. */
   public get revealedUntilTick(): number {
     return this.revealedUntilTickValue;
   }

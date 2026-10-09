@@ -5,12 +5,14 @@ import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { Command } from './commands/Command.types';
 import { ConfigValidationError } from './config/ConfigValidationError';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
-import { UNIT_DEFINITIONS } from './content/units/unitDefinitions';
+import { loadDefaultContent } from './content/loadDefaultContent';
 import type { Logger } from './diagnostics/Logger.types';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
 import { Simulation } from './Simulation';
 import type { System } from './systems/System.types';
+
+const UNIT_DEFINITIONS = loadDefaultContent(30);
 
 const stop = (actorId: string): Command => ({ type: 'stop', actorId });
 
@@ -113,20 +115,23 @@ describe('Simulation', () => {
     ]);
   });
 
-  it('rejects dev-spawn of a kind no registry knows', () => {
+  it.each([
+    ['unknown-kind', { kind: 'dragon', definitionId: 'warrior' }],
+    ['unknown-definition', { kind: 'warrior', definitionId: 'no-such-legend' }],
+    ['unknown-definition', { kind: 'warrior', definitionId: 'magus' }],
+  ])('rejects dev-spawn with %s instead of throwing out of step()', (reason, names) => {
     const sim = simulation();
     const reasons: string[] = [];
-    sim.on('command-rejected', ({ reason }) => reasons.push(reason));
+    sim.on('command-rejected', ({ reason: rejected }) => reasons.push(rejected));
     sim.enqueueCommand({
       type: 'dev-spawn',
-      kind: 'dragon',
-      definitionId: 'dragon',
+      ...names,
       team: 'light',
       at: { x: 0, y: 0 },
       count: 1,
     });
     sim.step();
-    expect(reasons).toEqual(['unknown-kind']);
+    expect(reasons).toEqual([reason]);
     expect(sim.snapshot().entities).toEqual([]);
   });
 
