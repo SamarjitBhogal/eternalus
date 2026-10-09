@@ -14,10 +14,23 @@ const SETTINGS: PersistedSettings = {
 
 const NOW = 1_760_000_000_000;
 
-async function setup(): Promise<{ adapter: MemoryStorageAdapter; repository: SettingsRepository }> {
+async function setup(): Promise<{
+  adapter: MemoryStorageAdapter;
+  repository: SettingsRepository;
+  warnings: string[];
+}> {
   const adapter = new MemoryStorageAdapter();
   await adapter.open(STORAGE_SCHEMA);
-  return { adapter, repository: new SettingsRepository(adapter, new Set(['move-up']), () => NOW) };
+  const warnings: string[] = [];
+  const repository = new SettingsRepository(
+    adapter,
+    new Set(['move-up']),
+    () => NOW,
+    (body, attributes) => {
+      warnings.push(`${body}: ${String(attributes.reason)}`);
+    },
+  );
+  return { adapter, repository, warnings };
 }
 
 function storeRaw(adapter: MemoryStorageAdapter, value: unknown): Promise<void> {
@@ -67,7 +80,7 @@ describe('SettingsRepository', () => {
     ],
     ['a future version', { ...SETTINGS, schemaVersion: 9, profileId: 'p1' }],
   ])('quarantines a record with %s and reports it as missing', async (_case, corrupt) => {
-    const { adapter, repository } = await setup();
+    const { adapter, repository, warnings } = await setup();
     await storeRaw(adapter, corrupt);
 
     const loaded = await repository.load('p1');
@@ -80,5 +93,7 @@ describe('SettingsRepository', () => {
       quarantinedAt: NOW,
       value: corrupt,
     });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/^record quarantined: /);
   });
 });

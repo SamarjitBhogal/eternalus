@@ -1,6 +1,6 @@
 import { settingsSlice, type SettingsSliceState } from '../../bridge/slices/settingsSlice';
-import { rebind, resetBindings } from './bindingEdits';
-import { withDefaults } from './keybindings';
+import { rebind, resetBindings } from '../input/bindingEdits';
+import { withDefaults } from '../input/keybindings';
 import type { SavedSettings, SettingsIntent } from './settingsState.types';
 
 /**

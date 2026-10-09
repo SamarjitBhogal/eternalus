@@ -17,7 +17,7 @@ export class PersistenceController {
   /** Builds the facade over the injected adapter. Call `open()` before anything else. */
   public constructor(deps: PersistenceControllerDeps) {
     this.adapter = deps.adapter;
-    this.settings = new SettingsRepository(deps.adapter, deps.knownActions, deps.now);
+    this.settings = new SettingsRepository(deps.adapter, deps.knownActions, deps.now, deps.warn);
   }
 
   /** Opens storage, migrating it to the current schema. */

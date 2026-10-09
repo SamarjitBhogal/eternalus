@@ -1,6 +1,6 @@
 import type { UiIntent } from '../../bridge/events';
 import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
-import type { SavedBinding } from './keybindings';
+import type { SavedBinding } from '../input/keybindings';
 
 /** The UI intents that change settings. */
 export type SettingsIntent = Extract<

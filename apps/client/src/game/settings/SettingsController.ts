@@ -1,3 +1,5 @@
+import { makeLogRecord } from '@eternalus/core';
+
 import type { UiIntent } from '../../bridge/events';
 import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
 import type { SettingsControllerDeps } from './SettingsController.types';
@@ -18,9 +20,16 @@ export class SettingsController {
     this.deps = deps;
   }
 
-  /** Loads the saved settings (defaults filled in), publishes them and starts handling intents. */
+  /**
+   * Loads the saved settings (defaults filled in), publishes them and starts handling intents.
+   * If storage cannot be read, it logs a warning and starts from defaults; it never rejects.
+   */
   public async start(): Promise<void> {
-    this.publish(settingsWithDefaults(await this.deps.persistence.loadSettings()));
+    const saved = await this.deps.persistence.loadSettings().catch((error: unknown) => {
+      this.report('WARN', 'settings could not be loaded; using defaults', error);
+      return null;
+    });
+    this.publish(settingsWithDefaults(saved));
     this.stopListening = this.deps.bus.on('ui-intent', this.onIntent);
   }
 
@@ -40,10 +49,16 @@ export class SettingsController {
     }
     const next = applySettingsIntent(this.settings, intent);
     this.publish(next);
-    // ponytail: a failed save surfaces as an unhandled rejection; route it to the Logger port
-    // (core diagnostics, session B) with the "storage degraded" banner when IndexedDB lands.
-    void this.deps.persistence.saveSettings(next);
+    this.deps.persistence.saveSettings(next).catch((error: unknown) => {
+      this.report('ERROR', 'settings could not be saved', error);
+    });
   };
+
+  private report(level: 'WARN' | 'ERROR', body: string, error: unknown): void {
+    this.deps.logger.log(
+      makeLogRecord(level, 'client.settings', body, { attributes: { error: String(error) } }),
+    );
+  }
 
   private publish(settings: SettingsSliceState): void {
     this.settings = settings;

@@ -1,3 +1,5 @@
+import type { LogAttributes } from '@eternalus/core';
+
 import type { PersistedSettings, SettingsDtoV1 } from '../dto/SettingsDto';
 import { validateSettingsDto } from '../dto/SettingsDto';
 import { QUARANTINE_STORE, SETTINGS_STORE } from '../schema/migrations';
@@ -6,22 +8,26 @@ import type { StorageAdapter } from '../StorageAdapter.types';
 /**
  * Reads and writes a profile's settings record. Every read is validated; a corrupt record is
  * moved to the quarantine store in the same unit of work and reported as missing, so the
- * caller falls back to defaults and no screen can crash on stored data.
+ * caller falls back to defaults and no screen can crash on stored data. Each quarantine is
+ * reported through `warn` (architecture 14 §8).
  */
 export class SettingsRepository {
   private readonly adapter: StorageAdapter;
   private readonly knownActions: ReadonlySet<string>;
   private readonly now: () => number;
+  private readonly warn: (body: string, attributes: LogAttributes) => void;
 
   /** `now` is wall-clock milliseconds, used only to date quarantined records. */
   public constructor(
     adapter: StorageAdapter,
     knownActions: ReadonlySet<string>,
     now: () => number,
+    warn: (body: string, attributes: LogAttributes) => void,
   ) {
     this.adapter = adapter;
     this.knownActions = knownActions;
     this.now = now;
+    this.warn = warn;
   }
 
   /** The saved settings of `profileId`, or `null` when none are saved or they were corrupt. */
@@ -47,6 +53,7 @@ export class SettingsRepository {
           value: raw,
         });
         await tx.delete(SETTINGS_STORE, profileId);
+        this.warn('record quarantined', { store: SETTINGS_STORE, reason: checked.reason });
         return null;
       },
     );

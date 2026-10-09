@@ -12,7 +12,12 @@ const SETTINGS: PersistedSettings = {
 };
 
 function controller(adapter = new MemoryStorageAdapter()): PersistenceController {
-  return new PersistenceController({ adapter, knownActions: new Set(['attack']), now: () => 0 });
+  return new PersistenceController({
+    adapter,
+    knownActions: new Set(['attack']),
+    now: () => 0,
+    warn: () => undefined,
+  });
 }
 
 describe('PersistenceController', () => {

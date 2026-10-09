@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
-import { DEFAULT_CHORDS, PRESETS } from './keybindings';
+import { DEFAULT_CHORDS, PRESETS } from '../input/keybindings';
 import { applySettingsIntent, settingsWithDefaults } from './settingsState';
 
 const UP_ARROW = { device: 'keyboard', code: 'ArrowUp', label: '↑' } as const;

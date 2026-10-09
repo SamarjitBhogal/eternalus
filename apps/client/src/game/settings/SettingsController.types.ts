@@ -1,3 +1,5 @@
+import type { Logger } from '@eternalus/core';
+
 import type { BridgeEventMap } from '../../bridge/events';
 import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
 import type { TypedEventBus } from '../../bridge/TypedEventBus';
@@ -13,4 +15,6 @@ type SettingsStorage = {
 export type SettingsControllerDeps = {
   readonly bus: TypedEventBus<BridgeEventMap>;
   readonly persistence: SettingsStorage;
+  /** Where load and save failures are reported. */
+  readonly logger: Logger;
 };

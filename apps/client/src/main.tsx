@@ -10,9 +10,11 @@ import { PersistenceController } from './data/persistence/PersistenceController'
 import { placeholderCatalogue } from './game/content/placeholderCatalogue';
 import { PLACEHOLDER_MATCH_CONFIG, PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
+import { type Logger, makeLogRecord, NullLogger } from '@eternalus/core';
+
 import { GameCanvas } from './game/GameCanvas';
 import { INPUT_ACTIONS } from './game/input/keybindings';
-import { SettingsController } from './game/input/SettingsController';
+import { SettingsController } from './game/settings/SettingsController';
 import { SessionController } from './game/SessionController';
 import { createDefaultSessionStates } from './game/session/defaultSessionStates';
 import { LcgRng } from './game/session/LcgRng';
@@ -39,13 +41,28 @@ const session = new SessionController({
 });
 session.start();
 
-// Settings load in the background; the slice holds defaults until they arrive.
+// Settings load in the background: the store has no bindings until the settings event arrives.
+// TODO(sam): replace NullLogger with the client's log sinks when they land (session H).
+const logger: Logger = new NullLogger();
 const persistence = new PersistenceController({
   adapter: new MemoryStorageAdapter(),
   knownActions: new Set(INPUT_ACTIONS),
   now: () => Date.now(),
+  warn: (body, attributes) => {
+    logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
+  },
 });
-void persistence.open().then(() => new SettingsController({ bus: eventBus, persistence }).start());
+const settings = new SettingsController({ bus: eventBus, persistence, logger });
+void persistence
+  .open()
+  .catch((error: unknown) => {
+    logger.log(
+      makeLogRecord('ERROR', 'client.persistence', 'storage did not open', {
+        attributes: { error: String(error) },
+      }),
+    );
+  })
+  .then(() => settings.start());
 
 createRoot(rootElement).render(
   <StrictMode>

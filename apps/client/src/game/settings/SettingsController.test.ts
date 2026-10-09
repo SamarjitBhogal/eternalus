@@ -1,3 +1,4 @@
+import { MemoryLogger, NullLogger } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../../bridge/events';
@@ -5,7 +6,7 @@ import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
 import { TypedEventBus } from '../../bridge/TypedEventBus';
 import { MemoryStorageAdapter } from '../../data/persistence/MemoryStorageAdapter';
 import { PersistenceController } from '../../data/persistence/PersistenceController';
-import { INPUT_ACTIONS, PRESETS } from './keybindings';
+import { INPUT_ACTIONS, PRESETS } from '../input/keybindings';
 import { SettingsController } from './SettingsController';
 
 const UP_ARROW = { device: 'keyboard', code: 'ArrowUp', label: '↑' } as const;
@@ -19,12 +20,13 @@ async function started(adapter = new MemoryStorageAdapter()): Promise<{
     adapter,
     knownActions: new Set(INPUT_ACTIONS),
     now: () => 0,
+    warn: () => undefined,
   });
   await persistence.open();
   const bus = new TypedEventBus<BridgeEventMap>();
   const published: SettingsSliceState[] = [];
   bus.on('settings', (settings) => published.push(settings));
-  const controller = new SettingsController({ bus, persistence });
+  const controller = new SettingsController({ bus, persistence, logger: new NullLogger() });
   await controller.start();
   return { bus, controller, published };
 }
@@ -72,6 +74,27 @@ describe('SettingsController', () => {
     bus.emit('ui-intent', { kind: 'start-match' });
 
     expect(published).toHaveLength(1);
+  });
+
+  it('starts from defaults and warns when storage cannot be read', async () => {
+    const bus = new TypedEventBus<BridgeEventMap>();
+    const logger = new MemoryLogger();
+    const published: SettingsSliceState[] = [];
+    bus.on('settings', (settings) => published.push(settings));
+    const failing = {
+      loadSettings: () => Promise.reject(new Error('storage is not open')),
+      saveSettings: () => Promise.reject(new Error('storage is not open')),
+    };
+
+    await new SettingsController({ bus, persistence: failing, logger }).start();
+    bus.emit('ui-intent', { kind: 'reset-bindings', action: null });
+    await Promise.resolve(); // let the rejected save be reported
+
+    expect(published[0]?.bindings).toEqual(PRESETS.wasd);
+    expect(logger.records.map((record) => [record.severityText, record.body])).toEqual([
+      ['WARN', 'settings could not be loaded; using defaults'],
+      ['ERROR', 'settings could not be saved'],
+    ]);
   });
 
   it('stops listening when destroyed', async () => {

@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Provider } from 'react-redux';
+import { NullLogger } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { eventBus } from '../../bridge/eventBus';
@@ -9,7 +10,7 @@ import { MemoryStorageAdapter } from '../../data/persistence/MemoryStorageAdapte
 import { PersistenceController } from '../../data/persistence/PersistenceController';
 import { InputMapper } from '../../game/input/InputMapper';
 import { INPUT_ACTIONS } from '../../game/input/keybindings';
-import { SettingsController } from '../../game/input/SettingsController';
+import { SettingsController } from '../../game/settings/SettingsController';
 import { Prompt } from '../components/Prompt';
 import { captureKey, type CapturedKey } from './SettingsScreen.capture';
 
@@ -37,9 +38,14 @@ describe('rebinding move-up from W to ArrowUp', () => {
       adapter,
       knownActions: new Set(INPUT_ACTIONS),
       now: () => 0,
+      warn: () => undefined,
     });
     await persistence.open();
-    const controller = new SettingsController({ bus: eventBus, persistence });
+    const controller = new SettingsController({
+      bus: eventBus,
+      persistence,
+      logger: new NullLogger(),
+    });
     await controller.start();
     const mapper = new InputMapper(store.getState().settings.bindings);
     const render = (): string =>
