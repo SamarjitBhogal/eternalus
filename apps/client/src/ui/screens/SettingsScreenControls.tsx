@@ -27,7 +27,6 @@ export function SettingsScreenControls(): ReactElement {
   return (
     <div
       className={styles.controls}
-      onKeyDown={capture.onKeyDown}
       onPointerDown={capture.onPointerDown}
       onContextMenu={capture.onSuppressible}
       onAuxClick={capture.onSuppressible}
@@ -86,6 +85,7 @@ export function SettingsScreenControls(): ReactElement {
           {conflict === null ? (
             <button
               type="button"
+              autoFocus
               onClick={() => {
                 capture.save('swap');
               }}
@@ -96,6 +96,7 @@ export function SettingsScreenControls(): ReactElement {
             <>
               <button
                 type="button"
+                autoFocus
                 onClick={() => {
                   capture.save('swap');
                 }}

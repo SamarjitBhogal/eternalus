@@ -8,6 +8,7 @@ import styles from './SettingsScreenOptions.module.css';
 
 const { selectAccessibility, selectAudio, selectVideo } = settingsSlice.selectors;
 const VOLUMES = ['master', 'music', 'effects'] as const;
+// TUNE: render-scale choices and the 5 % volume step (below) are provisional UI options.
 const RENDER_SCALES: readonly number[] = [0.5, 0.75, 1];
 
 function percent(fraction: number): number {

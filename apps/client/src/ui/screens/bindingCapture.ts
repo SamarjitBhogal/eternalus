@@ -18,6 +18,8 @@ export type CapturedKey = {
   readonly repeat: boolean;
   readonly ctrlKey: boolean;
   readonly metaKey: boolean;
+  /** The key went to a control that must keep working while capturing (dialog, resets). */
+  readonly isExemptTarget: boolean;
 };
 
 /**
@@ -52,18 +54,24 @@ export function saveIntent(
     : null;
 }
 
-/** Feeds one `keydown` to the capture. Enter saves (swapping on a conflict); Escape cancels. */
+/**
+ * Feeds one `keydown` to the capture. Enter saves (swapping on a conflict); Escape cancels.
+ * On an exempt control only Escape is taken, so Enter and Space still press the focused button.
+ */
 export function captureKey(state: CaptureState, input: CapturedKey): CaptureStep {
   const isPassedThrough =
     PASSED_THROUGH_CODES.includes(input.code) || input.ctrlKey || input.metaKey;
   if (state.step === 'idle' || isPassedThrough) {
     return { state, intent: null, isConsumed: false };
   }
-  if (input.repeat) {
-    return { state, intent: null, isConsumed: true };
-  }
   if (input.code === CANCEL_CODE) {
     return { state: IDLE, intent: null, isConsumed: true };
+  }
+  if (input.isExemptTarget) {
+    return { state, intent: null, isConsumed: false };
+  }
+  if (input.repeat) {
+    return { state, intent: null, isConsumed: true };
   }
   if (state.step === 'confirming' && input.code === SAVE_CODE) {
     return { state: IDLE, intent: saveIntent(state, 'swap'), isConsumed: true };
@@ -80,10 +88,17 @@ export function captureKey(state: CaptureState, input: CapturedKey): CaptureStep
   };
 }
 
-/** Feeds one `pointerdown` (`MouseEvent.button` 0–4, side buttons included) to the capture. */
-export function captureButton(state: CaptureState, button: number): CaptureStep {
+/**
+ * Feeds one `pointerdown` (`MouseEvent.button` 0–4, side buttons included) to the capture. A
+ * press on an exempt control is a click, not a binding.
+ */
+export function captureButton(
+  state: CaptureState,
+  button: number,
+  isExemptTarget: boolean,
+): CaptureStep {
   const label = MOUSE_BUTTON_LABELS[button];
-  if (state.step === 'idle' || label === undefined) {
+  if (state.step === 'idle' || label === undefined || isExemptTarget) {
     return { state, intent: null, isConsumed: false };
   }
   const chord: InputChord = { device: 'mouse', code: String(button), label };

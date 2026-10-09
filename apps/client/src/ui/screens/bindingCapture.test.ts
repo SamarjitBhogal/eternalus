@@ -8,12 +8,20 @@ import {
   IDLE,
   keyLabel,
   saveIntent,
-} from './SettingsScreen.capture';
+} from './bindingCapture';
 
 const LISTENING: CaptureState = { step: 'listening', action: 'move-up' };
 
 function key(code: string, key: string, extra: Partial<CapturedKey> = {}): CapturedKey {
-  return { code, key, repeat: false, ctrlKey: false, metaKey: false, ...extra };
+  return {
+    code,
+    key,
+    repeat: false,
+    ctrlKey: false,
+    metaKey: false,
+    isExemptTarget: false,
+    ...extra,
+  };
 }
 
 describe('press-to-bind capture', () => {
@@ -36,7 +44,7 @@ describe('press-to-bind capture', () => {
   });
 
   it('binds a mouse side button (the requirements doc Z → side button scenario)', () => {
-    const captured = captureButton({ step: 'listening', action: 'gadget-1' }, 3);
+    const captured = captureButton({ step: 'listening', action: 'gadget-1' }, 3, false);
 
     expect(captured.state).toEqual({
       step: 'confirming',
@@ -98,13 +106,39 @@ describe('press-to-bind capture', () => {
     });
   });
 
+  it('lets Enter and Space press a focused dialog or reset button instead of capturing them', () => {
+    const confirming = captureKey(LISTENING, key('KeyS', 's')).state;
+
+    const enter = captureKey(confirming, key('Enter', 'Enter', { isExemptTarget: true }));
+    const space = captureKey(confirming, key('Space', ' ', { isExemptTarget: true }));
+
+    expect(enter).toEqual({ state: confirming, intent: null, isConsumed: false });
+    expect(space).toEqual({ state: confirming, intent: null, isConsumed: false });
+  });
+
+  it('still cancels with Escape from a dialog button', () => {
+    const confirming = captureKey(LISTENING, key('KeyS', 's')).state;
+
+    expect(captureKey(confirming, key('Escape', 'Escape', { isExemptTarget: true })).state).toEqual(
+      IDLE,
+    );
+  });
+
+  it('treats a click on a dialog or reset button as a click, not a mouse binding', () => {
+    expect(captureButton(LISTENING, 0, true)).toEqual({
+      state: LISTENING,
+      intent: null,
+      isConsumed: false,
+    });
+  });
+
   it('does nothing while idle', () => {
     expect(captureKey(IDLE, key('KeyW', 'w')).isConsumed).toBe(false);
-    expect(captureButton(IDLE, 0).isConsumed).toBe(false);
+    expect(captureButton(IDLE, 0, false).isConsumed).toBe(false);
   });
 
   it('ignores buttons beyond the five a mouse reports', () => {
-    expect(captureButton(LISTENING, 5).isConsumed).toBe(false);
+    expect(captureButton(LISTENING, 5, false).isConsumed).toBe(false);
   });
 
   it('falls back to key when a virtual keyboard reports no code', () => {

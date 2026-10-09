@@ -12,13 +12,13 @@ import { InputMapper } from '../../game/input/InputMapper';
 import { INPUT_ACTIONS } from '../../game/input/keybindings';
 import { SettingsController } from '../../game/settings/SettingsController';
 import { Prompt } from '../components/Prompt';
-import { captureKey, type CapturedKey } from './SettingsScreen.capture';
+import { captureKey, type CapturedKey } from './bindingCapture';
 
 // The requirements doc's acceptance test (architecture 13 §8): "press Enter on W, press Up
 // Arrow, then press Enter to save", and every prompt follows with no code change.
 
 function press(code: string, key: string): CapturedKey {
-  return { code, key, repeat: false, ctrlKey: false, metaKey: false };
+  return { code, key, repeat: false, ctrlKey: false, metaKey: false, isExemptTarget: false };
 }
 
 const noAim = { screenToWorld: () => ({ x: 0, y: 0 }) };

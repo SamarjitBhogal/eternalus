@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type PointerEvent, type SyntheticEvent, useState } from 'react';
+import { type PointerEvent, type SyntheticEvent, useEffect, useState } from 'react';
 
 import type { BindingConflictPolicy, InputAction } from '../../bridge/Binding.types';
 import { emitIntent } from '../../bridge/eventBus';
@@ -9,7 +9,7 @@ import {
   type CaptureStep,
   IDLE,
   saveIntent,
-} from './SettingsScreen.capture';
+} from './bindingCapture';
 
 /** Elements marked with this attribute (dialog buttons, resets) are clicked, not captured. */
 export const CAPTURE_EXEMPT = 'data-capture-exempt';
@@ -23,28 +23,31 @@ export type BindingCapture = {
   readonly save: (policy: BindingConflictPolicy) => void;
   /** Drops the capture. */
   readonly cancel: () => void;
-  readonly onKeyDown: (event: KeyboardEvent) => void;
   readonly onPointerDown: (event: PointerEvent) => void;
   /** Keeps the context menu and middle-click actions away while capturing. */
   readonly onSuppressible: (event: SyntheticEvent) => void;
 };
 
-function isExempt(target: EventTarget): boolean {
+function isExempt(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest(`[${CAPTURE_EXEMPT}]`) !== null;
 }
 
 /**
- * Press-to-bind (architecture 13 §6.3): wires React key and pointer events to the capture
- * state machine in `SettingsScreen.capture.ts` and emits the save as a `ui-intent`.
+ * Press-to-bind (architecture 13 §6.3): wires key and pointer events to the capture state
+ * machine in `bindingCapture.ts` and emits the save as a `ui-intent`. While capturing, keys are
+ * read on `window` in the capture phase: a clicked row is not focused in every browser (Safari,
+ * Firefox), and a consumed key must not reach the game's own keyboard listener.
  */
 export function useBindingCapture(): BindingCapture {
   const [state, setState] = useState<CaptureState>(IDLE);
 
-  const apply = (step: CaptureStep, event: SyntheticEvent): void => {
+  const apply = (
+    step: CaptureStep,
+    event: Pick<Event, 'preventDefault' | 'stopPropagation'>,
+  ): void => {
     if (!step.isConsumed) {
       return;
     }
-    // Consumed inputs neither reach the browser nor the game's own listeners.
     event.preventDefault();
     event.stopPropagation();
     setState(step.state);
@@ -52,6 +55,21 @@ export function useBindingCapture(): BindingCapture {
       emitIntent(step.intent);
     }
   };
+
+  useEffect(() => {
+    if (state.step === 'idle') {
+      return undefined;
+    }
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const { code, key, repeat, ctrlKey, metaKey } = event;
+      const input = { code, key, repeat, ctrlKey, metaKey, isExemptTarget: isExempt(event.target) };
+      apply(captureKey(state, input), event);
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true);
+    };
+  });
 
   return {
     state,
@@ -70,13 +88,8 @@ export function useBindingCapture(): BindingCapture {
     cancel: () => {
       setState(IDLE);
     },
-    onKeyDown: (event) => {
-      apply(captureKey(state, event), event);
-    },
     onPointerDown: (event) => {
-      if (!isExempt(event.target)) {
-        apply(captureButton(state, event.button), event);
-      }
+      apply(captureButton(state, event.button, isExempt(event.target)), event);
     },
     onSuppressible: (event) => {
       if (state.step !== 'idle') {
