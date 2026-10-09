@@ -2,7 +2,7 @@ import type { EntitySnapshot, Snapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
-import { DefaultViewRegistry } from './DefaultViewRegistry';
+import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
@@ -69,7 +69,7 @@ describe('EntityLayer', () => {
   });
 
   it('leaves the minimap alone (entity markers belong to the minimap work)', () => {
-    const layer = new EntityLayer(new DefaultViewRegistry());
+    const layer = new EntityLayer(createDefaultViewRegistry());
     const renderer = new RecordingRenderer();
 
     layer.show(null, snapshot(1, [unit('a', 1, 1), unit('b', 2, 2)]), 0, null);

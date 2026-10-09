@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-09-30
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -277,35 +277,6 @@ The design keeps the move cheap:
   views, the loop or the renderer.
 - `SharedArrayBuffer` is not planned (needs cross-origin isolation headers); revisit only if
   snapshots exceed the ~10 KiB per message rule of thumb.
-
-## 11. Implementation status
-
-Session H's first pieces (branch `feat/engine-loop-match`) implement §2, §5, §7 and §8 with these
-interim differences, each closed by the session named:
-
-- `FrameScheduler`, `RafFrameScheduler`, `FakeFrameScheduler` and `GameLoop` live in
-  `game/engine/loop/` (session H's folder); the `Clock` is session D's `SessionClock` in
-  `game/engine/time/`. `useMatch` stamps log records with `performance.now()` until it is wired.
-- `Camera` keeps its `lookAt`/`visibleArea` API and adds `track` (smooth follow), `zoomTo`
-  (clamped), `contains` (culling) and `worldToScreen`/`screenToWorld` with an explicit
-  `Viewport`; the `Projection` port and `MinimapProjection` arrive with the minimap work.
-- `ViewRegistry` resolves kind, then family, then `DefaultEntityView`, and reports each unknown kind
-  once; `LegendView` is the placeholder Legend look. Entity markers on the minimap are the
-  minimap work's (SCRUM-151); `EntityLayer.drawMinimap` draws nothing until then.
-- `Match` takes the player's intent through an `IntentSource` port (`IdleIntentSource` until the
-  input session F); no `InputMapper`, `MatchBridge` or `PerfMonitor` yet, and no `MatchScreen`
-  (sessions D, E, G). `GameCanvas` owns the `Match` through `useMatch`, which replaced
-  `useMapCanvas`. The player's Legend spawns with a `dev-spawn` command until `SpawnSystem` exists.
-- The first frame after `start()` only sets the time origin (elapsed 0), so §3's
-  `runFrames(2, 16.7)` gives no tick until the second frame's elapsed time adds up; this avoids
-  counting the time between `start()` and the first real frame. Owner sign-off asked in `INBOX.md`.
-- `Match.destroy()` stops the loop and its subscription; the renderer and camera are injected, so
-  `useMatch` (their owner) destroys them, including when the `Match` constructor throws.
-  `EntityLayer` does not cull yet (`Camera.contains` exists for it).
-- The log sinks live in `apps/client/src/data/logging/` as 15 §4 places them; session F owns
-  `data/**` (new files only, noted in `INBOX.md`). The overlay cannot read the `RingBufferSink` yet.
-- `Canvas2dRenderer` scales X and Y separately, so a window that is not 16:9 stretches the
-  following camera's 64 × 36 m view.
 
 ## Related
 
