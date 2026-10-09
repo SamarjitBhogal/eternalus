@@ -70,6 +70,24 @@ describe('MouseDevice', () => {
     expect(read(device).pointer).toEqual({ x: 40, y: 25 });
   });
 
+  it('forgets the pointer when it leaves the target or the device detaches', () => {
+    const { device, target } = attachedMouse();
+    const moveTo = (x: number, y: number): void => {
+      target.dispatchEvent(
+        pointerEvent('pointermove', { button: -1, buttons: 0, offsetX: x, offsetY: y }),
+      );
+    };
+
+    moveTo(40, 25);
+    target.dispatchEvent(new Event('pointerleave'));
+    const afterLeave = read(device).pointer;
+    moveTo(10, 10);
+    device.detach();
+
+    expect(afterLeave).toBeNull();
+    expect(read(device).pointer).toBeNull();
+  });
+
   it('cancels the browser action of non-main buttons but not of the main one', () => {
     const { target } = attachedMouse();
     const side = pointerEvent('pointerdown', { button: 3, buttons: 8 });

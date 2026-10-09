@@ -26,10 +26,11 @@ export class MouseDevice implements InputDevice {
       target.addEventListener(type, MouseDevice.suppress);
     });
     target.addEventListener('pointercancel', this.onCancel);
+    target.addEventListener('pointerleave', this.onLeave);
     this.target = target;
   }
 
-  /** Stops listening and releases every button. */
+  /** Stops listening, releases every button and forgets the pointer. */
   public detach(): void {
     const target = this.target;
     if (target !== null) {
@@ -40,12 +41,14 @@ export class MouseDevice implements InputDevice {
         target.removeEventListener(type, MouseDevice.suppress);
       });
       target.removeEventListener('pointercancel', this.onCancel);
+      target.removeEventListener('pointerleave', this.onLeave);
       this.target = null;
     }
     this.releaseAll();
+    this.pointer = null;
   }
 
-  /** Adds the held buttons and, once known, the pointer position to `snapshot`. */
+  /** Adds the held buttons and, while it is over the target, the pointer position to `snapshot`. */
   public writeInto(snapshot: MutableInputSnapshot): void {
     for (const [bit, button] of BUTTON_BITS) {
       if ((this.buttons & bit) !== 0) {
@@ -77,6 +80,11 @@ export class MouseDevice implements InputDevice {
 
   private readonly onCancel = (): void => {
     this.releaseAll();
+  };
+
+  /** Off the canvas (or over the HUD above it) the pointer aims at nothing. */
+  private readonly onLeave = (): void => {
+    this.pointer = null;
   };
 
   private static readonly suppress = (event: Event): void => {

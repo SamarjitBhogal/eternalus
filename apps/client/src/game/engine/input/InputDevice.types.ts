@@ -10,7 +10,7 @@ export type InputSnapshot = {
   readonly keys: ReadonlySet<string>;
   /** `MouseEvent.button` of every mouse button held: 0 main, 1 wheel, 2 secondary, 3/4 side. */
   readonly mouseButtons: ReadonlySet<number>;
-  /** The last pointer position, or `null` before the pointer has moved over the target. */
+  /** The pointer position while it is over the target; `null` before it arrives and after it leaves. */
   readonly pointer: ScreenPoint | null;
 };
 
