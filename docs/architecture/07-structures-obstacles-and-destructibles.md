@@ -353,7 +353,7 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
 - `Structure` and `Obstacle` use a circle `Collider` from `footprintRadius`; convex polygon
   footprints arrive with the structures in Phase 2. No concrete structure kind or content exists yet.
 - `Health` keeps `current`/`max` for the base bar and adds `shields`, `total`, `addShield` and
-  `removeShield`; bars stay in tower creation order (DEC-20).
+  `removeShield`; bars stay in source id order.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 

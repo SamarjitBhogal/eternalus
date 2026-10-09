@@ -20,23 +20,21 @@ export class SpawnContextReader {
   public constructor(private readonly entity: Entity) {}
 
   /**
-   * Reads a context with a definition and a position.
+   * Reads a context's position, with the definition the factory put next to it.
    *
-   * @throws Error when the context has no definition or no position.
+   * @throws Error when the context has no position.
    */
   public positioned<Definition extends DefinitionRef>(
     context: unknown,
   ): PositionedSpawnContext<Definition> {
     const { definition, position } = SpawnContextReader.fields(context);
 
-    if (!SpawnContextReader.isObject(definition) || !SpawnContextReader.isObject(position)) {
-      throw new Error(
-        `Entity "${this.entity.id}" needs a spawn context with a definition and a position.`,
-      );
+    if (!SpawnContextReader.isObject(position)) {
+      throw new Error(`Entity "${this.entity.id}" needs a spawn context with a position.`);
     }
 
-    // Safe: the factory matched the definition to this kind; Transform rejects a position that
-    // is not a finite point.
+    // Safe: the factory looked the definition up and matched it to this kind (04 §6), so it is
+    // not checked again; Transform rejects a position that is not a finite point.
     return { definition: definition as Definition, position: position as Vec2 };
   }
 

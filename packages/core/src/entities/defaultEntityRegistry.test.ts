@@ -6,6 +6,7 @@ import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { ContentCatalogue } from '../content/ContentCatalogue';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { UnitDefinition } from '../content/units/units.types';
 import { createDefaultEntityRegistry } from './defaultEntityRegistry';
@@ -32,7 +33,7 @@ const depthBelowEntity = (entityClass: object): number => {
   return depth;
 };
 
-const UNIT_DEFINITIONS = loadDefaultContent(30);
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const PLACEMENT = { position: { x: 10, y: 20 }, team: 'light' } as const;
 
 describe('createDefaultEntityRegistry', () => {
