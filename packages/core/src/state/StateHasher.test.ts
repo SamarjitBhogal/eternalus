@@ -115,6 +115,12 @@ describe('StateHasher', () => {
       },
     ],
     [
+      'a heading',
+      (scout) => {
+        scout.getComponent(Movement).steer({ x: 0, y: 1 });
+      },
+    ],
+    [
       'a collider being disabled',
       (scout) => {
         scout.getComponent(Collider).disable();

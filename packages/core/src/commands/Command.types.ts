@@ -73,4 +73,6 @@ export type CommandRejectReason =
   | 'invalid-count'
   | 'invalid-position'
   | 'cap-exceeded'
+  | 'invalid-direction'
+  | 'not-movable'
   | 'not-supported';

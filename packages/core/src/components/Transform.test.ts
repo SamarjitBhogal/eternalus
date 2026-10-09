@@ -30,4 +30,14 @@ describe('Transform', () => {
     }).toThrow('position must be finite');
     expect(transform.position).toEqual({ x: 1, y: 1 });
   });
+
+  it('moves in place instead of allocating a new position', () => {
+    const transform = new Transform({ x: 0, y: 0 }, 1);
+    const position = transform.position;
+
+    transform.moveBy({ x: 1, y: 2 });
+
+    expect(transform.position).toBe(position);
+    expect(position).toEqual({ x: 1, y: 2 });
+  });
 });

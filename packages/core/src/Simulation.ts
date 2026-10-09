@@ -3,9 +3,9 @@ import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
-import type { GameConfig } from './config/GameConfig.types';
 import { validateGameConfig } from './config/validateGameConfig';
-import type { Logger } from './diagnostics/Logger.types';
+import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
+import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
@@ -14,7 +14,9 @@ import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameE
 import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
-import type { System, SystemContext } from './systems/System.types';
+import type { SimulationOptions } from './Simulation.types';
+import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
+import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
 
 /**
@@ -32,28 +34,31 @@ export class Simulation {
   private readonly hasher = new StateHasher();
 
   /**
-   * @param config - The match config; validated here, so an invalid one throws
-   *   `ConfigValidationError` before anything runs.
-   * @param seed - The match seed, a whole number from 0 to 2^32 - 1.
-   * @param logger - Where core's log records go.
-   * @param systems - The tick's systems in execution order.
+   * Creates a match from its options (architecture 03 §6).
+   *
+   * @throws ConfigValidationError when `options.config` is invalid, before anything runs.
    */
-  public constructor(
-    config: GameConfig,
-    seed: number,
-    logger: Logger,
-    systems: readonly System[] = [],
-  ) {
+  public constructor({
+    config,
+    seed,
+    logger,
+    systems,
+    debug = RELEASE_DEBUG_CONFIG,
+    content,
+  }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed);
     this.commandContext = {
       state: this.state,
       factory: new EntityFactory(
         createDefaultEntityRegistry(),
-        loadDefaultContent(this.state.config.tickRate),
+        content ?? loadDefaultContent(this.state.config.tickRate),
       ),
     };
     this.systemContext = { state: this.state, logger };
-    this.pipeline = new SystemPipeline(systems);
+    this.pipeline =
+      systems === undefined
+        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger))
+        : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
         makeLogRecord('INFO', 'core.commands', `Rejected ${command.type}: ${reason}`, {
@@ -75,11 +80,12 @@ export class Simulation {
   }
 
   /**
-   * Advances exactly one tick: applies the queued commands in order, runs the systems in order,
-   * counts the tick and emits `tick-completed`.
+   * Advances exactly one tick: records and applies the queued commands in order, runs the systems
+   * in order, counts the tick and emits `tick-completed`.
    */
   public step(): void {
     for (const command of this.queue.drain()) {
+      this.state.recordCommand(command);
       applyCommand(command, this.handlers, this.commandContext);
     }
     this.pipeline.run(this.systemContext);

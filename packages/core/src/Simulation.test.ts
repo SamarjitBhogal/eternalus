@@ -1,20 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
+import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
+
 import type { Command } from './commands/Command.types';
 import { ConfigValidationError } from './config/ConfigValidationError';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { loadDefaultContent } from './content/loadDefaultContent';
 import type { Logger } from './diagnostics/Logger.types';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
 import { Simulation } from './Simulation';
 import type { System } from './systems/System.types';
 
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
+
 const stop = (actorId: string): Command => ({ type: 'stop', actorId });
 
 const simulation = (
   systems: readonly System[] = [],
   logger: Logger = new NullLogger(),
-): Simulation => new Simulation(createDefaultGameConfig(), 1, logger, systems);
+): Simulation => new Simulation({ config: createDefaultGameConfig(), seed: 1, logger, systems });
 
 describe('Simulation', () => {
   it('advances exactly one tick per step and announces it', () => {
@@ -85,22 +90,28 @@ describe('Simulation', () => {
     ]);
   });
 
-  it('spawns a Warrior through dev-spawn with its definition from the default content', () => {
+  it('spawns a Warrior through the default entity registry and its content', () => {
     const sim = simulation();
-    const spawned: string[] = [];
-    sim.on('entity-spawned', ({ kind }) => spawned.push(kind));
     sim.enqueueCommand({
       type: 'dev-spawn',
       kind: 'warrior',
       definitionId: 'warrior',
       team: 'light',
-      at: { x: 3, y: 4 },
+      at: { x: 10, y: 20 },
       count: 1,
     });
     sim.step();
-    expect(spawned).toEqual(['warrior']);
-    expect(sim.snapshot().entities).toMatchObject([
-      { kind: 'warrior', definitionId: 'warrior', team: 'light', transform: { x: 3, y: 4 } },
+
+    expect(sim.snapshot().entities).toEqual([
+      {
+        id: 'entity-1',
+        kind: 'warrior',
+        family: 'legend',
+        definitionId: 'warrior',
+        team: 'light',
+        transform: { x: 10, y: 20, radius: 0.5 },
+        health: { current: 600, max: 600 },
+      },
     ]);
   });
 
@@ -136,9 +147,12 @@ describe('Simulation', () => {
 
   it('hashes equal runs equal and a different seed differently', () => {
     const run = (seed: number): number => {
-      const sim = new Simulation(createDefaultGameConfig(), seed, new NullLogger(), [
-        { name: 'draw', update: ({ state }) => state.rng.nextFloat() },
-      ]);
+      const sim = new Simulation({
+        config: createDefaultGameConfig(),
+        seed,
+        logger: new NullLogger(),
+        systems: [{ name: 'draw', update: ({ state }) => state.rng.nextFloat() }],
+      });
       for (let step = 0; step < 30; step += 1) {
         sim.step();
       }
@@ -150,12 +164,59 @@ describe('Simulation', () => {
 
   it('refuses an invalid config before anything runs', () => {
     const config = createDefaultGameConfig({ map: { numLanes: 0 } });
-    expect(() => new Simulation(config, 1, new NullLogger())).toThrow(ConfigValidationError);
+    expect(() => new Simulation({ config, seed: 1, logger: new NullLogger() })).toThrow(
+      ConfigValidationError,
+    );
   });
 
   it('refuses an invalid seed', () => {
-    expect(() => new Simulation(createDefaultGameConfig(), -1, new NullLogger())).toThrow(
-      RangeError,
-    );
+    expect(
+      () =>
+        new Simulation({ config: createDefaultGameConfig(), seed: -1, logger: new NullLogger() }),
+    ).toThrow(RangeError);
+  });
+
+  it('runs the default pipeline when no systems are given: move commands move units', () => {
+    const sim = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+      debug: TEST_DEBUG_CONFIG,
+    });
+    sim.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at: { x: 0, y: 0 },
+      count: 1,
+    });
+    sim.step();
+    sim.enqueueCommand({ type: 'move', actorId: 'entity-1', direction: { x: 1, y: 0 } });
+    sim.step();
+    sim.step();
+
+    expect(sim.snapshot().entities[0]?.transform?.x).toBeGreaterThan(0);
+  });
+
+  it('builds entities from the content it is given', () => {
+    const tough = { ...UNIT_DEFINITIONS.get('warrior'), baseHealth: 5000 };
+    const sim = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+      content: { has: (id) => id === 'warrior', get: () => tough },
+    });
+    sim.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'light',
+      at: { x: 0, y: 0 },
+      count: 1,
+    });
+    sim.step();
+
+    expect(sim.snapshot().entities[0]?.health).toEqual({ current: 5000, max: 5000 });
   });
 });

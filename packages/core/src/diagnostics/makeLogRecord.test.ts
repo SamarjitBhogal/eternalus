@@ -61,4 +61,13 @@ describe('makeLogRecord', () => {
       'invariant-violated',
     );
   });
+
+  it('carries a context of recent commands and events when given one', () => {
+    const context = { recentCommands: [{ tick: 2, command: { type: 'stop' } }], recentEvents: [] };
+
+    expect(makeLogRecord('ERROR', 'core.invariants', 'x', { tick: 2, context }).context).toBe(
+      context,
+    );
+    expect(makeLogRecord('ERROR', 'core.invariants', 'x')).not.toHaveProperty('context');
+  });
 });

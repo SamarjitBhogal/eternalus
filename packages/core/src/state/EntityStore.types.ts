@@ -8,3 +8,6 @@ export type RemovalCause = 'died' | 'despawned' | 'consumed' | 'dev-removed' | '
 
 /** An entity class, concrete or abstract, used to ask "how many of these?" (`Unit`, `Legend`). */
 export type EntityClass = abstract new (id: string, definitionId: string) => Entity;
+
+/** One removal the store made this tick. */
+export type RemovalRecord = { readonly entityId: EntityId; readonly cause: RemovalCause };

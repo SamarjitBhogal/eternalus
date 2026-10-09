@@ -109,7 +109,7 @@ Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
       (abstract) + `Warrior` (placeholder, no abilities). Owner: _. Test: factory spawns each
       with the right components. Done when: `Warrior` is renamable by changing the class name,
       its imports and its content display name only.
-- [ ] **`MovementSystem`** (acceleration → velocity → position; velocity clamp). Owner: _.
+- [x] **`MovementSystem`** (acceleration → velocity → position; velocity clamp). Owner: _.
       Test: a dummy reaches `maxSpeed` after `maxSpeed / acceleration` ticks; a `stop` command
       decelerates. Done when: no `atan2` and no allocation per unit per tick.
 - [ ] **`DeathSystem` with `RemovalCause`** (the only removal path; emits `entity-removed`

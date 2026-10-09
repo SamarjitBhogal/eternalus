@@ -46,6 +46,9 @@ export class StateHasher {
         ...health.shields.flatMap((bar) => [bar.sourceId, bar.current, bar.max]),
       ]);
     }
+    if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
+      fields.push(['heading', movement.heading.x, movement.heading.y]);
+    }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
       fields.push(['collider', collider.isEnabled]);

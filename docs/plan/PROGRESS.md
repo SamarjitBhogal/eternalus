@@ -323,6 +323,21 @@ The example below is fenced so it is not read as a real entry.
 - Next step: pre-PR gate, then review. Session B (#13) adds `MovementSystem`, `DeathSystem`,
   `InvariantSystem`; owner: sim lane.
 
+### 2026-10-07 — Phase 1 / sprint 1.2 — feat/entity-systems — claudiodh + Claude Code
+
+- What was done: session B's handoff to session C (`INBOX.md`), stacked on `feat/sim-kernel` and
+  the entity foundation. `Simulation` takes `SimulationOptions` and builds `DefaultSystemPipeline`
+  (`MovementSystem`, `DeathSystem`, `InvariantSystem`); `EntityFactory` uses `IdGenerator` and a
+  `DefinitionSource`; `MoveHandler`/`StopHandler`; `InvariantRunner` + `DebugConfig` with
+  `no-removal-without-cause`, `health-within-bounds`, `finite-transforms`, each with a test that
+  triggers it; `GameState.recentCommands`, `LogRecord.context`; `StateHasher` fields for shields,
+  heading, collider and vision (recorded replay checkpoints unchanged); `ShieldBar` shared.
+  Player scenarios now also play through the `Simulation`.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 36 passed (36)", "✓ built", "Documentation check passed.").
+- Next step: Sam decides the `dev-remove-entity` deferral (INBOX); `ObjectPool`, the remaining
+  sprint 1.2 invariants and the pre-PR gate; owner: claudiodh.
+
 ### 2026-10-08 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
 
 - What was done: the PR #14 review (Sam, 2026-10-08). Registry back to

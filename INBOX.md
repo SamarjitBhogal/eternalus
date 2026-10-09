@@ -97,10 +97,31 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       violations with the `invariant-violated` `DiagnosticEvent` already declared (15 §4–§5).
       (7) `state/GameEvents.types.ts`: import `ShieldBar` from `components/Health.types.ts` once
       `Health` has shields.
-      **Status (2026-10-08):** PR #14 does (1)'s registry, (4) for shields, colliders and vision,
-      (5) and (7). PR #17 (owner claudiodh) does the rest of (1), (2), (4)'s movement heading and
-      (6). (3) waits on Sam: routing `dev-remove-entity` through `DeathSystem` changes the
-      recorded replay checkpoints (question in PR #17).
+      **Status (session C, 2026-10-07, branch `feat/entity-systems`):** (1), (2), (4), (5), (6)
+      and (7) done. `Simulation` now takes `SimulationOptions` (`config`, `seed`, `logger`,
+      `systems?`, `debug?`, `content?`) and builds `DefaultSystemPipeline` (movement, death,
+      invariants) when `systems` is omitted; its factory uses `createDefaultEntityRegistry()` and
+      `loadDefaultContent()` (PR #14, DEC-21/22). (2) steers through
+      `EntityStore.steer`; new reject reasons `invalid-direction` and `not-movable`. (6) ships
+      `no-removal-without-cause`, `health-within-bounds` and `finite-transforms` (the 15 §3 name
+      for the prompt's NaN-transform check). **(3) is still open**: see the request below.
+- [ ] **Session C → Sam (2026-10-07): deferring `dev-remove-entity` to `DeathSystem`.** Routing
+      the removal through `DeathSystem` (a removal request in `state/`, drained by the system)
+      changes when the entity leaves within the tick, so `wanderSeed7.replay.ts` checkpoints
+      change. Options: (a) **Recommended** — do it and re-record the fixture in the same PR;
+      (b) keep the handler's immediate removal (today; `DeathSystem` removes only the dead).
+      Also a question: the invariants in `diagnostics/` read `components/` (`Health`,
+      `Transform`, `Movement`), which 15 §3 needs but 02 §2 does not list. May `diagnostics/`
+      import `components/`? If yes, I'll update 02 §2 and the core folder table together.
+- [ ] **Session C → session H (2026-10-07): `Simulation` takes one options object.** Call
+      `new Simulation({ config, seed, logger })` instead of passing four arguments; omit
+      `systems` to get the default pipeline and pass `debug` for the invariant level (architecture
+      03 §6, 15 §2). Branch `feat/entity-systems`.
+
+- [ ] **Session C → Sam (2026-10-07, PR #17): 2 optional ideas, no pressure.** Yes, no or "not
+      now" are all fine; a no means I switch back to the documented design. 1. **`DefaultSystemPipeline` and `DefaultInvariantRunner` are classes** instead of the
+      `defaultSystemPipeline.ts` / `createDefaultInvariants()` functions in 02 §9 and 15 §2. 2. **`InvariantViolationError` carries the seed, and each `Violation` its severity**, so a
+      test failure prints everything needed to reproduce it (15 §2).
 
 - [ ] **Session C → Sam (2026-10-08, PR #14 review): proposed, design text unchanged until you
       answer.** Each one is how the code works today; say yes (I update the doc) or no (I change
@@ -116,8 +137,21 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
   - (6) `packages/core/AGENTS.md` folder table: `content/` is "Data only", but it now also has
     `ContentCatalogue`, the validator and `loadDefaultContent()`. Proposed wording: "Definitions
     keyed by kebab-case id, plus the catalogue, its rules and the loader".
-  - (7) 03 §12 still says `Simulation` has an empty registry; PR #14 wires
-    `createDefaultEntityRegistry()` and `loadDefaultContent()`. Proposed: drop that line.
+  - (7) 03 §12 "Implementation status" is out of date, and PRs #14 and #17 leave it unchanged
+    until you approve new text. Proposed replacement for its bullets:
+    - `Simulation` takes `SimulationOptions` (`config`, `seed`, `logger`, `systems?`, `debug?`,
+      `content?`); `content` is a `DefinitionSource`, `loadDefaultContent(config.tickRate)` by
+      default. Its `EntityFactory` uses `createDefaultEntityRegistry()`; omitting `systems` gives
+      `DefaultSystemPipeline` (movement, death, invariants). No `exportReplay()` or `dispose()`.
+    - `move` and `stop` steer through `EntityStore.steer`; `attack-target`, `cast-ability`,
+      `intent` and `dev-set-controller` stay `not-supported` until their systems exist.
+    - `DeathSystem` removes only entities whose health reached 0 until `dev-remove-entity` is
+      routed through it (open below) and `SpawnSystem` exists.
+    - `Movement` works per tick: `advance()` accelerates along the heading with no `|dv|` clamp,
+      and without a heading slows by `acceleration` per tick instead of friction (10 §2);
+      impulses, friction and the clamp arrive with knockback (Phase 2).
+    - `GameState` keeps `recentCommands` and the seed for diagnostic reports; no `world`,
+      `teams` or `hordes` yet.
   - (8) The core lint (ADR 0013) comes back as its own PR with an ADR for your sign-off, encoding
     02 §2's per-folder import lists, not rings.
   - (9) 07 §13 still says shield bars stay in "source id order"; per your optional item they now

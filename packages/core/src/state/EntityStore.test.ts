@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
 import { Entity } from '../entities/Entity';
@@ -18,6 +19,15 @@ class Dummy extends Entity {
 
   protected override onRetire(cause: string): void {
     this.retiredWith = cause;
+  }
+}
+
+class Walker extends Entity {
+  public readonly kind = 'walker';
+  public readonly family = 'test';
+
+  protected installComponents(): void {
+    this.addComponent(new Movement({ maxSpeed: 1, acceleration: 1, mass: 1 }));
   }
 }
 
@@ -115,5 +125,30 @@ describe('EntityStore', () => {
     expect(store.countOnTeam('dark', Unit)).toBe(1);
     expect(store.countOnTeam('dark', Legend)).toBe(0);
     expect(store.countOnTeam('neutral', Entity)).toBe(0);
+  });
+
+  it("records this tick's removals until they are cleared", () => {
+    const store = storeWith('a', 'b');
+    store.remove('a', 'died');
+    store.remove('b', 'dev-removed');
+
+    expect(store.removedThisTick()).toEqual([
+      { entityId: 'a', cause: 'died' },
+      { entityId: 'b', cause: 'dev-removed' },
+    ]);
+    store.beginTick();
+    expect(store.removedThisTick()).toEqual([]);
+  });
+
+  it('steers an entity that has Movement and refuses one that does not', () => {
+    const store = storeWith('still');
+    const walker = new Walker('walker', 'walker-definition');
+    walker.spawn({});
+    store.add(walker);
+
+    expect(store.steer('walker', { x: 0, y: 2 })).toBe(true);
+    expect(walker.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
+    expect(store.steer('still', { x: 1, y: 0 })).toBe(false);
+    expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
   });
 });
