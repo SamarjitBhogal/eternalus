@@ -21,7 +21,8 @@ const NO_TRANSCENDENTAL_MATH = ['sin', 'cos', 'atan2', 'exp', 'pow'].map((proper
 }));
 
 export default defineConfig(
-  globalIgnores(['**/dist/', '**/coverage/']),
+  // Flat config ignores .gitignore; each worktree is linted by its own hooks and CI (ADR 0014).
+  globalIgnores(['**/dist/', '**/coverage/', '.worktrees/', '.claude/worktrees/']),
 
   js.configs.recommended,
 
