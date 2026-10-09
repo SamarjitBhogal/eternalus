@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-03
+last-reviewed: 2026-10-06
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths: ['apps/client/src/ui/**', 'apps/client/src/bridge/**', 'apps/client/src/game/input/**']
 related:
@@ -27,9 +27,9 @@ slice, an `InputAction` or its binding. It fixes how the UI learns about the gam
 snapshots through one bus and one store, rule 10), how the UI talks back (intents that become
 `Command`s, rule 9) and how controls stay data (requirements doc: "no hard-coded controls;
 configurable via settings", and prompts that "change dynamically to reflect whatever keybindings
-they chose"). React + Redux Toolkit + Vite are decided (D2, ADR 0004; confirm the libraries with
-the instructor). The client today holds only `main.tsx`, `GameCanvas.tsx` and an empty store;
-everything below is a **sketch**.
+they chose"). React + Redux Toolkit + Vite are decided (D2, ADR 0004; confirmed with the
+instructor, DEC-02). The client today has nothing under `ui/` or `game/input/` and only an empty
+store in `bridge/`; everything below is a **sketch**.
 
 ## 1. Where it sits
 
@@ -199,7 +199,7 @@ export type BridgeEventMap = {
   };
   scoreboard: {
     readonly legends: readonly LegendStats[];
-    readonly teams: Readonly<Record<PlayableTeamId, TeamStats>>;
+    readonly teams: Readonly<Record<PlayableTeam, TeamStats>>;
   };
   'capture-state': { readonly points: readonly CapturePointSnapshot[] };
   announce: {

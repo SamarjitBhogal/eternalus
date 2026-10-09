@@ -91,7 +91,7 @@ systems/
 - Function components and hooks only. Read data with store selectors; put logic in custom hooks.
 - Styles in a co-located `Component.module.css` with camelCase class names. Global CSS only in
   `apps/client/src/styles/` (variables and reset). No inline styles except runtime values.
-- Only the renderer (planned `game/engine/Renderer.ts`) touches the canvas context.
+- Only the 2D renderer (`game/engine/render/Canvas2dRenderer.ts`) touches the canvas context.
 - Engine objects expose `destroy()`, and their owner calls it.
 - Draw order is defined in one place, and keybindings in one file.
 
@@ -104,7 +104,7 @@ systems/
   coupling.
 - No `.only` or `.skip`, and every test asserts something. **(enforced)** Avoid `.todo`.
 - Coverage thresholds live in each package's `vitest.config.ts` and only go up (the ratchet,
-  see `docs/process/guardrails.md`). **(enforced)** Today: core 80%, client 45–50%.
+  see `docs/process/guardrails.md`). **(enforced)** Today: core 85%, client 45–50%.
 
 ## 7. Git workflow
 

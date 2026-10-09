@@ -35,22 +35,68 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
 
+- [ ] **DEC-15 — camp weights by depth (DISC-42) in practice.** The default map yields 4 light +
+      2 heavy camps per side and no medium ones; with one camp per corridor (`numLanes` ≥ 7) every
+      camp is heavy. Proposal: keep depth-based weights but define the classes by position in the
+      corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
+      class in content. Pick one. Note: "depth" is the distance to the nearest lane over half the
+      corridor's height, so in tall worlds with steep lanes every camp reads as light.
+- [ ] **DEC-16 — tooling: lint ignores agent worktrees.** ESLint's flat config does not read
+      `.gitignore`, so linting from the main checkout also lints every `.worktrees/*` checkout and
+      one unfinished worktree blocks every push from the main checkout. Proposal: add
+      `.worktrees/` and `.claude/worktrees/` to `globalIgnores` in `eslint.config.js` (each
+      worktree is still linted by its own hooks and CI).
+- [ ] **Session D (feat/session-shell-home), better than design — no `useAppDispatch`.** The
+      §2.3 contract and `apps/client/AGENTS.md` ask for `useAppSelector` **and**
+      `useAppDispatch`. D ships only `useAppSelector`: `ui/` never writes the store
+      (architecture 13 §5, "every state change has one path"; components call `emitIntent`), and
+      knip fails the build on an unused export. Leaving the hook out makes the rule structural.
+      Options: (a) **Recommended** — accept; update §2.3's successor, `apps/client/AGENTS.md`
+      "Adding code" and architecture 13 §5 to say "`useAppSelector` only; the UI emits intents".
+      (b) Add `useAppDispatch` back when a first caller exists.
+      Also found by the critic: architecture 13 §2's `character-select` row says it "builds the
+      rosters … assigns `playerTeam`", while the `menu` and `loading` rows (and reference 14 §5)
+      put the setup at "Start match"; D follows the latter. The row needs a one-line fix.
+
 ## Requests for the agent
 
-- [ ] _(none open — the S1 work packages are in `docs/agents/prompts/2026-10-03-ultracode-sessions.md`)_
-- [ ] **F → D (2026-10-06, `feat/settings-keybindings`): settings intents and the `settings`
-      event in D-owned bridge files.** Session F cannot edit these (§2.6). Types only, so D can
-      add them before F merges:
-      `bridge/events.ts` — `update-binding` gains `readonly onConflict: 'swap' | 'replace'`
-      (`BindingConflictPolicy` in `Binding.types.ts`); `reset-bindings` gains
-      `readonly action: InputAction | null` (`null` = all); new member
-      `{ readonly kind: 'update-settings'; readonly patch: SettingsPatch }` (`SettingsPatch` is
-      exported by `bridge/slices/settingsSlice.ts`); `BridgeEventMap` gains
-      `settings: SettingsSliceState`. `bridge/connectBusToStore.ts` — one line:
-      `bus.on('settings', (s) => dispatch(settingsSlice.actions.settingsChanged(s)))` (the
-      reducer is in F's slice body). Without these the settings screen has no way to reach the
-      game: the §2.3 intents carry no conflict policy, no per-action reset and no audio, video or
-      accessibility change.
+- [ ] **Session A (from session B, updated 2026-10-07):** PR #13 merged the phase branch with
+      `feat/map-generator`: B's files and `components/TeamMembership.ts` now use `Team` from
+      `teams/teams.types.ts`, `polarPoint` and the wall-ring test call
+      `utils/deterministicMath.ts`, and `index.ts` exports only `config/`'s `MapConfig`. Left for
+      session A, the stand-in swap: `DEFAULT_MAP_CONFIG` → `createDefaultGameConfig().map`;
+      `validateMapConfig` → `validateGameConfig` (same rules plus `navCellSize`); `MapRandom` /
+      `map/Rng.types.ts` → `SeededRandom` and `utils/Rng.types.ts` (`next()` is `nextFloat()`);
+      `DEFAULT_MAP_LAYOUT.navCellSize` → `config.map.navCellSize`; then delete the local
+      `MapConfig` in `map/MapGenerator.types.ts`.
+- [ ] **Session C (from session B, 2026-10-07; owner-approved, DEC-20):** the simulation kernel
+      (PR #13) leaves these to session C. The B-owned lines named here are C's to change, an
+      exception to the ownership table (`docs/agents/prompts/2026-10-03-ultracode-sessions.md`
+      §2.6). Read 03 §12 and 15 §13 ("Implementation status") first.
+      (1) `Simulation.ts`: pass `createDefaultEntityRegistry()` to its `EntityFactory` (marked
+      `TODO`) so `dev-spawn` finds kinds; make `systems/defaultSystemPipeline.ts` (02 §9) the
+      default of its `systems` parameter; wire `DebugConfig` there too, and if that takes the
+      constructor past four parameters switch to `SimulationOptions` (03 §6, CONTRIBUTING §4)
+      and tell session H in this file.
+      (2) `commands/defaultCommandHandlers.ts` and `commands/handlers/`: replace the
+      `UnsupportedCommandHandler` lines for `move` and `stop` with real handlers when
+      `MovementSystem` lands (recipe R16); the other unsupported commands wait for their systems.
+      `commands/` may not import `components/` (02 §2): reach `Movement` through a `state/`
+      helper, as `EntityStore.countOnTeam` reaches `TeamMembership`, or ask Sam here to widen
+      `commands/`'s imports first.
+      (3) `commands/handlers/DevRemoveEntityHandler.ts`: hand removal to your `DeathSystem` (marked
+      `TODO`; 03 §4 makes it the only `entity-removed` emitter). `DevSpawnHandler` keeps spawning
+      directly until `SpawnSystem` exists (a later phase).
+      (4) `state/StateHasher.ts`: add every new component's simulation fields to `fieldsOf`
+      (03 §9).
+      (5) `entities/EntityFactory.ts`: take ids from `utils/IdGenerator` (03 §2).
+      (6) With the `InvariantRunner`: add `GameState.recentCommands` (recorded by
+      `Simulation.step()`), typed structurally like `GameEventMap`'s `command-rejected`
+      (`{ tick: number; command: { readonly type: string } }`) because `state/` may not import
+      `commands/` (03 §4); add `LogRecord.context` in `diagnostics/Logger.types.ts`; report
+      violations with the `invariant-violated` `DiagnosticEvent` already declared (15 §4–§5).
+      (7) `state/GameEvents.types.ts`: import `ShieldBar` from `components/Health.types.ts` once
+      `Health` has shields.
 - [ ] **F → D (2026-10-06, after F merges): wire settings in `main.tsx` and `ui/App.tsx`.**
       `main.tsx`: build `new PersistenceController({ adapter: new MemoryStorageAdapter(),
 knownActions: new Set(INPUT_ACTIONS), now: () => Date.now() })`, `await persistence.open()`,
@@ -74,6 +120,21 @@ knownActions: new Set(INPUT_ACTIONS), now: () => Date.now() })`, `await persiste
 
 ## Done
 
+- 2026-10-08 — **F → D: settings intents and the `settings` event** (session F's request of
+  2026-10-06): `update-binding` `onConflict`, per-action `reset-bindings`, `update-settings`,
+  `BridgeEventMap.settings` and the `connectBusToStore` line landed in D's 5accc85 (PR #12).
+- 2026-10-07 — **Session B's simulation kernel items** signed off and done: the snapshot shape
+  (DEC-17) and the `makeLogRecord` options object (DEC-18) folded into 03 §5 and 15 §4; the
+  determinism lint (DEC-19, ADR 0012) added; the kernel's design differences (DEC-20) folded into
+  02, 03, 15 and 17 R16, with "Implementation status" sections in 03 and 15; the replay fixture
+  format written into 15 §7. Recorded in `docs/reference/game-design/13-owner-decisions-log.md`.
+  Branch `feat/sim-kernel` (PR #13).
+- 2026-10-07 — **Session A's requests to session B** done: `utils/deterministicMath.ts` (now used
+  by `polarPoint`), `GameConfig.map` keeps the field names of the map's local `MapConfig`, and the
+  nav cell size lives in `config.map.navCellSize`. Branch `feat/sim-kernel` (PR #13).
+- 2026-10-06 — **DEC-14** (map generator refinements a–d) signed off by the owner; recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and folded into
+  `docs/architecture/06-map-and-minimap.md`. Branch `feat/map-generator` (PR #8).
 - 2026-10-03 — **DEC-01…DEC-10 and the discrepancy answers** recorded in
   `docs/reference/game-design/13-owner-decisions-log.md`; plan re-cut to four two-week sprints
   ending 2026-11-27 (`docs/plan/README.md` §0); ADR 0004/0006/0009 statuses updated; 32

@@ -11,7 +11,7 @@ related:
     'docs/decisions/0007-phase-branching-model.md',
     'docs/plan/README.md',
     'docs/agents/checklists.md',
-    'docs/decisions/0012-agents-push-task-branches-and-open-prs.md',
+    'docs/decisions/0013-agents-push-task-branches-and-open-prs.md',
   ]
 ---
 
@@ -106,7 +106,7 @@ git push -u origin feat/health-shield-bars
 
 - Small PRs, squash-merged into the phase branch after one approval and green CI.
 - Agents commit, push their own task branch (`git push -u origin <task-branch>`, never a bare
-  `git push`) and open its PR only when asked in that task (ADR 0012); they never push `main` or
+  `git push`) and open its PR only when asked in that task (ADR 0013); they never push `main` or
   a phase branch, never force-push and never merge.
 - Parallel agents: one worktree per task (`docs/agents/running-agents.md` §3).
 - Rebase task branches on the phase branch before review if they fall behind; never
@@ -140,7 +140,7 @@ git push -u origin feat/health-shield-bars
 | `git status`, `git diff`, `git log`, `git branch`, `git show` | force pushes, pushing `main` or a phase branch, merging PRs |
 | `git switch -c <task> <phase>` when asked to branch           | `git reset --hard`, `git checkout main`, `git branch -D`    |
 | `git commit` when the human asked in the current task         | `git rebase`/`git merge` unless explicitly asked, `git tag` |
-| `git push -u origin <task>`, `gh pr create` when asked (0012) | `git commit --no-verify`                                    |
+| `git push -u origin <task>`, `gh pr create` when asked (0013) | `git commit --no-verify`                                    |
 
 ## Related
 
