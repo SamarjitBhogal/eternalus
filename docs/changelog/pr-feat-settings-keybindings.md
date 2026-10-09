@@ -63,8 +63,9 @@ file: Esc opens the pause overlay, W → ArrowUp updates the HUD glyphs).
 | UI                                   | `<KeyGlyph action>`, `<Prompt template="… {action:<id>} …">`, `<SettingsScreen isOverlay?>` (menu route `settings`), `<PauseOverlay />` (renders only while `session.overlay` is set); `STRINGS.settings`, `STRINGS.pause`, `STRINGS.unbound`, `ACTION_LABELS` in `ui/strings.ts`                                                                         |
 
 **G:** mount `<PauseOverlay />` in `MatchScreen` and use `<KeyGlyph action="ability-1" />` (etc.)
-in the ability bar. **H / PR #19:** see the INBOX handover; `Match` re-reads bindings on the
-`settings` event and toggles the pause overlay on a `pause-menu` press edge.
+in the ability bar. **The `Match` owner (session H; PR #19's `useMatch`):** start from the
+player's bindings instead of `PRESETS.wasd`, re-read them on the `settings` event and toggle the
+pause overlay on a `pause-menu` press edge (INBOX item).
 
 ## Behaviour
 
@@ -81,14 +82,14 @@ in the ability bar. **H / PR #19:** see the INBOX handover; `Match` re-reads bin
   the store.
 - **Pause overlay:** Resume (`close-overlay`), Settings (`open-overlay settings`, the screen
   embedded, Back returns to the pause menu), Leave match (`leave-match`).
-- **Devices** (used by `Match` once H/#19 wires them): keyboard by `code`, no auto-repeat presses,
+- **Devices** (`useMatch` from PR #19 builds them): keyboard by `code`, no auto-repeat presses,
   defaults prevented only for bound keys (never Tab, F5, F12, Ctrl/Meta), release-all on blur and
   `visibilitychange`; mouse buttons from the `buttons` bitmask as `MouseEvent.button` numbers,
   context menu and middle-click suppressed, pointer captured while pressed.
 
 ## How it was tested
 
-- 345 client tests (61 files): presets complete and conflict-free; rebind swap/replace and reset;
+- 398 client tests after the merge (345 before it; 74 files): presets complete and conflict-free; rebind swap/replace and reset;
   resolver and mapper (diagonals, edges, slots, aim projection, `isBound`); the `InputDevice`
   contract on `KeyboardDevice`, `MouseDevice` and `FakeInputDevice` with synthetic events (code
   vs key, repeat, Tab/F5/F12/Ctrl, blur and `visibilitychange`, side buttons, chorded buttons,
@@ -140,10 +141,14 @@ Each is recorded in the "Implementation status" notes (09 §11, 13 §10, 14 §14
 
 ## Notes for the reviewer
 
-- **PR #19 (`feat/player-input`) overlaps this branch** on `bridge/Binding.types.ts`,
+- **PR #19 (`feat/player-input`) merged first** with its own `bridge/Binding.types.ts`,
   `game/input/{keybindings,InputMapper}*` and `game/engine/input/*`. The owner made this
-  branch's versions canonical (DEC-26); `InputMapper` takes #19's calls. #19 then drops its copies
-  and adapts `DeviceIntentSource` (INBOX has the steps).
+  branch's versions canonical (DEC-26), so merge `a82e098` takes this branch's side of the 15
+  add/add conflicts, adapts #19's `DeviceIntentSource` to this snapshot (a `Set` of button
+  numbers, no `keyLabels`) and removes #19's then-unused `fakePointerEvent.ts`. `useMatch`
+  already called `new InputMapper(bindings)`, `isBound` and the `Projection` port as defined
+  here; #19's `Match` and `DeviceIntentSource` tests pass unchanged. Against the phase branch, the
+  diff therefore shows this branch's input files replacing #19's.
 - **Guardrail change (ADR 0015, accepted; DEC-25):** `.claude/settings.json` lets agents push
   `feat|fix|docs|refactor|chore/*` branches and open PRs; force pushes, `:`/`+` refspecs,
   deletions, `--no-verify`, `main`/`phase/` pushes and `gh pr merge` are denied. Patterns are
@@ -194,18 +199,26 @@ new nit: `SettingsScreenOptions` spells out its tab union instead of deriving it
 one unbound dash (net −9 lines). (2) `.chord` composing `KeyGlyph`'s style was applied and then
 reverted for the critic's N1 (net 0). Everything else was architecture-required.
 
-**`npm run check` on the post-ponytail code (`86b5ccb`):**
+**Critic, pass 4 (merge `a82e098` with PRs #14–#19): ready for PR.** #19's `useMatch`, `Match`
+and `DeviceIntentSource` work on this branch's API; the ADR renumber and the INBOX and
+decisions-log merges are consistent, and session C's ADR 0013 is untouched. Two minor items, fixed
+in `0782f39`: #19's `MouseDevice` forgot the pointer on `pointerleave` and `detach` (so
+`aim` is `null` off the canvas); this branch's did not, so that behaviour is restored with a test
+that failed before the fix. A stale INBOX item about #19's `Binding.types.ts` shapes is closed.
+Nits left: #19's `fakeKeyEvent.ts` duplicates `syntheticEvent`.
+
+**`npm run check` on the final tip (`0782f39`, after merging PRs #14–#19):**
 
 ```
 > npm run format:check && npm run check:no-js && npm run lint && npm run typecheck && npm run knip && npm run test:coverage && npm run build && npm run docs:check
 All matched files use Prettier code style!
- Test Files  42 passed (42)
-      Tests  295 passed (295)
-All files          |   98.78 |    91.48 |    99.1 |   98.69 |
- Test Files  61 passed (61)
-      Tests  345 passed (345)
-All files          |   90.97 |    85.75 |   88.32 |   91.13 |
-✓ built in 88ms
+ Test Files  76 passed (76)
+      Tests  442 passed (442)
+All files          |   98.99 |    93.12 |   99.29 |   98.92 |
+ Test Files  74 passed (74)
+      Tests  398 passed (398)
+All files          |   91.39 |    88.18 |   89.23 |   91.58 |
+✓ built in 92ms
 Documentation check passed.
 EXIT=0
 ```

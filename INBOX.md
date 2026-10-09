@@ -215,12 +215,6 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
     preset until settings supply saved bindings. A minimap click is also an `attack` press until
     the minimap consumes its clicks (SCRUM-151).
 
-- [ ] **Session C → session F (2026-10-09, PR #19): `bridge/Binding.types.ts` now has the 13 §6.1
-      shapes.** `INPUT_ACTIONS` (same 21 ids; `InputAction` derives from it), and `InputChord` is
-      the union (keyboard `code`/`label`/`modifiers?`, mouse `button` 0–4, `gamepad`,
-      `gamepad-axis`). The defaults are in `game/input/keybindings.ts` (`DEFAULT_CHORDS`, presets
-      `wasd`/`arrows`), and `InputMapper.setBindings` takes the saved bindings. `settingsSlice`,
-      `events.ts` and `hudSlice` compile unchanged.
 - [ ] **F → G (2026-10-06): mount the pause overlay.** `ui/screens/MatchScreen.tsx` renders
       `<PauseOverlay />` from `ui/hud/PauseOverlay.tsx` unconditionally; it renders nothing
       unless `session.overlay` is `'pause'` or `'settings'`.
@@ -238,6 +232,9 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Done
 
+- 2026-10-09 — **Session C → session F: `Binding.types.ts` has the 13 §6.1 shapes** (PR #19):
+  superseded by DEC-26 in F's merge `a82e098`. F's flat `InputChord` is kept, `INPUT_ACTIONS`
+  lives in `game/input/keybindings.ts`, and #19's `DeviceIntentSource` builds F's snapshot.
 - 2026-10-08 — **Session F owner decisions DEC-25…DEC-29** (agent pushes, canonical input layer,
   `SettingsController`, snapshot shape, conflict-free edits) recorded in
   `docs/reference/game-design/13-owner-decisions-log.md` and folded into ADR 0015 and

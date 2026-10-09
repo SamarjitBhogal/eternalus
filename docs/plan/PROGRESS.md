@@ -434,3 +434,21 @@ The example below is fenced so it is not read as a real entry.
 - Next step: push `feat/settings-keybindings` and open its PR into the phase branch (description
   in `docs/changelog/pr-feat-settings-keybindings.md`); PR #19 adapts to F's input layer after
   F merges; G mounts `<PauseOverlay />` in `MatchScreen`.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/1-simulation-kernel-and-world` again after PRs #14, #17,
+  #18 and #19 landed (`a82e098`). PR #19 had added its own input layer at the same paths; per
+  DEC-26 the 15 add/add conflicts take this branch's side, #19's `DeviceIntentSource` now builds
+  this branch's snapshot (`Set` of button numbers, no `keyLabels`), and #19's `fakePointerEvent.ts`
+  (unused after the merge; knip) is removed; #19's `Match`/`useMatch`/`DeviceIntentSource` tests
+  pass unchanged. The critic's merge review found #19's "forget the pointer off the canvas"
+  behaviour lost; restored in `0782f39` with a test that failed before. INBOX and the decisions log keep both sides. Correction to the entry above: the
+  push ADR is **0015**, not 0013 (DEC-24 reserves 0013 for session C's core lint); renamed with
+  every reference on this branch.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 442 passed (442)" (lines 98.92%); client "Tests 398
+  passed (398)" (statements 91.39%, lines 91.58%); "✓ built in 92ms"; "Documentation check
+  passed."
+- Next step: push and open the PR; the `Match` owner wires live bindings and the pause toggle
+  (INBOX); G mounts `<PauseOverlay />`.
