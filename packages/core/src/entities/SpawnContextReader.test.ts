@@ -35,30 +35,20 @@ describe('SpawnContextReader', () => {
     }
   });
 
-  it('rejects a context without a usable definition or position', () => {
+  it('rejects a context without a usable position', () => {
     const missing: unknown[] = [
       undefined,
       42,
       {},
       { definition: DEFINITION },
-      { definition: { id: 'reader-definition' }, position: POSITION },
       { definition: DEFINITION, position: 'here' },
     ];
 
     for (const context of missing) {
       expect(() => reader.positioned(context)).toThrow(
-        'Entity "entity-1" needs a spawn context with a definition and a position.',
+        'Entity "entity-1" needs a spawn context with a position.',
       );
     }
-  });
-
-  it("rejects another entity's definition", () => {
-    expect(() =>
-      reader.positioned({ definition: { ...DEFINITION, id: 'other' }, position: POSITION }),
-    ).toThrow('Entity "entity-1" (reader-kind, reader-definition) got definition "other"');
-    expect(() =>
-      reader.positioned({ definition: { ...DEFINITION, kind: 'other' }, position: POSITION }),
-    ).toThrow('got definition "reader-definition" (other)');
   });
 
   it('rejects a placed context with a missing or unknown team', () => {

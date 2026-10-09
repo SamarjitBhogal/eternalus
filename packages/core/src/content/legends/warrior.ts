@@ -11,7 +11,7 @@ export const WARRIOR = {
   kind: 'warrior',
   displayName: 'Warrior',
   roleBlurb: 'Lighter, lower health, faster.',
-  baseHealth: 600, // TUNE
+  baseHealth: 600, // TUNE:
   weaponBias: 'light',
   damageFocus: 'mixed',
   pickUp: 'pick-up',
@@ -19,10 +19,10 @@ export const WARRIOR = {
   defaultAction: null,
   referenceHeight: 2.1, // TUNE: ~7 ft (Master Chief)
   footprintRadius: 0.5, // DEC-06
-  visionRadius: 25, // TUNE
+  visionRadius: 25, // TUNE:
   movement: {
-    maxSpeed: 0.2, // TUNE: 6 m/s at 30 ticks/s
-    acceleration: 0.05, // TUNE: top speed after 4 ticks
-    mass: 1, // TUNE
+    maxSpeed: 6, // TUNE: m/s
+    acceleration: 45, // TUNE: m/s², top speed after about 0.13 s (4 ticks)
+    mass: 1, // TUNE:
   },
 } as const satisfies LegendDefinition;

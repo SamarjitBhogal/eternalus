@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-08
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -212,6 +212,14 @@ export type LegendDefinition = EntityDefinitionBase & {
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).
 
+**Validation (DEC-22).** `loadDefaultContent()` builds the catalogues and runs `ContentValidator`
+once, at load, never at import time. The validator knows no rule in particular: each rule is a
+class with `check(definition, content): readonly string[]`, so a rule sees the whole catalogue and
+can check the ids a definition names (dangling references), and the validator reports every
+broken rule at once in one `ContentValidationError`. The rules are listed in one file,
+`content/defaultContentRules.ts` (`createDefaultContentRules()`); a new rule is a class and one
+line there.
+
 ## 6. `EntityFactory` and `EntityRegistry`
 
 ```ts
@@ -313,13 +321,8 @@ session or phase named:
 
 - `Entity`, `Unit`, `Legend` and `Mob` keep the sprint 1 API (`installComponents`, `onRetire`,
   `addComponent`/`getComponent`/`findComponent`/`hasComponent`, `family` as a string) because the
-  simulation kernel (PR #13) builds on it. Concrete units install the `Unit` set through
-  `UnitComponentInstaller`; family bases `Structure`, `Zone`, `Obstacle` and `Projectile` install
-  theirs in `installComponents`. Every family reads its spawn context through `SpawnContextReader`,
-  which checks it at runtime because `spawn` takes `unknown`.
-- The registry is `DefaultEntityRegistry`, built from one `EntityModule` per family instead of a
-  single `defaultEntityRegistry.ts`; content validation is `ContentValidator` with rule classes,
-  run when `UNIT_DEFINITIONS` loads. Both await the owner's sign-off in `INBOX.md`.
+  simulation kernel (PR #13) builds on it. Every family reads its spawn context through
+  `SpawnContextReader`, which checks it at runtime because `spawn` takes `unknown`.
 - Units install `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider` and
   `Vision`; `Combat`, `StatusEffects` and `Carry` arrive with their systems (Phase 2–3). The team
   component is `TeamMembership` because the type `Team` owns that name.

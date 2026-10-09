@@ -5,14 +5,16 @@ import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { UNIT_DEFINITIONS } from '../content/units/unitDefinitions';
+import { loadDefaultContent } from '../content/loadDefaultContent';
 import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
 import { MemoryLogger } from '../diagnostics/MemoryLogger';
-import { DefaultEntityRegistry } from '../entities/DefaultEntityRegistry';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
+
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 describe('DefaultSystemPipeline', () => {
   it('moves, then removes the dead, then checks invariants, in that order', () => {
@@ -21,7 +23,7 @@ describe('DefaultSystemPipeline', () => {
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
     );
     const state = new GameState(createDefaultGameConfig(), 1);
-    const factory = new EntityFactory(new DefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const runner = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',

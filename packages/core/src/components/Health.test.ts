@@ -105,4 +105,17 @@ describe('Health', () => {
       ['buff-tower-3', 10],
     ]);
   });
+
+  it('keeps towers in creation order, so entity-10 comes after entity-9 (07 §2, DEC-20)', () => {
+    const health = new Health(100);
+    health.addShield('entity-10', 10);
+    health.addShield('entity-9', 10);
+
+    health.applyDamage(5);
+
+    expect(health.shields.map(({ sourceId, current }) => [sourceId, current])).toEqual([
+      ['entity-9', 5],
+      ['entity-10', 10],
+    ]);
+  });
 });

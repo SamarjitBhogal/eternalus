@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { Entity } from '../../entities/Entity';
+import { ContentCatalogue } from '../../content/ContentCatalogue';
 import { EntityFactory } from '../../entities/EntityFactory';
+import { EntityRegistry } from '../../entities/EntityRegistry';
 import { GameState } from '../../state/GameState';
 import type { CommandContext } from '../CommandHandler.types';
 import { DevRemoveEntityHandler } from './DevRemoveEntityHandler';
@@ -21,7 +23,7 @@ const contextWithEntity = (): CommandContext => {
   const entity = new Dummy('entity-1', 'training-dummy');
   entity.spawn({});
   state.entities.add(entity);
-  return { state, factory: new EntityFactory() };
+  return { state, factory: new EntityFactory(new EntityRegistry(), new ContentCatalogue([])) };
 };
 
 describe('DevRemoveEntityHandler', () => {

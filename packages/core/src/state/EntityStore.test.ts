@@ -34,7 +34,7 @@ class Walker extends Entity {
 class Grunt extends Unit {
   public readonly kind = 'grunt';
 
-  protected installComponents(team: unknown): void {
+  protected override installComponents(team: unknown): void {
     this.addComponent(new TeamMembership(team as Team));
   }
 }
@@ -42,7 +42,7 @@ class Grunt extends Unit {
 class Hero extends Legend {
   public readonly kind = 'hero';
 
-  protected installComponents(team: unknown): void {
+  protected override installComponents(team: unknown): void {
     this.addComponent(new TeamMembership(team as Team));
   }
 }

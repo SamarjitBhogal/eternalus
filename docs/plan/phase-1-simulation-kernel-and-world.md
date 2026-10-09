@@ -97,11 +97,11 @@ Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
       (`light | dark | neutral`, D10), `Collider` (circle). Owner: _. Test: `Health` clamps to
       `[0, max]`; `Movement` never exceeds `maxSpeed`. Done when: each component's invariants are
       asserted inside the component (data + invariants), not in systems.
-- [x] **Type Object definitions v1 + content** (`UnitDefinition`, `MobDefinition`; a
+- [ ] _(feat/entity-collider-and-concrete-kinds: done except the dangling-id test. Unit definitions name no other ids yet, so it is a `dev-spawn` rejection (`unknown-definition`) until the first rule that checks references lands with abilities)_ **Type Object definitions v1 + content** (`UnitDefinition`, `MobDefinition`; a
       `training-dummy` LightMob and a `placeholder-warrior` Legend definition; `satisfies Record<Id, Definition>`; `validateContent()`). Owner: _. Test: a dangling `definitionId`
       fails validation; definitions are frozen. Done when: no tuning number exists outside
       `content/` (all marked `// TUNE:`).
-- [x] **`EntityFactory` + `EntityRegistry`** (kind → factory). Owner: _. Test: registering a
+- [x] _(feat/entity-collider-and-concrete-kinds, pending merge)_ **`EntityFactory` + `EntityRegistry`** (kind → factory). Owner: _. Test: registering a
       fake kind in the test and spawning it works with one registry line; unknown kind throws.
       Done when: the product owner's litmus test holds ("new class + content entry + registry
       line, nothing else changes").

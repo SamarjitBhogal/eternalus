@@ -2,17 +2,19 @@ import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { UNIT_DEFINITIONS } from '../content/units/unitDefinitions';
+import { loadDefaultContent } from '../content/loadDefaultContent';
 import { NullLogger } from '../diagnostics/NullLogger';
-import { DefaultEntityRegistry } from '../entities/DefaultEntityRegistry';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
 import { DeathSystem } from './DeathSystem';
 import type { SystemContext } from './System.types';
 
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
+
 const setUp = (): SystemContext => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const factory = new EntityFactory(new DefaultEntityRegistry(), UNIT_DEFINITIONS);
+  const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
   for (let index = 0; index < 3; index += 1) {
     state.entities.add(
       factory.create('light-mob', 'training-dummy', { position: { x: 0, y: 0 }, team: 'dark' }),

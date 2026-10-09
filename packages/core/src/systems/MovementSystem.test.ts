@@ -3,14 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { UNIT_DEFINITIONS } from '../content/units/unitDefinitions';
+import { loadDefaultContent } from '../content/loadDefaultContent';
 import { NullLogger } from '../diagnostics/NullLogger';
-import { DefaultEntityRegistry } from '../entities/DefaultEntityRegistry';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
 import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
 import { MovementSystem } from './MovementSystem';
 import type { SystemContext } from './System.types';
+
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 class Statue extends Entity {
   public readonly kind = 'statue';
@@ -23,7 +25,7 @@ class Statue extends Entity {
 
 const setUp = (): { context: SystemContext; dummy: Entity } => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const factory = new EntityFactory(new DefaultEntityRegistry(), UNIT_DEFINITIONS);
+  const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
   const dummy = factory.create('light-mob', 'training-dummy', {
     position: { x: 0, y: 0 },
     team: 'neutral',

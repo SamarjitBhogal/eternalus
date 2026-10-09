@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import { Movement } from '../../components/Movement';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
-import { UNIT_DEFINITIONS } from '../../content/units/unitDefinitions';
-import { DefaultEntityRegistry } from '../../entities/DefaultEntityRegistry';
+import { loadDefaultContent } from '../../content/loadDefaultContent';
+import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
 import { Entity } from '../../entities/Entity';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { GameState } from '../../state/GameState';
 import type { CommandContext } from '../CommandHandler.types';
 import { StopHandler } from './StopHandler';
+
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 class Rock extends Entity {
   public readonly kind = 'rock';
@@ -21,7 +23,7 @@ class Rock extends Entity {
 
 const context = (): CommandContext => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const factory = new EntityFactory(new DefaultEntityRegistry(), UNIT_DEFINITIONS);
+  const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
   state.entities.add(
     factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' }),
   );

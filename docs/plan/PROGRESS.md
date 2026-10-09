@@ -364,3 +364,17 @@ The example below is fenced so it is not read as a real entry.
   449 passed (449)", client "Tests 127 passed (127)", "✓ built", "Documentation check passed.").
 - Next step: core `PlayerController` consumes `aim` and `triggered` (INBOX); pre-PR gate on the
   mouse commits; owner: claudiodh.
+
+### 2026-10-08 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
+
+- What was done: the PR #14 review (Sam, 2026-10-08). Registry back to
+  `createDefaultEntityRegistry()` (DEC-21); content rules get the catalogue, are listed in
+  `content/defaultContentRules.ts` and run once from `loadDefaultContent()`, which also converts
+  speeds authored per second to per tick (DEC-22); `EntityFactory` resolves definitions by id,
+  checks their kind once and takes ids from `IdGenerator`, `dev-spawn` rejects
+  `unknown-definition`, and `Simulation` spawns a Warrior; `Unit` installs the unit components;
+  `StateHasher` hashes shields, colliders and vision; `ShieldBar` shared with `GameEvents`;
+  shields in creation order; `EntityDefinitionBase`; `deepFreeze` in `utils/`; ring lint, ADR
+  0013 and the AGENTS section removed (DEC-24). DEC-21…24 logged; proposals in `INBOX.md`.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (see the PR).
+- Next step: Sam re-reviews #14; then merge it into #17, #18 and #19; owner: claudiodh.

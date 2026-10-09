@@ -9,7 +9,7 @@ export type DefinitionRef = {
 
 /** A spawn context for entities that have a place in the world but no team (obstacles). */
 export type PositionedSpawnContext<Definition extends DefinitionRef> = {
-  /** Must be the definition named by the entity's `definitionId`, built by the same `kind`. */
+  /** The definition named by the entity's `definitionId`, matched to its kind by the factory. */
   readonly definition: Definition;
   readonly position: Vec2;
 };
