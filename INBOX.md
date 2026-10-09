@@ -41,11 +41,6 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
       class in content. Pick one. Note: "depth" is the distance to the nearest lane over half the
       corridor's height, so in tall worlds with steep lanes every camp reads as light.
-- [ ] **DEC-16 — tooling: lint ignores agent worktrees.** ESLint's flat config does not read
-      `.gitignore`, so linting from the main checkout also lints every `.worktrees/*` checkout and
-      one unfinished worktree blocks every push from the main checkout. Proposal: add
-      `.worktrees/` and `.claude/worktrees/` to `globalIgnores` in `eslint.config.js` (each
-      worktree is still linted by its own hooks and CI).
 - [ ] **Session D (feat/session-shell-home), better than design — no `useAppDispatch`.** The
       §2.3 contract and `apps/client/AGENTS.md` ask for `useAppSelector` **and**
       `useAppDispatch`. D ships only `useAppSelector`: `ui/` never writes the store
@@ -57,6 +52,29 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       Also found by the critic: architecture 13 §2's `character-select` row says it "builds the
       rosters … assigns `playerTeam`", while the `menu` and `loading` rows (and reference 14 §5)
       put the setup at "Start match"; D follows the latter. The row needs a one-line fix.
+
+- [ ] **PROTO-01 — prototype escort minions (demo, 2026-10-08; branch `feat/minion-follow-prototype`).**
+      For the prototype demo, Samarjit chose minions that **follow the player's Legend** instead
+      of marching down lanes (option b). This is a **prototype decision to be replaced** by the
+      real Phase 3 systems; it is not in the design docs and they were not changed. Stand-ins to
+      remove: `ai/FollowLeaderController.ts` + `content/ai/followLeaderProfile.ts` (→
+      `MinionController`, sprint 3.3), `content/mobs/lightMinion.ts` (health 150 and radius 0.4 are
+      `balancing.md`'s light-minion anchors; please confirm two departures: speed 5.4 m/s instead
+      of 3.5 so the escort keeps up with the Warrior, and mass 0.5 as 40 on the repo's Warrior =
+      1 scale), the
+      `PROTOTYPE_ESCORT` spawn in `apps/client/src/game/Match.ts` (→ `SpawnSystem` / hordes),
+      the brute-force scan (→ `Perception` over `SpatialHash`), `Brain` as a component with only
+      a controller id (→ `state.ai.brains`, 11 §2) and the missing `AiSystem` decision budget
+      (11 §6). Question: `AiSystem` is a system (02 §2, 11 §1), but `systems/` may not import
+      `ai/` (core `AGENTS.md`), so it lives in `ai/` and `Simulation` passes it to
+      `DefaultSystemPipeline`, which splits the tick order across two files (02 §9). Should
+      `AiSystem` stay in `ai/`, or may `systems/` import `ai/` types?
+      Decision needed: keep the escort behind a dev flag after Phase 3, or delete it then?
+      **Finding the code:** all prototype code is temporary. Every piece carries the marker
+      `PROTOTYPE(PROTO-01) TEMPORARY`, followed by what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'`
+      lists them all. Agents: do not build on or extend marked code; replace it with the named
+      design piece. Proposal (needs your approval, since it edits `AGENTS.md`): add this marker
+      convention to `AGENTS.md` so every future prototype uses it.
 
 ## Requests for the agent
 
@@ -252,6 +270,10 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
   ADR 0013 split into its own PR (DEC-24). Recorded in
   `docs/reference/game-design/13-owner-decisions-log.md`. Branch
   `feat/entity-collider-and-concrete-kinds` (PR #14).
+- 2026-10-08 — **DEC-16** (lint ignores agent worktrees) accepted by the owner in chat:
+  `eslint.config.js` adds `.worktrees/` and `.claude/worktrees/` to `globalIgnores`; recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and ADR 0014. Branch
+  `chore/lint-ignore-worktrees` (PR #20).
 - 2026-10-07 — **Session B's simulation kernel items** signed off and done: the snapshot shape
   (DEC-17) and the `makeLogRecord` options object (DEC-18) folded into 03 §5 and 15 §4; the
   determinism lint (DEC-19, ADR 0012) added; the kernel's design differences (DEC-20) folded into

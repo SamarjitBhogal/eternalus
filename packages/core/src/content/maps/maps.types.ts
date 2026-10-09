@@ -185,3 +185,14 @@ export type MapPreset = {
   readonly riftProfile: readonly RiftWidthKnot[];
   readonly laneProfile?: readonly LaneKnot[];
 };
+
+/** Which pass draws a decoration: `ground` under terrain and lanes, `detail` above features. */
+export type MapDecorationLayer = 'ground' | 'detail';
+
+/** A presentation-only polygon; it never changes collision, ownership or gameplay. */
+export type MapDecoration = {
+  readonly id: string;
+  readonly shape: Polygon;
+  readonly color: string;
+  readonly layer: MapDecorationLayer;
+};

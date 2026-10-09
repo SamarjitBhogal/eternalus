@@ -25,6 +25,8 @@ export { validateGameConfig } from './config/validateGameConfig';
 export type { LegendKind } from './content/legends/legends.types';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {
+  MapDecoration,
+  MapDecorationLayer,
   MapDefinition,
   MapFeature,
   MapFeatureKind,
@@ -52,7 +54,10 @@ export type {
   ReplayTarget,
   ReplayTargetFactory,
 } from './diagnostics/Replay.types';
+export { CathedralInteriorBuilder } from './map/CathedralInteriorBuilder';
+export type { CathedralInterior } from './map/CathedralInteriorBuilder.types';
 export { MapGenerator } from './map/MapGenerator';
+export { MapSceneryBuilder } from './map/MapSceneryBuilder';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
