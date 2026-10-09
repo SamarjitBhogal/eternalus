@@ -12,7 +12,7 @@ import { GameState } from '../state/GameState';
 import { MovementSystem } from './MovementSystem';
 import type { SystemContext } from './System.types';
 
-const UNIT_DEFINITIONS = loadDefaultContent(30);
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 class Statue extends Entity {
   public readonly kind = 'statue';

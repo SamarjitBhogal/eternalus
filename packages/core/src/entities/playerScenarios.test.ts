@@ -15,7 +15,6 @@ import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LEGEND_CLASSES } from '../content/legends/legendCatalogue';
-import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { Simulation } from '../Simulation';

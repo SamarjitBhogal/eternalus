@@ -12,7 +12,7 @@ import { NullLogger } from './diagnostics/NullLogger';
 import { Simulation } from './Simulation';
 import type { System } from './systems/System.types';
 
-const UNIT_DEFINITIONS = loadDefaultContent(30);
+const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
 const stop = (actorId: string): Command => ({ type: 'stop', actorId });
 
