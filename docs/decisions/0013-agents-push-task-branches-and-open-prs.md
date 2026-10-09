@@ -4,7 +4,7 @@ description: Claude Code sessions may push their own task branch and open its pu
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-08
 tags: [adr, process, git, guardrail, agents]
 related:
   [
@@ -18,7 +18,7 @@ related:
 
 # 0013. Agents push task branches and open PRs
 
-- Status: proposed (the product owner asked for it in the session F chat, 2026-10-07)
+- Status: accepted (product owner decision in the session F chat, 2026-10-07; accepted 2026-10-08)
 - Date: 2026-10-07
 
 ## Context
@@ -31,27 +31,28 @@ themselves.
 
 ## Decision
 
-- **Allowed (when the human asks in the current task, `AGENTS.md`):** `git push -u origin
-<task-branch>` and `gh pr create` for the session's own task branch, into its phase branch.
-  `.claude/settings.json` allows `Bash(git push -u origin *)` and `Bash(gh pr create *)` and no
-  longer denies `git push`.
-- **Still denied:** force pushes in any position (`git push --force…`, `-f…`, and the same flags
-  after the branch name), pushes naming `main` or a `phase/` branch, `git commit --no-verify`,
-  `git reset --hard`, deleting branches.
+- **Allowed (when the human asks in the current task, `AGENTS.md`):** pushing the session's own
+  task branch with `git push -u origin <task-branch>` and opening its PR into the phase branch
+  with `gh pr create`. `.claude/settings.json` allows `Bash(git push -u origin <prefix>/*)` for
+  the task-branch prefixes of `docs/process/git-workflow.md` §2 (`feat`, `fix`, `docs`,
+  `refactor`, `chore`) and `Bash(gh pr create *)`; any other push prompts.
+- **Denied:** force pushes in any spelling (`--force…`, `-f`, a `+` refspec), any refspec with
+  `:` (pushing to another branch name or deleting one), `--delete`/`-d`, `--mirror`, `--all`,
+  `--no-verify`, pushes naming `main` or a `phase/` branch, `gh pr merge`, and as before
+  `git commit --no-verify`, `git reset --hard`, `git branch -D`.
 - **Still human-only:** merging PRs, pushing `main` or a phase branch, the one allowed
   force-with-lease on a phase branch (ADR 0007), tags.
 - Always name the branch: task branches track `origin/phase/<n>-…`, so a bare `git push` aims at
   the phase branch.
 
 Options considered: keep humans pushing (the bottleneck stays); allow `git push *` (also allows
-pushes to `main` and phase branches).
+force pushes by `+` refspec, deletions and pushes to `main` and phase branches).
 
 ## Consequences
 
 - Easier: a session hands over an open PR with its gate results instead of a local branch.
-- Harder: permission patterns are best-effort (tool-setup notes): the deny rules catch
-  `git push … main` and `git push … phase/…`, not every spelling (`HEAD:main`, a bare
-  `git push` with a phase upstream). GitHub branch protection covers `main` only
-  (`guardrails.md` §5), so a phase branch also relies on the agent following this ADR.
+- Harder: permission patterns are best-effort (tool-setup notes; `git -C . push` is not
+  matched at all). GitHub branch protection covers `main` only (`guardrails.md` §5), so a phase
+  branch also relies on the agent following this ADR.
 - Watch: a PR opened by an agent still needs a human review and merge; the PR description must
   carry the pre-PR gate results (ADR 0010).
