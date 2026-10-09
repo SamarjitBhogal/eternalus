@@ -6,16 +6,24 @@ import { startCountdown } from '../startCountdown';
 /**
  * Character select (reference 14 §2): a 60 s countdown. Confirming a class, or the countdown
  * ending with a class selected, goes to `pre-launch`; ending with none cancels to `menu` with
- * reason `'select-timeout'`.
+ * reason `'select-timeout'`. With the timeout off there is no countdown: only confirming or
+ * cancelling leaves.
  */
 export class CharacterSelectState implements SessionState {
   public readonly phase: SessionPhase = 'character-select';
   private selection: ClassSelection | null = null;
   private stopCountdown = (): void => undefined;
 
-  /** Clears the selection and starts the countdown. */
+  /**
+   * Creates the state.
+   * @param isTimeoutEnabled - Whether the countdown runs (reference 14 §2 has it on).
+   */
+  public constructor(private readonly isTimeoutEnabled: boolean) {}
+
+  /** Clears the selection and starts the countdown (if the timeout is on). */
   public enter(context: SessionContext): void {
     this.selection = null;
+    if (!this.isTimeoutEnabled) return;
     this.stopCountdown = startCountdown(
       context.clock,
       SELECT_COUNTDOWN_MS,

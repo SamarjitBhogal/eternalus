@@ -617,3 +617,21 @@ The example below is fenced so it is not read as a real entry.
   "Tests 466 passed (466)"; client "Tests 304 passed (304)"; "✓ built in 176ms"; "Documentation
   check passed."
 - Next step: the human commits the merge and pushes; PR #22 merges.
+
+### 2026-10-09 — Phase 1 / demo fix — fix/disable-select-timeout — sholtzman + Claude Code
+
+- What was done: the demo plays on the game canvas behind the `character-select` placeholder,
+  which has no way to pick a class yet, so the 60 s select countdown cancelled every demo match
+  back to the menu (`select-timeout`). `CharacterSelectState` takes `isTimeoutEnabled` (default
+  on, the design's behaviour) and skips the countdown when it is off;
+  `createDefaultSessionStates({ isSelectTimeoutEnabled })` passes it through, and `main.tsx`
+  turns it off with a `TODO(sam)` to turn it back on once character select can pick a class.
+  New test: with the timeout off, character select survives 10 × the countdown and confirming
+  still goes to `pre-launch` (it failed with the guard removed). In the demo, character select
+  now has no exit (the placeholder screen offers none); reload to return to the menu. Not
+  checked in a browser. Pre-PR critic: ready for PR; its TSDoc and test nits applied.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in 89ms"; "Documentation
+  check passed."
+- Next step: review and merge the PR into the phase branch before the demo; turn the timeout
+  back on when the character select screen lands.
