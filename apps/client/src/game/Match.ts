@@ -17,6 +17,7 @@ import {
   CAMERA_SMOOTHING,
   DEFAULT_ASPECT,
   MAX_TICKS_PER_FRAME,
+  PROTOTYPE_ESCORT,
   MS_PER_SECOND,
 } from './Match.constants';
 import type { MatchDeps } from './Match.types';
@@ -140,6 +141,8 @@ export class Match implements LoopTarget {
       at: spawnPoint,
       count: 1,
     });
+    // PROTOTYPE(PROTO-01) TEMPORARY: demo escort; delete with `spawnEscort`.
+    Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
     camera.lookAt(spawnPoint);
   }
@@ -326,6 +329,34 @@ export class Match implements LoopTarget {
       this.isExploring = true;
     }
     this.isFollowing = false;
+  }
+
+  /**
+   * PROTOTYPE(PROTO-01) TEMPORARY: demo code; `SpawnSystem` replaces it.
+   *
+   * Prototype (2026-10-08, demo): queues the escort minions in a ring around `center`, one spawn
+   * each so they start apart. Phase 2's `SpawnSystem` replaces this.
+   */
+  private static spawnEscort(
+    simulation: MatchDeps['simulation'],
+    team: MatchDeps['player']['team'],
+    center: Vec2,
+  ): void {
+    const { definitionId, kind, count, spawnRadius } = PROTOTYPE_ESCORT;
+    for (let index = 0; index < count; index += 1) {
+      const angle = (2 * Math.PI * index) / count;
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind,
+        definitionId,
+        team,
+        at: {
+          x: center.x + spawnRadius * Math.cos(angle),
+          y: center.y + spawnRadius * Math.sin(angle),
+        },
+        count: 1,
+      });
+    }
   }
 
   private static strongholdOf(map: MapDefinition, team: MatchDeps['player']['team']): Vec2 {
