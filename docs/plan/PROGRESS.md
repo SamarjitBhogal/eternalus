@@ -636,6 +636,110 @@ The example below is fenced so it is not read as a real entry.
 - Next step: review and merge the PR into the phase branch before the demo; turn the timeout
   back on when the character select screen lands.
 
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings — sholtzman + Claude Code
+
+- What was done: keybindings as data (`keybindings.ts`, presets `wasd`/`arrows`, `rebind` with
+  swap/replace, resets), `BindingResolver`, `InputMapper` → core `InputIntent` through a
+  `Projection` port, `KeyboardDevice`/`MouseDevice`/`FakeInputDevice` with the `InputDevice`
+  contract; the `PersistenceController` facade (settings only) over `StorageAdapter` and
+  `MemoryStorageAdapter` with its contract, `SettingsDtoV1` validation and quarantine;
+  `settingsSlice` body; `SettingsController` in `game/settings/` (owner sign-off DEC-27 after the
+  critic rated it better than the design); `KeyGlyph`, `Prompt`, `SettingsScreen` (tabs,
+  press-to-bind incl. mouse side buttons, conflict dialog, resets, audio/video/accessibility) and
+  `PauseOverlay`; `main.tsx`/`App.tsx` wiring after merging D's PR #12. Owner decisions
+  DEC-25…DEC-29: agents push task branches and open PRs (ADR 0013, accepted; `.claude/settings.json`
+  tightened after the critic), F's input layer is canonical over PR #19 (INBOX handover), snapshot
+  shape and conflict-free edits folded into 09 and 13. Fixed a memory-adapter bug (overlapping
+  transactions committed stale copies; the ordering test failed before the fix). Design docs 02,
+  09, 13, 14 updated with one "Implementation status" note each; sprint 1.5 boxes for keybindings
+  data and keyboard/mouse devices ticked. Pre-PR gate: critic passes 1–3 (not ready → ready →
+  ready), ponytail cuts 1 and 3 applied (−9 lines), cut 2 reverted for a build warning.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 295 passed (295)" (lines 98.69%); client "Tests 345
+  passed (345)" (statements 90.97%, branches 85.75%, lines 91.13%); "✓ built in 88ms";
+  "Documentation check passed."
+- Next step: push `feat/settings-keybindings` and open its PR into the phase branch (description
+  in `docs/changelog/pr-feat-settings-keybindings.md`); PR #19 adapts to F's input layer after
+  F merges; G mounts `<PauseOverlay />` in `MatchScreen`.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/1-simulation-kernel-and-world` again after PRs #14, #17,
+  #18 and #19 landed (`a82e098`). PR #19 had added its own input layer at the same paths; per
+  DEC-26 the 15 add/add conflicts take this branch's side, #19's `DeviceIntentSource` now builds
+  this branch's snapshot (`Set` of button numbers, no `keyLabels`), and #19's `fakePointerEvent.ts`
+  (unused after the merge; knip) is removed; #19's `Match`/`useMatch`/`DeviceIntentSource` tests
+  pass unchanged. The critic's merge review found #19's "forget the pointer off the canvas"
+  behaviour lost; restored in `0782f39` with a test that failed before. INBOX and the decisions log keep both sides. Correction to the entry above: the
+  push ADR is **0015**, not 0013 (DEC-24 reserves 0013 for session C's core lint); renamed with
+  every reference on this branch.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 442 passed (442)" (lines 98.92%); client "Tests 398
+  passed (398)" (statements 91.39%, lines 91.58%); "✓ built in 92ms"; "Documentation check
+  passed."
+- Next step: push and open the PR; the `Match` owner wires live bindings and the pause toggle
+  (INBOX); G mounts `<PauseOverlay />`.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (merge of phase/1) — sholtzman + Claude Code
+
+- What was done: re-synced PR #24 with the phase branch after PRs #20, #22 and #23 merged. Two
+  conflicts, both docs: this log (every entry from both sides kept, the phase branch's first,
+  then this branch's two session F entries) and `docs/README.md` (regenerated with
+  `npm run docs:index`; ADRs 0014 and 0015 and both changelog rows listed). No code file was
+  changed on both sides. Merge left uncommitted.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 413 passed (413)"; "✓ built in 150ms"; "Documentation
+  check passed."
+- Next step: the human commits the merge and pushes; PR #24 merges.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (PR #24 review) — sholtzman + Claude Code
+
+- What was done: addressed SamarjitBhogal's review (changes requested), approved by sholtzman in
+  chat for whatever is in line with or better than the architecture. (1) Quarantine-on-read is
+  the shared `repositories/readOrQuarantine.ts` (14 §8, DEC-31); its record is typed as
+  `QuarantineRecordDtoV1` (§7), `DtoCheck<T>` moved to `dto/DtoCheck.types.ts`, and the warn
+  callback type is `WarnReporter`. (2) `chordKey` moved to `bridge/chordKey.ts` (DEC-30, better
+  than the design: 13 §1 had it in `game/input/`); `selectChordOwner` and the settings screen use
+  it instead of restating `device:code`. Docs 02, 13 and 14 updated. Deferred, as the review
+  suggests: shared DTO helpers until S2's second DTO. New `readOrQuarantine.test.ts` with a
+  validator that knows nothing about settings.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 415 passed (415)"; "✓ built in 116ms"; "Documentation
+  check passed."
+- Next step: independent critic on the review diff, then push; the human merges.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (review critic, merge of phase/1) — sholtzman + Claude Code
+
+- What was done: critic pass 5 on the review round (base `4892adc`): ready to merge, no
+  blockers. Its should-fix items were applied before committing: `WarnReporter` moved out of the
+  controller's companion file into `repositories/readOrQuarantine.types.ts`; `readOrQuarantine`
+  takes three parameters (`tx, { store, key, validate }, report`, CONTRIBUTING §4) and 14 §8's
+  sketch matches; the PR description has a review-round section and DEC-27…DEC-31. Nits applied:
+  DEC-31 called better than the design in INBOX, 13 §6.1 wording, the deferred DTO helpers
+  tracked in 14 §14, the resolved `chordKey` nit kept and marked. Then merged
+  `origin/phase/1-simulation-kernel-and-world` again for PR #25 (the select-timeout toggle in
+  `main.tsx`, which auto-merged); the one conflict was this log, both sides kept, the phase
+  branch's entry first. Merge left uncommitted.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 105ms"; "Documentation
+  check passed."
+- Next step: critic re-check of the follow-ups and the merge, then push; the human merges. If
+  PR #26 (preselect the Warrior) merges first, `main.tsx` needs one more re-sync.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (review critic pass 6) — sholtzman + Claude Code
+
+- What was done: critic pass 6 on the review commits and merge `97fb72a`: ready to merge, no
+  blockers, every pass-5 item resolved, each commit builds on its own. Applied its should-fix
+  items: the `readOrQuarantine` valid-path test asserts the exact result and that the record
+  stays in its store (it failed with `return raw` substituted), and the PR description records
+  critic passes 5 and 6, the ponytail note and the final check. Nits: test count noted, one
+  INBOX line rewrapped.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 97ms"; "Documentation
+  check passed."
+- Next step: push and update the PR #24 description on GitHub; the human merges. If PR #26
+  merges first, re-sync `main.tsx`.
+
 ### 2026-10-09 — Phase 1 / demo fix — fix/preselect-warrior — sholtzman + Claude Code
 
 - What was done: replaced PR #25's approach, at sholtzman's request. #25 turned the
@@ -652,3 +756,14 @@ The example below is fenced so it is not read as a real entry.
   check passed."
 - Next step: review and merge before the demo; remove the preselect when the character select
   screen lands.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (merge of phase/1 after #26) — sholtzman + Claude Code
+
+- What was done: merged the phase branch into PR #24 after PR #26 merged, on top of session F's
+  eight unpushed commits (the review-round fixes, DEC-30/DEC-31, critic passes 5 and 6). The one
+  conflict was this log; every entry from both sides was kept, 46 in all.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 97ms"; "Documentation
+  check passed."
+- Next step: the human pushes; Samarjit re-reviews (his changes were requested before the
+  review-round commits); PR #24 merges.

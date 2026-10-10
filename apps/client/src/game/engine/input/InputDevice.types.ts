@@ -1,40 +1,37 @@
-/** A point on the canvas in CSS pixels, from its top-left corner. */
+/** A pointer position in CSS pixels, relative to the element the device is attached to. */
 export type ScreenPoint = { readonly x: number; readonly y: number };
 
 /**
- * What the input devices report for one frame (architecture 09 §2). The wheel and gamepad fields
- * arrive with the actions and the device that need them.
+ * Everything the attached devices hold right now, merged into one value. Raw device state only:
+ * no game vocabulary. `game/input/InputMapper` turns it into actions through the bindings.
  */
 export type InputSnapshot = {
-  /** `KeyboardEvent.code` of every key held. */
+  /** `KeyboardEvent.code` of every key held (`KeyboardEvent.key` when `code` is empty). */
   readonly keys: ReadonlySet<string>;
-  /** `KeyboardEvent.key` seen when each held key went down, for prompts. */
-  readonly keyLabels: ReadonlyMap<string, string>;
-  /** `PointerEvent.buttons` held: 1 left, 2 right, 4 middle, 8 back, 16 forward. */
-  readonly mouseButtons: number;
-  /** Where the pointer is on the canvas, or `null` when it is off the canvas. */
+  /** `MouseEvent.button` of every mouse button held: 0 main, 1 wheel, 2 secondary, 3/4 side. */
+  readonly mouseButtons: ReadonlySet<number>;
+  /** The pointer position while it is over the target; `null` before it arrives and after it leaves. */
   readonly pointer: ScreenPoint | null;
 };
 
-/** The snapshot devices write into; one per frame, shared by every device. */
+/** The snapshot devices write into. Each frame starts from an empty one. */
 export type MutableInputSnapshot = {
-  readonly keys: Set<string>;
-  readonly keyLabels: Map<string, string>;
-  mouseButtons: number;
+  keys: Set<string>;
+  mouseButtons: Set<number>;
   pointer: ScreenPoint | null;
 };
 
 /**
- * One input device (keyboard, mouse, gamepad) behind a port, so the game never touches a
- * browser event (architecture 09 §1). Devices expose state only, never commands.
+ * The port every input adapter implements (architecture 09 §2). One adapter wraps one browser
+ * API; the game depends on this interface, never on `KeyboardDevice` or `MouseDevice`.
  */
 export interface InputDevice {
-  /** Starts listening to `target`'s events. */
+  /** Starts listening to `target` (the window for keys, the canvas for the pointer). */
   attach(target: EventTarget): void;
-  /** Stops listening; the device reports nothing new afterwards. */
+  /** Stops listening and releases everything held. Safe to call when not attached. */
   detach(): void;
-  /** Adds what is held now to `snapshot`, keeping what other devices wrote. */
+  /** Adds what this device holds to `snapshot`, leaving other devices' entries alone. */
   writeInto(snapshot: MutableInputSnapshot): void;
-  /** Forgets everything held, for when the window loses focus and no release will arrive. */
+  /** Forgets everything held, for focus loss: no release event arrives for it. */
   releaseAll(): void;
 }

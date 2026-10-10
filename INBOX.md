@@ -233,12 +233,16 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
     preset until settings supply saved bindings. A minimap click is also an `attack` press until
     the minimap consumes its clicks (SCRUM-151).
 
-- [ ] **Session C → session F (2026-10-09, PR #19): `bridge/Binding.types.ts` now has the 13 §6.1
-      shapes.** `INPUT_ACTIONS` (same 21 ids; `InputAction` derives from it), and `InputChord` is
-      the union (keyboard `code`/`label`/`modifiers?`, mouse `button` 0–4, `gamepad`,
-      `gamepad-axis`). The defaults are in `game/input/keybindings.ts` (`DEFAULT_CHORDS`, presets
-      `wasd`/`arrows`), and `InputMapper.setBindings` takes the saved bindings. `settingsSlice`,
-      `events.ts` and `hudSlice` compile unchanged.
+- [ ] **F → G (2026-10-06): mount the pause overlay.** `ui/screens/MatchScreen.tsx` renders
+      `<PauseOverlay />` from `ui/hud/PauseOverlay.tsx` unconditionally; it renders nothing
+      unless `session.overlay` is `'pause'` or `'settings'`.
+- [ ] **F → session H / the `Match` owner (2026-10-09): settings in the match.** PR #19 merged
+      before F, so F's merge took F's input layer (DEC-26) and adapted `DeviceIntentSource` to its
+      snapshot (`mouseButtons` is a `Set` of `MouseEvent.button` numbers, no `keyLabels`). Left
+      for `Match`/`useMatch`: start from the player's bindings instead of `PRESETS.wasd`, re-read
+      them on each `settings` bus event (`mapper.setBindings(s.bindings)`), and toggle the pause
+      overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`), so the pause key is
+      the player's binding.
 
 ## Feedback
 
@@ -246,6 +250,24 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Done
 
+- 2026-10-09 — **PR #24 review (SamarjitBhogal), reuse requests**: approved by sholtzman in chat
+  for whatever is in line with or better than the architecture. Recorded as DEC-30 (`chordKey`
+  moves to `bridge/`, better than the design) and DEC-31 (one shared `readOrQuarantine` instead of
+  14 §8's private method per repository, also better than the design). The shared DTO helpers
+  (`dto/dtoCheck.ts`) wait for S2's second DTO, as the review suggests; only `DtoCheck<T>` moved
+  now, because `readOrQuarantine` needs it.
+- 2026-10-09 — **Session C → session F: `Binding.types.ts` has the 13 §6.1 shapes** (PR #19):
+  superseded by DEC-26 in F's merge `a82e098`. F's flat `InputChord` is kept, `INPUT_ACTIONS`
+  lives in `game/input/keybindings.ts`, and #19's `DeviceIntentSource` builds F's snapshot.
+- 2026-10-08 — **Session F owner decisions DEC-25…DEC-29** (agent pushes, canonical input layer,
+  `SettingsController`, snapshot shape, conflict-free edits) recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and folded into ADR 0015 and
+  architecture 02, 09 and 13 on `feat/settings-keybindings`.
+- 2026-10-08 — **F → D: settings wiring in `main.tsx` and `ui/App.tsx`**: done on
+  `feat/settings-keybindings` (owner-approved: the second branch to merge adds it, PR #12).
+- 2026-10-08 — **F → D: settings intents and the `settings` event** (session F's request of
+  2026-10-06): `update-binding` `onConflict`, per-action `reset-bindings`, `update-settings`,
+  `BridgeEventMap.settings` and the `connectBusToStore` line landed in D's 5accc85 (PR #12).
 - 2026-10-08 — **Session C's optional ideas** answered in the PR #14 review and done: one
   `EntityModule` per family declined (back to `createDefaultEntityRegistry()`, DEC-21);
   `ContentValidator` with rule classes accepted with fixes (rules get the catalogue, listed in

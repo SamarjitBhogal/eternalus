@@ -1,102 +1,108 @@
 import { describe, expect, it } from 'vitest';
 
-import { fakeKeyEvent } from './fakeKeyEvent';
-import { describeInputDevice } from './InputDevice.contract';
+import { describeInputDevice, syntheticEvent } from './InputDevice.contract';
 import type { MutableInputSnapshot } from './InputDevice.types';
 import { KeyboardDevice } from './KeyboardDevice';
 
-const emptySnapshot = (): MutableInputSnapshot => ({
-  keys: new Set(),
-  keyLabels: new Map(),
-  mouseButtons: 0,
-  pointer: null,
-});
+type KeyFields = { code: string; key: string; repeat?: boolean; ctrlKey?: boolean };
 
-const setUp = (bound: readonly string[] = ['KeyW']) => {
-  const target = new EventTarget();
-  const keyboard = new KeyboardDevice((code) => bound.includes(code));
-  keyboard.attach(target);
-  const held = (): ReadonlySet<string> => {
-    const snapshot = emptySnapshot();
-    keyboard.writeInto(snapshot);
-    return snapshot.keys;
+function keyEvent(type: 'keydown' | 'keyup', fields: KeyFields): Event {
+  return syntheticEvent(type, { repeat: false, ctrlKey: false, metaKey: false, ...fields });
+}
+
+function heldKeys(device: KeyboardDevice): ReadonlySet<string> {
+  const snapshot: MutableInputSnapshot = {
+    keys: new Set(),
+    mouseButtons: new Set(),
+    pointer: null,
   };
-  return { target, keyboard, held };
-};
+  device.writeInto(snapshot);
+  return snapshot.keys;
+}
+
+function attachedKeyboard(isBound: (code: string) => boolean = () => true): {
+  device: KeyboardDevice;
+  target: EventTarget;
+} {
+  const device = new KeyboardDevice(isBound);
+  const target = new EventTarget();
+  device.attach(target);
+  return { device, target };
+}
 
 describeInputDevice('KeyboardDevice', () => {
-  const { target, keyboard } = setUp();
+  const device = new KeyboardDevice(() => true);
+  const target = new EventTarget();
   return {
-    device: keyboard,
+    device,
     target,
-    press: () => target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW')),
-    release: () => target.dispatchEvent(fakeKeyEvent('keyup', 'KeyW')),
+    press: () => target.dispatchEvent(keyEvent('keydown', { code: 'KeyW', key: 'w' })),
+    release: () => target.dispatchEvent(keyEvent('keyup', { code: 'KeyW', key: 'w' })),
+    repeat: () =>
+      target.dispatchEvent(keyEvent('keydown', { code: 'KeyW', key: 'w', repeat: true })),
+    isHeld: (snapshot) => snapshot.keys.has('KeyW'),
   };
 });
 
 describe('KeyboardDevice', () => {
-  it('keeps the key label seen at press, for prompts', () => {
-    const { target, keyboard } = setUp();
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW', { key: 'z' }));
+  it('tracks the physical key (code), not the character it types (key)', () => {
+    const { device, target } = attachedKeyboard();
 
-    const snapshot = emptySnapshot();
-    keyboard.writeInto(snapshot);
+    // On an AZERTY keyboard the key in the W position types "z".
+    target.dispatchEvent(keyEvent('keydown', { code: 'KeyW', key: 'z' }));
 
-    expect(snapshot.keyLabels.get('KeyW')).toBe('z');
+    expect([...heldKeys(device)]).toEqual(['KeyW']);
   });
 
-  it('ignores auto-repeat: a repeated key-down after the release does not hold the key', () => {
-    const { target, held } = setUp();
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW'));
-    target.dispatchEvent(fakeKeyEvent('keyup', 'KeyW'));
+  it('falls back to key when a virtual keyboard reports no code', () => {
+    const { device, target } = attachedKeyboard();
 
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW', { repeat: true }));
+    target.dispatchEvent(keyEvent('keydown', { code: '', key: 'w' }));
 
-    expect(held().size).toBe(0);
+    expect([...heldKeys(device)]).toEqual(['w']);
   });
 
-  it('cancels the browser default only for bound keys, never for Ctrl chords or Tab', () => {
-    const { target } = setUp(['KeyW', 'Tab']);
-    const bound = fakeKeyEvent('keydown', 'KeyW');
-    const unbound = fakeKeyEvent('keydown', 'KeyQ');
-    const ctrlChord = fakeKeyEvent('keydown', 'KeyW', { ctrlKey: true });
-    const tab = fakeKeyEvent('keydown', 'Tab');
+  it('prevents the browser default for bound keys only', () => {
+    const { target } = attachedKeyboard((code) => code === 'KeyW');
+    const bound = keyEvent('keydown', { code: 'KeyW', key: 'w' });
+    const unbound = keyEvent('keydown', { code: 'KeyQ', key: 'q' });
 
-    [bound, unbound, ctrlChord, tab].forEach((event) => target.dispatchEvent(event));
+    target.dispatchEvent(bound);
+    target.dispatchEvent(unbound);
 
-    expect([bound, unbound, ctrlChord, tab].map((event) => event.defaultPrevented)).toEqual([
-      true,
-      false,
-      false,
-      false,
-    ]);
+    expect(bound.defaultPrevented).toBe(true);
+    expect(unbound.defaultPrevented).toBe(false);
   });
 
-  it('uses the key when the code is empty (mobile virtual keyboards)', () => {
-    const { target, held } = setUp();
+  it('never prevents Tab, F5, F12 or Ctrl/Meta shortcuts, even when bound', () => {
+    const { target } = attachedKeyboard();
+    const events = [
+      keyEvent('keydown', { code: 'Tab', key: 'Tab' }),
+      keyEvent('keydown', { code: 'F5', key: 'F5' }),
+      keyEvent('keydown', { code: 'F12', key: 'F12' }),
+      keyEvent('keydown', { code: 'KeyW', key: 'w', ctrlKey: true }),
+    ];
 
-    target.dispatchEvent(fakeKeyEvent('keydown', '', { key: 'w' }));
+    events.forEach((event) => target.dispatchEvent(event));
 
-    expect([...held()]).toEqual(['w']);
+    expect(events.map((event) => event.defaultPrevented)).toEqual([false, false, false, false]);
   });
 
-  it('ignores events that are not key events', () => {
-    const { target, held } = setUp();
+  it('still prevents the default of an auto-repeat of a bound key', () => {
+    const { target } = attachedKeyboard();
+    const repeat = keyEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', repeat: true });
 
-    target.dispatchEvent(new Event('keydown'));
-    target.dispatchEvent(new Event('keyup'));
+    target.dispatchEvent(repeat);
 
-    expect(held().size).toBe(0);
+    expect(repeat.defaultPrevented).toBe(true); // the page must not scroll while a key is held
   });
 
-  it('listens to one target only: attaching again moves it to the new target', () => {
-    const { target, keyboard, held } = setUp();
-    const other = new EventTarget();
-    keyboard.attach(other);
+  it.each(['blur', 'visibilitychange'])('releases every key on %s', (type) => {
+    const { device, target } = attachedKeyboard();
+    target.dispatchEvent(keyEvent('keydown', { code: 'KeyW', key: 'w' }));
 
-    target.dispatchEvent(fakeKeyEvent('keydown', 'KeyW'));
-    other.dispatchEvent(fakeKeyEvent('keydown', 'KeyD'));
+    target.dispatchEvent(new Event(type));
 
-    expect([...held()]).toEqual(['KeyD']);
+    expect(heldKeys(device).size).toBe(0);
   });
 });

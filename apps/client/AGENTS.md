@@ -25,6 +25,7 @@ Package-specific rules. The root `AGENTS.md` still applies.
 | `game/engine/`        | `GameLoop` (fixed 30 TPS + interpolation), `Renderer`, `Camera`, `AssetLoader` |
 | `game/views/`         | Drawing code. `SceneView.draw` is the single place that defines draw order     |
 | `game/input/`         | `keybindings.ts` (the only place keys are bound), input → `Command`            |
+| `game/settings/`      | `SettingsController`: settings intents → `settings` event + persistence        |
 | `game/Match.ts`       | Wires simulation, loop, renderer, input, views and bridge together             |
 | `game/GameCanvas.tsx` | The React component that owns the canvas and the `Match` lifetime              |
 | `ui/screens/`         | Full-screen layouts                                                            |

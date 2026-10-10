@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-09
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,23 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-10-09 (PR #24 review: SamarjitBhogal's requests, approved by sholtzman in chat)
+
+| ID     | Decision                                                                                                                                                                                                                                                                                       | Where it lives                                                               |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| DEC-30 | **`chordKey` lives in `bridge/`** (`bridge/chordKey.ts`), the one definition of "the same physical input": `game/input/`, `settingsSlice.selectChordOwner` and the settings screen import it instead of restating `device:code`. `game/input/` may import it beside `bridge/Binding.types.ts`. | `docs/architecture/02-code-structure.md` §3; `13-game-interface.md` §1, §6.1 |
+| DEC-31 | **Every repository reads through one shared `readOrQuarantine`** (`data/persistence/repositories/readOrQuarantine.ts`) rather than a private copy each; the quarantine row is typed as §7's `QuarantineRecordDtoV1`.                                                                           | `docs/architecture/14-persistence-and-resources.md` §8                       |
+
+## Batch 2026-10-08 (session F, settings and keybindings)
+
+| ID     | Decision                                                                                                                                                                                                                                                                                | Where it lives                                                                                        |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| DEC-25 | **Agents push their own task branch and open its PR** when the human asks (`git push -u origin <prefix>/…` for `feat`, `fix`, `docs`, `refactor`, `chore`; `gh pr create`); force pushes, refspecs, deletions, `--no-verify`, pushes naming `main` or `phase/`, and merges stay denied. | ADR 0015; `.claude/settings.json`; `docs/agents/tool-setup.md`; `docs/process/git-workflow.md` §4, §7 |
+| DEC-26 | **Session F's input layer is the canonical one** (`bridge/Binding.types.ts`, `game/input/`, `game/engine/input/`); PR #19 keeps its `Match` wiring and adapts to it. F, merging after D, adds the settings wiring to `main.tsx` and `ui/App.tsx`.                                       | `INBOX.md` (F → PR #19); `docs/architecture/13-game-interface.md` §10                                 |
+| DEC-27 | **`SettingsController` owns settings** in every session phase (load, apply the settings intents, publish the `settings` event, save), in `game/settings/`, instead of `SessionController`; kept because the independent pre-PR critic rated it better than the design.                  | `docs/architecture/13-game-interface.md` §1, §2, §5, §6.3; `02-code-structure.md` §3                  |
+| DEC-28 | **`InputSnapshot` carries `MouseEvent.button` numbers and no key labels**: devices map the `buttons` bitmask once, and labels are captured into the chord at bind time.                                                                                                                 | `docs/architecture/09-hardware-abstraction.md` §2                                                     |
+| DEC-29 | **Binding edits keep bindings conflict-free**: no rebind or reset leaves one input bound to two actions; `BindingResolver.conflicts()` is the check.                                                                                                                                    | `docs/architecture/13-game-interface.md` §6.3                                                         |
 
 ## Batch 2026-10-08 (INBOX, entity foundation, PR #14 review)
 
