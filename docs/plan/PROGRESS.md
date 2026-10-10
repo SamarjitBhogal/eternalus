@@ -446,3 +446,19 @@ The example below is fenced so it is not read as a real entry.
   "Tests 442 passed (442)"; client "Tests 289 passed (289)"; "✓ built in 218ms"; "Documentation
   check passed."
 - Next step: the human pushes; PR #20 (approved) merges into the phase branch.
+
+### 2026-10-09 — Phase 1 / Sprint 1 audit — chore/sprint-1-audit — sholtzman + Claude Code
+
+- What was done: started the Sprint 1 audit backlog (`docs/reviews/2026-10-09-sprint-1-audit.md`),
+  the house for the fixes the owner chose to make after the 2026-10-10 presentation.
+  - PR #22 and #23 merged before their reviews finished. Independent critics then reviewed each
+    merge against the docs at its first parent. #22: 3 blockers, 8 majors. #23: 1 process
+    blocker, 3 majors. Both verdicts were request changes.
+  - PR #24's findings come from its own six critic passes.
+  - The backlog also lists the stand-ins whose trigger has fired, and the owner decisions the
+    reviews surfaced (A22-3, A23-1, A23-17…A23-20).
+  - Nothing outside `docs/` is changed on this branch yet.
+- Checks run: `npm run check` (see the commit); the two post-merge critics each ran it in a fresh
+  clone with `EXIT=0`.
+- Next step: the owner rules on A22-3 and A23-1 (both block phase 1 → `main`), then the backlog is
+  fixed on this branch after the presentation.

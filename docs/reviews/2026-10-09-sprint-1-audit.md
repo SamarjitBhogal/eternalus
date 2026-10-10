@@ -35,7 +35,61 @@ minor, nit.
 
 ## PR #22 — buildings and map objects (`feat/buildings-and-map-objects`)
 
-_Review in progress._
+**Review:** an independent critic reviewed it after the merge (`8a13c19`), against the docs at `8a13c19^1`. In a fresh clone, `npm run check` gave `EXIT=0` (core 466/466, client 304/304). Verdict: request changes.
+
+**What conforms:**
+
+- Scenery never reaches `Simulation`, a snapshot or `StateHasher`.
+- No `Math.random` or `Date` is used, and trigonometry goes through `deterministicMath`.
+- The minimap's view-box clamp is a real fix.
+
+**Merge history (recorded as found, ADR 0010):**
+
+- The PR's own pre-PR critic was posted on the PR as "Verdict: BLOCKED" (2026-10-09 05:55Z), with the fixes left to the author.
+- Aryan's approval was of `b013fdc`, before the port to the architecture.
+- The ported code was approved at `66512d2` by the author of that port, and merged at `8a13c19`. Between the BLOCKED verdict and the merge, only the phase-branch merges changed the PR's files.
+- The PR description carries no gate record: no critic verdict, no ponytail cuts, no check output.
+
+The critic's measurements, made with probes against the merged sources:
+
+- **Size:** the default scenery is 3,780 polygons (30,913 vertices), drawn in both the main view and the minimap every frame.
+- **5 lanes:** the cathedral apse and the village overlap the capture-point forts.
+- **Bridges:** they sit on the lava only because the default lanes happen to cross there.
+- **Overpainting:** every structure glyph's centre is painted over by scenery drawn later.
+
+- [ ] **A22-1** (blocker) `packages/core/src/map/*Builder.ts` (`MapSceneryBuilder`, `MapDecorationBuilder`, `MapLandscapeBuilder`, `MapMountainBuilder`, `MapVillageBuilder`, `MapStrongholdBuilder`, `MapFortificationBuilder`, `CathedralExteriorBuilder`, `CathedralInteriorBuilder`), `content/maps/map1Scenery.ts`, `map1Landforms.ts`, `index.ts:28-29,57-60`: a presentation-only subsystem (about 1,800 lines with its tests) sits in L2 core and is public API. The client is its only user. Against 01's layer table, 02 §2 `map/` ("config + seed → `MapDefinition`") and 02 §10 ("something drawn on the canvas → `client/game/views/`"). Move it to `apps/client/src/game/views/scenery/`, keeping at most preset-keyed authored data in core content, and drop the core exports. Keeping it in core would need an owner ADR.
+- [ ] **A22-2** (blocker) The same builders apply map-1 geometry to every generated map, whatever its `presetId`. Examples: the ellipse at 800,450; `isWest ? 32 : 1348`; literal 1600/900/1640/940; hand-placed bridges; a cathedral exterior at fixed coordinates while the interior enters at the real cathedral. Against ADR 0009 ("a preset that hardcodes structure positions is rejected"), 06 §5 ("the bridge gaps follow wherever the lanes cross") and sprint 1.3's "no coordinate is hand-written in code". Anchor every dressing on generated features or lane × terrain crossings, key authored landforms by preset id, and draw nothing for presets without scenery. Add tests for `numLanes: 5`, a moved `strongholdInset` and a bent middle lane.
+- [ ] **A22-3** (blocker) Product decisions nobody sourced: snowy north and lava south biomes, a village, an enterable cathedral interior with named rooms, a free camera with a whole-map overview during a match, and new team colours. None trace to `docs/reference/`, `docs/requirements/` or the decisions log, and the reference vision says "the map starts green and grassy with trees". The PR also wrote these choices into `docs/reference/game-design/05-map.md` §"Map 1 scenery". The owner should rule on each (see "Proposed design changes"). Revert that 05-map section until he does, and mark the features `PROTOTYPE(...)` or put them behind a dev flag.
+- [ ] **A22-4** (major) `apps/client/src/game/useMatch.ts:104-136,160-164`: raw pointer and wheel listeners bypass `MouseDevice → InputMapper → InputAction` (09 §2–§3, 17 R21). Left-drag pans and left-click enters the cathedral, but mouse button 0 is bound to `attack`. That conflict is latent until `attack` is consumed. The wheel duplicates `camera-zoom-in/out` and cannot be rebound. Add InputActions for pan (on a chord that doesn't conflict) and `interact`, route the wheel through `MouseDevice.wheel`, and delete the raw listeners.
+- [ ] **A22-5** (major) `apps/client/src/game/GameCanvas.tsx:14-43`, `GameCanvas.module.css` (14 colour literals), `useMatch.ts:39-40,125,137-140`: the toolbar and legend are HUD living in `game/`, and the view mode reaches React through `useState` and a ref callback (rules 5 and 10; 13 §1, §5, §7; anti-recipe A5). Move them to `ui/hud/`, publish a `map-view` bridge event into a slice field, emit `ui-intent`s for overview and leave-interior, and use colour tokens.
+- [ ] **A22-6** (major) `apps/client/src/game/MapExplorer.ts` and `Match.ts`:
+  - `MapExplorer` is a second camera outside `engine/camera` and not a `Projection` (08 §5).
+  - `Match.enterAt` and `panBy` convert screen → world by hand, and aim still uses the hidden following camera in free view.
+  - The Legend keeps walking while the interior is shown.
+  - `Match.ts` grew to 371 lines.
+
+  Fold the free mode into `Camera`, or a `CameraController` behind `Projection`, and bring `Match.ts` back under 300 lines.
+
+- [ ] **A22-7** (major) `content/maps/maps.types.ts:190-198` (`color: string`), `map1Scenery.ts:10-32` (`MAP_PALETTE`), about 85 colour literals in the builders, and `views/MapView.constants.ts:11-28`: colours live in core, and the palette exists three times (core, client constants, CSS). Against 06 §8 (`colourRole`; team colour comes from the entity's team) and 13 §7 (tokens). Core should emit a material or role id, and the client should hold one palette shared with the CSS tokens.
+- [ ] **A22-8** (major) `MapFortificationBuilder.ts`, `MapStrongholdBuilder.ts`, `CathedralExteriorBuilder.ts`: the static scenery bakes in structure art and paints over the feature glyphs in both views. Structures are destructible entities (07), so this art will outlive them. Draw structure art in per-kind `StructureView`s through `defaultViewRegistry` (08 §8), keep static scenery to ground and landforms, and add a test that glyphs are not overpainted.
+- [ ] **A22-9** (major) `MapSceneryBuilder.ts:68-74` and `MapFortificationBuilder.ts:9-15`: kind and team dispatch uses `if`/ternary chains (rule 12, anti-recipe A1). Use a `Record<MapFeatureKind, Dresser[]>` registry, a size table and injected dressers.
+- [ ] **A22-10** (major, not measured) `views/SceneryView.ts:17-25` and `Match.ts:198-199`: about 3,800 polygons are filled twice a frame, with no culling or caching, against the 08 §9 budget (render ≤ 8 ms; minimap ≤ 1 ms every sixth frame). Measure first. Then cache the static scenery offscreen (TerrainView, sprint 1.4) and lighten the minimap. Record the interim with a `ponytail:` note.
+- [ ] **A22-11** (minor) About 820 numeric literals across the builders. The interior's id and display name are in code (`CathedralInteriorBuilder.ts:37-38`), and `map1Landforms.ts` has no `// TUNE:` markers. Move them to content or `.constants.ts`.
+- [ ] **A22-12** (minor) Functions over the size and parameter limits (CONTRIBUTING §4): `MapStrongholdBuilder` (112 lines), `CathedralExteriorBuilder` (69), `MapMountainBuilder` (67), `CathedralInteriorBuilder` (67), `MapSceneryBuilder` (65), the `useMatch` effect (140 lines), and `MapDecorationBuilder.blob`/`rect` (7 parameters). Split them, and use options objects.
+- [ ] **A22-13** (minor) `MapSceneryBuilder.ts:54-60` and `CathedralInteriorBuilder.ts:19-55`: `build()` adds to instance state, so a second call returns 7,560 pieces with only 3,780 unique ids. Build into a local array and add a test that calls it twice.
+- [ ] **A22-14** (minor) Seven builders and `SceneryView.ts` have no sibling test (02 §8), and the "at its anchor" test only checks a width. Add per-builder tests that assert anchor alignment.
+- [ ] **A22-15** (minor) `CathedralInteriorBuilder.types.ts:7`: the presentation-only interior is typed as a `MapDefinition` with a `capture-point` feature that has no entity (06 §4). Give it its own type.
+- [ ] **A22-16** (minor) `views/MapView.ts:30,83`: `MapView` nests `SceneryView`, which splits draw order away from `SceneView` (08 §8). Make ground scenery its own `SceneView` layer.
+- [ ] **A22-17** (minor) `useMatch.ts:122-126`: the cathedral can be entered only by pointer (13 §7: every screen operable by keyboard alone). Add a keyboard path.
+- [ ] **A22-18** (minor) `docs/architecture/06-map-and-minimap.md` §10. Its two new status rows:
+  - copy "1600 × 900" instead of naming where the value lives (OG-12);
+  - cite "08 §4" (the Renderer port) for scenery;
+  - set "Until" targets no design states (a walkable interior).
+
+  Also, 06's `paths` frontmatter misses `SceneryView`/`MapExplorer`, and 08 has no status note. Fix these with the owner's approval.
+
+- [ ] **A22-19** (minor, process) Record the owner's ruling on each item of the earlier BLOCKED critic in the decisions log, and append the missing gate record for PR #22 to `PROGRESS.md`.
+- [ ] **A22-20** (nit) `**` in core where ADR 0012 says to treat it like `Math.pow` (use `t * t`). An abstract base class used only to share helpers (prefer composition). `SKETCH_*` duplicates `map1Preset`'s `TRACED_*`. Team colours changed without a source: include those in the A22-3 question.
 
 ## PR #23 — escort minions prototype (`feat/minion-follow-prototype`)
 
@@ -102,6 +156,9 @@ Interim code marked "replace when session X lands". Those sessions have now land
 ## Proposed design changes (owner sign-off needed)
 
 Decisions and doc conflicts the reviews surfaced. None of these may be changed in the design docs before the owner rules.
+
+- [ ] **A22-3 / PR #22 scenery:** are the snowy and lava biomes, the village, an enterable cathedral interior, the in-match free camera with a world overview, and the new team colours part of the game? Should presentation code live in core (an ADR) or in the client (A22-1)?
+- [ ] **A23-1 / PROTO-01:** escort minions in place of lanes, speed 5.4 and mass 0.5 against `balancing.md`, and Phase 3 AI code in phase 1. This blocks phase 1 → `main` until the owner rules.
 
 - [ ] **A23-17** The `PROTOTYPE(<id>) TEMPORARY` marker convention. It is used 18 times and documented nowhere. Document it in `AGENTS.md` / `CONTRIBUTING.md`, or fold it into `ponytail:`.
 - [ ] **A23-18** Two import-boundary conflicts:
