@@ -30,7 +30,9 @@ connectBusToStore(eventBus, store.dispatch);
 const session = new SessionController({
   bus: eventBus,
   clock: new PerformanceSessionClock(),
-  states: createDefaultSessionStates(),
+  // TODO(sam): turn the select timeout back on once the character select screen can pick a class;
+  // until then it cancels every demo match after 60 s.
+  states: createDefaultSessionStates({ isSelectTimeoutEnabled: false }),
   catalogue: placeholderCatalogue,
   matchConfig: PLACEHOLDER_MATCH_CONFIG,
   playerName: PLACEHOLDER_PLAYER_NAME,

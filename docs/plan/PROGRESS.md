@@ -618,6 +618,24 @@ The example below is fenced so it is not read as a real entry.
   check passed."
 - Next step: the human commits the merge and pushes; PR #22 merges.
 
+### 2026-10-09 — Phase 1 / demo fix — fix/disable-select-timeout — sholtzman + Claude Code
+
+- What was done: the demo plays on the game canvas behind the `character-select` placeholder,
+  which has no way to pick a class yet, so the 60 s select countdown cancelled every demo match
+  back to the menu (`select-timeout`). `CharacterSelectState` takes `isTimeoutEnabled` (default
+  on, the design's behaviour) and skips the countdown when it is off;
+  `createDefaultSessionStates({ isSelectTimeoutEnabled })` passes it through, and `main.tsx`
+  turns it off with a `TODO(sam)` to turn it back on once character select can pick a class.
+  New test: with the timeout off, character select survives 10 × the countdown and confirming
+  still goes to `pre-launch` (it failed with the guard removed). In the demo, character select
+  now has no exit (the placeholder screen offers none); reload to return to the menu. Not
+  checked in a browser. Pre-PR critic: ready for PR; its TSDoc and test nits applied.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in 89ms"; "Documentation
+  check passed."
+- Next step: review and merge the PR into the phase branch before the demo; turn the timeout
+  back on when the character select screen lands.
+
 ### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings — sholtzman + Claude Code
 
 - What was done: keybindings as data (`keybindings.ts`, presets `wasd`/`arrows`, `rebind` with
@@ -689,3 +707,21 @@ The example below is fenced so it is not read as a real entry.
   "Tests 466 passed (466)"; client "Tests 415 passed (415)"; "✓ built in 116ms"; "Documentation
   check passed."
 - Next step: independent critic on the review diff, then push; the human merges.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (review critic, merge of phase/1) — sholtzman + Claude Code
+
+- What was done: critic pass 5 on the review round (base `4892adc`): ready to merge, no
+  blockers. Its should-fix items were applied before committing: `WarnReporter` moved out of the
+  controller's companion file into `repositories/readOrQuarantine.types.ts`; `readOrQuarantine`
+  takes three parameters (`tx, { store, key, validate }, report`, CONTRIBUTING §4) and 14 §8's
+  sketch matches; the PR description has a review-round section and DEC-27…DEC-31. Nits applied:
+  DEC-31 called better than the design in INBOX, 13 §6.1 wording, the deferred DTO helpers
+  tracked in 14 §14, the resolved `chordKey` nit kept and marked. Then merged
+  `origin/phase/1-simulation-kernel-and-world` again for PR #25 (the select-timeout toggle in
+  `main.tsx`, which auto-merged); the one conflict was this log, both sides kept, the phase
+  branch's entry first. Merge left uncommitted.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 105ms"; "Documentation
+  check passed."
+- Next step: critic re-check of the follow-ups and the merge, then push; the human merges. If
+  PR #26 (preselect the Warrior) merges first, `main.tsx` needs one more re-sync.
