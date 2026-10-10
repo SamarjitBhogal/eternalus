@@ -199,6 +199,95 @@ Extensions to earlier items:
 - **A22-2:** the builders never throw at 1, 5 or 7 lanes or at other world sizes; the failure is wrong art, not a crash. A map with no preset still gets 3,505 pieces of map-1 scenery.
 - **A23-3:** confirmed that `Match.ts:199` draws the minimap every frame and that `EntityLayer.drawMinimap` is empty.
 
+### Area S — client shell: bridge, UI, session, data (#12, #25, #26)
+
+**What conforms:**
+
+- `ui/` imports only `bridge/`, `ui/` and `styles/` (rule 5), and every UI action goes through `emitIntent`. Only the session states emit bridge events.
+- One store with the seven contract slices.
+- `SESSION_TRANSITIONS` equals 13 §2's table, and all 64 pairs are tested.
+- Countdowns run on the `SessionClock` port.
+- The screen flow matches reference 14.
+- `ui/` has no colour literals.
+- Accessibility basics: a focus ring, reduced-motion handling, labelled navigation, and `lang`.
+- No storage or fetch outside the facades.
+- #25 is fully reverted by #26, and #26's Warrior preselect carries its removal trigger.
+- The game → UI events (`match-clock`, `hud-state`, `announcement`, `settings`) have no producer yet, so `ResultsScreen` cannot be reached. The plan honestly leaves this unticked.
+
+- [ ] **AS-1** (major) `ui/components/PlaceholderScreen.tsx:31`, `ui/screens/screen.types.ts:4-5`, `ui/App.tsx:16-21,30,39`, `game/session/states/MatchState.ts:4-7`, `useMatch.ts`, `Match.constants.ts:24-28`:
+  - **What happens:** the `Match` lives as long as the viewport renders, not as long as the `match` phase. `PlaceholderScreen` stands in for every phase from `boot` to `match`, and for the `settings` route, and always renders the viewport. So the match is created at `loading` and runs for 70 s or more before `match`.
+  - **Wrong setup:** it ignores the session's `MatchSetupDraft` and always plays seed 1 as the Light Warrior, while the session draws a random team and themes the page, so about half of runs show the Dark theme.
+  - **Against:** 13 §2 (`createMatch(setup)` on `match-loading → match`; `match.destroy()` on exit) and reference 14 §5.
+  - **Fix:**
+    - render the viewport only in `match`;
+    - have the owner pick who owns the lifetime (AS-7, C2);
+    - feed the seed, team and selection into the `Match`;
+    - remove the stale `MatchState` TSDoc;
+    - add a test that no viewport renders outside `match`.
+
+  PR #26 deliberately kept the canvas playable for the demo, but neither the code nor 13 marks that.
+
+- [ ] **AS-2** (minor) `game/session/states/CharacterSelectState.ts:55-56` and `SessionController.test.ts:170`: post-MVP sub-classes can be selected (reference 14 §2), and the test treats `knight` as valid. Reject `status: 'post-mvp'`, correct that test, and add a rejection test.
+- [ ] **AS-3** (minor, latent) `bridge/events.ts:82` and `ui/components/ThemedBackground.tsx:24-25`: image layers load through a raw CSS `url()`, outside `ResourceController` (rule 13, 14 §1). Use `{kind:'image', assetId}`, resolved after the `selection` group loads.
+- [ ] **AS-4** (minor; ADR needed, tooling) `eslint.config.js:41-44`: there is no client boundary lint (02 §11), so rule 5 and "ui/ never writes the store" are checked by review only. After an ADR, add a `ui/` `no-restricted-imports` block (`game/`, `data/`, core, `react-redux` `useDispatch`/`useStore`, value imports of `store`/`eventBus`), and move or exempt `ui/testStore.tsx`.
+- [ ] **AS-5** (minor; owner approval) `docs/architecture/13-game-interface.md:31-32` still says "nothing under `ui/`…" and has no Implementation status section. After #24's §10 lands, add session D's and #26's interim items, including the preselected Warrior.
+- [ ] **AS-6** (minor; owner approval) Undocumented folders and routing:
+  - 02 §3 and 17 R20 lack `game/session/`, `game/content/` and `engine/time/SessionClock*`.
+  - 13's `paths` miss the session files.
+  - 14 claims `data/logging/**`, which belongs to 15.
+- [ ] **AS-11** (minor, tests) `ui/screens/{About,Loadout,Profile,Results}Screen.tsx` and `ui/components/PlaceholderScreen.tsx:35-43`: no test asserts the intent behind Back, Play again, Main menu or Leave match, and `ResultsScreen` is at 60 % statement coverage. Assert the emitted `UiIntent`.
+- [ ] **AS-12** (nit) `ui/components/ThemedBackground.tsx:11-43`: a second component and a helper share the file, and layers are dispatched with an `if` chain on `kind` (13 §7, 17 A1).
+- [ ] **AS-13** (nit) `bridge/events.ts:129` and `ui/strings.ts:4-7`: session reasons are free strings, so a typo silently drops a banner. Add a `SessionReason` union.
+- [ ] **AS-14** (nit) 12 source files (four bridge slices and the session states) have no sibling test, and the trigger PR #12 recorded for adding them never fired. Add them, or record the exemption. Also check the particles' `colourToken` in `placeholderCatalogue.test.ts`.
+- [ ] **AS-15** (nit) Plan line 199 still says "pending merge". The client coverage thresholds are 55 against measured coverage of about 89 %, and `guardrails.md` §2 still says 45/50. Ratchet both.
+
+Owner decisions from area S are listed under "Proposed design changes": AS-7, AS-8, AS-9, AS-10, AS-16 and AS-B1 to AS-B3.
+
+### Area K — core kernel: config, utils, state, commands, diagnostics, systems (#13, #17)
+
+**What was checked:** every source file in scope; an import census against 02 §2; sibling-test and file-size censuses; greps for `Math.*`, `**`, maps, sets, sorting, time, `console`, casts and markers. Core coverage thresholds are still 85 everywhere.
+
+- [ ] **AK-1** (major; owner approval) The kernel's status notes are stale:
+  - **03 §12** still says `Simulation(config, seed, logger, systems = [])`, that `move`/`stop` are unsupported, that the factory keeps its own id counter, and that there are no `recentCommands`.
+  - **15 §13** says "Not built yet: `Invariant`, `InvariantRunner`, …", but they exist.
+  - **10** has no status section, though `Movement` differs from 10 §2: per tick, no `|dv|` clamp, no friction, store order.
+  - **Core `AGENTS.md:15-16`** still says "`systems/` with the pipeline only".
+
+  PR #17 kept 03 unchanged until approved, and its replacement text waits in `INBOX.md` (item 7). Approve and apply that text, write 15 §13 and 10 status notes, and fix the core AGENTS "Today" list.
+
+- [ ] **AK-3** (minor) `components/Movement.ts:71,98` and `diagnostics/invariants/FiniteTransformsInvariant.ts:36` use `Math.hypot`; `utils/geometry.ts:11,55` use a bare `Math.sqrt` and `**`. ADR 0012 treats these as engine-dependent, and `utils/vec2.ts` already has `length`/`normalizeInto`. Use those and the `sqrt` wrapper. An ADR 0012 amendment adding `hypot` and the other approximated `Math` functions to the lint is the owner's call.
+- [ ] **AK-4** (minor) `commands/handlers/DevSpawnHandler.ts:16-44`: `team` is never validated, so a bad `dev-spawn`, for example from a JSON replay or a dev dump, throws out of `Simulation.step()` instead of being rejected (03 §3). `count` is also unbounded for kinds the caps don't cover. Add an `invalid-team` reason and a bound, with tests.
+- [ ] **AK-5** (minor) `Simulation.ts:55-58` and `Simulation.types.ts:19-20`: injected content skips the validation and per-tick conversion that `loadDefaultContent` does (03 §6, "validates config and content"). Extract `loadContent(definitions, tickRate)` for both paths, and document the contract.
+- [ ] **AK-6** (minor, latent) `entities/EntityFactory.ts:22`: the entity id counter belongs to the factory, outside `GameState` and outside the hash. Two states can hash equal yet issue different next ids, save/resume cannot restore it, and systems (the future `SpawnSystem`) cannot reach it (03 §2, §9; 15 §3). Move it into `GameState`, hash it, and test that.
+- [ ] **AK-7** (minor, test gap) `diagnostics/replay.test.ts`, `randomCommands.ts:43` and `__fixtures__/wanderSeed7.replay.ts` never run the shipped pipeline:
+  - the fixture spawns an unregistered `walker` (all rejected), so its moves are rejected too;
+  - invariants never run under random commands;
+  - the only real-pipeline determinism check is one Warrior for 90 ticks.
+
+  Add a seeded property test on the default pipeline with heavy invariants (15 §9), and a golden fixture recorded on it (17 R16).
+
+- [ ] **AK-8** (minor) `systems/DefaultSystemPipeline.ts:12` and `diagnostics/DefaultInvariantRunner.ts:9` are subclasses, while 02 §4/§9 and 15 §2 specify `createDefaultSystemPipeline()` and `createDefaultInvariants()`. The owner declined the same class-shaped registry for entities (DEC-21), and 17's `default*.ts` glob misses them. Replace them, and close the optional idea in `INBOX.md:151-153`.
+- [ ] **AK-9** (minor) `diagnostics/DefaultInvariantRunner.test.ts`: add 15 §10's registry test (every id has a test file, no duplicates), and have the runner reject duplicate ids.
+- [ ] **AK-10** (minor) `systems/DeathSystem.ts:14-25` polls `Health` and removes with no killer, against 03 §2/§4 (`entity-died` from `DeathResolver`). That is acceptable while combat doesn't exist, but record it in 03 §12 (with AK-1) and switch it when `DamagePipeline` lands.
+- [ ] **AK-11** (minor) `config/defaultGameConfig.ts:25-27`: `countdownSeconds`, `hordeSizes` and `initialHordesPerTeam` are marked TUNE in FR-003, FR-037 and FR-004, but have no `// TUNE:` marker.
+- [ ] **AK-12** (minor) `utils/deepFreeze.ts` has no sibling test, and its `Object.isFrozen` cycle guard leaves the mutable children of a shallow-frozen parent unfrozen. Use a `WeakSet` and add a test.
+- [ ] **AK-13** (nit) `utils/SeededRandom.ts:6-7`: a module-level helper sits in a class file.
+- [ ] **AK-14** (nit) `diagnostics/InvariantRunner.constants.ts:32-33`: move `SPEED_TOLERANCE` to `FiniteTransformsInvariant.constants.ts`.
+- [ ] **AK-15** (nit) `NoRemovalWithoutCauseInvariant.constants.ts` copies the `RemovalCause` union. Derive both from one `as const` array in `state/`.
+- [ ] **AK-16** (nit; public API change) `index.ts`:
+  - `StateHasher` is exported but unusable without a `GameState`, and 02 §6 doesn't list it.
+  - `SimulationOptions` (02 §6) is not exported.
+  - The unused deprecated `TeamId`/`FeatureOwner` aliases are still there (also AM-14).
+- [ ] **AK-17** (nit) `config/validateGameConfig.ts:125` returns the caller's object unfrozen. Return a deep-frozen copy.
+- [ ] **AK-21** (doc) `docs/plan/phase-1-simulation-kernel-and-world.md:46-78`: annotate the sprint 1.1 items ticked against superseded text: command stamping (DEC-20), the match timeline and the replay content version.
+- [ ] **AK-22** (doc; owner approval) `paths` frontmatter: 03 should claim `systems/DeathSystem*` and `systems/*Pipeline*`, and 15 should claim `systems/InvariantSystem*`. Add the emit-semantics sentence to 03 §4: a subscription changed during an emit takes effect from the next emit.
+
+Extensions to earlier items:
+
+- **A23-3:** `GameState`'s `entities.remove` is public to every holder, including AI controllers, so "no public `remove()`" is met only by its letter.
+- **A23-7:** `DefaultSystemPipeline.test.ts` can't detect a reordering, and the tick order is split over three places (sprint 1.1's "reads as a list in code" is unmet).
+- **A8-1:** `DEFAULT_MAP_CONFIG` is still public API.
+
 ## Proposed design changes (owner sign-off needed)
 
 Decisions and doc conflicts the reviews surfaced. None of these may be changed in the design docs before the owner rules.
@@ -208,6 +297,34 @@ Decisions and doc conflicts the reviews surfaced. None of these may be changed i
 
 - [ ] **AM-B1** (improvement on the design, small) `MapGenerator.generate` takes only the `{ map }` slice (`MapGenerator.types.ts:27`), while 06 §1 sketches a full `GameConfig`. It states its real dependency, and a full `GameConfig` still fits. If accepted, 06 §1 reads `generate(config: Pick<GameConfig, 'map'>, seed)`, and A8-1 uses that type.
 - [ ] **AM-19** (owner question) `docs/reference/game-design/05-map.md:41,103-104` puts corner camps "behind impassable rifts", but neither 06 nor the generator encloses them. Add the enclosure to 06 §3 and the generator, or drop it from 05.
+- [ ] **AS-7** (owner decisions, before `MatchBridge` and `MatchScreen` are written):
+  - **C1:** does `MatchBridge` live in `game/` (13 §1, 12 §8) or in `bridge/` (contract §2.6, H brief)?
+  - **C2:** who owns the `Match` lifetime, `SessionController` (13 §2) or `GameCanvas` (H brief)?
+  - **C3:** is the event `announce {id, params, tick}` into `matchSlice` (12 §8, 13 §5) or `announcement` into `hudSlice` (contract, code)?
+- [ ] **AS-8** (docs; owner approval) 13 contradicts itself or the code:
+  - `loading-progress.group` (`'boot'|'menu'|'match'` vs `selection`);
+  - the slice list vs reference 14 §5's `themeSlice`;
+  - `MenuRoute 'main'` vs `'home'`;
+  - `connectBusToStore` "in `bridge/store.ts`" (13 §5, `apps/client/AGENTS.md`) vs its own file;
+  - `bridge/selectors/*` (02, 13, 17), which doesn't exist.
+- [ ] **AS-9** (owner) Where do the background sets and the themed profile name ("Chronicle") live? They are in `game/content/placeholderCatalogue.ts:36-70` with no designed home. Decide before A12-4, so the class swap doesn't drop them.
+- [ ] **AS-10** (owner, product) Does confirming a class end character select early (13 §2, the code), or does the reveal start only "after the countdown" (reference 14 §2)?
+- [ ] **AS-16** (owner, before or after merging #24) `bridge/Binding.types.ts`: `26ae27e` has 13 §6.1's per-device `InputChord` union, and #24 replaces it with the contract's flat `{device, code, label}`. #24's 13 §10 records this as interim ("modifiers and gamepad axes come with `GamepadDevice`, post-MVP"), and DEC-26 does not rule on the shape. Adopt the flat shape as the design (edit 13 §6.1), or keep §6.1 as the target with that trigger.
+- [ ] **AS-B1** (improvement on the design) `SessionController.types.ts:8-28`: the synchronous `SessionState` hooks with a narrow `SessionContext` (13 §2 sketches async). Exit → enter → `session-phase` happen in one call stack, and tests need no awaiting. The cost: each state must cancel its own callbacks, so add a per-entry context token as a guard. If accepted, 13 §2's sketch (lines 76-94) changes.
+- [ ] **AS-B2** (improvement, conditional) No `useAppDispatch` (session D's INBOX item). Agreed, but "makes the rule structural" holds only together with AS-4's lint.
+- [ ] **AS-B3** (weak candidate) Selectors on the slices instead of `bridge/selectors/`: fewer files and typed, but not memoised (13 §3 wants `createSelector`). Accept only with a split: plain reads on the slice, derived data in `selectors/`.
+- [ ] **AK-2** (owner) May `diagnostics/` import `components/`? The invariants read `Health` and `Transform` (`FiniteTransformsInvariant.ts`, `HealthWithinBoundsInvariant.ts`), against 02 §2 and core `AGENTS.md:31`. Session C asked this in `INBOX.md:143-145` and nobody has answered. Recommended: allow read access.
+- [ ] **AK-18** (owner) How does `commands/` reach components? 02 §2 forbids it, so `EntityStore` grows a per-component facade (`steer`, `positionOf`, `teamOf`, `isSteering`, `controllerOf`), and Phase 2 commands will add more. Widen the imports, or name a home for the facades.
+- [ ] **AK-19** (docs; owner approval) Doc-vs-doc conflicts:
+  - 10 §2 "entity id order" vs store order (DEC-20);
+  - `RemovalCause` in 03 §2 vs 15 §3;
+  - `DamageSource` kinds in 05 §9 vs 15 §3;
+  - the plan's "payloads come from the pool" vs 03 §4 "may be pooled";
+  - `MatchPhase` names and the event name in 12 §2 vs FR-006 vs reference 04;
+  - `SystemContext.types.ts` (02 §2) vs `System.types.ts`.
+- [ ] **AK-20** (owner, product) 03 §10: should `legendsPerTeam` and `initialHordesPerTeam` be derived from, or validated against, `numLanes`? At 5 lanes, 3 per lane plus the Rover exceeds the cap of 10, and FR-004 wants one horde per lane.
+- [ ] **AK-23** (improvement on the design) `GameState.removalsAnnouncedThisTick()`: per-tick facts an invariant needs are kept by `GameState` for the current tick, not read back from the 512-entry event ring, which a busy tick can overflow into a false fatal. Adopt it in 15 §3 and apply it to `NoPassThroughUnbreakableInvariant`.
+- [ ] **AK-24** (improvement on the design, small) `Violation.severity`: each violation carries its log level, optionally stamped by the runner. Adopt it in 15 §2 together with the seed in `InvariantViolationError` that 15 §5 already requires, and close the optional idea in `INBOX.md:153-154`.
 - [ ] **A23-17** The `PROTOTYPE(<id>) TEMPORARY` marker convention. It is used 18 times and documented nowhere. Document it in `AGENTS.md` / `CONTRIBUTING.md`, or fold it into `ponytail:`.
 - [ ] **A23-18** Two import-boundary conflicts:
   - `packages/core/AGENTS.md:32` forbids `systems/` → `ai/`, but 02 §2 allows it (and 11 §1 calls `AiSystem` a system).
