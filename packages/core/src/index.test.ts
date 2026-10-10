@@ -5,9 +5,11 @@ import * as core from './index';
 describe('@eternalus/core public API', () => {
   it('exports exactly the documented runtime values', () => {
     expect(Object.keys(core).sort()).toEqual([
+      'CathedralInteriorBuilder',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
       'MapGenerator',
+      'MapSceneryBuilder',
       'MemoryLogger',
       'NullLogger',
       'SEVERITY',

@@ -409,6 +409,139 @@ The example below is fenced so it is not read as a real entry.
 - Next step: review and merge PR #12. Follow-up: core now exports `SeededRandom`, so the client's
   `LcgRng` stand-in can be swapped at the `createRng` line in `main.tsx` (its own task).
 
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: preserved all original map anchors and lanes; enlarged the preview to 12,800 ×
+  7,200; added snowy/lava capture fortresses, cathedral village, twelve neutral camp clearings,
+  deterministic scenery and an explorable cathedral interior through focused OOP builders.
+  Added aspect-correct zoom/pan, minimap navigation and viewport-bound regression tests;
+  updated the governing map docs. No dependencies, commits or pushes.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 41/41,
+  client 32/32; core coverage 100%; client lines 64.25%; build passed);
+  `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser check → `PASS: cathedral entry/exit, wheel zoom, drag pan, minimap navigation, desktop and narrow-screen rendering.`
+  Initial lint/unused-export findings were fixed without changing guardrails.
+- Next step: map owner reviews the visual direction; future simulation work connects doorway
+  collision, capture logic and neutral camp enemies to the existing presentation anchors.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: enlarged both home strongholds and the cathedral exterior; expanded the
+  cathedral interior to 1,800 × 2,200 with library, sacristy, vestry, reliquary, chapels and
+  garden cloisters. Replaced broad biome bands with layered snow pockets and curved lava
+  rivers with four bridges; added mountain borders, inland hills, lakes, varied trees and
+  boulders. Replaced the square city grid with winding streets and housing clusters; removed
+  the top-left title. Preserved original objectives, anchors and lane geometry. Added an
+  additive interior-entry footprint to MapDefinition. No dependencies, commits or pushes.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 33/33; core lines 100%, branches 98.02%; client lines 64.55%; production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser result: `PASS: title removed, cathedral entry/exit, wheel zoom, desktop and narrow-screen rendering.`
+  Initial sandbox-only Vitest cache errors were resolved by running checks outside the sandbox.
+- Next step: map owner reviews the updated environment. Mountain collision, player movement,
+  capture behaviour and neutral enemies remain future simulation work.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced repeated mountain peak icons with connected curved ridgelines,
+  blended slope shading, foothills and erosion grooves; softened inland hills. Cathedral
+  entry now starts at 1.65× zoom while leaving restores the world overview. Added regression
+  assertions for continuous full-edge mountain coverage, interior camera size and panning.
+  Updated the governing map documentation. No dependencies, commits or pushes.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 33/33; coverage thresholds and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser result: `PASS: mountain overview and enlarged interior render; cathedral entry works.`
+- Next step: map owner reviews the smoother mountain presentation and closer cathedral view.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced the ribbon mountain border with a field of overlapping rock masses
+  varying in width, height, summit position and facets, including snow on taller peaks.
+  Preserved landmark visibility by drawing mountains before fortified objectives. Rebuilt
+  the cathedral interior as a circular rotunda with radial room entrances and a clear central
+  capture court; added a neutral presentation capture anchor at (900, 1100). Kept the closer
+  interior camera. Added tests for mountain size variation and edge coverage, circular floor
+  geometry, capture-anchor position and furniture clearance. Updated governing map docs.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 33/33; coverage thresholds and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser results: `PASS: mountain field and circular capture hall render; cathedral entry works.`
+  `PASS: final radial room entrances render and cathedral exit restores overview.`
+- Next step: map owner reviews the mountain field and circular interior. Capture rules and
+  mountain collision remain future simulation work. Changes remain uncommitted.
+
+### 2026-10-08 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects (merge of phase/1) — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/1-simulation-kernel-and-world` into the PR branch and ported the
+  map work onto the config-driven `MapGenerator`. `MapSceneryBuilder` (core export) dresses any
+  generated map from sketch-space content stretched to the world size; camps, forts and
+  strongholds anchor on generated features. `CathedralInteriorBuilder` (core export) builds the
+  interior and its entry footprint from the generated cathedral. `Match` keeps the following
+  camera and adds the restored `MapExplorer` free view (drag pan, wheel zoom, overview, cathedral
+  interior); `GameCanvas` has the PR's toolbar and legend again. Removed the static `MAP_1`,
+  `MapLayout`'s ×8 scale and the hand-placed camps (the generator places camps).
+- Checks run: `npm run check` → exit 0 (core `Test Files 78 passed (78)`, `Tests 449 passed
+(449)`, lines 99.16%; client `Test Files 58 passed (58)`, `Tests 301 passed (301)`, lines
+  89.98%; build passed; `Checked 98 Markdown files under docs/. Documentation check passed.`).
+  Pre-PR critic: BLOCKED (V1–V5, see the PR); ponytail: 6 cuts, −51 lines, output identical.
+- Next step: owner reviews the merge; per-frame scenery cost is left as is for now.
+
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype — SamarjitBhogal + Claude Code
+
+- What was done: prototype for the demo, stacked on `feat/player-input` (#19 → #18 → #17 → #14) and synced
+  with the phase branch after PR #12, and again after #14, #17, #18 and #19 merged (merge commits;
+  `MobView` now registered in `createDefaultViewRegistry()`).
+  Minions escort the player's Legend: `ai/Controller.types.ts`, `ai/AiSystem.ts` (runs first,
+  queues decisions for the next tick), `ai/FollowLeaderController.ts` (walk to the nearest allied
+  Legend, keep space from it and from other followers), `components/Brain.ts` (installed by `Unit`
+  when a definition names a `controller`), `EntityStore.positionOf/teamOf/controllerOf` for `ai/`,
+  `content/mobs/lightMinion.ts`, `content/ai/followLeaderProfile.ts`; `Match` spawns six
+  minions around the player; `views/MobView.ts` draws mobs on a dark outline (the default view
+  painted them in the team colour, invisible on their own Stronghold). Checked in headless Chrome:
+  the escort shows, trails the player while it walks and settles around it. Prototype decision, to be replaced by Phase 3's `MinionController`,
+  `SpawnSystem` and `Perception`: recorded as PROTO-01 in `INBOX.md`; no design doc changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 456 passed (456)" (statements 99.03%, branches 93.46%); client "Tests 291 passed (291)"
+  (statements 92.51%, branches 93.35%); "✓ built in 152ms"; "Documentation check passed." (Node
+  24.21.0, Linux). Pre-PR gate not run yet.
+- Next step: rehearse the demo; after #14–#19 merge, open the PR into the phase branch through the
+  pre-PR gate, or drop the branch when Phase 3 lands.
+
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype (pre-PR gate) — SamarjitBhogal + Claude Code
+
+- What was done: ran the pre-PR gate (ADR 0010) on the prototype. Critic pass 1 found one blocker
+  (the Match default-view warning test had lost its exact assertion; restored with an `obstacle`
+  through test-injected content) and several should-fix items, all fixed: `AiSystem` asks each
+  entity on a cadence (`decideEveryTicks: 5`, architecture 11 §6, staggered by store position) and
+  throws on an unregistered controller; the follower sends `stop` only while it is steering
+  (`EntityStore.isSteering`); deterministic `distance`/`length` instead of `Math.hypot`; the light
+  minion cites `balancing.md` and states its speed and mass departures; PROTO-01 now asks the
+  owner to confirm them and where `AiSystem` belongs. Ponytail: one cut (−2 lines). Correction to
+  the entry above: it is dated 2026-10-09 but the work was done on 2026-10-08; this log is
+  append-only, so the date is corrected here.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)" (statements 99.03%, branches 93.55%); client "Tests 292 passed (292)"
+  (statements 92.61%, branches 93.35%); "✓ built in 162ms"; "Documentation check passed." (Node
+  24.21.0, Linux). Critic pass 2: NO BLOCKERS. Headless Chrome: the escort trails the player and
+  settles around it.
+- Next step: Samarjit commits and pushes the rework, then opens the PR into the phase branch with
+  `docs/changelog/pr-feat-minion-follow-prototype.md` as its description.
+
+### 2026-10-08 — Phase 3 prototype (sprint 3.3 subset) — feat/minion-follow-prototype (markers) — SamarjitBhogal + Claude Code
+
+- What was done: marked every piece of the escort prototype as temporary with
+  `PROTOTYPE(PROTO-01) TEMPORARY` plus what replaces it (18 markers, 16 files; comments only): the
+  follow controller, its profile and tests, the light-minion definition and its catalogue line,
+  the escort spawn and its tests in `Match`, and the interim `AiSystem`, `Brain`, `EntityStore`
+  read helpers, `Unit` brain attach, `Simulation` controller list and `DefaultSystemPipeline`
+  `decide` parameter. The convention is explained in PROTO-01 (`INBOX.md`) and the PR #23
+  description doc, with a proposal to add it to `AGENTS.md` once the owner approves.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)"; client "Tests 292 passed (292)"; "✓ built in 165ms"; "Documentation
+  check passed." (Node 24.21.0, Linux).
+- Next step: update the PR #23 description on GitHub from the doc; reviewers check the markers.
+
 ### 2026-10-08 — Process / tooling — chore/lint-ignore-worktrees — sholtzman + Claude Code
 
 - What was done: DEC-16, accepted by the owner in chat. `eslint.config.js` adds `.worktrees/` and
@@ -446,6 +579,79 @@ The example below is fenced so it is not read as a real entry.
   "Tests 442 passed (442)"; client "Tests 289 passed (289)"; "✓ built in 218ms"; "Documentation
   check passed."
 - Next step: the human pushes; PR #20 (approved) merges into the phase branch.
+
+### 2026-10-09 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects (merge of phase/1) — sholtzman + Claude Code
+
+- What was done: re-synced PR #22 with the phase branch after PR #20 merged. Merge commit only.
+  The one conflict was this log; every entry from both sides was kept, oldest first: 32 entries
+  (24 shared, 5 from this branch, 3 from the phase branch).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 449 passed (449)"; client "Tests 301 passed (301)"; "✓ built in 225ms"; "Documentation
+  check passed."
+- Next step: the human pushes; PR #22 (approved) merges, then PRs #23 and #24 re-sync.
+
+### 2026-10-09 — Phase 1 / plan audit — feat/minion-follow-prototype — SamarjitBhogal + Claude Code
+
+- What was done: audited the Phase 1 plan against the local working tree (open PRs not counted)
+  and ticked six items whose code and tests are in place: `DeathSystem` with `RemovalCause`, the
+  `map-1` preset, `GameLoop` + `FrameScheduler`, `MinimapView`, the logger sinks and the coverage
+  ratchet (core 85, client 55). Still open: `SpatialHash`, `CollisionSystem`, `ObjectPool`, the
+  unique-id and live-reference invariants, the `WorldMap` cost grid and its wiring into
+  `Simulation`, the renderer's three layers and `getContext` lint rule, `TerrainView`, the bridge
+  clock publish, `PlayerController`, collision for the placeholder Legend, `PerfOverlay`,
+  `DeveloperMenu` and `npm run bench`. None of the open PRs (#22, #23, #24) adds `SpatialHash`,
+  collision or `WorldMap` wiring, which Phase 3 minions need. Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 459 passed (459)"; client "Tests 292 passed (292)"; "✓ built in 230ms"; "Documentation
+  check passed." Also restored a blank line in this log that the `c563c01` conflict resolution
+  dropped (Prettier failed on it at HEAD).
+- Next step: pick up `SpatialHash` and `CollisionSystem` v1 (sprint 1.3) before more minion work.
+
+### 2026-10-09 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects (merge of phase/1) — SamarjitBhogal + Claude Code
+
+- What was done: re-synced PR #22 with the phase branch (minion-follow prototype, plan audit).
+  Conflicts in `Match.ts`, `Match.constants.ts` and this log; both sides kept in each
+  (`DEFAULT_ASPECT` and the free-view helpers next to `PROTOTYPE_ESCORT` and `spawnEscort`).
+  Merge left uncommitted.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 304 passed (304)"; "✓ built in 176ms"; "Documentation
+  check passed."
+- Next step: the human commits the merge and pushes; PR #22 merges.
+
+### 2026-10-09 — Phase 1 / demo fix — fix/disable-select-timeout — sholtzman + Claude Code
+
+- What was done: the demo plays on the game canvas behind the `character-select` placeholder,
+  which has no way to pick a class yet, so the 60 s select countdown cancelled every demo match
+  back to the menu (`select-timeout`). `CharacterSelectState` takes `isTimeoutEnabled` (default
+  on, the design's behaviour) and skips the countdown when it is off;
+  `createDefaultSessionStates({ isSelectTimeoutEnabled })` passes it through, and `main.tsx`
+  turns it off with a `TODO(sam)` to turn it back on once character select can pick a class.
+  New test: with the timeout off, character select survives 10 × the countdown and confirming
+  still goes to `pre-launch` (it failed with the guard removed). In the demo, character select
+  now has no exit (the placeholder screen offers none); reload to return to the menu. Not
+  checked in a browser. Pre-PR critic: ready for PR; its TSDoc and test nits applied.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in 89ms"; "Documentation
+  check passed."
+- Next step: review and merge the PR into the phase branch before the demo; turn the timeout
+  back on when the character select screen lands.
+
+### 2026-10-09 — Phase 1 / demo fix — fix/preselect-warrior — sholtzman + Claude Code
+
+- What was done: replaced PR #25's approach, at sholtzman's request. #25 turned the
+  character-select timeout off; now the timeout is back to the design's behaviour and character
+  select starts with the Warrior selected (`PLACEHOLDER_PRESELECTED_CLASS_ID` in
+  `game/content/placeholderSetup.ts`, `TODO(sam)`), so the 60 s countdown leads into
+  `pre-launch` and the match instead of cancelling. `CharacterSelectState` takes
+  `preselectedClassId` (selected on entry through the normal `select-class` path, so it is
+  checked against the catalogue); `createDefaultSessionStates({ preselectedClassId })` passes it
+  through. #25's isTimeoutEnabled option and its test are removed with the behaviour; the new
+  test fails with the preselect removed. Not checked in a browser.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in 95ms"; "Documentation
+  check passed."
+- Next step: review and merge before the demo; remove the preselect when the character select
+  screen lands.
 
 ### 2026-10-09 — Phase 1 / Sprint 1 audit — chore/sprint-1-audit — sholtzman + Claude Code
 

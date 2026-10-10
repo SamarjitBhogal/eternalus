@@ -4,7 +4,7 @@ description: Sprint checklists for the deterministic simulation kernel, the firs
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-09
 tags: [plan, phase-1, simulation, map, engine, input]
 paths: ['packages/core/src/**', 'apps/client/src/game/**', 'apps/client/src/bridge/**']
 related:
@@ -112,7 +112,7 @@ Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
 - [x] **`MovementSystem`** (acceleration → velocity → position; velocity clamp). Owner: _.
       Test: a dummy reaches `maxSpeed` after `maxSpeed / acceleration` ticks; a `stop` command
       decelerates. Done when: no `atan2` and no allocation per unit per tick.
-- [ ] **`DeathSystem` with `RemovalCause`** (the only removal path; emits `entity-removed`
+- [x] **`DeathSystem` with `RemovalCause`** (the only removal path; emits `entity-removed`
       with cause, D4). Owner: _. Test: removal without a cause does not compile; the event
       carries `cause` and `tick`. Done when: `GameState` has no public `remove()`.
 - [ ] **First invariants + `InvariantSystem` + `DebugConfig`** (`assertLevel: off | light | heavy`, `heavyEvery`): unique ids; components reference live entities; health in bounds;
@@ -159,7 +159,7 @@ Owner: _ (the `feat/map` author) with sholtzman. Weeks 1–2. Depends on `GameCo
       `collision-anomaly`. Owner: _. Test: a unit at 10× `maxSpeed` cannot cross a wall segment;
       1,000 ticks of seeded random movement raise 0 anomalies. Done when: the anomaly listener
       logs entity id, tick, from/to and collider id.
-- [ ] **Map preset `map-1` in `content/maps/presets/`** (a lane profile, a rift width profile and
+- [x] **Map preset `map-1` in `content/maps/presets/`** (a lane profile, a rift width profile and
       out-of-bounds shapes; never counts, which stay in `GameConfig.map`, DEC-14).
       Owner: _. Test: preset validates. Done when: a second preset needs only content, no code.
 
@@ -174,7 +174,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
 [09-hardware-abstraction.md](../architecture/09-hardware-abstraction.md) and
 [13-game-interface.md](../architecture/13-game-interface.md).
 
-- [ ] **`GameLoop` + `FrameScheduler` port + `RafFrameScheduler` + `Clock`** with the
+- [x] **`GameLoop` + `FrameScheduler` port + `RafFrameScheduler` + `Clock`** with the
       accumulator clamped at `5 × TICK_MS` (existing design). Owner: _. Test: a fake scheduler
       advancing 100 ms yields 3 ticks; a 1 s gap is clamped to 5 ticks; `alpha ∈ [0, 1)`. Done
       when: the loop never touches `requestAnimationFrame` directly.
@@ -191,7 +191,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
 - [ ] **`TerrainView`** (pre-rendered chunks from `MapDefinition`, dirty flags). Owner: _.
       Test: a chunk redraws only when flagged. Done when: the terrain layer is not cleared per
       frame.
-- [ ] **`MinimapView`** (same snapshot and definition, world → minimap scale, unit dots at a
+- [x] **`MinimapView`** (same snapshot and definition, world → minimap scale, unit dots at a
       lower cadence). Owner: _. Test ("new feature appears on the minimap"): registering a new
       structure kind in `ViewRegistry` makes it appear on both the map and the minimap with zero
       minimap code changes; a `numLanes: 5` definition draws five lanes. Done when: the minimap
@@ -203,7 +203,7 @@ Follows [08-game-engine.md](../architecture/08-game-engine.md),
       bridge; `destroy()` tears everything down). Owner: _. Test: create/destroy leaves 0 live
       listeners and 0 scheduled frames. Done when: `main.tsx` mounts `MatchScreen` behind the
       Redux `Provider`.
-- [ ] **Logger sinks**: `ConsoleSink` (the only `console` user, with a named `eslint-disable`
+- [x] **Logger sinks**: `ConsoleSink` (the only `console` user, with a named `eslint-disable`
       reason) and `RingBufferSink`. Owner: _. Test: records route by severity. Done when: the
       overlay can read the ring buffer.
 
@@ -237,7 +237,7 @@ Owner: _ (client lane + one sim-lane reviewer). Week 3. Depends on 1.2 and 1.4.
 - [ ] **Headless bench `npm run bench`** (`Recommendation:` Node script in core: 300 dummies ×
       3,000 ticks, prints p50/p95 tick time). Owner: _. Test: the script runs in CI without
       asserting a time (times are asserted locally). Done when: the number is in PROGRESS.
-- [ ] _(feat/session-shell-home, pending merge: client 45/50/45/45 → 55/55/55/55 done; core 80 → 82 open)_ **Coverage ratchet**: core 80 → 82, client 45/50 → 55/55 (`Recommendation:`). Owner: _.
+- [x] **Coverage ratchet**: core 80 → 82, client 45/50 → 55/55 (`Recommendation:`). Owner: _.
       Test: `npm run test:coverage`. Done when: thresholds are committed in the same PR.
 
 **Success metric:** p95 tick time ≤ 4 ms with 300 dummies in `npm run bench` on the reference

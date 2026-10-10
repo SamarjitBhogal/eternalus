@@ -53,6 +53,29 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       rosters … assigns `playerTeam`", while the `menu` and `loading` rows (and reference 14 §5)
       put the setup at "Start match"; D follows the latter. The row needs a one-line fix.
 
+- [ ] **PROTO-01 — prototype escort minions (demo, 2026-10-08; branch `feat/minion-follow-prototype`).**
+      For the prototype demo, Samarjit chose minions that **follow the player's Legend** instead
+      of marching down lanes (option b). This is a **prototype decision to be replaced** by the
+      real Phase 3 systems; it is not in the design docs and they were not changed. Stand-ins to
+      remove: `ai/FollowLeaderController.ts` + `content/ai/followLeaderProfile.ts` (→
+      `MinionController`, sprint 3.3), `content/mobs/lightMinion.ts` (health 150 and radius 0.4 are
+      `balancing.md`'s light-minion anchors; please confirm two departures: speed 5.4 m/s instead
+      of 3.5 so the escort keeps up with the Warrior, and mass 0.5 as 40 on the repo's Warrior =
+      1 scale), the
+      `PROTOTYPE_ESCORT` spawn in `apps/client/src/game/Match.ts` (→ `SpawnSystem` / hordes),
+      the brute-force scan (→ `Perception` over `SpatialHash`), `Brain` as a component with only
+      a controller id (→ `state.ai.brains`, 11 §2) and the missing `AiSystem` decision budget
+      (11 §6). Question: `AiSystem` is a system (02 §2, 11 §1), but `systems/` may not import
+      `ai/` (core `AGENTS.md`), so it lives in `ai/` and `Simulation` passes it to
+      `DefaultSystemPipeline`, which splits the tick order across two files (02 §9). Should
+      `AiSystem` stay in `ai/`, or may `systems/` import `ai/` types?
+      Decision needed: keep the escort behind a dev flag after Phase 3, or delete it then?
+      **Finding the code:** all prototype code is temporary. Every piece carries the marker
+      `PROTOTYPE(PROTO-01) TEMPORARY`, followed by what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'`
+      lists them all. Agents: do not build on or extend marked code; replace it with the named
+      design piece. Proposal (needs your approval, since it edits `AGENTS.md`): add this marker
+      convention to `AGENTS.md` so every future prototype uses it.
+
 ## Requests for the agent
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an

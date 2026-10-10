@@ -23,4 +23,6 @@ export type UnitDefinition = EntityDefinitionBase & {
   /** Sight radius in world units. */
   readonly visionRadius: number;
   readonly movement: MovementProfile;
+  /** The id of the controller that drives this unit (architecture 11 §2); none for the player. */
+  readonly controller?: string;
 };

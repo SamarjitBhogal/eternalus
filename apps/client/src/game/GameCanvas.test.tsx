@@ -15,5 +15,7 @@ describe('GameCanvas', () => {
       </Provider>,
     );
     expect(html).toContain('<canvas');
+    expect(html).toContain('World overview');
+    expect(html).toContain('Light stronghold');
   });
 });

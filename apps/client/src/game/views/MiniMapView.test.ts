@@ -3,6 +3,7 @@ import {
   type MapDefinition,
   type MapFeature,
   MapGenerator,
+  MapSceneryBuilder,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -12,6 +13,7 @@ import type { DrawContext } from '../engine/render/Canvas2dRenderer.types';
 import { MapView } from './MapView';
 import { MiniMapView } from './MiniMapView';
 import { MINI_MAP_BORDER_COLOR, MINI_MAP_VIEW_BOX_COLOR } from './MiniMapView.constants';
+import { SceneryView } from './SceneryView';
 import { SceneView } from './SceneView';
 import type { WorldLayer } from './SceneView.types';
 
@@ -182,5 +184,39 @@ describe('MiniMapView', () => {
     const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));
 
     expect(glyphs).toContainEqual([beacon.minimapGlyph, beacon.position, expect.any(String)]);
+  });
+});
+
+describe('MiniMapView with scenery', () => {
+  it('clamps a viewport outline that reaches past the map to the map bounds', () => {
+    const renderer = new RecordingRenderer();
+    createMiniMap().draw(renderer, 1000, 800, {
+      x: -100,
+      y: -200,
+      width: MAP.width + 200,
+      height: MAP.height + 400,
+    });
+    const outline = renderer.calls.find(
+      (call) => call.op === 'strokePath' && call.args[1] === MINI_MAP_VIEW_BOX_COLOR,
+    );
+
+    expect(outline?.args[0]).toEqual([
+      { x: 0, y: 0 },
+      { x: MAP.width, y: 0 },
+      { x: MAP.width, y: MAP.height },
+      { x: 0, y: MAP.height },
+      { x: 0, y: 0 },
+    ]);
+  });
+
+  it('draws the cathedral architecture through the same scenery layer on the minimap', () => {
+    const scenery = new MapSceneryBuilder(MAP).build();
+    const renderer = new RecordingRenderer();
+    const scene = new SceneView([new MapView(MAP, scenery), new SceneryView(scenery, 'detail')]);
+    new MiniMapView(MAP, scene).draw(renderer, 1000, 800, VIEW);
+    const roof = scenery.find((piece) => piece.id === 'cathedral-nave-roof');
+
+    expect(roof).toBeDefined();
+    expect(renderer.calls).toContainEqual({ op: 'fillPolygon', args: [roof?.shape, roof?.color] });
   });
 });
