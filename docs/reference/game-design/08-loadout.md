@@ -40,7 +40,9 @@ class-specific):
 ultimate from the set of abilities and ultimates that are available to their class when
 selecting/creating their loadout". Each class's set (its game-doc kit plus the DEC-11 approvals,
 listed in `06-abilities-and-progression.md`) is a pool, and the loadout's ability and ultimate
-slots are filled from it; the "3 + 1" slot count is unchanged.
+slots are filled from it; the "3 + 1" slot count is unchanged. The loadout also includes a weapon, chosen under the rules already set (owner, chat
+2026-10-10): every non-unique weapon is shared across all classes, and a class-specific weapon is
+usable only by that class and its subclasses (`07-weapons-and-artifacts.md`; the weapon rows above).
 
 The requirements doc's MVP line is "simple loadout options (weapons, some ability options, etc)"
 and "can configure loadouts that are saved to the users profile". The armour set has no other

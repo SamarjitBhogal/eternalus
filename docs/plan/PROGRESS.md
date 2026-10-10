@@ -792,3 +792,17 @@ The example below is fenced so it is not read as a real entry.
 - Next step: the owner pushes the branch, and the PR goes into the phase branch for the team.
   The owner then answers the INBOX items and plan §9, and accepts or changes ADR 0016/0017
   and the re-cut.
+
+### 2026-10-10 — Sprint 2 planning / Jira and loadout follow-up — docs/sprint-2-requirements-and-planning — sholtzman + Claude Code
+
+- What was done:
+  - Jira (owner-approved draft):
+    - Epics SCRUM-390 (Duel) and SCRUM-391 (server & scalability).
+    - Tasks SCRUM-392…SCRUM-411 and ability subtasks SCRUM-412…SCRUM-423 (SCRUM-406 is the volatile-crystal subtask of SCRUM-178).
+    - All new tickets carry the label `planning-2026-10-10`.
+    - SCRUM-347/348/349 moved to Done with comments; comments on SCRUM-164, SCRUM-290 and SCRUM-160.
+  - Docs, from the owner's chat:
+    - A loadout is 3 abilities and 1 ultimate from the class pool plus a weapon under the existing rules: DEC-11 row, `08-loadout.md`, Legend brief.
+    - DEC-38 records changeable team-based Legend skins as a full-game stretch goal, also in `docs/plan/backlog-post-mvp.md` (Jira SCRUM-411).
+- Checks run: `npm run docs:check` → "Documentation check passed."; Prettier clean.
+- Next step: the owner pushes; PR #27 merges.
