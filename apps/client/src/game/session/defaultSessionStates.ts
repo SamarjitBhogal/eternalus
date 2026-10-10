@@ -1,3 +1,4 @@
+import type { LegendClassId } from '../../bridge/domain.types';
 import type { SessionPhase } from '../../bridge/events';
 import type { SessionState } from '../SessionController.types';
 import { BootState } from './states/BootState';
@@ -14,7 +15,7 @@ import { ResultsState } from './states/ResultsState';
  * @param options - `preselectedClassId`: a class character select starts with (default none).
  */
 export function createDefaultSessionStates(
-  options: { readonly preselectedClassId?: string } = {},
+  options: { readonly preselectedClassId?: LegendClassId } = {},
 ): Readonly<Record<SessionPhase, SessionState>> {
   const { preselectedClassId = null } = options;
   return {

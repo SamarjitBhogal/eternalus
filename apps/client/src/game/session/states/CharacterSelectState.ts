@@ -1,3 +1,4 @@
+import type { LegendClassId } from '../../../bridge/domain.types';
 import type { ClassSelection, SessionPhase, UiIntent } from '../../../bridge/events';
 import type { SessionContext, SessionState } from '../../SessionController.types';
 import { SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
@@ -16,9 +17,10 @@ export class CharacterSelectState implements SessionState {
 
   /**
    * Creates the state.
-   * @param preselectedClassId - A class selected on entry, or `null` to start with none.
+   * @param preselectedClassId - A class selected on entry, or `null` to start with none. An id
+   *   missing from the catalogue is ignored like any unknown `select-class`.
    */
-  public constructor(private readonly preselectedClassId: string | null) {}
+  public constructor(private readonly preselectedClassId: LegendClassId | null) {}
 
   /** Resets the selection to the preselected class (if any) and starts the countdown. */
   public enter(context: SessionContext): void {
