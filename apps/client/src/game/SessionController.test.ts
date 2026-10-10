@@ -150,17 +150,14 @@ describe('SessionController with the default states', () => {
     expect(store.getState().matchSetup.countdownMs).toBe(0);
   });
 
-  it('stays in character select with the timeout off, and confirming still leaves', () => {
-    const { controller, clock, store, intent } = atCharacterSelect(
-      createDefaultSessionStates({ isSelectTimeoutEnabled: false }),
+  it('starts with the preselected class, so the countdown leads into pre-launch', () => {
+    const { controller, clock, store } = atCharacterSelect(
+      createDefaultSessionStates({ preselectedClassId: 'warrior' }),
     );
-    expect(store.getState().matchSetup.countdownMs).toBe(0);
-    clock.advance(SELECT_COUNTDOWN_MS * 10);
-    expect(controller.phase).toBe('character-select');
-    expect(store.getState().session.reason).toBeNull();
-    intent({ kind: 'select-class', classId: 'magus' });
-    intent({ kind: 'confirm-selection' });
+    expect(store.getState().matchSetup.selection).toEqual({ classId: 'warrior', specId: null });
+    clock.advance(SELECT_COUNTDOWN_MS);
     expect(controller.phase).toBe('pre-launch');
+    expect(store.getState().session.reason).toBeNull();
   });
 
   it('goes to pre-launch when the countdown ends with an unconfirmed selection', () => {
