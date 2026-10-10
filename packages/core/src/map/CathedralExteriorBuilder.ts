@@ -63,6 +63,17 @@ export class CathedralExteriorBuilder extends MapDecorationBuilder {
     this.blob('cathedral-crossing-roof', 800, 446, 19, 21, '#435d66');
     this.rect('cathedral-door', 785, 541, 30, 12, P.shadow);
     this.rect('cathedral-door-light', 793, 544, 14, 8, P.gold);
+    this.rect('cathedral-north-door', 788, 320, 24, 12, P.shadow);
+    this.rect('cathedral-north-door-light', 794, 322, 12, 8, P.gold);
+    for (let i = 0; i < 5; i++)
+      this.rect(
+        `cathedral-north-step-${String(i)}`,
+        782 - i * 2,
+        315 - i * 4,
+        36 + i * 4,
+        3,
+        '#c2baa1',
+      );
     for (let i = 0; i < 5; i++)
       this.rect(
         `cathedral-entry-step-${String(i)}`,

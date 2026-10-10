@@ -31,6 +31,17 @@ const createRenderer = (): Renderer => {
 };
 
 describe('MapView', () => {
+  it('keeps capture data while hiding the covered marker behind an open building cutaway', () => {
+    const renderer = createRenderer();
+    const squares = vi.spyOn(renderer, 'fillSquare');
+    new MapView(MAP_1, new Set(['grand-cathedral'])).draw(renderer);
+    expect(squares).toHaveBeenCalledTimes(MAP_1.features.length - 1);
+    expect(MAP_1.features.find((feature) => feature.id === 'grand-cathedral')?.position).toEqual({
+      x: 6400,
+      y: 3600,
+    });
+    expect(squares.mock.calls.some((call) => call[0].x === 6400 && call[0].y === 3600)).toBe(false);
+  });
   it('draws the ground first, then every terrain shape', () => {
     const renderer = createRenderer();
     // Spy on fillPolygon to record every shape MapView fills.

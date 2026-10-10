@@ -55,8 +55,11 @@ export type MapDefinition = {
   readonly scenery?: readonly MapDecoration[];
   readonly presentationScale?: number;
   readonly groundColor?: string;
-  readonly interior?: MapDefinition;
-  readonly interiorEntry?: { readonly halfWidth: number; readonly halfHeight: number };
+  readonly buildings?: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly footprint: readonly Polygon[];
+  }[];
 };
 
 /** A presentation-only polygon; it never changes collision, ownership or gameplay. */
@@ -65,4 +68,6 @@ export type MapDecoration = {
   readonly shape: Polygon;
   readonly color: string;
   readonly layer: 'ground' | 'detail';
+  readonly buildingId?: string;
+  readonly visibility?: 'roof' | 'interior';
 };

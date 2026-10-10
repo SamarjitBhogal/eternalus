@@ -2,11 +2,11 @@ import type { MapDefinition, Vec2 } from '@eternalus/core';
 import type { WorldRect } from './engine/Renderer.types';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
-/** Owns presentation-only camera navigation and cathedral entry for the map preview. */
+/** Owns camera navigation and authored building entry for the map preview. */
 export class MapExplorer {
   private center: Vec2;
   private zoom = 1;
-  private isInside = false;
+  public readonly hiddenRoofs = new Set<string>();
 
   /** Starts with an overview of the original three-lane battlefield. */
   public constructor(private readonly map: MapDefinition) {
@@ -15,12 +15,7 @@ export class MapExplorer {
 
   /** The immutable map currently being explored. */
   public get currentMap(): MapDefinition {
-    return this.isInside ? (this.map.interior ?? this.map) : this.map;
-  }
-
-  /** Whether the preview is showing the cathedral interior. */
-  public get isInterior(): boolean {
-    return this.isInside;
+    return this.map;
   }
 
   /** Keeps the world's proportions intact at every window size and zoom level. */
@@ -55,30 +50,35 @@ export class MapExplorer {
     this.zoom = Math.max(1, Math.min(EXPLORER_SETTINGS.maxZoom, this.zoom * factor));
   }
 
-  /** Enters only when the selected world point falls inside the cathedral footprint. */
-  public enterAt(point: Vec2): boolean {
-    const cathedral = this.map.features.find((feature) => feature.kind === 'cathedral');
-    const halfSize = EXPLORER_SETTINGS.cathedralHalfSize * (this.map.presentationScale ?? 1);
-    const halfWidth = this.map.interiorEntry?.halfWidth ?? halfSize;
-    const halfHeight = this.map.interiorEntry?.halfHeight ?? halfSize;
-    if (
-      this.isInside ||
-      this.map.interior === undefined ||
-      cathedral === undefined ||
-      Math.abs(point.x - cathedral.position.x) > halfWidth ||
-      Math.abs(point.y - cathedral.position.y) > halfHeight
-    )
-      return false;
-    this.isInside = true;
-    this.zoom = EXPLORER_SETTINGS.interiorZoom;
-    this.center = { x: this.currentMap.width / 2, y: this.currentMap.height / 2 };
+  /** Toggles a building roof in place without changing the world or camera. */
+  public toggleRoofAt(point: Vec2): boolean {
+    const building = this.map.buildings?.find((entry) =>
+      entry.footprint.some((shape) => this.contains(shape, point)),
+    );
+    if (building === undefined) return false;
+    if (this.hiddenRoofs.has(building.id)) this.hiddenRoofs.delete(building.id);
+    else this.hiddenRoofs.add(building.id);
     return true;
   }
 
-  /** Leaves the cathedral and restores the battlefield overview. */
+  /** Restores roofs and the battlefield overview. */
   public overview(): void {
-    this.isInside = false;
+    this.hiddenRoofs.clear();
     this.zoom = 1;
     this.center = { x: this.map.width / 2, y: this.map.height / 2 };
+  }
+
+  private contains(shape: readonly Vec2[], point: Vec2): boolean {
+    let isInside = false;
+    shape.forEach((a, index) => {
+      const b = shape[(index + shape.length - 1) % shape.length];
+      if (
+        b !== undefined &&
+        a.y > point.y !== b.y > point.y &&
+        point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
+      )
+        isInside = !isInside;
+    });
+    return isInside;
   }
 }

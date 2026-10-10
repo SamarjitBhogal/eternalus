@@ -25,7 +25,10 @@ export class MapView implements WorldLayer {
   private readonly map: MapDefinition;
 
   /** Creates a view for one map. */
-  public constructor(map: MapDefinition) {
+  public constructor(
+    map: MapDefinition,
+    private readonly hiddenRoofs: ReadonlySet<string> = new Set(),
+  ) {
     this.map = map;
   }
 
@@ -49,6 +52,7 @@ export class MapView implements WorldLayer {
       renderer.strokePath(lane.path, LANE_COLOR, LANE_WIDTH);
     }
     for (const feature of this.map.features) {
+      if (this.hiddenRoofs.has(feature.id)) continue;
       renderer.fillSquare(
         feature.position,
         FEATURE_SIZES[feature.kind] * (this.map.presentationScale ?? 1),

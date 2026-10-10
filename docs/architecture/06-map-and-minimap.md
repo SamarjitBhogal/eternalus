@@ -388,23 +388,22 @@ Written for the PR review; the branch is a good first step and most of it surviv
 
 ## 10. Implemented presentation preview (2026-10-07)
 
-The map owner's latest brief asks to preserve and dress the existing authored squares.
-`MapLayout` scales every original anchor and polygon uniformly by the presentation value in
-`content/maps/map1Scenery.ts`, adds twelve neutral camp anchors, and assembles deterministic
-decorative polygons through focused builder classes. `MapDecorationBuilder` supplies shared
-polygon assembly, irregular blobs and smoothed ribbons. Landscape, perimeter mountains, strongholds, village buildings and cathedral exteriors/interiors have separate builders. Decorative landforms and major footprint sizes are authored in `content/maps/map1Landforms.ts`.
-The public API still exposes `MAP_1`; its map definition now also carries optional scenery,
-presentation scale, interior, ground colour and an interior-entry footprint. The entry footprint scales with the enlarged cathedral and is consumed by the preview controller. These are additive API fields.
+`MapLayout` uniformly scales original anchors and geometry and adds deterministic scenery
+through focused builders. `MapBuildingInteriorBuilder` furnishes the cathedral and palaces
+in their exterior world coordinates. Building metadata supplies union-of-polygon footprints;
+scenery metadata identifies the building and whether a piece is a roof or interior decoration.
+These replace the former separate interior maps and entry-location metadata in the public
+`MapDefinition` API. The original gameplay anchors and world dimensions are preserved.
 
-`MapView` draws ground scenery beneath terrain and markers. `SceneryView` draws detail polygons
-through `Renderer`; `SceneView` shares those layers with `MiniMapView`. The preview's
-`MapExplorer` owns aspect-correct pan/zoom and cathedral inspection without mutating map data.
-Minimap viewport outlines are clamped to the world bounds for letterboxed views. Cathedral entry applies the configured interior zoom; leaving restores the world overview. Mountain borders use overlapping irregular rock masses with deterministic variations in width, height, summit position and surface shading. The cathedral interior uses circular floor geometry and radial room connections around a furniture-free capture court with a neutral presentation anchor.
+`MapExplorer` owns presentation camera controls and a set of hidden roof IDs. A click inside
+an authored building footprint toggles its ID, leaving the camera and current world unchanged.
+`SceneryView` selects roof or interior polygons using that set; walls and ordinary scenery
+remain visible. `MapPalaceRoomsBuilder` supplies the six partitioned side rooms per palace; cathedral wall geometry and furnishings are authored within its nave, transept and apse. Tests assert wall visibility in both roof states and interior bounds. `SceneView` shares this rendering with the minimap. The overview control
+restores all roofs and resets the camera. Views still draw only through `Renderer`.
 
-This implementation provides the authored environment preview, not the simulation's config
-generator, obstacle entities, colliders, capture logic or neutral AI. D7's planned generator
-remains future work. When it arrives, it should reuse the presentation templates while placing
-gameplay anchors from configuration.
+The click toggle is a preview of future character occupancy-driven cutaways. It does not
+implement movement, occupancy, colliders, capture rules or neutral AI. D7's planned configurable
+map generator remains future work.
 
 ## Related
 
@@ -416,3 +415,5 @@ gameplay anchors from configuration.
 - [17 Extension recipes](./17-extension-recipes.md)
 - [Research: game architecture and performance](../research/game-architecture-and-performance-research.md)
 - [Reference: map](../reference/game-design/05-map.md)
+
+The preview derives three permanent stronghold gate passages from the existing lane polylines. Oval palace furnishings are oriented toward the opposing team; each throne carpet reaches the middle-lane entrance without crossing the side rooms.

@@ -166,3 +166,72 @@ The example below is fenced so it is not read as a real entry.
   `PASS: final radial room entrances render and cathedral exit restores overview.`
 - Next step: map owner reviews the mountain field and circular interior. Capture rules and
   mountain collision remain future simulation work. Changes remain uncommitted.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced rectangular stronghold compounds with round fortified walls and
+  large palaces occupying their enclosures. Added faction-themed enterable royal throne halls
+  with raised thrones, marble floors, ceremonial carpets, columns, banners and banquet tables.
+  Added a visible, clickable north cathedral entrance and matching interior door. Preserved
+  original landmark anchors and all other scenery. Added optional named interior-location
+  metadata to MapDefinition; generalized preview entry/exit and the named leave control.
+  Added regression coverage for round footprints, both throne-room entries, outside-wall
+  rejection, interior bounds, return-to-world navigation and cathedral north entry.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 35/35; coverage thresholds, production build and documentation checks passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser result: `PASS: both throne rooms enter and exit; cathedral north entrance opens its interior.`
+  Initial sandbox-only Vitest cache errors were resolved by running the full gate outside
+  the sandbox. No guardrails were changed; no dependencies, commits or pushes.
+- Next step: map owner reviews the round strongholds and royal interiors. Player-driven
+  doorway traversal and collision remain future simulation work.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced separate interior maps with same-world building cutaways. Clicking
+  the cathedral or a palace toggles its roof independently without moving the camera or
+  changing maps. Furnished interiors now fit the cathedral's nave/transept/apse and each oval
+  palace footprint. Kept walls and entrance steps visible; suppressed the covered objective
+  marker during cutaways while retaining its original data. Shared roof visibility with the
+  minimap and added a restore-roofs overview control. Replaced old interior-location API
+  fields with building footprints and per-decoration visibility metadata; removed obsolete
+  standalone interior builders and updated governing docs and regression tests.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 36/36; coverage thresholds and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser results: `PASS: roofs toggle in the same world, second click restores identical canvas, multiple roofs open, zoom works.`
+  `PASS: final cutaways and restore-all control render correctly.`
+  Initial test-assertion lint finding was corrected without changing guardrails.
+- Next step: map owner reviews same-world cutaways; future player occupancy can drive the
+  roof visibility state. No dependencies, commits or pushes.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: preserved stronghold perimeter walls and cathedral buttresses during roof
+  cutaways; added visible nave, transept and curved apse wall sections with entrance gaps.
+  Added six partitioned rooms to each palace beside its throne corridor: council, library,
+  kitchen, bedchamber, armory and dining, with room-specific furniture and open doorways.
+  Added cathedral stained-glass windows, candles, chapel benches/partitions, lectern and book,
+  altar inlay and sacristy storage while keeping the central capture court clear. Added
+  assertions for room partitions/doorways, permanent wall rendering and footprint containment;
+  updated governing map docs. Same-world roof toggles remain intact.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 36/36; coverage thresholds and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser result: `PASS: detailed cathedral and partitioned palace render as same-world cutaways; zoom and pan work.`
+- Next step: map owner reviews the detailed structures. Occupancy-driven roof visibility,
+  movement and collision remain future simulation work. No dependencies, commits or pushes.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: derived three permanent stone gate passages per stronghold from the existing
+  lane crossings, connecting palace floors through the oval perimeter walls. Reoriented both
+  furnished palace interiors toward the opposing team, preserving their oval footprints and
+  side rooms; extended each throne carpet to its middle entrance. Removed the former single
+  decorative doorway and added regression assertions for gate crossings, roof-independent
+  visibility, carpet alignment and existing interior containment. Updated governing map docs.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 43/43,
+  client 36/36; formatting, lint, typecheck, knip, coverage and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+- Next step: map owner reviews entrances and ceremonial aisles in the preview. Movement and
+  gate collision remain future simulation work. No dependencies, commits or pushes.

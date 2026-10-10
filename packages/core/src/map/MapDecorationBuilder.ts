@@ -5,6 +5,26 @@ import type { Polygon, Vec2 } from '../utils/geometry.types';
 export abstract class MapDecorationBuilder {
   protected readonly pieces: MapDecoration[] = [];
 
+  protected ellipse(
+    id: string,
+    x: number,
+    y: number,
+    rx: number,
+    ry: number,
+    color: string,
+    layer: 'ground' | 'detail' = 'detail',
+  ): void {
+    this.polygon(
+      id,
+      Array.from({ length: 64 }, (_, i) => ({
+        x: x + Math.cos((i * Math.PI) / 32) * rx,
+        y: y + Math.sin((i * Math.PI) / 32) * ry,
+      })),
+      color,
+      layer,
+    );
+  }
+
   protected blob(
     id: string,
     x: number,

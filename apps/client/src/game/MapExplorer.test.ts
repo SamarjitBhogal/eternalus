@@ -3,13 +3,46 @@ import { describe, expect, it } from 'vitest';
 import { MapExplorer } from './MapExplorer';
 
 describe('MapExplorer', () => {
-  it('accepts the expanded cathedral wings and rejects points beyond the enlarged footprint', () => {
+  it('toggles all building roofs independently without changing the map or camera', () => {
     const explorer = new MapExplorer(MAP_1);
-    expect(explorer.enterAt({ x: 7210, y: 3600 })).toBe(false);
-    expect(explorer.enterAt({ x: 6400, y: 4550 })).toBe(false);
-    expect(explorer.enterAt({ x: 7130, y: 3600 })).toBe(true);
+    explorer.zoomBy(3);
+    explorer.lookAt({ x: 4200, y: 3000 });
+    const area = explorer.areaFor(16 / 9);
+    for (const [id, x] of [
+      ['light-capital', 142],
+      ['grand-cathedral', 800],
+      ['dark-capital', 1458],
+    ] as const) {
+      expect(explorer.toggleRoofAt({ x: x * 8, y: 450 * 8 })).toBe(true);
+      expect(explorer.hiddenRoofs.has(id)).toBe(true);
+      expect(explorer.currentMap).toBe(MAP_1);
+      expect(explorer.areaFor(16 / 9)).toEqual(area);
+    }
+    expect(explorer.hiddenRoofs.size).toBe(3);
+    expect(explorer.toggleRoofAt({ x: 800 * 8, y: 450 * 8 })).toBe(true);
+    expect(explorer.hiddenRoofs.has('grand-cathedral')).toBe(false);
+    expect(explorer.hiddenRoofs.has('light-capital')).toBe(true);
     explorer.overview();
-    expect(explorer.enterAt({ x: 6400, y: 4400 })).toBe(true);
+    expect(explorer.hiddenRoofs.size).toBe(0);
+    expect(explorer.areaFor(16 / 9).width).toBe(MAP_1.width);
+  });
+  it('accepts both cathedral doors and rejects points outside real building silhouettes', () => {
+    const explorer = new MapExplorer(MAP_1);
+    for (const point of [
+      { x: 32, y: 325 },
+      { x: 700, y: 350 },
+      { x: 900, y: 550 },
+      { x: 0, y: 0 },
+    ])
+      expect(explorer.toggleRoofAt({ x: point.x * 8, y: point.y * 8 })).toBe(false);
+    expect(explorer.toggleRoofAt({ x: 800 * 8, y: 325 * 8 })).toBe(true);
+    expect(explorer.toggleRoofAt({ x: 800 * 8, y: 545 * 8 })).toBe(true);
+    expect(explorer.hiddenRoofs.size).toBe(0);
+  });
+  it('ignores roof toggles on a map without buildings', () => {
+    const { buildings, ...map } = MAP_1;
+    expect(buildings).toHaveLength(3);
+    expect(new MapExplorer(map).toggleRoofAt({ x: 6400, y: 3600 })).toBe(false);
   });
   it('preserves the screen aspect ratio and clamps zoomed panning to the battlefield', () => {
     const explorer = new MapExplorer(MAP_1);
@@ -26,28 +59,5 @@ describe('MapExplorer', () => {
     expect(explorer.areaFor(16 / 9).width).toBeCloseTo(MAP_1.width / 12);
     explorer.zoomBy(0);
     expect(explorer.areaFor(16 / 9).width).toBe(MAP_1.width);
-  });
-
-  it('enters only the cathedral, displays its interior and returns to the battlefield', () => {
-    const explorer = new MapExplorer(MAP_1);
-    expect(explorer.enterAt({ x: 0, y: 0 })).toBe(false);
-    expect(explorer.enterAt({ x: 6400, y: 3600 })).toBe(true);
-    expect(explorer.isInterior).toBe(true);
-    expect(explorer.currentMap.id).toBe('grand-cathedral-interior');
-    expect(explorer.areaFor(16 / 9).height).toBeCloseTo(2200 / 1.65);
-    explorer.pan(0, 100000, 16 / 9);
-    const interiorArea = explorer.areaFor(16 / 9);
-    expect(interiorArea.y + interiorArea.height).toBe(2200);
-    expect(explorer.enterAt({ x: 6400, y: 3600 })).toBe(false);
-    explorer.overview();
-    expect(explorer.isInterior).toBe(false);
-    expect(explorer.currentMap).toBe(MAP_1);
-    expect(explorer.areaFor(16 / 9).width).toBe(MAP_1.width);
-  });
-
-  it('ignores entry when a map has no authored interior', () => {
-    const { interior: unusedInterior, ...exterior } = MAP_1;
-    expect(unusedInterior).toBeDefined();
-    expect(new MapExplorer(exterior).enterAt({ x: 6400, y: 3600 })).toBe(false);
   });
 });

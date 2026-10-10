@@ -8,12 +8,18 @@ export class SceneryView implements WorldLayer {
   public constructor(
     private readonly map: MapDefinition,
     private readonly layer: 'ground' | 'detail',
+    private readonly hiddenRoofs: ReadonlySet<string> = new Set(),
   ) {}
 
   /** Draws immutable polygon decorations in their authored order. */
   public draw(renderer: Renderer): void {
     for (const piece of this.map.scenery ?? []) {
-      if (piece.layer === this.layer) renderer.fillPolygon(piece.shape, piece.color);
+      const isOpen = piece.buildingId !== undefined && this.hiddenRoofs.has(piece.buildingId);
+      if (
+        piece.layer === this.layer &&
+        (piece.visibility === undefined || (piece.visibility === 'interior' ? isOpen : !isOpen))
+      )
+        renderer.fillPolygon(piece.shape, piece.color);
     }
   }
 }

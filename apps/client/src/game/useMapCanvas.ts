@@ -11,10 +11,10 @@ import { SceneryView } from './views/SceneryView';
 
 /** Wires presentation-only pan, zoom, minimap navigation and cathedral inspection. */
 export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): {
-  readonly isInterior: boolean;
+  readonly hasOpenRoofs: boolean;
   readonly overview: () => void;
 } {
-  const [isInterior, setIsInterior] = useState(false);
+  const [hasOpenRoofs, setHasOpenRoofs] = useState(false);
   const resetRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
@@ -24,8 +24,8 @@ export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): {
     const explorer = new MapExplorer(MAP_1);
     const createScene = (): SceneView =>
       new SceneView([
-        new MapView(explorer.currentMap),
-        new SceneryView(explorer.currentMap, 'detail'),
+        new MapView(explorer.currentMap, explorer.hiddenRoofs),
+        new SceneryView(explorer.currentMap, 'detail', explorer.hiddenRoofs),
       ]);
     let scene = createScene();
     let miniMap = new MiniMapView(explorer.currentMap, scene);
@@ -45,7 +45,7 @@ export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): {
     const rebuild = (): void => {
       scene = createScene();
       miniMap = new MiniMapView(explorer.currentMap, scene);
-      setIsInterior(explorer.isInterior);
+      setHasOpenRoofs(explorer.hiddenRoofs.size > 0);
       draw();
     };
     resetRef.current = (): void => {
@@ -91,7 +91,7 @@ export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): {
         const point = screenPoint(event);
         const area = explorer.areaFor(canvas.width / canvas.height);
         if (
-          explorer.enterAt({
+          explorer.toggleRoofAt({
             x: area.x + (point.x / canvas.width) * area.width,
             y: area.y + (point.y / canvas.height) * area.height,
           })
@@ -132,7 +132,7 @@ export function useMapCanvas(canvasRef: RefObject<HTMLCanvasElement | null>): {
   }, [canvasRef]);
 
   return {
-    isInterior,
+    hasOpenRoofs,
     overview: (): void => {
       resetRef.current();
     },

@@ -5,21 +5,20 @@ import { useMapCanvas } from './useMapCanvas';
 /** The explorable battlefield preview and its presentation-only navigation controls. */
 export function GameCanvas(): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { isInterior, overview } = useMapCanvas(canvasRef);
+  const { hasOpenRoofs, overview } = useMapCanvas(canvasRef);
   return (
     <section className={styles.explorer} aria-label="Eternalus map explorer">
       <canvas
         ref={canvasRef}
         className={styles.canvas}
-        aria-label="Drag to explore, scroll to zoom, click the cathedral to enter"
+        aria-label="Drag to explore, scroll to zoom, click a building to toggle its roof"
       />
       <div className={styles.toolbar}>
         <span>
-          Drag to explore <b>·</b> Scroll to zoom <b>·</b>{' '}
-          {isInterior ? 'Explore the sanctuary' : 'Click cathedral to enter'}
+          Drag to explore <b>·</b> Scroll to zoom <b>·</b> Click a building to toggle its roof
         </span>
         <button type="button" onClick={overview}>
-          {isInterior ? 'Leave cathedral' : 'World overview'}
+          {hasOpenRoofs ? 'Restore roofs & overview' : 'World overview'}
         </button>
       </div>
       <div className={styles.legend}>

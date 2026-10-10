@@ -9,6 +9,7 @@ import { MapFortificationBuilder } from './MapFortificationBuilder';
 import { MapLandscapeBuilder } from './MapLandscapeBuilder';
 import { MapMountainBuilder } from './MapMountainBuilder';
 import { MapStrongholdBuilder } from './MapStrongholdBuilder';
+import { MapStrongholdGatesBuilder } from './MapStrongholdGatesBuilder';
 import { MapVillageBuilder } from './MapVillageBuilder';
 import { CathedralExteriorBuilder } from './CathedralExteriorBuilder';
 import { LAKES, LAVA_RIVERS } from '../content/maps/map1Landforms';
@@ -31,9 +32,17 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
       this.camp(point, `camp-${String(index)}`);
     });
     this.map.features.forEach((feature) => {
-      if (feature.kind === 'capital')
+      if (feature.kind === 'capital') {
         this.pieces.push(...new MapStrongholdBuilder().build(feature));
-      if (feature.kind !== 'cathedral')
+        this.pieces.push(
+          ...new MapStrongholdGatesBuilder().build(
+            feature.owner === 'light' ? 142 : 1458,
+            feature.id,
+            this.map.lanes,
+          ),
+        );
+      }
+      if (feature.kind !== 'cathedral' && feature.kind !== 'capital')
         this.pieces.push(...new MapFortificationBuilder().build(feature));
     });
     this.pieces.push(...new CathedralExteriorBuilder().build());

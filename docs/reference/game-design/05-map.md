@@ -134,26 +134,22 @@ validates, never a hand-authored map that the code depends on. The east/west ori
 
 ## Current map preview (2026-10-07)
 
-The map owner's current brief preserves every square and the original three lane paths.
-The public `MAP_1` applies an eightfold uniform presentation scale to the 1600 × 900 sketch,
-producing a **12,800 × 7,200** battlefield. Original feature IDs, ownership and proportional
-positions remain intact. `MapLayout` assembles this preview; it is not the planned configurable
-simulation `MapGenerator`.
+The preview preserves every original objective anchor and the three lane paths, with an
+8× presentation scale producing a 12,800 × 7,200 battlefield. Twelve neutral camps, varied
+forests, lakes, hills and an overlapping mountain field dress the map. Snow pockets surround
+its northern fortress; lava rivers and bridges surround its southern fortress.
 
-- North capture point (`north-crossing`): snowy stone fortress.
-- Centre capture point (`grand-cathedral`): large cathedral surrounded by village streets,
-  houses and market stalls.
-- South capture point (`south-crossing`): basalt fortress with lava/forge accents.
-- Twelve additional neutral camp clearings (six per side), with tents, supplies and fires;
-  the four original corner objective squares are retained.
-- Shared deterministic polygon scenery: varied tree canopies and pines, boulders, lakes, hills, and a perimeter field of overlapping mountains with varied sizes, summit positions, rock faces and occasional snow on taller peaks. Snow pockets surround the northern point; lava rivers and four bridges surround the southern point. Layered translucent fringes soften both biome transitions.
-  Decorations are visual data and do not imply colliders, capture rules or enemy spawns.
+The central cathedral and both round stronghold palaces are **same-world buildings**.
+Clicking a building toggles its roof off or on without moving the camera or changing maps.
+The cathedral interior follows its nave, transept and apse, with pews, columns, chapels, altar,
+central capture court and both north/south doors. Each oval palace contains a matching oval
+throne hall with a raised throne, ceremonial carpet, columns, banners and banquet tables.
+Each palace includes partitioned council, library, kitchen, bedchamber, armory and dining rooms beside its throne hall. Exterior walls, cathedral buttresses and entrance steps remain visible during cutaways; the cathedral also has curved apse walls, stained-glass windows, candles, chapel benches, a lectern and sanctuary storage. All furniture stays within its building footprint, and the capture court stays clear. Multiple roofs may be open independently;
+the overview button restores all roofs. The minimap uses the same visibility state.
 
-The client preview supports drag panning, wheel zoom, minimap navigation and a world-overview
-button. The top-left title has been removed. Huge fortified home bases retain the original west/east anchors, and the enlarged cathedral sits within an irregular village with winding streets. Clicking the cathedral opens its enlarged 1,800 × 2,200 interior (nave, pews, columns, chapels, library, sacristy, vestry, reliquary, garden cloisters and
-altar). The interior is arranged around a circular rotunda with an open central capture court and rooms connected radially. The neutral interior capture anchor is at the world centre; capture rules remain future work. Entry starts at a 1.65× closer view; panning and wheel zoom reach the remaining rooms. The leave button returns outside. This is **presentation navigation**, pending the
-future player movement, doorway and collision systems. No external assets or dependencies were
-added. The original control-binding requirements still govern future gameplay input.
+This click toggle previews the future character-driven roof cutaway. Player movement,
+occupancy detection, doorway collision, capture logic and neutral enemies remain simulation
+work. No separate interior maps, external assets or new dependencies are used.
 
 ## Engineering notes
 
@@ -178,3 +174,5 @@ added. The original control-binding requirements still govern future gameplay in
 - [Open questions](12-open-questions.md)
 - [Research: config-driven design](../../research/game-architecture-and-performance-research.md#9-config-driven-and-data-driven-design)
 - [Verbatim source: Map](../source/game-project-eternalus-v2.md)
+
+Each stronghold has a stone entrance at each of the three lane crossings. The throne hall and carpet face its middle-lane entrance; side rooms remain beside the ceremonial aisle. Entrances remain visible with roofs on or off.
