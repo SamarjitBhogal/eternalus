@@ -75,6 +75,10 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       lists them all. Agents: do not build on or extend marked code; replace it with the named
       design piece. Proposal (needs your approval, since it edits `AGENTS.md`): add this marker
       convention to `AGENTS.md` so every future prototype uses it.
+      **Decision (2026-10-09, DEC-33):** the escort, its speed of 5.4 m/s and its mass of 0.5 were
+      for the demo and are not the design. Minions and mobs are Samarjit's to implement, and the
+      escort goes when his Phase 3 minions replace it. **Still open:** where `AiSystem` lives
+      (audit A23-18), and the marker convention (A23-17).
 
 ## Requests for the agent
 
