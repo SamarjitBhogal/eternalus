@@ -21,6 +21,13 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-10-09 (PR #24 review: SamarjitBhogal's requests, approved by sholtzman in chat)
+
+| ID     | Decision                                                                                                                                                                                                                                                                                       | Where it lives                                                               |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| DEC-30 | **`chordKey` lives in `bridge/`** (`bridge/chordKey.ts`), the one definition of "the same physical input": `game/input/`, `settingsSlice.selectChordOwner` and the settings screen import it instead of restating `device:code`. `game/input/` may import it beside `bridge/Binding.types.ts`. | `docs/architecture/02-code-structure.md` §3; `13-game-interface.md` §1, §6.1 |
+| DEC-31 | **Every repository reads through one shared `readOrQuarantine`** (`data/persistence/repositories/readOrQuarantine.ts`) rather than a private copy each; the quarantine row is typed as §7's `QuarantineRecordDtoV1`.                                                                           | `docs/architecture/14-persistence-and-resources.md` §8                       |
+
 ## Batch 2026-10-08 (session F, settings and keybindings)
 
 | ID     | Decision                                                                                                                                                                                                                                                                                | Where it lives                                                                                        |

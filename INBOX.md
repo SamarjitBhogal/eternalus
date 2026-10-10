@@ -250,6 +250,11 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Done
 
+- 2026-10-09 — **PR #24 review (SamarjitBhogal), reuse requests**: approved by sholtzman in chat
+  for whatever is in line with or better than the architecture. Recorded as DEC-30 (`chordKey`
+  moves to `bridge/`, better than the design) and DEC-31 (one shared `readOrQuarantine` instead of
+  14 §8's private method per repository, also better than the design). The shared DTO helpers (`dto/dtoCheck.ts`) wait for S2's second DTO, as the
+  review suggests; only `DtoCheck<T>` moved now, because `readOrQuarantine` needs it.
 - 2026-10-09 — **Session C → session F: `Binding.types.ts` has the 13 §6.1 shapes** (PR #19):
   superseded by DEC-26 in F's merge `a82e098`. F's flat `InputChord` is kept, `INPUT_ACTIONS`
   lives in `game/input/keybindings.ts`, and #19's `DeviceIntentSource` builds F's snapshot.

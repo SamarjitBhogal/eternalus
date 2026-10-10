@@ -673,3 +673,19 @@ The example below is fenced so it is not read as a real entry.
   "Tests 466 passed (466)"; client "Tests 413 passed (413)"; "✓ built in 150ms"; "Documentation
   check passed."
 - Next step: the human commits the merge and pushes; PR #24 merges.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (PR #24 review) — sholtzman + Claude Code
+
+- What was done: addressed SamarjitBhogal's review (changes requested), approved by sholtzman in
+  chat for whatever is in line with or better than the architecture. (1) Quarantine-on-read is
+  the shared `repositories/readOrQuarantine.ts` (14 §8, DEC-31); its record is typed as
+  `QuarantineRecordDtoV1` (§7), `DtoCheck<T>` moved to `dto/DtoCheck.types.ts`, and the warn
+  callback type is `WarnReporter`. (2) `chordKey` moved to `bridge/chordKey.ts` (DEC-30, better
+  than the design: 13 §1 had it in `game/input/`); `selectChordOwner` and the settings screen use
+  it instead of restating `device:code`. Docs 02, 13 and 14 updated. Deferred, as the review
+  suggests: shared DTO helpers until S2's second DTO. New `readOrQuarantine.test.ts` with a
+  validator that knows nothing about settings.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 415 passed (415)"; "✓ built in 116ms"; "Documentation
+  check passed."
+- Next step: independent critic on the review diff, then push; the human merges.

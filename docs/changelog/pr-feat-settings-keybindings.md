@@ -54,8 +54,8 @@ file: Esc opens the pause overlay, W → ArrowUp updates the HUD glyphs).
 
 | Area                                 | Names                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bindings (`bridge/Binding.types.ts`) | `InputAction`, `InputChord { device, code, label }` (mouse `code` = `MouseEvent.button` as a string), `Binding`, `BindingPreset`, `BindingConflictPolicy`                                                                                                                                                                                                 |
-| Defaults (`game/input/`)             | `keybindings.ts`: `DEFAULT_CHORDS`, `INPUT_ACTIONS`, `PRESETS` (`wasd`, `arrows`), `withDefaults(saved)`, `SavedBinding`; `bindingEdits.ts`: `rebind(bindings, action, chord, policy)`, `resetBindings(bindings, action \| null)`; `chordKey(chord)`; `BindingResolver` (`setBindings`, `actionsFor`, `conflicts`)                                        |
+| Bindings (`bridge/Binding.types.ts`) | `InputAction`, `InputChord { device, code, label }` (mouse `code` = `MouseEvent.button` as a string), `Binding`, `BindingPreset`, `BindingConflictPolicy`; `bridge/chordKey.ts`: `chordKey(chord)` (DEC-30)                                                                                                                                               |
+| Defaults (`game/input/`)             | `keybindings.ts`: `DEFAULT_CHORDS`, `INPUT_ACTIONS`, `PRESETS` (`wasd`, `arrows`), `withDefaults(saved)`, `SavedBinding`; `bindingEdits.ts`: `rebind(bindings, action, chord, policy)`, `resetBindings(bindings, action \| null)`; `BindingResolver` (`setBindings`, `actionsFor`, `conflicts`)                                                           |
 | Mapping                              | `new InputMapper(bindings)`: `setBindings`, `isBound(code)`, `resolve(snapshot) → ActionState { held, pressed, released, pointer }`, `toIntent(actions, projection) →` core `InputIntent { move, aim, triggered }`; `Projection { screenToWorld }` (`engine/input/Projection.types.ts`)                                                                   |
 | Devices (`game/engine/input/`)       | `InputDevice` (`attach`, `detach`, `writeInto`, `releaseAll`), `InputSnapshot` / `MutableInputSnapshot { keys, mouseButtons: Set<number>, pointer }`, `ScreenPoint`; `new KeyboardDevice(isBound)`, `MouseDevice`, `FakeInputDevice` (`press`, `pressButton`, `movePointer`…); `describeInputDevice`, `syntheticEvent`                                    |
 | Settings                             | `settingsSlice`: `settingsChanged`; selectors `selectBindings`, `selectBindingLabel(state, action)`, `selectChordOwner(state, chord)`, `selectAudio`, `selectVideo`, `selectAccessibility`; `SettingsPatch`. `game/settings/`: `new SettingsController({ bus, persistence, logger })` (`start`, `destroy`), `settingsWithDefaults`, `applySettingsIntent` |
@@ -131,13 +131,17 @@ Each is recorded in the "Implementation status" notes (09 §11, 13 §10, 14 §14
 - **`SettingsScreen.rebind.test.tsx`** imports `game/` and `data/`: it is architecture 13 §8's
   acceptance test, at that path. Production `ui/` imports only `bridge/`, `ui/` and `styles/`.
 
-## Better than the design (signed off: DEC-27…DEC-29)
+## Better than the design (signed off: DEC-27…DEC-31)
 
 - **DEC-27 `SettingsController`** owns settings in every phase (load, apply, publish, save) in
   `game/settings/`, instead of `SessionController`; the critic rated it better than the design
   and its conditions are met. Folded into 13 §1, §2, §5, §6.3 and 02 §3.
 - **DEC-28 snapshot shape:** button numbers, no key labels (09 §2).
 - **DEC-29 conflict-free edits** as an invariant (13 §6.3).
+- **DEC-30 `chordKey` in `bridge/`** (review round): one definition of "the same physical input"
+  for `game/input/`, `settingsSlice` and the settings screen. Folded into 02 §3 and 13 §1, §6.1.
+- **DEC-31 one shared `readOrQuarantine`** (review round) instead of a private copy per
+  repository. Folded into 14 §8.
 
 ## Notes for the reviewer
 
@@ -154,9 +158,29 @@ Each is recorded in the "Implementation status" notes (09 §11, 13 §10, 14 §14
   deletions, `--no-verify`, `main`/`phase/` pushes and `gh pr merge` are denied. Patterns are
   best-effort: extra arguments after a task-branch name (`--tags`, `--prune`) are not denied.
 - `.githooks`, CI, coverage thresholds and ESLint config are unchanged.
-- Known nits left: `selectChordOwner` restates `chordKey` (bridge may not import `game/`);
-  `Prompt` renders an unknown `{action:…}` id as "—"; focus does not return to the row after the
-  dialog closes.
+- Known nits left: `Prompt` renders an unknown `{action:…}` id as "—"; focus does not return to
+  the row after the dialog closes. (`selectChordOwner` restating `chordKey` was resolved in the
+  review round, DEC-30.)
+
+## Review round (SamarjitBhogal, changes requested)
+
+Each request was checked against the architecture; sholtzman approved implementing whatever is in
+line with it or better.
+
+1. **Quarantine-on-read, shared (better than 14 §8's private method; DEC-31).**
+   `repositories/readOrQuarantine.ts` is `readOrQuarantine(tx, { store, key, validate }, report)`
+   (three parameters, CONTRIBUTING §4). Its types are in `readOrQuarantine.types.ts`:
+   `WarnReporter` (the warn callback, used by `PersistenceControllerDeps` and the repository),
+   `RecordRead<T>` and `QuarantineReport`. The quarantine row is typed as §7's
+   `QuarantineRecordDtoV1` (`dto/QuarantineRecordDto.types.ts`). `SettingsRepository` reads
+   through it, with the same behaviour; its tests are unchanged. New `readOrQuarantine.test.ts`
+   uses a validator that knows nothing about settings.
+2. **`chordKey` in `bridge/` (better than 13 §1; DEC-30).** `bridge/chordKey.ts`; `game/input/`,
+   `selectChordOwner` and the settings screen's React key import it, so there are no other
+   copies of `device:code`.
+3. **Shared DTO helpers: deferred to S2**, as the review suggests. Only `DtoCheck<T>` moved
+   (`dto/DtoCheck.types.ts`), because `readOrQuarantine` needs it. Tracked in 14 §14.
+4. **"Fine as is" items:** unchanged.
 
 ## Checklist
 
