@@ -340,6 +340,53 @@ Extensions to earlier items:
 - **A22-4 and A22-12:** fix them through AC-2's factory.
 - **A22-18:** 08's missing status note is AC-3.
 
+### Area E — core entities, components and content (#14)
+
+**PR #14's must-change items are all fixed at `26ae27e`:**
+
+- **B1:** the factory resolves definitions by id through an injected `DefinitionSource`, and `dev-spawn` rejects unknown definitions.
+- **M1:** `Unit` installs its component set, and `UnitComponentInstaller` is gone.
+- **M3:** shields, heading, `Collider.isEnabled` and `Vision.revealedUntilTick` are hashed and tested.
+- **M4 / DEC-22:** rules see the catalogue and run from `loadDefaultContent()`. The residue is AE-4.
+- **M6:** the handoff items are done; the registry is wired and ids come from `IdGenerator`.
+- **DEC-21:** `defaultEntityRegistry.ts` is the only file naming concrete classes.
+- **DEC-24:** the ring lint is removed, and its follow-up PR has not been opened yet.
+
+**The doc edits stayed within the owner's approvals:** 04 §5, the 04 §13 removals, 05 §2–§3 and 07 §2. One caveat: the 05 §2 edit also moved "resolves `extends`, converts seconds to ticks" to `loadDefaultContent()`, which goes beyond decision 2 (AE-19).
+
+- [ ] **AE-1** (major) `content/units/units.types.ts:3-15`, `loadDefaultContent.ts:8-31`, `legends/legendCatalogue.ts:8`, `mobs/mobCatalogue.ts:8`: authored per-second and loaded per-tick unit definitions share one type, and both satisfy `DefinitionSource`. So nothing stops per-second data reaching `Movement` (30× speed and 900× acceleration at 30 Hz), and four entity tests already build `Movement` from per-second data (05 §2 `AbilityAuthoring`; 03 §10). Add `UnitAuthoring`/`MovementAuthoring` for content files, let only `loadDefaultContent` produce `UnitDefinition`, and make the entity tests spawn from loaded content.
+- [ ] **AE-2** (major) `components/Movement.ts:80-109`: it slows down by `acceleration` instead of friction and turns with no `|dv|` clamp (10 §2 steps 1 and 3). With the shipped content, the Sentinel (9 m/s, 0.18 m/s²) coasts 1,500 ticks, 50 s and about 225 m after `stop`, yet reverses in one tick. Implement friction and the clamp, or a deceleration field, and add a stop-distance scenario test. Add this consequence to INBOX PR #14 item (7) before it is ruled. Recorded with AK-1's 10 status note.
+- [ ] **AE-4** (minor) `legends/legendCatalogue.ts:8` and `mobs/mobCatalogue.ts:8` build catalogues, with a throwing duplicate-id check, when `@eternalus/core` is imported (DEC-22: "never at import time"). Export plain arrays, and build catalogues only in `loadDefaultContent()`.
+- [ ] **AE-5** (minor) `content/validation/PositiveStatsRule.ts`: `visionRadius` is not validated, and `Vision` throws on negative or NaN values, so bad content throws out of `step()` on the first spawn. Unregistered `kind`s are caught only by a test (05 §2: "a typo fails at boot"). Add a vision rule, and check kinds and controllers when `Simulation` is constructed (with A23-10). Injected content is AK-5.
+- [ ] **AE-6** (minor; `ponytail:`) `components/Health.ts:77-102`: shield order compares id lengths, a numeric sort of `entity-N` that 03 §2 forbids, and it ties a component to the factory's id format. Grant shields in store or call order, or have the owner amend 03 §2 together with A23-19.
+- [ ] **AE-8** (minor) `index.ts:25` exports the closed `LegendKind` union and no `LegendId`, and the client sends one value as both `kind` and `definitionId` (`Match.ts:138-139`), so a data-only Legend (R2, `extends`) could never be picked (05 §12, 02 §6, 04 §6). Export `LegendId = string` and keep `LegendKind` internal (with A12-4).
+- [ ] **AE-9** (minor; owner approval) `04-entity-architecture.md` §13 leaves out interim differences:
+  - **§2:** `spawn` doesn't emit `entity-spawned`, the factory doesn't add to the store, and `retire` takes a string cause.
+  - **§3:** no `facing`/`lookAt` or `applyImpulse`, `setTeam` without a cause, and `canSee`.
+  - **§5:** no `extends`/`sprite`/`minimapGlyph`, flat stats, no ability or loadout ids, extra unused fields, and no `weightClass`.
+  - **§6:** classes registered instead of factory functions.
+  - Units also get a `Brain`.
+- [ ] **AE-11** (minor; owner approval) `17-extension-recipes.md` R12 and `packages/core/AGENTS.md:42`: the component recipe never mentions `StateHasher`, which is how #14's M3 slipped through. Add "add its simulation fields to `StateHasher.fieldsOf` with one hasher test" (03 §9).
+- [ ] **AE-12** (minor) `entities/playerScenarios.test.ts` (318 lines): its stand-in helpers outlived `MovementSystem` and `DeathSystem` (#17), and "halts at once on a hard stop" tests a path no command takes, since `stop` coasts. Drive the real systems, fix that scenario, and split the file.
+- [ ] **AE-13** (minor) `docs/plan/phase-1-simulation-kernel-and-world.md:100,104`: "Unit definitions name no other ids yet" is wrong (`passiveOptions`, `defaultAction`, `pickUp`, `weaponBias` and `controller` are ids), and "pending merge" is stale. Correct both and append a PROGRESS correction.
+- [ ] **AE-14** (nit) `components/TeamMembership.ts:17-22`: `setTeam` takes no cause and leaves the `team-changed` emit to callers (04 §3). Add a cause, or record it in 04 §13.
+- [ ] **AE-15** (nit, acceptable) The `family` getters on `Unit`, `Legend` and `Mob` return `string` (and `'unit'` isn't an `EntityFamily`), while the newer families type it. Type them the same way.
+- [ ] **AE-16** (nit) `UnitDefinitionRule` is shared by three classes but lives in one class's companion file; `DefinitionRef` and `IdentifiedDefinition` repeat `EntityDefinitionBase`; and `SPAWNABLE_TEAMS` re-lists `Team` outside `teams/` with no exhaustiveness check.
+- [ ] **AE-17** (nit) Test gaps:
+  - the registry depth test loops only over unit definitions;
+  - the spawn test doesn't check `Vision`;
+  - `loadDefaultContent.test.ts:12` has a stale title;
+  - `mobCatalogue` has no test.
+- [ ] **AE-18** (nit; owner approval) `07-structures-obstacles-and-destructibles.md:325,348,356`: there are two "§13" sections, the status note sits after §14, and "source id order" is stale (INBOX (9)).
+- [ ] **AE-23** (nit, process) PR #14's description still describes `EntityModule`s and the ring lint, and the review round's critic, ponytail and check record exists only in a PR comment. Append the gate record to PROGRESS.
+
+Extensions to earlier items:
+
+- **AK-3:** `Movement`'s `Math.hypot` (also AE-7).
+- **AK-5:** injected content skips validation (also AE-5c).
+- **AK-6:** the id counter is outside `GameState` and the hash (also AE-22).
+- **AK-1:** 10 needs its own status note for `Movement` and `Collider`: per tick, heading, no friction, clamp or impulses, circles only, shapes in `components/`, no `isUnbreakable` (AE-10).
+
 ## Proposed design changes (owner sign-off needed)
 
 Decisions and doc conflicts the reviews surfaced. None of these may be changed in the design docs before the owner rules.
@@ -387,6 +434,14 @@ Decisions and doc conflicts the reviews surfaced. None of these may be changed i
   - **AC-25, who creates the `Match`:** `GameCanvas` (`apps/client/AGENTS.md`, H brief), `SessionController.createMatch` (13 §1–§2), or `Match` choosing its adapters (01 §3, 08 §7). This is the same decision as AS-7 C2, and AC-1 and AC-2 depend on it.
   - **AC-26, log filtering:** 09 §8 should put filtering in `SinkLogger`'s routes, as 15 §4 and the code do.
   - **AC-27, the loop example:** in 08 §3 the first frame only sets the time origin, so `runFrames(2, 16.7)` gives 0 ticks, not 1.
+- [ ] **AE-3** (owner) The content numbers have no source. Health 600/800/1200, vision 25 and every speed, acceleration and mass in `content/legends/*.ts` and `mobs/trainingDummy.ts` trace to nothing. Magus health 800 above the Warrior's 600 contradicts `balancing.md` (550 < 650), and masses 1/2/6 are not on 10 §2's "kg-like" scale, so 05 §4's `impulse: 80` would knock a Warrior back at 80 m/s. Adopt `balancing.md`'s anchors or keep the placeholders, and drop the unsourced health-ordering assertion in `legendCatalogue.test.ts:35-44`.
+- [ ] **AE-19** (docs; owner approval) Who resolves `extends` and validates content? `ContentCatalogue` (02 §2:68, 04 §5:177-178) or `loadDefaultContent()` (05 §2 as #14 edited it)? Also retire the `validateContent()` name in 02, 17 and the plan.
+- [ ] **AE-20** (owner, product) There is no base-speed field. The game doc's base speed (reference 02, FR-035, `balancing.md`) conflicts with 10 §2's "speed = current |velocity|, ramping from standstill", which the code follows.
+- [ ] **AE-21** (owner) What does `// TUNE:` certify? 00-overview:78 says "a provisional number quoted from a source", CONTRIBUTING §4 says any provisional number, and content uses it on invented numbers. Pick a marker for unsourced placeholders.
+- [ ] **AE-B1** (improvement on the design) `obstacleType` (INBOX PR #14 item (2); `obstacles.types.ts:8-20`). 04 §5 makes `kind` the registry key, while 04 §1, 04 §5, 07 §9 and 17 R6 also make `ObstacleDefinition.kind` the tree/rock/bridge type. Both can't hold with one registered `Obstacle` class. If accepted, the 04 §1 Obstacle row, the 04 §5 `ObstacleDefinition` row, the 07 §9 sketch and 17 R6 change.
+- [ ] **AE-B2** (improvement on the design, small) `EntityFactory.canCreate(kind, definitionId)` lets `dev-spawn` reject (03 §3) instead of throwing out of `step()`, the failure behind #14's B1. If accepted, 04 §6 changes; it shrinks to `has(id)` if spawn-by-definition-id lands.
+- [ ] **AE-B3** (alignment with the more specific doc; area E recommends yes) The `Collider` fields follow 10 §4 (`isStatic`/`isEnabled`), not 04 §3's `isSolid` (INBOX (3)). The shield names follow 07 §2 (INBOX (4)). If accepted, the 04 §3 component table rows change.
+- [ ] **AE-B4** (not better, per area E) `passiveOptions`. 05 §12 already gets a class's passives from `AbilityDefinition.classId` and `slot: 'passive'` (`PassiveOwnedRule`), so this would be a second source of truth. Pick one before Phase 4 content.
 - [ ] **A23-17** The `PROTOTYPE(<id>) TEMPORARY` marker convention. It is used 18 times and documented nowhere. Document it in `AGENTS.md` / `CONTRIBUTING.md`, or fold it into `ponytail:`.
 - [ ] **A23-18** Two import-boundary conflicts:
   - `packages/core/AGENTS.md:32` forbids `systems/` → `ai/`, but 02 §2 allows it (and 11 §1 calls `AiSystem` a system).
