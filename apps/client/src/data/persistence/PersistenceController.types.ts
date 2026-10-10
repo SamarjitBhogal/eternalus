@@ -1,5 +1,4 @@
-import type { LogAttributes } from '@eternalus/core';
-
+import type { WarnReporter } from './repositories/readOrQuarantine.types';
 import type { StorageAdapter } from './StorageAdapter.types';
 
 /** What `main.tsx` injects into `PersistenceController`. */
@@ -10,9 +9,6 @@ export type PersistenceControllerDeps = {
   readonly knownActions: ReadonlySet<string>;
   /** Wall-clock milliseconds, for dating quarantined records. */
   readonly now: () => number;
-  /**
-   * Reports a WARN-level event (a quarantined record). `main.tsx` routes it to the `Logger`
-   * port; `data/` imports core types only, so it does not build log records itself.
-   */
-  readonly warn: (body: string, attributes: LogAttributes) => void;
+  /** Reports a quarantined record at WARN. */
+  readonly warn: WarnReporter;
 };

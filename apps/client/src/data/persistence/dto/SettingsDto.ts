@@ -1,3 +1,5 @@
+import type { DtoCheck } from './DtoCheck.types';
+
 /** A stored chord: the same shape as `bridge/Binding.types.ts` `InputChord`. */
 type ChordDtoV1 = {
   readonly device: 'keyboard' | 'mouse' | 'gamepad';
@@ -21,10 +23,6 @@ export type SettingsDtoV1 = PersistedSettings & {
   readonly schemaVersion: 1;
   readonly profileId: string;
 };
-
-/** The outcome of checking an untrusted stored value. */
-export type DtoCheck<T> =
-  { readonly ok: true; readonly dto: T } | { readonly ok: false; readonly reason: string };
 
 type FieldCheck = (value: unknown) => boolean;
 

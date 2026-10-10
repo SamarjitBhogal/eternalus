@@ -313,20 +313,38 @@ Stored data is never trusted (ES-08). Every read goes through a type guard and, 
 version upgrade; every write goes through a mapper. Both live in `dto/`, one file per record.
 
 ```ts
-// Sketch: apps/client/src/data/persistence/dto/SavedLoadoutDto.ts and repositories/StorageLoadoutRepository.ts
-export function validateSavedLoadoutDto(value: unknown): { ok: true; dto: SavedLoadoutDtoV1 } | { ok: false; reason: string };
+// Sketch: apps/client/src/data/persistence/dto/SavedLoadoutDto.ts and repositories/readOrQuarantine.ts
+export function validateSavedLoadoutDto(
+  value: unknown,
+): { ok: true; dto: SavedLoadoutDtoV1 } | { ok: false; reason: string };
 export function upgradeSavedLoadoutDto(dto: SavedLoadoutDtoAnyVersion): SavedLoadoutDtoV1; // lazy per-record ladder on schemaVersion
 export function toLoadout(dto: SavedLoadoutDtoV1): Loadout; // core type
 export function fromLoadout(profileId: ProfileId, loadout: Loadout, now: number): SavedLoadoutDtoV1;
 
-private async readOrQuarantine<T>(tx: StorageTx, store: StoreName, key: IDBValidKey, validate: Validator<T>): Promise<T | null> {
+// One function shared by every repository, not a private copy in each.
+export async function readOrQuarantine<T>(
+  tx: StorageTx,
+  { store, key, validate }: { store: StoreName; key: IDBValidKey; validate: Validator<T> },
+  deps: { now: () => number; logger: Logger }, // the repository's, the same for every read
+): Promise<T | null> {
   const raw = await tx.get<unknown>(store, key);
   if (raw === undefined) return null;
   const checked = validate(raw);
   if (checked.ok) return checked.dto;
-  await tx.put('quarantine', { store, key, reason: checked.reason, quarantinedAt: this.now(), value: raw });
+  await tx.put('quarantine', {
+    store,
+    key,
+    reason: checked.reason,
+    quarantinedAt: deps.now(),
+    value: raw,
+  }); // a QuarantineRecordDtoV1 (§7)
   await tx.delete(store, key);
-  this.logger.log(makeLogRecord('WARN', 'client.persistence', 'record quarantined', { store: String(store), reason: checked.reason })); // 15 §4
+  deps.logger.log(
+    makeLogRecord('WARN', 'client.persistence', 'record quarantined', {
+      store: String(store),
+      reason: checked.reason,
+    }),
+  ); // 15 §4
   return null; // the caller substitutes a default: autoBuildLoadout, DEFAULT_CHORDS, a fresh profile
 }
 ```
@@ -474,15 +492,18 @@ Built in Sprint 1 (session F), settings only: `PersistenceController` with `open
 `transaction` and `close` (reads return `unknown`; `getAll`, `onVersionChange` and `estimate`
 come with their first caller); `MemoryStorageAdapter`, which runs transactions one at a time in
 call order, and the `describeStorageAdapter` contract suite; `schema/migrations.ts` v1 with the
-`settings` and `quarantine` stores only; `SettingsRepository` (a class, no interface yet) with
-validation on read and quarantine. Interim gaps, to settle before `IndexedDbStorageAdapter`
-(S2) fixes v1 on disk:
+`settings` and `quarantine` stores only; `SettingsRepository` (a class, no interface yet), which
+reads through the shared `readOrQuarantine`. Interim gaps, to settle before
+`IndexedDbStorageAdapter` (S2) fixes v1 on disk:
 
 - Settings are one `SettingsDtoV1` record per profile keyed by `profileId`, not §7's
   `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video` and
   `accessibility` (the Sprint 1 contract's `settingsSlice`), with no `developer` or `storage`
   group yet. Changing the key path after IndexedDB ships needs a new store and a `transform`.
 - One profile (`LOCAL_PROFILE_ID`) until the profiles store exists.
+- The validation helpers (`isRecord`, `groupProblem`, field checks) are private to
+  `dto/SettingsDto.ts`; when S2 adds the second DTO, the common ones move to a shared
+  `dto/dtoCheck.ts` beside `DtoCheck.types.ts` (PR #24 review).
 - A quarantine is reported through an injected `warn` callback, because `data/` imports core
   types only (§1); `main.tsx` turns it into a `Logger` record. No `degraded` status or memory
   fallback yet (§10): a failed open leaves the settings on defaults.
