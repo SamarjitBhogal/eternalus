@@ -9,7 +9,11 @@ import { store } from './bridge/store';
 import { MemoryStorageAdapter } from './data/persistence/MemoryStorageAdapter';
 import { PersistenceController } from './data/persistence/PersistenceController';
 import { placeholderCatalogue } from './game/content/placeholderCatalogue';
-import { PLACEHOLDER_MATCH_CONFIG, PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
+import {
+  PLACEHOLDER_MATCH_CONFIG,
+  PLACEHOLDER_PLAYER_NAME,
+  PLACEHOLDER_PRESELECTED_CLASS_ID,
+} from './game/content/placeholderSetup';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
 import { GameCanvas } from './game/GameCanvas';
 import { INPUT_ACTIONS } from './game/input/keybindings';
@@ -30,9 +34,7 @@ connectBusToStore(eventBus, store.dispatch);
 const session = new SessionController({
   bus: eventBus,
   clock: new PerformanceSessionClock(),
-  // TODO(sam): turn the select timeout back on once the character select screen can pick a class;
-  // until then it cancels every demo match after 60 s.
-  states: createDefaultSessionStates({ isSelectTimeoutEnabled: false }),
+  states: createDefaultSessionStates({ preselectedClassId: PLACEHOLDER_PRESELECTED_CLASS_ID }),
   catalogue: placeholderCatalogue,
   matchConfig: PLACEHOLDER_MATCH_CONFIG,
   playerName: PLACEHOLDER_PLAYER_NAME,
