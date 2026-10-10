@@ -756,3 +756,14 @@ The example below is fenced so it is not read as a real entry.
   check passed."
 - Next step: review and merge before the demo; remove the preselect when the character select
   screen lands.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (merge of phase/1 after #26) — sholtzman + Claude Code
+
+- What was done: merged the phase branch into PR #24 after PR #26 merged, on top of session F's
+  eight unpushed commits (the review-round fixes, DEC-30/DEC-31, critic passes 5 and 6). The one
+  conflict was this log; every entry from both sides was kept, 46 in all.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 97ms"; "Documentation
+  check passed."
+- Next step: the human pushes; Samarjit re-reviews (his changes were requested before the
+  review-round commits); PR #24 merges.
