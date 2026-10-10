@@ -288,6 +288,58 @@ Extensions to earlier items:
 - **A23-7:** `DefaultSystemPipeline.test.ts` can't detect a reordering, and the tick order is split over three places (sprint 1.1's "reads as a list in code" is unmet).
 - **A8-1:** `DEFAULT_MAP_CONFIG` is still public API.
 
+### Area C — client engine, match and input (#18, #19)
+
+**What conforms:**
+
+- `GameLoop` matches 08 §2 exactly: the clamp, whole ticks, `alpha`, and keeping the remainder on `stop()`. Its tests use only the fake scheduler.
+- `requestAnimationFrame`, `performance.now` and `setTimeout` stay inside their adapters, except AC-8.
+- Only `Canvas2dRenderer` touches the context (rule 7).
+- Views use `import type` from core (rule 6).
+- `engine/` imports nothing above it, and `console` appears only in `ConsoleSink`, with a named disable.
+- There is no `switch` on kind in `ViewRegistry`, and player input reaches core only as `Command`s (rule 9).
+- Translating the intent into `move`/`stop` inside `Match` is an acceptable interim (`INBOX.md:81-85`), to be recorded by AC-3.
+
+- [ ] **AC-1** (major) Merged into **AS-1**: the match runs behind every placeholder phase and the Settings route, and plays seed 1 as the Light Warrior. It adds three points:
+  - `KeyboardDevice` cancels the default of every bound key on `window` behind the menus;
+  - a throw from `Simulation.step()` escapes the rAF callback, and nothing routes it to the session (13 §2: a step exception sends `match` to results or menu);
+  - the `PLACEHOLDER_*` trigger names session E, but session D already publishes the setup.
+
+  Add a test that phases other than `match` schedule 0 frames.
+
+- [ ] **AC-2** (major) `apps/client/src/game/useMatch.ts:42-181` is a second composition root that no test runs. A React effect chooses and constructs every adapter: renderer, scheduler, camera, devices, logger and sinks, mapper, simulation and map. It also holds the plan's ticked "clear held input on `blur`/hidden `visibilitychange`" and all listener teardown. `GameCanvas.test.tsx` renders on the server, so the effect never runs (17 A8; 01 §3; 15 §4). Move construction into a Node-testable `createMatch` factory in `game/`, test focus-loss release, resize and a teardown that leaves 0 listeners, and reduce `useMatch` to mount and unmount. Land it with A22-4 and A22-12.
+- [ ] **AC-3** (major; owner approval) Docs 08 and 09 have no Implementation status section (`last-reviewed: 2026-09-30`), yet `INBOX.md:197`, `PROGRESS.md:349,364,376` and PR #18's description say the differences are "recorded in 08 §11". #18's critic accepted its divergences on that condition. Commit `e19fcad` added §11, and `fb310c6` removed it pending approval. The text waits at `INBOX.md:199-234`. Agents editing `engine/`, `views/` and `input/` are routed to a design that differs on the Renderer port, Camera/Projection, `Match`'s dependencies, the input pipeline, the clock and the sinks. Approve the text, amended with AC-1 to AC-8, as 08 §11 and 09 §11. Append a PROGRESS correction for `fb310c6`, and fix `INBOX.md:197`.
+- [ ] **AC-4** (minor) There are two world ↔ screen transforms: `Camera.ts:65-92` and `Canvas2dRenderer.ts:82-87,147-152`. 08 §5 asks for one `Projection`, and #22's `MapExplorer` is a third. Keep one, drop `Camera.worldToScreen`, and add a round-trip test (with A22-6).
+- [ ] **AC-5** (minor) `Camera.ts:21-25` and `Canvas2dRenderer.ts:82-87`: a fixed 64 × 36 view with X and Y scaled separately stretches the world, circles included, on windows that aren't 16:9. Derive the height from the aspect ratio, and test that scale X equals scale Y at 4:3.
+- [ ] **AC-7** (minor) `useMatch.ts:89-94`, `Match.ts:73-85,170-265`, `Canvas2dRenderer.ts:53-57` and `Renderer.ts:21-30`: device pixels leak into `Match`, there is no `ctx.scale(dpr)`, resizing comes from a `window` listener, and the port mixes units (08 §4, 09 §4). The renderer should own DPR and a `ResizeObserver`, game code should work in CSS pixels, and the port should use one unit for widths. Extends AM-12.
+- [ ] **AC-8** (minor) `useMatch.ts:54`: `() => performance.now()` stamps the logs, outside the clock port (09 §6, 15 §4). Inject `SessionClock.now`, which has existed since #12.
+- [ ] **AC-9** (minor) `Match.ts:108-122`: `Match` decides the draw order by passing two layer lists, instead of `SceneView` defining it in one place (02 §9, `apps/client/AGENTS.md`). Give `SceneView` fixed slots (terrain → scenery → entities → overlay). Extends A22-16.
+- [ ] **AC-10** (minor) Contract suites are missing for `FrameScheduler`, `Renderer` and `LogSink` (09 §9, 15 §10, 17 R25), and `RafFrameScheduler.test.ts` has one case. Add the three suites, each run by the real adapter and its double.
+- [ ] **AC-11** (minor) Phase-1 plan lines 185, 188, 206 and 220 are ticked without meeting their done-when:
+  - **Camera:** views still compute screen coordinates (`MiniMapView`).
+  - **SceneView:** draw order is not in one place (AC-9).
+  - **Logger sinks:** nothing reads the ring buffer, and `b12aa0f` re-ticked the item after #18's author had unticked it.
+  - **Devices:** the blur/visibility release is untested (AC-2).
+
+  Untick or annotate them, and append a PROGRESS correction (with A23-3).
+
+- [ ] **AC-12** (minor; owner approval) `06-map-and-minimap.md:419`: the Renderer row's trigger ("session H's layers and sprites") has fired without that work. Move the row to 08 §11 with a real target (see AM-2).
+- [ ] **AC-13** (minor, latent) `KeyboardDevice.ts`, `MouseDevice.ts`: devices keep only held state, and the mapper derives `pressed` by comparing two reads once per tick. A press and release between two reads is lost (09 §3, "pressed this frame"). It is latent because `Match` drops `aim` and `triggered`, and #24 keeps held-only devices. Latch presses until read, and add a contract case.
+- [ ] **AC-14** (nit) `Match.ts:189-192` makes the camera follow the tick position, not the interpolated one (08 §5), and its smoothing depends on the frame rate.
+- [ ] **AC-15** (nit) `RingBufferSink.ts:26-31` uses `push`/`shift`, which is O(capacity) per write. Use a fixed array with a head index.
+- [ ] **AC-16** (nit) `DefaultEntityView.ts:25-27` branches on team in a view (17 A1). Use a palette lookup that includes neutral (with A22-7 and AM-11).
+- [ ] **AC-17** (nit) `engine/Camera*.ts` should live in `engine/camera/` (08 §1, 02 §3).
+- [ ] **AC-18** (nit; owner approval) `paths` frontmatter: 08 misses `useMatch`, `GameCanvas`, `DeviceIntentSource` and the `Match.*` companions, and `data/logging/**` is matched only by 14 (with AS-6).
+- [ ] **AC-19** (nit) After #24 merges, re-check the input layer against this audit: #24 adds `now: () => Date.now()` in `main.tsx`, the same problem as AC-8, and keeps AC-13. A24-1 still applies.
+
+Extensions to earlier items:
+
+- **A23-14:** `LegendView` is the same data-only subclass as `MobView` (17 A7); one `OutlinedEntityView` covers both.
+- **A22-6:** see AC-4.
+- **A22-16:** see AC-9.
+- **A22-4 and A22-12:** fix them through AC-2's factory.
+- **A22-18:** 08's missing status note is AC-3.
+
 ## Proposed design changes (owner sign-off needed)
 
 Decisions and doc conflicts the reviews surfaced. None of these may be changed in the design docs before the owner rules.
@@ -325,6 +377,16 @@ Decisions and doc conflicts the reviews surfaced. None of these may be changed i
 - [ ] **AK-20** (owner, product) 03 §10: should `legendsPerTeam` and `initialHordesPerTeam` be derived from, or validated against, `numLanes`? At 5 lanes, 3 per lane plus the Rover exceeds the cap of 10, and FR-004 wants one horde per lane.
 - [ ] **AK-23** (improvement on the design) `GameState.removalsAnnouncedThisTick()`: per-tick facts an invariant needs are kept by `GameState` for the current tick, not read back from the 512-entry event ring, which a busy tick can overflow into a false fatal. Adopt it in 15 §3 and apply it to `NoPassThroughUnbreakableInvariant`.
 - [ ] **AK-24** (improvement on the design, small) `Violation.severity`: each violation carries its log level, optionally stamped by the runner. Adopt it in 15 §2 together with the seed in `InvariantViolationError` that 15 §5 already requires, and close the optional idea in `INBOX.md:153-154`.
+- [ ] **AC-6** (owner) How much of the world does the player see? The view is 64 × 36 m (`Match.constants.ts:15-22`) and the zoom range 0.5–4 (`Camera.constants.ts:5-8`), and neither has a source. Put the view size in config or content, and inject the zoom bounds from settings (08 §5).
+- [ ] **AC-20** (improvement on the design) The `IntentSource` port and `DeviceIntentSource` (`INBOX.md:86-91`, b). `Match` never names a device, its tests drive a scripted intent, and replayed or bot intents can use the same seam. Move the class and port to `game/input/`. If accepted, 13 §6.2, 08 §7 (`input: IntentSource`) and 09 §2 change.
+- [ ] **AC-21** (improvement, conditional) Focus-loss release outside `Match` (`INBOX.md:86-91`, a) resolves 09 §2 in favour of 09 §10 (no browser API in `Match`). Accept it only with a tested home (AC-2's factory), then update 09 §2.
+- [ ] **AC-22 to AC-27** (docs; owner rulings):
+  - **AC-22, view lookup:** 08 §8 should say kind → family → default view, with each unknown kind reported once (02 §9 and the code).
+  - **AC-23, the clock:** adopt `SessionClock` as the clock (01, 02, 08 and 09 say `Clock`), and `loop/` as the `FrameScheduler` home.
+  - **AC-24, `Projection`:** decide where it lives and whether it is one-way or two-way (02 §3 forced a one-way port into `engine/input/`; 08 §5 has a two-way one in `camera/`).
+  - **AC-25, who creates the `Match`:** `GameCanvas` (`apps/client/AGENTS.md`, H brief), `SessionController.createMatch` (13 §1–§2), or `Match` choosing its adapters (01 §3, 08 §7). This is the same decision as AS-7 C2, and AC-1 and AC-2 depend on it.
+  - **AC-26, log filtering:** 09 §8 should put filtering in `SinkLogger`'s routes, as 15 §4 and the code do.
+  - **AC-27, the loop example:** in 08 §3 the first frame only sets the time origin, so `runFrames(2, 16.7)` gives 0 ticks, not 1.
 - [ ] **A23-17** The `PROTOTYPE(<id>) TEMPORARY` marker convention. It is used 18 times and documented nowhere. Document it in `AGENTS.md` / `CONTRIBUTING.md`, or fold it into `ponytail:`.
 - [ ] **A23-18** Two import-boundary conflicts:
   - `packages/core/AGENTS.md:32` forbids `systems/` → `ai/`, but 02 §2 allows it (and 11 §1 calls `AiSystem` a system).
