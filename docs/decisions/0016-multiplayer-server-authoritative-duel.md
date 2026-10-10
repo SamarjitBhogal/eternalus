@@ -1,6 +1,6 @@
 ---
 title: 0016. Server-authoritative Duel on one Node process
-description: Proposed decision for the owner's Duel and server-scalability requirements (DEC-36, DEC-37) - the server runs the unchanged core simulation for each Duel in one Node process over WebSocket, solo matches against bots stay in the browser, identity is guest-first and a server database comes later - with the constraints it would supersede, the dependency and folders it asks approval for, and the alternatives rejected; read this before building any networked play or server code.
+description: Proposed decision for the Duel and server-scalability requirements the course instructor set (DEC-36, DEC-37) - the server runs the same core simulation for each Duel in one Node process over WebSocket, with no networking code in core and per-seat snapshots filtered by core, solo matches against bots stay in the browser, identity is guest-first and a server database comes later - with the constraints it would supersede, the dependency and folders it asks approval for, and the alternatives rejected; read this before building any networked play or server code.
 audience: [humans, agents]
 status: draft
 owner: sholtzman
@@ -15,6 +15,8 @@ related:
   - 'docs/decisions/0003-typescript-everywhere.md'
   - 'docs/decisions/0005-indexeddb-persistence.md'
   - 'docs/decisions/0012-determinism-lint-for-transcendental-math.md'
+  - 'docs/architecture/03-game-model.md'
+  - 'docs/architecture/17-extension-recipes.md'
   - 'docs/requirements/README.md'
   - 'docs/requirements/06-mvp-requirements.md'
 ---
@@ -27,9 +29,11 @@ related:
 
 ## Context
 
-The owner added two requirements due by the end of Sprint 3 (2026-11-13), recorded as DEC-36 and
-DEC-37 in `docs/reference/game-design/13-owner-decisions-log.md` (his words are in `INBOX.md`,
-"Feedback", committed in `8d0d308`):
+The course instructor set two new requirements: the owner said in chat on 2026-10-10 that "our
+prof" set them, as an intentional curveball. The owner relayed them in `INBOX.md`, "Feedback"
+(committed in `8d0d308`), and they are recorded as DEC-36 and DEC-37 in
+`docs/reference/game-design/13-owner-decisions-log.md`. Deadline for both: planned now; must be
+implemented by the end of Sprint 3 (2026-11-13).
 
 - **DEC-36, Duel.** "We must be able to have at least 1 player playing against another", through a
   second game mode, Duel, with matchmaking "looking for any other player currently waiting in a
@@ -52,7 +56,9 @@ use Vitest's `node` environment); all input is a serialisable `Command` applied 
 structured-clone safe (03 §5); `StateHasher` and seed-plus-commands replays exist (03 §9).
 Determinism is promised per machine and browser only (03 §8): the ECMAScript spec leaves `sin`,
 `cos`, `atan2`, `exp`, `pow`, `hypot` and `**` implementation-approximated, and engines, even two
-versions of V8, differ in practice (netcode research §2).
+versions of V8, differ in practice (netcode research §2). What does not fit yet: `Snapshot.player`
+is the HUD data of the one human Legend (03 §5) and `snapshot()` takes no viewer (03 §6), so core
+cannot yet produce a snapshot per player or leave out what one player may not see.
 
 Forces: about four weeks of a five-student team; hidden state (the Warrior's Veil) that a
 competitive mode must not leak; the long-term 10v10 with hordes; and cost. The scalability
@@ -63,22 +69,33 @@ tens of vCPUs for the owner's example mix alone, while the Duels in it need a fr
 
 Proposed; each point names where its detail lives instead of repeating it.
 
-1. **Authority.** The server runs the unchanged `@eternalus/core` `Simulation` for each Duel at the
-   fixed tick rate (D9). A client sends only its per-tick `intent` command with a sequence number;
-   the server stamps `actorId` from the connection, validates the message, enqueues it for the
-   next tick, and sends each client its own `Snapshot`, leaving out what that player may not see (an
-   invisible opponent). Clients draw the opponent interpolated between two snapshots. Predicting
-   the player's own Legend with server reconciliation is a later step, taken only if the Sprint 2
-   netcode spike says the game needs it (netcode research, "Spike plan").
+1. **Authority.** The server runs the same core `Simulation` (`@eternalus/core`) for each Duel,
+   with no networking code in core, at the fixed tick rate (D9). A client sends only its per-tick
+   `intent` command with a sequence number; the server stamps `actorId` from the connection,
+   validates the message and enqueues it for the next tick. Each client receives its own per-seat
+   `Snapshot`, which leaves out what that player may not see (an invisible opponent unless
+   revealed). **Core provides the per-seat snapshot and its visibility filter** (Veil, `reveal`),
+   for example a viewer argument to `snapshot()` or a filter strategy in core, because only core
+   knows `Vision`; `apps/server` asks for a seat's snapshot and sends it, and filters nothing
+   itself. Clients draw the opponent interpolated between two snapshots. Predicting the player's
+   own Legend with server reconciliation is a later step, taken only if the Sprint 2 netcode spike
+   says the game needs it (netcode research, "Spike plan").
 2. **Topology.** One Node process, `apps/server`, hosts the gateway, presence, the Duel queue, the
    match host and later the persistence API as modules. Every Duel steps on the main thread until a
    measured metric breaks the scalability research's ladder (Q1: worker threads, then more
    processes with matchmaker-assigned addresses). No Redis, Kubernetes or separate services.
 3. **Transport.** WebSocket: the browser's built-in client and the `ws` library on the server, each
    behind one transport port so WebTransport or a binary encoding can replace them locally later.
-   JSON messages first; a binary format only when a measurement asks for it.
+   On the client the port follows recipe R25 (architecture 17): the port `interface` beside its
+   consumer in a new `apps/client/src/game/engine/net/` area, a `WebSocket` adapter as the only
+   file touching the browser API, a fake and a contract suite, and the adapter injected by the
+   composition root. The server's own port lives in `apps/server`. JSON messages first; a binary
+   format only when a measurement asks for it.
 4. **Solo matches against bots stay in the browser**, as today. They cost the server nothing, still
-   work offline, and their results are client-reported, so they are never trusted for ranking.
+   work offline, and their results are client-reported, so they are never trusted for ranking
+   unless the owner rules otherwise (plan §9, question 51). Whether solo matches may stay in the
+   browser is its own owner question, answered separately from accepting this ADR (plan §9,
+   question 25).
 5. **Identity is guest-first.** On first online use the server issues an opaque random token that
    the client keeps through `PersistenceController` (one new repository in ADR 0005's shape). No
    passwords, OAuth or personal data. The server database for profiles, match records and ratings
@@ -86,22 +103,25 @@ Proposed; each point names where its detail lives instead of repeating it.
 6. **Wire types live in a new `packages/protocol`**: pure TypeScript that imports only core's types.
    The client and the server depend on protocol and core; nothing depends on the client or the
    server; core gains no networking code, so rules 1 to 4 of `AGENTS.md` hold for core unchanged.
+   The per-seat snapshot of point 1 is simulation code (what a seat may see), not networking.
 7. **The trust boundary moves to the server.** It validates every message (type, enums, finite
    numbers, ranges, size), drops `dev-*` commands from remote players, limits message rate and
    connections, and serves only `wss://` outside development (scalability research Q6 checklist).
    Command handlers reject and never throw, so one bad message cannot end a shared match (audit
    AK-4 is fixed first).
 8. **Runtime.** The server is TypeScript (ADR 0003) in the npm workspaces (ADR 0001), on the Node
-   version pinned in `.nvmrc`, which every replay records beside its versions (03 §9) so a Node
-   upgrade cannot silently change old replays. How the server bundles core (the scalability
-   research proposes Vite's SSR build, already installed) is settled by the spike.
+   version pinned in `.nvmrc`. A replay's `versions` hold core, content and schema today (03 §9),
+   not the runtime; this ADR proposes adding the Node version there, so a Node upgrade cannot
+   silently change old replays (a proposed 03 §9 change, listed below). How the server bundles core
+   (the scalability research proposes Vite's SSR build, already installed) is settled by the spike.
 
 ### Approval asked for
 
 - **Folders:** `apps/server` (the server's composition root, inside the existing `apps/*`
   workspace glob) and `packages/protocol`. Each adds a root `tsconfig.json` reference and `knip.json`
   entries (ADR 0001), an ESLint block (the server may use Node APIs; core still may not) and test
-  and CI wiring: guardrail changes this ADR would authorise.
+  and CI wiring: guardrail changes this ADR would authorise. Inside the client, the new
+  `game/engine/net/` area of point 3 (a row in architecture 02's folder table).
 - **Dependency:** `ws` (MIT) as the server's one runtime dependency, plus `@types/ws` as a
   development dependency if `ws` does not ship its own typings (neither is installed; the spike
   confirms). A database client is not requested here.
@@ -111,21 +131,27 @@ Proposed; each point names where its detail lives instead of repeating it.
 Records are not rewritten (ADR 0011); each change below is the owner's edit, made in the PR that
 accepts this ADR or right after it.
 
-| Document                                                                                                  | Change                                                                                                                                                                        |
-| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ADR 0005                                                                                                  | Amended in scope: IndexedDB stays the client's store and its one door; the server's own data is a later ADR. Status line notes 0016                                           |
-| `AGENTS.md:8-9`, its architecture rules 1-2 and "Where code goes"                                         | Name the Duel server; add the server → core and client/server → protocol directions; add `apps/server` and `packages/protocol` rows                                           |
-| `README.md` (opening paragraph)                                                                           | "Single player against AI bots, no server" gains the online Duel                                                                                                              |
-| `docs/requirements/README.md`, Runtime row                                                                | Browser-first; a Duel server; no accounts beyond guest tokens until the database ADR                                                                                          |
-| NFR-013, AP-14, ES-08                                                                                     | The threat model gains the server boundary (the checklist in point 7)                                                                                                         |
-| NFR-033                                                                                                   | "No server (D3)" lifted for the Duel server; the runtime dependency list gains `ws` on the server only                                                                        |
-| FR-046, FR-059, FR-088 (and FR-113 to FR-118, NFR-034)                                                    | One human per 10v10 match stays; Duel rows and their conflicts are settled by the owner's answers (plan, open questions)                                                      |
-| Architecture 01, 02, 03 §3/§8/§9, 08, 09, 11 §7, 12, 13 §2, 14, 15                                        | A server layer and its import rules, actor stamping, more than one human, Duel rounds, queue phases, server logging; and a new architecture doc for networking and the server |
-| `docs/architecture/README.md` (D3 row), `docs/plan/backlog-post-mvp.md` (server persistence), phase 5 doc | "No server" wording                                                                                                                                                           |
+| Document                                                                                                  | Change                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADR 0005                                                                                                  | Amended in scope: IndexedDB stays the client's store and its one door; the server's own data is a later ADR. Status line notes 0016                                                    |
+| `AGENTS.md:8-9`, its architecture rules 1-2 and "Where code goes"                                         | Name the Duel server; add the server → core and client/server → protocol directions; add `apps/server` and `packages/protocol` rows                                                    |
+| `README.md` (opening paragraph)                                                                           | "Single player against AI bots, no server" gains the online Duel                                                                                                                       |
+| `docs/requirements/README.md`, Runtime row                                                                | Browser-first; a Duel server; no accounts beyond guest tokens until the database ADR                                                                                                   |
+| NFR-013, AP-14, ES-08                                                                                     | The threat model gains the server boundary (the checklist in point 7)                                                                                                                  |
+| NFR-033                                                                                                   | "No server (D3)" lifted for the Duel server; the runtime dependency list gains `ws` on the server only                                                                                 |
+| FR-001                                                                                                    | "The human player's team" drawn from the seed stays for the 10v10; in a Duel, two humans, and whether the server assigns sides is settled by the owner's answer (plan §9, question 45) |
+| FR-046, FR-059, FR-088 (and FR-113 to FR-118, NFR-034)                                                    | One human per 10v10 match stays; Duel rows and their conflicts are settled by the owner's answers (plan, open questions)                                                               |
+| Architecture 03 §5                                                                                        | `Snapshot.player` is one human's HUD data; a Duel needs one snapshot per seat, with the visibility filter of point 1                                                                   |
+| Architecture 03 §6                                                                                        | `snapshot()` has no viewer; it gains a seat argument, or core gains a filter strategy (point 1)                                                                                        |
+| Architecture 03 §9                                                                                        | Replay `versions` gain the Node version (point 8)                                                                                                                                      |
+| Architecture 01, 02, 03 §3/§8, 08, 09, 11 §7, 12, 13 §2, 14, 15                                           | A server layer and its import rules, actor stamping, more than one human, Duel rounds, queue phases, server logging; and a new architecture doc for networking and the server          |
+| `docs/architecture/README.md` (D3 row), `docs/plan/backlog-post-mvp.md` (server persistence), phase 5 doc | "No server" wording                                                                                                                                                                    |
 
-ADR 0012 is not changed by this ADR. Banning `Math.hypot` and `**` in core (audit AK-3) is a
-separate owner call, needed only if clients generate the Duel arena themselves instead of receiving
-it from the server (netcode research §2).
+ADR 0012 is not changed by this ADR. It already tells reviewers to treat `**` like `Math.pow`, and
+audit AK-3 says to replace `Math.hypot` and `**` in core with the `vec2` helpers and the `sqrt`
+wrapper whatever the netcode, so that fix is prerequisite work (plan W3), not a decision. Only
+enforcing it by lint, an ADR 0012 amendment, is the owner's call; it becomes necessary if clients
+generate the Duel arena themselves instead of receiving it from the server (netcode research §2).
 
 ## Consequences
 
@@ -143,10 +169,12 @@ it from the server (netcode research §2).
   `step()`), AK-6 (the entity id counter outside `GameState` and the hash), the `intent` handler and
   `PlayerController` in core, a non-developer spawn path for match setup (A23-20), one testable
   `createMatch(setup)` (AS-1, AC-1, AC-2), and AK-5, AE-4 and AK-12, because one process now hosts
-  many `Simulation`s over shared content.
+  many `Simulation`s over shared content. The per-seat snapshot and its visibility filter in core
+  are built with the Duel rules (plan W10), before the server sends snapshots (plan MP-4).
 - **Watch.** Event-loop delay and tick-time percentiles on `/metrics` decide each scaling step;
   the arena geometry must be identical on client and server (a map hash in the match-start
-  message, or geometry sent by the server); the Node version is pinned and recorded.
+  message, or geometry sent by the server); the Node version is pinned, and recorded with each
+  replay once 03 §9 changes.
 
 ## Alternatives considered
 

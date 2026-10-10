@@ -23,8 +23,10 @@ related:
 
 Read this before planning or building anything that needs a server: Duel matchmaking, accounts,
 online stats, performance-based matchmaking, or "hundreds or thousands of concurrent players"
-([`INBOX.md`](../../INBOX.md), "Feedback", "NEW REQUIREMENTS"). It informs ADRs and decides
-nothing. The game is browser-only with no server and no accounts today (the runtime row of
+([`INBOX.md`](../../INBOX.md), "Feedback", "NEW REQUIREMENTS"). The course instructor set these
+requirements (the owner said in chat on 2026-10-10 that "our prof" set them) and the owner relayed
+them: planned now; must be implemented by the end of Sprint 3 (2026-11-13). It informs ADRs and
+decides nothing. The game is browser-only with no server and no accounts today (the runtime row of
 [`requirements/README.md`](../requirements/README.md), NFR-013 and NFR-033 in
 [`06-mvp-requirements.md`](../requirements/06-mvp-requirements.md),
 [ADR 0005](../decisions/0005-indexeddb-persistence.md)); a server, package or dependency needs an
@@ -94,7 +96,8 @@ the [Capacity estimate](#capacity-estimate).
    optional shadow `Simulation` that decides the result (lockstep). Core stays timer-free; the
    server loop owns time as `GameLoop` does ([03 §7](../architecture/03-game-model.md#7-the-fixed-timestep-contract)).
 2. **Scaling ladder; climb only when a metric breaks:** (a) every match on the main thread, until
-   tick work passes about 70% of a core or event-loop delay p99 passes about 10 ms; (b) a
+   tick work passes 70% of a core (input I4) or event-loop delay p99 passes 10 ms (both
+   `Recommendation:` values); (b) a
    `worker_threads` pool, one worker per core, sockets on the main thread, buffers transferred;
    (c) more processes or machines, the matchmaker returning a process address and a one-time join
    ticket, no sticky load balancer; (d) a container per match, beyond this course.
@@ -401,18 +404,23 @@ figures: a measured 0.3 ms would cut them threefold.
 3. Spike B (once `ws` is approved): RSS per connection and event-loop delay at 1,000, 2,000 and
    5,000 idle connections (replaces I5). Spike C: Glicko-2 tested against Glickman's example [5].
 
-**Sprint 3 (Nov 2 to 13): must exist.**
+**Sprint 3 (Nov 2 to 13): must exist.** Guest accounts, Glicko-2 and the database tables are
+`Recommendation:` items, not requirements: the owner said the database comes "in the future", and
+the [plan's re-cut](../plan/multiplayer-and-scalability-plan.md#5-proposed-re-cut-of-sprints-2-to-4)
+moves them after Sprint 3 unless he schedules them (plan §9, question 35).
 
 1. `packages/protocol`: a versioned message union (auth, presence, queue join and leave, match
    found, input, state, match end) with validators.
-2. `apps/server`: the gateway with the Q6 checklist, guest accounts, presence, the Duel queue with
-   widening, the in-process match host with its 30 Hz loop and drain, Glicko-2 at match end, the
-   four tables with a migration ladder, `/metrics`, logging.
+2. `apps/server`: the gateway with the Q6 checklist, guest accounts (`Recommendation:`),
+   presence, the Duel queue with widening, the in-process match host with its 30 Hz loop and
+   drain, Glicko-2 at match end (`Recommendation:`), the four tables with a migration ladder
+   (`Recommendation:`), `/metrics`, logging.
 3. Client: Duel in the menu, a queue screen, connection state, the guest token through
    `PersistenceController`, offline summary upload.
 4. Bot load test, measured capacity table and a rehearsal on the real host, before the Nov 20 freeze.
 5. Cut order if late: offline upload, then window widening (plain FIFO), then the worker pool.
-   Duel over the server, guest accounts, stored results and the load test stay.
+   Duel over the server and the load test stay; guest accounts and stored results stay if the
+   owner schedules them (above).
 
 **Later.** Account claiming and display-name rules; worker pool, then more processes with
 matchmaker-assigned addresses; PostgreSQL once a second process writes; Redis only with a second
@@ -424,7 +432,8 @@ verifying offline results by replay; Agones only beyond the course.
 
 1. May solo vs-bot matches stay client-side, counting only as "offline matches played"?
 2. Is Duel rated from the first match or after placement matches, and is the rating shown as a
-   number, as tiers, or hidden? Should streaks change anything beyond Glicko-2's volatility?
+   number, as tiers, or hidden? Must the factors you listed (streaks, online and offline match
+   counts) be explicit inputs to matchmaking, or may a rating such as Glicko-2 cover them?
 3. How long may a player wait before "match anyone"? Should a bot Duel be offered after a timeout?
 4. Is guest-only acceptable for Sprint 3? Later: password, GitHub or Google OAuth, or school email?
    Are display names free text, unique, moderated?
@@ -437,7 +446,7 @@ verifying offline results by replay; Agones only beyond the course.
 8. Do you approve `apps/server`, `packages/protocol` and `ws` (and a PostgreSQL client if needed)?
 9. Who builds the server in Sprint 3, alongside Phase 3?
 
-## Sources
+## Works cited
 
 All accessed 2026-10-09 or 2026-10-10. "Read through search excerpts" means the page was read from
 search-engine extracts, not fetched in full.

@@ -1,6 +1,6 @@
 ---
 title: 0017. Balanced asymmetric camp placement
-description: Proposed amendment to ADR 0009 for DEC-15 - forest camps are placed by the seeded RNG independently on each side of the centre line and are bound by per-class count parity instead of mirror symmetry, while everything else on the map stays mirrored - with the validation and test changes, the ordering after audit item A8-1 and the open questions; read this before changing camp placement, the mirror check or the map's golden hash.
+description: Proposed amendment to ADR 0009 for DEC-15 - forest camps are placed by the seeded RNG independently on each side of the centre line and are bound by per-class count parity instead of mirror symmetry, while everything else on the map stays mirrored and obstacles keep clear of the camps on both sides - with the failure rule for a band that cannot hold its camp, the validation and test changes, the ordering after audit item A8-1 and the open questions; read this before changing camp placement, obstacle scatter, the mirror check or the map's golden hash.
 audience: [humans, agents]
 status: draft
 owner: sholtzman
@@ -12,6 +12,7 @@ related:
   - 'docs/reviews/2026-10-10-new-requirements-impact.md'
   - 'docs/reference/game-design/13-owner-decisions-log.md'
   - 'docs/requirements/06-mvp-requirements.md'
+  - 'docs/plan/multiplayer-and-scalability-plan.md'
 ---
 
 # 0017. Balanced asymmetric camp placement
@@ -52,7 +53,8 @@ Proposed.
    until the owner answers open question 1.
 2. **The sides.** The vertical centre line, the axis `mirrorPoint` already uses, divides the map
    (DEC-15). A camp belongs to the side its position lies on; no camp sits on the line.
-3. **Class first, then position.** Per side and per corridor, the generator takes the corridor's
+3. **Class first, then position (the proposed reading; open question 5 asks the owner to choose
+   between it and class by rank).** Per side and per corridor, the generator takes the corridor's
    camp count (from `distributeCamps`, unchanged, so both sides get the same counts per corridor)
    and the class list for that count from content (`MapLayout.camps`, next to today's weight
    classes). It then draws each camp's position with the map's seeded `Rng` inside the depth band
@@ -68,6 +70,33 @@ Proposed.
    of the centre line equals the number east of it. Because per-corridor counts and class lists are
    the same on both sides, parity also holds per corridor by construction; whether the validator
    enforces the per-corridor form is open question 2.
+6. **Obstacles stay mirrored and keep clear of the camps on both sides.** `scatterObstacles`
+   (`map/obstacleScatter.ts`) samples only the west half and checks each sample against
+   `occupied`, then `MapBuilder.scatterObstacles` mirrors every kept obstacle east. Today every
+   east feature is the mirror of a west one, so a sample clear of the west features is also clear
+   once mirrored. With independent east camps that no longer holds: a sample clear of every west
+   feature can land, once mirrored, on or within `featureClearance` of an east camp. So each sample
+   is also checked at its mirror image against the east camps: `MapBuilder.scatterObstacles` adds
+   the mirror image (`mirrorPoint`, `map/symmetry.ts`) of every camp east of the centre line to
+   `occupied`. The scatter's draw count per sample does not change.
+7. **A band that cannot hold its camp fails loudly, never silently or forever.** A class's band is
+   empty when content gives it no depth range (a `minDepth` of 1 or more, since depth is 1 at the
+   corridor's middle), and it can be too thin in a given world for a camp to fit with its clearances
+   (narrow corridors at small world heights or many lanes). Three guards:
+   - **Layout validation.** `validateMapLayout` adds rules that every `minDepth` is below 1 and
+     that every class a corridor class list names exists in `weightClasses`, each with a test that
+     breaks it on purpose.
+   - **Bounded attempts.** Each camp gets at most a content number of position samples
+     (`MapLayout.camps`, a `Recommendation:` value marked `TUNE`), each consuming the same fixed
+     number of `Rng` draws whether kept or not. When the bound is reached the generator throws
+     `MapGenerationError` naming the side, the corridor index and the class (`definitionId`); it
+     never loops without bound or drops the camp.
+   - **A test across world heights.** For several lane counts and world heights, from the smallest
+     the generator accepts upwards, generation either places every camp inside its class's band or
+     throws that named error, and the default config and every shipped preset never throw.
+
+   Whether a rejected config is acceptable, or the generator should fall back for that corridor,
+   is open question 6.
 
 ### Validation and tests
 
@@ -85,9 +114,14 @@ Proposed.
     give different camp positions.
   - "mirrors every Light feature onto a Dark one" is unaffected: it checks team features, and camps
     are neutral.
+  - A new test: over several seeds and lane counts, no obstacle on either side lies within
+    `featureClearance` of any camp (point 6). It fails today's scatter once east camps are no
+    longer mirrored, so it is written first.
+  - The tests of point 7: the empty-band layout rules, the named error when attempts run out, and
+    the sweep across world heights.
   - The golden hash is re-pinned once, deliberately, in the PR that lands this change. Camps now
-    consume the `Rng` before `scatterObstacles`, and obstacles keep clear of camps, so obstacle
-    positions move for a given seed too.
+    consume the `Rng` before `scatterObstacles`, and obstacles keep clear of camps on both sides,
+    so obstacle positions move for a given seed too.
 - `campPlacement.test.ts` follows `placeCampSlots`, which gains the `Rng` and the class list.
 - `validateGameConfig`'s "`cornerCamps` must be even (corner camps are mirrored)" rule stays while
   corner camps stay mirrored.
@@ -127,18 +161,19 @@ decisions log (impact review §5.3, CW-1 to CW-3).
 
 1. **Keep mirroring and only fix the weights.** Meets "equal difficulty" but not "both sides are
    different". Rejected.
-2. **Random positions, class by depth rank within each corridor** (the impact review's CW-4
-   reading). Parity holds by construction, but a "heavy" camp may land beside a lane when every
-   draw falls near it, breaking "keep depth-based weights". Rejected in favour of point 3.
-3. **Random positions with no parity check.** Breaks "they must equate in terms of overall
+2. **Random positions with no parity check.** Breaks "they must equate in terms of overall
    difficulty". Rejected.
-4. **Parity of a summed difficulty score** (one heavy worth so many light). More placements become
+3. **Parity of a summed difficulty score** (one heavy worth so many light). More placements become
    possible, but the owner asked for per-class counts ("1 light on left means 1 light on right").
    Rejected.
 
+Class by depth rank within each corridor (the impact review's CW-4 reading) is not rejected: it is
+the other reading of the owner's words, and the choice is his (open question 5).
+
 ## Open questions for the owner
 
-Questions 1, 2 and 4 are also asked under DEC-15 in `INBOX.md`.
+All six are in the plan's question list (`docs/plan/multiplayer-and-scalability-plan.md` §9,
+DEC-15 group); 1, 2 and 4 are also asked under DEC-15 in `INBOX.md`.
 
 1. Does the random, parity-checked placement also apply to the corner camps (MVP-if-time, first in
    the cut order)?
@@ -147,3 +182,9 @@ Questions 1, 2 and 4 are also asked under DEC-15 in `INBOX.md`.
    when `campsPerSide` or `numLanes` changes)? The answer becomes the content class list.
 4. Only counts are matched: is it acceptable that one side's camps may sit nearer its lanes or
    Stronghold, or should the generator also bound that difference?
+5. Which reading of "define the classes by position in the corridor": class by depth band (point 3,
+   this draft's proposal), or class by depth rank within the corridor (impact review CW-4)? Band
+   keeps "deeper is heavier" absolute but can fail in a narrow corridor (point 7); rank always
+   places every camp, but a heavy camp may sit beside a lane when every draw falls there.
+6. When a corridor is too narrow for a class's band, is rejecting the config with a named error
+   (point 7) acceptable, or should the generator fall back, for example to rank, for that corridor?

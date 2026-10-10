@@ -22,24 +22,28 @@ related:
 ## Purpose
 
 Read this before planning, designing or building the Duel mode or any other networked play. The
-product owner's new requirement (`INBOX.md`, "Feedback" → "NEW REQUIREMENTS") asks for a 1v1
-online **Duel** by the end of Sprint 3 (2026-11-13): matchmaking against any waiting player, both
-Legends inside the closed Cathedral with the outer world deactivated, first to 10 kills with a
-match-point system, Legends reset after each kill while map damage persists, and ultimate
-cooldowns that persist through death while other abilities reset. A profile/stats database and
-skill-based matchmaking come later. Server scalability is a separate requirement researched in
-parallel; this report touches it only where the netcode model changes the server's load.
+course instructor set a new requirement (the owner said in chat on 2026-10-10 that "our prof" set
+it) and the owner relayed it (`INBOX.md`, "Feedback" → "NEW REQUIREMENTS"): a 1v1 online **Duel**,
+planned now; must be implemented by the end of Sprint 3 (2026-11-13). It asks for matchmaking
+against any waiting player, both Legends inside the closed Cathedral with the outer world
+deactivated, first to 10 kills with a match-point system, Legends reset after each kill while map
+damage persists, and ultimate cooldowns that persist through death while other abilities reset.
+A profile/stats database and skill-based matchmaking come later. Server scalability is a separate
+requirement researched in parallel; this report touches it only where the netcode model changes the
+server's load.
 
 Research informs decisions; it does not make them ([README](README.md)). External sources were
-accessed on 2026-10-09 or 2026-10-10; bracketed numbers refer to [Sources](#sources). Numbers
-marked **estimate** are back-of-envelope arithmetic, not measurements; the spike measures them.
+accessed on 2026-10-09 or 2026-10-10; bracketed numbers refer to [Works cited](#works-cited).
+Numbers marked **estimate** are back-of-envelope arithmetic, not measurements; the spike measures
+them.
 
 ## Summary and recommendation
 
-- **Recommendation: server-authoritative simulation.** A Node process runs the unchanged
-  `@eternalus/core` `Simulation` at 30 ticks/s; browsers send their per-tick `intent` `Command`
-  (03 §3) with a sequence number; the server stamps the `actorId` from the connection, enqueues it
-  for the next tick (rule 9 holds), and sends each client its own `Snapshot`. Clients draw the
+- **Recommendation: server-authoritative simulation.** A Node process runs the same core
+  `Simulation` (`@eternalus/core`), with no networking code in core, at 30 ticks/s; browsers send
+  their per-tick `intent` `Command` (03 §3) with a sequence number; the server stamps the `actorId`
+  from the connection, enqueues it for the next tick (rule 9 holds), and sends each client its own
+  per-seat `Snapshot`, which core filters for what that seat may see (§5). Clients draw the
   opponent interpolated between snapshots and, as a second step, predict their own Legend's
   movement with server reconciliation [8][10][13][14].
 - **Why it fits this codebase.** Only the server's engine decides outcomes, so the single-machine
@@ -107,8 +111,11 @@ command (03 §3) is already the per-tick network input. Lockstep and rollback wo
 `Simulation.hash()` every N ticks as the desync detector; server authority uses it for
 server-side replay checkpoints and tests (15 §7). `Simulation` today exposes `tick`,
 `enqueueCommand`, `step`, `snapshot`, `on` and `hash`, with no state save/restore, which only
-rollback needs. Server authority needs no new core API for a first version: actor stamping,
-command filtering and per-client snapshot filtering sit at the server boundary.
+rollback needs. Server authority needs one new core capability for a first version: a snapshot per
+seat that leaves out what that seat may not see (Veil, reveals), provided by core, for example as a
+viewer argument to `snapshot()` or a filter strategy in core, because only core knows `Vision` and
+`snapshot()` has no viewer today (03 §6). Actor stamping and command filtering sit at the server
+boundary.
 
 ## 2. Cross-environment determinism
 
@@ -252,9 +259,10 @@ to study then.
 - **Trust boundary.** The server sets `actorId` from the connection and drops `dev-*` commands
   (03 §3 already forwards them only when the developer menu is on). Handlers must reject, never
   throw: AK-4 shows a malformed `dev-spawn` throwing out of `step()`.
-- **Per-client snapshots.** `Snapshot.player` is the HUD of "the human Legend" (03 §5), so the
-  server builds one snapshot per connection, and it omits an invisible opponent unless
-  `Vision.isRevealedAt` says the opponent is revealed (the VALORANT pattern [18]).
+- **Per-seat snapshots.** `Snapshot.player` is the HUD of "the human Legend" (03 §5), so core
+  builds one snapshot per seat, on the server's request, and omits an invisible opponent unless
+  `Vision.isRevealedAt` says the opponent is revealed (the VALORANT pattern [18]). The filter is
+  core's (§1), so the server only sends what core returns.
 - **Matchmaking.** Sprint 3: a FIFO queue that pairs the first two waiting players, which is the
   owner's wording. Later, with the database, a rating such as Glicko-2 (public domain [33]) can
   drive skill-based pairing.
@@ -270,7 +278,7 @@ to study then.
 | Speed and state hacks           | Caught as desync, not prevented from reading state [16]  | Same; peer-to-peer has no referee for a disputed desync          | Server simulates; clients only send inputs [13]                              |
 | Desync risk across browsers     | High: needs bit-exact maths [1][3][5]                    | High, plus save/restore bugs [7]                                 | None by design; mispredictions are corrected [10][13]                        |
 | Infrastructure                  | Relay or signalling server                               | Signalling server, plus TURN for some peers [25]                 | A simulation server per match                                                |
-| New core work                   | Math ports, lint amendment, cross-browser hash CI        | All of lockstep's, plus `GameState` save/restore and AK-6        | AK-4, AK-6, per-client snapshot filter; prediction later                     |
+| New core work                   | Math ports, lint amendment, cross-browser hash CI        | All of lockstep's, plus `GameState` save/restore and AK-6        | AK-4, AK-6, per-seat snapshot filter in core; prediction later               |
 | Cost for 5 students in ~4 weeks | Medium-high (judgement)                                  | High (judgement)                                                 | Medium; low-medium without prediction (judgement)                            |
 | 10v10 humans with hordes        | Bandwidth fine; delay, fog leaks, 20-way determinism bad | Infeasible re-simulation cost (§4)                               | Works with deltas, relevance and priority [8][9][12]                         |
 
@@ -301,7 +309,9 @@ numbers and a recommendation, not production code.
    second each way, round-trip time on the LAN and to a remote host, and feel with 0, 50, 100 and
    150 ms of delay injected on the server.
 3. **Movement prediction (days 4–6).** Predict and reconcile the local Legend's movement
-   [13]; count corrections per minute and their size.
+   [13]; count corrections per minute and their size. `Recommendation:` go for Sprint 3 if
+   movement feels unplayable without prediction at 100 ms of injected delay and the prototype
+   corrects rarely; otherwise prediction is post-MVP.
 4. **Cross-engine probe (one day, in parallel).** One page that hashes a fixed set of `sin`,
    `cos`, `atan2`, `exp`, `pow`, `hypot` and `**` results and the Cathedral's generated geometry,
    run in Chrome, Firefox, Safari and Node. Decides whether clients may generate the map
@@ -338,7 +348,7 @@ and match-point HUD.
 12. Does Sprint 3's Phase 3 scope move to make room for Duel?
 13. Amend ADR 0012 to ban `Math.hypot` and `**` (AK-3)? Needed if clients generate the arena.
 
-## Sources
+## Works cited
 
 1. Ecma TC39, ECMA-262 (ECMAScript 2027 draft), §21.3.2 "Function Properties of the Math Object" (note; `Math.hypot`, `sin`, `cos`, `atan2`, `exp`, `pow`, `sqrt`). https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-function-properties-of-the-math-object (accessed 2026-10-09)
 2. Ecma TC39, ECMA-262 (ECMAScript 2027 draft), §6.1.6.1 "The Number Type" (`Number::exponentiate`, `Number::add`, `Number::multiply`, `Number::toString` notes). https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-numeric-types-number-exponentiate (accessed 2026-10-09)

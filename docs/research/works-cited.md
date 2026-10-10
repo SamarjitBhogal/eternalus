@@ -19,8 +19,8 @@ related:
 
 Purpose: Read this when a doc cites an external fact and you want the source, when you are
 checking that a claim is still true, or when you add research and must merge its bibliography.
-This list merges the "Works cited" sections of the three Phase 0 reports and the "Sources"
-sections of the two 2026-10-10 reports in this folder, removes the duplicates (Nystrom's
+This list merges the "Works cited" sections of the three Phase 0 reports and of the two
+2026-10-10 reports in this folder, removes the duplicates (Nystrom's
 "Command" and Hoskinson's "Determinism in League of Legends: Introduction", each cited from two
 URLs; Fiedler's "Deterministic Lockstep", cited by Architecture and Netcode; Fiedler's "Snapshot
 Compression" and the Colyseus README, each cited by Netcode and Scalability), and groups the
