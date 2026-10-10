@@ -4,7 +4,7 @@ description: The class abilities, combos, ultimates and their charge rules, the 
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-10
 tags: [reference, game-design, abilities, ultimates, progression, aether]
 paths: ['packages/core/src/content/abilities/**', 'packages/core/src/abilities/**']
 related:
@@ -26,20 +26,29 @@ Each class has **3 abilities plus an ultimate**. Abilities are class-specific an
 between classes. Some abilities have **varieties** chosen in the loadout (`08-loadout.md`).
 Grasp was moved to the default interactives (`01-classes-and-subclasses.md`).
 
-| Class    | Ability      | Description                                                                                                                                                                   | Varieties (loadout configurable)                                                                                                                                                   | Status       |
-| -------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Warrior  | Veil         | Become invisible for N seconds.                                                                                                                                               | —                                                                                                                                                                                  | **MVP**      |
-| Warrior  | Blade Runner | Dash forward at incredible speed, dealing damage to everyone in your path.                                                                                                    | **Physical**: knocks back enemies in your way and stuns anyone at the end of your path. **Magical**: leaves a path of flame in your wake and burns anyone at the end of your path. | **MVP**      |
-| Sentinel | Rip & Tear   | "Low-health enemies should back up." (no further description; open question "Describe Slam and Rip & Tear")                                                                   | —                                                                                                                                                                                  | **MVP**      |
-| Sentinel | Slam         | Slam your arms down on the ground creating a shockwave, inducing knockback and knockup, and destroying the ground/structures near you.                                        | —                                                                                                                                                                                  | **MVP**      |
-| Magus    | Imbue        | Your weapons do X% more damage, and attack speed increases by N%.                                                                                                             | **Damage**: full buff, applied to you alone. **Support**: buff reduced; provides a lesser buff to nearby allies.                                                                   | **MVP**      |
-| Magus    | Shockwave    | Sends out a shockwave of light that blasts enemies back and applies the "concussion" debuff.                                                                                  | —                                                                                                                                                                                  | **MVP**      |
-| Flying   | Eagle Eye    | Activate for thermal vision and target marking for N seconds. When the ability ends, targets stay marked for N more seconds. Marked targets are visible to all nearby allies. | —                                                                                                                                                                                  | **post-MVP** |
+| Class    | Ability        | Description                                                                                                                                                                                               | Varieties (loadout configurable)                                                                                                                                                   | Status           |
+| -------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| Warrior  | Veil           | Become invisible for N seconds.                                                                                                                                                                           | —                                                                                                                                                                                  | **MVP**          |
+| Warrior  | Blade Runner   | Dash forward at incredible speed, dealing damage to everyone in your path.                                                                                                                                | **Physical**: knocks back enemies in your way and stuns anyone at the end of your path. **Magical**: leaves a path of flame in your wake and burns anyone at the end of your path. | **MVP**          |
+| Warrior  | Hamstring      | Throw a short blade; the first enemy hit takes damage, bleeds and is slowed. Approved from `more-abilities.md` §2 (DEC-11).                                                                               | **Serrated**, **Hooked** (`more-abilities.md` §2)                                                                                                                                  | **MVP** (DEC-11) |
+| Warrior  | Fan of Sorrows | A cone of five blades; each damages the first enemy it hits. Approved from `more-abilities.md` §2 (DEC-11).                                                                                               | **Steel** (physical), **Hex** (magical) (`more-abilities.md` §2)                                                                                                                   | **MVP** (DEC-11) |
+| Sentinel | Rip & Tear     | "Low-health enemies should back up." (no further description; open question "Describe Slam and Rip & Tear")                                                                                               | —                                                                                                                                                                                  | **MVP**          |
+| Sentinel | Slam           | Slam your arms down on the ground creating a shockwave, inducing knockback and knockup, and destroying the ground/structures near you.                                                                    | —                                                                                                                                                                                  | **MVP**          |
+| Sentinel | Shield Wall    | Raise a temporary stone rampart that blocks movement and projectiles for both teams. Approved from `more-abilities.md` §3 (DEC-11).                                                                       | **Bulwark**, **Rampart** (`more-abilities.md` §3)                                                                                                                                  | **MVP** (DEC-11) |
+| Sentinel | Sunder         | Smash the ground in a line: enemies on it are rooted and damaged, structures take more, and an enemy Sanctuary on the line is shattered. Approved from `more-abilities.md` §3 (DEC-11).                   | **Fissure**, **Upheaval** (`more-abilities.md` §3)                                                                                                                                 | **MVP** (DEC-11) |
+| Sentinel | Colossus Roar  | Roar: nearby enemies are **feared** (what fear does is open, DEC-11), and you take less damage for a short time. Approved from `more-abilities.md` §3 (DEC-11), with fear replacing the proposal's taunt. | **Dread**, **Fortitude** (`more-abilities.md` §3)                                                                                                                                  | **MVP** (DEC-11) |
+| Magus    | Imbue          | Your weapons do X% more damage, and attack speed increases by N%.                                                                                                                                         | **Damage**: full buff, applied to you alone. **Support**: buff reduced; provides a lesser buff to nearby allies.                                                                   | **MVP**          |
+| Magus    | Shockwave      | Sends out a shockwave of light that blasts enemies back and applies the "concussion" debuff.                                                                                                              | —                                                                                                                                                                                  | **MVP**          |
+| Magus    | Sanctuary      | Consecrate a circle for a short time: allies inside heal. An enemy Sentinel's Sunder shatters it. Approved from `more-abilities.md` §4 (DEC-11).                                                          | **Sanctuary** (heal), **Consecration** (damage) (`more-abilities.md` §4)                                                                                                           | **MVP** (DEC-11) |
+| Magus    | Aether Lance   | A piercing bolt: every enemy on the line takes magical damage; the first target is marked. Approved from `more-abilities.md` §4 (DEC-11).                                                                 | **Piercing**, **Bursting** (`more-abilities.md` §4)                                                                                                                                | **MVP** (DEC-11) |
+| Flying   | Eagle Eye      | Activate for thermal vision and target marking for N seconds. When the ability ends, targets stay marked for N more seconds. Marked targets are visible to all nearby allies.                             | —                                                                                                                                                                                  | **post-MVP**     |
 
 Counting: the source gives Warrior 2, Sentinel 2, Magus 2 and Flying 1 named abilities against
-the "3 abilities per class" rule, so each MVP class is one ability short. Proposals live in
-`../suggestions/more-abilities.md`; the requirements doc's MVP asks only for "some ability
-options", so two per class is enough to ship the MVP loadout.
+the "3 abilities per class" rule. The owner approved more from `../suggestions/more-abilities.md`
+for the MVP (DEC-11, 2026-10-10, `13-owner-decisions-log.md`), so Warrior now has 4, Sentinel 5 and
+Magus 4 for 3 slots. **Open (owner):** whether that is a loadout pool (pick 3) or a change to the
+"3 abilities + 1 ultimate" rule, and whether Sentinel keeps Rip & Tear. Costs, cooldowns and
+magnitudes of the newly approved abilities are TBD (owner).
 
 ### Combos and interactions
 
@@ -48,6 +57,9 @@ options", so two per class is enough to ship the MVP loadout.
 - **Death Ray lock**: two opposing Death Rays lock together like the Harry Potter graveyard duel.
   Do not get close to the middle. Both sides get up to N seconds of extended ult time as long as
   they stay connected. "It is cool and rare." **MVP-if-time**.
+- **Sunder shatters Sanctuary**: an enemy Sentinel's Sunder shatters a Magus's Sanctuary
+  (DEC-11). **MVP** (approved with the two abilities; architecture 05 §17 still lists combos as
+  MVP-if-time, for the owner to reconcile).
 - **Abilities cast before an ultimate still apply during it.** Example: Veil then Fury keeps the
   Warrior invisible during Fury until Veil expires. **MVP** (it falls out of status effects
   being independent timers).
@@ -57,8 +69,11 @@ options", so two per class is enough to ship the MVP loadout.
 concussion (Shockwave, Wuuthrad heavy attack, Lightbringer, Nova), stun, blind, bleed (Raptor
 Talons), burn (Blade Runner magical, Firestorm), knockback and knockup (Slam, Shockwave, Fury,
 Nova), crushed (Grab), marked (Eagle Eye), invisible (Veil), enraged (minions), pulled (Nova
-collapse), protections reduced (the unnamed bow, stacking). Each is a `StatusEffectDefinition`
-in content applied through the `StatusEffectSystem`.
+collapse), protections reduced (the unnamed bow, stacking). Added by owner decisions: **feared**
+(Colossus Roar, DEC-11; what it does is open) and **insanity** (volatile corner-camp crystals,
+DEC-12; a description and an icon only, effect TBD). Each is a `StatusEffectDefinition` in content
+applied through the `StatusEffectSystem`; proposed semantics are in
+`../suggestions/more-abilities.md` §7.
 
 ## Ultimates
 
@@ -74,21 +89,30 @@ Rules from the game doc:
   in the MVP the class is fixed for the match, so this rule is **post-MVP**).
 - The ultimate is available from the start as a charging bar and upgrades to **Ultimate Plus** at
   higher levels (**MVP-if-time**; level thresholds `TUNE`).
+- **Duel mode (DEC-36):** the ultimate's cooldown persists through death, while the other
+  abilities reset to fully cooled down on death. **Open (owner):** this conflicts with the charge
+  meter above (no cooldown; loses N% on death). Is the Duel ultimate a time cooldown, or the meter
+  with no loss on death? Does the reset on death also apply in the 10v10 mode?
 
 | Class    | Ultimate                  | Description                                                                                                                                                                                                                                                                                                                                                                                          | Status       |
 | -------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | Magus    | Death Ray (working title) | A Kamehameha. Very long distance. Lasts N seconds.                                                                                                                                                                                                                                                                                                                                                   | **MVP**      |
 | Magus    | Nova                      | Sends out a shockwave that stuns enemies caught in it, with minor knock-back. At its largest point it collapses inward, pulling enemies toward you for N seconds, before a larger explosion knocks them back and inflicts concussion. The closer enemies are when the explosion hits, the more damage Nova does. Enemies within X metres who are looking at you are blinded by the second explosion. | **MVP**      |
+| Magus    | Last Rites                | Revive intact allied Legend corpses nearby with a short negation buff; if there are none, heal nearby allies. Approved alternate ultimate from `more-abilities.md` §4 (DEC-11).                                                                                                                                                                                                                      | **MVP**      |
 | Sentinel | Berserk                   | Suddenly grow in size, power, speed, and durability (Hulk / Cú Chulainn). Lasts N seconds.                                                                                                                                                                                                                                                                                                           | **MVP**      |
 | Sentinel | Meteor Fall               | Leap into the air and come down hard: massive AoE damage, stun, etc. (Bacchus).                                                                                                                                                                                                                                                                                                                      | **MVP**      |
+| Sentinel | Avalanche                 | Reach Wrecking Run full speed at once and become unstoppable for a short time, knocking back and damaging every unit in your path. Approved alternate ultimate from `more-abilities.md` §3 (DEC-11).                                                                                                                                                                                                 | **MVP**      |
 | Warrior  | Fury                      | Imbue yourself with the light of [god name]. Attack speed is over-maxed (N00%) for N seconds. Press [button] to dash instantly in any direction (joystick or WASD to guide). Attacks do Nx damage during Fury and apply knock-back.                                                                                                                                                                  | **MVP**      |
+| Warrior  | Eclipse                   | A dome of dusk: allies inside are invisible, enemies inside are blinded. Approved alternate ultimate from `more-abilities.md` §2 (DEC-11).                                                                                                                                                                                                                                                           | **MVP**      |
 | Flying   | Firestorm                 | An AoE attack that sets alight the land beneath you. Higher up means a wider area and less damage (up to X max height); closer to the ground means a smaller area and higher damage. Basic damage fall-off, like shotgun birdshot but larger.                                                                                                                                                        | **post-MVP** |
 
-Magus and Sentinel each have two ultimates listed and Warrior one. With one ultimate per class
-in the MVP, the second is a loadout choice (`08-loadout.md`: "changing abilities or ultimate
-resets cooldown"), which the source supports ("Loadout can be adjusted in game"). The god
-invoked by Fury, the Death Ray's final name and Fury's dash button are naming to-dos
-(`12-open-questions.md`).
+Magus and Sentinel each have two ultimates listed and Warrior one; DEC-11 adds one alternate
+ultimate per class (Eclipse, Avalanche, Last Rites), so Warrior has two and Sentinel and Magus
+three. **Open (owner):** do Meteor Fall and Nova stay MVP next to the alternates? With one
+ultimate per class equipped in the MVP, the others are a loadout choice (`08-loadout.md`:
+"changing abilities or ultimate resets cooldown"), which the source supports ("Loadout can be
+adjusted in game"). The god invoked by Fury, the Death Ray's final name and Fury's dash button are
+naming to-dos (`12-open-questions.md`).
 
 ## Ability progression (no item shop)
 

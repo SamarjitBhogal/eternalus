@@ -4,7 +4,7 @@ description: The four Legend classes, their post-MVP sub-classes, class default 
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-10
 tags: [reference, game-design, legends, classes]
 paths: ['packages/core/src/content/legends/**', 'packages/core/src/entities/**']
 related:
@@ -43,6 +43,11 @@ Notes:
   explicit, but no code, content or abilities are built for it in the MVP. Its abilities (Eagle
   Eye, Grasp, Firestorm) and sub-classes are therefore **post-MVP** by derivation even though the
   PDF did not highlight those rows.
+- Each MVP class's abilities and ultimates, including the ones the owner approved on 2026-10-10
+  (DEC-11: Warrior Hamstring, Fan of Sorrows, Eclipse; Sentinel Shield Wall, Sunder, Colossus
+  Roar, Avalanche; Magus Sanctuary, Aether Lance, Last Rites), are listed in
+  `06-abilities-and-progression.md`. The approvals exceed the "3 abilities + ultimate" slots of
+  the `Legend` contract below; whether that is a loadout pool or a rule change is open (owner).
 
 ## Sub-classes (names pending) — post-MVP
 
