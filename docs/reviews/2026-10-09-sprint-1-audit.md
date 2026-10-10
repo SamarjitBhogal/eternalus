@@ -39,7 +39,40 @@ _Review in progress._
 
 ## PR #23 — escort minions prototype (`feat/minion-follow-prototype`)
 
-_Review in progress._
+**Review:** an independent critic reviewed it after the merge (`8fe091f`), against the docs at `8fe091f^1`. In a fresh clone, `npm run check` gave `EXIT=0` (core 459/459, client 292/292).
+
+**What conforms:**
+
+- AI acts only through `Command`s applied on the next tick (rule 9), and replays do not double them.
+- `ai/` imports stay inside its allowed list, and there is no `switch (kind)`.
+- The new core code is deterministic.
+- No guardrail was weakened.
+- The prototype code carries 18 `PROTOTYPE(PROTO-01)` markers.
+
+**Verdict:** request changes.
+
+- [ ] **A23-1** (blocker before phase 1 → `main`) `INBOX.md` PROTO-01 is still open, and the decisions log has no entry for it. The owner's ruling is needed on three things: escort minions instead of lanes, speed 5.4 against `balancing.md`'s 3.5 (and mass 0.5), and Phase 3 code living in phase 1. Record the ruling, or gate or remove the escort before the phase merges.
+- [ ] **A23-2** (major) `packages/core/src/ai/Controller.types.ts:11-13` and `content/units/units.types.ts:26-27`: the `Controller` contract differs from 11 §2 (`id: string` instead of `ControllerId`, plus a `cadenceTicks` member), and `controller?: string` has no prototype marker either. Phase 3 builds on this contract. Either mark both and list them in PROTO-01, or align them now: take cadence from the AI profile in content (11 §6) and add a `ControllerId` union.
+- [ ] **A23-3** (major) `docs/plan/phase-1-simulation-kernel-and-world.md:115,194` (commit `b12aa0f`): two ticked items are not met. `DeathSystem` is not yet "the only removal path" (see A13-1) and has no "removal without a cause does not compile" test. `MinimapView` draws no unit dots and has no lower cadence. Untick both or annotate them "done except …", and append a PROGRESS correction.
+- [ ] **A23-4** (major) Stale governing docs:
+  - `docs/architecture/11-game-ai.md:24` still says "No AI code exists yet" and has no Implementation status section listing the PROTO-01 stand-ins. Its `paths:` frontmatter matches `ai/**`, so agents working there are misled.
+  - 04 §13 still says "`light-mob` (the training dummy only)".
+  - The "Today" list in `packages/core/AGENTS.md` leaves out `ai/` and `content/ai/`.
+
+  These are architecture-doc and AGENTS.md edits, so they need the owner's approval.
+
+- [ ] **A23-5** (minor) `packages/core/src/ai/FollowLeaderController.ts:46-83`: the controller does its own steering (seek, plus separation over a full scan). 11 §1 says "controllers decide _what_, systems decide _how_", and 10 §9 puts separation in `PathingSystem`. Add this to PROTO-01's replacement table.
+- [ ] **A23-6** (minor) `packages/core/src/ai/AiSystem.ts:40-51`: decisions are staggered by store position, so removing any entity shifts every later brain's phase. Use `fnv1a(entityId) % cadence` and add a test.
+- [ ] **A23-7** (minor) `packages/core/src/systems/DefaultSystemPipeline.ts:9-19`: the TSDoc's "the one place a system is added" is no longer true, line 18 is garbled, and no test checks that the `decide` systems run before `MovementSystem`.
+- [ ] **A23-8** (minor) `apps/client/src/game/Match.ts:115,211-236` and `Match.constants.ts:40-45`: the escort's count and radius are gameplay numbers in the client, and `Match` issues `dev-spawn` in every match, although 03 §3 forwards `dev-*` commands only with the developer menu. Gate the escort behind the dev flag, or move the numbers into core content.
+- [ ] **A23-9** (minor) `packages/core/src/Simulation.ts:9,66`: the follow-leader profile is a module import that bypasses `options.content` (03 §6). Load it through the injected content and validate it.
+- [ ] **A23-10** (minor) `packages/core/src/ai/AiSystem.ts:47-50`: an unknown controller id throws in the middle of a step. Check every definition's `controller` when `Simulation` is constructed.
+- [ ] **A23-11** (minor) `docs/plan/PROGRESS.md`: merge `c563c01` rewrote an entry's date (2026-10-09 → 2026-10-08), so the appended correction now contradicts it. Append a note about the rewrite; do not edit the entry again (ADR 0011).
+- [ ] **A23-12** (minor) `packages/core/src/content/mobs/lightMinion.ts:13`: a prototype with off-reference stats uses the canonical id `light-minion`, and ids are never renamed once used. Rename it to a prototype id before replays or saves use it, or get the owner's OK.
+- [ ] **A23-13** (minor) `packages/core/src/ai/`: the determinism check compares only the final hash of two runs in one process. Add a recorded escort replay fixture with checkpoints and a command-log check (11 §8).
+- [ ] **A23-14** (nit) `apps/client/src/game/views/MobView.ts` copies `LegendView` line for line. Use one `OutlinedEntityView(color, scale)` registered twice.
+- [ ] **A23-15** (nit) `packages/core/src/ai/AiSystem.ts:31`: a duplicate controller id silently overwrites the first. Throw, as the other registries do.
+- [ ] **A23-16** (nit) Comment lines longer than 100 columns: `DefaultSystemPipeline.ts:18`, `lightMinion.ts:21`, `Controller.types.ts:12`, `EntityStore.ts:121`.
 
 ## PR #24 — settings and keybindings (`feat/settings-keybindings`)
 
@@ -68,7 +101,17 @@ Interim code marked "replace when session X lands". Those sessions have now land
 
 ## Proposed design changes (owner sign-off needed)
 
-_None yet._
+Decisions and doc conflicts the reviews surfaced. None of these may be changed in the design docs before the owner rules.
+
+- [ ] **A23-17** The `PROTOTYPE(<id>) TEMPORARY` marker convention. It is used 18 times and documented nowhere. Document it in `AGENTS.md` / `CONTRIBUTING.md`, or fold it into `ponytail:`.
+- [ ] **A23-18** Two import-boundary conflicts:
+  - `packages/core/AGENTS.md:32` forbids `systems/` → `ai/`, but 02 §2 allows it (and 11 §1 calls `AiSystem` a system).
+  - `packages/core/AGENTS.md:33` and 11 §1 forbid `ai/` → `content/` types, but 02 §2 allows them.
+
+  Pick one per pair, through an ADR if a boundary changes.
+
+- [ ] **A23-19** 11 §5–§6 and the phase 3 plan (line 99) stagger and order AI by numeric `entityId`, but 03 §2 makes ids strings that are never sorted as numbers. Name the stagger key (a hash of the id) and the order (store order).
+- [ ] **A23-20** `Match` spawns the player, and now the escort, with `dev-spawn` without the developer menu (03 §3). Record that as an Implementation status note in 03 §12 or 08, or give match setup a proper non-dev command.
 
 ## Not yet audited
 
