@@ -38,7 +38,12 @@ async function readThrough(stored: unknown) {
 describe('readOrQuarantine', () => {
   it('returns a valid record and null for a missing one, quarantining nothing', async () => {
     const valid = await readThrough({ profileId: 'p1', count: 3 });
-    expect(valid).toMatchObject({ result: { count: 3 }, quarantined: undefined, warnings: [] });
+    expect(valid).toEqual({
+      result: { count: 3 },
+      live: { profileId: 'p1', count: 3 },
+      quarantined: undefined,
+      warnings: [],
+    });
     const missing = await readThrough(undefined);
     expect(missing).toMatchObject({ result: null, quarantined: undefined, warnings: [] });
   });
