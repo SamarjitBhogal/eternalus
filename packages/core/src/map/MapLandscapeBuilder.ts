@@ -113,7 +113,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
   private ground(): void {
     for (let y: number = S.margin; y < this.map.height - S.margin; y += S.gridStep) {
       for (let x: number = S.margin; x < this.map.width - S.margin; x += S.gridStep) {
-        const n = (Math.imul(x + 17, 73856093) ^ Math.imul(y + 29, 19349663)) >>> 0;
+        const n = this.variation(x, y);
         if (this.isClear({ x, y }) && n % 3 === 0)
           this.blob(
             `ground-fleck-${String(x)}-${String(y)}`,

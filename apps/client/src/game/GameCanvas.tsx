@@ -1,11 +1,15 @@
 import { type ReactElement, useRef } from 'react';
-import styles from './GameCanvas.module.css';
-import { useMapCanvas } from './useMapCanvas';
 
-/** The explorable battlefield preview and its presentation-only navigation controls. */
+import styles from './GameCanvas.module.css';
+import { useMatch } from './useMatch';
+
+/**
+ * The canvas the match renders into, with the map's navigation controls and legend. It owns the
+ * match for as long as it is mounted.
+ */
 export function GameCanvas(): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { hasOpenRoofs, overview } = useMapCanvas(canvasRef);
+  const { hasOpenRoofs, overview } = useMatch(canvasRef);
   return (
     <section className={styles.explorer} aria-label="Eternalus map explorer">
       <canvas
@@ -15,7 +19,7 @@ export function GameCanvas(): ReactElement {
       />
       <div className={styles.toolbar}>
         <span>
-          Drag to explore <b>·</b> Scroll to zoom <b>·</b> Click a building to toggle its roof
+          Drag to explore <b>Â·</b> Scroll to zoom <b>Â·</b> Click a building to toggle its roof
         </span>
         <button type="button" onClick={overview}>
           {hasOpenRoofs ? 'Restore roofs & overview' : 'World overview'}

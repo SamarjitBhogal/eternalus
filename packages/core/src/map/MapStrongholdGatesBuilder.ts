@@ -7,7 +7,8 @@ export class MapStrongholdGatesBuilder extends MapDecorationBuilder {
   /** Derives all three entrances from the existing lane geometry. */
   public build(x: number, id: string, lanes: readonly MapLane[]): readonly MapDecoration[] {
     for (const lane of lanes) {
-      const path = x < 800 ? lane.path : [...lane.path].reverse();
+      const lanePath = x < 800 ? lane.path : [...lane.path].reverse();
+      const path = [{ x, y: 450 }, ...lanePath];
       for (let i = 1; i < path.length; i++) {
         const a = path[i - 1];
         const b = path[i];

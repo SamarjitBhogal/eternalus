@@ -1,26 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { MAP_1 } from '../content/maps/map1';
-import { MAP_1_SCALE, CAMP_POSITIONS } from '../content/maps/map1Scenery';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MapGenerator } from './MapGenerator';
+const MAP_1_SCALE = 1;
+const MAP_1 = new MapGenerator().generate(createDefaultGameConfig(), 1);
 import { MapLayout } from './MapLayout';
 
 describe('MapLayout', () => {
   it('opens permanent gates on all lanes and leads the throne carpet to the middle gate', () => {
     const map = new MapLayout().build(MAP_1);
     for (const team of ['light', 'dark']) {
-      const center = team === 'light' ? 142 : 1458;
+      const center = team === 'light' ? 130 : 1470;
       for (const lane of map.lanes) {
-        const gate = map.scenery?.find((p) => p.id === `${team}-capital-${lane.id}-gate-bridge`);
+        const gate = map.scenery?.find((p) => p.id === `${team}-stronghold-${lane.id}-gate-bridge`);
         expect(gate).toBeDefined();
         expect(gate?.visibility).toBeUndefined();
         const points = gate?.shape ?? [];
         const inner = {
-          x: ((points[0]?.x ?? 0) + (points[3]?.x ?? 0)) / 16,
-          y: ((points[0]?.y ?? 0) + (points[3]?.y ?? 0)) / 16,
+          x: ((points[0]?.x ?? 0) + (points[3]?.x ?? 0)) / 2,
+          y: ((points[0]?.y ?? 0) + (points[3]?.y ?? 0)) / 2,
         };
         expect(((inner.x - center) / 90) ** 2 + ((inner.y - 450) / 101) ** 2).toBeLessThan(1);
         const outer = {
-          x: ((points[1]?.x ?? 0) + (points[2]?.x ?? 0)) / 16,
-          y: ((points[1]?.y ?? 0) + (points[2]?.y ?? 0)) / 16,
+          x: ((points[1]?.x ?? 0) + (points[2]?.x ?? 0)) / 2,
+          y: ((points[1]?.y ?? 0) + (points[2]?.y ?? 0)) / 2,
         };
         expect(((outer.x - center) / 110) ** 2 + ((outer.y - 450) / 125) ** 2).toBeGreaterThan(1);
       }
@@ -68,7 +70,7 @@ describe('MapLayout', () => {
           piece.id === 'snow-region' || piece.id === 'ash-region' || piece.id === 'city-plaza',
       ),
     ).toBe(false);
-    for (const id of ['light-capital', 'dark-capital']) {
+    for (const id of ['light-stronghold', 'dark-stronghold']) {
       const court = scenery.find((piece) => piece.id === `${id}-stronghold-wall`);
       expect(court).toBeDefined();
       expect(court?.shape).toHaveLength(64);
@@ -76,15 +78,15 @@ describe('MapLayout', () => {
       expect(
         Math.max(...(court?.shape.map((point) => point.x) ?? [])) -
           Math.min(...(court?.shape.map((point) => point.x) ?? [])),
-      ).toBe(1760);
+      ).toBe(220);
     }
     expect(map.buildings).toHaveLength(3);
     expect(scenery.some((piece) => piece.id === 'cathedral-north-door')).toBe(true);
   });
-  it('enlarges the battlefield uniformly and preserves all original feature anchors', () => {
+  it('preserves all generated geometry while adding presentation', () => {
     const map = new MapLayout().build(MAP_1);
-    expect(map.width).toBe(12800);
-    expect(map.height).toBe(7200);
+    expect(map.width).toBe(1600);
+    expect(map.height).toBe(900);
     for (const original of MAP_1.features) {
       expect(map.features.find((feature) => feature.id === original.id)).toEqual({
         ...original,
@@ -92,24 +94,27 @@ describe('MapLayout', () => {
       });
     }
     expect(map.lanes.map((lane) => lane.id)).toEqual(MAP_1.lanes.map((lane) => lane.id));
-    expect(map.lanes[0]?.path[0]).toEqual({ x: 680, y: 3600 });
+    expect(map.lanes).toEqual(MAP_1.lanes);
+    expect(map.terrain).toEqual(MAP_1.terrain);
   });
 
-  it('creates repeatable scenery, twelve neutral camps and distinct capture landmarks', () => {
+  it('creates repeatable scenery, generated neutral camps and distinct capture landmarks', () => {
     const first = new MapLayout().build(MAP_1);
     const second = new MapLayout().build(MAP_1);
     expect(first).toEqual(second);
     expect(first.features.filter((feature) => feature.kind === 'camp')).toHaveLength(
-      CAMP_POSITIONS.length,
+      MAP_1.features.filter((f) => f.kind === 'camp').length,
     );
     expect(
       first.features
         .filter((feature) => feature.kind === 'camp')
-        .every((feature) => feature.owner === 'neutral'),
+        .every((feature) => feature.team === 'neutral'),
     ).toBe(true);
     expect(
-      first.scenery?.find((piece) => piece.id === 'north-crossing-fort-keep-roof')?.color,
-    ).not.toBe(first.scenery?.find((piece) => piece.id === 'south-crossing-fort-keep-roof')?.color);
+      first.scenery?.find((piece) => piece.id === 'capture-point-lane-0-fort-keep-roof')?.color,
+    ).not.toBe(
+      first.scenery?.find((piece) => piece.id === 'capture-point-lane-2-fort-keep-roof')?.color,
+    );
     expect(first.scenery?.some((piece) => piece.id.startsWith('village-'))).toBe(true);
     expect(first.scenery?.some((piece) => piece.id.startsWith('tree-'))).toBe(true);
   });
@@ -169,8 +174,8 @@ describe('MapLayout', () => {
         ),
       ).toBe(true);
     for (const id of [
-      'light-capital-stronghold-wall',
-      'dark-capital-stronghold-wall',
+      'light-stronghold-stronghold-wall',
+      'dark-stronghold-stronghold-wall',
       'cathedral-buttress-746-0',
     ])
       expect(map.scenery?.find((piece) => piece.id === id)?.visibility).toBeUndefined();
@@ -191,12 +196,12 @@ describe('MapLayout', () => {
           const x = p.x / MAP_1_SCALE;
           const y = p.y / MAP_1_SCALE;
           const isInside =
-            building.id === 'grand-cathedral'
+            building.id === 'cathedral-lane-1'
               ? (x >= 755 && x <= 845 && y >= 342 && y <= 553) ||
                 (x >= 703 && x <= 897 && y >= 420 && y <= 485) ||
                 ((x - 800) / 44) ** 2 + ((y - 344) / 26) ** 2 <= 1.001 ||
                 (x >= 788 && x <= 812 && y >= 320 && y <= 332)
-              : ((x - (building.id === 'light-capital' ? 142 : 1458)) / 90) ** 2 +
+              : ((x - (building.id === 'light-stronghold' ? 130 : 1470)) / 90) ** 2 +
                   ((y - 450) / 101) ** 2 <=
                 1.001;
           expect(isInside).toBe(true);

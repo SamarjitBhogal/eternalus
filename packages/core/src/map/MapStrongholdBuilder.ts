@@ -1,3 +1,4 @@
+import { cos, sin } from '../utils/deterministicMath';
 import type { MapDecoration, MapFeature } from '../content/maps/maps.types';
 import { LANDMARK_SETTINGS as S } from '../content/maps/map1Landforms';
 import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
@@ -6,8 +7,8 @@ import { MapDecorationBuilder } from './MapDecorationBuilder';
 export class MapStrongholdBuilder extends MapDecorationBuilder {
   /** Keeps the original home anchor inside a palace extending inward from the border. */
   public build(feature: MapFeature): readonly MapDecoration[] {
-    const isWest = feature.owner === 'light';
-    const x = isWest ? 142 : 1458;
+    const isWest = feature.team === 'light';
+    const x = feature.position.x;
     const y = feature.position.y;
     const rx = S.strongholdWidth / 2;
     const ry = S.strongholdHeight / 2;
@@ -32,8 +33,8 @@ export class MapStrongholdBuilder extends MapDecorationBuilder {
     this.rect(`${id}-great-hall-ridge`, x - 2, y - 88, 4, 166, P.gold);
     for (let i = 0; i < 12; i++) {
       const angle = (i * Math.PI) / 6;
-      const tx = x + Math.cos(angle) * (rx - 9);
-      const ty = y + Math.sin(angle) * (ry - 9);
+      const tx = x + cos(angle) * (rx - 9);
+      const ty = y + sin(angle) * (ry - 9);
       this.ellipse(`${id}-wall-tower-${String(i)}`, tx, ty, 10, 12, P.stone);
       this.ellipse(`${id}-wall-tower-roof-${String(i)}`, tx, ty - 2, 7, 8, roof);
       this.rect(`${id}-tower-banner-${String(i)}`, tx - 2, ty - 1, 4, 7, accent);

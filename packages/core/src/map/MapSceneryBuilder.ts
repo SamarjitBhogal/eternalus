@@ -1,9 +1,11 @@
 import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
 import {
-  CAMP_POSITIONS,
   MAP_PALETTE as P,
   SCENERY_SETTINGS as S,
+  SKETCH_HEIGHT,
+  SKETCH_WIDTH,
 } from '../content/maps/map1Scenery';
+import { CAMP_KINDS, FORTIFIED_KINDS } from './MapSceneryBuilder.constants';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { MapFortificationBuilder } from './MapFortificationBuilder';
 import { MapLandscapeBuilder } from './MapLandscapeBuilder';
@@ -13,57 +15,73 @@ import { MapStrongholdGatesBuilder } from './MapStrongholdGatesBuilder';
 import { MapVillageBuilder } from './MapVillageBuilder';
 import { CathedralExteriorBuilder } from './CathedralExteriorBuilder';
 import { LAKES, LAVA_RIVERS } from '../content/maps/map1Landforms';
-import type { Polygon, Vec2 } from '../utils/geometry.types';
+import { distance, distanceToPath, isPointInPolygon } from '../utils/geometry';
+import type { Vec2 } from '../utils/geometry.types';
 
-/** Builds repeatable visual scenery without randomness, collision or simulation state. */
+/**
+ * Builds repeatable visual scenery for a generated map, without randomness, collision or
+ * simulation state. The scenery is authored in sketch space (`SKETCH_WIDTH` x `SKETCH_HEIGHT`),
+ * so the map is mapped into the sketch, dressed, and the result stretched back to world units.
+ */
 export class MapSceneryBuilder extends MapDecorationBuilder {
-  /** Uses original sketch coordinates so scaling never changes the layout's proportions. */
-  public constructor(private readonly map: MapDefinition) {
+  /** The generated map, in sketch coordinates. */
+  private readonly map: MapDefinition;
+  private readonly scaleX: number;
+  private readonly scaleY: number;
+
+  /** Creates a builder for one generated map. */
+  public constructor(world: MapDefinition) {
     super();
+    this.scaleX = world.width / SKETCH_WIDTH;
+    this.scaleY = world.height / SKETCH_HEIGHT;
+    const toSketch = (point: Vec2): Vec2 => ({
+      x: point.x / this.scaleX,
+      y: point.y / this.scaleY,
+    });
+    this.map = {
+      ...world,
+      width: SKETCH_WIDTH,
+      height: SKETCH_HEIGHT,
+      lanes: world.lanes.map((lane) => ({ ...lane, path: lane.path.map(toSketch) })),
+      terrain: world.terrain.map((piece) => ({ ...piece, shape: piece.shape.map(toSketch) })),
+      features: world.features.map((feature) => ({
+        ...feature,
+        position: toSketch(feature.position),
+      })),
+    };
   }
 
-  /** Returns the landscape, forests, settlement, camps and dressed feature footprints. */
+  /** Returns the landscape, forests, settlement, camps and dressed features, in world units. */
   public build(): readonly MapDecoration[] {
+    this.dress();
+    return this.pieces.map((piece) => ({
+      ...piece,
+      shape: piece.shape.map((point) => ({ x: point.x * this.scaleX, y: point.y * this.scaleY })),
+    }));
+  }
+
+  /** Adds every decoration, in sketch coordinates and draw order. */
+  private dress(): void {
     this.pieces.push(...new MapLandscapeBuilder(this.map, (point) => this.isClear(point)).build());
     this.forest();
     this.pieces.push(...new MapMountainBuilder().build());
     this.pieces.push(...new MapVillageBuilder(this.map).build());
-    CAMP_POSITIONS.forEach((point, index) => {
-      this.camp(point, `camp-${String(index)}`);
-    });
     this.map.features.forEach((feature) => {
-      if (feature.kind === 'capital') {
+      if (CAMP_KINDS.has(feature.kind)) this.camp(feature.position, `${feature.id}-camp`);
+      if (feature.kind === 'stronghold') {
         this.pieces.push(...new MapStrongholdBuilder().build(feature));
         this.pieces.push(
-          ...new MapStrongholdGatesBuilder().build(
-            feature.owner === 'light' ? 142 : 1458,
-            feature.id,
-            this.map.lanes,
-          ),
+          ...new MapStrongholdGatesBuilder().build(feature.position.x, feature.id, this.map.lanes),
         );
       }
-      if (feature.kind !== 'cathedral' && feature.kind !== 'capital')
+      if (FORTIFIED_KINDS.has(feature.kind) && feature.kind !== 'stronghold')
         this.pieces.push(...new MapFortificationBuilder().build(feature));
     });
     this.pieces.push(...new CathedralExteriorBuilder().build());
-
-    return this.pieces;
-  }
-
-  private variation(x: number, y: number): number {
-    return (Math.imul(x + 17, 73856093) ^ Math.imul(y + 29, 19349663)) >>> 0;
   }
 
   private isClear(point: Vec2): boolean {
-    if (
-      LAVA_RIVERS.some((path) =>
-        path.some((end, index) => {
-          const start = path[index - 1];
-          return start !== undefined && this.distanceToSegment(point, start, end) < 46;
-        }),
-      )
-    )
-      return false;
+    if (LAVA_RIVERS.some((path) => distanceToPath(point, path) < 46)) return false;
     if (((point.x - 800) / 270) ** 2 + ((point.y - 450) / 210) ** 2 < 1) return false;
     if (point.x < 280 || point.x > 1320) return false;
     if (
@@ -74,58 +92,10 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
       )
     )
       return false;
-    if (
-      this.map.features.some(
-        (feature) =>
-          Math.hypot(point.x - feature.position.x, point.y - feature.position.y) <
-          S.featureClearance,
-      )
-    )
+    if (this.map.features.some((f) => distance(point, f.position) < S.featureClearance))
       return false;
-    if (
-      CAMP_POSITIONS.some(
-        (camp) => Math.hypot(point.x - camp.x, point.y - camp.y) < S.campClearance,
-      )
-    )
-      return false;
-    if (this.map.terrain.some((terrain) => this.contains(terrain.shape, point))) return false;
-    return !this.map.lanes.some((lane) =>
-      lane.path.some((end, index) => {
-        const start = lane.path[index - 1];
-        if (start === undefined) return false;
-        const dx = end.x - start.x;
-        const dy = end.y - start.y;
-        const t = Math.max(
-          0,
-          Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)),
-        );
-        return Math.hypot(point.x - start.x - t * dx, point.y - start.y - t * dy) < S.laneClearance;
-      }),
-    );
-  }
-
-  private contains(shape: Polygon, point: Vec2): boolean {
-    let inside = false;
-    shape.forEach((a, index) => {
-      const b = shape[(index + shape.length - 1) % shape.length];
-      if (
-        b !== undefined &&
-        a.y > point.y !== b.y > point.y &&
-        point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
-      )
-        inside = !inside;
-    });
-    return inside;
-  }
-
-  private distanceToSegment(point: Vec2, start: Vec2, end: Vec2): number {
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const t = Math.max(
-      0,
-      Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)),
-    );
-    return Math.hypot(point.x - start.x - t * dx, point.y - start.y - t * dy);
+    if (this.map.terrain.some((terrain) => isPointInPolygon(point, terrain.shape))) return false;
+    return !this.map.lanes.some((lane) => distanceToPath(point, lane.path) < S.laneClearance);
   }
 
   private forest(): void {

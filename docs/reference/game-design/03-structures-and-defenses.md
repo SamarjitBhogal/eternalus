@@ -151,7 +151,7 @@ Status: **MVP** (the Stronghold "has turrets on walls").
   (`05-map.md`).
 - A Legend can enter a turret for **manual firing** with **P** ("press p to assume control";
   auto-fire turns off) and leave with **P** again ("press p to exit"; auto-fire resumes). The
-  source says "Assault-class legends" can enter turrets; the requirements list does not restrict
+  source says "Warrior-class legends" can enter turrets; the requirements list does not restrict
   it, so which classes may enter is a content flag per class (open question).
 - Turrets **launch bolts** (large crossbows) at any enemy in range. Fire rate `TUNE`: **1 bolt
   per 10 seconds on heavy ammo, 1 bolt per 5 seconds on default ammo**.

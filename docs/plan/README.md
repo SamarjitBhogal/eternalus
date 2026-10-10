@@ -4,7 +4,7 @@ description: The Eternalus MVP roadmap; read this to know which phase we are in,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [plan, roadmap, sprints, metrics]
 related:
   [
@@ -21,10 +21,32 @@ related:
 
 Read this when you need to know where the project is, what to work on next, or whether a
 feature is still in scope. It is the roadmap for the COMP 7082 MVP: seven phases (0–6), one
-document per phase, each phase split into one-week sprints with checklists, tests and a
+document per phase, each phase split into sprints (two weeks each since 2026-10-03) with checklists, tests and a
 measurable success metric. The phase docs are the working documents; this file is the map and
 the rulebook. Progress is logged in [PROGRESS.md](PROGRESS.md). Anything outside the MVP lives
 in [backlog-post-mvp.md](backlog-post-mvp.md).
+
+## 0. Re-cut of 2026-10-03 (overrides the dates below)
+
+The product owner answered the Phase 0 INBOX ([decisions log](../reference/game-design/13-owner-decisions-log.md)):
+the **presentation is on 2026-11-27**, sprints are **two weeks**, and reviewers are chosen by
+the feature owner when opening a PR. That leaves eight working weeks from 2026-10-05, so the
+phases below keep their content and exit criteria but run as **two parallel tracks** across
+four sprint windows, with a feature freeze on **2026-11-20**:
+
+| Sprint | Dates           | Track A — core simulation (`packages/core`, engine)                                                         | Track B — client shell (`apps/client` screens, HUD, settings, persistence)                                                                |
+| ------ | --------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| S1     | Oct 5 – Oct 16  | Phase 1: kernel (config, RNG, state, commands, events, hasher), map audit → `MapGenerator`, entity base     | Session shell + home screen, match-flow screens (loading, character select, pre-launch, match loading), HUD draft, settings + keybindings |
+| S2     | Oct 19 – Oct 30 | Phase 1 close (engine loop, `Match`, views, input → player moves on the generated map) + Phase 2 structures | Persistence (IndexedDB behind `PersistenceController`), loadouts + profile screens, developer menu v1                                     |
+| S3     | Nov 2 – Nov 13  | Phase 3: hordes, flow fields, controllers, match timeline, sim mode                                         | Phase 4 HUD pieces (ability bar, name tags with bot icon), results screen, in-match settings overlay                                      |
+| S4     | Nov 16 – Nov 27 | Phase 4: three classes, MVP abilities, weapons, XP; **freeze Nov 20**; Phase 6 hardening Nov 20–27          | Art/audio pass, docs gardening, course deliverables, demo script                                                                          |
+
+Tracks merge into the same phase branches (Track B work lands in the open phase branch of
+the moment, stacked per `../process/git-workflow.md` §3). The MVP cut order (DEC-07) applies
+from the end: corner camps → manual turret control → pick-up/throw → art polish. The sprint
+checklists in the phase docs stay the task source; their week numbers are superseded by this
+table. Session-level work packages for S1 are in
+[`../agents/prompts/2026-10-03-ultracode-sessions.md`](../agents/prompts/2026-10-03-ultracode-sessions.md).
 
 ## 1. How phases, sprints and tasks work
 
@@ -32,7 +54,7 @@ in [backlog-post-mvp.md](backlog-post-mvp.md).
   (decided, D5, ADR 0007 in [docs/decisions/](../decisions/)). A phase is **done**
   when every exit criterion in its doc is met, its metrics pass, and its PR is merged to `main`
   by the `main` maintainer.
-- **Sprint** = a one-week work package with an owner (one or two people plus their agents),
+- **Sprint** = a two-week work package (DEC-05, 2026-10-03; the phase docs still say one week per sprint — read two) with an owner (one or two people plus their agents),
   a checklist of tasks, the tests those tasks must add, and one **success metric** a reviewer
   can measure without asking the author. Sprints of the same phase run in parallel when their
   dependency line allows it; the calendar week is the unit, not the sequence number.
@@ -159,7 +181,8 @@ Targets are project-level; the phase docs say when each is first measured. Numbe
 
 Five students plus agents. Names known today: **Sam Holtzman** (product owner, lead architect,
 `sholtzman`) and **SamarjitBhogal** (`main` maintainer, merges phase PRs, Phase 0 reviewer). The
-`feat/map` author owns the map reconciliation. The other lanes are assigned at the Phase 0
+lead architect reconciles the `feat/map` code with the architecture; its author, **Aryan
+Walanj**, reviews those changes (DEC-04). The other lanes are assigned at the Phase 0
 walkthrough; record them in [PROGRESS.md](PROGRESS.md).
 
 | Phase | Builds                                     | Reviews architecture and design                 | Reviews tests and guardrails | Merges to `main` |

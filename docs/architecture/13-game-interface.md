@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths: ['apps/client/src/ui/**', 'apps/client/src/bridge/**', 'apps/client/src/game/input/**']
 related:
@@ -27,9 +27,9 @@ slice, an `InputAction` or its binding. It fixes how the UI learns about the gam
 snapshots through one bus and one store, rule 10), how the UI talks back (intents that become
 `Command`s, rule 9) and how controls stay data (requirements doc: "no hard-coded controls;
 configurable via settings", and prompts that "change dynamically to reflect whatever keybindings
-they chose"). React + Redux Toolkit + Vite are decided (D2, ADR 0004; confirm the libraries with
-the instructor). The client today holds only `main.tsx`, `GameCanvas.tsx` and an empty store;
-everything below is a **sketch**.
+they chose"). React + Redux Toolkit + Vite are decided (D2, ADR 0004; confirmed with the
+instructor, DEC-02). The client today has nothing under `ui/` or `game/input/` and only an empty
+store in `bridge/`; everything below is a **sketch**.
 
 ## 1. Where it sits
 
@@ -63,7 +63,15 @@ store, not session states (plan Phase 5, sprint 5.2). `results` is a session pha
 
 ```ts
 // Sketch: apps/client/src/bridge/events.ts (types shared with ui/) and game/SessionController.ts
-export type SessionPhase = 'boot' | 'menu' | 'loading' | 'match' | 'results';
+export type SessionPhase =
+  | 'boot'
+  | 'menu'
+  | 'loading' // start-match loading: themed background, assets for the selection screens
+  | 'character-select' // 60 s countdown; cancel to 'menu' if nothing selected (owner flow, 2026-10-03)
+  | 'pre-launch' // 10 s reveal of the allied team (enemy team top right)
+  | 'match-loading' // waits for the `match` asset group; both rosters shown
+  | 'match'
+  | 'results';
 export type MenuRoute = 'main' | 'loadouts' | 'profile' | 'settings' | 'about';
 export interface SessionState {
   readonly phase: SessionPhase;
@@ -86,15 +94,18 @@ export class SessionController {
 }
 ```
 
-| From      | To                 | Trigger                                                                                                   | Work done in `enter`/`exit`                                                                                                                                                                |
-| --------- | ------------------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `boot`    | `menu`             | manifest loaded (`boot` group), `persistence.open()` resolved (`ready` or `degraded`)                     | creates the default profile on first boot; loads settings and bindings into `settingsSlice` and `InputMapper`; projects the content catalogue (`loadDefaultContent()`) into `contentSlice` |
-| `menu`    | `loading`          | `ui-intent { kind: 'start-match' }`                                                                       | builds `MatchSetup` (seed, `GameConfig` from the preset plus developer overrides, random `playerTeam`, the saved or auto-built `Loadout`)                                                  |
-| `loading` | `match` / `menu`   | `match` asset group loaded / cancelled or failed                                                          | `createMatch(setup)`, `match.start()`; on failure logs and returns to `menu` with a banner                                                                                                 |
-| `match`   | `results` / `menu` | `match-ended { result }` from `Simulation.on`, a `Simulation.step()` exception, `forfeit` / `leave-match` | `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                          |
-| `results` | `menu` / `loading` | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                               | releases the `match` asset group                                                                                                                                                           |
+| From               | To                          | Trigger                                                                                                                                    | Work done in `enter`/`exit`                                                                                                                                                                |
+| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `boot`             | `menu`                      | manifest loaded (`boot` group), `persistence.open()` resolved (`ready` or `degraded`)                                                      | creates the default profile on first boot; loads settings and bindings into `settingsSlice` and `InputMapper`; projects the content catalogue (`loadDefaultContent()`) into `contentSlice` |
+| `menu`             | `loading`                   | `ui-intent { kind: 'start-match' }`                                                                                                        | builds `MatchSetup` (seed, `GameConfig` from the preset plus developer overrides, random `playerTeam`, the saved or auto-built `Loadout`)                                                  |
+| `loading`          | `character-select` / `menu` | selection-screen asset group loaded / cancelled or failed                                                                                  | loads the `selection` asset group (themed background set for the player's team) and shows `LoadingScreen`; the `MatchSetup` draft (seed, config, `playerTeam`) already exists from `menu`  |
+| `character-select` | `pre-launch` / `menu`       | player confirmed a class before the 60 s `SessionClock` countdown ended / countdown expired with no selection (`reason: 'select-timeout'`) | builds the rosters from content (allies + enemies), assigns `playerTeam` from the setup RNG stream, starts the countdown through the injected `SessionClock`                               |
+| `pre-launch`       | `match-loading`             | 10 s `SessionClock` reveal elapsed                                                                                                         | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                               |
+| `match-loading`    | `match` / `menu`            | `match` asset group loaded / failed                                                                                                        | `createMatch(setup)`, `match.start()`; on failure logs and returns to `menu` with a banner                                                                                                 |
+| `match`            | `results` / `menu`          | `match-ended { result }` from `Simulation.on`, a `Simulation.step()` exception, `forfeit` / `leave-match`                                  | `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                          |
+| `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                | releases the `match` asset group                                                                                                                                                           |
 
-Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The
+The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The
 table is the test (`SessionController.test.ts` walks every pair with fake states, a
 `MemoryStorageAdapter` and a fake `ResourceController`).
 
@@ -188,7 +199,7 @@ export type BridgeEventMap = {
   };
   scoreboard: {
     readonly legends: readonly LegendStats[];
-    readonly teams: Readonly<Record<PlayableTeamId, TeamStats>>;
+    readonly teams: Readonly<Record<PlayableTeam, TeamStats>>;
   };
   'capture-state': { readonly points: readonly CapturePointSnapshot[] };
   announce: {

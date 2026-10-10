@@ -1,5 +1,6 @@
 import type { MapDefinition, Vec2 } from '@eternalus/core';
-import type { WorldRect } from './engine/Renderer.types';
+
+import type { WorldRect } from './engine/render/Renderer.types';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
 /** Owns camera navigation and authored building entry for the map preview. */
@@ -8,12 +9,12 @@ export class MapExplorer {
   private zoom = 1;
   public readonly hiddenRoofs = new Set<string>();
 
-  /** Starts with an overview of the original three-lane battlefield. */
+  /** Starts with an overview of the generated battlefield. */
   public constructor(private readonly map: MapDefinition) {
     this.center = { x: map.width / 2, y: map.height / 2 };
   }
 
-  /** The immutable map currently being explored. */
+  /** The unchanged battlefield being explored. */
   public get currentMap(): MapDefinition {
     return this.map;
   }
@@ -34,7 +35,15 @@ export class MapExplorer {
     return { x, y, width, height };
   }
 
-  /** Moves the preview camera; clamping is applied when its visible area is requested. */
+  /** Takes over from another view (the following camera) without jumping. */
+  public showArea(area: WorldRect, aspect: number): void {
+    const map = this.currentMap;
+    this.center = { x: area.x + area.width / 2, y: area.y + area.height / 2 };
+    this.zoom = 1;
+    this.zoomBy(Math.max(map.width, map.height * aspect) / area.width);
+  }
+
+  /** Moves the view; clamping is applied when its visible area is requested. */
   public lookAt(point: Vec2): void {
     this.center = point;
   }
@@ -45,7 +54,7 @@ export class MapExplorer {
     this.center = { x: area.x + area.width / 2 + dx, y: area.y + area.height / 2 + dy };
   }
 
-  /** Zooms within a bounded range so a large battlefield can be explored in detail. */
+  /** Zooms within a bounded range so the battlefield can be explored in detail. */
   public zoomBy(factor: number): void {
     this.zoom = Math.max(1, Math.min(EXPLORER_SETTINGS.maxZoom, this.zoom * factor));
   }

@@ -1,74 +1,70 @@
 import type { MapDefinition } from '../content/maps/maps.types';
-import { CAMP_POSITIONS, MAP_1_SCALE } from '../content/maps/map1Scenery';
+import { SKETCH_WIDTH, SKETCH_HEIGHT } from '../content/maps/map1Scenery';
 import { MapBuildingInteriorBuilder } from './MapBuildingInteriorBuilder';
 import { MapSceneryBuilder } from './MapSceneryBuilder';
 
-/** Enlarges an authored map uniformly while preserving every original feature and lane. */
+/** Adds same-world building presentation without altering generated gameplay geometry. */
 export class MapLayout {
-  /** Returns a decorated battlefield at the requested presentation scale. */
+  /** Dresses a generated battlefield while preserving its dimensions, features and lanes. */
   public build(layout: MapDefinition): MapDefinition {
-    const scale = MAP_1_SCALE;
-    const interiors = new MapBuildingInteriorBuilder().build();
+    const sx = layout.width / SKETCH_WIDTH;
+    const sy = layout.height / SKETCH_HEIGHT;
+    const buildings = layout.features.filter(
+      (f) => f.kind === 'stronghold' || f.kind === 'cathedral',
+    );
+    const interiors = new MapBuildingInteriorBuilder().build().flatMap((piece) => {
+      const feature = buildings.find((f) =>
+        piece.buildingId === 'grand-cathedral'
+          ? f.kind === 'cathedral'
+          : f.kind === 'stronghold' &&
+            f.team === (piece.buildingId === 'light-capital' ? 'light' : 'dark'),
+      );
+      if (feature === undefined) return [];
+      const ox = feature.kind === 'cathedral' ? 800 : feature.team === 'light' ? 142 : 1458;
+      return [
+        {
+          ...piece,
+          buildingId: feature.id,
+          shape: piece.shape.map((p) => ({
+            x: (p.x - ox) * sx + feature.position.x,
+            y: (p.y - 450) * sy + feature.position.y,
+          })),
+        },
+      ];
+    });
     const scenery = new MapSceneryBuilder(layout).build().map((piece) => {
-      const id = piece.id.startsWith('cathedral-')
-        ? 'grand-cathedral'
-        : piece.id.startsWith('light-capital-')
-          ? 'light-capital'
-          : piece.id.startsWith('dark-capital-')
-            ? 'dark-capital'
-            : undefined;
-      const isWall =
-        piece.id.includes('stronghold-wall') ||
-        piece.id.includes('cathedral-buttress') ||
-        piece.id.includes('wall-tower') ||
-        piece.id.includes('stronghold-court') ||
-        piece.id.includes('gate-bridge') ||
-        piece.id.includes('-step-') ||
-        piece.id.includes('tower-banner');
-      return id !== undefined && piece.layer === 'detail' && !isWall
-        ? { ...piece, buildingId: id, visibility: 'roof' as const }
+      const feature = buildings.find((f) =>
+        f.kind === 'cathedral'
+          ? piece.id.startsWith('cathedral-')
+          : piece.id.startsWith(`${f.id}-`),
+      );
+      const isWall = [
+        'stronghold-wall',
+        'cathedral-buttress',
+        'wall-tower',
+        'stronghold-court',
+        'gate-bridge',
+        '-step-',
+        'tower-banner',
+      ].some((part) => piece.id.includes(part));
+      return feature !== undefined && piece.layer === 'detail' && !isWall
+        ? { ...piece, buildingId: feature.id, visibility: 'roof' as const }
         : piece;
     });
-    const point = (p: {
-      readonly x: number;
-      readonly y: number;
-    }): { readonly x: number; readonly y: number } => ({ x: p.x * scale, y: p.y * scale });
     return {
       ...layout,
-      width: layout.width * scale,
-      height: layout.height * scale,
-      lanes: layout.lanes.map((lane) => ({ ...lane, path: lane.path.map(point) })),
-      terrain: layout.terrain.map((piece) => ({ ...piece, shape: piece.shape.map(point) })),
-      features: [
-        ...layout.features.map((feature) => ({ ...feature, position: point(feature.position) })),
-        ...CAMP_POSITIONS.map((position, index) => ({
-          id: `neutral-camp-${String(index)}`,
-          kind: 'camp' as const,
-          owner: 'neutral' as const,
-          position: point(position),
-        })),
-      ],
-      scenery: [...scenery, ...interiors].map((piece) => ({
-        ...piece,
-        shape: piece.shape.map(point),
-      })),
-      presentationScale: scale,
-      buildings: ['grand-cathedral', 'light-capital', 'dark-capital'].map((id) => ({
-        id,
-        name:
-          id === 'grand-cathedral'
-            ? 'Cathedral'
-            : id === 'light-capital'
-              ? 'Light stronghold'
-              : 'Dark stronghold',
+      scenery: [...scenery, ...interiors],
+      buildings: buildings.map((feature) => ({
+        id: feature.id,
+        name: feature.kind === 'cathedral' ? 'Cathedral' : `${feature.team} stronghold`,
         footprint: interiors
           .filter(
             (piece) =>
-              piece.buildingId === id &&
+              piece.buildingId === feature.id &&
               ((piece.id.endsWith('-floor') && !piece.id.includes('capture')) ||
                 piece.id.endsWith('-door')),
           )
-          .map((piece) => piece.shape.map(point)),
+          .map((piece) => piece.shape),
       })),
     };
   }

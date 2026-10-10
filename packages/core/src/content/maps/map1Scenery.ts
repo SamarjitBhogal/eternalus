@@ -1,21 +1,10 @@
-/** TUNE: presentation scale requested by the map owner; all original anchors are preserved. */
-export const MAP_1_SCALE = 8;
-
-/** Authored neutral camp clearings. Enemies and collision belong to the future simulation. */
-export const CAMP_POSITIONS = [
-  { x: 350, y: 370 },
-  { x: 490, y: 290 },
-  { x: 660, y: 260 },
-  { x: 350, y: 540 },
-  { x: 490, y: 610 },
-  { x: 660, y: 660 },
-  { x: 1250, y: 370 },
-  { x: 1110, y: 290 },
-  { x: 940, y: 260 },
-  { x: 1250, y: 540 },
-  { x: 1110, y: 610 },
-  { x: 940, y: 660 },
-] as const;
+/**
+ * Map 1's scenery is authored in the 1600 x 900 sketch the preset was traced from;
+ * `MapSceneryBuilder` stretches it to the generated world size.
+ */
+export const SKETCH_WIDTH = 1600;
+/** Height of the sketch the scenery is authored in. */
+export const SKETCH_HEIGHT = 900;
 
 /** Earth, stone, timber and restrained faction accents for the authored environment. */
 export const MAP_PALETTE = {
@@ -48,9 +37,4 @@ export const SCENERY_SETTINGS = {
   margin: 25,
   laneClearance: 18,
   featureClearance: 62,
-  campClearance: 30,
-  cityLeft: 660,
-  cityRight: 940,
-  cityTop: 330,
-  cityBottom: 570,
 } as const;

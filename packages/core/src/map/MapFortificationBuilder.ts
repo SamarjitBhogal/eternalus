@@ -1,17 +1,18 @@
 import type { MapDecoration, MapFeature } from '../content/maps/maps.types';
-import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
+import { MAP_PALETTE as P, SKETCH_HEIGHT } from '../content/maps/map1Scenery';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 
 /** Dresses existing square anchors with masonry, towers, battlements and faction banners. */
 export class MapFortificationBuilder extends MapDecorationBuilder {
   /** Returns architecture for an existing landmark without moving its anchor. */
   public build(feature: MapFeature): readonly MapDecoration[] {
-    const north = feature.id === 'north-crossing';
-    const south = feature.id === 'south-crossing';
-    const size = north || south ? 88 : feature.kind === 'capital' ? 58 : 32;
+    const isCapturePoint = feature.kind === 'capture-point';
+    const north = isCapturePoint && feature.position.y < SKETCH_HEIGHT / 2;
+    const south = isCapturePoint && !north;
+    const size = isCapturePoint ? 88 : feature.kind === 'stronghold' ? 58 : 32;
     const stone = north ? P.snowLight : south ? P.basalt : P.stone;
     const roof = north ? P.snowShadow : south ? '#763e32' : P.stoneDark;
-    const accent = feature.owner === 'light' ? P.light : feature.owner === 'dark' ? P.dark : P.gold;
+    const accent = feature.team === 'light' ? P.light : feature.team === 'dark' ? P.dark : P.gold;
     const { x, y } = feature.position;
     const left = x - size / 2;
     const top = y - size / 2;

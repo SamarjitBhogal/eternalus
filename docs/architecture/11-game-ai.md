@@ -226,7 +226,7 @@ turret behaviour
 - Ammo choice: `heavy` when the target kind is listed in `preferredAgainst` (Sentinel, HeavyMob),
   else `default`; 1 bolt per 10 s heavy, 1 per 5 s default (`TUNE`, game doc). Ammo is content
   (`content/weapons/turret-bolt-*.ts`), so "ammo specifics can change" is a data edit.
-- Manual control (**MVP-if-time**): when an Assault Legend occupies the turret (`occupantId`), the
+- Manual control (**MVP-if-time**): when an Warrior Legend occupies the turret (`occupantId`), the
   controller yields; the occupant's `PlayerController` emits `fire-turret` and `switch-ammo`.
 
 ### 4.6 BossController (MiniBoss MVP, GreaterBoss MVP, corner-camp bosses post-MVP)

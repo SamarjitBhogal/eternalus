@@ -4,7 +4,7 @@ description: The code-level requirements CP-01 to CP-16 (SOLID, DRY, KISS/YAGNI 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [requirements, coding, solid, patterns]
 paths: ['packages/core/src/**', 'apps/client/src/**']
 related:
@@ -21,8 +21,8 @@ Purpose: Read this when you write or review code and want the reasoning behind t
 or when you need a concrete example of what "SOLID and DRY are a bible" means in this codebase.
 Each principle has an ID (`CP-nn`). The mechanical conventions (naming table, companion files,
 TypeScript settings, size numbers) live in [`CONTRIBUTING.md`](../../CONTRIBUTING.md) and are
-linked, not repeated. Code below is **illustrative TypeScript sketches**: the repository has no
-game code yet, and names follow the canonical vocabulary in
+linked, not repeated. Code below is **illustrative TypeScript sketches** of the target design
+(`docs/plan/` tracks what is built), and names follow the canonical vocabulary in
 [`../architecture/02-code-structure.md`](../architecture/02-code-structure.md).
 
 ## SOLID
@@ -216,11 +216,11 @@ registry.register('blink', () => new BlinkEffect());
 
 - **Requirement.** Display names live in content, never in class names or code strings. Content
   IDs are kebab-case and never renamed once used. Class names are code identifiers: renaming
-  `Assault` (rename pending) is an IDE rename of the class, its imports and the `extends` headers
+  `Warrior` (rename pending) is an IDE rename of the class, its imports and the `extends` headers
   of its subclasses, and nothing else, because no rule, ID, save file or string compares against
   the class name. Kinds are string-literal unions declared once in content types; `kind` values
   are derived from definitions, not from `constructor.name`.
-- **Why.** "if i wanted to change the name of 'Assault' to anything else at any time, should be
+- **Why.** "if i wanted to change the name of 'Warrior' to anything else at any time, should be
   very easy". Placeholder names keep their "(rename pending)" note in docs and TSDoc.
 
 ### CP-14 TSDoc expectations

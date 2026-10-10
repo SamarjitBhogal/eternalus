@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -100,7 +100,7 @@ Owner: _ (sim lane B). Week 5. Depends on 2.2.
       only the swept test, never overlap-only.
 - [ ] **`Turret` + `TurretController` + ammo data** (`TUNE`: heavy ammo 1 bolt / 10 s, default
       1 bolt / 5 s; auto ammo switch: heavy for Sentinels and heavy minions; predictive fire on
-      auto; manual control by an Assault Legend through `InputAction`s `turret-enter`,
+      auto; manual control by an Warrior Legend through `InputAction`s `turret-enter`,
       `turret-exit`, `turret-switch-ammo`, all rebindable). Owner: _. Test: cadence 300 / 150
       ticks at 30 TPS; ammo choice follows the target's definition tag; predictive aim hits a
       unit moving at constant velocity. Done when: changing ammo specifics is a content edit
@@ -195,7 +195,7 @@ Owner: _ (client lane). Weeks 4–5.
 - [ ] **`EntityView`s for each structure kind** with shield bars drawn as stacked coloured
       segments (one per living BuffTower) and gate/wall states. Owner: _. Test: fake-context
       draw-call snapshot per state. Done when: views read `Snapshot` only.
-- [ ] **Minimap glyphs through `ViewRegistry`** (glyph per kind, owner colour, capture progress
+- [ ] **Minimap glyphs through `ViewRegistry`** (glyph per definition, owner colour, capture progress
       ring). Owner: _. Test: the Phase 1 "new feature appears on the minimap" test extended to a
       structure and an obstacle. Done when: no minimap code names a kind.
 - [ ] **HUD `HealthBar` for the selected structure and `Announcer` events** (tower razed, point

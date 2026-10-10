@@ -1,3 +1,4 @@
+import { cos, sin } from '../utils/deterministicMath';
 import type { MapDecoration } from '../content/maps/maps.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { MapPalaceRoomsBuilder } from './MapPalaceRoomsBuilder';
@@ -152,7 +153,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
     const curve = (rx: number, ry: number) =>
       Array.from({ length: 25 }, (_, i) => {
         const angle = start + ((end - start) * i) / 24;
-        return { x: 800 + Math.cos(angle) * rx, y: 344 + Math.sin(angle) * ry };
+        return { x: 800 + cos(angle) * rx, y: 344 + sin(angle) * ry };
       });
     this.polygon(
       `cathedral-interior-wall-apse-${id}`,
