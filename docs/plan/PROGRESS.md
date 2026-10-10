@@ -668,3 +668,22 @@ The example below is fenced so it is not read as a real entry.
   clone with `EXIT=0`.
 - Next step: the owner rules on A22-3 and A23-1 (both block phase 1 → `main`), then the backlog is
   fixed on this branch after the presentation.
+
+### 2026-10-09 — Phase 1 / Sprint 1 audit — chore/sprint-1-audit — sholtzman + Claude Code
+
+- What was done: the full Sprint 1 audit.
+  - Recorded the owner's rulings DEC-32 (PR #22 scenery) and DEC-33 (PROTO-01 is demo-only).
+  - Merged the phase tip (`26ae27e`) into this branch.
+  - Six independent critics audited the merged code by area: kernel, entities and content, map,
+    client engine, client shell, and docs and process. Each finding was spot-checked against the
+    code before it went into `docs/reviews/2026-10-09-sprint-1-audit.md`.
+  - The backlog holds 2 blockers, 22 majors, 82 minors and 46 nits, plus the owner decisions.
+  - Overlapping findings are merged (AC-1 into AS-1; `Math.hypot`, injected content and the id
+    counter into AK-3, AK-5 and AK-6).
+  - AD-26 corrects an earlier line of the audit by appending, not editing.
+- Checks run: baseline `npm run check` at `26ae27e` → `EXIT=0`: "All matched files use Prettier
+  code style!"; core "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in
+  270ms"; "Documentation check passed." This branch changes only `docs/` and `INBOX.md`.
+- Next step: the owner answers the "Proposed design changes" items. The fixes then land on this
+  branch, starting with the summary's "fix first" list. Merge PR #24, then fold its follow-ups
+  (A24-*, AC-19) in.

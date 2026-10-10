@@ -33,6 +33,22 @@ approval).
 this branch, tick the item and add the commit; never delete an item. Severity: blocker, major,
 minor, nit.
 
+## Summary (2026-10-09)
+
+**Coverage.** The three PRs reviewed before merging (#22, #23 and #24), plus a full audit of the merged code at `26ae27e` in six areas: K kernel, E entities and content, M map, C client engine, S client shell, D docs and process. Every finding was cross-checked against the code before it was recorded. The baseline `npm run check` passes, so these are design and process findings, not failing tests.
+
+**Open items:** 2 blockers (A22-1, A22-2), 22 majors, 82 minors and 46 nits, plus the owner decisions under "Proposed design changes".
+
+**Fix first, before Sprint 2 builds on them:**
+
+1. **The live `Match` lifetime and setup** (AS-1, AC-1, AC-2). The match runs behind every placeholder phase, ignores the session's seed, team and class, and its composition root has no test.
+2. **Movement units and stopping** (AE-1, AE-2). One type carries per-second and per-tick values, and the Sentinel coasts about 225 m after `stop`.
+3. **Scenery in core and hard-coded map-1 geometry** (A22-1, A22-2).
+4. **The guards that let these through** (AD-1, AD-2, AD-4). The phase-branch ruleset is disabled, the coverage thresholds sit 9–34 points below actual coverage, and the doc-approval rule is unwritten.
+5. **Status notes and plan ticks** (AK-1, AC-3, AD-3, A23-3, AC-11, AD-5). Docs 03, 08, 09, 10, 13 and 15 misdescribe the code, and several plan items are ticked without meeting their done-when.
+
+**Waiting on the owner:** every item under "Proposed design changes", for example the `Match` lifetime owner (AS-7 C2 / AC-25), the merge method (AD-13), the content numbers (AE-3), and the improvements on the design listed there (AM-B1, AS-B1…B3, AK-23, AK-24, AC-20, AC-21, AE-B1…B3, AD-B2, AD-B3).
+
 ## PR #22 — buildings and map objects (`feat/buildings-and-map-objects`)
 
 **Review:** an independent critic reviewed it after the merge (`8a13c19`), against the docs at `8a13c19^1`. In a fresh clone, `npm run check` gave `EXIT=0` (core 466/466, client 304/304). Verdict: request changes.
@@ -387,6 +403,70 @@ Extensions to earlier items:
 - **AK-6:** the id counter is outside `GameState` and the hash (also AE-22).
 - **AK-1:** 10 needs its own status note for `Movement` and `Collider`: per tick, heading, no friction, clamp or impulses, circles only, shapes in `components/`, no `isUnbreakable` (AE-10).
 
+### Area D — documentation, process and guardrails
+
+**What was checked:**
+
+- **Guardrail config:** `eslint.config.js` changed only through ADR 0012 and ADR 0014, each with its ADR and table row. Tsconfigs, `knip.json`, `ci.yml`, `.githooks/` and `.claude/settings.json` are unchanged, and the ponytail matcher still excludes the reviewers.
+- **No bypasses:** coverage thresholds only went up, and there is no `@ts-ignore`, `any` or skipped test.
+- **Numbering:** no DEC or ADR number collides. DEC-14 and DEC-16 to DEC-24 landed in the docs they name.
+- **Gate records:** the full ADR 0010 gate, with approval on the merged head, is recorded for #12, #13, #17, #19 and #20.
+- **CI:** green on every Sprint 1 PR head and on `26ae27e`.
+
+- [ ] **AD-1** (major; needs the repo admin) The GitHub ruleset "phase branches" (24691101) has been disabled since it was created, `phase/1` is unprotected, and `main` has no required CI checks. That is against ADR 0007:41 ("phase branches are … protected like `main`") and guardrails §5 (one approval, required CI). It let #8 merge with no approval, #14 merge over the owner's open change request, #23 take commits after its only approval, and #22 merge after a BLOCKED critic. The admin (Samarjit) should:
+  - enable the ruleset with last-push approval or stale-review dismissal;
+  - add the three CI contexts to `main`;
+  - set the merge methods (AD-13);
+  - document it in guardrails §5.
+- [ ] **AD-2** (major) The coverage ratchet never ratcheted: core is at 85 against measured 99.24/94.14/99.4/99.19 (`packages/core/vitest.config.ts:17-20`), and the client at 55 against about 89–90 (`apps/client/vitest.config.ts:24-27`). Guardrails §2: "raise the threshold in the same PR". Raise each to just below its measured value, for example core 98/93/98/98 and client 88/88/89/88 (with AD-8 and AS-15).
+- [ ] **AD-3** (major; owner approval) Stale or missing status notes:
+  - 03 §12 and 15 §13 (AK-1);
+  - 08 and 09 (AC-3);
+  - 10 (AK-1, AE-2);
+  - 13 (AS-5);
+  - 07 §13's "source id order" (INBOX (9)).
+
+  Approve the queued texts (INBOX (7), (9), and the 08/09 notes at `INBOX.md:199`), and have an agent draft 10, 13 and 15 for the same approval. See AD-B3 for the process fix.
+
+- [ ] **AD-5** (major) `docs/plan/phase-1-simulation-kernel-and-world.md:206` ticks "Logger sinks", but its done-when ("the overlay can read the ring buffer") is unmet: no overlay exists, and the `RingBufferSink` in `useMatch.ts:53-57` is read by nothing. #18's critic had unticked it, and `b12aa0f` re-ticked it. Untick or annotate it and append a PROGRESS correction (with A23-3 and AC-11).
+- [ ] **AD-6** (minor; owner approval) Sprint 1 folders are missing from 02 §2/§3 and the package AGENTS tables (01 §7, OG-06):
+  - client: `game/session/`, `game/content/` and `data/logging/`;
+  - core: `content/validation/`, `units/`, `zones/`, `projectiles/` and `ai/`.
+
+  Add them in one docs PR (with AS-6).
+
+- [ ] **AD-7** (minor; owner approval) `paths:` frontmatter gaps:
+  - `game/session/**`, `SessionController*` and `game/content/**` → 13;
+  - `useMatch*`, `GameCanvas*` and `DeviceIntentSource*` → 08/09;
+  - `data/logging/**` → 15, not 14;
+  - `systems/*` and `Simulation.types.ts` → 03/15;
+  - `utils/**`;
+  - 17's `default*.ts` glob misses `Default*.ts` and `loadDefaultContent.ts`.
+
+  Includes AS-6, AC-18 and AK-22.
+
+- [ ] **AD-8** (minor) `docs/process/guardrails.md:63-66` and `CONTRIBUTING.md:107` still say client 45/50 % and "one placeholder test each". Update them with AD-2.
+- [ ] **AD-9** (minor; ADR) `packages/core/vitest.config.ts:14` excludes `src/content/**`, which since DEC-22 holds logic: `ContentCatalogue`, the validator and rules, `loadDefaultContent`'s per-tick conversion, and two error classes. Narrow the exclusion to data files.
+- [ ] **AD-12** (minor) Gate records don't describe the merged code:
+  - #14's body still describes `EntityModule`s, `UnitComponentInstaller` and the ring lint;
+  - #17, #18 and #19 claim doc updates (03 §12, 08 §11, 08/09) that were reverted;
+  - `PROGRESS.md:349,364,376` repeat the claim.
+
+  Point the PR bodies at the correction comments, and append one PROGRESS correction (with AE-23).
+
+- [ ] **AD-14** (minor) #25 and #26 ran ponytail "by hand" without the plugin, while ADR 0010 says such tools hand the branch to a Claude Code session. Run `/ponytail-review` on `864ffe2..62ad7fc`, or amend ADR 0010 with a manual fallback (owner).
+- [ ] **AD-16** (minor) `.gitignore:2` `node_modules/` matches directories only, which let three symlinks be committed in `285af9f` (removed by hand in `21fde4e`). Use `node_modules`.
+- [ ] **AD-17** (minor) All 47 items in the phase 1 plan read `Owner: _`, including the open `SpatialHash`, `CollisionSystem`, `ObjectPool`, `PlayerController`, `TerrainView`, `PerfOverlay`, `DeveloperMenu` and bench. Assign an owner or SCRUM id to every open item before Sprint 2.
+- [ ] **AD-18** (minor) The per-folder import lint (02 §11: "add them in Phase 1 as folders appear"; DEC-24's ADR 0013) exists on no branch and has no owner or date. Add a plan item. It folds in A23-18, AM-1, AK-2 and AS-4.
+- [ ] **AD-19** (nit) `docs/changelog/pr-*.md` is missing for #14, #17, #18 and #19, and `docs/changelog/README.md:33` indexes one of the four PR files. Add the rows, or decide that GitHub bodies suffice.
+- [ ] **AD-20** (nit) `INBOX.md:146` (session C → H) is done, so move it to Done. `:16` says "Three items" but heads six, and the Done entry at `:273` lacks PR #5.
+- [ ] **AD-21** (nit) Plan `:104` and `:199` carry stale "pending merge" and "session H" notes (extends AM-9 and AE-13).
+- [ ] **AD-22** (nit; owner approval) `packages/core/AGENTS.md:16,41` ("pipeline only", "simulation's list of systems") and `apps/client/AGENTS.md:56` ("planned game loop") are stale (extends A23-4).
+- [ ] **AD-23** (nit) `game/session/runPlaceholderLoad.ts:5` has a `ponytail:` note with no upgrade path, and TODO owners are spelled both `sam` and `sholtzman`. Pick one handle.
+- [ ] **AD-24** (nit) `Date` is not lint-banned in core (rule 8; 02 §11:285). Add `no-restricted-globals` in AD-18's lint PR. It isn't used today.
+- [ ] **AD-25** (nit) `.github/CODEOWNERS` (#11) requests all five collaborators on every PR. That is undocumented and conflicts with DEC-05 (the feature owner picks the reviewer). Document it in `git-workflow.md` §1, or scope it.
+- [ ] **AD-27** (nit, pre-existing) NFR-015 requires `npm audit` at `audit-level=high` in `npm run check` and CI, and no step runs it. Add it through an ADR, or amend NFR-015.
+
 ## Proposed design changes (owner sign-off needed)
 
 Decisions and doc conflicts the reviews surfaced. None of these may be changed in the design docs before the owner rules.
@@ -442,6 +522,26 @@ Decisions and doc conflicts the reviews surfaced. None of these may be changed i
 - [ ] **AE-B2** (improvement on the design, small) `EntityFactory.canCreate(kind, definitionId)` lets `dev-spawn` reject (03 §3) instead of throwing out of `step()`, the failure behind #14's B1. If accepted, 04 §6 changes; it shrinks to `has(id)` if spawn-by-definition-id lands.
 - [ ] **AE-B3** (alignment with the more specific doc; area E recommends yes) The `Collider` fields follow 10 §4 (`isStatic`/`isEnabled`), not 04 §3's `isSolid` (INBOX (3)). The shield names follow 07 §2 (INBOX (4)). If accepted, the 04 §3 component table rows change.
 - [ ] **AE-B4** (not better, per area E) `passiveOptions`. 05 §12 already gets a class's passives from `AbilityDefinition.classId` and `slot: 'passive'` (`PassiveOwnedRule`), so this would be a second source of truth. Pick one before Phase 4 content.
+- [ ] **AD-4** (owner; process) The owner's rule "no `docs/architecture/`, `docs/decisions/` or `AGENTS.md` edits without his approval" lives only in the PR #14 review. It was scoped to "this PR and the stacked ones" but applied to every later PR (#17–#19 reverted their doc edits), and it conflicts with `AGENTS.md:181` ("update the governing doc") and ADR 0010 step 1. As a result, 13 of the 17 open INBOX items come from Sprint 1 PRs, and five PRs merged with improvements still unsigned. Record the rule as a DEC with its scope in `AGENTS.md` "Documentation", decide AD-B3, and answer the queued INBOX items in one batch.
+- [ ] **AD-10** (owner; record waivers) Three merges went past review:
+  - #8 merged with no review, although DEC-04 names Aryan;
+  - #14 merged (02:38Z on 10-09) with the owner's change request from 22:07Z on 10-08 never re-reviewed or dismissed;
+  - #23 took two commits after its only approval, one of which rewrote a PROGRESS entry and ticked six plan items.
+
+  Record any approval given off GitHub as a waiver, and enforce through AD-1.
+
+- [ ] **AD-11** (owner; record a waiver) #9 and #11 reached `main` mid-phase, and #15 synced `main` into the phase branch with no review, no gate and a non-Conventional title (ADR 0007: "nothing reaches `main` until a phase … is complete"). Record a one-off waiver, and route tooling changes through the phase branch.
+- [ ] **AD-13 / AD-B1** (owner) The merge method:
+  - **Practice:** 12 of 13 phase PRs used merge commits, at the owner's direction.
+  - **Docs:** `git-workflow.md:106,115`, OG-10:227 and guardrails §5 say squash and linear history; ADR 0007:45 prefers merge commits for phase PRs.
+  - **For merge commits:** they keep the task-branch SHAs that gate records cite.
+  - **Against:** non-Conventional subjects and accidental files become permanent (`21fde4e`, `285af9f`).
+
+  Rule on it, then update the four docs and the ruleset together. Merge commits work best with a Conventional-subjects rule, or a commit-msg hook (ADR).
+
+- [ ] **AD-15** (owner; process) PROGRESS entries were rewritten on task branches before merge: `a91694a`, `9eb2260`, `6e2659a`, `182f9e2`, `b381c17`, `40f668f` and `abd2c07`. None was rewritten after landing on the phase branch. Define when an entry becomes a record (on commit, or when its PR merges) in PROGRESS's format rules.
+- [ ] **AD-B2** (improvement, conditional) Draft PR #16 makes every push to the phase branch run the three OS CI jobs, while `ci.yml` itself pushes only on `main`. That lapses if #16 is closed. Document it, or add `phase/**` to the push triggers (ADR).
+- [ ] **AD-B3** (process proposal) Exempt "Implementation status" sections from per-change approval. OG-12 already confines interim state there, and the approval queue is the root cause of AD-3. Mitigation: the critic checks that a status edit touches no design text, and the owner reviews the note in the PR.
 - [ ] **A23-17** The `PROTOTYPE(<id>) TEMPORARY` marker convention. It is used 18 times and documented nowhere. Document it in `AGENTS.md` / `CONTRIBUTING.md`, or fold it into `ponytail:`.
 - [ ] **A23-18** Two import-boundary conflicts:
   - `packages/core/AGENTS.md:32` forbids `systems/` → `ai/`, but 02 §2 allows it (and 11 §1 calls `AiSystem` a system).
@@ -469,3 +569,7 @@ These Sprint 1 PRs merged before this audit started:
   marked for removal after the demo in `placeholderSetup.ts`
 
 The full system audit planned after the presentation covers them.
+
+## Corrections
+
+- 2026-10-09 (area D, AD-26): the "Not yet audited" note above says #25 and #26 are "both marked for removal after the demo in `placeholderSetup.ts`". That is inaccurate. #26 already removed #25's timeout switch (`821bae1`), and the remaining `TODO(sam)` at `placeholderSetup.ts:11` waits for the character-select screen, not the demo. Both PRs are now covered by area S.
