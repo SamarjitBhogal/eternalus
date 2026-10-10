@@ -156,6 +156,49 @@ Interim code marked "replace when session X lands". Those sessions have now land
 - [ ] **A12-4** (minor) `apps/client/src/bridge/domain.types.ts` and `game/content/placeholderCatalogue.ts`: use `LegendClassId` and `LEGEND_CLASSES` from core. Session C has merged, but core's `index.ts` does not export either yet; export what the client needs first.
 - [ ] **A13-1** (minor) `packages/core/src/commands/handlers/DevRemoveEntityHandler.ts`: hand removal to `DeathSystem`, which exists now. 03 §4 makes it the only `entity-removed` emitter.
 
+## Full audit of the merged code (phase tip `26ae27e`)
+
+Six independent critics each reviewed one area of the merged code at `26ae27e` against the design docs at the same commit. The areas: K (core kernel), E (entities and content), M (map), C (client engine and input), S (client shell) and D (docs, process and guardrails). Baseline `npm run check` at `26ae27e` gave `EXIT=0` (core 466/466, client 305/305, docs check passed). Findings already listed above are cited by id, not repeated. Items marked "owner approval" change an architecture doc, an ADR or an `AGENTS.md` file.
+
+### Area M — map generation, map and minimap drawing (#1, #2, #8, #22)
+
+**What conforms:**
+
+- Generation is pure and deterministic from config and seed, and pinned by a golden hash.
+- Every lane and feature is placed from config and mirrored, symmetry is validated on every `generate`, and lane and tower counts change with zero code.
+- Presets are content only, and no feature coordinate is written in generator code.
+- `WorldMap` follows 06 §6.
+- Trigonometry goes only through `deterministicMath`.
+- Views draw only through `Renderer`, using `import type` from core.
+
+From the 2026-10-05 map audit, D1–D3, D5–D9, F3, F4, F6, F13 and F15–F17 still hold, and F8 is fixed. D4 and D11 named session H as their trigger, and #18 merged without that work (AM-2).
+
+- [ ] **AM-1** (minor; settle before A8-1; owner approval) `packages/core/AGENTS.md:23,25` says `map/` may import `content/`, `teams/` and `utils/`, while 02 §2 (`02-code-structure.md:68,74`) adds `config/` and `physics/`. The two docs also disagree on `content/` → `config/` types. A8-1 needs `GameConfig['map']` in `map/`. Align the two docs; this joins A23-18's boundary conflicts.
+- [ ] **AM-2** (minor; owner approval) `06-map-and-minimap.md:415,419`: the Minimap and Renderer-port rows give "session H" as the "Until", but #18 has merged. Re-point them to SCRUM-151 / Phase 2 sprint 2.8 and to sprint 1.4's renderer and `TerrainView`, and drop the branch names from 06's Purpose paragraph (`:33-35`).
+- [ ] **AM-3** (minor) `map/MapGenerator.ts:43`, `terrainLayout.ts`, `riftTerrain.ts`, `campPlacement.ts:60-68`: only a preset's `laneProfile` is validated. Rift knots out of order, a negative `halfWidth`, an empty rift profile, a 2-point bounds polygon and bounds crossing the axis all generate without error, and `cornerCamps: 28` places west corner camps on the east half. Add `validateMapPreset` and a rule that keeps corner camps on their half and off the lanes, with one test per rule.
+- [ ] **AM-4** (minor, latent) `apps/client/src/game/Match.ts:95,362-370`: the client finds the spawn point by checking `feature.kind === 'stronghold'` (06 §4 lets only `EntityFactory.fromFeature` read a feature's kind). It spawns the Legend, and the escort, at the stronghold's centre, inside its blocking footprint (radius 40). Emit a per-team spawn slot from the generator, outside the footprint, and resolve it in core. Until then, record it with A23-20.
+- [ ] **AM-5** (minor) `apps/client/src/game/Match.types.ts:33-34`: the TSDoc says "the generated map the simulation plays on", but `Simulation` never receives the map, features are not entities, and `WorldMap` is built only in tests. Fix the TSDoc and add a 06 §10 row: the map is outside the simulation until Phase 2's spawn-from-`MapDefinition` items.
+- [ ] **AM-6** (minor) `content/maps/maps.types.ts:82-90` vs the `content/structures/` and `content/obstacles/` types: the same ids have two definition types, each with its own `footprintRadius`. Add a 06 §10 row now. In Phase 2, move `minimapGlyph` and `isBlocking` onto the entity definitions so the footprint has one source.
+- [ ] **AM-7** (minor) `apps/client/src/game/views/MapView.constants.ts:50-62`: features are drawn at world sizes kept in the client, which disagree with content (stronghold 50 vs a footprint of 80; turret 14 vs 16; tree 14 vs 16; rock 14 vs 20), so what the player sees is not what blocks them. Draw `feature.footprint` where one exists.
+- [ ] **AM-8** (minor) 13 helper files in `packages/core/src/map/` (from #8) have no sibling test (02 §8). Add tests for the pure helpers (`riftTerrain`, `symmetry`, `mapSymmetry`, `validateMapLayout`, `ProfileLaneShape`), or record in 02 §8 that a builder's step helpers may be tested through its facade (owner approval).
+- [ ] **AM-9** (minor) `docs/plan/phase-1-simulation-kernel-and-world.md:135,142,147,162`: "(feat/map-generator, pending merge)" and the `WorldMap` note ("until B's GameConfig lands") are stale. The ticks at `:142` ("no coordinate is hand-written in code") and `:162` ("a second preset needs only content"; "preset validates") have not held since A22-2 and AM-3. Annotate them "done except …" and append a PROGRESS correction.
+- [ ] **AM-10** (nit) `packages/core/src/utils/geometry.ts:55` uses `**` on the generator's path (ADR 0012). Use multiplication, and re-pin the golden hash only if the output changes.
+- [ ] **AM-11** (nit) `apps/client/src/game/views/DefaultEntityView.ts:4` imports `TEAM_COLORS` from `MapView`'s companion constants file. Move it into one shared palette (see A22-7).
+- [ ] **AM-12** (nit) `engine/render/Canvas2dRenderer.ts:104,124`: stroke widths are in device pixels, so lines are half as thick at DPR 2 (08 §4: game code works in CSS pixels). Scale them by `pixelRatio` and add a DPR-2 test.
+- [ ] **AM-13** (nit) `map/MapGenerator.test.ts:509-519` hand-rolls FNV-1a; use `utils/fnv1a.ts`.
+- [ ] **AM-14** (nit) `packages/core/src/index.ts:78-90`: remove the unused deprecated `TeamId` and `FeatureOwner` aliases.
+- [ ] **AM-15** (nit) `map/wallRing.ts:9`: `MAX_GATE_SHARE_OF_GAP = 0.4` shapes the generated gates. Move it into `MapLayout.wallRing` with `TUNE`, or document it as an invariant.
+- [ ] **AM-16** (nit; owner approval if the doc changes) `map/MapBuilder.ts:177-185` always emits bridge segments, while 06 §3 step 7 says "when enabled". Add a layout switch, or drop the wording.
+- [ ] **AM-17** (nit) `map/MapBuilder.types.ts:48-74` holds types that belong to function modules. Move each to its module's own `.types.ts`.
+- [ ] **AM-18** (nit) The code says `MiniMapView`, while 02, 06, 08 and plan 1.4 say `MinimapView`. Pick one.
+- [ ] **AM-20** (nit, process) Commit `b013fdc` (#22) uses the scope `feat(map)`, which is not allowed. Record it in A22-19's gate record; history is not rewritten.
+
+Extensions to earlier items:
+
+- **A8-1:** `GameConfig.map.navCellSize` has no reader, and `WorldMap.ts:31-33` documents the old source. There are two `Rng` interfaces. `validateMapConfig` lists every problem, while `validateGameConfig` throws on the first. `DEFAULT_MAP_CONFIG` is also used by `MapView.test.ts` and `MiniMapView.test.ts`. AM-1 comes first.
+- **A22-2:** the builders never throw at 1, 5 or 7 lanes or at other world sizes; the failure is wrong art, not a crash. A map with no preset still gets 3,505 pieces of map-1 scenery.
+- **A23-3:** confirmed that `Match.ts:199` draws the minimap every frame and that `EntityLayer.drawMinimap` is empty.
+
 ## Proposed design changes (owner sign-off needed)
 
 Decisions and doc conflicts the reviews surfaced. None of these may be changed in the design docs before the owner rules.
@@ -163,6 +206,8 @@ Decisions and doc conflicts the reviews surfaced. None of these may be changed i
 - [x] **A22-3 / PR #22 scenery:** ruled, DEC-32 (see A22-21 to A22-23). Still open: where presentation code lives (A22-1).
 - [x] **A23-1 / PROTO-01:** ruled, DEC-33. Still open: A23-17 and A23-18.
 
+- [ ] **AM-B1** (improvement on the design, small) `MapGenerator.generate` takes only the `{ map }` slice (`MapGenerator.types.ts:27`), while 06 §1 sketches a full `GameConfig`. It states its real dependency, and a full `GameConfig` still fits. If accepted, 06 §1 reads `generate(config: Pick<GameConfig, 'map'>, seed)`, and A8-1 uses that type.
+- [ ] **AM-19** (owner question) `docs/reference/game-design/05-map.md:41,103-104` puts corner camps "behind impassable rifts", but neither 06 nor the generator encloses them. Add the enclosure to 06 §3 and the generator, or drop it from 05.
 - [ ] **A23-17** The `PROTOTYPE(<id>) TEMPORARY` marker convention. It is used 18 times and documented nowhere. Document it in `AGENTS.md` / `CONTRIBUTING.md`, or fold it into `ponytail:`.
 - [ ] **A23-18** Two import-boundary conflicts:
   - `packages/core/AGENTS.md:32` forbids `systems/` → `ai/`, but 02 §2 allows it (and 11 §1 calls `AiSystem` a system).
