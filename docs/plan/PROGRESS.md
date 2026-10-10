@@ -725,3 +725,17 @@ The example below is fenced so it is not read as a real entry.
   check passed."
 - Next step: critic re-check of the follow-ups and the merge, then push; the human merges. If
   PR #26 (preselect the Warrior) merges first, `main.tsx` needs one more re-sync.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (review critic pass 6) — sholtzman + Claude Code
+
+- What was done: critic pass 6 on the review commits and merge `97fb72a`: ready to merge, no
+  blockers, every pass-5 item resolved, each commit builds on its own. Applied its should-fix
+  items: the `readOrQuarantine` valid-path test asserts the exact result and that the record
+  stays in its store (it failed with `return raw` substituted), and the PR description records
+  critic passes 5 and 6, the ponytail note and the final check. Nits: test count noted, one
+  INBOX line rewrapped.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 97ms"; "Documentation
+  check passed."
+- Next step: push and update the PR #24 description on GitHub; the human merges. If PR #26
+  merges first, re-sync `main.tsx`.

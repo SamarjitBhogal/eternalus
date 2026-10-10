@@ -182,6 +182,9 @@ line with it or better.
    (`dto/DtoCheck.types.ts`), because `readOrQuarantine` needs it. Tracked in 14 §14.
 4. **"Fine as is" items:** unchanged.
 
+Tests after the review round and the PR #25 re-sync (merge `97fb72a`): 416 client tests in 78
+files (415 from this branch, one from #25); the "How it was tested" counts above predate both.
+
 ## Checklist
 
 - [x] `npm run check` passes locally
@@ -246,5 +249,49 @@ All files          |   91.39 |    88.18 |   89.23 |   91.58 |
 Documentation check passed.
 EXIT=0
 ```
+
+**Review round (SamarjitBhogal's requests).**
+
+**Critic, pass 5 (review round, base `4892adc`, before committing): ready to merge.** No
+blockers. Should-fix items applied before the commits: `WarnReporter` out of the controller's
+companion file (S1), `readOrQuarantine` down to three parameters with 14 §8's sketch to match
+(S2), and this description's review-round section and DEC-27…DEC-31 (S3). Its nits were applied
+as well.
+
+**Critic, pass 6 (the three review commits and merge `97fb72a` with PR #25): ready to merge.**
+Every pass-5 item is resolved. It built `64e05a2` and `b1c2190` in isolation (each passes
+typecheck, lint, tests, knip and the docs check), and confirmed that `main.tsx` is the clean
+automatic merge, carrying both #25's select-timeout toggle and this branch's wiring, and that
+the `PROGRESS.md` resolution drops no line. Should-fix items applied: the `readOrQuarantine`
+valid-path test now checks the exact result and that the record stays in its store (a mutation
+returning the raw record now fails it), and this gate record. Nits: the current test count is
+noted in the review-round section, and one INBOX line is rewrapped.
+
+**Ponytail on the review round:** `/ponytail-review` is not installed in this session, so the
+ladder was applied by hand. No cuts: both changes remove duplication (one `chordKey`, one
+quarantine path). The shared DTO helpers stay deferred until a second DTO exists. The
+three-parameter signature and the types file came from the critic, and architecture outranks
+ponytail.
+
+**`npm run check` on the final tip (after the review round and the PR #25 merge):**
+
+```
+All matched files use Prettier code style!
+Configuration hints (1)
+@eternalus/core  apps/client  knip.json  Remove from ignoreDependencies
+ Test Files  82 passed (82)
+      Tests  466 passed (466)
+All files          |   99.24 |    94.14 |    99.4 |   99.19 |
+ Test Files  78 passed (78)
+      Tests  416 passed (416)
+All files          |   89.31 |    85.86 |    88.5 |   89.71 |
+✓ built in 97ms
+Checked 102 Markdown files under docs/.
+Documentation check passed.
+EXIT=0
+```
+
+The knip line is a configuration hint that was already there (`knip.json` is unchanged); it
+does not fail the check.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
