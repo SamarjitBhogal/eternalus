@@ -1,16 +1,17 @@
 ---
 title: Research
-description: Index of the research folder (the three Phase 0 deep-research reports, the decisions they informed, the merged bibliography and the rules for adding research); read it before citing a source in a doc or before starting new research so you do not redo what exists.
+description: Index of the research folder (the three Phase 0 deep-research reports and the decisions they informed, the two draft multiplayer and server reports of 2026-10-10 and the proposals they inform, the merged bibliography and the rules for adding research); read it before citing a source in a doc or before starting new research so you do not redo what exists.
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-10
 tags: [research, index, works-cited]
 related:
   - 'docs/README.md'
   - 'docs/research/works-cited.md'
   - 'docs/requirements/05-engineering-standards.md'
   - 'docs/architecture/README.md'
+  - 'docs/reviews/2026-10-10-new-requirements-impact.md'
 ---
 
 # Research
@@ -19,12 +20,13 @@ Purpose: Read this when you need evidence for a design choice, when a doc cites
 `docs/research/<file>.md#section` and you want the source behind it, or when you are about to
 research something and should first check whether it is already here. The requirements document
 asked for "deep research" and a "work cited" folder; this folder holds the three reports written
-in Phase 0 (all sources fetched on 2026-09-30), the merged bibliography, and the rules for adding
-more. Research **informs** decisions; it does not make them. A decision is an ADR in
-[`../decisions/`](../decisions/), and the requirements in [`../requirements/`](../requirements/)
-outrank anything written here.
+in Phase 0 (all sources fetched on 2026-09-30), two draft reports written on 2026-10-10 for the
+Sprint 3 online requirements (sources accessed on 2026-10-09 and 2026-10-10), the merged
+bibliography, and the rules for adding more. Research **informs** decisions; it does not make
+them. A decision is an ADR in [`../decisions/`](../decisions/), and the requirements in
+[`../requirements/`](../requirements/) outrank anything written here.
 
-## The three reports
+## The five reports
 
 ### Agentic coding harness
 
@@ -109,6 +111,75 @@ Decision **D1** (TypeScript everywhere) rests on the requirements document's own
 on the harness report's observation that typed languages and clear module boundaries are easier
 to enforce mechanically; it is recorded in its ADR, not derived from a single source.
 
+The next two reports answer the product owner's two new Sprint 3 requirements (`INBOX.md`,
+"Feedback" → "NEW REQUIREMENTS"): a 1v1 online **Duel** and a server for "hundreds or thousands"
+of concurrent players. They were written side by side, and the scalability report marks the
+claims that depend on the netcode choice **[netcode]**. The impact map
+[`../reviews/2026-10-10-new-requirements-impact.md`](../reviews/2026-10-10-new-requirements-impact.md)
+traces both requirements onto code, docs and plan, and lists the "no server" constraints they
+lift.
+
+### Multiplayer and netcode
+
+[`multiplayer-and-netcode-research.md`](multiplayer-and-netcode-research.md) compares
+deterministic lockstep, GGPO-style rollback and server-authoritative simulation with client
+prediction, reconciliation and interpolation for a fast 1v1 Duel, and recommends server authority:
+a Node process runs the unchanged core `Simulation` at 30 ticks/s, clients send `intent` commands
+and receive per-client snapshots, so single-machine determinism suffices and hidden state (Veil,
+`Vision`) stays on the server. It shows from ECMA-262, Firefox bugs and a 2026 engine-divergence
+report that `sin`, `cos`, `atan2`, `exp`, `pow`, `hypot` and `**` differ across engines and even
+across V8 versions, so lockstep or rollback would first need fdlibm-style ports; compares
+WebSocket, WebRTC data channels and WebTransport (Baseline since March 2026) with the 2026 Node
+server libraries, and recommends WebSocket (`ws`) behind a transport port; estimates Duel and 10v10
+bandwidth; maps the Duel rules (kill target, match point, round reset, persistent ultimate
+cooldowns, reconnect, trust boundary) onto the simulation; and plans a Sprint 2 spike of two
+browser tabs duelling through a throwaway Node server.
+
+Proposals it informs: the proposed [ADR 0016](../decisions/0016-multiplayer-server-authoritative-duel.md),
+which answers the owner's requirements **DEC-36** and **DEC-37**
+([decisions log](../reference/game-design/13-owner-decisions-log.md)), draws on its recommendation and comparison
+([Summary](multiplayer-and-netcode-research.md#summary-and-recommendation),
+[Options compared](multiplayer-and-netcode-research.md#options-compared)), the transport and
+library choice ([§3](multiplayer-and-netcode-research.md#3-browser-transports-and-node-server-libraries-2026)),
+the Duel rule mapping ([§5](multiplayer-and-netcode-research.md#5-how-the-duel-rules-map-onto-the-model)),
+and the open question of amending ADR 0012 to ban `Math.hypot` and `**`
+([§2](multiplayer-and-netcode-research.md#2-cross-environment-determinism)). It names the Sprint 1
+audit findings AK-3, AK-4, AK-6 and AM-10 as prerequisites. Status: **draft**, pending the owner's
+answers to its 13
+[open questions](multiplayer-and-netcode-research.md#open-questions-for-the-owner) and the spike's
+measurements.
+
+### Server scalability, matchmaking and player data
+
+[`server-scalability-and-matchmaking-research.md`](server-scalability-and-matchmaking-research.md)
+recommends keeping solo vs-bot matches on the client (on a server a full-horde match costs about a
+quarter of a core) and running only Duels on the server: one pinned Node 24 process
+(`apps/server`) holding gateway, presence, Duel queue, match host and persistence API as modules,
+with a scaling ladder (main thread, `worker_threads` pool, more processes with matchmaker-assigned
+addresses) climbed only when a measured metric breaks. It recommends Glicko-2 rating after every Duel
+(OpenSkill later for teams; TrueSkill is patented), a queue whose rating window widens with wait
+time, guest accounts with a server-issued 128-bit token, a four-table schema in `node:sqlite` (or
+managed PostgreSQL) beside IndexedDB with append-only offline uploads, wire types in a new
+`packages/protocol`, a security checklist for the WebSocket trust boundary, student-budget hosting
+options, and a load test with headless TypeScript bot clients playing real Duels. A capacity
+estimate puts the owner's example at 0.15 to 0.3 of one core, and its inputs are assumptions until
+the Sprint 2 spikes measure them.
+
+Proposals it informs: the proposed [ADR 0016](../decisions/0016-multiplayer-server-authoritative-duel.md),
+which answers the owner's requirements **DEC-36** and **DEC-37**
+([decisions log](../reference/game-design/13-owner-decisions-log.md)), draws on its topology and scaling ladder
+([Q1](server-scalability-and-matchmaking-research.md#q1-server-topology-for-the-mixed-workload)),
+rating and queue ([Q3](server-scalability-and-matchmaking-research.md#q3-matchmaking-and-rating)),
+accounts and schema ([Q4](server-scalability-and-matchmaking-research.md#q4-accounts-and-player-data)),
+placement, runtime and security
+([Q6](server-scalability-and-matchmaking-research.md#q6-monorepo-placement-runtime-libraries-and-security))
+and its [phased plan](server-scalability-and-matchmaking-research.md#phased-plan-q7), which lists
+the ADRs to write: online play and a server (amending the requirements runtime row, NFR-013,
+NFR-033 and ADR 0005's "no server" context), the packages and dependency rule, database and
+accounts, and approval of `ws`. Status: **draft**, pending the owner's answers to its 9
+[open questions](server-scalability-and-matchmaking-research.md#open-questions-for-the-owner)
+(hosting first) and spikes A to C.
+
 ## How to add research
 
 - One report per topic, named `<topic>-research.md`, with the frontmatter of
@@ -135,13 +206,15 @@ to enforce mechanically; it is recorded in its ADR, not derived from a single so
 
 ## Index
 
-| Path                                                                                             | What it is                                                                                                              | Sections                                                                                                                                                                                    | Cited by                                                                                                  |
-| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| [`README.md`](README.md)                                                                         | This index, the abstracts and the rules for adding research.                                                            | —                                                                                                                                                                                           | `docs/README.md`                                                                                          |
-| [`agentic-harness-research.md`](agentic-harness-research.md)                                     | How coding agents read instructions and how to enforce rules mechanically; 53 sources.                                  | §1 `AGENTS.md`, §2 Claude Code config, §3 Anthropic guidance, §4 OpenAI and 2026 sources, §5 verification, §6 multi-agent, §7 frontmatter                                                   | `requirements/04`, `requirements/05`, `agents/*`, `process/guardrails.md`, ADR 0007, ADR 0008             |
-| [`game-architecture-and-performance-research.md`](game-architecture-and-performance-research.md) | Simulation, entity, pathfinding, collision, rendering, pooling, AI, worker and content-design evidence; 66 sources.     | §1 timestep and determinism, §2 hierarchies vs ECS, §3 pathfinding, §4 partitioning and collision, §5 Canvas 2D, §6 pooling, §7 AI, §8 workers, §9 data-driven, §10 reference architectures | `requirements/01`, `requirements/05`, `architecture/03`, `04`, `06`, `08`, `10`, `11`, ADR 0006, ADR 0009 |
-| [`persistence-input-diagnostics-research.md`](persistence-input-diagnostics-research.md)         | IndexedDB as a DBMS, resource loading, input and rebinding, invariants, logging, timing and replay testing; 46 sources. | §A persistence (A1–A4), §B input (B1–B2), §C diagnostics (C1–C3)                                                                                                                            | `requirements/05`, `requirements/06`, `architecture/09`, `14`, `15`, ADR 0005                             |
-| [`works-cited.md`](works-cited.md)                                                               | The merged, de-duplicated bibliography of all three reports, grouped by topic, with the citing reports.                 | Agent tooling, game architecture, performance, AI, persistence, input, diagnostics, testing                                                                                                 | Every doc that cites an external fact                                                                     |
+| Path                                                                                               | What it is                                                                                                                                    | Sections                                                                                                                                                                                                                           | Cited by                                                                                                  |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [`README.md`](README.md)                                                                           | This index, the abstracts and the rules for adding research.                                                                                  | —                                                                                                                                                                                                                                  | `docs/README.md`                                                                                          |
+| [`agentic-harness-research.md`](agentic-harness-research.md)                                       | How coding agents read instructions and how to enforce rules mechanically; 53 sources.                                                        | §1 `AGENTS.md`, §2 Claude Code config, §3 Anthropic guidance, §4 OpenAI and 2026 sources, §5 verification, §6 multi-agent, §7 frontmatter                                                                                          | `requirements/04`, `requirements/05`, `agents/*`, `process/guardrails.md`, ADR 0007, ADR 0008             |
+| [`game-architecture-and-performance-research.md`](game-architecture-and-performance-research.md)   | Simulation, entity, pathfinding, collision, rendering, pooling, AI, worker and content-design evidence; 66 sources.                           | §1 timestep and determinism, §2 hierarchies vs ECS, §3 pathfinding, §4 partitioning and collision, §5 Canvas 2D, §6 pooling, §7 AI, §8 workers, §9 data-driven, §10 reference architectures                                        | `requirements/01`, `requirements/05`, `architecture/03`, `04`, `06`, `08`, `10`, `11`, ADR 0006, ADR 0009 |
+| [`persistence-input-diagnostics-research.md`](persistence-input-diagnostics-research.md)           | IndexedDB as a DBMS, resource loading, input and rebinding, invariants, logging, timing and replay testing; 46 sources.                       | §A persistence (A1–A4), §B input (B1–B2), §C diagnostics (C1–C3)                                                                                                                                                                   | `requirements/05`, `requirements/06`, `architecture/09`, `14`, `15`, ADR 0005                             |
+| [`multiplayer-and-netcode-research.md`](multiplayer-and-netcode-research.md)                       | Draft: netcode models for the Duel, cross-engine determinism, transports and server libraries, bandwidth, Duel rules, spike plan; 35 sources. | Summary, §1 netcode models, §2 cross-environment determinism, §3 transports and libraries, §4 tick rate and bandwidth, §5 Duel rules, options, risks, spike plan, open questions                                                   | Proposed ADR 0016 (for DEC-36, DEC-37)                                                                    |
+| [`server-scalability-and-matchmaking-research.md`](server-scalability-and-matchmaking-research.md) | Draft: server topology, services, Glicko-2 matchmaking, guest accounts and schema, hosting, load testing, placement and security; 50 sources. | Summary, Q1 topology, Q2 services, Q3 matchmaking and rating, Q4 accounts and data, Q5 hosting and scale, Q6 placement and security, options, capacity estimate, risks, phased plan (Q7), open questions                           | Proposed ADR 0016 (for DEC-36, DEC-37)                                                                    |
+| [`works-cited.md`](works-cited.md)                                                                 | The merged, de-duplicated bibliography of all five reports, grouped by topic, with the citing reports.                                        | Agent tooling, game architecture, performance, AI, persistence, input, diagnostics, testing, multiplayer netcode, transports and server libraries, server runtime and hosting, matchmaking and rating, identity, data and security | Every doc that cites an external fact                                                                     |
 
 ## Related
 
@@ -150,4 +223,5 @@ to enforce mechanically; it is recorded in its ADR, not derived from a single so
 - [`../requirements/06-mvp-requirements.md`](../requirements/06-mvp-requirements.md): the requirements the reports helped shape
 - [`../architecture/README.md`](../architecture/README.md): the architecture docs that cite the findings
 - [`../decisions/`](../decisions/): the ADRs that record the decisions D1–D12
+- [`../reviews/2026-10-10-new-requirements-impact.md`](../reviews/2026-10-10-new-requirements-impact.md): the impact map of the Duel and server requirements that the two 2026-10-10 reports research
 - [`../requirements/03-organization-guidelines.md`](../requirements/03-organization-guidelines.md): frontmatter and document hygiene rules

@@ -1,30 +1,41 @@
 ---
 title: Works cited
-description: The merged, de-duplicated bibliography of the three Phase 0 research reports, grouped by topic, with each source's URL, author or publisher, the date shown on the page, the access date and the report(s) that cite it; read it to find or verify the source behind a claim in any Eternalus doc.
+description: The merged, de-duplicated bibliography of the five research reports (three from Phase 0, two on multiplayer and servers from 2026-10-10), grouped by topic, with each source's URL, author or publisher, the date shown on the page, the access date and the report(s) that cite it; read it to find or verify the source behind a claim in any Eternalus doc.
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-10
 tags: [research, works-cited, bibliography, sources]
 related:
   - 'docs/research/README.md'
   - 'docs/research/agentic-harness-research.md'
   - 'docs/research/game-architecture-and-performance-research.md'
   - 'docs/research/persistence-input-diagnostics-research.md'
+  - 'docs/research/multiplayer-and-netcode-research.md'
+  - 'docs/research/server-scalability-and-matchmaking-research.md'
 ---
 
 # Works cited
 
 Purpose: Read this when a doc cites an external fact and you want the source, when you are
 checking that a claim is still true, or when you add research and must merge its bibliography.
-This list merges the "Works cited" sections of the three reports in this folder, removes the
-one duplicate (Nystrom's "Command", cited from two URLs), and groups the entries by topic. Every
-URL is kept exactly as the report fetched it. All sources were accessed on 2026-09-30; the date
-after the publisher is the date the page itself shows (or "undated"). The last field names the
-citing report and the entry number in that report's own list: **Harness** =
+This list merges the "Works cited" sections of the three Phase 0 reports and the "Sources"
+sections of the two 2026-10-10 reports in this folder, removes the duplicates (Nystrom's
+"Command" and Hoskinson's "Determinism in League of Legends: Introduction", each cited from two
+URLs; Fiedler's "Deterministic Lockstep", cited by Architecture and Netcode; Fiedler's "Snapshot
+Compression" and the Colyseus README, each cited by Netcode and Scalability), and groups the
+entries by topic. Every URL is kept exactly as the report cited it. The Phase 0 sources were
+accessed on 2026-09-30. The Netcode report gives each source's own access date; the Scalability
+report states only "All accessed 2026-10-09 or 2026-10-10" for its whole list, so its entries
+carry that range. The date after the publisher is the date the page itself shows ("undated" where
+the report says so, "date not stated" where the report gives none). Scalability entries marked
+"read through search excerpts" were read from search-engine extracts, not fetched in full. The
+last field names the citing report and the entry number in that report's own list: **Harness** =
 [`agentic-harness-research.md`](agentic-harness-research.md), **Architecture** =
 [`game-architecture-and-performance-research.md`](game-architecture-and-performance-research.md),
-**Persistence** = [`persistence-input-diagnostics-research.md`](persistence-input-diagnostics-research.md).
+**Persistence** = [`persistence-input-diagnostics-research.md`](persistence-input-diagnostics-research.md),
+**Netcode** = [`multiplayer-and-netcode-research.md`](multiplayer-and-netcode-research.md),
+**Scalability** = [`server-scalability-and-matchmaking-research.md`](server-scalability-and-matchmaking-research.md).
 
 Entry format: title — URL — author/publisher — date on page — accessed date — citing report(s).
 
@@ -91,7 +102,7 @@ marmelab survey; the fetched PDF returned no readable text (Harness, closing not
 
 - Fix Your Timestep! — https://gafferongames.com/post/fix_your_timestep/ — Glenn Fiedler, Gaffer On Games (Game Physics series) — page undated; the series is dated 2004 on the category index — accessed 2026-09-30 — Architecture #1.
 - Floating Point Determinism — https://gafferongames.com/post/floating_point_determinism/ — Glenn Fiedler, Gaffer On Games — undated — accessed 2026-09-30 — Architecture #2.
-- Deterministic Lockstep — https://gafferongames.com/post/deterministic_lockstep/ — Glenn Fiedler, Gaffer On Games — undated — accessed 2026-09-30 — Architecture #3.
+- Deterministic Lockstep — https://gafferongames.com/post/deterministic_lockstep/ — Glenn Fiedler, Gaffer On Games — undated — accessed 2026-09-30 (Architecture) and 2026-10-09 (Netcode) — Architecture #3; Netcode #11.
 - Game Physics category index (lists "Networked Physics (2004)") — https://gafferongames.com/categories/game-physics/ — Gaffer On Games — undated — accessed 2026-09-30 — Architecture #4.
 - Math.random() — https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random — MDN Web Docs (Mozilla) — last modified Jul 10, 2025 — accessed 2026-09-30 — Architecture #5.
 - Math — https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math — MDN Web Docs (Mozilla) — last modified Jul 10, 2025 — accessed 2026-09-30 — Architecture #6.
@@ -212,7 +223,7 @@ marmelab survey; the fetched PDF returned no readable text (Harness, closing not
 
 ## Testing
 
-- Determinism in League of Legends: Introduction — https://technology.riotgames.com/news/determinism-league-legends-introduction — Rick Hoskinson, Riot Games Technology Blog — 2017-06-20 — accessed 2026-09-30 — Persistence #20.
+- Determinism in League of Legends: Introduction — https://technology.riotgames.com/news/determinism-league-legends-introduction (Riot Games Technology Blog) and https://www.riotgames.com/en/news/determinism-league-legends-introduction (Riot Games news) — Rick Hoskinson, Riot Games — 2017-06-20 — accessed 2026-09-30 (Persistence) and 2026-10-10 (Netcode) — Persistence #20 (Technology Blog URL); Netcode #19 (news URL).
 - Determinism in League of Legends: Fixing Divergences — https://technology.riotgames.com/news/determinism-league-legends-fixing-divergences — Rick Hoskinson, Riot Games Technology Blog — 2018-05-01 — accessed 2026-09-30 — Persistence #21.
 - What is Property-Based Testing? — https://fast-check.dev/docs/introduction/what-is-property-based-testing/ — Nicolas Dubien, fast-check documentation — last updated 2026-02-07 — accessed 2026-09-30 — Persistence #43.
 - Snapshot — https://vitest.dev/guide/snapshot — Vitest guide (v5.0.2), VoidZero and Vitest contributors — undated (versioned docs) — accessed 2026-09-30 — Persistence #44.
@@ -220,8 +231,104 @@ marmelab survey; the fetched PDF returned no readable text (Harness, closing not
 - Vitest coverage config (thresholds, autoUpdate, perFile) — https://vitest.dev/config/coverage — Vitest (v5.0.2 docs) — undated (versioned docs) — accessed 2026-09-30 — Harness #45.
 - Fowler-Noll-Vo hash function — https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function — Wikipedia — undated (living article) — accessed 2026-09-30 — Persistence #46.
 
+## Multiplayer netcode
+
+- ECMA-262 §21.3.2 "Function Properties of the Math Object" (note; `Math.hypot`, `sin`, `cos`, `atan2`, `exp`, `pow`, `sqrt`) — https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-function-properties-of-the-math-object — Ecma TC39, ECMA-262 (ECMAScript 2027 draft) — date not stated — accessed 2026-10-09 — Netcode #1.
+- ECMA-262 §6.1.6.1 "The Number Type" (`Number::exponentiate`, `Number::add`, `Number::multiply`, `Number::toString` notes) — https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-numeric-types-number-exponentiate — Ecma TC39, ECMA-262 (ECMAScript 2027 draft) — date not stated — accessed 2026-10-09 — Netcode #2.
+- Bug 531915 "Floating point differences between platforms" (fixed in Firefox 93) — https://bugzilla.mozilla.org/show_bug.cgi?id=531915 — Mozilla Bugzilla — date not stated — accessed 2026-10-10 — Netcode #3.
+- Bug 1823880 "Make fdlibm (sin/cos/tan) fingerprinting resistance precise" (fixed in Firefox 113) — https://bugzilla.mozilla.org/show_bug.cgi?id=1823880 — Mozilla Bugzilla — date not stated — accessed 2026-10-09 — Netcode #4.
+- Simulation diverges between JS engines: Math.sin/Math.cos in the per-step integrator (perplexdotgg/bounce issue #8) — https://codeberg.org/perplexdotgg/bounce/issues/8 — digitalbreed, Codeberg — 2026-08-03 — accessed 2026-10-09 — Netcode #5.
+- Netcode Architectures Part 1: Lockstep — https://www.snapnet.dev/blog/netcode-architectures-part-1-lockstep/ — Jay Mattis, SnapNet blog — 2023-03-28 — accessed 2026-10-09 — Netcode #6.
+- Netcode Architectures Part 2: Rollback — https://www.snapnet.dev/blog/netcode-architectures-part-2-rollback/ — Jay Mattis, SnapNet blog — 2023-04-18 — accessed 2026-10-09 — Netcode #7.
+- Netcode Architectures Part 3: Snapshot Interpolation — https://www.snapnet.dev/blog/netcode-architectures-part-3-snapshot-interpolation/ — Jay Mattis, SnapNet blog — 2023-06-07 — accessed 2026-10-09 — Netcode #8.
+- Netcode Architectures Part 4: Tribes — https://www.snapnet.dev/blog/netcode-architectures-part-4-tribes/ — Jay Mattis, SnapNet blog — 2023-09-27 — accessed 2026-10-09 — Netcode #9.
+- What Every Programmer Needs To Know About Game Networking — https://gafferongames.com/post/what_every_programmer_needs_to_know_about_game_networking/ — Glenn Fiedler, Gaffer On Games — 2010-02-24 — accessed 2026-10-10 — Netcode #10.
+- Snapshot Compression — https://gafferongames.com/post/snapshot_compression/ — Glenn Fiedler, Gaffer On Games — 2015-01-04 per Netcode; Scalability lists it as undated — accessed 2026-10-09 (Netcode) and 2026-10-09 or 2026-10-10 (Scalability) — Netcode #12; Scalability #23.
+- Client-Side Prediction and Server Reconciliation (Fast-Paced Multiplayer part II) — https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html — Gabriel Gambetta — undated — accessed 2026-10-09 — Netcode #13.
+- Entity Interpolation (Fast-Paced Multiplayer part III) — https://www.gabrielgambetta.com/entity-interpolation.html — Gabriel Gambetta — undated — accessed 2026-10-09 — Netcode #14.
+- Lag Compensation (Fast-Paced Multiplayer part IV) — https://www.gabrielgambetta.com/lag-compensation.html — Gabriel Gambetta — undated — accessed 2026-10-10 — Netcode #15.
+- 1500 Archers on a 28.8: Network Programming in Age of Empires and Beyond — https://www.gamedeveloper.com/programming/1500-archers-on-a-28-8-network-programming-in-age-of-empires-and-beyond — Paul Bettner and Mark Terrano, Game Developer — 2001-03-22 — accessed 2026-10-09 — Netcode #16.
+- Mitigating information exposure to cheaters in real-time strategy games — https://research.ibm.com/publications/mitigating-information-exposure-to-cheaters-in-real-time-strategy-games — Chris Chambers, Wu-chang Feng, Wu-chi Feng, Debanjan Saha, NOSSDAV 2005 — 2005 — accessed 2026-10-10 — Netcode #17.
+- Demolishing Wallhacks with VALORANT's Fog of War — https://www.riotgames.com/en/news/demolishing-wallhacks-valorants-fog-war — Paul Chamberlain, Riot Games — 2020-04-14 — accessed 2026-10-09 — Netcode #18.
+- GGPO (README) — https://github.com/pond3r/ggpo — pond3r, GitHub (MIT) — date not stated; no releases, last push 2024-06-26 per Netcode #35 — accessed 2026-10-09 — Netcode #20.
+- NetplayJS (README) — https://github.com/rameshvarun/netplayjs — Varun Ramesh, GitHub (ISC) — date not stated — accessed 2026-10-09 — Netcode #30.
+- Window: setTimeout() method, section "Timeouts in inactive tabs" — https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout — MDN Web Docs (Mozilla) — last modified 2026-09-03 — accessed 2026-10-10 — Netcode #32.
+- Fast-Paced Multiplayer (Part I): Client-Server Game Architecture — https://www.gabrielgambetta.com/fpm1.html — Gabriel Gambetta, gabrielgambetta.com — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #1.
+- State Synchronization — https://gafferongames.com/post/state_synchronization/ — Glenn Fiedler, Gaffer On Games — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #17.
+
+## Transports and server libraries
+
+- WebTransport API — https://developer.mozilla.org/en-US/docs/Web/API/WebTransport_API — MDN Web Docs (Mozilla) — last modified 2026-09-25 — accessed 2026-10-09 — Netcode #21.
+- WebKit Features for Safari 26.4 — https://webkit.org/blog/17862/webkit-features-for-safari-26-4/ — Jen Simmons, WebKit blog (Apple) — 2026-03-24 — accessed 2026-10-09 — Netcode #22.
+- RTCPeerConnection: createDataChannel() method — https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createDataChannel — MDN Web Docs (Mozilla) — last modified 2026-09-14 — accessed 2026-10-09 — Netcode #23.
+- The WebSocket API (WebSockets) — https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API — MDN Web Docs (Mozilla) — last modified 2026-09-12 — accessed 2026-10-10 — Netcode #24.
+- Network Traversal Service (STUN/TURN) — https://twilio.com/en-us/stun-turn — Twilio — undated (© 2026) — accessed 2026-10-09 — Netcode #25.
+- geckos.io (README) — https://github.com/geckosio/geckos.io — Yannick Deubel, GitHub (BSD-3-Clause) — date not stated — accessed 2026-10-09 — Netcode #26.
+- colyseus (README) — https://github.com/colyseus/colyseus — Colyseus, GitHub (MIT; "Authoritative Multiplayer Framework for Node.js") — date not stated in Netcode; undated in Scalability — accessed 2026-10-09 (Netcode) and 2026-10-09 or 2026-10-10 (Scalability) — Netcode #27; Scalability #50.
+- Colyseus 0.18 is here — https://colyseus.io/blog/colyseus-018-is-here/ — Colyseus blog — 2026-08-20 — accessed 2026-10-09 — Netcode #28.
+- Room — https://docs.colyseus.io/room — Colyseus documentation (0.18) — date not stated — accessed 2026-10-09 — Netcode #29.
+- Global objects (`WebSocket`) — https://nodejs.org/api/globals.html — Node.js v26.11.1 documentation — date not stated — accessed 2026-10-10 — Netcode #31.
+- Introduction — https://socket.io/docs/v4/ — Socket.IO (v4 documentation) — date not stated — accessed 2026-10-10 — Netcode #34.
+- Package metadata for the server libraries — GitHub REST API (`https://api.github.com/repos/<owner>/<repo>` and `/releases/latest`) for colyseus/colyseus, websockets/ws, uNetworking/uWebSockets.js, geckosio/geckos.io, rameshvarun/netplayjs, murat-dogan/node-datachannel, shinyoshiaki/werift-webrtc, fails-components/webtransport, socketio/socket.io and pond3r/ggpo; npm registry (`https://registry.npmjs.org/<package>`) for the npm packages (`uWebSockets.js` returned "not found") — GitHub and npm — live API data — queried 2026-10-09 — Netcode #35.
+- `ws` repository README (MIT licence) — https://github.com/websockets/ws — websockets, GitHub — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #14.
+- WebSocket client (Learn) — https://nodejs.org/en/learn/getting-started/websocket — OpenJS Foundation, nodejs.org — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #15.
+- `ws` API documentation (`doc/ws.md`) — https://github.com/websockets/ws/blob/master/doc/ws.md — websockets, GitHub — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #25.
+- `uWebSockets.js` repository README — https://github.com/uNetworking/uWebSockets.js — uNetworking, GitHub — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #47.
+- WebSockets — https://bun.com/docs/runtime/http/websockets — Oven, Bun documentation — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #48.
+- Deno.upgradeWebSocket — https://docs.deno.com/api/deno/~/Deno.upgradeWebSocket — Deno, Deno API documentation — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #49.
+
+## Server runtime, scaling and hosting
+
+- Worker threads — https://nodejs.org/api/worker_threads.html — OpenJS Foundation, Node.js v26.11.1 documentation — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #2.
+- Scalability — https://docs.colyseus.io/scalability — Colyseus 0.18 documentation — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #3.
+- Modules: TypeScript — https://nodejs.org/docs/latest-v24.x/api/typescript.html — OpenJS Foundation, Node.js v24.21.0 documentation — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #12.
+- Server-Side Rendering — https://vite.dev/guide/ssr — Vite (v8.3.4 documentation) — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #13.
+- Performance measurement APIs (`monitorEventLoopDelay`) — https://nodejs.org/docs/latest-v24.x/api/perf_hooks.html — OpenJS Foundation, Node.js v24.21.0 documentation — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #16.
+- Using WebSockets (Cloud Run) — https://docs.cloud.google.com/run/docs/triggering/websockets — Google Cloud — last updated 2026-10-07 — accessed 2026-10-09 or 2026-10-10 — Scalability #18.
+- Dynamic request routing (`fly-replay`) — https://fly.io/docs/networking/dynamic-request-routing/ — Fly.io — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #19.
+- Graceful Shutdown — https://docs.colyseus.io/server/graceful-shutdown — Colyseus documentation — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #20.
+- App configuration (fly.toml): `kill_signal` and `kill_timeout` — https://fly.io/docs/reference/configuration/ — Fly.io — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #21.
+- GameServerAllocation Specification — https://agones.dev/site/docs/reference/gameserverallocation/ — Agones, agones.dev — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #22.
+- Always Free Resources — https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm — Oracle, OCI documentation — undated (copyright 2026) — accessed 2026-10-09 or 2026-10-10 — Scalability #34.
+- Report on the Oracle Cloud Always Free Ampere A1 reduction effective 2026-06-15 — https://infoq.com/news/2026/07/oracle-cloud-free-tier-limits/ — InfoQ — 2026-07 (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #35.
+- FAQ — https://docs.colyseus.io/faq — Colyseus 0.18 documentation — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #36.
+- k6/websockets — https://grafana.com/docs/k6/latest/javascript-api/k6-websockets/ — Grafana Labs, k6 documentation (latest) — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #37.
+- WebSocket engine reference — https://www.artillery.io/docs/reference/engines/websocket — Artillery, artillery.io — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #38.
+- Node.js v24.12.0 (LTS) release notes — https://nodejs.org/blog/release/v24.12.0 — OpenJS Foundation — 2025-12-10 — accessed 2026-10-09 or 2026-10-10 — Scalability #39.
+- Azure for Students — https://azure.microsoft.com/en-us/free/students — Microsoft, azure.microsoft.com — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #42.
+- Deploy for Free — https://render.com/docs/free — Render docs — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #43.
+- Free web services now remain active while receiving WebSocket messages — https://render.com/changelog/free-web-services-now-remain-active-while-receiving-websocket-messages — Render changelog — 2026-02-24 — accessed 2026-10-09 or 2026-10-10 — Scalability #44.
+- Resource pricing — https://docs.fly.io/about/pricing — Fly.io docs — undated (mentions 2026 snapshot charges) — accessed 2026-10-09 or 2026-10-10 — Scalability #45.
+- Pricing (Durable Objects) — https://developers.cloudflare.com/durable-objects/platform/pricing/ — Cloudflare docs — last updated 2026-09-30 — accessed 2026-10-09 or 2026-10-10 — Scalability #46.
+
+## Matchmaking and rating
+
+- The Glicko system (web page; states that Glicko and Glicko-2 are public domain) — http://www.glicko.net/glicko.html — Mark Glickman — date not stated for the page; glicko2.pdf revised 2022-03-22 — accessed 2026-10-10 — Netcode #33.
+- The Glicko system (paper, PDF) — http://www.glicko.net/glicko/glicko.pdf — Mark E. Glickman, glicko.net — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #4.
+- Example of the Glicko-2 system — http://www.glicko.net/glicko/glicko2.pdf — Mark E. Glickman, glicko.net — 2022-03-22 — accessed 2026-10-09 or 2026-10-10 — Scalability #5.
+- OpenSkill: A faster asymmetric multi-team, multiplayer rating system — https://joss.theoj.org/papers/10.21105/joss.05901 — Vivek Joshy, Journal of Open Source Software 9(93) 5901 — 2024-01-09 (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #6.
+- Allow requirements to relax over time — https://docs.aws.amazon.com/gameliftservers/latest/flexmatchguide/match-rulesets-components-expansion.html — Amazon Web Services, Amazon GameLift Servers FlexMatch developer guide — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #7.
+- instant-glicko-2 crate documentation — https://docs.rs/instant-glicko-2 — docs.rs (no author stated) — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #26.
+- Rating systems — https://lichess.org/page/rating-systems — Lichess, lichess.org — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #27.
+- TrueSkill(TM): A Bayesian Skill Rating System — https://www.microsoft.com/en-us/research/publication/trueskilltm-a-bayesian-skill-rating-system/ — Ralf Herbrich, Tom Minka, Thore Graepel, Advances in Neural Information Processing Systems 20, MIT Press — 2007-01 — accessed 2026-10-09 or 2026-10-10 — Scalability #28.
+- US8538910B2 - Determining relative skills of players — https://patents.google.com/patent/US8538910B2/en — Google Patents (assignee Microsoft Technology Licensing, LLC) — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #29.
+- TrueSkill 2: An improved Bayesian skill rating system — https://www.microsoft.com/en-us/research/publication/trueskill-2-improved-bayesian-skill-rating-system/ — Tom Minka, Ryan Cleven, Yordan Zaykov, Microsoft Research MSR-TR-2018-8 — 2018 (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #30.
+- `openskill` (openskill.js, MIT) — https://npmjs.com/package/openskill — Philihp Busby et al., npm — undated (v4.1.x) (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #31.
+
+## Identity, data and security
+
+- Session Management Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html — OWASP Cheat Sheet Series — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #8.
+- Password Storage Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html — OWASP Cheat Sheet Series — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #9.
+- SQLite — https://nodejs.org/docs/latest-v24.x/api/sqlite.html — OpenJS Foundation, Node.js v24.21.0 documentation — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #10.
+- Appropriate Uses For SQLite — https://sqlite.org/whentouse.html — SQLite, sqlite.org — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #11.
+- WebSocket Security Cheat Sheet — https://cheatsheetseries.owasp.org/cheatsheets/WebSocket_Security_Cheat_Sheet.html — OWASP Cheat Sheet Series — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #24.
+- Anonymous Sign-Ins — https://supabase.com/docs/guides/auth/auth-anonymous — Supabase docs — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #32.
+- `lucia` repository README (deprecation notice) — https://github.com/lucia-auth/lucia — Lucia, GitHub — undated (read through search excerpts) — accessed 2026-10-09 or 2026-10-10 — Scalability #33.
+- Pricing — https://supabase.com/pricing — Supabase, supabase.com — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #40.
+- Pricing — https://neon.com/pricing — Neon, neon.com — undated — accessed 2026-10-09 or 2026-10-10 — Scalability #41.
+
 ## Related
 
 - [`README.md`](README.md): the reports, the decisions they informed and how to add research
-- [`agentic-harness-research.md`](agentic-harness-research.md), [`game-architecture-and-performance-research.md`](game-architecture-and-performance-research.md), [`persistence-input-diagnostics-research.md`](persistence-input-diagnostics-research.md): the reports whose lists are merged here
+- [`agentic-harness-research.md`](agentic-harness-research.md), [`game-architecture-and-performance-research.md`](game-architecture-and-performance-research.md), [`persistence-input-diagnostics-research.md`](persistence-input-diagnostics-research.md), [`multiplayer-and-netcode-research.md`](multiplayer-and-netcode-research.md), [`server-scalability-and-matchmaking-research.md`](server-scalability-and-matchmaking-research.md): the reports whose lists are merged here
 - [`../requirements/05-engineering-standards.md`](../requirements/05-engineering-standards.md) and [`../architecture/README.md`](../architecture/README.md): the docs that cite these sources
