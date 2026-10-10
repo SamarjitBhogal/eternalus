@@ -56,8 +56,8 @@ ui/screens/           *Screen.tsx (+ .module.css, .test.tsx, useXxx hooks)
 ui/hud/               HealthBar, AetherBar, AbilityBar, MinimapPanel, MatchClock, Scoreboard, Announcer, DeveloperMenu, PerfOverlay
 ui/components/        KeyGlyph, Prompt, Button, Dialog, ProgressBar, ErrorBoundary
 ui/strings.ts         UI labels and prompt templates (Recommendation; game names stay in content)
-bridge/               store.ts, eventBus.ts, events.ts, Binding.types.ts, slices/*, selectors/*, hooks.ts
-game/input/           keybindings.ts, InputMapper.ts, BindingResolver.ts, chordKey.ts
+bridge/               store.ts, eventBus.ts, events.ts, Binding.types.ts, chordKey.ts, slices/*, selectors/*, hooks.ts
+game/input/           keybindings.ts, InputMapper.ts, BindingResolver.ts
 ```
 
 ## 2. `SessionController`
@@ -320,7 +320,9 @@ The shapes are the ones in [09](09-hardware-abstraction.md) §3 plus the keyboar
 `KeyboardEvent.code`, display `KeyboardEvent.key`, fall back to `key` when `code` is `''`). The
 type contracts sit in `bridge/` rather than `game/input/` ([02](02-code-structure.md) §3
 and [09](09-hardware-abstraction.md) §3 agree) because `ui/` may not import `game/` and
-`<KeyGlyph action="…"/>` needs the `InputAction` type.
+`<KeyGlyph action="…"/>` needs the `InputAction` type. For the same reason `chordKey(chord)`, the
+one definition of "the same physical input", is `bridge/chordKey.ts`: `game/input/`,
+`settingsSlice` and the settings screen all identify chords through it.
 Adding an action is one id in `INPUT_ACTIONS` and one `DEFAULT_CHORDS` entry (the record type
 demands it); no screen, prompt or system names a key.
 

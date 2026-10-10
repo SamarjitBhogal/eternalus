@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { chordKey } from '../../bridge/chordKey';
 import { BindingResolver } from './BindingResolver';
-import { chordKey } from './chordKey';
 
 describe('BindingResolver', () => {
   it('finds the action a chord is bound to', () => {

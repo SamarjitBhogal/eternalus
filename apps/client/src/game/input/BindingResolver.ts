@@ -1,6 +1,6 @@
 import type { Binding, InputAction, InputChord } from '../../bridge/Binding.types';
+import { chordKey } from '../../bridge/chordKey';
 import type { BindingConflict } from './BindingResolver.types';
-import { chordKey } from './chordKey';
 
 /**
  * Looks up which actions a physical input triggers under the current bindings, and reports

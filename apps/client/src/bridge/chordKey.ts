@@ -1,4 +1,4 @@
-import type { InputChord } from '../../bridge/Binding.types';
+import type { InputChord } from './Binding.types';
 
 /**
  * The identity of a chord, ignoring its label: `'keyboard:KeyW'`, `'mouse:3'`. Two chords with

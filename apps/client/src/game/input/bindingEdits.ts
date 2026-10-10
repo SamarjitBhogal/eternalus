@@ -4,7 +4,7 @@ import type {
   InputAction,
   InputChord,
 } from '../../bridge/Binding.types';
-import { chordKey } from './chordKey';
+import { chordKey } from '../../bridge/chordKey';
 import { DEFAULT_CHORDS, withDefaults } from './keybindings';
 
 /**

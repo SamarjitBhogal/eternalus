@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 
+import { chordKey } from '../../bridge/chordKey';
 import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
@@ -54,7 +55,7 @@ export function SettingsScreenControls(): ReactElement {
                     (chords.length === 0
                       ? STRINGS.unbound
                       : chords.map((chord) => (
-                          <kbd key={`${chord.device}:${chord.code}`} className={styles.chord}>
+                          <kbd key={chordKey(chord)} className={styles.chord}>
                             {chord.label}
                           </kbd>
                         )))}

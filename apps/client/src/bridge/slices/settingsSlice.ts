@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { Binding, InputAction, InputChord } from '../Binding.types';
+import { chordKey } from '../chordKey';
 
 /** Per-user preferences (architecture 02 §7 "settings"). */
 export type SettingsSliceState = {
@@ -43,7 +44,7 @@ export const settingsSlice = createSlice({
     /** The action that already holds the same physical input as `chord`, if any. */
     selectChordOwner: (state, chord: InputChord): InputAction | null =>
       state.bindings.find((binding) =>
-        binding.chords.some((held) => held.device === chord.device && held.code === chord.code),
+        binding.chords.some((held) => chordKey(held) === chordKey(chord)),
       )?.action ?? null,
     selectAudio: (state) => state.audio,
     selectVideo: (state) => state.video,
