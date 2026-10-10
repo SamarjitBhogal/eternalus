@@ -1,3 +1,4 @@
+import type { LegendClassId } from '../../../bridge/domain.types';
 import type { ClassSelection, SessionPhase, UiIntent } from '../../../bridge/events';
 import type { SessionContext, SessionState } from '../../SessionController.types';
 import { SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
@@ -6,8 +7,8 @@ import { startCountdown } from '../startCountdown';
 /**
  * Character select (reference 14 §2): a 60 s countdown. Confirming a class, or the countdown
  * ending with a class selected, goes to `pre-launch`; ending with none cancels to `menu` with
- * reason `'select-timeout'`. With the timeout off there is no countdown: only confirming or
- * cancelling leaves.
+ * reason `'select-timeout'`. A preselected class is selected on entry, as if the player had
+ * picked it.
  */
 export class CharacterSelectState implements SessionState {
   public readonly phase: SessionPhase = 'character-select';
@@ -16,14 +17,17 @@ export class CharacterSelectState implements SessionState {
 
   /**
    * Creates the state.
-   * @param isTimeoutEnabled - Whether the countdown runs (reference 14 §2 has it on).
+   * @param preselectedClassId - A class selected on entry, or `null` to start with none. An id
+   *   missing from the catalogue is ignored like any unknown `select-class`.
    */
-  public constructor(private readonly isTimeoutEnabled: boolean) {}
+  public constructor(private readonly preselectedClassId: LegendClassId | null) {}
 
-  /** Clears the selection and starts the countdown (if the timeout is on). */
+  /** Resets the selection to the preselected class (if any) and starts the countdown. */
   public enter(context: SessionContext): void {
     this.selection = null;
-    if (!this.isTimeoutEnabled) return;
+    if (this.preselectedClassId !== null) {
+      this.handleIntent({ kind: 'select-class', classId: this.preselectedClassId }, context);
+    }
     this.stopCountdown = startCountdown(
       context.clock,
       SELECT_COUNTDOWN_MS,

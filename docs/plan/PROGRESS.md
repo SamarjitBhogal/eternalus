@@ -635,3 +635,20 @@ The example below is fenced so it is not read as a real entry.
   check passed."
 - Next step: review and merge the PR into the phase branch before the demo; turn the timeout
   back on when the character select screen lands.
+
+### 2026-10-09 — Phase 1 / demo fix — fix/preselect-warrior — sholtzman + Claude Code
+
+- What was done: replaced PR #25's approach, at sholtzman's request. #25 turned the
+  character-select timeout off; now the timeout is back to the design's behaviour and character
+  select starts with the Warrior selected (`PLACEHOLDER_PRESELECTED_CLASS_ID` in
+  `game/content/placeholderSetup.ts`, `TODO(sam)`), so the 60 s countdown leads into
+  `pre-launch` and the match instead of cancelling. `CharacterSelectState` takes
+  `preselectedClassId` (selected on entry through the normal `select-class` path, so it is
+  checked against the catalogue); `createDefaultSessionStates({ preselectedClassId })` passes it
+  through. #25's isTimeoutEnabled option and its test are removed with the behaviour; the new
+  test fails with the preselect removed. Not checked in a browser.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in 95ms"; "Documentation
+  check passed."
+- Next step: review and merge before the demo; remove the preselect when the character select
+  screen lands.
