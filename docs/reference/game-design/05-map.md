@@ -69,7 +69,7 @@ What this means (brief decision D7; details in `../../architecture/06-map-and-mi
   view and appears on both, with no minimap code change.
 - Changing `numLanes` from 3 to 5 must produce a valid, symmetric map with 5 SpawnerTowers and 5
   BuffTowers per team and 5 central capture points (one per lane); that is the acceptance test.
-  Camps are the exception to symmetry once DEC-15 is in force (below).
+  Camps are the exception to symmetry once ADR 0017 is accepted (DEC-15, below).
 
 ## MVP layout summary
 
@@ -112,8 +112,9 @@ camps on each side, so the two sides differ, but they must be equal in overall d
 same number of camps of each weight class on each side, not necessarily in mirrored positions.
 This exempts camps from the mirror invariant of ADR 0009 and architecture 06, which a proposed
 ADR 0017 must amend (owner sign-off) before the generator changes; until then the generator still
-mirrors camps. **Open (owner):** whether this also applies to the corner camps, and whether
-parity is per side only or also per corridor.
+mirrors camps. **Open (owner):** whether this also applies to the corner camps, whether parity
+is per side only or also per corridor, and which classes a corridor gets when it holds other than
+three camps (ADR 0017).
 
 ## Obstacles and destructible terrain
 

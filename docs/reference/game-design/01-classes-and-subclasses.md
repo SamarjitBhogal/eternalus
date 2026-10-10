@@ -46,8 +46,11 @@ Notes:
 - Each MVP class's abilities and ultimates, including the ones the owner approved on 2026-10-10
   (DEC-11: Warrior Hamstring, Fan of Sorrows, Eclipse; Sentinel Shield Wall, Sunder, Colossus
   Roar, Avalanche; Magus Sanctuary, Aether Lance, Last Rites), are listed in
-  `06-abilities-and-progression.md`. The approvals exceed the "3 abilities + ultimate" slots of
-  the `Legend` contract below; whether that is a loadout pool or a rule change is open (owner).
+  `06-abilities-and-progression.md`. They come on top of each class's game-doc kit, which stays
+  MVP, and the class's abilities and ultimates are a pool: "a player chooses 3 abilities and 1
+  ultimate from the set of abilities and ultimates that are available to their class when
+  selecting/creating their loadout" (owner, confirmed in chat 2026-10-10). So the "3 abilities +
+  ultimate" slots of the `Legend` contract below stand.
 
 ## Sub-classes (names pending) — post-MVP
 

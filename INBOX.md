@@ -16,56 +16,81 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-**Multiplayer and scalability (DEC-36, DEC-37):** the consolidated questions about the Duel mode
-and the server live in `docs/plan/multiplayer-and-scalability-plan.md`. Answer them there or
-inline here.
-
+- [ ] **DEC-36 / DEC-37 — accept ADR 0016 and answer the plan §9 questions.** The course
+      instructor's two new requirements, Duel multiplayer (DEC-36) and a server for hundreds or
+      thousands of concurrent players (DEC-37), are planned now; must be implemented by the end of
+      Sprint 3 (2026-11-13). The proposed design is
+      `docs/decisions/0016-multiplayer-server-authoritative-duel.md` (draft): accept, change or
+      reject it. The consolidated questions about the Duel mode and the server are in
+      `docs/plan/multiplayer-and-scalability-plan.md` §9; answer them there or inline here.
 - [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
-      `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10). (1) The approved
-      abilities exceed the "3 abilities + 1 ultimate" rule: Warrior now has 4 abilities, Sentinel 5
-      and Magus 4 for 3 slots, and up to three ultimates each. Is that a loadout **pool** (pick 3
-      abilities and 1 ultimate), or does the rule change? Does Sentinel keep Rip & Tear? (2) Do
-      Meteor Fall and Nova stay MVP next to Avalanche and Last Rites? (3) What does a `feared`
-      unit do (Colossus Roar), does `control-immune` cover it, and does fear apply to human
-      Legends (for example in a Duel)? (4) Costs, cooldowns and magnitudes for the newly approved
-      abilities, or may agents put `TUNE` placeholders in content?
+      `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
+      of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
+      get the slow — does that hold in Duels too, and what does `feared` do to bots? Does
+      `control-immune` cover fear? The same row cites `mechanics-ideas.md` for "Fear is bot-only in
+      the MVP", but that file has no such text: what is the source? (4) Costs, cooldowns and
+      magnitudes for the newly approved abilities, or may agents put `TUNE` placeholders in
+      content?
   -     Hamstring ability approved for Warrior class. Fan of Sorrows also approved. Eclipse alternate ultimate approved for MVP
     - Shield wall, Sunder, and Colossus Roar approved for Sentinel class. Avalanche approved as alternate ultimate for MVP
     - Sanctuary and Aether Lance approved for Magus class (Enemy Sentinel's Sunder should shatter Sanctuary). Last Rites alternate ultimate approved for MVP.
+- [ ] **DEC-11 — architecture approvals (impact review AB-3…AB-5).** The approved abilities need
+      edits to architecture 05 that wait for your approval: §8, add `feared` (Colossus Roar) and
+      `insanity` (DEC-12) to the status ids; §17, move `summon` (Shield Wall) from MVP-if-time to
+      MVP and `reveal` (Aether Lance) from post-MVP to MVP, add the continuous `dash` that
+      Avalanche needs, make combos MVP for "Sunder shatters Sanctuary", and list the class pools in
+      its kit row (it still says "third abilities and ultimate picks: INBOX"). Approve, or say
+      which to change; 05 stays as it is until then.
 - [ ] **DEC-12 — volatile crystals, still open after your answer** (the timers and the volatile
       rule are recorded as DEC-12, 2026-10-10). (1) Does "once the centre boss spawns" mean the
       moment the boss is summoned or the mid-game mark? If the GreaterBoss (MVP-if-time) is cut,
-      do the crystals ever turn volatile? (2) What does `insanity` do, and what are its display
-      name and icon? (3) The shockwave's radius and damage and the debuff's duration (or `TUNE`
-      placeholders); does the shockwave hit every team; does a destroyed camp stay gone for the
-      rest of the match? (Corner camps are first in the cut order, so this only matters if time
-      allows.)
+      do the crystals ever turn volatile? (2) What does `insanity` do? Its name is yours, and its
+      description and a placeholder icon may be added now, as you said. (3) The shockwave's radius
+      and damage and the debuff's duration (or `TUNE` placeholders); does the shockwave hit every
+      team; does a destroyed camp stay gone for the rest of the match? (4) How much health does a
+      volatile crystal have, and who can break it (either team? damage only?) (Corner camps are
+      first in the cut order, so this only matters if time allows.)
   -     Approved with this caveat: Onc the centre boss spawns, the outer camp's crystals become "volatile" and are now breakable but when they die, they release a shockwave destroying the camp and dealing massive AOE damage and temporary insanity debuff (TBD on what it does but the effect description/icon can be added with no actual effects applied)
 - [ ] **DEC-13 — score cap, still open after your answer** (30-minute planned match recorded as
-      DEC-13, 2026-10-10; the quarter mark and mid-game scale with it). The proposal had an
-      optional score cap at 2700 s for a 1200 s match. At 30 minutes, scale the cap the same way
-      (4050 s) or keep 2700 s? The balance anchors tied to the old length (boss levels at the two
-      marks, the match-length metrics in `balancing.md`, the soak length) also need your numbers.
+      DEC-13, 2026-10-10; the quarter mark and mid-game scale with it). Your "Accept after
+      scaling" scales the proposal's optional score cap too: 2700 s for a 1200 s match becomes
+      **4050 s** for 30 minutes (2.25 × the planned match). Confirm 4050 s, or give another value.
+      The balance anchors tied to the old length (boss levels at the two marks, the match-length
+      metrics in `balancing.md`, the soak length) also need your numbers.
   -     Accept after scaling to planned match time = 30 mins
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
       (2) Is parity per side only, or also per corridor? Only counts are matched, so one side's
       camps may sit nearer its lanes or Stronghold than the other's: acceptable? (3) The rule
-      exempts camps from ADR 0009's mirror invariant, so it needs your sign-off on an amending ADR
-      (proposed ADR 0017) before the generator changes.
+      exempts camps from ADR 0009's mirror invariant, so it needs your sign-off on the amending
+      ADR 0017 (next item) before the generator changes. (4) From ADR 0017: which classes does a
+      corridor get when it holds other than three camps?
   -     Accepted " keep depth-based weights but define the classes by position in the corridor" where the vertical line down the centre of the map defines the division. RNG determines the location of the camps on each side so both sides are different, but they must equate in terms of overall difficulty (1 light on left means 1 light on right; not necessarily in mirrored locations but the same amount of weighted camps on left team and right team's sides)
+- [ ] **DEC-15 — accept ADR 0017.** `docs/decisions/0017-balanced-asymmetric-camp-placement.md`
+      (draft) amends ADR 0009 for forest camps only: the seeded RNG places them per side with
+      equal counts per weight class, and everything else stays mirrored. Accept, change or reject
+      it; the generator does not change until you accept it. Its open questions are DEC-15 (1),
+      (2) and (4) above.
+- [ ] **Session D (DEC-34) — the text of the delegated edits.** You delegated both items to the
+      cleaner long-term design (recorded as DEC-34). The impact review proposes the text in
+      `docs/reviews/2026-10-10-new-requirements-impact.md` §5.4: SD-1, option (a), no
+      `useAppDispatch` and the UI emits intents (edits architecture 13 §5 and
+      `apps/client/AGENTS.md`); SD-2, the 13 §2 `character-select` row records the class choice and
+      starts the countdown while `menu` keeps building `MatchSetup`. Approve that text, or confirm
+      that agents may apply it as delegated.
+  -     Accept recommended option if it is cleaner long-term. For D, set to whichever is cleaner in the long-term.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
-      sprint is "this sprint": S1, which ends 2026-10-16, or S2? (2) `AiSystem` is a system (02 §2,
-      11 §1), but `systems/` may not import `ai/` (core `AGENTS.md`), so it lives in `ai/` and
-      `Simulation` passes it to `DefaultSystemPipeline`, which splits the tick order across two
-      files (02 §9). Should it stay in `ai/`, or may `systems/` import `ai/` types? (3) Add the
+      sprint is "this sprint": S1, which ends 2026-10-16, or S2? (2) Your bot-AI system: may its
+      file live under `systems/`, or must it stay in `ai/`? (Today it is in `ai/`, because core
+      `AGENTS.md` forbids `systems/` importing `ai/`, which 02 §2 allows.) (3) Add the
       `PROTOTYPE(<id>) TEMPORARY` marker convention to `AGENTS.md` so every future prototype uses
       it? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
       what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'` lists them. Agents: do not build on or
-      extend marked code.
+      extend marked code. The two departures you were asked to confirm, speed 5.4 m/s and mass
+      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`).
   -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
@@ -261,6 +286,28 @@ inline here.
 
 ## Done
 
+- 2026-10-10 — **Your chat clarifications of 2026-10-10 (DEC-11) and the source of the new
+  requirements** recorded in `docs/reference/game-design/13-owner-decisions-log.md` (appended to
+  DEC-11, DEC-36 and DEC-37) and applied to reference 01, 06, 08, 11, `more-abilities.md` and
+  `docs/plan/legend-team-brief-2026-10-10.md`. Branch `docs/sprint-2-requirements-and-planning`,
+  on top of `8d0d308` (your answers), `045ecc3` (the DEC records and the brief) and `3923124`
+  (proposed ADR 0016 and ADR 0017, and the multiplayer plan).
+  - **DEC-11 (1), pool or rule change, and does Sentinel keep Rip & Tear** (impact Q3): confirmed
+    in chat, "a player chooses 3 abilities and 1 ultimate from the set of abilities and ultimates
+    that are available to their class when selecting/creating their loadout". The "3 + 1" rule
+    stands and the class set is a pool. Rip & Tear stays: the approvals come "on top of the
+    abilities that i had originally put forward in the reference docs".
+  - **DEC-11 (2), do Meteor Fall and Nova stay MVP** (impact Q4): confirmed in chat, yes. Every
+    class keeps its game-doc kit (Warrior Veil, Blade Runner, Fury; Sentinel Rip & Tear, Slam,
+    Berserk, Meteor Fall; Magus Imbue, Shockwave, Death Ray, Nova), all MVP, next to Eclipse,
+    Avalanche and Last Rites.
+  - **MVP status of Fan of Sorrows, Sunder, Colossus Roar, Aether Lance and the Sunder–Sanctuary
+    combo:** confirmed in chat, "all of these for MVP".
+  - **DEC-36 and DEC-37** were set by the course instructor ("our prof", an intentional
+    curveball): planned now; must be implemented by the end of Sprint 3 (2026-11-13).
+  - **Correction to the entry below:** the Session D follow-up (approving the SD-1/SD-2 text) was
+    left only in Done; it is now an open item above. The open items above also gain the DEC-11
+    architecture approvals, ADR 0016 and ADR 0017.
 - 2026-10-10 — **The owner's answers of 2026-10-09 (`8d0d308`)** recorded in
   `docs/reference/game-design/13-owner-decisions-log.md` (batch 2026-10-10) and folded into the
   reference docs and `docs/plan/legend-team-brief-2026-10-10.md`. Branch

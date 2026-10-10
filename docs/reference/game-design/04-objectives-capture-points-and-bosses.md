@@ -148,9 +148,11 @@ allows).
   (lowest structure damage dealt, most structures lost, pushed furthest back, etc.). The "worst
   lane" choice is a scoring function in content (`Recommendation:` weighted sum of structures
   lost, front-line distance and recent damage; a `LaneAssessment` query on `GameState`).
-- **A crystal within each camp cannot be broken** until the centre boss spawns (then it turns
-  volatile, below; DEC-12). **It spawns new bosses every 5 minutes `TUNE` after a mini-boss's
-  death.**
+- **A crystal within each camp cannot be broken. It spawns new bosses every 5 minutes `TUNE`
+  after a mini-boss's death.**
+
+DEC-12 (2026-10-10) changes the first half of that bullet once the centre boss spawns: see
+"Volatile crystals" below.
 
 Corner camps are the only place mini-bosses exist before the quarter mark, which is why the lane
 mini-bosses are described as "nothing compared to the middle boss" but the corner ones as
@@ -175,8 +177,9 @@ releases a shockwave that destroys its camp, deals massive area damage and appli
 **`insanity`** debuff. What `insanity` does is TBD (owner); until then it is a description and an
 icon with no effect applied. The shockwave's radius and damage and the debuff's duration are TBD
 (owner). **Open (owner):** whether "the centre boss spawns" means the moment the boss is summoned
-or the mid-game mark, and whether crystals turn volatile at all if the GreaterBoss is cut; whom
-the shockwave hits; whether a destroyed camp stays gone for the rest of the match.
+or the mid-game mark, and whether crystals turn volatile at all if the GreaterBoss is cut; how
+much health a volatile crystal has and who can break it (either team? damage only?); whom the
+shockwave hits; whether a destroyed camp stays gone for the rest of the match.
 
 ## Win condition and match end
 
@@ -188,22 +191,24 @@ the shockwave hits; whether a destroyed camp stays gone for the rest of the matc
   relative to a configured nominal match length, so "quarter mark" and "mid-game" are concrete
   ticks even without a limit. The owner set the planned match to **30 minutes** (DEC-13,
   2026-10-10); the value lives in `GameConfig`'s `plannedMatchSeconds`, and the marks scale with
-  it. **Open (owner):** the optional score cap at 30 minutes.
+  it. **To confirm (owner):** the optional score cap; scaled with the match, as the answer
+  reads, it is 4050 s.
 
 ## Match timeline (MVP summary)
 
 All values `TUNE`; sources in brackets. The quarter mark and mid-game are fractions of the
 planned match length (30 minutes, DEC-13).
 
-| When                            | Event                                                                                                                                                       |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| t = 0                           | 1-minute countdown; 3 hordes of 16 light minions spawn from each Stronghold, one per lane [requirements]                                                    |
-| t = 60 s                        | Towers begin spawning hordes every 60 s [requirements]                                                                                                      |
-| after camp cooldown             | Forest camps spawn their units [requirements]                                                                                                               |
-| quarter mark                    | Mini-bosses plus support mobs on the top and bottom lane capture zones [game doc]                                                                           |
-| mid-game                        | Cathedral gem explodes; Eternal boss summoned; atmosphere change; camps buffed; corner waves every 4 min [game doc]; corner crystals turn volatile [DEC-12] |
-| every 5 min after a corner kill | Corner crystal respawns its mini-boss [game doc]                                                                                                            |
-| Stronghold destroyed            | Match ends [game doc]                                                                                                                                       |
+| When                            | Event                                                                                                               |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| t = 0                           | 1-minute countdown; 3 hordes of 16 light minions spawn from each Stronghold, one per lane [requirements]            |
+| t = 60 s                        | Towers begin spawning hordes every 60 s [requirements]                                                              |
+| after camp cooldown             | Forest camps spawn their units [requirements]                                                                       |
+| quarter mark                    | Mini-bosses plus support mobs on the top and bottom lane capture zones [game doc]                                   |
+| mid-game                        | Cathedral gem explodes; Eternal boss summoned; atmosphere change; camps buffed; corner waves every 4 min [game doc] |
+| boss spawns (trigger open)      | Corner crystals turn volatile [DEC-12]                                                                              |
+| every 5 min after a corner kill | Corner crystal respawns its mini-boss [game doc]                                                                    |
+| Stronghold destroyed            | Match ends [game doc]                                                                                               |
 
 ## Engineering notes
 
