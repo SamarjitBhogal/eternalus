@@ -25,15 +25,20 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       Death Ray (Magus), Berserk (Sentinel), Fury (Warrior); Nova / Meteor Fall / Eclipse become
       loadout-selectable alternative ultimates post-MVP. (b) Keep both ultimates per class as a
       loadout choice in the MVP (more content, more balancing). (c) Your own picks.
+  -     Hamstring ability approved for Warrior class. Fan of Sorrows also approved. Eclipse alternate ultimate approved for MVP
+    -   Shield wall, Sunder, and Colossus Roar approved for Sentinel class. Avalanche approved as alternate ultimate for MVP
+    - Sanctuary and Aether Lance approved for Magus class (Enemy Sentinel's Sunder should shatter Sanctuary). Last Rites alternate ultimate approved for MVP. 
 - [ ] **DEC-12 (was DISC-33) — corner-camp crystal timers.** "Crystals" are the unbreakable
       crystals inside the four **corner camps** (game doc, "Outer (Corner) Camps" and "Minion
       Buffs on Boss Spawn"): the crystal respawns the camp's mini-boss **300 s** after it dies,
       and once the central boss has spawned it also emits light/medium waves toward your lanes
       every **240 s**. Accept both timers as TUNE starting values? (Corner camps are first in the
       cut order, so this only matters if time allows.)
+  -     Approved with this caveat: Onc the centre boss spawns, the outer camp's crystals become "volatile" and are now breakable but when they die, they release a shockwave destroying the camp and dealing massive AOE damage and temporary insanity debuff (TBD on what it does but the effect description/icon can be added with no actual effects applied)
 - [ ] **DEC-13 (was DISC-34) — match length.** Left blank in the last batch. Proposal:
       `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
       summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
+  -     Accept after scaling to planned match time = 30 mins
 
 - [ ] **DEC-15 — camp weights by depth (DISC-42) in practice.** The default map yields 4 light +
       2 heavy camps per side and no medium ones; with one camp per corridor (`numLanes` ≥ 7) every
@@ -41,6 +46,7 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
       class in content. Pick one. Note: "depth" is the distance to the nearest lane over half the
       corridor's height, so in tall worlds with steep lanes every camp reads as light.
+  -     Accepted " keep depth-based weights but define the classes by position in the corridor" where the vertical line down the centre of the map defines the division. RNG determines the location of the camps on each side so both sides are different, but they must equate in terms of overall difficulty (1 light on left means 1 light on right; not necessarily in mirrored locations but the same amount of weighted camps on left team and right team's sides)
 - [ ] **Session D (feat/session-shell-home), better than design — no `useAppDispatch`.** The
       §2.3 contract and `apps/client/AGENTS.md` ask for `useAppSelector` **and**
       `useAppDispatch`. D ships only `useAppSelector`: `ui/` never writes the store
@@ -52,6 +58,7 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       Also found by the critic: architecture 13 §2's `character-select` row says it "builds the
       rosters … assigns `playerTeam`", while the `menu` and `loading` rows (and reference 14 §5)
       put the setup at "Start match"; D follows the latter. The row needs a one-line fix.
+  -     Accept recommended option if it is cleaner long-term. For D, set to whichever is cleaner in the long-term.
 
 - [ ] **PROTO-01 — prototype escort minions (demo, 2026-10-08; branch `feat/minion-follow-prototype`).**
       For the prototype demo, Samarjit chose minions that **follow the player's Legend** instead
@@ -61,8 +68,7 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       `MinionController`, sprint 3.3), `content/mobs/lightMinion.ts` (health 150 and radius 0.4 are
       `balancing.md`'s light-minion anchors; please confirm two departures: speed 5.4 m/s instead
       of 3.5 so the escort keeps up with the Warrior, and mass 0.5 as 40 on the repo's Warrior =
-      1 scale), the
-      `PROTOTYPE_ESCORT` spawn in `apps/client/src/game/Match.ts` (→ `SpawnSystem` / hordes),
+      1 scale), the `PROTOTYPE_ESCORT` spawn in `apps/client/src/game/Match.ts` (→ `SpawnSystem` / hordes),
       the brute-force scan (→ `Perception` over `SpatialHash`), `Brain` as a component with only
       a controller id (→ `state.ai.brains`, 11 §2) and the missing `AiSystem` decision budget
       (11 §6). Question: `AiSystem` is a system (02 §2, 11 §1), but `systems/` may not import
@@ -75,8 +81,9 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
       lists them all. Agents: do not build on or extend marked code; replace it with the named
       design piece. Proposal (needs your approval, since it edits `AGENTS.md`): add this marker
       convention to `AGENTS.md` so every future prototype uses it.
+  -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
 
-## Requests for the agent
+## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -246,7 +253,26 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
 
 ## Feedback
 
-- [ ] _(none yet)_
+- [ ] Answered below questions, or called out in section header. 
+- NEW REQUIREMENTS:
+  - By the end of Sprint 3, two new items must be implemented, and therefore we must plan for them:
+    - 1. Multiplayer support
+      - We must be able to have at least 1 player playing against another. 
+      - We have decided the best way to have this work is to do a second game mode called "Duel"
+      - Duel has matchmaking, looking for any other player currently waiting in a Duel queue
+      - Duel spawns both players inside the Cathedral where the doors are closed and the surrounding world is deactivated to no longer spawn units or carry structures (environmental buildings, trees, etc., unaffected)
+      - The players compete in a 1v1, first-to-10-kills match with a match-point system
+      - After each kill, like in a standard fighting game, the players reset. any damage done to the map during this battle remains in place; only the players reset. 
+      - Ultimate abilities have continuous cooldown, while other abilities do not 
+        - Meaning: Your cooldown for an ultimate persists through life and death, where your other abilities have standard cooldown and reset to fully cooled down upon death
+      - We would like to set up a simple database in the future where we can track player's profiles, game IDs, stats, etc
+      - Tracking stats / history will allow us to also implement performance-based matchmaking, prioritizing better players against better players (more wins against better players, fewer losses against worse players, win streak, losing streak, number of total matches played online and offline, etc)
+    2. Speed and Support
+      - Our second requirement is to make a server capable of supporting hundreds or thousands of concurrent players
+      - This would mean that scalability is now something that needs to be considered
+      - e.g., 50 players doing solo 10v10 battles against bots, 10 players in 1v1 duels, 6 players idle on home screen, 3 logging in, 1 logging off, etc.
+      - Prep for this will also put us on the right track to eventually have the 10 v 10 games being all players, while still supporting the large legions of mobs. 
+      - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
 
