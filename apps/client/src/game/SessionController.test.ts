@@ -47,8 +47,8 @@ function setUp(
 }
 
 /** Drives the real states from boot to character-select. */
-function atCharacterSelect() {
-  const session = setUp();
+function atCharacterSelect(states = createDefaultSessionStates()) {
+  const session = setUp(states);
   session.controller.start();
   session.intent({ kind: 'start-match' });
   session.clock.advance(PLACEHOLDER_LOAD_MS);
@@ -148,6 +148,19 @@ describe('SessionController with the default states', () => {
     expect(controller.phase).toBe('menu');
     expect(store.getState().session.reason).toBe('select-timeout');
     expect(store.getState().matchSetup.countdownMs).toBe(0);
+  });
+
+  it('stays in character select with the timeout off, and confirming still leaves', () => {
+    const { controller, clock, store, intent } = atCharacterSelect(
+      createDefaultSessionStates({ isSelectTimeoutEnabled: false }),
+    );
+    expect(store.getState().matchSetup.countdownMs).toBe(0);
+    clock.advance(SELECT_COUNTDOWN_MS * 10);
+    expect(controller.phase).toBe('character-select');
+    expect(store.getState().session.reason).toBeNull();
+    intent({ kind: 'select-class', classId: 'magus' });
+    intent({ kind: 'confirm-selection' });
+    expect(controller.phase).toBe('pre-launch');
   });
 
   it('goes to pre-launch when the countdown ends with an unconfirmed selection', () => {
