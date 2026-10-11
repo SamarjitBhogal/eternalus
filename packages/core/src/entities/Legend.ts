@@ -1,3 +1,6 @@
+import { Aether } from '../components/Aether';
+import type { LegendDefinition } from '../content/legends/legends.types';
+import { SpawnContextReader } from './SpawnContextReader';
 import { Unit } from './Unit';
 
 /** Abstract base for entities of the `legend` family. */
@@ -17,5 +20,16 @@ export abstract class Legend extends Unit {
     }
 
     super(id, definitionId);
+  }
+
+  /**
+   * Installs the unit components, then the legend-only `Aether` (MP) pool. Only Legends carry
+   * Aether; mobs and structures have none.
+   */
+  protected override installComponents(context: unknown): void {
+    super.installComponents(context);
+
+    const { definition } = new SpawnContextReader(this).placed<LegendDefinition>(context);
+    this.addComponent(new Aether(definition.baseAether));
   }
 }

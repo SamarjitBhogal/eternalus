@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Aether } from '../../components/Aether';
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
 import { Movement } from '../../components/Movement';
@@ -27,5 +28,6 @@ describe('Magus', () => {
     expect(entity.getComponent(Health).current).toBe(definition.baseHealth);
     expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
     expect(entity.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
+    expect(entity.getComponent(Aether).max).toBe(definition.baseAether);
   });
 });

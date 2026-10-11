@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-10
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -139,6 +139,7 @@ fields. Each component guards its own invariants so a bug shows up where it happ
 | --------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
 | `Transform`     | `position: Vec2`, `facing`, `radius`                                             | position finite                                                          | `moveBy`, `lookAt`                                                                                |
 | `Health`        | `base`, `current`, `shieldBars: ShieldBar[]` (one per living allied `BuffTower`) | `0 <= current <= base`; bars drain before base; bar count ≤ towers alive | `applyDamage(amount, source)`, `heal`, `addShieldBar(sourceId, max)`, `removeShieldBar(sourceId)` |
+| `Aether`        | `current`, `max` (MP pool; Legends only)                                         | `0 <= current <= max`; `max > 0`                                         | `canAfford(amount)`, `spend(amount)`, `restore(amount)`, `fraction`, `isEmpty`                    |
 | `Movement`      | `speed`, `maxSpeed`, `acceleration`, `mass`, `velocity: Vec2`                    | `0 <= speed <= maxSpeed`; mass > 0                                       | `accelerateToward`, `applyImpulse` (knockback), `stop`                                            |
 | `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`   | cooldown never negative                                                  | `canAttack(tick)`, `setTarget`, `beginAttack`                                                     |
 | `Abilities`     | `slots: Record<AbilitySlot, AbilityRuntime>`                                     | one runtime per slot                                                     | `runtime(slot)`, `forEachReady`                                                                   |

@@ -58,6 +58,10 @@ Reply inline (`Decision: …`).
       The balance anchors tied to the old length (boss levels at the two marks, the match-length
       metrics in `balancing.md`, the soak length) also need your numbers.
   -     Accept after scaling to planned match time = 30 mins
+- [ ] **Aether (MP) pool sizes per class.** The game doc gives no aether numbers. Branch
+      `feat/legend-aether` adds the `Aether` component (MP) to every Legend, with TUNE placeholder
+      `baseAether`: Warrior 200, Sentinel 250, Magus 500 (caster largest). Confirm the pool sizes or
+      give your own. (Regen rate is a Phase 4 concern, not set yet.)
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?

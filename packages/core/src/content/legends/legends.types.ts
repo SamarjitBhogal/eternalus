@@ -27,6 +27,8 @@ export type LegendDefinition = UnitDefinition & {
   readonly kind: LegendKind;
   /** One line for the character-select screen. */
   readonly roleBlurb: string;
+  /** Full aether (MP) pool; abilities and class default actions spend it (`01-classes`). */
+  readonly baseAether: number;
   readonly weaponBias: WeaponBias;
   readonly damageFocus: DamageFocus;
   readonly pickUp: PickUpStyle;

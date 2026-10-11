@@ -845,3 +845,21 @@ The example below is fenced so it is not read as a real entry.
   "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 117ms"; "Documentation
   check passed."
 - Next step: retarget PR #28 to `phase/2-sprint-2-work` and merge it.
+
+### 2026-10-10 — Phase 1 / S2 — feat/legend-aether — Claudio + Claude Code
+
+- What was done: added the `Aether` component (MP pool: `max`/`current`, `canAfford`, `spend`,
+  `restore`, `fraction`, `isEmpty`) in `packages/core/src/components/Aether.ts` with its test.
+  `Legend.installComponents` now installs `Aether(definition.baseAether)` on every Legend (mobs and
+  structures get none); `LegendDefinition` gains `baseAether`, with TUNE placeholders in the Warrior
+  (200), Sentinel (250) and Magus (500) content. `StateHasher` hashes aether, appended only when
+  present so non-legend entities hash unchanged. `Magus.test` asserts the pool; the `Match` test
+  fixture's warrior definition gains `baseAether`. Sub-classes were left out: they are post-MVP
+  (D11, `01-classes-and-subclasses.md`). Aether regen is a Phase 4 system, not added. Aether tuning
+  values raised for the owner in `INBOX.md`. Not checked in a browser.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 472 passed (472)"; client "Tests 416 passed (416)"; "✓ built in 105ms"; "Documentation
+  check passed."
+- Next step: pre-PR gate (critic + ponytail-review), then open the PR (rebased onto
+  `phase/2-sprint-2-work`); owner confirms the aether pool sizes; abilities and regen
+  that spend aether land in Phase 4.
