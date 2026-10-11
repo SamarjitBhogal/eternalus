@@ -12,6 +12,7 @@ export const SENTINEL = {
   displayName: 'Sentinel',
   roleBlurb: 'Heavy and powerful; needs a long runway to reach a very high top speed.',
   baseHealth: 1200, // TUNE:
+  baseAether: 250, // TUNE: no aether numbers in the game doc; small pool (physical bruiser)
   weaponBias: 'heavy',
   damageFocus: 'physical',
   pickUp: 'grab',

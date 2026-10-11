@@ -12,6 +12,7 @@ export const MAGUS = {
   displayName: 'Magus',
   roleBlurb: 'Magical; applies buffs or debuffs and can revive allies.',
   baseHealth: 800, // TUNE:
+  baseAether: 500, // TUNE: no aether numbers in the game doc; largest pool (caster)
   weaponBias: 'staff',
   damageFocus: 'magic',
   pickUp: 'levitate',

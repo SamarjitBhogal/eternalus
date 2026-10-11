@@ -12,6 +12,7 @@ export const WARRIOR = {
   displayName: 'Warrior',
   roleBlurb: 'Lighter, lower health, faster.',
   baseHealth: 600, // TUNE:
+  baseAether: 200, // TUNE: no aether numbers in the game doc; smallest pool (weapon-focused class)
   weaponBias: 'light',
   damageFocus: 'mixed',
   pickUp: 'pick-up',

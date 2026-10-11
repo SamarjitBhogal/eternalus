@@ -1,3 +1,4 @@
+import { Aether } from '../components/Aether';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -56,6 +57,10 @@ export class StateHasher {
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {
       fields.push(['vision', vision.revealedUntilTick]);
+    }
+    const aether = entity.findComponent(Aether);
+    if (aether !== undefined) {
+      fields.push(['aether', aether.current, aether.max]);
     }
     return fields;
   }
