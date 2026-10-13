@@ -4,7 +4,7 @@ description: The MVP list from the requirements doc merged with the game doc's M
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-10
 tags: [reference, game-design, mvp, scope]
 related:
   - 'docs/requirements/06-mvp-requirements.md'
@@ -43,11 +43,14 @@ Numbers are quoted from the sources and are `TUNE` (they live in `GameConfig`/co
 | Turrets: auto-fire, manual with P, T to switch ammo, heavy/default bolts                                                                  | **MVP**         | game doc                                 |
 | 3 central capture points (1 per lane) with three checkpoints; the middle one is the Cathedral                                             | **MVP**         | requirements; game doc                   |
 | 6 forest camps per team side between the lanes (1 lane → 3 camps → middle lane → 3 camps → 1 lane); camps spawn only after their cooldown | **MVP**         | requirements                             |
+| Camp weight class by position in the corridor; random positions per side with equal counts per class (ADR 0009 amendment pending)         | **MVP**         | DEC-15                                   |
 | Neutral camps, bosses and mini-bosses as neutral units                                                                                    | **MVP**         | requirements                             |
 | Mini-bosses on the outer capture zones at the quarter mark                                                                                | **MVP**         | game doc                                 |
+| Planned match of 30 minutes; the quarter mark and mid-game scale with it; no hard time limit (score cap: 4050 s, to confirm)              | **MVP**         | DEC-13                                   |
 | Central boss (Eternal) summoned by the Cathedral gem mid-game; Eternal form for the final hit                                             | **MVP-if-time** | game doc                                 |
-| Outer (corner) camps with mini-bosses, unbreakable crystal, 5-minute respawn, heavy wave down the worst lane                              | **MVP-if-time** | game doc ("included in MVP if possible") |
+| Outer (corner) camps with mini-bosses, crystal (volatile once the boss spawns, DEC-12), 5-minute respawn, heavy wave down the worst lane  | **MVP-if-time** | game doc ("included in MVP if possible") |
 | Minion buffs on boss spawn; corner camps spawn side waves every 4 minutes                                                                 | **MVP-if-time** | game doc                                 |
+| Volatile crystals: breaking one destroys its camp (shockwave, massive area damage, `insanity` debuff with no effect yet)                  | **MVP-if-time** | DEC-12                                   |
 | Map + minimap, both generated from config; minimap follows the map with no code change                                                    | **MVP**         | requirements                             |
 | Destructible bridges; burnable grass and trees; felled trees damage, break ground and can be carried                                      | **MVP-if-time** | game doc                                 |
 | Multiple maps                                                                                                                             | **post-MVP**    | game doc (idea pending)                  |
@@ -77,6 +80,7 @@ Numbers are quoted from the sources and are `TUNE` (they live in `GameConfig`/co
 | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------- |
 | Simple XP-based scaling on abilities (blessings?), health and aether (aether = mana, spent after cooldown) | **MVP**                                             | requirements                 |
 | 3 abilities + ultimate per class; ultimate charged by kills, assists, objective damage; lose N% on death   | **MVP**                                             | game doc                     |
+| Approved abilities, alternate ultimates, Sunder–Sanctuary combo; class pools, loadout picks 3 + 1 (`06`)   | **MVP**                                             | DEC-11; chat 2026-10-10      |
 | Ability upgrades on hold beyond basic level scaling                                                        | **MVP** decision (upgrades themselves **post-MVP**) | game doc (yellow)            |
 | Ability tree; upgrading blessings at a BuffTower or the Stronghold                                         | **post-MVP**                                        | game doc (idea pending)      |
 | Simple loadout options (weapons, some ability options); pre-game configuration with auto-build             | **MVP**                                             | requirements; game doc       |
@@ -88,6 +92,18 @@ Numbers are quoted from the sources and are `TUNE` (they live in `GameConfig`/co
 | Artifacts (Mortar, Soul Orb) in the two gadget slots                                                       | **MVP-if-time**                                     | game doc                     |
 | Form change at buildings (Ascendance, Enchantment)                                                         | **post-MVP**                                        | game doc (yellow); brief D12 |
 | Class switching mid-match and its ultimate penalty                                                         | **post-MVP**                                        | game doc ("Needs work")      |
+
+### Game modes and online (new requirements, 2026-10-10)
+
+Both requirements were set by the course instructor (DEC-36, DEC-37).
+
+| Item                                                                                                                                                                                                                                                                                                                                                                | Tag                                                                            | Source |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------ |
+| Duel: a second game mode, 1v1 against another player through a Duel matchmaking queue; both players in the Cathedral with its doors closed and the surrounding world deactivated; first to 10 kills with a match-point system; players reset after each kill while map damage stays; the ultimate's cooldown persists through death, other abilities reset on death | **MVP** (planned now; must be implemented by the end of Sprint 3 (2026-11-13)) | DEC-36 |
+| A server that supports hundreds or thousands of concurrent players (solo matches vs bots, Duels, idle players, logins and logouts)                                                                                                                                                                                                                                  | **MVP** (planned now; must be implemented by the end of Sprint 3 (2026-11-13)) | DEC-37 |
+| A database of player profiles, game ids and stats; performance-based matchmaking                                                                                                                                                                                                                                                                                    | provisional, open (plan question; DEC-36 says "in the future")                 | DEC-36 |
+
+Open questions for both are consolidated in `../../plan/multiplayer-and-scalability-plan.md`.
 
 ### Controls, UI, presentation
 

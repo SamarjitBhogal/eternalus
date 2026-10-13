@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-10
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -69,6 +69,7 @@ What this means (brief decision D7; details in `../../architecture/06-map-and-mi
   view and appears on both, with no minimap code change.
 - Changing `numLanes` from 3 to 5 must produce a valid, symmetric map with 5 SpawnerTowers and 5
   BuffTowers per team and 5 central capture points (one per lane); that is the acceptance test.
+  Camps are the exception to symmetry once ADR 0017 is accepted (DEC-15, below).
 
 ## MVP layout summary
 
@@ -83,7 +84,8 @@ config values):
 - **3 central capture points**, one per lane; the middle one is the Cathedral.
 - Corner camps (4, one per map corner) are **MVP-if-time**.
 
-A schematic of one half of the map (Light side; the Dark side mirrors it). Not to scale:
+A schematic of one half of the map (Light side; the Dark side mirrors it, except the camp
+positions, DEC-15). Not to scale:
 
 ```text
    corner camp                                                          corner camp
@@ -102,6 +104,17 @@ between adjacent lanes, lighter near a lane and heavier deeper into the Unknown 
 capture points on the lane centre line at the map's centre; the rift along the centre line
 between the two territories with one bridge per lane; corner camps outside the lanes behind
 impassable rifts.
+
+**Camp weights and placement (DEC-15, 2026-10-10).** Camp weights stay depth-based, with the
+class set by the camp's position in its corridor: nearest the lane light, middle medium, deepest
+heavy. The vertical line down the centre of the map divides the sides. The seeded RNG places the
+camps on each side, so the two sides differ, but they must be equal in overall difficulty: the
+same number of camps of each weight class on each side, not necessarily in mirrored positions.
+This exempts camps from the mirror invariant of ADR 0009 and architecture 06, which a proposed
+ADR 0017 must amend (owner sign-off) before the generator changes; until then the generator still
+mirrors camps. **Open (owner):** whether this also applies to the corner camps, whether parity
+is per side only or also per corridor, and which classes a corridor gets when it holds other than
+three camps (ADR 0017).
 
 ## Obstacles and destructible terrain
 

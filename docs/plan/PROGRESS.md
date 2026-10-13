@@ -767,3 +767,28 @@ The example below is fenced so it is not read as a real entry.
   check passed."
 - Next step: the human pushes; Samarjit re-reviews (his changes were requested before the
   review-round commits); PR #24 merges.
+
+### 2026-10-10 — Sprint 2 planning / new requirements — docs/sprint-2-requirements-and-planning — sholtzman + Claude Code
+
+- What was done:
+  - Committed the owner's INBOX answers and the instructor's two new Sprint 3 requirements
+    verbatim (`8d0d308`): Duel multiplayer (DEC-36) and server scalability (DEC-37).
+  - Three research agents wrote the netcode report, the server-scalability and matchmaking report
+    and an impact map (`5194e58`).
+  - Planners recorded DEC-11/12/13/15 and DEC-34…DEC-37 in the decisions log, moved answered
+    INBOX parts to Done, updated the reference docs, and wrote a Legend team brief (`045ecc3`).
+  - They also wrote proposed ADR 0016 (server-authoritative Duel) and ADR 0017 (balanced
+    asymmetric camps), `docs/plan/multiplayer-and-scalability-plan.md` (a proposed Sprint 2–4
+    re-cut and 52 owner questions) and FR-113…FR-118 and NFR-034 (`3923124`).
+  - The research index and works cited were updated (`d121df1`).
+  - Two independent critics reviewed the branch. Architecture: request changes, no blockers.
+    Fidelity: needs fixes. Two fixers applied every finding.
+  - The owner's chat clarifications are recorded under DEC-11: the new abilities and the
+    Sunder–Sanctuary combo are MVP, they are on top of each class's original kit, and a loadout
+    picks 3 abilities and 1 ultimate from the class pool.
+  - No existing architecture doc, ADR or AGENTS file was edited; both new ADRs are proposed.
+- Checks run: `npm run check` (see the commit); `npm run docs:check` → "Documentation check
+  passed."; Prettier clean.
+- Next step: the owner pushes the branch, and the PR goes into the phase branch for the team.
+  The owner then answers the INBOX items and plan §9, and accepts or changes ADR 0016/0017
+  and the re-cut.
