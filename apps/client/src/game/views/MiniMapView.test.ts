@@ -30,6 +30,7 @@ const createMiniMap = (): MiniMapView => new MiniMapView(MAP, new MapView(MAP));
 const createFakeContext = (): DrawContext => ({
   beginPath: vi.fn(),
   closePath: vi.fn(),
+  drawImage: vi.fn(),
   ellipse: vi.fn(),
   fill: vi.fn(),
   fillRect: vi.fn(),

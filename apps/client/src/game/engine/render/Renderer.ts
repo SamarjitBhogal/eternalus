@@ -22,6 +22,10 @@ export interface Renderer {
   strokeScreenRect(area: ScreenRect, color: string, width: number): void;
   /** Fills a closed shape given in world units. Does nothing for an empty shape. */
   fillPolygon(points: readonly WorldPoint[], color: string): void;
+  /** Fills a collection of polygons in one colour, allowing adapters to batch the draw. */
+  fillPolygons(shapes: readonly (readonly WorldPoint[])[], color: string): void;
+  /** Reuses a presentation layer until its revision or drawing-area size changes. */
+  drawCachedLayer(key: object, revision: number, draw: () => void): void;
   /** Draws a line through points given in world units. `width` is in screen pixels. */
   strokePath(points: readonly WorldPoint[], color: string, width: number): void;
   /** Draws a marker centred on a world position, sized in world units (scales with zoom). */

@@ -13,6 +13,8 @@ import {
 } from './MapView.constants';
 import type { WorldLayer } from './SceneView.types';
 import { SceneryView } from './SceneryView';
+import { MapSurfaceDetailView } from './MapSurfaceDetailView';
+import type { WorldRect } from '../engine/render/Renderer.types';
 
 /**
  * Draws a map layout: ground, then ground scenery, then terrain, then lanes, then features on top. Features are
@@ -23,15 +25,29 @@ import { SceneryView } from './SceneryView';
 export class MapView implements WorldLayer {
   private readonly map: MapDefinition;
   private readonly groundScenery: SceneryView;
+  private readonly surface = new MapSurfaceDetailView();
+  private readonly meadow: MapDecoration;
 
   /** Creates a view for one map; `scenery` supplies its ground-layer decorations. */
   public constructor(
     map: MapDefinition,
     scenery: readonly MapDecoration[] = [],
     private readonly hiddenRoofs: ReadonlySet<string> = new Set(),
+    private readonly detailArea?: () => WorldRect,
   ) {
     this.map = map;
-    this.groundScenery = new SceneryView(scenery, 'ground', hiddenRoofs);
+    this.meadow = {
+      id: 'surface-meadow',
+      color: GROUND_COLOR,
+      layer: 'ground',
+      shape: [
+        { x: 0, y: 0 },
+        { x: map.width, y: 0 },
+        { x: map.width, y: map.height },
+        { x: 0, y: map.height },
+      ],
+    };
+    this.groundScenery = new SceneryView(scenery, 'ground', hiddenRoofs, detailArea);
   }
 
   /** Draws the whole map for the main view. */
@@ -39,6 +55,7 @@ export class MapView implements WorldLayer {
     this.drawGround(renderer);
     for (const feature of this.map.features) {
       if (this.hiddenRoofs.has(feature.id)) continue;
+      if (this.map.buildings?.some((building) => building.id === feature.id)) continue;
       const style = FEATURE_STYLES[feature.kind];
       const color = MapView.featureColor(feature);
       if (style.shape === 'footprint') {
@@ -51,7 +68,7 @@ export class MapView implements WorldLayer {
 
   /** Draws the whole map for the mini map: the ground, then one marker per feature. */
   public drawMinimap(renderer: Renderer): void {
-    this.drawGround(renderer);
+    this.drawGround(renderer, true);
     for (const feature of this.map.features) {
       if (this.hiddenRoofs.has(feature.id)) continue;
       renderer.drawGlyph(feature.minimapGlyph, feature.position, MapView.minimapColor(feature));
@@ -75,7 +92,7 @@ export class MapView implements WorldLayer {
   }
 
   /** The ground, its scenery, the terrain shapes and the lanes, shared by both views. */
-  private drawGround(renderer: Renderer): void {
+  private drawGround(renderer: Renderer, isMinimap = false): void {
     const { width, height } = this.map;
     renderer.fillPolygon(
       [
@@ -86,7 +103,11 @@ export class MapView implements WorldLayer {
       ],
       GROUND_COLOR,
     );
-    this.groundScenery.draw(renderer);
+    if (isMinimap) this.groundScenery.drawMinimap(renderer);
+    else {
+      this.surface.draw(renderer, this.meadow, this.detailArea?.());
+      this.groundScenery.draw(renderer);
+    }
     for (const piece of this.map.terrain) {
       renderer.fillPolygon(piece.shape, TERRAIN_COLORS[piece.kind]);
     }

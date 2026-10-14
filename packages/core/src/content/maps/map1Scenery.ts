@@ -38,3 +38,11 @@ export const SCENERY_SETTINGS = {
   laneClearance: 18,
   featureClearance: 62,
 } as const;
+
+/** TUNE: seeded presentation placement ranges in sketch units; no collision effect. */
+export const RANDOM_SCENERY_SETTINGS = {
+  lakeWander: 220,
+  lakeFeatureClearance: 40,
+  houseWander: 12,
+  attempts: 128,
+} as const;

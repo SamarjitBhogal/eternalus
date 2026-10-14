@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-13
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -128,7 +128,7 @@ flowchart LR
    gate that its own turrets would close is rejected (§2, DEC-14).
 5. **placeCamps**: `campsPerSide` is split over the `numLanes - 1` corridors between adjacent
    lanes as evenly as possible, leftovers to the middle corridors (DEC-14). In a corridor, camps
-   spread across the team's half and step from one lane towards the other; a camp's weight class
+   sample seeded positions across the team's half and step from one lane towards the other; a camp's weight class
    follows its depth into the Unknown, lighter near a lane and heavier deeper (DISC-42).
    `cornerCamps` `corner-camp` features go in the map corners (MVP-if-time).
 6. **placeCapturePoints**: one `capture-point` at `t = 0.5` of each lane; the middle lane's is
@@ -291,7 +291,7 @@ export type FlowField = { readonly integration: Uint16Array; readonly direction:
 - **Counts follow config**: `numLanes = 5, spawnTowersPerLane = 2` yields 5 lanes, 10 spawner
   towers per team, 5 gates per ring, 5 capture points (1 cathedral), `campsPerSide` camps per side.
 - **Determinism**: two `generate(config, seed)` calls are deep-equal; a different seed changes
-  only obstacle scatter, never team features.
+  off-path camps and obstacle scatter, never fixed lane structures or landmark anchors.
 - **Containment**: every point lies inside the world; no team feature overlaps the rift or
   out-of-bounds terrain; every lane crosses its ring exactly at its gate.
 - **Connectivity**: on the `WorldMap` grid every lane joins the two Strongholds, and closing the
@@ -403,6 +403,15 @@ the design (DEC-14).
 
 ## 10. Implementation status
 
+Match startup chooses a fresh unsigned seed at the client boundary and passes it to both map
+generation and simulation. Off-path camps use seeded corridor slots; corner camps vary within
+their content-defined corner band. Fixed lane structures, strongholds and the cathedral retain
+their anchors. Scenery uses independent seeded streams for trees, boulders, houses and lakes,
+then reflects west-half polygons east with identical shape and material. Mountains remain a
+continuous border with seeded forms. Placement ranges live in scenery content. Decorative
+lakes may be omitted if no clear position is found; they still have no simulation collider.
+Same config and seed reproduce gameplay geometry and presentation.
+
 The design points that differ from the 2026-09-30 sketch were signed off by the owner on
 2026-10-06 (DEC-14, [decisions log](../reference/game-design/13-owner-decisions-log.md)) and are
 part of §2–§6; why each one differs is recorded in
@@ -428,6 +437,11 @@ player entities; clicks toggle roofs without changing the camera or map. Both st
 oval walls, lane-aligned gate passages, throne aisles and six furnished side rooms. The cathedral
 keeps its cross-shaped furnished interior and capture court. `MapExplorer` retains camera
 handoff, aspect-correct pan/zoom and minimap navigation; overview restores every roof.
+`MapSurfaceDetailView` overlays world-sized material courses inside visible scenery polygons
+at player scale. Material definitions live beside the view; details are clipped to each surface
+and culled to the visible world area. Wide overview and minimap passes omit microdetail.
+Ground roads use the generated lane paths, with layered verges and worn tracks. Presentation
+changes do not alter the following camera, simulation coordinates or gameplay footprints.
 The older exported `CathedralInteriorBuilder` remains for API compatibility, but `Match` no
 longer uses its separate interior scene. Building collision and occupancy-driven roof hiding
 remain future simulation work.

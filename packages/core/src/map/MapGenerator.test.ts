@@ -25,7 +25,8 @@ import type { MapConfig } from './MapGenerator.types';
 
 const SEED = 1234;
 /** FNV-1a of the default map's JSON at SEED; see the golden-hash test. */
-const GOLDEN_HASH = 798_224_052;
+// Off-path camps now consume seeded draws before obstacle generation.
+const GOLDEN_HASH = 3_170_480_840;
 const EPSILON = 1e-6;
 
 type Ground = 'map-1' | 'generated';
@@ -60,10 +61,12 @@ describe('MapGenerator', () => {
     expect(generate()).toEqual(generate());
   });
 
-  it('changes only the scattered obstacles when the seed changes', () => {
+  it('randomizes off-path camps and obstacles while preserving fixed structures and lanes', () => {
     const notObstacle = (map: MapDefinition): readonly MapFeature[] =>
       map.features.filter(
-        (feature) => feature.kind !== 'obstacle' || feature.definitionId === 'bridge-segment',
+        (feature) =>
+          !['camp', 'corner-camp', 'obstacle'].includes(feature.kind) ||
+          feature.definitionId === 'bridge-segment',
       );
     const a = generate({}, 1);
     const b = generate({}, 2);
@@ -71,6 +74,10 @@ describe('MapGenerator', () => {
     expect(notObstacle(a)).toEqual(notObstacle(b));
     expect(a.lanes).toEqual(b.lanes);
     expect(ofKind(a, 'obstacle')).not.toEqual(ofKind(b, 'obstacle'));
+    expect(ofKind(a, 'camp')).not.toEqual(ofKind(b, 'camp'));
+    expect(ofKind(a, 'corner-camp')).not.toEqual(ofKind(b, 'corner-camp'));
+    expect(findAsymmetries(a)).toEqual([]);
+    expect(findAsymmetries(b)).toEqual([]);
   });
 
   it('returns a frozen map', () => {
@@ -318,10 +325,10 @@ describe('MapGenerator', () => {
     expect(map.lanes.map((lane) => lane.path[Math.floor(lane.path.length / 2)]?.y)).toEqual([
       100, 450, 800,
     ]);
-    expect(ofKind(map, 'corner-camp').map((camp) => camp.position)).toContainEqual({
-      x: 320,
-      y: 80,
-    });
+    const corner = ofKind(map, 'corner-camp').find((camp) => camp.position.x < map.width / 2);
+    expect(corner?.position.x).toBeGreaterThanOrEqual(320);
+    expect(corner?.position.x).toBeLessThan(440);
+    expect(corner?.position.y).toBe(80);
     expect(ofKind(map, 'cathedral')[0]?.position).toEqual({ x: 800, y: 450 });
   });
 

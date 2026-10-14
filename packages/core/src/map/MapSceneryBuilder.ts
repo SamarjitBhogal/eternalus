@@ -14,12 +14,14 @@ import { MapStrongholdBuilder } from './MapStrongholdBuilder';
 import { MapStrongholdGatesBuilder } from './MapStrongholdGatesBuilder';
 import { MapVillageBuilder } from './MapVillageBuilder';
 import { CathedralExteriorBuilder } from './CathedralExteriorBuilder';
-import { LAKES, LAVA_RIVERS } from '../content/maps/map1Landforms';
+import { LAVA_RIVERS } from '../content/maps/map1Landforms';
 import { distance, distanceToPath, isPointInPolygon } from '../utils/geometry';
+import { SeededRandom } from '../utils/SeededRandom';
+import { mirrorMovableScenery, placeSceneryLakes } from './sceneryPlacement';
 import type { Vec2 } from '../utils/geometry.types';
 
 /**
- * Builds repeatable visual scenery for a generated map, without randomness, collision or
+ * Builds repeatable visual scenery for a generated map, with seeded placement and without collision or
  * simulation state. The scenery is authored in sketch space (`SKETCH_WIDTH` x `SKETCH_HEIGHT`),
  * so the map is mapped into the sketch, dressed, and the result stretched back to world units.
  */
@@ -28,6 +30,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
   private readonly map: MapDefinition;
   private readonly scaleX: number;
   private readonly scaleY: number;
+  private readonly lakes: ReturnType<typeof placeSceneryLakes>;
 
   /** Creates a builder for one generated map. */
   public constructor(world: MapDefinition) {
@@ -49,12 +52,13 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
         position: toSketch(feature.position),
       })),
     };
+    this.lakes = placeSceneryLakes(this.map);
   }
 
   /** Returns the landscape, forests, settlement, camps and dressed features, in world units. */
   public build(): readonly MapDecoration[] {
     this.dress();
-    return this.pieces.map((piece) => ({
+    return mirrorMovableScenery(this.pieces, this.map.width).map((piece) => ({
       ...piece,
       shape: piece.shape.map((point) => ({ x: point.x * this.scaleX, y: point.y * this.scaleY })),
     }));
@@ -62,9 +66,11 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
 
   /** Adds every decoration, in sketch coordinates and draw order. */
   private dress(): void {
-    this.pieces.push(...new MapLandscapeBuilder(this.map, (point) => this.isClear(point)).build());
+    this.pieces.push(
+      ...new MapLandscapeBuilder(this.map, (point) => this.isClear(point), this.lakes).build(),
+    );
     this.forest();
-    this.pieces.push(...new MapMountainBuilder().build());
+    this.pieces.push(...new MapMountainBuilder().build(this.map.seed));
     this.pieces.push(...new MapVillageBuilder(this.map).build());
     this.map.features.forEach((feature) => {
       if (CAMP_KINDS.has(feature.kind)) this.camp(feature.position, `${feature.id}-camp`);
@@ -85,7 +91,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     if (((point.x - 800) / 270) ** 2 + ((point.y - 450) / 210) ** 2 < 1) return false;
     if (point.x < 280 || point.x > 1320) return false;
     if (
-      LAKES.some(
+      this.lakes.some(
         (lake) =>
           ((point.x - lake.x) / (lake.rx + 15)) ** 2 + ((point.y - lake.y) / (lake.ry + 15)) ** 2 <
           1,
@@ -99,9 +105,10 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
   }
 
   private forest(): void {
+    const rng = new SeededRandom(this.map.seed).fork('scenery-forest');
     for (let y: number = S.margin; y < this.map.height - S.margin; y += S.gridStep) {
-      for (let x: number = S.margin; x < this.map.width - S.margin; x += S.gridStep) {
-        const n = this.variation(x, y);
+      for (let x: number = S.margin; x < this.map.width / 2 - S.margin; x += S.gridStep) {
+        const n = rng.nextInt(0, 0xffffffff);
         const point = { x: x + (n % 17) - 8, y: y + ((n >>> 4) % 17) - 8 };
         if (!this.isClear(point) || n % 5 === 0) continue;
         const id = `tree-${String(x)}-${String(y)}`;

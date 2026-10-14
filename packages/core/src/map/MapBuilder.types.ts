@@ -43,6 +43,7 @@ export type CampLayoutInput = {
   readonly stronghold: Vec2;
   readonly centreX: number;
   readonly band: readonly [number, number];
+  readonly rng?: Rng;
 };
 
 /** One piece of a Stronghold's wall ring on the Light side. */

@@ -1,6 +1,7 @@
 import type { MapDefinition, MapDecoration } from '../content/maps/maps.types';
 import { MAP_PALETTE as P, SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { LAKES, LAVA_RIVERS, SNOW_PATCHES } from '../content/maps/map1Landforms';
+import type { SceneryLake } from './sceneryPlacement.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 /** Layers local snow, flowing lava, water and weathered ground beneath landmarks. */
@@ -9,6 +10,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
   public constructor(
     private readonly map: MapDefinition,
     private readonly isClear: (point: Vec2) => boolean,
+    private readonly lakePositions: readonly SceneryLake[] = LAKES,
   ) {
     super();
   }
@@ -18,6 +20,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
     this.lava();
     this.lakes();
     this.ground();
+    this.laneRoads();
     this.bridges();
     return this.pieces.map((piece) => ({
       ...piece,
@@ -69,7 +72,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
   }
 
   private lakes(): void {
-    LAKES.forEach((lake, i) => {
+    this.lakePositions.forEach((lake, i) => {
       this.blob(
         `lake-shore-${String(i)}`,
         lake.x,
@@ -148,6 +151,20 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
         );
       this.rect(`lava-bridge-${String(i)}-west-rail`, x - 17, y - 25, 4, 50, '#cac0a5');
       this.rect(`lava-bridge-${String(i)}-east-rail`, x + 13, y - 25, 4, 50, '#cac0a5');
+    }
+  }
+
+  private laneRoads(): void {
+    for (const lane of this.map.lanes) {
+      for (let edge = 3; edge > 0; edge--)
+        this.ribbon(
+          `lane-road-${lane.id}-verge-${String(edge)}`,
+          lane.path,
+          3 + edge,
+          'rgba(82,76,54,0.12)',
+          'ground',
+        );
+      this.ribbon(`lane-road-${lane.id}-track`, lane.path, 3, P.road, 'ground');
     }
   }
 }

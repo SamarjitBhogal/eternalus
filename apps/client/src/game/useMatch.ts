@@ -18,9 +18,9 @@ import {
   FOLLOW_VIEW_HEIGHT,
   FOLLOW_VIEW_WIDTH,
   LOG_RING_CAPACITY,
-  PLACEHOLDER_MATCH_SEED,
   PLACEHOLDER_PLAYER,
 } from './Match.constants';
+import { createMatchSeed } from './createMatchSeed';
 import { CLICK_SLOP } from './useMatch.constants';
 
 /**
@@ -46,7 +46,8 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
       return undefined;
     }
     const config = createDefaultGameConfig();
-    const map = new MapGenerator().generate(config, PLACEHOLDER_MATCH_SEED);
+    const seed = createMatchSeed();
+    const map = new MapGenerator().generate(config, seed);
     // The match points the camera at the player's spawn, so its start point does not matter.
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
     // Warnings and worse reach the console; everything is kept for bug reports and the overlay.
@@ -64,7 +65,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger }),
+        simulation: new Simulation({ config, seed, logger }),
         map,
         tickRate: config.tickRate,
         scheduler: new RafFrameScheduler({

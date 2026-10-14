@@ -43,6 +43,8 @@ export class Match implements LoopTarget {
   private readonly entities: EntityLayer;
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
+  private landscapeKey = '';
+  private landscapeRevision = 0;
 
   private readonly explorer: MapExplorer;
 
@@ -104,12 +106,11 @@ export class Match implements LoopTarget {
     const presentation = new MapLayout().build(map);
     this.explorer = new MapExplorer(presentation);
     const scenery = presentation.scenery ?? [];
-    const scene = new SceneView([
-      new MapView(presentation, scenery, this.explorer.hiddenRoofs),
-      new SceneryView(scenery, 'detail', this.explorer.hiddenRoofs),
-      this.entities,
+    const landscape = new SceneView([
+      new MapView(presentation, scenery, this.explorer.hiddenRoofs, () => this.currentView()),
+      new SceneryView(scenery, 'detail', this.explorer.hiddenRoofs, () => this.currentView()),
     ]);
-    this.world = { scene, miniMap: new MiniMapView(map, scene) };
+    this.world = { scene: landscape, miniMap: new MiniMapView(map, landscape, this.entities) };
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
@@ -183,7 +184,21 @@ export class Match implements LoopTarget {
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
-    scene.draw(renderer);
+    const landscapeKey = [
+      view.x,
+      view.y,
+      view.width,
+      view.height,
+      ...this.explorer.hiddenRoofs,
+    ].join(':');
+    if (landscapeKey !== this.landscapeKey) {
+      this.landscapeKey = landscapeKey;
+      this.landscapeRevision += 1;
+    }
+    renderer.drawCachedLayer(scene, this.landscapeRevision, () => {
+      scene.draw(renderer);
+    });
+    this.entities.draw(renderer);
     miniMap.draw(renderer, this.screenWidth, this.screenHeight, view);
   }
 
@@ -246,12 +261,14 @@ export class Match implements LoopTarget {
       y: view.y + (screenY / this.screenHeight) * view.height,
     });
 
+    if (isEntered) this.world.miniMap.invalidate();
     return isEntered;
   }
 
   /** Shows the whole battlefield in the free view, restoring all building roofs. */
   public overview(): void {
     this.explorer.overview();
+    this.world.miniMap.invalidate();
     this.isExploring = true;
     this.isFollowing = false;
   }

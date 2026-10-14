@@ -1,4 +1,6 @@
 import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
+import { SeededRandom } from '../utils/SeededRandom';
+import { RANDOM_SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 /** Arranges village clusters around winding streets and the cathedral precinct. */
@@ -9,8 +11,9 @@ export class MapVillageBuilder extends MapDecorationBuilder {
   }
   /** Creates an irregular settlement rather than a rectangular housing grid. */
   public build(): readonly MapDecoration[] {
+    const rng = new SeededRandom(this.map.seed).fork('scenery-houses');
     this.blob('city-market-ground', 800, 606, 76, 32, P.road, 'ground');
-    for (const side of [-1, 1]) {
+    for (const side of [-1]) {
       const path = [
         { x: 800, y: 605 },
         { x: 800 + side * 105, y: 594 },
@@ -29,8 +32,8 @@ export class MapVillageBuilder extends MapDecorationBuilder {
         const outward = i % 3 === 0 ? 39 : 19;
         this.house(
           `village-${String(side)}-${String(i)}`,
-          800 + side * (bend + outward),
-          y + ((i * 13) % 19),
+          800 + side * (bend + outward) + (rng.nextFloat() * 2 - 1) * S.houseWander,
+          y + rng.nextFloat() * S.houseWander,
           14 + (i % 8),
           18 + (i % 11),
           i,
@@ -39,8 +42,8 @@ export class MapVillageBuilder extends MapDecorationBuilder {
       for (let i = 0; i < 8; i++)
         this.house(
           `village-outskirts-${String(side)}-${String(i)}`,
-          800 + side * (200 + (i % 3) * 22),
-          350 + i * 32,
+          800 + side * (200 + (i % 3) * 22) + (rng.nextFloat() * 2 - 1) * S.houseWander,
+          350 + i * 32 + rng.nextFloat() * S.houseWander,
           12 + (i % 5),
           16 + (i % 7),
           i + 1,

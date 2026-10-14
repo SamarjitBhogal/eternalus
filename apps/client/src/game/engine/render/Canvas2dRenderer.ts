@@ -1,5 +1,16 @@
-import { FULL_TURN, GLYPH_OUTLINE_WIDTH, OUTLINED_GLYPHS } from './Canvas2dRenderer.constants';
-import type { DrawContext, GlyphHalfSize, GlyphTracer } from './Canvas2dRenderer.types';
+import {
+  FULL_TURN,
+  GLYPH_OUTLINE_WIDTH,
+  OUTLINED_GLYPHS,
+  SURFACE_PIXELS_PER_UNIT,
+} from './Canvas2dRenderer.constants';
+import type {
+  CachedLayer,
+  CachedSurface,
+  DrawContext,
+  GlyphHalfSize,
+  GlyphTracer,
+} from './Canvas2dRenderer.types';
 import type { Renderer } from './Renderer';
 import type { GlyphShape, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from './Renderer.types';
 
@@ -10,7 +21,8 @@ import type { GlyphShape, GlyphSpec, ScreenRect, WorldPoint, WorldRect } from '.
  * more of the world's height without showing more of its width.
  */
 export class Canvas2dRenderer implements Renderer {
-  private readonly context: DrawContext;
+  private context: DrawContext;
+  private readonly layerCache = new WeakMap<object, CachedLayer>();
   private screenWidth = 0;
   private screenHeight = 0;
   private scaleX = 1;
@@ -18,6 +30,8 @@ export class Canvas2dRenderer implements Renderer {
   private offsetX = 0;
   private offsetY = 0;
   private pixelRatio = 1;
+  private readonly polygonBounds = new WeakMap<readonly WorldPoint[], ScreenRect>();
+  private readonly surfaceCache = new WeakMap<readonly (readonly WorldPoint[])[], CachedSurface>();
   /** How each glyph shape is traced. A new shape is one entry here, never a branch in code. */
   private readonly glyphTracers: Readonly<Record<GlyphShape, GlyphTracer>>;
 
@@ -25,20 +39,25 @@ export class Canvas2dRenderer implements Renderer {
   public constructor(context: DrawContext) {
     this.context = context;
     const ellipse: GlyphTracer = (center, halfWidth, halfHeight) => {
-      context.ellipse(center.x, center.y, halfWidth, halfHeight, 0, 0, FULL_TURN);
+      this.context.ellipse(center.x, center.y, halfWidth, halfHeight, 0, 0, FULL_TURN);
     };
     this.glyphTracers = {
       dot: ellipse,
       ring: ellipse,
       square: (center, halfWidth, halfHeight) => {
-        context.rect(center.x - halfWidth, center.y - halfHeight, halfWidth * 2, halfHeight * 2);
+        this.context.rect(
+          center.x - halfWidth,
+          center.y - halfHeight,
+          halfWidth * 2,
+          halfHeight * 2,
+        );
       },
       diamond: (center, halfWidth, halfHeight) => {
-        context.moveTo(center.x, center.y - halfHeight);
-        context.lineTo(center.x + halfWidth, center.y);
-        context.lineTo(center.x, center.y + halfHeight);
-        context.lineTo(center.x - halfWidth, center.y);
-        context.closePath();
+        this.context.moveTo(center.x, center.y - halfHeight);
+        this.context.lineTo(center.x + halfWidth, center.y);
+        this.context.lineTo(center.x, center.y + halfHeight);
+        this.context.lineTo(center.x - halfWidth, center.y);
+        this.context.closePath();
       },
     };
   }
@@ -107,12 +126,115 @@ export class Canvas2dRenderer implements Renderer {
 
   /** Fills a closed shape given in world units. Does nothing for an empty shape. */
   public fillPolygon(points: readonly WorldPoint[], color: string): void {
+    if (this.isOutside(points)) return;
     if (!this.tracePath(points)) {
       return;
     }
     this.context.closePath();
     this.context.fillStyle = color;
     this.context.fill();
+  }
+
+  /** Batches same-colour detail into one fill without changing its world coordinates. */
+  public fillPolygons(shapes: readonly (readonly WorldPoint[])[], color: string): void {
+    if (typeof OffscreenCanvas !== 'undefined' && shapes.length > 0) {
+      const surface = this.surfaceCache.get(shapes) ?? this.rasterize(shapes, color);
+      if (surface !== undefined) {
+        this.surfaceCache.set(shapes, surface);
+        const origin = this.toScreen(surface.bounds);
+        this.context.drawImage(
+          surface.image,
+          origin.x,
+          origin.y,
+          surface.bounds.width * this.scaleX,
+          surface.bounds.height * this.scaleY,
+        );
+        return;
+      }
+    }
+    this.context.beginPath();
+    let hasShape = false;
+    for (const points of shapes) {
+      if (points.length === 0 || this.isOutside(points)) continue;
+      points.forEach((point, index) => {
+        const screen = this.toScreen(point);
+        if (index === 0) this.context.moveTo(screen.x, screen.y);
+        else this.context.lineTo(screen.x, screen.y);
+      });
+      this.context.closePath();
+      hasShape = true;
+    }
+    if (hasShape) {
+      this.context.fillStyle = color;
+      this.context.fill();
+    }
+  }
+
+  /** Caches static scenery while allowing live entities and camera outlines to draw normally. */
+  public drawCachedLayer(key: object, revision: number, draw: () => void): void {
+    if (
+      typeof OffscreenCanvas === 'undefined' ||
+      this.screenWidth === 0 ||
+      this.screenHeight === 0
+    ) {
+      draw();
+      return;
+    }
+    let layer = this.layerCache.get(key);
+    if (
+      layer?.revision !== revision ||
+      layer.width !== this.screenWidth ||
+      layer.height !== this.screenHeight
+    ) {
+      const image = new OffscreenCanvas(this.screenWidth, this.screenHeight);
+      const context = image.getContext('2d');
+      if (context === null) {
+        draw();
+        return;
+      }
+      const destination = this.context;
+      this.context = context;
+      try {
+        draw();
+      } finally {
+        this.context = destination;
+      }
+      layer = { image, revision, width: this.screenWidth, height: this.screenHeight };
+      this.layerCache.set(key, layer);
+    }
+    this.context.drawImage(layer.image, 0, 0);
+  }
+
+  private rasterize(
+    shapes: readonly (readonly WorldPoint[])[],
+    color: string,
+  ): CachedSurface | undefined {
+    const points = shapes.flat();
+    if (points.length === 0) return undefined;
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
+    const x = Math.min(...xs);
+    const y = Math.min(...ys);
+    const width = Math.max(...xs) - x;
+    const height = Math.max(...ys) - y;
+    const density = SURFACE_PIXELS_PER_UNIT;
+    const image = new OffscreenCanvas(
+      Math.max(1, Math.ceil(width * density)),
+      Math.max(1, Math.ceil(height * density)),
+    );
+    const context = image.getContext('2d');
+    if (context === null) return undefined;
+    context.fillStyle = color;
+    context.beginPath();
+    for (const shape of shapes) {
+      shape.forEach((p, i) => {
+        if (i === 0) context.moveTo((p.x - x) * density, (p.y - y) * density);
+        else context.lineTo((p.x - x) * density, (p.y - y) * density);
+      });
+      context.closePath();
+    }
+    context.fill();
+    return { image, bounds: { x, y, width, height } };
   }
 
   /** Draws a line through points given in world units. `width` is in screen pixels. */
@@ -191,5 +313,21 @@ export class Canvas2dRenderer implements Renderer {
       }
     });
     return true;
+  }
+
+  private isOutside(points: readonly WorldPoint[]): boolean {
+    if (points.length === 0 || this.screenWidth === 0 || this.screenHeight === 0) return false;
+    let bounds = this.polygonBounds.get(points);
+    if (bounds === undefined) {
+      const xs = points.map((p) => p.x);
+      const ys = points.map((p) => p.y);
+      const x = Math.min(...xs);
+      const y = Math.min(...ys);
+      bounds = { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+      this.polygonBounds.set(points, bounds);
+    }
+    const a = this.toScreen(bounds);
+    const b = this.toScreen({ x: bounds.x + bounds.width, y: bounds.y + bounds.height });
+    return b.x < 0 || b.y < 0 || a.x > this.screenWidth || a.y > this.screenHeight;
   }
 }

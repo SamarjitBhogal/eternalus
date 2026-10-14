@@ -7,6 +7,7 @@ import type { DrawContext } from './Canvas2dRenderer.types';
 type DrawMethod =
   | 'beginPath'
   | 'closePath'
+  | 'drawImage'
   | 'ellipse'
   | 'fill'
   | 'fillRect'
@@ -30,6 +31,7 @@ const createFakeContext = (): FakeContext => {
   const spies = {
     beginPath: vi.fn(),
     closePath: vi.fn(),
+    drawImage: vi.fn(),
     ellipse: vi.fn(),
     fill: vi.fn(),
     fillRect: vi.fn(),
@@ -62,6 +64,91 @@ const createFittedRenderer = (context: DrawContext): Canvas2dRenderer => {
 };
 
 describe('Canvas2dRenderer', () => {
+  it('reuses static layers and rebuilds them on revision or resize, including glyphs', () => {
+    const destination = createFakeContext();
+    const cached = createFakeContext();
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      vi.fn(function () {
+        return { getContext: () => cached.context };
+      }),
+    );
+    try {
+      const renderer = createFittedRenderer(destination.context);
+      const key = {};
+      const draw = vi.fn(() => {
+        renderer.drawGlyph({ shape: 'square', size: 4 }, { x: 50, y: 50 }, '#abc');
+      });
+      renderer.drawCachedLayer(key, 0, draw);
+      renderer.drawCachedLayer(key, 0, draw);
+      expect(draw).toHaveBeenCalledOnce();
+      expect(cached.spies.rect).toHaveBeenCalledOnce();
+      expect(destination.spies.rect).not.toHaveBeenCalled();
+      expect(destination.spies.drawImage).toHaveBeenCalledTimes(2);
+      renderer.drawCachedLayer(key, 1, draw);
+      renderer.resize(800, 400);
+      renderer.drawCachedLayer(key, 1, draw);
+      expect(draw).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('batches visible same-colour polygons into one fill and skips off-screen geometry', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = new Canvas2dRenderer(context);
+    renderer.resize(100, 100);
+    renderer.showWorldArea({ x: 0, y: 0, width: 10, height: 10 });
+    renderer.fillPolygons(
+      [
+        [
+          { x: 1, y: 1 },
+          { x: 2, y: 1 },
+          { x: 1, y: 2 },
+        ],
+        [
+          { x: 3, y: 3 },
+          { x: 4, y: 3 },
+          { x: 3, y: 4 },
+        ],
+        [
+          { x: 20, y: 20 },
+          { x: 22, y: 20 },
+          { x: 20, y: 22 },
+        ],
+      ],
+      '#555',
+    );
+    expect(spies.beginPath).toHaveBeenCalledTimes(1);
+    expect(spies.closePath).toHaveBeenCalledTimes(2);
+    expect(spies.fill).toHaveBeenCalledTimes(1);
+    expect(context.fillStyle).toBe('#555');
+  });
+  it('culls off-screen polygons but keeps intersecting surfaces and reprojects cached bounds', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = new Canvas2dRenderer(context);
+    renderer.resize(100, 100);
+    renderer.showWorldArea({ x: 0, y: 0, width: 10, height: 10 });
+    const shape = [
+      { x: 20, y: 20 },
+      { x: 22, y: 20 },
+      { x: 20, y: 22 },
+    ];
+    renderer.fillPolygon(shape, '#333');
+    expect(spies.fill).not.toHaveBeenCalled();
+    renderer.showWorldArea({ x: 19, y: 19, width: 10, height: 10 });
+    renderer.fillPolygon(shape, '#333');
+    expect(spies.fill).toHaveBeenCalledTimes(1);
+    renderer.fillPolygon(
+      [
+        { x: 18, y: 20 },
+        { x: 21, y: 20 },
+        { x: 21, y: 22 },
+      ],
+      '#444',
+    );
+    expect(spies.fill).toHaveBeenCalledTimes(2);
+  });
   it('scales and centres the world to fit the screen', () => {
     const renderer = createFittedRenderer(createFakeContext().context);
 

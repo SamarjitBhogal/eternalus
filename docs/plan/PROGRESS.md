@@ -704,3 +704,43 @@ The example below is fenced so it is not read as a real entry.
   Initial formatting and deterministic-math lint findings were fixed without changing guardrails.
 - Next step: human reviews and commits the pending merge. Building collision and automatic
   occupancy-driven roof visibility remain future work.
+
+### 2026-10-10 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: refined map presentation for the existing player camera without changing
+  camera tracking, zoom, simulation geometry or gameplay. Added clipped, deterministic
+  material detail for slate roofs, masonry floors and walls, carpet, grass, foliage, water
+  and worn roads. Added layered lane verges and narrower stronghold roof trims and banners.
+  Building artwork replaces oversized main-view feature glyphs; minimap markers remain.
+  Added polygon culling, cached material batches and static scenery caches with roof/view/resize
+  invalidation. Live entities render separately. Updated governing map and engine documents.
+- Checks run: `npm run check:quick` passed; `npm run check` passed (exit 0): format,
+  no-JS, lint, typecheck, knip, coverage, production build and documentation. Core 472/472,
+  client 314/314. Verbatim tail: `Checked 100 Markdown files under docs/. Documentation check passed.`
+  Browser inspection covered the close-view roof and interior, roof toggle and movement.
+  An unchanged view measured 16.7 ms/frame in isolated headless Chrome; this is not a
+  moving-camera performance guarantee. Initial lint findings were corrected without weakening
+  guardrails. `git diff --check` passed. Changes remain uncommitted.
+- Next step: human reviews the map at player zoom and provides the next visual requirement;
+  moving-camera performance remains worth profiling separately from cached stationary views.
+
+### 2026-10-13 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced the client placeholder seed with a fresh browser-generated unsigned
+  seed per match, shared by map generation and simulation. Seeded off-path corridor camps and
+  corner camps while retaining mirrored definitions, counts, depth-based weights, strongholds,
+  cathedral, capture crossings and lane structures. Seeded forest tree/boulder positions, lake
+  positions, village houses and mountain forms. Reflected movable scenery polygons west/east,
+  including streets and border mountains, with identical materials and sizes. Kept existing
+  camera and map artwork. Lake placement omits a template when its clearance search is exhausted.
+  Updated map documentation and the intentionally changed map golden hash (camp draws now
+  precede obstacle draws). Preserved all earlier uncommitted presentation changes.
+- Checks run: `npm run check:quick` passed; focused generation/scenery regression tests 64/64
+  passed; `npm run check` passed (exit 0): formatting, no-JS, lint, typecheck, knip,
+  coverage, production build and docs. Core 478/478, client 315/315. Verbatim tail:
+  `Checked 100 Markdown files under docs/. Documentation check passed.` New tests cover
+  different-seed variation, same-seed reproduction, exact polygon reflection across multiple
+  seeds and fresh seed requests. Initial type errors and lake-placement/mountain-ID regression
+  failures were fixed without weakening checks. `git diff --check` passed.
+- Next step: human reviews newly generated matches and supplies the next map requirement.
+  Decorative scenery still has no gameplay collision. No commit or push performed.

@@ -3,12 +3,12 @@ import { MapDecorationBuilder } from './MapDecorationBuilder';
 /** Builds overlapping, individually shaped mountain masses around the battlefield. */
 export class MapMountainBuilder extends MapDecorationBuilder {
   /** Returns varied peaks, foothills and rocky slopes without changing collision. */
-  public build(): readonly MapDecoration[] {
+  public build(seed = 0): readonly MapDecoration[] {
     for (let x = 0; x <= 1640;) {
-      const n = this.variation(x, 17);
+      const n = this.variation(x + seed, 17);
       const width = 42 + (n % 44);
       this.mountain(`mountain-north-${String(x)}`, x, 32, width, 25 + ((n >>> 4) % 34), n);
-      const south = this.variation(x, 881);
+      const south = this.variation(x + seed, 881);
       this.mountain(
         `mountain-south-${String(x)}`,
         x + 11,
@@ -20,7 +20,7 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       x += width * 1.15;
     }
     for (let y = 0; y <= 940;) {
-      const n = this.variation(19, y);
+      const n = this.variation(19 + seed, y);
       this.mountain(`mountain-west-${String(y)}`, 8, y, 22 + (n % 8), 35 + ((n >>> 5) % 35), n);
       this.mountain(
         `mountain-east-${String(y)}`,
@@ -34,7 +34,7 @@ export class MapMountainBuilder extends MapDecorationBuilder {
     }
     for (let y = 38; y < 310; y += 48) {
       for (let x = 38; x < 235 - y * 0.35; x += 55) {
-        const n = this.variation(x, y);
+        const n = this.variation(x + seed, y);
         for (const [corner, px, py] of [
           ['nw', x, y],
           ['ne', 1600 - x, y + 9],
@@ -61,7 +61,14 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       [4, 530, 555, 26],
       [5, 1075, 560, 31],
     ] as const)
-      this.mountain(`hill-${String(i)}`, x, y, size, size * 0.7, i * 47);
+      this.mountain(
+        `hill-${String(i)}`,
+        x + (this.variation(seed, i) % 21) - 10,
+        y + (this.variation(i, seed) % 21) - 10,
+        size,
+        size * 0.7,
+        this.variation(seed, i),
+      );
     return this.pieces.map((piece) => ({
       ...piece,
       shape: piece.shape.map((p) => ({

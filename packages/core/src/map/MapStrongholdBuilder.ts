@@ -28,9 +28,9 @@ export class MapStrongholdBuilder extends MapDecorationBuilder {
       ry - 42,
       isWest ? '#708b8c' : '#947481',
     );
-    this.rect(`${id}-great-hall`, x - 30, y - 92, 60, 176, '#b3ad96');
+    this.rect(`${id}-great-hall`, x - 24.5, y - 92, 49, 176, '#b3ad96');
     this.rect(`${id}-great-hall-roof`, x - 24, y - 88, 48, 166, roof);
-    this.rect(`${id}-great-hall-ridge`, x - 2, y - 88, 4, 166, P.gold);
+    this.rect(`${id}-great-hall-ridge`, x - 0.2, y - 88, 0.4, 166, P.gold);
     for (let i = 0; i < 12; i++) {
       const angle = (i * Math.PI) / 6;
       const tx = x + cos(angle) * (rx - 9);
@@ -40,8 +40,8 @@ export class MapStrongholdBuilder extends MapDecorationBuilder {
       this.rect(`${id}-tower-banner-${String(i)}`, tx - 2, ty - 1, 4, 7, accent);
     }
     this.rect(`${id}-original-keep`, feature.position.x - 17, y - 22, 34, 44, P.stone);
-    this.rect(`${id}-original-keep-roof`, feature.position.x - 13, y - 18, 26, 36, roof);
-    this.rect(`${id}-original-banner`, feature.position.x - 3, y - 3, 6, 6, accent);
+    this.rect(`${id}-original-keep-roof`, feature.position.x - 16.5, y - 21.5, 33, 43, roof);
+    this.rect(`${id}-original-banner`, feature.position.x - 0.4, y - 20, 0.8, 1.4, accent);
     return this.pieces;
   }
 }

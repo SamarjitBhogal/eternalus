@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-13
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -155,6 +155,18 @@ furnished side rooms (council, library, kitchen, bedchamber, armory and dining).
 leads to the middle-lane entrance; each lane has a stone passage through the perimeter.
 **Restore roofs & overview** restores roofs and shows the battlefield. Movement continues in
 the same simulation; building collision and occupancy-driven cutaways remain future work.
+
+The close player view uses fine slate courses, stone joints, textile weave, foliage/grass marks
+and water ripples. Road tracks follow the generated lanes and fade into their verges. Stronghold
+roof trims and flags use finer proportions; building art replaces the large main-view building
+marker while minimap markers remain. The overview keeps the broader landscape readable.
+
+## Implementation status
+
+Each new match chooses a fresh seed. Off-path camps, trees, rocks, lakes and houses vary with
+that seed and are placed as west/east mirror pairs. Strongholds, cathedral and lane structures
+retain their anchors. Scenery placement bounds live in map content; scenery remains decorative
+until collision integration lands. Reusing a seed reproduces the layout.
 
 ## Engineering notes
 
