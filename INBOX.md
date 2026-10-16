@@ -93,6 +93,20 @@ Reply inline (`Decision: …`).
       0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`).
   -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
 
+- [ ] **Combat — friendly fire (PR #34, `feat/combat-damage-pipeline`).** No reference doc says
+      whether allies can hurt each other. The combat pipeline ships `FriendlyFireStep` as the
+      default: no damage between entities on the same team (Legends never hurt allies; neutral
+      bosses and camps never hurt each other); environment damage and teamless targets (trees)
+      always pass. Confirm, or say which hits should go through. Removing it is one line in
+      `combat/defaultDamageSteps.ts`.
+- [ ] **Combat — better than the design, for sign-off (PR #34).** (1) 05 §9's fixed named
+      stages are a list of `DamageStep`s whose order is `combat/defaultDamageSteps.ts`, so a new
+      rule is one class and one line; (2) `defaultStrategyRegistry.ts` is a typed record per
+      behaviour instead of `registry.register()`, so a missing strategy does not compile;
+      (3) `DamagePipeline.apply` takes `GameState`, not `SystemContext`, so handlers and listeners
+      can call it. 02, 04, 05 and 17 already describe the built version; approve or say what to
+      change.
+
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an

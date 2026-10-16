@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-16
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -532,6 +532,19 @@ entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule 
 every ability, weapon, status tick and gate fire names a `DamageSource`: "extra effective against
 Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
 
+**Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
+source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
+`DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
+`combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The one step today is
+`FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
+`INBOX.md`). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+`apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
+`DeathResolver` is not a separate class yet; `DeathSystem` still removes with the cause `died`.
+`CombatSystem` (after movement, before death) runs each unit's `Combat` target through its
+`AttackStrategy` (melee only) when in reach (edge to edge) and off cooldown; `attack-target` sets
+the target and rejects allies, itself and dead targets (`invalid-target`) and units with no attack
+(`cannot-attack`).
+
 ## 10. Weapons
 
 ```ts
@@ -566,7 +579,9 @@ export type WeaponDefinition = {
 };
 ```
 
-`Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
+Until weapons land, a unit's basic attack is `UnitDefinition.attack` (same shape as `WeaponAttack`
+minus `onHit` and `projectile`; `interval` authored in seconds, converted to ticks at load like
+movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
 (`attack(self, target, weapon, ctx)`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
 `MeleeAttackStrategy` applies `damage` and `onHit` in the tick; `RangedProjectileAttackStrategy`

@@ -87,6 +87,11 @@ Owner: _ (sim lane B). Week 4.
       dummy attacks the nearest enemy within reach every `attackIntervalTicks`. Done when: the
       strategies are chosen from definitions.
 
+**Status (2026-10-16, PR #34, Claudio):** `DamagePipeline` (no damage types yet), `DamageStep`
+list with `FriendlyFireStep`, `Combat`, `CombatSystem` v1 (melee only, no `TargetingStrategy`) and
+the `attack-target` handler are built; killer causes in `DeathSystem`, status effects, ranged attacks
+and the unexplained-death invariant are still open, so no box above is ticked yet.
+
 **Success metric:** 100% of deaths in a 3,000-tick seeded skirmish (dummies vs dummies) carry a
 killer or a timeline cause; 0 negative-damage or out-of-range health values in invariants.
 

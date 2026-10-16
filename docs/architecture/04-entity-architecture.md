@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-16
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -164,7 +164,7 @@ A strategy is a stateless, shared object selected by a definition field and reso
 | Interface           | Contract                                           | MVP implementations                                                                                                                                                            | Selected by            |
 | ------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
 | `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `AggroPriorityTargetingStrategy` (data-driven priority list), `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks)    | `definition.targeting` |
-| `AttackStrategy`    | `attack(self, target, weapon, ctx): void`          | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                         | `weapon.attack`        |
+| `AttackStrategy`    | `attack(attacker, targetId, attack, ctx): void`    | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                         | `weapon.attack`        |
 | `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `FlowFieldMovementStrategy` (hordes), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movement`  |
 | `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                        | `definition.pickUp`    |
 
@@ -324,7 +324,15 @@ session or phase named:
   simulation kernel (PR #13) builds on it. Every family reads its spawn context through
   `SpawnContextReader`, which checks it at runtime because `spawn` takes `unknown`.
 - Units install `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider` and
-  `Vision`; `Combat`, `StatusEffects` and `Carry` arrive with their systems (Phase 2–3). The team
+  `Vision`, plus `Combat` when the definition has an `attack` (sprint 2.2, PR #34); `StatusEffects`
+  and `Carry` arrive with their systems (Phase 2–3).
+- `Combat` (sprint 2.2) holds `attack` (the definition's `UnitAttack`: `strategy`, `damage`,
+  `reach`, `interval`, authored in seconds and loaded as ticks), `targetId` and `readyAtTick`, with
+  `canAttack(tick)`, `setTarget` and `beginAttack`. Until weapons land (05 §10) the attack lives on
+  the unit definition, not `weaponId`; `targetingStrategy` waits for the AI. `AttackStrategy` gets
+  the attacker entity and a `DamageDealer` port in its context, because `entities/` may not import
+  `combat/`; `defaultStrategyRegistry.ts` is a typed record per behaviour (`attack` today), so a
+  missing id does not compile. The team
   component is `TeamMembership` because the type `Team` owns that name.
 - Shipped kinds: `warrior`, `sentinel`, `magus`, `light-mob` (the training dummy only),
   `obstacle` and `projectile`. Other mobs are SCRUM-59; structures and zones get concrete kinds in

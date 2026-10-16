@@ -44,4 +44,31 @@ describe('DefaultSystemPipeline', () => {
     expect(state.entities.has(victim.id)).toBe(false);
     expect(logger.records).toEqual([]);
   });
+
+  it('lands attacks after movement and before death, so a unit killed this tick leaves this tick', () => {
+    const logger = new MemoryLogger();
+    const pipeline = new DefaultSystemPipeline(
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+    );
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const warrior = factory.create('warrior', 'warrior', {
+      position: { x: 0, y: 0 },
+      team: 'light',
+    });
+    const victim = factory.create('light-mob', 'training-dummy', {
+      position: { x: 1, y: 0 },
+      team: 'dark',
+    });
+    state.entities.add(warrior);
+    state.entities.add(victim);
+    const health = victim.getComponent(Health);
+    health.applyDamage(health.max - 1);
+    state.entities.setAttackTarget(warrior.id, victim.id);
+
+    pipeline.run({ state, logger });
+
+    expect(state.entities.has(victim.id)).toBe(false);
+    expect(logger.records).toEqual([]);
+  });
 });

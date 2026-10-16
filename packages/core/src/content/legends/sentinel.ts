@@ -25,4 +25,6 @@ export const SENTINEL = {
     acceleration: 0.18, // TUNE: m/s², top speed after 50 s
     mass: 6, // TUNE:
   },
+  // TUNE: basic melee placeholder until weapons (05 §10) land
+  attack: { strategy: 'melee', damage: 55, reach: 1.8, interval: 1.2 },
 } as const satisfies LegendDefinition;

@@ -1,10 +1,10 @@
-import type { DamageSource } from '../state/GameEvents.types';
-
-export type { DamageSource };
-
 /** What one `DamagePipeline.apply` call did. */
 export type DamageResult =
-  | { readonly applied: false; readonly reason: 'no-target' | 'no-health' | 'already-dead' }
+  | {
+      readonly applied: false;
+      /** `blocked`: a damage step took the hit to 0; `zero-damage`: it was 0 to begin with. */
+      readonly reason: 'no-target' | 'no-health' | 'already-dead' | 'blocked' | 'zero-damage';
+    }
   | {
       readonly applied: true;
       /** Damage taken from base health. */
