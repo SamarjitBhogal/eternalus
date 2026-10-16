@@ -6,14 +6,29 @@
 export class Aether {
   private currentValue: number;
 
+  private maxValue: number;
+
   /**
    * Creates a full aether pool.
    *
    * @param max - Full aether (MP); must be positive.
    */
-  public constructor(public readonly max: number) {
+  public constructor(max: number) {
     Aether.checkPositive(max, 'max');
+    this.maxValue = max;
     this.currentValue = max;
+  }
+
+  /** Full aether now: the starting pool plus every `raiseMax` (level-ups). */
+  public get max(): number {
+    return this.maxValue;
+  }
+
+  /** Raises the pool by `amount` (finite, ≥ 0) and fills it by the same amount. */
+  public raiseMax(amount: number): void {
+    Aether.checkAmount(amount, 'max raise');
+    this.maxValue += amount;
+    this.currentValue += amount;
   }
 
   /** Aether left, between 0 and `max`. */

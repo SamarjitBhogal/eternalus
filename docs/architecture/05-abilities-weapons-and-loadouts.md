@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-16
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -13,6 +13,9 @@ paths:
     'packages/core/src/loadout/**',
     'packages/core/src/content/abilities/**',
     'packages/core/src/content/weapons/**',
+    'packages/core/src/content/progression/**',
+    'packages/core/src/components/Progression.ts',
+    'packages/core/src/systems/ProgressionSystem.ts',
   ]
 related:
   [
@@ -703,6 +706,19 @@ applied by `AbilityRegistry.resolve` exactly like a variety, `Progression.upgrad
 choice, and an `upgrade-ability` command carries the `near-structure` restriction from §5; "only
 N upgrades per tier" and "forgetting has a cost" become rules on that command. The MVP runtime
 does not change when it arrives.
+
+**Implementation status (2026-10-16, PR #31, SCRUM-426).** `Progression` holds its
+`LevelCurveDefinition` and the class's `LevelScalingDefinition` (resolved by `Legend` from
+`levelCurveId` in `content/progression/levelCurves.ts`, checked at load by `KnownLevelCurveRule`), so
+`addXp(amount)` takes no curve; `xp` is the match total and the level follows it to the cap.
+`ProgressionSystem` (after movement, before death) subscribes to `entity-died` in its constructor,
+prices the kill while the victim is still in the store (`xpSources.ts`: Legend kill by victim level,
+mob kill by kind) and in its own pass gives it to the killer only, raising `Health` and `Aether`
+max by the scaling and emitting `level-up`. Not built yet: the share radius and damage bias,
+assists, structure, checkpoint, camp and boss XP (their systems do not exist), basic-attack and
+ability potency per level, `upgradeIds`, and the ultimate charge rules. `progression-level`
+checks every level against its XP; a raise never revives a killer that died the same tick. Numbers are `TUNE` from
+`suggestions/balancing.md`.
 
 ## 14. `AbilityRegistry`: the single place of change
 

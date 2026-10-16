@@ -1,3 +1,4 @@
+import type { LevelCurveId, LevelScalingDefinition } from '../progression/progression.types';
 import type { UnitDefinition } from '../units/units.types';
 
 /** The MVP Legend classes (DEC-08: Assault is now Warrior). */
@@ -29,6 +30,10 @@ export type LegendDefinition = UnitDefinition & {
   readonly roleBlurb: string;
   /** Full aether (MP) pool; abilities and class default actions spend it (`01-classes`). */
   readonly baseAether: number;
+  /** The XP table this class levels along (`content/progression/levelCurves.ts`). */
+  readonly levelCurveId: LevelCurveId;
+  /** What each level adds (06 XP-based scaling). */
+  readonly levelScaling: LevelScalingDefinition;
   readonly weaponBias: WeaponBias;
   readonly damageFocus: DamageFocus;
   readonly pickUp: PickUpStyle;

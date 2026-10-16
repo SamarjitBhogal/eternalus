@@ -1,5 +1,7 @@
 import { Aether } from '../components/Aether';
+import { Progression } from '../components/Progression';
 import type { LegendDefinition } from '../content/legends/legends.types';
+import { LEVEL_CURVES } from '../content/progression/levelCurves';
 import { SpawnContextReader } from './SpawnContextReader';
 import { Unit } from './Unit';
 
@@ -23,13 +25,19 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * Installs the unit components, then the legend-only `Aether` (MP) pool. Only Legends carry
-   * Aether; mobs and structures have none.
+   * Installs the unit components, then the legend-only `Aether` (MP) pool and `Progression` (XP
+   * and level). Mobs and structures have neither.
    */
   protected override installComponents(context: unknown): void {
     super.installComponents(context);
 
     const { definition } = new SpawnContextReader(this).placed<LegendDefinition>(context);
     this.addComponent(new Aether(definition.baseAether));
+    // The curve id is checked at content load (`KnownLevelCurveRule`).
+    const curve = LEVEL_CURVES[definition.levelCurveId];
+    if (curve === undefined) {
+      throw new Error(`Unknown level curve "${definition.levelCurveId}".`);
+    }
+    this.addComponent(new Progression(curve, definition.levelScaling));
   }
 }

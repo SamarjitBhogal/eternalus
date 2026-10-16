@@ -863,3 +863,24 @@ The example below is fenced so it is not read as a real entry.
 - Next step: pre-PR gate (critic + ponytail-review), then open the PR (rebased onto
   `phase/2-sprint-2-work`); owner confirms the aether pool sizes; abilities and regen
   that spend aether land in Phase 4.
+
+### 2026-10-16 — S2 / SCRUM-426 — feat/legend-aether (progression) — Claudio + Claude Code
+
+- What was done: `Progression` component (XP total, level along a content curve, cap) installed on
+  every Legend; `content/progression/` with `LEVEL_CURVES` (`legend`: 100 + 50·(L−1), cap 10),
+  `XP_SOURCES` (Legend kill 150 + 25 × victim level; mob kill 20 / 45 / 120 by kind) and per-class
+  `levelScaling` (+8% base health, +10 aether per level), all `TUNE` from `balancing.md`;
+  `KnownLevelCurveRule`; `ProgressionSystem` (subscribes to `entity-died` through the state it
+  gets from `DefaultSystemPipeline`, awards in its own pass, raises `Health`/`Aether` max, emits
+  `level-up`); `Health.baseMax` + `raiseMax`, `Aether.raiseMax`; `StateHasher` hashes progression
+  once XP is earned. Aether pools now follow `balancing.md` (100 / 80 / 140) instead of invented
+  placeholders; INBOX item updated. Kills only feed it once `DamagePipeline` (PR #34) emits
+  `entity-died`. Docs 04, 05 and the Phase 4 plan updated.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 488 passed (488)"; client "Tests 416 passed
+  (416)"; "✓ built in 92ms"; "Documentation check passed."
+- Pre-PR gate: critic request-changes, 1 blocker (a level-up revived a killer that died the same
+  tick: `Health.raiseMax` now never heals the dead) → fixed with tests; should-fixes done
+  (`ProgressionLevelInvariant` `progression-level`, pipeline wiring test); nits done (rule uses
+  `Object.hasOwn`, 04 table row, 05 `paths`, damage-before-progression comment, INBOX lists the
+  progression numbers). Ponytail-review after.
+- Next step: push to PR #31; shared/assist XP and potency scaling later.

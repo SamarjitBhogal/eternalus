@@ -59,9 +59,12 @@ Reply inline (`Decision: …`).
       metrics in `balancing.md`, the soak length) also need your numbers.
   -     Accept after scaling to planned match time = 30 mins
 - [ ] **Aether (MP) pool sizes per class.** The game doc gives no aether numbers. Branch
-      `feat/legend-aether` adds the `Aether` component (MP) to every Legend, with TUNE placeholder
-      `baseAether`: Warrior 200, Sentinel 250, Magus 500 (caster largest). Confirm the pool sizes or
-      give your own. (Regen rate is a Phase 4 concern, not set yet.)
+      `feat/legend-aether` adds the `Aether` component (MP) to every Legend, with `baseAether` taken
+      from `suggestions/balancing.md` (level 1: Warrior 100, Sentinel 80, Magus 140; +10 per level,
+      `TUNE`). Confirm the pool sizes or give your own. (Regen rate is a Phase 4 concern, not set
+      yet.) The same branch adds Legend progression with balancing.md's other `Recommendation:`
+      values, also for you to confirm: level cap 10, `xpToNext = 100 + 50·(L−1)`, +8% base health
+      and +10 aether per level, Legend kill 150 + 25 × victim level, minion kill 20 / 45 / 120.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?

@@ -8,16 +8,24 @@ import type { DamageBreakdown, MutableShieldBar, ShieldBar } from './Health.type
 export class Health {
   private currentValue: number;
 
+  private maxValue: number;
+
   private readonly shieldBars: MutableShieldBar[] = [];
 
   /**
    * Creates health at full health, with no shield bars.
    *
-   * @param max - Full health (the base bar, without shields); must be positive.
+   * @param baseMax - Full health at level 1 (the base bar, without shields); must be positive.
    */
-  public constructor(public readonly max: number) {
-    Health.checkPositive(max, 'max');
-    this.currentValue = max;
+  public constructor(public readonly baseMax: number) {
+    Health.checkPositive(baseMax, 'max');
+    this.maxValue = baseMax;
+    this.currentValue = baseMax;
+  }
+
+  /** Full health now: `baseMax` plus every `raiseMax` (level-ups). */
+  public get max(): number {
+    return this.maxValue;
   }
 
   /** Health left on the base bar, between 0 and `max`. Shield bars are in `shields`. */
@@ -56,6 +64,18 @@ export class Health {
     const toBase = Math.min(remaining, this.currentValue);
     this.currentValue -= toBase;
     return { toShields, toBase, overflow: remaining - toBase };
+  }
+
+  /**
+   * Raises full health by `amount` (finite, ≥ 0) and heals by the same amount, so a level-up never
+   * leaves a gap on the bar. A dead entity stays at 0: a raise never revives.
+   */
+  public raiseMax(amount: number): void {
+    Health.checkAmount(amount, 'max raise');
+    this.maxValue += amount;
+    if (!this.isDead) {
+      this.currentValue += amount;
+    }
   }
 
   /** Restores up to `amount` health (never above `max`) and returns how much. */

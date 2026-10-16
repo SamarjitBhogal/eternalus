@@ -5,6 +5,7 @@ import { createDefaultContentRules } from './defaultContentRules';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { ContentValidator } from './validation/ContentValidator';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
+import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 
@@ -16,6 +17,7 @@ describe('createDefaultContentRules', () => {
       KebabCaseIdRule,
       PositiveStatsRule,
       PositiveAetherRule,
+      KnownLevelCurveRule,
     ]);
   });
 

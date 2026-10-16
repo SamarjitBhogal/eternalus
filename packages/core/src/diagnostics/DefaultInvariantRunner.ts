@@ -1,6 +1,7 @@
 import { FiniteTransformsInvariant } from './invariants/FiniteTransformsInvariant';
 import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInvariant';
 import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCauseInvariant';
+import { ProgressionLevelInvariant } from './invariants/ProgressionLevelInvariant';
 import { InvariantRunner } from './InvariantRunner';
 import type { DebugConfig } from './InvariantRunner.types';
 import type { Logger } from './Logger.types';
@@ -14,6 +15,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new NoRemovalWithoutCauseInvariant(),
         new HealthWithinBoundsInvariant(),
         new FiniteTransformsInvariant(),
+        new ProgressionLevelInvariant(),
       ],
       config,
       logger,

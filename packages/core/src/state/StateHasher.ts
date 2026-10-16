@@ -2,6 +2,7 @@ import { Aether } from '../components/Aether';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
@@ -49,6 +50,10 @@ export class StateHasher {
     }
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);
+    }
+    const progression = entity.findComponent(Progression);
+    if (progression !== undefined && progression.xp > 0) {
+      fields.push(['progression', progression.xp, progression.level]);
     }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
