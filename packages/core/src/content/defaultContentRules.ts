@@ -1,5 +1,6 @@
 import type { UnitDefinitionRule } from './validation/ContentValidator.types';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
+import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
 
@@ -8,4 +9,5 @@ export const createDefaultContentRules = (): readonly UnitDefinitionRule[] => [
   new KebabCaseIdRule(),
   new PositiveStatsRule(),
   new PositiveAetherRule(),
+  new KnownLevelCurveRule(),
 ];

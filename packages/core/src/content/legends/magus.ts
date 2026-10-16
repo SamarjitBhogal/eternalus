@@ -12,7 +12,7 @@ export const MAGUS = {
   displayName: 'Magus',
   roleBlurb: 'Magical; applies buffs or debuffs and can revive allies.',
   baseHealth: 800, // TUNE:
-  baseAether: 500, // TUNE: no aether numbers in the game doc; largest pool (caster)
+  baseAether: 140, // TUNE: balancing.md (level 1)
   weaponBias: 'staff',
   damageFocus: 'magic',
   pickUp: 'levitate',
@@ -26,4 +26,6 @@ export const MAGUS = {
     acceleration: 22.5, // TUNE: m/s², top speed after 0.2 s (6 ticks)
     mass: 2, // TUNE:
   },
+  levelCurveId: 'legend',
+  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;

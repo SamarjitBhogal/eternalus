@@ -62,7 +62,7 @@ export class Simulation {
     // `ai/defaultControllerRegistry.ts` (11 §2) and `FollowLeaderController` with `MinionController`.
     this.pipeline =
       systems === undefined
-        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), [
+        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), this.state, [
             new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
               this.queue.enqueue(command);
             }),

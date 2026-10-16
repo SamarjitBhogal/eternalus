@@ -12,7 +12,7 @@ export const SENTINEL = {
   displayName: 'Sentinel',
   roleBlurb: 'Heavy and powerful; needs a long runway to reach a very high top speed.',
   baseHealth: 1200, // TUNE:
-  baseAether: 250, // TUNE: no aether numbers in the game doc; small pool (physical bruiser)
+  baseAether: 80, // TUNE: balancing.md (level 1)
   weaponBias: 'heavy',
   damageFocus: 'physical',
   pickUp: 'grab',
@@ -26,4 +26,6 @@ export const SENTINEL = {
     acceleration: 0.18, // TUNE: m/s², top speed after 50 s
     mass: 6, // TUNE:
   },
+  levelCurveId: 'legend',
+  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;

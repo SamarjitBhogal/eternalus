@@ -48,4 +48,15 @@ describe('Aether', () => {
   it('rejects a non-positive max', () => {
     expect(() => new Aether(0)).toThrow();
   });
+
+  it('raises max and fills by the same amount, and rejects a negative raise', () => {
+    const pool = new Aether(100);
+    pool.raiseMax(20);
+
+    expect(pool.max).toBe(120);
+    expect(pool.current).toBe(120);
+    expect(() => {
+      pool.raiseMax(-1);
+    }).toThrow();
+  });
 });

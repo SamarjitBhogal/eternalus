@@ -12,7 +12,7 @@ export const WARRIOR = {
   displayName: 'Warrior',
   roleBlurb: 'Lighter, lower health, faster.',
   baseHealth: 600, // TUNE:
-  baseAether: 200, // TUNE: no aether numbers in the game doc; smallest pool (weapon-focused class)
+  baseAether: 100, // TUNE: balancing.md (level 1)
   weaponBias: 'light',
   damageFocus: 'mixed',
   pickUp: 'pick-up',
@@ -26,4 +26,6 @@ export const WARRIOR = {
     acceleration: 45, // TUNE: m/s², top speed after about 0.13 s (4 ticks)
     mass: 1, // TUNE:
   },
+  levelCurveId: 'legend',
+  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;
