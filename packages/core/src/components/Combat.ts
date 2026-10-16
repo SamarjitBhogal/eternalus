@@ -1,12 +1,12 @@
 import type { UnitAttack } from '../content/units/units.types';
-import type { EntityId } from '../state/EntityStore.types';
 
 /**
  * A unit's attack state (architecture 04 §3): what it attacks, its target and when it may hit
  * again. `CombatSystem` reads it every tick; the `attack-target` command sets the target.
+ * Ids are plain strings because `components/` may not import `state/` (02 §2).
  */
 export class Combat {
-  private targetIdValue: EntityId | null = null;
+  private targetIdValue: string | null = null;
 
   private readyAtTickValue = 0;
 
@@ -14,7 +14,7 @@ export class Combat {
   public constructor(public readonly attack: UnitAttack) {}
 
   /** The entity being attacked, or `null` when idle. */
-  public get targetId(): EntityId | null {
+  public get targetId(): string | null {
     return this.targetIdValue;
   }
 
@@ -24,7 +24,7 @@ export class Combat {
   }
 
   /** Starts attacking `targetId`, or stops with `null`. */
-  public setTarget(targetId: EntityId | null): void {
+  public setTarget(targetId: string | null): void {
     this.targetIdValue = targetId;
   }
 

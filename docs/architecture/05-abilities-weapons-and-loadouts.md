@@ -542,10 +542,11 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;
 `no-death-without-killer` (15) flags a death without one.
-`CombatSystem` (after movement, before death) runs each unit's `Combat` target through its
-`AttackStrategy` (melee only) when in reach (edge to edge) and off cooldown; `attack-target` sets
-the target and rejects allies, itself and dead targets (`invalid-target`) and units with no attack
-(`cannot-attack`).
+`DefaultSystemPipeline` builds the match's one `DamagePipeline` and injects it into every system
+that deals damage. `CombatSystem` (after movement, before death) runs each unit's `Combat` target
+through its `AttackStrategy` (melee only) when in reach (edge to edge) and off cooldown;
+`attack-target` sets the target and rejects allies, itself and dead targets (`invalid-target`) and
+units with no attack (`cannot-attack`).
 
 ## 10. Weapons
 

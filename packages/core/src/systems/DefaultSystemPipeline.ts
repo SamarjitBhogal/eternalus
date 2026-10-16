@@ -1,3 +1,4 @@
+import { DamagePipeline } from '../combat/DamagePipeline';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import { CombatSystem } from './CombatSystem';
 import { DeathSystem } from './DeathSystem';
@@ -9,6 +10,8 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order: decisions (AI), movement, combat, then death, then invariants
  * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
+ * It builds the match's one `DamagePipeline` and hands it to every system that deals damage, so a
+ * damage step added there applies to every hit.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /**
@@ -20,10 +23,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
    *   import, so `Simulation` passes it in.
    */
   public constructor(invariants: InvariantRunner, decide: readonly System[] = []) {
+    const damage = new DamagePipeline();
     super([
       ...decide,
       new MovementSystem(),
-      new CombatSystem(),
+      new CombatSystem(damage),
       new DeathSystem(),
       new InvariantSystem(invariants),
     ]);

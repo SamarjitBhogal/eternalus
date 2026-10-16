@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Combat } from '../components/Combat';
+import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -39,7 +40,7 @@ describe('CombatSystem', () => {
     const { state, warrior, spawn, context, attack } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
     const { damage, interval } = warrior.getComponent(Combat).attack;
-    const system = new CombatSystem();
+    const system = new CombatSystem(new DamagePipeline());
 
     expect(attack(dummy)).toBe(true);
     for (let tick = 0; tick <= interval; tick += 1) {
@@ -56,7 +57,7 @@ describe('CombatSystem', () => {
     const dummy = spawn('light-mob', 'training-dummy', 50, 'dark');
 
     attack(dummy);
-    new CombatSystem().update(context);
+    new CombatSystem(new DamagePipeline()).update(context);
 
     expect(dummy.getComponent(Health).current).toBe(dummy.getComponent(Health).max);
   });
@@ -67,7 +68,7 @@ describe('CombatSystem', () => {
 
     attack(dummy);
     dummy.getComponent(Health).applyDamage(1_000_000);
-    new CombatSystem().update(context);
+    new CombatSystem(new DamagePipeline()).update(context);
 
     expect(warrior.getComponent(Combat).targetId).toBeNull();
   });
@@ -76,7 +77,7 @@ describe('CombatSystem', () => {
     const run = (): number => {
       const { state, spawn, context, attack } = setUp();
       attack(spawn('light-mob', 'training-dummy', 1, 'dark'));
-      const system = new CombatSystem();
+      const system = new CombatSystem(new DamagePipeline());
       for (let tick = 0; tick < 60; tick += 1) {
         system.update(context);
         state.advanceTick();

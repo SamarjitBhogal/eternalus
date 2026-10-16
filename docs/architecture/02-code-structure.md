@@ -149,7 +149,7 @@ to it, named after it (`CONTRIBUTING.md` §3.1):
 ```
 components/
   Health.ts              # export class Health { ... }
-  Health.types.ts        # export type ShieldBar = { readonly sourceId: EntityId; current: number; max: number }
+  Health.types.ts        # export type ShieldBar = { readonly sourceId: string; current: number; max: number }
   Health.constants.ts    # export const MAX_SHIELD_BARS = 8;   (implementation detail, not tuning)
   Health.test.ts
 ```

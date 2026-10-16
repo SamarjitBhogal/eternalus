@@ -1,7 +1,7 @@
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
-import { DamagePipeline } from '../combat/DamagePipeline';
+import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { Entity } from '../entities/Entity';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
@@ -17,11 +17,11 @@ export class CombatSystem implements System {
   public readonly name = 'combat';
 
   /**
-   * @param damage - The pipeline every hit goes through.
+   * @param damage - The match's one damage pipeline, shared with every system that deals damage.
    * @param strategies - The strategy registry; attacks use `strategies.attack`.
    */
   public constructor(
-    private readonly damage = new DamagePipeline(),
+    private readonly damage: DamagePipeline,
     private readonly strategies: StrategyRegistry = createDefaultStrategyRegistry(),
   ) {}
 

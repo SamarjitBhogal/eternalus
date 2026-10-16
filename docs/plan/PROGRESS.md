@@ -889,3 +889,14 @@ The example below is fenced so it is not read as a real entry.
   (416)"; "✓ built in 89ms"; "Documentation check passed."
 - Next step: pre-PR gate on this commit (critic + ponytail), then push to PR #34; status effects,
   ranged attacks (SCRUM-169), damage types.
+
+### 2026-10-16 — Phase 2 / sprint 2.2 — feat/combat-damage-pipeline (review fixes) — Claudio + Claude Code
+
+- What was done: rebased on `phase/2-sprint-2-work` (PR #28 merged; only PROGRESS conflicted,
+  both sides kept). Fixed two findings from the owner's review of #35 whose precedent is here:
+  `Combat` no longer imports `EntityId` from `state/` (plain `string`, 02 §2: `components/` may not
+  import `state/`); `DefaultSystemPipeline` builds the one `DamagePipeline` and injects it into
+  `CombatSystem` (no default `new` inside the system). Doc 05 §9 status updated.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 492 passed (492)"; client "Tests 416 passed
+  (416)"; "✓ built in 93ms"; "Documentation check passed."
+- Next step: same fixes carried into #35 with the rest of the owner's review.
