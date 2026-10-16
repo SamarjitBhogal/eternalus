@@ -1,147 +1,136 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { fakePointerEvent } from './fakePointerEvent';
-import { describeInputDevice } from './InputDevice.contract';
+import { describeInputDevice, syntheticEvent } from './InputDevice.contract';
 import type { MutableInputSnapshot } from './InputDevice.types';
 import { MouseDevice } from './MouseDevice';
 
-const LEFT = 1;
-const BACK = 8;
+type PointerFields = { button: number; buttons: number; offsetX?: number; offsetY?: number };
 
-const setUp = () => {
-  const target = new EventTarget();
-  const mouse = new MouseDevice();
-  mouse.attach(target);
-  const read = (): MutableInputSnapshot => {
-    const snapshot: MutableInputSnapshot = {
-      keys: new Set(),
-      keyLabels: new Map(),
-      mouseButtons: 0,
-      pointer: null,
-    };
-    mouse.writeInto(snapshot);
-    return snapshot;
+function pointerEvent(type: string, fields: PointerFields): Event {
+  return syntheticEvent(type, { offsetX: 0, offsetY: 0, pointerId: 1, ...fields });
+}
+
+function read(device: MouseDevice): MutableInputSnapshot {
+  const snapshot: MutableInputSnapshot = {
+    keys: new Set(),
+    mouseButtons: new Set(),
+    pointer: null,
   };
-  return { target, mouse, read };
-};
+  device.writeInto(snapshot);
+  return snapshot;
+}
+
+function attachedMouse(): { device: MouseDevice; target: EventTarget } {
+  const device = new MouseDevice();
+  const target = new EventTarget();
+  device.attach(target);
+  return { device, target };
+}
 
 describeInputDevice('MouseDevice', () => {
-  const { target, mouse } = setUp();
+  const device = new MouseDevice();
+  const target = new EventTarget();
   return {
-    device: mouse,
+    device,
     target,
-    press: () => target.dispatchEvent(fakePointerEvent('pointerdown', { buttons: LEFT })),
-    release: () => target.dispatchEvent(fakePointerEvent('pointerup', { buttons: 0 })),
+    // The back side button: MouseEvent.button 3, PointerEvent.buttons bit 8.
+    press: () => target.dispatchEvent(pointerEvent('pointerdown', { button: 3, buttons: 8 })),
+    release: () => target.dispatchEvent(pointerEvent('pointerup', { button: 3, buttons: 0 })),
+    repeat: () => undefined, // mouse buttons do not auto-repeat
+    isHeld: (snapshot) => snapshot.mouseButtons.has(3),
   };
 });
 
 describe('MouseDevice', () => {
-  it('reads side buttons from the buttons bitmask', () => {
-    const { target, read } = setUp();
+  it('reads both side buttons from the buttons bitmask', () => {
+    const { device, target } = attachedMouse();
 
-    target.dispatchEvent(fakePointerEvent('pointerdown', { buttons: LEFT | BACK, button: 3 }));
+    target.dispatchEvent(pointerEvent('pointerdown', { button: 4, buttons: 8 | 16 }));
 
-    expect(read().mouseButtons).toBe(LEFT | BACK);
+    expect([...read(device).mouseButtons].sort()).toEqual([3, 4]);
   });
 
-  it('tracks the pointer on the canvas and forgets it when the pointer leaves', () => {
-    const { target, read } = setUp();
+  it('maps the bitmask to MouseEvent.button numbers (right is 2, wheel is 1)', () => {
+    const { device, target } = attachedMouse();
 
-    target.dispatchEvent(fakePointerEvent('pointermove', { x: 120, y: 45 }));
-    const onCanvas = read().pointer;
-    target.dispatchEvent(fakePointerEvent('pointerleave'));
+    // A second button pressed while the first is held arrives as a pointermove.
+    target.dispatchEvent(pointerEvent('pointerdown', { button: 2, buttons: 2 }));
+    target.dispatchEvent(pointerEvent('pointermove', { button: 1, buttons: 2 | 4 }));
 
-    expect(onCanvas).toEqual({ x: 120, y: 45 });
-    expect(read().pointer).toBeNull();
+    expect([...read(device).mouseButtons].sort()).toEqual([1, 2]);
   });
 
-  it('keeps the pointer another device wrote when it has none', () => {
-    const { mouse } = setUp();
-    const snapshot: MutableInputSnapshot = {
-      keys: new Set(),
-      keyLabels: new Map(),
-      mouseButtons: 0,
-      pointer: { x: 1, y: 2 },
+  it('records the pointer position on the target', () => {
+    const { device, target } = attachedMouse();
+
+    target.dispatchEvent(
+      pointerEvent('pointermove', { button: -1, buttons: 0, offsetX: 40, offsetY: 25 }),
+    );
+
+    expect(read(device).pointer).toEqual({ x: 40, y: 25 });
+  });
+
+  it('forgets the pointer when it leaves the target or the device detaches', () => {
+    const { device, target } = attachedMouse();
+    const moveTo = (x: number, y: number): void => {
+      target.dispatchEvent(
+        pointerEvent('pointermove', { button: -1, buttons: 0, offsetX: x, offsetY: y }),
+      );
     };
 
-    mouse.writeInto(snapshot);
+    moveTo(40, 25);
+    target.dispatchEvent(new Event('pointerleave'));
+    const afterLeave = read(device).pointer;
+    moveTo(10, 10);
+    device.detach();
 
-    expect(snapshot.pointer).toEqual({ x: 1, y: 2 });
+    expect(afterLeave).toBeNull();
+    expect(read(device).pointer).toBeNull();
   });
 
-  it('cancels the context menu, middle-click tabs and non-primary presses, not a left click', () => {
-    const { target } = setUp();
-    const contextMenu = new Event('contextmenu', { cancelable: true });
-    const auxClick = new Event('auxclick', { cancelable: true });
-    const rightPress = fakePointerEvent('pointerdown', { buttons: 2, button: 2 });
-    const leftPress = fakePointerEvent('pointerdown', { buttons: LEFT, button: 0 });
+  it('cancels the browser action of non-main buttons but not of the main one', () => {
+    const { target } = attachedMouse();
+    const side = pointerEvent('pointerdown', { button: 3, buttons: 8 });
+    const main = pointerEvent('pointerdown', { button: 0, buttons: 1 });
 
-    [contextMenu, auxClick, rightPress, leftPress].forEach((event) => target.dispatchEvent(event));
+    target.dispatchEvent(side);
+    target.dispatchEvent(main);
 
-    expect([contextMenu, auxClick, rightPress, leftPress].map((e) => e.defaultPrevented)).toEqual([
-      true,
-      true,
-      true,
-      false,
-    ]);
+    expect(side.defaultPrevented).toBe(true);
+    expect(main.defaultPrevented).toBe(false);
   });
 
-  it('cancels a chorded non-primary press (middle while left is held), and drops on cancel', () => {
-    const { target, read } = setUp();
-    target.dispatchEvent(fakePointerEvent('pointerdown', { buttons: LEFT }));
-    const chord = fakePointerEvent('pointermove', { buttons: LEFT | 4 });
-    const plainMove = fakePointerEvent('pointermove', { buttons: LEFT | 4 });
+  it.each(['contextmenu', 'auxclick'])(
+    'suppresses %s so the button stays a game button',
+    (type) => {
+      const { target } = attachedMouse();
+      const event = syntheticEvent(type, {});
 
-    target.dispatchEvent(chord);
-    target.dispatchEvent(plainMove);
-    target.dispatchEvent(fakePointerEvent('pointercancel'));
+      target.dispatchEvent(event);
 
-    expect([chord.defaultPrevented, plainMove.defaultPrevented]).toEqual([true, false]);
-    expect(read().mouseButtons).toBe(0);
+      expect(event.defaultPrevented).toBe(true);
+    },
+  );
+
+  it('captures the pointer on press when the target supports it', () => {
+    const device = new MouseDevice();
+    const captured: number[] = [];
+    const target = Object.assign(new EventTarget(), {
+      setPointerCapture: (pointerId: number) => captured.push(pointerId),
+    });
+    device.attach(target);
+
+    target.dispatchEvent(pointerEvent('pointerdown', { button: 0, buttons: 1 }));
+
+    expect(captured).toEqual([1]);
   });
 
-  it('keeps the pointer through releaseAll, so aiming survives a focus loss', () => {
-    const { target, mouse, read } = setUp();
-    target.dispatchEvent(fakePointerEvent('pointerdown', { buttons: LEFT, x: 10, y: 20 }));
+  it('releases every button when the browser cancels the pointer', () => {
+    const { device, target } = attachedMouse();
+    target.dispatchEvent(pointerEvent('pointerdown', { button: 0, buttons: 1 }));
 
-    mouse.releaseAll();
+    target.dispatchEvent(new Event('pointercancel'));
 
-    expect(read()).toMatchObject({ mouseButtons: 0, pointer: { x: 10, y: 20 } });
-  });
-
-  it('captures the pointer on press, so a drag off the canvas still releases', () => {
-    class FakeElement extends EventTarget {
-      public readonly captured: number[] = [];
-
-      public setPointerCapture(pointerId: number): void {
-        this.captured.push(pointerId);
-      }
-    }
-    vi.stubGlobal('Element', FakeElement);
-    const canvas = new FakeElement();
-    new MouseDevice().attach(canvas);
-
-    canvas.dispatchEvent(fakePointerEvent('pointerdown', { buttons: LEFT }));
-    vi.unstubAllGlobals();
-
-    expect(canvas.captured).toEqual([1]);
-  });
-
-  it('ignores events that are not pointer events', () => {
-    const { target, read } = setUp();
-
-    target.dispatchEvent(new Event('pointerdown'));
-
-    expect(read()).toMatchObject({ mouseButtons: 0, pointer: null });
-  });
-
-  it('stops cancelling the context menu after detach', () => {
-    const { target, mouse } = setUp();
-    mouse.detach();
-    const contextMenu = new Event('contextmenu', { cancelable: true });
-
-    target.dispatchEvent(contextMenu);
-
-    expect(contextMenu.defaultPrevented).toBe(false);
+    expect(read(device).mouseButtons.size).toBe(0);
   });
 });

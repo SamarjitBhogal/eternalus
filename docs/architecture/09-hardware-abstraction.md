@@ -4,7 +4,7 @@ description: The ports-and-adapters layer that isolates the game from the browse
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-09
 tags: [architecture, hal, input, ports, adapters, keybindings]
 paths:
   [
@@ -61,8 +61,7 @@ Rules that make this a layer and not a folder:
 // apps/client/src/game/engine/input/InputDevice.ts (sketch)
 export type InputSnapshot = {
   readonly keys: ReadonlySet<string>; // KeyboardEvent.code values currently held
-  readonly keyLabels: ReadonlyMap<string, string>; // code → KeyboardEvent.key at press (glyphs)
-  readonly mouseButtons: number; // PointerEvent.buttons: 1 left, 2 right, 4 middle, 8 X1, 16 X2
+  readonly mouseButtons: ReadonlySet<number>; // MouseEvent.button numbers held: 0 main … 3/4 side
   readonly pointer: { readonly x: number; readonly y: number } | null; // CSS px on the canvas
   readonly wheel: number; // accumulated since last poll
   readonly gamepads: readonly GamepadState[]; // by index; empty until a pad is used
@@ -77,13 +76,15 @@ export interface InputDevice {
 ```
 
 - **`KeyboardDevice`** keys on `KeyboardEvent.code` (physical key, layout independent: the right
-  choice for gamepad-like controls) and records `KeyboardEvent.key` as the label for prompts;
+  choice for gamepad-like controls); the label prompts show is captured into the chord at bind
+  time (13 §6.3), so the device keeps no labels;
   tracks `keydown`/`keyup` rather than auto-repeat (`event.repeat` is ignored); calls
   `preventDefault()` only for bound codes and never for `Tab`, `F5`, `F12` or Ctrl/Meta chords;
   falls back to `key` when `code === ''` (mobile virtual keyboards).
 - **`MouseDevice`** listens to pointer events on the canvas (`pointerdown/up/move`, pointer capture
   while a button is held), reads side buttons from the `buttons` bitmask (8 = X1/back, 16 =
-  X2/forward), cancels `auxclick` (middle-click new tab) and `pointerdown` for non-primary
+  X2/forward) and reports every button as its `MouseEvent.button` number, the numbering mouse
+  chords use, so snapshots and bindings never translate between the two, cancels `auxclick` (middle-click new tab) and `pointerdown` for non-primary
   buttons (autoscroll/paste), and cancels `contextmenu` so right-click is a game button. Users may
   swap buttons at OS level; we never assume which physical button is "left".
 - **`GamepadDevice`** (post-MVP; the class is a stub that satisfies the port) polls
@@ -167,8 +168,8 @@ Rebinding is pure data flow: the settings screen enters listen mode, the next `k
 (ignoring `repeat` and `Escape`), `pointerdown` or gamepad pressed-edge becomes a chord, conflicts
 are detected with a `Map<chordKey, InputAction>`, and the new `Binding[]` is saved as a versioned
 DTO and pushed to `InputMapper.setBindings`. Prompts never hard-code keys: `<KeyGlyph
-action="ability-1" />` renders the label (`keyLabels` for keyboard, a glyph table by gamepad
-family) of the current binding, so tutorials update themselves (requirements doc). The mouse side
+action="ability-1" />` renders the label of the current binding (captured at bind time for
+keyboard and mouse, a glyph table by gamepad family), so tutorials update themselves (requirements doc). The mouse side
 button for a gadget is `{ device: 'mouse', button: 3 }`, no special case.
 
 ## 4. Display
@@ -276,6 +277,18 @@ layer is the seam:
 - What makes that true today: rule 1 (core has no DOM), rule 7 (one class touches the canvas),
   the `Command` stream (input is data), content by id (assets are looked up, never imported), and
   the contract suites (they become the acceptance tests for the new adapters).
+
+## 11. Implementation status
+
+Built in Sprint 1 (session F): the `InputDevice` port with `KeyboardDevice`, `MouseDevice`,
+`FakeInputDevice` and the §9 contract suite, and the `Projection` port `InputMapper` projects the
+pointer through. Keyboard labels are not in the snapshot: they are captured into the chord at bind
+time (13 §6.3). Interim gaps: no `poll()` and no `wheel` or `gamepads` fields until
+`GamepadDevice` (post-MVP); `KeyboardDevice` releases on `blur` and `visibilitychange` itself
+(Sprint 1 brief), while the mouse relies on pointer capture, `pointercancel` and its owner's
+`releaseAll()` on focus loss; the §3 `Binding.types.ts` sketch
+is superseded by the Sprint 1 contract's flat `InputChord` (13 §10). Storage (§7) is covered in
+[14](14-persistence-and-resources.md) §14.
 
 ## Related
 

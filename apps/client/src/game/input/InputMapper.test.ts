@@ -1,123 +1,112 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Binding } from '../../bridge/Binding.types';
-import type { InputSnapshot } from '../engine/input/InputDevice.types';
+import type { InputSnapshot, ScreenPoint } from '../engine/input/InputDevice.types';
 import type { Projection } from '../engine/input/Projection.types';
+import { rebind } from './bindingEdits';
 import { InputMapper } from './InputMapper';
 import { PRESETS } from './keybindings';
 
-const holding = (...keys: string[]): InputSnapshot => ({
-  keys: new Set(keys),
-  keyLabels: new Map(),
-  mouseButtons: 0,
-  pointer: null,
-});
+// A camera stand-in: the world is the canvas scaled by 2.
+const PROJECTION: Projection = { screenToWorld: ({ x, y }) => ({ x: x * 2, y: y * 2 }) };
 
-/** A world ten times the canvas, so a projected point is easy to read. */
-const TIMES_TEN: Projection = { screenToWorld: ({ x, y }) => ({ x: x * 10, y: y * 10 }) };
+function snapshotWith(
+  keys: string[],
+  mouseButtons: number[] = [],
+  pointer: ScreenPoint | null = null,
+): InputSnapshot {
+  return { keys: new Set(keys), mouseButtons: new Set(mouseButtons), pointer };
+}
 
-const intentOf = (mapper: InputMapper, ...keys: string[]) =>
-  mapper.toIntent(mapper.resolve(holding(...keys)), TIMES_TEN);
+function intentFor(
+  mapper: InputMapper,
+  snapshot: InputSnapshot,
+): ReturnType<InputMapper['toIntent']> {
+  return mapper.toIntent(mapper.resolve(snapshot), PROJECTION);
+}
 
 describe('InputMapper', () => {
-  it('turns W held into a move straight up, (0, -1)', () => {
-    expect(intentOf(new InputMapper(PRESETS.wasd), 'KeyW').move).toEqual({ x: 0, y: -1 });
+  it('moves up while W is held', () => {
+    expect(intentFor(new InputMapper(PRESETS.wasd), snapshotWith(['KeyW'])).move).toEqual({
+      x: 0,
+      y: -1,
+    });
   });
 
-  it('stops moving when the key is released', () => {
-    const mapper = new InputMapper(PRESETS.wasd);
-    intentOf(mapper, 'KeyW');
+  it('normalises diagonal movement to length 1', () => {
+    const { move } = intentFor(new InputMapper(PRESETS.wasd), snapshotWith(['KeyW', 'KeyD']));
 
-    expect(intentOf(mapper).move).toEqual({ x: 0, y: 0 });
-  });
-
-  it('normalises a diagonal so it is not faster than a straight line', () => {
-    const { move } = intentOf(new InputMapper(PRESETS.wasd), 'KeyW', 'KeyD');
-
+    expect(Math.hypot(move.x, move.y)).toBeCloseTo(1);
     expect(move.x).toBeCloseTo(Math.SQRT1_2);
     expect(move.y).toBeCloseTo(-Math.SQRT1_2);
   });
 
-  it('stands still when opposite keys cancel out', () => {
-    expect(intentOf(new InputMapper(PRESETS.wasd), 'KeyA', 'KeyD').move).toEqual({ x: 0, y: 0 });
+  it('cancels opposite directions out', () => {
+    expect(intentFor(new InputMapper(PRESETS.wasd), snapshotWith(['KeyW', 'KeyS'])).move).toEqual({
+      x: 0,
+      y: 0,
+    });
   });
 
-  it('follows a rebinding with no code change: W → ArrowUp', () => {
-    const rebound: Binding[] = PRESETS.wasd.map((binding) =>
-      binding.action === 'move-up'
-        ? { action: 'move-up', chords: [{ device: 'keyboard', code: 'ArrowUp', label: '↑' }] }
-        : binding,
-    );
-    const mapper = new InputMapper(PRESETS.wasd);
-    mapper.setBindings(rebound);
-
-    expect(intentOf(mapper, 'KeyW').move).toEqual({ x: 0, y: 0 });
-    expect(intentOf(mapper, 'ArrowUp').move).toEqual({ x: 0, y: -1 });
-    expect([mapper.isBound('KeyW'), mapper.isBound('ArrowUp')]).toEqual([false, true]);
-  });
-
-  it('reports the frame an action starts and the frame it ends', () => {
+  it('reports a press once, then holds, then a release', () => {
     const mapper = new InputMapper(PRESETS.wasd);
 
-    const down = mapper.resolve(holding('KeyW'));
-    const still = mapper.resolve(holding('KeyW'));
-    const up = mapper.resolve(holding());
+    const first = mapper.resolve(snapshotWith(['Digit1']));
+    const second = mapper.resolve(snapshotWith(['Digit1']));
+    const third = mapper.resolve(snapshotWith([]));
 
-    expect([...down.pressed]).toEqual(['move-up']);
-    expect([still.pressed.size, still.released.size, still.held.size]).toEqual([0, 0, 1]);
-    expect([...up.released]).toEqual(['move-up']);
+    expect([...first.pressed]).toEqual(['ability-1']);
+    expect([...second.pressed]).toEqual([]);
+    expect([...second.held]).toEqual(['ability-1']);
+    expect([...third.released]).toEqual(['ability-1']);
   });
 
-  it('triggers an ability slot only on the frame its key goes down', () => {
+  it('triggers a slot only on the frame it is pressed', () => {
     const mapper = new InputMapper(PRESETS.wasd);
 
-    expect(intentOf(mapper, 'Digit4', 'KeyZ').triggered).toEqual(['ability-4', 'gadget-1']);
-    expect(intentOf(mapper, 'Digit4', 'KeyZ').triggered).toEqual([]);
+    const pressed = intentFor(mapper, snapshotWith(['KeyZ', 'Digit2']));
+    const held = intentFor(mapper, snapshotWith(['KeyZ', 'Digit2']));
+
+    expect(pressed.triggered).toEqual(['ability-2', 'gadget-1']);
+    expect(held.triggered).toEqual([]);
   });
 
-  it('activates every action bound to one key', () => {
-    const shared: Binding[] = [
-      { action: 'move-up', chords: [{ device: 'keyboard', code: 'KeyW', label: 'W' }] },
-      { action: 'sprint', chords: [{ device: 'keyboard', code: 'KeyW', label: 'W' }] },
-    ];
-
-    expect([...new InputMapper(shared).resolve(holding('KeyW')).held]).toEqual([
-      'move-up',
-      'sprint',
-    ]);
-  });
-
-  it('presses attack with the left mouse button and a gadget with the back button', () => {
-    const bindings: Binding[] = [
-      ...PRESETS.wasd,
-      { action: 'gadget-1', chords: [{ device: 'mouse', button: 3 }] },
-    ];
-    const mapper = new InputMapper(bindings);
-
-    const actions = mapper.resolve({ ...holding(), mouseButtons: 1 | 8 });
-
-    expect([...actions.pressed].sort()).toEqual(['attack', 'gadget-1']);
-    expect(mapper.toIntent(actions, TIMES_TEN).triggered).toEqual(['gadget-1']);
-  });
-
-  it('aims at the world point under the pointer, and at nothing when it is off the canvas', () => {
+  it('projects the pointer into the world as the aim, or none without a pointer', () => {
     const mapper = new InputMapper(PRESETS.wasd);
 
-    const onCanvas = mapper.toIntent(
-      mapper.resolve({ ...holding(), pointer: { x: 3, y: 4 } }),
-      TIMES_TEN,
+    expect(intentFor(mapper, snapshotWith([], [], { x: 6, y: 17 })).aim).toEqual({ x: 12, y: 34 });
+    expect(intentFor(mapper, snapshotWith([])).aim).toBeNull();
+  });
+
+  it('keeps client-only and non-slot actions in the action state for the match to read', () => {
+    const actions = new InputMapper(PRESETS.wasd).resolve(
+      snapshotWith(['ShiftLeft', 'Escape'], [0]),
     );
 
-    expect(onCanvas.aim).toEqual({ x: 30, y: 40 });
-    expect(intentOf(mapper).aim).toBeNull();
+    expect([...actions.pressed].sort()).toEqual(['attack', 'pause-menu', 'sprint']);
   });
 
-  it('indexes gamepad chords without matching them yet (no GamepadDevice)', () => {
-    const mapper = new InputMapper([
-      { action: 'attack', chords: [{ device: 'gamepad', button: 0 }] },
-      { action: 'move-up', chords: [{ device: 'gamepad-axis', axis: 1, sign: -1, deadzone: 0.2 }] },
-    ]);
+  it('says which key codes are bound, so devices prevent defaults only for those', () => {
+    const mapper = new InputMapper(PRESETS.wasd);
 
-    expect(mapper.resolve({ ...holding(), mouseButtons: 1 }).held.size).toBe(0);
+    expect(mapper.isBound('KeyW')).toBe(true);
+    expect(mapper.isBound('KeyQ')).toBe(false);
+  });
+
+  it('follows a rebinding of W to ArrowUp with no code change', () => {
+    const mapper = new InputMapper(PRESETS.wasd);
+    const upArrow = { device: 'keyboard', code: 'ArrowUp', label: '↑' } as const;
+
+    mapper.setBindings(rebind(PRESETS.wasd, 'move-up', upArrow, 'swap'));
+
+    expect(intentFor(mapper, snapshotWith(['ArrowUp'])).move).toEqual({ x: 0, y: -1 });
+    expect(mapper.resolve(snapshotWith(['KeyW'])).held.size).toBe(0);
+    expect(mapper.isBound('KeyW')).toBe(false);
+  });
+
+  it('fires a gadget from a mouse side button once it is bound there', () => {
+    const sideButton = { device: 'mouse', code: '3', label: 'Mouse 4' } as const;
+    const mapper = new InputMapper(rebind(PRESETS.wasd, 'gadget-1', sideButton, 'swap'));
+
+    expect(intentFor(mapper, snapshotWith([], [3])).triggered).toEqual(['gadget-1']);
   });
 });

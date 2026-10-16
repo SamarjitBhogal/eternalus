@@ -4,7 +4,7 @@ description: Line-by-line explanation of the committed agent configuration (Clau
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-08
 tags: [agents, harness, tooling, claude-code, codex, gemini, copilot, cursor]
 paths:
   [
@@ -15,7 +15,12 @@ paths:
     'GEMINI.md',
     '.github/copilot-instructions.md',
   ]
-related: ['docs/agents/README.md', 'docs/research/agentic-harness-research.md']
+related:
+  [
+    'docs/agents/README.md',
+    'docs/research/agentic-harness-research.md',
+    'docs/decisions/0015-agents-push-task-branches-and-open-prs.md',
+  ]
 ---
 
 # Tool setup for coding agents
@@ -40,13 +45,13 @@ re-verify against the tool's docs before changing a key name.
 Project settings, committed, applied to everyone who opens the repo in Claude Code after the
 workspace-trust dialog (deny rules apply immediately, allow rules after trust).
 
-| Key                  | Entries                                                                                                                                                                                                                             | Why                                                                                         |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `permissions.allow`  | `Read`, `Edit`, `Write`; `Bash(npm run check…)`, `test`, `lint`, `typecheck`, `knip`, `format`, `docs:*`, `build`, `dev`; `npx prettier/eslint/vitest`; read-only git (`status`, `diff`, `log`, `branch`, `show`, `worktree list`)  | The quality gate and inspection commands run without prompts, so agents actually run them   |
-| `permissions.deny`   | `git push` (all forms), `git commit --no-verify`, `git reset --hard`, `git checkout/switch main`, `git branch -D`, `rm -rf`; reading `.env*`, `dist/`, `coverage/`; editing `package-lock.json`, `.githooks/`, `.github/workflows/` | Humans push and merge; guardrail files are changed only through an ADR by a human           |
-| `hooks.SessionStart` | `node scripts/hooks/session-start.mjs`                                                                                                                                                                                              | Prints branch (warns on `main`), the reading order, open INBOX items, last PROGRESS entry   |
-| `hooks.PostToolUse`  | matcher `Edit\|Write` → `node scripts/hooks/post-edit.mjs`                                                                                                                                                                          | Prettier + ESLint on the touched file; exit 2 shows lint failures to the agent immediately  |
-| `hooks.Stop`         | `node scripts/hooks/stop-check.mjs`                                                                                                                                                                                                 | Runs `npm run check:quick`; exit 2 stops the agent from ending its turn with failing checks |
+| Key                  | Entries                                                                                                                                                                                                                                                                                                                                                                                | Why                                                                                                                               |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `permissions.allow`  | `Read`, `Edit`, `Write`; `Bash(npm run check…)`, `test`, `lint`, `typecheck`, `knip`, `format`, `docs:*`, `build`, `dev`; `npx prettier/eslint/vitest`; read-only git (`status`, `diff`, `log`, `branch`, `show`, `worktree list`); `git push -u origin <prefix>/*` for the task-branch prefixes and `gh pr create *` (ADR 0015)                                                       | The quality gate and inspection commands run without prompts, so agents actually run them                                         |
+| `permissions.deny`   | force pushes (`--force`, `-f`, `+` refspec), `:` refspecs, `--delete`/`-d`, `--mirror`, `--all`, `git push --no-verify`, pushes naming `main` or `phase/…`, `gh pr merge`, `git commit --no-verify`, `git reset --hard`, `git checkout/switch main`, `git branch -D`, `rm -rf`; reading `.env*`, `dist/`, `coverage/`; editing `package-lock.json`, `.githooks/`, `.github/workflows/` | Agents push their own task branch and open its PR when asked (ADR 0015); humans merge; guardrail files change only through an ADR |
+| `hooks.SessionStart` | `node scripts/hooks/session-start.mjs`                                                                                                                                                                                                                                                                                                                                                 | Prints branch (warns on `main`), the reading order, open INBOX items, last PROGRESS entry                                         |
+| `hooks.PostToolUse`  | matcher `Edit\|Write` → `node scripts/hooks/post-edit.mjs`                                                                                                                                                                                                                                                                                                                             | Prettier + ESLint on the touched file; exit 2 shows lint failures to the agent immediately                                        |
+| `hooks.Stop`         | `node scripts/hooks/stop-check.mjs`                                                                                                                                                                                                                                                                                                                                                    | Runs `npm run check:quick`; exit 2 stops the agent from ending its turn with failing checks                                       |
 
 Notes: permission patterns are best-effort (`git -C . push` is not matched by `Bash(git push *)`);
 the git hooks and CI remain the hard gate. Commands use the exec form (`"command": "node",

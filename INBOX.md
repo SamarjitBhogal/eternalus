@@ -13,74 +13,87 @@ review comments under "Feedback". Answered decisions are recorded in
 
 ## Decisions needed from Sam
 
-Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Decision: …`).
+Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
+Reply inline (`Decision: …`).
 
-- [ ] **DEC-11 (was DISC-19 / DISC-39) — third ability and single ultimate per class.** The game
-      doc names only **two** abilities per MVP class (Warrior: Veil, Blade Runner; Sentinel: Rip &
-      Tear, Slam; Magus: Imbue, Shockwave) while the rule is "3 abilities + 1 ultimate". It also
-      lists **two ultimates** for Magus (Death Ray, Nova) and Sentinel (Berserk, Meteor Fall) and
-      one for Warrior (Fury). Needed before Phase 4 content is written.
-      Options: (a) **Recommended** — third abilities from `suggestions/more-abilities.md`:
-      Warrior **Hamstring**, Sentinel **Shield Wall**, Magus **Sanctuary**; MVP ultimates
-      Death Ray (Magus), Berserk (Sentinel), Fury (Warrior); Nova / Meteor Fall / Eclipse become
-      loadout-selectable alternative ultimates post-MVP. (b) Keep both ultimates per class as a
-      loadout choice in the MVP (more content, more balancing). (c) Your own picks.
-- [ ] **DEC-12 (was DISC-33) — corner-camp crystal timers.** "Crystals" are the unbreakable
-      crystals inside the four **corner camps** (game doc, "Outer (Corner) Camps" and "Minion
-      Buffs on Boss Spawn"): the crystal respawns the camp's mini-boss **300 s** after it dies,
-      and once the central boss has spawned it also emits light/medium waves toward your lanes
-      every **240 s**. Accept both timers as TUNE starting values? (Corner camps are first in the
-      cut order, so this only matters if time allows.)
-- [ ] **DEC-13 (was DISC-34) — match length.** Left blank in the last batch. Proposal:
-      `plannedMatchSeconds: 1200` (quarter mark 300 s → mini-bosses; mid-game 600 s → gem
-      summons the boss), no hard time limit, optional score cap at 2700 s. Accept or give numbers.
+- [ ] **DEC-36 / DEC-37 — accept ADR 0016 and answer the plan §9 questions.** The course
+      instructor's two new requirements, Duel multiplayer (DEC-36) and a server for hundreds or
+      thousands of concurrent players (DEC-37), are planned now; must be implemented by the end of
+      Sprint 3 (2026-11-13). The proposed design is
+      `docs/decisions/0016-multiplayer-server-authoritative-duel.md` (draft): accept, change or
+      reject it. The consolidated questions about the Duel mode and the server are in
+      `docs/plan/multiplayer-and-scalability-plan.md` §9; answer them there or inline here.
+- [ ] **DEC-11 — still open after your answer** (the approvals are recorded as DEC-11 in
+      `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-10; your chat clarifications
+      of 2026-10-10 answered the former (1) and (2), see Done). (3) Your Roar row says Legends only
+      get the slow — does that hold in Duels too, and what does `feared` do to bots? Does
+      `control-immune` cover fear? The same row cites `mechanics-ideas.md` for "Fear is bot-only in
+      the MVP", but that file has no such text: what is the source? (4) Costs, cooldowns and
+      magnitudes for the newly approved abilities, or may agents put `TUNE` placeholders in
+      content?
+  -     Hamstring ability approved for Warrior class. Fan of Sorrows also approved. Eclipse alternate ultimate approved for MVP
+    - Shield wall, Sunder, and Colossus Roar approved for Sentinel class. Avalanche approved as alternate ultimate for MVP
+    - Sanctuary and Aether Lance approved for Magus class (Enemy Sentinel's Sunder should shatter Sanctuary). Last Rites alternate ultimate approved for MVP.
+- [ ] **DEC-11 — architecture approvals (impact review AB-3…AB-5).** The approved abilities need
+      edits to architecture 05 that wait for your approval: §8, add `feared` (Colossus Roar) and
+      `insanity` (DEC-12) to the status ids; §17, move `summon` (Shield Wall) from MVP-if-time to
+      MVP and `reveal` (Aether Lance) from post-MVP to MVP, add the continuous `dash` that
+      Avalanche needs, make combos MVP for "Sunder shatters Sanctuary", and list the class pools in
+      its kit row (it still says "third abilities and ultimate picks: INBOX"). Approve, or say
+      which to change; 05 stays as it is until then.
+- [ ] **DEC-12 — volatile crystals, still open after your answer** (the timers and the volatile
+      rule are recorded as DEC-12, 2026-10-10). (1) Does "once the centre boss spawns" mean the
+      moment the boss is summoned or the mid-game mark? If the GreaterBoss (MVP-if-time) is cut,
+      do the crystals ever turn volatile? (2) What does `insanity` do? Its name is yours, and its
+      description and a placeholder icon may be added now, as you said. (3) The shockwave's radius
+      and damage and the debuff's duration (or `TUNE` placeholders); does the shockwave hit every
+      team; does a destroyed camp stay gone for the rest of the match? (4) How much health does a
+      volatile crystal have, and who can break it (either team? damage only?) (Corner camps are
+      first in the cut order, so this only matters if time allows.)
+  -     Approved with this caveat: Onc the centre boss spawns, the outer camp's crystals become "volatile" and are now breakable but when they die, they release a shockwave destroying the camp and dealing massive AOE damage and temporary insanity debuff (TBD on what it does but the effect description/icon can be added with no actual effects applied)
+- [ ] **DEC-13 — score cap, still open after your answer** (30-minute planned match recorded as
+      DEC-13, 2026-10-10; the quarter mark and mid-game scale with it). Your "Accept after
+      scaling" scales the proposal's optional score cap too: 2700 s for a 1200 s match becomes
+      **4050 s** for 30 minutes (2.25 × the planned match). Confirm 4050 s, or give another value.
+      The balance anchors tied to the old length (boss levels at the two marks, the match-length
+      metrics in `balancing.md`, the soak length) also need your numbers.
+  -     Accept after scaling to planned match time = 30 mins
 
-- [ ] **DEC-15 — camp weights by depth (DISC-42) in practice.** The default map yields 4 light +
-      2 heavy camps per side and no medium ones; with one camp per corridor (`numLanes` ≥ 7) every
-      camp is heavy. Proposal: keep depth-based weights but define the classes by position in the
-      corridor (nearest-lane camps light, middle medium, deepest heavy), or give the count per
-      class in content. Pick one. Note: "depth" is the distance to the nearest lane over half the
-      corridor's height, so in tall worlds with steep lanes every camp reads as light.
-- [ ] **Session D (feat/session-shell-home), better than design — no `useAppDispatch`.** The
-      §2.3 contract and `apps/client/AGENTS.md` ask for `useAppSelector` **and**
-      `useAppDispatch`. D ships only `useAppSelector`: `ui/` never writes the store
-      (architecture 13 §5, "every state change has one path"; components call `emitIntent`), and
-      knip fails the build on an unused export. Leaving the hook out makes the rule structural.
-      Options: (a) **Recommended** — accept; update §2.3's successor, `apps/client/AGENTS.md`
-      "Adding code" and architecture 13 §5 to say "`useAppSelector` only; the UI emits intents".
-      (b) Add `useAppDispatch` back when a first caller exists.
-      Also found by the critic: architecture 13 §2's `character-select` row says it "builds the
-      rosters … assigns `playerTeam`", while the `menu` and `loading` rows (and reference 14 §5)
-      put the setup at "Start match"; D follows the latter. The row needs a one-line fix.
+- [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
+      2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
+      (2) Is parity per side only, or also per corridor? Only counts are matched, so one side's
+      camps may sit nearer its lanes or Stronghold than the other's: acceptable? (3) The rule
+      exempts camps from ADR 0009's mirror invariant, so it needs your sign-off on the amending
+      ADR 0017 (next item) before the generator changes. (4) From ADR 0017: which classes does a
+      corridor get when it holds other than three camps?
+  -     Accepted " keep depth-based weights but define the classes by position in the corridor" where the vertical line down the centre of the map defines the division. RNG determines the location of the camps on each side so both sides are different, but they must equate in terms of overall difficulty (1 light on left means 1 light on right; not necessarily in mirrored locations but the same amount of weighted camps on left team and right team's sides)
+- [ ] **DEC-15 — accept ADR 0017.** `docs/decisions/0017-balanced-asymmetric-camp-placement.md`
+      (draft) amends ADR 0009 for forest camps only: the seeded RNG places them per side with
+      equal counts per weight class, and everything else stays mirrored. Accept, change or reject
+      it; the generator does not change until you accept it. Its open questions are DEC-15 (1),
+      (2) and (4) above.
+- [ ] **Session D (DEC-34) — the text of the delegated edits.** You delegated both items to the
+      cleaner long-term design (recorded as DEC-34). The impact review proposes the text in
+      `docs/reviews/2026-10-10-new-requirements-impact.md` §5.4: SD-1, option (a), no
+      `useAppDispatch` and the UI emits intents (edits architecture 13 §5 and
+      `apps/client/AGENTS.md`); SD-2, the 13 §2 `character-select` row records the class choice and
+      starts the countdown while `menu` keeps building `MatchSetup`. Approve that text, or confirm
+      that agents may apply it as delegated.
+  -     Accept recommended option if it is cleaner long-term. For D, set to whichever is cleaner in the long-term.
+- [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
+      amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
+      for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
+      sprint is "this sprint": S1, which ends 2026-10-16, or S2? (2) Your bot-AI system: may its
+      file live under `systems/`, or must it stay in `ai/`? (Today it is in `ai/`, because core
+      `AGENTS.md` forbids `systems/` importing `ai/`, which 02 §2 allows; audit A23-18.) (3) Add
+      the `PROTOTYPE(<id>) TEMPORARY` marker convention to `AGENTS.md` so every future prototype
+      uses it (audit A23-17)? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
+      what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'` lists them. Agents: do not build on or
+      extend marked code. The two departures you were asked to confirm, speed 5.4 m/s and mass
+      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`).
+  -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
 
-- [ ] **PROTO-01 — prototype escort minions (demo, 2026-10-08; branch `feat/minion-follow-prototype`).**
-      For the prototype demo, Samarjit chose minions that **follow the player's Legend** instead
-      of marching down lanes (option b). This is a **prototype decision to be replaced** by the
-      real Phase 3 systems; it is not in the design docs and they were not changed. Stand-ins to
-      remove: `ai/FollowLeaderController.ts` + `content/ai/followLeaderProfile.ts` (→
-      `MinionController`, sprint 3.3), `content/mobs/lightMinion.ts` (health 150 and radius 0.4 are
-      `balancing.md`'s light-minion anchors; please confirm two departures: speed 5.4 m/s instead
-      of 3.5 so the escort keeps up with the Warrior, and mass 0.5 as 40 on the repo's Warrior =
-      1 scale), the
-      `PROTOTYPE_ESCORT` spawn in `apps/client/src/game/Match.ts` (→ `SpawnSystem` / hordes),
-      the brute-force scan (→ `Perception` over `SpatialHash`), `Brain` as a component with only
-      a controller id (→ `state.ai.brains`, 11 §2) and the missing `AiSystem` decision budget
-      (11 §6). Question: `AiSystem` is a system (02 §2, 11 §1), but `systems/` may not import
-      `ai/` (core `AGENTS.md`), so it lives in `ai/` and `Simulation` passes it to
-      `DefaultSystemPipeline`, which splits the tick order across two files (02 §9). Should
-      `AiSystem` stay in `ai/`, or may `systems/` import `ai/` types?
-      Decision needed: keep the escort behind a dev flag after Phase 3, or delete it then?
-      **Finding the code:** all prototype code is temporary. Every piece carries the marker
-      `PROTOTYPE(PROTO-01) TEMPORARY`, followed by what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'`
-      lists them all. Agents: do not build on or extend marked code; replace it with the named
-      design piece. Proposal (needs your approval, since it edits `AGENTS.md`): add this marker
-      convention to `AGENTS.md` so every future prototype uses it.
-      **Decision (2026-10-09, DEC-33):** the escort, its speed of 5.4 m/s and its mass of 0.5 were
-      for the demo and are not the design. Minions and mobs are Samarjit's to implement, and the
-      escort goes when his Phase 3 minions replace it. **Still open:** where `AiSystem` lives
-      (audit A23-18), and the marker convention (A23-17).
-
-## Requests for the agent
+## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -237,19 +250,104 @@ Three items from the 2026-10-03 batch asked for elaboration. Reply inline (`Deci
     preset until settings supply saved bindings. A minimap click is also an `attack` press until
     the minimap consumes its clicks (SCRUM-151).
 
-- [ ] **Session C → session F (2026-10-09, PR #19): `bridge/Binding.types.ts` now has the 13 §6.1
-      shapes.** `INPUT_ACTIONS` (same 21 ids; `InputAction` derives from it), and `InputChord` is
-      the union (keyboard `code`/`label`/`modifiers?`, mouse `button` 0–4, `gamepad`,
-      `gamepad-axis`). The defaults are in `game/input/keybindings.ts` (`DEFAULT_CHORDS`, presets
-      `wasd`/`arrows`), and `InputMapper.setBindings` takes the saved bindings. `settingsSlice`,
-      `events.ts` and `hudSlice` compile unchanged.
+- [ ] **F → G (2026-10-06): mount the pause overlay.** `ui/screens/MatchScreen.tsx` renders
+      `<PauseOverlay />` from `ui/hud/PauseOverlay.tsx` unconditionally; it renders nothing
+      unless `session.overlay` is `'pause'` or `'settings'`.
+- [ ] **F → session H / the `Match` owner (2026-10-09): settings in the match.** PR #19 merged
+      before F, so F's merge took F's input layer (DEC-26) and adapted `DeviceIntentSource` to its
+      snapshot (`mouseButtons` is a `Set` of `MouseEvent.button` numbers, no `keyLabels`). Left
+      for `Match`/`useMatch`: start from the player's bindings instead of `PRESETS.wasd`, re-read
+      them on each `settings` bus event (`mapper.setBindings(s.bindings)`), and toggle the pause
+      overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`), so the pause key is
+      the player's binding.
 
 ## Feedback
 
-- [ ] _(none yet)_
+- [ ] Answered below questions, or called out in section header.
+- NEW REQUIREMENTS:
+  - By the end of Sprint 3, two new items must be implemented, and therefore we must plan for them:
+    - 1. Multiplayer support
+      - We must be able to have at least 1 player playing against another.
+      - We have decided the best way to have this work is to do a second game mode called "Duel"
+      - Duel has matchmaking, looking for any other player currently waiting in a Duel queue
+      - Duel spawns both players inside the Cathedral where the doors are closed and the surrounding world is deactivated to no longer spawn units or carry structures (environmental buildings, trees, etc., unaffected)
+      - The players compete in a 1v1, first-to-10-kills match with a match-point system
+      - After each kill, like in a standard fighting game, the players reset. any damage done to the map during this battle remains in place; only the players reset.
+      - Ultimate abilities have continuous cooldown, while other abilities do not
+        - Meaning: Your cooldown for an ultimate persists through life and death, where your other abilities have standard cooldown and reset to fully cooled down upon death
+      - We would like to set up a simple database in the future where we can track player's profiles, game IDs, stats, etc
+      - Tracking stats / history will allow us to also implement performance-based matchmaking, prioritizing better players against better players (more wins against better players, fewer losses against worse players, win streak, losing streak, number of total matches played online and offline, etc)
+    2. Speed and Support
+    - Our second requirement is to make a server capable of supporting hundreds or thousands of concurrent players
+    - This would mean that scalability is now something that needs to be considered
+    - e.g., 50 players doing solo 10v10 battles against bots, 10 players in 1v1 duels, 6 players idle on home screen, 3 logging in, 1 logging off, etc.
+    - Prep for this will also put us on the right track to eventually have the 10 v 10 games being all players, while still supporting the large legions of mobs.
+    - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
 
+- 2026-10-10 — **Your chat clarifications of 2026-10-10 (DEC-11) and the source of the new
+  requirements** recorded in `docs/reference/game-design/13-owner-decisions-log.md` (appended to
+  DEC-11, DEC-36 and DEC-37) and applied to reference 01, 06, 08, 11, `more-abilities.md` and
+  `docs/plan/legend-team-brief-2026-10-10.md`. Branch `docs/sprint-2-requirements-and-planning`,
+  on top of `8d0d308` (your answers), `045ecc3` (the DEC records and the brief) and `3923124`
+  (proposed ADR 0016 and ADR 0017, and the multiplayer plan).
+  - **DEC-11 (1), pool or rule change, and does Sentinel keep Rip & Tear** (impact Q3): confirmed
+    in chat, "a player chooses 3 abilities and 1 ultimate from the set of abilities and ultimates
+    that are available to their class when selecting/creating their loadout". The "3 + 1" rule
+    stands and the class set is a pool. Rip & Tear stays: the approvals come "on top of the
+    abilities that i had originally put forward in the reference docs".
+  - **DEC-11 (2), do Meteor Fall and Nova stay MVP** (impact Q4): confirmed in chat, yes. Every
+    class keeps its game-doc kit (Warrior Veil, Blade Runner, Fury; Sentinel Rip & Tear, Slam,
+    Berserk, Meteor Fall; Magus Imbue, Shockwave, Death Ray, Nova), all MVP, next to Eclipse,
+    Avalanche and Last Rites.
+  - **MVP status of Fan of Sorrows, Sunder, Colossus Roar, Aether Lance and the Sunder–Sanctuary
+    combo:** confirmed in chat, "all of these for MVP".
+  - **DEC-36 and DEC-37** were set by the course instructor ("our prof", an intentional
+    curveball): planned now; must be implemented by the end of Sprint 3 (2026-11-13).
+  - **Correction to the entry below:** the Session D follow-up (approving the SD-1/SD-2 text) was
+    left only in Done; it is now an open item above. The open items above also gain the DEC-11
+    architecture approvals, ADR 0016 and ADR 0017.
+- 2026-10-10 — **The owner's answers of 2026-10-09 (`8d0d308`)** recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` (batch 2026-10-10) and folded into the
+  reference docs and `docs/plan/legend-team-brief-2026-10-10.md`. Branch
+  `docs/sprint-2-requirements-and-planning`. What each item still needs stays open above.
+  - **Session D — no `useAppDispatch`, and the 13 §2 `character-select` row** (DEC-34), fully
+    answered: "Accept recommended option if it is cleaner long-term. For D, set to whichever is
+    cleaner in the long-term." The edits to architecture 13 §2, §5 and `apps/client/AGENTS.md`
+    wait for your approval of their text (impact review SD-1, SD-2).
+  - **DEC-11**, the answered part: Hamstring and Fan of Sorrows (Warrior), Shield Wall, Sunder and
+    Colossus Roar with fear (Sentinel), Sanctuary and Aether Lance (Magus), the alternate
+    ultimates Eclipse, Avalanche and Last Rites, and "Sunder shatters Sanctuary", all MVP.
+  - **DEC-12**, the answered part: both crystal timers are `TUNE` starting values; crystals turn
+    volatile once the centre boss spawns; `insanity` is a description and an icon only for now.
+  - **DEC-13**, the answered part: the planned match is 30 minutes, no hard time limit.
+    `plannedMatchSeconds` in `packages/core/src/config/defaultGameConfig.ts` is not changed by this
+    docs branch.
+  - **DEC-15**, the answered part: camp classes by position in the corridor, positions drawn per
+    side, equal counts per class on each side.
+  - **PROTO-01**, the answered part (DEC-35): the escort is deleted this sprint in favour of real
+    hordes; `AiSystem` means the game's bot AI.
+  - **New requirements** (Feedback): Duel multiplayer (DEC-36) and server scalability (DEC-37)
+    recorded; their questions are in `docs/plan/multiplayer-and-scalability-plan.md`.
+- 2026-10-09 — **PR #24 review (SamarjitBhogal), reuse requests**: approved by sholtzman in chat
+  for whatever is in line with or better than the architecture. Recorded as DEC-30 (`chordKey`
+  moves to `bridge/`, better than the design) and DEC-31 (one shared `readOrQuarantine` instead of
+  14 §8's private method per repository, also better than the design). The shared DTO helpers
+  (`dto/dtoCheck.ts`) wait for S2's second DTO, as the review suggests; only `DtoCheck<T>` moved
+  now, because `readOrQuarantine` needs it.
+- 2026-10-09 — **Session C → session F: `Binding.types.ts` has the 13 §6.1 shapes** (PR #19):
+  superseded by DEC-26 in F's merge `a82e098`. F's flat `InputChord` is kept, `INPUT_ACTIONS`
+  lives in `game/input/keybindings.ts`, and #19's `DeviceIntentSource` builds F's snapshot.
+- 2026-10-08 — **Session F owner decisions DEC-25…DEC-29** (agent pushes, canonical input layer,
+  `SettingsController`, snapshot shape, conflict-free edits) recorded in
+  `docs/reference/game-design/13-owner-decisions-log.md` and folded into ADR 0015 and
+  architecture 02, 09 and 13 on `feat/settings-keybindings`.
+- 2026-10-08 — **F → D: settings wiring in `main.tsx` and `ui/App.tsx`**: done on
+  `feat/settings-keybindings` (owner-approved: the second branch to merge adds it, PR #12).
+- 2026-10-08 — **F → D: settings intents and the `settings` event** (session F's request of
+  2026-10-06): `update-binding` `onConflict`, per-action `reset-bindings`, `update-settings`,
+  `BridgeEventMap.settings` and the `connectBusToStore` line landed in D's 5accc85 (PR #12).
 - 2026-10-08 — **Session C's optional ideas** answered in the PR #14 review and done: one
   `EntityModule` per family declined (back to `createDefaultEntityRegistry()`, DEC-21);
   `ContentValidator` with rule classes accepted with fixes (rules get the catalogue, listed in

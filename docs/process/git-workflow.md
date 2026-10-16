@@ -4,13 +4,14 @@ description: Branch model, naming, the stacked-phase procedure that lets work co
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-07
 tags: [process, git, branching, pull-requests]
 related:
   [
     'docs/decisions/0007-phase-branching-model.md',
     'docs/plan/README.md',
     'docs/agents/checklists.md',
+    'docs/decisions/0015-agents-push-task-branches-and-open-prs.md',
   ]
 ---
 
@@ -104,8 +105,9 @@ git push -u origin feat/health-shield-bars
 ```
 
 - Small PRs, squash-merged into the phase branch after one approval and green CI.
-- Agents commit only when asked in that task, and never push (`.claude/settings.json` denies
-  it); the human pushes and opens the PR.
+- Agents commit, push their own task branch (`git push -u origin <task-branch>`, never a bare
+  `git push`) and open its PR only when asked in that task (ADR 0015); they never push `main` or
+  a phase branch, never force-push and never merge.
 - Parallel agents: one worktree per task (`docs/agents/running-agents.md` §3).
 - Rebase task branches on the phase branch before review if they fall behind; never
   force-push a branch someone else has checked out without saying so.
@@ -133,11 +135,12 @@ git push -u origin feat/health-shield-bars
 
 ## 7. Commands agents may and may not run
 
-| Allowed (read-only or local)                                  | Forbidden for agents                                        |
+| Allowed                                                       | Forbidden for agents                                        |
 | ------------------------------------------------------------- | ----------------------------------------------------------- |
-| `git status`, `git diff`, `git log`, `git branch`, `git show` | `git push` (any form), `git commit --no-verify`             |
+| `git status`, `git diff`, `git log`, `git branch`, `git show` | force pushes, pushing `main` or a phase branch, merging PRs |
 | `git switch -c <task> <phase>` when asked to branch           | `git reset --hard`, `git checkout main`, `git branch -D`    |
 | `git commit` when the human asked in the current task         | `git rebase`/`git merge` unless explicitly asked, `git tag` |
+| `git push -u origin <task>`, `gh pr create` when asked (0015) | `git commit --no-verify`                                    |
 
 ## Related
 

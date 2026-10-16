@@ -13,8 +13,7 @@ import type { InputMapper } from './input/InputMapper';
 export class DeviceIntentSource implements IntentSource {
   private readonly snapshot: MutableInputSnapshot = {
     keys: new Set(),
-    keyLabels: new Map(),
-    mouseButtons: 0,
+    mouseButtons: new Set(),
     pointer: null,
   };
 
@@ -27,8 +26,7 @@ export class DeviceIntentSource implements IntentSource {
   /** The intent for this tick, with the pointer projected into the world. */
   public read(projection: Projection): InputIntent {
     this.snapshot.keys.clear();
-    this.snapshot.keyLabels.clear();
-    this.snapshot.mouseButtons = 0;
+    this.snapshot.mouseButtons.clear();
     this.snapshot.pointer = null;
     for (const device of this.devices) {
       device.writeInto(this.snapshot);
