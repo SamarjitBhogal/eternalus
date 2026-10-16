@@ -3,11 +3,12 @@ import { CombatSystem } from './CombatSystem';
 import { DeathSystem } from './DeathSystem';
 import { InvariantSystem } from './InvariantSystem';
 import { MovementSystem } from './MovementSystem';
+import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
- * The tick's systems in their fixed order: decisions (AI), movement, combat, then death, then invariants
+ * The tick's systems in their fixed order: decisions (AI), statuses, movement, combat, then death, then invariants
  * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
  */
 export class DefaultSystemPipeline extends SystemPipeline {
@@ -22,6 +23,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
   public constructor(invariants: InvariantRunner, decide: readonly System[] = []) {
     super([
       ...decide,
+      new StatusEffectSystem(),
       new MovementSystem(),
       new CombatSystem(),
       new DeathSystem(),

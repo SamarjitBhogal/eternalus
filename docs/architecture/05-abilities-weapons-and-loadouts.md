@@ -501,6 +501,24 @@ emboldened, hexed) are in
 [more-abilities.md §7](../reference/suggestions/more-abilities.md#7-proposed-status-effects); a
 new status is content only, a new stacking mode is one union member and one `case`.
 
+**Implementation status (sprint 2.2, SCRUM-228).** The MVP set (`bleed`, `concussion`, `stun`,
+`blind`, `enraged`, `crushed`) is content in `content/status-effects/`, with times authored in
+seconds and converted to ticks once by `loadStatusEffects` (so `duration` and `periodic.every`
+stand for `durationTicks` and `everyTicks`). `StatusEffectRuntime` sits in `components/` next to
+`StatusEffects`, which holds and pools it (`components/` may not import `combat/`); its stacking
+switch is `reapply`, with `refresh` and `intensity` so far; periodic ticks count from the first
+application, so reapplying keeps the rhythm. Every unit gets `StatusEffects`; anything without it
+(structures) is immune. `combat/StatusEffectApplier` (by id, from the loaded catalogue) is the one
+way a status lands and emits `status-applied`. Periodic ticks are `StatusTickEffect` strategies by
+id (`combat/defaultStatusTickEffects.ts`), not `AbilityEffectSpec`s, until the ability registry
+exists; their damage goes through `DamagePipeline` with `kind: 'status'`, crediting the applier.
+Modifiers add per stack (`perStack`, not `op: 'mul'`) and the table holds `moveSpeed`
+(`MovementSystem`), `attackSpeed` (`CombatSystem`, fixed when a hit lands), `damageDealt` and
+`damageTaken` (`StatusModifierStep`); flags `cannot-move`, `cannot-attack`, `attacks-miss` are
+read, `cannot-cast` waits for `AbilitySystem`. Not built yet: `polarity`, `controlClass` and
+`control-immune`, `onExpire`, `appliesTo` (the component is the gate), the `duration`,
+`independent` and `permanent` modes. `StatusEffectSystem` runs before movement.
+
 ## 9. Combat pipeline (`combat/`)
 
 ```ts
@@ -535,9 +553,9 @@ Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `
 **Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
 source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
-`combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The one step today is
+`combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+`INBOX.md`) and `StatusModifierStep` (blind misses, `damageDealt` / `damageTaken`; 05 §8). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;

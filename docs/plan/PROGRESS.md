@@ -836,3 +836,34 @@ The example below is fenced so it is not read as a real entry.
   (416)"; "✓ built in 89ms"; "Documentation check passed."
 - Next step: pre-PR gate on this commit (critic + ponytail), then push to PR #34; status effects,
   ranged attacks (SCRUM-169), damage types.
+
+### 2026-10-16 — Phase 2 / sprint 2.2 — feat/status-effects — Claudio + Claude Code
+
+- What was done (SCRUM-228, branch from `feat/combat-damage-pipeline`, PR #34): status effects
+  (05 §8). Content: `content/status-effects/` with the MVP set `bleed`, `concussion`, `stun`,
+  `blind`, `enraged`, `crushed` (numbers from more-abilities §7 and balancing.md, times in
+  seconds) and `STATUS_EFFECTS`; `loadStatusEffects(tickRate)` converts them to ticks once. `components/StatusEffects` (every unit gets one; no component =
+  immune) keeps pooled `StatusEffectRuntime` instances and caches one multiplier per stat and the
+  flags; `StatusEffectRuntime.reapply` is the one stacking switch (`refresh`, `intensity`).
+  `combat/StatusEffectApplier` lands a status by id and emits `status-applied`; `StatusTickEffect`
+  strategies (`PeriodicDamageEffect`, `MaxHealthDamageEffect`, `defaultStatusTickEffects.ts`) run
+  periodic ticks through `DamagePipeline` (`kind: 'status'`, credited to the applier);
+  `StatusModifierStep` (after friendly fire) makes blinded weapon hits miss and applies
+  `damageDealt`/`damageTaken`. `StatusEffectSystem` (before movement) ticks and expires
+  (`status-expired`). `MovementSystem` and `CombatSystem` read `moveSpeed`/`cannot-move` and
+  `attackSpeed`/`cannot-attack` (`Movement.advance(speedScale)`, `Combat.beginAttack(tick,
+attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and the Phase 2 plan
+  updated; numbers and rules to confirm in `INBOX.md`.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 514 passed (514)"; client "Tests 416 passed
+  (416)"; "✓ built in 94ms"; "Documentation check passed."
+- Pre-PR gate: critic request-changes (blocker: Prettier on this file; bug: reapplying reset the
+  periodic rhythm, so a bleed reapplied every 0.7 s never ticked; times converted at load instead
+  of per instance; per-entity closures in the system; attack-speed and `status-applied` tests) →
+  all fixed (`periodAnchorTick`, `loadStatusEffects`, applier by id), plus tests. `npm run check` →
+  `EXIT=0`: core "Tests 519 passed (519)"; client "Tests 416 passed (416)"; "✓ built in 97ms";
+  "Documentation check passed."
+- Ponytail-review: 3 cuts applied (dropped the unread `appliedTick`, definition as a constructor
+  parameter instead of a nullable getter, a tautological test line). Critic re-check: approve, no
+  blockers. Final `npm run check` → `EXIT=0`: core "Tests 519 passed (519)"; client "Tests 416
+  passed (416)"; "✓ built in 101ms"; "Documentation check passed."
+- Next step: PR to `phase/2-sprint-2-work` (after #34); the owner answers the INBOX item.

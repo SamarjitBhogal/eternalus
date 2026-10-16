@@ -33,8 +33,11 @@ export class Combat {
     return tick >= this.readyAtTickValue;
   }
 
-  /** Records a hit at `tick`, putting the attack on cooldown for `attack.interval` ticks. */
-  public beginAttack(tick: number): void {
-    this.readyAtTickValue = tick + this.attack.interval;
+  /**
+   * Records a hit at `tick`, putting the attack on cooldown for `attack.interval` ticks divided by
+   * `attackSpeed` (statuses: 0.7 concussed), at least one tick.
+   */
+  public beginAttack(tick: number, attackSpeed = 1): void {
+    this.readyAtTickValue = tick + Math.max(1, Math.round(this.attack.interval / attackSpeed));
   }
 }
