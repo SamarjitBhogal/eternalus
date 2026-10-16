@@ -1,4 +1,4 @@
-import type { StatusEffectDefinition } from './statusEffects.types';
+import type { AuthoredStatusEffect } from './statusEffects.types';
 
 /**
  * Crushed: held by Grab, stunned and losing 3% of max health per second. TUNE: more-abilities.md
@@ -8,10 +8,10 @@ import type { StatusEffectDefinition } from './statusEffects.types';
 export const CRUSHED = {
   id: 'crushed',
   displayName: 'Crushed',
-  duration: 3,
+  durationSeconds: 3,
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [],
   flags: ['cannot-move', 'cannot-attack', 'cannot-cast'],
-  periodic: { every: 1, effect: 'max-health-damage', amount: 0.03 },
-} as const satisfies StatusEffectDefinition;
+  periodic: { everySeconds: 1, effects: [{ kind: 'damage', fractionOfMax: 0.03 }] },
+} as const satisfies AuthoredStatusEffect;

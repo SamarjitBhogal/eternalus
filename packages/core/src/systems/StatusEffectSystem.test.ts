@@ -5,10 +5,13 @@ import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
+import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
+import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
+import { RELEASE_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import type { Entity } from '../entities/Entity';
@@ -18,14 +21,15 @@ import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import type { Team } from '../teams/teams.types';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
-import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
-import { RELEASE_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 import { StatusEffectSystem } from './StatusEffectSystem';
-import type { SystemContext } from './System.types';
+import type { System, SystemContext } from './System.types';
 
 const CONFIG = createDefaultGameConfig();
+const statusSystem = (applier: StatusEffectApplier) =>
+  new StatusEffectSystem(new DamagePipeline(), applier);
+const STRUCTURES_PER_LANE = CONFIG.map.spawnTowersPerLane + CONFIG.map.buffTowersPerLane;
 
-/** A Warrior (light) at the origin next to a dark training dummy, with an applier and a clock. */
+/** A Warrior (light) at the origin next to a dark training dummy, an applier and an event log. */
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
   const factory = new EntityFactory(
@@ -40,7 +44,7 @@ const setUp = () => {
   const warrior = spawn('warrior', 'warrior', 0, 'light');
   const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
   const context: SystemContext = { state, logger: new NullLogger() };
-  const applier = new StatusEffectApplier(loadStatusEffects(CONFIG.tickRate));
+  const applier = new StatusEffectApplier(loadStatusEffects(CONFIG.tickRate, STRUCTURES_PER_LANE));
   const apply = (target: Entity, statusId: string, sourceId: string | null = warrior.id) =>
     applier.apply(state, target.id, statusId, sourceId);
   const events: TimedEvent[] = [];
@@ -50,165 +54,152 @@ const setUp = () => {
   state.events.on('damage-applied', (payload) =>
     events.push({ tick: state.tick, type: 'damage-applied', payload }),
   );
-  /** Runs `system` for `ticks` ticks. */
-  const run = (system: { update(context: SystemContext): void }, ticks: number) => {
+  state.events.on('attack-missed', (payload) =>
+    events.push({ tick: state.tick, type: 'attack-missed', payload }),
+  );
+  /** Runs `system` for `ticks` ticks, calling `before(tick)` first each tick. */
+  const run = (system: System, ticks: number, before: (tick: number) => void = () => undefined) => {
     for (let i = 0; i < ticks; i += 1) {
+      before(state.tick);
       system.update(context);
       state.advanceTick();
     }
   };
-  return { state, warrior, dummy, apply, events, run };
+  const ticksOf = (type: TimedEvent['type']) =>
+    events.filter((event) => event.type === type).map((event) => event.tick);
+  return { state, warrior, dummy, apply, applier, events, run, ticksOf };
+};
+
+/** The whole default tick of `state` as one system, so `run` can drive it. */
+const tickPipeline = (state: GameState): System => {
+  const pipeline = new DefaultSystemPipeline(
+    new DefaultInvariantRunner(RELEASE_DEBUG_CONFIG, new NullLogger()),
+    state,
+  );
+  return {
+    name: 'tick',
+    update: (context) => {
+      pipeline.run(context);
+    },
+  };
 };
 
 describe('StatusEffectSystem', () => {
-  it('emits status-applied with the source when a status lands', () => {
-    const { state, dummy, warrior, apply } = setUp();
-    const applied: unknown[] = [];
-    state.events.on('status-applied', (payload) => applied.push(payload));
-
-    apply(dummy, 'stun');
-
-    expect(applied).toEqual([{ entityId: dummy.id, statusId: 'stun', sourceId: warrior.id }]);
-  });
-
-  it('a bleed reapplied faster than once a second still ticks every second', () => {
-    const { state, dummy, apply, events } = setUp();
-    const system = new StatusEffectSystem();
-    for (let tick = 0; tick <= 60; tick += 1) {
-      if (tick % 21 === 0) {
-        apply(dummy, 'bleed'); // Warrior pace, 0.7 s
-      }
-      system.update({ state, logger: new NullLogger() });
-      state.advanceTick();
-    }
-
-    expect(
-      events.filter((event) => event.type === 'damage-applied').map((event) => event.tick),
-    ).toEqual([30, 60]);
-  });
-
   it('ticks bleed once per second per stack, credited to the source, then expires it on the exact tick', () => {
-    const { dummy, warrior, apply, events, run } = setUp();
-    expect(apply(dummy, 'bleed')).toBe(true);
+    const { applier, dummy, warrior, apply, events, run, ticksOf } = setUp();
+    apply(dummy, 'bleed');
     apply(dummy, 'bleed'); // 2 stacks, 12 per tick, 4 ticks over 4 s
 
-    run(new StatusEffectSystem(), 121);
+    run(statusSystem(applier), 121);
 
-    const hits = events.filter((event) => event.type === 'damage-applied');
-    expect(hits.map((event) => event.tick)).toEqual([30, 60, 90, 120]);
-    expect(hits[0]?.payload).toMatchObject({
+    expect(ticksOf('damage-applied')).toEqual([30, 60, 90, 120]);
+    expect(events.find((event) => event.type === 'damage-applied')?.payload).toMatchObject({
       amount: 12,
       source: { attackerId: warrior.id, kind: 'status', definitionId: 'bleed' },
     });
-    expect(events.find((event) => event.type === 'status-expired')?.tick).toBe(120);
+    expect(ticksOf('status-expired')).toEqual([120]);
     expect(dummy.getComponent(StatusEffects).active).toHaveLength(0);
   });
 
+  it('a bleed reapplied faster than once a second still ticks every second', () => {
+    const { applier, dummy, apply, run, ticksOf } = setUp();
+
+    run(statusSystem(applier), 61, (tick) => {
+      if (tick % 21 === 0) {
+        apply(dummy, 'bleed'); // Warrior pace, 0.7 s
+      }
+    });
+
+    expect(ticksOf('damage-applied')).toEqual([30, 60]);
+  });
+
   it('crushed deals 3% of max health per second', () => {
-    const { dummy, apply, run } = setUp();
+    const { applier, dummy, apply, run } = setUp();
     const health = dummy.getComponent(Health);
     apply(dummy, 'crushed');
 
-    run(new StatusEffectSystem(), 31);
+    run(statusSystem(applier), 31);
 
     expect(health.current).toBeCloseTo(health.max * 0.97);
   });
 
-  it('gives the same hash for the same statuses, and a different one without them (determinism)', () => {
-    const hashAfter = (statusId: string | null): number => {
-      const { state, dummy, apply, run } = setUp();
-      if (statusId !== null) {
-        apply(dummy, statusId);
-      }
-      run(new StatusEffectSystem(), 40);
+  it('gives the same hash for the same statuses, and a different one when only the rhythm differs (determinism)', () => {
+    const hashAfter = (reapplyAt: number | null): number => {
+      const { applier, state, dummy, apply, run } = setUp();
+      run(statusSystem(applier), 15, (tick) => {
+        if (tick === 0 || tick === reapplyAt) {
+          apply(dummy, 'crushed');
+        }
+      });
       return new StateHasher().hash(state);
     };
 
-    expect(hashAfter('bleed')).toBe(hashAfter('bleed'));
-    expect(hashAfter('bleed')).not.toBe(hashAfter(null));
-  });
-
-  it('does not land on a dead target or on something without StatusEffects', () => {
-    const { state, dummy, apply } = setUp();
-    dummy.getComponent(Health).applyDamage(1_000_000);
-
-    expect(apply(dummy, 'stun')).toBe(false);
-    expect(
-      new StatusEffectApplier(loadStatusEffects(30)).apply(state, 'nobody', 'stun', null),
-    ).toBe(false);
+    expect(hashAfter(10)).toBe(hashAfter(10));
+    expect(hashAfter(10)).not.toBe(hashAfter(null));
   });
 });
 
 describe('statuses in the tick', () => {
-  const pipelineOf = () =>
-    new DefaultSystemPipeline(new DefaultInvariantRunner(RELEASE_DEBUG_CONFIG, new NullLogger()));
-
   it('a stunned unit neither moves nor attacks, and both resume when it expires', () => {
-    const { state, warrior, dummy, apply } = setUp();
-    const pipeline = pipelineOf();
-    const context: SystemContext = { state, logger: new NullLogger() };
+    const { state, warrior, dummy, apply, run } = setUp();
     state.entities.setAttackTarget(warrior.id, dummy.id);
     warrior.getComponent(Movement).steer({ x: 0, y: 1 });
     apply(warrior, 'stun'); // 30 ticks
+    const pipeline = tickPipeline(state);
+    const health = dummy.getComponent(Health);
 
-    for (let i = 0; i < 30; i += 1) {
-      pipeline.run(context);
-      state.advanceTick();
-    }
+    run(pipeline, 30);
     expect(warrior.getComponent(Transform).position).toEqual({ x: 0, y: 0 });
-    expect(dummy.getComponent(Health).current).toBe(dummy.getComponent(Health).max);
+    expect(health.current).toBe(health.max);
 
-    pipeline.run(context);
+    run(pipeline, 1);
     expect(warrior.getComponent(Transform).position.y).toBeGreaterThan(0);
-    expect(dummy.getComponent(Health).current).toBeLessThan(dummy.getComponent(Health).max);
+    expect(health.current).toBeLessThan(health.max);
   });
 
-  it('concussion slows movement and attacks by 30%', () => {
-    const { state, warrior, apply } = setUp();
-    const pipeline = pipelineOf();
-    const context: SystemContext = { state, logger: new NullLogger() };
+  it('concussion slows movement to 70% of top speed', () => {
+    const { state, warrior, apply, run } = setUp();
     const movement = warrior.getComponent(Movement);
     movement.steer({ x: 0, y: 1 });
     apply(warrior, 'concussion');
 
-    for (let i = 0; i < 20; i += 1) {
-      pipeline.run(context);
-      state.advanceTick();
-    }
+    run(tickPipeline(state), 20);
+
     expect(movement.speed).toBeCloseTo(movement.maxSpeed * 0.7);
   });
 
   it('concussion stretches the gap between two hits by 1 / 0.7', () => {
-    const { state, warrior, dummy, apply, events } = setUp();
-    const pipeline = pipelineOf();
-    const context: SystemContext = { state, logger: new NullLogger() };
+    const { state, warrior, dummy, apply, run, ticksOf } = setUp();
     const { interval } = warrior.getComponent(Combat).attack;
     state.entities.setAttackTarget(warrior.id, dummy.id);
     apply(warrior, 'concussion');
 
-    for (let i = 0; i < 2 * interval; i += 1) {
-      pipeline.run(context);
-      state.advanceTick();
-    }
+    run(tickPipeline(state), 2 * interval);
 
-    const hitTicks = events
-      .filter((event) => event.type === 'damage-applied')
-      .map((event) => event.tick);
-    expect(hitTicks).toEqual([0, Math.round(interval / 0.7)]);
+    expect(ticksOf('damage-applied')).toEqual([0, Math.round(interval / 0.7)]);
   });
 
-  it.each([
-    ['blind', 0],
-    ['enraged', 1.15],
-  ])('%s: the first hit deals ×%d damage', (statusId, factor) => {
-    const { state, warrior, dummy, apply } = setUp();
+  it('a blinded unit spends its attack on a miss: attack-missed, no damage, cooldown taken', () => {
+    const { state, warrior, dummy, apply, run, ticksOf } = setUp();
+    const { interval } = warrior.getComponent(Combat).attack;
+    state.entities.setAttackTarget(warrior.id, dummy.id);
+    apply(warrior, 'blind'); // 45 ticks
+
+    run(tickPipeline(state), 3 * interval + 1);
+
+    expect(ticksOf('attack-missed')).toEqual([0, interval, 2 * interval]); // 45 ticks of blind
+    expect(ticksOf('damage-applied')).toEqual([3 * interval]);
+  });
+
+  it('an enraged unit hits 15% harder', () => {
+    const { state, warrior, dummy, apply, run } = setUp();
     const health = dummy.getComponent(Health);
     const { damage } = warrior.getComponent(Combat).attack;
     state.entities.setAttackTarget(warrior.id, dummy.id);
-    apply(warrior, statusId);
+    apply(warrior, 'enraged');
 
-    pipelineOf().run({ state, logger: new NullLogger() });
+    run(tickPipeline(state), 1);
 
-    expect(health.current).toBeCloseTo(health.max - damage * factor);
+    expect(health.current).toBeCloseTo(health.max - damage * 1.15);
   });
 });

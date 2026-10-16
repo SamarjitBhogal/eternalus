@@ -3,7 +3,7 @@ export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTa
 
 /**
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4); the others are
- * read by `MovementSystem`, `CombatSystem` and `StatusModifierStep`.
+ * read by `MovementSystem` and `CombatSystem`.
  */
 export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'attacks-miss';
 
@@ -14,34 +14,59 @@ export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'atta
  */
 type StatusStacking = 'refresh' | 'intensity';
 
-/** What a periodic status does on each of its ticks; one `StatusTickEffect` per id in `combat/defaultStatusTickEffects.ts`. */
-export type StatusTickEffectId = 'damage' | 'max-health-damage';
-
-/** Adds `perStack × stacks` to a stat's multiplier (1 = unchanged), e.g. −0.3 for a 30% slow. */
+/** Multiplies a stat by `value` once per stack (architecture 05 section 8), e.g. 0.7 for a 30% slow. */
 type StatModifier = {
   readonly stat: StatusStat;
-  readonly perStack: number;
+  readonly op: 'mul';
+  readonly value: number;
 };
 
 /**
- * One status effect (architecture 05 section 8). Shared, immutable and keyed by `id`. Times are
- * seconds in content files and ticks once loaded (`loadStatusEffects`), like attack intervals.
+ * One thing a periodic status does on each of its ticks, per stack. Shaped like the
+ * `AbilityEffectSpec` it will become (05 section 3): `damage` takes `amount` or `fractionOfMax`
+ * (of the target's max health), the way `heal` does.
  */
-export type StatusEffectDefinition = {
+export type StatusTickSpec =
+  | { readonly kind: 'damage'; readonly amount: number }
+  | { readonly kind: 'damage'; readonly fractionOfMax: number };
+
+/** The kinds of `StatusTickSpec`; one `StatusTickEffect` per kind in `combat/defaultStatusTickEffects.ts`. */
+export type StatusTickKind = StatusTickSpec['kind'];
+
+/** What every status has, authored or loaded. */
+type StatusEffectBase = {
   readonly id: string;
   readonly displayName: string;
-  /** Time until it expires (seconds in content, ticks once loaded); `null` lasts until removed (`enraged`). */
-  readonly duration: number | null;
   readonly stacking: StatusStacking;
-  /** 1 for `refresh`. */
-  readonly maxStacks: number;
   readonly modifiers: readonly StatModifier[];
   readonly flags: readonly StatusFlag[];
-  /** Something it does every `every` seconds (ticks once loaded) while active (bleed, crushed), or `null`. */
+};
+
+/**
+ * A status as authored in `content/status-effects/<id>.ts`: times in seconds. `maxStacks` may be
+ * `'structures-per-lane'` (`spawnTowersPerLane + buffTowersPerLane`), resolved from config at load.
+ */
+export type AuthoredStatusEffect = StatusEffectBase & {
+  /** `null` lasts until removed (`enraged`). */
+  readonly durationSeconds: number | null;
+  /** 1 for `refresh`. */
+  readonly maxStacks: number | 'structures-per-lane';
   readonly periodic: {
-    readonly every: number;
-    readonly effect: StatusTickEffectId;
-    /** Per stack; what it means is the effect's (damage points, a fraction of max health). */
-    readonly amount: number;
+    readonly everySeconds: number;
+    readonly effects: readonly StatusTickSpec[];
+  } | null;
+};
+
+/**
+ * One loaded status effect (architecture 05 section 8): times in ticks, every number resolved.
+ * Shared, immutable and keyed by `id`; built only by `loadStatusEffects`.
+ */
+export type StatusEffectDefinition = StatusEffectBase & {
+  /** `null` lasts until removed. */
+  readonly durationTicks: number | null;
+  readonly maxStacks: number;
+  readonly periodic: {
+    readonly everyTicks: number;
+    readonly effects: readonly StatusTickSpec[];
   } | null;
 };

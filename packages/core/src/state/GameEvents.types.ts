@@ -54,6 +54,8 @@ export type GameEventMap = {
     readonly source: DamageSource;
   };
   readonly 'entity-died': { readonly entityId: EntityId; readonly killer: DamageSource };
+  /** A basic attack that was spent without landing (the attacker is blinded). */
+  readonly 'attack-missed': { readonly attackerId: EntityId; readonly targetId: EntityId };
   readonly 'structure-destroyed': {
     readonly entityId: EntityId;
     readonly kind: string;

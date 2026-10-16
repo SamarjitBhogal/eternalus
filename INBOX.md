@@ -113,15 +113,18 @@ Reply inline (`Decision: …`).
       pipeline (the requirements' "dies without another entity or a defensive tower killing it").
       Proposal: the 15 §3 row covers both, (a) now and (b) "the attacker resolves in the store"
       with abilities. Approve, or say what to change.
-- [ ] **Status effects — numbers and rules to confirm (SCRUM-228, `feat/status-effects`).**
-      (1) Modifiers add per stack (enraged ×2 = +30% damage, not 1.15²); the sketch in 05 §8
-      had `op: 'mul'`. (2) `stun` defaults to 1 s (more-abilities §7 says 0.5–1 s per source);
-      each ability will pass its own once abilities land. (3) `enraged.maxStacks` is 2, the
-      default `spawnTowersPerLane + buffTowersPerLane`; deriving it from config is open.
-      (4) Blind makes only weapon hits miss (`attacks-miss`); ability damage still lands.
-      (5) Not built yet, by design: `polarity`, `controlClass` / `control-immune`, `onExpire`
-      (crushed → slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut.
-      Confirm or correct.
+- [ ] **Status effects — numbers and rules to confirm (SCRUM-228, PR #35).** Modifiers now
+      multiply (`op: 'mul'`, 05 §8), per your review. (1) If you want additive stacking
+      instead, say so: it is one line in `StatusEffects.recompute`. (2) `stun` defaults to 1 s
+      (more-abilities §7 says 0.5–1 s per source); each ability will pass its own once abilities
+      land. (3) Blind spends a basic attack as a miss (`attack-missed`); ability damage still
+      lands. (4) Better than the design, for sign-off: the component caches its multiplier
+      table when its list changes (05 §8 recomputes per tick), and `StatusEffectApplier` is the
+      one way in (05 §3 has effects call `StatusEffects.apply`; 03 names `StatusEffectSystem` as
+      the `status-applied` emitter). (5) Not built yet: `polarity`, `controlClass` /
+      `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
+      slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
+      stat for the FR-029 aura. Confirm or correct.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

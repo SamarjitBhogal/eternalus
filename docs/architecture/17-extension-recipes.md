@@ -203,12 +203,9 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   by `buff`/`debuff` specs, weapon `onHit` lists, `grants` and `periodic` ticks.
 - **Files:** `core/content/status-effects/<camelId>.ts` (`StatusEffectDefinition`: `polarity`,
   `stacking`, `modifiers[]`, `flags[]`, `periodic`, `onExpire`) + `statusEffectCatalogue.ts` line.
-  Apply it through `combat/StatusEffectApplier`.
 - **Registry line:** none. A new **stacking mode** is one `StatusStacking` member plus one `case`
-  in `StatusEffectRuntime.reapply` (the one closed switch, 05 §8); a new **flag** or modifier
-  **stat** is one union member read by the system or damage step that owns the stat. A new
-  **periodic behaviour** (what a tick does) is one `StatusTickEffect` class, one
-  `StatusTickEffectId` member and one line in `combat/defaultStatusTickEffects.ts`.
+  in `StatusEffectRuntime.apply` (the one closed switch, 05 §8); a new **flag** or modifier
+  **stat** is one union member read by the component that owns the stat.
 - **Tests:** content validation (ids resolve); the table-driven stacking test if a mode was
   added; a scenario: apply, modifier table, `status-applied` / `status-expired`.
 - **Docs:** the status table in `../reference/suggestions/more-abilities.md` §7; reference 06.

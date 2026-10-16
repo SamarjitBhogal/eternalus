@@ -1,5 +1,6 @@
 import { StatusEffects } from '../components/StatusEffects';
-import { DamagePipeline } from '../combat/DamagePipeline';
+import type { DamagePipeline } from '../combat/DamagePipeline';
+import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultStatusTickEffects } from '../combat/defaultStatusTickEffects';
 import type { System, SystemContext } from './System.types';
 
@@ -12,11 +13,13 @@ export class StatusEffectSystem implements System {
   public readonly name = 'status-effects';
 
   /**
-   * @param damage - The pipeline periodic damage goes through.
-   * @param tickEffects - Each periodic effect by id.
+   * @param damage - The match's one damage pipeline, shared with every system that deals damage.
+   * @param statuses - The match's one status applier; it emits `status-expired`.
+   * @param tickEffects - Each periodic tick kind's strategy.
    */
   public constructor(
-    private readonly damage = new DamagePipeline(),
+    private readonly damage: DamagePipeline,
+    private readonly statuses: StatusEffectApplier,
     private readonly tickEffects = createDefaultStatusTickEffects(),
   ) {}
 
@@ -31,19 +34,12 @@ export class StatusEffectSystem implements System {
       for (const status of statuses.active) {
         const { periodic } = status.definition;
         if (periodic !== null && status.isPeriodicTick(state.tick)) {
-          this.tickEffects[periodic.effect].tick(status, entity.id, context);
+          for (const spec of periodic.effects) {
+            this.tickEffects[spec.kind].tick(spec, status, entity.id, context);
+          }
         }
       }
-      for (const status of statuses.active) {
-        if (status.hasExpired(state.tick)) {
-          state.events.emit('status-expired', {
-            entityId: entity.id,
-            statusId: status.definition.id,
-            sourceId: status.sourceId,
-          });
-        }
-      }
-      statuses.expire(state.tick);
+      this.statuses.expire(state, entity.id);
     });
   }
 }

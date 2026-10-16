@@ -71,6 +71,7 @@ export class StateHasher {
           status.definition.id,
           status.sourceId,
           status.stacks,
+          status.periodAnchorTick,
           status.expiresTick,
         ]),
       ]);

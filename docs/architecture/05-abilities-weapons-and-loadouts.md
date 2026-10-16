@@ -502,22 +502,31 @@ emboldened, hexed) are in
 new status is content only, a new stacking mode is one union member and one `case`.
 
 **Implementation status (sprint 2.2, SCRUM-228).** The MVP set (`bleed`, `concussion`, `stun`,
-`blind`, `enraged`, `crushed`) is content in `content/status-effects/`, with times authored in
-seconds and converted to ticks once by `loadStatusEffects` (so `duration` and `periodic.every`
-stand for `durationTicks` and `everyTicks`). `StatusEffectRuntime` sits in `components/` next to
-`StatusEffects`, which holds and pools it (`components/` may not import `combat/`); its stacking
-switch is `reapply`, with `refresh` and `intensity` so far; periodic ticks count from the first
-application, so reapplying keeps the rhythm. Every unit gets `StatusEffects`; anything without it
-(structures) is immune. `combat/StatusEffectApplier` (by id, from the loaded catalogue) is the one
-way a status lands and emits `status-applied`. Periodic ticks are `StatusTickEffect` strategies by
-id (`combat/defaultStatusTickEffects.ts`), not `AbilityEffectSpec`s, until the ability registry
-exists; their damage goes through `DamagePipeline` with `kind: 'status'`, crediting the applier.
-Modifiers add per stack (`perStack`, not `op: 'mul'`) and the table holds `moveSpeed`
-(`MovementSystem`), `attackSpeed` (`CombatSystem`, fixed when a hit lands), `damageDealt` and
-`damageTaken` (`StatusModifierStep`); flags `cannot-move`, `cannot-attack`, `attacks-miss` are
-read, `cannot-cast` waits for `AbilitySystem`. Not built yet: `polarity`, `controlClass` and
-`control-immune`, `onExpire`, `appliesTo` (the component is the gate), the `duration`,
-`independent` and `permanent` modes. `StatusEffectSystem` runs before movement.
+`blind`, `enraged`, `crushed`) is authored in `content/status-effects/` as `AuthoredStatusEffect`
+(seconds; `enraged.maxStacks: 'structures-per-lane'`) and loaded by `loadStatusEffects` into
+`StatusEffectDefinition` (`durationTicks`, `everyTicks`, every cap resolved from config), which
+validates at load. Modifiers are `op: 'mul'`, `value` once per stack. `StatusEffectRuntime` sits in
+`components/` next to `StatusEffects`, which holds and pools it (`components/` may not import
+`combat/`); its stacking switch is `reapply`, with `refresh` and `intensity` so far, and periodic
+ticks count from the first application. Every unit gets `StatusEffects`; anything without it
+(structures) is immune. The component recomputes its multiplier table and flags when its list
+changes, not per tick. `combat/StatusEffectApplier` (not in the sketch above) is the one way in and out and emits every
+status event: `apply` (by id) emits `status-applied`; `remove` ends a status early (auras, holds)
+and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both with
+`status-expired`. `DefaultSystemPipeline` loads the statuses for the match's config and builds the
+one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
+fire 2.4, enraged 3.3) receive it there.
+`periodic.effects` are `StatusTickSpec`s shaped like `AbilityEffectSpec`, run by `StatusTickEffect`
+strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
+lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
+the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSystem`
+(`cannot-attack`; `attacks-miss` spends the attack and emits `attack-missed`; `attackSpeed`, fixed
+when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
+`AbilitySystem`. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
+`controlClass` and `control-immune` (so a producer that reapplies `stun` before `onExpire` exists
+can stun-lock), `onExpire`, `appliesTo` (the component is the gate), the `duration`,
+`independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
+runs before movement.
 
 ## 9. Combat pipeline (`combat/`)
 

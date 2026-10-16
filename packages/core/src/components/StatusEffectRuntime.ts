@@ -1,16 +1,16 @@
 import type { StatusEffectDefinition } from '../content/status-effects/statusEffects.types';
-import type { EntityId } from '../state/EntityStore.types';
 
 /**
  * One active status on one entity (architecture 05 section 8). `StatusEffects` keeps and reuses
  * them, so a status applied every few ticks allocates nothing after the first time.
  *
  * Lives in `components/`, not `combat/` as 02 sketches, because `StatusEffects` holds it and
- * `components/` may not import `combat/`.
+ * `components/` may not import `combat/`. Ids are plain strings (`components/` may not import
+ * `state/`, 02 section 2).
  */
 export class StatusEffectRuntime {
   /** Who applied it last (credited for its damage); `null` for the environment. */
-  public sourceId: EntityId | null = null;
+  public sourceId: string | null = null;
 
   public stacks = 0;
 
@@ -27,18 +27,18 @@ export class StatusEffectRuntime {
   public constructor(public definition: StatusEffectDefinition) {}
 
   /** (Re)starts this instance as a fresh application of `definition` (loaded, in ticks) at `tick`. */
-  public start(definition: StatusEffectDefinition, sourceId: EntityId | null, tick: number): this {
+  public start(definition: StatusEffectDefinition, sourceId: string | null, tick: number): this {
     this.definition = definition;
     this.sourceId = sourceId;
     this.stacks = 1;
     this.periodAnchorTick = tick;
-    this.periodTicks = definition.periodic?.every ?? null;
+    this.periodTicks = definition.periodic?.everyTicks ?? null;
     this.restartTimer(tick);
     return this;
   }
 
   /** The same status applied again while active: the one switch over stacking modes. */
-  public reapply(sourceId: EntityId | null, tick: number): void {
+  public reapply(sourceId: string | null, tick: number): void {
     const { stacking, maxStacks } = this.definition;
     this.sourceId = sourceId;
     switch (stacking) {
@@ -66,7 +66,7 @@ export class StatusEffectRuntime {
   }
 
   private restartTimer(tick: number): void {
-    const { duration } = this.definition;
-    this.expiresTick = duration === null ? null : tick + duration;
+    const { durationTicks } = this.definition;
+    this.expiresTick = durationTicks === null ? null : tick + durationTicks;
   }
 }

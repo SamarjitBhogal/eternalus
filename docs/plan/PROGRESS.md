@@ -931,3 +931,32 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   blockers. Final `npm run check` → `EXIT=0`: core "Tests 519 passed (519)"; client "Tests 416
   passed (416)"; "✓ built in 101ms"; "Documentation check passed."
 - Next step: PR to `phase/2-sprint-2-work` (after #34); the owner answers the INBOX item.
+
+### 2026-10-16 — Phase 2 / sprint 2.2 — feat/status-effects (owner review) — Claudio + Claude Code
+
+- What was done: rebased on #34 (itself rebased on phase 2). Applied the owner's review of #35:
+  modifiers multiply (`op: 'mul'`, value once per stack; the 0 clamp and the `attackSpeed === 0`
+  guard are gone); ids in `components/` are plain strings; one `DamagePipeline` shared with
+  `StatusEffectSystem`; blind resolved in `CombatSystem` (new `attack-missed` event, 03);
+  `periodAnchorTick` hashed; authored (`AuthoredStatusEffect`, seconds) and loaded
+  (`StatusEffectDefinition`, ticks) types split, `loadStatusEffects(tickRate, structuresPerLane)`
+  resolves `enraged`'s cap from config and validates at load; `utils/TickRate` is the one
+  seconds-to-ticks formula (also used by `loadDefaultContent`); `periodic.effects` shaped like
+  `AbilityEffectSpec` (`damage` with `amount` or `fractionOfMax`, one `DamageStatusTick`, marked
+  `ponytail:` as interim); `StatusEffects.remove` + `StatusEffectApplier.remove`;
+  `StatusStacksWithinMaxInvariant` registered; sibling tests for the runtime (table-driven),
+  applier, step, tick, registry, invariant and `TickRate`. Docs: 02 and 17 reverted to the
+  design except the forced `StatusEffectRuntime` move; interim state in the 05 §8 status note; 03
+  `attack-missed` row; plan (FR-029 deferred); INBOX rewritten.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 534 passed (534)"; client "Tests 416 passed
+  (416)"; "✓ built in 97ms"; "Documentation check passed."
+- Critic: request-changes (item 18 wiring deferred, item 11 unrecorded, loader no longer caught
+  0 or negative seconds) → fixed: `DefaultSystemPipeline(invariants, state, decide)` (the same
+  signature as #31) loads the statuses for the match's config and builds the one
+  `StatusEffectApplier`, which now also expires (`StatusEffectSystem` calls it), so every status
+  event comes from one class; the loader validates authored seconds, whole `maxStacks` and
+  positive tick amounts; merge order #34 → #35 → #31 goes in the PR reply. `npm run check` →
+  `EXIT=0`: core "Tests 534 passed (534)"; client "Tests 416 passed (416)"; "✓ built in 94ms";
+  "Documentation check passed."
+- Ponytail-review: no cuts (`op: 'mul'` keeps the design's shape). Critic re-check: approve, no
+  blockers. Next step: push, reply to the owner on #35 (merge order #34 → #35 → #31).

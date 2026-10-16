@@ -3,9 +3,10 @@ import { createDefaultContentRules } from './defaultContentRules';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { MOB_DEFINITIONS } from './mobs/mobCatalogue';
 import type { UnitDefinition } from './units/units.types';
+import { TickRate } from '../utils/TickRate';
 import { ContentValidator } from './validation/ContentValidator';
 
-const perTick = (definition: UnitDefinition, tickRate: number): UnitDefinition => ({
+const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): UnitDefinition => ({
   ...definition,
   movement: {
     ...definition.movement,
@@ -15,7 +16,7 @@ const perTick = (definition: UnitDefinition, tickRate: number): UnitDefinition =
   ...(definition.attack && {
     attack: {
       ...definition.attack,
-      interval: Math.max(1, Math.round(definition.attack.interval * tickRate)),
+      interval: rate.toTicks(definition.attack.interval),
     },
   }),
 });
@@ -34,5 +35,8 @@ export const loadDefaultContent = (tickRate: number): ContentCatalogue<UnitDefin
     ...MOB_DEFINITIONS.all(),
   ]);
   new ContentValidator(createDefaultContentRules()).validate(authored);
-  return new ContentCatalogue(authored.all().map((definition) => perTick(definition, tickRate)));
+  const rate = new TickRate(tickRate);
+  return new ContentCatalogue(
+    authored.all().map((definition) => perTick(definition, tickRate, rate)),
+  );
 };

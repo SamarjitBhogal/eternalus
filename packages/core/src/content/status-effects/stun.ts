@@ -1,4 +1,4 @@
-import type { StatusEffectDefinition } from './statusEffects.types';
+import type { AuthoredStatusEffect } from './statusEffects.types';
 
 /**
  * Stunned: cannot move, attack or cast. TUNE: more-abilities.md section 7 (0.5–1 s per source;
@@ -8,10 +8,10 @@ import type { StatusEffectDefinition } from './statusEffects.types';
 export const STUN = {
   id: 'stun',
   displayName: 'Stunned',
-  duration: 1,
+  durationSeconds: 1,
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [],
   flags: ['cannot-move', 'cannot-attack', 'cannot-cast'],
   periodic: null,
-} as const satisfies StatusEffectDefinition;
+} as const satisfies AuthoredStatusEffect;

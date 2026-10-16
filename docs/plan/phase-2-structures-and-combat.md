@@ -94,10 +94,12 @@ with the `no-death-without-killer` invariant (architecture 03 §2 keeps the caus
 killer, instead of new `RemovalCause` members). Status effects, ranged attacks and damage types are
 still open, so no box above is ticked yet.
 
-**Status (2026-10-16, branch `feat/status-effects`, Claudio, SCRUM-228):** `StatusEffects` +
-`StatusEffectRuntime` + `StatusEffectSystem` with the six MVP statuses as content, `refresh` and
-`intensity` stacking, pooled instances, `StatusEffectApplier` and `StatusModifierStep`; tests
-cover exact-tick expiry, stacking and pooling. Open numbers and rules are in `INBOX.md`.
+**Status (2026-10-16, PR #35, Claudio, SCRUM-228):** `StatusEffects` + `StatusEffectRuntime` +
+`StatusEffectSystem` with the six MVP statuses as content (loaded in ticks, `enraged`'s cap from
+config), `refresh` and `intensity` stacking, pooled instances, `StatusEffectApplier` (apply and
+remove), `StatusModifierStep` and `StatusStacksWithinMaxInvariant`; tests cover exact-tick expiry,
+stacking and pooling. FR-029 (aura debuff) is deferred to the BuffTower sprint: removal exists,
+the max-health stat does not. Open numbers and rules are in `INBOX.md`.
 
 **Success metric:** 100% of deaths in a 3,000-tick seeded skirmish (dummies vs dummies) carry a
 killer or a timeline cause; 0 negative-damage or out-of-range health values in invariants.

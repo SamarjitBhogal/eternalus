@@ -1,5 +1,8 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { StatusEffectApplier } from '../combat/StatusEffectApplier';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
+import type { GameState } from '../state/GameState';
 import { CombatSystem } from './CombatSystem';
 import { DeathSystem } from './DeathSystem';
 import { InvariantSystem } from './InvariantSystem';
@@ -11,23 +14,33 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order: decisions (AI), statuses, movement, combat, then death, then invariants
  * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
- * It builds the match's one `DamagePipeline` and hands it to every system that deals damage, so a
- * damage step added there applies to every hit.
+ * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
+ * effects loaded for this match's config) and hands them to the systems that need them, so a damage
+ * step applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /**
    * Creates the pipeline.
    *
    * @param invariants - The runner the last system checks with.
+   * @param state - The match; its config sets the tick rate and lane structure count statuses load with.
    * @param decide - PROTOTYPE(PROTO-01) TEMPORARY: remove once the owner decides where `AiSystem`
    *   lives and it is registered like any other system. Systems that run first, before movement: `AiSystem`, which `systems/` may not
    *   import, so `Simulation` passes it in.
    */
-  public constructor(invariants: InvariantRunner, decide: readonly System[] = []) {
+  public constructor(
+    invariants: InvariantRunner,
+    state: GameState,
+    decide: readonly System[] = [],
+  ) {
+    const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
+    const statuses = new StatusEffectApplier(
+      loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
+    );
     super([
       ...decide,
-      new StatusEffectSystem(),
+      new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
       new CombatSystem(damage),
       new DeathSystem(),

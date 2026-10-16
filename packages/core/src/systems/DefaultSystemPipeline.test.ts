@@ -20,10 +20,11 @@ const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 describe('DefaultSystemPipeline', () => {
   it('moves, then removes the dead, then checks invariants, in that order', () => {
     const logger = new MemoryLogger();
+    const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      state,
     );
-    const state = new GameState(createDefaultGameConfig(), 1);
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const runner = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
@@ -52,10 +53,11 @@ describe('DefaultSystemPipeline', () => {
 
   it('lands attacks after movement and before death, so a unit killed this tick leaves this tick', () => {
     const logger = new MemoryLogger();
+    const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      state,
     );
-    const state = new GameState(createDefaultGameConfig(), 1);
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },

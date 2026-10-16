@@ -1,4 +1,4 @@
-import type { StatusEffectDefinition } from './statusEffects.types';
+import type { AuthoredStatusEffect } from './statusEffects.types';
 
 /**
  * Bleeding: physical damage over time, stacking. TUNE: more-abilities.md section 7 (6 per second
@@ -7,10 +7,10 @@ import type { StatusEffectDefinition } from './statusEffects.types';
 export const BLEED = {
   id: 'bleed',
   displayName: 'Bleeding',
-  duration: 4,
+  durationSeconds: 4,
   stacking: 'intensity',
   maxStacks: 3,
   modifiers: [],
   flags: [],
-  periodic: { every: 1, effect: 'damage', amount: 6 },
-} as const satisfies StatusEffectDefinition;
+  periodic: { everySeconds: 1, effects: [{ kind: 'damage', amount: 6 }] },
+} as const satisfies AuthoredStatusEffect;

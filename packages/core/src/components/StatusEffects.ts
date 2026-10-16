@@ -3,21 +3,21 @@ import type {
   StatusFlag,
   StatusStat,
 } from '../content/status-effects/statusEffects.types';
-import type { EntityId } from '../state/EntityStore.types';
 import { StatusEffectRuntime } from './StatusEffectRuntime';
 
 /**
  * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier
- * per stat and the set of flags, recomputed whenever the list changes, so every reader asks one
- * question per tick. An entity without this component is immune to statuses (structures).
+ * per stat (each modifier's `value` once per stack) and the set of flags, recomputed whenever the
+ * list changes, so every reader asks one question per tick. An entity without this component is
+ * immune to statuses (structures). Ids are plain strings (`components/` may not import `state/`).
  */
 export class StatusEffects {
   private readonly activeList: StatusEffectRuntime[] = [];
 
   private readonly spare: StatusEffectRuntime[] = [];
 
-  /** Per stat, the sum of `perStack × stacks` over the active statuses. */
-  private readonly modifierSums = new Map<StatusStat, number>();
+  /** Per stat, the product of every active modifier's `value` raised to its stacks. */
+  private readonly multipliers = new Map<StatusStat, number>();
 
   private readonly flags = new Set<StatusFlag>();
 
@@ -30,7 +30,7 @@ export class StatusEffects {
    * Applies `definition` (loaded, in ticks) at `tick`: a new instance, or the active one reapplied
    * by its stacking rule. Use `combat/StatusEffectApplier`, which also emits `status-applied`.
    */
-  public apply(definition: StatusEffectDefinition, sourceId: EntityId | null, tick: number): void {
+  public apply(definition: StatusEffectDefinition, sourceId: string | null, tick: number): void {
     const existing = this.find(definition.id);
     if (existing === undefined) {
       const runtime = this.spare.pop() ?? new StatusEffectRuntime(definition);
@@ -39,6 +39,22 @@ export class StatusEffects {
       existing.reapply(sourceId, tick);
     }
     this.recompute();
+  }
+
+  /**
+   * Removes the status `statusId` now, whatever its timer (an aura left, a hold released). Returns
+   * whether it was active. Use `combat/StatusEffectApplier.remove`, which also emits the event.
+   * Not from inside a loop over `active` (a listener during `StatusEffectSystem`'s pass): it splices.
+   */
+  public remove(statusId: string): boolean {
+    const status = this.find(statusId);
+    if (status === undefined) {
+      return false;
+    }
+    this.activeList.splice(this.activeList.indexOf(status), 1);
+    this.spare.push(status);
+    this.recompute();
+    return true;
   }
 
   /** Removes every status that is over at `tick` (`StatusEffectRuntime.hasExpired`). */
@@ -58,9 +74,9 @@ export class StatusEffects {
     }
   }
 
-  /** What `stat` is multiplied by: 1 plus every active modifier × its stacks, never below 0. */
+  /** What `stat` is multiplied by: 1 with no modifier on it. */
   public multiplier(stat: StatusStat): number {
-    return Math.max(0, 1 + (this.modifierSums.get(stat) ?? 0));
+    return this.multipliers.get(stat) ?? 1;
   }
 
   /** Whether any active status sets `flag`. */
@@ -78,11 +94,16 @@ export class StatusEffects {
   }
 
   private recompute(): void {
-    this.modifierSums.clear();
+    this.multipliers.clear();
     this.flags.clear();
     for (const { definition, stacks } of this.activeList) {
-      for (const { stat, perStack } of definition.modifiers) {
-        this.modifierSums.set(stat, (this.modifierSums.get(stat) ?? 0) + perStack * stacks);
+      for (const { stat, value } of definition.modifiers) {
+        let product = this.multipliers.get(stat) ?? 1;
+        // Repeated multiplication, not Math.pow, which core avoids (ADR 0012).
+        for (let stack = 0; stack < stacks; stack += 1) {
+          product *= value;
+        }
+        this.multipliers.set(stat, product);
       }
       for (const flag of definition.flags) {
         this.flags.add(flag);

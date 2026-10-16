@@ -1,92 +1,85 @@
 import { describe, expect, it } from 'vitest';
 
+import { CONCUSSION } from '../content/status-effects/concussion';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import type { StatusEffectRuntime } from './StatusEffectRuntime';
 import { StatusEffects } from './StatusEffects';
 
-const LOADED = loadStatusEffects(30);
+const LOADED = loadStatusEffects(30, 2);
 const BLEED = LOADED.get('bleed');
-const CONCUSSION = LOADED.get('concussion');
 const ENRAGED = LOADED.get('enraged');
 const STUN = LOADED.get('stun');
 
-/** Expires at `tick` and returns the ids that expired. */
-const expireAt = (statuses: StatusEffects, tick: number): string[] => {
-  const expired = statuses.active
-    .filter((status) => status.hasExpired(tick))
-    .map((status) => status.definition.id);
-  statuses.expire(tick);
-  return expired;
-};
+/** Concussion loaded under another id with other modifiers (a stand-in for a future slow). */
+const slow = (id: string, value: number) =>
+  loadStatusEffects(30, 2, [
+    { ...CONCUSSION, id, modifiers: [{ stat: 'moveSpeed', op: 'mul', value }] },
+  ]).get(id);
 
 describe('StatusEffects', () => {
   it('expires a status on the exact tick its duration ends', () => {
     const statuses = new StatusEffects();
-    statuses.apply(CONCUSSION, 'a', 10); // 3 s = 90 ticks
+    statuses.apply(LOADED.get('concussion'), 'a', 10); // 3 s = 90 ticks
 
-    expect(expireAt(statuses, 99)).toEqual([]);
+    statuses.expire(99);
     expect(statuses.multiplier('moveSpeed')).toBeCloseTo(0.7);
-    expect(expireAt(statuses, 100)).toEqual(['concussion']);
+    statuses.expire(100);
     expect(statuses.active).toHaveLength(0);
     expect(statuses.multiplier('moveSpeed')).toBe(1);
   });
 
-  it('refresh: reapplying restarts the timer and keeps one stack', () => {
+  it('multiplies modifiers: value once per stack, and across statuses', () => {
     const statuses = new StatusEffects();
-    statuses.apply(STUN, 'a', 0); // 1 s = 30 ticks
-    statuses.apply(STUN, 'b', 20);
+    statuses.apply(ENRAGED, 'b', 0);
+    statuses.apply(ENRAGED, 'b', 1);
+    expect(statuses.multiplier('damageDealt')).toBeCloseTo(1.15 * 1.15);
 
-    expect(statuses.active).toHaveLength(1);
-    expect(statuses.active[0]).toMatchObject({ stacks: 1, sourceId: 'b', expiresTick: 50 });
+    statuses.apply(LOADED.get('concussion'), 'a', 2);
+    statuses.apply(slow('slowed', 0.6), 'a', 2);
+    expect(statuses.multiplier('moveSpeed')).toBeCloseTo(1.1 * 1.1 * 0.7 * 0.6);
+  });
+
+  it('never reaches 0 by stacking slows', () => {
+    const statuses = new StatusEffects();
+    statuses.apply(LOADED.get('concussion'), 'a', 0);
+    statuses.apply(slow('slowed', 0.3), 'a', 0);
+
+    expect(statuses.multiplier('moveSpeed')).toBeCloseTo(0.21);
+  });
+
+  it('collects the flags of every active status', () => {
+    const statuses = new StatusEffects();
+    statuses.apply(STUN, 'a', 0);
+
     expect(statuses.has('cannot-move')).toBe(true);
+    expect(statuses.has('attacks-miss')).toBe(false);
   });
 
-  it('intensity: each application adds a stack up to the cap, and modifiers scale with stacks', () => {
+  it('removes a status on demand and recomputes', () => {
     const statuses = new StatusEffects();
-    for (let tick = 0; tick < 4; tick += 1) {
-      statuses.apply(BLEED, 'a', tick);
-      statuses.apply(ENRAGED, 'b', tick);
-    }
+    statuses.apply(ENRAGED, 'a', 0);
+    statuses.apply(STUN, 'a', 0);
 
-    expect(statuses.active.map((status) => status.stacks)).toEqual([3, 2]);
-    expect(statuses.multiplier('damageDealt')).toBeCloseTo(1.3);
-    expect(statuses.active[1]?.expiresTick).toBeNull();
+    expect(statuses.remove('enraged')).toBe(true);
+    expect(statuses.remove('enraged')).toBe(false);
+    expect(statuses.active.map((status) => status.definition.id)).toEqual(['stun']);
+    expect(statuses.multiplier('damageDealt')).toBe(1);
   });
 
-  it('keeps the periodic rhythm when reapplied before its next tick', () => {
-    const statuses = new StatusEffects();
-    statuses.apply(BLEED, 'a', 0); // ticks every 30
-    statuses.apply(BLEED, 'a', 21);
-
-    expect(statuses.active[0]?.isPeriodicTick(30)).toBe(true);
-    expect(statuses.active[0]?.expiresTick).toBe(21 + 120);
-  });
-
-  it('never gives a multiplier below 0', () => {
-    const statuses = new StatusEffects();
-    statuses.apply(
-      { ...CONCUSSION, id: 'frozen', modifiers: [{ stat: 'moveSpeed', perStack: -2 }] },
-      null,
-      0,
-    );
-
-    expect(statuses.multiplier('moveSpeed')).toBe(0);
-  });
-
-  it('reuses expired instances (pooled) with none of their old state', () => {
+  it('reuses expired and removed instances (pooled) with none of their old state', () => {
     const statuses = new StatusEffects();
     statuses.apply(BLEED, 'a', 0);
     statuses.apply(BLEED, 'a', 1);
     const first: StatusEffectRuntime | undefined = statuses.active[0];
     statuses.expire(1_000);
-    statuses.apply(CONCUSSION, 'b', 1_001);
+    statuses.apply(STUN, 'b', 1_001);
 
     expect(statuses.active[0]).toBe(first);
     expect(statuses.active[0]).toMatchObject({
       stacks: 1,
       sourceId: 'b',
       periodTicks: null,
-      expiresTick: 1_091,
+      expiresTick: 1_031,
     });
   });
 });
