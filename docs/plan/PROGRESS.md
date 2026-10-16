@@ -792,3 +792,98 @@ The example below is fenced so it is not read as a real entry.
 - Next step: the owner pushes the branch, and the PR goes into the phase branch for the team.
   The owner then answers the INBOX items and plan §9, and accepts or changes ADR 0016/0017
   and the re-cut.
+
+### 2026-10-14 — Phase 2 sprint 2 / minion system design — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done:
+  - Analysed driving minions with an external model over a WebSocket. Decision: the minion system
+    stays scripted and deterministic in core. A model becomes, at most, a later writer of the goal
+    seam and would need an ADR.
+  - Ran an interactive design session and wrote `docs/architecture/18-minion-system.md`. It is the
+    owning doc for spawning, hordes, minion and guard behaviour, the goal seam for hordes and bot
+    Legends, and horde redirection. The work is split into phases M1 to M5 with named blockers:
+    the damage pipeline (sprint 2.2) and structures (sprint 2.1), both built by other developers.
+  - Doc 04 §7 and doc 11 §4.3–4.4 now point to doc 18. The architecture index and the docs
+    index were updated.
+- Checks run: `npm run docs:check` → "Documentation check passed."; `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: the owner answers doc 18 §13 (worst lane, unit cap, gate holding, M5 order, M4
+  triggers). The Phase 3 plan's sprints 3.1–3.4 and 3.7 are then re-cut to M1–M5, and M1 starts.
+
+### 2026-10-15 — Phase 2 sprint 2 / minion system design, round 2 — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done:
+  - A second interactive session settled doc 18's open points. Confirmed: partial spawns at the
+    unit cap (MS-10), holding at gates that are not breakable yet (MS-12) and strength scaling
+    in M5 (MS-16).
+  - Added MS-18…MS-22:
+    - `TUNE` placeholder stats for medium and heavy mobs.
+    - Separation within a team only, so enemy hordes pass through each other in M1.
+    - Bots spread across lanes at setup.
+    - `Survive` outranks goals, and a goal clears itself when it can no longer apply.
+    - No gameplay redirection of hordes in the MVP.
+  - The worst-lane rule (MS-9) stays open for the owner. By the human's choice, the Phase 3
+    plan is not re-cut.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: the owner answers MS-9; run the pre-PR gate (architecture-reviewer critic) on the
+  doc changes before opening a PR.
+
+### 2026-10-15 — Phase 2 sprint 2 / minion doc entity legend — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done: added an entity legend to the top of `docs/architecture/18-minion-system.md`.
+  It lists the entity types the system implements (light, medium and heavy lane minions, tower
+  guards, bot laners, the enemy Rover, and the Horde composite). It also lists what is out of
+  scope; bosses, camps, turrets and the human Legend are explicitly excluded.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: unchanged; the owner answers MS-9, then the pre-PR critic runs.
+
+### 2026-10-15 — Phase 2 sprint 2 / minion doc MS-9 settled — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done: the human settled MS-9. The worst lane for the Stronghold's scheduled heavy
+  horde (DISC-10) is a weighted mix of towers lost and enemy pressure.
+  - Doc 18 §3.3 now defines both terms (0 to 1), `TUNE` weights in content, ties to the lowest
+    lane index, and a fallback lane when every lane scores 0.
+  - In M1 only pressure counts; M2 adds the towers term.
+  - §13 now has no open questions. The boss reward wave's `LaneAssessment` stays out of scope.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: run the pre-PR gate (architecture-reviewer critic) on the doc changes before a PR.
+
+### 2026-10-15 — Phase 2 sprint 2 / minion plan critic rework — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done:
+  - The pre-PR critic (architecture-reviewer, base `d125cad`) returned BLOCKERS. By the human's
+    choice, the whole doc moved from `docs/architecture/18-minion-system.md` to
+    `docs/plan/minion-system-plan.md`. The architecture index changes were reverted, and the
+    phase table and interim stand-ins now sit in a plan doc.
+  - Blocker fixes:
+    - The goal types moved to `state/`, removing the state→ai import and the cycle.
+    - DISC-21 is read correctly: a lost SpawnerTower shrinks the Stronghold's guards.
+    - Each M5 item keeps its own MVP status.
+    - MS-19 is limited to steering; collision still separates enemies (the human's choice).
+  - Other fixes: `structure-destroyed`, `spawn-suppressed`, `GameConfig.limits.maxUnitsPerTeam`,
+    `MapDefinition.lanes[i].path` (reversed for Dark), and the doc 03 event flow (`SpawnSystem`
+    emits `horde-spawned`; `HordeSystem` handles `entity-removed` and `team-changed`). Also the
+    mob `hordeId` back-pointer, `GuardPlan.leashRadius`, the 12 §2 opening hordes, and
+    `content/ai/` instead of a new folder.
+  - Docs 04, 07, 11, 15 and 17 now point to the plan. Doc 04's movement catalogue names
+    `LaneFollowMovementStrategy`, and doc 07's horde sizes name `GameConfig.match.hordeSizes`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: the critic re-checks; commit and push if it reports no blockers.
+
+### 2026-10-15 — Phase 2 sprint 2 / minion docs split — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done:
+  - The critic re-check left one blocker (N1): the target design sat in `docs/plan/`. By the
+    human's choice, the doc is split. The design (decisions, spawning, hordes, movement, minion
+    and guard behaviour, the goal seam, redirection, tests) is now
+    `docs/architecture/18-minion-system.md`, with its `paths:`.
+  - The build phases M1–M5 and the interim stand-ins stay in `docs/plan/minion-system-plan.md`,
+    which links to doc 18.
+  - Docs 04, 07, 11, 15 and 17 point to doc 18, and doc 18 is back in the architecture index.
+  - Also fixed:
+    - N2: `horde-spawned` is emitted after the deferred `spawn-requested` is fulfilled (07 §6).
+    - N3: the check result is filled in.
+    - N4: doc 11's description wording.
+    - N5: goals use `MapLane.index`; the horde record keeps `MapLane.id`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: the critic re-checks; commit and push if it reports no blockers.
