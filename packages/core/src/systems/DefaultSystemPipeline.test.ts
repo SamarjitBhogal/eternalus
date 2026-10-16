@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 
+import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -35,7 +36,11 @@ describe('DefaultSystemPipeline', () => {
     state.entities.add(runner);
     state.entities.add(victim);
     runner.getComponent(Movement).steer({ x: 1, y: 0 });
-    victim.getComponent(Health).applyDamage(1000);
+    new DamagePipeline().apply(state, victim.id, 1000, {
+      attackerId: runner.id,
+      kind: 'weapon',
+      definitionId: 'warrior',
+    });
 
     pipeline.run({ state, logger });
 

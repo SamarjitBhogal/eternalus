@@ -41,7 +41,12 @@ export type GameEventMap = {
     readonly kind: string;
     readonly team: Team;
   };
-  readonly 'entity-removed': { readonly entityId: EntityId; readonly cause: RemovalCause };
+  /** `killer` is set for a `died` removal whose lethal hit went through the damage pipeline. */
+  readonly 'entity-removed': {
+    readonly entityId: EntityId;
+    readonly cause: RemovalCause;
+    readonly killer?: DamageSource;
+  };
   readonly 'damage-applied': {
     readonly targetId: EntityId;
     readonly amount: number;
