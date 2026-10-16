@@ -7,7 +7,7 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
 import { DamagePipeline } from './DamagePipeline';
-import type { DamageSource } from './DamageSource.types';
+import type { DamageSource } from '../state/GameEvents.types';
 
 const SOURCE: DamageSource = { attackerId: 'entity-9', kind: 'weapon', definitionId: 'sword' };
 
@@ -55,6 +55,27 @@ describe('DamagePipeline', () => {
     const died = state.events.recentEvents().filter((event) => event.type === 'entity-died');
     expect(died).toHaveLength(1);
     expect(died[0]?.payload).toEqual({ entityId: 'entity-1', killer: SOURCE });
+  });
+
+  it('blocks a hit between teammates (friendly fire)', () => {
+    const state = setUp();
+    const ally = { attackerId: 'entity-1', kind: 'weapon', definitionId: 'sword' } as const;
+
+    expect(new DamagePipeline().apply(state, 'entity-1', 15, ally)).toEqual({
+      applied: false,
+      reason: 'blocked',
+    });
+    expect(healthOf(state).current).toBe(healthOf(state).max);
+  });
+
+  it('applies nothing for a zero-damage hit', () => {
+    const state = setUp();
+
+    expect(new DamagePipeline().apply(state, 'entity-1', 0, SOURCE)).toEqual({
+      applied: false,
+      reason: 'zero-damage',
+    });
+    expect(state.events.recentEvents()).toEqual([]);
   });
 
   it('rejects a missing target without throwing', () => {

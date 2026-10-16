@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-16
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -37,7 +37,7 @@ carried over unchanged.
 flowchart LR
   IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q[CommandQueue]
   Q -->|next tick| APPLY[CommandApplySystem]
-  APPLY --> SYS[SystemPipeline: AiSystem ... DeathSystem ... InvariantSystem]
+  APPLY --> SYS[SystemPipeline: AiSystem ... MovementSystem, CombatSystem, DeathSystem ... InvariantSystem]
   SYS -->|mutates| STATE[(GameState)]
   SYS -->|emits| EV[GameEvents]
   SYS --> SNAP[SnapshotSystem]

@@ -858,5 +858,19 @@ The example below is fenced so it is not read as a real entry.
   (02). No modifier steps yet (statuses, structure multipliers, damage types, breakability).
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 469 passed (469)"; client "Tests 416
   passed (416)"; "✓ built in 98ms"; "Documentation check passed."
-- Next step: `CombatSystem` + the `attack-target` handler, killer causes in `DeathSystem`, then the
-  modifier steps as their features land.
+- Second commit (same branch): `DamageStep` list run before `Health`
+  (`combat/defaultDamageSteps.ts`, first step `FriendlyFireStep`, pending the owner's sign-off in
+  `INBOX.md`); `Combat` component (installed when a unit definition has an `attack`; Warrior,
+  Sentinel and Magus get TUNE melee placeholders, interval authored in seconds and loaded as
+  ticks); `AttackStrategy` + `MeleeAttackStrategy` + `defaultStrategyRegistry.ts` in
+  `entities/strategies/` with a `DamageDealer` port; `CombatSystem` between movement and death;
+  `AttackTargetHandler` through new `EntityStore.isAlive`/`setAttackTarget` facades; reject reasons
+  `cannot-attack`/`invalid-target`; `StateHasher` hashes `Combat` once it has changed. Docs 02, 03,
+  04, 05, 17 (new recipe R13a) and the Phase 2 plan updated. Pre-PR gate: critic request-changes
+  (2 blockers: handler imported components; strategies in `combat/`) → fixed, plus its
+  should-fixes (split tests, pipeline-order and hash tests, docs, INBOX); ponytail-review: 2 line
+  cuts applied (redundant self-target check, unused `null` in `setAttackTarget`), no structural
+  change. Final `npm run check` → `EXIT=0`: core "Tests 487 passed (487)"; client "Tests 416
+  passed (416)"; "✓ built in 91ms"; "Documentation check passed."
+- Next step: killer causes in `DeathSystem` and the unexplained-death invariant, status effects,
+  ranged attacks (SCRUM-169), damage types with the first resistance.
