@@ -845,3 +845,18 @@ The example below is fenced so it is not read as a real entry.
   "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 117ms"; "Documentation
   check passed."
 - Next step: retarget PR #28 to `phase/2-sprint-2-work` and merge it.
+
+### 2026-10-16 — Phase 2 / sprint 2.2 — feat/combat-damage-pipeline — Claudio + Claude Code
+
+- What was done: added `combat/DamagePipeline`, the one way damage reaches `Health` (05 §9).
+  Anything with `Health` is hit the same way (Legends, mobs, bosses, structures, destructible
+  obstacles); a target without `Health` is never damaged. Shields drain before health, every
+  landed hit emits `damage-applied` with its `DamageSource`, and the lethal hit alone emits
+  `entity-died` with the killer. A missing, health-less or already-dead target returns a reason
+  instead of throwing. `DamageResult` lives in `combat/DamageSource.types.ts`; `DamageSource`
+  stays in `state/GameEvents.types.ts` (now exported) because `state/` may not import `combat/`
+  (02). No modifier steps yet (statuses, structure multipliers, damage types, breakability).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 469 passed (469)"; client "Tests 416
+  passed (416)"; "✓ built in 98ms"; "Documentation check passed."
+- Next step: `CombatSystem` + the `attack-target` handler, killer causes in `DeathSystem`, then the
+  modifier steps as their features land.
