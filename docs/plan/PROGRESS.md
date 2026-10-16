@@ -757,6 +757,41 @@ The example below is fenced so it is not read as a real entry.
 - Next step: review and merge before the demo; remove the preselect when the character select
   screen lands.
 
+### 2026-10-09 — Phase 1 / Sprint 1 audit — chore/sprint-1-audit — sholtzman + Claude Code
+
+- What was done: started the Sprint 1 audit backlog (`docs/reviews/2026-10-09-sprint-1-audit.md`),
+  the house for the fixes the owner chose to make after the 2026-10-10 presentation.
+  - PR #22 and #23 merged before their reviews finished. Independent critics then reviewed each
+    merge against the docs at its first parent. #22: 3 blockers, 8 majors. #23: 1 process
+    blocker, 3 majors. Both verdicts were request changes.
+  - PR #24's findings come from its own six critic passes.
+  - The backlog also lists the stand-ins whose trigger has fired, and the owner decisions the
+    reviews surfaced (A22-3, A23-1, A23-17…A23-20).
+  - Nothing outside `docs/` is changed on this branch yet.
+- Checks run: `npm run check` (see the commit); the two post-merge critics each ran it in a fresh
+  clone with `EXIT=0`.
+- Next step: the owner rules on A22-3 and A23-1 (both block phase 1 → `main`), then the backlog is
+  fixed on this branch after the presentation.
+
+### 2026-10-09 — Phase 1 / Sprint 1 audit — chore/sprint-1-audit — sholtzman + Claude Code
+
+- What was done: the full Sprint 1 audit.
+  - Recorded the owner's rulings DEC-32 (PR #22 scenery) and DEC-33 (PROTO-01 is demo-only).
+  - Merged the phase tip (`26ae27e`) into this branch.
+  - Six independent critics audited the merged code by area: kernel, entities and content, map,
+    client engine, client shell, and docs and process. Each finding was spot-checked against the
+    code before it went into `docs/reviews/2026-10-09-sprint-1-audit.md`.
+  - The backlog holds 2 blockers, 22 majors, 82 minors and 46 nits, plus the owner decisions.
+  - Overlapping findings are merged (AC-1 into AS-1; `Math.hypot`, injected content and the id
+    counter into AK-3, AK-5 and AK-6).
+  - AD-26 corrects an earlier line of the audit by appending, not editing.
+- Checks run: baseline `npm run check` at `26ae27e` → `EXIT=0`: "All matched files use Prettier
+  code style!"; core "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in
+  270ms"; "Documentation check passed." This branch changes only `docs/` and `INBOX.md`.
+- Next step: the owner answers the "Proposed design changes" items. The fixes then land on this
+  branch, starting with the summary's "fix first" list. Merge PR #24, then fold its follow-ups
+  (A24-*, AC-19) in.
+
 ### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (merge of phase/1 after #26) — sholtzman + Claude Code
 
 - What was done: merged the phase branch into PR #24 after PR #26 merged, on top of session F's
@@ -792,3 +827,21 @@ The example below is fenced so it is not read as a real entry.
 - Next step: the owner pushes the branch, and the PR goes into the phase branch for the team.
   The owner then answers the INBOX items and plan §9, and accepts or changes ADR 0016/0017
   and the re-cut.
+
+### 2026-10-16 — Phase 2 / Sprint 1 audit — chore/sprint-1-audit (merge of phase/2 for PR #28) — sholtzman + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (`d125cad`, PR #27 on top of #24 and #26) into
+  this branch so PR #28 can merge into phase 2. Four doc conflicts, every entry from both sides
+  kept:
+  - This log: the two audit entries, then phase 2's two entries, by date.
+  - The decisions log: the DEC-32/DEC-33 batch goes between phase 2's 2026-10-10 batch and its
+    PR #24 batch, newest first.
+  - `docs/README.md`: regenerated with `npm run docs:index`.
+  - `INBOX.md`: phase 2 had already replaced PROTO-01 with a "still open" item that cites DEC-33
+    and DEC-35. That item is kept, and this branch's DEC-33 note on the old item is dropped
+    (DEC-33 itself is in the decisions log). The note's audit ids A23-17 and A23-18 move into the
+    new item's questions (3) and (2).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 117ms"; "Documentation
+  check passed."
+- Next step: retarget PR #28 to `phase/2-sprint-2-work` and merge it.
