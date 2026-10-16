@@ -113,6 +113,15 @@ Reply inline (`Decision: …`).
       pipeline (the requirements' "dies without another entity or a defensive tower killing it").
       Proposal: the 15 §3 row covers both, (a) now and (b) "the attacker resolves in the store"
       with abilities. Approve, or say what to change.
+- [ ] **Status effects — numbers and rules to confirm (SCRUM-228, `feat/status-effects`).**
+      (1) Modifiers add per stack (enraged ×2 = +30% damage, not 1.15²); the sketch in 05 §8
+      had `op: 'mul'`. (2) `stun` defaults to 1 s (more-abilities §7 says 0.5–1 s per source);
+      each ability will pass its own once abilities land. (3) `enraged.maxStacks` is 2, the
+      default `spawnTowersPerLane + buffTowersPerLane`; deriving it from config is open.
+      (4) Blind makes only weapon hits miss (`attacks-miss`); ability damage still lands.
+      (5) Not built yet, by design: `polarity`, `controlClass` / `control-immune`, `onExpire`
+      (crushed → slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut.
+      Confirm or correct.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

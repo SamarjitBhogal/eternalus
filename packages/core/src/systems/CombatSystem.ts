@@ -1,5 +1,6 @@
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { Entity } from '../entities/Entity';
@@ -11,7 +12,8 @@ import type { System, SystemContext } from './System.types';
 /**
  * Lands the attacks of every unit with a target (architecture 05 §10): when the target is in reach
  * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A dead
- * or removed target clears. Getting into reach is the controller's job (moving), not this system's.
+ * or removed target clears. Statuses stop attacks (`cannot-attack`, or an `attackSpeed` of 0) and
+ * scale the cooldown. Getting into reach is the controller's job (moving), not this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
@@ -38,6 +40,11 @@ export class CombatSystem implements System {
         combat.setTarget(null);
         return;
       }
+      const statuses = attacker.findComponent(StatusEffects);
+      const attackSpeed = statuses?.multiplier('attackSpeed') ?? 1;
+      if (statuses?.has('cannot-attack') === true || attackSpeed === 0) {
+        return;
+      }
       if (!combat.canAttack(state.tick) || !CombatSystem.inReach(attacker, target, combat)) {
         return;
       }
@@ -46,7 +53,7 @@ export class CombatSystem implements System {
         state,
         damage: this.damage,
       });
-      combat.beginAttack(state.tick);
+      combat.beginAttack(state.tick, attackSpeed);
     });
   }
 

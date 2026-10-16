@@ -2,6 +2,7 @@ import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
@@ -61,6 +62,18 @@ export class StateHasher {
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {
       fields.push(['vision', vision.revealedUntilTick]);
+    }
+    const statuses = entity.findComponent(StatusEffects);
+    if (statuses !== undefined && statuses.active.length > 0) {
+      fields.push([
+        'statuses',
+        ...statuses.active.flatMap((status) => [
+          status.definition.id,
+          status.sourceId,
+          status.stacks,
+          status.expiresTick,
+        ]),
+      ]);
     }
     return fields;
   }

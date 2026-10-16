@@ -21,4 +21,13 @@ describe('Combat', () => {
     combat.setTarget(null);
     expect(combat.targetId).toBeNull();
   });
+
+  it('divides the cooldown by the attack speed, and never below one tick', () => {
+    const combat = new Combat({ strategy: 'melee', damage: 10, reach: 1, interval: 7 });
+
+    combat.beginAttack(0, 0.7);
+    expect(combat.readyAtTick).toBe(10);
+    combat.beginAttack(0, 100);
+    expect(combat.readyAtTick).toBe(1);
+  });
 });
