@@ -25,6 +25,6 @@ export const WARRIOR = {
     acceleration: 45, // TUNE: m/s², top speed after about 0.13 s (4 ticks)
     mass: 1, // TUNE:
   },
-  // TUNE: basic melee placeholder until weapons (05 §10) land
-  attack: { strategy: 'melee', damage: 40, reach: 1.5, interval: 0.8 },
+  // Basic attack until weapons (05 §10) land.
+  attack: { strategy: 'melee', damage: 45, reach: 1.5, interval: 0.7 }, // TUNE: balancing.md (45 / 0.7 s); reach unspecified
 } as const satisfies LegendDefinition;

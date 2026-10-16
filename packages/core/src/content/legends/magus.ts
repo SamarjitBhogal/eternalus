@@ -25,6 +25,6 @@ export const MAGUS = {
     acceleration: 22.5, // TUNE: m/s², top speed after 0.2 s (6 ticks)
     mass: 2, // TUNE:
   },
-  // TUNE: basic melee placeholder until weapons (05 §10) land
-  attack: { strategy: 'melee', damage: 30, reach: 1.5, interval: 1.0 },
+  // Basic attack until weapons (05 §10) land.
+  attack: { strategy: 'melee', damage: 40, reach: 1.5, interval: 0.9 }, // TUNE: balancing.md (40 / 0.9 s, magical, 8 m range: melee until ranged attacks land)
 } as const satisfies LegendDefinition;
