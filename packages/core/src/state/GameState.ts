@@ -6,8 +6,9 @@ import type { Entity } from '../entities/Entity';
 import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
 import { EntityStore } from './EntityStore';
-import type { RemovalRecord } from './EntityStore.types';
+import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
+import type { DamageSource } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
 import type { MatchPhase, RecordedCommand } from './GameState.types';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
@@ -26,6 +27,7 @@ export class GameState {
   private currentTick = 0;
   private readonly recent = new RingBuffer<RecordedCommand>(RECENT_COMMAND_CAPACITY);
   private readonly announcedRemovals: RemovalRecord[] = [];
+  private readonly killers = new Map<EntityId, DamageSource>();
 
   /**
    * @param config - A config that passed `validateGameConfig()`.
@@ -39,7 +41,10 @@ export class GameState {
     this.rng = new SeededRandom(seed);
     this.events = new GameEvents(() => this.currentTick);
     this.events.on('entity-removed', (removal) => {
-      this.announcedRemovals.push(removal);
+      this.announcedRemovals.push({ entityId: removal.entityId, cause: removal.cause });
+    });
+    this.events.on('entity-died', ({ entityId, killer }) => {
+      this.killers.set(entityId, killer);
     });
   }
 
@@ -53,6 +58,15 @@ export class GameState {
     this.currentTick += 1;
     this.entities.beginTick();
     this.announcedRemovals.length = 0;
+    this.killers.clear();
+  }
+
+  /**
+   * Who dealt the lethal hit to `entityId` this tick (from its `entity-died` event), or
+   * `undefined` when it did not die through the damage pipeline this tick.
+   */
+  public killerOf(entityId: EntityId): DamageSource | undefined {
+    return this.killers.get(entityId);
   }
 
   /** Every `entity-removed` event of the current tick, in order (whatever the ring buffer keeps). */

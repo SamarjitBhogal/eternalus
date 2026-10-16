@@ -874,3 +874,18 @@ The example below is fenced so it is not read as a real entry.
   passed (416)"; "✓ built in 91ms"; "Documentation check passed."
 - Next step: killer causes in `DeathSystem` and the unexplained-death invariant, status effects,
   ranged attacks (SCRUM-169), damage types with the first resistance.
+
+### 2026-10-16 — Phase 2 / sprint 2.2 — feat/combat-damage-pipeline (killer tracking) — Claudio + Claude Code
+
+- What was done: `GameState` records this tick's killers from `entity-died` (`killerOf`, cleared by
+  `advanceTick`, like the announced removals). `DeathSystem` puts the killer on each `died`
+  `entity-removed` (new optional `killer` field, 03 §2). New `NoDeathWithoutKillerInvariant`
+  (`no-death-without-killer`, error, tick; 15 §3) flags a `died` removal with no killer this tick,
+  i.e. a lethal hit that skipped `DamagePipeline`; registered in `DefaultInvariantRunner`. The
+  pipeline-order test now kills through the pipeline (the invariant caught the old direct
+  `applyDamage`). Kept the cause `died` plus the killer per 03 §2 instead of the plan's new
+  `RemovalCause` members. Docs 03, 05, 15 and the Phase 2 plan updated.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 492 passed (492)"; client "Tests 416 passed
+  (416)"; "✓ built in 89ms"; "Documentation check passed."
+- Next step: pre-PR gate on this commit (critic + ponytail), then push to PR #34; status effects,
+  ranged attacks (SCRUM-169), damage types.

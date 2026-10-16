@@ -106,6 +106,13 @@ Reply inline (`Decision: …`).
       (3) `DamagePipeline.apply` takes `GameState`, not `SystemContext`, so handlers and listeners
       can call it. 02, 04, 05 and 17 already describe the built version; approve or say what to
       change.
+- [ ] **Combat — `no-death-without-killer` checks a different hole than 15 §3 (PR #34).** The
+      15 §3 row checks that every `entity-died` carries a resolvable `DamageSource` (the type
+      already forces one). The built invariant checks that every `died` removal had an
+      `entity-died` with its killer this tick, which catches `Health` written around the damage
+      pipeline (the requirements' "dies without another entity or a defensive tower killing it").
+      Proposal: the 15 §3 row covers both, (a) now and (b) "the attacker resolves in the store"
+      with abilities. Approve, or say what to change.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-16
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -479,6 +479,13 @@ The simulation kernel (sprint 1.1, PR #13) delivers the `Logger` port and double
 `DebugConfig` and `LogRecord.context` with `GameState.recentCommands` (session C, sprint 1.2); the
 `Profiler` port; `runSimMatch` and the soak harness. `Replay` has no `versions` and
 `ReplayOutcome` no `ok` or `violations` until the content catalogue and the runner exist.
+
+`NoDeathWithoutKillerInvariant` (sprint 2.2, PR #34) checks the failure that can happen today:
+every `died` removal of the tick had an `entity-died` with its killer this tick
+(`GameState.killerOf`), so a death whose lethal hit skipped `DamagePipeline` is the violation.
+`DamageSource` kinds are still those of 05 §9 (`weapon`, `ability`, `status`, `structure`,
+`environment`); the `self`/`script` kinds and resolving the attacker in the store join with the
+abilities and the match director.
 
 ## Related
 

@@ -539,7 +539,9 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
 `INBOX.md`). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
-`DeathResolver` is not a separate class yet; `DeathSystem` still removes with the cause `died`.
+`DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
+`DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;
+`no-death-without-killer` (15) flags a death without one.
 `CombatSystem` (after movement, before death) runs each unit's `Combat` target through its
 `AttackStrategy` (melee only) when in reach (edge to edge) and off cooldown; `attack-target` sets
 the target and rejects allies, itself and dead targets (`invalid-target`) and units with no attack
