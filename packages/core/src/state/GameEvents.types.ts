@@ -5,10 +5,10 @@ import type { EntityId, RemovalCause } from './EntityStore.types';
 import type { MatchPhase } from './GameState.types';
 
 /**
- * Who or what dealt damage (architecture 05 §9). Lives here until `combat/` exists; move it to
- * `combat/DamageSource.types.ts` then.
+ * Who or what dealt damage (architecture 05 §9). Every hit names one, so every death has a killer.
+ * Lives in `state/` because events carry it and `state/` may not import `combat/` (02).
  */
-type DamageSource = {
+export type DamageSource = {
   readonly attackerId: EntityId | null;
   readonly kind: 'weapon' | 'ability' | 'status' | 'structure' | 'environment';
   /** The weapon, ability, status or structure definition id. */
