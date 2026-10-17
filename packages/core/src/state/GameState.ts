@@ -7,14 +7,17 @@ import type { Entity } from '../entities/Entity';
 import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
+import { AiState } from './AiState';
 import { EntityStore } from './EntityStore';
 import type { RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
 import type { MatchPhase, RecordedCommand, TeamState } from './GameState.types';
+import type { HordeRequest } from './HordeRequest.types';
 import { HordeStore } from './HordeStore';
 import { LaneRoutes } from './LaneRoutes';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
+import type { SpaceQuery } from './SpaceQuery.types';
 
 /**
  * The aggregate root of one match: config, the seeded RNG, the map, the entities, the hordes, the
@@ -24,8 +27,12 @@ export class GameState {
   /** The only source of randomness in the match. */
   public readonly rng: SeededRandom;
   public readonly entities = new EntityStore();
+  /** The brains of every controlled entity and the deferred decisions (architecture 11 §2). */
+  public readonly ai = new AiState();
   /** The lane hordes (architecture 18 §4). */
   public readonly hordes = new HordeStore();
+  /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
+  public readonly hordeRequests: HordeRequest[] = [];
   /** Each playable team's match counters. */
   public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = {
     light: { unitsRequested: 0, unitsSuppressed: 0 },
@@ -44,6 +51,7 @@ export class GameState {
    * @param config - A config that passed `validateGameConfig()`.
    * @param seed - The match seed (a whole number from 0 to 2^32 - 1).
    * @param map - The generated map; without one, nothing spawns on lanes.
+   * @param space - The neighbour index `SpaceSystem` refills each tick; `null` without a map.
    */
   public constructor(
     public readonly config: GameConfig,
@@ -51,6 +59,8 @@ export class GameState {
     public readonly seed: number,
     /** The generated map of the match, or `null` (most unit tests). */
     public readonly map: MapDefinition | null = null,
+    /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
+    public readonly space: SpaceQuery | null = null,
   ) {
     this.rng = new SeededRandom(seed);
     this.routes = map === null ? null : new LaneRoutes(map);

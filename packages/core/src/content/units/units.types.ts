@@ -1,3 +1,4 @@
+import type { ControllerId } from '../ai/ai.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
 
 /**
@@ -31,6 +32,8 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly movement: MovementProfile;
   /** The strategy that steers this unit each tick; none for a unit nothing steers. */
   readonly movementStrategy?: MovementStrategyId;
-  /** The id of the controller that drives this unit (architecture 11 §2); none for the player. */
-  readonly controller?: string;
+  /** The controller that drives this unit (architecture 11 §2); none for the player. */
+  readonly controller?: ControllerId;
+  /** The AI profile its controller reads (`content/ai/profiles/`); the controller id by default. */
+  readonly aiProfile?: string;
 };

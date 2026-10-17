@@ -77,6 +77,28 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     expect(Math.min(...marching)).toBeGreaterThan(diameter);
   });
 
+  it('spawns a developer-menu horde on the named lane, clipped to the unit cap', () => {
+    const { simulation } = match(TWO_LANE_MAP);
+    const spawned: string[] = [];
+    simulation.on('horde-spawned', ({ team, lane, memberIds }) =>
+      spawned.push(`${team} ${lane} ${String(memberIds.length)}`),
+    );
+    simulation.step();
+    const cap = createDefaultGameConfig().limits.maxUnitsPerTeam;
+
+    simulation.enqueueCommand({
+      type: 'dev-spawn-mobs',
+      team: 'light',
+      definitionId: 'heavy-minion',
+      count: cap,
+      origin: { kind: 'lane', lane: 'lane-1', t: 0.5 },
+    });
+    simulation.step();
+
+    // The two opening hordes hold 32 of the cap; the heavy horde gets the rest.
+    expect(spawned.slice(4)).toEqual([`light lane-1 ${String(cap - 32)}`]);
+  });
+
   it('gives the same hash for the same seed and map, tick for tick', () => {
     const first = match(TWO_LANE_MAP).simulation;
     const second = match(TWO_LANE_MAP).simulation;

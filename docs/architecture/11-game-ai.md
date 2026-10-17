@@ -316,6 +316,24 @@ Flying class, the `Vision` component for fog of war, `jungler`/`support` trees, 
 and utility better
 [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots).
 
+## 10. Implementation status
+
+Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
+work named:
+
+- `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
+  the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open
+  PROTO-01 question).
+- `EntityFactory` cannot reach the state, so a unit whose definition names a `controller` gets a
+  `ControllerBinding` component at spawn, and `AiSystem` creates its brain the first tick it sees
+  it.
+- The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
+  `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
+- The controller registry is empty until `MinionController` (M2b). How a controller writes its
+  memory and RNG state back is open (`INBOX.md`), since `decide` returns only commands.
+- `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities
+  (M2c).
+
 ## Related
 
 - [03-game-model](./03-game-model.md)

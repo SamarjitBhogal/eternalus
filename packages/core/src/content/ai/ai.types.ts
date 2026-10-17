@@ -1,3 +1,15 @@
+/** Which controller drives an entity (architecture 11 §2); kebab-case, never renamed once used. */
+export type ControllerId =
+  'player' | 'bot-legend' | 'minion' | 'guard' | 'turret' | 'boss' | 'rover';
+
+/** How often each controller decides, and how many decisions a tick may hold (11 §6). */
+export type AiCadence = {
+  /** Ticks between two decisions of one entity, per controller. */
+  readonly everyTicks: Readonly<Record<ControllerId, number>>;
+  /** At most this many decisions per tick; the rest wait for the next tick, first in line. */
+  readonly maxDecisionsPerTick: number;
+};
+
 /**
  * How a horde moves together (architecture 18 §4, §5). Distances are world units (metres); none
  * changes with the tick rate.

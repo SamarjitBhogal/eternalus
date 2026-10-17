@@ -7,14 +7,12 @@ import type { MovementContext } from './MovementStrategy.types';
 
 /** A context with units at `points`, heading for `target`. */
 const contextOf = (points: readonly [number, number][], target: { x: number; y: number }) => {
+  const positions = Float64Array.from(points.flatMap(([x, y]) => [x, y]));
   const neighbours = new SpatialHash(100, 100, HORDE_STEERING.separationRadius);
-  points.forEach(([x, y], index) => {
-    neighbours.insert(index, x, y);
-  });
+  neighbours.rebuild(positions, points.length);
   return {
+    positions,
     neighbours,
-    xs: Float64Array.from(points.map(([x]) => x)),
-    ys: Float64Array.from(points.map(([, y]) => y)),
     found: new Int32Array(points.length),
     target,
     out: { x: 0, y: 0 },

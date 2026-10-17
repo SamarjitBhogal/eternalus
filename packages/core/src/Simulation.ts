@@ -1,3 +1,5 @@
+import { AiSystem } from './ai/AiSystem';
+import { createDefaultControllerRegistry } from './ai/defaultControllerRegistry';
 import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
@@ -7,6 +9,8 @@ import { validateGameConfig } from './config/validateGameConfig';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { AI_CADENCE } from './content/ai/cadence';
+import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
@@ -15,6 +19,7 @@ import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import type { SimulationOptions } from './Simulation.types';
+import { SpaceIndex } from './physics/SpaceIndex';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -47,7 +52,8 @@ export class Simulation {
     content,
     map,
   }: SimulationOptions) {
-    this.state = new GameState(validateGameConfig(config), seed, map ?? null);
+    const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
+    this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
     // One factory for commands and spawning, so entity ids come from one counter.
     const definitions = content ?? loadDefaultContent(this.state.config.tickRate);
     const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
@@ -59,6 +65,12 @@ export class Simulation {
             state: this.state,
             factory,
             definitions,
+            space,
+            decide: [
+              new AiSystem(this.state, createDefaultControllerRegistry(), AI_CADENCE, (command) => {
+                this.queue.enqueue(command);
+              }),
+            ],
           })
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {

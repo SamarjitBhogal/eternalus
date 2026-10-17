@@ -1,3 +1,5 @@
+import { ControllerBinding } from '../components/ControllerBinding';
+import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
@@ -98,6 +100,21 @@ export class EntityStore {
     }
     movement.steer(direction);
     return true;
+  }
+
+  /** The entity's team, or `undefined` when it is unknown or has no team. */
+  public teamOf(id: EntityId): Team | undefined {
+    return this.entities.get(id)?.findComponent(TeamMembership)?.team;
+  }
+
+  /** The controller that drives the entity and its AI profile, or `undefined` when none does. */
+  public controllerOf(id: EntityId): ControllerBinding | undefined {
+    return this.entities.get(id)?.findComponent(ControllerBinding);
+  }
+
+  /** Whether the entity exists and has health left (`false` for anything without `Health`). */
+  public isAlive(id: EntityId): boolean {
+    return this.entities.get(id)?.findComponent(Health)?.isDead === false;
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */

@@ -1077,3 +1077,30 @@ The example below is fenced so it is not read as a real entry.
   written.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: merge into `feat/minion-m1-marching`.
+
+### 2026-10-17 — Minion system M2a (brains and perception) — feat/minion-m2a-brains-perception (off feat/minion-m1-marching, uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **PR split:** the rest of the minion work is cut into pull requests M2a, M4, M2b, M2c, M3,
+    M5a and M5b, with their blockers (minion plan §2; stand-ins are now §3).
+  - **DEC renumber:** the PR #33 owner rulings became DEC-43 to DEC-47 on PR #33 and were merged
+    into M1 (PR #38) before branching.
+  - **Neighbour index:** `SpatialHash` is now 10 §5's counting-sort grid with an exact, ascending
+    `queryCircle`; `physics/SpaceIndex` is `state.space` (the `SpaceQuery` port in `state/`),
+    rebuilt by the new `SpaceSystem` after `MovementSystem`; `PathingSystem` and the steering
+    strategy read it instead of their own grid.
+  - **Perception** (`ai/perception/`): `unitsWithin` and `nearest`, filtered by hostility, kind
+    and liveness through the re-added `EntityStore.teamOf` / `isAlive` (PR #34's signatures).
+  - **Brains and AI:** `content/ai/cadence.ts` (11 §6), the `ControllerId` union in content
+    types, a `ControllerBinding` component from `UnitDefinition.controller` / `aiProfile`,
+    `state.ai` (`AiState`: brains with their own RNG stream, the deferred queue; hashed), the
+    `Controller` contract, an empty controller registry, and `AiSystem` (stagger by id hash,
+    budget with deferral) composed first by `Simulation`.
+  - **`HordeMembershipConsistentInvariant`** (15 §3), against the store lookup.
+  - **`dev-spawn-mobs`** (13 §4, 18 §3.5, DEC-46): its handler resolves the origin (structure,
+    `{ lane, t }`, point) to a lane and queues a `HordeRequest` on `state.hordeRequests`;
+    `SpawnSystem` fulfils queued requests and scheduled waves through one shape, clipped to the cap.
+  - **Docs:** 03 §3 union and status, 10 §12, a new 11 §10 implementation status, 18 status, plan
+    §2 table and §3 stand-ins; INBOX question on how a controller writes its memory back.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 507 passed (507)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review; commit on the human's request; the pre-PR gate; M4 can start in parallel.

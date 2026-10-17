@@ -4,6 +4,7 @@ import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
+import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { GameState } from '../state/GameState';
@@ -12,12 +13,15 @@ import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
 import { MovementSystem } from './MovementSystem';
 import { PathingSystem } from './PathingSystem';
+import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
+import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
- * The tick's systems in their fixed order (architecture 10 §9, 18 §3.2): horde progress,
- * movement, steering, spawning, death, then invariants last. This is the one place a system is
+ * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
+ * progress,
+ * movement, the neighbour index, steering, spawning, death, then invariants last. This is the one place a system is
  * added, at its position in the tick (architecture 02 §9).
  */
 export class DefaultSystemPipeline extends SystemPipeline {
@@ -34,6 +38,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
       readonly state: GameState;
       readonly factory: EntityFactory;
       readonly definitions: DefinitionSource;
+      /** The index `state.space` exposes; `null` for a match without a map. */
+      readonly space: SpaceIndex | null;
+      /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
+      readonly decide: readonly System[];
     },
   ) {
     if (world === undefined) {
@@ -41,13 +49,13 @@ export class DefaultSystemPipeline extends SystemPipeline {
       return;
     }
     super([
+      ...world.decide,
       new HordeSystem(world.state, HORDE_STEERING.marchSpeedFactor),
       new MovementSystem(),
-      new PathingSystem(
-        createDefaultStrategyRegistry().movement,
-        { [RANKS_FORMATION.id]: RANKS_FORMATION },
-        HORDE_STEERING.separationRadius,
-      ),
+      ...(world.space === null ? [] : [new SpaceSystem(world.space)]),
+      new PathingSystem(createDefaultStrategyRegistry().movement, {
+        [RANKS_FORMATION.id]: RANKS_FORMATION,
+      }),
       new SpawnSystem(world.state, world.factory, {
         definitions: world.definitions,
         openingWave: OPENING_WAVE,

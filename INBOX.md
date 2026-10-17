@@ -87,7 +87,7 @@ Reply inline (`Decision: …`).
       the middle lane, so the first heavy horde goes down it), or name others. (2) **Horde size and cadence (your M7):** size from (a) `hordeSizes` in config only,
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
-      cadences (plan §2 stand-in). Details: doc 18 §10.
+      cadences (plan §3 stand-in). Details: doc 18 §10.
 - [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
@@ -96,6 +96,11 @@ Reply inline (`Decision: …`).
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
       to the store lookup.
+- [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
+      "never mutate state", yet a brain's `memory` and `rngState` change with each decision
+      (`MinionController`'s FSM state and timers, M2b). Should `decide` return
+      `{ commands, memory, rngState }` for `AiSystem` to write back (`Recommendation:`, keeps
+      controllers pure), or may a controller write its own brain?
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which

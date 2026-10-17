@@ -1,5 +1,6 @@
 import { FiniteTransformsInvariant } from './invariants/FiniteTransformsInvariant';
 import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInvariant';
+import { HordeMembershipConsistentInvariant } from './invariants/HordeMembershipConsistentInvariant';
 import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCauseInvariant';
 import { InvariantRunner } from './InvariantRunner';
 import type { DebugConfig } from './InvariantRunner.types';
@@ -14,6 +15,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new NoRemovalWithoutCauseInvariant(),
         new HealthWithinBoundsInvariant(),
         new FiniteTransformsInvariant(),
+        new HordeMembershipConsistentInvariant(),
       ],
       config,
       logger,

@@ -10,3 +10,9 @@ export const HORDE_STEERING = {
   spawnSpacing: 2, // TUNE: over the heavy minion's 1.6 m diameter
   spawnColumns: 4, // TUNE:
 } as const satisfies HordeSteeringProfile;
+
+/**
+ * The neighbour grid's cell size (architecture 10 §5): the steering query radius, so a
+ * separation query touches the 3 × 3 cells around a unit.
+ */
+export const SPACE_CELL_SIZE = HORDE_STEERING.separationRadius;
