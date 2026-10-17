@@ -1,6 +1,6 @@
 /**
  * A uniform grid over the world for neighbour queries (architecture 10 §5). Callers insert item
- * indexes with their positions once per tick, then ask for the items in the cells a circle
+ * indexes with their positions once per tick, then collect the items in the cells a circle
  * touches; the caller checks the exact distance. Typed-array linked lists keep inserts and queries
  * free of allocation; the visiting order depends only on positions and insert order, never on
  * hashing, so it is deterministic.
@@ -60,8 +60,13 @@ export class SpatialHash {
     this.heads[cell] = index;
   }
 
-  /** Visits every item in the cells the circle at `(x, y)` with `radius` touches. */
-  public forEachNear(x: number, y: number, radius: number, visit: (index: number) => void): void {
+  /**
+   * Writes every item in the cells the circle at `(x, y)` with `radius` touches into `out` and
+   * returns how many it wrote; items past `out.length` are dropped, so size `out` to the item
+   * count.
+   */
+  public collectNear(x: number, y: number, radius: number, out: Int32Array): number {
+    let count = 0;
     const firstColumn = this.column(x - radius);
     const lastColumn = this.column(x + radius);
     const firstRow = this.row(y - radius);
@@ -69,12 +74,14 @@ export class SpatialHash {
     for (let row = firstRow; row <= lastRow; row += 1) {
       for (let column = firstColumn; column <= lastColumn; column += 1) {
         let item = this.heads[row * this.columns + column] ?? -1;
-        while (item !== -1) {
-          visit(item);
+        while (item !== -1 && count < out.length) {
+          out[count] = item;
+          count += 1;
           item = this.next[item] ?? -1;
         }
       }
     }
+    return count;
   }
 
   private cellAt(x: number, y: number): number {

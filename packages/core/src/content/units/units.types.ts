@@ -14,6 +14,12 @@ export type MovementProfile = {
   readonly mass: number;
 };
 
+/**
+ * How a unit steers: one `MovementStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`
+ * (architecture 04 §4).
+ */
+export type MovementStrategyId = 'lane-follow';
+
 /** What every unit definition (Legend or mob) has. Shared, immutable and keyed by `id`. */
 export type UnitDefinition = EntityDefinitionBase & {
   /** Full base health. */
@@ -23,6 +29,8 @@ export type UnitDefinition = EntityDefinitionBase & {
   /** Sight radius in world units. */
   readonly visionRadius: number;
   readonly movement: MovementProfile;
+  /** The strategy that steers this unit each tick; none for a unit nothing steers. */
+  readonly movementStrategy?: MovementStrategyId;
   /** The id of the controller that drives this unit (architecture 11 §2); none for the player. */
   readonly controller?: string;
 };

@@ -2,7 +2,7 @@ import type { MobDefinition } from './mobs.types';
 
 /**
  * The heavy lane minion (Goliath in the balancing proposal), spawned in hordes by the Stronghold
- * down the worst lane (architecture 18 §3). Placeholder stats (MS-18) from the heavy-minion anchors
+ * down the worst lane (architecture 18 §3). Placeholder stats (minion plan §1, "Placeholder numbers") from the heavy-minion anchors
  * of `docs/reference/suggestions/balancing.md` ("Reference anchor values").
  */
 export const HEAVY_MINION = {
@@ -12,6 +12,7 @@ export const HEAVY_MINION = {
   baseHealth: 1200, // TUNE: balancing.md heavy minion
   footprintRadius: 0.8, // TUNE: balancing.md heavy minion
   visionRadius: 10, // TUNE:
+  movementStrategy: 'lane-follow',
   movement: {
     maxSpeed: 2.8, // TUNE: m/s, balancing.md heavy minion
     acceleration: 14, // TUNE: m/s², top speed after 0.2 s

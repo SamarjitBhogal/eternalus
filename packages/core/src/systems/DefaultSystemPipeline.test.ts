@@ -53,7 +53,7 @@ describe('DefaultSystemPipeline', () => {
 
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
-      { state, factory },
+      { state, factory, definitions: UNIT_DEFINITIONS },
     );
 
     expect(pipeline.names).toEqual([

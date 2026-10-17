@@ -54,14 +54,16 @@ scaled from the light minion, until balancing (Phase 6).
 
 Each stand-in is removed by the phase named.
 
-| Stand-in                                                                                                                                                | Used in | Replaced by                               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------- |
-| Spawners are the map's structure features (position, team, lane), since structure entities do not exist yet                                             | M1      | M2: the structure entities                |
-| `LaneAssessment` scores only `pushedBack`; the structure terms are 0 because no structure has health or can fall                                        | M1      | M2: all three terms                       |
-| The formation anchor and slots follow the lane polyline (seek with arrival), with no terrain-aware routing                                              | M1–M3   | M4: flow fields, behind the same strategy |
-| Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2) | M1      | the owner's answer, wherever it puts them |
-| Without combat, opposing hordes jostle past each other and gather at the enemy end                                                                      | M1      | M2: they fight                            |
-| The formation anchor never holds: not at a standing objective, not while the leader engages                                                             | M1      | M2: objectives and combat                 |
+| Stand-in                                                                                                                                                | Used in | Replaced by                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------- |
+| Spawners are the map's structure features (position, team, lane), since structure entities do not exist yet                                             | M1      | M2: the structure entities                                            |
+| `LaneAssessment` scores only `pushedBack`; damage-not-dealt is 1 and structures-lost 0 on every lane, because no structure has health or can fall       | M1      | M2: all three terms                                                   |
+| The formation anchor and slots follow the lane polyline (seek with arrival), with no terrain-aware routing                                              | M1–M3   | M4: flow fields, behind the same strategy                             |
+| Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2) | M1      | the owner's answer, wherever it puts them                             |
+| Without combat, opposing hordes jostle past each other and gather at the enemy end                                                                      | M1      | M2: they fight                                                        |
+| The formation anchor never holds: not at a standing objective, not while the leader engages                                                             | M1      | M2: objectives and combat                                             |
+| `SpatialHash` yields neighbours in insert order (not id-sorted) and separation falls off linearly, not as 1/r (10 §12)                                  | M1      | M2: `Perception`'s id-ordered queries                                 |
+| The snapshot carries no hordes or team counters                                                                                                         | M1      | When a view or the HUD reads them (`MinimapView`, the developer menu) |
 
 ## Related
 

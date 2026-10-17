@@ -3,26 +3,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { distance } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
-
-/** One team's walk of one lane: its waypoints and the distance from the gate to each. */
-type Route = {
-  readonly points: readonly Vec2[];
-  /** `along[i]` is the path length from `points[0]` to `points[i]`. */
-  readonly along: readonly number[];
-};
-
-const routeOf = (points: readonly Vec2[]): Route => {
-  const along = [0];
-  for (let index = 1; index < points.length; index += 1) {
-    const previous = points[index - 1];
-    const here = points[index];
-    along.push(
-      (along[index - 1] ?? 0) +
-        (previous === undefined || here === undefined ? 0 : distance(previous, here)),
-    );
-  }
-  return { points, along };
-};
+import type { Route } from './LaneRoutes.types';
 
 /**
  * The map's lanes as each team walks them (architecture 18 §3.2): a lane path runs from the Light
@@ -40,8 +21,8 @@ export class LaneRoutes {
     this.lanes = [...map.lanes].sort((a, b) => a.index - b.index);
     for (const lane of this.lanes) {
       this.routes.set(lane.id, {
-        light: routeOf(lane.path),
-        dark: routeOf([...lane.path].reverse()),
+        light: LaneRoutes.routeOf(lane.path),
+        dark: LaneRoutes.routeOf([...lane.path].reverse()),
       });
     }
   }
@@ -115,6 +96,19 @@ export class LaneRoutes {
     point.y = a.y + t * (b.y - a.y);
     forward.x = span === 0 ? 0 : (b.x - a.x) / span;
     forward.y = span === 0 ? 0 : (b.y - a.y) / span;
+  }
+
+  private static routeOf(points: readonly Vec2[]): Route {
+    const along = [0];
+    for (let index = 1; index < points.length; index += 1) {
+      const previous = points[index - 1];
+      const here = points[index];
+      along.push(
+        (along[index - 1] ?? 0) +
+          (previous === undefined || here === undefined ? 0 : distance(previous, here)),
+      );
+    }
+    return { points, along };
   }
 
   private route(laneId: string, team: PlayableTeam): Route {

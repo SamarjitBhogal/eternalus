@@ -5,7 +5,7 @@ import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { loadDefaultContent } from '../content/loadDefaultContent';
-import { SPAWN_WAVES } from '../content/structures/spawnWaves';
+import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
@@ -17,7 +17,14 @@ import { SpawnSystem } from './SpawnSystem';
 const TICK_RATE = 30;
 
 const newSystem = (state: GameState, factory: EntityFactory) =>
-  new SpawnSystem(state, factory, SPAWN_WAVES, HORDE_STEERING, LANE_ASSESSMENT_WEIGHTS, 'ranks');
+  new SpawnSystem(state, factory, {
+    definitions: loadDefaultContent(TICK_RATE),
+    openingWave: OPENING_WAVE,
+    waves: SPAWN_WAVES,
+    steering: HORDE_STEERING,
+    weights: LANE_ASSESSMENT_WEIGHTS,
+    formationId: 'ranks',
+  });
 
 const setUp = (overrides: DeepPartial<GameConfig> = {}) => {
   const config = createDefaultGameConfig({

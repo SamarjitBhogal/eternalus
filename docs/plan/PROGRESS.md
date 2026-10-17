@@ -1043,3 +1043,27 @@ The example below is fenced so it is not read as a real entry.
   - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and stand-ins.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 486 passed (486)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: review; commit on the human's request; then the pre-PR gate.
+
+### 2026-10-17 — Minion system M1, pre-PR gate — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done (critic on `e814637..508eea0`, the human's choices on four items):
+  - **Blocker fixed:** `LaneFollowMovementStrategy` implements the 04 §4 `MovementStrategy`
+    contract (`desiredVelocity(self, ctx): Vec2`, stateless, writes `ctx.out`), selected by the new
+    `UnitDefinition.movementStrategy` through `entities/strategies/defaultStrategyRegistry.ts`
+    (the shape PR #34 uses, `movement` as its key). `Movement.strategyId` carries the choice from
+    spawn. `SpatialHash.forEachNear` became `collectNear` into a caller buffer, and `entities/`
+    reaches it through a structural port, not an import of `physics/`.
+  - **Deferred removal (03 §4):** `HordeSystem` queues `entity-removed` / `team-changed` ids and
+    drops them at the start of its pass.
+  - **Minor fixes:** helpers and types out of class files (`utils/compareById`,
+    `HordeStore.types`, `LaneRoutes.types`, `SpawnSystem.types`/`.constants`, `PathingSystem.types`);
+    the opening wave is content (`OPENING_WAVE`) and spawns read the kind from the definition
+    through an injected `SpawnPlan`; a type guard instead of a team cast; `weightClass` in the
+    hash; a formation overlap scenario test; doc 18 paths and §3.3 wording, 04 §4 selector name,
+    03 and 10 implementation status, plan stand-ins (insert-ordered `SpatialHash`, linear
+    separation, no hordes in the snapshot); placeholder stats cite the plan instead of MS-18.
+  - **Ponytail:** `spawnHorde` takes the routes instead of checking them again.
+  - **INBOX:** the first heavy horde's start (60 s or 240 s), and the `hordeOf` store lookup
+    instead of a `hordeId` field, raised as better than the design.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 490 passed (490)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: critic re-check, then open the M1 PR stacked on PR #33.

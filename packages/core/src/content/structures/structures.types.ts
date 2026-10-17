@@ -39,3 +39,6 @@ export type SpawnWaveDefinition = {
   readonly everySeconds: number;
   readonly lane: SpawnLaneRule;
 };
+
+/** The Stronghold's opening hordes (architecture 18 §3.1): what they are made of. */
+export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightClass'>;

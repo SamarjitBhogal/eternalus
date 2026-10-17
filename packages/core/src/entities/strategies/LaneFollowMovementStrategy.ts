@@ -2,75 +2,50 @@ import type { HordeSteeringProfile } from '../../content/ai/ai.types';
 import { sqrt } from '../../utils/deterministicMath';
 import type { Vec2 } from '../../utils/geometry.types';
 import { length } from '../../utils/vec2';
-import type { MutableVec2 } from '../../utils/vec2.types';
-import type { Crowd } from './LaneFollowMovementStrategy.types';
+import type { MovementContext, MovementStrategy } from './MovementStrategy.types';
 
 /**
  * How a lane-horde mob steers (architecture 18 §5.2): toward its formation slot until it is
- * within `slotArrivalRadius`, plus separation from every neighbour (10 §9, MS-19). Holds no
- * per-unit state and allocates nothing per call.
+ * within `slotArrivalRadius`, plus separation from every neighbour (10 §9, MS-19). Stateless:
+ * it reads the context's buffers, writes `context.out` and allocates nothing.
  *
- * @remarks ponytail: a plain class, not behind a `MovementStrategy` interface, while it is the
- * only strategy `PathingSystem` runs; add the interface and the registry with the second one.
- * Wall avoidance and the flow field join with terrain-aware routing (minion plan M4).
+ * @remarks ponytail: wall avoidance and the flow field join with terrain-aware routing (minion
+ * plan M4); separation falls off linearly, not as 1/r (minion plan §2).
  */
-export class LaneFollowMovementStrategy {
-  private crowd: Crowd | null = null;
-  private selfIndex = -1;
-  private pushX = 0;
-  private pushY = 0;
-
+export class LaneFollowMovementStrategy implements MovementStrategy {
   /** @param profile - Distances and weights; the strategy holds no numbers of its own. */
   public constructor(private readonly profile: HordeSteeringProfile) {}
 
-  /** The grid cell size that keeps a neighbour query to the 3 × 3 cells around a unit. */
-  public get neighbourRadius(): number {
-    return this.profile.separationRadius;
-  }
-
-  /**
-   * Writes the steer of the mob at `index` in `crowd` into `out`: toward `slot`, or none once
-   * within `slotArrivalRadius`, plus the separation push; a steer shorter than `minSteer` is none.
-   */
-  public steer(out: MutableVec2, crowd: Crowd, index: number, slot: Vec2): void {
-    const x = crowd.xs[index] ?? 0;
-    const y = crowd.ys[index] ?? 0;
-    const dx = slot.x - x;
-    const dy = slot.y - y;
+  /** Toward the slot, or none once there, plus the separation push; below `minSteer` is none. */
+  public desiredVelocity(self: number, context: MovementContext): Vec2 {
+    const { xs, ys, target, out, found } = context;
+    const { slotArrivalRadius, separationRadius, separationWeight, minSteer } = this.profile;
+    const x = xs[self] ?? 0;
+    const y = ys[self] ?? 0;
+    const dx = target.x - x;
+    const dy = target.y - y;
     const gap = sqrt(dx * dx + dy * dy);
-    const isThere = gap <= this.profile.slotArrivalRadius;
+    const isThere = gap <= slotArrivalRadius;
     out.x = isThere ? 0 : dx / gap;
     out.y = isThere ? 0 : dy / gap;
-    this.crowd = crowd;
-    this.selfIndex = index;
-    this.pushX = 0;
-    this.pushY = 0;
-    crowd.hash.forEachNear(x, y, this.profile.separationRadius, this.pushFrom);
-    out.x += this.pushX;
-    out.y += this.pushY;
-    if (length(out) < this.profile.minSteer) {
+    const count = context.neighbours.collectNear(x, y, separationRadius, found);
+    for (let at = 0; at < count; at += 1) {
+      const other = found[at] ?? self;
+      const awayX = x - (xs[other] ?? x);
+      const awayY = y - (ys[other] ?? y);
+      const apart = sqrt(awayX * awayX + awayY * awayY);
+      if (other === self || apart === 0 || apart >= separationRadius) {
+        continue;
+      }
+      // Away from the neighbour: full weight at contact, nothing at the radius.
+      const strength = (separationWeight * (separationRadius - apart)) / separationRadius;
+      out.x += (awayX / apart) * strength;
+      out.y += (awayY / apart) * strength;
+    }
+    if (length(out) < minSteer) {
       out.x = 0;
       out.y = 0;
     }
+    return out;
   }
-
-  /** Bound once, so a query allocates no closure. */
-  private readonly pushFrom = (other: number): void => {
-    const crowd = this.crowd;
-    const self = this.selfIndex;
-    if (crowd === null || other === self) {
-      return;
-    }
-    const dx = (crowd.xs[self] ?? 0) - (crowd.xs[other] ?? 0);
-    const dy = (crowd.ys[self] ?? 0) - (crowd.ys[other] ?? 0);
-    const gap = sqrt(dx * dx + dy * dy);
-    const { separationRadius, separationWeight } = this.profile;
-    if (gap === 0 || gap >= separationRadius) {
-      return;
-    }
-    // Away from the neighbour: full weight at contact, nothing at the radius.
-    const strength = (separationWeight * (separationRadius - gap)) / separationRadius;
-    this.pushX += (dx / gap) * strength;
-    this.pushY += (dy / gap) * strength;
-  };
 }

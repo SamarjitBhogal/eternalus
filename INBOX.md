@@ -88,6 +88,14 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §2 stand-in). Details: doc 18 §10.
+- [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
+      (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
+      countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
+      after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
+      say each mob carries a `hordeId` back-pointer. The code keeps membership only in
+      `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
+      apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
+      to the store lookup.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which

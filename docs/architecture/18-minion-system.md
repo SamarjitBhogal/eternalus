@@ -12,10 +12,15 @@ paths:
     'packages/core/src/ai/GuardController*',
     'packages/core/src/state/Horde*',
     'packages/core/src/state/LaneAssessment*',
+    'packages/core/src/state/LaneRoutes*',
     'packages/core/src/systems/HordeSystem*',
     'packages/core/src/systems/SpawnSystem*',
+    'packages/core/src/systems/PathingSystem*',
     'packages/core/src/entities/strategies/LaneFollowMovementStrategy*',
     'packages/core/src/content/mobs/**',
+    'packages/core/src/content/ai/hordeSteering*',
+    'packages/core/src/content/ai/laneAssessmentWeights*',
+    'packages/core/src/content/structures/spawnWaves*',
   ]
 related:
   - docs/plan/minion-system-plan.md
@@ -176,7 +181,8 @@ The game doc defines the worst-off lane as the one with the "lowest structure da
 structures, pushed furthest back" (source game doc, Outer camps; reference 04 §"Outer camps"). This
 is one query, `assessLanes(state, team, weights)` in `state/LaneAssessment.ts`, a pure function
 over `GameState`; lane lengths and the per-lane structure lists come from `state.world` (03 §2),
-and the weights are a parameter, so it imports nothing beyond `state/`. It lives there so both of its consumers can reach it: `SpawnSystem`
+and the weights are a parameter, so it imports only `state/` and content types (which `state/`
+may import); a caller in `match/` types its weights by `assessLanes`' parameter. It lives there so both of its consumers can reach it: `SpawnSystem`
 (`systems/`, the Stronghold's scheduled heavy horde, DISC-10) and the corner-camp boss reward wave
 (`match/`, doc 12 §7), which 02 §2 allows to import only `state/`, `config/` and `utils/`; a `match/` caller receives its
 weights from the composition root (`Simulation`), never by importing `content/`.

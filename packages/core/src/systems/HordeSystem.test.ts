@@ -42,8 +42,8 @@ const setUp = () => {
 };
 
 describe('HordeSystem', () => {
-  it('drops removed and re-teamed members and dissolves an empty horde', () => {
-    const { state, addHorde } = setUp();
+  it('drops removed and re-teamed members on its next pass and dissolves an empty horde', () => {
+    const { state, system, addHorde } = setUp();
     const { hordeId, memberIds } = addHorde([
       ['light-mob', 'light-minion'],
       ['light-mob', 'light-minion'],
@@ -53,6 +53,8 @@ describe('HordeSystem', () => {
     const [first = '', second = ''] = memberIds;
 
     state.events.emit('entity-removed', { entityId: first, cause: 'dev-removed' });
+    expect(state.hordes.get(hordeId)?.leaderId).toBe(first);
+    system.update({ state, logger });
     expect(state.hordes.get(hordeId)?.leaderId).toBe(second);
 
     state.events.emit('team-changed', {
@@ -61,10 +63,12 @@ describe('HordeSystem', () => {
       to: 'dark',
       cause: 'test',
     });
+    system.update({ state, logger });
     expect(state.hordes.get(hordeId)).toBeUndefined();
     expect(dissolved).toEqual([hordeId]);
 
     state.events.emit('entity-removed', { entityId: 'entity-99', cause: 'died' });
+    system.update({ state, logger });
     expect(dissolved).toEqual([hordeId]);
   });
 

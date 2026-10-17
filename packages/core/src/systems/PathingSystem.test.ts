@@ -8,13 +8,14 @@ import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
-import { LaneFollowMovementStrategy } from '../entities/strategies/LaneFollowMovementStrategy';
+import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { PathingSystem } from './PathingSystem';
 
 const logger = new NullLogger();
 const FORMATIONS = { ranks: RANKS_FORMATION };
+const STRATEGIES = createDefaultStrategyRegistry().movement;
 
 describe('PathingSystem', () => {
   it('sends the leader to the anchor and each member to its rank and file behind it', () => {
@@ -45,7 +46,7 @@ describe('PathingSystem', () => {
       memberIds: [leader.id, ...fillers, member.id],
       progress: 40,
     });
-    const system = new PathingSystem(new LaneFollowMovementStrategy(HORDE_STEERING), FORMATIONS);
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.separationRadius);
 
     system.update({ state, logger });
     // A second tick reuses the grown buffers.
@@ -56,7 +57,7 @@ describe('PathingSystem', () => {
   });
 
   it('does nothing without a map, without hordes or with an unknown formation', () => {
-    const system = new PathingSystem(new LaneFollowMovementStrategy(HORDE_STEERING), FORMATIONS);
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.separationRadius);
     const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
     state.hordes.add({
       id: 'horde-1',

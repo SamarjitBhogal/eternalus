@@ -1,22 +1,20 @@
-import type { HordeSteeringProfile, LaneAssessmentWeights } from '../content/ai/ai.types';
 import type { MapFeature } from '../content/maps/maps.types';
-import type { SpawnWaveDefinition } from '../content/structures/structures.types';
+import type { OpeningWaveDefinition } from '../content/structures/structures.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Unit } from '../entities/Unit';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import { assessLanes } from '../state/LaneAssessment';
+import type { LaneRoutes } from '../state/LaneRoutes';
 import type { PlayableTeam } from '../teams/teams.types';
+import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
+import { PLAYABLE_TEAMS } from './SpawnSystem.constants';
+import type { SpawnPlan } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
 
-/** The opening hordes are light hordes of the light minion (architecture 18 §3.1). */
-const OPENING_WAVE: Pick<SpawnWaveDefinition, 'mobId' | 'weightClass'> = {
-  mobId: 'light-minion',
-  weightClass: 'light',
-};
-
-const PLAYABLE_TEAMS: readonly PlayableTeam[] = ['light', 'dark'];
+/** A map structure that belongs to a playable team. */
+type TeamFeature = MapFeature & { readonly team: PlayableTeam };
 
 /**
  * Spawns the lane hordes on the DISC-10 schedule (architecture 18 §3): the Stronghold's opening
@@ -33,27 +31,24 @@ const PLAYABLE_TEAMS: readonly PlayableTeam[] = ['light', 'dark'];
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
-  private readonly spawners: readonly MapFeature[];
+  private readonly spawners: readonly TeamFeature[];
 
   /**
    * @param state - The match; its map's structure features are the spawn points.
    * @param factory - Builds the minions.
-   * @param waves - Each spawning structure kind's horde waves.
-   * @param steering - The spawn grid's spacing and width.
-   * @param weights - The lane-assessment weights.
-   * @param formationId - The formation every horde marches in.
+   * @param plan - The waves, the opening wave, the definitions and the spawn layout.
    */
   public constructor(
     state: GameState,
     private readonly factory: EntityFactory,
-    private readonly waves: Readonly<Record<string, readonly SpawnWaveDefinition[]>>,
-    private readonly steering: Pick<HordeSteeringProfile, 'spawnSpacing' | 'spawnColumns'>,
-    private readonly weights: LaneAssessmentWeights,
-    private readonly formationId: string,
+    private readonly plan: SpawnPlan,
   ) {
     this.spawners = (state.map?.features ?? [])
-      .filter((feature) => feature.team !== 'neutral' && this.waves[feature.kind] !== undefined)
-      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      .filter(
+        (feature): feature is TeamFeature =>
+          feature.team !== 'neutral' && plan.waves[feature.kind] !== undefined,
+      )
+      .sort((a, b) => compareById(a.id, b.id));
   }
 
   /** Spawns every horde due this tick, in spawner id order. */
@@ -75,7 +70,14 @@ export class SpawnSystem implements System {
         ) {
           const lane = routes.lanes[index % routes.lanes.length];
           if (lane !== undefined) {
-            this.spawnHorde(state, team, stronghold.position, lane.id, OPENING_WAVE);
+            this.spawnHorde(
+              state,
+              routes,
+              team,
+              stronghold.position,
+              lane.id,
+              this.plan.openingWave,
+            );
           }
         }
       }
@@ -85,15 +87,15 @@ export class SpawnSystem implements System {
       return;
     }
     for (const spawner of this.spawners) {
-      const team = spawner.team as PlayableTeam;
-      for (const wave of this.waves[spawner.kind] ?? []) {
+      const team = spawner.team;
+      for (const wave of this.plan.waves[spawner.kind] ?? []) {
         if (sinceCountdown % Math.max(1, Math.round(wave.everySeconds * tickRate)) !== 0) {
           continue;
         }
         const lane =
-          wave.lane === 'own-lane' ? spawner.laneId : assessLanes(state, team, this.weights);
+          wave.lane === 'own-lane' ? spawner.laneId : assessLanes(state, team, this.plan.weights);
         if (lane !== undefined) {
-          this.spawnHorde(state, team, spawner.position, lane, wave);
+          this.spawnHorde(state, routes, team, spawner.position, lane, wave);
         }
       }
     }
@@ -102,10 +104,11 @@ export class SpawnSystem implements System {
   /** Spawns one horde and its record in a grid around `origin`, clipped to the team's unit cap. */
   private spawnHorde(
     state: GameState,
+    routes: LaneRoutes,
     team: PlayableTeam,
     origin: Vec2,
     lane: string,
-    wave: Pick<SpawnWaveDefinition, 'mobId' | 'weightClass'>,
+    wave: OpeningWaveDefinition,
   ): void {
     const requested = state.config.match.hordeSizes[wave.weightClass];
     const room = state.config.limits.maxUnitsPerTeam - state.entities.countOnTeam(team, Unit);
@@ -113,12 +116,11 @@ export class SpawnSystem implements System {
     const counters = state.teams[team];
     counters.unitsRequested += requested;
     counters.unitsSuppressed += requested - count;
-    const routes = state.routes;
-    if (count === 0 || routes === null) {
+    if (count === 0) {
       return;
     }
-    const kind = `${wave.weightClass}-mob`;
-    const { spawnSpacing, spawnColumns } = this.steering;
+    const kind = this.plan.definitions.get(wave.mobId).kind;
+    const { spawnSpacing, spawnColumns } = this.plan.steering;
     const columns = Math.min(count, spawnColumns);
     const rows = Math.ceil(count / columns);
     const memberIds: EntityId[] = [];
@@ -136,7 +138,7 @@ export class SpawnSystem implements System {
       team,
       weightClass: wave.weightClass,
       lane,
-      formationId: this.formationId,
+      formationId: this.plan.formationId,
       memberIds,
       progress: routes.distanceAlong(lane, team, origin),
     });

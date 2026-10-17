@@ -49,10 +49,8 @@ export class Simulation {
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed, map ?? null);
     // One factory for commands and spawning, so entity ids come from one counter.
-    const factory = new EntityFactory(
-      createDefaultEntityRegistry(),
-      content ?? loadDefaultContent(this.state.config.tickRate),
-    );
+    const definitions = content ?? loadDefaultContent(this.state.config.tickRate);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
     this.commandContext = { state: this.state, factory };
     this.systemContext = { state: this.state, logger };
     this.pipeline =
@@ -60,6 +58,7 @@ export class Simulation {
         ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), {
             state: this.state,
             factory,
+            definitions,
           })
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {

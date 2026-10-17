@@ -47,6 +47,36 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
   });
 
+  it('marches in formation with no overlap beyond a tolerance', () => {
+    const { simulation } = match(TWO_LANE_MAP);
+    // Light minions are 0.8 m across; forming up outside the gate may squeeze them by 0.2 m.
+    const diameter = 0.8;
+    const closest = (): number => {
+      const minions = simulation
+        .snapshot()
+        .entities.filter(({ family, team }) => family === 'mob' && team === 'light');
+      let best = Number.POSITIVE_INFINITY;
+      minions.forEach(({ transform: a }, index) => {
+        for (const { transform: b } of minions.slice(index + 1)) {
+          best = Math.min(best, Math.hypot((a?.x ?? 0) - (b?.x ?? 0), (a?.y ?? 0) - (b?.y ?? 0)));
+        }
+      });
+      return best;
+    };
+
+    const forming = [1, 2].map(() => {
+      run(simulation, 300);
+      return closest();
+    });
+    const marching = [3, 4, 5, 6].map(() => {
+      run(simulation, 300);
+      return closest();
+    });
+
+    expect(Math.min(...forming)).toBeGreaterThan(diameter - 0.2);
+    expect(Math.min(...marching)).toBeGreaterThan(diameter);
+  });
+
   it('gives the same hash for the same seed and map, tick for tick', () => {
     const first = match(TWO_LANE_MAP).simulation;
     const second = match(TWO_LANE_MAP).simulation;

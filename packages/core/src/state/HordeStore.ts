@@ -1,12 +1,7 @@
+import { compareById } from '../utils/compareById';
 import type { EntityId } from './EntityStore.types';
 import type { Horde, HordeId } from './Horde.types';
-
-/** String order, the total order of entity ids (architecture 03 §2); never numeric. */
-const byEntityId = (a: EntityId, b: EntityId): number => (a < b ? -1 : a > b ? 1 : 0);
-
-type StoredHorde = {
-  -readonly [K in keyof Horde]: Horde[K] extends readonly EntityId[] ? EntityId[] : Horde[K];
-};
+import type { StoredHorde } from './HordeStore.types';
 
 /**
  * Every live horde of a match, in creation order, and which horde each member belongs to
@@ -43,7 +38,7 @@ export class HordeStore {
     if (this.hordes.has(horde.id)) {
       throw new Error(`Horde "${horde.id}" is already in the store.`);
     }
-    const memberIds = [...horde.memberIds].sort(byEntityId);
+    const memberIds = [...horde.memberIds].sort(compareById);
     const leaderId = memberIds[0];
     if (leaderId === undefined) {
       throw new Error(`Horde "${horde.id}" needs at least one member.`);

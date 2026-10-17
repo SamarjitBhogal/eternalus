@@ -271,6 +271,14 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   (counters flat); p95 tick time recorded for the `08` budget table.
 - **Regression**: every replay-found bug adds a fixture (seed + commands + expected hashes).
 
+## 12. Implementation status
+
+`physics/SpatialHash` (minion plan M1) is a uniform grid with linked-list cells:
+`insert(index, x, y)` per tick and `collectNear(x, y, radius, out)`, which yields items in insert
+order per cell, not §5's `rebuild` / `queryCircle` with id-sorted results. It is deterministic
+(insert order follows store order). Horde separation (18 §5.2) falls off linearly with distance,
+not as 1/r. Both conform when `Perception` (minion plan M2) needs id-ordered queries.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

@@ -38,6 +38,7 @@ export class StateHasher {
         hordes.push([
           horde.id,
           horde.team,
+          horde.weightClass,
           horde.lane,
           horde.formationId,
           horde.leaderId,

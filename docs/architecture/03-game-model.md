@@ -421,7 +421,8 @@ each closed by the session or phase named:
   `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
-- `GameState` has no `world`, `teams`, `hordes` or `recentCommands` yet; `EntityFactory` keeps its
+- `GameState` has no `world` or `recentCommands` yet; it has `hordes`, `teams` (the spawn
+  counters only), the generated `map` and its `routes` since minion plan M1 (18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),

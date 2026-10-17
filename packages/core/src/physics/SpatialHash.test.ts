@@ -4,9 +4,8 @@ import { SeededRandom } from '../utils/SeededRandom';
 import { SpatialHash } from './SpatialHash';
 
 const near = (hash: SpatialHash, x: number, y: number, radius: number): number[] => {
-  const found: number[] = [];
-  hash.forEachNear(x, y, radius, (index) => found.push(index));
-  return found.sort((a, b) => a - b);
+  const out = new Int32Array(2000);
+  return [...out.subarray(0, hash.collectNear(x, y, radius, out))].sort((a, b) => a - b);
 };
 
 describe('SpatialHash', () => {
@@ -50,11 +49,19 @@ describe('SpatialHash', () => {
       [3, 1, 4, 1.5, 9, 2.6].forEach((x, index) => {
         hash.insert(index, x, 5);
       });
-      const order: number[] = [];
-      hash.forEachNear(4, 5, 6, (index) => order.push(index));
-      return order;
+      const out = new Int32Array(6);
+      return [...out.subarray(0, hash.collectNear(4, 5, 6, out))];
     };
     expect(fill()).toEqual(fill());
+  });
+
+  it('stops at the end of the output buffer', () => {
+    const hash = new SpatialHash(10, 10, 5);
+    [0, 1, 2].forEach((index) => {
+      hash.insert(index, 1, 1);
+    });
+
+    expect(hash.collectNear(1, 1, 1, new Int32Array(2))).toBe(2);
   });
 
   it('rejects a size that is not positive', () => {
