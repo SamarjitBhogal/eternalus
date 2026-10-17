@@ -1,11 +1,14 @@
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
+import { LaneFlowFields } from '../map/LaneFlowFields';
+import { WorldMap } from '../map/WorldMap';
 import type { GameState } from '../state/GameState';
 import { DeathSystem } from './DeathSystem';
 import { HordeSystem } from './HordeSystem';
@@ -40,6 +43,19 @@ export class DefaultSystemPipeline extends SystemPipeline {
       super([new MovementSystem(), new DeathSystem(), new InvariantSystem(invariants)]);
       return;
     }
+    const { map, config } = world.state;
+    const flowFields =
+      map === null
+        ? null
+        : new LaneFlowFields(
+            WorldMap.fromDefinition(
+              map,
+              config.map.navCellSize,
+              (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+            ),
+            map,
+            config.map.flowFieldCorridorHalfWidth,
+          );
     super([
       new HordeSystem(world.state, HORDE_STEERING.marchSpeedFactor),
       new MovementSystem(),
@@ -47,6 +63,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
         createDefaultStrategyRegistry().movement,
         { [RANKS_FORMATION.id]: RANKS_FORMATION },
         HORDE_STEERING.separationRadius,
+        flowFields,
       ),
       new SpawnSystem(world.state, world.factory, {
         definitions: world.definitions,

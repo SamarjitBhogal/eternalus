@@ -18,6 +18,8 @@ export const WANDER_SEED_7: Replay = {
       worldWidth: 1600,
       worldHeight: 900,
       navCellSize: 5,
+      flowFieldCorridorHalfWidth: 25,
+      flowFieldCellBudget: 2000,
       presetId: 'map-1',
     },
     match: {

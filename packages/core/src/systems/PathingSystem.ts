@@ -3,6 +3,7 @@ import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import type { LaneFlowFields } from '../map/LaneFlowFields';
 import { SpatialHash } from '../physics/SpatialHash';
 import type { EntityId } from '../state/EntityStore.types';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -34,26 +35,32 @@ export class PathingSystem implements System {
    * @param strategies - Every movement strategy by id; a mob's `Movement.strategyId` picks one.
    * @param formations - Every formation, by id.
    * @param cellSize - The neighbour grid's cell size: at least the largest neighbour radius.
+   * @param flowFields - The lane flow fields (06 §6), which this system also rebuilds within
+   *   `config.map.flowFieldCellBudget` each tick; without them mobs steer straight to their slots.
    */
   public constructor(
     private readonly strategies: StrategyRegistry['movement'],
     private readonly formations: Readonly<Record<string, FormationDefinition>>,
     private readonly cellSize: number,
+    private readonly flowFields: LaneFlowFields | null = null,
   ) {}
 
-  /** Steers every horde member for the next tick. */
+  /** Rebuilds dirty flow fields, then steers every horde member for the next tick. */
   public update({ state }: SystemContext): void {
+    this.flowFields?.rebuildDirty(state.config.map.flowFieldCellBudget);
     const { map, routes } = state;
     if (map === null || routes === null || state.hordes.size === 0) {
       return;
     }
     const buffers = this.fill(state, map.width, map.height);
-    const context = { ...buffers, target: this.target, out: this.out };
+    const base = { ...buffers, target: this.target, out: this.out };
     state.hordes.forEach((horde) => {
       const formation = this.formations[horde.formationId];
       if (formation === undefined) {
         return;
       }
+      const flow = this.flowFields?.field(horde.lane, horde.team);
+      const context = flow === undefined ? base : { ...base, flow };
       routes.pose(horde.lane, horde.team, horde.progress, this.target, this.forward);
       const anchorX = this.target.x;
       const anchorY = this.target.y;
