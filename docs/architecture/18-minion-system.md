@@ -92,9 +92,9 @@ the build split moved to the plan).
 | MS-16 | Minion modifiers keep their own status: strength by distance (MVP-full, DISC-24) and enraged (MVP) ship with the MVP; minion XP and the ghosted first wave are MVP-if-time. | plan       |
 | MS-19 | Steering follows 10 §9: separation from all neighbours, and obstacle and wall avoidance always outrank keeping a formation slot.                                            | §5.2       |
 | MS-20 | Match setup fills each lane with bot Legends up to `GameConfig.match.legendsPerLane`, counting the human's Legend in its lane; the Rover takes no lane.                     | §8         |
-| MS-23 | **Owner, DEC-38.** A horde marches in formation; members break formation to fight and to steer around obstacles, and re-form afterwards. Shape and spacing are content.     | §5.1       |
-| MS-24 | **Owner, DEC-39.** A horde advances up its lane toward the enemy from where it spawns; it turns aside only to attack an enemy that is right there.                          | §3.2, §4   |
-| MS-25 | **Owner, DEC-40, DEC-41.** Every lane minion spawns as part of a horde, developer-menu spawns included; no mob exists without its horde record.                             | §3.2, §3.5 |
+| MS-23 | **Owner, DEC-43.** A horde marches in formation; members break formation to fight and to steer around obstacles, and re-form afterwards. Shape and spacing are content.     | §5.1       |
+| MS-24 | **Owner, DEC-44.** A horde advances up its lane toward the enemy from where it spawns; it turns aside only to attack an enemy that is right there.                          | §3.2, §4   |
+| MS-25 | **Owner, DEC-45, DEC-46.** Every lane minion spawns as part of a horde, developer-menu spawns included; no mob exists without its horde record.                             | §3.2, §3.5 |
 | MS-26 | A mob disengages with `stop`, which clears both heading and attack target (03 §3).                                                                                          | §6.1       |
 | MS-27 | Controllers own target selection: minions and guards rank candidates in `ai/`, not through a `TargetingStrategy`.                                                           | §6.1       |
 

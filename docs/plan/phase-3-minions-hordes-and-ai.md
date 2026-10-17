@@ -30,7 +30,7 @@ performance budget is proved. The word is **horde**, not "hoard".
 [18-minion-system](../architecture/18-minion-system.md)) supersedes the minion items of sprints
 3.1–3.4 and 3.7; its §"Relation to Phase 3" lists exactly which. Read it before any sprint 3.1,
 3.2, 3.3, 3.4 or 3.7 task. A\* for Legends, forest camps, checkpoint assist spawns and the Rover
-stay here (DEC-42).
+stay here (DEC-47).
 
 - **Branch:** `phase/3-minions-hordes-and-ai` (stacked on `phase/2-…` until it merges).
 - **Weeks:** 6–7 (2026-11-09 → 2026-11-20). Week 6: sprints 3.1, 3.2, 3.3, 3.5; week 7:
