@@ -11,7 +11,7 @@ import type { GameState } from './GameState';
 /**
  * Fingerprints a match state as a 32-bit FNV-1a hash of a canonical serialisation
  * (architecture 03 §9): tick, phase and RNG state, then every entity in store order with its
- * component fields in a fixed order. It covers state the client never sees (velocity), so two
+ * component fields in a fixed order, then the hordes and spawn counters (architecture 18 §3.4, §4). It covers state the client never sees (velocity), so two
  * runs that diverge anywhere show it at the next hash. A new component with simulation state adds
  * its fields to `fieldsOf`.
  */
@@ -22,7 +22,32 @@ export class StateHasher {
     state.entities.forEach((entity) => {
       entities.push(StateHasher.fieldsOf(entity));
     });
-    return fnv1a(JSON.stringify([state.tick, state.phase, state.rng.getState(), entities]));
+    const parts: unknown[] = [state.tick, state.phase, state.rng.getState(), entities];
+    // Hordes and the spawn counters are appended only once a horde was asked for, so a match
+    // without hordes hashes exactly as before (recorded replay checkpoints stay valid).
+    const { light, dark } = state.teams;
+    if (state.hordes.issuedIds > 0 || light.unitsRequested > 0 || dark.unitsRequested > 0) {
+      const hordes: unknown[] = [
+        state.hordes.issuedIds,
+        light.unitsRequested,
+        light.unitsSuppressed,
+        dark.unitsRequested,
+        dark.unitsSuppressed,
+      ];
+      state.hordes.forEach((horde) => {
+        hordes.push([
+          horde.id,
+          horde.team,
+          horde.lane,
+          horde.formationId,
+          horde.leaderId,
+          horde.progress,
+          ...horde.memberIds,
+        ]);
+      });
+      parts.push(['hordes', ...hordes]);
+    }
+    return fnv1a(JSON.stringify(parts));
   }
 
   private static fieldsOf(entity: Entity): unknown[] {

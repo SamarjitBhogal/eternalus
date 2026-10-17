@@ -10,6 +10,7 @@ import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
 import { MemoryLogger } from '../diagnostics/MemoryLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
@@ -43,5 +44,25 @@ describe('DefaultSystemPipeline', () => {
     expect(runner.getComponent(Movement).speed).toBeGreaterThan(0);
     expect(state.entities.has(victim.id)).toBe(false);
     expect(logger.records).toEqual([]);
+  });
+
+  it('runs the horde systems in the order of architecture 10 §9 and 18 §3.2', () => {
+    const logger = new MemoryLogger();
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+
+    const pipeline = new DefaultSystemPipeline(
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      { state, factory },
+    );
+
+    expect(pipeline.names).toEqual([
+      'hordes',
+      'movement',
+      'pathing',
+      'spawn',
+      'death',
+      'invariants',
+    ]);
   });
 });

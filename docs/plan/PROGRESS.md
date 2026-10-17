@@ -990,3 +990,56 @@ The example below is fenced so it is not read as a real entry.
   this branch's DEC-38 to DEC-42.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: push the branch so PR #33 shows the merge.
+
+### 2026-10-15 — Minion system M1 (marching) — feat/minion-m1-marching (stacked on docs/minion-system-design, uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done (minion plan M1; the human's choices: brains deferred to M2, spawn at the map's
+  tower and Stronghold positions, client wired):
+  - **Prototype escort deleted (DEC-35):** `FollowLeaderController`, `AiSystem`,
+    `Controller.types`, the `Brain` component, the follow-leader profile, the `EntityStore`
+    PROTO helpers, and `Match.spawnEscort` with `PROTOTYPE_ESCORT` in the client.
+  - **Content:** `light-minion` is now the real light lane minion (balancing.md anchors, no
+    controller). New `medium-minion` and `heavy-minion` (`TUNE` placeholders, MS-18), with
+    `MediumMob` and `HeavyMob` classes and registry lines. Also `content/ai/` (horde steering,
+    worst-lane weights) and `content/structures/spawnWaves.ts` (DISC-10).
+  - **State:** `HordeStore`, `LaneRoutes` and the map on `GameState`; hordes are in the state
+    hash, appended only once a horde has existed.
+  - **Systems:** `HordeSystem` (records, membership, leader promotion, dissolve, waypoint
+    progress), `SpatialHash` (`physics/`), `LaneFollowMovementStrategy` with `PathingSystem`,
+    `SpawnSystem` (opening hordes, tower and Stronghold waves, unit cap with the new
+    `spawn-suppressed` event), and `worstLane` (enemy pressure; the towers-lost term is 0 until
+    M2).
+  - **Config:** `GameConfig.match.fallbackWorstLane`, with validation.
+  - **API:** `SimulationOptions.map` (an API change); the client passes the map.
+  - **Design fix found by the scenario test:** a leader that reacted to separation was pushed
+    off its lane by its own followers and the horde never stopped. The leader now ignores
+    neighbours (doc 18 §5.1).
+  - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and
+    stand-ins; doc 03 gains the `spawn-suppressed` event.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 485 passed (485)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review, commit on the human's request, then the pre-PR gate; M2 waits on sprints
+  2.1 and 2.2.
+
+### 2026-10-17 — Minion system M1 refresh — feat/minion-m1-marching (merged docs/minion-system-design, uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done: fast-forwarded this branch to `docs/minion-system-design` (the PR #33 review
+  rework), popped the M1 WIP stash (doc conflicts resolved in favour of the reviewed design) and
+  brought the code in line with the new doc 18:
+  - **Formation (DEC-38):** `content/mobs/formations/ranks.ts`; `PathingSystem` lays out the slots
+    around each horde's anchor and `LaneFollowMovementStrategy` steers every mob, leader included,
+    to its slot with separation from all neighbours (10 §9). The old leader-follow steering and
+    `followDistance` are gone.
+  - **Anchor (18 §4):** `progress` is world units from the horde's own gate; `HordeSystem` advances
+    it at `marchSpeedFactor` of the slowest member's speed and no longer creates records.
+  - **Spawning (DEC-39, DEC-40):** `SpawnSystem` creates members and record in one step, then emits
+    the events; the anchor starts at the lane point nearest the spawn point. The unit cap counts
+    into `GameState.teams` (`unitsRequested`, `unitsSuppressed`), hashed; the `spawn-suppressed`
+    event is removed.
+  - **Worst lane (18 §3.3):** `state/LaneAssessment.ts` (`assessLanes`) with the three terms
+    (structure terms constant until M2), ties to the middle lane; `systems/worstLane`,
+    `WORST_LANE_WEIGHTS` and `GameConfig.match.fallbackWorstLane` are removed.
+  - **Order and ids:** pipeline `hordes → movement → pathing → spawn → death → invariants`, pinned
+    by a test through the new `SystemPipeline.names`; horde members sort in string order.
+  - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and stand-ins.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 486 passed (486)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review; commit on the human's request; then the pre-PR gate.

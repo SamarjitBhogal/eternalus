@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { Brain } from '../../components/Brain';
 import { Collider } from '../../components/Collider';
 import { Health } from '../../components/Health';
 import { Movement } from '../../components/Movement';
@@ -32,22 +31,13 @@ describe('LightMob', () => {
     expect(dummy.getComponent(Vision).radius).toBe(definition.visionRadius);
   });
 
-  it('gets a Brain only when its definition names a controller', () => {
+  it('builds the light lane minion with the stats of its definition', () => {
+    const definition = MOB_DEFINITIONS.get('light-minion');
     const minion = new LightMob('entity-1', 'light-minion');
-    const dummy = new LightMob('entity-2', 'training-dummy');
 
-    minion.spawn({
-      definition: MOB_DEFINITIONS.get('light-minion'),
-      position: { x: 0, y: 0 },
-      team: 'light',
-    });
-    dummy.spawn({
-      definition: MOB_DEFINITIONS.get('training-dummy'),
-      position: { x: 0, y: 0 },
-      team: 'light',
-    });
+    minion.spawn({ definition, position: { x: 0, y: 0 }, team: 'light' });
 
-    expect(minion.getComponent(Brain).controllerId).toBe('follow-leader');
-    expect(dummy.hasComponent(Brain)).toBe(false);
+    expect(minion.getComponent(Health).current).toBe(definition.baseHealth);
+    expect(minion.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
   });
 });

@@ -1,12 +1,9 @@
-import { AiSystem } from './ai/AiSystem';
-import { FollowLeaderController } from './ai/FollowLeaderController';
 import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { validateGameConfig } from './config/validateGameConfig';
-import { FOLLOW_LEADER_PROFILE } from './content/ai/followLeaderProfile';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
@@ -48,25 +45,22 @@ export class Simulation {
     systems,
     debug = RELEASE_DEBUG_CONFIG,
     content,
+    map,
   }: SimulationOptions) {
-    this.state = new GameState(validateGameConfig(config), seed);
-    this.commandContext = {
-      state: this.state,
-      factory: new EntityFactory(
-        createDefaultEntityRegistry(),
-        content ?? loadDefaultContent(this.state.config.tickRate),
-      ),
-    };
+    this.state = new GameState(validateGameConfig(config), seed, map ?? null);
+    // One factory for commands and spawning, so entity ids come from one counter.
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      content ?? loadDefaultContent(this.state.config.tickRate),
+    );
+    this.commandContext = { state: this.state, factory };
     this.systemContext = { state: this.state, logger };
-    // PROTOTYPE(PROTO-01) TEMPORARY: replace this hand-built controller list with
-    // `ai/defaultControllerRegistry.ts` (11 §2) and `FollowLeaderController` with `MinionController`.
     this.pipeline =
       systems === undefined
-        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), [
-            new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
-              this.queue.enqueue(command);
-            }),
-          ])
+        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), {
+            state: this.state,
+            factory,
+          })
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(

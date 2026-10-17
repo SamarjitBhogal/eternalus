@@ -2,24 +2,37 @@ import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { GameConfig } from '../config/GameConfig.types';
+import type { MapDefinition } from '../content/maps/maps.types';
 import type { Entity } from '../entities/Entity';
+import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
 import { EntityStore } from './EntityStore';
 import type { RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
-import type { MatchPhase, RecordedCommand } from './GameState.types';
+import type { MatchPhase, RecordedCommand, TeamState } from './GameState.types';
+import { HordeStore } from './HordeStore';
+import { LaneRoutes } from './LaneRoutes';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
 
 /**
- * The aggregate root of one match: config, the seeded RNG, the entities, the event channel and
- * the tick. Changed only inside `Simulation.step()`.
+ * The aggregate root of one match: config, the seeded RNG, the map, the entities, the hordes, the
+ * team counters, the event channel and the tick. Changed only inside `Simulation.step()`.
  */
 export class GameState {
   /** The only source of randomness in the match. */
   public readonly rng: SeededRandom;
   public readonly entities = new EntityStore();
+  /** The lane hordes (architecture 18 §4). */
+  public readonly hordes = new HordeStore();
+  /** Each playable team's match counters. */
+  public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = {
+    light: { unitsRequested: 0, unitsSuppressed: 0 },
+    dark: { unitsRequested: 0, unitsSuppressed: 0 },
+  };
+  /** The map's lanes as each team walks them; `null` for a match without a map. */
+  public readonly routes: LaneRoutes | null;
   public readonly events: GameEvents;
   /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
   public readonly phase: MatchPhase = 'countdown';
@@ -30,13 +43,17 @@ export class GameState {
   /**
    * @param config - A config that passed `validateGameConfig()`.
    * @param seed - The match seed (a whole number from 0 to 2^32 - 1).
+   * @param map - The generated map; without one, nothing spawns on lanes.
    */
   public constructor(
     public readonly config: GameConfig,
     /** The match seed, kept for diagnostic reports (seed + tick reproduce the moment). */
     public readonly seed: number,
+    /** The generated map of the match, or `null` (most unit tests). */
+    public readonly map: MapDefinition | null = null,
   ) {
     this.rng = new SeededRandom(seed);
+    this.routes = map === null ? null : new LaneRoutes(map);
     this.events = new GameEvents(() => this.currentTick);
     this.events.on('entity-removed', (removal) => {
       this.announcedRemovals.push(removal);
