@@ -93,9 +93,9 @@ Reply inline (`Decision: …`).
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
       sprint is "this sprint": S1, which ends 2026-10-16, or S2? (2) Your bot-AI system: may its
       file live under `systems/`, or must it stay in `ai/`? (Today it is in `ai/`, because core
-      `AGENTS.md` forbids `systems/` importing `ai/`, which 02 §2 allows.) (3) Add the
-      `PROTOTYPE(<id>) TEMPORARY` marker convention to `AGENTS.md` so every future prototype uses
-      it? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
+      `AGENTS.md` forbids `systems/` importing `ai/`, which 02 §2 allows; audit A23-18.) (3) Add
+      the `PROTOTYPE(<id>) TEMPORARY` marker convention to `AGENTS.md` so every future prototype
+      uses it (audit A23-17)? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
       what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'` lists them. Agents: do not build on or
       extend marked code. The two departures you were asked to confirm, speed 5.4 m/s and mass
       0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`). **Agent note
