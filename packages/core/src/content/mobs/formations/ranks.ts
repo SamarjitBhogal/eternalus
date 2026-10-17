@@ -1,6 +1,6 @@
 import type { FormationDefinition } from './formations.types';
 
-/** The default block of ranks every lane horde marches in (DEC-38, architecture 18 §5.1). */
+/** The default block of ranks every lane horde marches in (DEC-43, architecture 18 §5.1). */
 export const RANKS_FORMATION = {
   id: 'ranks',
   ranksWidth: 4, // TUNE:

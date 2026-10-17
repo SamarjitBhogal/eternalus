@@ -1067,3 +1067,13 @@ The example below is fenced so it is not read as a real entry.
     instead of a `hordeId` field, raised as better than the design.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 490 passed (490)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: critic re-check, then open the M1 PR stacked on PR #33.
+
+### 2026-10-17 — Phase 2 sprint 2 / minion docs, DEC renumber — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done: the owner rulings from the PR #33 review, logged earlier as DEC-38 to DEC-42,
+  are renumbered DEC-43 to DEC-47. DEC-38 (Legend skins), DEC-39 (the Phase 1 waiver) and DEC-40
+  to DEC-42 (PR #36's status rulings) were already taken. Changed in the decisions log, doc 18
+  (MS-23 to MS-25) and the Phase 3 plan; the earlier entries in this log keep the old numbers as
+  written.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: merge into `feat/minion-m1-marching`.
