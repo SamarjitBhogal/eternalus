@@ -18,6 +18,7 @@ const contextOf = (points: readonly [number, number][], target: { x: number; y: 
     found: new Int32Array(points.length),
     target,
     out: { x: 0, y: 0 },
+    flow: null,
   } satisfies MovementContext;
 };
 

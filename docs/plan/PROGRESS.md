@@ -1104,3 +1104,16 @@ The example below is fenced so it is not read as a real entry.
     removed; no dirty trigger and no wall-avoidance term added).
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 512 passed (512)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: review; commit on the human's request; then the pre-PR gate (critic, ponytail).
+
+### 2026-10-17 — Minion system M4, pre-PR gate — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `62e8a61..4bf6e7b`) approved; its minor
+  findings are fixed: `PathingSystem` builds one movement context per tick and sets each horde's
+  `flow` on it (`MovementContext.flow` is now `FlowQuery | null`), the saddle fallback in
+  `FlowField.directionAt` computes its cell inline (no allocation on the hot path), and the
+  rebuild test asserts the exact queue size after a repeated `markDirty`. `ponytail:` notes now
+  name the whole-grid reset in `FlowFieldBuilder.begin`, the `UNREACHED` cost ceiling and the
+  wall-pointing stand-in. Not done: the optional DRY helper for the blocking rule.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 512 passed (512)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: draft PR to `phase/2-sprint-2-work`; merge after #33 and #38, then resolve the
+  overlap with M2a (#39).

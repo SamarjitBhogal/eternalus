@@ -14,7 +14,7 @@ type NeighbourQuery = {
  * A lane's flow field as a strategy sees it. `map/FlowField` satisfies it; a port because
  * `entities/` may not import `map/` (architecture 02 §2).
  */
-type FlowQuery = {
+export type FlowQuery = {
   /** Whether the first `maxDistance` of the straight line between two points is walkable. */
   isLineClear(fromX: number, fromY: number, toX: number, toY: number, maxDistance: number): boolean;
   /** Writes the field's unit direction at `(x, y)` into `out`; `false` where it has none. */
@@ -34,8 +34,8 @@ export type MovementContext = {
   readonly found: Int32Array;
   /** Where the unit wants to be: a horde mob's formation slot. */
   readonly target: Vec2;
-  /** The flow field of the unit's lane and team, when the match has a walkability grid. */
-  readonly flow?: FlowQuery;
+  /** The flow field of the unit's lane and team, or `null` when the match has none. */
+  readonly flow: FlowQuery | null;
   /** Scratch the strategy writes its answer into and returns, so nothing allocates. */
   readonly out: MutableVec2;
 };

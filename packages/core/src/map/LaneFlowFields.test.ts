@@ -176,8 +176,12 @@ describe('LaneFlowFields', () => {
       throw new Error('no field');
     }
     const budget = 300;
+    const holdingGoal = fields.fields.filter(({ mask }) => mask[field.goal] === 1).length;
     fields.markDirty([field.goal]);
+    expect(fields.pending).toBe(holdingGoal);
+    // Marking the same cells again queues nothing twice.
     fields.markDirty([field.goal]);
+    expect(fields.pending).toBe(holdingGoal);
     const queued = fields.pending;
     let ticks = 0;
     while (fields.pending === queued) {

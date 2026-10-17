@@ -32,7 +32,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
     // The lane flow field takes over where the straight line to the slot is blocked (MS-19).
     const isRouted =
       !isThere &&
-      flow !== undefined &&
+      flow !== null &&
       !flow.isLineClear(x, y, target.x, target.y, this.profile.blockedLookAhead) &&
       flow.directionAt(x, y, out);
     if (!isRouted) {

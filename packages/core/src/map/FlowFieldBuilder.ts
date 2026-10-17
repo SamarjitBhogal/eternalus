@@ -17,8 +17,14 @@ import type { WorldMap } from './WorldMap';
  * neighbours with octile costs and no corner cutting, ordered by cost then cell index. A cell's
  * direction is chosen when it settles, among the already settled neighbours it is exactly
  * downhill of, in its team's preference order, so the result never depends on the heap order.
- * Blocked corridor cells beside open ground point out of it (`pointWallsOut`). It works in its own buffers and swaps them into the field when the fill completes, so the old
- * field serves until then. Allocation-free after construction.
+ * Blocked corridor cells beside open ground point out of it (`pointWallsOut`). It works in its
+ * own buffers and swaps them into the field when the fill completes, so the old field serves
+ * until then. Allocation-free after construction.
+ *
+ * @remarks ponytail: `begin` resets whole-grid buffers outside the cell budget (cheap at today's
+ * ~58k cells; reset only the previous field's corridor cells if grids grow), and a cost that would
+ * pass `UNREACHED` (0xffff) is never relaxed, so a corridor longer than ~6,500 straight cells
+ * silently trims its far end (widen the field to `Uint32Array` if maps grow that large).
  */
 export class FlowFieldBuilder {
   private integration: Uint16Array;
@@ -115,6 +121,9 @@ export class FlowFieldBuilder {
    * cheaper open cell, or an equally cheap one its team prefers. Cells settle cheapest first, so
    * a wall cell ends up leading to its cheapest open neighbour, and a unit pushed into a wall is
    * led out and on (a stand-in for the wall-avoidance term of architecture 10 §9).
+   *
+   * ponytail: a stand-in; the wall-avoidance term arrives with `CollisionSystem` (10 §8–§9), and
+   * walls then stop pointing anywhere.
    */
   private pointWallsOut(field: FlowField, cell: number, col: number, row: number): void {
     const { cols, rows } = this.grid;

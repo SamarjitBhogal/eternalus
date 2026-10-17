@@ -2,6 +2,7 @@ import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
+import type { FlowQuery, MovementContext } from '../entities/strategies/MovementStrategy.types';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import type { LaneFlowFields } from '../map/LaneFlowFields';
 import { SpatialHash } from '../physics/SpatialHash';
@@ -53,14 +54,19 @@ export class PathingSystem implements System {
       return;
     }
     const buffers = this.fill(state, map.width, map.height);
-    const base = { ...buffers, target: this.target, out: this.out };
+    // One context per tick; each horde sets its own lane's field, so nothing is built per horde.
+    const context: Omit<MovementContext, 'flow'> & { flow: FlowQuery | null } = {
+      ...buffers,
+      target: this.target,
+      out: this.out,
+      flow: null,
+    };
     state.hordes.forEach((horde) => {
       const formation = this.formations[horde.formationId];
       if (formation === undefined) {
         return;
       }
-      const flow = this.flowFields?.field(horde.lane, horde.team);
-      const context = flow === undefined ? base : { ...base, flow };
+      context.flow = this.flowFields?.field(horde.lane, horde.team) ?? null;
       routes.pose(horde.lane, horde.team, horde.progress, this.target, this.forward);
       const anchorX = this.target.x;
       const anchorY = this.target.y;

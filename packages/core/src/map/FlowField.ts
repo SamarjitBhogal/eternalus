@@ -114,11 +114,12 @@ export class FlowField {
     const size = sqrt(sumX * sumX + sumY * sumY);
     if (size === 0) {
       // A saddle, where the field splits around an obstacle: take the cell underfoot's way.
-      const here = this.grid.cellAt({ x, y });
-      const step =
-        here === null
-          ? NO_DIRECTION
-          : (this.directionCells[here.row * cols + here.col] ?? NO_DIRECTION);
+      const hereCol = Math.floor(x / cellSize);
+      const hereRow = Math.floor(y / cellSize);
+      const isInside = hereCol >= 0 && hereRow >= 0 && hereCol < cols && hereRow < rows;
+      const step = isInside
+        ? (this.directionCells[hereRow * cols + hereCol] ?? NO_DIRECTION)
+        : NO_DIRECTION;
       if (step === NO_DIRECTION) {
         return false;
       }
