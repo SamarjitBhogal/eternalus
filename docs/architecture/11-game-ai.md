@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-15
+last-reviewed: 2026-10-17
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -177,6 +177,7 @@ export const laneMinionAggro = {
     'turret-attacking-ally-minion',
     'closest-minion',
     'closest-legend',
+    'lane-objective', // the horde's next standing structure (18 §6.2)
   ],
   reevaluateEveryTicks: 15, // TUNE
   leashRadius: 700, // TUNE

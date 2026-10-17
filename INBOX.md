@@ -83,11 +83,11 @@ Reply inline (`Decision: …`).
 - [ ] **Minion system (PR #33 review) — two decisions still open.** (1) **The worst lane
       (MS-9):** doc 18 §3.3 now scores your game doc's terms (structure damage not dealt,
       structures lost, pushed back), as one `LaneAssessment` shared by the heavy horde and the
-      corner-camp reward wave, with a worked example. Sign off the terms and weights, or name
-      others. (2) **Horde size and cadence (your M7):** size from (a) `hordeSizes` in config only,
+      corner-camp reward wave, with a worked example. Sign off the terms, the weights and the tie-break (ties go to
+      the middle lane, so the first heavy horde goes down it), or name others. (2) **Horde size and cadence (your M7):** size from (a) `hordeSizes` in config only,
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
-      cadences (plan §2 stand-in). Details: doc 18 §12.
+      cadences (plan §2 stand-in). Details: doc 18 §10.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which

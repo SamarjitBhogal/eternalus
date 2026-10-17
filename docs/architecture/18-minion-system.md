@@ -25,6 +25,8 @@ related:
   - docs/architecture/10-physics.md
   - docs/architecture/11-game-ai.md
   - docs/architecture/12-game-story-and-match-director.md
+  - docs/architecture/13-game-interface.md
+  - docs/architecture/15-diagnostics-and-runtime-testing.md
   - docs/reference/game-design/02-entities-and-units.md
 ---
 
@@ -81,12 +83,12 @@ the build split moved to the plan).
 | MS-4  | A horde marches as a group and fights as individuals; survivors re-form and march on.                                                                                       | §4, §5, §6 |
 | MS-7  | Lane following targets the lane's flow field (10 §9).                                                                                                                       | §5         |
 | MS-8  | Spawning follows the full DISC-10 schedule.                                                                                                                                 | §3         |
-| MS-9  | The worst lane is one `LaneAssessment` over the game doc's terms, shared by every consumer. **Open**: the owner signs off the terms and weights (§12).                      | §3.3       |
+| MS-9  | The worst lane is one `LaneAssessment` over the game doc's terms, shared by every consumer. **Open**: the owner signs off the terms, weights and tie-break (§10).           | §3.3       |
 | MS-10 | A spawn that only partly fits under the unit cap spawns the members that fit and counts the rest as suppressed.                                                             | §3.4       |
 | MS-11 | Target priority is doc 11's League-style aggro list, as content.                                                                                                            | §6         |
 | MS-12 | Hordes attack structures in lane order; a horde holds at a gate that is not breakable yet.                                                                                  | §6.2       |
 | MS-13 | Guards follow the doc 11 baseline; the owner's Tower Guardians refinement is guard content plus a second idle rule.                                                         | §7         |
-| MS-15 | No team commander and no goal seam in the MVP; both are post-MVP backlog items.                                                                                             | backlog    |
+| MS-15 | No team commander, goal seam or lane redirection in the MVP; all are [post-MVP backlog](../plan/backlog-post-mvp.md) items.                                                 | backlog    |
 | MS-16 | Minion modifiers keep their own status: strength by distance (MVP-full, DISC-24) and enraged (MVP) ship with the MVP; minion XP and the ghosted first wave are MVP-if-time. | plan       |
 | MS-19 | Steering follows 10 §9: separation from all neighbours, and obstacle and wall avoidance always outrank keeping a formation slot.                                            | §5.2       |
 | MS-20 | Match setup fills each lane with bot Legends up to `GameConfig.match.legendsPerLane`, counting the human's Legend in its lane; the Rover takes no lane.                     | §8         |
@@ -135,8 +137,10 @@ flowchart LR
 DISC-10 (decisions log): SpawnerTower light hordes, BuffTower medium hordes, Stronghold heavy
 hordes down the worst lane. The opening hordes are the `countdown` row of doc
 [12 §2](12-game-story-and-match-director.md#2-matchphase-and-the-state-pattern), counted by
-`GameConfig.match.initialHordesPerTeam`. Where horde sizes and cadences live is an open owner
-decision (§12); until it is made this doc names no source for them.
+`GameConfig.match.initialHordesPerTeam`. Horde sizes per weight class are
+`GameConfig.match.hordeSizes` (FR-037) and cadences are spawner data (`SpawnWave.everyTicks`,
+DISC-10); the owner may move either (§10). This doc names where the numbers live and never
+copies them.
 
 ### 3.2 `SpawnSystem` and the spawn pipeline
 
@@ -151,8 +155,8 @@ inserted into `state.hordes`, and only then are `entity-spawned` (per member) an
 `horde-spawned { hordeId, lane, team, memberIds }` emitted. No listener creates the record, so no
 mob ever exists without its horde (MS-25).
 
-**Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `PathingSystem` →
-`MovementSystem` → `CollisionSystem` → … → `SpawnSystem` (schedule and fulfilment) → `DeathSystem`
+**Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `MovementSystem` →
+`PathingSystem` → `CollisionSystem` (10 §9) → … → `SpawnSystem` (schedule and fulfilment) → `DeathSystem`
 → `InvariantSystem` → `SnapshotSystem`. A horde spawned on tick N has its members and record when
 the invariants and the snapshot of tick N run, and its first decisions in tick N+1.
 
@@ -170,9 +174,11 @@ flow-field corridor (10 §9) therefore includes the ground between the Stronghol
 The game doc defines the worst-off lane as the one with the "lowest structure damage, lost the most
 structures, pushed furthest back" (source game doc, Outer camps; reference 04 §"Outer camps"). This
 is one query, `assessLanes(state, team, weights)` in `state/LaneAssessment.ts`, a pure function
-over `GameState`. It lives in `state/` so both of its consumers can reach it: `SpawnSystem`
+over `GameState`; lane lengths and the per-lane structure lists come from `state.world` (03 §2),
+and the weights are a parameter, so it imports nothing beyond `state/`. It lives there so both of its consumers can reach it: `SpawnSystem`
 (`systems/`, the Stronghold's scheduled heavy horde, DISC-10) and the corner-camp boss reward wave
-(`match/`, doc 12 §7), which 02 §2 allows to import only `state/`, `config/` and `utils/`.
+(`match/`, doc 12 §7), which 02 §2 allows to import only `state/`, `config/` and `utils/`; a `match/` caller receives its
+weights from the composition root (`Simulation`), never by importing `content/`.
 
 Every term runs from 0 (best) to 1 (worst) and is computed per lane from the team's point of view:
 
@@ -194,19 +200,19 @@ score(lane) =
   enemy horde is on its own half. It reads horde positions, not unit counts, so weight classes
   count the same. Legends are left out: they roam between lanes, and the game doc's terms are
   about structures and the front line.
-- **Choice.** The highest score wins; ties go to the lane nearest the middle
+- **Choice** (`Recommendation:`, part of §10 item 1). The highest score wins; ties go to the lane nearest the middle
   (`floor(numLanes / 2)` by `MapLane.index`), then to the lower index. At match start every lane
   ties (each term is 1, 0, 0), so the first heavy horde goes down the middle lane with no extra
   config value.
-- **Weights** are content (`TUNE`, `Recommendation:` one third each), read from the content
-  catalogue by the caller. The boss reward wave may pass its own weights.
+- **Weights** are content (`TUNE`, `Recommendation:` one third each), passed in by the caller.
 - **numLanes 3 and 5.** Every term is per lane and normalised, so the lane count only changes how
   many lanes are scored; the middle tie-break uses the actual count.
 - **Cost.** Evaluated only on the tick a consumer needs it (a heavy horde every DISC-10 interval, a
   boss reward). It walks each lane's structure list (§6.2) and `state.hordes` once: O(lane
   structures + hordes), no unit scan and no spatial query.
 
-**Worked example** (`numLanes` 3, lanes `L0`–`L2`, equal weights, scores for Light):
+**Worked example** (equal weights, scores for Light; with `numLanes` 5 the same states on lanes
+`L1`–`L3` choose the same lanes shifted by one, and an all-tie picks `L2`). `numLanes` 3, lanes `L0`–`L2`:
 
 | State                                                                                                                  | `L0`                        | `L1`                     | `L2`                     | Chosen                                               |
 | ---------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------ | ------------------------ | ---------------------------------------------------- |
@@ -219,8 +225,8 @@ score(lane) =
 Before each batch `SpawnSystem` checks `GameConfig.limits.maxUnitsPerTeam`. If only part of the
 batch fits, it spawns that many; if none fits, no horde is created. `spawn-suppressed` is a
 **counter, not an event**: `TeamState` (03 §2) keeps `unitsRequested` and `unitsSuppressed` per
-team, both hashed, which `TeamUnitCapInvariant` (15) and the developer menu (13 §4) read and from
-which Phase 6 computes the suppressed share.
+team, both hashed, which `TeamUnitCapInvariant` (15), the developer menu (13 §4) and the
+suppressed-share metric read.
 
 ### 3.5 Developer-menu spawns
 
@@ -241,7 +247,7 @@ export type HordeId = string;
 export type Horde = {
   readonly id: HordeId;
   readonly team: Team;
-  readonly weightClass: 'light' | 'medium' | 'heavy'; // derived from the size source once §12 settles it
+  readonly weightClass: 'light' | 'medium' | 'heavy'; // the hordeSizes keys
   readonly lane: string; // MapLane.id
   readonly formationId: string; // content, §5.1
   readonly memberIds: readonly EntityId[]; // string order
@@ -253,14 +259,16 @@ export type Horde = {
 `HordeSystem` (SRP: membership, leader and lane progress; it never creates records, §3.2):
 
 - **Membership.** On `entity-removed` (death, `dev-removed` or any other cause) and on
-  `team-changed` (a revived or converted mob leaves its old horde) it removes the member. If the
-  leader left, the lowest surviving id becomes leader. At zero members it removes the record and
+  `team-changed` (a revived or converted mob leaves its old horde) it removes the member on its next pass (03 §4), so a member removed late in tick N leaves
+  the record at the start of tick N+1; `HordeMembershipConsistentInvariant` accepts members in
+  `entities.removedThisTick`. `AiSystem` runs before that pass, so a controller may see a
+  removed id for one tick and treats it as absent. If the leader left, the lowest surviving id becomes leader. At zero members it removes the record and
   emits `horde-dissolved`.
 - **Progress.** `progress` is the horde's **formation anchor**, the lane point the formation is
-  laid out around (§5.1). While the leader is `marching`, `HordeSystem` advances it by the march
+  laid out around (§5.1). While the leader has no attack target (`Combat.targetId` empty), `HordeSystem` advances it by the march
   speed (the slowest member's `maxSpeed`, times a `TUNE` content factor), but never past the hold
   distance in front of the horde's next standing objective (§6.2), so the horde gathers there.
-  While the leader is engaging or returning, the anchor holds. At the lane's end the horde stays
+  While the leader has one, the anchor holds. At the lane's end the horde stays
   until it dies or the enemy Stronghold falls.
 
 ## 5. Movement
@@ -272,8 +280,8 @@ default, `ranks`, is a block: the leader at the front centre, the other members 
 `ranksWidth` abreast behind it, `slotSpacing` apart.
 
 - **Slots are derived, never stored.** A member's slot comes from its index in `memberIds` (the
-  leader excluded): rank `floor(i / ranksWidth) + 1`, file `i % ranksWidth` centred on the lane.
-  The offset is `−forward × rank × slotSpacing + right × file × slotSpacing`, where `forward` is
+  leader excluded): rank `floor(i / ranksWidth) + 1`, file `i % ranksWidth − (ranksWidth − 1) / 2`, so
+  the block is centred on the lane. The offset is `−forward × rank × slotSpacing + right × file × slotSpacing`, where `forward` is
   the lane's direction at `progress` and `right` its perpendicular, as vectors (ADR 0012). When a
   member dies the ranks close up on the next tick, with no bookkeeping.
 - **Another shape** (wedge, column) is a new formation entry and its slot function, not a change to
@@ -333,7 +341,8 @@ Each lane has an ordered list of each team's structures along it (towers, then t
 the Stronghold). The list is part of the `WorldMap` structures index (03 §2), built once when the
 map is built and read by `HordeSystem`, `MinionController` and `LaneAssessment`. A horde's **next
 objective** is the first enemy structure on its lane, in its marching direction, that still stands.
-Minions in range attack it when no unit outranks it in the aggro list.
+It ranks as `lane-objective`, the last entry of the aggro priority list (11 §4.3), so minions
+in range attack it when no unit outranks it.
 
 - **A gate that is not breakable yet** (the DISC-09 threshold, 07 §3): the horde holds in front of
   it and minions fight whatever comes in range. When `structure-breakability-changed` makes it
@@ -350,9 +359,9 @@ and melee guards at the `Stronghold`, per the game doc) are Mobs owned by their 
 - `GuardController` runs `holding → engaging → returning → holding`. It reuses the acquire, engage
   and return logic of §6.1 through a shared `LeashBehaviour` helper (DRY), including `stop` to
   disengage.
-- The differences are data: the anchor is the guard's post at the home structure, the leash is the
+- The differences are data: the leash is measured from the home structure, its radius is the
   structure's `GuardPlan.leashRadius` (07 §6; game doc: guards "don't leave the tower's
-  perimeter") and the idle state holds position.
+  perimeter") and the idle state holds the guard's post near the structure.
 - Guards move with `LeashedChaseMovementStrategy` (04 §4; 10 §9's "seek/arrival inside their
   leash"): chase `Combat.targetId` while it is set, otherwise return to the post.
 - `GuardWithinLeashInvariant` (15 §3) checks that no guard is farther than `leashRadius` plus a
@@ -388,8 +397,8 @@ Per doc 11 §8, plus:
   a tower-spawned horde advances from the tower, never back toward its own gate.
 - `SpawnSystem`: every DISC-10 source fires on its tick; a partial batch at the cap spawns what
   fits and counts the rest in `unitsSuppressed`.
-- `LaneAssessment`: the three worked-example states give the chosen lanes above, for `numLanes` 3
-  and 5.
+- `LaneAssessment`: the worked-example states give the chosen lanes above, for `numLanes` 3 and
+  their shifted versions for 5.
 - `LaneFollowMovementStrategy`: a horde walks a lane in formation with no overlap beyond a
   tolerance and no allocation per unit; a member blocked by an obstacle leaves its slot and
   re-forms.
@@ -399,32 +408,17 @@ Per doc 11 §8, plus:
 - Lane assignment: `legendsPerLane` is respected with the human counted and the Rover excluded.
 - Determinism: the same seed and command log give the same hash with hordes, guards and bots.
 
-## 10. Post-MVP extensions
+## 10. Open questions for the owner
 
-The goal seam (goals on hordes and bot Legends that any decision maker writes through commands: a
-team commander, an external model) and horde redirection between lanes are post-MVP backlog items
-([backlog](../plan/backlog-post-mvp.md)). Both would build on what is here: the `Command`
-vocabulary, the horde record and the per-lane flow fields.
-
-## 11. Naming
-
-Minions and hordes are getting new names (provisionally **Host** and **Cohort** or **legion**).
-The wording moves over gradually; until a rename is decided, code and docs say mob and horde.
-
-## 12. Open questions for the owner
-
-1. **The worst lane (MS-9).** Sign off the three terms and their weights in §3.3, or name others.
-2. **Horde size and cadence (PR #33 review M7).** Size: (a) `GameConfig.match.hordeSizes` only,
+1. **The worst lane (MS-9).** Sign off the three terms, their weights and the middle-lane
+   tie-break in §3.3 (the first heavy horde goes down the middle lane), or name others.
+2. **Horde size and cadence.** Size: (a) `GameConfig.match.hordeSizes` only,
    (b) counts in each spawner's wave table only, or (c) a horde definition in content (composition,
    size and formation per horde type) referenced by spawners. Cadence: per spawner
    (`SpawnWave.everyTicks`, DISC-10) or one `MatchConfig.hordeSpawnIntervalSeconds` (03 §10, 12 §2).
-   07 §6's source table rows follow the answer.
+   §3.1 and 07 §6's source table rows follow the answer.
 3. **PROTO-01, part 2 (`INBOX.md`).** May `AiSystem` live in `systems/`, or must it stay in `ai/`?
    It bears on §2's folder list.
-
-The removal of the PROTO-01 escort overlaps work item W6 of the
-[multiplayer and scalability plan](../plan/multiplayer-and-scalability-plan.md); whichever lands
-first does it.
 
 ## Related
 

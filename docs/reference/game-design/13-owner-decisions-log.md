@@ -32,7 +32,7 @@ ADRs > this log > the reference docs > the source transcriptions.
 | DEC-42 | **Do not drop Phase 3 scope**: the forest camps, checkpoint assist spawns (sprint 3.4) and A\* for Legends (sprint 3.2) are key to gameplay and stay in Phase 3; the minion plan supersedes only the items it covers.                                                                                                                                                                                                                              | `plan/minion-system-plan.md`; `plan/phase-3-minions-hordes-and-ai.md`                  |
 
 Still open from the same review: the worst-lane terms and weights (MS-9) and where horde size and
-cadence live (doc 18 §12). The reviewer's naming note (minions provisionally **Host**, hordes a
+cadence live (doc 18 §10). The reviewer's naming note (minions provisionally **Host**, hordes a
 **Cohort** or **legion**) is not a rename yet.
 
 ## Batch 2026-10-10 (INBOX answers, new Sprint 3 requirements)

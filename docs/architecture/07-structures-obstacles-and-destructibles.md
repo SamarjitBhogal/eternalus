@@ -202,7 +202,8 @@ export class Spawner {
 ```
 
 `SpawnSystem` walks every `Spawner` in id order and emits `spawn-requested` events that
-`EntityFactory` fulfils at the end of the tick (deferred spawns, deterministic order):
+`EntityFactory` fulfils at the end of the tick (deferred spawns, deterministic order); a horde
+batch is fulfilled in one step together with its horde record ([18](18-minion-system.md) §3.2):
 
 | Source          | Waves                                                                                   | Guards                                    | MVP status  |
 | --------------- | --------------------------------------------------------------------------------------- | ----------------------------------------- | ----------- |
@@ -214,9 +215,10 @@ export class Spawner {
 | `Cathedral`     | the gem summons the `GreaterBoss` mid-match via `MatchTimeline`                         | none                                      | phase 3     |
 
 Guards use `GuardController` with `leashRadius` ("don't leave the tower's perimeter") and respawn
-after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). Where horde sizes and
-cadences live is an open owner decision ([18-minion-system](18-minion-system.md) §12); the
-`Stronghold` and `BuffTower` rows above follow its answer and DISC-10.
+after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). Horde sizes are
+`GameConfig.match.hordeSizes` (FR-037) and cadences are spawner data (DISC-10); the owner may move
+either ([18-minion-system](18-minion-system.md) §10), and the `Stronghold` and `BuffTower` rows
+above follow that answer.
 
 ## 7. Capture points
 

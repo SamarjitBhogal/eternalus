@@ -911,3 +911,19 @@ The example below is fenced so it is not read as a real entry.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: the critic and ponytail gate on the updated branch; reply to the review comments;
   commit and push when the human asks.
+
+### 2026-10-17 — Phase 2 sprint 2 / minion docs, pre-PR gate — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done:
+  - Critic (`architecture-reviewer`) on `d125cad..aa36023`: one blocker (doc 18's pipeline order
+    contradicted 10 §9) and minor findings, all fixed: membership pruning timing and the horde
+    invariant accepting `removedThisTick`; sizes name FR-037/`hordeSizes`; the middle-lane
+    tie-break is an owner question; `lane-objective` ranks last in the 11 §4.3 list; the guard
+    leash is measured from the structure in 18 §7 and 15; import paths of `LaneAssessment`, the
+    strategy and `match/` callers; 03 §4 listeners, 07 §6 fulfilment and 12 §7 lane id updated;
+    interim text out of the doc 18 body; nits. Left open: naming the guard kinds (owner content).
+  - Ponytail cuts: doc 18's "Post-MVP extensions" and "Naming" sections and the boss wave's own
+    weights removed; open questions are now §10.
+  - Critic re-check: approve, no blockers.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: the owner answers doc 18 §10 (MS-9 sign-off, horde size and cadence, PROTO-01 part 2); then M1.

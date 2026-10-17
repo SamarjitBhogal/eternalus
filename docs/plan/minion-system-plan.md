@@ -52,14 +52,14 @@ scaled from the light minion, until balancing (Phase 6).
 
 ## 2. Interim stand-ins
 
-Each stand-in has a ceiling and is removed by the phase named.
+Each stand-in is removed by the phase named.
 
 | Stand-in                                                                                                                                                | Used in | Replaced by                                 |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------- |
 | Spawners are plain data records keyed by `(team, source, lane id)`, spawning at the point of the lane nearest their source                              | M1      | M2: the same records on the real structures |
 | `LaneAssessment` scores only `pushedBack`; the structure terms are 0 because no structure has health or can fall                                        | M1      | M2: all three terms                         |
 | The formation anchor and slots follow the lane polyline (seek with arrival), with no terrain-aware routing                                              | M1–M3   | M4: flow fields, behind the same strategy   |
-| Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §12, item 2) | M1      | the owner's answer, wherever it puts them   |
+| Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2) | M1      | the owner's answer, wherever it puts them   |
 | Without combat, opposing hordes jostle past each other and gather at the enemy end                                                                      | M1      | M2: they fight                              |
 
 ## Related
