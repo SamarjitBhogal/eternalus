@@ -16,6 +16,17 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
+      `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR
+      #35). (1) Can a stunned unit still act while its aim wobbles, or does stun keep "cannot
+      move, attack, cast or interact"? (2) Do the per-source stuns in `balancing.md` (0.5–1 s)
+      stand, with 2 s only the default? (3) How large is the wobble ("slightly")? (4) Does
+      blind's white vignette replace more-abilities §7's −70% vision radius, or come on top of
+      it, and does its 2–3 s fade start when blind lands or when it ends?
+  - Your answer (chat, 2026-10-16): "2 seconds. blind makes aim slightly wobbly (like stun), but
+    also causes the screen to have a heavy white vignette that dissipates over 2-3 seconds. yes,
+    aimed projectiles miss too"; picks: "Stun default", "Wobble causes misses", "Yes, stun
+    wobbles too".
 - [ ] **DEC-36 / DEC-37 — accept ADR 0016 and answer the plan §9 questions.** The course
       instructor's two new requirements, Duel multiplayer (DEC-36) and a server for hundreds or
       thousands of concurrent players (DEC-37), are planned now; must be implemented by the end of

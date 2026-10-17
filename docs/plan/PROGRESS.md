@@ -845,3 +845,27 @@ The example below is fenced so it is not read as a real entry.
   "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 117ms"; "Documentation
   check passed."
 - Next step: retarget PR #28 to `phase/2-sprint-2-work` and merge it.
+
+### 2026-10-16 — Phase 2 / sprint 2.2 — docs/status-effect-rulings — sholtzman + Claude Code
+
+- What was done: the owner's rulings on PR #35's status-effect questions, as a new 2026-10-16
+  batch of the decisions log:
+  - DEC-40: modifiers multiply, per stack and across statuses (05 §8 `op: 'mul'`).
+  - DEC-41: `StatusEffectApplier` and the cache recomputed on change are accepted as design;
+    whether the approval covers `09a48a6`'s wider applier is open.
+  - DEC-42: stun defaults to 2 s and wobbles aim. Blind's aim wobble makes basic attacks and
+    aimed projectiles veer off and usually miss (a miss is not guaranteed), with a white
+    vignette that fades over 2–3 s.
+  - DEC-38 and DEC-39 are taken elsewhere (skins; the Phase 1 waiver in PR #16). DEC-42's open
+    questions are a new `INBOX.md` item.
+  - Posted on PR #35: a strict-audit review (request changes, 22:55Z) and the rulings comment
+    (01:53Z). The rulings comment was posted without re-fetching the PR. The author's `09a48a6`
+    (reply at 23:32Z) had already applied review items 1 and 4, so the comment's instructions on
+    those are stale, and the guaranteed miss now lives in `CombatSystem`, not
+    `StatusModifierStep`. A correcting comment awaits the owner. The pre-PR critic found this.
+    The other fidelity and accuracy fixes it requested are applied to the rows above.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 91ms"; "Documentation
+  check passed."
+- Next step: PR #35 applies DEC-41's doc updates and DEC-42, and marks questions (1)–(4) of its
+  INBOX item `Decision:`; (5) stays open. The owner answers the DEC-42 item.
