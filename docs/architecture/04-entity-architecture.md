@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-15
+last-reviewed: 2026-10-17
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -163,7 +163,7 @@ A strategy is a stateless, shared object selected by a definition field and reso
 
 | Interface           | Contract                                           | MVP implementations                                                                                                                                                                                                                            | Selected by            |
 | ------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `AggroPriorityTargetingStrategy` (data-driven priority list), `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks)                                                                    | `definition.targeting` |
+| `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks); minions and guards rank targets in their controllers ([18](18-minion-system.md) §6.1)                                           | `definition.targeting` |
 | `AttackStrategy`    | `attack(self, target, weapon, ctx): void`          | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                                                                                         | `weapon.attack`        |
 | `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `LaneFollowMovementStrategy` (hordes, flow-field target; [18-minion-system](18-minion-system.md) §5), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movement`  |
 | `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                                                                                        | `definition.pickUp`    |
@@ -251,7 +251,7 @@ entities.
 ## 7. `Horde`, the composite
 
 A horde is **not** an entity: it is a Composite of Mob ids kept as plain data in `GameState` and
-managed by `HordeSystem`. Its record, lifecycle, movement and goal are owned by
+managed by `HordeSystem`. Its record, formation, lifecycle and movement are owned by
 [18-minion-system](18-minion-system.md) §4. Spelling is **horde** everywhere in our code and docs.
 
 ## 8. Team is a property, not a class (D10)

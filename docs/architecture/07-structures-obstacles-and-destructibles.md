@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-15
+last-reviewed: 2026-10-17
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -214,8 +214,9 @@ export class Spawner {
 | `Cathedral`     | the gem summons the `GreaterBoss` mid-match via `MatchTimeline`                         | none                                      | phase 3     |
 
 Guards use `GuardController` with `leashRadius` ("don't leave the tower's perimeter") and respawn
-after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). Horde sizes are
-`GameConfig.match.hordeSizes` ([18-minion-system](18-minion-system.md) §3.1).
+after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). Where horde sizes and
+cadences live is an open owner decision ([18-minion-system](18-minion-system.md) §12); the
+`Stronghold` and `BuffTower` rows above follow its answer and DISC-10.
 
 ## 7. Capture points
 

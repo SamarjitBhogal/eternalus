@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-17
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -59,7 +59,7 @@ export class GameState {
   public readonly rng: SeededRandom; // the only source of randomness
   public readonly entities: EntityStore; // deterministic, creation-order iteration
   public readonly world: WorldMap; // grid, cost field, flow fields, structures index
-  public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs
+  public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs, spawn counters (18 §3.4)
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
@@ -96,7 +96,7 @@ command log is a complete replay and cheats are replayable too.
 // Sketch: packages/core/src/commands/Command.types.ts (fields per type in `CommandPayloads`)
 export type Command =
   | { readonly type: 'move'; readonly actorId: EntityId; readonly direction: Vec2 }
-  | { readonly type: 'stop'; readonly actorId: EntityId }
+  | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading and attack target (18 §6.1)
   | { readonly type: 'attack-target'; readonly actorId: EntityId; readonly targetId: EntityId }
   | {
       readonly type: 'cast-ability';

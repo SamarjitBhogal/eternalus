@@ -887,3 +887,27 @@ The example below is fenced so it is not read as a real entry.
     - N5: goals use `MapLane.index`; the horde record keeps `MapLane.id`.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: the critic re-checks; commit and push if it reports no blockers.
+
+### 2026-10-17 — Phase 2 sprint 2 / minion docs, PR #33 review — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done (both reviews of PR #33 answered, in an interactive session with the author):
+  - Owner decisions from sholtzman's review logged as DEC-38 to DEC-42 (formation, advancing from
+    the spawn point, every lane mob spawns in a horde, dev spawns are hordes, Phase 3 scope kept)
+    and written into doc 18 (MS-23 to MS-25, §3.2, §3.5, §4, §5).
+  - The author's choices: the worst lane is one `LaneAssessment` in `state/` over the game doc's
+    terms, with a worked example (MS-9, still open for the owner's sign-off); `fallbackWorstLane`
+    is dropped (ties go to the middle lane). The goal seam and horde redirection move to
+    `backlog-post-mvp.md`; M4 is now flow fields only. `stop` clears the attack target (MS-26).
+    Controllers own target selection (MS-27; `AggroPriorityTargetingStrategy` leaves 04 §4).
+    Separation follows 10 §9, with the formation slot added to its priority list.
+  - Mechanical: the M-numbers moved from doc 18 to the plan (ADR 0011 rule 4); `legendsPerLane`
+    lane assignment without the Rover; `spawn-suppressed` is a `TeamState` counter; ids in string
+    order; one lane identifier (`MapLane.id`); `progress` in world units; lane objectives in the
+    `WorldMap` structures index; `GuardWithinLeashInvariant` in 15 §3; the PROTO-01 inventory and
+    a "no marker remains" done-when; the traceability table maps FR-037/FR-038 to doc 18; the
+    Phase 3 plan points to the minion plan and says `structure-destroyed`.
+  - Open questions listed in doc 18 §12 and `INBOX.md`: MS-9 weights, horde size and cadence
+    (M7, not picked), PROTO-01 part 2.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: the critic and ponytail gate on the updated branch; reply to the review comments;
+  commit and push when the human asks.

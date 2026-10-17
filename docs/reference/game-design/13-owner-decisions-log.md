@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-17
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,20 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-10-16 (PR #33 review: the minion system design, sholtzman)
+
+| ID     | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                           | Docs changed                                                                           |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| DEC-38 | **Hordes march in formation** (rejects the loose-flock proposal MS-5). Formation is the more sensible design and lore-accurate: a single swing of a large weapon should not wipe out a loose horde, and well-formed legions make a harder, structured fight. Formation is not rigid once combat starts: members may break it to fight, and it never stops a unit steering around an obstacle. Shape and spacing are `TUNE` content. FR-037 stands. | `architecture/18-minion-system.md` §1 (MS-23), §4, §5; `architecture/10-physics.md` §9 |
+| DEC-39 | **A horde advances up its lane from where it spawns**, toward the enemy; it turns aside only to attack an enemy that is right there. A horde spawned at a tower never walks back toward its own gate.                                                                                                                                                                                                                                              | `architecture/18-minion-system.md` §1 (MS-24), §3.2                                    |
+| DEC-40 | **Every lane minion spawns as part of a horde**: mobs and their horde membership are created together, so no mob exists without its horde record.                                                                                                                                                                                                                                                                                                  | `architecture/18-minion-system.md` §1 (MS-25), §3.2                                    |
+| DEC-41 | **Developer-menu mob spawns are hordes too**: `dev-spawn-mobs` spawns its mobs as one horde, with the lane taken from the origin.                                                                                                                                                                                                                                                                                                                  | `architecture/18-minion-system.md` §3.5; `architecture/13-game-interface.md` §4        |
+| DEC-42 | **Do not drop Phase 3 scope**: the forest camps, checkpoint assist spawns (sprint 3.4) and A\* for Legends (sprint 3.2) are key to gameplay and stay in Phase 3; the minion plan supersedes only the items it covers.                                                                                                                                                                                                                              | `plan/minion-system-plan.md`; `plan/phase-3-minions-hordes-and-ai.md`                  |
+
+Still open from the same review: the worst-lane terms and weights (MS-9) and where horde size and
+cadence live (doc 18 §12). The reviewer's naming note (minions provisionally **Host**, hordes a
+**Cohort** or **legion**) is not a rename yet.
 
 ## Batch 2026-10-10 (INBOX answers, new Sprint 3 requirements)
 

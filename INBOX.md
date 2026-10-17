@@ -80,6 +80,14 @@ Reply inline (`Decision: …`).
       starts the countdown while `menu` keeps building `MatchSetup`. Approve that text, or confirm
       that agents may apply it as delegated.
   -     Accept recommended option if it is cleaner long-term. For D, set to whichever is cleaner in the long-term.
+- [ ] **Minion system (PR #33 review) — two decisions still open.** (1) **The worst lane
+      (MS-9):** doc 18 §3.3 now scores your game doc's terms (structure damage not dealt,
+      structures lost, pushed back), as one `LaneAssessment` shared by the heavy horde and the
+      corner-camp reward wave, with a worked example. Sign off the terms and weights, or name
+      others. (2) **Horde size and cadence (your M7):** size from (a) `hordeSizes` in config only,
+      (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
+      spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
+      cadences (plan §2 stand-in). Details: doc 18 §12.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
@@ -90,7 +98,10 @@ Reply inline (`Decision: …`).
       it? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
       what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'` lists them. Agents: do not build on or
       extend marked code. The two departures you were asked to confirm, speed 5.4 m/s and mass
-      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`).
+      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`). **Agent note
+      (2026-10-17):** (1) is answered by your reply below and DEC-35: the escort goes together
+      with the real hordes, in minion plan phase M1, whose done-when is "no `PROTOTYPE(PROTO-01)`
+      marker remains in code". (2) and (3) are still open; (2) decides doc 18 §2's folder list.
   -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
