@@ -1,13 +1,14 @@
 import type { EntityId } from '../../state/EntityStore.types';
 import type { GameState } from '../../state/GameState';
+import { compareById } from '../../utils/compareById';
 import type { Vec2 } from '../../utils/geometry.types';
 import type { UnitFilter } from './Perception.types';
 
 /**
  * What a controller can see (architecture 11 §3): radius-bounded queries over `state.space`, never
- * a scan of the store. Results are in index order, which is store order, so they never depend on
- * the grid layout. One instance per `AiSystem`; its result array is reused, so read a result
- * before the next query.
+ * a scan of the store. Results are in id order (string order, 03 §2) and ties go to the lower id,
+ * so they never depend on the grid layout (11 §5). One instance per `AiSystem`; its result array
+ * is reused, so read a result before the next query.
  *
  * @remarks ponytail: no `structuresWithin` until structure entities exist (minion plan M2c).
  */
@@ -18,42 +19,52 @@ export class Perception {
   /** @param state - The match to look at. */
   public constructor(private readonly state: GameState) {}
 
-  /** The units within `radius` of `center` that pass `filter`, in store order. */
+  /** The units within `radius` of `center` that pass `filter`, in id order. */
   public unitsWithin(center: Vec2, radius: number, filter: UnitFilter): readonly EntityId[] {
     this.result.length = 0;
+    const count = this.query(center, radius);
     const space = this.state.space;
-    if (space === null) {
-      return this.result;
-    }
-    if (this.found.length < space.count) {
-      this.found = new Int32Array(Math.max(space.count, 2 * this.found.length));
-    }
-    const count = space.queryCircle(center.x, center.y, radius, this.found);
-    for (let at = 0; at < count; at += 1) {
+    for (let at = 0; at < count && space !== null; at += 1) {
       const id = space.idAt(this.found[at] ?? 0);
       if (this.passes(id, filter)) {
         this.result.push(id);
       }
     }
-    return this.result;
+    return this.result.sort(compareById);
   }
 
-  /** The unit nearest `center` within `radius` that passes `filter`; ties go to store order. */
+  /** The unit nearest `center` within `radius` that passes `filter`; ties go to the lower id. */
   public nearest(center: Vec2, radius: number, filter: UnitFilter): EntityId | null {
+    const count = this.query(center, radius);
     const space = this.state.space;
     let best: EntityId | null = null;
     let bestGap = Number.POSITIVE_INFINITY;
-    for (const id of this.unitsWithin(center, radius, filter)) {
-      const index = space?.indexOf(id) ?? 0;
-      const dx = (space?.positions[2 * index] ?? 0) - center.x;
-      const dy = (space?.positions[2 * index + 1] ?? 0) - center.y;
+    for (let at = 0; at < count && space !== null; at += 1) {
+      const index = this.found[at] ?? 0;
+      const id = space.idAt(index);
+      const dx = (space.positions[2 * index] ?? 0) - center.x;
+      const dy = (space.positions[2 * index + 1] ?? 0) - center.y;
       const gap = dx * dx + dy * dy;
-      if (gap < bestGap) {
+      const isCloser =
+        gap < bestGap || (gap === bestGap && best !== null && compareById(id, best) < 0);
+      if (isCloser && this.passes(id, filter)) {
         bestGap = gap;
         best = id;
       }
     }
     return best;
+  }
+
+  /** Fills `found` with the indexes within `radius` of `center`; 0 without an index. */
+  private query(center: Vec2, radius: number): number {
+    const space = this.state.space;
+    if (space === null) {
+      return 0;
+    }
+    if (this.found.length < space.count) {
+      this.found = new Int32Array(Math.max(space.count, 2 * this.found.length));
+    }
+    return space.queryCircle(center.x, center.y, radius, this.found);
   }
 
   private passes(id: EntityId, { hostileTo, kinds, aliveOnly }: UnitFilter): boolean {

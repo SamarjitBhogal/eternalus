@@ -1,5 +1,5 @@
 import type { Command } from '../commands/Command.types';
-import type { AiCadence } from '../content/ai/ai.types';
+import type { AiCadence, ControllerId } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import { compareById } from '../utils/compareById';
@@ -42,9 +42,30 @@ export class AiSystem {
   }
 
   /**
+   * Checks that every controller the definitions name is registered, so a content error stops
+   * the match at construction instead of mid-tick.
+   *
+   * @throws Error naming the first definition whose controller has no implementation.
+   */
+  public static assertRegistered(
+    definitions: readonly { readonly id: string; readonly controller?: ControllerId }[],
+    controllers: ControllerRegistry,
+  ): void {
+    const missing = definitions.find(
+      ({ controller }) => controller !== undefined && controllers[controller] === undefined,
+    );
+    if (missing !== undefined) {
+      throw new Error(
+        `Definition "${missing.id}" names controller "${String(missing.controller)}", which is not registered.`,
+      );
+    }
+  }
+
+  /**
    * Gives new entities their brains and asks every due one for its commands.
    *
-   * @throws Error when an entity names a controller that is not registered (a content error).
+   * @throws Error when an entity names a controller that is not registered (a content error the
+   *   construction check could not see, such as injected content).
    */
   public update({ state }: { readonly state: GameState }): void {
     const { ai, entities } = state;
@@ -60,6 +81,11 @@ export class AiSystem {
         return;
       }
       if (ai.get(id) === undefined) {
+        if (this.controllers[binding.controllerId] === undefined) {
+          throw new Error(
+            `Entity "${id}" names controller "${binding.controllerId}", which is not registered.`,
+          );
+        }
         ai.set(id, {
           controllerId: binding.controllerId,
           profileId: binding.profileId,
@@ -86,12 +112,7 @@ export class AiSystem {
   private decide(state: GameState, id: EntityId): void {
     const controllerId = state.ai.get(id)?.controllerId;
     const controller = controllerId === undefined ? undefined : this.controllers[controllerId];
-    if (controller === undefined) {
-      throw new Error(
-        `Entity "${id}" names controller "${String(controllerId)}", which is not registered.`,
-      );
-    }
-    for (const command of controller.decide(state, id)) {
+    for (const command of controller?.decide(state, id) ?? []) {
       this.enqueue(command);
     }
   }

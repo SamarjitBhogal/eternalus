@@ -20,9 +20,8 @@ import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress,
- * movement, the neighbour index, steering, spawning, death, then invariants last. This is the one place a system is
- * added, at its position in the tick (architecture 02 §9).
+ * progress, movement, the neighbour index, steering, spawning, death, then invariants last. This
+ * is the one place a system is added, at its position in the tick (architecture 02 §9).
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /**

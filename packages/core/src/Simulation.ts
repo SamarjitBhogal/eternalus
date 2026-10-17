@@ -1,5 +1,8 @@
 import { AiSystem } from './ai/AiSystem';
-import { createDefaultControllerRegistry } from './ai/defaultControllerRegistry';
+import {
+  createDefaultControllerRegistry,
+  type ControllerRegistry,
+} from './ai/defaultControllerRegistry';
 import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
@@ -14,6 +17,7 @@ import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import type { DefinitionSource } from './entities/EntityFactory.types';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
@@ -55,7 +59,9 @@ export class Simulation {
     const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
     this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
     // One factory for commands and spawning, so entity ids come from one counter.
-    const definitions = content ?? loadDefaultContent(this.state.config.tickRate);
+    const controllers = createDefaultControllerRegistry();
+    const definitions =
+      content ?? Simulation.defaultContent(this.state.config.tickRate, controllers);
     const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
     this.commandContext = { state: this.state, factory };
     this.systemContext = { state: this.state, logger };
@@ -67,7 +73,7 @@ export class Simulation {
             definitions,
             space,
             decide: [
-              new AiSystem(this.state, createDefaultControllerRegistry(), AI_CADENCE, (command) => {
+              new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
                 this.queue.enqueue(command);
               }),
             ],
@@ -120,5 +126,15 @@ export class Simulation {
   /** A 32-bit fingerprint of the current state; equal runs give equal hashes. */
   public hash(): number {
     return this.hasher.hash(this.state);
+  }
+
+  /** The shipped content, checked against the controllers before the match starts. */
+  private static defaultContent(
+    tickRate: number,
+    controllers: ControllerRegistry,
+  ): DefinitionSource {
+    const catalogue = loadDefaultContent(tickRate);
+    AiSystem.assertRegistered(catalogue.all(), controllers);
+    return catalogue;
   }
 }

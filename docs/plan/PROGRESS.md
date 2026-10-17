@@ -1078,7 +1078,7 @@ The example below is fenced so it is not read as a real entry.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: merge into `feat/minion-m1-marching`.
 
-### 2026-10-17 — Minion system M2a (brains and perception) — feat/minion-m2a-brains-perception (off feat/minion-m1-marching, uncommitted) — SamarjitBhogal + Claude Code
+### 2026-10-17 — Minion system M2a (brains and perception) — feat/minion-m2a-brains-perception (off feat/minion-m1-marching) — SamarjitBhogal + Claude Code
 
 - What was done:
   - **PR split:** the rest of the minion work is cut into pull requests M2a, M4, M2b, M2c, M3,
@@ -1104,3 +1104,19 @@ The example below is fenced so it is not read as a real entry.
     §2 table and §3 stand-ins; INBOX question on how a controller writes its memory back.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 507 passed (507)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: review; commit on the human's request; the pre-PR gate; M4 can start in parallel.
+
+### 2026-10-17 — Minion system M2a, pre-PR gate — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `62e8a61..d13bbfa`) approved with
+  should-fixes, all applied: `Perception` returns ids in string order and breaks `nearest` ties
+  toward the lower id (11 §3, §5), with a test across `entity-9` / `entity-10`; a `StateHasher`
+  test covers every brain field and the deferred queue, and an `AiSystem` determinism test
+  compares the ask order and the hash of two runs; `SpatialHash.queryCircle` sorts in place
+  (no allocation per query); the weight classes have one source (`state/Horde.constants.ts`);
+  an unregistered controller fails at `Simulation` construction for shipped content and at
+  attach time otherwise; nits (pipeline TSDoc, `PathingSystem.test` no longer imports
+  `SpaceSystem`, new `SpaceIndex` and `ControllerBinding` tests, the cadence test checks the
+  ticks actually used). Ponytail: the redundant `queryCircle` guard is gone and `nearest` walks
+  the query's indexes.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 514 passed (514)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: open the draft PR to `phase/2-sprint-2-work`; M4 is in progress in its worktree.

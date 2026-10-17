@@ -1,9 +1,9 @@
+import { HORDE_WEIGHT_CLASSES } from '../../state/Horde.constants';
 import type { HordeRequest } from '../../state/HordeRequest.types';
 import type { GameState } from '../../state/GameState';
 import type { Vec2 } from '../../utils/geometry.types';
 import type { Command, CommandRejectReason, SpawnOrigin } from '../Command.types';
 import type { CommandContext, CommandHandler } from '../CommandHandler.types';
-import { WEIGHT_CLASSES } from './DevSpawnMobsHandler.constants';
 
 /**
  * Developer menu: queues one horde of `count` mobs (architecture 13 §4, 18 §3.5, DEC-46), which
@@ -17,7 +17,7 @@ export class DevSpawnMobsHandler implements CommandHandler<'dev-spawn-mobs'> {
     { team, definitionId, count, origin }: Command<'dev-spawn-mobs'>,
     { state, factory }: CommandContext,
   ): CommandRejectReason | null {
-    const weightClass = WEIGHT_CLASSES.find((weight) =>
+    const weightClass = HORDE_WEIGHT_CLASSES.find((weight) =>
       factory.canCreate(`${weight}-mob`, definitionId),
     );
     if (weightClass === undefined) {

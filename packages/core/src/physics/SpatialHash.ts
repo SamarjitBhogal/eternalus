@@ -17,7 +17,6 @@ export class SpatialHash {
   private entries = new Int32Array(0);
   private cellOf = new Int32Array(0);
   private positions: Float64Array = new Float64Array(0);
-  private count = 0;
 
   /**
    * @param width - World width in world units.
@@ -58,7 +57,6 @@ export class SpatialHash {
       this.cellOf = new Int32Array(count);
     }
     this.positions = positions;
-    this.count = count;
     this.cellStart.fill(0);
     for (let index = 0; index < count; index += 1) {
       const cell = this.cellAt(positions[2 * index] ?? 0, positions[2 * index + 1] ?? 0);
@@ -98,14 +96,23 @@ export class SpatialHash {
           const index = this.entries[slot] ?? 0;
           const dx = (this.positions[2 * index] ?? 0) - x;
           const dy = (this.positions[2 * index + 1] ?? 0) - y;
-          if (index < this.count && dx * dx + dy * dy <= reach) {
+          if (dx * dx + dy * dy <= reach) {
             out[found] = index;
             found += 1;
           }
         }
       }
     }
-    out.subarray(0, found).sort();
+    // Insertion sort in place: each cell is already ascending, so the merge is nearly sorted.
+    for (let at = 1; at < found; at += 1) {
+      const value = out[at] ?? 0;
+      let to = at - 1;
+      while (to >= 0 && (out[to] ?? 0) > value) {
+        out[to + 1] = out[to] ?? 0;
+        to -= 1;
+      }
+      out[to + 1] = value;
+    }
     return found;
   }
 

@@ -33,7 +33,7 @@ const setUp = () => {
 };
 
 describe('Perception', () => {
-  it('finds the units in range that pass the filter, in store order', () => {
+  it('finds the units in range that pass the filter', () => {
     const { state, add, index } = setUp();
     const near = add('dark', 12);
     add('light', 11);
@@ -52,6 +52,21 @@ describe('Perception', () => {
     expect(perception.unitsWithin(center, 5, { kinds: ['heavy-mob'] })).toEqual([heavy.id]);
     expect(perception.nearest(center, 5, { hostileTo: 'light', aliveOnly: true })).toBe(heavy.id);
     expect(perception.nearest(center, 0.5, { hostileTo: 'dark' })).toBeNull();
+  });
+
+  it('returns ids in string order, and breaks a nearest tie toward the lower id', () => {
+    const { state, add, index } = setUp();
+    // Eight fillers far away, so the two near units get the ids entity-9 and entity-10.
+    Array.from({ length: 8 }, () => add('dark', 80));
+    const created = add('dark', 8);
+    const later = add('dark', 12);
+    index();
+    const perception = new Perception(state);
+
+    expect([created.id, later.id]).toEqual(['entity-9', 'entity-10']);
+    // Store order would give entity-9 first; string order puts entity-10 first.
+    expect(perception.unitsWithin({ x: 10, y: 10 }, 5, {})).toEqual(['entity-10', 'entity-9']);
+    expect(perception.nearest({ x: 10, y: 10 }, 5, {})).toBe('entity-10');
   });
 
   it('sees nothing without a neighbour index, and skips units removed since the rebuild', () => {

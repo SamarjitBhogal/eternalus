@@ -10,6 +10,7 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import type { EntityId } from '../state/EntityStore.types';
 import { GameState } from '../state/GameState';
+import { StateHasher } from '../state/StateHasher';
 import { fnv1a } from '../utils/fnv1a';
 import { AiSystem } from './AiSystem';
 import type { Controller } from './Controller.types';
@@ -90,21 +91,37 @@ describe('AiSystem', () => {
   });
 
   it('asks each entity once per cadence, on its own tick, and queues its commands', () => {
-    const { ids, asked, queued, step } = setUp(8);
+    const { state, ids, asked, queued, step } = setUp(8);
+    const askedOn: number[] = [];
 
     for (let tick = 0; tick < 2 * EVERY; tick += 1) {
+      const before = asked.length;
       step();
+      askedOn.push(...asked.slice(before).map(() => state.tick - 1));
     }
 
     for (const id of ids) {
       expect(asked.filter((each) => each === id)).toHaveLength(2);
-      const first = asked.indexOf(id);
-      expect(first).toBeGreaterThanOrEqual(0);
     }
+    asked.forEach((id, at) => {
+      expect(((askedOn[at] ?? 0) + fnv1a(id)) % EVERY).toBe(0);
+    });
+    expect(new Set(askedOn).size).toBeGreaterThan(2);
     expect(queued).toContainEqual({ type: 'stop', actorId: ids[0] });
-    // The tick an entity decides on follows its id's hash, so the eight are spread out.
-    const ticks = new Set(ids.map((id) => (EVERY - (fnv1a(id) % EVERY)) % EVERY));
-    expect(ticks.size).toBeGreaterThan(1);
+  });
+
+  it('asks the same entities in the same order on every run with the same seed', () => {
+    const first = setUp(30, 4);
+    const second = setUp(30, 4);
+
+    for (let tick = 0; tick < 20; tick += 1) {
+      first.step();
+      second.step();
+    }
+
+    expect(first.asked).toEqual(second.asked);
+    expect(first.state.ai.deferred).toEqual(second.state.ai.deferred);
+    expect(new StateHasher().hash(first.state)).toBe(new StateHasher().hash(second.state));
   });
 
   it('defers decisions past the budget and lets them go first next tick', () => {
@@ -132,26 +149,30 @@ describe('AiSystem', () => {
     expect(state.ai.size).toBe(0);
   });
 
-  it('throws when an entity names a controller with no implementation', () => {
+  it('throws the first tick it sees an entity whose controller has no implementation', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const definitions = new ContentCatalogue<UnitDefinition>([
       { ...LIGHT_MINION, controller: 'guard' },
     ]);
     const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
-    const guard = factory.create('light-mob', 'light-minion', {
-      team: 'light',
-      position: { x: 0, y: 0 },
-    });
-    state.entities.add(guard);
+    state.entities.add(
+      factory.create('light-mob', 'light-minion', { team: 'light', position: { x: 0, y: 0 } }),
+    );
     const system = new AiSystem(state, {}, cadenceWith(10), () => undefined);
-    const dueTick = (EVERY - (fnv1a(guard.id) % EVERY)) % EVERY;
-    while (state.tick < dueTick) {
-      system.update({ state });
-      state.advanceTick();
-    }
 
     expect(() => {
       system.update({ state });
     }).toThrow('not registered');
+  });
+
+  it('checks the definitions against the registry before a match starts', () => {
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'a' }, { id: 'b', controller: 'minion' }], {
+        minion: stopper([]),
+      });
+    }).not.toThrow();
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'g', controller: 'guard' }], {});
+    }).toThrow('Definition "g" names controller "guard"');
   });
 });

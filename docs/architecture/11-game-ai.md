@@ -331,6 +331,8 @@ work named:
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
 - The controller registry is empty until `MinionController` (M2b). How a controller writes its
   memory and RNG state back is open (`INBOX.md`), since `decide` returns only commands.
+- A definition that names an unregistered controller stops `Simulation` at construction (shipped
+  content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities
   (M2c).
 

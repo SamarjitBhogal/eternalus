@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Movement } from '../components/Movement';
+import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
@@ -12,7 +13,6 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
 import { PathingSystem } from './PathingSystem';
-import { SpaceSystem } from './SpaceSystem';
 
 const logger = new NullLogger();
 const FORMATIONS = { ranks: RANKS_FORMATION };
@@ -50,7 +50,13 @@ describe('PathingSystem', () => {
     });
     const system = new PathingSystem(STRATEGIES, FORMATIONS);
 
-    new SpaceSystem(space).update({ state, logger });
+    // Fill the index the way SpaceSystem does: every unit, in store order.
+    space.begin(state.entities.size);
+    state.entities.forEach((entity) => {
+      const { x, y } = entity.getComponent(Transform).position;
+      space.add(entity.id, x, y);
+    });
+    space.commit();
     system.update({ state, logger });
     // A second tick reuses the grown scratch.
     system.update({ state, logger });
