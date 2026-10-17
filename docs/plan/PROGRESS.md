@@ -845,3 +845,24 @@ The example below is fenced so it is not read as a real entry.
   "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 117ms"; "Documentation
   check passed."
 - Next step: retarget PR #28 to `phase/2-sprint-2-work` and merge it.
+
+### 2026-10-16 — Phase 2 / layered architecture diagram — docs/phase-2-architecture-diagram — sholtzman + Claude Code
+
+- What was done: added `docs/plan/phase-2-architecture.md` with a Figure-4.6-style layered model of
+  the whole architecture at Phase 2 exit (cumulative P0–P2 plus Track B S1–S2). The figure is
+  `phase-2-architecture.drawio` (editable source) exported to `phase-2-architecture.svg`; the doc
+  also carries a Mermaid view of the same bands with the allowed-import arrows, a "Not shown" list,
+  drawing choices for every doc conflict, and an implementation-status note. Docs were read as on
+  `origin/phase/2-sprint-2-work`. A research agent built the cited inventory, a drafter drew it,
+  and an independent critic (`architecture-reviewer`, its own checklist from the docs) reviewed
+  three rounds: 0/8/14, 0/1/7, then approve (blockers/should-fix/nits). One optional nit is left:
+  the "Sentinel sprint-through rule" could read "sprint-through rule (definition flag)"
+  (phase-2:127-129). Added a Related link in the Phase 2 doc and regenerated the docs index.
+- Pre-PR gate: critic approved (above); `/ponytail-review` gave 3 findings, 2 applied (the copied
+  02 §2 may-import lists and one provenance line, -26 lines), 1 kept (a single `.drawio.svg`
+  instead of `.drawio` + `.svg`: the plain `.drawio` stays diffable and opens directly).
+- Checks run: `npm run check` (after ponytail) → `EXIT=0`: "All matched files use Prettier code
+  style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 99ms";
+  "Documentation check passed."
+- Next step: the owner names a reviewer on the PR into `phase/2-sprint-2-work` and reviews the
+  figure.
