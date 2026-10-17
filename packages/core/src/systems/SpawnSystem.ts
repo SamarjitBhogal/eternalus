@@ -1,4 +1,3 @@
-import type { MapFeature } from '../content/maps/maps.types';
 import type { OpeningWaveDefinition } from '../content/structures/structures.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Unit } from '../entities/Unit';
@@ -10,11 +9,8 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
 import { PLAYABLE_TEAMS } from './SpawnSystem.constants';
-import type { SpawnPlan } from './SpawnSystem.types';
+import type { SpawnPlan, TeamFeature } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
-
-/** A map structure that belongs to a playable team. */
-type TeamFeature = MapFeature & { readonly team: PlayableTeam };
 
 /**
  * Spawns the lane hordes on the DISC-10 schedule (architecture 18 §3): the Stronghold's opening
