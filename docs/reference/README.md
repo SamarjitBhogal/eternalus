@@ -4,7 +4,7 @@ description: Index of the reference folder (the game-design vision split by topi
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-17
 tags: [reference, index, game-design]
 related:
   - 'docs/README.md'
@@ -47,6 +47,7 @@ related:
 | `game-design/12-open-questions.md`                       | Every open question and naming to-do (OQ-nn) with status, owner and decision columns.                                                                                                               |
 | `game-design/13-owner-decisions-log.md`                  | Dated record of the product owner's decisions taken through `INBOX.md` and the docs each one changes; a decision here overrides the other reference docs.                                           |
 | `game-design/14-interface-and-screen-flow.md`            | The product owner's design for the MVP screens, from the home menu to the in-match HUD, and the engineering reading of it.                                                                          |
+| `game-design/15-figma-frames-and-creative-decisions.md`  | The owner's Figma frames for the selection screens and the HUD, and the register of every deliberate difference the build makes from them.                                                          |
 | `suggestions/README.md`                                  | What a suggestion is, how the owner accepts or rejects one, and the index of the suggestion files.                                                                                                  |
 | `suggestions/naming.md`                                  | Themed name proposals for every placeholder and the in-code naming convention that keeps renames cheap.                                                                                             |
 | `suggestions/balancing.md`                               | Starting numbers, formulas and balance knobs for hordes, minions, structures, turrets, capture points, bosses, abilities, XP and the Eternal form, and how to test balance headlessly.              |

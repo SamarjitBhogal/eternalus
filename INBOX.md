@@ -92,6 +92,241 @@ Reply inline (`Decision: …`).
       extend marked code. The two departures you were asked to confirm, speed 5.4 m/s and mass
       0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`).
   -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
+- [ ] **HC-F1 — Character select: two steps in one phase (default applied; veto or change;
+      `feat/hud-and-character-select`).** The class step (Figma 62:125) and then the Legend step
+      (58:271) are built inside the one `character-select` phase, with no new session phase. The
+      step follows the session's selection: no class chosen → class step; a class chosen →
+      Legend step. On both steps the cards form a radio group: clicking a card or moving to it
+      with the arrow keys picks it (the usual radio-group keyboard pattern), and hover and focus
+      preview a card. On the class step nothing is sent until **Select Class**, which stays
+      disabled until a class is picked; there is no default pick (the pre-selected Warrior is
+      removed). On the Legend step **LOCK IN** confirms and needs a Legend unless the class has
+      none available; **Back** clears the class, returns to the class step and puts the focus
+      back on the picked class card. One 60 s countdown spans both steps and the timeout rule is
+      unchanged: a class chosen → pre-launch, none → home ("select-timeout"). Open: (1) if the
+      countdown ends after a class but before a Legend, does the match go ahead with no Legend
+      (default), with a default Legend, or cancel? (2) Which Legend do bots get (default: none)?
+      (3) Does LOCK IN end the countdown early (today's behaviour; audit AS-10)?
+- [ ] **HC-F2 — Harbinger is a locked card, with the content id `flying` (default applied, with
+      one correction).** The fourth card shows "Harbinger" (DEC-48) as locked: `aria-disabled`, a
+      lock glyph and the word "Locked" (never colour alone), no hover emphasis, refused by the
+      session and never given to a bot (tested). The workflow's default id was `harbinger`, but
+      architecture 04 §2 and §12, 17 R1 and plan sprint 4.1 already reserve **`flying`** for this
+      class, and ids are never renamed once used (17 R26), so the card uses `flying`. A locked
+      card never reaches a save, a loadout or a replay, so the id can still change until the
+      class is built. Confirm `flying`, or say `harbinger` (then 04, 17 and plan 4.1 change). The
+      Figma draws no locked look: approve the treatment (register CD-05) or describe yours.
+- [ ] **HC-F3 — Ally tiles on the selection screens, your team and the backdrop (default applied;
+      veto).** The right-hand column (62:201, 58:342) shows your team from the match setup (team
+      size from config): your own tile highlighted as drawn (a cream border and the sigil of your
+      pick); an ally bot that has a Legend shows the Legend's portrait with that Legend's accent
+      border; other bots show their class sigil. "N Allies" on a class card counts the allied
+      bots on that class now, you excluded ("1 Ally" in the singular). Your team (Light or Dark)
+      is shown by a small badge at the top right (register CD-06). Open: (1) what do the other
+      border colours mean (#990000 on Ally 2, #8FD694 on Ally 4, cream on Ally 1), and should
+      every Legend tile cast the shadow? (2) Is "N Allies" a live count (default) or a recommended
+      composition (OQ-70)? (3) Reference 14 §2 makes the background and the allied pedestals
+      team-specific, but no Dark or pedestal art exists, so both teams see the one Figma backdrop
+      and no pedestals are drawn until that art exists (register CD-24); the backdrop sets stay
+      keyed by team in content, so the art drops in as data. Confirm, or say what to show.
+- [ ] **HC-F4 — Your pick reaches the match (default applied).** The class, team and seed of the
+      match setup now flow into the match (`PlayerChoice`, `setup.seed`, `setup.playerTeam`),
+      replacing the fixed seed 1 Light Warrior. Your Legend is recorded in the setup but changes no
+      gameplay yet (DEC-49). Nothing to answer unless you want otherwise.
+- [ ] **HC-F5 — HUD colours and key glyphs (default applied; veto).** (1) The HUD uses absolute
+      team colours (Light gold, white and blue; Dark red, black and purple: 10-art-and-lore,
+      architecture 07 §12 and 13 §7). For a Light player this equals your Figma; for a Dark player
+      the allied side shows Dark colours (register CD-19). Say if you want relative colours instead
+      (allies always blue, enemies always red). (2) Who holds a capture point is also shown by an
+      allegiance flag, never by colour alone (13 §7; register CD-03). (3) Every ability and gadget
+      slot shows its key from your bindings (05 §15, 13 §3), so the two gadgets get key glyphs the
+      Figma does not draw (CD-01), and the Figma's fixed "1" to "4" become live glyphs (CD-02).
+- [ ] **HC-F6 — HUD numbers come only from the game (default applied).** In a live match the HUD
+      shows what the simulation really has: your health, the match clock, the structures of the
+      generated map (their health is not simulated yet) and the capture points (owner neutral).
+      Everything else shows a "no data yet" state. The Figma's sample values (level 42, 1850,
+      4700, 14:32, partial bars, two of three pips) appear only in tests and the visual-audit
+      scenarios. What the weapon level, the ultimate's tiers and pips, the capture bars and the
+      timer mean is asked in HC-Q2.
+- [ ] **HC-F7 — "Esc back" and "C view details" use existing bindings (default applied; veto).**
+      The Legend step's Back prompt shows your `pause-menu` key and the alternate layout's View
+      details shows your `gadget-2` key, both as live key glyphs that also answer a mouse binding;
+      no new action is added, because a new Back action on Esc would bind one key to two actions
+      (DEC-29). Say if you want binding contexts instead (menu keys separate from match keys: an
+      architecture change to 13 §6.3), or other keys.
+- [ ] **HC-F8 — Developer-only camera tools in a match, and leaving the cathedral (default
+      applied; veto).** The free camera (drag and wheel zoom), the world overview, the explorer
+      toolbar and the map legend show only with the developer flag (`?dev=1`, 13 §4), because
+      DEC-32 makes the free camera and the overview demo-only; with the flag they sit at the top
+      left, clear of the HUD. The cathedral click and a "Leave cathedral" button stay in normal
+      play, because DEC-32 keeps the enterable interior in the design: the button shows only while
+      you are inside, as an interim control in the game canvas styled from the theme tokens, and it
+      becomes a HUD control with its own intent when the HUD gains an interior state (register
+      CD-22). Say if the developer tools should go entirely, or stay visible for the course demo.
+- [ ] **HC-F9 — When the selection art is freed (default applied).** The character-select art (the
+      selection asset groups) is released when the match starts and loaded again for a rematch;
+      13 §2 did not say. Nothing to answer unless you prefer to keep it loaded.
+- [ ] **HC-T1 — Approve the text of the design-doc edits (`feat/hud-and-character-select`; asked
+      after the pre-PR critic).** Your rule that `docs/architecture/`, `docs/decisions/` and
+      `AGENTS.md` change only with your approval (audit AD-4) applies to: 13 §2 (the `menu` and
+      `character-select` rows per DEC-34's delegated SD-2 text, plus the two steps; the DEC-50
+      lifetime rows are written before the critic as owner-decided text), §3, §5, §6.4 and §9;
+      05 §15 (the HUD kit is the selection joined with the loaded catalogue, with no `hud-kit`
+      event; `loadDisplayContent()` as the display catalogue); 02 §3 (the key files of
+      `data/resources/`: `loaders/UiImageLoader.ts`, `loaders/FontLoader.ts`), §6 and §10
+      (`loadDisplayContent`); 14 §1 (the tree: the two loaders, and the port and its contract at
+      `data/resources/loaders/AssetLoader.ts` and `AssetLoader.contract.ts`) and §11; 01 §3 (the
+      `AssetLoader` port row naming those two paths); 01 §3 and 17 §11 A8 (the composition root:
+      "`Match`, `main.tsx`, the match factory `main.tsx` binds, or a test"), with the 02 §3 tree
+      line for `game/Match.ts` and the 13 §2 sketch comment on `createMatch`; 04 §5 (the
+      `loadDisplayContent()` validation sentence); the 13 §2 boot row; 08 §7 and a draft amendment
+      to 08 §11 in this file (no new 08 section before you approve it); the architecture README's
+      D11 row; 17 R2's note naming `loadDisplayContent()` with its ADR 0018 cross-reference, and
+      04 §9's sentence that the player already picks a Legend at character select; ADR 0018 and the
+      FR-119 and FR-057 catalogue edit. Approve, or say which to change.
+- [ ] **HC-B1 — Better than the design or new, for sign-off (`feat/hud-and-character-select`;
+      asked after the pre-PR critic).** The critic's verdict is reconciled with the branch's
+      deviation table (the DV rows in the pull request's description) before you are asked, and
+      every item the critic confirms or adds joins this list. Known now: DV-01, the match world
+      prepared in `match-loading` and the `Match` built from it when the viewport attaches
+      (`createMatch(request, viewport)`, `attachViewport` returning its detach), a refinement of
+      13 §2's sketch under DEC-50; DV-22 and DV-23, new bridge messages (`structure-state`,
+      `asset-urls`, `credits`), the first definition of `CapturePointSnapshot`, and an
+      `assetsSlice`; DV-39, images the DOM shows go through `ResourceController` and reach React as
+      URLs through the store (14 §11 designed canvas bitmaps only); DV-40, a `font` asset type and
+      `FontLoader` for Cinzel (DEC-51); DV-42 and DV-122, manifest entries with a 2x file and
+      per-use renditions, the pixel density fixed per session; DV-46, layout-only art and the
+      Figma plates in their own asset groups; DV-55 and DV-56, the selection screens as one
+      1920 × 1080 artboard scaled as a whole and the HUD sized by its own unit, both with a text
+      floor; DV-93, the structure strip, objective tracker and crystal. DV-132 to DV-136 are your
+      own directions of 2026-10-17 (DEC-49, DEC-54, DEC-55), listed for the record and not asked
+      again. Approve each, or say what to change.
+- [ ] **HC-C1 — The differences from your Figma, for review (asked after the pre-PR critic).**
+      Every place the build differs from your frames on purpose is registered in
+      `docs/reference/game-design/15-figma-frames-and-creative-decisions.md` (DEC-53), so the
+      visual audit does not flag it. Rows are `forced` (a binding rule), `fill-in` (a state your
+      frames do not draw), `approximation` (an effect CSS cannot draw; your Figma's pixels where a
+      render exists), `normalised` (sub-pixel), `conflict` (a Figma value that breaks a binding
+      minimum) or `creative` (none on this branch; DEC-53 keeps your original live). Review CD-01
+      to CD-27: keep, change or reject each. CD-12 and CD-20 are withdrawn; CD-25 applies only if
+      the grain measurement finds no fixed grain field in your render; CD-21 is resolved by your
+      answer to HC-Q13 (DEC-55), and CD-26 and CD-27 record your directions on the Legends (DEC-49)
+      and the effects renderers (DEC-54). CD-26 includes one copy edit the recorder made as a
+      consequence of the Oracle rename, not stated by you: the oracle description's "The Cantor
+      bends…" reads "The Oracle bends…".
+- [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
+      part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
+      (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
+      labels do Catalyst and Necromancer get (Oracle's is "Support", from the Figma's Cantor)?
+      (OQ-69) (2) Descriptions and detail rows (Signature, Specialty, Ultimate) for Catalyst and
+      Necromancer: is Aetheric Recall every Magus Legend's signature? (3) The Damage, Support and
+      Control ratings: the build carries the Figma's Cantor values on Oracle as `TUNE` placeholders
+      (about 0.38, 0.84 and 0.51); keep them, and what are the other Legends' ratings? (OQ-67)
+      (4) Names for the Legionnaire's Legends (Velite, Centurion, Praetorian) and the Sentinel's
+      (Colossus, Juggernaut): none exist yet, so their cards show the sub-class title alone. Give
+      each Legend's Light name when you have it (and its Dark name, or confirm that it is the Light
+      name spelled backwards), and the art they should use (stand-ins until then). (OQ-69)
+      (5) Accept ADR 0018 (`docs/decisions/0018-mvp-legend-pick-as-setup-data.md`, proposed): it
+      records the Legend pick as MVP setup data, amends ADR 0006 point 3 and adds FR-119 with an
+      FR-057 edit, as NFR-010 asks.
+- [ ] **HC-Q2 — HUD rules your Figma implies (OQ-63 to OQ-66).** (1) Weapon level (62:258): what
+      earns it, how many levels, what a level changes, per weapon or per match? No doc defines it.
+      (2) Ultimate (62:246, 65:722): are Low, Mid and Max castable tiers, or one meter that must
+      fill (05 §6)? What do the three charge pips count, and is the earlier draft's grey ultimate
+      (8:2) the "not charged" look? (3) Objectives (62:425): does the bar under a shield show
+      capture progress or hold strength, does it take the capturing team's colour, does it need
+      checkpoint ticks, and how do a contested point and a point locked by a mini-boss look?
+      (4) The clock "14:32" (65:604): elapsed match time (default, FR-010) or a countdown (to the
+      gem or the score cap)? Does the crystal change during the match? (5) Is the glow the
+      "ready" look of the ultimate and the gadgets only?
+- [ ] **HC-Q3 — Which abilities your Figma's icons and names are (OQ-68).** The HUD shows a
+      Legionnaire with Meteor (a Sentinel ultimate in the docs), Atom, LinkBreak and Aperture
+      (Phosphor placeholders), a battle axe and the gadgets "Courage" and "Sword". The class screens
+      name Aetheric Recall, Staff Proficiency and Arcane Intellect (Magus) and Unison Ward and
+      Severed Accord (the Figma's Cantor, now Oracle), none of which the docs have. Map each to a
+      documented id (for example, is Aetheric Recall the Magus's Revive?), or confirm it is new;
+      until then they are display data only. Also: the emblem, weapon and first-gadget art for the
+      Sentinel's and the Magus's HUD, which the Figma draws only for the Legionnaire.
+- [ ] **HC-Q4 — The structure strip (62:303, 65:542).** (1) Are the names right? The HUD shows the
+      Figma's layer names (Stronghold, "Production Tower" for the spawner tower, "Buff Tower" for
+      the buff tower, one "Wall" tile for every wall segment and gate, Capture Point, Cathedral);
+      gates have no name of their own and turrets are not shown. (2) How does a destroyed structure
+      look, and should shield bars show? Neither is built until the game has the data. (3) Should
+      the enemy bars fill right to left, mirroring their icons?
+- [ ] **HC-Q5 — The alternate class layout (62:70, DEC-52).** It has no class cards, ally tiles or
+      Select button: the build adds previous and next arrows, and View Details confirms the shown
+      class (default; register CD-10). What should View Details open (no design exists)? Which
+      Magus description is canonical, 72:748 (the primary layout's, used by default) or 62:82? The
+      layout also has its own labels ("Signature / Proficiency / Specialty"): keep each layout's
+      own text (default) or share one?
+- [ ] **HC-Q6 — Visual details your frames leave open (defaults applied).** (1) The picked card is
+      the enlarged one, hover and focus preview a card, and there is no default pick: right? Is the
+      hover cue the same look as selected, and is the focus ring right (drawn over the backdrop,
+      never on the cream outline)? (2) Does the Select Class glow follow the class colour (default:
+      fixed blue, as drawn)? (3) Is the countdown always red? (4) The minimap circle: the whole map
+      inscribed (default), a cover crop, or centred on you? (5) Health and aether: the current value
+      only (as drawn) or current/max? (6) Avedrin's border: #9b32f3 (on screen; default) or
+      #8a898f (the stand-alone portrait)? (7) The Legend role line takes the Legend's accent and
+      the rating fills end at a fixed colour, as drawn (defaults); one refraction art per Legend, or
+      the Figma's for every Legend (default until more art exists)? (8) Keep the frames'
+      hand-placed offsets and asymmetries (default) or tidy them?
+- [ ] **HC-Q7 — Scope and docs questions from this branch.** (1) Your Figma art ships now (DEC-51),
+      but 10-art-and-lore and 11-mvp-scope list "High-quality character art on the selection
+      screen" as post-MVP; the branch treats it as MVP because it is your own art (the recorder's
+      reading, not your words): confirm or say otherwise. (2) The selection screens' asset groups
+      are `selection` and its per-layout and plate groups (the code and 13 §2), not 14 §11's
+      `menu` (audit AS-8): confirm. (3) The Cinzel OFL and Phosphor MIT texts sit beside their
+      files in the repo; to ship them inside the built game the About screen lists the manifest's
+      licences (13 §3, plan 5.3): do that now (default) or in 5.3, and how should the credits word
+      your own art? (4) Should DEC-53's rule also be a line in `AGENTS.md`'s pre-PR gate? (5)
+      Cinzel is used on the new screens only (token `--font-game`); should the menus switch to it
+      too (default: no, they keep `--font-display`)?
+- [ ] **HC-Q8 — Match runtime (confirm).** Pause is built as ES-11 requires: in single player the
+      pause overlay stops the simulation and the rendering, and held keys are released. Confirm.
+      (1) Route `Simulation.step()` exceptions to the session next (audit AC-1 point 2)? (2) Accept
+      audit AC-21 and the 09 §2 wording (the open item "F → session H / the `Match` owner" below)?
+      (3) The open item "Session C → Sam (2026-10-08), better than the design? (a)" below: the
+      release of held input on focus loss (blur, visibilitychange) stays outside `Match`, in
+      `MatchHost`. Is that the answer (then 09 §2 says so), or should the release move into
+      `Match`?
+- [ ] **HC-Q9 — Behaviour your frames do not show (defaults applied; veto).** Esc on the class step
+      does nothing; the Legends strip on the class step is informational, not clickable; after
+      LOCK IN the screen leaves at once, with no waiting state.
+- [ ] **HC-Q10 — New copy for your approval.** "Choose a class first.", "Choose a Legend to lock
+      in.", "Legends to come", "You are on the {team} team", "1 Ally", "No data yet", "Match could
+      not start.", "Loading failed.", "Leave cathedral". Keep each, or give your wording.
+- [ ] **HC-Q11 — Only if a tooling check fails (asked only then).** If the test runner cannot read
+      the asset files in its Node environment, approve an ADR adding a zero-dependency
+      `scripts/assets/check-asset-manifest.mjs` to `npm run check`.
+- [ ] **HC-Q12 — Which class ids the match accepts.** `PlayerChoice.legend` takes the open class id
+      (default, guarded by the catalogue check and a spawn test), or should core export its
+      `LegendKind` values (a core API change)?
+- [ ] **HC-Q14 — Minimum text size below 1080p.** Text never renders smaller than
+      `--text-min: 12px` (default; ES-11 asks a minimum size for HUD text, and the selection
+      screens follow it; register CD-23): keep 12 px, give another value, or none on the selection
+      screens?
+- [ ] **HC-Q15 — Exactness costs bytes.** Every 1x image file the visual audit compares is lossless
+      (lossy WebP at quality 90 alone fails the backdrop), including the two row plates and the
+      button-chrome plates. The branch reports the measured group sizes at device pixel ratios 1
+      and 2, per effects renderer (`'css'` loads no plate). Accept them (default), or allow lossy
+      1x files for named assets, with their regions listed as not exact?
+- [ ] **HC-Q16 — Veridan's Dark name, "Nadirev" (flag; DEC-49).** That name is derived from your
+      mirror rule (the Light name spelled backwards, as Elarion ↔ Noirale and Avedrin ↔ Nirdeva),
+      not stated by you. The build ships it as content (`catalyst`'s `legendName.dark`, marked
+      `TODO(sam)` in `packages/core/src/content/legends/specs/catalyst.ts`). Confirm it, or give
+      the Dark name. No other name or title is flagged: the sub-class titles, Praetorian included,
+      are used exactly as you gave them.
+- [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
+      1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
+      `creative` row: a data-selectable variant with your static original kept live (DEC-53).
+- [ ] **HC-S2 — Suggestion, not built: HUD value transitions.** 200 ms transitions on the bars, the
+      cooldown sweeps and the XP ring between updates. If you want it, it comes back the same way
+      as HC-S1, after a paint check on a slowed-down CPU.
+- [ ] **HC-S3 — For Phase 5 sprint 5.5 (architecture 13 §7 schedules the accessibility minimums
+      there): the in-game reduced-motion setting.** Apply the setting (FR-084) to every
+      reduced-motion rule, including the background layers' own rules (today `ThemedBackground`'s),
+      not only the global `--motion-*` tokens: one mechanism for the OS and the in-game source,
+      with a test that each module's media rule has its in-game twin. Nothing to answer now.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
@@ -286,6 +521,48 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-10-17 — **The owner's decisions for the Figma character select and HUD (chat 2026-10-16
+  and 2026-10-17)** recorded in `docs/reference/game-design/13-owner-decisions-log.md` (batch
+  2026-10-17): DEC-48 (display names; Harbinger shown locked), DEC-49 (the Legend pick, and the
+  Legends' ids, sub-class titles and names), DEC-50 (`SessionController` owns the `Match`
+  lifetime; answers audit AS-7 C2 / AC-25 and plan question 46), DEC-51 (asset provenance,
+  Phosphor MIT, Cinzel OFL), DEC-52 (62:70 as a data-selected alternate), DEC-53 (creative changes
+  only beside a live original), DEC-54 (Figma renders on a scratch page; two effects renderers)
+  and DEC-55 (two contrast sets). Numbered from DEC-48 because DEC-43 to DEC-47 are the minion
+  rulings on `docs/minion-system-design` (PR #33). Recorded on `feat/hud-and-character-select`,
+  with the proposed ADR 0018 and the register
+  `docs/reference/game-design/15-figma-frames-and-creative-decisions.md`. What each still needs
+  is open above (HC-F1 to HC-S3).
+  - **HC-A1, may an agent write to your Figma file** (answered 2026-10-17, DEC-54): yes, on one
+    new page only, `zz agent scratch - R1 exports (safe to delete)`, holding duplicates of
+    62:125, 62:70, 58:271 and 62:231; the original frames and every other page are never
+    modified, and every write and export is logged. Both paths are built: Figma's own renders as
+    plates, and a CSS approximation, chosen by the content value `effectsRenderer`
+    (`'figma-raster'` by default, or `'css'`), with `?dev=1&fx=css` or `fx=raster` to compare
+    them. The raster path is held to the pixel audit; the CSS path is audited and reported beside
+    it. No fallback masks.
+  - **HC-Q13, the HUD colours below the contrast minimums** (answered 2026-10-17, DEC-55): both.
+    The Figma colours are the default (`contrastMode: 'figma'`), with the failing pairs listed as
+    exceptions: letters A 2.52:1, B 3.02:1 and C 4.09:1 on their shields; health fill against its
+    rest 1.34:1 and aether 1.41:1 (the 1.4 px marker carries the level, 9.13:1 against the rest);
+    the white value numeral on the health peak 3.89:1 and on the aether peak 3.08:1; status fill
+    against its track 2.10:1; the enemy structure icon 1.14:1 (register CD-21). The
+    `contrastMode: 'minimums'` set, also chosen by the OS setting `prefers-contrast: more`, swaps
+    only those tokens for values meeting architecture 13 §7 (4.5:1 text, 3:1 bars and icons); the
+    branch adds the values and their ratios to CD-21.
+  - **HC-Q1, the answered part: the Legends** (answered 2026-10-17, DEC-49). Ids and sub-class
+    titles: Magus `catalyst` Catalyst, `oracle` Oracle (replaces Cantor, with the Figma's Cantor
+    data), `necromancer` Necromancer (replaces Gravecaller); Legionnaire `assassin` Velite,
+    `knight` Centurion, `paladin` Praetorian; Sentinel `colossus` Colossus and the new
+    `juggernaut` Juggernaut, with your descriptions. Sub-class titles are the same on both teams.
+    Legend names exist only for the three Magus Legends and differ by team (mirror universes: the
+    Dark name is the Light name spelled backwards): Elarion / Noirale and Avedrin / Nirdeva as you
+    stated them; Veridan's Dark name is asked in HC-Q16. The Legionnaire and Sentinel Legends have
+    no names yet, only their class and sub-class titles, so their cards show the title alone (what
+    is still open is HC-Q1 above). Your words: "this should only apply to the "names" not the
+    subclass "titles". Praetorian is a subclass title. I have no names for [any] Legionnaire or
+    Sentinel Legend, only the class and subclass titles. the names of the characters have only
+    been provided for Magus".
 - 2026-10-10 — **Your chat clarifications of 2026-10-10 (DEC-11) and the source of the new
   requirements** recorded in `docs/reference/game-design/13-owner-decisions-log.md` (appended to
   DEC-11, DEC-36 and DEC-37) and applied to reference 01, 06, 08, 11, `more-abilities.md` and

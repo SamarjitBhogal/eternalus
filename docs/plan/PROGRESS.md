@@ -845,3 +845,32 @@ The example below is fenced so it is not read as a real entry.
   "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 117ms"; "Documentation
   check passed."
 - Next step: retarget PR #28 to `phase/2-sprint-2-work` and merge it.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, foundation — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done: the foundation for the owner's three Figma frames (Pre-Game Class Selection
+  62:125 with its alternate 62:70, Pre-Game Sub-Class Selection 58:271, HUD Draft 62:231), built
+  by gated agent packages from the master plan (decisions DEC-48…DEC-55):
+  - Core: Legionnaire as the warrior display name, the display-only Legend family (Catalyst,
+    Oracle, Necromancer; Velite, Centurion, Praetorian; Colossus, Juggernaut) with mirrored Magus
+    Legend names per team, map-feature display names and `loadDisplayContent()`.
+  - Assets: the owner's Figma art exported on a scratch page (originals verified unchanged),
+    lossless WebP renditions, Cinzel (OFL) and Phosphor (MIT) with licences, behind a minimal
+    `data/resources` `ResourceController` and `AssetManifest` (asset groups boot, selection,
+    selection-primary, selection-alternate, match).
+  - Bridge and content: HUD and catalogue contracts, events, slices, selectors, the core-backed
+    display catalogue (placeholder catalogue retired), the `effectsRenderer` and `contrastMode`
+    data switches, tokens (Figma-exact set and an accessibility-minimums set) and strings.
+  - Lifecycle (audit AS-1): `SessionController` owns the `Match` (DEC-50). The world is prepared
+    in `match-loading`; the `Match` is created only when the match viewport attaches and is
+    destroyed on leaving `match`. Nothing builds a map, Simulation, game loop or rAF before
+    `match` (the game loop no longer runs during class selection). `MatchBridge` publishes what
+    the simulation has; the minimap draws in the HUD ring through `Renderer.clipToEllipse`.
+  - Screens are not built yet: `App.tsx` still shows `PlaceholderScreen` (WP-F F2 registers the
+    real screens after the selection and HUD packages).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 487 passed (487)"; client "Tests 735 passed (735)", statements 96% (base 89.19%);
+  "✓ built in 155ms"; "Documentation check passed."
+- Next step: the selection screens (WP-SEL-SHARED, WP-LEGEND, WP-CLASS) and the HUD (WP-HUD) in
+  parallel local sub-branches with the pixel audit against the Figma, then WP-F F2 integration
+  and the final audit.
