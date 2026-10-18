@@ -1,7 +1,8 @@
 import type { LegendDefinition } from './legends.types';
 
 /**
- * Warrior (formerly Assault): lighter, lower health, faster.
+ * Warrior (formerly Assault), displayed as Legionnaire (DEC-48): lighter, lower health, faster.
+ * The content id stays `warrior` (17 R26).
  *
  * TUNE: health and movement are placeholders that only keep the class ordering from
  * `01-classes-and-subclasses.md` (Warrior fastest to top speed, lightest). The radius is DEC-06.
@@ -9,8 +10,12 @@ import type { LegendDefinition } from './legends.types';
 export const WARRIOR = {
   id: 'warrior',
   kind: 'warrior',
-  displayName: 'Warrior',
+  displayName: 'Legionnaire', // DEC-48
   roleBlurb: 'Lighter, lower health, faster.',
+  roleLabel: 'Assault', // Figma 72:858: a role label, not the class name
+  tagline: null,
+  description: null,
+  detailNames: { signature: null, proficiency: null, specialty: null },
   baseHealth: 600, // TUNE:
   weaponBias: 'light',
   damageFocus: 'mixed',

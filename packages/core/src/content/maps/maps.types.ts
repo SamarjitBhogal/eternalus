@@ -87,6 +87,14 @@ export type MapFeatureDefinition = {
   readonly footprintRadius: number;
   /** Whether the footprint blocks walking in the `WorldMap` grid. */
   readonly isBlocking: boolean;
+  /**
+   * Name the HUD shows for this kind; `null` when no screen names it. Not copied into `MapFeature`.
+   *
+   * TODO(sam): when structure content exists, the stronghold, wall, tower and cathedral names move
+   * to `StructureDefinition.displayName` (one per kind, 04 §5); this field then keeps only kinds
+   * without a structure definition (capture-point) (DV-126).
+   */
+  readonly displayName: string | null;
 };
 
 /**

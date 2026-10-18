@@ -19,6 +19,17 @@ type PassiveId = string;
 type DefaultActionId = string;
 
 /**
+ * Display names of a class's selection-screen detail rows (Figma 72:757); `null` until named.
+ *
+ * TODO(sam): each becomes an ability/weapon id when the kit is mapped (OQ-68).
+ */
+export type ClassDetailNames = {
+  readonly signature: string | null;
+  readonly proficiency: string | null;
+  readonly specialty: string | null;
+};
+
+/**
  * A playable Legend class. Ability, passive and action ids name the class's options; their
  * ability definitions, loadouts and progression arrive in Phase 4.
  */
@@ -27,6 +38,14 @@ export type LegendDefinition = UnitDefinition & {
   readonly kind: LegendKind;
   /** One line for the character-select screen. */
   readonly roleBlurb: string;
+  /** Role tag on the class card ("Assault", "Tank", "Ranged"; Figma 72:858–72:860). */
+  readonly roleLabel: string;
+  /** Resource and role line under the class name (Figma 72:749); `null` until written. */
+  readonly tagline: string | null;
+  /** Selection-screen lore paragraph (Figma 72:748); `null` until written. */
+  readonly description: string | null;
+  /** Names of the class's selection-screen detail rows (Figma 72:757); `null` until named. */
+  readonly detailNames: ClassDetailNames;
   readonly weaponBias: WeaponBias;
   readonly damageFocus: DamageFocus;
   readonly pickUp: PickUpStyle;

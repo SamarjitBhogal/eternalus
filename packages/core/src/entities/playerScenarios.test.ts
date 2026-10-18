@@ -62,14 +62,14 @@ const ticksToRun = (unit: Entity, metres: number): number => {
 
 describe('Player scenarios', () => {
   describe('choosing a Legend on character select', () => {
-    it('shows Warrior, Sentinel and Magus, in that order, each with a one-line role', () => {
+    it('shows Legionnaire, Sentinel and Magus, in that order, each with a one-line role', () => {
       const cards = LEGEND_CLASSES.all().map((legend) => ({
         name: legend.displayName,
         hasRole: legend.roleBlurb.length > 0,
       }));
 
       expect(cards).toEqual([
-        { name: 'Warrior', hasRole: true },
+        { name: 'Legionnaire', hasRole: true },
         { name: 'Sentinel', hasRole: true },
         { name: 'Magus', hasRole: true },
       ]);

@@ -10,13 +10,51 @@ const secondsToTopSpeed = (kind: LegendKind): number => {
 };
 
 describe('LEGEND_CLASSES', () => {
-  it('lists the three MVP classes in character-select order (DEC-08: Warrior, not Assault)', () => {
+  it('lists the three MVP classes in character-select order (DEC-48: Legionnaire)', () => {
     expect(LEGEND_CLASSES.ids).toEqual(['warrior', 'sentinel', 'magus']);
     expect(LEGEND_CLASSES.all().map((legend) => legend.displayName)).toEqual([
-      'Warrior',
+      'Legionnaire',
       'Sentinel',
       'Magus',
     ]);
+  });
+
+  it('gives each class card its Figma role label (72:858–72:860)', () => {
+    expect(LEGEND_CLASSES.all().map((legend) => legend.roleLabel)).toEqual([
+      'Assault',
+      'Tank',
+      'Ranged',
+    ]);
+  });
+
+  it('gives the Magus its Figma tagline and description, and invents none for the others', () => {
+    const magus = LEGEND_CLASSES.get('magus');
+
+    expect(magus.tagline).toBe('Aether  ·  Ranged Support');
+    expect(magus.description).toBe(
+      'With a mastery of Aether, the Magus bends reality into torrents of destructive energy. ' +
+        'Channeling natural and arcane forces to decimate the enemy from afar and enhance nearby ' +
+        'allies.',
+    );
+    for (const kind of ['warrior', 'sentinel'] as const) {
+      expect(LEGEND_CLASSES.get(kind).tagline).toBeNull();
+      expect(LEGEND_CLASSES.get(kind).description).toBeNull();
+    }
+  });
+
+  it('names the Magus detail rows from the Figma (72:757) and leaves the others unnamed', () => {
+    expect(LEGEND_CLASSES.get('magus').detailNames).toEqual({
+      signature: 'Aetheric Recall',
+      proficiency: 'Staff Proficiency',
+      specialty: 'Arcane Intellect',
+    });
+    for (const kind of ['warrior', 'sentinel'] as const) {
+      expect(LEGEND_CLASSES.get(kind).detailNames).toEqual({
+        signature: null,
+        proficiency: null,
+        specialty: null,
+      });
+    }
   });
 
   it('builds each class with the entity kind of the same name', () => {

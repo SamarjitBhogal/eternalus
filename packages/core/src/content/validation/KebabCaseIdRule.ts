@@ -1,11 +1,14 @@
-import type { UnitDefinition } from '../units/units.types';
-import type { UnitDefinitionRule } from './ContentValidator.types';
+import type { IdentifiedDefinition } from '../ContentCatalogue.types';
+import type { ContentRule } from './ContentValidator.types';
 import { KEBAB_CASE } from './KebabCaseIdRule.constants';
 
-/** Content ids are kebab-case, because replays, loadouts and saves reference them forever. */
-export class KebabCaseIdRule implements UnitDefinitionRule {
+/**
+ * Content ids are kebab-case, because replays, loadouts and saves reference them forever. Checks
+ * any definition with an id (units, Legend specs).
+ */
+export class KebabCaseIdRule implements ContentRule<IdentifiedDefinition> {
   /** Flags an id that is not kebab-case. */
-  public check(definition: UnitDefinition): readonly string[] {
+  public check(definition: IdentifiedDefinition): readonly string[] {
     return KEBAB_CASE.test(definition.id) ? [] : ['id must be kebab-case'];
   }
 }

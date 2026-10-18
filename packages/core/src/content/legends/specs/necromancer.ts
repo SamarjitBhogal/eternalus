@@ -1,0 +1,17 @@
+import type { LegendSpecDefinition } from './legendSpecs.types';
+
+/**
+ * A Magus Legend whose sub-class title is "Necromancer" (DEC-49; it replaces the Figma's
+ * "Gravecaller"), the same on both teams. Its Legend is Avedrin on the Light team and Nirdeva on
+ * the Dark team (both owner-stated). Role, description, ratings and detail rows are not written.
+ */
+export const NECROMANCER = {
+  id: 'necromancer',
+  classId: 'magus',
+  displayName: 'Necromancer',
+  legendName: { light: 'Avedrin', dark: 'Nirdeva' },
+  roleLabel: null,
+  description: null,
+  roleRatings: null,
+  detailNames: { signature: null, specialty: null, ultimate: null },
+} as const satisfies LegendSpecDefinition;

@@ -17,10 +17,17 @@ describe('@eternalus/core public API', () => {
       'Simulation',
       'StateHasher',
       'createDefaultGameConfig',
+      'loadDisplayContent',
       'makeLogRecord',
       'runReplay',
       'validateGameConfig',
     ]);
+  });
+
+  it('keeps the raw content catalogues internal: display content comes from loadDisplayContent', () => {
+    expect(Object.keys(core)).not.toContain('LEGEND_CLASSES');
+    expect(Object.keys(core)).not.toContain('LEGEND_SPECS');
+    expect(core.loadDisplayContent().specs).toHaveLength(8);
   });
 
   it('generates the default map-1 from the default config', () => {

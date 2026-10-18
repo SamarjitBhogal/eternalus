@@ -22,7 +22,19 @@ export type {
   MatchConfig,
 } from './config/GameConfig.types';
 export { validateGameConfig } from './config/validateGameConfig';
-export type { LegendKind } from './content/legends/legends.types';
+export type {
+  ClassDetailNames,
+  LegendDefinition,
+  LegendKind,
+} from './content/legends/legends.types';
+export type {
+  LegendName,
+  LegendSpecDefinition,
+  RoleRatings,
+  SpecDetailNames,
+} from './content/legends/specs/legendSpecs.types';
+export { loadDisplayContent } from './content/loadDisplayContent';
+export type { DisplayContent } from './content/loadDisplayContent';
 export { DEFAULT_MAP_CONFIG } from './content/maps/defaultMapConfig';
 export type {
   MapDecoration,
