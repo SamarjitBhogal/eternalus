@@ -1,4 +1,5 @@
 import type { BridgeEventMap } from './events';
+import { assetsSlice } from './slices/assetsSlice';
 import { contentSlice } from './slices/contentSlice';
 import { hudSlice } from './slices/hudSlice';
 import { loadingSlice } from './slices/loadingSlice';
@@ -10,6 +11,7 @@ import type { AppDispatch } from './store';
 import type { TypedEventBus } from './TypedEventBus';
 
 const setup = matchSetupSlice.actions;
+const match = matchSlice.actions;
 
 /**
  * Copies every game → UI event into its slice: the only path from the bus to the store.
@@ -29,9 +31,13 @@ export function connectBusToStore(
     bus.on('loading-progress', (progress) =>
       dispatch(loadingSlice.actions.progressChanged(progress)),
     ),
-    // Every published setup starts clean: no selection or countdowns left from a previous one.
+    bus.on('asset-urls', (event) => dispatch(assetsSlice.actions.groupUrlsChanged(event))),
+    bus.on('credits', ({ entries }) => dispatch(assetsSlice.actions.creditsLoaded(entries))),
+    // Every published setup starts clean: no selection, countdowns, HUD or match state left over.
     bus.on('match-setup', (draft) => {
       dispatch(setup.reset());
+      dispatch(hudSlice.actions.reset());
+      dispatch(match.reset());
       if (draft === null) return;
       dispatch(setup.setTeam({ seed: draft.seed, playerTeam: draft.playerTeam }));
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
@@ -40,8 +46,10 @@ export function connectBusToStore(
     bus.on('countdown', ({ kind, remainingMs }) =>
       dispatch(kind === 'select' ? setup.setCountdown(remainingMs) : setup.setReveal(remainingMs)),
     ),
-    bus.on('match-clock', (clock) => dispatch(matchSlice.actions.clockChanged(clock))),
-    bus.on('hud-state', (hud) => dispatch(hudSlice.actions.hudStateChanged(hud))),
+    bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
+    bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),
+    bus.on('structure-state', ({ structures }) => dispatch(match.structuresChanged(structures))),
+    bus.on('capture-state', ({ points }) => dispatch(match.capturePointsChanged(points))),
     bus.on('announcement', (line) => dispatch(hudSlice.actions.announced(line))),
     bus.on('settings', (settings) => dispatch(settingsSlice.actions.settingsChanged(settings))),
   ];

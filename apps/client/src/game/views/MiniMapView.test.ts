@@ -10,9 +10,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { Canvas2dRenderer } from '../engine/render/Canvas2dRenderer';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import type { DrawContext } from '../engine/render/Canvas2dRenderer.types';
+import type { ScreenRect } from '../engine/render/Renderer.types';
 import { MapView } from './MapView';
 import { MiniMapView } from './MiniMapView';
-import { MINI_MAP_BORDER_COLOR, MINI_MAP_VIEW_BOX_COLOR } from './MiniMapView.constants';
+import { MINI_MAP_BACKGROUND_COLOR, MINI_MAP_VIEW_BOX_COLOR } from './MiniMapView.constants';
+import type { MiniMapRing } from './MiniMapView.types';
 import { SceneryView } from './SceneryView';
 import { SceneView } from './SceneView';
 import type { WorldLayer } from './SceneView.types';
@@ -23,12 +25,24 @@ const MAP = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 1);
 /** A pretend camera view: the part of the map the main screen is showing, in map units. */
 const VIEW = { x: 0, y: 200, width: 640, height: 360 };
 
+/**
+ * The HUD ring as `Match` injects it (Figma 65:743: 255 × 244 at 1636, 47 in the 1920 × 1080
+ * frame, 4 px stroke). Written out here because views import nothing from `bridge/` (I-68).
+ */
+const RING: MiniMapRing = {
+  frame: { width: 1920, height: 1080 },
+  box: { right: 29, top: 47, width: 255, height: 244 },
+  strokeWidth: 4,
+};
+
 /** A mini map whose scene is just the map, like in the real game today. */
-const createMiniMap = (): MiniMapView => new MiniMapView(MAP, new MapView(MAP));
+const createMiniMap = (ring: MiniMapRing = RING): MiniMapView =>
+  new MiniMapView(MAP, new MapView(MAP), ring);
 
 /** A pretend canvas. Tests run without a browser, so every drawing tool does nothing. */
 const createFakeContext = (): DrawContext => ({
   beginPath: vi.fn(),
+  clip: vi.fn(),
   closePath: vi.fn(),
   ellipse: vi.fn(),
   fill: vi.fn(),
@@ -36,6 +50,8 @@ const createFakeContext = (): DrawContext => ({
   lineTo: vi.fn(),
   moveTo: vi.fn(),
   rect: vi.fn(),
+  restore: vi.fn(),
+  save: vi.fn(),
   stroke: vi.fn(),
   strokeRect: vi.fn(),
   fillStyle: '',
@@ -44,47 +60,116 @@ const createFakeContext = (): DrawContext => ({
   lineJoin: 'miter',
 });
 
-// All tests use a 1000 x 800 screen.
-describe('MiniMapView', () => {
-  it('sits in the bottom-right corner with the same shape as the map', () => {
-    const area = createMiniMap().areaFor(1000, 800);
+/** Where a point lies against the ellipse filling `area`: 1 on it, below 1 inside. */
+const ellipseDistance = (x: number, y: number, area: ScreenRect, inset = 0): number => {
+  const radiusX = area.width / 2 - inset;
+  const radiusY = area.height / 2 - inset;
+  return (
+    ((x - area.x - area.width / 2) / radiusX) ** 2 + ((y - area.y - area.height / 2) / radiusY) ** 2
+  );
+};
 
-    // The margin is 1.5% of the screen width (15 px), so the right edge is at 1000 - 15
-    // and the bottom edge is at 800 - 15.
-    expect(area.x + area.width).toBeCloseTo(985);
-    expect(area.y + area.height).toBeCloseTo(785);
-    // Same width-to-height shape as the map, so the mini map isn't squashed.
-    expect(area.width / area.height).toBeCloseTo(MAP.width / MAP.height);
+// Unless a test says otherwise, the screen is the 1920 × 1080 design frame.
+describe('MiniMapView', () => {
+  it('sits in the HUD ring: (1636, 47, 255, 244) on a 1920 × 1080 screen', () => {
+    expect(createMiniMap().areaFor(1920, 1080)).toEqual({
+      x: 1636,
+      y: 47,
+      width: 255,
+      height: 244,
+    });
   });
 
-  it('draws the scene inside its area, then a border on top', () => {
-    const renderer = new Canvas2dRenderer(createFakeContext());
-    // Spies record each call so we can check what the mini map asked for.
-    const fitWorldInArea = vi.spyOn(renderer, 'fitWorldInArea');
-    const mapDraw = vi.spyOn(MapView.prototype, 'drawMinimap');
-    const strokeScreenRect = vi.spyOn(renderer, 'strokeScreenRect');
-    const miniMap = createMiniMap();
-    miniMap.draw(renderer, 1000, 800, VIEW);
+  it('scales the ring by the smaller screen ratio and keeps it at the top-right corner', () => {
+    // 3840 × 2160 is twice the frame both ways.
+    expect(createMiniMap().areaFor(3840, 2160)).toEqual({
+      x: 3272,
+      y: 94,
+      width: 510,
+      height: 488,
+    });
+    // 1000 × 800 is limited by its width: 1000 / 1920 of the frame.
+    const scale = 1000 / 1920;
+    const area = createMiniMap().areaFor(1000, 800);
+    expect(area.x).toBeCloseTo(1000 - (29 + 255) * scale);
+    expect(area.y).toBeCloseTo(47 * scale);
+    expect(area.width).toBeCloseTo(255 * scale);
+    expect(area.height).toBeCloseTo(244 * scale);
+  });
 
-    const area = miniMap.areaFor(1000, 800);
-    // 1. The whole map is shrunk to fit the mini map's box.
-    expect(fitWorldInArea).toHaveBeenCalledWith(MAP.width, MAP.height, area);
-    // 2. The map is drawn as minimap markers (through the scene).
+  it('fits the whole map, with its own shape, inside the ring stroke', () => {
+    const miniMap = createMiniMap();
+    const area = miniMap.areaFor(1920, 1080);
+    const mapArea = miniMap.mapAreaFor(1920, 1080);
+
+    expect(mapArea.width / mapArea.height).toBeCloseTo(MAP.width / MAP.height);
+    // Centred in the ring, with its corners on the ellipse inside the 4 px stroke.
+    expect(mapArea.x + mapArea.width / 2).toBeCloseTo(1763.5);
+    expect(mapArea.y + mapArea.height / 2).toBeCloseTo(169);
+    for (const [x, y] of [
+      [mapArea.x, mapArea.y],
+      [mapArea.x + mapArea.width, mapArea.y + mapArea.height],
+    ] as const) {
+      expect(ellipseDistance(x, y, area, RING.strokeWidth)).toBeCloseTo(1);
+    }
+  });
+
+  it('draws everything inside the clip to the ring ellipse, and no border', () => {
+    const renderer = new RecordingRenderer();
+    const mapDraw = vi.spyOn(MapView.prototype, 'drawMinimap');
+    const miniMap = createMiniMap();
+    miniMap.draw(renderer, 1920, 1080, VIEW);
+    const area = miniMap.areaFor(1920, 1080);
+
+    // RecordingRenderer runs the clipped drawing at once, so it is recorded after the clip.
+    expect(renderer.calls[0]).toEqual({ op: 'clipToEllipse', args: [area, expect.any(Function)] });
+    expect(renderer.calls[1]).toEqual({
+      op: 'fillScreenRect',
+      args: [area, MINI_MAP_BACKGROUND_COLOR],
+    });
+    expect(renderer.calls[2]).toEqual({
+      op: 'fitWorldInArea',
+      args: [MAP.width, MAP.height, miniMap.mapAreaFor(1920, 1080)],
+    });
     expect(mapDraw).toHaveBeenCalledWith(renderer);
-    // 3. A border is drawn around the box.
-    expect(strokeScreenRect).toHaveBeenCalledWith(area, MINI_MAP_BORDER_COLOR, 2);
+    expect(renderer.calls.map((call) => call.op)).not.toContain('strokeScreenRect');
+
+    // With a clip that never runs its drawing, nothing at all reaches the screen.
+    const held = new RecordingRenderer();
+    vi.spyOn(held, 'clipToEllipse').mockImplementation(() => undefined);
+    miniMap.draw(held, 1920, 1080, VIEW);
+    expect(held.calls).toEqual([]);
+  });
+
+  it('clips and fits to whichever ring it is given', () => {
+    const other: MiniMapRing = {
+      frame: { width: 1920, height: 1080 },
+      box: { right: 100, top: 200, width: 300, height: 150 },
+      strokeWidth: 10,
+    };
+    const clipOf = (ring: MiniMapRing) => {
+      const renderer = new RecordingRenderer();
+      createMiniMap(ring).draw(renderer, 1920, 1080, VIEW);
+      return renderer.calls.flatMap((call) => (call.op === 'clipToEllipse' ? [call.args[0]] : []));
+    };
+
+    expect(clipOf(RING)).toEqual([{ x: 1636, y: 47, width: 255, height: 244 }]);
+    expect(clipOf(other)).toEqual([{ x: 1520, y: 200, width: 300, height: 150 }]);
+    expect(createMiniMap(other).mapAreaFor(1920, 1080)).not.toEqual(
+      createMiniMap().mapAreaFor(1920, 1080),
+    );
   });
 
   it('keeps the whole map visible inside the mini map', () => {
     const renderer = new Canvas2dRenderer(createFakeContext());
     const miniMap = createMiniMap();
     miniMap.draw(renderer, 1000, 800, VIEW);
-    const area = miniMap.areaFor(1000, 800);
+    const mapArea = miniMap.mapAreaFor(1000, 800);
 
-    // The map's far corner must land exactly on the mini map's far corner: nothing cut off.
+    // The map's far corner must land exactly on the map area's far corner: nothing cut off.
     const bottomRight = renderer.toScreen({ x: MAP.width, y: MAP.height });
-    expect(bottomRight.x).toBeCloseTo(area.x + area.width);
-    expect(bottomRight.y).toBeCloseTo(area.y + area.height);
+    expect(bottomRight.x).toBeCloseTo(mapArea.x + mapArea.width);
+    expect(bottomRight.y).toBeCloseTo(mapArea.y + mapArea.height);
   });
 
   it('outlines the part of the map the main view is showing', () => {
@@ -110,38 +195,43 @@ describe('MiniMapView', () => {
     const drawObstacles = vi.fn();
     const obstacles: WorldLayer = { draw: vi.fn(), drawMinimap: drawObstacles };
     const scene = new SceneView([new MapView(MAP), obstacles]);
-    new MiniMapView(MAP, scene).draw(renderer, 1000, 800, VIEW);
+    new MiniMapView(MAP, scene, RING).draw(renderer, 1000, 800, VIEW);
 
     // The mini map drew the obstacles too, without any change to MiniMapView.
     expect(drawObstacles).toHaveBeenCalledWith(renderer);
   });
 
-  it('turns a click on the mini map into the map position under it', () => {
-    const miniMap = createMiniMap();
-    const area = miniMap.areaFor(1000, 800);
-
-    // Clicking the exact centre of the mini map points at the centre of the map.
-    const point = miniMap.worldPointAt(
-      area.x + area.width / 2,
-      area.y + area.height / 2,
-      1000,
-      800,
-    );
+  it('turns a click at the ring centre into the centre of the map', () => {
+    const point = createMiniMap().worldPointAt(1763.5, 169, 1920, 1080);
 
     expect(point?.x).toBeCloseTo(MAP.width / 2);
     expect(point?.y).toBeCloseTo(MAP.height / 2);
   });
 
-  it('ignores clicks outside the mini map', () => {
+  it('clamps a click between the map and the ring to the map edge', () => {
+    // 3 px inside the ring's left end: inside the ellipse, left of the map.
+    const point = createMiniMap().worldPointAt(1636 + 3, 169, 1920, 1080);
+
+    expect(point?.x).toBe(0);
+    expect(point?.y).toBeCloseTo(MAP.height / 2);
+  });
+
+  it('ignores clicks outside the ring ellipse, even inside its box', () => {
+    const miniMap = createMiniMap();
     // The top-left corner of the screen is far from the mini map.
-    expect(createMiniMap().worldPointAt(10, 10, 1000, 800)).toBeNull();
+    expect(miniMap.worldPointAt(10, 10, 1920, 1080)).toBeNull();
+    // The ring box's top-left corner lies outside the ellipse.
+    expect(ellipseDistance(1638, 49, miniMap.areaFor(1920, 1080))).toBeGreaterThan(1);
+    expect(miniMap.worldPointAt(1638, 49, 1920, 1080)).toBeNull();
+    // Before the first resize the screen is 0 × 0 and there is no mini map to click.
+    expect(miniMap.worldPointAt(0, 0, 0, 0)).toBeNull();
   });
 
   it('shows new map features with no view code change (ADR 0009 minimap proof)', () => {
     // Draw the mini map of a generated map and keep only the marker calls.
     const minimapGlyphs = (map: MapDefinition) => {
       const renderer = new RecordingRenderer();
-      new MiniMapView(map, new SceneView([new MapView(map)])).draw(renderer, 1000, 800, VIEW);
+      new MiniMapView(map, new SceneView([new MapView(map)]), RING).draw(renderer, 1000, 800, VIEW);
       return renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));
     };
     const base = minimapGlyphs(MAP);
@@ -175,7 +265,7 @@ describe('MiniMapView', () => {
     };
     const withBeacon: MapDefinition = { ...MAP, features: [...MAP.features, beacon] };
     const renderer = new RecordingRenderer();
-    new MiniMapView(withBeacon, new SceneView([new MapView(withBeacon)])).draw(
+    new MiniMapView(withBeacon, new SceneView([new MapView(withBeacon)]), RING).draw(
       renderer,
       1000,
       800,
@@ -213,7 +303,7 @@ describe('MiniMapView with scenery', () => {
     const scenery = new MapSceneryBuilder(MAP).build();
     const renderer = new RecordingRenderer();
     const scene = new SceneView([new MapView(MAP, scenery), new SceneryView(scenery, 'detail')]);
-    new MiniMapView(MAP, scene).draw(renderer, 1000, 800, VIEW);
+    new MiniMapView(MAP, scene, RING).draw(renderer, 1000, 800, VIEW);
     const roof = scenery.find((piece) => piece.id === 'cathedral-nave-roof');
 
     expect(roof).toBeDefined();

@@ -1,11 +1,14 @@
 import type { PlayableTeam } from '../../bridge/domain.types';
-import type { LegendClassCard, MatchSetupDraft, RosterEntry } from '../../bridge/events';
+import type { LegendClassCard } from '../../bridge/catalogue.types';
+import type { MatchSetupDraft, RosterEntry } from '../../bridge/events';
+import { isSelectableClass } from '../../bridge/selectionRules';
 import type { Rng } from './Rng.types';
 
 /**
  * Builds a match setup from content (reference 14 §5 "rosters are data"): the player's team is
  * drawn from the match seed's stream; the allies are the player as their team's Rover plus bots,
- * the enemies are all bots led by the enemy Rover. Bots take the classes in catalogue order.
+ * the enemies are all bots led by the enemy Rover. Bots take the selectable classes in catalogue
+ * order; a locked card is never given to a bot (DEC-48).
  */
 export function buildMatchSetup(inputs: {
   readonly seed: number;
@@ -15,9 +18,12 @@ export function buildMatchSetup(inputs: {
   readonly playerName: string;
 }): MatchSetupDraft {
   const { seed, rng, legendClasses, legendsPerTeam, playerName } = inputs;
+  const selectable = legendClasses.filter(isSelectableClass);
   const classAt = (index: number): LegendClassCard => {
-    const card = legendClasses[index % legendClasses.length];
-    if (card === undefined) throw new Error('buildMatchSetup: the catalogue has no Legend classes');
+    const card = selectable[index % selectable.length];
+    if (card === undefined) {
+      throw new Error('buildMatchSetup: the catalogue has no selectable Legend classes');
+    }
     return card;
   };
   const roster = (team: PlayableTeam, hasPlayer: boolean): RosterEntry[] =>

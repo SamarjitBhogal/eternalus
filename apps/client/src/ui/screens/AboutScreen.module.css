@@ -1,0 +1,5 @@
+/* Licence texts keep their own line breaks (OFL and MIT as shipped). */
+.licenceText {
+  white-space: pre-wrap;
+  color: var(--text-muted);
+}

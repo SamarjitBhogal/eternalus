@@ -7,6 +7,7 @@ import type { Binding } from '../../bridge/Binding.types';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import { createAppStore } from '../../bridge/store';
 import { KeyGlyph } from './KeyGlyph';
+import styles from './KeyGlyph.module.css';
 
 const W_BINDINGS: readonly Binding[] = [
   { action: 'move-up', chords: [{ device: 'keyboard', code: 'KeyW', label: 'W' }] },
@@ -36,6 +37,20 @@ describe('KeyGlyph', () => {
     const html = render(<KeyGlyph action="sprint" />, storeWith(W_BINDINGS));
 
     expect(html).toMatch(/<kbd[^>]*>—<\/kbd>/);
+  });
+
+  it('draws the inline key cap by default and the bare and HUD looks on request', () => {
+    const store = storeWith(W_BINDINGS);
+    const glyph = (appearance: 'inline' | 'bare' | 'hud') =>
+      render(<KeyGlyph action="move-up" appearance={appearance} />, store);
+    const byDefault = render(<KeyGlyph action="move-up" />, store);
+
+    expect(styles.glyph).toBeTruthy();
+    expect(byDefault).toBe(`<kbd class="${String(styles.glyph)}">W</kbd>`);
+    expect(glyph('inline')).toBe(byDefault);
+    expect(glyph('bare')).toBe(`<kbd class="${String(styles.bare)}">W</kbd>`);
+    expect(glyph('hud')).toBe(`<kbd class="${String(styles.hud)}">W</kbd>`);
+    expect(new Set([styles.glyph, styles.bare, styles.hud]).size).toBe(3);
   });
 
   it('updates every glyph when move-up is rebound from W to ArrowUp', () => {

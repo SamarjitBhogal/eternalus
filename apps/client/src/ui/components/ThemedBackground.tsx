@@ -1,45 +1,31 @@
-import type { ReactElement } from 'react';
+import type { ComponentType, ReactElement } from 'react';
 
-import type { BackgroundLayer, BackgroundSet } from '../../bridge/events';
-import {
-  PARTICLE_STEP_DELAY,
-  PARTICLE_STEP_X,
-  PARTICLE_STEP_Y,
-} from './ThemedBackground.constants';
+import type { BackgroundLayer, BackgroundSet } from '../../bridge/catalogue.types';
+import { GradientLayer } from './GradientLayer';
+import { ImageLayer } from './ImageLayer';
+import { ParticlesLayer } from './ParticlesLayer';
 import styles from './ThemedBackground.module.css';
 
-const percent = (step: number, index: number): string =>
-  `${String(Math.round(((index * step) % 1) * 1000) / 10)}%`;
+type LayerKind = BackgroundLayer['kind'];
+type LayerByKind = { readonly [K in LayerKind]: Extract<BackgroundLayer, { kind: K }> };
 
-function Layer({ layer }: { readonly layer: BackgroundLayer }): ReactElement {
-  if (layer.kind === 'gradient') {
-    const stops = layer.stops.map((token) => `var(${token})`).join(', ');
-    return (
-      <div
-        className={styles.gradient}
-        style={{ backgroundImage: `linear-gradient(${String(layer.angleDeg)}deg, ${stops})` }}
-      />
-    );
-  }
-  if (layer.kind === 'image') {
-    return <div className={styles.image} style={{ backgroundImage: `url("${layer.src}")` }} />;
-  }
-  return (
-    <div className={styles.particles}>
-      {Array.from({ length: layer.count }, (_, index) => (
-        <span
-          key={index}
-          className={styles.particle}
-          style={{
-            left: percent(PARTICLE_STEP_X, index),
-            top: percent(PARTICLE_STEP_Y, index),
-            backgroundColor: `var(${layer.colourToken})`,
-            animationDelay: `calc(var(--motion-ambient) * -${String((index * PARTICLE_STEP_DELAY) % 1)})`,
-          }}
-        />
-      ))}
-    </div>
-  );
+/** One view per layer kind (rule 12: a new kind is one entry here and one component). */
+const BACKGROUND_LAYER_VIEWS: {
+  readonly [K in LayerKind]: ComponentType<{ readonly layer: LayerByKind[K] }>;
+} = {
+  gradient: GradientLayer,
+  image: ImageLayer,
+  particles: ParticlesLayer,
+};
+
+/** Draws `layer` with the view of its kind (the kind and the layer correlate through `K`). */
+function renderLayer<K extends LayerKind>(
+  kind: K,
+  layer: LayerByKind[K],
+  key: number,
+): ReactElement {
+  const View: ComponentType<{ readonly layer: LayerByKind[K] }> = BACKGROUND_LAYER_VIEWS[kind];
+  return <View key={key} layer={layer} />;
 }
 
 /**
@@ -54,9 +40,7 @@ export function ThemedBackground({
 }): ReactElement {
   return (
     <div className={styles.background} aria-hidden="true" data-background={set?.id}>
-      {set?.layers.map((layer, index) => (
-        <Layer key={index} layer={layer} />
-      ))}
+      {set?.layers.map((layer, index) => renderLayer(layer.kind, layer, index))}
     </div>
   );
 }

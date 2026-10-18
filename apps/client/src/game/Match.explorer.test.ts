@@ -1,13 +1,14 @@
 import {
   createDefaultGameConfig,
   type InputIntent,
-  MapGenerator,
   NullLogger,
   Simulation,
   type Vec2,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import type { BridgeEventMap } from '../bridge/events';
+import { TypedEventBus } from '../bridge/TypedEventBus';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import type { WorldRect } from './engine/render/Renderer.types';
@@ -15,6 +16,8 @@ import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
+import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
+import { prepareMatchWorld } from './prepareMatchWorld';
 
 const SCREEN = { width: 1280, height: 720 };
 
@@ -29,13 +32,14 @@ class ScriptedIntent implements IntentSource {
 
 const setUp = () => {
   const config = createDefaultGameConfig();
-  const map = new MapGenerator().generate(config, 1);
+  const world = prepareMatchWorld(config, 1);
+  const { map } = world;
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const match = new Match({
     simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
-    map,
+    world,
     tickRate: config.tickRate,
     scheduler: new FakeFrameScheduler(),
     renderer,
@@ -43,6 +47,11 @@ const setUp = () => {
     input,
     player: { legend: 'warrior', team: 'light' },
     logger: new NullLogger(),
+    bridge: {
+      bus: new TypedEventBus<BridgeEventMap>(),
+      publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
+      captureKinds: [],
+    },
   });
   match.resize(SCREEN.width, SCREEN.height, 1);
   match.tick();
@@ -126,5 +135,18 @@ describe('Match free view', () => {
 
     match.overview();
     expect(match.isInterior).toBe(false);
+  });
+
+  it('leaves the cathedral for the following camera (normal play, I-55)', () => {
+    const { match, shown, cathedral, toScreen } = setUp();
+    const following = shown();
+    match.overview();
+    const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, shown());
+    expect(match.enterAt(onCathedral.x, onCathedral.y)).toBe(true);
+
+    match.leaveInterior();
+
+    expect(match.isInterior).toBe(false);
+    expect(shown()).toEqual(following);
   });
 });

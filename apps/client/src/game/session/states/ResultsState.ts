@@ -5,6 +5,11 @@ import type { SessionContext, SessionState } from '../../SessionController.types
 export class ResultsState implements SessionState {
   public readonly phase: SessionPhase = 'results';
 
+  /** Releases the match's assets (13 §2 results row). */
+  public exit(context: SessionContext): void {
+    context.releaseAssets('match');
+  }
+
   /** `navigate` → `menu` at that route; `start-match` → `loading` with the same setup. */
   public handleIntent(intent: UiIntent, context: SessionContext): void {
     if (intent.kind === 'navigate') {

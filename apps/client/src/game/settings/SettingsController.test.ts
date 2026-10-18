@@ -60,6 +60,32 @@ describe('SettingsController', () => {
     expect(moveUpChords(second.published[0])).toEqual([UP_ARROW]);
   });
 
+  it('exposes no bindings before start, then the published ones, then a rebinding', async () => {
+    const persistence = new PersistenceController({
+      adapter: new MemoryStorageAdapter(),
+      knownActions: new Set(INPUT_ACTIONS),
+      now: () => 0,
+      warn: () => undefined,
+    });
+    await persistence.open();
+    const bus = new TypedEventBus<BridgeEventMap>();
+    const controller = new SettingsController({ bus, persistence, logger: new NullLogger() });
+    expect(controller.bindings).toBeNull();
+
+    await controller.start();
+    expect(controller.bindings).toEqual(PRESETS.wasd);
+
+    bus.emit('ui-intent', {
+      kind: 'update-binding',
+      action: 'move-up',
+      chord: UP_ARROW,
+      onConflict: 'swap',
+    });
+    expect(controller.bindings?.find((binding) => binding.action === 'move-up')?.chords).toEqual([
+      UP_ARROW,
+    ]);
+  });
+
   it('applies audio, video and accessibility changes', async () => {
     const { bus, published } = await started();
 

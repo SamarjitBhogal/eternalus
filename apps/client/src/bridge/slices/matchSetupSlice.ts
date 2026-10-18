@@ -16,6 +16,9 @@ type MatchSetupSliceState = {
   readonly revealMs: number;
 };
 
+/** Milliseconds per second: the countdown shows whole seconds. */
+const MS_PER_SECOND = 1000;
+
 const initialState: MatchSetupSliceState = {
   seed: 0,
   playerTeam: null,
@@ -50,8 +53,9 @@ export const matchSetupSlice = createSlice({
       state.allies = [...action.payload.allies];
       state.enemies = [...action.payload.enemies];
     },
-    select(state, action: PayloadAction<ClassSelection>) {
-      state.selection = action.payload;
+    /** `null` clears the pick (back to the class step). */
+    select(state, action: PayloadAction<ClassSelection | null>) {
+      state.selection = action.payload ?? { classId: null, specId: null };
     },
     setCountdown(state, action: PayloadAction<number>) {
       state.countdownMs = action.payload;
@@ -60,5 +64,12 @@ export const matchSetupSlice = createSlice({
       state.revealMs = action.payload;
     },
     reset: () => initialState,
+  },
+  selectors: {
+    selectSelection: (state) => state.selection,
+    selectPlayerTeam: (state) => state.playerTeam,
+    selectAllies: (state) => state.allies,
+    /** Whole seconds left, rounded up, as the countdown shows them (42000 → 42, 41001 → 42). */
+    selectCountdownSeconds: (state) => Math.ceil(state.countdownMs / MS_PER_SECOND),
   },
 });

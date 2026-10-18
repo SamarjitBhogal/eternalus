@@ -2,13 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { type BridgeEventMap, SESSION_PHASES, type SessionPhase } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
-import { placeholderCatalogue } from './content/placeholderCatalogue';
-import { PLACEHOLDER_MATCH_CONFIG } from './content/placeholderSetup';
-import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { SessionController } from './SessionController';
 import type { SessionContext, SessionState } from './SessionController.types';
 import { IllegalSessionTransition } from './session/IllegalSessionTransition';
-import { LcgRng } from './session/LcgRng';
+import { testSessionDeps } from './testSessionDeps';
 
 // Architecture 13 §2, written out independently of SESSION_TRANSITIONS.
 const LEGAL: readonly (readonly [SessionPhase, SessionPhase])[] = [
@@ -43,17 +40,7 @@ describe('SessionController transition table', () => {
     const bus = new TypedEventBus<BridgeEventMap>();
     const phases: SessionPhase[] = [];
     bus.on('session-phase', ({ phase }) => phases.push(phase));
-    const controller = new SessionController({
-      bus,
-      clock: new FakeSessionClock(),
-      states,
-      catalogue: placeholderCatalogue,
-      matchConfig: PLACEHOLDER_MATCH_CONFIG,
-      playerName: 'Tester',
-      seedSource: () => 1,
-      createRng: (seed) => new LcgRng(seed),
-      themeRoot: { dataset: {} },
-    });
+    const controller = new SessionController(testSessionDeps({ bus, states }));
     controller.start();
     const context = captured.context;
     if (context === null) throw new Error('boot did not enter');

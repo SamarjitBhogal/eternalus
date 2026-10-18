@@ -1,6 +1,3 @@
-/** `MouseEvent.button` of the main (usually left) button. */
-export const MAIN_BUTTON = 0;
-
 /**
  * `PointerEvent.buttons` bits and the `MouseEvent.button` each stands for. The two numberings
  * differ: bit 2 is the secondary button (2) and bit 4 the wheel button (1).

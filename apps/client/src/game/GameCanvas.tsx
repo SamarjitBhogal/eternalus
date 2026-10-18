@@ -1,45 +1,39 @@
-import { type ReactElement, useRef } from 'react';
+import { type ReactElement, useEffect, useRef } from 'react';
 
 import styles from './GameCanvas.module.css';
-import { useMatch } from './useMatch';
+import type { GameCanvasProps } from './GameCanvas.types';
+import { GameCanvasChrome } from './GameCanvasChrome';
+import { useExplorerChrome } from './useExplorerChrome';
 
 /**
- * The canvas the match renders into, with the map's navigation controls and legend. It owns the
- * match for as long as it is mounted.
+ * The match viewport (13 §1): owns the canvas and hands it to the session when it mounts
+ * (`attach` → `SessionController.attachViewport`, which builds the match), and the returned
+ * detach when it unmounts. In normal play only a "Leave cathedral" control is drawn, while inside
+ * the interior (an interim, DV-119); the developer explorer's toolbar and legend show only with
+ * `isExplorerShown` (`?dev=1`, I-55). `GameCanvasChrome` draws both from this hook's state.
  */
-export function GameCanvas(): ReactElement {
+export function GameCanvas({ attach, isExplorerShown, labels }: GameCanvasProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { isInterior, overview } = useMatch(canvasRef);
+  const { chrome, isInterior, overview, leaveInterior } = useExplorerChrome();
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas === null) return undefined;
+    return attach({ canvas, chrome, isExplorerShown });
+  }, [attach, chrome, isExplorerShown]);
   return (
-    <section className={styles.explorer} aria-label="Eternalus map explorer">
+    <div className={styles.explorer}>
       <canvas
         ref={canvasRef}
-        className={styles.canvas}
-        aria-label="Drag to explore, scroll to zoom, click the cathedral to enter"
+        className={isExplorerShown ? [styles.canvas, styles.isExploring].join(' ') : styles.canvas}
+        aria-label={isExplorerShown ? labels.explorer.canvas : labels.canvas}
       />
-      <div className={styles.toolbar}>
-        <span>
-          Drag to explore <b>·</b> Scroll to zoom <b>·</b>{' '}
-          {isInterior ? 'Explore the sanctuary' : 'Click cathedral to enter'}
-        </span>
-        <button type="button" onClick={overview}>
-          {isInterior ? 'Leave cathedral' : 'World overview'}
-        </button>
-      </div>
-      <div className={styles.legend}>
-        <span>
-          <i className={styles.light} />
-          Light stronghold
-        </span>
-        <span>
-          <i className={styles.dark} />
-          Dark stronghold
-        </span>
-        <span>
-          <i className={styles.camp} />
-          Neutral camps
-        </span>
-      </div>
-    </section>
+      <GameCanvasChrome
+        isExplorerShown={isExplorerShown}
+        isInterior={isInterior}
+        labels={labels}
+        onOverview={overview}
+        onLeaveInterior={leaveInterior}
+      />
+    </div>
   );
 }

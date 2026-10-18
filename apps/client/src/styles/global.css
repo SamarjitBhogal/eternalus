@@ -54,6 +54,142 @@
   --motion-fast: 120ms;
   --motion-medium: 240ms;
   --motion-ambient: 24s;
+
+  /* Game screens (Figma z5Udjg41B9Vtcb9IJHHyTs 62:125, 62:70, 58:271, 62:231); the frames bind no
+     Figma variables, so each value is the frame's literal and the name says its role. */
+
+  /* Cinzel 400/700 (SIL OFL 1.1), registered by FontLoader from the boot group (DEC-51). A capitals
+     face: never text-transform content text. Menus keep --font-display. */
+  --font-game: 'Cinzel', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  /* Cinzel line heights = Figma AUTO box heights (unitless px; selection uses ×1px, HUD ×--hud-u). */
+  --leading-game-96: 129;
+  --leading-game-64: 83;
+  --leading-game-48: 63;
+  --leading-game-40: 54;
+  --leading-game-36: 48;
+  --leading-game-32: 43;
+  --leading-game-24: 32;
+  --leading-game-20: 27;
+  --leading-game-16: 22;
+  --leading-game-15: 20;
+  --leading-game-14: 19;
+  /* Minimum rendered text size below 1080p (ES-11; Recommendation, INBOX HC-Q14). */
+  --text-min: 12px;
+  /* The opaque stop of an alpha mask (a mask reads only alpha), e.g. the XP glow ring (R3-02). */
+  --mask-opaque: #000000;
+
+  /* Selection screens */
+  --selection-ink: #131313;
+  --selection-ink-scrim: rgb(19 19 19 / 20%);
+  --selection-ink-veil: rgb(19 19 19 / 50%);
+  --selection-ink-missing: rgb(19 19 19 / 80%);
+  --selection-glass-fallback: rgb(19 19 19 / 30%);
+  --selection-parchment: #f9e0c7;
+  --selection-parchment-faint: rgb(249 224 199 / 60%);
+  --selection-text: #ffffff;
+  --selection-text-soft: rgb(255 255 255 / 85%);
+  --selection-text-dim: rgb(255 255 255 / 75%);
+  --selection-placeholder-line: rgb(255 255 255 / 25%);
+  --selection-glass-rim: rgb(255 255 255 / 80%);
+  --selection-tile-idle: rgb(255 255 255 / 40%);
+  --selection-countdown: #ff1a00;
+  --selection-countdown-glow: rgb(255 26 0 / 15%);
+  --selection-detail-accent: rgb(255 26 0 / 40%);
+  --selection-banner-title: #710b00;
+  --selection-brace: #b2ccd9;
+  --selection-glow-frost: #bddeff;
+  --selection-glow-frost-soft: rgb(189 222 255 / 55%);
+  --selection-glow-sky: #75b4fb;
+  --selection-glow-azure: #5291fc;
+  --selection-glow-azure-strong: rgb(82 145 252 / 80%);
+  --selection-glow-azure-half: rgb(82 145 252 / 50%);
+  --selection-glow-pale: #d1e2ff;
+  --selection-glass-centre: rgb(117 180 251 / 20%);
+  --selection-glass-edge: rgb(117 180 251 / 4%);
+  --selection-shadow: #000000;
+  --selection-art-shade: rgb(0 0 0 / 20%);
+  --selection-art-shade-deep: rgb(0 0 0 / 36%);
+  --selection-art-shade-hover: rgb(0 0 0 / 8%);
+  --selection-art-shade-light: rgb(0 0 0 / 5%);
+  --selection-art-warm: rgb(49 13 0 / 10%);
+  --selection-drop-shadow: rgb(0 0 0 / 60%);
+  --selection-keycap: #d9d9d9;
+  --selection-keycap-ink: #151616;
+  --selection-keycap-ink-alt: #000000;
+  --selection-stat-track: #d9d9d9;
+  --selection-stat-fill-start: rgb(217 217 217 / 80%);
+  --selection-stat-fill-end: #bddeff;
+  --selection-underfill-centre: #5f6468;
+  --selection-underfill-edge: #343436;
+
+  /* Class and Legend accents; content names them (accentToken). */
+  --class-warrior-accent: #eda84d;
+  --class-sentinel-accent: #67ed4d;
+  --class-magus-accent: #bddeff;
+  --class-flying-accent: #9b32f3;
+  --legend-catalyst-accent: #eda84d;
+  --legend-oracle-accent: #bddeff;
+  --legend-necromancer-accent: #9b32f3;
+
+  /* Match HUD (62:231) */
+  --hud-frame-backdrop: #3e2217;
+  --hud-text: #ffffff;
+  --hud-marker: #ffffff;
+  --hud-cream: #f9e0c7;
+  --hud-cream-bright: #ffefcc;
+  --hud-cream-bright-half: rgb(255 239 204 / 50%);
+  --hud-amber: #f9bd45;
+  --hud-orange: #f98d45;
+  --hud-xp-glow: rgb(255 155 4 / 50%);
+  --hud-active-fill: rgb(35 35 35 / 20%);
+  --hud-slot-border: #929390;
+  --hud-slot-shade-strong: rgb(113 11 0 / 50%);
+  --hud-slot-shade-soft: rgb(113 11 0 / 10%);
+  --hud-bar-hairline: rgb(249 224 199 / 50%);
+  --hud-bar-cream: rgb(249 224 199 / 80%);
+  --hud-bar-cream-rest: rgb(249 224 199 / 20%);
+  /* The cream bars' value marker (65:722, 62:258: the "#FFF 51%" stop); its own token, apart from
+     --hud-marker, so the minimums set can change it alone (OD-11). */
+  --hud-bar-cream-marker: #ffffff;
+  --hud-health: #ff1a00;
+  --hud-health-fill: rgb(255 26 0 / 60%);
+  --hud-health-rest: rgb(255 26 0 / 40%);
+  --hud-aether: #5291fc;
+  --hud-aether-fill: rgb(82 145 252 / 60%);
+  --hud-aether-rest: rgb(82 145 252 / 40%);
+  --hud-charge-pip-border: #d9d9d9;
+  --hud-charge-pip-fill: rgb(168 0 3 / 50%);
+  --hud-status-fill: #b1aea9;
+  --hud-status-track: #737574;
+  --hud-xp-ring-outer: #625a57;
+  --hud-xp-ring-inner: #564745;
+  --hud-level-shadow-near: #370907;
+  --hud-level-shadow-far: #000000;
+  --hud-level-noise: #3e2217;
+  /* Not in the Figma (forced or fill-in states; register CD-03, CD-13): */
+  --hud-cooldown-shade: rgb(0 0 0 / 55%);
+  --hud-no-data-hatch: rgb(249 224 199 / 25%);
+  --hud-allegiance-flag: #f9e0c7;
+  /* Team HUD colours (10-art-and-lore: team colours are the HUD colours; Figma allied = Light). */
+  --team-light-hud-structure: #5291fc;
+  --team-dark-hud-structure: #710b00;
+  --team-neutral-hud-structure: #929390;
+  --team-light-hud-letter: #7b8a9f;
+  --team-light-hud-letter-shadow: rgb(0 0 0 / 50%);
+  --team-light-hud-letter-blur: 5;
+  --team-neutral-hud-letter: #b0b0b0;
+  --team-neutral-hud-letter-shadow: rgb(0 0 0 / 50%);
+  --team-neutral-hud-letter-blur: 4;
+  --team-dark-hud-letter: #ac938e;
+  --team-dark-hud-letter-shadow: #000000;
+  --team-dark-hud-letter-blur: 5;
+  /* Reference only, painted by no rule: the flat fills of the objective shield art (65:621 light,
+     65:606 neutral, 65:616 dark; HUD spec §1), which ships as R1 rasters with its own colours. The
+     letters' and the shield edges' contrast pairs are measured on them
+     (styles/tokenContrast.test.ts). */
+  --team-light-hud-shield-art: #1d4a85;
+  --team-neutral-hud-shield-art: #605d58;
+  --team-dark-hud-shield-art: #6e1615;
 }
 
 :root[data-team='light'] {
@@ -74,6 +210,54 @@
   :root {
     --motion-fast: 0ms;
     --motion-medium: 0ms;
+  }
+}
+
+/* OA2: tokens of the pairs below 13 §7's minimums (CD-21), and only those. The Figma values in
+   :root stay the default (contrastMode 'figma'). Each value keeps its token's OKLCH hue and alpha
+   and moves its lightness by the smallest step that meets 4.5:1 (text) or 3:1 (bars, icons) plus
+   0.05; chroma is reduced only where the sRGB gamut forces it (method: master plan §5.17). */
+:root[data-contrast='minimums'] {
+  --team-light-hud-letter: #acbcd2;
+  --team-neutral-hud-letter: #d7d7d7;
+  --team-dark-hud-letter: #b59c96;
+  --hud-health-fill: rgb(255 134 115 / 60%);
+  --hud-aether-fill: rgb(122 172 255 / 60%);
+  /* Each bar's rest and peak, solved with its fill: the white value numeral sits on all three. */
+  --hud-health-rest: rgb(118 6 0 / 40%);
+  --hud-aether-rest: rgb(0 55 142 / 40%);
+  --hud-health: #e91700;
+  --hud-aether: #3572db;
+  --hud-status-fill: #d5d2cd;
+  --team-dark-hud-structure: #cf6755;
+  /* OD-11 (a): the cream bars' marker meets 3:1 against their fill. No colour also meets 3:1
+     against the cream rest; the fill's edge with the rest (4.51:1) still shows the value. */
+  --hud-bar-cream-marker: #676767;
+  /* OD-11 (b): rings drawn around the objective shield rasters, 3:1 against the ground; each starts
+     from its shield's flat fill. Not declared in :root, so the figma set draws no ring. */
+  --team-light-hud-shield-outline: #4775b3;
+  --team-neutral-hud-shield-outline: #76736d;
+  --team-dark-hud-shield-outline: #b4574f;
+}
+
+/* The OS asking for more contrast selects the same set (identical declarations, asserted). */
+@media (prefers-contrast: more) {
+  :root {
+    --team-light-hud-letter: #acbcd2;
+    --team-neutral-hud-letter: #d7d7d7;
+    --team-dark-hud-letter: #b59c96;
+    --hud-health-fill: rgb(255 134 115 / 60%);
+    --hud-aether-fill: rgb(122 172 255 / 60%);
+    --hud-health-rest: rgb(118 6 0 / 40%);
+    --hud-aether-rest: rgb(0 55 142 / 40%);
+    --hud-health: #e91700;
+    --hud-aether: #3572db;
+    --hud-status-fill: #d5d2cd;
+    --team-dark-hud-structure: #cf6755;
+    --hud-bar-cream-marker: #676767;
+    --team-light-hud-shield-outline: #4775b3;
+    --team-neutral-hud-shield-outline: #76736d;
+    --team-dark-hud-shield-outline: #b4574f;
   }
 }
 

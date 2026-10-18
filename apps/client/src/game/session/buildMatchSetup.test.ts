@@ -1,16 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LegendClassCard } from '../../bridge/events';
+import { classCardFixture } from '../../bridge/catalogueFixtures';
 import { buildMatchSetup } from './buildMatchSetup';
 import { LcgRng } from './LcgRng';
 import type { Rng } from './Rng.types';
 
-const card = (classId: string): LegendClassCard => ({
-  classId,
-  displayName: classId.toUpperCase(),
-  blurb: '',
-  specs: [],
-});
+const card = (classId: string) => classCardFixture({ classId, displayName: classId.toUpperCase() });
 const CLASSES = [card('warrior'), card('sentinel'), card('magus')];
 const fixedRng = (value: number): Rng => ({ nextInt: () => value });
 
@@ -68,6 +63,24 @@ describe('buildMatchSetup', () => {
   });
 
   it('refuses an empty catalogue', () => {
-    expect(() => build(new LcgRng(1), [])).toThrow('no Legend classes');
+    expect(() => build(new LcgRng(1), [])).toThrow('no selectable Legend classes');
+  });
+
+  it('never gives a locked class to anyone and cycles the selectable classes in order', () => {
+    const locked = classCardFixture({ classId: 'flying', status: 'locked' });
+    const { allies, enemies } = build(new LcgRng(1), [locked, ...CLASSES]);
+    const roster = [...allies, ...enemies];
+    expect(roster.filter((entry) => entry.classId === 'flying')).toEqual([]);
+    expect(allies.slice(0, 4).map((entry) => entry.classId)).toEqual([
+      'warrior',
+      'sentinel',
+      'magus',
+      'warrior',
+    ]);
+  });
+
+  it('refuses a catalogue with only locked classes', () => {
+    const locked = classCardFixture({ classId: 'flying', status: 'locked' });
+    expect(() => build(new LcgRng(1), [locked])).toThrow('no selectable Legend classes');
   });
 });

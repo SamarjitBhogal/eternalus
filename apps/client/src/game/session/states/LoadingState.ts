@@ -1,17 +1,28 @@
 import type { SessionPhase, UiIntent } from '../../../bridge/events';
 import type { SessionContext, SessionState } from '../../SessionController.types';
-import { runPlaceholderLoad } from '../runPlaceholderLoad';
+import { selectionAssetGroups } from '../selectionAssetGroups';
 
-/** Start-match loading: loads the selection screens' assets, then opens character select. */
+/**
+ * Start-match loading (13 §2): loads the selection screens' asset groups for the catalogue's
+ * layout and effects renderer (I-47, I-86), then opens character select; a load bug returns to
+ * the menu with reason `'load-failed'` (I-57).
+ */
 export class LoadingState implements SessionState {
   public readonly phase: SessionPhase = 'loading';
   private cancelLoad = (): void => undefined;
 
-  /** Starts the `selection` group load. */
+  /** Starts the selection groups' load. */
   public enter(context: SessionContext): void {
-    this.cancelLoad = runPlaceholderLoad(context, 'selection', () => {
-      context.transition('character-select');
-    });
+    const { classSelectLayout, effectsRenderer } = context.catalogue;
+    this.cancelLoad = context.loadAssets(
+      selectionAssetGroups(classSelectLayout, effectsRenderer),
+      () => {
+        context.transition('character-select');
+      },
+      () => {
+        context.transition('menu', 'load-failed');
+      },
+    );
   }
 
   /** Cancels an unfinished load. */

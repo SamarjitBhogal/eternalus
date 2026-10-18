@@ -15,6 +15,9 @@ export default mergeConfig(
       environment: 'node',
       sequence: { shuffle: true, seed: 20260926 },
       restoreMocks: true,
+      // Vitest blanks every CSS import it does not process, `?raw` included; tests that read a
+      // stylesheet's text (`global.css?raw`, a module's `?raw`) get it. Plain imports are unchanged.
+      css: { include: [/\.css\?raw$/] },
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,tsx}'],

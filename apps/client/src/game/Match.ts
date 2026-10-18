@@ -1,28 +1,23 @@
 import {
-  CathedralInteriorBuilder,
   type EntityId,
   makeLogRecord,
   type MapDefinition,
-  MapSceneryBuilder,
   type Snapshot,
   type Vec2,
 } from '@eternalus/core';
 
-import type { Projection } from './engine/input/Projection.types';
-import type { WorldRect } from './engine/render/Renderer.types';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import {
   BACKGROUND_COLOR,
-  CAMERA_SMOOTHING,
-  DEFAULT_ASPECT,
+  HUD_MINIMAP_RING,
   MAX_TICKS_PER_FRAME,
   PROTOTYPE_ESCORT,
   MS_PER_SECOND,
 } from './Match.constants';
 import type { MatchDeps } from './Match.types';
-import { MapExplorer } from './MapExplorer';
-import { EXPLORER_SETTINGS } from './MapExplorer.constants';
+import { MatchBridge } from './MatchBridge';
+import { MatchCamera } from './MatchCamera';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { MapView } from './views/MapView';
@@ -34,9 +29,11 @@ import { SceneView } from './views/SceneView';
  * The composition root of one match (architecture 08 §7): it wires the simulation, the game
  * loop, the renderer, the camera, the player's intent and the views, and owns their lifetime.
  * Each tick turns the player's intent into commands, steps the simulation and keeps the last two
- * snapshots; each frame follows the player with the camera and draws the scene. The player's
- * Legend is spawned at its team's stronghold when the match is created. Dragging, the overview
- * and the cathedral interior switch to the free `MapExplorer` view until the player moves.
+ * snapshots; each frame follows the player with the camera and draws the scene and the minimap
+ * (inside the HUD ring). The player's Legend is spawned at its team's stronghold when the match is
+ * created. Which part of the world is shown (the following camera, or the free view that
+ * dragging, the overview and the cathedral interior switch to) is `MatchCamera`'s. The world
+ * (map, scenery, interior) arrives prepared (06 §1); its `MatchBridge` publishes to the UI.
  */
 export class Match implements LoopTarget {
   private readonly loop: GameLoop;
@@ -47,9 +44,11 @@ export class Match implements LoopTarget {
 
   private readonly interior: { readonly scene: SceneView; readonly miniMap: MiniMapView } | null;
 
-  private readonly explorer: MapExplorer;
+  private readonly camera: MatchCamera;
 
   private readonly stopListening: () => void;
+
+  private readonly bridge: MatchBridge;
 
   private previous: Snapshot | null = null;
 
@@ -59,38 +58,14 @@ export class Match implements LoopTarget {
 
   private lastMove: Vec2 = { x: 0, y: 0 };
 
-  private isFollowing = true;
-
-  /** Whether the free `MapExplorer` view is on screen instead of the camera's. */
-  private isExploring = false;
-
-  private screenWidth = 0;
-
-  private screenHeight = 0;
-
-  private pixelRatio = 1;
-
-  /** Canvas CSS pixels → device pixels → the world point the camera shows there. */
-  private readonly projection: Projection = {
-    screenToWorld: (point) =>
-      this.deps.camera.screenToWorld(
-        { x: point.x * this.pixelRatio, y: point.y * this.pixelRatio },
-        {
-          worldWidth: this.deps.map.width,
-          worldHeight: this.deps.map.height,
-          screenWidth: this.screenWidth,
-          screenHeight: this.screenHeight,
-        },
-      ),
-  };
-
   /**
    * Creates the match, queues the player's spawn and points the camera at the spawn point.
    *
    * @throws Error when the map has no stronghold for the player's team.
    */
   public constructor(private readonly deps: MatchDeps) {
-    const { simulation, map, tickRate, scheduler, camera, player, logger } = deps;
+    const { simulation, world, tickRate, scheduler, camera, player, logger, bridge } = deps;
+    const { map, scenery, interior } = world;
     // Find the spawn point first: if the map has none, nothing has been subscribed yet.
     const spawnPoint = Match.strongholdOf(map, player.team);
     this.entities = new EntityLayer(
@@ -104,15 +79,13 @@ export class Match implements LoopTarget {
         );
       }),
     );
-    const scenery = new MapSceneryBuilder(map).build();
     const scene = new SceneView([
       new MapView(map, scenery),
       new SceneryView(scenery, 'detail'),
       this.entities,
     ]);
-    this.world = { scene, miniMap: new MiniMapView(map, scene) };
-    const interior = new CathedralInteriorBuilder().build(map);
-    this.explorer = new MapExplorer(map, interior);
+    this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING) };
+    this.camera = new MatchCamera(camera, map, interior);
     if (interior === null) {
       this.interior = null;
     } else {
@@ -120,13 +93,17 @@ export class Match implements LoopTarget {
         new MapView(interior.map, interior.scenery),
         new SceneryView(interior.scenery, 'detail'),
       ]);
-      this.interior = { scene: inside, miniMap: new MiniMapView(interior.map, inside) };
+      this.interior = {
+        scene: inside,
+        miniMap: new MiniMapView(interior.map, inside, HUD_MINIMAP_RING),
+      };
     }
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
+    this.bridge = new MatchBridge({ ...bridge, tickRate, map });
     this.stopListening = simulation.on('entity-spawned', ({ entityId, kind, team }) => {
       if (this.playerId === null && kind === player.legend && team === player.team) {
         this.playerId = entityId;
@@ -154,7 +131,7 @@ export class Match implements LoopTarget {
 
   /** Whether the view is inside the cathedral. */
   public get isInterior(): boolean {
-    return this.explorer.isInterior;
+    return this.camera.isInterior;
   }
 
   /** The latest snapshot. */
@@ -162,16 +139,27 @@ export class Match implements LoopTarget {
     return this.current;
   }
 
-  /** Starts the game loop. */
+  /** Publishes everything the HUD shows once, then starts the game loop. */
   public start(): void {
+    this.bridge.publishAll(this.current, this.playerId);
     this.loop.start();
+  }
+
+  /**
+   * Stops the loop (pause) or starts it again; the loop keeps its remainder and restarts its frame
+   * clock, so paused time is not simulated (I-48).
+   */
+  public setPaused(isPaused: boolean): void {
+    if (isPaused) {
+      this.loop.stop();
+    } else {
+      this.loop.start();
+    }
   }
 
   /** Sets the drawing area in device pixels; call on mount and on every resize. */
   public resize(screenWidth: number, screenHeight: number, pixelRatio: number): void {
-    this.screenWidth = screenWidth;
-    this.screenHeight = screenHeight;
-    this.pixelRatio = pixelRatio;
+    this.camera.resize(screenWidth, screenHeight, pixelRatio);
     this.deps.renderer.resize(screenWidth, screenHeight, pixelRatio);
   }
 
@@ -181,22 +169,21 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
+    this.bridge.afterTick(this.current, this.playerId);
   }
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
   public render(alpha: number): void {
-    const { renderer, camera } = this.deps;
+    const { renderer } = this.deps;
     const player = this.current.entities.find((entity) => entity.id === this.playerId);
-    if (this.isFollowing && player?.transform != null) {
-      camera.track(player.transform, CAMERA_SMOOTHING);
-    }
-    const view = this.currentView();
+    this.camera.follow(player?.transform ?? null);
+    const view = this.camera.visibleArea();
     const { scene, miniMap } = this.views;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     scene.draw(renderer);
-    miniMap.draw(renderer, this.screenWidth, this.screenHeight, view);
+    miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight, view);
   }
 
   /**
@@ -206,44 +193,23 @@ export class Match implements LoopTarget {
    * @returns Whether the click was on the minimap.
    */
   public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
-    const target = this.views.miniMap.worldPointAt(
-      screenX,
-      screenY,
-      this.screenWidth,
-      this.screenHeight,
-    );
+    const { screenWidth, screenHeight } = this.camera;
+    const target = this.views.miniMap.worldPointAt(screenX, screenY, screenWidth, screenHeight);
     if (target === null) {
       return false;
     }
-    if (this.isExploring) {
-      this.explorer.lookAt(target);
-      this.explorer.zoomBy(EXPLORER_SETTINGS.minimapZoom);
-    } else {
-      this.deps.camera.lookAt(target);
-    }
-    this.isFollowing = false;
+    this.camera.lookAt(target);
     return true;
   }
 
   /** Drags the view by a screen offset (device pixels), switching to the free view. */
   public panBy(screenDx: number, screenDy: number): void {
-    this.explore();
-    const area = this.explorer.areaFor(this.aspect);
-    this.explorer.pan(
-      (-screenDx * area.width) / this.screenWidth,
-      (-screenDy * area.height) / this.screenHeight,
-      this.aspect,
-    );
+    this.camera.panBy(screenDx, screenDy);
   }
 
   /** Zooms whichever view is on screen; `factor` above 1 zooms in. */
   public zoomBy(factor: number): void {
-    const { camera } = this.deps;
-    if (this.isExploring) {
-      this.explorer.zoomBy(factor);
-    } else {
-      camera.zoomTo(camera.zoom * factor);
-    }
+    this.camera.zoomBy(factor);
   }
 
   /**
@@ -252,28 +218,22 @@ export class Match implements LoopTarget {
    * @returns Whether the view moved inside.
    */
   public enterAt(screenX: number, screenY: number): boolean {
-    const view = this.currentView();
-    const isEntered = this.explorer.enterAt({
-      x: view.x + (screenX / this.screenWidth) * view.width,
-      y: view.y + (screenY / this.screenHeight) * view.height,
-    });
-    if (isEntered) {
-      this.isExploring = true;
-      this.isFollowing = false;
-    }
-    return isEntered;
+    return this.camera.enterAt(screenX, screenY);
   }
 
   /** Shows the whole battlefield in the free view, leaving the cathedral if inside. */
   public overview(): void {
-    this.explorer.overview();
-    this.isExploring = true;
-    this.isFollowing = false;
+    this.camera.overview();
+  }
+
+  /** Leaves the cathedral interior and returns the camera to following the player (I-55). */
+  public leaveInterior(): void {
+    this.camera.leaveInterior();
   }
 
   /**
    * Stops the loop and the event subscription. The renderer and camera are injected, so their
-   * owner (`useMatch`) destroys them.
+   * owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
     this.loop.destroy();
@@ -284,13 +244,10 @@ export class Match implements LoopTarget {
     if (this.playerId === null) {
       return;
     }
-    const { move } = this.deps.input.read(this.projection);
+    const { move } = this.deps.input.read(this.camera);
     const isMoving = move.x !== 0 || move.y !== 0;
-    // Any movement brings the camera back to the player, even a key held since before a click,
-    // except inside the cathedral, which the player leaves with the leave button.
-    if (isMoving && !this.explorer.isInterior) {
-      this.isFollowing = true;
-      this.isExploring = false;
+    if (isMoving) {
+      this.camera.playerMoved();
     }
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
       return;
@@ -305,30 +262,7 @@ export class Match implements LoopTarget {
 
   /** The scene and minimap on screen: the cathedral's inside it, the battlefield's otherwise. */
   private get views(): { readonly scene: SceneView; readonly miniMap: MiniMapView } {
-    return this.explorer.isInterior && this.interior !== null ? this.interior : this.world;
-  }
-
-  /** The drawing area's width over its height, until the first resize a default. */
-  private get aspect(): number {
-    return this.screenHeight > 0 ? this.screenWidth / this.screenHeight : DEFAULT_ASPECT;
-  }
-
-  /** The part of the world on screen: the free view's or the camera's. */
-  private currentView(): WorldRect {
-    const { camera, map } = this.deps;
-    return this.isExploring
-      ? this.explorer.areaFor(this.aspect)
-      : camera.visibleArea(map.width, map.height);
-  }
-
-  /** Switches to the free view, starting from what the camera shows so nothing jumps. */
-  private explore(): void {
-    if (!this.isExploring) {
-      const { camera, map } = this.deps;
-      this.explorer.showArea(camera.visibleArea(map.width, map.height), this.aspect);
-      this.isExploring = true;
-    }
-    this.isFollowing = false;
+    return this.camera.isInterior && this.interior !== null ? this.interior : this.world;
   }
 
   /**

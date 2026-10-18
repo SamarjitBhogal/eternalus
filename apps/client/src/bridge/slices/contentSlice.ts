@@ -1,12 +1,19 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+import type { DisplayCatalogue } from '../catalogue.types';
 import type { Team } from '../domain.types';
-import type { DisplayCatalogue } from '../events';
 
 const initialState: DisplayCatalogue = {
   legendClasses: [],
   backgroundSets: [],
   profileDisplayName: '',
+  classSelectLayout: 'primary',
+  selectionBannerAssetId: null,
+  selectClassChromeAssetId: null,
+  lockInChromeAssetId: null,
+  effectsRenderer: 'figma-raster',
+  contrastMode: 'figma',
+  hud: { structureKinds: [], objectiveKinds: [], chrome: null },
 };
 
 /** Display-ready content, projected once at boot from the catalogue source. */
@@ -22,5 +29,10 @@ export const contentSlice = createSlice({
     /** The first background set for `team`, or `undefined` before content loads. */
     selectBackgroundSet: (state, team: Team) =>
       state.backgroundSets.find((set) => set.team === team),
+    selectClassSelectLayout: (state) => state.classSelectLayout,
+    selectSelectionBannerAssetId: (state) => state.selectionBannerAssetId,
+    selectSelectClassChromeAssetId: (state) => state.selectClassChromeAssetId,
+    selectLockInChromeAssetId: (state) => state.lockInChromeAssetId,
+    selectHudCatalogue: (state) => state.hud,
   },
 });

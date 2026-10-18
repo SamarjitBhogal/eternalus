@@ -2,16 +2,16 @@ import type { ReactElement } from 'react';
 
 import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
-import { contentSlice } from '../../bridge/slices/contentSlice';
+import { selectSelectableClasses } from '../../bridge/selectors/selectSelectableClasses';
 import { Button } from '../components/Button';
 import { Panel } from '../components/Panel';
 import { ScreenFrame } from '../components/ScreenFrame';
 import { STRINGS } from '../strings';
 import styles from './LoadoutScreen.module.css';
 
-/** Loadouts shell: the classes, read-only, until loadout editing lands in sprint 2. */
+/** Loadouts shell: the playable classes (locked ones left out), read-only, until loadout editing lands. */
 export function LoadoutScreen(): ReactElement {
-  const legendClasses = useAppSelector(contentSlice.selectors.selectLegendClasses);
+  const legendClasses = useAppSelector(selectSelectableClasses);
   return (
     <ScreenFrame>
       <Panel title={STRINGS.loadouts.title}>

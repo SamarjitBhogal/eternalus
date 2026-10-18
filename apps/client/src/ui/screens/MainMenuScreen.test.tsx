@@ -26,6 +26,16 @@ describe('MainMenuScreen', () => {
     expect(html).toContain(STRINGS.reasonBanners['select-timeout']);
   });
 
+  it.each([
+    ['match-failed', 'Match could not start.'],
+    ['load-failed', 'Loading failed.'],
+  ] as const)('shows the failure banner for %s', (reason, banner) => {
+    const html = renderWithStore(<MainMenuScreen />, { session: sessionAt('menu', { reason }) });
+    expect(STRINGS.reasonBanners[reason]).toBe(banner);
+    expect(html).toContain(`<p role="status"`);
+    expect(html).toContain(banner);
+  });
+
   it('shows no banner without a reason or for a reason with no message', () => {
     for (const session of [sessionAt('menu'), sessionAt('menu', { reason: 'unknown' })]) {
       expect(renderWithStore(<MainMenuScreen />, { session })).not.toContain('role="status"');

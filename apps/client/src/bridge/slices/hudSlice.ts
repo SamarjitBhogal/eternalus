@@ -1,59 +1,60 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { InputAction } from '../Binding.types';
-import type { PlayableTeam } from '../domain.types';
+import type { HudSlotId } from '../Binding.types';
+import type { AbilitySlotStatus, Announcement, PlayerHudSnapshot } from '../hud.types';
 
-// Session G owns this slice's body and the HUD display types below; session D created the
-// minimal shapes `events.ts` and `connectBusToStore` need. This file must not import events.ts.
+// This file must not import events.ts (events.ts imports the HUD display types).
 
-/** A resource bar. */
-type Bar = { readonly current: number; readonly max: number };
-
-/** One ability slot as the HUD shows it. */
-type AbilitySlotState = {
-  readonly action: InputAction;
-  /** 0 = ready, 1 = just used. */
-  readonly cooldownFraction: number;
-};
-
-/** One announcer line. */
-export type Announcement = { readonly id: string; readonly text: string };
-
-/** One team's score. */
-type TeamScore = { readonly team: PlayableTeam; readonly score: number };
-
-/** Everything the HUD shows. */
+/** What the HUD shows of the human Legend, and the announcer lines. */
 type HudSliceState = {
-  readonly health: Bar;
-  readonly aether: Bar;
-  readonly xp: { readonly level: number; readonly current: number; readonly next: number };
-  readonly abilities: readonly AbilitySlotState[];
+  /** `null` until the first `hud-state` of a match. */
+  readonly player: PlayerHudSnapshot | null;
   readonly announcements: readonly Announcement[];
-  readonly scores: readonly TeamScore[];
 };
 
-/** The `hud-state` payload: the HUD minus announcements, which arrive one by one. */
-export type HudSnapshot = Omit<HudSliceState, 'announcements'>;
+const initialState: HudSliceState = { player: null, announcements: [] };
 
-const initialState: HudSliceState = {
-  health: { current: 0, max: 0 },
-  aether: { current: 0, max: 0 },
-  xp: { level: 0, current: 0, next: 0 },
-  abilities: [],
-  announcements: [],
-  scores: [],
-};
+/** The slot whose `charge` is the ultimate meter (05 §15). */
+const ULTIMATE_SLOT: HudSlotId = 'ability-4';
 
-/** HUD state, fed by `hud-state` and `announcement`. */
+/** The runtime entry of `slot`, or `null` while it has none. */
+function slotStatus(state: HudSliceState, slot: HudSlotId): AbilitySlotStatus | null {
+  return state.player?.slots.find((entry) => entry.slot === slot) ?? null;
+}
+
+/** HUD state, fed by `hud-state` and `announcement`; reset by every `match-setup`. */
 export const hudSlice = createSlice({
   name: 'hud',
   initialState,
   reducers: {
-    hudStateChanged(state, action: PayloadAction<HudSnapshot>) {
-      return { ...action.payload, announcements: state.announcements };
-    },
+    // The snapshot is readonly and stored as given (PR1-21), so the reducer returns new state.
+    hudStateChanged: (state, action: PayloadAction<PlayerHudSnapshot | null>) => ({
+      player: action.payload,
+      announcements: state.announcements,
+    }),
     announced(state, action: PayloadAction<Announcement>) {
       state.announcements.push(action.payload);
     },
+    reset: () => initialState,
+  },
+  selectors: {
+    selectHealth: (state) => state.player?.health ?? null,
+    selectMaxHealth: (state) => state.player?.maxHealth ?? null,
+    selectAether: (state) => state.player?.aether ?? null,
+    selectMaxAether: (state) => state.player?.maxAether ?? null,
+    selectLevel: (state) => state.player?.level ?? null,
+    /** XP through the current level, 0..1; `null` while either value is missing or `xpToNext <= 0`. */
+    selectXpFraction: (state): number | null => {
+      const xp = state.player?.xp ?? null;
+      const xpToNext = state.player?.xpToNext ?? null;
+      if (xp === null || xpToNext === null || xpToNext <= 0) return null;
+      return Math.min(1, Math.max(0, xp / xpToNext));
+    },
+    selectWeaponProgress: (state) => state.player?.weaponProgress ?? null,
+    selectUltimatePips: (state) => state.player?.ultimatePips ?? null,
+    /** The runtime entry of `slot`, or `null` while it has none. */
+    selectSlotStatus: slotStatus,
+    /** The ultimate meter (`ability-4`'s `charge`), or `null`. */
+    selectUltimateCharge: (state) => slotStatus(state, ULTIMATE_SLOT)?.charge ?? null,
   },
 });

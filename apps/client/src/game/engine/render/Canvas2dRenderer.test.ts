@@ -6,6 +6,7 @@ import type { DrawContext } from './Canvas2dRenderer.types';
 /** The canvas drawing tools the tests watch. */
 type DrawMethod =
   | 'beginPath'
+  | 'clip'
   | 'closePath'
   | 'ellipse'
   | 'fill'
@@ -13,6 +14,8 @@ type DrawMethod =
   | 'lineTo'
   | 'moveTo'
   | 'rect'
+  | 'restore'
+  | 'save'
   | 'stroke'
   | 'strokeRect';
 
@@ -29,6 +32,7 @@ type FakeContext = {
 const createFakeContext = (): FakeContext => {
   const spies = {
     beginPath: vi.fn(),
+    clip: vi.fn(),
     closePath: vi.fn(),
     ellipse: vi.fn(),
     fill: vi.fn(),
@@ -36,6 +40,8 @@ const createFakeContext = (): FakeContext => {
     lineTo: vi.fn(),
     moveTo: vi.fn(),
     rect: vi.fn(),
+    restore: vi.fn(),
+    save: vi.fn(),
     stroke: vi.fn(),
     strokeRect: vi.fn(),
   };
@@ -196,7 +202,7 @@ describe('Canvas2dRenderer', () => {
     const { context, spies } = createFakeContext();
     const renderer = createFittedRenderer(context);
     const area = { x: 10, y: 20, width: 30, height: 40 };
-    // Used for the mini map's dark panel and its border.
+    // The mini map's dark panel is a filled screen rectangle.
     renderer.fillScreenRect(area, '#111111');
     renderer.strokeScreenRect(area, '#222222', 2);
 
@@ -205,6 +211,36 @@ describe('Canvas2dRenderer', () => {
     expect(spies.strokeRect).toHaveBeenCalledWith(10, 20, 30, 40);
     expect(context.strokeStyle).toBe('#222222');
     expect(context.lineWidth).toBe(2);
+  });
+
+  it('clips drawing to the ellipse that fills an area, then restores the context', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = createFittedRenderer(context);
+    const order: string[] = [];
+    for (const step of ['save', 'beginPath', 'ellipse', 'clip', 'restore'] as const) {
+      spies[step].mockImplementation(() => order.push(step));
+    }
+    // The minimap ring's box: a 200 x 80 ellipse whose centre is (200, 90).
+    renderer.clipToEllipse({ x: 100, y: 50, width: 200, height: 80 }, () => order.push('draw'));
+
+    expect(spies.ellipse).toHaveBeenCalledWith(200, 90, 100, 40, 0, 0, 2 * Math.PI);
+    expect(order).toEqual(['save', 'beginPath', 'ellipse', 'clip', 'draw', 'restore']);
+  });
+
+  it('restores the context even when the clipped drawing throws', () => {
+    const { context, spies } = createFakeContext();
+    const renderer = createFittedRenderer(context);
+    const fail = (): void => {
+      throw new Error('draw failed');
+    };
+
+    const clipFailing = (): void => {
+      renderer.clipToEllipse({ x: 0, y: 0, width: 10, height: 10 }, fail);
+    };
+
+    expect(clipFailing).toThrow('draw failed');
+    expect(spies.save).toHaveBeenCalledOnce();
+    expect(spies.restore).toHaveBeenCalledOnce();
   });
 
   it('shows one part of the world across the whole screen', () => {

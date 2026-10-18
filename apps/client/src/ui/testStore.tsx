@@ -2,15 +2,189 @@ import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Provider } from 'react-redux';
 
-import type { DisplayCatalogue, MenuRoute, SessionPhase } from '../bridge/events';
+import { loadedAssetsFor } from '../bridge/assetFixtures';
+import { classCardFixture, specCardFixture } from '../bridge/catalogueFixtures';
+import type { AssetId, ClassHudDisplay, DisplayCatalogue } from '../bridge/catalogue.types';
+import type { MenuRoute, SessionPhase } from '../bridge/events';
+import { TEST_HUD_CATALOGUE } from '../bridge/hudFixtures';
 import { sessionSlice } from '../bridge/slices/sessionSlice';
 import { createAppStore, type RootState } from '../bridge/store';
 
-/** A small catalogue for UI tests (ui/ may not import the game's placeholder catalogue). */
+export { accessibleNames } from './accessibleNames';
+
+/** A HUD kit with the Figma placeholder ability icons (names `null` until abilities exist). */
+const testKit = (
+  gadget1: AssetId | null,
+  weapon: AssetId | null,
+  emblem: AssetId | null,
+): ClassHudDisplay => ({
+  emblemAssetId: emblem,
+  weapon: weapon === null ? null : { displayName: null, iconAssetId: weapon },
+  slots: [
+    { slot: 'ability-1', displayName: null, iconAssetId: 'icon-placeholder-atom' },
+    { slot: 'ability-2', displayName: null, iconAssetId: 'icon-placeholder-link-break' },
+    { slot: 'ability-3', displayName: null, iconAssetId: 'icon-placeholder-aperture' },
+    { slot: 'ability-4', displayName: null, iconAssetId: 'icon-placeholder-meteor' },
+    { slot: 'gadget-1', displayName: null, iconAssetId: gadget1 },
+    { slot: 'gadget-2', displayName: null, iconAssetId: 'icon-placeholder-sword' },
+  ],
+});
+
+/**
+ * A small catalogue for UI tests (ui/ may not import the game's catalogue): the three MVP classes,
+ * the locked Harbinger, one unnamed Legend each for Legionnaire and Sentinel and the three named
+ * Magus Legends (both team names, as content stores them), the oracle with its full display data.
+ */
 export const TEST_CONTENT: DisplayCatalogue = {
   legendClasses: [
-    { classId: 'warrior', displayName: 'Warrior', blurb: 'Quick and light.', specs: [] },
-    { classId: 'magus', displayName: 'Magus', blurb: 'Casts and revives.', specs: [] },
+    classCardFixture({
+      classId: 'warrior',
+      displayName: 'Legionnaire',
+      blurb: 'Quick and light.',
+      roleLabel: 'Assault',
+      accentToken: '--class-warrior-accent',
+      art: {
+        card: 'warrior-card-art',
+        sigil: 'warrior-sigil',
+        model: null,
+        cardPlates: { idle: 'warrior-card-plate-idle' },
+        rowPlate: null,
+      },
+      specs: [
+        specCardFixture({
+          specId: 'knight',
+          displayName: 'Centurion',
+          accentToken: '--class-warrior-accent',
+          art: {
+            card: null,
+            refraction: null,
+            portrait: 'legionnaire-legend-portrait',
+            mini: null,
+            rowPlate: null,
+          },
+        }),
+      ],
+      hud: testKit('warrior-gadget-courage', 'warrior-weapon-battle-axe', 'warrior-hud-emblem'),
+    }),
+    classCardFixture({
+      classId: 'sentinel',
+      displayName: 'Sentinel',
+      blurb: 'Heavy and strong.',
+      roleLabel: 'Tank',
+      accentToken: '--class-sentinel-accent',
+      specs: [specCardFixture({ specId: 'colossus', displayName: 'Colossus' })],
+      hud: testKit(null, null, null),
+    }),
+    classCardFixture({
+      classId: 'magus',
+      displayName: 'Magus',
+      blurb: 'Casts and revives.',
+      roleLabel: 'Ranged',
+      tagline: 'Aether  ·  Ranged Support',
+      description: 'Bends the Aether against the enemy.',
+      details: [
+        {
+          slot: 'signature',
+          displayName: 'Aetheric Recall',
+          iconAssetId: 'magus-detail-aetheric-recall',
+        },
+        {
+          slot: 'proficiency',
+          displayName: 'Staff Proficiency',
+          iconAssetId: 'magus-detail-staff',
+        },
+        {
+          slot: 'specialty',
+          displayName: 'Arcane Intellect',
+          iconAssetId: 'magus-detail-arcane-intellect',
+        },
+      ],
+      art: {
+        card: 'magus-card-art',
+        sigil: 'magus-sigil',
+        model: 'magus-model',
+        cardPlates: { picked: 'magus-card-plate-picked' },
+        rowPlate: 'class-row-plate-magus',
+      },
+      specs: [
+        specCardFixture({
+          specId: 'catalyst',
+          displayName: 'Catalyst',
+          // The Dark name is derived from the mirror rule, pending owner confirmation (INBOX HC-Q16).
+          legendName: { light: 'Veridan', dark: 'Nadirev' },
+          accentToken: '--legend-catalyst-accent',
+          art: {
+            card: 'catalyst-card-art',
+            refraction: null,
+            portrait: 'catalyst-portrait',
+            mini: 'catalyst-mini',
+            rowPlate: null,
+          },
+        }),
+        specCardFixture({
+          specId: 'oracle',
+          displayName: 'Oracle',
+          legendName: { light: 'Elarion', dark: 'Noirale' },
+          roleLabel: 'Support',
+          description: 'A voice of the Unison.',
+          accentToken: '--legend-oracle-accent',
+          ratings: { damage: 152 / 395, support: 333 / 395, control: 201 / 395 },
+          details: [
+            {
+              slot: 'signature',
+              displayName: 'Aetheric Recall',
+              iconAssetId: 'magus-detail-aetheric-recall',
+            },
+            {
+              slot: 'specialty',
+              displayName: 'Unison Ward',
+              iconAssetId: 'oracle-detail-unison-ward',
+            },
+            {
+              slot: 'ultimate',
+              displayName: 'Severed Accord',
+              iconAssetId: 'oracle-detail-severed-accord',
+            },
+          ],
+          art: {
+            card: 'oracle-card-art',
+            refraction: 'oracle-refraction-art',
+            portrait: 'oracle-portrait',
+            mini: 'oracle-mini',
+            rowPlate: 'oracle-row-plate',
+          },
+        }),
+        specCardFixture({
+          specId: 'necromancer',
+          displayName: 'Necromancer',
+          legendName: { light: 'Avedrin', dark: 'Nirdeva' },
+          accentToken: '--legend-necromancer-accent',
+          art: {
+            card: 'necromancer-card-art',
+            refraction: null,
+            portrait: 'necromancer-portrait',
+            mini: 'necromancer-mini',
+            rowPlate: null,
+          },
+        }),
+      ],
+      hud: testKit(null, 'magus-weapon-staff', null),
+    }),
+    classCardFixture({
+      classId: 'flying',
+      displayName: 'Harbinger',
+      blurb: 'Takes to the air.',
+      status: 'locked',
+      roleLabel: 'aerial',
+      accentToken: '--class-flying-accent',
+      art: {
+        card: 'flying-card-art',
+        sigil: 'flying-sigil',
+        model: null,
+        cardPlates: { idle: 'flying-card-plate-idle' },
+        rowPlate: null,
+      },
+    }),
   ],
   backgroundSets: [
     {
@@ -19,11 +193,18 @@ export const TEST_CONTENT: DisplayCatalogue = {
       layers: [
         { kind: 'gradient', angleDeg: 90, stops: ['--surface-0', '--team-neutral-accent'] },
         { kind: 'particles', count: 3, colourToken: '--team-neutral-primary' },
-        { kind: 'image', src: '/backgrounds/test.png' },
+        { kind: 'image', assetId: 'test-backdrop' },
       ],
     },
   ],
   profileDisplayName: 'Chronicle',
+  classSelectLayout: 'primary',
+  selectionBannerAssetId: 'test-banner',
+  selectClassChromeAssetId: 'select-class-chrome',
+  lockInChromeAssetId: 'lock-in-chrome',
+  effectsRenderer: 'figma-raster',
+  contrastMode: 'figma',
+  hud: TEST_HUD_CATALOGUE,
 };
 
 /** Session slice state at `phase`, optionally on a menu route with a reason. */
@@ -34,9 +215,15 @@ export function sessionAt(
   return { ...sessionSlice.getInitialState(), phase, ...extra };
 }
 
-/** Server-renders `element` inside a store built from `state` (content defaults to `TEST_CONTENT`). */
+/** Every asset `TEST_CONTENT` names, loaded under `/assets/test/`. */
+const TEST_ASSETS = loadedAssetsFor(TEST_CONTENT);
+
+/**
+ * Server-renders `element` inside a store built from `state`. Content defaults to `TEST_CONTENT`
+ * and assets to every id it names, loaded under `/assets/test/` (pass `assets` to start empty).
+ */
 export function renderWithStore(element: ReactElement, state: Partial<RootState> = {}): string {
-  const store = createAppStore({ content: TEST_CONTENT, ...state });
+  const store = createAppStore({ content: TEST_CONTENT, assets: TEST_ASSETS, ...state });
   return renderToStaticMarkup(<Provider store={store}>{element}</Provider>);
 }
 

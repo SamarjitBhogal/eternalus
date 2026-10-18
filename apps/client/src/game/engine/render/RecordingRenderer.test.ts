@@ -16,6 +16,22 @@ describe('RecordingRenderer', () => {
     ]);
   });
 
+  it('records clipToEllipse, then the calls its drawing makes, in order', () => {
+    const renderer = new RecordingRenderer();
+    const area = { x: 10, y: 20, width: 30, height: 40 };
+    const draw = (): void => {
+      renderer.fillScreenRect(area, '#000000');
+    };
+    renderer.clipToEllipse(area, draw);
+    renderer.clear('#ffffff');
+
+    expect(renderer.calls).toEqual([
+      { op: 'clipToEllipse', args: [area, draw] },
+      { op: 'fillScreenRect', args: [area, '#000000'] },
+      { op: 'clear', args: ['#ffffff'] },
+    ]);
+  });
+
   it('returns world points unchanged from toScreen', () => {
     expect(new RecordingRenderer().toScreen({ x: 3, y: 4 })).toEqual({ x: 3, y: 4 });
   });

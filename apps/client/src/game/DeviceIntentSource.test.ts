@@ -1,12 +1,8 @@
-import {
-  createDefaultGameConfig,
-  MapGenerator,
-  MemoryLogger,
-  NullLogger,
-  Simulation,
-} from '@eternalus/core';
+import { createDefaultGameConfig, MemoryLogger, NullLogger, Simulation } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import type { BridgeEventMap } from '../bridge/events';
+import { TypedEventBus } from '../bridge/TypedEventBus';
 import { Camera } from './engine/Camera';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import type { InputDevice, MutableInputSnapshot } from './engine/input/InputDevice.types';
@@ -18,6 +14,8 @@ import { Match } from './Match';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
+import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
+import { prepareMatchWorld } from './prepareMatchWorld';
 
 const IDENTITY: Projection = { screenToWorld: (point) => point };
 
@@ -91,7 +89,7 @@ describe('Player scenario: walking with the keyboard', () => {
     const { target, input } = setUp();
     const match = new Match({
       simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
-      map: new MapGenerator().generate(config, 1),
+      world: prepareMatchWorld(config, 1),
       tickRate: config.tickRate,
       scheduler: new FakeFrameScheduler(),
       renderer: new RecordingRenderer(),
@@ -99,6 +97,11 @@ describe('Player scenario: walking with the keyboard', () => {
       input,
       player: { legend: 'warrior', team: 'light' },
       logger: new MemoryLogger(),
+      bridge: {
+        bus: new TypedEventBus<BridgeEventMap>(),
+        publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
+        captureKinds: [],
+      },
     });
     const position = () => {
       const player = match.snapshot.entities.find((entity) => entity.id === match.playerEntityId);

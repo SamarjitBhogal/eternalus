@@ -1,5 +1,6 @@
 import { makeLogRecord } from '@eternalus/core';
 
+import type { Binding } from '../../bridge/Binding.types';
 import type { UiIntent } from '../../bridge/events';
 import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
 import type { SettingsControllerDeps } from './SettingsController.types';
@@ -31,6 +32,11 @@ export class SettingsController {
     });
     this.publish(settingsWithDefaults(saved));
     this.stopListening = this.deps.bus.on('ui-intent', this.onIntent);
+  }
+
+  /** The current bindings, or `null` before `start()` has published the settings. */
+  public get bindings(): readonly Binding[] | null {
+    return this.settings?.bindings ?? null;
   }
 
   /** Stops handling intents. */

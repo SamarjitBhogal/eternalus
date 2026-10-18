@@ -1,67 +1,35 @@
 import { describe, expect, it } from 'vitest';
 
-import { connectBusToStore } from '../bridge/connectBusToStore';
-import type { BridgeEventMap, SessionPhase, UiIntent } from '../bridge/events';
-import { createAppStore } from '../bridge/store';
-import { TypedEventBus } from '../bridge/TypedEventBus';
-import { placeholderCatalogue } from './content/placeholderCatalogue';
-import {
-  PLACEHOLDER_MATCH_CONFIG,
-  PLACEHOLDER_PRESELECTED_CLASS_ID,
-} from './content/placeholderSetup';
-import { FakeSessionClock } from './engine/time/FakeSessionClock';
-import { SessionController } from './SessionController';
+import type { SessionPhase } from '../bridge/events';
 import type { SessionContext, SessionState } from './SessionController.types';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
-import { LcgRng } from './session/LcgRng';
-import {
-  PLACEHOLDER_LOAD_MS,
-  REVEAL_COUNTDOWN_MS,
-  SELECT_COUNTDOWN_MS,
-} from './session/sessionTiming.constants';
+import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
+import { testSession } from './testSessionDeps';
 
-function setUp(
-  states: Readonly<Record<SessionPhase, SessionState>> = createDefaultSessionStates(),
-) {
-  const bus = new TypedEventBus<BridgeEventMap>();
-  const clock = new FakeSessionClock();
-  const store = createAppStore();
-  const disconnect = connectBusToStore(bus, store.dispatch);
-  const themeRoot: Pick<HTMLElement, 'dataset'> = { dataset: {} };
-  const phases: SessionPhase[] = [];
-  const stopRecording = bus.on('session-phase', ({ phase }) => phases.push(phase));
-  // A fresh seed per setup, so a rematch that rebuilt the setup would show a different seed.
-  let seed = 41;
-  const controller = new SessionController({
-    bus,
-    clock,
-    states,
-    catalogue: placeholderCatalogue,
-    matchConfig: PLACEHOLDER_MATCH_CONFIG,
-    playerName: 'Tester',
-    seedSource: () => ++seed,
-    createRng: (seed) => new LcgRng(seed),
-    themeRoot,
-  });
-  const intent = (value: UiIntent): void => {
-    bus.emit('ui-intent', value);
-  };
-  return { bus, clock, store, disconnect, stopRecording, themeRoot, phases, controller, intent };
+/** A session in the menu: started, its boot load settled. */
+async function inMenu(states?: Readonly<Record<SessionPhase, SessionState>>) {
+  const session = testSession(states === undefined ? {} : { states });
+  session.controller.start();
+  await session.resolveLoads();
+  return session;
 }
 
 /** Drives the real states from boot to character-select. */
-function atCharacterSelect(states = createDefaultSessionStates()) {
-  const session = setUp(states);
-  session.controller.start();
+async function atCharacterSelect() {
+  const session = await inMenu();
   session.intent({ kind: 'start-match' });
-  session.clock.advance(PLACEHOLDER_LOAD_MS);
+  await session.resolveLoads();
   return session;
 }
 
 describe('SessionController with the default states', () => {
-  it('boots into the menu with the content catalogue and a finished boot load', () => {
-    const { controller, store, phases } = setUp();
+  it('boots into the menu with the content catalogue once the boot group has loaded', async () => {
+    const { controller, store, phases, resolveLoads } = testSession();
     controller.start();
+    expect(phases).toEqual(['boot']);
+    expect(store.getState().loading).toMatchObject({ group: 'boot', status: 'loading' });
+
+    await resolveLoads();
     expect(phases).toEqual(['boot', 'menu']);
     const state = store.getState();
     expect(state.session.phase).toBe('menu');
@@ -70,28 +38,27 @@ describe('SessionController with the default states', () => {
       'warrior',
       'sentinel',
       'magus',
+      'flying',
     ]);
     expect(state.loading).toMatchObject({ group: 'boot', status: 'ready' });
   });
 
   it('cannot be started twice', () => {
-    const { controller } = setUp();
+    const { controller } = testSession();
     controller.start();
     expect(() => {
       controller.start();
     }).toThrow('already started');
   });
 
-  it('changes the menu route on navigate without leaving the menu', () => {
-    const { controller, store, intent } = setUp();
-    controller.start();
+  it('changes the menu route on navigate without leaving the menu', async () => {
+    const { store, intent } = await inMenu();
     intent({ kind: 'navigate', route: 'about' });
     expect(store.getState().session).toMatchObject({ phase: 'menu', menuRoute: 'about' });
   });
 
-  it('walks the whole start-match flow to the match and back to the menu', () => {
-    const { controller, clock, store, themeRoot, phases, intent } = setUp();
-    controller.start();
+  it('walks the whole start-match flow to the match and back to the menu', async () => {
+    const { controller, clock, store, themeRoot, phases, intent, resolveLoads } = await inMenu();
 
     intent({ kind: 'start-match' });
     const setup = store.getState().matchSetup;
@@ -102,15 +69,16 @@ describe('SessionController with the default states', () => {
     expect(setup.playerTeam).not.toBeNull();
     expect(themeRoot.dataset.team).toBe(setup.playerTeam);
 
-    clock.advance(PLACEHOLDER_LOAD_MS);
+    await resolveLoads();
     expect(controller.phase).toBe('character-select');
     expect(store.getState().loading.status).toBe('ready');
     expect(store.getState().matchSetup.countdownMs).toBe(SELECT_COUNTDOWN_MS);
     clock.advance(1_000);
     expect(store.getState().matchSetup.countdownMs).toBe(SELECT_COUNTDOWN_MS - 1_000);
 
-    intent({ kind: 'select-class', classId: 'magus' });
-    expect(store.getState().matchSetup.selection).toEqual({ classId: 'magus', specId: null });
+    intent({ kind: 'select-class', classId: 'sentinel' });
+    expect(store.getState().matchSetup.selection).toEqual({ classId: 'sentinel', specId: null });
+    intent({ kind: 'select-class', classId: 'sentinel', specId: 'colossus' });
     intent({ kind: 'confirm-selection' });
     expect(controller.phase).toBe('pre-launch');
     expect(store.getState().matchSetup.revealMs).toBe(REVEAL_COUNTDOWN_MS);
@@ -118,7 +86,7 @@ describe('SessionController with the default states', () => {
     clock.advance(REVEAL_COUNTDOWN_MS);
     expect(controller.phase).toBe('match-loading');
     expect(store.getState().loading.group).toBe('match');
-    clock.advance(PLACEHOLDER_LOAD_MS);
+    await resolveLoads();
     expect(controller.phase).toBe('match');
 
     intent({ kind: 'open-overlay', overlay: 'pause' });
@@ -143,8 +111,8 @@ describe('SessionController with the default states', () => {
     expect(themeRoot.dataset.team).toBeUndefined();
   });
 
-  it('cancels to the menu with select-timeout when the countdown ends with no selection', () => {
-    const { controller, clock, store } = atCharacterSelect();
+  it('cancels to the menu with select-timeout when the countdown ends with no selection', async () => {
+    const { controller, clock, store } = await atCharacterSelect();
     clock.advance(SELECT_COUNTDOWN_MS - 1);
     expect(controller.phase).toBe('character-select');
     clock.advance(1);
@@ -153,44 +121,41 @@ describe('SessionController with the default states', () => {
     expect(store.getState().matchSetup.countdownMs).toBe(0);
   });
 
-  it('starts with the preselected class, so the countdown leads into pre-launch', () => {
-    const { controller, clock, store } = atCharacterSelect(
-      createDefaultSessionStates({ preselectedClassId: PLACEHOLDER_PRESELECTED_CLASS_ID }),
-    );
-    expect(store.getState().matchSetup.selection).toEqual({ classId: 'warrior', specId: null });
-    clock.advance(SELECT_COUNTDOWN_MS - 1);
-    expect(controller.phase).toBe('character-select');
-    clock.advance(1);
-    expect(controller.phase).toBe('pre-launch');
-    expect(store.getState().session.reason).toBeNull();
+  it('starts character select with nothing selected, and the countdown ends in the menu', async () => {
+    const { controller, clock, store } = await atCharacterSelect();
+    expect(store.getState().matchSetup.selection).toEqual({ classId: null, specId: null });
+    clock.advance(SELECT_COUNTDOWN_MS);
+    expect(controller.phase).toBe('menu');
+    expect(store.getState().session.reason).toBe('select-timeout');
   });
 
-  it('goes to pre-launch when the countdown ends with an unconfirmed selection', () => {
-    const { controller, clock, intent } = atCharacterSelect();
+  it('goes to pre-launch when the countdown ends with an unconfirmed selection', async () => {
+    const { controller, clock, intent } = await atCharacterSelect();
     intent({ kind: 'select-class', classId: 'warrior', specId: 'knight' });
     clock.advance(SELECT_COUNTDOWN_MS);
     expect(controller.phase).toBe('pre-launch');
   });
 
-  it('ignores unknown classes or specs and a confirm with nothing selected', () => {
-    const { controller, store, intent } = atCharacterSelect();
+  it('ignores unknown classes or specs and a confirm with nothing selected', async () => {
+    const { controller, store, intent } = await atCharacterSelect();
+    // `flying` is the locked Harbinger card: shown, never selectable (DEC-48).
     intent({ kind: 'select-class', classId: 'flying' });
+    intent({ kind: 'select-class', classId: 'unknown-class' });
     intent({ kind: 'select-class', classId: 'magus', specId: 'colossus' });
     intent({ kind: 'confirm-selection' });
     expect(controller.phase).toBe('character-select');
     expect(store.getState().matchSetup.selection).toEqual({ classId: null, specId: null });
   });
 
-  it('cancels from loading and from character select, and the old timers never fire', () => {
-    const loading = setUp();
-    loading.controller.start();
+  it('cancels from loading and from character select, and the old loads and timers never finish', async () => {
+    const loading = await inMenu();
     loading.intent({ kind: 'start-match' });
     loading.intent({ kind: 'cancel-match' });
     expect(loading.store.getState().session).toMatchObject({ phase: 'menu', reason: 'cancelled' });
-    loading.clock.advance(PLACEHOLDER_LOAD_MS);
+    await loading.resolveLoads();
     expect(loading.controller.phase).toBe('menu');
 
-    const selecting = atCharacterSelect();
+    const selecting = await atCharacterSelect();
     selecting.intent({ kind: 'cancel-match' });
     expect(selecting.store.getState().session.reason).toBe('cancelled');
     selecting.clock.advance(SELECT_COUNTDOWN_MS);
@@ -198,34 +163,40 @@ describe('SessionController with the default states', () => {
     expect(selecting.store.getState().session.reason).toBe('cancelled');
   });
 
-  it('leaves results for a menu route, or rematches with the same setup', () => {
+  it('leaves results for a menu route, or rematches with the same setup', async () => {
+    // The real match state (it releases the selection assets), plus a handle on the context.
     const captured: { context: SessionContext | null } = { context: null };
+    const real = createDefaultSessionStates();
     const states = {
-      ...createDefaultSessionStates(),
+      ...real,
       match: {
         phase: 'match',
         enter: (context: SessionContext) => {
+          real.match.enter?.(context);
           captured.context = context;
+        },
+        exit: (context: SessionContext) => {
+          real.match.exit?.(context);
         },
       },
     } satisfies Record<SessionPhase, SessionState>;
-    const session = setUp(states);
-    const playToResults = (): void => {
+    const session = await inMenu(states);
+    const playToResults = async (): Promise<void> => {
       session.intent({ kind: 'start-match' });
-      session.clock.advance(PLACEHOLDER_LOAD_MS);
-      session.intent({ kind: 'select-class', classId: 'sentinel' });
+      await session.resolveLoads();
+      session.intent({ kind: 'select-class', classId: 'sentinel', specId: 'juggernaut' });
       session.intent({ kind: 'confirm-selection' });
-      session.clock.advance(REVEAL_COUNTDOWN_MS + PLACEHOLDER_LOAD_MS);
+      session.clock.advance(REVEAL_COUNTDOWN_MS);
+      await session.resolveLoads();
       captured.context?.transition('results');
     };
-    session.controller.start();
 
-    playToResults();
+    await playToResults();
     expect(session.controller.phase).toBe('results');
     session.intent({ kind: 'navigate', route: 'profile' });
     expect(session.store.getState().session).toMatchObject({ phase: 'menu', menuRoute: 'profile' });
 
-    playToResults();
+    await playToResults();
     const before = session.store.getState().matchSetup;
     session.intent({ kind: 'start-match' });
     const after = session.store.getState().matchSetup;
@@ -236,8 +207,8 @@ describe('SessionController with the default states', () => {
     expect(session.themeRoot.dataset.team).toBe(before.playerTeam);
   });
 
-  it('destroy stops timers and intent handling and leaves no bus listeners', () => {
-    const { controller, clock, bus, disconnect, stopRecording, intent } = atCharacterSelect();
+  it('destroy stops timers and intent handling and leaves no bus listeners', async () => {
+    const { controller, clock, bus, disconnect, stopRecording, intent } = await atCharacterSelect();
     controller.destroy();
     controller.destroy();
     disconnect();

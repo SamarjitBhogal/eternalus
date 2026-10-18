@@ -1,3 +1,5 @@
+import type { AbilitySlot } from '@eternalus/core';
+
 /**
  * Every player action that can be bound to a key or a button. Adding an action is one literal
  * here and one entry in `game/input/keybindings.ts` (its `DEFAULT_CHORDS` record demands it).
@@ -43,6 +45,12 @@ export type InputChord = {
   /** The text a prompt shows: the key seen at bind time (`'W'`, `'↑'`) or a button name. */
   readonly label: string;
 };
+
+/**
+ * The `InputAction`s that are also HUD slots (05 §15, 17 R21): core's `AbilitySlot` without
+ * `default-action`, so `<KeyGlyph action={slot} />` needs no mapping table.
+ */
+export type HudSlotId = Extract<InputAction, Exclude<AbilitySlot, 'default-action'>>;
 
 /** The chords bound to one action. Any chord of any device triggers it. */
 export type Binding = { readonly action: InputAction; readonly chords: readonly InputChord[] };

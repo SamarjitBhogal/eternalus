@@ -1,11 +1,17 @@
 /**
- * The ONLY list of game ↔ UI messages (architecture 13 §5) and the display types they carry.
- * `game/` emits game → UI events; `ui/` emits only `ui-intent`. `connectBusToStore` copies every
- * game → UI event into its slice.
+ * The ONLY list of game ↔ UI messages (architecture 13 §5). The display types they carry live in
+ * `catalogue.types.ts` and `hud.types.ts`. `game/` emits game → UI events; `ui/` emits only
+ * `ui-intent`. `connectBusToStore` copies every game → UI event into its slice.
  */
 import type { InputAction, InputChord } from './Binding.types';
-import type { LegendClassId, PlayableTeam, Team } from './domain.types';
-import type { Announcement, HudSnapshot } from './slices/hudSlice';
+import type { AssetId, DisplayCatalogue } from './catalogue.types';
+import type { LegendClassId, PlayableTeam } from './domain.types';
+import type {
+  Announcement,
+  CapturePointStatus,
+  PlayerHudSnapshot,
+  StructureStatus,
+} from './hud.types';
 import type { SettingsPatch, SettingsSliceState } from './slices/settingsSlice';
 
 /** Every session phase, in flow order (architecture 13 §2). */
@@ -35,6 +41,8 @@ export type UiIntent =
   | { readonly kind: 'navigate'; readonly route: MenuRoute }
   | { readonly kind: 'select-class'; readonly classId: LegendClassId; readonly specId?: string }
   | { readonly kind: 'confirm-selection' }
+  /** Back from the Legend step: clears the class (and Legend) pick; the countdown runs on (F1). */
+  | { readonly kind: 'clear-class-selection' }
   | { readonly kind: 'cancel-match' }
   | { readonly kind: 'leave-match' }
   | { readonly kind: 'open-overlay'; readonly overlay: Overlay }
@@ -63,41 +71,46 @@ export type RosterEntry = {
   readonly team: PlayableTeam;
 };
 
-/** A Legend class as the selection screens show it. Specs are post-MVP slots. */
-export type LegendClassCard = {
-  readonly classId: LegendClassId;
-  readonly displayName: string;
-  readonly blurb: string;
-  readonly specs: readonly {
-    readonly specId: string;
-    readonly displayName: string;
-    readonly status: 'post-mvp';
-  }[];
+/** Why a phase was entered (audit AS-13: a union, so a typo cannot silently drop a banner). */
+export type SessionReason = 'select-timeout' | 'cancelled' | 'match-failed' | 'load-failed';
+
+/**
+ * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
+ * layout groups the rest (I-47); the `-raster` groups hold only plates, loaded only on the
+ * `'figma-raster'` effects renderer (I-80, I-86). Restated in `data/resources/AssetManifest.types.ts`.
+ */
+export type AssetGroup =
+  | 'boot'
+  | 'selection'
+  | 'selection-primary'
+  | 'selection-alternate'
+  | 'selection-raster'
+  | 'selection-primary-raster'
+  | 'match';
+
+/**
+ * URL key of an asset (`id`) or of one of its renditions (`` `${AssetId}@${RenditionKey}` ``, e.g.
+ * `oracle-portrait@ally-tile`). Both forms are strings while `AssetId` is `string`, so the type is
+ * `AssetId` itself.
+ */
+export type AssetUrlKey = AssetId;
+
+/** URLs of a group's loaded images (`{}` after release); `ui/` reads them by asset id. */
+export type AssetUrls = {
+  readonly group: AssetGroup;
+  readonly urls: Readonly<Record<AssetUrlKey, string>>;
 };
 
-/** One layer of a themed background. Colours are token names (`--team-light-primary`), never literals. */
-export type BackgroundLayer =
-  | { readonly kind: 'gradient'; readonly angleDeg: number; readonly stops: readonly string[] }
-  | { readonly kind: 'particles'; readonly count: number; readonly colourToken: string }
-  | { readonly kind: 'image'; readonly src: string };
-
-/** A swappable background (architecture contract §2.5): content, so real art drops in as data. */
-export type BackgroundSet = {
-  readonly id: string;
-  readonly team: Team;
-  readonly layers: readonly BackgroundLayer[];
+/** One licence block of the About screen, generated from the asset manifest (13 §3 `selectCredits`). */
+export type CreditEntry = {
+  readonly licenceId: string;
+  readonly work: string;
+  readonly licenceName: string;
+  readonly notice: string;
+  /** Licence text that must ship with the files (OFL, MIT); `null` for the owner's own art. */
+  readonly licenceText: string | null;
+  readonly assets: readonly { readonly assetId: AssetId; readonly source: string }[];
 };
-
-/** Display-ready content projected into the store at boot. */
-export type DisplayCatalogue = {
-  readonly legendClasses: readonly LegendClassCard[];
-  readonly backgroundSets: readonly BackgroundSet[];
-  /** Themed display name of the profile screen ("Chronicle", naming.md). */
-  readonly profileDisplayName: string;
-};
-
-/** Asset groups the session loads (architecture 14). */
-export type AssetGroup = 'boot' | 'selection' | 'match';
 
 /** Progress of one asset group load. */
 export type LoadingProgress = {
@@ -126,18 +139,28 @@ export type MatchClock = { readonly tick: number; readonly seconds: number };
 /** Every message on the bridge bus, keyed by event name. */
 export type BridgeEventMap = {
   'ui-intent': UiIntent;
-  'session-phase': { readonly phase: SessionPhase; readonly reason: string | null };
+  'session-phase': { readonly phase: SessionPhase; readonly reason: SessionReason | null };
   'menu-route': { readonly route: MenuRoute };
   overlay: { readonly overlay: Overlay | null };
   'content-catalogue': DisplayCatalogue;
   'loading-progress': LoadingProgress;
   /** `null` clears the setup (back to the menu). */
   'match-setup': MatchSetupDraft | null;
-  'class-selection': ClassSelection;
+  /** `null` clears the pick (back to the class step). */
+  'class-selection': ClassSelection | null;
   /** Remaining session time of the select (60 s) or reveal (10 s) countdown. */
   countdown: { readonly kind: 'select' | 'reveal'; readonly remainingMs: number };
   'match-clock': MatchClock;
-  'hud-state': HudSnapshot;
+  /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */
+  'hud-state': { readonly player: PlayerHudSnapshot | null };
+  /** Team structures, at match start and every 30 ticks (13 §9 recipe). */
+  'structure-state': { readonly structures: readonly StructureStatus[] };
+  /** Capture points in lane order, at match start and every 30 ticks (13 §5). */
+  'capture-state': { readonly points: readonly CapturePointStatus[] };
+  /** A group's loaded image URLs; `{}` after its release. */
+  'asset-urls': AssetUrls;
+  /** The licence blocks of every bundled asset, once at boot. */
+  credits: { readonly entries: readonly CreditEntry[] };
   announcement: Announcement;
   /** The whole settings state, published whenever it changes. */
   settings: SettingsSliceState;

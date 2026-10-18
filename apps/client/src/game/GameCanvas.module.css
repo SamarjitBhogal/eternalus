@@ -11,15 +11,19 @@
   display: block;
   width: 100%;
   height: 100%;
-  cursor: grab;
   touch-action: none;
 }
-.canvas:active {
+/* Only the developer explorer drags the view (?dev=1, I-55); normal play has no grab cursor. */
+.isExploring {
+  cursor: grab;
+}
+.isExploring:active {
   cursor: grabbing;
 }
+/* The developer chrome sits top-left, clear of the HUD regions (I-34); its look is unchanged (I-61). */
 .toolbar {
   position: absolute;
-  bottom: 24px;
+  top: 24px;
   left: 32px;
   display: flex;
   gap: 18px;
@@ -52,8 +56,8 @@
 }
 .legend {
   position: absolute;
-  right: 24px;
-  top: 28px;
+  top: 96px;
+  left: 32px;
   display: flex;
   gap: 16px;
   font:
@@ -83,17 +87,37 @@
 }
 @media (max-width: 700px) {
   .toolbar {
+    top: 12px;
     left: 12px;
-    bottom: 12px;
     max-width: 60%;
     flex-wrap: wrap;
     gap: 8px;
   }
   .legend {
-    top: auto;
-    bottom: 170px;
-    right: 12px;
+    top: 120px;
+    left: 12px;
     flex-direction: column;
     gap: 8px;
   }
+}
+/*
+ * Interim normal-play control (I-75, DV-119): leaves the cathedral interior, at the toolbar's
+ * place, only while inside. Tokens only; its upgrade path is a ui/hud control (13 §9 recipe).
+ */
+.leaveInterior {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--text-muted);
+  border-radius: var(--radius-sm);
+  background: var(--surface-scrim);
+  color: var(--text-primary);
+  font-family: var(--font-game);
+  font-size: max(16px, var(--text-min));
+  cursor: pointer;
+}
+.leaveInterior:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
