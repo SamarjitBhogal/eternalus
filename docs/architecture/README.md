@@ -4,7 +4,7 @@ description: The index of the seventeen architecture docs with the layered model
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, index]
 related:
   [
@@ -19,9 +19,9 @@ related:
 
 **Purpose.** Read this first when you need to know how Eternalus is built or where a design
 question is answered. The seventeen docs in this folder are the system of record for the
-architecture; the repo has no game code yet, so every snippet in them is a **sketch** of what
-Phase 1 onwards will create, and `AGENTS.md` carries only the rules that fit on one screen and
-links here. This page gives the layered model in one picture, the reading orders, an index of
+architecture; every snippet in them is a labelled **sketch** or **contract**, never copied code,
+and `AGENTS.md` carries only the rules that fit on one screen and links here. This page gives
+the layered model in one picture, the reading orders, an index of
 every doc with the code it governs, the register of decisions already made (do not reopen
 them) and what survives a move to a real engine.
 
@@ -46,7 +46,7 @@ flowchart TB
   subgraph L2["L2 Domain: packages/core/src/ as @eternalus/core"]
     SIM[Simulation: state/, commands/, config/]
     WORLD[entities/, components/, strategies, systems/]
-    REST[content/, map/, physics/, ai/, abilities/, combat/, match/, loadout/, diagnostics/, utils/]
+    REST[content/, map/, physics/, ai/, abilities/, combat/, match/, loadout/, diagnostics/, utils/, teams/]
   end
   subgraph L1["L1 Infrastructure: apps/client/src/game/engine/, data/ adapters"]
     PORTS[GameLoop, Renderer, FrameScheduler, InputDevice, AudioOutput, Clock]
@@ -102,7 +102,7 @@ entry, per [../agents/README.md](../agents/README.md) §2. Read three documents,
 | [03-game-model.md](03-game-model.md)                                                         | One tick end to end, `GameState`, `Command`, `GameEvents`, `Snapshot`, the `Simulation` facade, determinism, replays, `GameConfig`                                               | `packages/core/src/{state,commands,config}/**`, `packages/core/src/Simulation.ts`                                                                                      |
 | [04-entity-architecture.md](04-entity-architecture.md)                                       | The family tree, `Entity` lifecycle, components, strategies, Type Object definitions, factory and registry, hordes, D10, D11                                                     | `packages/core/src/{entities,components,content}/**`                                                                                                                   |
 | [05-abilities-weapons-and-loadouts.md](05-abilities-weapons-and-loadouts.md)                 | Abilities as content plus effect and restriction strategies, status effects, the damage pipeline, weapons, artifacts, loadouts, progression                                      | `packages/core/src/{abilities,combat,loadout}/**`, `packages/core/src/content/{abilities,weapons}/**`                                                                  |
-| [06-map-and-minimap.md](06-map-and-minimap.md)                                               | `MapGenerator` from config (D7), `MapDefinition`, `WorldMap`, presets, and why the minimap needs no code per feature                                                             | `packages/core/src/map/**`, `packages/core/src/content/maps/**`, `apps/client/src/game/views/MinimapView*`                                                             |
+| [06-map-and-minimap.md](06-map-and-minimap.md)                                               | `MapGenerator` from config (D7), `MapDefinition`, `WorldMap`, presets, and why the minimap needs no code per feature                                                             | `packages/core/src/{map,content/maps,teams}/**`, `apps/client/src/game/views/{MiniMapView,MapView}*`                                                                   |
 | [07-structures-obstacles-and-destructibles.md](07-structures-obstacles-and-destructibles.md) | The `Structure` family, layered shields, breakability as data, gates, turrets, spawners, capture points, obstacles, destructible terrain                                         | `packages/core/src/entities/structures/**`, `Obstacle*`, the `Health`/`Spawner`/`Capturable`/`Carry` components, the structure systems, structure and obstacle content |
 | [08-game-engine.md](08-game-engine.md)                                                       | `GameLoop`, `FrameScheduler`, `Renderer`, `Camera`, audio, clock, `Match`, the render pipeline, the performance budget, D8                                                       | `apps/client/src/game/engine/**`, `apps/client/src/game/views/**`, `apps/client/src/game/Match.ts`                                                                     |
 | [09-hardware-abstraction.md](09-hardware-abstraction.md)                                     | Ports and adapters for input, display, audio, time, storage and logging; device → `InputAction` → `Command`; contract tests                                                      | `apps/client/src/game/engine/**`, `apps/client/src/game/input/**`, the `StorageAdapter` port and adapters                                                              |

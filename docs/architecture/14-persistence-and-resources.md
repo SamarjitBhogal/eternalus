@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-09
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -27,7 +27,7 @@ controller in front"; the decision is IndexedDB behind ONE `PersistenceControlle
 repositories and a `StorageAdapter` port, and assets through ONE `ResourceController` (D3,
 ADR 0005, AP-08). No server. Local data is a cache the player can export
 ([research A, "What this means"](../research/persistence-input-diagnostics-research.md#what-this-means-for-eternalus-a)).
-Every block is a **sketch**; no data code exists yet.
+Every block is a **sketch**; §14 says what is built.
 
 ## 1. Where it sits and the one-door rule
 
@@ -313,20 +313,38 @@ Stored data is never trusted (ES-08). Every read goes through a type guard and, 
 version upgrade; every write goes through a mapper. Both live in `dto/`, one file per record.
 
 ```ts
-// Sketch: apps/client/src/data/persistence/dto/SavedLoadoutDto.ts and repositories/StorageLoadoutRepository.ts
-export function validateSavedLoadoutDto(value: unknown): { ok: true; dto: SavedLoadoutDtoV1 } | { ok: false; reason: string };
+// Sketch: apps/client/src/data/persistence/dto/SavedLoadoutDto.ts and repositories/readOrQuarantine.ts
+export function validateSavedLoadoutDto(
+  value: unknown,
+): { ok: true; dto: SavedLoadoutDtoV1 } | { ok: false; reason: string };
 export function upgradeSavedLoadoutDto(dto: SavedLoadoutDtoAnyVersion): SavedLoadoutDtoV1; // lazy per-record ladder on schemaVersion
 export function toLoadout(dto: SavedLoadoutDtoV1): Loadout; // core type
 export function fromLoadout(profileId: ProfileId, loadout: Loadout, now: number): SavedLoadoutDtoV1;
 
-private async readOrQuarantine<T>(tx: StorageTx, store: StoreName, key: IDBValidKey, validate: Validator<T>): Promise<T | null> {
+// One function shared by every repository, not a private copy in each.
+export async function readOrQuarantine<T>(
+  tx: StorageTx,
+  { store, key, validate }: { store: StoreName; key: IDBValidKey; validate: Validator<T> },
+  deps: { now: () => number; logger: Logger }, // the repository's, the same for every read
+): Promise<T | null> {
   const raw = await tx.get<unknown>(store, key);
   if (raw === undefined) return null;
   const checked = validate(raw);
   if (checked.ok) return checked.dto;
-  await tx.put('quarantine', { store, key, reason: checked.reason, quarantinedAt: this.now(), value: raw });
+  await tx.put('quarantine', {
+    store,
+    key,
+    reason: checked.reason,
+    quarantinedAt: deps.now(),
+    value: raw,
+  }); // a QuarantineRecordDtoV1 (§7)
   await tx.delete(store, key);
-  this.logger.log(makeLogRecord('WARN', 'client.persistence', 'record quarantined', { store: String(store), reason: checked.reason })); // 15 §4
+  deps.logger.log(
+    makeLogRecord('WARN', 'client.persistence', 'record quarantined', {
+      store: String(store),
+      reason: checked.reason,
+    }),
+  ); // 15 §4
   return null; // the caller substitutes a default: autoBuildLoadout, DEFAULT_CHORDS, a fresh profile
 }
 ```
@@ -465,6 +483,30 @@ export class ResourceController {
 | A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts` | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures     |
 | A field or a settings group   | bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; or one `group` literal with its `value` DTO and default             | a fixture at the old version in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
 | An asset or a storage backend | one `ASSET_MANIFEST` line with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                 | nothing else (views ask by id); one line in `main.tsx`                                                        |
+
+## 14. Implementation status
+
+Built in Sprint 1 (session F), settings only: `PersistenceController` with `open`,
+`loadSettings`, `saveSettings` and `close` (the Sprint 1 brief's facade, in place of §2's
+`persistence.settings` repository and `status`); the `StorageAdapter` port with `open`,
+`transaction` and `close` (reads return `unknown`; `getAll`, `onVersionChange` and `estimate`
+come with their first caller); `MemoryStorageAdapter`, which runs transactions one at a time in
+call order, and the `describeStorageAdapter` contract suite; `schema/migrations.ts` v1 with the
+`settings` and `quarantine` stores only; `SettingsRepository` (a class, no interface yet), which
+reads through the shared `readOrQuarantine`. Interim gaps, to settle before
+`IndexedDbStorageAdapter` (S2) fixes v1 on disk:
+
+- Settings are one `SettingsDtoV1` record per profile keyed by `profileId`, not §7's
+  `SettingsGroupDtoV1` keyed by `[profileId, group]`; the groups are `audio`, `video` and
+  `accessibility` (the Sprint 1 contract's `settingsSlice`), with no `developer` or `storage`
+  group yet. Changing the key path after IndexedDB ships needs a new store and a `transform`.
+- One profile (`LOCAL_PROFILE_ID`) until the profiles store exists.
+- The validation helpers (`isRecord`, `groupProblem`, field checks) are private to
+  `dto/SettingsDto.ts`; when S2 adds the second DTO, the common ones move to a shared
+  `dto/dtoCheck.ts` beside `DtoCheck.types.ts` (PR #24 review).
+- A quarantine is reported through an injected `warn` callback, because `data/` imports core
+  types only (§1); `main.tsx` turns it into a `Logger` record. No `degraded` status or memory
+  fallback yet (§10): a failed open leaves the settings on defaults.
 
 ## Related
 

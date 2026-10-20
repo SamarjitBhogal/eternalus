@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-10
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -68,7 +68,8 @@ What this means (brief decision D7; details in `../../architecture/06-map-and-mi
   the `ViewRegistry` for each entity kind's minimap glyph; a new entity kind registers one
   view and appears on both, with no minimap code change.
 - Changing `numLanes` from 3 to 5 must produce a valid, symmetric map with 5 SpawnerTowers and 5
-  BuffTowers per team and 3 more central capture points; that is the acceptance test.
+  BuffTowers per team and 5 central capture points (one per lane); that is the acceptance test.
+  Camps are the exception to symmetry once ADR 0017 is accepted (DEC-15, below).
 
 ## MVP layout summary
 
@@ -83,7 +84,8 @@ config values):
 - **3 central capture points**, one per lane; the middle one is the Cathedral.
 - Corner camps (4, one per map corner) are **MVP-if-time**.
 
-A schematic of one half of the map (Light side; the Dark side mirrors it). Not to scale:
+A schematic of one half of the map (Light side; the Dark side mirrors it, except the camp
+positions, DEC-15). Not to scale:
 
 ```text
    corner camp                                                          corner camp
@@ -98,9 +100,21 @@ A schematic of one half of the map (Light side; the Dark side mirrors it). Not t
 ```
 
 Placement rules the generator follows: SpawnerTower ahead of BuffTower on every lane; camps
-equidistant between adjacent lanes; capture points on the lane centre line at the map's centre;
-the rift along the centre line between the two territories with one bridge per lane; corner
-camps outside the lanes behind impassable rifts.
+between adjacent lanes, lighter near a lane and heavier deeper into the Unknown (DISC-42);
+capture points on the lane centre line at the map's centre; the rift along the centre line
+between the two territories with one bridge per lane; corner camps outside the lanes behind
+impassable rifts.
+
+**Camp weights and placement (DEC-15, 2026-10-10).** Camp weights stay depth-based, with the
+class set by the camp's position in its corridor: nearest the lane light, middle medium, deepest
+heavy. The vertical line down the centre of the map divides the sides. The seeded RNG places the
+camps on each side, so the two sides differ, but they must be equal in overall difficulty: the
+same number of camps of each weight class on each side, not necessarily in mirrored positions.
+This exempts camps from the mirror invariant of ADR 0009 and architecture 06, which a proposed
+ADR 0017 must amend (owner sign-off) before the generator changes; until then the generator still
+mirrors camps. **Open (owner):** whether this also applies to the corner camps, whether parity
+is per side only or also per corridor, and which classes a corridor gets when it holds other than
+three camps (ADR 0017).
 
 ## Obstacles and destructible terrain
 
@@ -127,21 +141,43 @@ The team's `feat/map` branch traced Map 1 by hand as `packages/core/src/content/
 and `map1Terrain.ts`: a **1600 × 900 world-unit** rectangle, **Light on the west, Dark on the
 east**, with named objectives (`north-west-objective`, …) and polygon bounds for the corner
 regions, marked `TUNE: provisional shapes traced from the team's layout sketch`. Treat it as
-**provisional data only**: under D7 those coordinates become either generator inputs (world
-size, lane spacing, corner-region shape) or a preset under `content/maps/` that the generator
-validates, never a hand-authored map that the code depends on. The east/west orientation is a
-`GameConfig` value with the same status.
+**provisional data only**: under D7 those coordinates become generator inputs (world size, lane
+spacing) and a preset under `content/maps/presets/` that the generator validates (`map-1`: corner
+regions, rift width, lane bends; DEC-14), never a hand-authored map that the code depends on. The
+east/west orientation is fixed, not a `GameConfig` value (integration contract §2.2).
+
+## Map 1 scenery
+
+The generated map is dressed with presentation-only scenery (`MapSceneryBuilder`), authored in
+map-1's 1600 × 900 sketch and stretched to the configured world size. It never adds colliders,
+capture rules or spawns; every gameplay anchor still comes from the generator.
+
+- Northern capture point: snowy stone fortress inside snow pockets.
+- Cathedral: Gothic exterior surrounded by village streets, houses and market stalls.
+- Southern capture point: basalt fortress ringed by lava rivers with four bridges.
+- Strongholds: large fortified compounds under the generated wall ring; towers get small forts.
+- Camps and corner camps: clearings with tents, supplies and a fire.
+- Trees, boulders, lakes, hills and a perimeter of overlapping mountains, all deterministic.
+
+Navigation (presentation only): drag to pan, scroll to zoom, click the minimap to jump, and
+**World overview** shows the whole battlefield; walking (WASD) returns to the following camera.
+Clicking the cathedral opens its 1,800 × 2,200 interior: a circular rotunda with an open central
+capture court, pews and columns, and radially connected rooms (library, sacristy, chapels,
+vestry, reliquary, garden cloisters, altar). **Leave cathedral** returns outside. Capture rules,
+doorways and collision for the interior remain future work.
 
 ## Engineering notes
 
-- `packages/core/src/map/`: `MapGenerator` (with a `MapBuilder` inside), `MapDefinition` types,
-  `WorldMap` (runtime grid, nav cost grid, flow fields), `LaneGeometry`, symmetry helpers.
-  Presets live in `content/maps/`.
+- `packages/core/src/map/`: `MapGenerator` (with a `MapBuilder` inside), `WorldMap` (runtime
+  grid, nav cost grid, flow fields), `LaneGeometry`, symmetry helpers. `MapDefinition` and the
+  other map types live in `content/maps/maps.types.ts` (integration contract §2.2), presets in
+  `content/maps/`.
 - Single place of change: a new placed thing (say, a shrine) is one `Structure` or `Obstacle`
   subclass or content kind, one placement rule in the generator, one view registration. The
   minimap never changes.
 - Straight lanes are an MVP simplification, not a model constraint: `LaneGeometry` is a
-  polyline so curved lanes later are data.
+  polyline, so bends are data (a lane profile of straight segments, DEC-14) and curved lanes
+  later are one more `LaneShape` class.
 - Determinism: the generator is pure (config + seed in, definition out) and is tested with
   golden hashes of the generated definition.
 

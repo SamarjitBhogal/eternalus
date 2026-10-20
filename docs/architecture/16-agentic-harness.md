@@ -64,7 +64,7 @@ flowchart LR
 
 | Path                                                                           | Purpose                                                                                                                                                                                            | Kind    |
 | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `AGENTS.md`                                                                    | The canonical rules: definition of done, git rules, forbidden actions, the twelve architecture rules, where code goes, coding standards, testing, commands (114 lines; ceiling about 150)          | guide   |
+| `AGENTS.md`                                                                    | The canonical rules: definition of done, git rules, forbidden actions, the architecture rules, where code goes, coding standards, testing, commands (ceiling about 150 lines)                      | guide   |
 | `packages/core/AGENTS.md`, `apps/client/AGENTS.md`                             | Package boundaries, planned folder tables with may-import lists, "adding code", tests; the closest file to the edited file applies on top of the root                                              | guide   |
 | `CLAUDE.md` (root, `packages/core/`, `apps/client/`)                           | `@AGENTS.md` and nothing else; Claude Code expands the import at launch relative to the importing file                                                                                             | pointer |
 | `GEMINI.md` (root and packages), `.gemini/settings.json`                       | Two-line pointers; `context.fileName: ["AGENTS.md", "GEMINI.md"]` makes Gemini CLI and Antigravity load `AGENTS.md` as context                                                                     | pointer |
@@ -88,20 +88,18 @@ flowchart LR
 | `docs/plan/phase-<n>-*.md`                                                     | The sprint checklists: the feature list with pass/fail (§7)                                                                                                                                        | memory  |
 | `.githooks/pre-commit`, `.githooks/pre-push`                                   | `npm run check:quick` for every human and every tool, hooks or not (`core.hooksPath`)                                                                                                              | sensor  |
 | `.github/workflows/ci.yml`                                                     | `npm run check` as named steps on Ubuntu, macOS and Windows (§8)                                                                                                                                   | sensor  |
-| `scripts/docs/check-docs.mjs` (sprint 0.4, landing)                            | Frontmatter, relative links and index validation behind `npm run docs:check`, inside `npm run check` and CI (§8)                                                                                   | sensor  |
+| `scripts/docs/check-docs.mjs`                                                  | Frontmatter, relative links and index validation behind `npm run docs:check`, inside `npm run check` and CI (§8)                                                                                   | sensor  |
 
 ## 3. Instruction files: one canonical `AGENTS.md`, thin pointers
 
 Root `AGENTS.md` is the only place rules are written. It holds the definition of done, the git
-rules, the forbidden actions, the twelve architecture rules (restated with the planned folder
+rules, the forbidden actions, the architecture rules (restated with the planned folder
 names in [01 §4](01-layered-oop-model.md#4-the-architecture-rules)), the "where code goes"
 table, the coding standards, the testing rules and the commands; everything longer lives in
 `docs/` and is linked. This is OpenAI's "map, not a 1,000-page manual" (about 100 lines as a
 table of contents) and the ETH result that repository overviews cost tokens without helping
-(research §4). Two known leftovers: the root file still carries a short "Architecture (planned)"
-list, and it links the old `docs/architecture.md` and `docs/agent-workflow.md` paths (DISC-54 in
-[../reference/suggestions/discrepancies.md](../reference/suggestions/discrepancies.md)) until
-the Phase 0 PR re-points them at [README.md](README.md) and `docs/agents/running-agents.md`.
+(research §4). One known leftover: the root file still carries a short "Architecture (planned)"
+list.
 
 Tool-specific files never contain rules. How each tool family enters:
 
@@ -210,7 +208,7 @@ Context is per session; the repository is the memory (OpenAI: "anything it can't
 in-context while running effectively doesn't exist", research §4). Three files carry it:
 
 - `INBOX.md` (root, committed, no frontmatter) is the product owner's queue: decisions needed
-  (DEC-01 to DEC-10 today), requests, feedback, done. Saying "file updated" tells the agent to
+  (`DEC-nn`), requests, feedback, done. Saying "file updated" tells the agent to
   treat the open items as its prompt, in order; an item leaves only when implemented and
   confirmed. The session-start hook prints the open count.
 - `docs/plan/PROGRESS.md` is the append-only log: one `###` entry per session or PR (date,
@@ -236,8 +234,8 @@ the code each doc governs and by the index in `docs/README.md`; architecture enf
 whose messages contain the fix (`core must be deterministic: use a seeded RNG` today, the
 per-folder boundaries of §10 next); plans as versioned artifacts (the phase docs and PROGRESS);
 and a recurring doc-gardening agent (`doc-gardener`, `npm run docs:check`). Making the app
-legible to the agent is covered for the core (headless `Simulation`, replays, `RecordingRenderer`)
-and not yet for the browser (no MCP, §10).
+legible to the agent is covered for the core (headless `Simulation`, replays) and the views
+(`RecordingRenderer`) and not yet for the browser (no MCP, §10).
 
 ## 8. The verification ladder
 
@@ -252,11 +250,11 @@ cost: a failure lower down makes the higher rungs noise.
 | 4    | `npm run knip`                                        | Unused files, exports, types and dependencies: a class that no registry line reaches is dead code                                                        | `npm run check`                                                                       |
 | 5    | `npm run test:coverage`                               | Behaviour, determinism (seeded shuffle), contract suites; coverage thresholds that only go up                                                            | `npm run check`; the `test-writer` subagent                                           |
 | 6    | `npm run build`                                       | `tsc -b` emit plus the Vite build                                                                                                                        | `npm run check`                                                                       |
-| 7    | `npm run docs:check` (`scripts/docs/check-docs.mjs`)  | Frontmatter keys and values, `title` equals the H1, relative links resolve, the index in `docs/README.md` is in sync, `last-reviewed` older than 90 days | `npm run check` and a named CI step (sprint 0.4, landing with the Phase 0 PR)         |
+| 7    | `npm run docs:check` (`scripts/docs/check-docs.mjs`)  | Frontmatter keys and values, `title` equals the H1, relative links resolve, the index in `docs/README.md` is in sync, `last-reviewed` older than 90 days | `npm run check` and a named CI step                                                   |
 | 8    | `.github/workflows/ci.yml`                            | The same steps as `npm run check`, one named step per tool, on Ubuntu, macOS and Windows; `npm ci` proves the lockfile                                   | Every push and PR; branch protection makes it binding                                 |
 
 `npm run check` (`format:check`, `lint`, `typecheck`, `knip`, `test:coverage`, `build`, and
-`docs:check` once wired) is the definition of done, and the agent quotes its verbatim tail in
+`docs:check`) is the definition of done, and the agent quotes its verbatim tail in
 its final message and in the PR (AI-11). What the ladder enforces and what review still catches:
 
 | Enforced by tooling                                                                                        | Checked in review (`pr-review`, `architecture-reviewer`, a human)                        |
@@ -275,8 +273,8 @@ agents never share a working directory or half-finished edits. Branch off the cu
 or `claude --worktree <name>` (which creates `.claude/worktrees/<name>` on `worktree-<name>`).
 Run `npm ci` in each worktree; do not share `node_modules` through `worktree.symlinkDirectories`,
 because npm workspaces would resolve `@eternalus/core` to the main checkout's copy (research §6).
-`.worktrees/` is gitignored (`Recommendation:` add `.claude/worktrees/` and `.gemini/worktrees/`
-beside it). Give parallel agents disjoint file sets; the reviewer runs in the worktree of the
+`.worktrees/` and `.claude/worktrees/` are gitignored (`Recommendation:` add `.gemini/worktrees/`
+beside them). Give parallel agents disjoint file sets; the reviewer runs in the worktree of the
 task it reviews; a feature that spans core and client is a stack of two PRs on the phase branch.
 
 **Prompts.** Every task starts from the brief in
@@ -308,12 +306,9 @@ handed over, never inside it.
   the plan is `thresholds.autoUpdate: true` for local runs only, with the raised numbers
   committed in the same PR (sprint 1.5 lists the first ratchet: core 80 to 82, client 45/50 to
   55/55).
-- **Docs check.** `scripts/docs/check-docs.mjs` and the `docs:check` / `docs:index` scripts are
-  being added in sprint 0.4; until they land, `npm run check` has no docs step even though the
-  `verify` and `doc-gardening` skills already call it.
 - **Other tools.** No `.codex/hooks.json` is committed (added by ADR when someone uses Codex
   daily); no browser MCP (`.mcp.json`) for driving the running game, which is an optional
-  dependency decision (research §3); `.gitignore` lacks `.claude/worktrees/`.
+  dependency decision (research §3).
 
 ## 11. Maintenance rules
 

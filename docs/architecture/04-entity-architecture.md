@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-08
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -143,7 +143,7 @@ fields. Each component guards its own invariants so a bug shows up where it happ
 | `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`   | cooldown never negative                                                  | `canAttack(tick)`, `setTarget`, `beginAttack`                                                     |
 | `Abilities`     | `slots: Record<AbilitySlot, AbilityRuntime>`                                     | one runtime per slot                                                     | `runtime(slot)`, `forEachReady`                                                                   |
 | `Progression`   | `xp`, `level`, `curveId`                                                         | level never decreases; xp ≥ 0                                            | `addXp(amount) → levelsGained`                                                                    |
-| `Team`          | `team: TeamId`                                                                   | transitions emit `team-changed`                                          | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                         |
+| `Team`          | `team: Team` (type from `teams/teams.types.ts`)                                  | transitions emit `team-changed`                                          | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                         |
 | `Collider`      | `shape: Circle \| ConvexPolygon`, `layer`, `isSolid`                             | shape convex                                                             | `bounds()`                                                                                        |
 | `StatusEffects` | `active: StatusEffectRuntime[]`                                                  | stacks ≤ `maxStacks`; no duplicates when `stacking: 'refresh'`           | `apply(definition, sourceId, tick)`, `expire`, `has(flag)`                                        |
 | `Carry`         | `carriedId: EntityId \| null`, `maxWeight`, `pickUpStrategy`                     | carried entity exists and is carryable                                   | `canCarry(target)`, `pickUp`, `release`                                                           |
@@ -185,7 +185,7 @@ export type EntityDefinitionBase = {
   readonly displayName: string; // 'Warrior (formerly Assault)' lives here, not in code
   readonly extends?: string; // single parent, same family
   readonly sprite: SpriteRef;
-  readonly minimapGlyph: MinimapGlyphId;
+  readonly minimapGlyph?: MinimapGlyph; // 06 §8; absent = DEFAULT_MINIMAP_GLYPH
 };
 
 export type LegendDefinition = EntityDefinitionBase & {
@@ -211,6 +211,14 @@ export type LegendDefinition = EntityDefinitionBase & {
 
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).
+
+**Validation (DEC-22).** `loadDefaultContent()` builds the catalogues and runs `ContentValidator`
+once, at load, never at import time. The validator knows no rule in particular: each rule is a
+class with `check(definition, content): readonly string[]`, so a rule sees the whole catalogue and
+can check the ids a definition names (dangling references), and the validator reports every
+broken rule at once in one `ContentValidationError`. The rules are listed in one file,
+`content/defaultContentRules.ts` (`createDefaultContentRules()`); a new rule is a class and one
+line there.
 
 ## 6. `EntityFactory` and `EntityRegistry`
 
@@ -305,6 +313,22 @@ client-side (views) and pooled there; mobs may be pooled later if profiling show
 Untouched: every system, every other class, `LoadoutScreen` (lists classes from the catalogue),
 `LegendView` (draws by `definitionId`), the minimap, keybindings, the store. The content
 validation test and the replay fixtures pass unchanged. The `new-entity` skill walks these steps.
+
+## 13. Implementation status
+
+Sprint 1.2 (PR #14) implements §1–§3, §5 and §6 with these interim differences, each closed by the
+session or phase named:
+
+- `Entity`, `Unit`, `Legend` and `Mob` keep the sprint 1 API (`installComponents`, `onRetire`,
+  `addComponent`/`getComponent`/`findComponent`/`hasComponent`, `family` as a string) because the
+  simulation kernel (PR #13) builds on it. Every family reads its spawn context through
+  `SpawnContextReader`, which checks it at runtime because `spawn` takes `unknown`.
+- Units install `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider` and
+  `Vision`; `Combat`, `StatusEffects` and `Carry` arrive with their systems (Phase 2–3). The team
+  component is `TeamMembership` because the type `Team` owns that name.
+- Shipped kinds: `warrior`, `sentinel`, `magus`, `light-mob` (the training dummy only),
+  `obstacle` and `projectile`. Other mobs are SCRUM-59; structures and zones get concrete kinds in
+  Phase 2 and 3.
 
 ## Related
 

@@ -6,8 +6,23 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
+/** core must never draw from an unseeded RNG. */
+const NO_MATH_RANDOM = {
+  object: 'Math',
+  property: 'random',
+  message: 'core must be deterministic: use a seeded RNG.',
+};
+
+/** Transcendental Math differs between engines; core reaches it through one file (ADR 0012). */
+const NO_TRANSCENDENTAL_MATH = ['sin', 'cos', 'atan2', 'exp', 'pow'].map((property) => ({
+  object: 'Math',
+  property,
+  message: 'core must be deterministic: use utils/deterministicMath.ts (ADR 0012).',
+}));
+
 export default defineConfig(
-  globalIgnores(['**/dist/', '**/coverage/']),
+  // Flat config ignores .gitignore; each worktree is linted by its own hooks and CI (ADR 0014).
+  globalIgnores(['**/dist/', '**/coverage/', '.worktrees/', '.claude/worktrees/']),
 
   js.configs.recommended,
 
@@ -35,15 +50,14 @@ export default defineConfig(
         'error',
         { patterns: ['react', 'react-dom', 'react-redux', '@reduxjs/*', '@eternalus/client'] },
       ],
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'Math',
-          property: 'random',
-          message: 'core must be deterministic: use a seeded RNG.',
-        },
-      ],
+      'no-restricted-properties': ['error', NO_MATH_RANDOM, ...NO_TRANSCENDENTAL_MATH],
     },
+  },
+
+  {
+    // The one door to transcendental Math in core (ADR 0012).
+    files: ['packages/core/src/utils/deterministicMath.ts'],
+    rules: { 'no-restricted-properties': ['error', NO_MATH_RANDOM] },
   },
 
   {

@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-08
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -79,13 +79,19 @@ buff tower 150%, a wall 200%, each as a separate bar that absorbs damage before 
 ```ts
 // packages/core/src/components/Health.ts (sketch)
 export type ShieldBar = { readonly sourceId: EntityId; current: number; readonly max: number };
+/** Where one hit's damage went (DEC-23): shields, base, and what was left once both were empty. */
+export type DamageBreakdown = {
+  readonly toShields: number;
+  readonly toBase: number;
+  readonly overflow: number;
+};
 export class Health {
   base: number; // current base health
   readonly baseMax: number;
   readonly shields: ShieldBar[]; // one per living allied BuffTower, in tower id order
   get total(): number; // base + sum(shields.current)
-  /** Drains shields first (newest bar last), then base. Returns the overflow that killed it. */
-  applyDamage(amount: number): number;
+  /** Drains shields first (newest bar last), then base, and says where the damage went. */
+  applyDamage(amount: number): DamageBreakdown;
   addShield(sourceId: EntityId, max: number): void;
   removeShield(sourceId: EntityId): void; // drops the bar; never touches base or other bars
 }
@@ -218,7 +224,7 @@ the middle one.
 
 ```ts
 export class Capturable {
-  ownerTeam: TeamId; // 'neutral' at match start
+  ownerTeam: Team; // 'neutral' at match start
   progress: number; // -1..1, negative = dark, positive = light (TUNE rate per unit inside)
   checkpoint: 0 | 1 | 2 | 3;
   lockedBy: EntityId | null; // a living MiniBoss locks the zone
@@ -312,9 +318,9 @@ These are the requirements doc's runtime checks ("entity passes through an unbre
 ## 12. Minimap appearance
 
 Every `StructureDefinition` and `ObstacleDefinition` carries an optional `minimapGlyph`
-(`06-map-and-minimap.md` §8). `WallSegment`s use `shape: 'footprint'` so the ring is drawn as its
-polygon; towers use team-coloured squares; camps neutral dots; capture points rings whose colour
-follows `Capturable.ownerTeam`. No view code per kind: the default `EntityView.drawGlyph` handles all.
+(`06-map-and-minimap.md` §8). `WallSegment`s and towers use team-coloured glyphs; camps neutral
+dots; capture points rings whose colour follows `Capturable.ownerTeam`. No view code per kind: the
+default `EntityView.drawGlyph` handles all.
 
 ## 13. Extension recipe: a new structure type
 
@@ -323,7 +329,7 @@ follows `Capturable.ownerTeam`. No view code per kind: the default `EntityView.d
 2. Add a subclass under `entities/structures/` **only** if its lifecycle differs (otherwise reuse
    an existing class with the new definition). Depth stays ≤ 3 below `Entity`.
 3. Add the kind to `MapFeatureKind` and one `EntityRegistry` line (feature kind → factory).
-4. Add a `MapBuilder` step or a preset feature so the generator places it.
+4. Add a `MapBuilder` step so the generator places it (presets never place features, DEC-14).
 5. Optional: an `EntityView` in `ViewRegistry` for the main canvas; the minimap needs nothing.
 6. Tests: the definition validates, the mirror test still passes, the minimap glyph test counts it.
 
@@ -338,6 +344,18 @@ Nothing in `StructureSystem`, `DamagePipeline`, `SpawnSystem` or `MinimapView` c
   that emits `form-change-requested`; the Legend side is a `LegendSpecDefinition` swap (D11).
 - **Bridges** across the rift as `bridge-segment` obstacles are MVP-if-time; until then the rift
   gaps are plain walkable ground.
+
+## 13. Implementation status
+
+Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered shields on
+`Health`, with these interim differences:
+
+- `Structure` and `Obstacle` use a circle `Collider` from `footprintRadius`; convex polygon
+  footprints arrive with the structures in Phase 2. No concrete structure kind or content exists yet.
+- `Health` keeps `current`/`max` for the base bar and adds `shields`, `total`, `addShield` and
+  `removeShield`; bars stay in source id order.
+- `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
+  `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
 ## Related
 

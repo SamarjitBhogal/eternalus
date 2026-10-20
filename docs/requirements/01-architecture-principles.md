@@ -4,7 +4,7 @@ description: The architectural requirements AP-01 to AP-15 that every design in 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [requirements, architecture, principles]
 paths: ['packages/core/src/**', 'apps/client/src/**']
 related:
@@ -93,7 +93,8 @@ flowchart TD
 - **Requirement.** The same seed and the same ordered command stream produce an identical
   `GameState` (identical `StateHasher` output) at every tick, on the same engine. Core measures
   time only in ticks at a fixed 30 ticks/s (decided, D9), draws randomness only from
-  `SeededRandom` owned by `GameState`, iterates entities in ID order with pure comparators, defers
+  seeded generators (`SeededRandom` owned by `GameState`, and the `Rng` that `MapGenerator`
+  creates from its seed; decided, D7), iterates entities in ID order with pure comparators, defers
   spawns and removals to the end of the tick, and mutates state only through `Command`s applied at
   the start of a tick. Player input and bots are both `Command` producers.
 - **Why.** Replays, golden-hash regression tests, reproducible bug reports and cheap headless soak

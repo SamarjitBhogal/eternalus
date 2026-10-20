@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-06
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths: ['packages/core/src/match/**']
 related:
@@ -29,7 +29,7 @@ every number quoted from the sources is `TUNE`.
 
 ## 1. Where it sits
 
-- Folder `packages/core/src/match/`; may import `state/`, `config/`, `utils/` and content types
+- Folder `packages/core/src/match/`; may import `state/`, `config/`, `utils/`, `teams/` and content types
   ([02-code-structure.md](02-code-structure.md) §2). Files: `MatchDirector.ts`,
   `MatchPhase.types.ts`, `phases/<Name>Phase.ts` + `defaultMatchPhases.ts`, `MatchTimeline.ts`,
   `TimelineActionRegistry.ts` + `actions/<Kind>Action.ts` + `defaultTimelineActions.ts`,
@@ -163,7 +163,7 @@ export type MatchState = {
   phase: MatchPhase;
   phaseEnteredTick: number;
   timelineCursor: number; // index of the next unfired entry
-  readonly playerTeam: PlayableTeamId; // chosen at match creation, also in sim mode
+  readonly playerTeam: PlayableTeam; // chosen at match creation, also in sim mode
   humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); spectatedLegendId beside it
   atmosphere:
     'calm' | { readonly kind: 'eternal'; readonly originId: EntityId; readonly sinceTick: number };
@@ -208,7 +208,7 @@ predicates over these counters evaluated at match end (`evaluateAchievements`,
 ```ts
 // Sketch: packages/core/src/match/VictoryConditions.ts
 export type Verdict = {
-  readonly winner: PlayableTeamId | null;
+  readonly winner: PlayableTeam | null;
   readonly condition: VictoryConditionId;
 }; // null winner = draw
 export type VictoryConditionId = 'stronghold-destroyed' | 'score-cap' | 'forfeit' | 'aborted';
@@ -249,7 +249,7 @@ resistance, replacement ability ids, sprite, `endsOn: ['death']`); `AbilitySyste
 with no revive back (game doc). The killer is `entity-died.killer: DamageSource` resolved to the
 owning Legend (projectiles and turrets carry their owner); a final hit by a minion or a turret
 grants no form (**Recommendation:** the doc says "the player who lands the final hit"). The
-mini-boss "consumable item" is an open question (OQ-24) and is not modelled. Form change at
+mini-boss "consumable item" was removed (DISC-43) and is not modelled. Form change at
 buildings later reuses `FormDefinition` plus one interaction class (D12, post-MVP).
 
 ## 8. Announcer and narrative hooks
@@ -296,15 +296,15 @@ snapshot and `TerrainView` tints outward from the Cathedral (**MVP-if-time**).
 ```ts
 // Sketch: packages/core/src/match/MatchResult.types.ts — deterministic, no wall clock, no client ids
 export type MatchResult = {
-  readonly winner: PlayableTeamId | null;
+  readonly winner: PlayableTeam | null;
   readonly condition: VictoryConditionId;
-  readonly playerTeam: PlayableTeamId;
+  readonly playerTeam: PlayableTeam;
   readonly hadHuman: boolean; // false for a pure sim match (mechanics-ideas.md §6)
   readonly durationTicks: number;
   readonly seed: number;
   readonly configHash: number; // FNV-1a of GameConfig, so a replay can refuse a mismatched config
   readonly legends: readonly LegendStats[]; // 20 rows: entityId, team, classId, controller, counters, score
-  readonly teams: Readonly<Record<PlayableTeamId, TeamStats>>;
+  readonly teams: Readonly<Record<PlayableTeam, TeamStats>>;
   readonly timeline: readonly {
     readonly tick: number;
     readonly event: TimelineEventId;
