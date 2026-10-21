@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-15
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -113,7 +113,7 @@ R14 "new view" and R16 "new command".
 - **Tests:** content validation; a `SpawnSystem` scenario spawns a horde of it at the configured
   size; a `MinionController` scenario (attacks within N ticks); determinism.
 - **Docs:** `../reference/game-design/02-entities-and-units.md`; `TUNE` values in `balancing.md`.
-- **Skill:** `new-content` or `new-entity` · [04 §1](04-entity-architecture.md#1-the-family-tree), [11 §4.3](11-game-ai.md#43-minioncontroller-mvp).
+- **Skill:** `new-content` or `new-entity` · [04 §1](04-entity-architecture.md#1-the-family-tree), [11 §4.3](11-game-ai.md#43-minioncontroller-mvp), [18-minion-system](18-minion-system.md) §6.
 
 ### R4. Add a boss
 
