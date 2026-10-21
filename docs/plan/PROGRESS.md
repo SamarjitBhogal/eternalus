@@ -1051,3 +1051,20 @@ The example below is fenced so it is not read as a real entry.
   notice; use a conforming squash title such as feat(core): add same-world building cutaways.
   The phase merge and fixes are deliberately uncommitted and unpushed, with the backup stash
   retained. Full repository verification and the release gate remain incomplete.
+
+### 2026-10-20 — Phase 1 / verification — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: verified the user's removal of the nested GameTest2 directory. Its tracked
+  gitlink deletion remains unstaged; no other Git changes, commit or push were made in this
+  follow-up. The previously resolved phase merge is still pending its merge commit.
+- Checks: npm run check passed in full, exit 0: format, no-JS, lint, typecheck, knip, coverage,
+  production build and documentation validation. Core 478/478 and client 429/429 tests pass.
+  Verbatim final output:
+  Checked 109 Markdown files under docs/.
+  Documentation check passed.
+  The first sandboxed attempt passed static checks but failed because Vitest workers could not
+  access sandbox temporary module files (ENOENT). The complete check was rerun outside that
+  sandbox and passed without code or guardrail changes.
+- Next: include the tracked GameTest2 deletion when preparing the merge commit. The team's
+  ADR 0010 review gate and PR description evidence remain pending; no release-gate approval
+  is implied by the passing automated checks.
