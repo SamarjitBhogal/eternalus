@@ -1,4 +1,4 @@
-import type { MapDecoration, MapDefinition, MapFeature } from '@eternalus/core';
+import type { MapBuilding, MapDecoration, MapDefinition, MapFeature } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import {
@@ -34,6 +34,7 @@ export class MapView implements WorldLayer {
     scenery: readonly MapDecoration[] = [],
     private readonly hiddenRoofs: ReadonlySet<string> = new Set(),
     private readonly detailArea?: () => WorldRect,
+    private readonly buildings: readonly MapBuilding[] = [],
   ) {
     this.map = map;
     this.meadow = {
@@ -55,7 +56,7 @@ export class MapView implements WorldLayer {
     this.drawGround(renderer);
     for (const feature of this.map.features) {
       if (this.hiddenRoofs.has(feature.id)) continue;
-      if (this.map.buildings?.some((building) => building.id === feature.id)) continue;
+      if (this.buildings.some((building) => building.id === feature.id)) continue;
       const style = FEATURE_STYLES[feature.kind];
       const color = MapView.featureColor(feature);
       if (style.shape === 'footprint') {
@@ -70,7 +71,6 @@ export class MapView implements WorldLayer {
   public drawMinimap(renderer: Renderer): void {
     this.drawGround(renderer, true);
     for (const feature of this.map.features) {
-      if (this.hiddenRoofs.has(feature.id)) continue;
       renderer.drawGlyph(feature.minimapGlyph, feature.position, MapView.minimapColor(feature));
     }
   }

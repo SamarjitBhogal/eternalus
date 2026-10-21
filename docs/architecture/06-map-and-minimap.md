@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-13
+last-reviewed: 2026-10-20
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -430,6 +430,8 @@ Still interim:
 | Free view and interior    | `MapExplorer` in `Match`: drag pan, wheel zoom, overview and the presentation-only cathedral interior (`CathedralInteriorBuilder`); walking returns to the following camera outside the cathedral                                                                             | Player movement, doorways and collision into the interior                                          |
 | Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                                                                                                                                                                                                 | The owner's answer to DEC-15                                                                       |
 
+Historical implementation note (superseded by the dated amendment below):
+
 The merged presentation uses `MapLayout` to dress generated maps without scaling or replacing
 simulation geometry. It adds building footprints and roof/interior decoration metadata derived
 from generated feature IDs and positions. `Match` renders those cutaways in the same scene as
@@ -445,6 +447,45 @@ changes do not alter the following camera, simulation coordinates or gameplay fo
 The older exported `CathedralInteriorBuilder` remains for API compatibility, but `Match` no
 longer uses its separate interior scene. Building collision and occupancy-driven roof hiding
 remain future simulation work.
+
+### 2026-10-20 — PR #30 review corrections and accepted cutaway design
+
+The owner's 2026-10-16 sign-off in [PR #30](https://github.com/SamarjitBhogal/eternalus/pull/30)
+supersedes the separate-interior approach in the unchanged historical table above and the API
+compatibility note. The accepted model keeps one world scene and minimap: only a selected roof
+is hidden while its furnished interior is shown. Permanent walls, buttresses and ground shadows
+remain visible. Main-view placeholder building markers yield to the building art, including open cutaways;
+minimap glyphs persist independently of cosmetic state (FR-017).
+
+The public API now exports MapPresentationBuilder and the named MapPresentation and MapBuilding
+types. This renames the presentation class without changing the existing content MapLayout type.
+MapDefinition stays the generation contract in §4. Presentation contains scenery and building
+silhouettes separately; it has no dead scale, ground colour or display-name fields. Building
+footprints are the same transformed interior floor and door polygons used to draw each building.
+MapExplorer owns its private roof set, exposes a read-only view, toggles by polygon hit testing
+and clears on overview. Match shares that state with both views without changing the simulation.
+
+MapBuildingInteriorBuilder furnishes a cathedral cross, apse, capture court and chapels, and each
+palace's throne corridor. MapPalaceRoomsBuilder supplies the six furnished side rooms described
+in 05. Each builder assigns building membership and visibility as pieces are created, rather
+than inferring it from ID substrings or array index ranges. Shared anchors, floor radii, door
+rectangles and enclosure dimensions live in content/maps/buildingGeometry.ts; colours live in
+MAP_PALETTE. Small ellipse details use fewer vertices than landmark silhouettes.
+
+The generated circular wallRing remains unchanged (§2–§3, ADR 0009). MapStrongholdBuilder fits
+the oval palace within that ring in absolute world units using layout.wallRing, independent of
+configured world aspect ratio. Decorative towers at fixed angles are removed: generated turrets
+are the towers. MapStrongholdGatesBuilder joins the palace to each generated gate by team and
+position, underneath the ring. Scenery intersecting ring bounds draws on ground, so it cannot
+paint over generated wall segments, gates or turrets. Other authored scenery retains the §10
+sketch-space interim. World dimensions still come from GameConfig (NFR-008).
+
+B7 decision: remove the unused CathedralInteriorBuilder, CathedralInterior type, their obsolete
+separate-scene tests, interiorWidth/interiorHeight and interiorZoom. This intentionally removes
+the obsolete public API; no external consumer was identified. Same-world interiors replace it.
+For DEC-36, generated wall and door features must replace any presentation-only boundary when
+Duel becomes playable; snapshot-driven structures control closure, damage and collision. The
+cutaway state controls appearance only and never grants access or removes gameplay walls.
 
 ## Related
 

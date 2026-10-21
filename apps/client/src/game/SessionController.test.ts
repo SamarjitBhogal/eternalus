@@ -5,7 +5,10 @@ import type { BridgeEventMap, SessionPhase, UiIntent } from '../bridge/events';
 import { createAppStore } from '../bridge/store';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { placeholderCatalogue } from './content/placeholderCatalogue';
-import { PLACEHOLDER_MATCH_CONFIG } from './content/placeholderSetup';
+import {
+  PLACEHOLDER_MATCH_CONFIG,
+  PLACEHOLDER_PRESELECTED_CLASS_ID,
+} from './content/placeholderSetup';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { SessionController } from './SessionController';
 import type { SessionContext, SessionState } from './SessionController.types';
@@ -47,8 +50,8 @@ function setUp(
 }
 
 /** Drives the real states from boot to character-select. */
-function atCharacterSelect() {
-  const session = setUp();
+function atCharacterSelect(states = createDefaultSessionStates()) {
+  const session = setUp(states);
   session.controller.start();
   session.intent({ kind: 'start-match' });
   session.clock.advance(PLACEHOLDER_LOAD_MS);
@@ -148,6 +151,18 @@ describe('SessionController with the default states', () => {
     expect(controller.phase).toBe('menu');
     expect(store.getState().session.reason).toBe('select-timeout');
     expect(store.getState().matchSetup.countdownMs).toBe(0);
+  });
+
+  it('starts with the preselected class, so the countdown leads into pre-launch', () => {
+    const { controller, clock, store } = atCharacterSelect(
+      createDefaultSessionStates({ preselectedClassId: PLACEHOLDER_PRESELECTED_CLASS_ID }),
+    );
+    expect(store.getState().matchSetup.selection).toEqual({ classId: 'warrior', specId: null });
+    clock.advance(SELECT_COUNTDOWN_MS - 1);
+    expect(controller.phase).toBe('character-select');
+    clock.advance(1);
+    expect(controller.phase).toBe('pre-launch');
+    expect(store.getState().session.reason).toBeNull();
   });
 
   it('goes to pre-launch when the countdown ends with an unconfirmed selection', () => {

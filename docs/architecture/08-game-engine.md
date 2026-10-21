@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-20
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -289,6 +289,12 @@ Same-colour material marks are batched and cached as world-sized bitmaps. Static
 cached separately from live entities: the main view rebuilds on view or roof changes, while
 the minimap rebuilds on roof changes. Both rebuild after resizing. Renderers without
 `OffscreenCanvas` draw the same geometry directly.
+
+The 2026-10-20 PR #30 corrections keep cutaway presentation separate from MapDefinition via
+MapPresentationBuilder. Roof toggles preserve structure glyphs on the minimap; the toolbar
+reflects whether any roofs remain open after each toggle. This branch uses marker-based Legend
+rendering; the temporary sprite animation and image-loading implementation have been removed.
+The planned sprite/resource interfaces above remain future architecture.
 
 ## Related
 

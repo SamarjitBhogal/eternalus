@@ -1,5 +1,5 @@
 import {
-  MapLayout,
+  MapPresentationBuilder,
   type EntityId,
   makeLogRecord,
   type MapDefinition,
@@ -103,11 +103,17 @@ export class Match implements LoopTarget {
         );
       }),
     );
-    const presentation = new MapLayout().build(map);
-    this.explorer = new MapExplorer(presentation);
-    const scenery = presentation.scenery ?? [];
+    const presentation = new MapPresentationBuilder().build(map);
+    this.explorer = new MapExplorer(map, presentation);
+    const scenery = presentation.scenery;
     const landscape = new SceneView([
-      new MapView(presentation, scenery, this.explorer.hiddenRoofs, () => this.currentView()),
+      new MapView(
+        map,
+        scenery,
+        this.explorer.hiddenRoofs,
+        () => this.currentView(),
+        presentation.buildings,
+      ),
       new SceneryView(scenery, 'detail', this.explorer.hiddenRoofs, () => this.currentView()),
     ]);
     this.world = { scene: landscape, miniMap: new MiniMapView(map, landscape, this.entities) };
@@ -180,7 +186,7 @@ export class Match implements LoopTarget {
       camera.track(player.transform, CAMERA_SMOOTHING);
     }
     const view = this.currentView();
-    const { scene, miniMap } = this.views;
+    const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
@@ -209,7 +215,7 @@ export class Match implements LoopTarget {
    * @returns Whether the click was on the minimap.
    */
   public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
-    const target = this.views.miniMap.worldPointAt(
+    const target = this.world.miniMap.worldPointAt(
       screenX,
       screenY,
       this.screenWidth,
@@ -256,13 +262,12 @@ export class Match implements LoopTarget {
    */
   public toggleRoofAt(screenX: number, screenY: number): boolean {
     const view = this.currentView();
-    const isEntered = this.explorer.toggleRoofAt({
+    const wasToggled = this.explorer.toggleRoofAt({
       x: view.x + (screenX / this.screenWidth) * view.width,
       y: view.y + (screenY / this.screenHeight) * view.height,
     });
-
-    if (isEntered) this.world.miniMap.invalidate();
-    return isEntered;
+    if (wasToggled) this.world.miniMap.invalidate();
+    return wasToggled;
   }
 
   /** Shows the whole battlefield in the free view, restoring all building roofs. */
@@ -302,11 +307,6 @@ export class Match implements LoopTarget {
         : { type: 'stop', actorId: this.playerId },
     );
     this.lastMove = move;
-  }
-
-  /** The single world scene shared by the camera, free view and building cutaways. */
-  private get views(): { readonly scene: SceneView; readonly miniMap: MiniMapView } {
-    return this.world;
   }
 
   /** The drawing area's width over its height, until the first resize a default. */

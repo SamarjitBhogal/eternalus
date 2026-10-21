@@ -1,11 +1,13 @@
 import type { InputAction } from '../../bridge/Binding.types';
 import type { ScreenPoint } from '../engine/input/InputDevice.types';
 
-/** Which actions are active this frame, and which started or ended since the last one. */
+/**
+ * The actions active this frame. `pressed` and `released` are the edges since the last frame;
+ * `pointer` is carried through so `toIntent` can project it into the world.
+ */
 export type ActionState = {
   readonly held: ReadonlySet<InputAction>;
   readonly pressed: ReadonlySet<InputAction>;
   readonly released: ReadonlySet<InputAction>;
-  /** Where the pointer is on the canvas, or `null` when it is off the canvas. */
   readonly pointer: ScreenPoint | null;
 };

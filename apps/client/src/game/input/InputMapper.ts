@@ -1,58 +1,50 @@
-import type { AbilitySlot, InputIntent } from '@eternalus/core';
+import type { InputIntent } from '@eternalus/core';
 
-import type { Binding, InputAction, InputChord } from '../../bridge/Binding.types';
+import type { Binding, InputAction } from '../../bridge/Binding.types';
 import type { InputSnapshot } from '../engine/input/InputDevice.types';
 import type { Projection } from '../engine/input/Projection.types';
-import { MOUSE_BUTTON_BITS, MOVE_AXES, SLOT_ACTIONS } from './InputMapper.constants';
+import { BindingResolver } from './BindingResolver';
+import { CAST_SLOTS } from './InputMapper.constants';
 import type { ActionState } from './InputMapper.types';
 
 /**
- * Turns device state into player actions and actions into an `InputIntent` (architecture 13
- * §6.2). Bindings are data, so rebinding is a `setBindings` call and no key name lives here.
- * Keyboard and mouse chords match; gamepad chords wait for `GamepadDevice` (post-MVP).
+ * Turns raw device state into actions through the bindings, then actions into core's
+ * `InputIntent` (architecture 13 §6.2). The only reader of bindings at play time, so rebinding
+ * changes what the game does with no code change. Keeps the last frame's held actions to report
+ * edges.
  */
 export class InputMapper {
-  private actionsByChord = new Map<string, InputAction[]>();
+  private readonly resolver: BindingResolver;
+  private previous: ReadonlySet<InputAction> = new Set();
 
-  private lastHeld: ReadonlySet<InputAction> = new Set();
-
-  /** Creates a mapper with the given bindings (defaults merged with the player's saved ones). */
-  public constructor(bindings: readonly Binding[]) {
-    this.setBindings(bindings);
+  /** Creates a mapper over `bindings` (defaults merged with the player's saved ones). */
+  public constructor(bindings: readonly Binding[], resolver = new BindingResolver()) {
+    this.resolver = resolver;
+    resolver.setBindings(bindings);
   }
 
-  /** Replaces the bindings; called on every settings save. */
+  /** Swaps in new bindings; called whenever the settings change. */
   public setBindings(bindings: readonly Binding[]): void {
-    this.actionsByChord = new Map();
-    for (const { action, chords } of bindings) {
-      for (const chord of chords) {
-        const key = InputMapper.chordKey(chord);
-        this.actionsByChord.set(key, [...(this.actionsByChord.get(key) ?? []), action]);
-      }
-    }
+    this.resolver.setBindings(bindings);
   }
 
-  /** Whether a key code is bound to any action. */
+  /** Whether a key code is bound to any action (devices prevent the browser default only then). */
   public isBound(code: string): boolean {
-    return this.actionsByChord.has(InputMapper.chordKey({ device: 'keyboard', code, label: '' }));
+    return this.resolver.actionsFor({ device: 'keyboard', code }).length > 0;
   }
 
-  /** The actions held now and the ones that started or ended since the previous call. */
+  /** The actions `snapshot` activates: any chord of any device activates its actions. */
   public resolve(snapshot: InputSnapshot): ActionState {
     const held = new Set<InputAction>();
-    const add = (key: string): void => {
-      this.actionsByChord.get(key)?.forEach((action) => held.add(action));
-    };
-    snapshot.keys.forEach((code) => {
-      add(InputMapper.chordKey({ device: 'keyboard', code, label: '' }));
-    });
-    for (const [button, bit] of MOUSE_BUTTON_BITS) {
-      if ((snapshot.mouseButtons & bit) !== 0) {
-        add(InputMapper.chordKey({ device: 'mouse', button }));
-      }
+    for (const code of snapshot.keys) {
+      this.resolver.actionsFor({ device: 'keyboard', code }).forEach((action) => held.add(action));
     }
-    const previous = this.lastHeld;
-    this.lastHeld = held;
+    for (const button of snapshot.mouseButtons) {
+      const chord = { device: 'mouse', code: String(button) } as const;
+      this.resolver.actionsFor(chord).forEach((action) => held.add(action));
+    }
+    const previous = this.previous;
+    this.previous = held;
     return {
       held,
       pressed: new Set([...held].filter((action) => !previous.has(action))),
@@ -62,38 +54,20 @@ export class InputMapper {
   }
 
   /**
-   * The intent: one normalised move vector, the world point under the pointer and the ability
-   * slots pressed this frame.
+   * The intent for this frame: one normalised move vector (screen axes, y down), the world
+   * point under the pointer and the ability and gadget slots pressed this frame.
    */
   public toIntent(actions: ActionState, projection: Projection): InputIntent {
-    let x = 0;
-    let y = 0;
-    for (const [action, dx, dy] of MOVE_AXES) {
-      if (actions.held.has(action)) {
-        x += dx;
-        y += dy;
-      }
-    }
-    const length = Math.hypot(x, y);
-    const triggered: AbilitySlot[] = SLOT_ACTIONS.filter((slot) => actions.pressed.has(slot));
+    const { held, pressed, pointer } = actions;
+    const axis = (minus: InputAction, plus: InputAction): number =>
+      Number(held.has(plus)) - Number(held.has(minus));
+    const x = axis('move-left', 'move-right');
+    const y = axis('move-up', 'move-down');
+    const scale = x !== 0 && y !== 0 ? Math.SQRT1_2 : 1;
     return {
-      // Opposite keys cancel out, which leaves a zero vector that must not be divided.
-      move: length === 0 ? { x: 0, y: 0 } : { x: x / length, y: y / length },
-      aim: actions.pointer === null ? null : projection.screenToWorld(actions.pointer),
-      triggered,
+      move: { x: x * scale, y: y * scale },
+      aim: pointer === null ? null : projection.screenToWorld(pointer),
+      triggered: CAST_SLOTS.filter((slot) => pressed.has(slot)),
     };
-  }
-
-  /** The index key of a chord, e.g. `keyboard:KeyW` or `mouse:3` (architecture 13 §6.2). */
-  private static chordKey(chord: InputChord): string {
-    switch (chord.device) {
-      case 'keyboard':
-        return `keyboard:${chord.code}`;
-      case 'mouse':
-      case 'gamepad':
-        return `${chord.device}:${String(chord.button)}`;
-      case 'gamepad-axis':
-        return `gamepad-axis:${String(chord.axis)}:${String(chord.sign)}`;
-    }
   }
 }

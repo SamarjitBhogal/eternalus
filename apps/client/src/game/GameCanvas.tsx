@@ -19,7 +19,7 @@ export function GameCanvas(): ReactElement {
       />
       <div className={styles.toolbar}>
         <span>
-          Drag to explore <b>Â·</b> Scroll to zoom <b>Â·</b> Click a building to toggle its roof
+          Drag to explore <b>·</b> Scroll to zoom <b>·</b> Click a building to toggle its roof
         </span>
         <button type="button" onClick={overview}>
           {hasOpenRoofs ? 'Restore roofs & overview' : 'World overview'}

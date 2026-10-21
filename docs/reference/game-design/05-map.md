@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-13
+last-reviewed: 2026-10-20
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -69,6 +69,7 @@ What this means (brief decision D7; details in `../../architecture/06-map-and-mi
   view and appears on both, with no minimap code change.
 - Changing `numLanes` from 3 to 5 must produce a valid, symmetric map with 5 SpawnerTowers and 5
   BuffTowers per team and 5 central capture points (one per lane); that is the acceptance test.
+  Camps are the exception to symmetry once ADR 0017 is accepted (DEC-15, below).
 
 ## MVP layout summary
 
@@ -83,7 +84,8 @@ config values):
 - **3 central capture points**, one per lane; the middle one is the Cathedral.
 - Corner camps (4, one per map corner) are **MVP-if-time**.
 
-A schematic of one half of the map (Light side; the Dark side mirrors it). Not to scale:
+A schematic of one half of the map (Light side; the Dark side mirrors it, except the camp
+positions, DEC-15). Not to scale:
 
 ```text
    corner camp                                                          corner camp
@@ -102,6 +104,17 @@ between adjacent lanes, lighter near a lane and heavier deeper into the Unknown 
 capture points on the lane centre line at the map's centre; the rift along the centre line
 between the two territories with one bridge per lane; corner camps outside the lanes behind
 impassable rifts.
+
+**Camp weights and placement (DEC-15, 2026-10-10).** Camp weights stay depth-based, with the
+class set by the camp's position in its corridor: nearest the lane light, middle medium, deepest
+heavy. The vertical line down the centre of the map divides the sides. The seeded RNG places the
+camps on each side, so the two sides differ, but they must be equal in overall difficulty: the
+same number of camps of each weight class on each side, not necessarily in mirrored positions.
+This exempts camps from the mirror invariant of ADR 0009 and architecture 06, which a proposed
+ADR 0017 must amend (owner sign-off) before the generator changes; until then the generator still
+mirrors camps. **Open (owner):** whether this also applies to the corner camps, whether parity
+is per side only or also per corridor, and which classes a corridor gets when it holds other than
+three camps (ADR 0017).
 
 ## Obstacles and destructible terrain
 
@@ -148,6 +161,16 @@ capture rules or spawns; every gameplay anchor still comes from the generator.
 
 Navigation (presentation only): drag to pan, scroll to zoom, click the minimap to jump, and
 **World overview** shows the whole battlefield; walking (WASD) returns to the following camera.
+Clicking the cathedral opens its 1,800 × 2,200 interior: a circular rotunda with an open central
+capture court, pews and columns, and radially connected rooms (library, sacristy, chapels,
+vestry, reliquary, garden cloisters, altar). **Leave cathedral** returns outside. Capture rules,
+doorways and collision for the interior remain future work.
+
+### 2026-10-16 owner-approved amendment (PR #30)
+
+The following same-world cutaway design supersedes the separate-interior navigation above.
+The owner accepted it because it preserves a single world and supports DEC-36 Duel.
+
 Clicking the cathedral or either stronghold toggles its roof in the same world. Walls and
 entrances stay visible. The cathedral has a cross-shaped interior with chapels, stained glass,
 pews, candles and an open capture court. Each oval stronghold includes a throne hall and six
@@ -160,6 +183,15 @@ The close player view uses fine slate courses, stone joints, textile weave, foli
 and water ripples. Road tracks follow the generated lanes and fade into their verges. Stronghold
 roof trims and flags use finer proportions; building art replaces the large main-view building
 marker while minimap markers remain. The overview keeps the broader landscape readable.
+
+The oval palace enclosure sits inside the generated wall ring, whose individual wall segments,
+gates and turrets remain authoritative and visible. Passages connect to the generated gates,
+with the throne aisle facing the middle gate. Roof toggles never remove minimap structure glyphs.
+The north and south cathedral doors share their geometry with the interior and click silhouette.
+
+For DEC-36, the furnished interior is currently presentation only. Duel must use generated
+wall and door features, with their snapshot state controlling closure, collision and pathing;
+decorative floors and cutaways cannot substitute for those gameplay structures.
 
 ## Implementation status
 

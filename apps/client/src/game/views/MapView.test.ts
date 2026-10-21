@@ -35,7 +35,11 @@ describe('MapView', () => {
     const glyphs = renderer.calls.filter((c) => c.op === 'drawWorldGlyph');
     expect(glyphs).toHaveLength(MAP.features.filter((f) => !footprintKinds.has(f.kind)).length - 1);
     expect(glyphs.some((c) => c.args[1] === cathedral?.position)).toBe(false);
-    expect(MAP.features.find((f) => f.id === cathedral?.id)).toBe(cathedral);
+    const minimap = new RecordingRenderer();
+    new MapView(MAP, [], new Set(MAP.features.map((f) => f.id))).drawMinimap(minimap);
+    const markers = minimap.calls.filter((c) => c.op === 'drawGlyph');
+    expect(markers).toHaveLength(MAP.features.length);
+    expect(markers.some((c) => c.args[1] === cathedral?.position)).toBe(true);
   });
   it('draws the ground first, then every terrain shape, then footprint features', () => {
     const fills = drawMain().calls.flatMap((call) =>

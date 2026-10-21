@@ -1,0 +1,26 @@
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.tab {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--theme-primary);
+  color: var(--text-primary);
+}
+
+.panel {
+  max-height: 60vh;
+  margin: var(--space-4) 0;
+  overflow-y: auto;
+}

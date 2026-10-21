@@ -1,16 +1,23 @@
-import type { MapDefinition, Vec2 } from '@eternalus/core';
+import type { MapDefinition, MapPresentation, Vec2 } from '@eternalus/core';
 
 import type { WorldRect } from './engine/render/Renderer.types';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
-/** Owns camera navigation and authored building entry for the map preview. */
+/** Owns camera navigation and same-world roof cutaways for the map preview. */
 export class MapExplorer {
   private center: Vec2;
   private zoom = 1;
-  public readonly hiddenRoofs = new Set<string>();
+  private readonly roofs = new Set<string>();
+  /** Roof state can only be changed through the explorer's toggle and reset methods. */
+  public get hiddenRoofs(): ReadonlySet<string> {
+    return this.roofs;
+  }
 
   /** Starts with an overview of the generated battlefield. */
-  public constructor(private readonly map: MapDefinition) {
+  public constructor(
+    private readonly map: MapDefinition,
+    private readonly presentation: MapPresentation = { scenery: [], buildings: [] },
+  ) {
     this.center = { x: map.width / 2, y: map.height / 2 };
   }
 
@@ -61,18 +68,18 @@ export class MapExplorer {
 
   /** Toggles a building roof in place without changing the world or camera. */
   public toggleRoofAt(point: Vec2): boolean {
-    const building = this.map.buildings?.find((entry) =>
+    const building = this.presentation.buildings.find((entry) =>
       entry.footprint.some((shape) => this.contains(shape, point)),
     );
     if (building === undefined) return false;
-    if (this.hiddenRoofs.has(building.id)) this.hiddenRoofs.delete(building.id);
-    else this.hiddenRoofs.add(building.id);
+    if (this.roofs.has(building.id)) this.roofs.delete(building.id);
+    else this.roofs.add(building.id);
     return true;
   }
 
   /** Restores roofs and the battlefield overview. */
   public overview(): void {
-    this.hiddenRoofs.clear();
+    this.roofs.clear();
     this.zoom = 1;
     this.center = { x: this.map.width / 2, y: this.map.height / 2 };
   }

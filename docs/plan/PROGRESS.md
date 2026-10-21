@@ -744,3 +744,310 @@ The example below is fenced so it is not read as a real entry.
   failures were fixed without weakening checks. `git diff --check` passed.
 - Next step: human reviews newly generated matches and supplies the next map requirement.
   Decorative scenery still has no gameplay collision. No commit or push performed.
+
+### 2026-10-09 — Phase 1 / demo fix — fix/disable-select-timeout — sholtzman + Claude Code
+
+- What was done: the demo plays on the game canvas behind the `character-select` placeholder,
+  which has no way to pick a class yet, so the 60 s select countdown cancelled every demo match
+  back to the menu (`select-timeout`). `CharacterSelectState` takes `isTimeoutEnabled` (default
+  on, the design's behaviour) and skips the countdown when it is off;
+  `createDefaultSessionStates({ isSelectTimeoutEnabled })` passes it through, and `main.tsx`
+  turns it off with a `TODO(sam)` to turn it back on once character select can pick a class.
+  New test: with the timeout off, character select survives 10 × the countdown and confirming
+  still goes to `pre-launch` (it failed with the guard removed). In the demo, character select
+  now has no exit (the placeholder screen offers none); reload to return to the menu. Not
+  checked in a browser. Pre-PR critic: ready for PR; its TSDoc and test nits applied.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in 89ms"; "Documentation
+  check passed."
+- Next step: review and merge the PR into the phase branch before the demo; turn the timeout
+  back on when the character select screen lands.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings — sholtzman + Claude Code
+
+- What was done: keybindings as data (`keybindings.ts`, presets `wasd`/`arrows`, `rebind` with
+  swap/replace, resets), `BindingResolver`, `InputMapper` → core `InputIntent` through a
+  `Projection` port, `KeyboardDevice`/`MouseDevice`/`FakeInputDevice` with the `InputDevice`
+  contract; the `PersistenceController` facade (settings only) over `StorageAdapter` and
+  `MemoryStorageAdapter` with its contract, `SettingsDtoV1` validation and quarantine;
+  `settingsSlice` body; `SettingsController` in `game/settings/` (owner sign-off DEC-27 after the
+  critic rated it better than the design); `KeyGlyph`, `Prompt`, `SettingsScreen` (tabs,
+  press-to-bind incl. mouse side buttons, conflict dialog, resets, audio/video/accessibility) and
+  `PauseOverlay`; `main.tsx`/`App.tsx` wiring after merging D's PR #12. Owner decisions
+  DEC-25…DEC-29: agents push task branches and open PRs (ADR 0013, accepted; `.claude/settings.json`
+  tightened after the critic), F's input layer is canonical over PR #19 (INBOX handover), snapshot
+  shape and conflict-free edits folded into 09 and 13. Fixed a memory-adapter bug (overlapping
+  transactions committed stale copies; the ordering test failed before the fix). Design docs 02,
+  09, 13, 14 updated with one "Implementation status" note each; sprint 1.5 boxes for keybindings
+  data and keyboard/mouse devices ticked. Pre-PR gate: critic passes 1–3 (not ready → ready →
+  ready), ponytail cuts 1 and 3 applied (−9 lines), cut 2 reverted for a build warning.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 295 passed (295)" (lines 98.69%); client "Tests 345
+  passed (345)" (statements 90.97%, branches 85.75%, lines 91.13%); "✓ built in 88ms";
+  "Documentation check passed."
+- Next step: push `feat/settings-keybindings` and open its PR into the phase branch (description
+  in `docs/changelog/pr-feat-settings-keybindings.md`); PR #19 adapts to F's input layer after
+  F merges; G mounts `<PauseOverlay />` in `MatchScreen`.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/1-simulation-kernel-and-world` again after PRs #14, #17,
+  #18 and #19 landed (`a82e098`). PR #19 had added its own input layer at the same paths; per
+  DEC-26 the 15 add/add conflicts take this branch's side, #19's `DeviceIntentSource` now builds
+  this branch's snapshot (`Set` of button numbers, no `keyLabels`), and #19's `fakePointerEvent.ts`
+  (unused after the merge; knip) is removed; #19's `Match`/`useMatch`/`DeviceIntentSource` tests
+  pass unchanged. The critic's merge review found #19's "forget the pointer off the canvas"
+  behaviour lost; restored in `0782f39` with a test that failed before. INBOX and the decisions log keep both sides. Correction to the entry above: the
+  push ADR is **0015**, not 0013 (DEC-24 reserves 0013 for session C's core lint); renamed with
+  every reference on this branch.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 442 passed (442)" (lines 98.92%); client "Tests 398
+  passed (398)" (statements 91.39%, lines 91.58%); "✓ built in 92ms"; "Documentation check
+  passed."
+- Next step: push and open the PR; the `Match` owner wires live bindings and the pause toggle
+  (INBOX); G mounts `<PauseOverlay />`.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (merge of phase/1) — sholtzman + Claude Code
+
+- What was done: re-synced PR #24 with the phase branch after PRs #20, #22 and #23 merged. Two
+  conflicts, both docs: this log (every entry from both sides kept, the phase branch's first,
+  then this branch's two session F entries) and `docs/README.md` (regenerated with
+  `npm run docs:index`; ADRs 0014 and 0015 and both changelog rows listed). No code file was
+  changed on both sides. Merge left uncommitted.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 413 passed (413)"; "✓ built in 150ms"; "Documentation
+  check passed."
+- Next step: the human commits the merge and pushes; PR #24 merges.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (PR #24 review) — sholtzman + Claude Code
+
+- What was done: addressed SamarjitBhogal's review (changes requested), approved by sholtzman in
+  chat for whatever is in line with or better than the architecture. (1) Quarantine-on-read is
+  the shared `repositories/readOrQuarantine.ts` (14 §8, DEC-31); its record is typed as
+  `QuarantineRecordDtoV1` (§7), `DtoCheck<T>` moved to `dto/DtoCheck.types.ts`, and the warn
+  callback type is `WarnReporter`. (2) `chordKey` moved to `bridge/chordKey.ts` (DEC-30, better
+  than the design: 13 §1 had it in `game/input/`); `selectChordOwner` and the settings screen use
+  it instead of restating `device:code`. Docs 02, 13 and 14 updated. Deferred, as the review
+  suggests: shared DTO helpers until S2's second DTO. New `readOrQuarantine.test.ts` with a
+  validator that knows nothing about settings.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 415 passed (415)"; "✓ built in 116ms"; "Documentation
+  check passed."
+- Next step: independent critic on the review diff, then push; the human merges.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (review critic, merge of phase/1) — sholtzman + Claude Code
+
+- What was done: critic pass 5 on the review round (base `4892adc`): ready to merge, no
+  blockers. Its should-fix items were applied before committing: `WarnReporter` moved out of the
+  controller's companion file into `repositories/readOrQuarantine.types.ts`; `readOrQuarantine`
+  takes three parameters (`tx, { store, key, validate }, report`, CONTRIBUTING §4) and 14 §8's
+  sketch matches; the PR description has a review-round section and DEC-27…DEC-31. Nits applied:
+  DEC-31 called better than the design in INBOX, 13 §6.1 wording, the deferred DTO helpers
+  tracked in 14 §14, the resolved `chordKey` nit kept and marked. Then merged
+  `origin/phase/1-simulation-kernel-and-world` again for PR #25 (the select-timeout toggle in
+  `main.tsx`, which auto-merged); the one conflict was this log, both sides kept, the phase
+  branch's entry first. Merge left uncommitted.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 105ms"; "Documentation
+  check passed."
+- Next step: critic re-check of the follow-ups and the merge, then push; the human merges. If
+  PR #26 (preselect the Warrior) merges first, `main.tsx` needs one more re-sync.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (review critic pass 6) — sholtzman + Claude Code
+
+- What was done: critic pass 6 on the review commits and merge `97fb72a`: ready to merge, no
+  blockers, every pass-5 item resolved, each commit builds on its own. Applied its should-fix
+  items: the `readOrQuarantine` valid-path test asserts the exact result and that the record
+  stays in its store (it failed with `return raw` substituted), and the PR description records
+  critic passes 5 and 6, the ponytail note and the final check. Nits: test count noted, one
+  INBOX line rewrapped.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 97ms"; "Documentation
+  check passed."
+- Next step: push and update the PR #24 description on GitHub; the human merges. If PR #26
+  merges first, re-sync `main.tsx`.
+
+### 2026-10-09 — Phase 1 / demo fix — fix/preselect-warrior — sholtzman + Claude Code
+
+- What was done: replaced PR #25's approach, at sholtzman's request. #25 turned the
+  character-select timeout off; now the timeout is back to the design's behaviour and character
+  select starts with the Warrior selected (`PLACEHOLDER_PRESELECTED_CLASS_ID` in
+  `game/content/placeholderSetup.ts`, `TODO(sam)`), so the 60 s countdown leads into
+  `pre-launch` and the match instead of cancelling. `CharacterSelectState` takes
+  `preselectedClassId` (selected on entry through the normal `select-class` path, so it is
+  checked against the catalogue); `createDefaultSessionStates({ preselectedClassId })` passes it
+  through. #25's isTimeoutEnabled option and its test are removed with the behaviour; the new
+  test fails with the preselect removed. Not checked in a browser.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 305 passed (305)"; "✓ built in 95ms"; "Documentation
+  check passed."
+- Next step: review and merge before the demo; remove the preselect when the character select
+  screen lands.
+
+### 2026-10-09 — Phase 1 / sprint 1 session F — feat/settings-keybindings (merge of phase/1 after #26) — sholtzman + Claude Code
+
+- What was done: merged the phase branch into PR #24 after PR #26 merged, on top of session F's
+  eight unpushed commits (the review-round fixes, DEC-30/DEC-31, critic passes 5 and 6). The one
+  conflict was this log; every entry from both sides was kept, 46 in all.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 97ms"; "Documentation
+  check passed."
+- Next step: the human pushes; Samarjit re-reviews (his changes were requested before the
+  review-round commits); PR #24 merges.
+
+### 2026-10-10 — Sprint 2 planning / new requirements — docs/sprint-2-requirements-and-planning — sholtzman + Claude Code
+
+- What was done:
+  - Committed the owner's INBOX answers and the instructor's two new Sprint 3 requirements
+    verbatim (`8d0d308`): Duel multiplayer (DEC-36) and server scalability (DEC-37).
+  - Three research agents wrote the netcode report, the server-scalability and matchmaking report
+    and an impact map (`5194e58`).
+  - Planners recorded DEC-11/12/13/15 and DEC-34…DEC-37 in the decisions log, moved answered
+    INBOX parts to Done, updated the reference docs, and wrote a Legend team brief (`045ecc3`).
+  - They also wrote proposed ADR 0016 (server-authoritative Duel) and ADR 0017 (balanced
+    asymmetric camps), `docs/plan/multiplayer-and-scalability-plan.md` (a proposed Sprint 2–4
+    re-cut and 52 owner questions) and FR-113…FR-118 and NFR-034 (`3923124`).
+  - The research index and works cited were updated (`d121df1`).
+  - Two independent critics reviewed the branch. Architecture: request changes, no blockers.
+    Fidelity: needs fixes. Two fixers applied every finding.
+  - The owner's chat clarifications are recorded under DEC-11: the new abilities and the
+    Sunder–Sanctuary combo are MVP, they are on top of each class's original kit, and a loadout
+    picks 3 abilities and 1 ultimate from the class pool.
+  - No existing architecture doc, ADR or AGENTS file was edited; both new ADRs are proposed.
+- Checks run: `npm run check` (see the commit); `npm run docs:check` → "Documentation check
+  passed."; Prettier clean.
+- Next step: the owner pushes the branch, and the PR goes into the phase branch for the team.
+  The owner then answers the INBOX items and plan §9, and accepts or changes ADR 0016/0017
+  and the re-cut.
+
+### 2026-10-13 — Phase 1 / sprint 1.5 — feat/buildings-and-map-objects — Gurshaan + Codex — verification blocked
+
+- What was done: added a temporary controlled-player sprite preview using both user-supplied
+  knight sheets, copied unchanged after the user confirmed ownership/project-use permission.
+  ResourceController and an injectable ImageLoader load and cache manifest images; source and
+  permission are recorded with the assets. LegendView requests sheet crops through Renderer;
+  Canvas2dRenderer anchors, crops and horizontally mirrors images, retaining the marker until
+  loading succeeds. SpritePreviewController uses mapped actions and tick time: WASD selects
+  idle/walk, 1–4 preview rows, Z switches sheets, E restores automatic playback. Unsupported
+  rows clamp to the smaller sheet's final row. No combat effects, simulation or camera changes.
+  Added an on-screen control legend and updated engine/resource implementation-status notes.
+- Checks run: client coverage suite 329/329 passed; production build, typecheck, knip and
+  docs:check passed. Browser inspection verified transparent idle, attack-row playback and
+  switching to the opaque gray-background sheet. New tests cover frame timing, facing, row
+  selection, smaller-sheet bounds, image loading/cache retry, input edges, renderer crop/flip,
+  and fallback markers. A floating-point expectation and the existing gadget-slot trigger
+  contract were corrected in tests; no assertions or guardrails were weakened.
+  `npm run check:quick` failed only in the existing nested GameTest2 project: verbatim tail
+  `✖ 95 problems (95 errors, 0 warnings)`.
+  `npm run check` failed at formatting, exclusively in GameTest2: verbatim tail
+  `[warn] Code style issues found in 54 files. Run Prettier with --write to fix.`
+  The unrelated nested Git project and repository guardrails were left untouched. Full task
+  verification is blocked, so the task is not declared done. `git diff --check` passed.
+- Next step: human resolves how the nested GameTest2 project belongs in the repository checks;
+  then rerun the full gate. Temporary grid-row metadata can later be replaced with authored
+  frame anchors and directional sequences. Changes are uncommitted; local preview runs on 5173.
+
+### 2026-10-13 — Phase 1 / maintenance — feat/buildings-and-map-objects — Gurshaan + Codex — pull
+
+- What was done: ran the requested `git pull --no-rebase --no-commit --no-autostash` against
+  the current branch's configured origin upstream. Fetch updated remote-tracking references;
+  pull reported `Already up to date.` No integration, merge commit or conflict resolution was
+  needed. Preserved all local sprite changes, untracked assets and the nested GameTest2 project.
+- Checks run: pull exit 0; `git ls-files --unmerged` returned no entries; `git diff --check`
+  passed. Branch is one commit ahead and zero behind its upstream. `npm run check` failed at
+  formatting on the same pre-existing GameTest2 files. Verbatim tail:
+  `[warn] Code style issues found in 54 files. Run Prettier with --write to fix.`
+  Repository validation remains blocked; no unrelated files or guardrails were changed.
+- Next step: human reviews local sprite work; resolve the separate GameTest2 quality-gate
+  blocker before repository verification can pass. No commit or push performed.
+
+### 2026-10-13 — Phase 1 / sprint 1.5 — feat/buildings-and-map-objects — Gurshaan + Codex — sprite timing/crops
+
+- What was done: replaced uniform four-tick playback with per-row timing, retaining a faster
+  walk while ability frames last 10–12 ticks. Replaced equal-height row division with explicit
+  pixel boundaries for both sheets and integer inset crop margins. Preserved crop aspect ratio
+  when drawing the controlled Legend. Updated engine implementation-status notes. Browser
+  inspection exposed next-row wings under the initial uniform crop; the authored row boundaries
+  removed that observed fragment from the attack preview.
+- Checks run: targeted SpritePreviewController and LegendView tests 12/12 passed, including
+  exact frame-duration boundaries, loop completion, next-row exclusion and source aspect ratio.
+  Typecheck passed. `npm run check:quick` remains blocked by the existing GameTest2 lint errors
+  (95 errors). `npm run check` failed at formatting only in GameTest2; verbatim tail:
+  `[warn] Code style issues found in 54 files. Run Prettier with --write to fix.`
+  `git diff --check` passed. Full repository verification remains blocked; no guardrails or
+  unrelated GameTest2 files were altered. Changes remain uncommitted.
+- Next step: human tests all preview rows and resolves the existing GameTest2 gate blocker;
+  exact per-frame anchors and additional in-between art remain future sprite authoring work.
+
+### 2026-10-16 — Phase 1 / sprint 1.5 — feat/buildings-and-map-objects — Gurshaan + Codex — paladin replacement
+
+- What was done: removed both former knight atlases and SpritePreviewController, its metadata
+  and its obsolete preview tests. Added the supplied Angelic Paladin atlas with an imagegen
+  backdrop-cleanup derivative stored in client assets. Replaced grid-row playback with a new
+  PaladinAnimationController, individual atlas crops, source-pixel foot pivots, timed idle/run
+  loops and one-shot slash, thrust, ranged and ascension sequences. Attacks return to locomotion.
+  Preview bindings are WASD, 1 slash, 2 thrust, 3 aimed ranged, 4 ascend, E automatic/reset;
+  sheet switching is removed. The ranged cast releases one visual bolt after windup, traveling
+  96 world units analytically with a locked direction, gold trail and terminal impact. Added
+  an ascension aura, pixel-crisp sprite sampling, optional rotation/opacity/glow in Renderer,
+  and gold control-label styling. Existing ResourceController loading and generic rendering
+  infrastructure support the replacement; no old asset or controller references remain in src.
+  Updated engine/resource implementation-status notes. No simulation damage or collision added.
+- Checks run: targeted controller/effect/render/resource/input tests 41/41 passed; full client
+  coverage suite 333/333 passed. Typecheck, production build, knip and docs:check passed.
+  Browser inspection verified a transparent paladin, aimed traveling bolt and ascension aura;
+  decoded alpha samples confirmed empty atlas space is transparent. Production bundles only
+  the replacement paladin atlas. `git diff --check` passed. Initial non-null assertions and an
+  unused type export were fixed without relaxing guardrails.
+  `npm run check:quick` fails only in the existing nested GameTest2 project, verbatim tail:
+  `✖ 95 problems (95 errors, 0 warnings)`.
+  `npm run check` fails at formatting only in GameTest2, verbatim tail:
+  `[warn] Code style issues found in 54 files. Run Prettier with --write to fix.`
+  Full repository verification remains blocked, so the task is not declared fully done.
+- Next step: human tests the new preview and resolves the existing nested-project check
+  blocker before the full gate can pass. Gameplay abilities/projectile collision remain future
+  simulation work. Changes are uncommitted; historical progress entries remain intact.
+
+### 2026-10-20 — Phase 1 / sprint 1.5 — feat/buildings-and-map-objects — Gurshaan + Codex — PR #30 revisions
+
+- What was done: removed the entire temporary sprite implementation, atlases, resource loaders,
+  renderer extensions, animation tests and controls, restoring those files to the branch's
+  pre-sprite implementation. Historical progress entries remain append-only. Pulled the current
+  upstream (Already up to date), then merged origin/phase/1-simulation-kernel-and-world with
+  explicit owner authorization, without committing. Resolved conflicts in this log and reference
+  05 by preserving both histories, then reapplied the review fixes from the retained backup
+  stash named codex-pr30-review-fixes-before-phase-merge. No unmerged index entries remain.
+- Review fixes: B1 and S3 fit oval palace decoration inside generated rings using layout.wallRing
+  in absolute world units. Removed fixed-angle decorative towers; generated turrets remain the
+  towers. Passages use generated team/gate positions. Scenery near generated ring footprints
+  draws beneath features. B3/S1 renamed the presentation class to MapPresentationBuilder and
+  separated MapPresentation/MapBuilding from the unchanged MapDefinition contract; removed dead
+  fields and shared anchors, floor radii and door geometry in content. B4 preserves minimap
+  glyphs regardless of roof state. B5 repaired UTF-8 punctuation. B7 removes the unused separate
+  cathedral interior API and its obsolete tests/settings. S2 fixes the toolbar after a second
+  click closes the last roof, with a pointer-event regression test. S4 moves new-builder colours
+  to MAP_PALETTE. S5 sets building membership and visibility during construction, retaining
+  shadows and permanent walls. S6 moves builder assertions beside their implementations and
+  removes copied scenery tests. S7 makes the mutable roof set private. Applied the small naming,
+  redundant getter, import order, small ellipse and function-size nits without redesigning
+  cameras or gameplay. B2 restores the earlier interior paragraph and preserves the old table,
+  with dated approved-design amendments, DEC-36 integration intent and INBOX tracking.
+- Checks on the resolved merge: full coverage passes, core 478/478 and client 429/429; typecheck,
+  production build, knip and docs validation pass. Verbatim documentation result:
+  Checked 109 Markdown files under docs/.
+  Documentation check passed.
+  Browser inspection before phase integration verified marker-based characters, the exposed
+  generated stronghold ring and same-world cathedral cutaway. After integration, all suites
+  and the build were rerun. An overlap-check performance regression was fixed with conservative
+  polygon bounds instead of raising timeouts; no assertions, coverage or guardrails weakened.
+  npm run check:quick fails only on the existing unrelated GameTest2 project:
+  ✖ 95 problems (95 errors, 0 warnings)
+  npm run check fails at formatting only in that project:
+  [warn] Code style issues found in 54 files. Run Prettier with --write to fix.
+  Both staged and unstaged git diff --check checks pass. GameTest2 was not changed.
+- Next: resolve the unrelated nested-project check failures, then hand the resolved branch to
+  Claude Code for B6/ADR 0010's architecture critic, Ponytail review/cuts and final full check.
+  The PR description still needs that actual gate evidence and the renamed/removed core API
+  notice; use a conforming squash title such as feat(core): add same-world building cutaways.
+  The phase merge and fixes are deliberately uncommitted and unpushed, with the backup stash
+  retained. Full repository verification and the release gate remain incomplete.

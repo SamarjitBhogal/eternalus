@@ -76,14 +76,6 @@ export type MapDefinition = {
   readonly lanes: readonly MapLane[];
   readonly terrain: readonly MapTerrain[];
   readonly features: readonly MapFeature[];
-  readonly scenery?: readonly MapDecoration[];
-  readonly presentationScale?: number;
-  readonly groundColor?: string;
-  readonly buildings?: readonly {
-    readonly id: string;
-    readonly name: string;
-    readonly footprint: readonly Polygon[];
-  }[];
 };
 
 /** Content describing one kind of placed thing: how big it is and how it shows on the minimap. */
@@ -127,7 +119,7 @@ export type MapLayout = {
   readonly wallRing: {
     readonly radius: number;
     readonly thickness: number;
-    /** The arc facing the enemy over which the gates are spread evenly (architecture 06 Â§3). */
+    /** The arc facing the enemy over which the gates are spread evenly (architecture 06 Â�3). */
     readonly exitArcDegrees: number;
     readonly gateArcDegrees: number;
     readonly maxSegmentArcDegrees: number;
@@ -205,4 +197,16 @@ export type MapDecoration = {
   readonly layer: MapDecorationLayer;
   readonly buildingId?: string;
   readonly visibility?: 'roof' | 'interior';
+};
+
+/** A selectable same-world building, derived from its interior floor and door polygons. */
+export type MapBuilding = {
+  readonly id: string;
+  readonly footprint: readonly Polygon[];
+};
+
+/** Presentation data kept separate from the generated simulation map contract. */
+export type MapPresentation = {
+  readonly scenery: readonly MapDecoration[];
+  readonly buildings: readonly MapBuilding[];
 };

@@ -54,9 +54,7 @@ export type {
   ReplayTarget,
   ReplayTargetFactory,
 } from './diagnostics/Replay.types';
-export { CathedralInteriorBuilder } from './map/CathedralInteriorBuilder';
-export type { CathedralInterior } from './map/CathedralInteriorBuilder.types';
-export { MapLayout } from './map/MapLayout';
+export { MapPresentationBuilder } from './map/MapPresentationBuilder';
 export { MapGenerator } from './map/MapGenerator';
 export { MapSceneryBuilder } from './map/MapSceneryBuilder';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
@@ -89,3 +87,5 @@ export type TeamId = PlayableTeam;
  * @deprecated Use `Team`. Kept for one release for code written against `feat/map`.
  */
 export type FeatureOwner = Team;
+
+export type { MapBuilding, MapPresentation } from './content/maps/maps.types';

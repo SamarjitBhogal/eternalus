@@ -46,8 +46,8 @@ describe('MapSceneryBuilder', () => {
     expect(strongholds).toHaveLength(2);
     for (const { id } of strongholds) {
       const court = scenery.find((piece) => piece.id === `${id}-stronghold-court`);
-      expect(court?.layer).toBe('detail');
-      expect(xSpan(court?.shape ?? [])).toBe(204);
+      expect(court?.layer).toBe('ground');
+      expect(xSpan(court?.shape ?? [])).toBeCloseTo(204 * (78 / 133));
     }
     const camps = map.features.filter((f) => f.kind === 'camp' || f.kind === 'corner-camp');
     expect(camps.length).toBeGreaterThan(0);

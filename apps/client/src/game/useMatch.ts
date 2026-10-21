@@ -123,7 +123,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     const pointerUp = (event: PointerEvent): void => {
       if (drag !== null && drag.distance < CLICK_SLOP) {
         const point = screenPoint(event);
-        if (match.toggleRoofAt(point.x, point.y)) setHasOpenRoofs(true);
+        if (match.toggleRoofAt(point.x, point.y)) setHasOpenRoofs(match.hasOpenRoofs);
       }
       drag = null;
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);

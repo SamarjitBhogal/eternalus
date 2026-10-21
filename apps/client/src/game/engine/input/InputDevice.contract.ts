@@ -1,75 +1,101 @@
 import { describe, expect, it } from 'vitest';
 
-import type { InputDevice, MutableInputSnapshot } from './InputDevice.types';
+import type { InputDevice, InputSnapshot, MutableInputSnapshot } from './InputDevice.types';
 
-/** One device under test: attached to `target`, with a way to press and release one input. */
+/** What the contract suite needs to drive one device through one input. */
 export type InputDeviceHarness = {
   readonly device: InputDevice;
+  /** What the device attaches to. */
   readonly target: EventTarget;
-  readonly press: () => void;
-  readonly release: () => void;
+  /** Presses the harness's input (a key, a button). */
+  press(): void;
+  /** Releases it. */
+  release(): void;
+  /** Sends an auto-repeat of the press; a no-op for devices that have none. */
+  repeat(): void;
+  /** Whether the harness's input shows as held in `snapshot`. */
+  isHeld(snapshot: InputSnapshot): boolean;
 };
 
-const emptySnapshot = (): MutableInputSnapshot => ({
-  keys: new Set(),
-  keyLabels: new Map(),
-  mouseButtons: 0,
-  pointer: null,
-});
+/** A browser-like event for Node tests: an `Event` carrying the fields a device reads. */
+export function syntheticEvent<T extends object>(type: string, fields: T): Event & T {
+  return Object.assign(new Event(type, { cancelable: true }), fields);
+}
 
-const isHolding = (device: InputDevice): boolean => {
+function emptySnapshot(): MutableInputSnapshot {
+  return { keys: new Set(), mouseButtons: new Set(), pointer: null };
+}
+
+function read(device: InputDevice): MutableInputSnapshot {
   const snapshot = emptySnapshot();
   device.writeInto(snapshot);
-  return snapshot.keys.size > 0 || snapshot.mouseButtons !== 0;
-};
+  return snapshot;
+}
 
 /**
- * The rules every `InputDevice` adapter and double must pass (architecture 09 §9). Adding a
- * device is one `describeInputDevice` line in its test.
+ * The behaviour every `InputDevice` must share (architecture 09 §9). Each adapter's test calls
+ * it once with a factory, so an adapter cannot merge without honouring the port.
  */
-export const describeInputDevice = (name: string, make: () => InputDeviceHarness): void => {
+export function describeInputDevice(name: string, make: () => InputDeviceHarness): void {
   describe(`${name} InputDevice contract`, () => {
-    it('reports an input held after the press and clears it after the release', () => {
-      const { device, press, release } = make();
+    function attached(): InputDeviceHarness {
+      const harness = make();
+      harness.device.attach(harness.target);
+      return harness;
+    }
 
-      press();
-      const afterPress = isHolding(device);
-      release();
+    it('reports the input held after a press and not after the release', () => {
+      const harness = attached();
 
-      expect([afterPress, isHolding(device)]).toEqual([true, false]);
+      harness.press();
+      const whilePressed = read(harness.device);
+      harness.release();
+
+      expect(harness.isHeld(whilePressed)).toBe(true);
+      expect(harness.isHeld(read(harness.device))).toBe(false);
     });
 
-    it('never leaves anything held after releaseAll()', () => {
-      const { device, press } = make();
-      press();
+    it('holds nothing after releaseAll()', () => {
+      const harness = attached();
+      harness.press();
 
-      device.releaseAll();
+      harness.device.releaseAll();
 
-      expect(isHolding(device)).toBe(false);
+      expect(harness.isHeld(read(harness.device))).toBe(false);
     });
 
-    it('stops reporting after detach()', () => {
-      const { device, press } = make();
-      device.detach();
+    it('does not turn an auto-repeat into a new press', () => {
+      const harness = attached();
+      harness.press();
+      harness.device.releaseAll(); // focus lost while the key stays down
 
-      press();
+      harness.repeat();
 
-      expect(isHolding(device)).toBe(false);
+      expect(harness.isHeld(read(harness.device))).toBe(false);
     });
 
-    it('merges into a snapshot without overwriting other devices', () => {
-      const { device, press } = make();
-      press();
+    it('reports nothing after detach()', () => {
+      const harness = attached();
+      harness.press();
+
+      harness.device.detach();
+      harness.press();
+
+      expect(harness.isHeld(read(harness.device))).toBe(false);
+    });
+
+    it('adds to a snapshot without removing what other devices wrote', () => {
+      const harness = attached();
+      harness.press();
       const snapshot = emptySnapshot();
-      snapshot.keys.add('other-device');
-      snapshot.mouseButtons = 16;
+      snapshot.keys.add('OtherDeviceKey');
+      snapshot.mouseButtons.add(42);
 
-      device.writeInto(snapshot);
+      harness.device.writeInto(snapshot);
 
-      expect(snapshot.keys.has('other-device')).toBe(true);
-      expect(snapshot.mouseButtons & 16).toBe(16);
-      // The device's own input was added on top of the other device's.
-      expect(snapshot.keys.size > 1 || snapshot.mouseButtons !== 16).toBe(true);
+      expect(snapshot.keys.has('OtherDeviceKey')).toBe(true);
+      expect(snapshot.mouseButtons.has(42)).toBe(true);
+      expect(harness.isHeld(snapshot)).toBe(true);
     });
   });
-};
+}

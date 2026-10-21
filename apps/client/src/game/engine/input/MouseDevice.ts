@@ -1,98 +1,93 @@
 import type { InputDevice, MutableInputSnapshot, ScreenPoint } from './InputDevice.types';
 import {
+  BUTTON_BITS,
+  MAIN_BUTTON,
   POINTER_EVENTS,
-  PRIMARY_BUTTON,
-  PRIMARY_BUTTON_BIT,
   SUPPRESSED_EVENTS,
 } from './MouseDevice.constants';
 
 /**
- * The mouse on the canvas (architecture 09 §2). Buttons come from the `buttons` bitmask, so the
- * side buttons work and an OS-level button swap is respected. The pointer is captured while a
- * button is held. The context menu, middle-click new tabs and autoscroll are cancelled so every
- * button can be bound.
+ * The mouse adapter, on pointer events over the canvas. Reads every button, side buttons
+ * included, from the `buttons` bitmask; keeps the browser from acting on non-main buttons
+ * (autoscroll, paste, back/forward, context menu); captures the pointer while a button is held.
  */
 export class MouseDevice implements InputDevice {
   private buttons = 0;
-
   private pointer: ScreenPoint | null = null;
-
   private target: EventTarget | null = null;
 
-  /** Starts listening to pointer events on `target` (the canvas). */
+  /** Starts listening to pointer events on `target`, normally the game canvas. */
   public attach(target: EventTarget): void {
     this.detach();
-    for (const type of POINTER_EVENTS) {
+    POINTER_EVENTS.forEach((type) => {
       target.addEventListener(type, this.onPointer);
-    }
-    for (const type of SUPPRESSED_EVENTS) {
+    });
+    SUPPRESSED_EVENTS.forEach((type) => {
       target.addEventListener(type, MouseDevice.suppress);
-    }
+    });
+    target.addEventListener('pointercancel', this.onCancel);
+    target.addEventListener('pointerleave', this.onLeave);
     this.target = target;
   }
 
-  /** Stops listening and forgets the buttons and the pointer. */
+  /** Stops listening, releases every button and forgets the pointer. */
   public detach(): void {
-    const { target } = this;
-    for (const type of POINTER_EVENTS) {
-      target?.removeEventListener(type, this.onPointer);
+    const target = this.target;
+    if (target !== null) {
+      POINTER_EVENTS.forEach((type) => {
+        target.removeEventListener(type, this.onPointer);
+      });
+      SUPPRESSED_EVENTS.forEach((type) => {
+        target.removeEventListener(type, MouseDevice.suppress);
+      });
+      target.removeEventListener('pointercancel', this.onCancel);
+      target.removeEventListener('pointerleave', this.onLeave);
+      this.target = null;
     }
-    for (const type of SUPPRESSED_EVENTS) {
-      target?.removeEventListener(type, MouseDevice.suppress);
-    }
-    this.target = null;
-    this.pointer = null;
     this.releaseAll();
+    this.pointer = null;
   }
 
-  /** Adds the held buttons and, when it is on the canvas, the pointer to `snapshot`. */
+  /** Adds the held buttons and, while it is over the target, the pointer position to `snapshot`. */
   public writeInto(snapshot: MutableInputSnapshot): void {
-    snapshot.mouseButtons |= this.buttons;
-    snapshot.pointer = this.pointer ?? snapshot.pointer;
+    for (const [bit, button] of BUTTON_BITS) {
+      if ((this.buttons & bit) !== 0) {
+        snapshot.mouseButtons.add(button);
+      }
+    }
+    if (this.pointer !== null) {
+      snapshot.pointer = this.pointer;
+    }
   }
 
-  /** Forgets every held button; the pointer stays where it is. */
+  /** Forgets every held button. The pointer position stays: it is not "held". */
   public releaseAll(): void {
     this.buttons = 0;
   }
 
   private readonly onPointer = (event: Event): void => {
-    if (!MouseDevice.isPointerEvent(event)) {
-      return;
+    const pointerEvent = event as PointerEvent;
+    this.buttons = pointerEvent.buttons;
+    this.pointer = { x: pointerEvent.offsetX, y: pointerEvent.offsetY };
+    if (pointerEvent.button > MAIN_BUTTON) {
+      pointerEvent.preventDefault();
     }
-    if (event.type === 'pointerleave') {
-      this.pointer = null;
-      return;
+    const host = pointerEvent.currentTarget;
+    if (pointerEvent.type === 'pointerdown' && host !== null && 'setPointerCapture' in host) {
+      (host as Element).setPointerCapture(pointerEvent.pointerId);
     }
-    // A second button pressed while one is held arrives as a pointermove (a chorded press).
-    const newButtons = event.buttons & ~this.buttons;
-    this.buttons = event.buttons;
-    this.pointer = { x: event.offsetX, y: event.offsetY };
-    if (event.type === 'pointerdown') {
-      MouseDevice.capture(event);
-    }
-    const isNonPrimaryPress =
-      (event.type === 'pointerdown' && event.button !== PRIMARY_BUTTON) ||
-      (newButtons & ~PRIMARY_BUTTON_BIT) !== 0;
-    if (isNonPrimaryPress) {
-      event.preventDefault();
-    }
+  };
+
+  private readonly onCancel = (): void => {
+    this.releaseAll();
+  };
+
+  /** Off the canvas (or over the HUD above it) the pointer aims at nothing. */
+  private readonly onLeave = (): void => {
+    this.pointer = null;
   };
 
   private static readonly suppress = (event: Event): void => {
     event.preventDefault();
   };
-
-  /** Keeps the pointer's events on the canvas while a button is held, even off its edge. */
-  private static capture(event: PointerEvent): void {
-    const element = event.currentTarget;
-    // Tests run without a DOM, where `Element` does not exist.
-    if (typeof Element !== 'undefined' && element instanceof Element) {
-      element.setPointerCapture(event.pointerId);
-    }
-  }
-
-  private static isPointerEvent(event: Event): event is PointerEvent {
-    return 'buttons' in event && 'offsetX' in event && 'offsetY' in event;
-  }
 }

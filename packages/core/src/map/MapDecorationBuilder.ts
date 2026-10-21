@@ -5,6 +5,9 @@ import type { Polygon, Vec2 } from '../utils/geometry.types';
 /** Shared polygon assembly for authored map scenery and interior architecture. */
 export abstract class MapDecorationBuilder {
   protected readonly pieces: MapDecoration[] = [];
+  protected buildingId?: string;
+  protected visibility?: MapDecoration['visibility'];
+  protected layer?: MapDecorationLayer;
 
   protected ellipse(
     id: string,
@@ -13,13 +16,13 @@ export abstract class MapDecorationBuilder {
     rx: number,
     ry: number,
     color: string,
-    layer: 'ground' | 'detail' = 'detail',
+    layer: MapDecorationLayer = 'detail',
   ): void {
     this.polygon(
       id,
-      Array.from({ length: 64 }, (_, i) => ({
-        x: x + cos((i * Math.PI) / 32) * rx,
-        y: y + sin((i * Math.PI) / 32) * ry,
+      Array.from({ length: Math.min(rx, ry) < 5 ? 12 : 64 }, (_, i) => ({
+        x: x + cos((i * Math.PI * 2) / (Math.min(rx, ry) < 5 ? 12 : 64)) * rx,
+        y: y + sin((i * Math.PI * 2) / (Math.min(rx, ry) < 5 ? 12 : 64)) * ry,
       })),
       color,
       layer,
@@ -121,7 +124,14 @@ export abstract class MapDecorationBuilder {
     color: string,
     layer: MapDecorationLayer = 'detail',
   ): void {
-    this.pieces.push({ id, shape, color, layer });
+    this.pieces.push({
+      id,
+      shape,
+      color,
+      layer: this.layer ?? layer,
+      ...(this.buildingId === undefined ? {} : { buildingId: this.buildingId }),
+      ...(this.visibility === undefined ? {} : { visibility: this.visibility }),
+    });
   }
 
   protected rect(

@@ -1,46 +1,49 @@
 import type { InputDevice, MutableInputSnapshot } from './InputDevice.types';
-import { NEVER_PREVENTED_CODES } from './KeyboardDevice.constants';
+import { FOCUS_LOSS_EVENTS, NEVER_PREVENTED_CODES } from './KeyboardDevice.constants';
 
 /**
- * The keyboard (architecture 09 §2). Keys are tracked by `KeyboardEvent.code`, the physical key,
- * so bindings work on any layout; `KeyboardEvent.key` is kept as the label. Auto-repeat is ignored.
- * The browser's default is cancelled only for bound keys, and never for Tab, F5, F12 or Ctrl/Meta
- * chords.
+ * The keyboard adapter. Tracks held keys by `KeyboardEvent.code` (the physical key, so
+ * bindings survive keyboard layouts), ignores auto-repeat, prevents the browser default only
+ * for bound keys, and releases everything when the window loses focus or is hidden.
  */
 export class KeyboardDevice implements InputDevice {
-  private readonly held = new Map<string, string>();
-
+  private readonly held = new Set<string>();
+  private readonly isBound: (code: string) => boolean;
   private target: EventTarget | null = null;
 
-  /**
-   * Creates a detached keyboard.
-   *
-   * @param isBound - Whether a key code is bound to an action (its default gets cancelled).
-   */
-  public constructor(private readonly isBound: (code: string) => boolean) {}
+  /** `isBound` says which codes the game uses; only those have their browser default prevented. */
+  public constructor(isBound: (code: string) => boolean) {
+    this.isBound = isBound;
+  }
 
-  /** Starts listening to key presses on `target` (normally `window`). */
+  /** Starts listening to key and focus events on `target`, normally `window`. */
   public attach(target: EventTarget): void {
     this.detach();
     target.addEventListener('keydown', this.onKeyDown);
     target.addEventListener('keyup', this.onKeyUp);
+    FOCUS_LOSS_EVENTS.forEach((type) => {
+      target.addEventListener(type, this.onFocusLost);
+    });
     this.target = target;
   }
 
-  /** Stops listening and forgets every held key. */
+  /** Stops listening and releases every key. */
   public detach(): void {
-    this.target?.removeEventListener('keydown', this.onKeyDown);
-    this.target?.removeEventListener('keyup', this.onKeyUp);
-    this.target = null;
+    const target = this.target;
+    if (target !== null) {
+      target.removeEventListener('keydown', this.onKeyDown);
+      target.removeEventListener('keyup', this.onKeyUp);
+      FOCUS_LOSS_EVENTS.forEach((type) => {
+        target.removeEventListener(type, this.onFocusLost);
+      });
+      this.target = null;
+    }
     this.releaseAll();
   }
 
-  /** Adds the held keys and their labels to `snapshot`. */
+  /** Adds the held key codes to `snapshot`. */
   public writeInto(snapshot: MutableInputSnapshot): void {
-    for (const [code, label] of this.held) {
-      snapshot.keys.add(code);
-      snapshot.keyLabels.set(code, label);
-    }
+    this.held.forEach((code) => snapshot.keys.add(code));
   }
 
   /** Forgets every held key. */
@@ -49,35 +52,27 @@ export class KeyboardDevice implements InputDevice {
   }
 
   private readonly onKeyDown = (event: Event): void => {
-    if (!KeyboardDevice.isKeyboardEvent(event)) {
-      return;
+    const keyEvent = event as KeyboardEvent;
+    const code = KeyboardDevice.codeOf(keyEvent);
+    const isBrowserShortcut =
+      NEVER_PREVENTED_CODES.includes(code) || keyEvent.ctrlKey || keyEvent.metaKey;
+    if (this.isBound(code) && !isBrowserShortcut) {
+      keyEvent.preventDefault();
     }
-    const code = KeyboardDevice.codeOf(event);
-    if (this.shouldPrevent(event, code)) {
-      event.preventDefault();
-    }
-    if (!event.repeat) {
-      this.held.set(code, event.key);
+    if (!keyEvent.repeat) {
+      this.held.add(code);
     }
   };
 
   private readonly onKeyUp = (event: Event): void => {
-    if (KeyboardDevice.isKeyboardEvent(event)) {
-      this.held.delete(KeyboardDevice.codeOf(event));
-    }
+    this.held.delete(KeyboardDevice.codeOf(event as KeyboardEvent));
   };
 
-  private shouldPrevent(event: KeyboardEvent, code: string): boolean {
-    return (
-      this.isBound(code) && !event.ctrlKey && !event.metaKey && !NEVER_PREVENTED_CODES.has(code)
-    );
-  }
+  private readonly onFocusLost = (): void => {
+    this.releaseAll();
+  };
 
-  private static isKeyboardEvent(event: Event): event is KeyboardEvent {
-    return 'code' in event && 'key' in event;
-  }
-
-  /** Mobile virtual keyboards send an empty `code`; the key is the best stand-in. */
+  /** Mobile virtual keyboards report an empty `code`; fall back to `key` for them. */
   private static codeOf(event: KeyboardEvent): string {
     return event.code === '' ? event.key : event.code;
   }

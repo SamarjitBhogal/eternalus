@@ -134,6 +134,16 @@ const playerX = (match: Match): number =>
   Number.NaN;
 
 describe('Match', () => {
+  it('reports closed roofs after the same building is toggled twice', () => {
+    const { match } = setUp();
+    // The following camera initially centres on the light stronghold.
+    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.hasOpenRoofs).toBe(true);
+    expect(match.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.hasOpenRoofs).toBe(false);
+    match.destroy();
+  });
   it("spawns the player's Warrior at the Light stronghold on the first tick", () => {
     const { match, lightStronghold } = setUp();
     expect(match.playerEntityId).toBeNull();

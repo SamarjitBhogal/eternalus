@@ -1,10 +1,11 @@
-import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
+import type { MapDecoration, MapDefinition, MapLayout } from '../content/maps/maps.types';
 import {
   MAP_PALETTE as P,
   SCENERY_SETTINGS as S,
   SKETCH_HEIGHT,
   SKETCH_WIDTH,
 } from '../content/maps/map1Scenery';
+import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { CAMP_KINDS, FORTIFIED_KINDS } from './MapSceneryBuilder.constants';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { MapFortificationBuilder } from './MapFortificationBuilder';
@@ -28,13 +29,18 @@ import type { Vec2 } from '../utils/geometry.types';
 export class MapSceneryBuilder extends MapDecorationBuilder {
   /** The generated map, in sketch coordinates. */
   private readonly map: MapDefinition;
+  private readonly world: MapDefinition;
   private readonly scaleX: number;
   private readonly scaleY: number;
   private readonly lakes: ReturnType<typeof placeSceneryLakes>;
 
   /** Creates a builder for one generated map. */
-  public constructor(world: MapDefinition) {
+  public constructor(
+    world: MapDefinition,
+    private readonly ringLayout: MapLayout['wallRing'] = DEFAULT_MAP_LAYOUT.wallRing,
+  ) {
     super();
+    this.world = world;
     this.scaleX = world.width / SKETCH_WIDTH;
     this.scaleY = world.height / SKETCH_HEIGHT;
     const toSketch = (point: Vec2): Vec2 => ({
@@ -58,10 +64,48 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
   /** Returns the landscape, forests, settlement, camps and dressed features, in world units. */
   public build(): readonly MapDecoration[] {
     this.dress();
-    return mirrorMovableScenery(this.pieces, this.map.width).map((piece) => ({
+    const scenery = mirrorMovableScenery(this.pieces, this.map.width).map((piece) => ({
       ...piece,
       shape: piece.shape.map((point) => ({ x: point.x * this.scaleX, y: point.y * this.scaleY })),
     }));
+    const ring = this.world.features
+      .filter((f) => f.kind === 'gate' || f.kind === 'wall-segment' || f.kind === 'turret')
+      .map((feature) => {
+        const footprint = feature.footprint ?? [feature.position];
+        const xs = footprint.map((p) => p.x);
+        const ys = footprint.map((p) => p.y);
+        return {
+          x: Math.min(...xs) - 5,
+          y: Math.min(...ys) - 5,
+          width: Math.max(...xs) - Math.min(...xs) + 10,
+          height: Math.max(...ys) - Math.min(...ys) + 10,
+        };
+      });
+    const underRing = scenery.map((piece) => {
+      const xs = piece.shape.map((p) => p.x);
+      const ys = piece.shape.map((p) => p.y);
+      const left = Math.min(...xs);
+      const right = Math.max(...xs);
+      const top = Math.min(...ys);
+      const bottom = Math.max(...ys);
+      const overlaps = ring.some(
+        (bounds) =>
+          left <= bounds.x + bounds.width &&
+          right >= bounds.x &&
+          top <= bounds.y + bounds.height &&
+          bottom >= bounds.y,
+      );
+      return overlaps ? { ...piece, layer: 'ground' as const } : piece;
+    });
+    return [
+      ...underRing,
+      ...this.world.features
+        .filter((f) => f.kind === 'stronghold')
+        .flatMap((feature) => [
+          ...new MapStrongholdBuilder().build(feature, this.ringLayout),
+          ...new MapStrongholdGatesBuilder().build(feature, this.world.features),
+        ]),
+    ];
   }
 
   /** Adds every decoration, in sketch coordinates and draw order. */
@@ -74,16 +118,12 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     this.pieces.push(...new MapVillageBuilder(this.map).build());
     this.map.features.forEach((feature) => {
       if (CAMP_KINDS.has(feature.kind)) this.camp(feature.position, `${feature.id}-camp`);
-      if (feature.kind === 'stronghold') {
-        this.pieces.push(...new MapStrongholdBuilder().build(feature));
-        this.pieces.push(
-          ...new MapStrongholdGatesBuilder().build(feature.position.x, feature.id, this.map.lanes),
-        );
-      }
-      if (FORTIFIED_KINDS.has(feature.kind) && feature.kind !== 'stronghold')
+      if (FORTIFIED_KINDS.has(feature.kind))
         this.pieces.push(...new MapFortificationBuilder().build(feature));
     });
-    this.pieces.push(...new CathedralExteriorBuilder().build());
+    const cathedral = this.map.features.find((f) => f.kind === 'cathedral');
+    if (cathedral !== undefined)
+      this.pieces.push(...new CathedralExteriorBuilder().build(cathedral.id));
   }
 
   private isClear(point: Vec2): boolean {
@@ -135,7 +175,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
             point.y - 5,
             size,
             size * 0.85,
-            n % 4 === 0 ? '#797847' : P.pine,
+            n % 4 === 0 ? P.oliveCanopy : P.pine,
           );
           this.blob(
             `${id}-canopy-light`,
@@ -143,7 +183,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
             point.y - 8,
             size * 0.65,
             size * 0.6,
-            n % 4 === 0 ? '#a09a62' : P.pineLight,
+            n % 4 === 0 ? P.oliveCanopyLight : P.pineLight,
           );
           continue;
         }

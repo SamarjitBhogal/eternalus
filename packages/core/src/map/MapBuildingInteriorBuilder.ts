@@ -1,3 +1,7 @@
+import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
+import type { MapFeature } from '../content/maps/maps.types';
+import type { PlayableTeam } from '../teams/teams.types';
+import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { cos, sin } from '../utils/deterministicMath';
 import type { MapDecoration } from '../content/maps/maps.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
@@ -5,57 +9,83 @@ import { MapPalaceRoomsBuilder } from './MapPalaceRoomsBuilder';
 /** Furnishes interiors directly inside the buildings' original world footprints. */
 export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
   /** Builds the cross-shaped cathedral and both oval palace interiors in sketch coordinates. */
-  public build(): readonly MapDecoration[] {
-    this.cathedral();
-    this.cathedralDetails();
-    const cathedral = this.pieces.length;
-    this.palace(142, 'light');
-    const light = this.pieces.length;
-    this.palace(1458, 'dark');
-    return this.pieces.map((piece, i) => ({
-      ...piece,
-      buildingId: i < cathedral ? 'grand-cathedral' : i < light ? 'light-capital' : 'dark-capital',
-      visibility: 'interior',
-    }));
+  public build(feature: MapFeature): readonly MapDecoration[] {
+    this.buildingId = feature.id;
+    this.visibility = 'interior';
+    if (feature.kind === 'cathedral') {
+      this.cathedral();
+      this.cathedralDetails();
+    } else if (feature.team !== 'neutral') this.palace(G.palace.x, feature.team);
+    return this.pieces;
   }
   private cathedral(): void {
-    this.rect('cathedral-interior-nave-floor', 755, 342, 90, 211, '#938e7c');
-    this.rect('cathedral-interior-cross-floor', 703, 420, 194, 65, '#938e7c');
-    this.ellipse('cathedral-interior-apse-floor', 800, 344, 44, 26, '#aaa18a');
-    this.rect('cathedral-interior-north-door', 788, 320, 24, 12, '#c3a96b');
-    this.rect('cathedral-interior-south-door', 785, 541, 30, 12, '#c3a96b');
-    this.ellipse('cathedral-interior-capture-border', 800, 450, 35, 35, '#c3a96b');
-    this.ellipse('cathedral-interior-capture-floor', 800, 450, 31, 31, '#b6ad92');
-    this.ellipse('cathedral-interior-capture-inlay', 800, 450, 11, 11, '#d2c5a1');
-    this.rect('cathedral-interior-altar', 785, 340, 30, 14, '#d2c5a1');
+    this.rect('cathedral-interior-nave-floor', 755, 342, 90, 211, P.cathedralFloor);
+    this.rect('cathedral-interior-cross-floor', 703, 420, 194, 65, P.cathedralFloor);
+    this.ellipse('cathedral-interior-apse-floor', G.cathedral.x, 344, 44, 26, P.apseFloor);
+    this.rect(
+      'cathedral-interior-north-door',
+      G.northDoor.x,
+      G.northDoor.y,
+      G.northDoor.width,
+      G.northDoor.height,
+      P.doorInlay,
+    );
+    this.rect(
+      'cathedral-interior-south-door',
+      G.southDoor.x,
+      G.southDoor.y,
+      G.southDoor.width,
+      G.southDoor.height,
+      P.doorInlay,
+    );
+    this.ellipse('cathedral-interior-capture-border', G.cathedral.x, 450, 35, 35, P.doorInlay);
+    this.ellipse('cathedral-interior-capture-floor', G.cathedral.x, 450, 31, 31, P.captureFloor);
+    this.ellipse('cathedral-interior-capture-inlay', G.cathedral.x, 450, 11, 11, P.ivoryStone);
+    this.rect('cathedral-interior-altar', 785, 340, 30, 14, P.ivoryStone);
     for (const x of [712, 856]) {
-      this.rect(`cathedral-interior-chapel-${String(x)}`, x, 428, 32, 49, '#7a8783');
-      this.rect(`cathedral-interior-shrine-${String(x)}`, x + 7, 434, 18, 9, '#bea675');
+      this.rect(`cathedral-interior-chapel-${String(x)}`, x, 428, 32, 49, P.chapelFloor);
+      this.rect(`cathedral-interior-shrine-${String(x)}`, x + 7, 434, 18, 9, P.shrineGold);
     }
     for (const y of [370, 390, 505, 525]) {
       for (const x of [769, 811])
-        this.rect(`cathedral-interior-pew-${String(x)}-${String(y)}`, x, y, 20, 5, '#574538');
+        this.rect(`cathedral-interior-pew-${String(x)}-${String(y)}`, x, y, 20, 5, P.pewWood);
     }
     for (const y of [362, 398, 500, 535])
       for (const x of [761, 839])
-        this.ellipse(`cathedral-interior-column-${String(x)}-${String(y)}`, x, y, 3, 3, '#d2c5a1');
+        this.ellipse(
+          `cathedral-interior-column-${String(x)}-${String(y)}`,
+          x,
+          y,
+          3,
+          3,
+          P.ivoryStone,
+        );
   }
-  private palace(x: number, team: string): void {
+  private palace(x: number, team: PlayableTeam): void {
     const start = this.pieces.length;
     const id = `${team}-palace-interior`;
-    const accent = team === 'light' ? '#668b93' : '#8d607d';
-    this.ellipse(`${id}-floor`, x, 450, 90, 101, '#a6a08b');
-    this.ellipse(`${id}-floor-inlay`, x, 450, 79, 89, '#b9b098');
-    this.rect(`${id}-carpet-border`, x - 9, 394, 18, 155, '#c3a362');
+    const accent = team === 'light' ? P.lightTextile : P.darkTextile;
+    this.ellipse(
+      `${id}-floor`,
+      x,
+      G.palace.y,
+      G.palace.floorRadiusX,
+      G.palace.floorRadiusY,
+      P.palaceFloor,
+    );
+    this.ellipse(`${id}-floor-inlay`, x, 450, 79, 89, P.palaceInlay);
+    this.rect(`${id}-carpet-border`, x - 9, 394, 18, 155, P.carpetBorder);
     this.rect(`${id}-carpet`, x - 7, 397, 14, 152, accent);
-    this.rect(`${id}-dais`, x - 32, 374, 64, 27, '#d2c5a1');
-    this.rect(`${id}-throne-back`, x - 10, 369, 20, 23, '#d0ac58');
+    this.rect(`${id}-dais`, x - 32, 374, 64, 27, P.ivoryStone);
+    this.rect(`${id}-throne-back`, x - 10, 369, 20, 23, P.throneGold);
     this.rect(`${id}-throne-cushion`, x - 7, 373, 14, 15, accent);
-    this.rect(`${id}-throne-seat`, x - 11, 387, 22, 8, '#d0ac58');
-    this.pieces.push(...new MapPalaceRoomsBuilder().build(x, team, accent));
+    this.rect(`${id}-throne-seat`, x - 11, 387, 22, 8, P.throneGold);
+    this.pieces.push(
+      ...new MapPalaceRoomsBuilder().build(x, team, accent, this.buildingId ?? team),
+    );
     for (const y of [409, 450, 490])
       for (const dx of [-24, 24]) {
-        this.ellipse(`${id}-column-${String(dx)}-${String(y)}`, x + dx, y, 4, 4, '#e5d9b7');
+        this.ellipse(`${id}-column-${String(dx)}-${String(y)}`, x + dx, y, 4, 4, P.columnStone);
         this.rect(`${id}-banner-${String(dx)}-${String(y)}`, x + dx - 3, y - 13, 6, 8, accent);
       }
     // Orient the ceremonial aisle toward the opposing team, preserving the oval footprint.
@@ -66,8 +96,8 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
       this.pieces[i] = {
         ...piece,
         shape: piece.shape.map((p) => ({
-          x: x + direction * (p.y - 450) * (90 / 101),
-          y: 450 - direction * (p.x - x) * (101 / 90),
+          x: x + direction * (p.y - G.palace.y) * (G.palace.floorRadiusX / G.palace.floorRadiusY),
+          y: G.palace.y - direction * (p.x - x) * (G.palace.floorRadiusY / G.palace.floorRadiusX),
         })),
       };
     }
@@ -76,7 +106,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
   private cathedralDetails(): void {
     this.apseWall('west', Math.PI, Math.PI * 1.41);
     this.apseWall('east', Math.PI * 1.59, Math.PI * 2);
-    const stone = '#c5bda5';
+    const stone = P.interiorWall;
     for (const [id, x, y, w, h] of [
       ['nave-west-upper', 755, 342, 3, 78],
       ['nave-east-upper', 842, 342, 3, 78],
@@ -100,7 +130,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
           y,
           3,
           8,
-          x < 800 ? '#76abb6' : '#b38b9f',
+          x < 800 ? P.westGlass : P.eastGlass,
         );
       }
     for (const y of [364, 397, 506, 532])
@@ -111,10 +141,21 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
           y,
           2,
           2,
-          '#b49558',
+          P.candleMetal,
         );
-        this.ellipse(`cathedral-interior-candle-${String(x)}-${String(y)}`, x, y, 1, 1, '#f1d99a');
+        this.ellipse(
+          `cathedral-interior-candle-${String(x)}-${String(y)}`,
+          x,
+          y,
+          1,
+          1,
+          P.candleLight,
+        );
       }
+    this.chapelDetails(stone);
+  }
+
+  private chapelDetails(stone: string): void {
     for (const x of [712, 856]) {
       this.rect(
         `cathedral-interior-chapel-partition-${String(x)}`,
@@ -130,9 +171,16 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
         451,
         1,
         9,
-        '#7a8783',
+        P.chapelFloor,
       );
-      this.rect(`cathedral-interior-chapel-carpet-${String(x)}`, x + 7, 447, 18, 25, '#6c707b');
+      this.rect(
+        `cathedral-interior-chapel-carpet-${String(x)}`,
+        x + 7,
+        447,
+        18,
+        25,
+        P.chapelCarpet,
+      );
       for (let i = 0; i < 3; i++)
         this.rect(
           `cathedral-interior-chapel-bench-${String(x)}-${String(i)}`,
@@ -140,13 +188,13 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
           450 + i * 8,
           22,
           3,
-          '#574538',
+          P.pewWood,
         );
     }
-    this.rect('cathedral-interior-lectern', 813, 357, 7, 7, '#725840');
-    this.rect('cathedral-interior-open-book', 814, 357, 5, 3, '#e0d6bd');
-    this.rect('cathedral-interior-altar-inlay', 790, 343, 20, 3, '#c3a362');
-    this.rect('cathedral-interior-sacristy-cabinet', 824, 349, 10, 9, '#725840');
+    this.rect('cathedral-interior-lectern', 813, 357, 7, 7, P.furnitureWood);
+    this.rect('cathedral-interior-open-book', 814, 357, 5, 3, P.bookPaper);
+    this.rect('cathedral-interior-altar-inlay', 790, 343, 20, 3, P.carpetBorder);
+    this.rect('cathedral-interior-sacristy-cabinet', 824, 349, 10, 9, P.furnitureWood);
   }
 
   private apseWall(id: string, start: number, end: number): void {
@@ -158,7 +206,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
     this.polygon(
       `cathedral-interior-wall-apse-${id}`,
       [...curve(44, 26), ...curve(41, 23).reverse()],
-      '#c5bda5',
+      P.interiorWall,
     );
   }
 }

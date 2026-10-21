@@ -10,6 +10,7 @@ import { MainMenuScreen } from './screens/MainMenuScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import type { ScreenProps } from './screens/screen.types';
+import { SettingsScreen } from './screens/SettingsScreen';
 
 /** Session phase → screen: the one place a screen is registered (architecture 02 §9). */
 const PHASE_SCREENS: Readonly<Record<Exclude<SessionPhase, 'menu'>, ComponentType<ScreenProps>>> = {
@@ -27,7 +28,7 @@ const MENU_SCREENS: Readonly<Record<MenuRoute, ComponentType<ScreenProps>>> = {
   home: MainMenuScreen,
   loadouts: LoadoutScreen,
   profile: ProfileScreen,
-  settings: PlaceholderScreen,
+  settings: SettingsScreen,
   about: AboutScreen,
 };
 
