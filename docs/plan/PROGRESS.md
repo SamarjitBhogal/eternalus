@@ -1153,3 +1153,20 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Critic: approve, two nits fixed (the applier's remove/expire kept out of the design text as
   DEC-41's open question; a reflowed sentence). Ponytail-review: lean (the delta only deletes).
   Next step: push and reply on #35; merge order stays #34 → #35 → #31.
+
+### 2026-10-22 — Phase 4 (early, O7) / sprint 4.4 — feat/weapons — Claudio + Claude Code
+
+- What: first weapon slice (SCRUM-183 / SCRUM-287, 05 §10). `content/weapons/`
+  (`WeaponDefinition`, empty `WEAPONS` catalogue, `loadWeapons` with seconds→ticks via `TickRate`
+  and validation at load); `LegendDefinition.defaultLoadout.primaryWeaponId` +
+  `KnownWeaponRule`; `EntityFactory` and `Simulation({ weapons })` inject the weapon source;
+  `Legend.basicAttack` builds `Combat` from the weapon (`Combat.weaponId`); `MeleeAttackStrategy`
+  names the weapon in the `DamageSource` (mobs name their own definition). No weapon numbers
+  shipped: owner questions in INBOX. Answers Sam's Discord ask (dealer = entity + weapon; damage
+  changes with the weapon on the same class).
+- Tests shown red by breaking the code: interval conversion, no attacks, each non-positive
+  field, kebab id, `uniqueTo` outside `allowedClasses` (loader checks removed); unknown weapon
+  (`KnownWeaponRule` forced true); rule listing (rule unregistered); `Combat.weaponId` (default
+  changed); Legend equips / throws without a source (override bypassed); factory forwarding
+  (spread removed); `Simulation` wiring (weapon source not passed); weapon and mob source names
+  (`definitionId` reverted / replaced).

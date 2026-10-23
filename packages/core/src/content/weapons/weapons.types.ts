@@ -2,7 +2,7 @@ import type { LegendKind } from '../legends/legends.types';
 import type { UnitAttack } from '../units/units.types';
 
 /** The weapon classes of reference 07 (architecture 05 §10). */
-export type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff';
+type WeaponClass = 'glove' | 'bow' | 'sword' | 'spear' | 'battle-axe' | 'staff';
 
 /**
  * A weapon (architecture 05 §10). Shared, immutable and keyed by `id`. Its attacks have the shape of
