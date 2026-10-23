@@ -9,6 +9,8 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadLevelCurves } from '../content/progression/loadLevelCurves';
+import { XP_SOURCES } from '../content/progression/xpSources';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
@@ -72,6 +74,11 @@ const tickPipeline = (state: GameState): System => {
   const pipeline = new DefaultSystemPipeline(
     new DefaultInvariantRunner(RELEASE_DEBUG_CONFIG, new NullLogger()),
     state,
+    {
+      units: loadDefaultContent(CONFIG.tickRate),
+      curves: loadLevelCurves(),
+      xpSources: XP_SOURCES,
+    },
   );
   return {
     name: 'tick',

@@ -21,7 +21,15 @@ describe('PositiveAetherRule', () => {
     }
   });
 
-  it('ignores units that have no aether, such as mobs', () => {
+  it('ignores units that are not Legends, such as mobs', () => {
     expect(new PositiveAetherRule().check(TRAINING_DUMMY)).toEqual([]);
+  });
+
+  it('flags a Legend that has no aether pool at all', () => {
+    const dry = { ...TRAINING_DUMMY, kind: 'magus' };
+
+    expect(new PositiveAetherRule().check(dry)).toEqual([
+      'baseAether must be a positive finite number',
+    ]);
   });
 });

@@ -15,15 +15,15 @@ export class Health {
   /**
    * Creates health at full health, with no shield bars.
    *
-   * @param baseMax - Full health at level 1 (the base bar, without shields); must be positive.
+   * @param max - Full health (the base bar, without shields); must be positive.
    */
-  public constructor(public readonly baseMax: number) {
-    Health.checkPositive(baseMax, 'max');
-    this.maxValue = baseMax;
-    this.currentValue = baseMax;
+  public constructor(max: number) {
+    Health.checkPositive(max, 'max');
+    this.maxValue = max;
+    this.currentValue = max;
   }
 
-  /** Full health now: `baseMax` plus every `raiseMax` (level-ups). */
+  /** Full health now: the starting bar plus every `raiseMax` (level-ups). */
   public get max(): number {
     return this.maxValue;
   }
@@ -67,15 +67,12 @@ export class Health {
   }
 
   /**
-   * Raises full health by `amount` (finite, ≥ 0) and heals by the same amount, so a level-up never
-   * leaves a gap on the bar. A dead entity stays at 0: a raise never revives.
+   * Raises full health by `amount` (finite, ≥ 0). Only the cap: whoever raises it decides whether to
+   * heal too (a level-up heals a living Legend by the raise, O3/O4).
    */
   public raiseMax(amount: number): void {
     Health.checkAmount(amount, 'max raise');
     this.maxValue += amount;
-    if (!this.isDead) {
-      this.currentValue += amount;
-    }
   }
 
   /** Restores up to `amount` health (never above `max`) and returns how much. */

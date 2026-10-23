@@ -87,6 +87,13 @@ export type GameEventMap = {
   readonly 'horde-spawned': HordePayload;
   readonly 'horde-dissolved': HordePayload;
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
+  /** A kill's XP reaching its killer; one per award, so the invariant can audit every award. */
+  readonly 'xp-gained': {
+    readonly entityId: EntityId;
+    readonly amount: number;
+    readonly victimId: EntityId;
+    readonly victimTeam: Team;
+  };
   readonly 'team-changed': {
     readonly entityId: EntityId;
     readonly from: Team;

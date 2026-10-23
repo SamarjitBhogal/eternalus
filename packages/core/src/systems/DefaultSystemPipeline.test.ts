@@ -5,8 +5,11 @@ import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { Progression } from '../components/Progression';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadLevelCurves } from '../content/progression/loadLevelCurves';
+import { XP_SOURCES } from '../content/progression/xpSources';
 import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
 import { MemoryLogger } from '../diagnostics/MemoryLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -16,6 +19,7 @@ import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
+const PROGRESSION = { units: UNIT_DEFINITIONS, curves: loadLevelCurves(), xpSources: XP_SOURCES };
 
 describe('DefaultSystemPipeline', () => {
   it('moves, then removes the dead, then checks invariants, in that order', () => {
@@ -24,6 +28,7 @@ describe('DefaultSystemPipeline', () => {
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
       state,
+      PROGRESSION,
     );
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const runner = factory.create('warrior', 'warrior', {
@@ -57,6 +62,7 @@ describe('DefaultSystemPipeline', () => {
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
       state,
+      PROGRESSION,
     );
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const warrior = factory.create('warrior', 'warrior', {
@@ -76,6 +82,36 @@ describe('DefaultSystemPipeline', () => {
     pipeline.run({ state, logger });
 
     expect(state.entities.has(victim.id)).toBe(false);
+    expect(logger.records).toEqual([]);
+  });
+
+  it('pays a combat kill in the same tick, before the dead are removed', () => {
+    const logger = new MemoryLogger();
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const pipeline = new DefaultSystemPipeline(
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      state,
+      PROGRESSION,
+    );
+    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const warrior = factory.create('warrior', 'warrior', {
+      position: { x: 0, y: 0 },
+      team: 'light',
+    });
+    const minion = factory.create('light-mob', 'light-minion', {
+      position: { x: 1, y: 0 },
+      team: 'dark',
+    });
+    state.entities.add(warrior);
+    state.entities.add(minion);
+    const health = minion.getComponent(Health);
+    health.applyDamage(health.max - 1);
+    state.entities.setAttackTarget(warrior.id, minion.id);
+
+    pipeline.run({ state, logger });
+
+    expect(warrior.getComponent(Progression).xp).toBe(20);
+    expect(state.entities.has(minion.id)).toBe(false);
     expect(logger.records).toEqual([]);
   });
 });

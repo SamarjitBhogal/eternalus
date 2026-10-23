@@ -1,21 +1,21 @@
 import { Aether } from '../components/Aether';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
-import type { XpSourcesDefinition } from '../content/progression/progression.types';
-import { XP_SOURCES } from '../content/progression/xpSources';
+import { TeamMembership } from '../components/TeamMembership';
+import { LEGEND_KINDS } from '../content/legends/legendKinds';
+import type { LevelScalingDefinition } from '../content/progression/progression.types';
+import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { Entity } from '../entities/Entity';
-import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { System, SystemContext } from './System.types';
-
-/** One kill waiting for this system's pass. */
-type Award = { readonly killerId: EntityId; readonly xp: number };
+import type { Award, ProgressionContent } from './ProgressionSystem.types';
 
 /**
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
  * while the victim is still in the store, and in its own pass gives the XP to the killer's
- * `Progression`. Each level gained raises max health and max aether by the class's scaling and
- * emits `level-up`.
+ * `Progression`. Self-kills and ally kills pay nothing (O5). Each level gained raises max health by
+ * the class's share of its base health (O3) and max aether, heals and refills by the raise only
+ * while the Legend is alive (O4), and emits `level-up`.
  */
 export class ProgressionSystem implements System {
   public readonly name = 'progression';
@@ -24,47 +24,94 @@ export class ProgressionSystem implements System {
 
   /**
    * @param state - The match whose `entity-died` events this system listens to.
-   * @param xpSources - What each kill is worth.
+   * @param content - The unit definitions, level curves and XP sources it prices and levels with.
    */
   public constructor(
     state: GameState,
-    private readonly xpSources: XpSourcesDefinition = XP_SOURCES,
+    private readonly content: ProgressionContent,
   ) {
     state.events.on('entity-died', ({ entityId, killer }) => {
       const victim = state.entities.get(entityId);
-      if (killer.attackerId !== null && victim !== undefined) {
-        this.pending.push({ killerId: killer.attackerId, xp: this.xpFor(victim) });
+      const killerId = killer.attackerId;
+      if (killerId === null || victim === undefined || killerId === entityId) {
+        return; // O5: no self-kill reward
+      }
+      const victimTeam = victim.findComponent(TeamMembership)?.team;
+      const killerTeam = state.entities.get(killerId)?.findComponent(TeamMembership)?.team;
+      if (victimTeam === undefined || killerTeam === victimTeam) {
+        return; // O5: no ally-kill reward; teams are compared, so neutral camp mobs still pay
+      }
+      const xp = this.xpFor(victim);
+      if (xp > 0) {
+        this.pending.push({ killerId, victimId: entityId, victimTeam, xp });
       }
     });
   }
 
   /** Gives this tick's kill XP, in kill order, and applies each level gained. */
   public update({ state }: SystemContext): void {
-    for (const { killerId, xp } of this.pending.splice(0)) {
-      const killer = state.entities.get(killerId);
+    for (const award of this.pending.splice(0)) {
+      const killer = state.entities.get(award.killerId);
       const progression = killer?.findComponent(Progression);
+      // TODO(claudiodh): O4 pays a Legend killed earlier, but `DeathSystem` still removes dead
+      // Legends, so its XP is dropped here; respawn (FR-051, SCRUM-178) must keep them in the store.
       if (killer === undefined || progression === undefined) {
         continue;
       }
-      const gained = progression.addXp(xp);
+      const gained = this.award(killer, progression, award, state);
+      const definition = this.content.units.get(killer.definitionId);
       for (let step = gained - 1; step >= 0; step -= 1) {
-        ProgressionSystem.levelUp(killer, progression);
+        if (LEGEND_KINDS.has(definition)) {
+          ProgressionSystem.levelUp(killer, definition.levelScaling, definition.baseHealth);
+        }
         state.events.emit('level-up', { entityId: killer.id, level: progression.level - step });
       }
     }
   }
 
+  /** The one caller of `addXp`; it always announces the award, so none can bypass the invariant. */
+  private award(
+    recipient: Entity,
+    progression: Progression,
+    award: Award,
+    state: GameState,
+  ): number {
+    state.events.emit('xp-gained', {
+      entityId: recipient.id,
+      amount: award.xp,
+      victimId: award.victimId,
+      victimTeam: award.victimTeam,
+    });
+    return progression.addXp(award.xp, this.content.curves.get(progression.curveId));
+  }
+
   private xpFor(victim: Entity): number {
     const level = victim.findComponent(Progression)?.level;
     if (level !== undefined) {
-      return this.xpSources.legendKill.base + this.xpSources.legendKill.perVictimLevel * level;
+      const { base, perVictimLevel } = this.content.xpSources.legendKill;
+      return base + perVictimLevel * level;
     }
-    return this.xpSources.mobKill[victim.kind] ?? 0;
+    if (!this.content.units.has(victim.definitionId)) {
+      return 0;
+    }
+    const definition = this.content.units.get(victim.definitionId);
+    return MOB_KINDS.has(definition) ? definition.xpValue : 0;
   }
 
-  private static levelUp(entity: Entity, progression: Progression): void {
-    const health = entity.findComponent(Health);
-    health?.raiseMax(health.baseMax * progression.scaling.healthPerLevel);
-    entity.findComponent(Aether)?.raiseMax(progression.scaling.aetherPerLevel);
+  /** One rule in one place (O3/O4): raise the caps; heal and refill by the raise only while alive. */
+  private static levelUp(
+    entity: Entity,
+    scaling: LevelScalingDefinition,
+    baseHealth: number,
+  ): void {
+    const health = entity.getComponent(Health);
+    const aether = entity.getComponent(Aether);
+    const healthRaise = baseHealth * scaling.healthPerLevel; // O3: +8% of level-1 base, additive
+    health.raiseMax(healthRaise);
+    aether.raiseMax(scaling.aetherPerLevel);
+    if (!health.isDead) {
+      health.heal(healthRaise);
+      aether.restore(scaling.aetherPerLevel);
+    }
   }
 }

@@ -1,7 +1,6 @@
 import { Aether } from '../components/Aether';
 import { Progression } from '../components/Progression';
 import type { LegendDefinition } from '../content/legends/legends.types';
-import { LEVEL_CURVES } from '../content/progression/levelCurves';
 import { SpawnContextReader } from './SpawnContextReader';
 import { Unit } from './Unit';
 
@@ -33,11 +32,7 @@ export abstract class Legend extends Unit {
 
     const { definition } = new SpawnContextReader(this).placed<LegendDefinition>(context);
     this.addComponent(new Aether(definition.baseAether));
-    // The curve id is checked at content load (`KnownLevelCurveRule`).
-    const curve = LEVEL_CURVES[definition.levelCurveId];
-    if (curve === undefined) {
-      throw new Error(`Unknown level curve "${definition.levelCurveId}".`);
-    }
-    this.addComponent(new Progression(curve, definition.levelScaling));
+    // The id is checked at content load (`KnownLevelCurveRule`); `ProgressionSystem` resolves it.
+    this.addComponent(new Progression(definition.levelCurveId));
   }
 }

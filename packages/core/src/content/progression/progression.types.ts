@@ -18,10 +18,8 @@ export type LevelScalingDefinition = {
   readonly aetherPerLevel: number;
 };
 
-/** How much XP a kill is worth (06 "XP sources"); sources without a system yet are left out. */
+/** How much XP a kill is worth (06 "XP sources"); a mob's own XP is its `xpValue` (04 §5). */
 export type XpSourcesDefinition = {
   /** A Legend kill: `base + perVictimLevel × victim level`, to the killer. */
   readonly legendKill: { readonly base: number; readonly perVictimLevel: number };
-  /** XP for killing a unit of each kind (`light-mob`, …); a kind not listed is worth 0. */
-  readonly mobKill: Readonly<Record<string, number>>;
 };

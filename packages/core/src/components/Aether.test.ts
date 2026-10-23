@@ -7,8 +7,6 @@ describe('Aether', () => {
     const aether = new Aether(300);
 
     expect(aether.current).toBe(300);
-    expect(aether.fraction).toBe(1);
-    expect(aether.isEmpty).toBe(false);
   });
 
   it('spends what it can afford', () => {
@@ -41,20 +39,19 @@ describe('Aether', () => {
     const aether = new Aether(20);
     aether.spend(20);
 
-    expect(aether.isEmpty).toBe(true);
-    expect(aether.fraction).toBe(0);
+    expect(aether.current).toBe(0);
   });
 
   it('rejects a non-positive max', () => {
     expect(() => new Aether(0)).toThrow();
   });
 
-  it('raises max and fills by the same amount, and rejects a negative raise', () => {
+  it('raises only the cap (the caller refills, O4), and rejects a negative raise', () => {
     const pool = new Aether(100);
     pool.raiseMax(20);
 
     expect(pool.max).toBe(120);
-    expect(pool.current).toBe(120);
+    expect(pool.current).toBe(100);
     expect(() => {
       pool.raiseMax(-1);
     }).toThrow();

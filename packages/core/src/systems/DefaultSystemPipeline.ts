@@ -8,6 +8,7 @@ import { DeathSystem } from './DeathSystem';
 import { InvariantSystem } from './InvariantSystem';
 import { MovementSystem } from './MovementSystem';
 import { ProgressionSystem } from './ProgressionSystem';
+import type { ProgressionContent } from './ProgressionSystem.types';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
@@ -27,6 +28,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
    * @param invariants - The runner the last system checks with.
    * @param state - The match; its config sets the tick rate and lane structure count statuses load
    *   with, and systems that listen to its events subscribe here.
+   * @param progression - The content kills are priced and levels applied with, injected.
    * @param decide - PROTOTYPE(PROTO-01) TEMPORARY: remove once the owner decides where `AiSystem`
    *   lives and it is registered like any other system. Systems that run first, before movement: `AiSystem`, which `systems/` may not
    *   import, so `Simulation` passes it in.
@@ -34,6 +36,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
   public constructor(
     invariants: InvariantRunner,
     state: GameState,
+    progression: ProgressionContent,
     decide: readonly System[] = [],
   ) {
     const { tickRate, map } = state.config;
@@ -47,7 +50,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new MovementSystem(),
       new CombatSystem(damage),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
-      new ProgressionSystem(state),
+      new ProgressionSystem(state, progression),
       new DeathSystem(),
       new InvariantSystem(invariants),
     ]);

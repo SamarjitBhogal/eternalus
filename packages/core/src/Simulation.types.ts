@@ -1,6 +1,8 @@
 import type { GameConfig } from './config/GameConfig.types';
 import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
+import type { ContentCatalogue } from './content/ContentCatalogue';
+import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource } from './entities/EntityFactory.types';
 import type { System } from './systems/System.types';
 
@@ -18,4 +20,6 @@ export type SimulationOptions = {
   readonly debug?: DebugConfig;
   /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
+  /** The level curves Legends level along; `loadLevelCurves()` when omitted. */
+  readonly levelCurves?: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>;
 };

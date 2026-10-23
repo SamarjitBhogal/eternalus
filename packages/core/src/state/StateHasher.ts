@@ -53,10 +53,6 @@ export class StateHasher {
     if (movement !== undefined && (movement.heading.x !== 0 || movement.heading.y !== 0)) {
       fields.push(['heading', movement.heading.x, movement.heading.y]);
     }
-    const progression = entity.findComponent(Progression);
-    if (progression !== undefined && progression.xp > 0) {
-      fields.push(['progression', progression.xp, progression.level]);
-    }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
       fields.push(['collider', collider.isEnabled]);
@@ -85,6 +81,10 @@ export class StateHasher {
           status.expiresTick,
         ]),
       ]);
+    }
+    const progression = entity.findComponent(Progression);
+    if (progression !== undefined) {
+      fields.push(['progression', progression.xp, progression.level]);
     }
     return fields;
   }

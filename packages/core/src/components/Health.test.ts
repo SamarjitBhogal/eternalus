@@ -119,12 +119,12 @@ describe('Health', () => {
     ]);
   });
 
-  it('raises max and fills by the same amount, and rejects a negative raise', () => {
+  it('raises only the cap (the caller heals, O3/O4), and rejects a negative raise', () => {
     const pool = new Health(100);
     pool.raiseMax(20);
 
     expect(pool.max).toBe(120);
-    expect(pool.current).toBe(120);
+    expect(pool.current).toBe(100);
     expect(() => {
       pool.raiseMax(-1);
     }).toThrow();

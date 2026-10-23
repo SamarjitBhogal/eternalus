@@ -24,26 +24,15 @@ export class Aether {
     return this.maxValue;
   }
 
-  /** Raises the pool by `amount` (finite, ≥ 0) and fills it by the same amount. */
+  /** Raises the pool's cap by `amount` (finite, ≥ 0); whoever raises it decides whether to refill. */
   public raiseMax(amount: number): void {
     Aether.checkAmount(amount, 'max raise');
     this.maxValue += amount;
-    this.currentValue += amount;
   }
 
   /** Aether left, between 0 and `max`. */
   public get current(): number {
     return this.currentValue;
-  }
-
-  /** Fraction of the pool still filled, between 0 and 1 (for the aether bar). */
-  public get fraction(): number {
-    return this.currentValue / this.max;
-  }
-
-  /** Whether the pool is empty. */
-  public get isEmpty(): boolean {
-    return this.currentValue === 0;
   }
 
   /** Whether `amount` aether is available to spend. Callers check this before `spend`. */

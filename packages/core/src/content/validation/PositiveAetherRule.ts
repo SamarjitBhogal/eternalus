@@ -1,19 +1,16 @@
+import { LEGEND_KINDS } from '../legends/legendKinds';
 import type { UnitDefinition } from '../units/units.types';
 import type { UnitDefinitionRule } from './ContentValidator.types';
 
-/**
- * A Legend's aether (MP) pool must be a positive finite number. Units without an aether pool
- * (mobs, structures) are ignored, so this rule runs over every `UnitDefinition` at load.
- */
+/** Every Legend's aether (MP) pool must be a positive finite number; other units have none. */
 export class PositiveAetherRule implements UnitDefinitionRule {
-  /** Flags a `baseAether` that is zero, negative, infinite or not a number; none when absent. */
+  /** Flags a Legend whose `baseAether` is missing, zero, negative, infinite or not a number. */
   public check(definition: UnitDefinition): readonly string[] {
-    if (!('baseAether' in definition)) {
+    if (!LEGEND_KINDS.has(definition)) {
       return [];
     }
-
-    const { baseAether } = definition as { baseAether: number };
-    return Number.isFinite(baseAether) && baseAether > 0
+    const aether: unknown = definition.baseAether;
+    return typeof aether === 'number' && Number.isFinite(aether) && aether > 0
       ? []
       : ['baseAether must be a positive finite number'];
   }
