@@ -1,17 +1,16 @@
 import { TickRate } from '../../utils/TickRate';
 import { ContentCatalogue } from '../ContentCatalogue';
 import { ContentValidationError } from '../ContentValidationError';
+import { KEBAB_CASE } from '../validation/KebabCaseIdRule.constants';
 import { WEAPONS } from './weaponCatalogue';
 import type { WeaponDefinition } from './weapons.types';
-
-const KEBAB_ID = /^[a-z]+(-[a-z]+)*$/;
 
 const isPositive = (value: number): boolean => value > 0 && Number.isFinite(value);
 
 /** What is wrong with `weapon` as authored, or nothing. */
 const problemsOf = (weapon: WeaponDefinition): string[] => {
   const problems: string[] = [];
-  if (!KEBAB_ID.test(weapon.id)) problems.push('id must be kebab-case');
+  if (!KEBAB_CASE.test(weapon.id)) problems.push('id must be kebab-case');
   if (weapon.attacks.length === 0) problems.push('needs at least one attack');
   for (const field of ['damage', 'reach', 'interval'] as const) {
     if (weapon.attacks.some((attack) => !isPositive(attack[field]))) {
