@@ -72,7 +72,7 @@ const setUp = () => {
 /** The whole default tick of `state` as one system, so `run` can drive it. */
 const tickPipeline = (state: GameState): System => {
   const pipeline = new DefaultSystemPipeline(
-    new DefaultInvariantRunner(RELEASE_DEBUG_CONFIG, new NullLogger()),
+    new DefaultInvariantRunner(RELEASE_DEBUG_CONFIG, new NullLogger(), loadLevelCurves()),
     state,
     {
       units: loadDefaultContent(CONFIG.tickRate),

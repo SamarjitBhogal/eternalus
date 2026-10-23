@@ -26,7 +26,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
       state,
       PROGRESSION,
     );
@@ -60,7 +60,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
       state,
       PROGRESSION,
     );
@@ -89,7 +89,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
       state,
       PROGRESSION,
     );
@@ -119,7 +119,7 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
       state,
       PROGRESSION,
     );

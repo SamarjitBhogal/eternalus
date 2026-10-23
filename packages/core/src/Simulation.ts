@@ -53,8 +53,8 @@ export class Simulation {
     levelCurves,
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed);
-    const units = content ?? loadDefaultContent(this.state.config.tickRate);
     const curves = levelCurves ?? loadLevelCurves();
+    const units = content ?? loadDefaultContent(this.state.config.tickRate, curves);
     this.commandContext = {
       state: this.state,
       factory: new EntityFactory(createDefaultEntityRegistry(), units),

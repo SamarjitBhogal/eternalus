@@ -21,5 +21,5 @@ export type SimulationOptions = {
   /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
   /** The level curves Legends level along; `loadLevelCurves()` when omitted. */
-  readonly levelCurves?: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>;
+  readonly levelCurves?: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
 };

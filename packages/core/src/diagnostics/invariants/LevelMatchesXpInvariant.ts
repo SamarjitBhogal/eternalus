@@ -2,7 +2,6 @@ import { Progression } from '../../components/Progression';
 import { TeamMembership } from '../../components/TeamMembership';
 import type { ContentCatalogue } from '../../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../../content/progression/progression.types';
-import type { GameEventMap } from '../../state/GameEvents.types';
 import type { GameState } from '../../state/GameState';
 import type { Invariant, Violation } from '../Invariant.types';
 
@@ -56,7 +55,7 @@ export class LevelMatchesXpInvariant implements Invariant {
   private awardViolations(state: GameState): Violation[] {
     const violations: Violation[] = [];
     const seen = new Set<string>();
-    for (const award of LevelMatchesXpInvariant.awardsThisTick(state)) {
+    for (const award of state.xpAwardsThisTick()) {
       const { entityId, victimId, victimTeam } = award;
       const recipientTeam = state.entities.get(entityId)?.findComponent(TeamMembership)?.team;
       if (entityId === victimId || victimTeam === recipientTeam) {
@@ -90,15 +89,6 @@ export class LevelMatchesXpInvariant implements Invariant {
 
   private violation(entityId: string, message: string): Violation {
     return { invariantId: this.id, severity: this.severity, message, entityId, details: {} };
-  }
-
-  /** This tick's `xp-gained` payloads, in emission order. */
-  private static awardsThisTick(state: GameState): GameEventMap['xp-gained'][] {
-    return state.events
-      .recentEvents()
-      .flatMap((event) =>
-        event.type === 'xp-gained' && event.tick === state.tick ? [event.payload] : [],
-      );
   }
 
   /** The level `xp` gives on `curve`, recomputed independently of `Progression`. */

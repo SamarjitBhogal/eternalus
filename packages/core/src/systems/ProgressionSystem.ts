@@ -62,8 +62,9 @@ export class ProgressionSystem implements System {
       }
       const gained = this.award(killer, progression, award, state);
       const definition = this.content.units.get(killer.definitionId);
+      const isLegend = LEGEND_KINDS.has(definition);
       for (let step = gained - 1; step >= 0; step -= 1) {
-        if (LEGEND_KINDS.has(definition)) {
+        if (isLegend) {
           ProgressionSystem.levelUp(killer, definition.levelScaling, definition.baseHealth);
         }
         state.events.emit('level-up', { entityId: killer.id, level: progression.level - step });

@@ -5,7 +5,6 @@ import { NoDeathWithoutKillerInvariant } from './invariants/NoDeathWithoutKiller
 import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCauseInvariant';
 import { StatusStacksWithinMaxInvariant } from './invariants/StatusStacksWithinMaxInvariant';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
-import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { InvariantRunner } from './InvariantRunner';
 import type { DebugConfig } from './InvariantRunner.types';
@@ -16,12 +15,12 @@ export class DefaultInvariantRunner extends InvariantRunner {
   /**
    * Creates a runner with every built-in invariant.
    *
-   * @param curves - The level curves `level-matches-xp` checks against; the shipped set by default.
+   * @param curves - The level curves `level-matches-xp` checks against, injected.
    */
   public constructor(
     config: DebugConfig,
     logger: Logger,
-    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'> = loadLevelCurves(),
+    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
   ) {
     super(
       [

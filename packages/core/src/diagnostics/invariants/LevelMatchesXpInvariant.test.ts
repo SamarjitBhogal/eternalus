@@ -91,13 +91,26 @@ describe('LevelMatchesXpInvariant', () => {
     expect(check()).toEqual(['Entity "entity-1" gained XP twice for "entity-2" this tick.']);
   });
 
-  it('rule 4: flags a self award and an ally award (O5)', () => {
+  it('rule 4: flags a self award, even one reported on another team (O5)', () => {
     const { hero, died, gained, check } = setUp();
     died(hero.id, hero.id);
-    gained(hero.id, hero.id, 'light');
+    gained(hero.id, hero.id, 'dark');
 
     expect(check()).toEqual([
       'Entity "entity-1" gained XP for killing itself or an ally ("entity-1").',
+    ]);
+  });
+
+  it('rule 4: flags an award for killing an ally (O5)', () => {
+    const { state, hero, died, gained, check } = setUp();
+    const ally = new Hero('entity-3', 'light');
+    ally.spawn({});
+    state.entities.add(ally);
+    died(ally.id, hero.id);
+    gained(hero.id, ally.id, 'light');
+
+    expect(check()).toEqual([
+      'Entity "entity-1" gained XP for killing itself or an ally ("entity-3").',
     ]);
   });
 
