@@ -1218,3 +1218,17 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   keyed on field instead of kind), `PositiveAetherRule` (keyed on field), `LevelScalingRule`
   (filter removed), `raiseMax` cap only (heal added back), Legend `curveId` (wrong id). The
   no-attacker guard's break is a type error (`Award.killerId` is an `EntityId`), not a test.
+- Gate: ponytail-review: no cuts (the invariant's level recompute is independent on purpose).
+  Critic: request-changes, no code blockers; 4 should-fix → fixed red-first: the invariant runner
+  takes the curves (no content default in `diagnostics/`); `loadDefaultContent(tickRate, curves)`
+  validates Legends against the injected curves; `GameState.xpAwardsThisTick()` records every
+  award of the tick, so the 512-event ring buffer can't hide one; rule 4 tested for self and ally
+  awards apart (each condition's removal now fails its own test). Nits taken: the definition
+  lookup hoisted out of the level loop; INBOX notes the cap-10 boss levels. Nits left: an ally
+  award by a recipient already removed this tick is not flagged (the event has no recipient team,
+  Sam's payload); the kind lists are not checked for exhaustiveness. The PR body carries the
+  O1–O8 list, the D-table and the break-per-test table.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 585 passed (585)"; client "Tests 416 passed
+  (416)"; "Documentation check passed."
+- Next step: Sam re-reviews #31 after #34 and #35; Samarjit's medium/heavy minions need `xpValue`
+  (45 / 120) whichever merges second.

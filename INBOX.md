@@ -75,6 +75,8 @@ Reply inline (`Decision: …`).
     `xpValue` (light minion 20, training dummy 0, O8). If your income figure differs, the curve
     scales linearly: say the XP/min and I resize it. Still yours to sign off: `level-matches-xp`
     runs every tick, not heavy (05 §16), because rules 2–4 read this tick's `xp-gained` events.
+    Also on the cap-10 scale: balancing.md's bosses' "expected Legend level" (4 and 7) need
+    rescaling to cap 50 (×5 would give 20 and 35); say if you want that.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
