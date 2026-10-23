@@ -755,19 +755,6 @@ choice, and an `upgrade-ability` command carries the `near-structure` restrictio
 N upgrades per tier" and "forgetting has a cost" become rules on that command. The MVP runtime
 does not change when it arrives.
 
-**Implementation status (2026-10-16, PR #31, SCRUM-426).** `Progression` holds its
-`LevelCurveDefinition` and the class's `LevelScalingDefinition` (resolved by `Legend` from
-`levelCurveId` in `content/progression/levelCurves.ts`, checked at load by `KnownLevelCurveRule`), so
-`addXp(amount)` takes no curve; `xp` is the match total and the level follows it to the cap.
-`ProgressionSystem` (after movement, before death) subscribes to `entity-died` in its constructor,
-prices the kill while the victim is still in the store (`xpSources.ts`: Legend kill by victim level,
-mob kill by kind) and in its own pass gives it to the killer only, raising `Health` and `Aether`
-max by the scaling and emitting `level-up`. Not built yet: the share radius and damage bias,
-assists, structure, checkpoint, camp and boss XP (their systems do not exist), basic-attack and
-ability potency per level, `upgradeIds`, and the ultimate charge rules. `progression-level`
-checks every level against its XP; a raise never revives a killer that died the same tick. Numbers are `TUNE` from
-`suggestions/balancing.md`.
-
 ## 14. `AbilityRegistry`: the single place of change
 
 ```ts
@@ -900,6 +887,23 @@ Display names and icons come from the catalogue the client already loads for the
 | Raptor Talons, obsidian bow, A Fine Line, Magus staff; gadget slots Z/C                                                                                                    | **MVP**                                                                             |
 | Wuuthrad, Lightbringer, Short blades, Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                          | **MVP-if-time**                                                                     |
 | Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
+
+## Implementation status
+
+- **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
+  `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
+  (`content/progression/levelCurveCatalogue.ts`), shape-checked at load (`loadLevelCurves`) and
+  injected into `ProgressionSystem`, the content rules (`KnownLevelCurveRule`) and
+  `level-matches-xp`; `addXp(amount, curve)` takes the resolved curve. `ProgressionSystem` (after
+  combat, before death) subscribes to `entity-died`, prices the kill while the victim is still in
+  the store (a mob's own `xpValue`; a Legend by victim level, `xpSources.ts`), pays nothing for a
+  self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
+  only. A level-up raises max health by the class's share of base health and max aether, and heals
+  and refills by the raise only while the Legend is alive (O3, O4). Not built yet: the share radius
+  and damage bias, assists, structure, checkpoint, camp and boss XP (their systems do not exist),
+  basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
+  dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
+  `TUNE`; the curve is derived from an income estimate in `INBOX.md`.
 
 ## Related
 

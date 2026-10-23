@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-22
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -139,11 +139,10 @@ fields. Each component guards its own invariants so a bug shows up where it happ
 | --------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
 | `Transform`     | `position: Vec2`, `facing`, `radius`                                             | position finite                                                          | `moveBy`, `lookAt`                                                                                |
 | `Health`        | `base`, `current`, `shieldBars: ShieldBar[]` (one per living allied `BuffTower`) | `0 <= current <= base`; bars drain before base; bar count ≤ towers alive | `applyDamage(amount, source)`, `heal`, `addShieldBar(sourceId, max)`, `removeShieldBar(sourceId)` |
-| `Aether`        | `current`, `max` (MP pool; Legends only)                                         | `0 <= current <= max`; `max > 0`                                         | `canAfford(amount)`, `spend(amount)`, `restore(amount)`, `fraction`, `isEmpty`                    |
 | `Movement`      | `speed`, `maxSpeed`, `acceleration`, `mass`, `velocity: Vec2`                    | `0 <= speed <= maxSpeed`; mass > 0                                       | `accelerateToward`, `applyImpulse` (knockback), `stop`                                            |
 | `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`   | cooldown never negative                                                  | `canAttack(tick)`, `setTarget`, `beginAttack`                                                     |
 | `Abilities`     | `slots: Record<AbilitySlot, AbilityRuntime>`                                     | one runtime per slot                                                     | `runtime(slot)`, `forEachReady`                                                                   |
-| `Progression`   | `xp`, `level`, `curve`, `scaling`                                                | level never decreases; xp ≥ 0                                            | `addXp(amount) → levelsGained`                                                                    |
+| `Progression`   | `xp`, `level`, `curveId`                                                         | level never decreases; xp ≥ 0                                            | `addXp(amount) → levelsGained`                                                                    |
 | `Team`          | `team: Team` (type from `teams/teams.types.ts`)                                  | transitions emit `team-changed`                                          | `setTeam(next, cause)`, `isAlly(other)`, `isEnemy(other)`                                         |
 | `Collider`      | `shape: Circle \| ConvexPolygon`, `layer`, `isSolid`                             | shape convex                                                             | `bounds()`                                                                                        |
 | `StatusEffects` | `active: StatusEffectRuntime[]`                                                  | stacks ≤ `maxStacks`; no duplicates when `stacking: 'refresh'`           | `apply(definition, sourceId, tick)`, `expire`, `has(flag)`                                        |
@@ -333,9 +332,10 @@ session or phase named:
   `combat/`; `defaultStrategyRegistry.ts` is a typed record per behaviour (`attack` today), so a
   missing id does not compile. The team
   component is `TeamMembership` because the type `Team` owns that name.
-- Legends also install `Progression` (PR #31): it holds the class's level curve and scaling
-  instead of a bare `curveId`, and `Health`/`Aether` gained `raiseMax` (with `Health.baseMax`
-  for the level-1 value) so level-ups raise their caps (05 §13).
+- Legends also install `Aether` (its own component, owner decision O1) and `Progression` (PR #31):
+  `xp`, `level` and `curveId`, with `addXp(amount, curve)` taking the curve `ProgressionSystem`
+  resolves from the injected catalogue. `Health` and `Aether` gained `raiseMax`, which raises only
+  the cap; `ProgressionSystem` heals and refills by the raise while the Legend is alive (O3, O4).
 - Shipped kinds: `warrior`, `sentinel`, `magus`, `light-mob` (the training dummy only),
   `obstacle` and `projectile`. Other mobs are SCRUM-59; structures and zones get concrete kinds in
   Phase 2 and 3.

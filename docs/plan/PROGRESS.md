@@ -1192,3 +1192,29 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `Object.hasOwn`, 04 table row, 05 `paths`, damage-before-progression comment, INBOX lists the
   progression numbers). Ponytail-review after.
 - Next step: push to PR #31; shared/assist XP and potency scaling later.
+
+### 2026-10-22 — Phase 2 / SCRUM-426 — feat/legend-aether (owner review, PR #31) — Claudio + Claude Code
+
+- What: synced with `feat/status-effects` by a plain merge (no force; #34 → #35 → #31 order),
+  then applied Sam's review. Content injected: level curves are a catalogue
+  (`levelCurveCatalogue.ts`, `loadLevelCurves` shape-checks cap and steps at load), passed to
+  `ProgressionSystem`, `KnownLevelCurveRule` and the invariant runner; `Simulation({ levelCurves })`
+  can replace them. `Progression` keeps `curveId` (D2 reverted to the design); `Health.baseMax`
+  removed (D3 reverted: the raise uses the definition's `baseHealth`). Mob XP is
+  `MobDefinition.xpValue` (light minion 20, training dummy 0, O8); `XP_SOURCES` keeps only the
+  Legend kill, re-priced 150 + 5 × victim level for cap 50. O3/O4: `raiseMax` raises only the cap;
+  the system heals and refills by the raise only while alive. O5: self and ally kills pay nothing
+  (teams compared; one check covers both). Every award emits `xp-gained` from one private method;
+  `LevelMatchesXpInvariant` (`level-matches-xp`, 15 §3 name) replaces `ProgressionLevelInvariant`
+  with the four rules. `KindSet` (`LEGEND_KINDS`, `MOB_KINDS`) keys rules on kind without casts.
+  `StateHasher` appends progression at the end, ungated. `Aether.fraction`/`isEmpty` removed (no
+  caller). 04 §3 design rows reverted (O2); 04 bullet rewritten; 05 progression note moved into
+  one "Implementation status" section (ADR 0011 rule 4). INBOX: income estimate for the cap-50
+  curve. TODO(claudiodh) where a dead Legend's award is dropped (respawn, FR-051).
+- Tests shown red by breaking the code: O5 (team check removed), O3 heal and O4 no-heal (guard
+  removed / inverted), O8 and mob XP (xpValue replaced), `xp-gained` (emit skipped), pipeline
+  order (Death before Progression; Combat after Progression), hash rows (each `fields.push`
+  removed), curve shape (each check removed), `KnownLevelCurveRule` (injected `has` forced true;
+  keyed on field instead of kind), `PositiveAetherRule` (keyed on field), `LevelScalingRule`
+  (filter removed), `raiseMax` cap only (heal added back), Legend `curveId` (wrong id). The
+  no-attacker guard's break is a type error (`Award.killerId` is an `EntityId`), not a test.

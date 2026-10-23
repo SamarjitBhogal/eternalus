@@ -65,6 +65,16 @@ Reply inline (`Decision: …`).
       yet.) The same branch adds Legend progression with balancing.md's other `Recommendation:`
       values, also for you to confirm: level cap 10, `xpToNext = 100 + 50·(L−1)`, +8% base health
       and +10 aether per level, Legend kill 150 + 25 × victim level, minion kill 20 / 45 / 120.
+  - Update after your PR #31 review (O1–O8): cap 50 (O6). **Income estimate to check:**
+    balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
+    135 XP/min (minions about 110 XP/min, the rest kills and objectives). Keeping that income and
+    balancing.md's curve shape (growth = half the first step), the cap-50 curve is
+    `xpToNext(L) = 4 + 2·(L − 1)`, 2,548 XP to level 50, reached around minute 19. Kills are
+    re-priced on the same scale: a Legend kill is 150 + 5 × victim level (a level-L victim is worth
+    what a level-L/5 one was on the cap-10 curve; 400 XP at level 50). Mob XP is each mob's
+    `xpValue` (light minion 20, training dummy 0, O8). If your income figure differs, the curve
+    scales linearly: say the XP/min and I resize it. Still yours to sign off: `level-matches-xp`
+    runs every tick, not heavy (05 §16), because rules 2–4 read this tick's `xp-gained` events.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
