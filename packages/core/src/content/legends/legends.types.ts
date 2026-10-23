@@ -36,4 +36,9 @@ export type LegendDefinition = UnitDefinition & {
   readonly defaultAction: DefaultActionId | null;
   /** Reference height in metres, for art and hit-box tuning (not used by physics). */
   readonly referenceHeight: number;
+  /**
+   * The one field of the design's `defaultLoadout: LoadoutTemplate` (04 §5) built so far: the weapon
+   * the Legend spawns with (05 §12 `primaryWeaponId`). Without it the Legend uses its `attack`.
+   */
+  readonly defaultLoadout?: { readonly primaryWeaponId: string };
 };
