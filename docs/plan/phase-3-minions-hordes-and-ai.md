@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-17
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -25,6 +25,12 @@ fields, minion and guard FSMs with data-driven aggro, bosses, Legend bots with b
 the `MatchDirector` that runs the timeline from the 60 s countdown to the victory condition, and
 **sim mode** so a bot-vs-bot match can run headless. This is where the 144-units-per-team
 performance budget is proved. The word is **horde**, not "hoard".
+
+**Minion work moved.** The [minion system plan](minion-system-plan.md) (design:
+[18-minion-system](../architecture/18-minion-system.md)) supersedes the minion items of sprints
+3.1–3.4 and 3.7; its §"Relation to Phase 3" lists exactly which. Read it before any sprint 3.1,
+3.2, 3.3, 3.4 or 3.7 task. A\* for Legends, forest camps, checkpoint assist spawns and the Rover
+stay here (DEC-47).
 
 - **Branch:** `phase/3-minions-hordes-and-ai` (stacked on `phase/2-…` until it merges).
 - **Weeks:** 6–7 (2026-11-09 → 2026-11-20). Week 6: sprints 3.1, 3.2, 3.3, 3.5; week 7:
@@ -58,7 +64,7 @@ Owner: _ (sim lane A). Week 6. Follows [04-entity-architecture.md](../architectu
       structure falls on that lane; a minion that kills a minion earns XP and levels after two
       kills, buffing nearby allies). Ascension on a Legend kill is **MVP-if-time**
       (`Recommendation:` implement as a status effect only if the sprint has slack). Owner: _.
-      Test: `structure-razed` on lane 1 applies `enraged` to lane-1 enemy hordes only. Done
+      Test: `structure-destroyed` on lane 1 applies `enraged` to lane-1 enemy hordes only. Done
       when: both are event-driven with no system-to-system calls.
 
 **Success metric:** 3 hordes × 16 mobs spawn at tick 0 from each Stronghold and reach the
