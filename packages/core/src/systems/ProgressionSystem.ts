@@ -33,13 +33,15 @@ export class ProgressionSystem implements System {
     state.events.on('entity-died', ({ entityId, killer }) => {
       const victim = state.entities.get(entityId);
       const killerId = killer.attackerId;
-      if (killerId === null || victim === undefined || killerId === entityId) {
-        return; // O5: no self-kill reward
+      if (killerId === null || victim === undefined) {
+        return;
       }
       const victimTeam = victim.findComponent(TeamMembership)?.team;
       const killerTeam = state.entities.get(killerId)?.findComponent(TeamMembership)?.team;
       if (victimTeam === undefined || killerTeam === victimTeam) {
-        return; // O5: no ally-kill reward; teams are compared, so neutral camp mobs still pay
+        // O5: no reward for an ally kill or a self-kill (a killer is on its own team); teams are
+        // compared, so neutral camp mobs still pay.
+        return;
       }
       const xp = this.xpFor(victim);
       if (xp > 0) {

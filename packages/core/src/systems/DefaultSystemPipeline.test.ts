@@ -114,4 +114,48 @@ describe('DefaultSystemPipeline', () => {
     expect(state.entities.has(minion.id)).toBe(false);
     expect(logger.records).toEqual([]);
   });
+
+  it('pays a killer that also died this tick, so progression runs before death', () => {
+    const logger = new MemoryLogger();
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const pipeline = new DefaultSystemPipeline(
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger),
+      state,
+      PROGRESSION,
+    );
+    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const warrior = factory.create('warrior', 'warrior', {
+      position: { x: 0, y: 0 },
+      team: 'light',
+    });
+    const minion = factory.create('light-mob', 'light-minion', {
+      position: { x: 5, y: 0 },
+      team: 'dark',
+    });
+    state.entities.add(warrior);
+    state.entities.add(minion);
+    const damage = new DamagePipeline();
+    damage.apply(state, minion.id, 1_000_000, {
+      attackerId: warrior.id,
+      kind: 'weapon',
+      definitionId: 'warrior',
+    });
+    damage.apply(state, warrior.id, 1_000_000, {
+      attackerId: minion.id,
+      kind: 'weapon',
+      definitionId: 'light-minion',
+    });
+
+    pipeline.run({ state, logger });
+
+    const awards = state.events
+      .recentEvents()
+      .filter((event) => event.type === 'xp-gained')
+      .map((event) => event.payload);
+    expect(awards).toEqual([
+      { entityId: warrior.id, amount: 20, victimId: minion.id, victimTeam: 'dark' },
+    ]);
+    expect(state.entities.has(warrior.id)).toBe(false);
+    expect(logger.records).toEqual([]);
+  });
 });
