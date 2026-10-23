@@ -25,7 +25,8 @@ export abstract class Legend extends Unit {
   /**
    * The default weapon's attack when the definition names one (05 §10, §12), else the unit's own.
    *
-   * @throws Error when the definition names a weapon but the spawn context has no weapon source.
+   * @throws Error when the definition names a weapon but the spawn context has no weapon source, or
+   *   the weapon has no attacks.
    */
   protected override basicAttack(context: unknown): BasicAttack | undefined {
     const reader = new SpawnContextReader(this);
@@ -41,6 +42,9 @@ export abstract class Legend extends Unit {
     const weapon = weapons.get(weaponId);
     // ponytail: first attack only; "first attack whose reach covers the target" (05 §10) lands with ranged attacks.
     const [attack] = weapon.attacks;
-    return attack && { attack, weaponId: weapon.id };
+    if (attack === undefined) {
+      throw new Error(`Legend "${this.id}": weapon "${weapon.id}" has no attacks.`);
+    }
+    return { attack, weaponId: weapon.id };
   }
 }

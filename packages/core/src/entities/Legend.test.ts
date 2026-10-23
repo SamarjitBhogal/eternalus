@@ -46,4 +46,13 @@ describe('Legend', () => {
       legend.spawn({ ...PLACEMENT, definition: ARMED_WARRIOR });
     }).toThrow('Legend "entity-1" needs a weapon source to equip "test-talons".');
   });
+
+  it('throws when its weapon has no attacks', () => {
+    const legend = new Warrior('entity-1', 'warrior');
+    const unarmed = { has: () => true, get: () => ({ ...TEST_TALONS, attacks: [] }) };
+
+    expect(() => {
+      legend.spawn({ ...PLACEMENT, definition: ARMED_WARRIOR, weapons: unarmed });
+    }).toThrow('Legend "entity-1": weapon "test-talons" has no attacks.');
+  });
 });

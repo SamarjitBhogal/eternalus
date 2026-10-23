@@ -1170,3 +1170,12 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   changed); Legend equips / throws without a source (override bypassed); factory forwarding
   (spread removed); `Simulation` wiring (weapon source not passed); weapon and mob source names
   (`definitionId` reverted / replaced).
+- Gate: ponytail-review 1 cut (reuse `KEBAB_CASE`). Critic: request-changes, 1 blocker (a double
+  cast in `SpawnContextReader.weapons`) → replaced by a type guard; 1 should-fix (a weapon with no
+  attacks left a Legend without `Combat`) → `Legend` now throws; both red first. Nits kept: the
+  factory test's `as FactoryEntity` copies the existing pattern; `WeaponSource` / `loadWeapons`
+  stay off `src/index.ts` until the client needs them.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 557 passed (557)"; client "Tests 416 passed
+  (416)"; "✓ built in 94ms"; "Documentation check passed."
+- Next step: the owner's answers in INBOX (weapon numbers, default weapons), then the shipped
+  weapons; open the PR to `phase/2-sprint-2-work` once #34 and #35 are merged.
