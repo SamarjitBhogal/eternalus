@@ -1,5 +1,6 @@
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
+import type { WeaponSource } from './EntityFactory.types';
 import { SPAWNABLE_TEAMS } from './SpawnContextReader.constants';
 import type {
   DefinitionRef,
@@ -57,6 +58,13 @@ export class SpawnContextReader {
     }
 
     return { ...positioned, team };
+  }
+
+  /** The weapon source the factory put in the context, or `null` when it has none. */
+  public weapons(context: unknown): WeaponSource | null {
+    const { weapons } = SpawnContextReader.fields(context);
+    // Safe: only the `EntityFactory` puts `weapons` in a spawn context, and it is a `WeaponSource`.
+    return SpawnContextReader.isObject(weapons) ? (weapons as unknown as WeaponSource) : null;
   }
 
   private static fields(context: unknown): Readonly<Record<string, unknown>> {

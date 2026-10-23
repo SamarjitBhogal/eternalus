@@ -1,7 +1,7 @@
 import type { GameConfig } from './config/GameConfig.types';
 import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
-import type { DefinitionSource } from './entities/EntityFactory.types';
+import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { System } from './systems/System.types';
 
 /** Everything a `Simulation` is built from (architecture 03 §6). Only the first three are required. */
@@ -18,4 +18,6 @@ export type SimulationOptions = {
   readonly debug?: DebugConfig;
   /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
+  /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
+  readonly weapons?: WeaponSource;
 };

@@ -11,6 +11,7 @@ import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
@@ -48,13 +49,18 @@ export class Simulation {
     systems,
     debug = RELEASE_DEBUG_CONFIG,
     content,
+    weapons,
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed);
+    const { tickRate } = this.state.config;
+    const weaponSource = weapons ?? loadWeapons(tickRate);
     this.commandContext = {
       state: this.state,
       factory: new EntityFactory(
         createDefaultEntityRegistry(),
-        content ?? loadDefaultContent(this.state.config.tickRate),
+        content ?? loadDefaultContent(tickRate, weaponSource),
+        undefined,
+        weaponSource,
       ),
     };
     this.systemContext = { state: this.state, logger };

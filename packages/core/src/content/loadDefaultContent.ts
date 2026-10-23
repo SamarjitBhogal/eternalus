@@ -34,7 +34,7 @@ const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): 
  */
 export const loadDefaultContent = (
   tickRate: number,
-  weapons: ContentCatalogue<WeaponDefinition> = loadWeapons(tickRate),
+  weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = loadWeapons(tickRate),
 ): ContentCatalogue<UnitDefinition> => {
   const authored = new ContentCatalogue<UnitDefinition>([
     ...LEGEND_CLASSES.all(),
