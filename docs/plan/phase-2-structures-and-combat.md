@@ -267,6 +267,7 @@ Owner: _ (each sprint adds its own; one person wires the soak). Week 5.
 - [phase-1-simulation-kernel-and-world.md](phase-1-simulation-kernel-and-world.md)
 - [phase-3-minions-hordes-and-ai.md](phase-3-minions-hordes-and-ai.md)
 - [PROGRESS.md](PROGRESS.md)
+- [phase-2-architecture.md](phase-2-architecture.md)
 - [../architecture/07-structures-obstacles-and-destructibles.md](../architecture/07-structures-obstacles-and-destructibles.md)
 - [../architecture/10-physics.md](../architecture/10-physics.md)
 - [../architecture/15-diagnostics-and-runtime-testing.md](../architecture/15-diagnostics-and-runtime-testing.md)

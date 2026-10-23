@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-17
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -161,12 +161,12 @@ following West's warning about manager-mediated calls (research §2).
 A strategy is a stateless, shared object selected by a definition field and resolved through the
 `StrategyRegistry` at spawn. Systems call the interface; they never branch on `kind`.
 
-| Interface           | Contract                                           | MVP implementations                                                                                                                                                            | Selected by            |
-| ------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
-| `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `AggroPriorityTargetingStrategy` (data-driven priority list), `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks)    | `definition.targeting` |
-| `AttackStrategy`    | `attack(attacker, targetId, attack, ctx): void`    | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                         | `weapon.attack`        |
-| `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `FlowFieldMovementStrategy` (hordes), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movement`  |
-| `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                        | `definition.pickUp`    |
+| Interface           | Contract                                           | MVP implementations                                                                                                                                                                                                                                          | Selected by            |
+| ------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks); minions and guards rank targets in their controllers ([18](18-minion-system.md) §6.1)                                                         | `definition.targeting` |
+| `AttackStrategy`    | `attack(attacker, targetId, attack, ctx): void`    | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                                                                                                       | `weapon.attack`        |
+| `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `LaneFollowMovementStrategy` (hordes, flow-field target; [18-minion-system](18-minion-system.md) §5), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps, tower guards), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movement`  |
+| `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                                                                                                      | `definition.pickUp`    |
 
 Strategies use the seeded `Rng` from the context and vectors only (no angles), so they stay
 deterministic. Adding a strategy is a class and a `defaultStrategyRegistry.ts` line.
@@ -250,11 +250,9 @@ entities.
 
 ## 7. `Horde`, the composite
 
-A horde is **not** an entity. It is a Composite of Mob ids with a lane, a formation and a leader,
-managed by `HordeSystem`: it elects the lowest surviving id as leader, dissolves when empty (emitting
-`horde-dissolved`) and gives `PathingSystem` one flow-field target per horde. Sizes come from
-`GameConfig.match.hordeSizes` (`TUNE` light 16, medium 8, heavy 4, requirements doc). Spelling is
-**horde** everywhere in our code and docs.
+A horde is **not** an entity: it is a Composite of Mob ids kept as plain data in `GameState` and
+managed by `HordeSystem`. Its record, formation, lifecycle and movement are owned by
+[18-minion-system](18-minion-system.md) §4. Spelling is **horde** everywhere in our code and docs.
 
 ## 8. Team is a property, not a class (D10)
 
