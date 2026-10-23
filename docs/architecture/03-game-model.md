@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-22
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -166,14 +166,14 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                | `HordeSystem`, `ProjectilePool`, invariants                        |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                  | `ProgressionSystem` (assists), `AiSystem` (aggro)                  |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                   | `DeathSystem`, `ProgressionSystem`, `Scoring`                      |
-| `attack-missed`                     | `{ attackerId, targetId }`                             | `CombatSystem`                    | views (miss text), tests                                           |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                 | `SpawnSystem` (enraged hordes), `StructureSystem` (walls, shields) |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                 | HUD, views                                                         |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                   | HUD, `MinimapView`                                                 |
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                   | `Scoring`, `MatchDirector`, `StatusEffectSystem`                   |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchDirectorSystem`             | `SpawnSystem`, `Announcer`                                         |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                   | views (VFX), `Announcer`                                           |
-| `status-applied` / `status-expired` | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`              | views, HUD                                                         |
+| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)    | views, HUD                                                         |
+| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`              | views, HUD                                                         |
 | `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`     | `HordeSystem`, `MinimapView`                                       |
 | `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`               | `AbilitySystem` (scaling), HUD                                     |
 | `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                  | `HordeSystem`, views                                               |

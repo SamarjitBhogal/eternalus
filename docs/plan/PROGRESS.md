@@ -960,3 +960,20 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Documentation check passed."
 - Ponytail-review: no cuts (`op: 'mul'` keeps the design's shape). Critic re-check: approve, no
   blockers. Next step: push, reply to the owner on #35 (merge order #34 → #35 → #31).
+
+### 2026-10-22 — Phase 2 / sprint 2.2 — feat/status-effects (DEC-40 to DEC-42) — Claudio + Claude Code
+
+- What: applied the owner's rulings on PR #35. DEC-42: `blind` has no hard miss (the
+  `attacks-miss` flag, the `CombatSystem` miss branch and the `attack-missed` event are gone;
+  blind is content with no flags until the aim wobble lands); `stun` defaults to 2 s (`TUNE`,
+  DEC-42). DEC-41: design text updated as asked: 05 §3 and §8 (the applier is the one way in, the
+  component recomputes on change; whether the applier's `remove` / `expire` are covered stays
+  open, as DEC-41 says), 03 §4 (`status-applied` emitted by `StatusEffectApplier`;
+  `attack-missed` row removed), 17 R9 (`reapply`, apply through the
+  applier). INBOX item marked `Decision:` (DEC-40 to DEC-42; the open DEC-42 questions are PR #36's
+  item). Follow-ups, not built: blind/stun aim wobble (seeded RNG), the client white vignette.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 534 passed (534)"; client "Tests 416 passed
+  (416)"; "✓ built in 100ms"; "Documentation check passed."
+- Critic: approve, two nits fixed (the applier's remove/expire kept out of the design text as
+  DEC-41's open question; a reflowed sentence). Ponytail-review: lean (the delta only deletes).
+  Next step: push and reply on #35; merge order stays #34 → #35 → #31.

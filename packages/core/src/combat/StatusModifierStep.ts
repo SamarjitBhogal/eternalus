@@ -5,7 +5,7 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
 
 /**
  * Scales a hit by the attacker's `damageDealt` and the target's `damageTaken` multipliers (enraged,
- * sundered, marked). Misses (blind) are not a multiplier: `CombatSystem` resolves them.
+ * sundered, marked). Blind is not a multiplier: its misses come from aim wobble (DEC-42).
  */
 export class StatusModifierStep implements DamageStep {
   public readonly name = 'status-modifiers';

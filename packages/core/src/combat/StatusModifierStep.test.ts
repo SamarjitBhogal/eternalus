@@ -75,7 +75,7 @@ describe('StatusModifierStep', () => {
     expect(adjust(null)).toBeCloseTo(120);
   });
 
-  it('does not turn a blinded hit into a miss: CombatSystem resolves misses', () => {
+  it('does not turn a blinded hit into a miss: blind has no hard miss (DEC-42)', () => {
     const { attacker, give, adjust } = setUp();
     give(attacker, 'blind');
 

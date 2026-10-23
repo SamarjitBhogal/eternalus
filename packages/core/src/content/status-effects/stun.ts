@@ -1,14 +1,13 @@
 import type { AuthoredStatusEffect } from './statusEffects.types';
 
 /**
- * Stunned: cannot move, attack or cast. TUNE: more-abilities.md section 7 (0.5–1 s per source;
- * sources will set their own duration once abilities land). The `control-immune` follow-up waits
- * for `onExpire`.
+ * Stunned: cannot move, attack or cast. TUNE: 2 s default (DEC-42); sources will set their own
+ * duration once abilities land. The `control-immune` follow-up waits for `onExpire`.
  */
 export const STUN = {
   id: 'stun',
   displayName: 'Stunned',
-  durationSeconds: 1,
+  durationSeconds: 2,
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [],

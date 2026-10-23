@@ -54,9 +54,6 @@ const setUp = () => {
   state.events.on('damage-applied', (payload) =>
     events.push({ tick: state.tick, type: 'damage-applied', payload }),
   );
-  state.events.on('attack-missed', (payload) =>
-    events.push({ tick: state.tick, type: 'attack-missed', payload }),
-  );
   /** Runs `system` for `ticks` ticks, calling `before(tick)` first each tick. */
   const run = (system: System, ticks: number, before: (tick: number) => void = () => undefined) => {
     for (let i = 0; i < ticks; i += 1) {
@@ -144,11 +141,11 @@ describe('statuses in the tick', () => {
     const { state, warrior, dummy, apply, run } = setUp();
     state.entities.setAttackTarget(warrior.id, dummy.id);
     warrior.getComponent(Movement).steer({ x: 0, y: 1 });
-    apply(warrior, 'stun'); // 30 ticks
+    apply(warrior, 'stun'); // 60 ticks (2 s, DEC-42)
     const pipeline = tickPipeline(state);
     const health = dummy.getComponent(Health);
 
-    run(pipeline, 30);
+    run(pipeline, 60);
     expect(warrior.getComponent(Transform).position).toEqual({ x: 0, y: 0 });
     expect(health.current).toBe(health.max);
 
@@ -179,16 +176,15 @@ describe('statuses in the tick', () => {
     expect(ticksOf('damage-applied')).toEqual([0, Math.round(interval / 0.7)]);
   });
 
-  it('a blinded unit spends its attack on a miss: attack-missed, no damage, cooldown taken', () => {
+  it('a blinded unit still lands its hits: blind has no hard miss (DEC-42)', () => {
     const { state, warrior, dummy, apply, run, ticksOf } = setUp();
     const { interval } = warrior.getComponent(Combat).attack;
     state.entities.setAttackTarget(warrior.id, dummy.id);
     apply(warrior, 'blind'); // 45 ticks
 
-    run(tickPipeline(state), 3 * interval + 1);
+    run(tickPipeline(state), 2 * interval + 1); // inside the 45 ticks of blind
 
-    expect(ticksOf('attack-missed')).toEqual([0, interval, 2 * interval]); // 45 ticks of blind
-    expect(ticksOf('damage-applied')).toEqual([3 * interval]);
+    expect(ticksOf('damage-applied')).toEqual([0, interval, 2 * interval]);
   });
 
   it('an enraged unit hits 15% harder', () => {

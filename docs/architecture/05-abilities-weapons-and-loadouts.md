@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-22
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -146,7 +146,7 @@ export type CastContext = {
 ```
 
 Effects are stateless Flyweights (one instance per kind, like controllers). They call component
-methods (`Health.applyDamage`, `Movement.applyImpulse`, `StatusEffects.apply`) and the
+methods (`Health.applyDamage`, `Movement.applyImpulse`), the `StatusEffectApplier` and the
 `DamagePipeline`, never each other and never a system (rule 12). The catalogue, aligned with
 [more-abilities.md §1](../reference/suggestions/more-abilities.md#1-the-abilityeffect-catalogue-these-proposals-compose):
 
@@ -491,9 +491,11 @@ export class StatusEffectRuntime {
 }
 ```
 
-`StatusEffectSystem` walks `StatusEffects` components in id order: it fires `periodic` effects
-through the registry, expires instances (`status-expired`), runs `onExpire`, and recomputes each
-entity's cached modifier table (`StatusEffects.modifier('moveSpeed')`) so `MovementSystem`,
+`StatusEffectApplier` (DEC-41) is the one way a status lands: it resolves the id, refuses missing,
+dead and immune targets and emits `status-applied`. `StatusEffectSystem` walks `StatusEffects`
+components in id order: it fires `periodic` effects through the registry, expires instances
+(`status-expired`) and runs `onExpire`. `StatusEffects` recomputes its cached modifier table
+(`StatusEffects.multiplier('moveSpeed')`) whenever its list changes (DEC-41), so `MovementSystem`,
 `DamagePipeline` and `AbilityRuntime` each read one number. Mode semantics and the full id table
 (bleed, burn, concussion, blind, stun, knockup, crushed, marked, enraged, ascended, invisible,
 sundered, slowed, rooted, taunted, pulled, staggered, control-immune, eternal, hallowed,
@@ -520,9 +522,10 @@ fire 2.4, enraged 3.3) receive it there.
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
 the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSystem`
-(`cannot-attack`; `attacks-miss` spends the attack and emits `attack-missed`; `attackSpeed`, fixed
-when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
-`AbilitySystem`. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
+(`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
+`AbilitySystem`. Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
+DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
+follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
 `controlClass` and `control-immune` (so a producer that reapplies `stun` before `onExpire` exists
 can stun-lock), `onExpire`, `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
@@ -564,7 +567,7 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`) and `StatusModifierStep` (blind misses, `damageDealt` / `damageTaken`; 05 §8). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+`INBOX.md`) and `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;

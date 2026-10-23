@@ -12,8 +12,8 @@ import type { System, SystemContext } from './System.types';
 /**
  * Lands the attacks of every unit with a target (architecture 05 §10): when the target is in reach
  * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A dead
- * or removed target clears. Statuses stop attacks (`cannot-attack`), make them miss
- * (`attacks-miss`, emitting `attack-missed`) and scale the cooldown (`attackSpeed`). Getting into reach is the controller's job (moving), not this system's.
+ * or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
+ * (`attackSpeed`). Getting into reach is the controller's job (moving), not this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
@@ -48,15 +48,10 @@ export class CombatSystem implements System {
         return;
       }
 
-      // A miss (blind) is a hit-resolution outcome, not a multiplier: the attack is spent and nothing lands.
-      if (statuses?.has('attacks-miss') === true) {
-        state.events.emit('attack-missed', { attackerId: attacker.id, targetId: target.id });
-      } else {
-        this.strategies.attack[combat.attack.strategy].attack(attacker, target.id, combat.attack, {
-          state,
-          damage: this.damage,
-        });
-      }
+      this.strategies.attack[combat.attack.strategy].attack(attacker, target.id, combat.attack, {
+        state,
+        damage: this.damage,
+      });
       combat.beginAttack(state.tick, statuses?.multiplier('attackSpeed') ?? 1);
     });
   }

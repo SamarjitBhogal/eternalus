@@ -125,6 +125,8 @@ Reply inline (`Decision: …`).
       `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
       slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
       stat for the FR-029 aura. Confirm or correct.
+  - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
+    2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

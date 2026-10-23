@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-22
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -204,8 +204,9 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 - **Files:** `core/content/status-effects/<camelId>.ts` (`StatusEffectDefinition`: `polarity`,
   `stacking`, `modifiers[]`, `flags[]`, `periodic`, `onExpire`) + `statusEffectCatalogue.ts` line.
 - **Registry line:** none. A new **stacking mode** is one `StatusStacking` member plus one `case`
-  in `StatusEffectRuntime.apply` (the one closed switch, 05 §8); a new **flag** or modifier
-  **stat** is one union member read by the component that owns the stat.
+  in `StatusEffectRuntime.reapply` (the one closed switch, 05 §8); a new **flag** or modifier
+  **stat** is one union member read by the component that owns the stat. Producers apply it
+  through the match's one `StatusEffectApplier` (DEC-41), never `StatusEffects` directly.
 - **Tests:** content validation (ids resolve); the table-driven stacking test if a mode was
   added; a scenario: apply, modifier table, `status-applied` / `status-expired`.
 - **Docs:** the status table in `../reference/suggestions/more-abilities.md` §7; reference 06.

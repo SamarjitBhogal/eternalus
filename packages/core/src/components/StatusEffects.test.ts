@@ -52,7 +52,7 @@ describe('StatusEffects', () => {
     statuses.apply(STUN, 'a', 0);
 
     expect(statuses.has('cannot-move')).toBe(true);
-    expect(statuses.has('attacks-miss')).toBe(false);
+    expect(statuses.has('cannot-cast')).toBe(true);
   });
 
   it('removes a status on demand and recomputes', () => {
@@ -79,7 +79,7 @@ describe('StatusEffects', () => {
       stacks: 1,
       sourceId: 'b',
       periodTicks: null,
-      expiresTick: 1_031,
+      expiresTick: 1_061,
     });
   });
 });

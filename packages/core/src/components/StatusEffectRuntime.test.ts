@@ -8,7 +8,7 @@ const LOADED = loadStatusEffects(30, 2);
 describe('StatusEffectRuntime', () => {
   // Applied at 0, reapplied at 21 (Warrior pace) by source 'b'.
   it.each([
-    { statusId: 'stun', stacking: 'refresh', stacks: 1, expiresTick: 21 + 30 },
+    { statusId: 'stun', stacking: 'refresh', stacks: 1, expiresTick: 21 + 60 },
     { statusId: 'concussion', stacking: 'refresh', stacks: 1, expiresTick: 21 + 90 },
     { statusId: 'bleed', stacking: 'intensity', stacks: 2, expiresTick: 21 + 120 },
     { statusId: 'enraged', stacking: 'intensity', stacks: 2, expiresTick: null },
@@ -53,8 +53,8 @@ describe('StatusEffectRuntime', () => {
     const stun = LOADED.get('stun');
     const enraged = LOADED.get('enraged');
 
-    expect(new StatusEffectRuntime(stun).start(stun, null, 0).hasExpired(29)).toBe(false);
-    expect(new StatusEffectRuntime(stun).start(stun, null, 0).hasExpired(30)).toBe(true);
+    expect(new StatusEffectRuntime(stun).start(stun, null, 0).hasExpired(59)).toBe(false);
+    expect(new StatusEffectRuntime(stun).start(stun, null, 0).hasExpired(60)).toBe(true);
     expect(new StatusEffectRuntime(enraged).start(enraged, null, 0).hasExpired(1e9)).toBe(false);
   });
 });

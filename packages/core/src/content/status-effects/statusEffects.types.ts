@@ -5,7 +5,7 @@ export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTa
  * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4); the others are
  * read by `MovementSystem` and `CombatSystem`.
  */
-export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'attacks-miss';
+export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast';
 
 /**
  * What reapplying an active status does (more-abilities.md section 7). `refresh` restarts the
