@@ -4,7 +4,7 @@ description: The normalised catalogue of functional (FR-nnn) and non-functional 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-17
 tags: [requirements, mvp, functional, non-functional, traceability, acceptance-criteria]
 paths: ['packages/**', 'apps/**']
 related:
@@ -297,14 +297,15 @@ those documents must cover. Post-MVP rows trace to the extension recipes and the
 | [`../architecture/01-layered-oop-model.md`](../architecture/01-layered-oop-model.md)                                           | NFR-001, NFR-006, NFR-026, NFR-029, NFR-033                                                        | P0–P1      |
 | [`../architecture/02-code-structure.md`](../architecture/02-code-structure.md)                                                 | NFR-003, NFR-004, NFR-005, NFR-031                                                                 | P0–P1      |
 | [`../architecture/03-game-model.md`](../architecture/03-game-model.md)                                                         | FR-001, FR-013, FR-100, FR-110, NFR-002, NFR-008, NFR-018, NFR-020                                 | P1         |
-| [`../architecture/04-entity-architecture.md`](../architecture/04-entity-architecture.md)                                       | FR-035, FR-036, FR-037, FR-044, FR-045, FR-047, FR-048, FR-051, FR-056, FR-057, NFR-003, NFR-007   | P1, P3, P4 |
+| [`../architecture/04-entity-architecture.md`](../architecture/04-entity-architecture.md)                                       | FR-035, FR-036, FR-044, FR-045, FR-047, FR-048, FR-051, FR-056, FR-057, NFR-003, NFR-007           | P1, P3, P4 |
 | [`../architecture/05-abilities-weapons-and-loadouts.md`](../architecture/05-abilities-weapons-and-loadouts.md)                 | FR-049, FR-050, FR-052, FR-053, FR-054, FR-058 to FR-069                                           | P2, P4     |
 | [`../architecture/06-map-and-minimap.md`](../architecture/06-map-and-minimap.md)                                               | FR-011 to FR-020, FR-032 (placement), NFR-008                                                      | P1, P2     |
 | [`../architecture/07-structures-obstacles-and-destructibles.md`](../architecture/07-structures-obstacles-and-destructibles.md) | FR-015, FR-018, FR-021 to FR-034, FR-040                                                           | P2, P3     |
 | [`../architecture/08-game-engine.md`](../architecture/08-game-engine.md)                                                       | FR-016, FR-019, FR-083, FR-087, FR-111, NFR-017, NFR-021 to NFR-024                                | P1, P5, P6 |
 | [`../architecture/09-hardware-abstraction.md`](../architecture/09-hardware-abstraction.md)                                     | FR-078 to FR-085, NFR-026                                                                          | P1, P5     |
 | [`../architecture/10-physics.md`](../architecture/10-physics.md)                                                               | FR-026, FR-035, FR-103, FR-104, NFR-020 (spatial hash), NFR-023                                    | P1, P2     |
-| [`../architecture/11-game-ai.md`](../architecture/11-game-ai.md)                                                               | FR-038, FR-039, FR-041, FR-042, FR-046, FR-070 to FR-077, FR-099, NFR-025                          | P3         |
+| [`../architecture/11-game-ai.md`](../architecture/11-game-ai.md)                                                               | FR-039, FR-041, FR-042, FR-046, FR-070 to FR-077, FR-099, NFR-025                                  | P3         |
+| [`../architecture/18-minion-system.md`](../architecture/18-minion-system.md)                                                   | FR-037, FR-038                                                                                     | P3         |
 | [`../architecture/12-game-story-and-match-director.md`](../architecture/12-game-story-and-match-director.md)                   | FR-002 to FR-010, FR-055, FR-112                                                                   | P2, P3     |
 | `../architecture/13-game-interface.md` (planned)                                                                               | FR-010, FR-081, FR-086, FR-088 to FR-091, FR-093, FR-096, FR-097, FR-101, FR-109, NFR-014, NFR-030 | P4, P5     |
 | `../architecture/14-persistence-and-resources.md` (planned)                                                                    | FR-084, FR-092, FR-094, FR-095, NFR-011, NFR-012, NFR-013                                          | P5         |

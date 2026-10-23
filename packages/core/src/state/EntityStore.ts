@@ -1,4 +1,6 @@
 import { Brain } from '../components/Brain';
+import { Combat } from '../components/Combat';
+import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -111,6 +113,26 @@ export class EntityStore {
    */
   public positionOf(id: EntityId): Vec2 | undefined {
     return this.entities.get(id)?.findComponent(Transform)?.position;
+  }
+
+  /** Whether the entity exists and has health left (`false` for anything without `Health`). */
+  public isAlive(id: EntityId): boolean {
+    return this.entities.get(id)?.findComponent(Health)?.isDead === false;
+  }
+
+  /**
+   * Points the entity's `Combat` at `targetId`. Lets `commands/` set a
+   * target without importing `components/`, as `steer` does for movement.
+   *
+   * @returns `false` when the entity is unknown or cannot attack.
+   */
+  public setAttackTarget(id: EntityId, targetId: EntityId): boolean {
+    const combat = this.entities.get(id)?.findComponent(Combat);
+    if (combat === undefined) {
+      return false;
+    }
+    combat.setTarget(targetId);
+    return true;
   }
 
   /** The entity's team, or `undefined` when it is unknown or has no team. */

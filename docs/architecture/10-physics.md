@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-17
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -225,7 +225,8 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
 - `PathingSystem` computes **next tick's** `desiredVelocity` from the positions just integrated:
   flow-field follow (bilinear interpolation of the four surrounding field vectors × `maxSpeed`),
   separation from neighbours found through `SpatialHash` (1/r weighted, id-sorted), arrival near
-  the goal, combined by priority (wall avoidance, then separation, then flow) and truncated to
+  the goal, combined by priority (wall avoidance, then separation, then a horde member's
+  formation slot ([18](18-minion-system.md) §5), then flow) and truncated to
   `maxSpeed`. Legends (bots and click-to-move) use A* with an octile heuristic and string pulling
   on the same `WorldMap` grid; camp guards use seek/arrival inside their leash.
 - The one-tick latency between deciding and integrating is deliberate: it removes any ordering

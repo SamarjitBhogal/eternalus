@@ -87,6 +87,14 @@ Reply inline (`Decision: …`).
       starts the countdown while `menu` keeps building `MatchSetup`. Approve that text, or confirm
       that agents may apply it as delegated.
   -     Accept recommended option if it is cleaner long-term. For D, set to whichever is cleaner in the long-term.
+- [ ] **Minion system (PR #33 review) — two decisions still open.** (1) **The worst lane
+      (MS-9):** doc 18 §3.3 now scores your game doc's terms (structure damage not dealt,
+      structures lost, pushed back), as one `LaneAssessment` shared by the heavy horde and the
+      corner-camp reward wave, with a worked example. Sign off the terms, the weights and the tie-break (ties go to
+      the middle lane, so the first heavy horde goes down it), or name others. (2) **Horde size and cadence (your M7):** size from (a) `hordeSizes` in config only,
+      (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
+      spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
+      cadences (plan §2 stand-in). Details: doc 18 §10.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
@@ -97,8 +105,46 @@ Reply inline (`Decision: …`).
       uses it (audit A23-17)? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
       what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'` lists them. Agents: do not build on or
       extend marked code. The two departures you were asked to confirm, speed 5.4 m/s and mass
-      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`).
+      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`). **Agent note
+      (2026-10-17):** (1) is answered by your reply below and DEC-35: the escort goes together
+      with the real hordes, in minion plan phase M1, whose done-when is "no `PROTOTYPE(PROTO-01)`
+      marker remains in code". (2) and (3) are still open; (2) decides doc 18 §2's folder list.
   -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
+
+- [ ] **Combat — friendly fire (PR #34, `feat/combat-damage-pipeline`).** No reference doc says
+      whether allies can hurt each other. The combat pipeline ships `FriendlyFireStep` as the
+      default: no damage between entities on the same team (Legends never hurt allies; neutral
+      bosses and camps never hurt each other); environment damage and teamless targets (trees)
+      always pass. Confirm, or say which hits should go through. Removing it is one line in
+      `combat/defaultDamageSteps.ts`.
+- [ ] **Combat — better than the design, for sign-off (PR #34).** (1) 05 §9's fixed named
+      stages are a list of `DamageStep`s whose order is `combat/defaultDamageSteps.ts`, so a new
+      rule is one class and one line; (2) `defaultStrategyRegistry.ts` is a typed record per
+      behaviour instead of `registry.register()`, so a missing strategy does not compile;
+      (3) `DamagePipeline.apply` takes `GameState`, not `SystemContext`, so handlers and listeners
+      can call it. 02, 04, 05 and 17 already describe the built version; approve or say what to
+      change.
+- [ ] **Combat — `no-death-without-killer` checks a different hole than 15 §3 (PR #34).** The
+      15 §3 row checks that every `entity-died` carries a resolvable `DamageSource` (the type
+      already forces one). The built invariant checks that every `died` removal had an
+      `entity-died` with its killer this tick, which catches `Health` written around the damage
+      pipeline (the requirements' "dies without another entity or a defensive tower killing it").
+      Proposal: the 15 §3 row covers both, (a) now and (b) "the attacker resolves in the store"
+      with abilities. Approve, or say what to change.
+- [ ] **Status effects — numbers and rules to confirm (SCRUM-228, PR #35).** Modifiers now
+      multiply (`op: 'mul'`, 05 §8), per your review. (1) If you want additive stacking
+      instead, say so: it is one line in `StatusEffects.recompute`. (2) `stun` defaults to 1 s
+      (more-abilities §7 says 0.5–1 s per source); each ability will pass its own once abilities
+      land. (3) Blind spends a basic attack as a miss (`attack-missed`); ability damage still
+      lands. (4) Better than the design, for sign-off: the component caches its multiplier
+      table when its list changes (05 §8 recomputes per tick), and `StatusEffectApplier` is the
+      one way in (05 §3 has effects call `StatusEffects.apply`; 03 names `StatusEffectSystem` as
+      the `status-applied` emitter). (5) Not built yet: `polarity`, `controlClass` /
+      `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
+      slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
+      stat for the FR-029 aura. Confirm or correct.
+  - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
+    2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
