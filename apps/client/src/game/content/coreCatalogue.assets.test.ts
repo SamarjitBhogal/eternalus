@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { AssetId, DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { AssetGroup } from '../../bridge/events';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
-import { coreCatalogue } from './coreCatalogue';
+import { shippedCatalogue } from './__fixtures__/shippedCatalogue';
 
 /**
  * Where a screen draws an asset: the primary class step (62:125), the alternate class step
@@ -86,7 +86,7 @@ function expectedGroup(uses: ReadonlySet<Use>): AssetGroup {
 }
 
 describe('coreCatalogue assets', () => {
-  const uses = assetUses(coreCatalogue.load());
+  const uses = assetUses(shippedCatalogue().load());
   const groupOf = new Map(ASSET_MANIFEST.assets.map((entry) => [entry.id, entry.group]));
 
   it('names only manifest assets, each in the group its screens load', () => {

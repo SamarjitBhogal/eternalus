@@ -4,7 +4,7 @@ import type { HudSlotId } from '../../bridge/Binding.types';
 import { TEST_HUD_CATALOGUE } from '../../bridge/hudFixtures';
 import { isSelectableClass } from '../../bridge/selectionRules';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
-import { coreCatalogue } from './coreCatalogue';
+import { shippedCatalogue } from './__fixtures__/shippedCatalogue';
 import { HUD_PRESENTATION } from './hudPresentation';
 
 const SLOT_ORDER: readonly HudSlotId[] = [
@@ -20,7 +20,7 @@ const MATCH_IDS = new Set(
 );
 
 describe('HUD presentation', () => {
-  const catalogue = coreCatalogue.load();
+  const catalogue = shippedCatalogue().load();
 
   it('gives every available class a kit listing the six slots once, in order, and the locked class none', () => {
     const available = catalogue.legendClasses.filter(isSelectableClass);

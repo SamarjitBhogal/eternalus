@@ -55,7 +55,7 @@ const EFFECTS_RENDERER: EffectsRenderer = 'figma-raster';
 /** OA2: the Figma colours; `'minimums'` swaps only the below-minimum tokens (I-81). */
 const CONTRAST_MODE: ContrastMode = 'figma';
 
-/** Everything the client adds to core display content (02 §7). */
+/** Everything the client adds to core display content. */
 export const CATALOGUE_PRESENTATION: CataloguePresentation = {
   classes: CLASS_PRESENTATION,
   lockedClasses: LOCKED_CLASS_PRESENTATION,

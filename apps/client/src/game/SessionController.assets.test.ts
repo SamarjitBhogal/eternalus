@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetGroup, AssetUrls, SessionPhase } from '../bridge/events';
 import { assetsSlice } from '../bridge/slices/assetsSlice';
-import { coreCatalogue } from './content/coreCatalogue';
+import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import type {
   SessionContext,
   SessionControllerDeps,
@@ -154,7 +154,7 @@ describe('SessionController asset groups', () => {
     expect(figma.themeRoot.dataset.contrast).toBeUndefined();
 
     const minimums = testSession({
-      catalogue: { load: () => ({ ...coreCatalogue.load(), contrastMode: 'minimums' }) },
+      catalogue: { load: () => ({ ...shippedCatalogue().load(), contrastMode: 'minimums' }) },
     });
     minimums.controller.start();
     expect(minimums.themeRoot.dataset.contrast).toBe('minimums');

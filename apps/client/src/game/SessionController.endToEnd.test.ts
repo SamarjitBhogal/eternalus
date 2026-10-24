@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BridgeEventMap } from '../bridge/events';
 import { isSelectableClass } from '../bridge/selectionRules';
 import { TypedEventBus } from '../bridge/TypedEventBus';
-import { coreCatalogue } from './content/coreCatalogue';
+import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { Camera } from './engine/Camera';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
@@ -179,7 +179,7 @@ describe('SessionController with the real match, end to end', () => {
   });
 
   it('spawns every selectable class of the shipped catalogue as a Legend', () => {
-    const selectable = coreCatalogue.load().legendClasses.filter(isSelectableClass);
+    const selectable = shippedCatalogue().load().legendClasses.filter(isSelectableClass);
     expect(selectable.length).toBeGreaterThan(0);
     for (const { classId } of selectable) {
       const simulation = new Simulation({ config: CONFIG, seed: 1, logger: new NullLogger() });

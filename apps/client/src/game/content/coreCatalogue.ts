@@ -1,6 +1,6 @@
 import { loadDisplayContent } from '@eternalus/core';
 
-import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
+import type { AssetId } from '../../bridge/catalogue.types';
 import { buildDisplayCatalogue } from './buildDisplayCatalogue';
 import type { CatalogueSource } from './CatalogueSource.types';
 import type { DisplayOverrides } from './CataloguePresentation.types';
@@ -11,20 +11,21 @@ export const NO_DISPLAY_OVERRIDES: DisplayOverrides = { effectsRenderer: null };
 
 /**
  * The shipped catalogue: core display content (validated by `loadDisplayContent`) joined with the
- * client presentation, its asset ids checked against `ASSET_MANIFEST`, with developer overrides
- * applied (`main.tsx` passes `readDeveloperFlags(location.search).displayOverrides`).
+ * client presentation, its asset ids checked against `knownAssetIds`, with developer overrides
+ * applied. `main.tsx`, the composition root, passes the asset manifest's ids and
+ * `readDeveloperFlags(location.search).displayOverrides`; this module reads no data/ facade.
  */
-export function createCoreCatalogue(overrides: DisplayOverrides): CatalogueSource {
+export function createCoreCatalogue(inputs: {
+  readonly knownAssetIds: ReadonlySet<AssetId>;
+  readonly overrides: DisplayOverrides;
+}): CatalogueSource {
   return {
     load: () =>
       buildDisplayCatalogue({
         content: loadDisplayContent(),
         presentation: CATALOGUE_PRESENTATION,
-        knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
-        overrides,
+        knownAssetIds: inputs.knownAssetIds,
+        overrides: inputs.overrides,
       }),
   };
 }
-
-/** The shipped catalogue with no override (tests and the harness). */
-export const coreCatalogue: CatalogueSource = createCoreCatalogue(NO_DISPLAY_OVERRIDES);

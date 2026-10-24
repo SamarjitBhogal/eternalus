@@ -20,8 +20,9 @@ import type {
 export type DetailIcons = Readonly<Partial<Record<DetailSlot, AssetId>>>;
 
 /**
- * What the client adds to a core Legend class (02 §7: presentation is client data). Names and
- * copy come from core; icons, art, accents and the HUD kit are presentation.
+ * What the client adds to a core Legend class. Names and copy are core content (02 §7); icons,
+ * art, accents and the HUD kit are presentation, by asset id and token name (images are
+ * `AssetManifest` entries and tokens live in `styles/global.css`, 02 §10).
  */
 export type ClassPresentation = {
   readonly accentToken: ColourToken;
