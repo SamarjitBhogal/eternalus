@@ -130,6 +130,8 @@ export const MATCH_PANEL_ASSETS: readonly AssetManifestEntry[] = [
     licence: 'owner',
     source:
       'Owner art (DEC-51): a pixel copy of magus-detail-staff@detail-class-alt (Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:70, node 62:103 rotated 90 degrees, R1 render on scratch duplicate 96:150 of page 96:2, black/white frame-fill pair r1-log W11/W12, straight alpha a = 1 - (W - B)/255, colour B/a, nothing removed), lossless WebP; in the match group so the HUD never needs released selection files (OD-8)',
+    // Not designed in 62:231 (OD-8): a fill-in for the owner, centred at whole px in the weapon
+    // art's layout box (397, 956) 254 x 62 (Battle Axe 62:241's own box).
     box: { left: 457, top: 977, width: 133, height: 19 },
   },
   {
