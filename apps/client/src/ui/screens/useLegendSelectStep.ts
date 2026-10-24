@@ -8,7 +8,7 @@ import {
   type LegendStepView,
 } from '../../bridge/selectors/selectLegendStepView';
 import { contentSlice } from '../../bridge/slices/contentSlice';
-import { tabbableRovingIndex } from '../components/rovingRadio';
+import { rovingKeyDown, tabbableRovingIndex } from '../components/rovingRadio';
 import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { legendStepActions, type LegendStepActions } from './legendStepActions';
@@ -57,13 +57,6 @@ export function useLegendSelectStep(): LegendSelectStepModel | null {
     rowPlate,
     lockInChromeAssetId: rowPlate === null ? null : lockInChrome,
     onPreview: setPreviewSpecId,
-    onCardKeyDown: (event, index) => {
-      const next = actions.move(index, event.key);
-      if (next === null) return;
-      event.preventDefault();
-      event.currentTarget.parentElement
-        ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-        [next]?.focus();
-    },
+    onCardKeyDown: rovingKeyDown(actions.move),
   };
 }

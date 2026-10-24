@@ -7,7 +7,7 @@ import { isSelectableClass } from '../../bridge/selectionRules';
 import { selectAllyCountsByClass } from '../../bridge/selectors/selectAllyCountsByClass';
 import { type ClassPanel, selectClassPanel } from '../../bridge/selectors/selectClassPanel';
 import { contentSlice } from '../../bridge/slices/contentSlice';
-import { tabbableRovingIndex } from '../components/rovingRadio';
+import { rovingKeyDown, tabbableRovingIndex } from '../components/rovingRadio';
 import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { classStepActions, type ClassStepActions } from './classStepActions';
@@ -76,13 +76,6 @@ export function useClassSelectStep(preferredClassId: LegendClassId | null): Clas
     rowPlate,
     selectClassChromeAssetId: chromeAssetId,
     actions,
-    onCardKeyDown: (event, index) => {
-      const next = actions.move(index, event.key);
-      if (next === null) return;
-      event.preventDefault();
-      event.currentTarget.parentElement
-        ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-        [next]?.focus();
-    },
+    onCardKeyDown: rovingKeyDown(actions.move),
   };
 }

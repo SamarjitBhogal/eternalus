@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { nextRovingIndex, tabbableRovingIndex } from './rovingRadio';
+import { nextRovingIndex, rovingKeyDown, tabbableRovingIndex } from './rovingRadio';
 
 const item = (isAvailable: boolean, isPicked = false) => ({ isAvailable, isPicked });
 
@@ -50,5 +50,84 @@ describe('tabbableRovingIndex', () => {
   it('falls back to the first radio when every radio is locked, or there is none', () => {
     expect(tabbableRovingIndex([item(false), item(false)])).toBe(0);
     expect(tabbableRovingIndex([])).toBe(0);
+  });
+});
+
+/**
+ * A group of `count` radios, each a stand-in that records taking the focus, and `keyOn(key)`: a
+ * key event on one of them, as the focus move reads it (its key, its default, its parent).
+ */
+function radioGroup(count: number, { isOrphan = false } = {}) {
+  const focused: number[] = [];
+  const queried: string[] = [];
+  let prevented = 0;
+  const radios = Array.from({ length: count }, (_, at) => ({
+    focus: () => {
+      focused.push(at);
+    },
+  }));
+  const parent = {
+    querySelectorAll: (selectors: string) => {
+      queried.push(selectors);
+      return radios;
+    },
+  };
+  const keyOn = (key: string) => ({
+    key,
+    preventDefault: () => {
+      prevented += 1;
+    },
+    currentTarget: { parentElement: isOrphan ? null : parent },
+  });
+  return { focused, queried, keyOn, prevented: () => prevented };
+}
+
+describe('rovingKeyDown', () => {
+  it("asks `move` where the key goes, focuses that radio among the group's, and keeps the key", () => {
+    const group = radioGroup(4);
+    const asked: [number, string][] = [];
+    const onKeyDown = rovingKeyDown((index, key) => {
+      asked.push([index, key]);
+      return 3;
+    });
+
+    onKeyDown(group.keyOn('End'), 1);
+
+    expect(asked).toEqual([[1, 'End']]);
+    expect(group.queried).toEqual(['[role="radio"]']);
+    expect(group.focused).toEqual([3]);
+    expect(group.prevented()).toBe(1);
+  });
+
+  it('moves the focus the way nextRovingIndex steps, wrapping at the ends', () => {
+    const group = radioGroup(3);
+    const onKeyDown = rovingKeyDown((index, key) => nextRovingIndex(index, key, 3));
+
+    onKeyDown(group.keyOn('ArrowRight'), 2);
+    onKeyDown(group.keyOn('ArrowUp'), 0);
+    onKeyDown(group.keyOn('ArrowDown'), 0);
+
+    expect(group.focused).toEqual([0, 2, 1]);
+  });
+
+  it('leaves any other key alone: no focus move, and its default kept', () => {
+    const group = radioGroup(3);
+    const onKeyDown = rovingKeyDown(() => null);
+
+    onKeyDown(group.keyOn('Tab'), 1);
+
+    expect(group.focused).toEqual([]);
+    expect(group.queried).toEqual([]);
+    expect(group.prevented()).toBe(0);
+  });
+
+  it('focuses nothing for a radio with no parent, or past the last radio', () => {
+    const orphan = radioGroup(3, { isOrphan: true });
+    rovingKeyDown(() => 1)(orphan.keyOn('ArrowRight'), 0);
+    const short = radioGroup(2);
+    rovingKeyDown(() => 5)(short.keyOn('End'), 0);
+
+    expect(orphan.focused).toEqual([]);
+    expect(short.focused).toEqual([]);
   });
 });
