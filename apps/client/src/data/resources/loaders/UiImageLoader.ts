@@ -11,6 +11,7 @@ import type { DecodableImage, UiImageLoaderDeps } from './UiImageLoader.types';
 export class UiImageLoader implements AssetLoader<DecodableImage> {
   public readonly type = 'ui-image';
 
+  /** Builds the loader over the injected image factory (`() => new Image()` in the browser). */
   public constructor(private readonly deps: UiImageLoaderDeps) {}
 
   /**
