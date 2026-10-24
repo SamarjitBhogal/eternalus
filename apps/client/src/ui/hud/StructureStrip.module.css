@@ -1,0 +1,49 @@
+/* Structure strips (Figma 62:303, 65:542): 50 px tiles on a 58 px pitch, no container. */
+.strip {
+  display: flex;
+  gap: calc(8 * var(--hud-u));
+}
+
+/* The enemy strip: the same identity order, laid out from the right (HUD spec §3.2). */
+.enemy {
+  flex-direction: row-reverse;
+}
+
+.tile {
+  position: relative;
+  flex: none;
+  width: calc(50 * var(--hud-u));
+  height: calc(62 * var(--hud-u));
+}
+
+/* Absolute team inks (F5): the owning team's colour, whichever side it is on. */
+.tile[data-team='light'] {
+  --structure-ink: var(--team-light-hud-structure);
+}
+
+.tile[data-team='dark'] {
+  --structure-ink: var(--team-dark-hud-structure);
+}
+
+/* The icon raster is a mask (its alpha holds the Figma's 0.8 fill opacity), drawn 1:1 at the
+   tile's 50 × 50 box (I-45). */
+.icon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(50 * var(--hud-u));
+  height: calc(50 * var(--hud-u));
+  background-color: var(--structure-ink);
+  mask-image: var(--structure-icon);
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+}
+
+/* Status bar 46 × 6 under the icon, 2 px in (x + 2, y 128). */
+.bar {
+  position: absolute;
+  left: calc(2 * var(--hud-u));
+  top: calc(56 * var(--hud-u));
+  width: calc(46 * var(--hud-u));
+  height: calc(6 * var(--hud-u));
+}

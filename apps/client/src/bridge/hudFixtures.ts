@@ -15,7 +15,7 @@ import type {
 } from './hud.types';
 import type { RootState } from './store';
 
-/** A ready slot with no ability and no cooldown (the Figma's default look), with `changes` applied. */
+/** A ready slot with no ability and no cooldown (the gold-glow look, OD-9), with `changes` applied. */
 const figmaSlot = (
   slot: HudSlotId,
   changes: Partial<AbilitySlotStatus> = {},
@@ -30,7 +30,22 @@ const figmaSlot = (
   ...changes,
 });
 
-/** The human Legend as 62:231 shows it: health 1850/2220, aether 4700/5640, level 42, XP 699/1000. */
+/** Any cooldown length: the Figma draws the red fill full, i.e. a cooldown that has just started. */
+const FIGMA_COOLDOWN_TICKS = 300;
+
+/** A slot at the start of its cooldown: the red fill covers the whole box (OD-9, fraction 1). */
+const FIGMA_COOLING: Partial<AbilitySlotStatus> = {
+  cooldownRemainingTicks: FIGMA_COOLDOWN_TICKS,
+  cooldownTicks: FIGMA_COOLDOWN_TICKS,
+  isReady: false,
+  blockedBy: 'on-cooldown',
+};
+
+/**
+ * The human Legend as 62:231 shows it: health 1850/2220, aether 4700/5640, level 42, XP 699/1000;
+ * abilities 1–3 and gadget-1 (Courage) on cooldown at fraction 1, the ultimate and gadget-2 (Sword)
+ * ready (OD-9).
+ */
 export const FIGMA_HUD_PLAYER: PlayerHudSnapshot = {
   entityId: 'figma-player',
   definitionId: 'warrior',
@@ -44,11 +59,11 @@ export const FIGMA_HUD_PLAYER: PlayerHudSnapshot = {
   weaponProgress: 5 / 6,
   ultimatePips: { filled: 2, total: 3 },
   slots: [
-    figmaSlot('ability-1'),
-    figmaSlot('ability-2'),
-    figmaSlot('ability-3'),
+    figmaSlot('ability-1', FIGMA_COOLING),
+    figmaSlot('ability-2', FIGMA_COOLING),
+    figmaSlot('ability-3', FIGMA_COOLING),
     figmaSlot('ability-4', { charge: 5 / 6 }),
-    figmaSlot('gadget-1', { isReady: false }),
+    figmaSlot('gadget-1', FIGMA_COOLING),
     figmaSlot('gadget-2'),
   ],
 };

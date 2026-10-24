@@ -20,8 +20,10 @@
 }
 
 /* HUD key box (65:667): 25 × 25, 1 px inside stroke, no fill; Cinzel Regular 16, white, centred.
-   A single character keeps the box; a longer label ("Mouse 4") grows it to the right. The box
-   keeps its own line height (FID-17). */
+   A single character keeps the box; a longer label ("Mouse 4") grows it to the right. The padding
+   puts the content centre on the Figma text node 65:668 (26 × 24 at +0, +1): +13, +13. The line
+   height fills that 22-unit content box (FID-17), so a one-line label does not overflow it
+   (OD-21 f). */
 .hud {
   display: inline-flex;
   align-items: center;
@@ -29,7 +31,7 @@
   box-sizing: border-box;
   min-width: calc(25 * var(--hud-u));
   height: calc(25 * var(--hud-u));
-  padding: 0 calc(3 * var(--hud-u));
+  padding: calc(1 * var(--hud-u)) calc(2 * var(--hud-u)) 0 calc(3 * var(--hud-u));
   border: calc(1 * var(--hud-u)) solid var(--hud-cream);
   border-radius: 0;
   background: none;
@@ -37,5 +39,5 @@
   font-family: var(--font-game);
   font-weight: 400;
   font-size: max(calc(16 * var(--hud-u)), var(--text-min));
-  line-height: calc(23 * var(--hud-u));
+  line-height: calc(22 * var(--hud-u));
 }

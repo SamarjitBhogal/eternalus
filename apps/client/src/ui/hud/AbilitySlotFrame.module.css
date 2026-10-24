@@ -1,0 +1,37 @@
+/* The frame fills the slot box; its glow is drawn outside it. */
+.frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* The inside stroke: grey (62:264, 62:281), the bright cream when ready (62:247, 65:711). */
+.stroke {
+  fill: none;
+  stroke: var(--hud-slot-border);
+}
+
+.strokeReady {
+  fill: none;
+  stroke: var(--hud-cream-bright);
+}
+
+/* Ready (OD-9, the Figma's "active" container): a 20 % dark fill under the amber glows. */
+.readyFill {
+  fill: var(--hud-active-fill);
+}
+
+.glowFlood {
+  flood-color: var(--hud-amber);
+}
+
+/* On cooldown (OD-9): the dark red from .5 at the bottom to .1 at the top over the whole box. */
+.shadeStrong {
+  stop-color: var(--hud-slot-shade-strong);
+}
+
+.shadeSoft {
+  stop-color: var(--hud-slot-shade-soft);
+}

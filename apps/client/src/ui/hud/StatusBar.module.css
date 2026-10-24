@@ -1,0 +1,19 @@
+/* Structure and capture bars (Figma "Charge Check 2" fill under "Charge Check 1" track): the fill
+   is not inset, so the track's 1 px inside stroke covers its first column, as in the Figma. */
+.bar {
+  background: linear-gradient(
+    to right,
+    var(--hud-status-fill) var(--status-bar-fill),
+    transparent var(--status-bar-fill)
+  );
+  box-shadow: inset 0 0 0 calc(1 * var(--hud-u)) var(--hud-status-track);
+}
+
+/* No data yet (CD-13, DEC-17). */
+.noData {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--hud-no-data-hatch) 0 calc(2 * var(--hud-u)),
+    transparent calc(2 * var(--hud-u)) calc(4 * var(--hud-u))
+  );
+}

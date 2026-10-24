@@ -1,0 +1,49 @@
+/* Region (42, 946) 613 × 113 (Figma 62:240); children at their Figma offsets from it. */
+.bar {
+  position: relative;
+  width: calc(613 * var(--hud-u));
+  height: calc(113 * var(--hud-u));
+}
+
+.chargeBar,
+.ultimate,
+.pips,
+.ability1,
+.ability2,
+.ability3 {
+  position: absolute;
+}
+
+/* Ultimate Charge Bar 65:722 at (161, 946). */
+.chargeBar {
+  left: calc(119 * var(--hud-u));
+  top: 0;
+}
+
+/* Ultimate Container 62:247 at (72, 946). */
+.ultimate {
+  left: calc(30 * var(--hud-u));
+  top: 0;
+}
+
+/* Charge Indicators 62:250 at (42, 946). */
+.pips {
+  left: 0;
+  top: 0;
+}
+
+/* Abilities at (161 | 239 | 315, 959): Figma's 8 and 6 px gaps kept. */
+.ability1 {
+  left: calc(119 * var(--hud-u));
+  top: calc(13 * var(--hud-u));
+}
+
+.ability2 {
+  left: calc(197 * var(--hud-u));
+  top: calc(13 * var(--hud-u));
+}
+
+.ability3 {
+  left: calc(273 * var(--hud-u));
+  top: calc(13 * var(--hud-u));
+}

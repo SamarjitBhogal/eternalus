@@ -1,0 +1,110 @@
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface-0);
+}
+
+.viewport {
+  position: absolute;
+  inset: 0;
+}
+
+/* The HUD over the viewport (13 §7: absolute, no pointer events). Its size defines the design
+   unit: --hud-u is one px of the 1920 × 1080 Figma frame, exactly 1px at 1920 × 1080, scaled
+   uniformly elsewhere (an unregistered property, so `cqw`/`cqh` resolve against this container
+   at each use). No descendant sets container-type. */
+.hud {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  container-type: size;
+  --hud-u: min(calc(100cqw / 1920), calc(100cqh / 1080));
+  /* Greyscale glyph antialiasing like the Figma render; macOS's default smoothing draws the
+     Cinzel stems visibly heavier than hud.figma.png (inherited by every HUD text). */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Regions (Figma 62:231 anchoring, HUD spec §1); every leaf positions itself inside its region. */
+
+/* Ultimate cluster and abilities 62:240: (42, 946) 613 × 113, bottom 21. */
+.abilities {
+  position: absolute;
+  left: calc(42 * var(--hud-u));
+  bottom: calc(21 * var(--hud-u));
+}
+
+/* Weapon panel 62:258: (397, 956) 258 × 72, bottom 52. */
+.weapon {
+  position: absolute;
+  left: calc(397 * var(--hud-u));
+  bottom: calc(52 * var(--hud-u));
+}
+
+/* Gadgets 62:275: (1694, 957) 181 × 87, right 45, bottom 36. */
+.gadgets {
+  position: absolute;
+  right: calc(45 * var(--hud-u));
+  bottom: calc(36 * var(--hud-u));
+}
+
+/* Health / aether 62:284: (739, 964) 435 × 47, bottom 69, from the frame's centre (3.5 px left
+   of it, as drawn). */
+.resources {
+  position: absolute;
+  left: calc(50% - 221 * var(--hud-u));
+  bottom: calc(69 * var(--hud-u));
+  width: calc(435 * var(--hud-u));
+  height: calc(47 * var(--hud-u));
+}
+
+/* Aether 65:632, 7 px under health (y 991). */
+.aether {
+  position: absolute;
+  left: 0;
+  top: calc(27 * var(--hud-u));
+}
+
+/* Level badge 65:655: (35, 758) 161 × 161, bottom 161. */
+.level {
+  position: absolute;
+  left: calc(35 * var(--hud-u));
+  bottom: calc(161 * var(--hud-u));
+}
+
+/* Structures and objectives 62:302: one row centred on x 960.5 (the 1 px left padding moves the
+   flex centre half a px right), top 72; its length follows the lane count. */
+.topStrip {
+  position: absolute;
+  top: calc(72 * var(--hud-u));
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-left: calc(1 * var(--hud-u));
+}
+
+/* Crystal 65:623 with its glows (833, 118) 256 × 256, drawn over the objectives as in the Figma's
+   layer order, under the timer. */
+.crystal {
+  position: absolute;
+  left: calc(50% - 127 * var(--hud-u));
+  top: calc(118 * var(--hud-u));
+}
+
+/* Timer 65:604: (919, 171) 84 × 22. */
+.clock {
+  position: absolute;
+  left: calc(50% - 41 * var(--hud-u));
+  top: calc(171 * var(--hud-u));
+}
+
+/* Minimap 65:743: the panel places itself against the HUD's top-right corner (MINI_MAP_RING). */
+.minimap {
+  position: absolute;
+  top: 0;
+  right: 0;
+}

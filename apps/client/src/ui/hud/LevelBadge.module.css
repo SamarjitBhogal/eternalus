@@ -1,0 +1,129 @@
+/* Level badge (Figma 65:655): 161 × 161, layers bottom → top as in the Figma. */
+.badge {
+  position: relative;
+  width: calc(161 * var(--hud-u));
+  height: calc(161 * var(--hud-u));
+}
+
+/* XP Colour Fill 65:653: the conic ramp amber → orange → amber runs clockwise from 12
+   o'clock over the XP share of the turn (the Figma ≈ 70 %, 0–251.7°), transparent after it.
+   Values jump to each publish (no transition, I-60). Its 1 px inside stroke, the Outer Ring
+   65:650 (the same circle and colour) and the Inner Ring 65:651 are the SVG `.rings` above it.
+   Tuning value: the fill is clipped at r 80.25, a quarter px inside the 80.5 disc, so the
+   stroke's outer edge pixels are not tinted by the fill's own edge beneath them (Chrome blends
+   each layer's edge separately; the Figma render shows the single-shape edge).
+   Arc edges at the Figma's own geometry, as soft ramps (Chrome draws a conic hard stop without
+   anti-aliasing): the Figma stops 0.2981 → 0.30, rotated to 251.6°, fade the arc in over 0.69°
+   just before 12 o'clock (358.95° → 359.64°), so the gradient starts at −1.05° and every later
+   stop is 1.05° on; the orange stop sits at p × 174°, and the arc fades out over 0.75° (about
+   1 px at r 75) centred on p × 360°. The fade-in narrows to the gap left before a full turn, so a
+   full ring (p = 1) closes with no notch at 12 o'clock. */
+.xpFill,
+.xpGlowCopy {
+  position: absolute;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -1.05deg,
+    transparent 0deg,
+    var(--hud-amber) min(0.69deg, (1 - var(--level-badge-progress)) * 360deg),
+    var(--hud-orange) calc(var(--level-badge-progress) * 174deg + 1.05deg),
+    var(--hud-amber) calc(var(--level-badge-progress) * 360deg + 0.675deg),
+    transparent calc(var(--level-badge-progress) * 360deg + 1.425deg)
+  );
+}
+
+/* No XP (p = 0): no arc. The fade-in before 12 o'clock and the fade-out after it would still
+   draw a 1–2 px sliver there. */
+.badge[data-xp-arc='none'] .xpFill,
+.badge[data-xp-arc='none'] .xpGlowCopy {
+  background: none;
+}
+
+.xpFill {
+  inset: 0;
+  clip-path: circle(calc(80.25 * var(--hud-u)) at 50% 50%);
+}
+
+/* The fill's DROP_SHADOW (--hud-xp-glow, blur 10; FID-07, FID-R2-04): a copy of the fill with
+   its 1 px inside stroke (it casts the glow around the unfilled sector too), blurred inside a
+   wrapper 20 px larger than the disc on every side and masked to outside the disc, so the glow
+   shows only around it and is never clipped to the disc's box. Figma draws only the shadow, but a
+   drop-shadow filter also paints the copy itself, whose anti-aliased edge showed through the mask
+   beyond r 80.5 and tinted the stroke's outer edge. So the copy sits --xp-glow-shift left of its
+   place, outside the wrapper, where the mask hides it, and the shadow is offset by the same
+   amount back under the disc. The shift is whole px (snapped copy + shift = the snapped place)
+   and at least 400 Figma px, more than the copy's right edge (181) at every --hud-u.
+   Tuning value: the drop-shadow's third length is σ, and Figma's blur 10 is nominally σ 5, but
+   the Figma render of 65:653 measures as σ 4 against hud.figma.png (a σ 5 glow is visibly wider
+   in Chrome; the ready slots' SLOT_GLOW_SIGMA records the same for their blur 10 glows). */
+.xpGlowWrap {
+  position: absolute;
+  inset: calc(-20 * var(--hud-u));
+  mask-image: radial-gradient(
+    circle,
+    transparent calc(80.5 * var(--hud-u)),
+    var(--mask-opaque) calc(80.5 * var(--hud-u))
+  );
+}
+
+.xpGlowCopy {
+  --xp-glow-shift: round(up, calc(400 * var(--hud-u)), 1px);
+
+  top: calc(20 * var(--hud-u));
+  bottom: calc(20 * var(--hud-u));
+  left: calc(20 * var(--hud-u) - var(--xp-glow-shift));
+  width: calc(161 * var(--hud-u));
+  box-shadow: inset 0 0 0 calc(1 * var(--hud-u)) var(--hud-xp-ring-outer);
+  filter: drop-shadow(var(--xp-glow-shift) 0 calc(4 * var(--hud-u)) var(--hud-xp-glow));
+}
+
+/* The ring strokes and the inner disc as SVG geometry in the badge's 161 px viewBox: the outer
+   1 px inside stroke (r 79.5–80.5) and Inner Ring 65:651 (r 70 at (81, 81), 0.5 px off the outer
+   centre as drawn; fill and 1 px inside stroke in one shape). */
+.rings {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ringStroke {
+  fill: none;
+  stroke: var(--hud-xp-ring-outer);
+}
+
+.innerDisc {
+  fill: var(--hud-frame-backdrop);
+  stroke: var(--hud-xp-ring-inner);
+}
+
+/* XP Icon 65:645: the class emblem raster at (49, 772) 134 × 135, crop baked (I-45). */
+.emblem {
+  position: absolute;
+  left: calc(14 * var(--hud-u));
+  top: calc(14 * var(--hud-u));
+  width: calc(134 * var(--hud-u));
+  height: calc(135 * var(--hud-u));
+}
+
+/* "42" 65:656: Cinzel Bold 48 in the HUD cream, centred in its 72 × 63 box; both drop shadows and the NOISE
+   grain come from the SVG filter (S9 → CD-25), on its own layer (I-60). */
+.level {
+  position: absolute;
+  left: calc(45 * var(--hud-u));
+  top: calc(49 * var(--hud-u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(72 * var(--hud-u));
+  height: calc(63 * var(--hud-u));
+  color: var(--hud-cream);
+  font-family: var(--font-game);
+  font-weight: 700;
+  font-size: max(calc(48 * var(--hud-u)), var(--text-min));
+  line-height: calc(var(--leading-game-48) * var(--hud-u));
+  white-space: nowrap;
+  filter: url('#hud-filter-level-number');
+  will-change: transform;
+}

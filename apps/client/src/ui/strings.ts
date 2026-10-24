@@ -159,6 +159,7 @@ export const STRINGS = {
     alliedStructures: 'Your structures',
     enemyStructures: 'Enemy structures',
     objectives: 'Capture points',
+    captureProgress: 'Capture progress',
     noData: '—',
     noDataLabel: 'No data yet',
     emptySlot: 'empty',

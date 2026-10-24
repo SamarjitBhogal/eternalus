@@ -1,0 +1,14 @@
+/* Timer 65:604: Cinzel Regular 32, white, centred in its 84 × 22 box at (919, 171). */
+.clock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(84 * var(--hud-u));
+  height: calc(22 * var(--hud-u));
+  color: var(--hud-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(calc(32 * var(--hud-u)), var(--text-min));
+  line-height: calc(var(--leading-game-32) * var(--hud-u));
+  white-space: nowrap;
+}

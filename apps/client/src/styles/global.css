@@ -157,6 +157,52 @@
   --hud-aether: #5291fc;
   --hud-aether-fill: rgb(82 145 252 / 60%);
   --hud-aether-rest: rgb(82 145 252 / 40%);
+  /* The bars' marker → rest fall a quarter, half and three quarters of the way to the rest
+     (SegmentedBar .leading). Declared once, here: each var() resolves on <html>, where the
+     minimums set re-declares the rests and the cream marker, so every set derives its own fades
+     (OD-25 a). Cream keeps the gradient's own premultiplied points (color-mix). Health and aether
+     mix the opaque white --hud-marker (255, alpha 1) into the rest in straight alpha, as Figma
+     blends: each channel and the alpha move n/4 back to the rest. color-mix() cannot express
+     that, since it always mixes premultiplied (lighter: fade-2 green 189.6 instead of 140.5). */
+  --hud-health-fade-1: rgb(
+    from var(--hud-health-rest) calc(r + (255 - r) * 0.75) calc(g + (255 - g) * 0.75)
+      calc(b + (255 - b) * 0.75) / calc(alpha + (1 - alpha) * 0.75)
+  );
+  --hud-health-fade-2: rgb(
+    from var(--hud-health-rest) calc(r + (255 - r) * 0.5) calc(g + (255 - g) * 0.5)
+      calc(b + (255 - b) * 0.5) / calc(alpha + (1 - alpha) * 0.5)
+  );
+  --hud-health-fade-3: rgb(
+    from var(--hud-health-rest) calc(r + (255 - r) * 0.25) calc(g + (255 - g) * 0.25)
+      calc(b + (255 - b) * 0.25) / calc(alpha + (1 - alpha) * 0.25)
+  );
+  --hud-aether-fade-1: rgb(
+    from var(--hud-aether-rest) calc(r + (255 - r) * 0.75) calc(g + (255 - g) * 0.75)
+      calc(b + (255 - b) * 0.75) / calc(alpha + (1 - alpha) * 0.75)
+  );
+  --hud-aether-fade-2: rgb(
+    from var(--hud-aether-rest) calc(r + (255 - r) * 0.5) calc(g + (255 - g) * 0.5)
+      calc(b + (255 - b) * 0.5) / calc(alpha + (1 - alpha) * 0.5)
+  );
+  --hud-aether-fade-3: rgb(
+    from var(--hud-aether-rest) calc(r + (255 - r) * 0.25) calc(g + (255 - g) * 0.25)
+      calc(b + (255 - b) * 0.25) / calc(alpha + (1 - alpha) * 0.25)
+  );
+  --hud-bar-cream-fade-1: color-mix(
+    in srgb,
+    var(--hud-bar-cream-marker) 75%,
+    var(--hud-bar-cream-rest)
+  );
+  --hud-bar-cream-fade-2: color-mix(
+    in srgb,
+    var(--hud-bar-cream-marker) 50%,
+    var(--hud-bar-cream-rest)
+  );
+  --hud-bar-cream-fade-3: color-mix(
+    in srgb,
+    var(--hud-bar-cream-marker) 25%,
+    var(--hud-bar-cream-rest)
+  );
   --hud-charge-pip-border: #d9d9d9;
   --hud-charge-pip-fill: rgb(168 0 3 / 50%);
   --hud-status-fill: #b1aea9;
