@@ -34,6 +34,40 @@ const braces = (className: string | undefined): ReactElement => (
 );
 
 /**
+ * The live chrome: the backdrop-blur pane beneath, then the glow group: its shadow layer (`lit`,
+ * cast from plain copies of the ring, haze and brace strokes) and above it, unfiltered, the ring,
+ * haze and braces with their glows, the braces' azure glows cast from plain stroke copies.
+ */
+const liveChrome = (): ReactElement => (
+  <>
+    <span className={styles.pane} aria-hidden="true" />
+    <span className={styles.glowGroup} aria-hidden="true">
+      <span className={styles.lit}>
+        <span className={styles.ring} />
+        <span className={styles.haze} />
+        {braces(styles.braces)}
+      </span>
+      <span className={styles.ring} />
+      <span className={styles.haze} />
+      {braces(classNames(styles.braces, styles.bracesGlow))}
+      {braces(styles.braces)}
+    </span>
+  </>
+);
+
+/** Figma's chrome plate, at its skin's full render-bounds box (the skin's `.chrome` rule). */
+const chromePlate = (url: string): ReactElement => (
+  <img
+    className={styles.chrome}
+    src={url}
+    alt=""
+    aria-hidden="true"
+    decoding="async"
+    draggable={false}
+  />
+);
+
+/**
  * A selection screen's main action: Select Class or LOCK IN. Placed by its skin at its Figma
  * node in the 1920 × 1080 artboard (render it in a full-artboard container).
  *
@@ -81,31 +115,7 @@ export function GlowButton({
         }}
         {...pointerHandlers}
       >
-        {plateUrl === null ? (
-          <>
-            <span className={styles.pane} aria-hidden="true" />
-            <span className={styles.glowGroup} aria-hidden="true">
-              <span className={styles.lit}>
-                <span className={styles.ring} />
-                <span className={styles.haze} />
-                {braces(styles.braces)}
-              </span>
-              <span className={styles.ring} />
-              <span className={styles.haze} />
-              {braces(classNames(styles.braces, styles.bracesGlow))}
-              {braces(styles.braces)}
-            </span>
-          </>
-        ) : (
-          <img
-            className={styles.chrome}
-            src={plateUrl}
-            alt=""
-            aria-hidden="true"
-            decoding="async"
-            draggable={false}
-          />
-        )}
+        {plateUrl === null ? liveChrome() : chromePlate(plateUrl)}
         <span className={styles.label}>{label}</span>
       </button>
       {/* Outside the button: a description, never part of its name. */}
