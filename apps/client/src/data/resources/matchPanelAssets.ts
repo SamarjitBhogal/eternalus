@@ -191,16 +191,16 @@ export const MATCH_PANEL_ASSETS: readonly AssetManifestEntry[] = [
     group: 'match',
     file: {
       url: warriorWeaponBattleAxe,
-      bytes: 14354,
-      hash: '3c7c0b7ba48bdba75e003afba33fea4261c7e92446a8c5b0243ac829ac910c0c',
+      bytes: 14560,
+      hash: 'ed90375b989909a9328af0e575e346da9ea53de86992373c6010c96d19a44b49',
     },
     file2x: {
       url: warriorWeaponBattleAxe2x,
-      bytes: 48102,
-      hash: 'e605c3ce787a450527a40b1b310e97d9aeb50d578d29d2a5de284259f35b2f82',
+      bytes: 49424,
+      hash: 'a0ccf168a449648c288331de808cc854c548ab9c5c8e4a0dafd65d5dcf3b7f8d',
     },
     licence: 'owner',
     source:
-      'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:231, protocol R1 render (OA1) on scratch duplicate 96:331 of page 96:2; pass hud-P1a: black/white frame-fill pair (r1-log W25/W26); straight alpha a = 1 - (W - B)/255, colour B/a; 1x lossless WebP. file = 62:241 (rotated 90°) cropped to (387, 946, 274, 82), nothing removed',
+      "Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs node 62:241 (rotated 90°, with the owner's Noise effect) in frame 62:231, 2026-10-24 (OD-23, OD-28). Alpha: protocol R1 (OA1) on scratch copy 140:3 in frame 140:2 of page 96:2, black/white frame-fill pair at scale 1 and 2, a = 1 - (W - B)/255. Colour: where a >= 0.5, solved from the original frame render over its #3e2217 fill, C = (F - (1 - a) * #3e2217) / a (F = 62:231 at scale 1 and 2), because a copy re-seeds the Noise grain; elsewhere B/a. Crop (387, 946, 274, 82); 1x and 2x lossless WebP. Re-extract after any edit to 62:241",
   },
 ];

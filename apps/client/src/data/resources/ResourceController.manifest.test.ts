@@ -15,7 +15,8 @@ const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['selection-alternate', 456_024, 587_480],
   ['selection-raster', 867_022, 243_798],
   ['selection-primary-raster', 1_041_660, 281_268],
-  ['match', 141_440, 358_580],
+  // OD-28: the battle axe with the owner's Noise grain, +206 B (1x) and +1,322 B (2x) on OD-7's 141,440 / 358,580.
+  ['match', 141_646, 359_902],
 ];
 
 /** The shipped manifest behind the browser adapters, with fake images and font faces. */
