@@ -176,20 +176,25 @@ const textShadow = (
  * 251); as text-shadows it was greener still. Each region is the experiment's, not the I-66
  * minimum: Chrome's blur depends on the region (with this construction, a 4.4-box-tall region
  * moved the LOCK IN haze by up to 13 code values), and these are the measured ones.
+ * The σ are measured too (OD-27, stream C's DECISION-glow-sigma.md): Figma's blur radius r renders
+ * closer to σ = 0.85 × r / 2 than to the derived r / 2. Against the live frames the label's 0.85
+ * scale halves the LOCK IN residual and the countdown's σ 3.4 is the best of 2.8 to 4 on 62:125,
+ * 62:70 and 58:271; no region gets a worse audit status.
  */
 export const TEXT_GLOW_FILTERS: readonly TextGlowDef[] = [
   {
     id: SELECTION_DEF_IDS.glowLabel,
     // A box width each side also holds a label the I-51 floor sets wider than its box.
     region: { x: -1, y: -3, width: 3, height: 7 },
-    // 62:228 / 58:276: sky 0 4 radius 25, then sky 0 −4 and 0 4 radius 50 alternating (five).
+    // 62:228 / 58:276: sky 0 4 radius 25, then sky 0 −4 and 0 4 radius 50 alternating (five);
+    // σ 0.85 × r / 2 (OD-27).
     shadows: [
-      textShadow(0, 4, 12.5),
-      textShadow(0, -4, 25),
-      textShadow(0, 4, 25),
-      textShadow(0, -4, 25),
-      textShadow(0, 4, 25),
-      textShadow(0, -4, 25),
+      textShadow(0, 4, 10.625),
+      textShadow(0, -4, 21.25),
+      textShadow(0, 4, 21.25),
+      textShadow(0, -4, 21.25),
+      textShadow(0, 4, 21.25),
+      textShadow(0, -4, 21.25),
     ],
     flood: 'sky',
     users: [
@@ -201,12 +206,12 @@ export const TEXT_GLOW_FILTERS: readonly TextGlowDef[] = [
     id: SELECTION_DEF_IDS.glowCountdown,
     region: { x: -0.5, y: -0.5, width: 2, height: 2 },
     // 62:135 / 58:281: the countdown red at 15 % (the --selection-countdown-glow alpha) at
-    // (6, 0), (−6, 0), (0, 6), (0, −6), radius 8.
+    // (6, 0), (−6, 0), (0, 6), (0, −6), radius 8; measured σ 3.4 (OD-27).
     shadows: [
-      textShadow(6, 0, 4, 0.15),
-      textShadow(-6, 0, 4, 0.15),
-      textShadow(0, 6, 4, 0.15),
-      textShadow(0, -6, 4, 0.15),
+      textShadow(6, 0, 3.4, 0.15),
+      textShadow(-6, 0, 3.4, 0.15),
+      textShadow(0, 6, 3.4, 0.15),
+      textShadow(0, -6, 3.4, 0.15),
     ],
     flood: 'countdown',
     users: [{ node: '62:135 / 58:281 countdown', width: 118, height: 83, bleed: 0 }],
