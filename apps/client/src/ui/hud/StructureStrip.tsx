@@ -1,10 +1,9 @@
 import type { ReactElement } from 'react';
 
-import type { RenditionKey } from '../../bridge/catalogue.types';
-import { shallowEqual, useAppSelector } from '../../bridge/hooks';
+import { useAppSelector } from '../../bridge/hooks';
 import type { HudSide } from '../../bridge/hud.types';
+import { selectStructureIconUrls } from '../../bridge/selectors/selectStructureIconUrls';
 import { selectStructureStrip } from '../../bridge/selectors/selectStructureStrip';
-import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { STRINGS } from '../strings';
@@ -22,12 +21,6 @@ const SIDE_CLASS: Readonly<Record<HudSide, string | undefined>> = {
   enemy: styles.enemy,
 };
 
-/** The enemy strip's icons face the other way: the R1 renders of the Figma's mirrored nodes. */
-const SIDE_RENDITION: Readonly<Record<HudSide, RenditionKey | undefined>> = {
-  allied: undefined,
-  enemy: 'mirrored',
-};
-
 /**
  * One structure strip (Figma 62:303 allied, 65:542 enemy): a tile per structure (one Wall for
  * every wall segment and gate), each a team-inked icon over its own health bar, bound by identity.
@@ -37,13 +30,7 @@ const SIDE_RENDITION: Readonly<Record<HudSide, RenditionKey | undefined>> = {
  */
 export function StructureStrip({ side }: { readonly side: HudSide }): ReactElement {
   const tiles = useAppSelector((state) => selectStructureStrip(state, side));
-  const iconUrls = useAppSelector(
-    (state) =>
-      tiles.map((tile) =>
-        assetsSlice.selectors.selectAssetUrl(state, tile.iconAssetId, SIDE_RENDITION[side]),
-      ),
-    shallowEqual,
-  );
+  const iconUrls = useAppSelector((state) => selectStructureIconUrls(state, side));
   return (
     <div
       role="group"
