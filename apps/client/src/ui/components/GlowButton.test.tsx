@@ -2,20 +2,22 @@ import { describe, expect, it } from 'vitest';
 
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import { accessibleNames, renderWithStore } from '../testStore';
-import { GlowButton, type GlowButtonSkin } from './GlowButton';
-import {
-  BRACE_MIRRORED_UNIT_PATH,
-  BRACE_UNIT_PATH,
-  CHROME_PLATE_BOXES,
-} from './GlowButton.constants';
+import { GlowButton } from './GlowButton';
+import { BRACE_MIRRORED_UNIT_PATH, BRACE_UNIT_PATH } from './GlowButton.constants';
 import styles from './GlowButton.module.css';
 import buttonCss from './GlowButton.module.css?raw';
+import type { GlowButtonSkin } from './GlowButton.types';
 
 const noop = (): void => undefined;
 
 const CHROME: Readonly<Record<GlowButtonSkin, string>> = {
   'select-class': 'select-class-chrome',
   'lock-in': 'lock-in-chrome',
+};
+
+const SKIN_CLASS: Readonly<Record<GlowButtonSkin, string>> = {
+  'select-class': String(styles.selectClass),
+  'lock-in': String(styles.lockIn),
 };
 
 /** The live chrome's layers: the backdrop pane, the ring, the haze and the braces. */
@@ -79,19 +81,23 @@ describe('GlowButton', () => {
     expect(html).not.toContain('hint');
   });
 
+  // The box is the skin's `.chrome` rule (GlowButton.styles.test.tsx), never an inline style: it
+  // is fixed at build time (apps/client/AGENTS.md: inline style only for runtime values).
   it.each(['select-class', 'lock-in'] as const)(
-    '%s draws its Figma-state chrome plate at its full box, with no live ring or pane',
+    '%s draws its Figma-state chrome plate at its skin’s box, with no live ring or pane',
     (skin) => {
       const html = renderWithStore(
         <GlowButton label="x" onPress={noop} skin={skin} chromeAssetId={CHROME[skin]} />,
       );
-      const box = CHROME_PLATE_BOXES[CHROME[skin]];
 
-      expect(box).toBeDefined();
+      expect(html).toContain(
+        `<button type="button" class="${String(styles.button)} ${SKIN_CLASS[skin]}"><img `,
+      );
       expect(html.match(/<img /g)).toHaveLength(1);
       expect(html).toContain(
-        `<img class="${String(styles.chrome)}" src="/assets/test/${CHROME[skin]}.webp" style="left:${String(box?.left)}px;top:${String(box?.top)}px;width:${String(box?.width)}px;height:${String(box?.height)}px" alt="" aria-hidden="true"`,
+        `<img class="${String(styles.chrome)}" src="/assets/test/${CHROME[skin]}.webp" alt="" aria-hidden="true"`,
       );
+      expect(html).not.toContain('style=');
       expect(hasNoLiveChrome(html)).toBe(true);
       expect(html).toContain(`class="${String(styles.label)}">x</span>`);
     },
@@ -115,6 +121,24 @@ describe('GlowButton', () => {
           chromeAssetId="lock-in-chrome"
           isDisabled
         />,
+      ),
+    ];
+
+    for (const html of cases) {
+      expect(html).not.toContain('<img');
+      expect(hasLiveChrome(html)).toBe(true);
+    }
+  });
+
+  // Each skin's box is measured for its own plate file, so the other skin's plate (another size)
+  // draws the live chrome rather than a plate at the wrong box.
+  it('draws the live chrome for the other skin’s plate', () => {
+    const cases = [
+      renderWithStore(
+        <GlowButton label="x" onPress={noop} skin="lock-in" chromeAssetId="select-class-chrome" />,
+      ),
+      renderWithStore(
+        <GlowButton label="x" onPress={noop} skin="select-class" chromeAssetId="lock-in-chrome" />,
       ),
     ];
 

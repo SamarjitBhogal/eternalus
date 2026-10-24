@@ -1,5 +1,5 @@
 import type { AssetId } from '../../bridge/catalogue.types';
-import type { ChromeBox } from './GlowButton.types';
+import type { GlowButtonSkin } from './GlowButton.types';
 
 /**
  * The left brace of either button in a unit box (62:227 at 17.654 × 48.762, 58:322 at
@@ -19,14 +19,11 @@ export const BRACE_MIRRORED_UNIT_PATH =
   'L 0.45714286 0.64893617 L 0.45714286 0.9893617 L 0.17142857 0.95744681 L 0 1';
 
 /**
- * Each chrome plate's full render-bounds box relative to its button root: the WP-ASSETS
- * placement table's frame box minus the skin's root origin (the only source of raster positions,
- * §5.13). The box equals the file's pixel size and is never cropped (FID-R3-01); a chrome id with
- * no box here is not drawn (the live chrome shows instead).
+ * The plate each skin's chrome box is measured for: the box is that file's own pixel size, set by
+ * the skin's `.chrome` rule in `GlowButton.module.css` (fixed at build time, so never an inline
+ * style). Any other plate id draws the live chrome instead.
  */
-export const CHROME_PLATE_BOXES: Readonly<Record<AssetId, ChromeBox>> = {
-  // select-class-chrome (740, 858) 439 × 163 − the Select Class root (788, 908), 62:222.
-  'select-class-chrome': { left: -48, top: -50, width: 439, height: 163 },
-  // lock-in-chrome (754, 890) 411 × 156 − the LOCK IN root (803, 940), 58:277.
-  'lock-in-chrome': { left: -49, top: -50, width: 411, height: 156 },
+export const BOXED_CHROME_PLATES: Readonly<Record<GlowButtonSkin, AssetId>> = {
+  'select-class': 'select-class-chrome',
+  'lock-in': 'lock-in-chrome',
 };

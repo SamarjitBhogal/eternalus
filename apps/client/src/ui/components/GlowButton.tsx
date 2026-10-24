@@ -4,10 +4,8 @@ import type { AssetId } from '../../bridge/catalogue.types';
 import { classNames } from './classNames';
 import { BRACE_MIRRORED_UNIT_PATH, BRACE_UNIT_PATH } from './GlowButton.constants';
 import styles from './GlowButton.module.css';
+import type { GlowButtonSkin } from './GlowButton.types';
 import { useGlowButtonChrome } from './useGlowButtonChrome';
-
-/** The two glow buttons: Select Class (62:222) and LOCK IN (58:277). */
-export type GlowButtonSkin = 'select-class' | 'lock-in';
 
 const SKIN_CLASSES: Readonly<Record<GlowButtonSkin, string | undefined>> = {
   'select-class': styles.selectClass,
@@ -39,17 +37,17 @@ const braces = (className: string | undefined): ReactElement => (
  * A selection screen's main action: Select Class or LOCK IN. Placed by its skin at its Figma
  * node in the 1920 × 1080 artboard (render it in a full-artboard container).
  *
- * Two effects paths (I-36, I-80): with a `chromeAssetId` whose plate is loaded and boxed, and
- * while enabled and neither hovered nor pressed, Figma's own chrome plate is drawn at its full
- * render-bounds box; otherwise the live chrome: a backdrop-blur pane beneath (never under a
- * filter, the backdrop-root rule), then the glow group: its shadow (σ = r/2, knocked out as Figma
- * draws it) cast from a plain copy of the ring, haze and brace strokes, and above it, unfiltered,
- * the ring, haze and braces with their glows, the braces' azure glows again cast from plain stroke
- * copies (Figma casts a group's shadow from its children's geometry, not from their glows). The
- * label and its six sky glows (`sel-glow-label`) are always live, above the chrome and
- * outside the group filter (a CSS filter would also shadow the label's glows, which Figma does not
- * show: measured on 58:271). Disabled, it stays
- * focusable with `aria-disabled` and announces `disabledHint`; a press then does nothing.
+ * Two effects paths (I-36, I-80): with a `chromeAssetId` whose plate is loaded and boxed, and while
+ * enabled and neither hovered nor pressed, Figma's own chrome plate is drawn at its skin's full
+ * render-bounds box (the skin's `.chrome` rule); otherwise the live chrome: a backdrop-blur pane
+ * beneath (never under a filter, the backdrop-root rule), then the glow group: its shadow (σ = r/2,
+ * knocked out as Figma draws it) cast from a plain copy of the ring, haze and brace strokes, and
+ * above it, unfiltered, the ring, haze and braces with their glows, the braces' azure glows again
+ * cast from plain stroke copies (Figma casts a group's shadow from its children's geometry, not
+ * from their glows). The label and its six sky glows (`sel-glow-label`) are always live, above the
+ * chrome and outside the group filter (a CSS filter would also shadow the label's glows, which
+ * Figma does not show: measured on 58:271). Disabled, it stays focusable with `aria-disabled` and
+ * announces `disabledHint`; a press then does nothing.
  */
 export function GlowButton({
   label,
@@ -69,7 +67,7 @@ export function GlowButton({
   readonly chromeAssetId: AssetId | null;
 }): ReactElement {
   const hintId = useId();
-  const { plate, ...pointerHandlers } = useGlowButtonChrome(chromeAssetId, isDisabled);
+  const { plateUrl, ...pointerHandlers } = useGlowButtonChrome(chromeAssetId, skin, isDisabled);
   const hasHint = isDisabled && disabledHint !== undefined;
   return (
     <>
@@ -83,7 +81,7 @@ export function GlowButton({
         }}
         {...pointerHandlers}
       >
-        {plate === null ? (
+        {plateUrl === null ? (
           <>
             <span className={styles.pane} aria-hidden="true" />
             <span className={styles.glowGroup} aria-hidden="true">
@@ -101,8 +99,7 @@ export function GlowButton({
         ) : (
           <img
             className={styles.chrome}
-            src={plate.url}
-            style={plate.box}
+            src={plateUrl}
             alt=""
             aria-hidden="true"
             decoding="async"
