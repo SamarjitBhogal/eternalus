@@ -9,8 +9,10 @@ import { useAssetBox } from '../components/useAssetBox';
 import { STRINGS } from '../strings';
 import { isBakedAt } from './isBakedAt';
 import styles from './LegendSelectCard.module.css';
-import { legendCardStyle, offset, originRemainder } from './legendSelectLayout';
-import type { FramePoint, LegendCardLook, LegendSlot } from './legendSelectLayout.types';
+import { legendCardStyle } from './legendSelectLayout';
+import type { LegendCardLook, LegendSlot } from './legendSelectLayout.types';
+import { offset, originRemainder } from './selectionGeometry';
+import type { FramePoint } from './selectionGeometry.types';
 
 /** Where each look's art sits in the card: 55:255 (11.42, 16), 58:360 (4.51, 5.42). */
 const ART_INSETS: Readonly<Record<LegendCardLook, FramePoint>> = {

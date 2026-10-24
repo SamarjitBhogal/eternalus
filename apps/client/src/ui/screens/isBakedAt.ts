@@ -1,5 +1,5 @@
 import type { RasterBox } from '../../bridge/catalogue.types';
-import type { FramePoint } from './legendSelectLayout.types';
+import type { FramePoint } from './selectionGeometry.types';
 
 /**
  * How far, in px on either axis, a raster's integer box may sit from the origin of the node that

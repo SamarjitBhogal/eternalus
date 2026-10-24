@@ -9,8 +9,8 @@ import type { CSSProperties } from 'react';
 import type { RasterBox } from '../../bridge/catalogue.types';
 import { cssVars } from '../components/cssVars';
 import type { ClassCardLook, ClassCardTextOffsets, ClassSlot } from './classSelectLayout.types';
-import { offset, originRemainder } from './legendSelectLayout';
-import type { FramePoint } from './legendSelectLayout.types';
+import { offset, originRemainder } from './selectionGeometry';
+import type { FramePoint } from './selectionGeometry.types';
 
 /** Card centres on a 301 px pitch about x 1099 (647.5 / 948.5 / 1249.5 / 1550.5 for four, C§4.10). */
 const ROW_CENTRE_X = 1099;

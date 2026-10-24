@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { legendCardStyle, legendSlot, originRemainder } from './legendSelectLayout';
+import { legendCardStyle, legendSlot } from './legendSelectLayout';
 
 /** Rounds every number to 2 decimals (Figma's own precision), keeping the shape. */
 const near = (point: { readonly x: number; readonly y: number }) => ({
@@ -78,11 +78,5 @@ describe('legendCardStyle', () => {
       '--title-dx': '0px',
       '--name-dx': '0px',
     });
-  });
-});
-
-describe('originRemainder', () => {
-  it('is the part of the origin past its integer floor', () => {
-    expect(near(originRemainder({ x: 470.67, y: 194 }))).toEqual({ x: 0.67, y: 0 });
   });
 });

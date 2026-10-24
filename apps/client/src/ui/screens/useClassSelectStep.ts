@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 
-import type { AssetId, LegendClassCard, RasterBox } from '../../bridge/catalogue.types';
+import type { AssetId, LegendClassCard } from '../../bridge/catalogue.types';
 import type { LegendClassId } from '../../bridge/domain.types';
 import { useAppSelector } from '../../bridge/hooks';
 import { isSelectableClass } from '../../bridge/selectionRules';
@@ -17,7 +17,8 @@ import {
   initialClassStep,
   shownClassId,
 } from './classStepState';
-import type { ClassRowPlate } from './ClassSelectCardRow.types';
+import { rowPlateOf } from './selectionGeometry';
+import type { RowPlate } from './selectionGeometry.types';
 
 /** State and handlers shared by both class layouts. */
 type ClassSelectStepModel = {
@@ -32,7 +33,7 @@ type ClassSelectStepModel = {
   /** The card that takes the focus on mount: the class Back returned to (CD-11), else `null`. */
   readonly autoFocusClassId: LegendClassId | null;
   /** The picked class's row plate while it is loaded and boxed (I-69's one predicate), else `null`. */
-  readonly rowPlate: ClassRowPlate | null;
+  readonly rowPlate: RowPlate | null;
   /** Select Class's chrome plate, for every pick (FID-R4-01); `null` = live CSS. */
   readonly selectClassChromeAssetId: AssetId | null;
   readonly actions: ClassStepActions;
@@ -44,10 +45,6 @@ const toStepCard = (card: LegendClassCard): ClassStepCard => ({
   classId: card.classId,
   isAvailable: isSelectableClass(card),
 });
-
-function rowPlateOf(url: string | null, box: RasterBox | null): ClassRowPlate | null {
-  return url === null || box === null ? null : { url, box };
-}
 
 /**
  * The class step's model for either layout. The pick is local until Select Class / View Details

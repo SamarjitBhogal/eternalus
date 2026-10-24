@@ -6,8 +6,10 @@ import { ArchCard, type ArchLayerKind } from '../components/ArchCard';
 import { useAssetBoxes } from '../components/useAssetBox';
 import { isBakedAt } from './isBakedAt';
 import styles from './LegendSelectCardHalo.module.css';
-import { legendCardStyle, legendSlot, offset, originRemainder } from './legendSelectLayout';
-import type { FramePoint, LegendCardLook } from './legendSelectLayout.types';
+import { legendCardStyle, legendSlot } from './legendSelectLayout';
+import type { LegendCardLook } from './legendSelectLayout.types';
+import { offset, originRemainder } from './selectionGeometry';
+import type { FramePoint } from './selectionGeometry.types';
 
 /** Where each copy's art sits in it: 61:8 (12.88, 16.93) in 61:4, 61:20 (5.19, 5.91) in 61:17. */
 const ART_INSETS: Readonly<Record<LegendCardLook, FramePoint>> = {

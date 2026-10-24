@@ -5,8 +5,8 @@ import type { LegendClassId } from '../../bridge/domain.types';
 import { ClassSelectCard } from './ClassSelectCard';
 import { ClassSelectCardHalo } from './ClassSelectCardHalo';
 import styles from './ClassSelectCardRow.module.css';
-import type { ClassRowPlate } from './ClassSelectCardRow.types';
 import { classSlot } from './classSelectLayout';
+import type { RowPlate } from './selectionGeometry.types';
 
 /**
  * The class cards of the class step (62:146), the top-most layer of 62:125: its root is lifted
@@ -40,7 +40,7 @@ export function ClassSelectCardRow({
   readonly tabbableIndex: number;
   /** The card that takes the focus on mount (Back), or `null`. */
   readonly autoFocusClassId: LegendClassId | null;
-  readonly rowPlate: ClassRowPlate | null;
+  readonly rowPlate: RowPlate | null;
   readonly onPick: (classId: LegendClassId) => void;
   /** A card's preview starts (its class id) or ends (`null`). */
   readonly onPreview: (classId: LegendClassId | null) => void;

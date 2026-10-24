@@ -12,7 +12,7 @@ import styles from './ClassSelectCard.module.css';
 import { classArtOrigin, classCardStyle, overlayVars, plateVars } from './classSelectLayout';
 import type { ClassCardLook, ClassSlot } from './classSelectLayout.types';
 import { isBakedAt } from './isBakedAt';
-import { offset, originRemainder } from './legendSelectLayout';
+import { offset, originRemainder } from './selectionGeometry';
 
 /** Bottom to top (62:162): outer frame 62:163, art 62:164, inner GLASS overlay 62:177, focus ring. */
 const LAYERS: readonly ArchLayerKind[] = ['outer-outline', 'art', 'inner-outline', 'focus-ring'];

@@ -8,12 +8,9 @@ import type { CSSProperties } from 'react';
 
 import type { RasterBox } from '../../bridge/catalogue.types';
 import { cssVars } from '../components/cssVars';
-import type {
-  CardTextOffsets,
-  FramePoint,
-  LegendCardLook,
-  LegendSlot,
-} from './legendSelectLayout.types';
+import type { CardTextOffsets, LegendCardLook, LegendSlot } from './legendSelectLayout.types';
+import { offset } from './selectionGeometry';
+import type { FramePoint } from './selectionGeometry.types';
 
 /** The row's centre and its mean slot pitch (321.33 left, 322.33 right; SUB P3) for 1, 2 or 4+. */
 const ROW_CENTRE_X = 960;
@@ -31,12 +28,6 @@ const REFRACTION_OFFSET: Readonly<Record<LegendCardLook, FramePoint>> = {
 
 /** Text on the left card's geometry: 55:259 / 55:260 centred 137.29 / 137.4 into the card. */
 const NO_TEXT_OFFSETS: CardTextOffsets = { title: 0, name: 0 };
-
-/** `point` moved by `by`. */
-export const offset = (point: FramePoint, by: FramePoint): FramePoint => ({
-  x: point.x + by.x,
-  y: point.y + by.y,
-});
 
 /** A slot centred on `centreX`, every card and copy at the left card's geometry (CD-17). */
 function slotAt(centreX: number): LegendSlot {
@@ -119,9 +110,4 @@ export function legendCardStyle(
       ...art,
     }),
   };
-}
-
-/** The remainder of `origin` past its integer floor, for `ArchCard`'s own `origin` (I-45). */
-export function originRemainder(origin: FramePoint): FramePoint {
-  return { x: origin.x - Math.floor(origin.x), y: origin.y - Math.floor(origin.y) };
 }
