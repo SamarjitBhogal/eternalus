@@ -1,3 +1,4 @@
+import type { PlayableTeam } from '../teams/teams.types';
 import type { ContentCatalogue } from './ContentCatalogue';
 import {
   createDefaultContentRules,
@@ -12,6 +13,7 @@ import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
 import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import type { MapFeatureKind } from './maps/maps.types';
+import { TEAM_DISPLAY_NAMES } from './teams/teamDisplayNames';
 import { ContentValidator } from './validation/ContentValidator';
 
 /** Display data the client's selection screens and HUD show (read-only definitions). */
@@ -25,6 +27,8 @@ export type DisplayContent = {
     readonly kind: MapFeatureKind;
     readonly displayName: string | null;
   }[];
+  /** Each playable team's display name (the team badge and the roster labels). */
+  readonly teamNames: Readonly<Record<PlayableTeam, string>>;
 };
 
 /** The catalogues `loadDisplayContent` validates and returns; each defaults to the shipped one. */
@@ -63,5 +67,6 @@ export const loadDisplayContent = ({
       kind,
       displayName,
     })),
+    teamNames: TEAM_DISPLAY_NAMES,
   };
 };

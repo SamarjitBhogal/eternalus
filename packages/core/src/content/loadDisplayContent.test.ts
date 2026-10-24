@@ -107,4 +107,8 @@ describe('loadDisplayContent', () => {
       new ContentValidationError('Invalid content: Flying: id must be kebab-case'),
     );
   });
+
+  it('names the two playable teams', () => {
+    expect(loadDisplayContent().teamNames).toEqual({ light: 'Light', dark: 'Dark' });
+  });
 });
