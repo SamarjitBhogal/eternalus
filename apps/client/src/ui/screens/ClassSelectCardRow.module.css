@@ -1,0 +1,23 @@
+/* 62:146 Class Option Frames is 62:125's top-most layer (§5.15 paint order): the row paints above
+   the title, the panel, the Legends strip, Select Class, the roster and the shell's banner,
+   countdown and badge, so the row plate's bottom bleed stays above Select Class's chrome (y
+   858–882). The only positive z-index on the class step; the row covers the artboard, and only
+   its cards take pointer events. */
+.row {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The picked class's row plate at its full inline box, 1:1, never fitted or cropped (I-45,
+   FID-R3-01); before the radio group, so the cards' plates and strokes paint above it. */
+.rowPlate {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.cards {
+  pointer-events: none;
+}

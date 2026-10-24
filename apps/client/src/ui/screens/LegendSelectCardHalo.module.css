@@ -1,0 +1,242 @@
+/* 61:3 lies beneath every element of 58:271 but the backdrop and the bottom vignette (62:229),
+   so both halo layers stack at -1: after the vignette (-1, earlier in the artboard) and below
+   everything at auto or above, the panel and the rating bars included (§5.15 paint order). */
+.glassLayer,
+.refractionLayer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 61:3 group: opacity 0.6, LAYER_BLUR 20 (σ 10). */
+.refractionLayer {
+  opacity: 0.6;
+  filter: blur(10px);
+}
+
+.pane,
+.copy {
+  position: absolute;
+}
+
+/* Copy vector layers sit at integer boxes (Chrome pixel-snaps an svg's box) and reach their
+   fractional Figma box by translate(the fraction) scale(Figma size / box size). */
+.copy [data-arch-layer='outer-outline'],
+.copy [data-arch-layer='inner-outline'],
+.copy [data-arch-layer='shadow-plate'] {
+  transform-origin: 0 0;
+}
+
+/* --- GLASS panes: frost 53 → backdrop blur 26.5 px, clipped to each copy's arch (CD-15). Literal
+   radius: Safari drops a var() in backdrop-filter. --- */
+
+.pane [data-arch-layer='glass'] {
+  backdrop-filter: blur(26.5px) saturate(1.1);
+  -webkit-backdrop-filter: blur(26.5px) saturate(1.1);
+}
+
+/* Idle copy arch 316.64 × 631 (61:18); picked: its art arch (61:8, relative to 61:4). */
+.pane[data-look='idle'] [data-arch-layer] {
+  width: 316.64px;
+  height: 631px;
+}
+
+.pane[data-look='picked'] [data-arch-layer] {
+  left: 12.88px;
+  top: 16.93px;
+  width: 353.86px;
+  height: 697.64px;
+}
+
+/* --- Picked copy (61:4, 379 × 735.23) --- */
+
+/* 61:5 plate 379 × 735.23: 36 %, LAYER_BLUR 100. */
+.copy[data-look='picked'] [data-arch-layer='shadow-plate'] {
+  width: 379px;
+  height: 735px;
+  transform: scale(1, calc(735.23 / 735));
+  filter: blur(50px);
+}
+
+.copy[data-look='picked'] [data-arch-layer='shadow-plate'] path,
+.copy[data-look='picked'] [data-arch-layer='inner-outline'] path {
+  fill: var(--selection-art-shade-deep);
+}
+
+/* 61:6 inner frame (19, 23.61) 340.11 × 683.79: 1 px parchment, two azure radius-5 glows. */
+.copy[data-look='picked'] [data-arch-layer='inner-outline'] {
+  left: 19px;
+  top: 23px;
+  width: 340px;
+  height: 684px;
+  transform: translate(0, 0.61px) scale(calc(340.11 / 340), calc(683.79 / 684));
+  filter: url(#sel-glow-inner);
+}
+
+.copy[data-look='picked'] [data-arch-layer='inner-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 1px;
+}
+
+/* 61:7 Rectangle 32 (19.18, 536.35) 339.52 × 171.38, beneath the art. */
+.copy[data-look='picked'] [data-arch-layer='text-scrim'] {
+  left: 19.18px;
+  top: 536.35px;
+  width: 339.52px;
+  height: 171.38px;
+  background: var(--selection-art-shade-deep);
+}
+
+/* 61:8 art (12.88, 16.93) 353.86 × 697.64 with its 2 px stroke and the selected glows. */
+.copy[data-look='picked'] [data-arch-layer='art'] {
+  filter: url(#sel-glow-selected);
+}
+
+.copy[data-look='picked'][data-art-mode='cover'] [data-arch-layer='art'] {
+  left: 12.88px;
+  top: 16.93px;
+  width: 353.86px;
+  height: 697.64px;
+}
+
+.copy[data-look='picked'] [data-arch-layer='outer-outline'] {
+  left: 12px;
+  top: 16px;
+  width: 354px;
+  height: 698px;
+  transform: translate(0.88px, 0.93px) scale(calc(353.86 / 354), calc(697.64 / 698));
+}
+
+.copy[data-look='picked'] [data-arch-layer='outer-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 2px;
+}
+
+/* Cover mode only: the 5 % shade over the image. */
+.copy[data-look='picked'] [data-arch-part='over'] {
+  fill: var(--selection-art-shade-light);
+}
+
+/* --- Idle copy (61:17, 316.64 × 631) --- */
+
+.copy[data-look='idle'] [data-arch-layer='outer-outline'] {
+  width: 317px;
+  height: 631px;
+  transform: scale(calc(316.64 / 317), 1);
+}
+
+.copy[data-look='idle'] [data-arch-layer='outer-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 2px;
+}
+
+/* 61:19 inner outline and 61:20 art (5.19, 5.91) 304.18 × 618.2. */
+.copy[data-look='idle'] [data-arch-layer='inner-outline'] {
+  left: 5px;
+  top: 5px;
+  width: 304px;
+  height: 618px;
+  transform: translate(0.19px, 0.91px) scale(calc(304.18 / 304), calc(618.2 / 618));
+}
+
+.copy[data-look='idle'][data-art-mode='cover'] [data-arch-layer='art'] {
+  left: 5.19px;
+  top: 5.91px;
+  width: 304.18px;
+  height: 618.2px;
+}
+
+.copy[data-look='idle'] [data-arch-layer='inner-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 1px;
+}
+
+.copy[data-look='idle'] [data-arch-part='under'] {
+  fill: var(--selection-ink-veil);
+}
+
+.copy[data-look='idle'] [data-arch-part='over'] {
+  fill: var(--selection-art-shade);
+}
+
+/* A rendition at its placement-table box, at its own pixel size (I-45). */
+.copy[data-art-mode='image'] [data-arch-layer='art'] {
+  left: var(--art-left);
+  top: var(--art-top);
+  width: var(--art-width);
+  height: var(--art-height);
+}
+
+.copy [data-arch-art='missing'] [data-arch-part='under'] {
+  fill: var(--selection-ink-missing);
+}
+
+/* --- Copy text: the card's title and name, centred on the copy's Figma centres; each line box
+   top is the copy's glyph top (render bounds) less the crisp card's glyph offset for that size
+   (the copies' text boxes are fixed-size and centred, 61:9 …); the copy's remainder goes into
+   left/top (a text translate snaps to whole px). --- */
+
+.title,
+.name {
+  position: absolute;
+  margin: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.name {
+  color: var(--selection-parchment);
+}
+
+/* 61:9 title 40, glyph top 747.01 − 10.44; centre x 189.05 of the copy. */
+.copy[data-look='picked'] .title {
+  left: calc(-0.45px + var(--card-fx));
+  top: calc(571.57px + var(--card-fy));
+  width: 379px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(40px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-40) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 61:10 name 24, glyph top 793.97 − 5.77; centre x 189.56. */
+.copy[data-look='picked'] .name {
+  left: calc(0.06px + var(--card-fx));
+  top: calc(623.2px + var(--card-fy));
+  width: 379px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 61:21 title 36, glyph top 711.5 − 9.3; centre x 157.88 of the copy. */
+.copy[data-look='idle'] .title {
+  left: calc(-0.44px + var(--card-fx));
+  top: calc(481.2px + var(--card-fy));
+  width: 316.64px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(36px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-36) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 61:22 name 20, glyph top 752.58 − 6; centre x 158.01. */
+.copy[data-look='idle'] .name {
+  left: calc(-0.31px + var(--card-fx));
+  top: calc(525.58px + var(--card-fy));
+  width: 316.64px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}

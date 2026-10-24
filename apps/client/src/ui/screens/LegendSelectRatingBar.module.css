@@ -1,0 +1,53 @@
+/* One 58:323 row: label (0, 0) 100 × 27, track (0, 27) 401 × 11. The parent stacks rows on the
+   Figma's 48 px pitch. */
+.bar {
+  position: relative;
+  width: 401px;
+  height: 38px;
+}
+
+/* 58:305 "Damage" …: Cinzel Regular 20, the 85 % text token, left-aligned. */
+.label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--selection-text-soft);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+}
+
+/* 58:308 track: no fill, 1 px INSIDE stroke, no radius. */
+.track {
+  position: absolute;
+  left: 0;
+  top: 27px;
+  box-sizing: border-box;
+  width: 401px;
+  height: 11px;
+  border: 1px solid var(--selection-stat-track);
+}
+
+/* 58:307 fill origin (76, row + 30): 2 px inside the track's 1 px border; inner travel 395 × 5. */
+.travel {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 395px;
+  height: 5px;
+}
+
+/* Paint style "Stat Bar", relative to the fill's own width (S§3); the width is inline (13 §7). */
+.fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--selection-stat-fill-start) 0%,
+    var(--selection-stat-fill-end) 44.712%
+  );
+}

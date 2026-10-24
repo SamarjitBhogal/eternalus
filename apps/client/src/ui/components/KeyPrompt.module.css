@@ -1,0 +1,105 @@
+/* A key cap then its label on one line; skins place it at its Figma node in the artboard. */
+.prompt {
+  position: absolute;
+  display: inline-flex;
+  align-items: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.prompt:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+}
+
+/* The cap keeps its box line height whatever the binding (FID-17); a longer label widens it. */
+.cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  background: var(--selection-keycap);
+  white-space: nowrap;
+}
+
+/* 58:328 ESC Back at (73, 971): cap 58:324 (73, 974) 40 × 22; "esc " 57:58 Cinzel Regular 20
+   centred in (75, 974) 35 × 21: Figma centres the glyphs, its trailing space adding no width
+   (measured: a rendered trailing space widened the cap to 44 px and moved "back" 4 px right);
+   "back" 58:326 at (122, 971). A longer binding widens the cap. */
+.legendBack {
+  left: 73px;
+  top: 971px;
+  gap: 9px;
+}
+
+.legendBack .cap {
+  min-width: 40px;
+  height: 22px;
+  margin-top: 3px;
+  padding: 0 3px 1px 2px;
+  color: var(--selection-keycap-ink);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  /* Cinzel 20's own line box (27 px): a 21 px line left 3 px of the <kbd>'s glyph box below it
+     (scroll 34 × 24 vs client 34 × 21, OD-21f). The cap centres the <kbd>, so the glyphs stay on
+     the same pixels. */
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  /* The binding label "Esc" in Cinzel's small capitals, as the Figma's "esc " (CD-08). */
+  text-transform: lowercase;
+}
+
+.legendBack .label {
+  color: var(--selection-text-dim);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+}
+
+/* 62:84 "C to View Details" at (83, 748): cap 62:87 (83, 753) 21 × 21; "C" 62:88 Cinzel Bold 16
+   centred; "View Details" 62:85 Regular 24 at (118, 748). */
+.viewDetails {
+  left: 83px;
+  top: 748px;
+  gap: 14px;
+}
+
+.viewDetails .cap {
+  min-width: 21px;
+  height: 21px;
+  margin-top: 5px;
+  padding: 0 4px;
+  color: var(--selection-keycap-ink-alt);
+  font-family: var(--font-game);
+  font-weight: 700;
+  font-size: max(16px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: 21px;
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 62:88: Chrome sets the Bold 16 key label 1 px above Figma's in the 21 px cap (WP-CLASS audit of
+   62:70: zero shift with it); the glyph moves, the cap box stays. */
+.viewDetails .cap > kbd {
+  position: relative;
+  top: 1px;
+}
+
+.viewDetails .label {
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+}

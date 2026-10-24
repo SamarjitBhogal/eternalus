@@ -111,7 +111,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
     },
     licence: 'owner',
     source:
-      'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 58:271, protocol R1 render (OA1) on scratch duplicate 96:205 of page 96:2; pass sub-P1-nonglass: black/white frame-fill pair (r1-log W17/W18); pass sub-V1-variants: black/white frame-fill pair (r1-log W21/W22; a non-Figma look made on the duplicate, OD-6); pass sub-P1b-refraction: black/white frame-fill pair (r1-log W19/W20); pass sub-V2-refraction-variants: black/white frame-fill pair (r1-log W23/W24; a non-Figma look made on the duplicate, OD-6); straight alpha a = 1 - (W - B)/255, colour B/a; 1x lossless WebP. card-idle = 58:365 cropped to (1149, 256, 265, 567) (fractional box (1149, 256.04, 264.51, 566.93) baked), nothing removed, 2x lossy q92 (alpha lossless); card-picked = agent clone 114:2 of the 55:255 dup (V1) cropped to (1125, 210, 315, 660) (fractional box (1125.75, 210, 313.71, 659.46) baked), removed: 2 px cream stroke, both glows, 2x lossy q92 (alpha lossless); refraction-idle = 61:14 cropped to (1127, 227, 306, 619) (fractional box (1127.99, 227.9, 304.18, 617.22) baked), removed: 61:3 LAYER_BLUR, GLASS and opacity 0.6 (drawn live), 2x lossy q92 (alpha lossless); refraction-picked = agent clone 116:2 of the 61:8 dup (V2) cropped to (1101, 181, 355, 699) (fractional box (1101.21, 181.93, 353.86, 697.64) baked), removed: 2 px cream stroke, both glows; 61:3 LAYER_BLUR, GLASS and opacity 0.6 (drawn live), 2x lossy q92 (alpha lossless)',
+      'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 58:271, protocol R1 render (OA1) on scratch duplicate 96:205 of page 96:2; pass sub-P1-nonglass: black/white frame-fill pair (r1-log W17/W18); pass sub-V3-necro-picked: black/white frame-fill pair (r1-log W39/W40; a non-Figma look made on the duplicate, OD-6, re-exported under OD-21(b)); pass sub-P1b-refraction: black/white frame-fill pair (r1-log W19/W20); pass sub-V2-refraction-variants: black/white frame-fill pair (r1-log W23/W24; a non-Figma look made on the duplicate, OD-6); straight alpha a = 1 - (W - B)/255, colour B/a; 1x lossless WebP. card-idle = 58:365 cropped to (1149, 256, 265, 567) (fractional box (1149, 256.04, 264.51, 566.93) baked), nothing removed, 2x lossy q92 (alpha lossless); card-picked = agent clone 134:2 of the 55:255 dup (V3; necromancer image in CROP mode on its opaque rows 17-646, so the arch is opaque, OD-21(b)) cropped to (1125, 210, 315, 660) (fractional box (1125.75, 210, 313.71, 659.46) baked), removed: 2 px cream stroke, both glows, 2x lossy q92 (alpha lossless); refraction-idle = 61:14 cropped to (1127, 227, 306, 619) (fractional box (1127.99, 227.9, 304.18, 617.22) baked), removed: 61:3 LAYER_BLUR, GLASS and opacity 0.6 (drawn live), 2x lossy q92 (alpha lossless); refraction-picked = agent clone 116:2 of the 61:8 dup (V2) cropped to (1101, 181, 355, 699) (fractional box (1101.21, 181.93, 353.86, 697.64) baked), removed: 2 px cream stroke, both glows; 61:3 LAYER_BLUR, GLASS and opacity 0.6 (drawn live), 2x lossy q92 (alpha lossless)',
     renditions: {
       'card-idle': {
         file: {
@@ -128,13 +128,13 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
       'card-picked': {
         file: {
           url: necromancerCardArtCardPicked,
-          bytes: 165304,
-          hash: '4083d793d9cf41eb1afde5bd0e6228ddea7411de78fa3593623e3e841c47533a',
+          bytes: 165068,
+          hash: 'fcbcaf3e63bd01bdb7051c5b5ee5ae0b1a12eaa4efd3d8e6c906acd08ddb5a30',
         },
         file2x: {
           url: necromancerCardArtCardPicked2x,
-          bytes: 84572,
-          hash: '5405ee781e09e9753e3a723d662f7c1e7bd9b5c7bf764324a2dd8f59543698d2',
+          bytes: 79210,
+          hash: 'e16a6e6e24c8dbecab947902da09e899ea75455498a2820a4ac99b95b1e156a9',
         },
       },
       'refraction-idle': {

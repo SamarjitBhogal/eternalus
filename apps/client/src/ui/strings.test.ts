@@ -19,6 +19,11 @@ describe('STRINGS.characterSelect templates', () => {
       'You are on the Light team',
     );
   });
+
+  it('names a roster tile with its class once known', () => {
+    expect(characterSelect.allyTile(characterSelect.you, 'Magus')).toBe('You, Magus');
+    expect(characterSelect.allyTile(characterSelect.you, null)).toBe('You');
+  });
 });
 
 describe('STRINGS.hud templates', () => {

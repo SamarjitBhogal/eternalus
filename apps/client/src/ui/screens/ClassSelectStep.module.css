@@ -1,0 +1,29 @@
+/* The class step (62:125) fills the artboard and creates no stacking context (no z-index,
+   transform, filter, opacity, isolation or containment; §5.15): its children stack in
+   SelectionStage's artboard, where the card row's z-index 1 lifts it above the shell's banner,
+   countdown and badge, as 62:146 is 62:125's top-most layer. */
+.step {
+  position: absolute;
+  inset: 0;
+}
+
+/* 62:213 "Choose Your Class": Cinzel Regular 24 white, box (839, 180) 243 × 32 centred on x 960.5
+   (the middle of 1..1920), as wide as its text. Beneath the row plate's hole (y 198–212). */
+.chooseTitle {
+  position: absolute;
+  left: 1px;
+  right: 0;
+  top: 180px;
+  width: max-content;
+  margin: 0 auto;
+  color: var(--selection-text);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}

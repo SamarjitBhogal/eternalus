@@ -17,7 +17,8 @@ export function AssetImage({
 }: {
   readonly assetId: AssetId | null;
   readonly rendition?: RenditionKey;
-  readonly className?: string;
+  /** A CSS module class (`string | undefined` under `noUncheckedIndexedAccess`); none when undefined. */
+  readonly className?: string | undefined;
   readonly alt?: string;
 }): ReactElement | null {
   const url = useAssetUrl(assetId, rendition);

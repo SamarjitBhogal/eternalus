@@ -1,0 +1,34 @@
+/* The alternate class step (62:70) fills the artboard and creates no stacking context (§5.15), so
+   the model's z-index places it between the shell's vignettes. */
+.step {
+  position: absolute;
+  inset: 0;
+}
+
+/* 62:77 Magus Model: the R1 render (its alpha-shaped DROP_SHADOW 0 4 r20 baked) at its placement
+   box (436, 165) 1048 × 747, 1:1 (I-45); between the top vignette (−3) and the bottom one (−1),
+   which fades its feet as in Figma. */
+.model,
+.modelStandIn {
+  position: absolute;
+  z-index: -2;
+  display: block;
+  pointer-events: none;
+}
+
+.model {
+  left: 436px;
+  top: 165px;
+  width: 1048px;
+  height: 747px;
+}
+
+/* CD-13: a class with no model art shows its card art contained in 62:77's layer box
+   (456, 181) 1008 × 707, a live stand-in (OD-17c), never a rendition. */
+.modelStandIn {
+  left: 456px;
+  top: 181px;
+  width: 1008px;
+  height: 707px;
+  object-fit: contain;
+}

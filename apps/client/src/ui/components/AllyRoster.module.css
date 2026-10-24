@@ -1,0 +1,23 @@
+/* The roster column from y 173: 60 px tiles, gap 15 (pitch 75), integer boxes throughout. */
+.roster {
+  position: absolute;
+  top: 173px;
+  width: 60px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  pointer-events: none;
+}
+
+/* 62:201 Ally Tiles at x 1775 (right edge 1835). */
+.roster[data-layout='class-step'] {
+  left: 1775px;
+}
+
+/* 58:342 Ally Tiles at x 1755 (the player's 70 px tile at 1750). */
+.roster[data-layout='legend-step'] {
+  left: 1755px;
+}

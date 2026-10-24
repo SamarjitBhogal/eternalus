@@ -1,0 +1,84 @@
+/* The panel origin per layout (frame px); every value of the panel and its details is relative to
+   it. The panel is not transformed: its icons are rasters at integer boxes (I-45). Fractional
+   Figma origins of live text are carried by `transform` on the text leaves only. */
+.panel {
+  position: absolute;
+  top: 128px;
+  pointer-events: none;
+}
+
+.panel[data-layout='class'] {
+  left: 45px;
+}
+
+.panel[data-layout='class-alternate'] {
+  left: 65px;
+}
+
+.panel[data-layout='legend'] {
+  left: 53px;
+}
+
+/* Text leaves: Cinzel Regular, line height = the Figma AUTO box (I-20). */
+.title,
+.subtitle,
+.description {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 72:750 / 62:81 / 56:34 title at the origin: 96, white. A title wider than its panel region gets a
+   smaller inline font size (≥ 64, the same I-51 floor, OD-21e) and keeps this line box, so nothing
+   below it moves. */
+.title {
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(96px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-96) * 1px);
+  white-space: nowrap;
+}
+
+/* 72:749 / 57:35 role line (4, 107) w 480: 24 in the content's accent (inline colour). */
+.subtitle {
+  width: 480px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  white-space: pre-wrap;
+  transform: translate(4px, 107px);
+}
+
+/* 16, white: 72:748 (4, 148) w 474; 62:82 (0, 134) auto width ≤ 496 with its hard line breaks;
+   56:35 (4, 149) w 496. */
+.description {
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(16px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-16) * 1px);
+}
+
+.panel[data-layout='class'] .description {
+  width: 474px;
+  transform: translate(4px, 148px);
+}
+
+/* Auto width: as wide as its longest hard-broken line, at most 496 (the panel root has no width,
+   so a shrink-to-fit box would otherwise wrap at every word). */
+.panel[data-layout='class-alternate'] .description {
+  width: max-content;
+  max-width: 496px;
+  white-space: pre-line;
+  transform: translate(0, 134px);
+}
+
+.panel[data-layout='legend'] .description {
+  width: 496px;
+  transform: translate(4px, 149px);
+}

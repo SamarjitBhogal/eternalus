@@ -86,6 +86,8 @@
   --selection-glass-fallback: rgb(19 19 19 / 30%);
   --selection-parchment: #f9e0c7;
   --selection-parchment-faint: rgb(249 224 199 / 60%);
+  /* The glow-button rings (62:223, 58:273) seen through the glass bodies stacked above them. */
+  --selection-parchment-under-glass: rgb(249 224 199 / 50%);
   --selection-text: #ffffff;
   --selection-text-soft: rgb(255 255 255 / 85%);
   --selection-text-dim: rgb(255 255 255 / 75%);
