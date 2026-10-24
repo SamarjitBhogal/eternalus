@@ -4,7 +4,7 @@ import { useAppSelector } from '../../bridge/hooks';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import type { RootState } from '../../bridge/store';
 import { AssetImage } from '../components/AssetImage';
-import { classNames } from './hudMeter';
+import { classNames } from '../components/classNames';
 import styles from './MinimapPanel.module.css';
 
 const selectMinimapFrame = (state: RootState) =>

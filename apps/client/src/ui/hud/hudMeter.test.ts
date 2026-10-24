@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classNames, fractionOf, meterAttributes, percentOf } from './hudMeter';
+import { fractionOf, meterAttributes, percentOf } from './hudMeter';
 
 describe('meterAttributes', () => {
   it('is a meter with now, min 0, max and an optional spoken value', () => {
@@ -39,11 +39,5 @@ describe('fractionOf and percentOf', () => {
   it('rounds a fraction to a whole percentage', () => {
     expect(percentOf(5 / 6)).toBe(83);
     expect(percentOf(0.699)).toBe(70);
-  });
-});
-
-describe('classNames', () => {
-  it('joins the set names and skips the rest', () => {
-    expect(classNames('a', undefined, false, null, '', 'b')).toBe('a b');
   });
 });

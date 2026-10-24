@@ -5,9 +5,10 @@ import { shallowEqual, useAppSelector } from '../../bridge/hooks';
 import type { HudSide } from '../../bridge/hud.types';
 import { selectStructureStrip } from '../../bridge/selectors/selectStructureStrip';
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
+import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { STRINGS } from '../strings';
-import { classNames, percentOf } from './hudMeter';
+import { percentOf } from './hudMeter';
 import { StatusBar } from './StatusBar';
 import styles from './StructureStrip.module.css';
 

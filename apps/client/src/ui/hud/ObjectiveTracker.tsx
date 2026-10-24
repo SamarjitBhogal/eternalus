@@ -8,9 +8,9 @@ import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import type { RootState } from '../../bridge/store';
 import { AssetImage } from '../components/AssetImage';
+import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { STRINGS } from '../strings';
-import { classNames } from './hudMeter';
 import styles from './ObjectiveTracker.module.css';
 import { StatusBar } from './StatusBar';
 

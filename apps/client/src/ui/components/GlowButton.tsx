@@ -1,6 +1,7 @@
 import { useId, type ReactElement } from 'react';
 
 import type { AssetId } from '../../bridge/catalogue.types';
+import { classNames } from './classNames';
 import { BRACE_MIRRORED_UNIT_PATH, BRACE_UNIT_PATH } from './GlowButton.constants';
 import styles from './GlowButton.module.css';
 import { useGlowButtonChrome } from './useGlowButtonChrome';
@@ -74,7 +75,7 @@ export function GlowButton({
     <>
       <button
         type="button"
-        className={[styles.button, SKIN_CLASSES[skin]].join(' ')}
+        className={classNames(styles.button, SKIN_CLASSES[skin])}
         aria-disabled={isDisabled ? true : undefined}
         aria-describedby={hasHint ? hintId : undefined}
         onClick={() => {
@@ -93,7 +94,7 @@ export function GlowButton({
               </span>
               <span className={styles.ring} />
               <span className={styles.haze} />
-              {braces([styles.braces, styles.bracesGlow].join(' '))}
+              {braces(classNames(styles.braces, styles.bracesGlow))}
               {braces(styles.braces)}
             </span>
           </>

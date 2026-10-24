@@ -3,8 +3,9 @@ import type { ReactElement } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import { hudSlice } from '../../bridge/slices/hudSlice';
 import type { RootState } from '../../bridge/store';
+import { classNames } from '../components/classNames';
 import { STRINGS } from '../strings';
-import { classNames, fractionOf } from './hudMeter';
+import { fractionOf } from './hudMeter';
 import styles from './ResourceBar.module.css';
 import { SegmentedBar } from './SegmentedBar';
 

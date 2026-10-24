@@ -2,10 +2,11 @@ import { type ReactElement, useId } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
 import { hudSlice } from '../../bridge/slices/hudSlice';
+import { classNames } from '../components/classNames';
 import { STRINGS } from '../strings';
 import { FIGMA_PIP_COUNT, PIP_GEOMETRY } from './ChargePips.constants';
 import styles from './ChargePips.module.css';
-import { classNames, meterAttributes } from './hudMeter';
+import { meterAttributes } from './hudMeter';
 
 const { size, pitch, fillInset, fillSize, stroke, edgeStepsPerPx } = PIP_GEOMETRY;
 

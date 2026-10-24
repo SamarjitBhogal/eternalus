@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import type { InputAction } from '../../bridge/Binding.types';
+import { classNames } from './classNames';
 import { KeyGlyph } from './KeyGlyph';
 import styles from './KeyPrompt.module.css';
 import { useActionShortcut } from './useActionShortcut';
@@ -34,7 +35,7 @@ export function KeyPrompt({
   return (
     <button
       type="button"
-      className={[styles.prompt, SKIN_CLASSES[skin]].join(' ')}
+      className={classNames(styles.prompt, SKIN_CLASSES[skin])}
       onClick={onPress}
     >
       <span className={styles.cap}>

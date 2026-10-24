@@ -3,6 +3,7 @@ import type { CSSProperties, ReactElement } from 'react';
 import type { AssetId, RenditionKey } from '../../bridge/catalogue.types';
 import { ARCH_UNIT_PATH } from './archUnitPath';
 import styles from './ArchCard.module.css';
+import { classNames } from './classNames';
 import { cssVars } from './cssVars';
 import { useAssetUrl } from './useAssetUrl';
 
@@ -53,7 +54,7 @@ function archVector(
     <svg
       key={layer}
       data-arch-layer={layer}
-      className={[styles.vector, className].join(' ').trim()}
+      className={classNames(styles.vector, className)}
       viewBox="0 0 1 1"
       preserveAspectRatio="none"
       overflow="visible"
