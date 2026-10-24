@@ -130,6 +130,7 @@ export const MATCH_PANEL_ASSETS: readonly AssetManifestEntry[] = [
     licence: 'owner',
     source:
       'Owner art (DEC-51): a pixel copy of magus-detail-staff@detail-class-alt (Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:70, node 62:103 rotated 90 degrees, R1 render on scratch duplicate 96:150 of page 96:2, black/white frame-fill pair r1-log W11/W12, straight alpha a = 1 - (W - B)/255, colour B/a, nothing removed), lossless WebP; in the match group so the HUD never needs released selection files (OD-8)',
+    box: { left: 457, top: 977, width: 133, height: 19 },
   },
   {
     id: 'minimap-frame',
@@ -202,5 +203,6 @@ export const MATCH_PANEL_ASSETS: readonly AssetManifestEntry[] = [
     licence: 'owner',
     source:
       "Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs node 62:241 (rotated 90°, with the owner's Noise effect) in frame 62:231, 2026-10-24 (OD-23, OD-28). Alpha: protocol R1 (OA1) on scratch copy 140:3 in frame 140:2 of page 96:2, black/white frame-fill pair at scale 1 and 2, a = 1 - (W - B)/255. Colour: where a >= 0.5, solved from the original frame render over its #3e2217 fill, C = (F - (1 - a) * #3e2217) / a (F = 62:231 at scale 1 and 2), because a copy re-seeds the Noise grain; elsewhere B/a. Crop (387, 946, 274, 82); 1x and 2x lossless WebP. Re-extract after any edit to 62:241",
+    box: { left: 387, top: 946, width: 274, height: 82 },
   },
 ];

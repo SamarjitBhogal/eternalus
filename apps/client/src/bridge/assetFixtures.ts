@@ -104,6 +104,15 @@ export const TEST_ASSET_BOXES: Readonly<Record<string, RasterBox>> = {
   'oracle-row-plate': { left: 459, top: 65, width: 1002, height: 936 },
 };
 
+/**
+ * The manifest's draw boxes of the HUD weapon art the UI tests' catalogue names (Figma 62:231), in
+ * the `match` group, keyed like `asset-urls`; restated and proved like `TEST_ASSET_BOXES`.
+ */
+export const TEST_HUD_ASSET_BOXES: Readonly<Record<string, RasterBox>> = {
+  'warrior-weapon-battle-axe': { left: 387, top: 946, width: 274, height: 82 },
+  'magus-weapon-staff': { left: 457, top: 977, width: 133, height: 19 },
+};
+
 /** `/assets/test/<id>.webp` for each id, and `/assets/test/<id>@<rendition>.webp` for every rendition. */
 function testUrls(ids: readonly AssetId[]): Readonly<Record<string, string>> {
   return Object.fromEntries(
@@ -119,7 +128,8 @@ function testUrls(ids: readonly AssetId[]): Readonly<Record<string, string>> {
 /**
  * The assets state with every asset `catalogue` names loaded: selection art in `selection`, HUD
  * art in `match`, each under `/assets/test/<id>.webp` plus `/assets/test/<id>@<rendition>.webp` for
- * every rendition key, and `TEST_ASSET_BOXES` in `selection`. No credits.
+ * every rendition key, `TEST_ASSET_BOXES` in `selection` and `TEST_HUD_ASSET_BOXES` in `match`. No
+ * credits.
  */
 export function loadedAssetsFor(catalogue: DisplayCatalogue): RootState['assets'] {
   const initial = assetsSlice.getInitialState();
@@ -130,6 +140,10 @@ export function loadedAssetsFor(catalogue: DisplayCatalogue): RootState['assets'
       selection: testUrls(selectionAssetIds(catalogue)),
       match: testUrls(hudAssetIds(catalogue)),
     },
-    boxesByGroup: { ...initial.boxesByGroup, selection: TEST_ASSET_BOXES },
+    boxesByGroup: {
+      ...initial.boxesByGroup,
+      selection: TEST_ASSET_BOXES,
+      match: TEST_HUD_ASSET_BOXES,
+    },
   };
 }

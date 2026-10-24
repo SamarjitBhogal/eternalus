@@ -70,9 +70,10 @@ export type RenditionKey =
   | 'mirrored';
 
 /**
- * Where a file is drawn, in px of the 1920 × 1080 selection artboard: the integer origin it was
- * baked at and the file's own pixel size, never scaled. The manifest declares it for an image the
- * screens place at the slot it was baked for; `selectAssetBox` gives it once the group has loaded.
+ * Where a file is drawn, in px of the 1920 × 1080 frame that draws it (the selection artboard, or
+ * the HUD's frame 62:231): the integer origin it was baked at and the file's own pixel size, never
+ * scaled. The manifest declares it for an image the screens place at the slot it was baked for and
+ * for a HUD weapon art; `selectAssetBox` gives it once the group has loaded.
  * Restated in `data/resources/AssetManifest.types.ts`; `game/content/assetVocabulary.test.ts`
  * checks both are equal.
  */

@@ -5,7 +5,7 @@ import type {
   RasterBox as BridgeRasterBox,
   RenditionKey as BridgeRenditionKey,
 } from '../../bridge/catalogue.types';
-import { TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
+import { TEST_ASSET_BOXES, TEST_HUD_ASSET_BOXES } from '../../bridge/assetFixtures';
 import type { AssetGroup as BridgeAssetGroup } from '../../bridge/events';
 import { assetBoxes } from '../../data/resources/assetBoxes';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
@@ -55,5 +55,15 @@ describe('asset vocabulary', () => {
 
     expect(keys.length).toBeGreaterThan(20);
     expect(Object.fromEntries(keys.map((key) => [key, shipped[key]]))).toEqual(TEST_ASSET_BOXES);
+  });
+
+  it("restates in the UI tests' HUD fixture only boxes the manifest's match group declares, unchanged", () => {
+    const shipped = assetBoxes(ASSET_MANIFEST.assets.filter((entry) => entry.group === 'match'));
+    const keys = Object.keys(TEST_HUD_ASSET_BOXES);
+
+    expect(keys).toEqual(['warrior-weapon-battle-axe', 'magus-weapon-staff']);
+    expect(Object.fromEntries(keys.map((key) => [key, shipped[key]]))).toEqual(
+      TEST_HUD_ASSET_BOXES,
+    );
   });
 });

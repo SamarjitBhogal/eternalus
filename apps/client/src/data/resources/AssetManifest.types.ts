@@ -53,8 +53,9 @@ export type LicenceId = 'owner' | 'ofl-cinzel' | 'mit-phosphor';
 export type AssetFile = { readonly url: string; readonly bytes: number; readonly hash: string };
 
 /**
- * Where a file is drawn, in px of the 1920 × 1080 selection artboard: the integer origin it was
- * baked at and the file's own 1x pixel size, never scaled. Restated in `bridge/catalogue.types.ts`.
+ * Where a file is drawn, in px of the 1920 × 1080 frame that draws it (the selection artboard, or
+ * the HUD's frame 62:231): the integer origin it was baked at and the file's own 1x pixel size,
+ * never scaled. Restated in `bridge/catalogue.types.ts`.
  */
 export type RasterBox = {
   readonly left: number;
@@ -97,7 +98,10 @@ type EntryBase = {
 export type UiImageEntry = EntryBase & {
   readonly type: 'ui-image';
   readonly renditions?: Readonly<Partial<Record<RenditionKey, RenditionFiles>>>;
-  /** The draw box of the entry's own file, for an image placed at the slot it was baked for (a plate). */
+  /**
+   * The draw box of the entry's own file, for an image placed at the slot it was baked for (a
+   * plate) or at its place in the HUD (a weapon art).
+   */
   readonly box?: RasterBox;
 };
 
