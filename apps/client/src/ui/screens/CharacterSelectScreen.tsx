@@ -1,6 +1,5 @@
 import type { ComponentType, ReactElement } from 'react';
 
-import type { ClassSelectLayout } from '../../bridge/catalogue.types';
 import { useAppSelector } from '../../bridge/hooks';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
@@ -11,24 +10,10 @@ import { SelectionStage, type VignetteEdge } from '../components/SelectionStage'
 import { TeamBadge } from '../components/TeamBadge';
 import { STRINGS } from '../strings';
 import type { SelectionStep, SelectionStepProps } from './characterSelect.types';
-import { ClassSelectAltStep } from './ClassSelectAltStep';
-import { ClassSelectStep } from './ClassSelectStep';
+import { ClassStep } from './ClassStep';
 import { LegendSelectStep } from './LegendSelectStep';
 import { SessionCountdown } from './SessionCountdown';
 import { useRememberedClassId } from './useRememberedClassId';
-
-/** Which component draws the class step (O5: a content switch, never a player setting). */
-const CLASS_STEP_LAYOUTS: Readonly<Record<ClassSelectLayout, ComponentType<SelectionStepProps>>> = {
-  primary: ClassSelectStep,
-  alternate: ClassSelectAltStep,
-};
-
-/** The class step in the catalogue's layout. */
-function ClassStep(props: SelectionStepProps): ReactElement {
-  const layout = useAppSelector(contentSlice.selectors.selectClassSelectLayout);
-  const Layout = CLASS_STEP_LAYOUTS[layout];
-  return <Layout {...props} />;
-}
 
 /** Which component draws each step of the phase (F1). */
 const SELECTION_STEPS: Readonly<Record<SelectionStep, ComponentType<SelectionStepProps>>> = {
