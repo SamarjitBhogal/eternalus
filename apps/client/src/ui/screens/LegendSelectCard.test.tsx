@@ -135,6 +135,14 @@ describe('LegendSelectCard', () => {
     expect(accessibleNames(html, '[role=radio]')).toEqual(['Oracle Elarion Locked']);
   });
 
+  // 58:271 refreshed 2026-10-24: the owner's rename of 55:257 to "Oracle" re-centred its auto-width
+  // box from x 84.6, 166 wide (centre 167.6) to x 90.6, 155 wide (centre 168.1) in the card.
+  it('centres the picked title on the live Figma 55:257 box, centre x 168.1 of the 336 px card (CSS)', () => {
+    expect(cardCss).toMatch(
+      /\.card\[data-look='picked'\] \.title \{\n {2}left: calc\(0\.1px \+ var\(--card-fx\) \+ var\(--title-dx\)\);\n {2}top: calc\(538\.4px \+ var\(--card-fy\)\);\n {2}width: 336px;/,
+    );
+  });
+
   it('stacks idle cards above the picked one and keeps the text off translate (CSS)', () => {
     expect(cardCss).toMatch(/\.card\[data-look='picked'\] \{[^}]*z-index: 0;/);
     expect(cardCss).toMatch(/\.card\[data-look='idle'\] \{[^}]*z-index: 1;/);

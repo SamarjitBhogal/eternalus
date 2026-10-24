@@ -178,24 +178,26 @@ describe('SelectionDefs text glows', () => {
     countdown: String(styles.floodCountdown),
   };
 
-  it('pins the 62:228 / 58:276 label glow: sky 0 4 σ 12.5, then sky 0 ∓4 σ 25 five times', () => {
+  // OD-27: the measured σ (0.85 × radius / 2), not the derived radius / 2 (12.5 and 25).
+  it('pins the 62:228 / 58:276 label glow: sky 0 4 σ 10.625, then sky 0 ∓4 σ 21.25 five times', () => {
     expect(defOf(SELECTION_DEF_IDS.glowLabel)?.shadows).toEqual([
-      { dx: 0, dy: 4, sigma: 12.5, opacity: 1 },
-      { dx: 0, dy: -4, sigma: 25, opacity: 1 },
-      { dx: 0, dy: 4, sigma: 25, opacity: 1 },
-      { dx: 0, dy: -4, sigma: 25, opacity: 1 },
-      { dx: 0, dy: 4, sigma: 25, opacity: 1 },
-      { dx: 0, dy: -4, sigma: 25, opacity: 1 },
+      { dx: 0, dy: 4, sigma: 10.625, opacity: 1 },
+      { dx: 0, dy: -4, sigma: 21.25, opacity: 1 },
+      { dx: 0, dy: 4, sigma: 21.25, opacity: 1 },
+      { dx: 0, dy: -4, sigma: 21.25, opacity: 1 },
+      { dx: 0, dy: 4, sigma: 21.25, opacity: 1 },
+      { dx: 0, dy: -4, sigma: 21.25, opacity: 1 },
     ]);
     expect(defOf(SELECTION_DEF_IDS.glowLabel)?.flood).toBe('sky');
   });
 
-  it('pins the 62:135 / 58:281 countdown glow: red 15 % at (±6, 0) and (0, ±6), σ 4', () => {
+  // OD-27: the measured σ 3.4 (best of 2.8 to 4 on all three frames), not the derived radius / 2 (4).
+  it('pins the 62:135 / 58:281 countdown glow: red 15 % at (±6, 0) and (0, ±6), σ 3.4', () => {
     expect(defOf(SELECTION_DEF_IDS.glowCountdown)?.shadows).toEqual([
-      { dx: 6, dy: 0, sigma: 4, opacity: 0.15 },
-      { dx: -6, dy: 0, sigma: 4, opacity: 0.15 },
-      { dx: 0, dy: 6, sigma: 4, opacity: 0.15 },
-      { dx: 0, dy: -6, sigma: 4, opacity: 0.15 },
+      { dx: 6, dy: 0, sigma: 3.4, opacity: 0.15 },
+      { dx: -6, dy: 0, sigma: 3.4, opacity: 0.15 },
+      { dx: 0, dy: 6, sigma: 3.4, opacity: 0.15 },
+      { dx: 0, dy: -6, sigma: 3.4, opacity: 0.15 },
     ]);
     expect(defOf(SELECTION_DEF_IDS.glowCountdown)?.flood).toBe('countdown');
     expect(TEXT_GLOW_FILTERS.map(({ id }) => id)).toEqual([
