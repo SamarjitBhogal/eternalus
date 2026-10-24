@@ -1,7 +1,6 @@
-import { type ComponentType, type ReactElement, useState } from 'react';
+import type { ComponentType, ReactElement } from 'react';
 
 import type { ClassSelectLayout } from '../../bridge/catalogue.types';
-import type { LegendClassId } from '../../bridge/domain.types';
 import { useAppSelector } from '../../bridge/hooks';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
@@ -14,9 +13,9 @@ import { STRINGS } from '../strings';
 import type { SelectionStep, SelectionStepProps } from './characterSelect.types';
 import { ClassSelectAltStep } from './ClassSelectAltStep';
 import { ClassSelectStep } from './ClassSelectStep';
-import { rememberedClassId } from './classStepState';
 import { LegendSelectStep } from './LegendSelectStep';
 import { SessionCountdown } from './SessionCountdown';
+import { useRememberedClassId } from './useRememberedClassId';
 
 /** Which component draws the class step (O5: a content switch, never a player setting). */
 const CLASS_STEP_LAYOUTS: Readonly<Record<ClassSelectLayout, ComponentType<SelectionStepProps>>> = {
@@ -54,9 +53,7 @@ export function CharacterSelectScreen(): ReactElement {
   const { classId } = useAppSelector(matchSetupSlice.selectors.selectSelection);
   const team = useAppSelector(matchSetupSlice.selectors.selectPlayerTeam);
   const bannerAssetId = useAppSelector(contentSlice.selectors.selectSelectionBannerAssetId);
-  const [lastClassId, setLastClassId] = useState<LegendClassId | null>(classId);
-  const preferredClassId = rememberedClassId(lastClassId, classId);
-  if (preferredClassId !== lastClassId) setLastClassId(preferredClassId);
+  const preferredClassId = useRememberedClassId(classId);
   const step: SelectionStep = classId === null ? 'class' : 'legend';
   const Step = SELECTION_STEPS[step];
   return (

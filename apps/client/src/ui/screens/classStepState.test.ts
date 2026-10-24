@@ -6,7 +6,6 @@ import {
   initialClassStep,
   pickClass,
   previewClass,
-  rememberedClassId,
   selectPickedIntent,
   selectShownIntent,
   shownClassId,
@@ -34,33 +33,6 @@ describe('initialClassStep', () => {
     expect(initialClassStep(CARDS, null)).toEqual(NOTHING);
     expect(initialClassStep(CARDS, 'flying')).toEqual(NOTHING);
     expect(initialClassStep(CARDS, 'druid')).toEqual(NOTHING);
-  });
-});
-
-describe("rememberedClassId (the shell's Back memory, CD-11)", () => {
-  it('remembers nothing on first entry, then remembers a pick', () => {
-    expect(rememberedClassId(null, null)).toBeNull();
-    expect(rememberedClassId(null, 'magus')).toBe('magus');
-  });
-
-  it('keeps the last class through Back (the session clears its pick to null)', () => {
-    expect(rememberedClassId('magus', null)).toBe('magus');
-  });
-
-  it('replaces the remembered class with a new pick', () => {
-    expect(rememberedClassId('magus', 'sentinel')).toBe('sentinel');
-  });
-
-  it('follows the session through pick, Back, pick, Back', () => {
-    const session = ['magus', null, 'sentinel', null] as const;
-    const remembered: (string | null)[] = [];
-    let last: string | null = null;
-    for (const classId of session) {
-      last = rememberedClassId(last, classId);
-      remembered.push(last);
-    }
-
-    expect(remembered).toEqual(['magus', 'magus', 'sentinel', 'sentinel']);
   });
 });
 
