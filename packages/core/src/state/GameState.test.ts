@@ -120,4 +120,22 @@ describe('GameState', () => {
 
     expect(state.entities.removedThisTick()).toEqual([]);
   });
+
+  it('keeps every xp award of the tick, whatever the ring buffer drops, and forgets them next tick', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const award = {
+      entityId: 'entity-1',
+      amount: 5,
+      victimId: 'entity-2',
+      victimTeam: 'dark',
+    } as const;
+    state.events.emit('xp-gained', award);
+    for (let i = 0; i < 600; i += 1) {
+      state.events.emit('tick-completed', { tick: 0 });
+    }
+
+    expect(state.xpAwardsThisTick()).toEqual([award]);
+    state.advanceTick();
+    expect(state.xpAwardsThisTick()).toEqual([]);
+  });
 });

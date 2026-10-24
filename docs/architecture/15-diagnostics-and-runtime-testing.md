@@ -481,6 +481,13 @@ The simulation kernel (sprint 1.1, PR #13) delivers the `Logger` port and double
 `Profiler` port; `runSimMatch` and the soak harness. `Replay` has no `versions` and
 `ReplayOutcome` no `ok` or `violations` until the content catalogue and the runner exist.
 
+`NoDeathWithoutKillerInvariant` (sprint 2.2, PR #34) checks the failure that can happen today:
+every `died` removal of the tick had an `entity-died` with its killer this tick
+(`GameState.killerOf`), so a death whose lethal hit skipped `DamagePipeline` is the violation.
+`DamageSource` kinds are still those of 05 §9 (`weapon`, `ability`, `status`, `structure`,
+`environment`); the `self`/`script` kinds and resolving the attacker in the store join with the
+abilities and the match director.
+
 ## Related
 
 - [03-game-model.md](03-game-model.md): `GameState` ring buffers, `GameEvents`, `StateHasher`, `Replay`, `SimulationOptions.debug`.
