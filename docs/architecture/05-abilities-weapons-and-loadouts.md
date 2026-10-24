@@ -904,22 +904,24 @@ Display names and icons come from the catalogue the client already loads for the
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
   `TUNE`; the curve is derived from an income estimate in `INBOX.md`.
-- **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist in core
-  yet: `Snapshot` holds `tick`, `phase` and `entities` only. Until `SnapshotSystem` fills
+- **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
+  in core yet: `Snapshot` holds `tick`, `phase` and `entities` only. Until `SnapshotSystem` fills
   `Snapshot.player` (Phase 4, sprints 4.5 and 4.7), the client's `MatchBridge` projects the HUD
   player from the player's `EntitySnapshot` into `PlayerHudSnapshot` (`bridge/hud.types.ts`): the
   same fields, every value nullable except the two ids, with health and maximum health live, the
-  slot list empty and everything else `null` (DEC-17), no
-  `varietyId` or `statusIds` until a reader needs them, and two presentational slots,
-  `weaponProgress` and `ultimatePips`, that stay `null` until OQ-63 and OQ-64 give them a rule. Its
-  TSDoc states the one-to-one mapping to the core type. The record lands in `hudSlice`, not
-  `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`. The kit's display
-  names and icons come from the display catalogue the client builds at boot (core's
-  `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`, published
-  as `content-catalogue`), joined with the player's selection by `selectHudKit`; there is no
-  `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids until
-  ability content exists (INBOX HC-Q3). The `xp` and `xpToNext` comments in §15 record the owner's
-  reading of the XP ring (2026-10-18).
+  slot list empty and everything else `null` (DEC-17), no `varietyId` or `statusIds` until a
+  reader needs them, and two presentational slots, `weaponProgress` and `ultimatePips`, that stay
+  `null` until OQ-63 and OQ-64 give them a rule; its TSDoc states the one-to-one mapping to the
+  core type. Core now has the `Aether` and `Progression` components (the bullet above), but
+  `EntitySnapshot` (`state/Snapshot.types.ts`) still carries only `health`, so the HUD's aether,
+  level and XP stay `null` until `Snapshot.player` exists (INBOX HC-F6). The record lands in
+  `hudSlice`, not `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`.
+  The kit's display names and icons come from the display catalogue the client builds at boot
+  (core's `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`,
+  published as `content-catalogue`), joined with the player's selection by `selectHudKit`; there
+  is no `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids
+  until ability content exists (INBOX HC-Q3). The `xp` and `xpToNext` comments in §15 record the
+  owner's reading of the XP ring (2026-10-18).
 
 ## Related
 

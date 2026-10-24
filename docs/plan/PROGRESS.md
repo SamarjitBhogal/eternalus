@@ -1500,3 +1500,47 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Next step: after the merge and the upstream sync, replace the `⟨PENDING-A⟩` sentences with the
   live-probe result and regenerate the patch on the merged tree; the owner answers HC-T1, HC-B1,
   HC-C1, HC-Q1 (5) and HC-S5.
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, screen registration, live probe and upstream sync — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (recorded by stream B from the coordinating session's results):
+  - `ui/App.tsx` registers `CharacterSelectScreen` and `MatchScreen` in `PHASE_SCREENS`
+    (`5c0f7da`). Only `MatchScreen` renders the viewport; `PlaceholderScreen` no longer shows it.
+    The App test that pins this failed first against the old App (5 phases showed a viewport).
+    Eight unused tokens this branch had added were removed, each grepped first.
+  - A live probe of the built app passed all ten criteria in development and production builds:
+    no canvas and no animation frame before the match, the world prepared only in
+    `match-loading`, the loop running in the match and stopped after Leave match, the
+    keyboard-only flow, Esc and C left to the page on the selection screens, no page errors, and
+    the `Match` created only in the match. Long frames during character select are judged on the
+    production build (OD-30): none in seven runs.
+  - `useFitFontSize` measures after layout through a one-shot `ResizeObserver` and applies the
+    fit with `flushSync`; its new tests failed first. Residual risk: the class-to-Legend step is
+    not measurably cheaper, so a slower machine may still stutter there.
+  - Merged `origin/phase/2-sprint-2-work` (34 commits: PRs #31, #33, #34, #35, #36, #37, #41) as
+    `5755dfe`.
+  - Evidence: the probe records are outside the repository (`eternalus-agent-work/hud-charselect/`
+    `wf7/probe-r2/`, `results/f2.json`).
+- Checks run: after F2, `npm run check` → `EXIT=0` (core 487 tests; client 1219 tests); after the
+  sync, `npm run check` → `EXIT=0`: core "Test Files 112 passed (112)", "Tests 606 passed (606)";
+  client "Test Files 199 passed (199)", "Tests 1220 passed (1220)", statements 95.36 %;
+  "Checked 116 Markdown files under docs/." "Documentation check passed."
+- Next step: the owner's sign-offs (INBOX HC-T1, HC-B1, HC-C1, HC-Q1 (5)).
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, docs follow-up after the sync (stream B) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only):
+  - Architecture 13 §10: the two placeholder sentences now record the screen registration and
+    the live check, with its residual risk and where the evidence is. 05 §18 records that the
+    HUD's aether, level and XP stay `null` after the sync, because core's entity snapshot carries
+    only health (INBOX HC-F6 gains a line).
+  - Reference 15: Select Class's label glow is an open residual for the owner, not a floor
+    (CD-30); CD-21 now gives its fifteen `minimums` tokens and the thirteen pairs' ratios in both
+    sets (new §5, computed as `tokenContrast.test.ts` computes them); a new appendix lists the
+    build rulings OD-1 to OD-30 that the docs cite. INBOX HC-C1 matches.
+  - The unapplied design-text patch was regenerated on the synced tree (79 edits, only line
+    numbers moved) and the HC-T1 table updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 606 passed (606)"; client "Tests 1220 passed (1220)", statements 95.36 %; "✓ built";
+  "Checked 116 Markdown files under docs/." "Documentation check passed."
+- Next step: the pre-PR critic on the merged branch, then the owner's sign-offs.

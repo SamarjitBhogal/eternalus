@@ -526,8 +526,8 @@ DEC-55). Where the text above differs, its corrections wait for the owner in `IN
 - **Screens.** `CharacterSelectScreen` runs the class step (62:125, or 62:70 when the content value
   `classSelectLayout` is `'alternate'`, through the registry `CLASS_STEP_LAYOUTS`; DEC-52) and then
   the Legend step (58:271; DEC-49) inside the one `character-select` phase. `MatchScreen` holds
-  the HUD and the pause overlay. ⟨PENDING-A: `App.tsx` registers both screens (WP-F F2) and the
-  viewport renders only in `match`; until then those phases render `PlaceholderScreen`.⟩
+  the HUD and the pause overlay. `ui/App.tsx` registers both in `PHASE_SCREENS`, and only
+  `MatchScreen` renders the viewport, so no canvas exists outside `match`.
 - **`Match` lifetime (DEC-50).** `match-loading` loads the `match` group, then calls
   `prepareWorld` (`game/prepareMatchWorld.ts`: the map from `setup.seed`). In `match`,
   `MatchState.attachViewport` creates the match through the injected factory
@@ -536,8 +536,19 @@ DEC-55). Where the text above differs, its corrections wait for the owner in `IN
   so a StrictMode remount builds a fresh match on the same world. `MatchHost` owns the window,
   document and canvas listeners and the devices, tears them down in order, applies the bindings
   from the `settings` event, and releases held input on pause and on focus loss. Leaving `match`
-  destroys the match and drops the world. ⟨PENDING-A: live check, dev and production builds:
-  canvases and `requestAnimationFrame` calls per phase, and after Leave match.⟩
+  destroys the match and drops the world. A live check of the built app (2026-10-24, development
+  and production builds) found no canvas and no animation-frame callback before `match`, the world
+  prepared once and only in `match-loading`, the `Match` created only in `match`, its loop running
+  there and stopped after Leave match, and the keyboard-only flow working. Long animation frames
+  during character select are judged on the production build, where none occurred in seven runs
+  (build ruling OD-30, listed in
+  [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md#appendix-the-build-rulings-od-1-to-od-30)).
+  The title fit (`useFitFontSize`) now measures after layout, through a one-shot `ResizeObserver`,
+  instead of forcing it. Residual risk: the change from the class step to the Legend step is not
+  measurably cheaper for it, so a slower machine may still stutter there. The evidence is the
+  probe's records in the coordinating session's working folder
+  (`eternalus-agent-work/hud-charselect/wf7/probe-r2/` and `results/f2.json`), outside the
+  repository.
 - **Session.** `menu` builds the setup draft (seed, `playerTeam`, allied and enemy rosters; no
   config or loadout yet). `SessionController` holds the class and Legend pick;
   `canConfirmSelection` (`bridge/selectionRules.ts`) is the one rule for LOCK IN, in the session
