@@ -69,6 +69,20 @@ export type RenditionKey =
   // the mirrored use: enemy-strip structure icons, the "theirs" allegiance flag
   | 'mirrored';
 
+/**
+ * Where a file is drawn, in px of the 1920 × 1080 selection artboard: the integer origin it was
+ * baked at and the file's own pixel size, never scaled. The manifest declares it for an image the
+ * screens place at the slot it was baked for; `selectAssetBox` gives it once the group has loaded.
+ * Restated in `data/resources/AssetManifest.types.ts`; `game/content/assetVocabulary.test.ts`
+ * checks both are equal.
+ */
+export type RasterBox = {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+};
+
 /** Which renderer draws the selection screens' Figma effects: R1 plates or live CSS (OA1, I-80). */
 export type EffectsRenderer = 'figma-raster' | 'css';
 /** Which colour set the token pairs below 13 §7's minimums use (OA2, I-81). */

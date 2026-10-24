@@ -83,4 +83,23 @@ describe('ResourceController with the shipped manifest', () => {
     expect(Object.keys(resources.urls('selection')).sort()).toEqual(expected.sort());
     expect(expected).toContain('catalyst-card-art@refraction-picked');
   });
+
+  it("hands out each group's draw boxes, keyed like its URLs, the same before and after a load", async () => {
+    const { resources } = shippedResources(1);
+    const before = resources.boxes('selection-primary');
+
+    await resources.load('selection-primary', () => undefined);
+
+    expect(resources.boxes('selection-raster')).toEqual({
+      'oracle-row-plate': { left: 459, top: 65, width: 1002, height: 936 },
+    });
+    expect(resources.boxes('selection-primary')).toEqual(before);
+    expect(Object.keys(before).sort()).toEqual([
+      'catalyst-mini@legend-mini',
+      'necromancer-mini@legend-mini',
+      'oracle-mini@legend-mini',
+    ]);
+    expect(Object.keys(resources.boxes('selection'))).toContain('oracle-card-art@card-picked');
+    expect(resources.boxes('boot')).toEqual({});
+  });
 });

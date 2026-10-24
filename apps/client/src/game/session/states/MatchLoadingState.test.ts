@@ -69,6 +69,7 @@ describe('MatchLoadingState', () => {
       isLoaded: (group: AssetGroup) => resources.isLoaded(group),
       progress: (group: AssetGroup) => resources.progress(group),
       urls: (group: AssetGroup) => resources.urls(group),
+      boxes: (group: AssetGroup) => resources.boxes(group),
       release: (group: AssetGroup) => {
         resources.release(group);
       },

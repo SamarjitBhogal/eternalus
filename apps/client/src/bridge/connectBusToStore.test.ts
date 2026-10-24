@@ -127,14 +127,18 @@ describe('connectBusToStore', () => {
     expect(store.getState().match.capturePoints).toBe(capturePoints);
   });
 
-  it('stores the asset URLs of a group, empties them on release, and stores the credits', () => {
+  it('stores the asset URLs and draw boxes of a group, empties them on release, and stores the credits', () => {
     const { bus, store } = connected();
     const urls = { 'selection-banner': '/a.webp', 'oracle-portrait@ally-tile': '/b.webp' };
-    bus.emit('asset-urls', { group: 'selection', urls });
+    const boxes = { 'oracle-portrait@ally-tile': { left: 1775, top: 848, width: 60, height: 60 } };
+    bus.emit('asset-urls', { group: 'selection', urls, boxes });
     expect(store.getState().assets.urlsByGroup.selection).toBe(urls);
+    expect(store.getState().assets.boxesByGroup.selection).toBe(boxes);
     expect(store.getState().assets.urlsByGroup.match).toEqual({});
-    bus.emit('asset-urls', { group: 'selection', urls: {} });
+    expect(store.getState().assets.boxesByGroup.match).toEqual({});
+    bus.emit('asset-urls', { group: 'selection', urls: {}, boxes: {} });
     expect(store.getState().assets.urlsByGroup.selection).toEqual({});
+    expect(store.getState().assets.boxesByGroup.selection).toEqual({});
     const entries: readonly CreditEntry[] = [
       {
         licenceId: 'owner',

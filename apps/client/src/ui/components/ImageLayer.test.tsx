@@ -13,6 +13,7 @@ describe('ImageLayer', () => {
       assetsSlice.actions.groupUrlsChanged({
         group: 'selection',
         urls: { 'selection-backdrop': '/assets/selection-backdrop.webp' },
+        boxes: {},
       }),
     );
     const html = renderWithStore(<ImageLayer layer={LAYER} />, { assets });

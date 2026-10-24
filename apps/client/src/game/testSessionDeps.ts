@@ -23,9 +23,13 @@ import { SELECTION_ASSET_GROUPS } from './session/selectionAssetGroups';
 /** Rounds of `await` that let a settled fake load reach the session's callbacks. */
 const MICROTASK_ROUNDS = 20;
 
+/** The draw box of `test-selection`, the one placed image of `testResources()`. */
+export const TEST_SELECTION_BOX = { left: 10, top: 20, width: 30, height: 40 } as const;
+
 /**
- * Resources whose every group holds one small image (`test-<group>`), loaded by a
- * `FakeAssetLoader` that keeps each load pending until `loader.resolveAll()` (no timers).
+ * Resources whose every group holds one small image (`test-<group>`; `test-selection` with the
+ * draw box `TEST_SELECTION_BOX`), loaded by a `FakeAssetLoader` that keeps each load pending
+ * until `loader.resolveAll()` (no timers).
  */
 export function testResources(): {
   readonly resources: ResourceController;
@@ -41,6 +45,7 @@ export function testResources(): {
       file: { url: `/test/${group}.webp`, bytes: 10, hash: '0'.repeat(64) },
       licence: 'owner',
       source: 'test fixture',
+      ...(group === 'selection' ? { box: TEST_SELECTION_BOX } : {}),
     })),
   };
   const loader = new FakeAssetLoader();

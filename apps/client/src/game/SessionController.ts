@@ -227,15 +227,20 @@ export class SessionController {
   private releaseAssets(group: AssetGroup): void {
     this.deps.resources.release(group);
     if (this.publishedGroups.delete(group)) {
-      this.deps.bus.emit('asset-urls', { group, urls: {} });
+      this.deps.bus.emit('asset-urls', { group, urls: {}, boxes: {} });
     }
   }
 
-  /** `ready`, then the group's URLs, so the next screen's first render has them. */
+  /** `ready`, then the group's URLs and draw boxes, so the next screen's first render has them. */
   private publishLoaded(group: AssetGroup): void {
     this.publishProgress(group, 'ready');
     this.publishedGroups.add(group);
-    this.deps.bus.emit('asset-urls', { group, urls: this.deps.resources.urls(group) });
+    const { resources } = this.deps;
+    this.deps.bus.emit('asset-urls', {
+      group,
+      urls: resources.urls(group),
+      boxes: resources.boxes(group),
+    });
   }
 
   private publishProgress(group: AssetGroup, status: LoadingProgress['status']): void {

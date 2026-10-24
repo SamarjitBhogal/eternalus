@@ -10,7 +10,7 @@ import type {
 } from './SessionController.types';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { REVEAL_COUNTDOWN_MS } from './session/sessionTiming.constants';
-import { flushMicrotasks, testSession } from './testSessionDeps';
+import { flushMicrotasks, TEST_SELECTION_BOX, testSession } from './testSessionDeps';
 
 const SELECTION_GROUPS: readonly AssetGroup[] = [
   'selection',
@@ -85,6 +85,7 @@ describe('SessionController asset groups', () => {
       }),
       load: () => Promise.reject(new Error('loader bug')),
       urls: () => ({}),
+      boxes: () => ({}),
       release: () => undefined,
     };
     const { controller, store, logger, phases } = testSession({ resources: rejecting });
@@ -131,6 +132,31 @@ describe('SessionController asset groups', () => {
     expect(assetsSlice.selectors.selectAssetUrl(session.store.getState(), 'test-selection')).toBe(
       '/test/selection.webp',
     );
+  });
+
+  it("publishes a loaded group's draw boxes with its URLs, and empties both on release", async () => {
+    const session = sessionWithResults();
+    const published: AssetUrls[] = [];
+    session.bus.on('asset-urls', (event) => published.push(event));
+    session.controller.start();
+    await session.resolveLoads();
+    session.intent({ kind: 'start-match' });
+    await session.resolveLoads();
+    const atSelect = assetsSlice.selectors.selectAssetBox(
+      session.store.getState(),
+      'test-selection',
+    );
+
+    await session.toMatch();
+
+    expect(atSelect).toEqual(TEST_SELECTION_BOX);
+    expect(
+      published.find(({ group, urls }) => group === 'selection' && 'test-selection' in urls),
+    ).toMatchObject({ boxes: { 'test-selection': TEST_SELECTION_BOX } });
+    expect(session.emptied.map(({ boxes }) => boxes)).toEqual(SELECTION_GROUPS.map(() => ({})));
+    expect(
+      assetsSlice.selectors.selectAssetBox(session.store.getState(), 'test-selection'),
+    ).toBeNull();
   });
 
   it("empties the match group's URLs once from match through results to the menu", async () => {
