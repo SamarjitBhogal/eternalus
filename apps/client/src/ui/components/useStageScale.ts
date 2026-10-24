@@ -2,14 +2,18 @@ import { useSyncExternalStore } from 'react';
 
 import { fitStageScale } from './stageScale';
 
-function subscribe(onResize: () => void): () => void {
+/** Calls `onResize` on every window resize until the returned function is called. */
+export function subscribeToResize(onResize: () => void): () => void {
   window.addEventListener('resize', onResize);
   return () => {
     window.removeEventListener('resize', onResize);
   };
 }
 
-const windowScale = (): number => fitStageScale(window.innerWidth, window.innerHeight);
+/** `fitStageScale` of the window's inner size: the stage the selection artboard is fitted into. */
+export function windowStageScale(): number {
+  return fitStageScale(window.innerWidth, window.innerHeight);
+}
 
 /** A server render has no window: the artboard renders at its own size. */
 const serverScale = (): number => 1;
@@ -19,5 +23,5 @@ const serverScale = (): number => 1;
  * screens fill the window, so the window is the stage the artboard is fitted into.
  */
 export function useStageScale(): number {
-  return useSyncExternalStore(subscribe, windowScale, serverScale);
+  return useSyncExternalStore(subscribeToResize, windowStageScale, serverScale);
 }
