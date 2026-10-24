@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-18
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -771,8 +771,8 @@ export type PlayerSnapshot = {
   readonly aether: number;
   readonly maxAether: number;
   readonly level: number;
-  readonly xp: number;
-  readonly xpToNext: number;
+  readonly xp: number; // XP earned inside the current level (resets on level-up)
+  readonly xpToNext: number; // XP the current level needs to reach the next
   readonly slots: readonly AbilitySlotSnapshot[]; // ability-1..4, gadget-1, gadget-2, default-action, in that order
   readonly statusIds: readonly StatusEffectId[];
 };

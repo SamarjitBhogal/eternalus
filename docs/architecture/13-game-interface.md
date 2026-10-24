@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-10-18
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -490,6 +490,13 @@ and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver
 - Boot does not wait for the settings: the store has no bindings until the first `settings`
   event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
   or the `degraded` path of [14](14-persistence-and-resources.md) §10.
+
+HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill
+rather than a conic sweep. A slot on cooldown shows the frame's red vertical gradient, cut from the
+bottom to the share of the cooldown still to run (`cooldownRemainingTicks / cooldownTicks`); a
+ready slot shows the gold glow. The meanings are the owner's (OD-9); the look and its open
+question, the fill's direction, are register row CD-28 in
+[reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md#3-register).
 
 ## Related
 
