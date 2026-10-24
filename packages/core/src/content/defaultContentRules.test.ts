@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { ContentCatalogue } from './ContentCatalogue';
-import { createDefaultContentRules, createLegendSpecRules } from './defaultContentRules';
+import {
+  createDefaultContentRules,
+  createLegendSpecRules,
+  createLockedClassRules,
+} from './defaultContentRules';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
 import { ContentValidator } from './validation/ContentValidator';
@@ -65,5 +69,11 @@ describe('createLegendSpecRules', () => {
       'Invalid content: Bad_Id: id must be kebab-case; ' +
         'Bad_Id: classId "flying" is not a Legend class',
     );
+  });
+});
+
+describe('createLockedClassRules', () => {
+  it('lists every shipped locked-class rule', () => {
+    expect(createLockedClassRules().map((rule) => rule.constructor)).toEqual([KebabCaseIdRule]);
   });
 });

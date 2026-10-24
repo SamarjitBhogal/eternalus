@@ -1,5 +1,6 @@
 import type { ContentCatalogue } from './ContentCatalogue';
 import type { LegendDefinition } from './legends/legends.types';
+import type { LockedClassDefinition } from './legends/locked/lockedClasses.types';
 import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
 import type { LevelCurveDefinition } from './progression/progression.types';
@@ -36,4 +37,9 @@ export const createLegendSpecRules = (
 ): readonly ContentRule<LegendSpecDefinition>[] => [
   new KebabCaseIdRule(),
   new SpecClassExistsRule(legends),
+];
+
+/** Every shipped locked-class rule. A new locked-class rule is one line here. */
+export const createLockedClassRules = (): readonly ContentRule<LockedClassDefinition>[] => [
+  new KebabCaseIdRule(),
 ];

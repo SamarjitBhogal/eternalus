@@ -4,6 +4,8 @@ import { ContentCatalogue } from './ContentCatalogue';
 import { ContentValidationError } from './ContentValidationError';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import type { LegendDefinition } from './legends/legends.types';
+import { FLYING } from './legends/locked/flying';
+import type { LockedClassDefinition } from './legends/locked/lockedClasses.types';
 import { MAGUS } from './legends/magus';
 import { SENTINEL } from './legends/sentinel';
 import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
@@ -37,6 +39,17 @@ describe('loadDisplayContent', () => {
     expect(content.legends).toEqual(LEGEND_CLASSES.all());
     expect(content.specs).toHaveLength(8);
     expect(content.specs.map((spec) => spec.id)).toEqual(LEGEND_SPECS.ids);
+  });
+
+  it('returns the locked classes the selection screen shows after the playable ones', () => {
+    expect(loadDisplayContent().lockedClasses).toEqual([
+      {
+        id: 'flying',
+        displayName: 'Harbinger',
+        roleBlurb: 'Air-based; moves primarily in the air, like a jet or helicopter.',
+        roleLabel: 'aerial',
+      },
+    ]);
   });
 
   it('names the HUD map-feature kinds and leaves every other feature unnamed', () => {
@@ -82,6 +95,16 @@ describe('loadDisplayContent', () => {
       new ContentValidationError(
         'Invalid content: magus: baseAether must be a positive finite number',
       ),
+    );
+  });
+
+  it('rejects a locked class whose id is not kebab-case', () => {
+    const lockedClasses = new ContentCatalogue<LockedClassDefinition>([
+      { ...FLYING, id: 'Flying' },
+    ]);
+
+    expect(() => loadDisplayContent({ lockedClasses })).toThrow(
+      new ContentValidationError('Invalid content: Flying: id must be kebab-case'),
     );
   });
 });
