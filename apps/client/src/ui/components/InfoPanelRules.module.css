@@ -1,0 +1,120 @@
+/* Rules in one svg at the integer origin (CSUI E3, E4), geometry from the Figma render boxes:
+   white header line and dividers, 1.5 px accents at 40 % red. The class layout's lines have round
+   caps (rx 0.5); 62:70 and 58:271 butt caps. */
+.rules {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+}
+
+.rule {
+  height: 1px;
+  fill: var(--selection-text);
+}
+
+.accent {
+  width: 1.5px;
+  fill: var(--selection-detail-accent);
+}
+
+/* 72:753 (428, 412) 38 × 1; 72:769 / 72:763 (45, 548 / 639.909) 417 × 1; 72:774 / 72:768 /
+   72:762 at x 45, y 434 h 95, 562.967 h 63, 650.909 h 93. */
+.rules[data-layout='class'] .rule {
+  rx: 0.5px;
+}
+
+.rules[data-layout='class'] [data-rule='header-line'] {
+  x: 383px;
+  y: 284px;
+  width: 38px;
+}
+
+.rules[data-layout='class'] [data-rule^='divider'] {
+  x: 0;
+  width: 417px;
+}
+
+.rules[data-layout='class'] [data-rule='divider-0'] {
+  y: 420px;
+}
+
+.rules[data-layout='class'] [data-rule='divider-1'] {
+  y: 511.909px;
+}
+
+.rules[data-layout='class'] [data-rule='accent-0'] {
+  x: 0;
+  y: 306px;
+  height: 95px;
+}
+
+.rules[data-layout='class'] [data-rule='accent-1'] {
+  x: 0;
+  y: 434.967px;
+  height: 63px;
+}
+
+.rules[data-layout='class'] [data-rule='accent-2'] {
+  x: 0;
+  y: 522.909px;
+  height: 93px;
+}
+
+/* 62:90 370 → 573 at row 413; 62:106 / 62:100 68 → 573 at rows 551 / 634; accents at x 65.
+   56:43 333 → 474 at row 413; 56:59 / 56:53 60 → 474 at rows 551 / 634; accents at x 57.
+   Both: accents y 436 h 95, 562 h 63, 645 h 93. */
+.rules[data-layout='class-alternate'] [data-rule='header-line'] {
+  x: 305px;
+  y: 285px;
+  width: 203px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule^='divider'] {
+  x: 3px;
+  width: 505px;
+}
+
+.rules[data-layout='legend'] [data-rule='header-line'] {
+  x: 280px;
+  y: 285px;
+  width: 141px;
+}
+
+.rules[data-layout='legend'] [data-rule^='divider'] {
+  x: 7px;
+  width: 414px;
+}
+
+.rules:not([data-layout='class']) [data-rule='divider-0'] {
+  y: 423px;
+}
+
+.rules:not([data-layout='class']) [data-rule='divider-1'] {
+  y: 506px;
+}
+
+.rules[data-layout='class-alternate'] [data-rule^='accent'] {
+  x: 0;
+}
+
+.rules[data-layout='legend'] [data-rule^='accent'] {
+  x: 4px;
+}
+
+.rules:not([data-layout='class']) [data-rule='accent-0'] {
+  y: 308px;
+  height: 95px;
+}
+
+.rules:not([data-layout='class']) [data-rule='accent-1'] {
+  y: 434px;
+  height: 63px;
+}
+
+.rules:not([data-layout='class']) [data-rule='accent-2'] {
+  y: 517px;
+  height: 93px;
+}
