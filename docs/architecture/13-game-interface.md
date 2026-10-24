@@ -114,13 +114,6 @@ The three selection phases come from the owner's screen flow of 2026-10-03 ([ref
 table is the test (`SessionController.test.ts` walks every pair with fake states, a
 `MemoryStorageAdapter` and a fake `ResourceController`).
 
-**Owner decision DEC-50 (2026-10-17).** `SessionController` owns the `Match` lifetime, as this
-section designs it: the match world is prepared in `match-loading`, the `Match` is created when
-the match screen attaches its viewport (`attachViewport`) and is destroyed on leaving `match`, so
-no map, simulation or game loop exists during character select
-([decisions log](../reference/game-design/13-owner-decisions-log.md)). §10 records how it is
-built.
-
 ## 3. Screens and HUD
 
 Screens are function components that read memoised selectors through the typed hooks and emit
@@ -428,14 +421,6 @@ every prompt with no code change: the requirements doc's acceptance test (§8).
   per file plus its `.module.css` and `.test.tsx`; no `dangerouslySetInnerHTML` (ES-08); labels in
   one strings file; game names from content; `ui/` never imports `game/`, `data/` or core (rule
   5; the planned lint block is in [02](02-code-structure.md) §11).
-- **Display switches** (owner decisions DEC-53, DEC-54 and DEC-55,
-  [decisions log](../reference/game-design/13-owner-decisions-log.md)). On the screens built from
-  the owner's Figma, the Figma look is the default and each alternative is chosen by one content
-  value: `effectsRenderer` (`'figma-raster'` or `'css'`) for the selection screens' glass, halos
-  and button chrome, and `contrastMode` (`'figma'` or `'minimums'`, also chosen by the OS setting
-  `prefers-contrast: more`) for the HUD colours that fall below the minimums above, which stay
-  listed exceptions in the `'figma'` set. A later improvement on a frame ships the same way, with
-  the frame's original kept as a live, selectable variant.
 
 ## 8. Tests
 
@@ -485,12 +470,6 @@ it('rebinds move-up from W to Up Arrow and every prompt follows', () => {
 Nothing else changes: the OCP litmus test holds because the registries (`App.tsx`, `events.ts`,
 `combineSlices`, `INPUT_ACTIONS`) are the only lists.
 
-A layout variant of a screen (the class step's alternate frame 62:70, DEC-52) or an improvement
-on one of the owner's frames (DEC-53) is chosen by one content value, never by a player setting
-unless the owner asks for one; the frame's original stays a live, selectable variant, and the
-difference is registered in
-[reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md).
-
 ## 10. Implementation status
 
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
@@ -523,26 +502,37 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-24; the owner
 [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md); DEC-48 to
 DEC-55). Where the text above differs, its corrections wait for the owner in `INBOX.md` HC-T1:
 
+- **Owner decisions the design text will state** once the owner approves its wording (`INBOX.md`
+  HC-T1, rows T-86 to T-88, applied together with the §2 row and sketch rows T-07, T-08 and T-14
+  to T-16, [decisions log](../reference/game-design/13-owner-decisions-log.md)): DEC-50,
+  `SessionController` owns the `Match` lifetime (the world prepared in `match-loading`, the
+  `Match` created when the match screen attaches its viewport and destroyed on leaving `match`);
+  DEC-53 to DEC-55, on the screens built from the owner's Figma the Figma look is the default and
+  each alternative is one content value (`effectsRenderer`, and `contrastMode`, which the OS
+  setting `prefers-contrast: more` also selects); DEC-52 and DEC-53, a layout variant or an
+  improvement on a frame is chosen by one content value, with the frame's original kept live and
+  the difference registered in reference 15.
 - **Screens.** `CharacterSelectScreen` runs the class step (62:125, or 62:70 when the content value
   `classSelectLayout` is `'alternate'`, through the registry `CLASS_STEP_LAYOUTS`; DEC-52) and then
   the Legend step (58:271; DEC-49) inside the one `character-select` phase. `MatchScreen` holds
   the HUD and the pause overlay. `ui/App.tsx` registers both in `PHASE_SCREENS`, and only
   `MatchScreen` renders the viewport, so no canvas exists outside `match`.
-- **`Match` lifetime (DEC-50).** `match-loading` loads the `match` group, then calls
-  `prepareWorld` (`game/prepareMatchWorld.ts`: the map from `setup.seed`). In `match`,
-  `MatchState.attachViewport` creates the match through the injected factory
-  `createMatch(request, viewport)` (`game/createBrowserMatch.ts`, bound only by `main.tsx`), which
-  builds the adapters, `Simulation`, `Match` and `MatchHost`; `attachViewport` returns its detach,
-  so a StrictMode remount builds a fresh match on the same world. `MatchHost` owns the window,
-  document and canvas listeners and the devices, tears them down in order, applies the bindings
-  from the `settings` event, and releases held input on pause and on focus loss. Leaving `match`
-  destroys the match and drops the world. A live check of the built app (2026-10-24, development
-  and production builds) found no canvas and no animation-frame callback before `match`, the world
-  prepared once and only in `match-loading`, the `Match` created only in `match`, its loop running
-  there and stopped after Leave match, and the keyboard-only flow working. Long animation frames
-  during character select are judged on the production build, where none occurred in seven runs
-  (build ruling OD-30, listed in
-  [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md#appendix-the-build-rulings-od-1-to-od-30)).
+- **`Match` lifetime (DEC-50).** `match-loading` loads the `match` group, then calls `prepareWorld`
+  (`game/prepareMatchWorld.ts`: the map from `setup.seed`). In `match`, `MatchState.attachViewport`
+  creates the match through the injected factory `createMatch(request, viewport)`
+  (`game/createBrowserMatch.ts`, bound only by `main.tsx`), which builds the adapters, `Simulation`,
+  `Match` and `MatchHost`; `attachViewport` returns its detach. Each attach builds a fresh
+  `Simulation` from the setup's seed, so a re-attach (a StrictMode remount, a replaced viewport)
+  restarts the match from tick 0 on the same prepared world. `MatchHost` owns the window, document
+  and canvas listeners and the devices, tears them down in order, applies the bindings from the
+  `settings` event, and releases held input on pause and on focus loss. Leaving `match` destroys the
+  match and drops the world. A live check of the built app (2026-10-24, development and production
+  builds) found no canvas and no animation-frame callback before `match`, the world prepared once
+  and only in `match-loading`, the `Match` created only in `match`, its loop running there and
+  stopped after Leave match, and the keyboard-only flow working. Long animation frames during
+  character select are judged on the production build, where none occurred in seven runs (build
+  ruling OD-30, listed in [reference
+  15](../reference/game-design/15-figma-frames-and-creative-decisions.md#appendix-the-build-rulings)).
   The title fit (`useFitFontSize`) now measures after layout, through a one-shot `ResizeObserver`,
   instead of forcing it. Residual risk: the change from the class step to the Legend step is not
   measurably cheaper for it, so a slower machine may still stutter there. The evidence is the
@@ -578,13 +568,21 @@ DEC-55). Where the text above differs, its corrections wait for the owner in `IN
   (weapon art and the weapon-level bar, OQ-63), `GadgetBar` (the gadget slots, each with
   `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64), `StructureStrip`, `ObjectiveTracker`
   (with an allegiance flag, register CD-03) and `CrystalStatus`. `HealthBar` and `AetherBar` are
-  one-line leaves over `ResourceBar`. `MatchClock` shows no phase label until `match-clock`
-  carries the phase (Phase 3, sprint 3.5). `MinimapPanel` is a frame only: the canvas handles a
-  minimap click, and there is no `minimapVisible` setting. Not built, because the frames do not
-  draw them: `Scoreboard`, `Announcer`, `DeveloperMenu`, `PerfOverlay`.
+  one-line leaves over `ResourceBar`; no shield segment is drawn, because the snapshot carries no
+  shield data and no plan entry yet publishes it to the HUD. `AbilityBar` places its slots at the
+  frame's fixed positions (the ultimate, then abilities 1 to 3; the gadgets in `GadgetBar`), and the
+  `default-action` prompt of [05](05-abilities-weapons-and-loadouts.md) §15 is not built; no plan
+  entry schedules it. `MatchClock` shows no phase label until `match-clock` carries the phase (Phase
+  3, sprint 3.5). `MinimapPanel` is a frame only: there is no `minimap-click` intent (the canvas
+  handles a click) and no `minimapVisible` setting, and the canvas draws the minimap inside the
+  HUD's ring ([06](06-map-and-minimap.md) §10). Not built, because the frames do not draw them, each
+  with the plan entry that schedules it: `Scoreboard` (named for Phase 3, sprint 3.5 in [the Phase 2
+  architecture plan](../plan/phase-2-architecture.md), with no task line yet), `Announcer` (Phase 2,
+  sprint 2.8, and Phase 3, sprint 3.5), `DeveloperMenu` (v0 in Phase 1, sprint 1.5; complete in
+  Phase 5, sprint 5.5) and `PerfOverlay` (v1 in Phase 1, sprint 1.5; v2 in Phase 5, sprint 5.5).
 - **Styling and accessibility.** The selection screens are one 1920 × 1080 artboard scaled as a
   whole; the HUD is sized by its own unit `--hud-u`; both keep text at or above `--text-min`.
-  The display switches of §7 are built (`effectsRenderer` with the developer override
+  The display switches (DEC-54, DEC-55) are built (`effectsRenderer` with the developer override
   `?dev=1&fx=css` or `fx=raster`; `contrastMode` written to `data-contrast` on `<html>` by
   `SessionController`). The in-game reduce-motion setting is saved but not yet applied to the
   page; only `prefers-reduced-motion` reaches CSS (INBOX HC-S3; specified as UE-03 in

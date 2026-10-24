@@ -1544,3 +1544,24 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 606 passed (606)"; client "Tests 1220 passed (1220)", statements 95.36 %; "✓ built";
   "Checked 116 Markdown files under docs/." "Documentation check passed."
 - Next step: the pre-PR critic on the merged branch, then the owner's sign-offs.
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, docs for the pre-PR critic's run 1 (stream B) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only):
+  - Architecture 13: the three paragraphs citing the owner's decisions (§2 DEC-50, §7 the display
+    switches, §9 the variants) moved from the design text into the §10 note until he approves
+    their wording, because §2's table still described the old lifetime (critic S5). §10 now also
+    records the missing shield segments (N17), a re-attach restarting at tick 0 (N21), the minimap
+    inside the HUD ring (N23), the fixed slots and the unbuilt default-action prompt (N25), the
+    frame-only minimap panel (N26) and the plan entry for each deferred HUD piece (N29).
+    Architecture 14 §14: a failed asset is warned about, not raised as a typed error.
+  - Reference 15's appendix defines every cited ruling part (OD-11a to OD-29d) and OD-31 to
+    OD-33; every OD id cited in the repository resolves there.
+  - `INBOX.md` HC-B1 adds the critic's BD1, BD2 and NF1 to NF5, merged with the existing rows.
+    HC-T1 lists rows T-01 to T-99: T-86 to T-90 for the critic's items, and T-91 to T-99 for ADR
+    0018's own amendments, which apply only if the owner accepts it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 606 passed (606)"; client "Tests 1220 passed (1220)", statements 95.36 %; "✓ built";
+  "Checked 116 Markdown files under docs/." "Documentation check passed."
+- Next step: the working ids that resolve nowhere in the repository (the DV rows and the work
+  package names) wait for a ruling; then the critic's second run.
