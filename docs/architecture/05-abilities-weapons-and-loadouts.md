@@ -13,6 +13,9 @@ paths:
     'packages/core/src/loadout/**',
     'packages/core/src/content/abilities/**',
     'packages/core/src/content/weapons/**',
+    'packages/core/src/content/progression/**',
+    'packages/core/src/components/Progression.ts',
+    'packages/core/src/systems/ProgressionSystem.ts',
   ]
 related:
   [
@@ -146,7 +149,7 @@ export type CastContext = {
 ```
 
 Effects are stateless Flyweights (one instance per kind, like controllers). They call component
-methods (`Health.applyDamage`, `Movement.applyImpulse`, `StatusEffects.apply`) and the
+methods (`Health.applyDamage`, `Movement.applyImpulse`), the `StatusEffectApplier` and the
 `DamagePipeline`, never each other and never a system (rule 12). The catalogue, aligned with
 [more-abilities.md §1](../reference/suggestions/more-abilities.md#1-the-abilityeffect-catalogue-these-proposals-compose):
 
@@ -491,15 +494,45 @@ export class StatusEffectRuntime {
 }
 ```
 
-`StatusEffectSystem` walks `StatusEffects` components in id order: it fires `periodic` effects
-through the registry, expires instances (`status-expired`), runs `onExpire`, and recomputes each
-entity's cached modifier table (`StatusEffects.modifier('moveSpeed')`) so `MovementSystem`,
+`StatusEffectApplier` (DEC-41) is the one way a status lands: it resolves the id, refuses missing,
+dead and immune targets and emits `status-applied`. `StatusEffectSystem` walks `StatusEffects`
+components in id order: it fires `periodic` effects through the registry, expires instances
+(`status-expired`) and runs `onExpire`. `StatusEffects` recomputes its cached modifier table
+(`StatusEffects.multiplier('moveSpeed')`) whenever its list changes (DEC-41), so `MovementSystem`,
 `DamagePipeline` and `AbilityRuntime` each read one number. Mode semantics and the full id table
 (bleed, burn, concussion, blind, stun, knockup, crushed, marked, enraged, ascended, invisible,
 sundered, slowed, rooted, taunted, pulled, staggered, control-immune, eternal, hallowed,
 emboldened, hexed) are in
 [more-abilities.md §7](../reference/suggestions/more-abilities.md#7-proposed-status-effects); a
 new status is content only, a new stacking mode is one union member and one `case`.
+
+**Implementation status (sprint 2.2, SCRUM-228).** The MVP set (`bleed`, `concussion`, `stun`,
+`blind`, `enraged`, `crushed`) is authored in `content/status-effects/` as `AuthoredStatusEffect`
+(seconds; `enraged.maxStacks: 'structures-per-lane'`) and loaded by `loadStatusEffects` into
+`StatusEffectDefinition` (`durationTicks`, `everyTicks`, every cap resolved from config), which
+validates at load. Modifiers are `op: 'mul'`, `value` once per stack. `StatusEffectRuntime` sits in
+`components/` next to `StatusEffects`, which holds and pools it (`components/` may not import
+`combat/`); its stacking switch is `reapply`, with `refresh` and `intensity` so far, and periodic
+ticks count from the first application. Every unit gets `StatusEffects`; anything without it
+(structures) is immune. The component recomputes its multiplier table and flags when its list
+changes, not per tick. `combat/StatusEffectApplier` (not in the sketch above) is the one way in and out and emits every
+status event: `apply` (by id) emits `status-applied`; `remove` ends a status early (auras, holds)
+and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both with
+`status-expired`. `DefaultSystemPipeline` loads the statuses for the match's config and builds the
+one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
+fire 2.4, enraged 3.3) receive it there.
+`periodic.effects` are `StatusTickSpec`s shaped like `AbilityEffectSpec`, run by `StatusTickEffect`
+strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
+lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting
+the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSystem`
+(`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
+`AbilitySystem`. Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
+DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
+follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
+`controlClass` and `control-immune` (so a producer that reapplies `stun` before `onExpire` exists
+can stun-lock), `onExpire`, `appliesTo` (the component is the gate), the `duration`,
+`independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
+runs before movement.
 
 ## 9. Combat pipeline (`combat/`)
 
@@ -531,6 +564,22 @@ strength-by-distance curve), target statuses (`sundered`, `marked`, `hexed`), th
 entityId, killer: DamageSource }` and records the cause for `DeathSystem` (rule B). That is why
 every ability, weapon, status tick and gate fire names a `DamageSource`: "extra effective against
 Sentinels" and "reduces protections (stacks)" are modifiers, never branches in `CombatSystem`.
+
+**Implementation status (sprint 2.2, PR #34).** `DamagePipeline.apply(state, targetId, amount,
+source)` is built and is the only caller of `Health.applyDamage`. Each modifier above is a
+`DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
+`combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
+`FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
+`INBOX.md`) and `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+`apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
+`DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
+`DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;
+`no-death-without-killer` (15) flags a death without one.
+`DefaultSystemPipeline` builds the match's one `DamagePipeline` and injects it into every system
+that deals damage. `CombatSystem` (after movement, before death) runs each unit's `Combat` target
+through its `AttackStrategy` (melee only) when in reach (edge to edge) and off cooldown;
+`attack-target` sets the target and rejects allies, itself and dead targets (`invalid-target`) and
+units with no attack (`cannot-attack`).
 
 ## 10. Weapons
 
@@ -566,7 +615,9 @@ export type WeaponDefinition = {
 };
 ```
 
-`Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
+Until weapons land, a unit's basic attack is `UnitDefinition.attack` (same shape as `WeaponAttack`
+minus `onHit` and `projectile`; `interval` authored in seconds, converted to ticks at load like
+movement speeds). `Combat.weaponId` names the equipped weapon; `CombatSystem` calls the weapon's `AttackStrategy`
 (`attack(self, target, weapon, ctx)`,
 [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind)):
 `MeleeAttackStrategy` applies `damage` and `onHit` in the tick; `RangedProjectileAttackStrategy`
@@ -839,22 +890,36 @@ Display names and icons come from the catalogue the client already loads for the
 
 ## 18. Implementation status
 
-HUD (`feat/hud-and-character-select`, 2026-10-24). §15's `PlayerSnapshot` does not exist in core
-yet: `Snapshot` holds `tick`, `phase` and `entities` only. Until `SnapshotSystem` fills
-`Snapshot.player` (Phase 4, sprints 4.5 and 4.7), the client's `MatchBridge` projects the HUD
-player from the player's `EntitySnapshot` into `PlayerHudSnapshot` (`bridge/hud.types.ts`): the
-same fields, every value nullable except the two ids, with health and maximum health live, the
-slot list empty and everything else `null` (DEC-17), no
-`varietyId` or `statusIds` until a reader needs them, and two presentational slots,
-`weaponProgress` and `ultimatePips`, that stay `null` until OQ-63 and OQ-64 give them a rule. Its
-TSDoc states the one-to-one mapping to the core type. The record lands in `hudSlice`, not
-`matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`. The kit's display
-names and icons come from the display catalogue the client builds at boot (core's
-`loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`, published
-as `content-catalogue`), joined with the player's selection by `selectHudKit`; there is no
-`hud-kit` event. The slot display names are `null` and the icons are client-side asset ids until
-ability content exists (INBOX HC-Q3). The `xp` and `xpToNext` comments in §15 record the owner's
-reading of the XP ring (2026-10-18).
+- **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
+  `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
+  (`content/progression/levelCurveCatalogue.ts`), shape-checked at load (`loadLevelCurves`) and
+  injected into `ProgressionSystem`, the content rules (`KnownLevelCurveRule`) and
+  `level-matches-xp`; `addXp(amount, curve)` takes the resolved curve. `ProgressionSystem` (after
+  combat, before death) subscribes to `entity-died`, prices the kill while the victim is still in
+  the store (a mob's own `xpValue`; a Legend by victim level, `xpSources.ts`), pays nothing for a
+  self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
+  only. A level-up raises max health by the class's share of base health and max aether, and heals
+  and refills by the raise only while the Legend is alive (O3, O4). Not built yet: the share radius
+  and damage bias, assists, structure, checkpoint, camp and boss XP (their systems do not exist),
+  basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
+  dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
+  `TUNE`; the curve is derived from an income estimate in `INBOX.md`.
+- **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist in core
+  yet: `Snapshot` holds `tick`, `phase` and `entities` only. Until `SnapshotSystem` fills
+  `Snapshot.player` (Phase 4, sprints 4.5 and 4.7), the client's `MatchBridge` projects the HUD
+  player from the player's `EntitySnapshot` into `PlayerHudSnapshot` (`bridge/hud.types.ts`): the
+  same fields, every value nullable except the two ids, with health and maximum health live, the
+  slot list empty and everything else `null` (DEC-17), no
+  `varietyId` or `statusIds` until a reader needs them, and two presentational slots,
+  `weaponProgress` and `ultimatePips`, that stay `null` until OQ-63 and OQ-64 give them a rule. Its
+  TSDoc states the one-to-one mapping to the core type. The record lands in `hudSlice`, not
+  `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`. The kit's display
+  names and icons come from the display catalogue the client builds at boot (core's
+  `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`, published
+  as `content-catalogue`), joined with the player's selection by `selectHudKit`; there is no
+  `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids until
+  ability content exists (INBOX HC-Q3). The `xp` and `xpToNext` comments in §15 record the owner's
+  reading of the XP ring (2026-10-18).
 
 ## Related
 

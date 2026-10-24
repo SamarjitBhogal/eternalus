@@ -16,6 +16,7 @@ export const SENTINEL = {
   description: null,
   detailNames: { signature: null, proficiency: null, specialty: null },
   baseHealth: 1200, // TUNE:
+  baseAether: 80, // TUNE: balancing.md (level 1)
   weaponBias: 'heavy',
   damageFocus: 'physical',
   pickUp: 'grab',
@@ -29,4 +30,8 @@ export const SENTINEL = {
     acceleration: 0.18, // TUNE: m/s², top speed after 50 s
     mass: 6, // TUNE:
   },
+  // Basic attack until weapons (05 §10) land.
+  attack: { strategy: 'melee', damage: 90, reach: 1.8, interval: 1.2 }, // TUNE: balancing.md (90 / 1.2 s); reach unspecified
+  levelCurveId: 'legend',
+  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;

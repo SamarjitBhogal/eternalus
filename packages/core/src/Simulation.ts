@@ -11,6 +11,8 @@ import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { loadLevelCurves } from './content/progression/loadLevelCurves';
+import { XP_SOURCES } from './content/progression/xpSources';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
@@ -48,25 +50,30 @@ export class Simulation {
     systems,
     debug = RELEASE_DEBUG_CONFIG,
     content,
+    levelCurves,
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed);
+    const curves = levelCurves ?? loadLevelCurves();
+    const units = content ?? loadDefaultContent(this.state.config.tickRate, curves);
     this.commandContext = {
       state: this.state,
-      factory: new EntityFactory(
-        createDefaultEntityRegistry(),
-        content ?? loadDefaultContent(this.state.config.tickRate),
-      ),
+      factory: new EntityFactory(createDefaultEntityRegistry(), units),
     };
     this.systemContext = { state: this.state, logger };
     // PROTOTYPE(PROTO-01) TEMPORARY: replace this hand-built controller list with
     // `ai/defaultControllerRegistry.ts` (11 §2) and `FollowLeaderController` with `MinionController`.
     this.pipeline =
       systems === undefined
-        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), [
-            new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
-              this.queue.enqueue(command);
-            }),
-          ])
+        ? new DefaultSystemPipeline(
+            new DefaultInvariantRunner(debug, logger, curves),
+            this.state,
+            { units, curves, xpSources: XP_SOURCES },
+            [
+              new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
+                this.queue.enqueue(command);
+              }),
+            ],
+          )
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(

@@ -118,4 +118,24 @@ describe('Health', () => {
       ['entity-10', 10],
     ]);
   });
+
+  it('raises only the cap (the caller heals, O3/O4), and rejects a negative raise', () => {
+    const pool = new Health(100);
+    pool.raiseMax(20);
+
+    expect(pool.max).toBe(120);
+    expect(pool.current).toBe(100);
+    expect(() => {
+      pool.raiseMax(-1);
+    }).toThrow();
+  });
+
+  it('does not revive a dead entity when its max is raised', () => {
+    const health = new Health(100);
+    health.applyDamage(100);
+    health.raiseMax(20);
+
+    expect(health.max).toBe(120);
+    expect(health.isDead).toBe(true);
+  });
 });

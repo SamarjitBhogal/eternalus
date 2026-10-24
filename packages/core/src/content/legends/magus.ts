@@ -23,6 +23,7 @@ export const MAGUS = {
     specialty: 'Arcane Intellect', // Figma 72:761
   },
   baseHealth: 800, // TUNE:
+  baseAether: 140, // TUNE: balancing.md (level 1)
   weaponBias: 'staff',
   damageFocus: 'magic',
   pickUp: 'levitate',
@@ -36,4 +37,8 @@ export const MAGUS = {
     acceleration: 22.5, // TUNE: m/s², top speed after 0.2 s (6 ticks)
     mass: 2, // TUNE:
   },
+  // Basic attack until weapons (05 §10) land.
+  attack: { strategy: 'melee', damage: 40, reach: 1.5, interval: 0.9 }, // TUNE: balancing.md (40 / 0.9 s, magical, 8 m range: melee until ranged attacks land)
+  levelCurveId: 'legend',
+  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;
