@@ -5,8 +5,10 @@ import { useAppSelector } from '../bridge/hooks';
 import { sessionSlice } from '../bridge/slices/sessionSlice';
 import { PlaceholderScreen } from './components/PlaceholderScreen';
 import { AboutScreen } from './screens/AboutScreen';
+import { CharacterSelectScreen } from './screens/CharacterSelectScreen';
 import { LoadoutScreen } from './screens/LoadoutScreen';
 import { MainMenuScreen } from './screens/MainMenuScreen';
+import { MatchScreen } from './screens/MatchScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import type { ScreenProps } from './screens/screen.types';
@@ -16,10 +18,10 @@ import { SettingsScreen } from './screens/SettingsScreen';
 const PHASE_SCREENS: Readonly<Record<Exclude<SessionPhase, 'menu'>, ComponentType<ScreenProps>>> = {
   boot: PlaceholderScreen,
   loading: PlaceholderScreen,
-  'character-select': PlaceholderScreen,
+  'character-select': CharacterSelectScreen,
   'pre-launch': PlaceholderScreen,
   'match-loading': PlaceholderScreen,
-  match: PlaceholderScreen,
+  match: MatchScreen,
   results: ResultsScreen,
 };
 

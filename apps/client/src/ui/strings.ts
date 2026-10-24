@@ -54,7 +54,6 @@ export const STRINGS = {
   },
   placeholder: {
     body: 'This screen is being built.',
-    leaveMatch: 'Leave match',
     phases: {
       boot: 'Starting',
       menu: 'Menu',

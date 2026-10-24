@@ -83,7 +83,6 @@
   --selection-ink-scrim: rgb(19 19 19 / 20%);
   --selection-ink-veil: rgb(19 19 19 / 50%);
   --selection-ink-missing: rgb(19 19 19 / 80%);
-  --selection-glass-fallback: rgb(19 19 19 / 30%);
   --selection-parchment: #f9e0c7;
   --selection-parchment-faint: rgb(249 224 199 / 60%);
   /* The glow-button rings (62:223, 58:273) seen through the glass bodies stacked above them. */
@@ -108,10 +107,8 @@
   --selection-glow-pale: #d1e2ff;
   --selection-glass-centre: rgb(117 180 251 / 20%);
   --selection-glass-edge: rgb(117 180 251 / 4%);
-  --selection-shadow: #000000;
   --selection-art-shade: rgb(0 0 0 / 20%);
   --selection-art-shade-deep: rgb(0 0 0 / 36%);
-  --selection-art-shade-hover: rgb(0 0 0 / 8%);
   --selection-art-shade-light: rgb(0 0 0 / 5%);
   --selection-art-warm: rgb(49 13 0 / 10%);
   --selection-drop-shadow: rgb(0 0 0 / 60%);
@@ -121,8 +118,6 @@
   --selection-stat-track: #d9d9d9;
   --selection-stat-fill-start: rgb(217 217 217 / 80%);
   --selection-stat-fill-end: #bddeff;
-  --selection-underfill-centre: #5f6468;
-  --selection-underfill-edge: #343436;
 
   /* Class and Legend accents; content names them (accentToken). */
   --class-warrior-accent: #eda84d;
@@ -139,7 +134,6 @@
   --hud-marker: #ffffff;
   --hud-cream: #f9e0c7;
   --hud-cream-bright: #ffefcc;
-  --hud-cream-bright-half: rgb(255 239 204 / 50%);
   --hud-amber: #f9bd45;
   --hud-orange: #f98d45;
   --hud-xp-glow: rgb(255 155 4 / 50%);
@@ -215,13 +209,11 @@
   --hud-level-shadow-far: #000000;
   --hud-level-noise: #3e2217;
   /* Not in the Figma (forced or fill-in states; register CD-03, CD-13): */
-  --hud-cooldown-shade: rgb(0 0 0 / 55%);
   --hud-no-data-hatch: rgb(249 224 199 / 25%);
   --hud-allegiance-flag: #f9e0c7;
   /* Team HUD colours (10-art-and-lore: team colours are the HUD colours; Figma allied = Light). */
   --team-light-hud-structure: #5291fc;
   --team-dark-hud-structure: #710b00;
-  --team-neutral-hud-structure: #929390;
   --team-light-hud-letter: #7b8a9f;
   --team-light-hud-letter-shadow: rgb(0 0 0 / 50%);
   --team-light-hud-letter-blur: 5;
