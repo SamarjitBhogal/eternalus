@@ -74,26 +74,28 @@ function detailRows(
   }));
 }
 
-/** A layout's own copy and icons; its rows keep core names, with its icons over the class's. */
+/**
+ * A layout's own icons (its rows keep core names, with its icons over the class's), and the
+ * alternate layout's own copy, core's `alternateLayoutDescription` (62:82).
+ */
 function layoutOverrides(
   legend: LegendDefinition,
   shown: ClassPresentation,
 ): LegendClassCard['layoutOverrides'] {
-  return Object.fromEntries(
+  const overrides = Object.fromEntries(
     Object.entries(shown.layoutOverrides).map(
-      ([layout, { description, detailIcons }]): [string, ClassLayoutOverride] => [
+      ([layout, { detailIcons }]): [string, ClassLayoutOverride] => [
         layout,
-        {
-          ...(description === undefined ? {} : { description }),
-          ...(detailIcons === undefined
-            ? {}
-            : {
-                details: detailRows(legend.detailNames, { ...shown.detailIcons, ...detailIcons }),
-              }),
-        },
+        detailIcons === undefined
+          ? {}
+          : { details: detailRows(legend.detailNames, { ...shown.detailIcons, ...detailIcons }) },
       ],
     ),
   );
+  const description = legend.alternateLayoutDescription;
+  return description === null
+    ? overrides
+    : { ...overrides, alternate: { description, ...overrides.alternate } };
 }
 
 /** A core Legend with its presentation: the title and per-team names stay core's objects (OA3). */

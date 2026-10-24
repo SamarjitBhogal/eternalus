@@ -9,14 +9,6 @@ import type {
 } from './CataloguePresentation.types';
 import { MAGUS_HUD, SENTINEL_HUD, WARRIOR_HUD } from './hudPresentation';
 
-/** 62:82 verbatim, with its hard line breaks (each line ends with a space; DV-114, HC-Q5). */
-const MAGUS_ALTERNATE_DESCRIPTION =
-  'The masters of Aether, Magus focus on the use of \n' +
-  'abilities, while providing buffs for allies, and de-buffing \n' +
-  'enemy units. Specializing in ranged attacks, Magus \n' +
-  'aim to keep their distance from enemies to dish out \n' +
-  'damage with high sustain. ';
-
 /** Keyed by core class id. Plates are present on both renderers; `'css'` empties them (I-80). */
 export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
   warrior: {
@@ -61,10 +53,7 @@ export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
     },
     hud: MAGUS_HUD,
     layoutOverrides: {
-      alternate: {
-        description: MAGUS_ALTERNATE_DESCRIPTION,
-        detailIcons: { specialty: 'magus-detail-arcane-intellect-flame' },
-      },
+      alternate: { detailIcons: { specialty: 'magus-detail-arcane-intellect-flame' } },
     },
   },
 };

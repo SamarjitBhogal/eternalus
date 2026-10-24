@@ -124,6 +124,23 @@ describe('buildDisplayCatalogue', () => {
     ]);
   });
 
+  it('takes the alternate layout description from core, next to the layout icons', () => {
+    const legends = CONTENT.legends.map((legend) => ({
+      ...legend,
+      alternateLayoutDescription: `${legend.id} in the alternate frame`,
+    }));
+    const cards = build({ content: { legends } }).legendClasses;
+
+    expect(classCard(cards, 'magus').layoutOverrides.alternate).toMatchObject({
+      description: 'magus in the alternate frame',
+      details: [{ slot: 'signature' }, { slot: 'proficiency' }, { slot: 'specialty' }],
+    });
+    expect(classCard(cards, 'warrior').layoutOverrides).toEqual({
+      alternate: { description: 'warrior in the alternate frame' },
+    });
+    expect(classCard(build().legendClasses, 'warrior').layoutOverrides).toEqual({});
+  });
+
   it('names HUD kinds from core, the aggregated wall tile after its first named kind', () => {
     expect(CONTENT.mapFeatures.find((feature) => feature.kind === 'gate')?.displayName).toBeNull();
     const { hud } = build();

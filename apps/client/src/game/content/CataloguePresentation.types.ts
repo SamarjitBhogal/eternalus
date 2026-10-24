@@ -28,14 +28,12 @@ export type ClassPresentation = {
   readonly art: LegendClassArt;
   readonly detailIcons: DetailIcons;
   readonly hud: ClassHudDisplay;
-  /** O5's alternate frame keeps its own copy and icons (DV-114; HC-Q5 picks the canonical copy). */
+  /**
+   * O5's alternate frame keeps its own icons; its own copy is core's `alternateLayoutDescription`
+   * (HC-Q5 picks the canonical copy).
+   */
   readonly layoutOverrides: Readonly<
-    Partial<
-      Record<
-        ClassSelectLayout,
-        { readonly description?: string | null; readonly detailIcons?: DetailIcons }
-      >
-    >
+    Partial<Record<ClassSelectLayout, { readonly detailIcons?: DetailIcons }>>
   >;
 };
 
