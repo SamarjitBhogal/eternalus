@@ -64,6 +64,22 @@ describe('AssetImage', () => {
     expect(named).toContain('alt="Oracle"');
     expect(named).not.toContain('aria-hidden');
   });
+
+  it('takes a CSS module class as read (possibly undefined) and writes none for undefined', () => {
+    const classes: Readonly<Record<string, string>> = { tile: 'tile' };
+    const missing = renderWithStore(
+      <AssetImage assetId="oracle-portrait" className={classes.absent} />,
+      { assets: loaded },
+    );
+
+    expect(missing).toContain(`<img src="${PORTRAIT}" alt="" aria-hidden="true" decoding="async"`);
+    expect(missing).not.toContain('class=');
+    expect(
+      renderWithStore(<AssetImage assetId="oracle-portrait" className={classes.tile} />, {
+        assets: loaded,
+      }),
+    ).toContain('class="tile"');
+  });
 });
 
 describe('useAssetUrl', () => {

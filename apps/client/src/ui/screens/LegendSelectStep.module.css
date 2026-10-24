@@ -1,0 +1,50 @@
+/* The Legend step (58:271) fills the artboard and creates no stacking context (no z-index,
+   transform, filter, opacity or isolation; §5.15): its children stack in SelectionStage's
+   artboard, above the vignettes and beneath the shell's banner and countdown. LOCK IN, Back and
+   the roster are placed by their own skins. */
+.step {
+  position: absolute;
+  inset: 0;
+}
+
+/* The picked Legend's row plate (61:3 + 58:351 + 55:255) at its full inline box, 1:1, never
+   fitted or cropped (I-45, FID-R3-01). First child, no z-index: everything after it paints above. */
+.rowPlate {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+/* 58:293 "Magus > Choose Your Legend": Cinzel Regular 24, text token, box (774, 171) 375 × 32 centred
+   on x 961.5 (= the middle of 3..1920), as wide as its text whatever the class name; above the
+   picked card's glow, as Figma draws 58:279 above 55:270 (SUB §2). */
+.breadcrumb {
+  position: absolute;
+  z-index: 1;
+  left: 3px;
+  right: 0;
+  top: 171px;
+  width: max-content;
+  margin: 0 auto;
+  color: var(--selection-text);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 58:323 Stat Bars (73, 766): three rows on a 48 px pitch (766, 814, 862). */
+.ratings {
+  position: absolute;
+  left: 73px;
+  top: 766px;
+  display: grid;
+  grid-auto-rows: 48px;
+  width: 401px;
+  pointer-events: none;
+}

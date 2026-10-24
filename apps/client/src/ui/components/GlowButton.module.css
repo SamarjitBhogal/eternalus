@@ -1,0 +1,266 @@
+/* The root carries no filter, opacity or transform: the pane's backdrop-filter sees the stage, and
+   the chrome plate keeps its integer box (I-45). Skins place it at the node's frame origin. */
+.button {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* 62:222 Select Class, root (788, 908) 344 × 62.249. */
+.selectClass {
+  left: 788px;
+  top: 908px;
+  width: 344px;
+  height: 62.249px;
+}
+
+/* 58:277 LOCK IN, root (803, 940) 314 × 55.25. */
+.lockIn {
+  left: 803px;
+  top: 940px;
+  width: 314px;
+  height: 55.25px;
+}
+
+/* The Figma-state chrome plate (R1 step 2): at its inline full render-bounds box, 1:1, never fitted. */
+.chrome {
+  position: absolute;
+  display: block;
+}
+
+/* The glass body's BACKGROUND_BLUR 60 (σ 30) and GLASS approximated by a backdrop blur (CD-15),
+   beneath the ring (a blur above it would soften the crisp ring); literal radius: Safari drops a
+   var() in backdrop-filter. 62:224 (790.018, 908) 338.956 × 62.249; 58:390 (804.84, 940)
+   309.4 × 55.25. */
+.pane,
+.ring,
+.haze {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.pane {
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+}
+
+/* 62:222 / 58:277 glow group: its shadow layer, then the ring, haze and braces with their glows,
+   unfiltered. Disabled, it dims as one group. */
+.glowGroup {
+  position: absolute;
+  inset: 0;
+}
+
+/* The group DROP_SHADOW (azure 80 %, 0 4, radius 10): σ 5 (E11), knocked out under the cast
+   alpha (sel-glow-group, shadows only), as 58:277's showShadowBehindNode: false draws it; a CSS
+   drop-shadow() would paint it behind the translucent glows and haze. Cast from a plain copy of
+   the ring stroke, haze and brace strokes, not from their glows (cast from the whole group it
+   spread all round the ring and too far below it: WP-CLASS CSS audit B2). The label stays outside
+   it: measured against 58:271 with the LOCK IN plate, Figma's label glow carries no share of the
+   group shadow (under the filter its glow was 1.9× too strong). */
+.lit {
+  position: absolute;
+  inset: 0;
+  filter: url(#sel-glow-group);
+}
+
+.lit .ring,
+.lit .brace,
+.bracesGlow .brace {
+  filter: none;
+}
+
+/* 62:223 / 58:273: 2 px parchment INSIDE stroke, six radius-20 frost glows (sel-glow-ring).
+   Figma stacks the glass body (62:224 / 58:390) above the ring, so the stroke shows through the
+   frosted glass at about half strength: drawn at 50 % alpha and kept crisp, not blurred. The six
+   glows are cast from this alpha, so they are halved too (measured on 58:271: closer to the
+   reference outside the button than full-strength glows). */
+.ring {
+  border: 2px solid var(--selection-parchment-under-glass);
+  filter: url(#sel-glow-ring);
+}
+
+/* 62:224 / 58:390 fill: radial sky 100 % → 20 % at paint opacity 0.2 (the glass-centre and
+   glass-edge tokens), radii 55.2 % × 50 %, LAYER_BLUR 50 (σ 25). */
+.haze {
+  background: radial-gradient(
+    55.2% 50% at 50% 50%,
+    var(--selection-glass-centre),
+    var(--selection-glass-edge)
+  );
+  filter: blur(25px);
+}
+
+.selectClass .pane,
+.selectClass .haze {
+  width: 338.956px;
+  height: 62.249px;
+  transform: translate(2.018px, 0);
+}
+
+/* Each ring box is the whole-pixel box Chrome paints its 2 px border in (62:223 790.018 to
+   1128.974 × 908 to 970.249 paints 790–1129 × 908–970; 58:273 804.84 to 1114.24 × 940 to 995.25
+   paints 805–1114 × 940–995), so the glow knockout's box ends at the stroke: on the fractional box
+   it rounded out one row or column further, leaving a 1 px dark seam between the ring and its glow
+   (under the whole ring, WP-CLASS CSS audit D1; LOCK IN's left and right edges too). */
+.selectClass .ring {
+  width: 339px;
+  height: 62px;
+  transform: translate(2px, 0);
+}
+
+.lockIn .pane,
+.lockIn .haze {
+  width: 309.4px;
+  height: 55.25px;
+  transform: translate(1.84px, 0);
+}
+
+.lockIn .ring {
+  width: 309px;
+  height: 55px;
+  transform: translate(2px, 0);
+}
+
+/* 62:225 / 58:278 braces group box. */
+.braces {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* The braces group's four azure radius-20 glows at 0 ±2 (sel-glow-braces, shadows only), cast from
+   plain copies of the 1 px strokes beneath the braces with their own glows (cast from those glows
+   they made blue blobs at both ring ends: WP-CLASS CSS audit B1). */
+.bracesGlow {
+  filter: url(#sel-glow-braces);
+}
+
+.selectClass .braces {
+  width: 344px;
+  height: 48.762px;
+  transform: translate(0, 7.262px);
+}
+
+.lockIn .braces {
+  width: 314px;
+  height: 43.28px;
+  transform: translate(0, 6.45px);
+}
+
+/* One brace: 1 px brace-token centre stroke, round caps; parchment glows 0 −4 r20 and 0 4 r10
+   (sel-glow-brace). */
+.brace {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  filter: url(#sel-glow-brace);
+}
+
+.brace path {
+  fill: none;
+  stroke: var(--selection-brace);
+  stroke-width: 1px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.selectClass .brace {
+  width: 17.654px;
+  height: 48.762px;
+}
+
+.selectClass .brace[data-side='right'] {
+  transform: translate(326.346px, 0);
+}
+
+.lockIn .brace {
+  width: 16.114px;
+  height: 43.279px;
+}
+
+.lockIn .brace[data-side='right'] {
+  transform: translate(297.886px, 0);
+}
+
+/* 62:228 "Select Class" / 58:276 "lock in": Cinzel Regular 36 parchment, six sky glows (0 4 25,
+   then 0 ∓4 50 alternating) as the sel-glow-label def at σ = r/2. As CSS text-shadows the haze
+   came out wider and greener than Figma's on 62:125 (WP-CLASS visual audit). */
+.label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--selection-parchment);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(36px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-36) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+  filter: url(#sel-glow-label);
+}
+
+/* Box (831.771, 912.563) 256.357 × 55.208, centred on (959.95, 940.17). Chrome snaps the text line
+   to whole px: at the Figma 4.563 px the glyphs sat 1 px below Figma's rows (WP-CLASS audit of
+   62:125: shift +0,+1, ink box T+1 B+2); 4 px puts them on Figma's rows (shift 0, ink box B+1).
+   LOCK IN's 4.09 px already rounds down. */
+.selectClass .label {
+  width: 256.357px;
+  height: 55.208px;
+  transform: translate(43.771px, 4px);
+}
+
+/* Centred on (960, 968.09) across the 314 px group. */
+.lockIn .label {
+  width: 314px;
+  height: 48px;
+  transform: translate(0, 4.09px);
+}
+
+/* States the Figma does not draw (CD-11, CD-15; fill-in values): hover lifts the group glow,
+   a press tightens it (both knocked out like the idle glow; a url() filter swaps without a
+   transition), disabled dims it and drops the haze. */
+.button:hover:not([aria-disabled='true']) .lit {
+  filter: url(#sel-glow-group-hover);
+}
+
+.button:active:not([aria-disabled='true']) .lit {
+  filter: url(#sel-glow-group-press);
+}
+
+.button[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+.button[aria-disabled='true'] .glowGroup,
+.button[aria-disabled='true'] .label {
+  opacity: 0.45;
+}
+
+.button[aria-disabled='true'] .haze {
+  display: none;
+}
+
+/* Over the dark backdrop, clear of the cream ring (CD-11). */
+.button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 6px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

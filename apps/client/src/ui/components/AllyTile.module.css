@@ -1,0 +1,86 @@
+/* One 60 × 60 slot of the roster column; the tile box sits in it (the Legend step's player tile
+   5 px larger on every side, 58:392). */
+.slot {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+/* The tile box: the image under an INSIDE stroke drawn on top (CSUI E5), shadows outside. */
+.tile {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 60px;
+  height: 60px;
+}
+
+.tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: var(--tile-border-width) solid var(--tile-border);
+  pointer-events: none;
+}
+
+/* The tile's rendition at its own pixel size: no fit, no crop percentages (I-45). */
+.image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  width: 60px;
+  height: 60px;
+}
+
+/* Every sigil look (player and idle), never a portrait: Figma's paint opacity 0.85 (FID-R2-09). */
+.sigil {
+  opacity: 0.85;
+}
+
+/* 62:202 player tile: 2 px parchment. */
+.slot[data-look='player'] .tile {
+  --tile-border-width: 2px;
+  --tile-border: var(--selection-parchment);
+}
+
+/* 62:207 / 58:335 … bots on a class: 1 px white 40 %. */
+.slot[data-look='idle'] .tile {
+  --tile-border-width: 1px;
+  --tile-border: var(--selection-tile-idle);
+}
+
+/* 62:209 / 58:400 bots with a Legend: 2 px Legend accent, DROP_SHADOW black 60 % 0 4 radius 20. */
+.slot[data-look='legend'] .tile {
+  --tile-border-width: 2px;
+  --tile-border: var(--tile-accent);
+  box-shadow: 0 4px 20px var(--selection-drop-shadow);
+}
+
+/* 58:392 the Legend step's player tile: 70 × 70 at (−5, −5), 2 px accent of the pick, two azure
+   50 % shadows 0 ∓2 radius 5 spread 5. */
+.slot[data-look='player-picked'] .tile {
+  --tile-border-width: 2px;
+  --tile-border: var(--tile-accent);
+  left: -5px;
+  top: -5px;
+  width: 70px;
+  height: 70px;
+  box-shadow:
+    0 -2px 5px 5px var(--selection-glow-azure-half),
+    0 2px 5px 5px var(--selection-glow-azure-half);
+}
+
+.slot[data-look='player-picked'] .image {
+  width: 70px;
+  height: 70px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

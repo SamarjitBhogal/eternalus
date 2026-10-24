@@ -1,0 +1,17 @@
+/* 16 × 20 padlock in the surrounding text colour (CD-05). */
+.glyph {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 20px;
+}
+
+.shackle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2px;
+}
+
+.body {
+  fill: currentColor;
+}

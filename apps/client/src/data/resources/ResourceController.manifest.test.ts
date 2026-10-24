@@ -10,7 +10,7 @@ import { ResourceController } from './ResourceController';
 /** Byte totals per group at a pixel ratio of 1 and 2: the HC-Q15 budgets accepted by OD-7. */
 const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['boot', 25_888, 25_888],
-  ['selection', 4_056_098, 1_910_378],
+  ['selection', 4_055_862, 1_905_016],
   ['selection-primary', 795_914, 865_606],
   ['selection-alternate', 456_024, 587_480],
   ['selection-raster', 867_022, 243_798],

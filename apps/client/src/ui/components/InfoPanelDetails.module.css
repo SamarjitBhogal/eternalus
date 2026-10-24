@@ -1,0 +1,322 @@
+/* `.details` is a plain, unpositioned wrapper: every box below is relative to the enclosing
+   InfoPanel's origin. */
+
+/* Header box 72:755 (0, 274) 374 × 22, 62:92 (0, 274) 291 × 22, 56:45 (4, 274) 265 × 22: ink
+   scrim, 1 px white INSIDE, radius 2. */
+.headerBox {
+  position: absolute;
+  left: var(--header-box-x);
+  top: 274px;
+  width: var(--header-box-w);
+  height: 22px;
+  border: 1px solid var(--selection-text);
+  border-radius: 2px;
+  background: var(--selection-ink-scrim);
+}
+
+/* Header text: 72:756 Regular 14 centred in (0, 276) 374 × 19; 62:93 Regular 15 left in
+   (5, 275) 279 × 20; 56:46 Regular 15 left at x 9, centred on the box (275, h 20). */
+.headerText {
+  position: absolute;
+  left: var(--header-text-x);
+  top: 275px;
+  height: 20px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(15px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-15) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+}
+
+.details[data-layout='class'] {
+  --header-box-x: 0;
+  --header-box-w: 374px;
+  --header-text-x: 0;
+}
+
+.details[data-layout='class-alternate'] {
+  --header-box-x: 0;
+  --header-box-w: 291px;
+  --header-text-x: 5px;
+}
+
+.details[data-layout='legend'] {
+  --header-box-x: 4px;
+  --header-box-w: 265px;
+  --header-text-x: 9px;
+}
+
+.details[data-layout='class'] .headerText {
+  top: 276px;
+  width: 374px;
+  height: 19px;
+  justify-content: center;
+  font-size: max(14px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-14) * 1px);
+}
+
+/* 56:46: Chrome sets the 15 px Cinzel cap rows 1 px above Figma's in the same 20 px box (Figma cap
+   rows 409–417, build at 275 px 408–416); 276 px puts the ink on Figma's rows. 62:93 measured the
+   same on 62:70 (rule below). */
+.details[data-layout='legend'] .headerText {
+  top: 276px;
+}
+
+/* 62:93: at 275 px its ink sat 1 px high too (WP-CLASS audit of 62:70: p95 40.5 → 7.7, zero shift
+   at 276 px). */
+.details[data-layout='class-alternate'] .headerText {
+  top: 276px;
+}
+
+/* Rules in one svg at the integer origin (CSUI E3, E4), geometry from the Figma render boxes:
+   white header line and dividers, 1.5 px accents at 40 % red. The class layout's lines have round
+   caps (rx 0.5); 62:70 and 58:271 butt caps. */
+.rules {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+}
+
+.rule {
+  height: 1px;
+  fill: var(--selection-text);
+}
+
+.accent {
+  width: 1.5px;
+  fill: var(--selection-detail-accent);
+}
+
+/* 72:753 (428, 412) 38 × 1; 72:769 / 72:763 (45, 548 / 639.909) 417 × 1; 72:774 / 72:768 /
+   72:762 at x 45, y 434 h 95, 562.967 h 63, 650.909 h 93. */
+.details[data-layout='class'] .rule {
+  rx: 0.5px;
+}
+
+.details[data-layout='class'] [data-rule='header-line'] {
+  x: 383px;
+  y: 284px;
+  width: 38px;
+}
+
+.details[data-layout='class'] [data-rule^='divider'] {
+  x: 0;
+  width: 417px;
+}
+
+.details[data-layout='class'] [data-rule='divider-0'] {
+  y: 420px;
+}
+
+.details[data-layout='class'] [data-rule='divider-1'] {
+  y: 511.909px;
+}
+
+.details[data-layout='class'] [data-rule='accent-0'] {
+  x: 0;
+  y: 306px;
+  height: 95px;
+}
+
+.details[data-layout='class'] [data-rule='accent-1'] {
+  x: 0;
+  y: 434.967px;
+  height: 63px;
+}
+
+.details[data-layout='class'] [data-rule='accent-2'] {
+  x: 0;
+  y: 522.909px;
+  height: 93px;
+}
+
+/* 62:90 370 → 573 at row 413; 62:106 / 62:100 68 → 573 at rows 551 / 634; accents at x 65.
+   56:43 333 → 474 at row 413; 56:59 / 56:53 60 → 474 at rows 551 / 634; accents at x 57.
+   Both: accents y 436 h 95, 562 h 63, 645 h 93. */
+.details[data-layout='class-alternate'] [data-rule='header-line'] {
+  x: 305px;
+  y: 285px;
+  width: 203px;
+}
+
+.details[data-layout='class-alternate'] [data-rule^='divider'] {
+  x: 3px;
+  width: 505px;
+}
+
+.details[data-layout='legend'] [data-rule='header-line'] {
+  x: 280px;
+  y: 285px;
+  width: 141px;
+}
+
+.details[data-layout='legend'] [data-rule^='divider'] {
+  x: 7px;
+  width: 414px;
+}
+
+.details:not([data-layout='class']) [data-rule='divider-0'] {
+  y: 423px;
+}
+
+.details:not([data-layout='class']) [data-rule='divider-1'] {
+  y: 506px;
+}
+
+.details[data-layout='class-alternate'] [data-rule^='accent'] {
+  x: 0;
+}
+
+.details[data-layout='legend'] [data-rule^='accent'] {
+  x: 4px;
+}
+
+.details:not([data-layout='class']) [data-rule='accent-0'] {
+  y: 308px;
+  height: 95px;
+}
+
+.details:not([data-layout='class']) [data-rule='accent-1'] {
+  y: 434px;
+  height: 63px;
+}
+
+.details:not([data-layout='class']) [data-rule='accent-2'] {
+  y: 517px;
+  height: 93px;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Detail icons: each row's rendition at its WP-ASSETS placement box, at its own pixel size, with
+   no fit, rotation or transform (I-45); a missing icon shows a 1 px placeholder box in its slot. */
+.icon,
+.placeholder {
+  position: absolute;
+  display: block;
+  left: var(--icon-x);
+  top: var(--icon-y);
+  width: var(--icon-w);
+  height: var(--icon-h);
+}
+
+.placeholder {
+  border: 1px solid var(--selection-placeholder-line);
+  border-radius: 2px;
+}
+
+/* Row names: Cinzel Regular 24 white at each Figma origin (the Figma's x 243 vs 233 kept, CSUI-15). */
+.name {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+  transform: translate(var(--name-x), var(--name-y));
+}
+
+/* 62:125: aetheric-recall (111, 424) 90 × 115, staff (121, 559) 73 × 72, arcane intellect
+   (133, 666) 54 × 64; names 72:773 (243, 466), 72:767 (233, 578.967), 72:761 (233, 685.909). */
+.details[data-layout='class'] [data-row='0'] {
+  --icon-x: 66px;
+  --icon-y: 296px;
+  --icon-w: 90px;
+  --icon-h: 115px;
+  --name-x: 198px;
+  --name-y: 338px;
+}
+
+.details[data-layout='class'] [data-row='1'] {
+  --icon-x: 76px;
+  --icon-y: 431px;
+  --icon-w: 73px;
+  --icon-h: 72px;
+  --name-x: 188px;
+  --name-y: 450.967px;
+}
+
+.details[data-layout='class'] [data-row='2'] {
+  --icon-x: 88px;
+  --icon-y: 538px;
+  --icon-w: 54px;
+  --icon-h: 64px;
+  --name-x: 188px;
+  --name-y: 557.909px;
+}
+
+/* 62:70: aetheric-recall (131, 424) 92 × 118, staff (110, 584) 133 × 19, flame (154, 653)
+   44 × 78; names 62:110 (281, 467), 62:104 (283, 578), 62:98 (283, 680). */
+.details[data-layout='class-alternate'] [data-row='0'] {
+  --icon-x: 66px;
+  --icon-y: 296px;
+  --icon-w: 92px;
+  --icon-h: 118px;
+  --name-x: 216px;
+  --name-y: 339px;
+}
+
+.details[data-layout='class-alternate'] [data-row='1'] {
+  --icon-x: 45px;
+  --icon-y: 456px;
+  --icon-w: 133px;
+  --icon-h: 19px;
+  --name-x: 218px;
+  --name-y: 450px;
+}
+
+.details[data-layout='class-alternate'] [data-row='2'] {
+  --icon-x: 89px;
+  --icon-y: 525px;
+  --icon-w: 44px;
+  --icon-h: 78px;
+  --name-x: 218px;
+  --name-y: 552px;
+}
+
+/* 58:271: aetheric-recall (123, 424) 92 × 118, unison ward (134, 567) 72 × 56, severed accord
+   (143, 668) 51 × 56; names 56:63 (243, 467), 56:57 (245, 578), 56:51 (245, 680). */
+.details[data-layout='legend'] [data-row='0'] {
+  --icon-x: 70px;
+  --icon-y: 296px;
+  --icon-w: 92px;
+  --icon-h: 118px;
+  --name-x: 190px;
+  --name-y: 339px;
+}
+
+.details[data-layout='legend'] [data-row='1'] {
+  --icon-x: 81px;
+  --icon-y: 439px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --name-x: 192px;
+  --name-y: 450px;
+}
+
+.details[data-layout='legend'] [data-row='2'] {
+  --icon-x: 90px;
+  --icon-y: 540px;
+  --icon-w: 51px;
+  --icon-h: 56px;
+  --name-x: 192px;
+  --name-y: 552px;
+}

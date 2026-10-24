@@ -1,0 +1,167 @@
+/* `.strip` is a plain, unpositioned wrapper: every box below is in the step's frame px (72:786). */
+.strip {
+  pointer-events: none;
+}
+
+/* 72:784 (45, 767) 84 × 22: ink scrim, 1 px white INSIDE, radius 2. */
+.headerBox {
+  position: absolute;
+  left: 45px;
+  top: 767px;
+  width: 84px;
+  height: 22px;
+  border: 1px solid var(--selection-text);
+  border-radius: 2px;
+  background: var(--selection-ink-scrim);
+}
+
+/* 72:785 "Legends": Cinzel Regular 14 white, centred in (45, 769) 84 × 19. */
+.headerText {
+  position: absolute;
+  left: 45px;
+  top: 769px;
+  width: 84px;
+  height: 19px;
+  margin: 0;
+  color: var(--selection-text);
+  text-align: center;
+  white-space: nowrap;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(14px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-14) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 72:782 header line 141 → 466 on row 777: 1 px white, round caps; an svg rect, never snapped
+   (CSUI E3). */
+.rules {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+}
+
+.rule {
+  x: 141px;
+  y: 777px;
+  width: 325px;
+  height: 1px;
+  rx: 0.5px;
+  fill: var(--selection-text);
+}
+
+/* CD-13: a class with no Legend yet. */
+.pending {
+  position: absolute;
+  left: 49px;
+  top: 801px;
+  margin: 0;
+  color: var(--selection-parchment-faint);
+  white-space: nowrap;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(14px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-14) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+.minis {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One mini card (72:800 …) at its slot: outer frame 105 × 140 at y 801. */
+.mini {
+  position: absolute;
+  top: 801px;
+  width: 105px;
+  height: 140px;
+}
+
+.mini[data-slot='0'] {
+  left: 68px;
+}
+
+.mini[data-slot='1'] {
+  left: 205px;
+}
+
+.mini[data-slot='2'] {
+  left: 339px;
+}
+
+/* 72:801 outer frame 105 × 140, 2 px parchment at 60 %; 72:802 inner frame (3, 3) 100 × 135,
+   1 px at 60 % (its GLASS lies under the opaque portrait, N-05). */
+.mini [data-arch-layer='outer-outline'] {
+  width: 105px;
+  height: 140px;
+}
+
+.mini [data-arch-layer='outer-outline'] path {
+  stroke: var(--selection-parchment-faint);
+  stroke-width: 2px;
+}
+
+.mini [data-arch-layer='inner-outline'],
+.mini[data-art-mode='cover'] [data-arch-layer='art'] {
+  left: 3px;
+  top: 3px;
+  width: 100px;
+  height: 135px;
+}
+
+.mini [data-arch-layer='inner-outline'] path {
+  stroke: var(--selection-parchment-faint);
+  stroke-width: 1px;
+}
+
+/* The portrait rendition at its placement-table box, at its own pixel size (I-45). */
+.mini[data-art-mode='image'] [data-arch-layer='art'] {
+  left: var(--art-left);
+  top: var(--art-top);
+  width: var(--art-width);
+  height: var(--art-height);
+}
+
+/* CD-13: no portrait yet. */
+.mini [data-arch-art='missing'] [data-arch-part='under'] {
+  fill: var(--selection-ink-veil);
+}
+
+/* Names: Cinzel Regular 14 parchment, centred on 72:805 (120, 921.5), 72:793 (257.18, 921.5),
+   72:799 (391.34, 917.81): 0.5 / 0.32 / 0.16 px left of each frame's centre, the third 3.69 px
+   higher, in left/top (a text translate snaps to whole px). */
+.name {
+  position: absolute;
+  top: 111px;
+  width: 105px;
+  margin: 0;
+  color: var(--selection-parchment);
+  text-align: center;
+  white-space: nowrap;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(14px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-14) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+.mini[data-slot='0'] .name {
+  left: -0.5px;
+}
+
+.mini[data-slot='1'] .name {
+  left: -0.32px;
+}
+
+.mini[data-slot='2'] .name {
+  left: -0.16px;
+  top: 107.31px;
+}

@@ -1,0 +1,27 @@
+/* 62:135 / 58:281 "Countdown (from 60)": Cinzel Bold 64, centred in the box (901, 104) 118 × 83;
+   four 15 % glows at (±6, 0) and (0, ±6), Figma radius 8, as the sel-glow-countdown def at σ 4
+   (as a text-shadow they left an orange ring around the numerals that Figma does not draw).
+   Chrome draws the numerals 1 px above Figma's in the same 83 px box: at the Figma 104 px the glyph
+   rows (R−G > 150) were 118–163 on 62:125's "42" (Figma 119–164) and 118–166 on 58:271's "31"
+   (Figma 119–167); 105 px gives zero shift on 62:125, 62:70 and 58:271 (WP-CLASS audit). */
+.countdown {
+  position: absolute;
+  left: 901px;
+  top: 105px;
+  width: 118px;
+  height: 83px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--selection-countdown);
+  font-family: var(--font-game);
+  font-weight: 700;
+  font-size: max(64px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-64) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+  filter: url(#sel-glow-countdown);
+  pointer-events: none;
+}

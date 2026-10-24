@@ -1,0 +1,262 @@
+/* One crisp class card (62:146): a radio at its slot's integer floor (inline left/top, I-45). Its
+   live layers and text carry the slot's fractional remainder; a plate sits at its own integer box
+   (inline --art-*). The row above is the one that receives pointer events per card. */
+.card {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* CD-11: the arch focus ring (ArchCard's focus-ring layer) is the focus indicator. */
+.card:focus-visible {
+  outline: none;
+}
+
+.card[data-look='idle'] {
+  width: 255px;
+  height: 535px;
+}
+
+.card[data-look='picked'] {
+  width: 287.338px;
+  height: 602.847px;
+}
+
+/* Vector layers (svg) sit at integer boxes, since Chrome pixel-snaps an svg's box, and reach their
+   fractional Figma box by translate(the fraction) scale(Figma size / box size), about the top-left. */
+.card [data-arch-layer='outer-outline'],
+.card [data-arch-layer='inner-outline'] {
+  transform-origin: 0 0;
+}
+
+/* --- Outer frame: 62:163 255 × 535 / 62:153 287.338 × 602.847, 2 px parchment (CENTER). --- */
+
+.card[data-look='idle'] [data-arch-layer='outer-outline'] {
+  width: 255px;
+  height: 535px;
+}
+
+.card[data-look='picked'] [data-arch-layer='outer-outline'] {
+  width: 287px;
+  height: 603px;
+  transform: scale(calc(287.338 / 287), calc(602.847 / 603));
+}
+
+.card [data-arch-layer='outer-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 2px;
+}
+
+/* --- Live art (cover mode): 62:164 (4.18, 5.008) 244.967 × 524.15 / 62:154 (5.225, 5.644)
+   276.033 × 590.621: the art clipped to the arch, 20 % shade over it, 1 px parchment stroke;
+   the overlay's 1 px stroke (62:177 …) at its own node, the inline --overlay-dx/-dy off the art
+   (OD-1's two strokes without a plate: aligned with the art, a light line was missing along
+   three arches, WP-CLASS CSS audit C1). --- */
+
+.card[data-look='idle'][data-art-mode='cover'] [data-arch-layer='art'] {
+  left: 4.18px;
+  top: 5.008px;
+  width: 244.967px;
+  height: 524.15px;
+}
+
+.card[data-look='picked'][data-art-mode='cover'] [data-arch-layer='art'] {
+  left: 5.225px;
+  top: 5.644px;
+  width: 276.033px;
+  height: 590.621px;
+}
+
+.card[data-look='idle'][data-art-mode='cover'] [data-arch-layer='inner-outline'] {
+  left: 4px;
+  top: 5px;
+  width: 245px;
+  height: 524px;
+  transform: translate(calc(0.18px + var(--overlay-dx)), calc(0.008px + var(--overlay-dy)))
+    scale(calc(244.967 / 245), calc(524.15 / 524));
+}
+
+.card[data-look='picked'][data-art-mode='cover'] [data-arch-layer='inner-outline'] {
+  left: 5px;
+  top: 5px;
+  width: 276px;
+  height: 591px;
+  transform: translate(calc(0.225px + var(--overlay-dx)), calc(0.644px + var(--overlay-dy)))
+    scale(calc(276.033 / 276), calc(590.621 / 591));
+}
+
+.card [data-arch-part='over'] {
+  fill: var(--selection-art-shade);
+}
+
+.card [data-arch-part='stroke'],
+.card [data-arch-layer='inner-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 1px;
+}
+
+/* CD-13: no art yet. */
+.card [data-arch-art='missing'] [data-arch-part='under'] {
+  fill: var(--selection-ink-missing);
+}
+
+/* --- Plate mode (OD-1): the plate at its integer box; the art node's and the overlay node's
+   1 px strokes in an svg at the same box, each moved to its own node and scaled to its size. --- */
+
+.card[data-art-mode='plate'] [data-arch-layer='art'],
+.card[data-art-mode='plate'] [data-arch-layer='inner-outline'] {
+  left: var(--art-left);
+  top: var(--art-top);
+  width: var(--art-width);
+  height: var(--art-height);
+}
+
+.card[data-look='idle'] [data-arch-part='art-stroke'] {
+  transform: translate(var(--art-stroke-x), var(--art-stroke-y)) scale(244.967, 524.15);
+}
+
+.card[data-look='idle'] [data-arch-part='overlay-stroke'] {
+  transform: translate(var(--overlay-stroke-x), var(--overlay-stroke-y)) scale(244.967, 524.15);
+}
+
+.card[data-look='picked'] [data-arch-part='art-stroke'] {
+  transform: translate(var(--art-stroke-x), var(--art-stroke-y)) scale(276.033, 590.621);
+}
+
+.card[data-look='picked'] [data-arch-part='overlay-stroke'] {
+  transform: translate(var(--overlay-stroke-x), var(--overlay-stroke-y)) scale(276.033, 590.621);
+}
+
+/* --- CD-11: focus ring 6 px outside the outer frame, over the dark backdrop. --- */
+
+.card[data-look='idle'] [data-arch-layer='focus-ring'] {
+  left: -6px;
+  top: -6px;
+  width: 267px;
+  height: 547px;
+}
+
+.card[data-look='picked'] [data-arch-layer='focus-ring'] {
+  left: -6px;
+  top: -6px;
+  width: 299.338px;
+  height: 614.847px;
+}
+
+/* CD-11 hover / preview cue on an available idle card: the art lifts (never the picked or a
+   locked card; a filter on the art layer only, never an ancestor of a glass pane). */
+.card[data-look='idle']:not([aria-disabled='true']) [data-arch-layer='art'] {
+  transition: filter var(--motion-fast) ease-out;
+}
+
+.card[data-look='idle']:not([aria-disabled='true']):hover [data-arch-layer='art'],
+.card[data-look='idle'][data-previewed='true']:not([aria-disabled='true']) [data-arch-layer='art'] {
+  filter: brightness(1.12);
+}
+
+/* CD-05: never picked; the lock and "Locked" are its non-colour cue. */
+.card[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+/* --- Text leaves (Cinzel Regular, centred on the Figma centres): each line box at its Figma box
+   top, the slot's remainder and the Figma's own per-slot offsets (--name-dx …) in left, never a
+   translate (Chrome snaps a text translate to whole px). Idle: 62:165 name 32 at +392, 72:858 role
+   24 at +440, 72:865 allies 20 at +482 (C§4.10). Picked (62:155, 72:860, 72:863): the same sizes
+   centred in the boxes scaled ×1.12682 (centres y 703.94, 751.83, 796.34: line tops +444.44,
+   +497.83, +544.84); at those tops Chrome set the name 0.82 px high and the allies 0.93 px low
+   against 62:125 (vdiff dy, WP-CLASS r1), so their tops carry the measured offsets. --- */
+
+.name,
+.role,
+.allies {
+  position: absolute;
+  margin: 0;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.name,
+.allies {
+  color: var(--card-accent);
+}
+
+.role {
+  color: var(--selection-parchment);
+}
+
+.name {
+  left: calc(var(--card-fx) + var(--name-dx));
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(32px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-32) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+.role {
+  left: calc(var(--card-fx) + var(--role-dx));
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+.allies {
+  left: calc(var(--card-fx) + var(--allies-dx));
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+.card[data-look='idle'] .name,
+.card[data-look='idle'] .role,
+.card[data-look='idle'] .allies {
+  width: 255px;
+}
+
+.card[data-look='picked'] .name,
+.card[data-look='picked'] .role,
+.card[data-look='picked'] .allies {
+  width: 287.338px;
+}
+
+.card[data-look='idle'] .name {
+  top: calc(392px + var(--card-fy));
+}
+
+.card[data-look='idle'] .role {
+  top: calc(440px + var(--card-fy));
+}
+
+.card[data-look='idle'] .allies {
+  top: calc(482px + var(--card-fy));
+}
+
+.card[data-look='picked'] .name {
+  top: calc(445.26px + var(--card-fy));
+}
+
+.card[data-look='picked'] .role {
+  top: calc(497.83px + var(--card-fy));
+}
+
+.card[data-look='picked'] .allies {
+  top: calc(543.91px + var(--card-fy));
+}
+
+.lockGlyph {
+  margin-right: 6px;
+  vertical-align: -2px;
+}

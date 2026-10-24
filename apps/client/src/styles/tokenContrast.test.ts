@@ -106,6 +106,12 @@ const PAIRS: readonly Pair[] = [
   pair('soft selection text on the ink', ['--selection-text-soft', INK], [INK], TEXT),
   pair('dim selection text on the ink', ['--selection-text-dim', INK], [INK], TEXT),
   pair('parchment text on the ink', ['--selection-parchment'], [INK], TEXT),
+  pair(
+    'glow-button ring through its glass on the ink',
+    ['--selection-parchment-under-glass', INK],
+    [INK],
+    NON_TEXT,
+  ),
   pair('countdown on the ink', ['--selection-countdown'], [INK], TEXT),
   pair('selection text on the scrim', ['--selection-text'], ['--selection-ink-scrim', INK], TEXT),
   pair('key cap label', ['--selection-keycap-ink'], ['--selection-keycap'], TEXT),

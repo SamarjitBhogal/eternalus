@@ -1,0 +1,163 @@
+/* 62:200 lies beneath the crisp cards inside the row (62:146): both halo layers come before the
+   radio group in the row's markup and take no z-index (§5.15). */
+.frostLayer,
+.refractionLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 62:200 group: LAYER_BLUR 20 (σ 10). */
+.refractionLayer {
+  filter: blur(10px);
+}
+
+.pane,
+.copy {
+  position: absolute;
+}
+
+/* --- GLASS panes: frost 52 → backdrop blur 26 px in each copy's arch (CD-15), its edge faded by
+   the arch blurred at the halo's σ 10 (the frostMasks defs), as 62:200's LAYER_BLUR 20 fades it
+   in Figma; clipped crisp, each card had a hard arch-shaped frost edge (WP-CLASS CSS audit H1).
+   Literal radius: Safari drops a var() in backdrop-filter. --- */
+
+.pane [data-arch-layer='glass'] {
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  clip-path: none;
+}
+
+.pane[data-look='idle'] [data-arch-layer='glass'] {
+  width: 271.561px;
+  height: 567.811px;
+  mask: url(#sel-halo-frost-idle);
+}
+
+.pane[data-look='picked'] [data-arch-layer='glass'] {
+  width: 306px;
+  height: 639.818px;
+  mask: url(#sel-halo-frost-picked);
+}
+
+/* The masks' defs: no space, no paint (a `display: none` svg would drop its defs). */
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* The blurred arch's alpha masks the pane, scaled to the pane's box (its px user space). */
+.frostMask {
+  mask-type: alpha;
+}
+
+.maskArchIdle {
+  transform-origin: 0 0;
+  transform: scale(271.561, 567.811);
+}
+
+.maskArchPicked {
+  transform-origin: 0 0;
+  transform: scale(306, 639.818);
+}
+
+/* --- Copies: idle 62:196 271.561 × 567.811, picked 62:186 306 × 639.818 (the cards scaled
+   1.0649 × 1.0613 about their centres); vector layers at integer boxes reach their fractional
+   Figma box by translate(the fraction) scale(Figma size / box size). --- */
+
+.copy [data-arch-layer='outer-outline'],
+.copy [data-arch-layer='inner-outline'] {
+  transform-origin: 0 0;
+}
+
+.copy[data-look='idle'] [data-arch-layer='outer-outline'] {
+  width: 272px;
+  height: 568px;
+  transform: scale(calc(271.561 / 272), calc(567.811 / 568));
+}
+
+.copy[data-look='picked'] [data-arch-layer='outer-outline'] {
+  width: 306px;
+  height: 640px;
+  transform: scale(1, calc(639.818 / 640));
+}
+
+.copy [data-arch-layer='outer-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 2px;
+}
+
+/* 62:197 (4.455, 5.314) 260.877 × 556.296 / 62:187 (5.562, 5.988) 293.961 × 626.843: the card
+   art clipped to the arch with its 20 % shade and 1 px stroke; the overlay aligned with it. */
+.copy[data-look='idle'] [data-arch-layer='art'] {
+  left: 4.455px;
+  top: 5.314px;
+  width: 260.877px;
+  height: 556.296px;
+}
+
+.copy[data-look='picked'] [data-arch-layer='art'] {
+  left: 5.562px;
+  top: 5.988px;
+  width: 293.961px;
+  height: 626.843px;
+}
+
+.copy[data-look='idle'] [data-arch-layer='inner-outline'] {
+  left: 4px;
+  top: 5px;
+  width: 261px;
+  height: 556px;
+  transform: translate(0.455px, 0.314px) scale(calc(260.877 / 261), calc(556.296 / 556));
+}
+
+.copy[data-look='picked'] [data-arch-layer='inner-outline'] {
+  left: 5px;
+  top: 5px;
+  width: 294px;
+  height: 627px;
+  transform: translate(0.562px, 0.988px) scale(calc(293.961 / 294), calc(626.843 / 627));
+}
+
+.copy [data-arch-part='over'] {
+  fill: var(--selection-art-shade);
+}
+
+.copy [data-arch-part='stroke'],
+.copy [data-arch-layer='inner-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 1px;
+}
+
+.copy [data-arch-art='missing'] [data-arch-part='under'] {
+  fill: var(--selection-ink-missing);
+}
+
+/* Copy name: Cinzel Regular 36 in the class accent, centred on the copy, line tops at 62:199's
+   centre 683.09 (idle, +403.09) and 62:189's 701.25 (picked, +457.25). */
+.name {
+  position: absolute;
+  left: var(--card-fx);
+  margin: 0;
+  color: var(--card-accent);
+  text-align: center;
+  white-space: nowrap;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(36px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-36) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+.copy[data-look='idle'] .name {
+  top: calc(403.09px + var(--card-fy));
+  width: 271.561px;
+}
+
+.copy[data-look='picked'] .name {
+  top: calc(457.25px + var(--card-fy));
+  width: 306px;
+}

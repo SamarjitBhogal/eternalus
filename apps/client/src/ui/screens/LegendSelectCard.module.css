@@ -1,0 +1,296 @@
+/* One crisp Legend card (55:270): a radio at its slot's integer floor (inline left/top, I-45). Its
+   live layers and text carry the slot's fractional remainder; its art rendition sits at its own
+   integer box (inline --art-*). Idle cards stack above the picked one, so the picked glow passes
+   under its neighbours as in Figma (55:267 first, then 55:268, 55:269; SUB §2). */
+.card {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* CD-11: the arch focus ring (ArchCard's focus-ring layer) is the focus indicator. */
+.card:focus-visible {
+  outline: none;
+}
+
+.card[data-look='picked'] {
+  z-index: 0;
+  width: 336px;
+  height: 695px;
+}
+
+.card[data-look='idle'] {
+  z-index: 1;
+  width: 275.34px;
+  height: 578.66px;
+}
+
+/* Vector layers (svg) sit at integer boxes, since Chrome pixel-snaps an svg's box (measured: the
+   inner outline at x 505.51 drew at 506), and reach their fractional Figma box by a transform:
+   translate(the fraction) scale(Figma size / box size), about the top-left. */
+.card [data-arch-layer='outer-outline'],
+.card [data-arch-layer='inner-outline'] {
+  transform-origin: 0 0;
+}
+
+/* --- Picked look (55:267; boxes relative to the card's top-left (792, 194)) --- */
+
+/* 58:351 shadow plate: the arch, two 20 % shade fills (36 %), LAYER_BLUR 100 (σ 50). */
+.card[data-look='picked'] [data-arch-layer='shadow-plate'] {
+  width: 336px;
+  height: 695px;
+  filter: blur(50px);
+}
+
+.card[data-look='picked'] [data-arch-layer='shadow-plate'] path {
+  fill: var(--selection-art-shade-deep);
+}
+
+/* 55:256 inner frame (16.84, 22.32) 301.52 × 646.37: 36 % fill, 1 px parchment, two azure radius-5
+   glows (sel-glow-inner). Its GLASS lies under the opaque art (S§5 item 3) and is not drawn. */
+.card[data-look='picked'] [data-arch-layer='inner-outline'] {
+  left: 16px;
+  top: 22px;
+  width: 302px;
+  height: 646px;
+  transform: translate(0.84px, 0.32px) scale(calc(301.52 / 302), calc(646.37 / 646));
+  filter: url(#sel-glow-inner);
+}
+
+.card[data-look='picked'] [data-arch-layer='inner-outline'] path {
+  fill: var(--selection-art-shade-deep);
+  stroke: var(--selection-parchment);
+  stroke-width: 1px;
+}
+
+/* 58:354 Rectangle 32 (17, 507) 301 × 162, 36 %, beneath the art as designed (Q9). */
+.card[data-look='picked'] [data-arch-layer='text-scrim'] {
+  left: 17px;
+  top: 507px;
+  width: 301px;
+  height: 162px;
+  background: var(--selection-art-shade-deep);
+}
+
+/* 55:255 art (11.42, 16) 313.71 × 659.46: pale 0 4 r20 and azure 0 −4 r20 (sel-glow-selected),
+   cast from the art; its 2 px parchment stroke is the outer-outline layer above it. */
+.card[data-look='picked'] [data-arch-layer='art'] {
+  filter: url(#sel-glow-selected);
+}
+
+.card[data-look='picked'][data-art-mode='cover'] [data-arch-layer='art'] {
+  left: 11.42px;
+  top: 16px;
+  width: 313.71px;
+  height: 659.46px;
+}
+
+.card[data-look='picked'] [data-arch-layer='outer-outline'] {
+  left: 11px;
+  top: 16px;
+  width: 314px;
+  height: 659px;
+  transform: translate(0.42px, 0) scale(calc(313.71 / 314), calc(659.46 / 659));
+}
+
+.card[data-look='picked'] [data-arch-layer='outer-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 2px;
+}
+
+/* Cover mode only (a rendition bakes its fills): the warm 10 % tint over the image. */
+.card[data-look='picked'] [data-arch-part='over'] {
+  fill: var(--selection-art-warm);
+}
+
+/* CD-11: 3 px outside the art. */
+.card[data-look='picked'] [data-arch-layer='focus-ring'] {
+  left: 8.42px;
+  top: 13px;
+  width: 319.71px;
+  height: 665.46px;
+}
+
+/* --- Idle look (55:268; relative to (501, 250)) --- */
+
+/* 55:265 outer outline 275.34 × 578.66: 2 px parchment, no fill. */
+.card[data-look='idle'] [data-arch-layer='outer-outline'] {
+  width: 275px;
+  height: 579px;
+  transform: scale(calc(275.34 / 275), calc(578.66 / 579));
+}
+
+.card[data-look='idle'] [data-arch-layer='outer-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 2px;
+}
+
+/* 55:266 inner outline (4.51, 5.42) 264.51 × 566.93: 1 px parchment (its GLASS lies under the art). */
+.card[data-look='idle'] [data-arch-layer='inner-outline'] {
+  left: 4px;
+  top: 5px;
+  width: 265px;
+  height: 567px;
+  transform: translate(0.51px, 0.42px) scale(calc(264.51 / 265), calc(566.93 / 567));
+}
+
+.card[data-look='idle'][data-art-mode='cover'] [data-arch-layer='art'] {
+  left: 4.51px;
+  top: 5.42px;
+  width: 264.51px;
+  height: 566.93px;
+}
+
+.card[data-look='idle'] [data-arch-layer='inner-outline'] path {
+  stroke: var(--selection-parchment);
+  stroke-width: 1px;
+}
+
+/* Cover mode only: 58:360's 50 % ink veil under and 20 % shade over the image. */
+.card[data-look='idle'] [data-arch-part='under'] {
+  fill: var(--selection-ink-veil);
+}
+
+.card[data-look='idle'] [data-arch-part='over'] {
+  fill: var(--selection-art-shade);
+}
+
+.card[data-look='idle'] [data-arch-layer='focus-ring'] {
+  left: -3px;
+  top: -3px;
+  width: 281.34px;
+  height: 584.66px;
+}
+
+/* --- Art box, placeholder and states --- */
+
+/* A rendition at its placement-table box, at its own pixel size (I-45). */
+.card[data-art-mode='image'] [data-arch-layer='art'] {
+  left: var(--art-left);
+  top: var(--art-top);
+  width: var(--art-width);
+  height: var(--art-height);
+}
+
+/* CD-13: no art yet. */
+.card [data-arch-art='missing'] [data-arch-part='under'] {
+  fill: var(--selection-ink-missing);
+}
+
+/* CD-11 hover cue on an available idle card: the art lifts (never on the picked or a locked card). */
+.card[data-look='idle']:not([aria-disabled='true']) [data-arch-layer='art'] {
+  transition: filter var(--motion-fast) ease-out;
+}
+
+.card[data-look='idle']:not([aria-disabled='true']):hover [data-arch-layer='art'] {
+  filter: brightness(1.15);
+}
+
+/* CD-13 locked look: never colour alone (the lock and "Locked" below the names). */
+.card[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+.card[aria-disabled='true'] [data-arch-layer='art'] {
+  filter: grayscale(1) brightness(0.6);
+}
+
+/* --- Text leaves: Cinzel Regular, centred on the Figma box centres, each line box at its Figma
+   box top (a 36 px line is 48 px here and 49 in Figma, its extra pixel below the glyphs). The
+   slot's remainder and its own text offsets (--title-dx, --name-dx: where the Figma row places a
+   card's text off the left card's geometry) go into left/top, never a translate: Chrome snaps a
+   text translate to whole px (measured: 0.3 and -0.4 px drew as 0, 0.62 as 1), while a
+   fractional layout box keeps the glyphs nearest the Figma's. --- */
+
+.title,
+.name,
+.locked {
+  position: absolute;
+  margin: 0;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.title {
+  color: var(--card-accent);
+}
+
+.name,
+.locked {
+  color: var(--selection-parchment);
+}
+
+/* 55:257 title 40, box (84.6, 538.4) 166 × 54 of the card: centre x 167.6. */
+.card[data-look='picked'] .title {
+  left: calc(-0.4px + var(--card-fx) + var(--title-dx));
+  top: calc(538.4px + var(--card-fy));
+  width: 336px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(40px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-40) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 55:258 Legend name 24, box (116.56, 588.15) 103 × 32: centre x 168.06. */
+.card[data-look='picked'] .name {
+  left: calc(0.06px + var(--card-fx) + var(--name-dx));
+  top: calc(588.15px + var(--card-fy));
+  width: 336px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 55:259 title 36, box (53.29, 438.54) 168 × 49 of the card: centre x 137.29. */
+.card[data-look='idle'] .title {
+  left: calc(-0.38px + var(--card-fx) + var(--title-dx));
+  top: calc(438.54px + var(--card-fy));
+  width: 275.34px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(36px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-36) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* 55:260 Legend name 20, box (93.4, 481.07) 88 × 27: centre x 137.4. */
+.card[data-look='idle'] .name {
+  left: calc(-0.27px + var(--card-fx) + var(--name-dx));
+  top: calc(481.07px + var(--card-fy));
+  width: 275.34px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+/* CD-13: the lock and "Locked" one line below the names (idle look; a locked card is never picked). */
+.locked {
+  left: var(--card-fx);
+  top: calc(512px + var(--card-fy));
+  width: 275.34px;
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+}
+
+.lockGlyph {
+  margin-right: 6px;
+  vertical-align: -2px;
+}

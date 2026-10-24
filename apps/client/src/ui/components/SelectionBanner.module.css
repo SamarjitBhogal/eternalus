@@ -1,0 +1,37 @@
+/* 62:144 / 58:290 banner box (102, 2) 1731 × 92 (WP-ASSETS placement table: selection-banner,
+   file 1731 × 92 px): an integer box, the art at its own pixel size, no fit (I-45). */
+.banner {
+  position: absolute;
+  left: 102px;
+  top: 2px;
+  width: 1731px;
+  height: 92px;
+  pointer-events: none;
+}
+
+.image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1731px;
+  height: 92px;
+}
+
+/* 62:145 / 58:291 "Legend Selection": Cinzel Bold 40, centred in (766, 21) 388 × 54. */
+.title {
+  position: absolute;
+  left: 664px;
+  top: 19px;
+  width: 388px;
+  height: 54px;
+  margin: 0;
+  color: var(--selection-banner-title);
+  font-family: var(--font-game);
+  font-weight: 700;
+  font-size: max(40px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-40) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  text-align: center;
+  white-space: nowrap;
+}

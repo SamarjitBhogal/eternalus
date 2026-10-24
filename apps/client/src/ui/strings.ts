@@ -145,6 +145,9 @@ export const STRINGS = {
     teamNames: { light: 'Light', dark: 'Dark' } satisfies Record<PlayableTeam, string>,
     teamBadge: (team: string): string => `You are on the ${team} team`,
     you: 'You',
+    /** A roster tile's name: who, then their class once known ("You, Magus"). */
+    allyTile: (who: string, className: string | null): string =>
+      className === null ? who : `${who}, ${className}`,
   },
   /** The match HUD (62:231); slot names reuse `ACTION_LABELS`, gameplay names are content. */
   hud: {
