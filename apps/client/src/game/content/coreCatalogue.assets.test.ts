@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AssetId, DisplayCatalogue } from '../../bridge/catalogue.types';
+import type { AssetId, DisplayCatalogue, RenditionKey } from '../../bridge/catalogue.types';
 import type { AssetGroup } from '../../bridge/events';
+import { assetBoxes } from '../../data/resources/assetBoxes';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
 import { shippedCatalogue } from './__fixtures__/shippedCatalogue';
 
@@ -85,6 +86,31 @@ function expectedGroup(uses: ReadonlySet<Use>): AssetGroup {
   return ONLY_GROUPS.find(([use]) => only(use))?.[1] ?? 'selection';
 }
 
+/**
+ * The manifest box key of every image the selection screens draw at the slot it was baked for: a
+ * class card plate or row plate (its own file, `id`), and each Legend's card art, refraction copy
+ * and mini (the rendition each look draws, `id@rendition`). The screens find each box by that key
+ * (14 §13: views ask by id), so a missing one would quietly draw the live art instead.
+ */
+function placedImageKeys(catalogue: DisplayCatalogue): string[] {
+  const keys: string[] = [];
+  const add = (id: AssetId | null, renditions?: readonly RenditionKey[]): void => {
+    if (id === null) return;
+    keys.push(...(renditions === undefined ? [id] : renditions.map((key) => `${id}@${key}`)));
+  };
+  for (const card of catalogue.legendClasses) {
+    for (const plate of Object.values(card.art.cardPlates)) add(plate);
+    add(card.art.rowPlate);
+    for (const spec of card.specs) {
+      add(spec.art.card, ['card-idle', 'card-picked']);
+      add(spec.art.refraction ?? spec.art.card, ['refraction-idle', 'refraction-picked']);
+      add(spec.art.mini, ['legend-mini']);
+      add(spec.art.rowPlate);
+    }
+  }
+  return keys;
+}
+
 describe('coreCatalogue assets', () => {
   const uses = assetUses(shippedCatalogue().load());
   const groupOf = new Map(ASSET_MANIFEST.assets.map((entry) => [entry.id, entry.group]));
@@ -108,5 +134,14 @@ describe('coreCatalogue assets', () => {
       /cantor|gravecaller|veridan|elarion|avedrin|nadirev|noirale|nirdeva/.test(id),
     );
     expect(named).toEqual([]);
+  });
+
+  it('declares in the manifest the draw box of every image the screens place at its baked slot', () => {
+    const boxed = new Set(Object.keys(assetBoxes(ASSET_MANIFEST.assets)));
+    const keys = placedImageKeys(shippedCatalogue().load());
+
+    expect(keys).toContain('oracle-refraction-art@refraction-picked');
+    expect(keys).toContain('magus-card-plate-picked');
+    expect(keys.filter((key) => !boxed.has(key))).toEqual([]);
   });
 });

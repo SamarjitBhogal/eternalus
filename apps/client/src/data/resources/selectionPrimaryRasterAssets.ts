@@ -32,6 +32,7 @@ export const SELECTION_PRIMARY_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       bytes: 98470,
       hash: '721961f93c097cb66b609e4f197fe0fbca0aa5a610e1e2a70dcc2efa82a34360',
     },
+    box: { left: 491, top: 198, width: 1216, height: 683 },
     licence: 'owner',
     source:
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:125, protocol R1 render (OA1) on scratch duplicate 96:3 of page 96:2; pass cs-P2b-rowplate: composite over the original frame fill and backdrop; crisp cards 62:147/152/157/162 and all text but the label 62:228 and the 62:200 halo names hidden (r1-log W4); opaque crop; 1x lossless WebP. file = 62:200 over everything beneath it (render bounds 491, 198.87, 1215.57 × 681.95) cropped to (491, 198, 1216, 683), nothing removed, alpha 0 in the three holes (7434 px), 2x lossy q92 (alpha lossless)',
@@ -50,6 +51,7 @@ export const SELECTION_PRIMARY_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       bytes: 26948,
       hash: '5294b7dfe62dacc7270f17f5b44ca7217b847bdd59db8e41ae29cce2b0f32606',
     },
+    box: { left: 1427, top: 277, width: 246, height: 525 },
     licence: 'owner',
     source:
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:125, protocol R1 render (OA1) on scratch duplicate 96:3 of page 96:2; pass cs-P2a-cardplates: GLASS composite over the original frame fill and backdrop, text hidden (r1-log W3); opaque crop; alpha 1 inside the art arch, 0 outside it and on its boundary ring (coverage from cs-P1-nonglass); 1x lossless WebP. file = 62:149 + 62:179 cropped to (1427, 277, 246, 525) (fractional box (1427.18, 277.01, 244.97, 524.15) baked), removed: 1 px cream strokes of 62:149 and 62:179, 2x lossy q92 (alpha lossless)',
@@ -68,6 +70,7 @@ export const SELECTION_PRIMARY_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       bytes: 43010,
       hash: 'c820e3e840e77e2ec80834098be0d16d2031523f161535ed69901af11e367931',
     },
+    box: { left: 1111, top: 243, width: 277, height: 592 },
     licence: 'owner',
     source:
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:125, protocol R1 render (OA1) on scratch duplicate 96:3 of page 96:2; pass cs-P2a-cardplates: GLASS composite over the original frame fill and backdrop, text hidden (r1-log W3); opaque crop; alpha 1 inside the art arch, 0 outside it and on its boundary ring (coverage from cs-P1-nonglass); 1x lossless WebP. file = 62:154 + 62:178 cropped to (1111, 243, 277, 592) (fractional box (1111.24, 243.64, 276.03, 590.62) baked), removed: 1 px cream strokes of 62:154 and 62:178, 2x lossy q92 (alpha lossless)',
@@ -104,6 +107,7 @@ export const SELECTION_PRIMARY_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       bytes: 53096,
       hash: '42a884e0bc6bea4f44688acecb807fbe1717781d3d2b4825dcbc28d619562510',
     },
+    box: { left: 825, top: 277, width: 246, height: 525 },
     licence: 'owner',
     source:
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:125, protocol R1 render (OA1) on scratch duplicate 96:3 of page 96:2; pass cs-P2a-cardplates: GLASS composite over the original frame fill and backdrop, text hidden (r1-log W3); opaque crop; alpha 1 inside the art arch, 0 outside it and on its boundary ring (coverage from cs-P1-nonglass); 1x lossless WebP. file = 62:159 + 62:176 cropped to (825, 277, 246, 525) (fractional box (825.18, 277.01, 244.97, 524.15) baked), removed: 1 px cream strokes of 62:159 and 62:176, 2x lossy q92 (alpha lossless)',
@@ -122,6 +126,7 @@ export const SELECTION_PRIMARY_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       bytes: 43056,
       hash: '5d3455ccc3449deec97654ae739fd1c55e31e382a68ff46246678caacd2c0ccc',
     },
+    box: { left: 524, top: 277, width: 246, height: 525 },
     licence: 'owner',
     source:
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:125, protocol R1 render (OA1) on scratch duplicate 96:3 of page 96:2; pass cs-P2a-cardplates: GLASS composite over the original frame fill and backdrop, text hidden (r1-log W3); opaque crop; alpha 1 inside the art arch, 0 outside it and on its boundary ring (coverage from cs-P1-nonglass); 1x lossless WebP. file = 62:164 + 62:177 cropped to (524, 277, 246, 525) (fractional box (524.18, 277.01, 244.97, 524.15) baked), removed: 1 px cream strokes of 62:164 and 62:177, 2x lossy q92 (alpha lossless)',

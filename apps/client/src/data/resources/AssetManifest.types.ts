@@ -52,8 +52,27 @@ export type LicenceId = 'owner' | 'ofl-cinzel' | 'mit-phosphor';
 /** One file of an asset. `hash` is the lowercase hex SHA-256 of the file. */
 export type AssetFile = { readonly url: string; readonly bytes: number; readonly hash: string };
 
+/**
+ * Where a file is drawn, in px of the 1920 × 1080 selection artboard: the integer origin it was
+ * baked at and the file's own 1x pixel size, never scaled. Restated in `bridge/catalogue.types.ts`.
+ */
+export type RasterBox = {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+};
+
 /** Files of one rendition (I-45): `file` is the exact 1x box, lossless; `file2x` is optional. */
-export type RenditionFiles = { readonly file: AssetFile; readonly file2x?: AssetFile };
+export type RenditionFiles = {
+  readonly file: AssetFile;
+  readonly file2x?: AssetFile;
+  /**
+   * The draw box of a rendition the screens place at the slot it was baked for; they read it with
+   * the URL, by `id@rendition` (14 §13: views ask by id).
+   */
+  readonly box?: RasterBox;
+};
 
 type EntryBase = {
   readonly id: AssetId;
@@ -78,6 +97,8 @@ type EntryBase = {
 export type UiImageEntry = EntryBase & {
   readonly type: 'ui-image';
   readonly renditions?: Readonly<Partial<Record<RenditionKey, RenditionFiles>>>;
+  /** The draw box of the entry's own file, for an image placed at the slot it was baked for (a plate). */
+  readonly box?: RasterBox;
 };
 
 /** A web font face; `family` is the name `--font-game` uses. */

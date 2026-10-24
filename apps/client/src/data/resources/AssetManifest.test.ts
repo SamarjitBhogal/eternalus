@@ -2,7 +2,13 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { ASSET_LICENCES } from './assetLicences';
 import { ASSET_MANIFEST } from './AssetManifest';
-import type { AssetFile, AssetGroup, AssetManifestEntry } from './AssetManifest.types';
+import type {
+  AssetFile,
+  AssetGroup,
+  AssetManifestEntry,
+  RasterBox,
+  RenditionKey,
+} from './AssetManifest.types';
 import { BOOT_ASSETS } from './bootAssets';
 import { MATCH_ASSETS } from './matchAssets';
 import { SELECTION_ALTERNATE_ASSETS } from './selectionAlternateAssets';
@@ -40,8 +46,53 @@ const INLINE_IMAGES = import.meta.glob<string>('../../assets/**/*.webp', {
   eager: true,
 });
 
+/**
+ * The renditions the selection screens draw at the slot they were baked for: the Legend card art
+ * per look, its refraction copy per look, and the Legends strip mini. Each must declare its box.
+ */
+const PLACED_RENDITIONS: readonly RenditionKey[] = [
+  'card-idle',
+  'card-picked',
+  'refraction-idle',
+  'refraction-picked',
+  'legend-mini',
+];
+
 const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const assets = ASSET_MANIFEST.assets;
+
+/** The base64 contents of a manifest URL's file (`''` when there is none). */
+function inlineOf(url: string): string {
+  const inline = INLINE_IMAGES[url.replace(/^\/src\/assets\//, '../../assets/')] ?? '';
+  return inline.slice(inline.indexOf(',') + 1);
+}
+
+/** The pixel size in a lossless WebP's VP8L header: 14 bits each, less one, from byte 21. */
+function webpSize(url: string): { readonly width: number; readonly height: number } {
+  const header = Array.from(atob(inlineOf(url).slice(0, 36)), (char) => char.charCodeAt(0));
+  const [b0 = 0, b1 = 0, b2 = 0, b3 = 0] = header.slice(21, 25);
+  const bits = (b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)) >>> 0;
+  return { width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 };
+}
+
+/** Every declared draw box, with its key (`id` or `id@rendition`) and the 1x file it places. */
+function boxedFiles(): {
+  readonly key: string;
+  readonly box: RasterBox;
+  readonly file: AssetFile;
+}[] {
+  return assets.flatMap((entry) => {
+    if (entry.type !== 'ui-image') return [];
+    const own =
+      entry.box === undefined ? [] : [{ key: entry.id, box: entry.box, file: entry.file }];
+    const renditions = Object.entries(entry.renditions ?? {}).flatMap(([key, files]) =>
+      files.box === undefined
+        ? []
+        : [{ key: `${entry.id}@${key}`, box: files.box, file: files.file }],
+    );
+    return [...own, ...renditions];
+  });
+}
 
 /** The basename of a file URL without its extension. */
 function basename(url: string): string {
@@ -184,5 +235,36 @@ describe('ASSET_MANIFEST', () => {
 
     expect(urls.length).toBeGreaterThan(0);
     expect(lossy).toEqual([]);
+  });
+
+  it('declares the draw box of every rendition the screens place at the slot it was baked for', () => {
+    const unboxed = assets.flatMap((entry) =>
+      entry.type === 'ui-image'
+        ? Object.entries(entry.renditions ?? {}).flatMap(([key, files]) =>
+            (PLACED_RENDITIONS as readonly string[]).includes(key) && files.box === undefined
+              ? [`${entry.id}@${key}`]
+              : [],
+          )
+        : [],
+    );
+
+    expect(boxedFiles().length).toBeGreaterThan(0);
+    expect(unboxed).toEqual([]);
+  });
+
+  it("gives every draw box integer px at or past the artboard origin and its 1x file's pixel size", () => {
+    const boxed = boxedFiles();
+    const wrong = boxed.flatMap(({ key, box, file }) => {
+      const size = webpSize(file.url);
+      const isWhole = [box.left, box.top].every((value) => Number.isInteger(value) && value >= 0);
+      const isFileSize = box.width === size.width && box.height === size.height;
+      return isWhole && isFileSize
+        ? []
+        : [`${key}: file ${String(size.width)}×${String(size.height)}`];
+    });
+
+    expect(boxed.length).toBeGreaterThan(0);
+    expect(webpSize(boxed[0]?.file.url ?? '').width).toBeGreaterThan(1);
+    expect(wrong).toEqual([]);
   });
 });
