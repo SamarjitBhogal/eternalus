@@ -30,7 +30,10 @@ type ClassSelectStepModel = {
   /** The card picked on screen, not yet selected (`select-class` comes with Select Class). */
   readonly picked: LegendClassCard | undefined;
   readonly tabbableIndex: number;
-  /** The card that takes the focus on mount: the class Back returned to (CD-11), else `null`. */
+  /**
+   * The class Back returned to (CD-11), else `null`: its card (primary) or View Details
+   * (alternate) takes the focus on mount.
+   */
   readonly autoFocusClassId: LegendClassId | null;
   /** The picked class's row plate while it is loaded and boxed (I-69's one predicate), else `null`. */
   readonly rowPlate: RowPlate | null;

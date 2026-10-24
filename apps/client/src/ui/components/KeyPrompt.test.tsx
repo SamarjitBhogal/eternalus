@@ -48,6 +48,26 @@ describe('KeyPrompt', () => {
     expect(accessibleNames(html, 'button')).toEqual(['Esc back']);
   });
 
+  it('takes the focus on mount only when asked to', () => {
+    const asked = renderWith(
+      <KeyPrompt
+        action="gadget-2"
+        label="View Details"
+        onPress={noop}
+        skin="view-details"
+        isAutoFocused
+      />,
+      DEFAULT_BINDINGS,
+    );
+    const unasked = renderWith(
+      <KeyPrompt action="gadget-2" label="View Details" onPress={noop} skin="view-details" />,
+      DEFAULT_BINDINGS,
+    );
+
+    expect(asked).toMatch(/^<button [^>]*autofocus=""[^>]*>/);
+    expect(unasked).not.toContain('autofocus');
+  });
+
   it('re-renders the cap when gadget-2 is rebound to X (13 §8)', () => {
     const html = renderWith(
       <KeyPrompt action="gadget-2" label="View Details" onPress={noop} skin="view-details" />,

@@ -17,18 +17,21 @@ const SKIN_CLASSES: Readonly<Record<KeyPromptSkin, string | undefined>> = {
  * A key cap and a label that act together (F7): a button, and while mounted the key or mouse
  * button bound to `action` presses it too (`useActionShortcut`, I-54). The cap shows the live
  * binding (`KeyGlyph`), so a rebinding re-renders it; the accessible name is the cap then the
- * label ("Esc back", WCAG 2.5.3). Placed by its skin at its Figma node in the artboard.
+ * label ("Esc back", WCAG 2.5.3). Placed by its skin at its Figma node in the artboard; with
+ * `isAutoFocused` it takes the focus when it mounts.
  */
 export function KeyPrompt({
   action,
   label,
   onPress,
   skin,
+  isAutoFocused = false,
 }: {
   readonly action: InputAction;
   readonly label: string;
   readonly onPress: () => void;
   readonly skin: KeyPromptSkin;
+  readonly isAutoFocused?: boolean;
 }): ReactElement {
   useActionShortcut(action, onPress);
   return (
@@ -36,6 +39,7 @@ export function KeyPrompt({
       type="button"
       className={[styles.prompt, SKIN_CLASSES[skin]].join(' ')}
       onClick={onPress}
+      autoFocus={isAutoFocused}
     >
       <span className={styles.cap}>
         <KeyGlyph action={action} appearance="bare" />
