@@ -1,0 +1,35 @@
+/* Region (397, 956) 258 × 72 (Figma 62:258). */
+.panel {
+  position: relative;
+  width: calc(258 * var(--hud-u));
+  height: calc(72 * var(--hud-u));
+}
+
+/* Weapon Level Bar 65:721 at (397, 1018). */
+.levelBar {
+  position: absolute;
+  left: 0;
+  top: calc(62 * var(--hud-u));
+}
+
+.art {
+  position: absolute;
+}
+
+/* Battle Axe 62:241: the R1 render with its rotation, crop and both shadows baked, at
+   (387, 946) 274 × 82. */
+.battleAxe {
+  left: calc(-10 * var(--hud-u));
+  top: calc(-10 * var(--hud-u));
+  width: calc(274 * var(--hud-u));
+  height: calc(82 * var(--hud-u));
+}
+
+/* The Magus staff (133 × 19): not designed in 62:231 (OD-8); centred at whole pixels in the
+   weapon art's layout box (397, 956) 254 × 62, i.e. at (457, 977). A fill-in for the owner. */
+.staff {
+  left: calc(60 * var(--hud-u));
+  top: calc(21 * var(--hud-u));
+  width: calc(133 * var(--hud-u));
+  height: calc(19 * var(--hud-u));
+}

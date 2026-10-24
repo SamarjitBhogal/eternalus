@@ -89,5 +89,7 @@ export type CapturePointStatus = {
   readonly progress: number | null;
 };
 
+/** Which strip a structure tile is in, seen from the player (PR1-03: shared, so it lives here). */
+export type HudSide = 'allied' | 'enemy';
 /** Who holds a capture point, seen from the player. */
 export type HudAllegiance = 'ours' | 'theirs' | 'neutral';

@@ -874,3 +874,163 @@ The example below is fenced so it is not read as a real entry.
 - Next step: the selection screens (WP-SEL-SHARED, WP-LEGEND, WP-CLASS) and the HUD (WP-HUD) in
   parallel local sub-branches with the pixel audit against the Figma, then WP-F F2 integration
   and the final audit.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the match screen and HUD of Figma 62:231 (package WP-HUD), not yet registered in
+  `App.tsx` (WP-F F2 does that):
+  - `ui/screens/MatchScreen`: the viewport under a HUD section (`--hud-u` = one Figma px, nine
+    regions in the Figma's paint order) and the pause overlay beside both; the viewport and the
+    HUD are `inert` while an overlay is open. `PauseOverlay` autofocuses Resume, focuses the
+    dialog for the settings view and returns focus to the element the pause key captured.
+  - `ui/hud/`: segmented health, aether, ultimate and weapon bars, the level badge (XP ring =
+    XP within the level, emblem from the class kit, total level), the ability and gadget slots
+    with the owner's slot meanings (OD-9: gold glow = ready, red fill from the bottom = remaining
+    cooldown, a key glyph on every slot), charge boxes, structure strips bound by identity,
+    objectives with an allegiance flag, the clock, the crystal and the minimap ring. A `null`
+    value draws the "no data yet" hatch and is an image named "No data yet".
+  - Bridge selectors `selectHudKit`, `selectHudSlotView`, `selectStructureStrip`,
+    `selectObjectives`, `selectMatchClockText`; `HudSide`; the Figma fixture's slots follow OD-9.
+- Checks run: `npm run check` → `EXIT=0` (quoted in the WP-HUD report); pixel audit of the
+  `hud-draft` harness scenario against `hud.figma.png`: 64 match, 44 identical, 4 masked, 27
+  differ (Cinzel text rasterisation, the 15 px numerals 1 px high, sub-pixel edges of the charge
+  boxes and the XP ring).
+- Next step: the orchestrator's gate and the HUD-vs-Figma critic; WP-F F2 registers
+  `MatchScreen` in `App.tsx`.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD fix round 1 — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the named leaves `ui/hud/HealthBar` and `ui/hud/AetherBar` (OD-19(b): each one
+  line over `ResourceBar`, passing `className` through), each with a server-render test (Figma
+  value 1850 / 4700, "—" and the "No data yet" image before the first publish, no shield
+  overlay); `MatchScreen` renders them instead of `ResourceBar` directly (the aether placement
+  class is unchanged).
+- Checks run: `npm run check` → `EXIT=0` (client 159 files, 860 tests; core 85 files, 487 tests).
+- Next step: the orchestrator's gate re-check; the T-HUD-20 objective-letter fallback waits for
+  the orchestrator's decision; the visual audit loop on `hud-draft`.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD visual fix round 1 — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the two fixable defects of the WP-HUD raster audit, round 1.
+  - `ResourceBar.module.css`: the health and aether numeral box sits 1 `--hud-u` below the
+    Figma's top 2 through a named, commented local knob (`--value-baseline-nudge: 1`). Chrome
+    rounds Cinzel 15's ascent and descent and puts the baseline about 0.8 px above Figma's, so the
+    numerals were 1 px high; tops of 2.5 and 2.8 render like 2. This is a per-leaf baseline offset
+    found by the audit: OD-18 outranks the plan's "no knob tuned during the audit" (§11.4 step 7,
+    I-88) for this leaf. It is a `top`, not a `translate` (I-45).
+  - `ChargePips`: each box stroke is drawn on the edges the Figma render shows, which sit on a
+    1/8 px grid (`PIP_GEOMETRY.edgeStepsPerPx`); the fills, widths and viewBox keep the node
+    geometry. A `normalised` change of at most 0.063 px that needs a CD row (CD-17 type) in the
+    register (reference doc 15), which WP-DOCS owns.
+- Checks run: `npm run check` → `EXIT=0` (client 159 files, 863 tests; core 85 files, 487
+  tests). Harness `hud-draft` re-shot: health-value and aether-value now shift 0 (OD-18 /
+  OD-21(d) floor), the charge boxes match; byte-identical to the auditor's combined probe.
+- Next step: WP-DOCS registers the charge-box CD row and records the numeral baseline knob; the
+  re-audit of `hud-draft`.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD visual fix round 2 — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: two of the three defects of the WP-HUD raster audit, round 2.
+  - `LevelBadge.module.css`: the XP glow draws only the fill's shadow, as Figma does. A
+    drop-shadow filter also paints the copy it shades, and the copy's anti-aliased edge showed
+    through the r 80.5 mask and tinted the stroke's outer edge. The copy now sits
+    `--xp-glow-shift` (whole px, at least 400 Figma px) left of its place, outside the masked
+    wrapper, and the shadow is offset back by the same shift. The 80.25 fill clip stays.
+  - `SegmentedBar.module.css`: the health and aether marker → rest step gets three stops at a
+    quarter, half and three quarters, each the straight-alpha mix Figma draws (relative colour
+    from the rest token towards the white marker, so the minimums set follows); the gradient
+    names `in srgb` so those stops keep the legacy interpolation space. The cream bars get the
+    premultiplied points of their own ramp, so they render unchanged (byte-identical in the
+    harness, both colour sets).
+  - Not done here: the HUD key-label centre needs `KeyGlyph.module.css` (WP-F) changed, which is
+    not additive; it is routed to WP-F as a CCR.
+- Checks run: `npm run check` (result quoted in the WP-HUD report). Harness `hud-draft` re-shot:
+  xp-ring 4.17 %, xp-ring-inner 4.54 %, level-icon 4.43 % (official mask), all MATCH under the
+  CD-25 information mask; health marker zone 0 px over dE 2.3, aether 16. The 1280 × 720, dark,
+  green, minimums and minimums-peak scenarios change only on the ring edge and the marker
+  columns; null and live-no-data are byte-identical; the CSS path equals `hud-draft`.
+- Next step: WP-F applies or rejects the KeyGlyph CCR; the re-audit of `hud-draft`.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD key-label centre (KeyGlyph CCR applied) — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the HUD key-label defect of the WP-HUD audits (rounds 2 and 3), on the
+  orchestrator's instruction to apply the open CCR to `KeyGlyph.module.css` (WP-F file).
+  - `.hud` padding is `calc(1 * var(--hud-u)) calc(2 * var(--hud-u)) 0 calc(3 * var(--hud-u))`,
+    so the content centre sits on the Figma text node 65:668 (+13, +13 of the 25 × 25 box). The
+    digits were about 1 px high and 0.6 px left.
+  - The CCR said to check the change against OD-21(f) (key-cap overflow). With the padding alone
+    the 23-unit line box overflows the 22-unit content box (scroll 23 × 24, client 23 × 23), so
+    the line height is now `calc(22 * var(--hud-u))`: the line box fills the content box (FID-17).
+    At 1920 × 1080 (DPR 1 and 2) this renders byte-identical to the padding alone; at 1280 × 720
+    it also centres the digits vertically (padding alone left them about 0.5–0.9 px high).
+  - `KeyGlyph.test.tsx`: a test of the `.hud` rule (box, stroke, padding, line height). It
+    failed before the CSS change.
+- Checks run: `npm run check` (result quoted in the WP-HUD report). Harness, every scenario
+  before and after: only pixels inside the six HUD key boxes change; key-label rows ult / 1 / 2 /
+  3 are 4.81 / 3.69 / 5.77 / 4.17 % (were 8.01 / 5.13 / 10.26 / 9.46), shift 0, ink box 0, glyph
+  centroids within 0.17 px of Figma's (OD-18 floor). The CSS path still equals the raster path.
+  The text lists are unchanged.
+- Next step: the re-audit of `hud-draft`; WP-F confirms the change to its file.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD OD-9 docs record — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the HUD-vs-Figma critic's one finding, OD-9 not yet recorded in the docs. Docs
+  only; no code changed.
+  - Reference 15 §3: register row CD-28 (`fill-in`): the red vertical fill is the on-cooldown
+    look, cut from the bottom to `cooldownRemainingTicks / cooldownTicks`; the gold glow is the
+    ready look; the fill's direction is a default for the owner to confirm (HC-C1).
+  - Architecture 13 §10 (Implementation status): the `AbilityBar` cooldown sweep of §3 is that
+    vertical fill, with a link to CD-28. §3's design text is unchanged.
+  - Architecture 05 §15 `PlayerSnapshot` sketch: `xp` is the XP earned inside the current level
+    (resets on level-up), `xpToNext` the XP the current level needs to reach the next.
+  - `last-reviewed` 2026-10-18 on all three; `INBOX.md` HC-C1 gains one sentence naming CD-28.
+- Checks run: `npm run check` (result quoted in the WP-HUD report). Harness `hud-draft` re-shot
+  and compared with the previous shot and the Figma reference.
+- Next step: the PR's deviation table lists the vertical fill as acceptable (owner design).
+
+### 2026-10-19 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD XP-ring edges and glow (CSS-quality audit) — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the two fixable XP-ring defects of the WP-HUD CSS-quality audit (65:653).
+  - `LevelBadge.module.css`, arc edges: the conic gradient uses the Figma's own edge geometry
+    as soft ramps. It starts at −1.05° with a 0.69° fade-in, has the orange stop at
+    p × 174° + 1.05°, and fades out over 0.75° centred on p × 360°. The hard `transparent 0`
+    stop is gone, because Chrome draws conic hard stops aliased (the end was a staircase and the
+    start 1.4 px late). The fade-in narrows to the gap left before a full turn
+    (`min(0.69deg, (1 − p) × 360deg)`), so p = 1 closes with no notch. With no XP (p = 0),
+    `LevelBadge` sets `data-xp-arc="none"` and the fill and glow copy draw no arc; the edge ramps
+    alone would leave a 1–2 px sliver at 12 o'clock.
+  - `LevelBadge.module.css`, glow: the drop-shadow σ is now `calc(4 * var(--hud-u))`, a tuning
+    value with a comment: Figma's blur 10 is nominally σ 5 but measures as σ 4 here, the same
+    finding as `SLOT_GLOW_SIGMA`.
+  - `LevelBadge.test.tsx`: the existing exact pin of the drop-shadow string now says
+    `calc(4 * …)` (still exact). Three new tests cover the gradient stops with no hard stop, p = 0
+    (`data-xp-arc="none"` and the `background: none` rule) and p = 1 (no attribute, and the
+    fade-in and fade-out stops that close the ring).
+- Checks run: `npm run check` (result quoted in the WP-HUD report). Harness `hud-draft`, raster
+  and CSS paths, re-shot. The two paths are still byte-identical to each other, because the HUD
+  does not depend on the renderer. The shot is byte-identical to the auditor's combined probe.
+  Only the badge box changed: 132 of 139 rows are identical, and xp-ring, -outer and -fill moved
+  from 4.17 to 3.60 %. Arc-edge zone: 36 px over 2.3 before, 13 after. Glow bands r 81–93:
+  dL* −0.28 to +0.33, with 0 px over 2.3. In harness scenarios at p = 0, 1 and 0.998, the ring
+  is empty at p = 0, closes with no dip at 12 o'clock at p = 1, and shows a closing gap at 0.998.
+- Next step: the re-audit of `hud-draft` on both paths. The stroke edge (r 79–81) and the level
+  number stay open, as the audit found.
+
+### 2026-10-23 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD frame 8:2 and CD-25 dispositions — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the HUD-vs-Figma critic's two docs findings. Docs only; no code changed.
+  - Reference 15 §1: frame 8:2's role reads "deleted by the owner 2026-10-18 (OD-9); 62:231 is
+    the only HUD frame" (the Figma no longer has the node).
+  - Reference 15 §3, CD-25: the status reads "registered (OD-3, 2026-10-18); mask pending owner
+    sign-off (HC-C1)"; the row states the measurement's outcome instead of its condition, and
+    points to HC-S4. The level-number mask is still not applied: it waits for the owner.
+  - `INBOX.md`: HC-C1 asks the owner to sign off CD-25 and its mask; HC-Q2 (2) asks how an
+    uncharged ultimate looks, with CD-28's default, and no longer cites 8:2; HC-Q2 (5) is marked
+    answered by OD-9 (CD-28); new HC-S4 records the hybrid grain field ("option A") as a
+    better-than-design candidate, not built.
+  - `last-reviewed` 2026-10-23 on reference 15.
+- Checks run: `npm run check` (result quoted in the WP-HUD report). The harness could not re-shoot
+  `hud-draft`: its sources and the shot and diff tools are gone from the scratch space. Every
+  file outside `docs/` and `INBOX.md` hashes the same before and after this edit, so the HUD
+  render is unchanged; the region numbers were re-measured on the last shot of that code.
+- Next step: the owner signs CD-25 (then the mask is applied) or picks HC-S4.

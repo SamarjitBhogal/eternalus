@@ -8,6 +8,10 @@ import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import { createAppStore } from '../../bridge/store';
 import { KeyGlyph } from './KeyGlyph';
 import styles from './KeyGlyph.module.css';
+import css from './KeyGlyph.module.css?raw';
+
+/** The declarations of the `.hud` rule in the module's CSS text. */
+const hudRule = (): string => /(?:^|\n)\.hud \{([^}]*)\}/.exec(css)?.[1] ?? '';
 
 const W_BINDINGS: readonly Binding[] = [
   { action: 'move-up', chords: [{ device: 'keyboard', code: 'KeyW', label: 'W' }] },
@@ -51,6 +55,17 @@ describe('KeyGlyph', () => {
     expect(glyph('bare')).toBe(`<kbd class="${String(styles.bare)}">W</kbd>`);
     expect(glyph('hud')).toBe(`<kbd class="${String(styles.hud)}">W</kbd>`);
     expect(new Set([styles.glyph, styles.bare, styles.hud]).size).toBe(3);
+  });
+
+  it('centres the HUD key label on the Figma text node 65:668 (+13, +13 of the 25 × 25 box)', () => {
+    const rule = hudRule();
+
+    expect(rule).toContain('height: calc(25 * var(--hud-u));');
+    expect(rule).toContain('border: calc(1 * var(--hud-u)) solid var(--hud-cream);');
+    expect(rule).toContain(
+      'padding: calc(1 * var(--hud-u)) calc(2 * var(--hud-u)) 0 calc(3 * var(--hud-u));',
+    );
+    expect(rule).toContain('line-height: calc(22 * var(--hud-u));');
   });
 
   it('updates every glyph when move-up is rebound from W to ArrowUp', () => {

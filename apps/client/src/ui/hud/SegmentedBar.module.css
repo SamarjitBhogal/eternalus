@@ -1,0 +1,163 @@
+/* The HUD's three-segment bars (Figma 62:231: health 62:289 and aether 65:632, ultimate charge
+   65:722, weapon level 65:721). Every length is a Figma px × --hud-u. Each segment's 0.5 px inside
+   cream stroke is a 1 px ring of the cream at 50 % (the coverage a 0.5 px stroke has at 1x);
+   its fill sits 2 px inside it. */
+.bar {
+  position: relative;
+}
+
+.segment {
+  position: absolute;
+  top: 0;
+  box-shadow: inset 0 0 0 calc(1 * var(--hud-u)) var(--hud-bar-hairline);
+}
+
+.fill {
+  position: absolute;
+  left: calc(2 * var(--hud-u));
+  top: calc(2 * var(--hud-u));
+}
+
+/* Health and aether: segments 145 × 20 at 0, 145, 290; fills 141 × 16. */
+.resource {
+  width: calc(435 * var(--hud-u));
+  height: calc(20 * var(--hud-u));
+}
+
+.resource .segment {
+  width: calc(145 * var(--hud-u));
+  height: calc(20 * var(--hud-u));
+}
+
+.resource .segment:nth-child(2) {
+  left: calc(145 * var(--hud-u));
+}
+
+.resource .segment:nth-child(3) {
+  left: calc(290 * var(--hud-u));
+}
+
+.resource .fill {
+  width: calc(141 * var(--hud-u));
+  height: calc(16 * var(--hud-u));
+}
+
+/* Ultimate charge: segments 164.667 × 10 at 161, 326, 490 (Figma's 0.33–0.67 px overlaps kept);
+   fills 161 × 6. */
+.ultimate {
+  width: calc(493.667 * var(--hud-u));
+  height: calc(10 * var(--hud-u));
+}
+
+.ultimate .segment {
+  width: calc(164.667 * var(--hud-u));
+  height: calc(10 * var(--hud-u));
+}
+
+.ultimate .segment:nth-child(2) {
+  left: calc(165 * var(--hud-u));
+}
+
+.ultimate .segment:nth-child(3) {
+  left: calc(329 * var(--hud-u));
+}
+
+.ultimate .fill {
+  width: calc(161 * var(--hud-u));
+  height: calc(6 * var(--hud-u));
+}
+
+/* Weapon level: segments 86 × 10 at 397, 483, 569; fills 82 × 6. */
+.weapon {
+  width: calc(258 * var(--hud-u));
+  height: calc(10 * var(--hud-u));
+}
+
+.weapon .segment {
+  width: calc(86 * var(--hud-u));
+  height: calc(10 * var(--hud-u));
+}
+
+.weapon .segment:nth-child(2) {
+  left: calc(86 * var(--hud-u));
+}
+
+.weapon .segment:nth-child(3) {
+  left: calc(172 * var(--hud-u));
+}
+
+.weapon .fill {
+  width: calc(82 * var(--hud-u));
+  height: calc(6 * var(--hud-u));
+}
+
+/* Tones: a full segment, the peak at the value, the marker and the dim rest. Health and aether
+   ramp from the fill (.6) to the opaque peak; the cream bars stay at .8 up to the value.
+   --bar-fade-1…3 are the marker → rest ramp at a quarter, half and three quarters (see .leading):
+   tokens of global.css, derived there from each set's rest and marker, never computed here
+   (I-18, OD-25 a). Health and aether fall in Figma's straight alpha (a gradient alone mixes
+   premultiplied, wider and lighter); the cream fades are the gradient's own premultiplied points. */
+.toneHealth {
+  --bar-full: var(--hud-health-fill);
+  --bar-peak: var(--hud-health);
+  --bar-marker: var(--hud-marker);
+  --bar-rest: var(--hud-health-rest);
+  --bar-fade-1: var(--hud-health-fade-1);
+  --bar-fade-2: var(--hud-health-fade-2);
+  --bar-fade-3: var(--hud-health-fade-3);
+}
+
+.toneAether {
+  --bar-full: var(--hud-aether-fill);
+  --bar-peak: var(--hud-aether);
+  --bar-marker: var(--hud-marker);
+  --bar-rest: var(--hud-aether-rest);
+  --bar-fade-1: var(--hud-aether-fade-1);
+  --bar-fade-2: var(--hud-aether-fade-2);
+  --bar-fade-3: var(--hud-aether-fade-3);
+}
+
+.toneCream {
+  --bar-full: var(--hud-bar-cream);
+  --bar-peak: var(--hud-bar-cream);
+  --bar-marker: var(--hud-bar-cream-marker);
+  --bar-rest: var(--hud-bar-cream-rest);
+  --bar-fade-1: var(--hud-bar-cream-fade-1);
+  --bar-fade-2: var(--hud-bar-cream-fade-2);
+  --bar-fade-3: var(--hud-bar-cream-fade-3);
+}
+
+.full {
+  background: var(--bar-full);
+}
+
+.empty {
+  background: var(--bar-rest);
+}
+
+/* The segment holding the value (Figma Max: "… peak 50 %, white 51 %, rest 52–100 %"). The marker
+   is 1 % of the fill, never thinner than 1 px below 1080p (TAP2-08). The fades split the marker →
+   rest step in four; `in srgb` names the legacy interpolation space, so a fade token in a
+   non-legacy colour syntax can never switch the ramp to oklab. */
+.leading {
+  background: linear-gradient(
+    90deg in srgb,
+    var(--bar-full) 0%,
+    var(--bar-peak) var(--segmented-bar-fill),
+    var(--bar-marker) calc(var(--segmented-bar-fill) + max(1%, 1px)),
+    var(--bar-fade-1) calc(var(--segmented-bar-fill) + 1.25 * max(1%, 1px)),
+    var(--bar-fade-2) calc(var(--segmented-bar-fill) + 1.5 * max(1%, 1px)),
+    var(--bar-fade-3) calc(var(--segmented-bar-fill) + 1.75 * max(1%, 1px)),
+    var(--bar-rest) calc(var(--segmented-bar-fill) + 2 * max(1%, 1px)),
+    var(--bar-rest) 100%
+  );
+}
+
+/* No data yet (CD-13, DEC-17). */
+.noData {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--hud-no-data-hatch) 0 calc(2 * var(--hud-u)),
+    transparent calc(2 * var(--hud-u)) calc(5 * var(--hud-u))
+  );
+}

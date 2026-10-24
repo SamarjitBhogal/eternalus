@@ -208,12 +208,20 @@ Reply inline (`Decision: …`).
       frames do not draw), `approximation` (an effect CSS cannot draw; your Figma's pixels where a
       render exists), `normalised` (sub-pixel), `conflict` (a Figma value that breaks a binding
       minimum) or `creative` (none on this branch; DEC-53 keeps your original live). Review CD-01
-      to CD-27: keep, change or reject each. CD-12 and CD-20 are withdrawn; CD-25 applies only if
-      the grain measurement finds no fixed grain field in your render; CD-21 is resolved by your
-      answer to HC-Q13 (DEC-55), and CD-26 and CD-27 record your directions on the Legends (DEC-49)
-      and the effects renderers (DEC-54). CD-26 includes one copy edit the recorder made as a
-      consequence of the Oracle rename, not stated by you: the oracle description's "The Cantor
-      bends…" reads "The Oracle bends…".
+      to CD-27: keep, change or reject each. CD-12 and CD-20 are withdrawn. CD-25 is registered
+      (2026-10-18, OD-3): no render outside your frame reproduces the level number's grain, so the
+      "42" grain is drawn by an SVG noise filter. Please sign off CD-25 and its mask on the level
+      number (80, 807, 72 × 63): the visual audit applies that mask only after you sign, and until
+      then reports the "42" unmasked (it differs from your render by its grain; its ink box is
+      exact and its position within 0.34 px). A closer option is offered in HC-S4. CD-21 is
+      resolved by your answer to HC-Q13 (DEC-55), and CD-26 and CD-27 record your directions on
+      the Legends (DEC-49) and the effects renderers (DEC-54). CD-26 includes one copy edit the
+      recorder made as a consequence of the Oracle rename, not stated by you: the oracle
+      description's "The Cantor bends…" reads "The Oracle bends…". Added after the HUD build:
+      CD-28 records your slot
+      meanings of 2026-10-18 (red fill = on cooldown, gold glow = ready). One part is a default
+      for you to confirm: the red fill shrinks towards the bottom as the cooldown runs (the whole
+      box when it starts, empty when the slot is ready).
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
@@ -232,13 +240,15 @@ Reply inline (`Decision: …`).
 - [ ] **HC-Q2 — HUD rules your Figma implies (OQ-63 to OQ-66).** (1) Weapon level (62:258): what
       earns it, how many levels, what a level changes, per weapon or per match? No doc defines it.
       (2) Ultimate (62:246, 65:722): are Low, Mid and Max castable tiers, or one meter that must
-      fill (05 §6)? What do the three charge pips count, and is the earlier draft's grey ultimate
-      (8:2) the "not charged" look? (3) Objectives (62:425): does the bar under a shield show
+      fill (05 §6)? What do the three charge pips count, and how does an ultimate that is not
+      charged look? Default (CD-28): the plain frame with its icon dimmed, and the red fill only
+      while a cooldown runs. (3) Objectives (62:425): does the bar under a shield show
       capture progress or hold strength, does it take the capturing team's colour, does it need
       checkpoint ticks, and how do a contested point and a point locked by a mini-boss look?
       (4) The clock "14:32" (65:604): elapsed match time (default, FR-010) or a countdown (to the
-      gem or the score cap)? Does the crystal change during the match? (5) Is the glow the
-      "ready" look of the ultimate and the gadgets only?
+      gem or the score cap)? Does the crystal change during the match? (5) Answered by your slot
+      meanings of 2026-10-18 (OD-9, register CD-28): the gold glow is the "ready" look of every
+      slot, abilities included, and the red fill is the cooldown.
 - [ ] **HC-Q3 — Which abilities your Figma's icons and names are (OQ-68).** The HUD shows a
       Legionnaire with Meteor (a Sentinel ultimate in the docs), Atom, LinkBreak and Aperture
       (Phosphor placeholders), a battle axe and the gadgets "Courage" and "Sword". The class screens
@@ -327,6 +337,16 @@ Reply inline (`Decision: …`).
       reduced-motion rule, including the background layers' own rules (today `ThemedBackground`'s),
       not only the global `--motion-*` tokens: one mechanism for the OS and the in-game source,
       with a test that each module's media rule has its in-game twin. Nothing to answer now.
+- [ ] **HC-S4 — Better than the design, not built: the level number's grain from your own render
+      (OD-3).** CD-25 draws the "42" grain with an SVG noise filter, which cannot place your
+      speckles. The asset work of 2026-10-18 also built and measured a hybrid grain field ("option
+      A"): your frame's grain, rendered from your file and painted through the digits. On your
+      frame's "42" it equals your render, by construction (its glyph pixels are solved from that
+      render); on any other number it shows the grain of a duplicate, with your noise's settings
+      and statistics but the speckles in other places. When built, it added 1,194 B to the match
+      assets (3,022 B at device pixel ratio 2). If you want it, it comes back as a data-selectable
+      variant with CD-25's filter kept live (DEC-53), rendered again from your file, because the
+      agents' scratch copy no longer exists. Nothing to answer unless you want it.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

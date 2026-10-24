@@ -1,0 +1,31 @@
+/* Health / aether bar with its value (Figma 62:289 + 65:642, 65:632 + 65:643): 435 × 20. */
+.resource {
+  position: relative;
+  width: calc(435 * var(--hud-u));
+  height: calc(20 * var(--hud-u));
+}
+
+/* The value text box (1103, 966) 69 × 16 in the bar's frame: Cinzel Regular 15, white, centred
+   on both axes in its box (Figma `justify-center`), the AUTO line box overflowing it evenly.
+   Baseline knob (WP-HUD audit round 1; OD-18 outranks I-88 for this leaf): the box is drawn 1 unit
+   below the Figma's top 2. Chrome rounds Cinzel 15's ascent and descent to 15 and 6 and snaps the
+   baseline about 0.8 px above Figma's unrounded one (numerals 1 px high); tops of 2.5 and 2.8
+   render like 2, and 3 puts both numerals on the Figma rows. `top`, not `translate` (I-45). */
+.value {
+  --value-baseline-nudge: 1;
+
+  position: absolute;
+  left: calc(364 * var(--hud-u));
+  top: calc((2 + var(--value-baseline-nudge)) * var(--hud-u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(69 * var(--hud-u));
+  height: calc(16 * var(--hud-u));
+  color: var(--hud-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(calc(15 * var(--hud-u)), var(--text-min));
+  line-height: calc(var(--leading-game-15) * var(--hud-u));
+  white-space: nowrap;
+}
