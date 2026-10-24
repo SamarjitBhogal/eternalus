@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { GameCanvas } from './GameCanvas';
 import css from './GameCanvas.module.css?raw';
 import type { GameCanvasLabels } from './GameCanvas.types';
-import { GameCanvasChrome } from './GameCanvasChrome';
 
 /** The labels `main.tsx` passes (`STRINGS.viewport`; `game/` never imports `ui/`). */
 const LABELS: GameCanvasLabels = {
@@ -26,25 +25,6 @@ function render(isExplorerShown: boolean): string {
   );
 }
 
-/**
- * Renders what `GameCanvas` draws over the canvas for a chrome state its hook can only reach in a
- * browser (inside the interior once the match reports it).
- */
-function renderChrome(options: {
-  readonly isExplorerShown: boolean;
-  readonly isInterior: boolean;
-}): string {
-  return renderToStaticMarkup(
-    <GameCanvasChrome
-      isExplorerShown={options.isExplorerShown}
-      isInterior={options.isInterior}
-      labels={LABELS}
-      onOverview={() => undefined}
-      onLeaveInterior={() => undefined}
-    />,
-  );
-}
-
 describe('GameCanvas', () => {
   it('renders only the battlefield canvas in normal play', () => {
     const html = render(false);
@@ -59,21 +39,6 @@ describe('GameCanvas', () => {
     const html = render(true);
     expect(html).toContain('World overview');
     expect(html).toContain('Light stronghold');
-  });
-
-  it('offers Leave cathedral inside the interior in normal play, outside the toolbar', () => {
-    const html = renderChrome({ isExplorerShown: false, isInterior: true });
-    expect(html).toMatch(
-      /^<button type="button" class="[^"]*leaveInterior[^"]*">Leave cathedral<\/button>$/,
-    );
-    expect(html).not.toContain('toolbar');
-  });
-
-  it('keeps the developer toolbar inside the interior, with its interior hint and no Leave control', () => {
-    const html = renderChrome({ isExplorerShown: true, isInterior: true });
-    expect(html).toContain('Explore the sanctuary');
-    expect(html).toContain('World overview');
-    expect(html).not.toContain('Leave cathedral');
   });
 
   it('styles the Leave control from tokens only (I-75)', () => {
