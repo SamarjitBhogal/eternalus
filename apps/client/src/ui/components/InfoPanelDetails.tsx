@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import type { DetailRow } from '../../bridge/catalogue.types';
 import { STRINGS } from '../strings';
 import { AssetImage } from './AssetImage';
-import { INFO_PANEL_ICON_RENDITIONS, INFO_PANEL_ROW_COUNT } from './InfoPanel.constants';
+import { INFO_PANEL_ICON_RENDITIONS, INFO_PANEL_ROW_COUNT } from './InfoPanelDetails.constants';
 import type { InfoPanelLayout } from './InfoPanel.types';
 import styles from './InfoPanelDetails.module.css';
 

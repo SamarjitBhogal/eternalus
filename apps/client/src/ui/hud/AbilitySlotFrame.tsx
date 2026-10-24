@@ -2,7 +2,7 @@ import { type ReactElement, useId } from 'react';
 
 import type { HudSlotId } from '../../bridge/Binding.types';
 import type { HudSlotLook } from '../../bridge/selectors/selectHudSlotView';
-import { SLOT_FRAMES, SLOT_GLOW_SIGMA, SLOT_STROKE } from './AbilitySlot.constants';
+import { SLOT_FRAMES, SLOT_GLOW_SIGMA, SLOT_STROKE } from './AbilitySlotFrame.constants';
 import styles from './AbilitySlotFrame.module.css';
 
 /**

@@ -4,7 +4,7 @@ import type { HudSlotId } from '../../bridge/Binding.types';
 import type { AbilitySlotStatus } from '../../bridge/hud.types';
 import { FIGMA_HUD_PLAYER, figmaHudState } from '../../bridge/hudFixtures';
 import { accessibleNames, renderWithStore } from '../testStore';
-import { SLOT_FRAMES } from './AbilitySlot.constants';
+import { SLOT_FRAMES } from './AbilitySlotFrame.constants';
 import { AbilitySlot } from './AbilitySlot';
 import styles from './AbilitySlot.module.css';
 import frameStyles from './AbilitySlotFrame.module.css';
