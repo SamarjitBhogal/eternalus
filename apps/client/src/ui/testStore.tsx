@@ -2,9 +2,14 @@ import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Provider } from 'react-redux';
 
-import { loadedAssetsFor } from '../bridge/assetFixtures';
+import { loadedAssetsFor, TEST_ASSET_BOXES } from '../bridge/assetFixtures';
 import { classCardFixture, specCardFixture } from '../bridge/catalogueFixtures';
-import type { AssetId, ClassHudDisplay, DisplayCatalogue } from '../bridge/catalogue.types';
+import type {
+  AssetId,
+  ClassHudDisplay,
+  DisplayCatalogue,
+  RasterBox,
+} from '../bridge/catalogue.types';
 import type { MenuRoute, SessionPhase } from '../bridge/events';
 import { TEST_HUD_CATALOGUE } from '../bridge/hudFixtures';
 import { sessionSlice } from '../bridge/slices/sessionSlice';
@@ -218,6 +223,22 @@ export function sessionAt(
 
 /** Every asset `TEST_CONTENT` names, loaded under `/assets/test/`. */
 const TEST_ASSETS = loadedAssetsFor(TEST_CONTENT);
+
+/**
+ * Every asset `TEST_CONTENT` names, loaded, with `TEST_ASSET_BOXES` changed by `changes`: a key
+ * given a box gets it, a key given `undefined` loses its box (its URL stays).
+ */
+export function assetsWithBoxes(
+  changes: Readonly<Record<string, RasterBox | undefined>>,
+): RootState['assets'] {
+  const boxes = Object.entries({ ...TEST_ASSET_BOXES, ...changes }).flatMap(([key, box]) =>
+    box === undefined ? [] : [[key, box] as const],
+  );
+  return {
+    ...TEST_ASSETS,
+    boxesByGroup: { ...TEST_ASSETS.boxesByGroup, selection: Object.fromEntries(boxes) },
+  };
+}
 
 /**
  * Server-renders `element` inside a store built from `state`. Content defaults to `TEST_CONTENT`

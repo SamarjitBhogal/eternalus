@@ -5,7 +5,9 @@ import type {
   RasterBox as BridgeRasterBox,
   RenditionKey as BridgeRenditionKey,
 } from '../../bridge/catalogue.types';
+import { TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
 import type { AssetGroup as BridgeAssetGroup } from '../../bridge/events';
+import { assetBoxes } from '../../data/resources/assetBoxes';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
 import type {
   AssetGroup,
@@ -45,5 +47,13 @@ describe('asset vocabulary', () => {
     expect(
       shipped.filter((key) => !(BRIDGE_RENDITION_KEYS as readonly string[]).includes(key)),
     ).toEqual([]);
+  });
+
+  it("restates in the UI tests' fixture only boxes the manifest declares, unchanged", () => {
+    const shipped = assetBoxes(ASSET_MANIFEST.assets);
+    const keys = Object.keys(TEST_ASSET_BOXES);
+
+    expect(keys.length).toBeGreaterThan(20);
+    expect(Object.fromEntries(keys.map((key) => [key, shipped[key]]))).toEqual(TEST_ASSET_BOXES);
   });
 });

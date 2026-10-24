@@ -1,19 +1,18 @@
 /**
  * Geometry of the Legend row (58:271), shared by the crisp cards and the live halo: where each
- * slot puts a card and its refraction copy, and where each Legend art rendition is drawn. Slot
- * positions are the Figma's; raster boxes are the WP-ASSETS placement table's (§5.13, the only
- * source of raster positions), keyed `<assetId>@<rendition>`.
+ * slot puts a card and its refraction copy, and the inline style that places a card root and its
+ * art. Slot positions are the Figma's; each art rendition's draw box is its manifest entry's,
+ * read with its URL (`useAssetBox`).
  */
 import type { CSSProperties } from 'react';
 
-import type { AssetId, RenditionKey } from '../../bridge/catalogue.types';
+import type { RasterBox } from '../../bridge/catalogue.types';
 import { cssVars } from '../components/cssVars';
 import type {
   CardTextOffsets,
   FramePoint,
   LegendCardLook,
   LegendSlot,
-  RasterBox,
 } from './legendSelectLayout.types';
 
 /** The row's centre and its mean slot pitch (321.33 left, 322.33 right; SUB P3) for 1, 2 or 4+. */
@@ -81,53 +80,6 @@ const FIGMA_ROW: readonly LegendSlot[] = [
 export function legendSlot(count: number, index: number): LegendSlot {
   const figmaSlot = count === FIGMA_ROW.length ? FIGMA_ROW[index] : undefined;
   return figmaSlot ?? slotAt(ROW_CENTRE_X + (index - (count - 1) / 2) * SLOT_PITCH);
-}
-
-/**
- * Each Legend art rendition's draw box in frame px, from the WP-ASSETS placement table: each file
- * bakes its art's fractional origin at its Figma slot (I-45), so it is drawn only there.
- */
-const LEGEND_ART_BOXES: Readonly<Record<string, RasterBox>> = {
-  // 58:360 slot 0 idle; 55:255 copy at slot 0; 61:20; 61:8 copy at slot 0.
-  'catalyst-card-art@card-idle': { left: 505, top: 255, width: 266, height: 568 },
-  'catalyst-card-art@card-picked': { left: 482, top: 210, width: 314, height: 660 },
-  'catalyst-card-art@refraction-idle': { left: 485, top: 226, width: 305, height: 620 },
-  'catalyst-card-art@refraction-picked': { left: 457, top: 181, width: 355, height: 699 },
-  // 58:360 copy at slot 1; 55:255 (Figma state); 61:20 copy at slot 1; 61:8 (Figma state).
-  'oracle-card-art@card-idle': { left: 826, top: 255, width: 266, height: 568 },
-  'oracle-card-art@card-picked': { left: 803, top: 210, width: 315, height: 660 },
-  'oracle-refraction-art@refraction-idle': { left: 806, top: 226, width: 305, height: 620 },
-  'oracle-refraction-art@refraction-picked': { left: 778, top: 181, width: 355, height: 699 },
-  // 58:365 slot 2 idle; 55:255 clone at slot 2; 61:14; 61:8 clone at slot 2.
-  'necromancer-card-art@card-idle': { left: 1149, top: 256, width: 265, height: 567 },
-  'necromancer-card-art@card-picked': { left: 1125, top: 210, width: 315, height: 660 },
-  'necromancer-card-art@refraction-idle': { left: 1127, top: 227, width: 306, height: 619 },
-  'necromancer-card-art@refraction-picked': { left: 1101, top: 181, width: 355, height: 699 },
-};
-
-/**
- * How far a rendition's integer box may sit from the art origin of the card drawing it: its floor,
- * or the Figma's own slip (61:14 sits 0.2 px off its copy's geometry, CD-17).
- */
-const ART_BOX_TOLERANCE = 2;
-
-/**
- * Where an art's rendition is drawn: its placement-table box, only when that box belongs to the
- * card drawing it (`artOrigin`, the look's art top-left in frame px). `undefined` when the table
- * has no box, or the box was baked for another slot (a reordered or re-laid-out row), so the
- * caller draws the art live instead of a raster detached from its card.
- */
-export function legendArtBox(
-  assetId: AssetId | null,
-  rendition: RenditionKey,
-  artOrigin: FramePoint,
-): RasterBox | undefined {
-  const box = assetId === null ? undefined : LEGEND_ART_BOXES[`${assetId}@${rendition}`];
-  const isHere =
-    box !== undefined &&
-    Math.abs(box.left - artOrigin.x) < ART_BOX_TOLERANCE &&
-    Math.abs(box.top - artOrigin.y) < ART_BOX_TOLERANCE;
-  return isHere ? box : undefined;
 }
 
 const px = (value: number): string => `${String(value)}px`;

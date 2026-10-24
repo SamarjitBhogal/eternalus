@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LegendCardView } from '../../bridge/selectors/selectLegendStepView';
-import { accessibleNames, renderWithStore } from '../testStore';
+import { accessibleNames, assetsWithBoxes, renderWithStore } from '../testStore';
 import { LegendSelectCard } from './LegendSelectCard';
 import styles from './LegendSelectCard.module.css';
 import cardCss from './LegendSelectCard.module.css?raw';
@@ -125,6 +125,32 @@ describe('LegendSelectCard', () => {
     expect(render(ORACLE, { index: 0 })).toContain('data-art-mode="cover"');
     expect(render(ORACLE, { index: 0 })).toContain('src="/assets/test/oracle-card-art.webp"');
     expect(render({ ...ORACLE, cardArtAssetId: 'stray-art' })).toContain('data-art-mode="cover"');
+  });
+
+  it('places its rendition at the box the store gives it, and live where it gives none', () => {
+    const card = (
+      <LegendSelectCard
+        legend={ORACLE}
+        slot={legendSlot(3, 1)}
+        isRowPlateMode={false}
+        isTabbable={false}
+        onPick={noop}
+        onPreview={noop}
+        onKeyDown={noop}
+      />
+    );
+    const moved = renderWithStore(card, {
+      assets: assetsWithBoxes({
+        'oracle-card-art@card-picked': { left: 804, top: 211, width: 300, height: 600 },
+      }),
+    });
+    const unboxed = renderWithStore(card, {
+      assets: assetsWithBoxes({ 'oracle-card-art@card-picked': undefined }),
+    });
+
+    expect(moved).toContain('--art-left:12px;--art-top:17px;--art-width:300px;--art-height:600px');
+    expect(unboxed).toContain('data-art-mode="cover"');
+    expect(unboxed).not.toContain('--art-left');
   });
 
   it('marks a locked Legend aria-disabled with a lock and "Locked", never colour alone', () => {

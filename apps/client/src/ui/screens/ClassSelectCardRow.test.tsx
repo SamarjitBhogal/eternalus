@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
 import { renderWithStore, TEST_CONTENT } from '../testStore';
 import haloStyles from './ClassSelectCardHalo.module.css';
-import { CLASS_ROW_PLATE_BOXES } from './ClassSelectCardRow.constants';
 import { ClassSelectCardRow } from './ClassSelectCardRow';
 import styles from './ClassSelectCardRow.module.css';
 import rowCss from './ClassSelectCardRow.module.css?raw';
@@ -34,7 +34,7 @@ function declarationsOf(css: string, selector: string): string {
   );
 }
 
-const PLATE_BOX = CLASS_ROW_PLATE_BOXES['class-row-plate-magus'];
+const PLATE_BOX = TEST_ASSET_BOXES['class-row-plate-magus'];
 const PLATE: ClassRowPlate | null =
   PLATE_BOX === undefined
     ? null

@@ -9,7 +9,7 @@ import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { CHROME_PLATE_BOXES } from '../components/GlowButton.constants';
 import infoPanelStyles from '../components/InfoPanel.module.css';
 import detailsStyles from '../components/InfoPanelDetails.module.css';
-import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
+import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassSelectStep } from './ClassSelectStep';
 
 const ally = (
@@ -193,6 +193,21 @@ describe('ClassSelectStep', () => {
     expect(html).toContain('Choose a class first.');
     expect(html).not.toContain('class-row-plate-magus');
     expect(html).not.toContain('select-class-chrome');
+  });
+
+  it('draws the live halo instead of a row plate the store gives no box', () => {
+    const html = renderWithStore(<ClassSelectStep preferredClassId="magus" />, {
+      content: FIGMA_CONTENT,
+      assets: { ...assetsWithBoxes({ 'class-row-plate-magus': undefined }) },
+      matchSetup: {
+        ...matchSetupSlice.getInitialState(),
+        playerTeam: 'light',
+        allies: ALLIES_62_125,
+      },
+    });
+
+    expect(html).not.toContain('class-row-plate-magus');
+    expect(html).toContain('data-art-mode="plate"');
   });
 
   it('draws the live halo and keeps the Select Class chrome for a pick without a row plate', () => {

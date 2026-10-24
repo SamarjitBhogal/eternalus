@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import type { LegendClassCard } from '../../bridge/catalogue.types';
-import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
+import type { RootState } from '../../bridge/store';
+import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassSelectCard } from './ClassSelectCard';
 import cardCss from './ClassSelectCard.module.css?raw';
 import { classSlot } from './classSelectLayout';
@@ -25,6 +26,7 @@ function render(
     allyCount = 2,
     card = cardOf(classId),
     isLoaded = true,
+    assets,
   }: {
     readonly isPicked?: boolean;
     readonly isPreviewed?: boolean;
@@ -33,6 +35,7 @@ function render(
     readonly allyCount?: number;
     readonly card?: LegendClassCard;
     readonly isLoaded?: boolean;
+    readonly assets?: RootState['assets'];
   } = {},
 ): string {
   const noop = (): void => undefined;
@@ -50,7 +53,7 @@ function render(
       onPreview={noop}
       onKeyDown={noop}
     />,
-    isLoaded ? {} : { assets: assetsSlice.getInitialState() },
+    assets !== undefined ? { assets } : isLoaded ? {} : { assets: assetsSlice.getInitialState() },
   );
 }
 
@@ -141,6 +144,25 @@ describe('ClassSelectCard', () => {
 
     expect(rootTag(render('warrior', { isLoaded: false }))).toContain('data-art-mode="cover"');
     expect(rootTag(render('sentinel', { card: elsewhere }))).toContain('data-art-mode="cover"');
+  });
+
+  it('places its plate at the box the store gives it, and draws live art where it gives none', () => {
+    const moved = render('magus', {
+      isPicked: true,
+      assets: assetsWithBoxes({
+        'magus-card-plate-picked': { left: 1112, top: 244, width: 270, height: 580 },
+      }),
+    });
+    const unboxed = render('magus', {
+      isPicked: true,
+      assets: assetsWithBoxes({ 'magus-card-plate-picked': undefined }),
+    });
+
+    expect(rootTag(moved)).toContain(
+      '--art-left:6px;--art-top:6px;--art-width:270px;--art-height:580px',
+    );
+    expect(rootTag(unboxed)).toContain('data-art-mode="cover"');
+    expect(unboxed).not.toContain('card-plate');
   });
 
   it('marks the previewed card for the hover cue', () => {

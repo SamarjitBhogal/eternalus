@@ -1,38 +1,38 @@
 import type { ReactElement } from 'react';
 
-import type { AssetId } from '../../bridge/catalogue.types';
 import type { LegendStripItem } from '../../bridge/selectors/selectClassPanel';
 import { ArchCard, type ArchLayerKind } from '../components/ArchCard';
 import { cssVars } from '../components/cssVars';
+import { useAssetBoxes } from '../components/useAssetBox';
 import { STRINGS } from '../strings';
-import { MINI_ART_BOXES, MINI_SLOT_LEFTS, MINI_TOP } from './ClassSelectLegendStrip.constants';
+import { MINI_SLOT_LEFTS, MINI_TOP } from './ClassSelectLegendStrip.constants';
 import styles from './ClassSelectLegendStrip.module.css';
+import { isBakedAt } from './isBakedAt';
 
 /** A mini card's layers, bottom to top: outer frame 72:801, inner frame 72:802, portrait 72:803. */
 const MINI_LAYERS: readonly ArchLayerKind[] = ['outer-outline', 'inner-outline', 'art'];
 
-/** The inner frame's offset in the mini card (72:802 at +3, +3). */
+/** The inner frame's offset in the mini card (72:802 at +3, +3): the portrait's origin. */
 const INNER_INSET = 3;
-
-/** The mini's portrait box when its rendition was baked at this slot, else `undefined` (I-45). */
-function miniArtBox(miniAssetId: AssetId | null, slotLeft: number) {
-  const box = miniAssetId === null ? undefined : MINI_ART_BOXES[miniAssetId];
-  const isHere = box !== undefined && Math.abs(box.left - (slotLeft + INNER_INSET)) <= 1;
-  return isHere ? box : undefined;
-}
 
 /**
  * The class panel's Legends strip (72:786): the "Legends" header box and rule, then up to three
  * mini arch cards with the Legend's name for the player's team, else its sub-class title (I-83).
  * Informational: nothing in it is focusable or clickable. A class with no Legend shows the
- * pending line (CD-13); a portrait the catalogue lacks, or one baked for another slot, leaves the
- * designed empty arch.
+ * pending line (CD-13); a portrait the catalogue lacks, one without a draw box, or one baked for
+ * another slot, leaves the designed empty arch.
  */
 export function ClassSelectLegendStrip({
   items,
 }: {
   readonly items: readonly LegendStripItem[];
 }): ReactElement {
+  const boxes = useAssetBoxes(
+    MINI_SLOT_LEFTS.map((_, index) => ({
+      assetId: items[index]?.miniAssetId ?? null,
+      rendition: 'legend-mini',
+    })),
+  );
   return (
     <div className={styles.strip}>
       <span className={styles.headerBox} aria-hidden="true" />
@@ -47,7 +47,9 @@ export function ClassSelectLegendStrip({
           {MINI_SLOT_LEFTS.map((left, index) => {
             const item = items[index];
             if (item === undefined) return null;
-            const box = miniArtBox(item.miniAssetId, left);
+            const baked = boxes[index] ?? null;
+            const origin = { x: left + INNER_INSET, y: MINI_TOP + INNER_INSET };
+            const box = isBakedAt(baked, origin) ? baked : undefined;
             return (
               <li
                 key={item.key}

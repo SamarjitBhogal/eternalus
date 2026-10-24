@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CLASS_CARD_PLATES } from './ClassSelectCard.constants';
+import { TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
 import {
   classArtOrigin,
   classCardStyle,
@@ -48,19 +48,19 @@ describe('classSlot', () => {
   });
 
   it("puts each Figma card's overlay where its plate's overlay stroke is (C§4.11)", () => {
+    // Each plate's GLASS overlay node: 62:177, 62:176, 62:178, 62:179.
     const figmaCards = [
-      ['warrior-card-plate-idle', 0, 'idle'],
-      ['sentinel-card-plate-idle', 1, 'idle'],
-      ['magus-card-plate-picked', 2, 'picked'],
-      ['flying-card-plate-idle', 3, 'idle'],
+      [0, 'idle', { x: 525.039, y: 277.055 }],
+      [1, 'idle', { x: 825.18, y: 277.008 }],
+      [2, 'picked', { x: 1111.856, y: 243.696 }],
+      [3, 'idle', { x: 1428.257, y: 277.055 }],
     ] as const;
-    for (const [plateId, index, look] of figmaCards) {
+    for (const [index, look, overlayOrigin] of figmaCards) {
       const slot = classSlot(4, index);
       const art = classArtOrigin(slot.card[look], look);
-      const plate = CLASS_CARD_PLATES[plateId];
 
-      expect(art.x + slot.overlay[look].x).toBeCloseTo(plate?.overlayOrigin.x ?? Number.NaN, 6);
-      expect(art.y + slot.overlay[look].y).toBeCloseTo(plate?.overlayOrigin.y ?? Number.NaN, 6);
+      expect(art.x + slot.overlay[look].x).toBeCloseTo(overlayOrigin.x, 6);
+      expect(art.y + slot.overlay[look].y).toBeCloseTo(overlayOrigin.y, 6);
     }
   });
 
@@ -78,7 +78,7 @@ describe('art origins and plates', () => {
     expect(magus.x).toBeCloseTo(1111.24, 6);
     expect(magus.y).toBeCloseTo(243.644, 6);
     expect(legionnaire).toEqual({ x: 524.18, y: 277.008 });
-    expect(CLASS_CARD_PLATES['magus-card-plate-picked']?.box).toMatchObject({
+    expect(TEST_ASSET_BOXES['magus-card-plate-picked']).toMatchObject({
       left: Math.floor(magus.x),
       top: Math.floor(magus.y),
     });
@@ -106,15 +106,15 @@ describe('art origins and plates', () => {
   });
 
   it('gives the plate its box in the root and each 1 px stroke its own node (OD-1)', () => {
-    const plate = CLASS_CARD_PLATES['magus-card-plate-picked'];
-    if (plate === undefined) throw new Error('magus plate missing');
+    const box = TEST_ASSET_BOXES['magus-card-plate-picked'];
+    if (box === undefined) throw new Error('magus plate missing');
 
     expect(
       plateVars(
         { x: 1106.015, y: 238 },
-        plate.box,
+        box,
         { x: 1111.24, y: 243.644 },
-        plate.overlayOrigin,
+        { x: 1111.856, y: 243.696 },
       ),
     ).toEqual({
       '--art-left': '5px',

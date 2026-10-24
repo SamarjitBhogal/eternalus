@@ -5,9 +5,11 @@ import type { LegendCardView } from '../../bridge/selectors/selectLegendStepView
 import { ArchCard, type ArchLayerKind } from '../components/ArchCard';
 import { cssVars } from '../components/cssVars';
 import { LockGlyph } from '../components/LockGlyph';
+import { useAssetBox } from '../components/useAssetBox';
 import { STRINGS } from '../strings';
+import { isBakedAt } from './isBakedAt';
 import styles from './LegendSelectCard.module.css';
-import { legendArtBox, legendCardStyle, offset, originRemainder } from './legendSelectLayout';
+import { legendCardStyle, offset, originRemainder } from './legendSelectLayout';
 import type { FramePoint, LegendCardLook, LegendSlot } from './legendSelectLayout.types';
 
 /** Where each look's art sits in the card: 55:255 (11.42, 16), 58:360 (4.51, 5.42). */
@@ -39,9 +41,9 @@ const ROW_PLATE_LAYERS: readonly ArchLayerKind[] = ['focus-ring'];
  * One Legend card of the Legend step (55:267 picked, 55:268 idle): a `radio` button at its slot
  * with the arch drawn live and the sub-class title in the Legend's accent, then the Legend's name
  * for the player's team (omitted when it has none, I-83). The art is the look's rendition at its
- * placement-table box (I-45); without a box for this card, the art in cover mode or the placeholder. In
- * row-plate mode (`isRowPlateMode`, I-69) only the text, the focus ring and the hit area are
- * drawn. A locked Legend stays focusable with `aria-disabled` and a lock with "Locked".
+ * manifest draw box (I-45); without a box baked for this card, the art in cover mode or the
+ * placeholder. In row-plate mode (`isRowPlateMode`, I-69) only the text, the focus ring and the
+ * hit area are drawn. A locked Legend stays focusable with `aria-disabled` and a lock with "Locked".
  */
 export function LegendSelectCard({
   legend,
@@ -66,7 +68,8 @@ export function LegendSelectCard({
   const look: LegendCardLook = legend.isPicked ? 'picked' : 'idle';
   const origin = slot.card[look];
   const rendition = CARD_RENDITIONS[look];
-  const artBox = legendArtBox(legend.cardArtAssetId, rendition, offset(origin, ART_INSETS[look]));
+  const box = useAssetBox(legend.cardArtAssetId, rendition);
+  const artBox = isBakedAt(box, offset(origin, ART_INSETS[look])) ? box : undefined;
   const artMode = artBox === undefined ? 'cover' : 'image';
   return (
     <button

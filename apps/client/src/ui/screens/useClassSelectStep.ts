@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 
-import type { AssetId, LegendClassCard } from '../../bridge/catalogue.types';
+import type { AssetId, LegendClassCard, RasterBox } from '../../bridge/catalogue.types';
 import type { LegendClassId } from '../../bridge/domain.types';
 import { useAppSelector } from '../../bridge/hooks';
 import { isSelectableClass } from '../../bridge/selectionRules';
@@ -8,6 +8,7 @@ import { selectAllyCountsByClass } from '../../bridge/selectors/selectAllyCounts
 import { type ClassPanel, selectClassPanel } from '../../bridge/selectors/selectClassPanel';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { tabbableRovingIndex } from '../components/rovingRadio';
+import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { classStepActions, type ClassStepActions } from './classStepActions';
 import {
@@ -16,7 +17,6 @@ import {
   initialClassStep,
   shownClassId,
 } from './classStepState';
-import { CLASS_ROW_PLATE_BOXES } from './ClassSelectCardRow.constants';
 import type { ClassRowPlate } from './ClassSelectCardRow.types';
 
 /** State and handlers shared by both class layouts. */
@@ -45,9 +45,8 @@ const toStepCard = (card: LegendClassCard): ClassStepCard => ({
   isAvailable: isSelectableClass(card),
 });
 
-function rowPlateOf(assetId: AssetId | null, url: string | null): ClassRowPlate | null {
-  const box = assetId === null ? undefined : CLASS_ROW_PLATE_BOXES[assetId];
-  return url === null || box === undefined ? null : { url, box };
+function rowPlateOf(url: string | null, box: RasterBox | null): ClassRowPlate | null {
+  return url === null || box === null ? null : { url, box };
 }
 
 /**
@@ -65,7 +64,7 @@ export function useClassSelectStep(preferredClassId: LegendClassId | null): Clas
   const panel = useAppSelector((state) => selectClassPanel(state, shownClassId(local, stepCards)));
   const picked = cards.find((card) => card.classId === local.pickedClassId);
   const plateId = picked?.art.rowPlate ?? null;
-  const rowPlate = rowPlateOf(plateId, useAssetUrl(plateId));
+  const rowPlate = rowPlateOf(useAssetUrl(plateId), useAssetBox(plateId));
   const actions = classStepActions(stepCards, local, setLocal);
   return {
     cards,

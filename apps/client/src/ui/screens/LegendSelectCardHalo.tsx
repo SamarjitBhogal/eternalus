@@ -3,14 +3,10 @@ import type { ReactElement } from 'react';
 import type { RenditionKey } from '../../bridge/catalogue.types';
 import type { LegendCardView } from '../../bridge/selectors/selectLegendStepView';
 import { ArchCard, type ArchLayerKind } from '../components/ArchCard';
+import { useAssetBoxes } from '../components/useAssetBox';
+import { isBakedAt } from './isBakedAt';
 import styles from './LegendSelectCardHalo.module.css';
-import {
-  legendArtBox,
-  legendCardStyle,
-  legendSlot,
-  offset,
-  originRemainder,
-} from './legendSelectLayout';
+import { legendCardStyle, legendSlot, offset, originRemainder } from './legendSelectLayout';
 import type { FramePoint, LegendCardLook } from './legendSelectLayout.types';
 
 /** Where each copy's art sits in it: 61:8 (12.88, 16.93) in 61:4, 61:20 (5.19, 5.91) in 61:17. */
@@ -56,6 +52,12 @@ export function LegendSelectCardHalo({
   readonly legends: readonly LegendCardView[];
 }): ReactElement {
   const slotOf = (index: number) => legendSlot(legends.length, index);
+  const boxes = useAssetBoxes(
+    legends.map((legend) => ({
+      assetId: legend.refractionArtAssetId,
+      rendition: COPY_RENDITIONS[lookOf(legend)],
+    })),
+  );
   return (
     <>
       <div className={styles.glassLayer} aria-hidden="true">
@@ -78,11 +80,8 @@ export function LegendSelectCardHalo({
         {legends.map((legend, index) => {
           const look = lookOf(legend);
           const origin = slotOf(index).refraction[look];
-          const artBox = legendArtBox(
-            legend.refractionArtAssetId,
-            COPY_RENDITIONS[look],
-            offset(origin, ART_INSETS[look]),
-          );
+          const box = boxes[index] ?? null;
+          const artBox = isBakedAt(box, offset(origin, ART_INSETS[look])) ? box : undefined;
           const artMode = artBox === undefined ? 'cover' : 'image';
           return (
             <div

@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 
-import type { AssetId } from '../../bridge/catalogue.types';
+import type { AssetId, RasterBox } from '../../bridge/catalogue.types';
 import { useAppSelector } from '../../bridge/hooks';
 import {
   selectLegendStepView,
@@ -9,10 +9,9 @@ import {
 } from '../../bridge/selectors/selectLegendStepView';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { tabbableRovingIndex } from '../components/rovingRadio';
+import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { legendStepActions, type LegendStepActions } from './legendStepActions';
-import { ROW_PLATE_BOXES } from './LegendSelectStep.constants';
-import type { RasterBox } from './legendSelectLayout.types';
 
 /** The Legend row plate to draw: its URL at its full box. */
 type LegendRowPlate = { readonly url: string; readonly box: RasterBox };
@@ -32,9 +31,8 @@ type LegendSelectStepModel = {
   readonly onCardKeyDown: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
 };
 
-function rowPlateOf(assetId: AssetId | null, url: string | null): LegendRowPlate | null {
-  const box = assetId === null ? undefined : ROW_PLATE_BOXES[assetId];
-  return url === null || box === undefined ? null : { url, box };
+function rowPlateOf(url: string | null, box: RasterBox | null): LegendRowPlate | null {
+  return url === null || box === null ? null : { url, box };
 }
 
 /**
@@ -49,7 +47,7 @@ export function useLegendSelectStep(): LegendSelectStepModel | null {
   const [previewSpecId, setPreviewSpecId] = useState<string | null>(null);
   const picked = view?.legends.find((legend) => legend.isPicked);
   const plateId = picked?.rowPlateAssetId ?? null;
-  const rowPlate = rowPlateOf(plateId, useAssetUrl(plateId));
+  const rowPlate = rowPlateOf(useAssetUrl(plateId), useAssetBox(plateId));
   if (view === null) return null;
   const actions = legendStepActions(view);
   return {
