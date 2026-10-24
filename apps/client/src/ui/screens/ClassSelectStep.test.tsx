@@ -268,4 +268,10 @@ describe('ClassSelectStep', () => {
   it('carries no colour literal in its markup', () => {
     expect(render('magus')).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(/);
   });
+
+  it("labels the roster with the player's team name from the content catalogue", () => {
+    const content = { ...FIGMA_CONTENT, teamNames: { light: 'Lux', dark: 'Umbra' } };
+
+    expect(render('magus', { team: 'dark', content })).toContain('aria-label="Umbra team"');
+  });
 });

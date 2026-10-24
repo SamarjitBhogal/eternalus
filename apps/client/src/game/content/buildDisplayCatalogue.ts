@@ -277,6 +277,7 @@ export function buildDisplayCatalogue(inputs: {
     effectsRenderer,
     contrastMode: presentation.contrastMode,
     hud: hudCatalogue(content.mapFeatures, presentation.hud),
+    teamNames: content.teamNames,
   };
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));
   if (unknown !== undefined) fail(`asset "${unknown}" is not in the asset manifest`);

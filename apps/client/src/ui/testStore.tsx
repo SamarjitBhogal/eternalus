@@ -205,6 +205,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
   hud: TEST_HUD_CATALOGUE,
+  teamNames: { light: 'Light', dark: 'Dark' },
 };
 
 /** Session slice state at `phase`, optionally on a menu route with a reason. */

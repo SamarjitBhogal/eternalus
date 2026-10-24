@@ -6,7 +6,7 @@
 import type { LegendName, MapFeatureKind, RoleRatings } from '@eternalus/core';
 
 import type { HudSlotId } from './Binding.types';
-import type { LegendClassId, Team } from './domain.types';
+import type { LegendClassId, PlayableTeam, Team } from './domain.types';
 
 export type { LegendName } from '@eternalus/core';
 
@@ -239,4 +239,6 @@ export type DisplayCatalogue = {
   /** The colour set; `SessionController` writes it to `data-contrast` on the theme root. */
   readonly contrastMode: ContrastMode;
   readonly hud: HudCatalogue;
+  /** Each playable team's display name (core content): the team badge and the roster labels. */
+  readonly teamNames: Readonly<Record<PlayableTeam, string>>;
 };

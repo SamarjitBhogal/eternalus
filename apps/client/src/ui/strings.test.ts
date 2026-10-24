@@ -14,10 +14,8 @@ describe('STRINGS.characterSelect templates', () => {
   it('builds the breadcrumb, the role line and the team labels', () => {
     expect(characterSelect.legendBreadcrumb('Magus')).toBe('Magus > Choose Your Legend');
     expect(characterSelect.detailLine('Oracle', 'Support')).toBe('Oracle  ·  Support');
-    expect(characterSelect.rosterLabel(characterSelect.teamNames.dark)).toBe('Dark team');
-    expect(characterSelect.teamBadge(characterSelect.teamNames.light)).toBe(
-      'You are on the Light team',
-    );
+    expect(characterSelect.rosterLabel('Dark')).toBe('Dark team');
+    expect(characterSelect.teamBadge('Light')).toBe('You are on the Light team');
   });
 
   it('names a roster tile with its class once known', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { renderWithStore } from '../testStore';
+import { renderWithStore, TEST_CONTENT } from '../testStore';
 import { TeamBadge } from './TeamBadge';
 import styles from './TeamBadge.module.css';
 
@@ -20,5 +20,14 @@ describe('TeamBadge', () => {
 
   it('shows nothing before a team is assigned', () => {
     expect(renderWithStore(<TeamBadge team={null} />)).toBe('');
+  });
+
+  it('names the team from the content catalogue', () => {
+    const html = renderWithStore(<TeamBadge team="dark" />, {
+      content: { ...TEST_CONTENT, teamNames: { light: 'Lux', dark: 'Umbra' } },
+    });
+
+    expect(html).toContain('aria-hidden="true">Umbra</span>');
+    expect(html).toContain('You are on the Umbra team');
   });
 });

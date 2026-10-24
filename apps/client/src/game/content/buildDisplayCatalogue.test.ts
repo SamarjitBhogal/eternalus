@@ -246,6 +246,12 @@ describe('buildDisplayCatalogue', () => {
     );
   });
 
+  it('carries the core team names', () => {
+    const teamNames = { light: 'Lux', dark: 'Umbra' };
+    expect(build({ content: { teamNames } }).teamNames).toBe(teamNames);
+    expect(build().teamNames).toEqual({ light: 'Light', dark: 'Dark' });
+  });
+
   it('carries the core title and the per-team Legend name object', () => {
     const coreOracle = CONTENT.specs.find((spec) => spec.id === 'oracle');
     const oracle = classCard(build().legendClasses, 'magus').specs.find(

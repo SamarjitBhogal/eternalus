@@ -20,6 +20,7 @@ const CATALOGUE: DisplayCatalogue = {
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
   hud: TEST_HUD_CATALOGUE,
+  teamNames: { light: 'Lux', dark: 'Umbra' },
 };
 
 const {
@@ -31,6 +32,7 @@ const {
   selectSelectClassChromeAssetId,
   selectLockInChromeAssetId,
   selectHudCatalogue,
+  selectTeamNames,
 } = contentSlice.selectors;
 
 const loaded = () => ({
@@ -71,5 +73,13 @@ describe('contentSlice', () => {
     expect(selectBackgroundSet(state, 'light')?.id).toBe('light-a');
     expect(selectBackgroundSet(state, 'neutral')?.id).toBe('menu');
     expect(selectBackgroundSet(state, 'dark')).toBeUndefined();
+  });
+
+  it('selects the team names, empty until the catalogue loads', () => {
+    expect(selectTeamNames({ content: contentSlice.getInitialState() })).toEqual({
+      light: '',
+      dark: '',
+    });
+    expect(selectTeamNames(loaded())).toBe(CATALOGUE.teamNames);
   });
 });

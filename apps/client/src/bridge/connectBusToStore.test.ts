@@ -59,6 +59,7 @@ describe('connectBusToStore', () => {
       effectsRenderer: 'css',
       contrastMode: 'minimums',
       hud: TEST_HUD_CATALOGUE,
+      teamNames: { light: 'Lux', dark: 'Umbra' },
     };
     bus.emit('content-catalogue', catalogue);
     bus.emit('loading-progress', {

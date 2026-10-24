@@ -282,4 +282,10 @@ describe('LegendSelectStep row plate (T-LEG-9, I-69, §5.15)', () => {
     expect(rules).toMatch(/\.breadcrumb \{[^}]*z-index: 1;/);
     expect(String(styles.rowPlate)).not.toBe('');
   });
+
+  it("labels the roster with the player's team name from the content catalogue", () => {
+    const content = { ...TEST_CONTENT, teamNames: { light: 'Lux', dark: 'Umbra' } };
+
+    expect(render(FIGMA_STATE, { team: 'dark', content })).toContain('aria-label="Umbra team"');
+  });
 });
