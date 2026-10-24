@@ -6,7 +6,6 @@ import type { DisplayCatalogue, LegendClassCard } from '../../bridge/catalogue.t
 import type { PlayableTeam } from '../../bridge/domain.types';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
-import type { RootState } from '../../bridge/store';
 import { CHROME_PLATE_BOXES } from '../components/GlowButton.constants';
 import glowStyles from '../components/GlowButton.module.css';
 import { chromePlateFor } from '../components/useGlowButtonChrome';
@@ -47,7 +46,7 @@ function render(
     readonly team?: PlayableTeam;
     readonly content?: DisplayCatalogue;
     readonly bindings?: readonly Binding[];
-    readonly assets?: RootState['assets'];
+    readonly assets?: ReturnType<typeof loadedAssetsFor>;
   } = {},
 ): string {
   return renderWithStore(<LegendSelectStep />, {
@@ -260,21 +259,16 @@ describe('LegendSelectStep row plate (T-LEG-9, I-69, §5.15)', () => {
       ),
     }));
     const html = render(FIGMA_STATE, { content });
+    const unboxed = render(FIGMA_STATE, {
+      assets: assetsWithBoxes({ 'oracle-row-plate': undefined }),
+    });
 
     expect(TEST_ASSET_BOXES['unboxed-row-plate']).toBeUndefined();
     expect(html).not.toContain('unboxed-row-plate.webp"');
     expect(html).not.toContain(LOCK_IN_CHROME);
     expect(html).toContain(String(haloStyles.refractionLayer));
-  });
-
-  it('draws the live halo and LOCK IN chrome for a loaded row plate the store gives no box', () => {
-    const html = render(FIGMA_STATE, {
-      assets: assetsWithBoxes({ 'oracle-row-plate': undefined }),
-    });
-
-    expect(html).not.toMatch(ROW_PLATE);
-    expect(html).not.toContain(LOCK_IN_CHROME);
-    expect(html).toContain(String(haloStyles.refractionLayer));
+    expect([ROW_PLATE.exec(unboxed), unboxed.includes(LOCK_IN_CHROME)]).toEqual([null, false]);
+    expect(unboxed).toContain(String(haloStyles.refractionLayer));
   });
 
   it("on the 'css' renderer draws no plate image anywhere, LOCK IN's chrome included (I-80)", () => {
