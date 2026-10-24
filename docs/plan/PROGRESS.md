@@ -1034,3 +1034,44 @@ The example below is fenced so it is not read as a real entry.
   file outside `docs/` and `INBOX.md` hashes the same before and after this edit, so the HUD
   render is unchanged; the region numbers were re-measured on the last shot of that code.
 - Next step: the owner signs CD-25 (then the mask is applied) or picks HC-S4.
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, final visual audit (stream C) — fix/hud-charselect-visual — sholtzman + Claude Code
+
+- What was done (recorded by stream B from stream C's report): the final pixel audit of 62:125,
+  62:70, 58:271 and 62:231 against the Figma as refreshed on 2026-10-24, on the Figma-raster
+  path, until a round changed nothing; every remaining difference has a ruling (register CD-29 to
+  CD-35). Fixes: the measured blur for the label and countdown glows (OD-27; 32 regions better,
+  none worse); the picked Legend title centred on the owner's renamed 55:257 box; the battle axe
+  with the owner's Noise grain, extracted from his own frame (OD-28, register CD-37). Also the CSS
+  effects path measured once for information, a live-content layout review on both teams and at
+  1280 × 720, and the HUD's slot meanings re-checked against OD-9.
+- Checks run: `npm run check` before the commits, `EXIT=0`: core 85 files, 487 tests; client 199
+  files, 1208 tests, statements 95.38 %; docs check passed (log in the stream's working folder).
+- Next step: the owner signs CD-25's mask (HC-C1); docs that quote the match budget use the new
+  totals (141,646 / 359,902 B, OD-29 (d)).
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, docs for the owner's sign-off (stream B) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only; no code changed):
+  - Architecture, append-only (OD-26): one Implementation-status note each in 01 (new §8), 02 (new
+    §12), 05 (new §18), 06 §10, 13 §10, 14 §14 and 17 (new §12), and three paragraphs citing
+    DEC-50 and DEC-52 to DEC-55 in 13 §2, §7 and §9. Two 13 §10 sentences wait for the merged live
+    probe (`⟨PENDING-A⟩`).
+  - Every change to existing design text is an unapplied patch with the owner's edit table (T-01
+    to T-79, plus A-1 and A-2 merged earlier), inlined in `INBOX.md` HC-T1.
+  - Reference 15: a `floor` kind; CD-26 records the frame's own Oracle/Cantor inconsistency and the
+    panel-subtitle mask; new rows CD-29 to CD-37 (rendering floors with every number from the final
+    audit in §4, fit-to-width titles, the battle-axe extraction).
+  - New `docs/plan/ui-enhancements-plan.md` (UE-01 to UE-12, each a data-selectable variant with
+    the Figma original kept live) with its task line in Phase 6, sprint 6.3.
+  - `INBOX.md`: HC-T1, HC-B1 (reconciled) and HC-C1 rewritten; HC-Q15 with the measured sizes;
+    new HC-S5; the owner's playtest of 2026-10-24 recorded in Done.
+  - Ids re-checked after `git fetch` across 39 remote refs and the open PRs: DEC-48…55, OQ-63…70,
+    FR-119, ADR 0018 and the CD, HC and UE ids are unique. An independent fact-check found 19
+    imprecisions; all are fixed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 487 passed (487)"; client "Tests 1207 passed (1207)", statements 95.38 %; "✓ built";
+  "Checked 113 Markdown files under docs/." and "Documentation check passed.".
+- Next step: after the merge and the upstream sync, replace the `⟨PENDING-A⟩` sentences with the
+  live-probe result and regenerate the patch on the merged tree; the owner answers HC-T1, HC-B1,
+  HC-C1, HC-Q1 (5) and HC-S5.

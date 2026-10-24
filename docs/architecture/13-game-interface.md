@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-18
+last-reviewed: 2026-10-24
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -113,6 +113,13 @@ export class SessionController {
 The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The
 table is the test (`SessionController.test.ts` walks every pair with fake states, a
 `MemoryStorageAdapter` and a fake `ResourceController`).
+
+**Owner decision DEC-50 (2026-10-17).** `SessionController` owns the `Match` lifetime, as this
+section designs it: the match world is prepared in `match-loading`, the `Match` is created when
+the match screen attaches its viewport (`attachViewport`) and is destroyed on leaving `match`, so
+no map, simulation or game loop exists during character select
+([decisions log](../reference/game-design/13-owner-decisions-log.md)). §10 records how it is
+built.
 
 ## 3. Screens and HUD
 
@@ -421,6 +428,14 @@ every prompt with no code change: the requirements doc's acceptance test (§8).
   per file plus its `.module.css` and `.test.tsx`; no `dangerouslySetInnerHTML` (ES-08); labels in
   one strings file; game names from content; `ui/` never imports `game/`, `data/` or core (rule
   5; the planned lint block is in [02](02-code-structure.md) §11).
+- **Display switches** (owner decisions DEC-53, DEC-54 and DEC-55,
+  [decisions log](../reference/game-design/13-owner-decisions-log.md)). On the screens built from
+  the owner's Figma, the Figma look is the default and each alternative is chosen by one content
+  value: `effectsRenderer` (`'figma-raster'` or `'css'`) for the selection screens' glass, halos
+  and button chrome, and `contrastMode` (`'figma'` or `'minimums'`, also chosen by the OS setting
+  `prefers-contrast: more`) for the HUD colours that fall below the minimums above, which stay
+  listed exceptions in the `'figma'` set. A later improvement on a frame ships the same way, with
+  the frame's original kept as a live, selectable variant.
 
 ## 8. Tests
 
@@ -470,6 +485,12 @@ it('rebinds move-up from W to Up Arrow and every prompt follows', () => {
 Nothing else changes: the OCP litmus test holds because the registries (`App.tsx`, `events.ts`,
 `combineSlices`, `INPUT_ACTIONS`) are the only lists.
 
+A layout variant of a screen (the class step's alternate frame 62:70, DEC-52) or an improvement
+on one of the owner's frames (DEC-53) is chosen by one content value, never by a player setting
+unless the owner asks for one; the frame's original stays a live, selectable variant, and the
+difference is registered in
+[reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md).
+
 ## 10. Implementation status
 
 Built (Sprint 1, sessions D and F): the bridge (`bridge/`), the session shell and menu screens,
@@ -497,6 +518,74 @@ bottom to the share of the cooldown still to run (`cooldownRemainingTicks / cool
 ready slot shows the gold glow. The meanings are the owner's (OD-9); the look and its open
 question, the fill's direction, are register row CD-28 in
 [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md#3-register).
+
+HUD and character select (`feat/hud-and-character-select`, 2026-10-24; the owner's Figma frames,
+[reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md); DEC-48 to
+DEC-55). Where the text above differs, its corrections wait for the owner in `INBOX.md` HC-T1:
+
+- **Screens.** `CharacterSelectScreen` runs the class step (62:125, or 62:70 when the content value
+  `classSelectLayout` is `'alternate'`, through the registry `CLASS_STEP_LAYOUTS`; DEC-52) and then
+  the Legend step (58:271; DEC-49) inside the one `character-select` phase. `MatchScreen` holds
+  the HUD and the pause overlay. ⟨PENDING-A: `App.tsx` registers both screens (WP-F F2) and the
+  viewport renders only in `match`; until then those phases render `PlaceholderScreen`.⟩
+- **`Match` lifetime (DEC-50).** `match-loading` loads the `match` group, then calls
+  `prepareWorld` (`game/prepareMatchWorld.ts`: the map from `setup.seed`). In `match`,
+  `MatchState.attachViewport` creates the match through the injected factory
+  `createMatch(request, viewport)` (`game/createBrowserMatch.ts`, bound only by `main.tsx`), which
+  builds the adapters, `Simulation`, `Match` and `MatchHost`; `attachViewport` returns its detach,
+  so a StrictMode remount builds a fresh match on the same world. `MatchHost` owns the window,
+  document and canvas listeners and the devices, tears them down in order, applies the bindings
+  from the `settings` event, and releases held input on pause and on focus loss. Leaving `match`
+  destroys the match and drops the world. ⟨PENDING-A: live check, dev and production builds:
+  canvases and `requestAnimationFrame` calls per phase, and after Leave match.⟩
+- **Session.** `menu` builds the setup draft (seed, `playerTeam`, allied and enemy rosters; no
+  config or loadout yet). `SessionController` holds the class and Legend pick;
+  `canConfirmSelection` (`bridge/selectionRules.ts`) is the one rule for LOCK IN, in the session
+  and in the UI. The countdown's end with a class picked goes on to `pre-launch`; `cancel-match`
+  returns to `menu`. Failures carry a `SessionReason` banner (`select-timeout`, `cancelled`,
+  `match-failed`, `load-failed`); a `boot` load that rejects (a loader bug; a missing asset is only
+  warned) opens the menu with `load-failed` until `BootScreen` offers a retry (plan Phase 5,
+  sprint 5.2). Nothing produces `results` yet: `match-ended` comes with the `MatchDirector`
+  (Phase 3, sprint 3.5).
+- **Bridge.** New events beyond §5's sketch: `structure-state`, `asset-urls` and `credits`; §5's
+  `capture-state` is now published;
+  `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md) §14);
+  `hud-state` is `{ player }` with no `spectatedLegendId` (no spectate producer yet). The
+  display types live in `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also
+  gains `selectionRules.ts`, `minimapRing.ts` and `legendNames.ts`, and `assetsSlice`. The HUD
+  data is in `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and
+  `match-setup` resets the setup, HUD and match slices so a rematch shows no stale HUD.
+- **HUD data.** `MatchBridge` publishes `match-clock` and `hud-state` every 6 ticks and
+  `structure-state` and `capture-state` every 30, from `Match`'s tick. Core's `Snapshot` has no
+  `player`, so it projects the HUD player from the player's `EntitySnapshot` (health and maximum
+  health live, the slot list empty, every other value `null`, DEC-17) and the structure and
+  capture rosters from the `MapDefinition` (structure health `null`, capture owner `neutral`).
+  Each field becomes live when core publishes it: structure health (Phase 2, sprint 2.1), capture
+  state (sprint 2.6), XP and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
+  [05](05-abilities-weapons-and-loadouts.md) §15).
+- **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
+  (weapon art and the weapon-level bar, OQ-63), `GadgetBar` (the gadget slots, each with
+  `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64), `StructureStrip`, `ObjectiveTracker`
+  (with an allegiance flag, register CD-03) and `CrystalStatus`. `HealthBar` and `AetherBar` are
+  one-line leaves over `ResourceBar`. `MatchClock` shows no phase label until `match-clock`
+  carries the phase (Phase 3, sprint 3.5). `MinimapPanel` is a frame only: the canvas handles a
+  minimap click, and there is no `minimapVisible` setting. Not built, because the frames do not
+  draw them: `Scoreboard`, `Announcer`, `DeveloperMenu`, `PerfOverlay`.
+- **Styling and accessibility.** The selection screens are one 1920 × 1080 artboard scaled as a
+  whole; the HUD is sized by its own unit `--hud-u`; both keep text at or above `--text-min`.
+  The display switches of §7 are built (`effectsRenderer` with the developer override
+  `?dev=1&fx=css` or `fx=raster`; `contrastMode` written to `data-contrast` on `<html>` by
+  `SessionController`). The in-game reduce-motion setting is saved but not yet applied to the
+  page; only `prefers-reduced-motion` reaches CSS (INBOX HC-S3; specified as UE-03 in
+  [the UI enhancements plan](../plan/ui-enhancements-plan.md)).
+- **Developer chrome and pause.** The developer flag is the `?dev=1` query only, because
+  `settings.developer.menuEnabled` does not exist yet. The free camera, the overview, the explorer
+  toolbar and the map legend need it (DEC-32; INBOX HC-F8). The cathedral click and a "Leave
+  cathedral" button stay in normal play; the button is an interim control in
+  `game/GameCanvasChrome.tsx` (register CD-22) until the HUD gains an interior state (then a
+  `ui/hud` control and a `leave-interior` intent). The pause key is read by the UI hook
+  `usePauseMenuKey`, because a paused loop cannot read it, and `MatchState` pauses the match
+  while an overlay is open (single player only; INBOX HC-Q8).
 
 ## Related
 

@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-24
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -535,6 +535,28 @@ the following. Each row is a missing seam; the fix is the seam, not the feature.
 
 The review checklists ask "what else changed?" for every PR
 ([../agents/checklists.md](../agents/checklists.md) §3); the recipe's expected diff is the answer.
+
+## 12. Implementation status
+
+HUD and character select (`feat/hud-and-character-select`, 2026-10-24). How the recipes touched by
+the branch are carried out today; the recipe text itself waits for the owner in `INBOX.md` HC-T1:
+
+- **An asset** (R1's sprites, every image and font): one line in its group's file in
+  `apps/client/src/data/resources/` (`<group>Assets.ts`, concatenated by `AssetManifest.ts`) with
+  its `licence` and `source`, and the file in `apps/client/src/assets/<group>/`;
+  `AssetManifest.files.test.ts` checks the bytes and hashes ([14](14-persistence-and-resources.md)
+  §14).
+- **A Legend's display data** (R2): one `LegendSpecDefinition` in
+  `packages/core/src/content/legends/specs/` and its catalogue line, validated by the content
+  rules through `loadDisplayContent()`. It is display and setup data only (DEC-49; ADR 0018,
+  proposed); R2's gameplay part is unchanged and still post-MVP.
+- **A screen or HUD element** (R19, R20, [13](13-game-interface.md) §9): a layout variant of one
+  of the owner's frames is one content value and one registry entry (DEC-52, DEC-53).
+- **Display names** (R26): `warrior` displays "Legionnaire" and the reserved `flying` class
+  displays "Harbinger" as a locked card on the selection screen (DEC-48); the ids are unchanged.
+- **A8:** the renderer is created (`Canvas2dRenderer.fromCanvas`) in `game/createBrowserMatch.ts`,
+  the match factory bound only by `main.tsx` (DEC-50); it is still the composition root, so the
+  anti-recipe's intent holds.
 
 ## Related
 
