@@ -1,9 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
+import { ContentCatalogue } from './ContentCatalogue';
+import { ContentValidationError } from './ContentValidationError';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
+import type { LegendDefinition } from './legends/legends.types';
+import { MAGUS } from './legends/magus';
+import { SENTINEL } from './legends/sentinel';
 import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
+import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
+import { ORACLE } from './legends/specs/oracle';
+import { WARRIOR } from './legends/warrior';
 import { loadDisplayContent } from './loadDisplayContent';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
+
+/** The shipped Legends plus one whose class is the reserved, unplayable `flying`. */
+const SPECS_WITH_FLYING = new ContentCatalogue<LegendSpecDefinition>([
+  ...LEGEND_SPECS.all(),
+  { ...ORACLE, id: 'skywatcher', classId: 'flying' },
+]);
 
 /** The map-feature kinds the HUD names (the Figma's layer names, pending HC-Q4). */
 const NAMED_FEATURES = {
@@ -47,5 +61,27 @@ describe('loadDisplayContent', () => {
       kind: 'capture-point',
       displayName: 'Capture Point',
     });
+  });
+
+  it('rejects a Legend whose class is not a loaded Legend class', () => {
+    expect(() => loadDisplayContent({ specs: SPECS_WITH_FLYING })).toThrow(
+      new ContentValidationError(
+        'Invalid content: skywatcher: classId "flying" is not a Legend class',
+      ),
+    );
+  });
+
+  it('checks the Legend classes first and leaves the Legends unchecked while a class fails', () => {
+    const legends = new ContentCatalogue<LegendDefinition>([
+      WARRIOR,
+      SENTINEL,
+      { ...MAGUS, baseAether: 0 },
+    ]);
+
+    expect(() => loadDisplayContent({ legends, specs: SPECS_WITH_FLYING })).toThrow(
+      new ContentValidationError(
+        'Invalid content: magus: baseAether must be a positive finite number',
+      ),
+    );
   });
 });
