@@ -15,6 +15,7 @@ export const WARRIOR = {
   roleLabel: 'Assault', // Figma 72:858: a role label, not the class name
   tagline: null,
   description: null,
+  alternateLayoutDescription: null,
   detailNames: { signature: null, proficiency: null, specialty: null },
   baseHealth: 600, // TUNE:
   baseAether: 100, // TUNE: balancing.md (level 1)

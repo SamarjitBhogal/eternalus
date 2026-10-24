@@ -42,6 +42,19 @@ describe('LEGEND_CLASSES', () => {
     }
   });
 
+  it('gives the Magus the alternate layout description (62:82) and none to the others', () => {
+    expect(LEGEND_CLASSES.get('magus').alternateLayoutDescription).toBe(
+      'The masters of Aether, Magus focus on the use of \n' +
+        'abilities, while providing buffs for allies, and de-buffing \n' +
+        'enemy units. Specializing in ranged attacks, Magus \n' +
+        'aim to keep their distance from enemies to dish out \n' +
+        'damage with high sustain. ',
+    );
+    for (const kind of ['warrior', 'sentinel'] as const) {
+      expect(LEGEND_CLASSES.get(kind).alternateLayoutDescription).toBeNull();
+    }
+  });
+
   it('names the Magus detail rows from the Figma (72:757) and leaves the others unnamed', () => {
     expect(LEGEND_CLASSES.get('magus').detailNames).toEqual({
       signature: 'Aetheric Recall',

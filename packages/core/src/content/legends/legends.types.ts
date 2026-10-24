@@ -51,6 +51,11 @@ export type LegendDefinition = UnitDefinition & {
   readonly tagline: string | null;
   /** Selection-screen lore paragraph (Figma 72:748); `null` until written. */
   readonly description: string | null;
+  /**
+   * The lore paragraph of the alternate class-select layout (Figma 62:82), which keeps its own
+   * older copy; `null` shows `description` there too.
+   */
+  readonly alternateLayoutDescription: string | null;
   /** Names of the class's selection-screen detail rows (Figma 72:757); `null` until named. */
   readonly detailNames: ClassDetailNames;
   readonly weaponBias: WeaponBias;
