@@ -5,7 +5,6 @@ import type { LegendClassId } from '../../bridge/domain.types';
 import { useAppSelector } from '../../bridge/hooks';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
-import { Countdown } from '../components/Countdown';
 import { ScreenFrame } from '../components/ScreenFrame';
 import { SelectionBanner } from '../components/SelectionBanner';
 import { SelectionDefs } from '../components/SelectionDefs';
@@ -17,6 +16,7 @@ import { ClassSelectAltStep } from './ClassSelectAltStep';
 import { ClassSelectStep } from './ClassSelectStep';
 import { rememberedClassId } from './classStepState';
 import { LegendSelectStep } from './LegendSelectStep';
+import { SessionCountdown } from './SessionCountdown';
 
 /** Which component draws the class step (O5: a content switch, never a player setting). */
 const CLASS_STEP_LAYOUTS: Readonly<Record<ClassSelectLayout, ComponentType<SelectionStepProps>>> = {
@@ -42,12 +42,6 @@ const STEP_VIGNETTES: Readonly<Record<SelectionStep, readonly VignetteEdge[]>> =
   class: ['top', 'bottom'],
   legend: ['bottom'],
 };
-
-/** The session's countdown; the only reader of the 1 Hz value, so the steps never re-render on it. */
-function SessionCountdown(): ReactElement {
-  const seconds = useAppSelector(matchSetupSlice.selectors.selectCountdownSeconds);
-  return <Countdown remainingSeconds={seconds} />;
-}
 
 /**
  * Character select (13 §2, reference 14 §2): the shell of both steps on one scaled artboard.
