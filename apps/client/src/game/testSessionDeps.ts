@@ -1,5 +1,4 @@
 import { createDefaultGameConfig, MemoryLogger } from '@eternalus/core';
-import { vi } from 'vitest';
 
 import { connectBusToStore } from '../bridge/connectBusToStore';
 import type { AssetGroup, BridgeEventMap, SessionPhase, UiIntent } from '../bridge/events';
@@ -15,7 +14,7 @@ import { coreCatalogue } from './content/coreCatalogue';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { SessionController } from './SessionController';
-import type { SessionContext, SessionControllerDeps } from './SessionController.types';
+import type { SessionControllerDeps } from './SessionController.types';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { LcgRng } from './session/LcgRng';
 import { SELECTION_ASSET_GROUPS } from './session/selectionAssetGroups';
@@ -139,33 +138,4 @@ export function testSession(overrides: Partial<SessionControllerDeps> = {}) {
     intent,
     resolveLoads,
   };
-}
-
-/**
- * A `SessionContext` for a state's unit test: a real bus and `FakeSessionClock`, the shipped
- * catalogue and credits, and a spy for every method (`createMatch` returns spied handles,
- * `loadAssets` a spied cancel; `selection()` is `null` until a test changes it).
- */
-export function spyContext() {
-  return {
-    bus: new TypedEventBus<BridgeEventMap>(),
-    clock: new FakeSessionClock(),
-    catalogue: coreCatalogue.load(),
-    credits: describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES),
-    transition: vi.fn<SessionContext['transition']>(),
-    newMatchSetup: vi.fn<SessionContext['newMatchSetup']>(),
-    repeatMatchSetup: vi.fn<SessionContext['repeatMatchSetup']>(),
-    clearMatchSetup: vi.fn<SessionContext['clearMatchSetup']>(),
-    selection: vi.fn<SessionContext['selection']>(() => null),
-    recordSelection: vi.fn<SessionContext['recordSelection']>(),
-    prepareWorld: vi.fn<SessionContext['prepareWorld']>(),
-    createMatch: vi.fn<SessionContext['createMatch']>(() => ({
-      destroy: vi.fn(),
-      setPaused: vi.fn(),
-    })),
-    dropWorld: vi.fn<SessionContext['dropWorld']>(),
-    abortMatch: vi.fn<SessionContext['abortMatch']>(),
-    loadAssets: vi.fn<SessionContext['loadAssets']>(() => vi.fn()),
-    releaseAssets: vi.fn<SessionContext['releaseAssets']>(),
-  } satisfies SessionContext;
 }
