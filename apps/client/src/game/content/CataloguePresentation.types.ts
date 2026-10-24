@@ -12,7 +12,6 @@ import type {
   HudChrome,
   HudStructureKind,
   LegendClassArt,
-  LegendClassCard,
   LegendSpecArt,
   SelectionStatus,
 } from '../../bridge/catalogue.types';
@@ -40,6 +39,9 @@ export type ClassPresentation = {
   >;
 };
 
+/** What the client adds to a core locked class (DEC-48): its accent and art. */
+export type LockedClassPresentation = Pick<ClassPresentation, 'accentToken' | 'art'>;
+
 /** What the client adds to a core Legend (sub-class): status, accent, art and detail icons. */
 export type SpecPresentation = {
   readonly status: SelectionStatus;
@@ -59,8 +61,8 @@ export type HudPresentation = {
 export type CataloguePresentation = {
   /** Keyed by core class id; a core class without an entry fails at boot. */
   readonly classes: Readonly<Record<string, ClassPresentation>>;
-  /** Shown, never selectable, with no core content yet (reference 01: Flying is post-MVP). */
-  readonly lockedClasses: readonly LegendClassCard[];
+  /** Keyed by core locked-class id; a core locked class without an entry fails at boot. */
+  readonly lockedClasses: Readonly<Record<string, LockedClassPresentation>>;
   /** Keyed by core spec id; a core spec without an entry fails at boot. */
   readonly specs: Readonly<Record<string, SpecPresentation>>;
   readonly backgroundSets: readonly BackgroundSet[];

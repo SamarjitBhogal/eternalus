@@ -1,4 +1,5 @@
 import type {
+  ClassDetailNames,
   DisplayContent,
   LegendDefinition,
   LegendSpecDefinition,
@@ -31,6 +32,13 @@ const DETAIL_SLOT_ORDER: readonly DetailSlot[] = [
   'specialty',
   'ultimate',
 ];
+
+/** A locked card's detail rows: the class slots, unnamed and without icons (placeholder rows). */
+const LOCKED_DETAIL_NAMES: ClassDetailNames = {
+  signature: null,
+  proficiency: null,
+  specialty: null,
+};
 
 /** What each effects renderer keeps of the full catalogue (I-80; a new renderer is one entry). */
 const RENDERER_VIEWS: Readonly<
@@ -134,6 +142,31 @@ function toClassCard(
   };
 }
 
+/** A core locked class with its presentation: shown, never picked, no Legends or kit (DEC-48). */
+function toLockedCard(
+  locked: DisplayContent['lockedClasses'][number],
+  presentation: CataloguePresentation,
+): LegendClassCard {
+  const shown =
+    presentation.lockedClasses[locked.id] ??
+    fail(`locked class "${locked.id}" has no presentation`);
+  return {
+    classId: locked.id,
+    displayName: locked.displayName,
+    blurb: locked.roleBlurb,
+    status: 'locked',
+    roleLabel: locked.roleLabel,
+    tagline: null,
+    description: null,
+    accentToken: shown.accentToken,
+    details: detailRows(LOCKED_DETAIL_NAMES, {}),
+    art: shown.art,
+    specs: [],
+    hud: null,
+    layoutOverrides: {},
+  };
+}
+
 /** HUD kinds named from core by kind; an aggregated group takes its first named kind's name. */
 function hudCatalogue(
   mapFeatures: DisplayContent['mapFeatures'],
@@ -211,8 +244,9 @@ function catalogueAssetIds(catalogue: DisplayCatalogue): AssetId[] {
  * Joins core display content with client presentation. Detail rows: core names × presentation
  * icons, in slot order. HUD kinds: core names by kind (an aggregated group takes its first named
  * kind's name).
- * @throws Error naming the id: a core class or spec without presentation, a HUD kind or group
- *   without a core name, or an asset id that is not in `knownAssetIds` (UD-18; checked at boot).
+ * @throws Error naming the id: a core class, spec or locked class without presentation, a HUD kind
+ *   or group without a core name, or an asset id that is not in `knownAssetIds` (UD-18; checked at
+ *   boot).
  */
 export function buildDisplayCatalogue(inputs: {
   readonly content: DisplayContent;
@@ -230,7 +264,7 @@ export function buildDisplayCatalogue(inputs: {
   const full: DisplayCatalogue = {
     legendClasses: [
       ...content.legends.map((legend) => toClassCard(legend, content, presentation)),
-      ...presentation.lockedClasses,
+      ...content.lockedClasses.map((locked) => toLockedCard(locked, presentation)),
     ],
     backgroundSets: presentation.backgroundSets,
     profileDisplayName: presentation.profileDisplayName,
