@@ -225,9 +225,10 @@
   color: var(--selection-parchment);
 }
 
-/* 55:257 title 40, box (84.6, 538.4) 166 × 54 of the card: centre x 167.6. */
+/* 55:257 title 40, box (90.6, 538.4) 155 × 54 of the card: centre x 168.1 (the live Figma, after
+   the owner renamed it "Oracle"; the "Cantor" box was centred at 167.6). */
 .card[data-look='picked'] .title {
-  left: calc(-0.4px + var(--card-fx) + var(--title-dx));
+  left: calc(0.1px + var(--card-fx) + var(--title-dx));
   top: calc(538.4px + var(--card-fy));
   width: 336px;
   font-family: var(--font-game);
