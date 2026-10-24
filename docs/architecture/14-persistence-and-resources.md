@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-10-24
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -507,6 +507,34 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
 - A quarantine is reported through an injected `warn` callback, because `data/` imports core
   types only (§1); `main.tsx` turns it into a `Logger` record. No `degraded` status or memory
   fallback yet (§10): a failed open leaves the settings on defaults.
+
+Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
+DEC-51). Where §1 and §11 differ, their corrections wait for the owner in `INBOX.md` HC-T1:
+
+- **A minimal `ResourceController`** (`data/resources/ResourceController.ts`): `load(group,
+onProgress)` with byte progress from the manifest, `isLoaded`, `progress`, `urls(group)` (the
+  URLs the DOM shows) and `release(group)`. The device pixel ratio is read once, so each image's
+  1x or 2x file is fixed for the session. Not built yet: `get`, `AssetCache` and the canvas
+  `ImageBitmap` path (no sprite atlas exists; Phase 6, sprint 6.3), and the audio and JSON loaders
+  (no such assets).
+- **The manifest** is typed TypeScript in `data/resources/`: `AssetManifest.ts` concatenates one
+  file per asset group (the ~300-line file rule; `selectionAssets.ts` and `matchAssets.ts` join
+  part files) into the one `ASSET_MANIFEST`. An entry has a `file` and an optional `file2x` (each
+  with URL, bytes and hash), its per-use `renditions`, a `licence` and a `source`. `AssetType` is
+  `'ui-image' | 'font'`. The seven groups (`boot`, `selection`, `selection-primary`,
+  `selection-alternate`, `selection-raster`, `selection-primary-raster`, `match`) let a session
+  load only its layout's art and, with the `'css'` effects renderer, no Figma plates
+  (`game/session/selectionAssetGroups.ts`).
+- **Loaders** sit behind the `AssetLoader` port in `data/resources/loaders/`, with the
+  `describeAssetLoader` contract suite: `UiImageLoader` decodes images for the DOM, whose URLs
+  reach `ui/` through the `asset-urls` event and `assetsSlice`, and `FontLoader` adds Cinzel to
+  `document.fonts` from the `boot` group (no `@font-face`, no CDN). Releasing a group clears its
+  images' sources and deletes its fonts; no object URLs are created, so none is revoked.
+- **Checks.** File integrity is a Vitest test (`AssetManifest.files.test.ts`: every file exists
+  with its bytes and SHA-256, and no file in `assets/` lacks an entry), not a `scripts/` check,
+  and no `assets/manifest.json` is generated. `AboutScreen` lists the manifest's credits, each
+  with its licence text (the `credits` event into `assetsSlice`), so the OFL and MIT notices ship
+  in the built game.
 
 ## Related
 

@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-24
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -420,6 +420,23 @@ Still interim:
 | Map scenery (08 §4)       | `MapSceneryBuilder` dresses the generated map with presentation-only polygons authored in map-1's 1600 × 900 sketch (`content/maps/map1Scenery.ts`, `map1Landforms.ts`) and stretched to the world size; `MapView` draws the `ground` layer, `SceneryView` the `detail` layer | Per-preset scenery and sprite assets                                                               |
 | Free view and interior    | `MapExplorer` in `Match`: drag pan, wheel zoom, overview and the presentation-only cathedral interior (`CathedralInteriorBuilder`); walking returns to the following camera outside the cathedral                                                                             | Player movement, doorways and collision into the interior                                          |
 | Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                                                                                                                                                                                                 | The owner's answer to DEC-15                                                                       |
+
+Minimap and camera (`feat/hud-and-character-select`, 2026-10-24); this note supersedes the "Today"
+cells of the "Minimap (§8)" and "Free view and interior" rows above, whose corrections wait for
+the owner in `INBOX.md` HC-T1:
+
+- `MiniMapView` draws into the main canvas every frame, clipped to the HUD's minimap ring by
+  `Renderer.clipToEllipse`, with the whole map inscribed in the ring (INBOX HC-Q6 (4)). The ring's
+  geometry is written once, in `bridge/minimapRing.ts`: `Match` passes it to `MiniMapView`'s
+  constructor, and `MinimapPanel`'s test checks its CSS against it, so `game/views/` imports
+  nothing from `bridge/`.
+- Still interim toward §8: no `'minimap'` renderer layer, no `MinimapProjection` (a minimap click
+  moves the camera through `Match`, with no `Command`), no lower redraw cadence and no entity
+  glyphs (those come with Phase 2, sprint 2.8).
+- `MapExplorer` belongs to `MatchCamera`. The free camera (drag pan, wheel zoom), the overview,
+  the explorer toolbar and the map legend need the developer flag `?dev=1` (DEC-32; INBOX HC-F8).
+  The cathedral click and a "Leave cathedral" button stay in normal play (register CD-22 in
+  [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md)).
 
 ## Related
 

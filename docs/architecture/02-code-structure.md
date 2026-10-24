@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-10-24
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -288,6 +288,34 @@ changes the shape of the world, it is config. If a player may change it, it is a
   and `performance` is the next step of the same block.
 - The tree, the tables in this doc and the lint blocks must agree; a PR that adds a folder updates
   all three ([01-layered-oop-model.md](01-layered-oop-model.md) §7).
+
+## 12. Implementation status
+
+HUD and character select (`feat/hud-and-character-select`, 2026-10-24). Folders and files the
+branch added or moved; the §3 tree lines and the §9 and §10 rows that name them wait for the
+owner in `INBOX.md` HC-T1:
+
+- **Assets.** `apps/client/src/assets/` holds one folder per asset group (`boot/`, `selection/`,
+  `selection-primary/`, `selection-alternate/`, `selection-raster/`,
+  `selection-primary-raster/`, `match/`) plus `licences/` (the Cinzel OFL and the Phosphor Icons
+  MIT texts, DEC-51). The typed manifest is not in `assets/`: it is
+  `data/resources/AssetManifest.ts`, which concatenates one file per group
+  (`data/resources/<group>Assets.ts`), so adding an asset is one line in its group's file with
+  its `licence` and `source`, plus the file. The loaders are `data/resources/loaders/`
+  (`AssetLoader.ts` port, `UiImageLoader.ts`, `FontLoader.ts`); there is no `AssetCache` yet
+  ([14](14-persistence-and-resources.md) §14).
+- **Bridge.** `bridge/catalogue.types.ts` and `bridge/hud.types.ts` (display types shared with
+  `ui/`), `bridge/selectionRules.ts`, `bridge/minimapRing.ts`, `bridge/legendNames.ts`, the
+  `bridge/selectors/` folder and the new `assetsSlice` ([13](13-game-interface.md) §10).
+- **Game.** `game/content/` builds the display catalogue the UI reads from core's display content
+  (`coreCatalogue.ts`, `buildDisplayCatalogue.ts` and the presentation files) in place of
+  `placeholderCatalogue.ts`; `game/session/` gains `selectionAssetGroups.ts` and loses
+  `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`, `game/MatchHost.ts`,
+  `game/createBrowserMatch.ts` and `game/prepareMatchWorld.ts`; `game/useMatch.ts` is gone
+  (DEC-50).
+- **Core.** `loadDisplayContent()` is exported from `@eternalus/core`: the Legend and
+  Legend-spec display data, validated through the content rules, and the map features' display
+  names (DEC-49; ADR 0018, proposed); the specs live in `packages/core/src/content/legends/specs/`.
 
 ## Related
 

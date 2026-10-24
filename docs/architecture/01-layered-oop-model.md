@@ -4,7 +4,7 @@ description: The four-layer model, who may import whom, ports and adapters, the 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-24
 tags: [architecture, layers, solid, rules, ports-and-adapters]
 paths: ['packages/core/src/**', 'apps/client/src/**']
 related:
@@ -194,6 +194,23 @@ new ones. When the team agrees a folder is needed:
    re-exports, and barrels invite cycles).
 5. If the folder introduces a new registry, add it to the "single place of change" list in
    `02-code-structure.md` §9 and write a recipe for it in `17-extension-recipes.md`.
+
+## 8. Implementation status
+
+HUD and character select (`feat/hud-and-character-select`, 2026-10-24). One more port exists in
+the client, and the browser adapters of a match are chosen in a factory rather than in `Match`;
+the matching §3 rows wait for the owner in `INBOX.md` HC-T1:
+
+- **`AssetLoader`** (`apps/client/src/data/resources/loaders/AssetLoader.ts`, L3, owned by
+  `ResourceController`): adapters `UiImageLoader` (images for the DOM) and `FontLoader` (the
+  display font) / `FakeAssetLoader`, with the `describeAssetLoader` contract suite in
+  `AssetLoader.contract.ts`; `main.tsx` passes the adapters to `ResourceController`
+  ([14](14-persistence-and-resources.md) §14).
+- **The match's adapters** (the `Canvas2dRenderer`, the frame scheduler, the keyboard and mouse
+  devices and the `Simulation`'s logger) are built by `game/createBrowserMatch.ts`, the match
+  factory that only `main.tsx` binds and that `SessionController` calls when the match screen
+  attaches its viewport (DEC-50). `Match` receives them by constructor injection; the input
+  devices reach it through an intent source, and `MatchHost` attaches them to the page.
 
 ## Related
 
