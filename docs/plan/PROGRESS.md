@@ -1609,3 +1609,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 679 passed (679)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: critic re-check, draft PR; M8 merges these fixes.
+
+### 2026-10-25 — Minion system M3, critic re-check — feat/minion-m3-bot-laners — SamarjitBhogal + Claude Code
+
+- What was done: the critic re-check (`1eec4f4..c2d9d1e`) approved: the blocker and should-fixes
+  are fixed. Its remaining items applied: `Placement`'s TSDoc is back on it; a plan §3 stand-in
+  records that no lane counts a human laner while the human is always the Rover (DISC-51);
+  roster order over 18 §8's id order is an INBOX sign-off item; `spawnRoster` hands each spawn to
+  a small `spawnBot`; the retreat tie-break by id has a test.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 680 passed (680)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: draft PR.

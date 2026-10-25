@@ -29,7 +29,7 @@ import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
-import type { DefinitionSource } from './entities/EntityFactory.types';
+import type { DefinitionSource, Placement } from './entities/EntityFactory.types';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
@@ -203,19 +203,33 @@ export class Simulation {
         placed.set(lane, follower + 1);
         routes.pose(lane, team, 0, anchor, forward);
         formationSlot(anchor, forward, follower, RANKS_FORMATION, at);
-        const entity = factory.create(slot.definitionId, slot.definitionId, {
-          team,
+        Simulation.spawnBot(state, factory, slot, {
           position: { x: at.x, y: at.y },
+          team,
           controller: {
             controllerId: controllerOf(slot),
             profileId: slot.difficulty,
             memory: { lane },
           },
         });
-        state.entities.add(entity);
-        state.events.emit('entity-spawned', { entityId: entity.id, kind: entity.kind, team });
       });
     }
+  }
+
+  /** Spawns one bot Legend of the roster and announces it. */
+  private static spawnBot(
+    state: GameState,
+    factory: EntityFactory,
+    slot: RosterSlot,
+    placement: Placement,
+  ): void {
+    const entity = factory.create(slot.definitionId, slot.definitionId, placement);
+    state.entities.add(entity);
+    state.events.emit('entity-spawned', {
+      entityId: entity.id,
+      kind: entity.kind,
+      team: slot.team,
+    });
   }
 
   /** The shipped content, checked against the controllers before the match starts. */

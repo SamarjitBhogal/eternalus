@@ -139,7 +139,10 @@ Reply inline (`Decision: …`).
       below 30% health, rejoin at 80%, engage within 12 m, arrive within 2 m, closeness and
       weakness weighted 1 each. Confirm or give values. (2) Doc 11 §4.2's `Survive` sends a bot
       "back to base", and the Phase 3 plan expects it to "return to base to heal", but nothing
-      heals a Legend yet and no doc says how. Is there base healing (where, how fast)?
+      heals a Legend yet and no doc says how. Is there base healing (where, how fast)? (3)
+      Better than the design, for sign-off: bot laners take lanes in roster order, the order
+      match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
+      `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
