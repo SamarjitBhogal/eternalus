@@ -37,7 +37,7 @@ function pointsOf(path: string): Point[] {
 
 /**
  * Figma's own paths: node vectors (`use_figma` dumps of 58:271) in node space, and the exported
- * SVGs of 62:125 with their stroke offset `(dx, dy)` removed (spec §4.11 origins).
+ * SVGs of 62:125 with their stroke offset `(dx, dy)` removed (their Figma origins).
  */
 const FIGMA_ARCHES: readonly {
   readonly node: string;

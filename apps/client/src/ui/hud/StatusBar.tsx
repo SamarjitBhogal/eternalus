@@ -6,9 +6,9 @@ import { meterAttributes, percentOf } from './hudMeter';
 import styles from './StatusBar.module.css';
 
 /**
- * The thin structure / capture bar (HUD spec §3.1, §3.3): a left-aligned fill under a 1 px
+ * The thin structure / capture bar (Figma 62:303, 62:425): a left-aligned fill under a 1 px
  * inside-stroked track; `null` is the no-data hatch. The caller's class sizes it (46 × 6 under a
- * structure, 62 × 6 under an objective). A meter, or an image "No data yet" (I-87).
+ * structure, 62 × 6 under an objective). A meter, or an image "No data yet" (CD-13).
  */
 export function StatusBar({
   label,

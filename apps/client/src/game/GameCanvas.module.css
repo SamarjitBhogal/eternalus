@@ -13,14 +13,17 @@
   height: 100%;
   touch-action: none;
 }
-/* Only the developer explorer drags the view (?dev=1, I-55); normal play has no grab cursor. */
+/*
+ * Only the developer explorer drags the view (?dev=1; DEC-32, INBOX HC-F8); normal play has no
+ * grab cursor.
+ */
 .isExploring {
   cursor: grab;
 }
 .isExploring:active {
   cursor: grabbing;
 }
-/* The developer chrome sits top-left, clear of the HUD regions (I-34); its look is unchanged (I-61). */
+/* The developer chrome sits top-left, clear of the HUD regions; its look is unchanged (OD-14). */
 .toolbar {
   position: absolute;
   top: 24px;
@@ -101,7 +104,7 @@
   }
 }
 /*
- * Interim normal-play control (I-75, DV-119): leaves the cathedral interior, at the toolbar's
+ * Interim normal-play control (CD-22): leaves the cathedral interior, at the toolbar's
  * place, only while inside. Tokens only; its upgrade path is a ui/hud control (13 §9 recipe).
  */
 .leaveInterior {

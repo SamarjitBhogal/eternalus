@@ -44,7 +44,7 @@ export const assetsSlice = createSlice({
   name: 'assets',
   initialState,
   reducers: {
-    // Payloads are readonly and stored as given (PR1-21), so the reducers return new state.
+    // Payloads are readonly and stored as given, so the reducers return new state.
     groupUrlsChanged: (state, action: PayloadAction<AssetUrls>) => ({
       ...state,
       urlsByGroup: { ...state.urlsByGroup, [action.payload.group]: action.payload.urls },

@@ -1,6 +1,6 @@
 import type { LegendClassId } from '../../bridge/domain.types';
 
-/** The two steps of the character-select phase (F1): pick a class, then one of its Legends. */
+/** The two steps of the character-select phase (HC-F1): pick a class, then one of its Legends. */
 export type SelectionStep = 'class' | 'legend';
 
 /** Props every selection step receives from the shell. */

@@ -25,10 +25,10 @@
   height: 55.25px;
 }
 
-/* The Figma-state chrome plate (R1 step 2): at its skin's full render-bounds box, 1:1, never
-   fitted. Each box is the WP-ASSETS placement table's frame box minus the skin's root origin (the
-   only source of raster positions, §5.13); it equals the file's pixel size and is never cropped
-   (FID-R3-01), so a skin draws only the plate it is measured for (BOXED_CHROME_PLATES). */
+/* The Figma-state chrome plate (CD-16): at its skin's full render-bounds box, 1:1, never fitted.
+   Each box is the plate's manifest draw box (frame px) minus the skin's root origin; it equals the
+   file's pixel size and is never cropped, so a skin draws only the plate it is measured for
+   (BOXED_CHROME_PLATES). */
 .chrome {
   position: absolute;
   display: block;
@@ -74,13 +74,13 @@
   inset: 0;
 }
 
-/* The group DROP_SHADOW (azure 80 %, 0 4, radius 10): σ 5 (E11), knocked out under the cast
+/* The group DROP_SHADOW (azure 80 %, 0 4, radius 10): σ 5 (CD-15), knocked out under the cast
    alpha (sel-glow-group, shadows only), as 58:277's showShadowBehindNode: false draws it; a CSS
    drop-shadow() would paint it behind the translucent glows and haze. Cast from a plain copy of
    the ring stroke, haze and brace strokes, not from their glows (cast from the whole group it
-   spread all round the ring and too far below it: WP-CLASS CSS audit B2). The label stays outside
-   it: measured against 58:271 with the LOCK IN plate, Figma's label glow carries no share of the
-   group shadow (under the filter its glow was 1.9× too strong). */
+   spread all round the ring and too far below it in the visual audit of 62:125). The label stays
+   outside it: measured against 58:271 with the LOCK IN plate, Figma's label glow carries no share
+   of the group shadow (under the filter its glow was 1.9× too strong). */
 .lit {
   position: absolute;
   inset: 0;
@@ -125,7 +125,7 @@
    1128.974 × 908 to 970.249 paints 790–1129 × 908–970; 58:273 804.84 to 1114.24 × 940 to 995.25
    paints 805–1114 × 940–995), so the glow knockout's box ends at the stroke: on the fractional box
    it rounded out one row or column further, leaving a 1 px dark seam between the ring and its glow
-   (under the whole ring, WP-CLASS CSS audit D1; LOCK IN's left and right edges too). */
+   (under the whole ring in the visual audit of 62:125; LOCK IN's left and right edges too). */
 .selectClass .ring {
   width: 339px;
   height: 62px;
@@ -154,7 +154,7 @@
 
 /* The braces group's four azure radius-20 glows at 0 ±2 (sel-glow-braces, shadows only), cast from
    plain copies of the 1 px strokes beneath the braces with their own glows (cast from those glows
-   they made blue blobs at both ring ends: WP-CLASS CSS audit B1). */
+   they made blue blobs at both ring ends in the visual audit of 62:125). */
 .bracesGlow {
   filter: url(#sel-glow-braces);
 }
@@ -209,7 +209,7 @@
 
 /* 62:228 "Select Class" / 58:276 "lock in": Cinzel Regular 36 parchment, six sky glows (0 4 25,
    then 0 ∓4 50 alternating) as the sel-glow-label def at σ = r/2. As CSS text-shadows the haze
-   came out wider and greener than Figma's on 62:125 (WP-CLASS visual audit). */
+   came out wider and greener than Figma's in the visual audit of 62:125. */
 .label {
   position: absolute;
   left: 0;
@@ -229,7 +229,7 @@
 }
 
 /* Box (831.771, 912.563) 256.357 × 55.208, centred on (959.95, 940.17). Chrome snaps the text line
-   to whole px: at the Figma 4.563 px the glyphs sat 1 px below Figma's rows (WP-CLASS audit of
+   to whole px: at the Figma 4.563 px the glyphs sat 1 px below Figma's rows (the visual audit of
    62:125: shift +0,+1, ink box T+1 B+2); 4 px puts them on Figma's rows (shift 0, ink box B+1).
    LOCK IN's 4.09 px already rounds down. */
 .selectClass .label {

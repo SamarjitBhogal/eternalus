@@ -7,7 +7,7 @@ import type { AssetManifestEntry } from './AssetManifest.types';
 
 /**
  * The `selection-raster` group: the Legend step's plates, loaded only with the `figma-raster`
- * effects renderer (I-47, DEC-54).
+ * effects renderer (14 §14; DEC-54).
  */
 export const SELECTION_RASTER_ASSETS: readonly AssetManifestEntry[] = [
   {

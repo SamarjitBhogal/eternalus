@@ -14,7 +14,8 @@ import warriorCardArt from '../../assets/selection-primary/classes/warrior-card-
 import type { AssetManifestEntry } from './AssetManifest.types';
 
 /**
- * The `selection-primary` group: art that only the primary class-step layout draws (I-47, DEC-52).
+ * The `selection-primary` group: art that only the primary class-step layout draws (14 §14;
+ * DEC-52).
  */
 export const SELECTION_PRIMARY_ASSETS: readonly AssetManifestEntry[] = [
   {

@@ -3,7 +3,7 @@ import type { InfoPanelLayout } from './InfoPanel.types';
 /**
  * Fit-to-width panel titles (OD-21e): the title (72:750, 62:81, 56:34) is drawn at the Figma
  * 96 px while it fits its panel region; a longer one is scaled down to fit, never below 64 px.
- * `maxWidth` is the region's right edge minus the panel origin (§11.2 regions: class
+ * `maxWidth` is the region's right edge minus the panel origin (CD-36 panel regions: class
  * (43, 128)–(529, 744) from x 45, alternate (63, 128)–(573, 738) from x 65, Legend
  * (53, 128)–(553, 738) from x 53).
  */

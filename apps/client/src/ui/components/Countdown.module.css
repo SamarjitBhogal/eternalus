@@ -3,7 +3,7 @@
    (as a text-shadow they left an orange ring around the numerals that Figma does not draw).
    Chrome draws the numerals 1 px above Figma's in the same 83 px box: at the Figma 104 px the glyph
    rows (R−G > 150) were 118–163 on 62:125's "42" (Figma 119–164) and 118–166 on 58:271's "31"
-   (Figma 119–167); 105 px gives zero shift on 62:125, 62:70 and 58:271 (WP-CLASS audit). */
+   (Figma 119–167); 105 px gives zero shift on 62:125, 62:70 and 58:271 (the visual audit). */
 .countdown {
   position: absolute;
   left: 901px;

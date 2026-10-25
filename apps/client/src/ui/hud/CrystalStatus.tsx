@@ -11,7 +11,7 @@ const selectCrystal = (state: RootState) =>
   contentSlice.selectors.selectHudCatalogue(state).chrome?.crystalAssetId ?? null;
 
 /**
- * The centre objective's crystal (Figma 65:623), always drawn (SIMP-06): the R1 raster with its
+ * The centre objective's crystal (Figma 65:623), always drawn: the Figma render (DEC-54) with its
  * three glows baked (render bounds 256 × 256), decorative and static (reference 04).
  */
 export function CrystalStatus(): ReactElement {

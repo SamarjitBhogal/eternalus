@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ASSET_MANIFEST } from './AssetManifest';
 import type { AssetFile, AssetManifestEntry } from './AssetManifest.types';
 
-/** Every asset file's contents as a data URL (spike S1: Vitest serves `?inline` in Node). */
+/** Every asset file's contents as a data URL (Vitest serves `?inline` in Node). */
 const INLINE_FILES = import.meta.glob<string>('../../assets/**/*.{webp,woff2}', {
   query: '?inline',
   import: 'default',

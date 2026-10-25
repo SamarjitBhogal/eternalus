@@ -12,7 +12,7 @@ import type { RootState } from '../store';
 export type HudStructureTile = {
   /** The structure id, or `<team>-<tileGroup>` for an aggregated tile (the Figma's one Wall). */
   readonly tileId: string;
-  /** The owning team: its colour inks the icon (absolute palettes, F5). */
+  /** The owning team: its colour inks the icon (absolute palettes, HC-F5). */
   readonly team: PlayableTeam;
   readonly displayName: string;
   readonly iconAssetId: AssetId;
@@ -77,9 +77,9 @@ function tilesOf(
 
 /**
  * The tiles of one strip in allied left-to-right order (the enemy strip is laid out mirrored, so
- * each bar stays under its own icon; HUD spec §3.2). Kinds come from `content.hud.structureKinds`;
+ * each bar stays under its own icon; CD-04). Kinds come from `content.hud.structureKinds`;
  * a kind without an entry (turrets, camps) is not shown. `[]` before the player has a team.
- * Memoised per side (TAP-07).
+ * Memoised per side.
  */
 export const selectStructureStrip = createSelector(
   [

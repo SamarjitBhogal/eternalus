@@ -49,7 +49,7 @@ function createMatchLogger(deps: BrowserMatchDeps): SinkLogger {
 }
 
 /**
- * The browser match factory `main.tsx` binds (DV-130; 13 §2's injected `createMatch`). Each call
+ * The browser match factory `main.tsx` binds (13 §10; 13 §2's injected `createMatch`). Each call
  * builds the adapters (renderer, camera, devices, mapper, logger, frame scheduler), a fresh
  * `Simulation(setup.seed)`, the `Match` on `request.world` and its `MatchHost`, then starts the
  * host, which owns everything from then on.

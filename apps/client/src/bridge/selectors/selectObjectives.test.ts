@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PlayableTeam } from '../domain.types';
 import type { CapturePointStatus } from '../hud.types';
-import { FIGMA_HUD_PLAYER, figmaHudState, TEST_HUD_CATALOGUE } from '../hudFixtures';
+import { FIGMA_HUD_PLAYER, figmaHudState, TEST_HUD_CATALOGUE } from '../__fixtures__/hudFixtures';
 import { contentSlice } from '../slices/contentSlice';
 import { hudSlice } from '../slices/hudSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';

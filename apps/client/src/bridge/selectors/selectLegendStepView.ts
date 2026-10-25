@@ -22,9 +22,9 @@ type LegendRatingView = { readonly axis: RoleRatingAxis; readonly value: number 
 /** One Legend card of the Legend step (55:267 …), in content order. */
 export type LegendCardView = {
   readonly specId: string;
-  /** The sub-class title ("Oracle"), the same on both teams (OA3). */
+  /** The sub-class title ("Oracle"), the same on both teams (DEC-49). */
   readonly subClassName: string;
-  /** The Legend's name as the player's team knows it (I-83); `null` shows the title alone. */
+  /** The Legend's name as the player's team knows it (DEC-49); `null` shows the title alone. */
   readonly legendName: string | null;
   readonly roleLabel: string | null;
   readonly description: string | null;
@@ -34,7 +34,7 @@ export type LegendCardView = {
   readonly cardArtAssetId: AssetId | null;
   /** Its own refraction art, else the card art (61:8 vs 61:14 / 61:20). */
   readonly refractionArtAssetId: AssetId | null;
-  /** Figma's render of the row with this Legend picked (I-69); `null` = live halo and glows. */
+  /** Figma's render of the row with this Legend picked (CD-16); `null` = live halo and glows. */
   readonly rowPlateAssetId: AssetId | null;
   readonly details: readonly DetailRow[];
   /** One per axis, in `RATING_AXIS_ORDER`. */
@@ -47,7 +47,7 @@ export type LegendStepView = {
   readonly classDisplayName: string;
   readonly legends: readonly LegendCardView[];
   readonly pickedSpecId: string | null;
-  /** LOCK IN is enabled (`canConfirmSelection`, I-12). */
+  /** LOCK IN is enabled (`canConfirmSelection`, 13 §10). */
   readonly canLockIn: boolean;
 };
 
@@ -75,7 +75,7 @@ function toCardView(
 
 /**
  * The Legend step's view model, or `null` on the class step (no class picked) and for a class
- * the catalogue lacks. Names resolve for the player's team (I-83). Memoised on the catalogue, the
+ * the catalogue lacks. Names resolve for the player's team (DEC-49). Memoised on the catalogue, the
  * selection and the team, so a countdown tick keeps the same object.
  */
 export const selectLegendStepView = createSelector(

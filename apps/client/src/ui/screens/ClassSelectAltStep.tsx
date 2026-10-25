@@ -12,13 +12,14 @@ import { useClassSelectStep } from './useClassSelectStep';
 const { characterSelect: text } = STRINGS;
 
 /**
- * The class step, alternate layout (62:70; O5, chosen by `classSelectLayout`): the shown class's
- * full-figure model between the vignettes, its panel with the layout's own copy and icons
- * (`layoutOverrides.alternate`), previous / next arrows over the available classes (CD-10) and
- * "C View Details" (`gadget-2`, F7), which selects the shown class (`select-class`). The title is
- * live (`polite`): the arrows change the panel without moving the focus (TAP-17). A class with no
- * model shows its card art in the model box (CD-13). After Back, View Details takes the focus, as
- * the card Back returns to does in the primary layout (CD-11); on first entry nothing is focused.
+ * The class step, alternate layout (62:70; DEC-52, chosen by `classSelectLayout`): the shown
+ * class's full-figure model between the vignettes, its panel with the layout's own copy and
+ * icons (`layoutOverrides.alternate`), previous / next arrows over the available classes (CD-10)
+ * and "C View Details" (`gadget-2`, HC-F7), which selects the shown class (`select-class`). The
+ * title is live (`polite`): the arrows change the panel without moving the focus. A class with
+ * no model shows its card art in the model box (CD-13). After Back, View Details takes the focus,
+ * as the card Back returns to does in the primary layout (CD-11); on first entry nothing is
+ * focused.
  */
 export function ClassSelectAltStep({ preferredClassId }: SelectionStepProps): ReactElement {
   const { panel, actions, autoFocusClassId } = useClassSelectStep(preferredClassId);

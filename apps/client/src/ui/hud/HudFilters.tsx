@@ -16,8 +16,9 @@ const GRAIN_TABLE = Array.from({ length: grainBins.total }, (_, bin) =>
 /**
  * The HUD's one SVG filter, mounted once in the HUD: the level number's two drop shadows (the
  * glyphs knocked out of them) and its NOISE grain clipped to the glyphs, from the Figma export of
- * 65:656 with the `hardAlpha` ×127 matrices stripped (I-24) and its colours as token classes. The
- * grain cannot land on Figma's speckles in Chrome (S9 → CD-25, an approximation for the owner).
+ * 65:656 with the `hardAlpha` ×127 matrices stripped (they turn blur tails opaque in Chrome) and
+ * its colours as token classes. The grain cannot land on Figma's speckles in Chrome (CD-25, an
+ * approximation for the owner).
  */
 export function HudFilters(): ReactElement {
   return (

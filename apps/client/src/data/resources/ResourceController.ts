@@ -22,7 +22,7 @@ import type {
 } from './ResourceController.types';
 
 /**
- * The single access to game assets (rule 13; 14 §11; DV-43): loads a manifest group with byte
+ * The single access to game assets (rule 13; 14 §11; 14 §14): loads a manifest group with byte
  * progress, keeps what the loaders decoded until the group is released, and hands out the URLs of
  * loaded images by id and by `id@rendition`, so the store, never `ui/`, holds them. An entry's
  * renditions load with it (I-45, DV-137); a failed rendition is warned and served by the entry's
@@ -37,7 +37,7 @@ export class ResourceController {
   private readonly generations = new Map<AssetGroup, number>();
 
   /**
-   * Indexes the manifest and fixes the density for the session (DV-42).
+   * Indexes the manifest and fixes the density for the session (14 §14).
    * @throws Error on a duplicate id, a type with no loader or a font outside `boot` (at boot,
    * never mid-frame).
    */

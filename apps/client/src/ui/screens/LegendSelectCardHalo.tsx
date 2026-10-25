@@ -44,9 +44,9 @@ const lookOf = (legend: LegendCardView): LegendCardLook => (legend.isPicked ? 'p
  * The live halo of the Legend row (61:3, CD-15): a larger copy of every card behind the crisp
  * row, at the group's opacity 0.6 and LAYER_BLUR 20, over GLASS approximated by one frost pane
  * per copy. The panes are siblings of the blurred layer, never inside it (a filtered or
- * translucent ancestor would hide the stage from their backdrop-filter, S§5). Both layers sit at
+ * translucent ancestor would hide the stage from their backdrop-filter). Both layers sit at
  * the bottom of the step, beneath every element Figma draws above 61:3. Drawn only while no row
- * plate is (I-69); decorative, `aria-hidden`.
+ * plate is (CD-16); decorative, `aria-hidden`.
  */
 export function LegendSelectCardHalo({
   legends,

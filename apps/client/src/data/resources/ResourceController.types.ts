@@ -24,7 +24,7 @@ export type ResourceControllerDeps = {
   readonly loaders: readonly AssetLoader<unknown>[];
   /**
    * The device pixel ratio; above 1 an entry's `file2x` is used when it has one. Read once, at
-   * construction: the density is fixed for the session (DV-42).
+   * construction: the density is fixed for the session (14 §14).
    */
   readonly pixelRatio: () => number;
   /**

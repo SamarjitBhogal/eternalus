@@ -68,8 +68,8 @@
   top: 276px;
 }
 
-/* 62:93: at 275 px its ink sat 1 px high too (WP-CLASS audit of 62:70: p95 40.5 → 7.7, zero shift
-   at 276 px). */
+/* 62:93: at 275 px its ink sat 1 px high too (the visual audit of 62:70: p95 40.5 → 7.7, zero
+   shift at 276 px). */
 .details[data-layout='class-alternate'] .headerText {
   top: 276px;
 }
@@ -80,7 +80,7 @@
   list-style: none;
 }
 
-/* Detail icons: each row's rendition at its WP-ASSETS placement box, at its own pixel size, with
+/* Detail icons: each row's rendition at its manifest draw box, at its own pixel size, with
    no fit, rotation or transform (I-45); a missing icon shows a 1 px placeholder box in its slot. */
 .icon,
 .placeholder {
@@ -97,7 +97,8 @@
   border-radius: 2px;
 }
 
-/* Row names: Cinzel Regular 24 white at each Figma origin (the Figma's x 243 vs 233 kept, CSUI-15). */
+/* Row names: Cinzel Regular 24 white at each Figma origin (the Figma's x 243 vs 233 kept as drawn,
+   reference 15 §2). */
 .name {
   position: absolute;
   left: 0;

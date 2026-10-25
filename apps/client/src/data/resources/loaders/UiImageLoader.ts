@@ -3,7 +3,7 @@ import type { AssetLoader } from './AssetLoader';
 import type { DecodableImage, UiImageLoaderDeps } from './UiImageLoader.types';
 
 /**
- * Loads `ui-image` assets (DV-39): sets `src`, awaits `decode()` (off the main thread where the
+ * Loads `ui-image` assets (14 §14): sets `src`, awaits `decode()` (off the main thread where the
  * browser can), and keeps the element so the decoded bitmap stays cached for the `<img>` that
  * renders the same URL. A rejected `decode()` on an image that did load (`complete &&
  * naturalWidth > 0`, a Safari SVG quirk) still counts as loaded.

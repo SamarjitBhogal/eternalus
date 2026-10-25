@@ -5,10 +5,10 @@ import type { GameCanvasLabels } from './GameCanvas.types';
 
 /**
  * What `GameCanvas` draws over its canvas, from the chrome state `useExplorerChrome` holds: with
- * `isExplorerShown` (`?dev=1`, I-55) the developer toolbar and legend; in normal play only the
- * interim "Leave cathedral" control, while inside the interior (I-75, DV-119). It holds no state,
- * so its test renders every state on the server. Its rules are the viewport's one sheet,
- * `GameCanvas.module.css` (the developer chrome's look is unchanged, I-61).
+ * `isExplorerShown` (`?dev=1`; DEC-32, INBOX HC-F8) the developer toolbar and legend; in normal
+ * play only the interim "Leave cathedral" control, while inside the interior (CD-22). It holds no
+ * state, so its test renders every state on the server. Its rules are the viewport's one sheet,
+ * `GameCanvas.module.css` (the developer chrome's look is unchanged, OD-14).
  */
 export function GameCanvasChrome({
   isExplorerShown,

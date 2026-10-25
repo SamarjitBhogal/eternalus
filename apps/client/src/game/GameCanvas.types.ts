@@ -4,7 +4,7 @@ import type { MatchViewport } from './MatchViewport.types';
 export type GameCanvasLabels = {
   /** The canvas's accessible name during play. */
   readonly canvas: string;
-  /** The interim control that leaves the cathedral interior in normal play (I-75). */
+  /** The interim control that leaves the cathedral interior in normal play (CD-22). */
   readonly leaveCathedral: string;
   /** The developer explorer's labels (`?dev=1`). */
   readonly explorer: {
@@ -20,7 +20,9 @@ export type GameCanvasLabels = {
 export type GameCanvasProps = {
   /** `SessionController.attachViewport`; the returned function runs on unmount. */
   readonly attach: (viewport: MatchViewport) => () => void;
-  /** Whether the developer explorer's chrome and gestures are on (`?dev=1`, I-55). */
+  /**
+   * Whether the developer explorer's chrome and gestures are on (`?dev=1`; DEC-32, INBOX HC-F8).
+   */
   readonly isExplorerShown: boolean;
   readonly labels: GameCanvasLabels;
 };

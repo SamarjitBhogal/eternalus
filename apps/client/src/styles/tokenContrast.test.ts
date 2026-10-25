@@ -4,7 +4,7 @@ import globalCss from './global.css?raw';
 
 /**
  * NFR-030's token contrast check (13 §7 minimums: text 4.5:1, bars and icons 3:1) over both colour
- * sets of OA2: `figma` (the `:root` values, the default) and `minimums` (`:root` overlaid by the
+ * sets of DEC-55: `figma` (the `:root` values, the default) and `minimums` (`:root` overlaid by the
  * `[data-contrast='minimums']` block, which `@media (prefers-contrast: more)` repeats). Colours are
  * composited in 8-bit sRGB, as a browser blends them.
  */
@@ -12,7 +12,10 @@ import globalCss from './global.css?raw';
 type Rgba = { readonly rgb: readonly [number, number, number]; readonly alpha: number };
 type Declarations = ReadonlyMap<string, string>;
 
-/** The structure icon fill opacity (Figma 0.8, 62:307 …), baked into the R1 mask the ink shows through. */
+/**
+ * The structure icon fill opacity (Figma 0.8, 62:307 …), baked into the rendered mask the ink
+ * shows through.
+ */
 const STRUCTURE_MASK_ALPHA = 0.8;
 
 const TEXT = 4.5;
@@ -44,7 +47,8 @@ const bar = (key: 'health' | 'aether'): Pair[] => {
   const rest = [`--hud-${key}-rest`, HUD];
   const peak = [`--hud-${key}`, HUD];
   return [
-    // The white value numeral (HUD §6.2) sits on the rest, a full segment's fill or the peak.
+    // The white value numeral (Figma 62:284; CD-21) sits on the rest, a full segment's fill or the
+    // peak.
     pair(`numeral on ${key} rest`, ['--hud-text'], rest, TEXT),
     pair(`numeral on ${key} fill`, ['--hud-text'], fill, TEXT),
     pair(`numeral on ${key} peak`, ['--hud-text'], peak, TEXT),
@@ -55,13 +59,17 @@ const bar = (key: 'health' | 'aether'): Pair[] => {
   ];
 };
 
-/** The listed pairs (master plan §5.17); grounds: the Figma's game-view stand-in and the selection ink. */
+/**
+ * The listed pairs (reference 15 §5, CD-21); grounds: the Figma's game-view stand-in and the
+ * selection ink.
+ */
 const PAIRS: readonly Pair[] = [
   ...bar('health'),
   ...bar('aether'),
   // The inner ring's disc (65:651) is filled with the backdrop colour.
   pair('level number on the ring', ['--hud-cream'], [HUD], TEXT),
-  // The shields are R1 rasters; their flat Figma fills are reference tokens (painted by no rule).
+  // The shields are Figma renders (DEC-54); their flat Figma fills are reference tokens (painted
+  // by no rule).
   pair(
     'letter A on its shield',
     ['--team-light-hud-letter'],
@@ -121,8 +129,8 @@ const PAIRS: readonly Pair[] = [
 ];
 
 /**
- * The Figma pairs below their minimum, with their ratio in the `figma` set (CD-21; OA2 keeps them
- * as drawn by default). A pair that starts or stops failing changes this list.
+ * The Figma pairs below their minimum, with their ratio in the `figma` set (CD-21; DEC-55 keeps
+ * them as drawn by default). A pair that starts or stops failing changes this list.
  */
 const FIGMA_EXCEPTIONS: Readonly<Record<string, number>> = {
   'letter A on its shield': 2.52,

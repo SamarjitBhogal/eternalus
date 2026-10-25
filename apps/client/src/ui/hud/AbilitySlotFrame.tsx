@@ -57,7 +57,7 @@ function readyGlow(id: string, size: number): ReactElement {
 }
 
 /**
- * A slot's frame as SVG geometry at its exact Figma size (FID-08; the viewBox is the frame, so the
+ * A slot's frame as SVG geometry at its exact Figma size (the viewBox is the frame, so the
  * fractional 83.515 and 86.633 px edges stay exact and every length scales with the slot box):
  * ready = the 20 % dark fill, the amber outer and inner glows (one filter on the frame's shape,
  * like the Figma's) and the bright stroke above them; cooldown = the red gradient of the whole box

@@ -30,8 +30,8 @@ export type ClassPresentation = {
   readonly detailIcons: DetailIcons;
   readonly hud: ClassHudDisplay;
   /**
-   * O5's alternate frame keeps its own icons; its own copy is core's `alternateLayoutDescription`
-   * (HC-Q5 picks the canonical copy).
+   * The alternate frame (DEC-52) keeps its own icons; its own copy is core's
+   * `alternateLayoutDescription` (HC-Q5 picks the canonical copy).
    */
   readonly layoutOverrides: Readonly<
     Partial<Record<ClassSelectLayout, { readonly detailIcons?: DetailIcons }>>
@@ -49,7 +49,10 @@ export type SpecPresentation = {
   readonly detailIcons: DetailIcons;
 };
 
-/** The class-agnostic HUD presentation: icon ids, tile groups, order and art; names come from core (I-53). */
+/**
+ * The class-agnostic HUD presentation: icon ids, tile groups, order and art; names come from core
+ * (13 §3).
+ */
 export type HudPresentation = {
   readonly structureKinds: readonly Omit<HudStructureKind, 'displayName'>[];
   readonly objectiveKinds: readonly { readonly kind: MapFeatureKind }[];
@@ -70,12 +73,15 @@ export type CataloguePresentation = {
   readonly selectionBannerAssetId: AssetId | null;
   readonly selectClassChromeAssetId: AssetId;
   readonly lockInChromeAssetId: AssetId;
-  /** OA1, I-80: `'figma-raster'` by default. */
+  /** DEC-54: `'figma-raster'` by default. */
   readonly effectsRenderer: EffectsRenderer;
-  /** OA2, I-81: `'figma'` by default. */
+  /** DEC-55: `'figma'` by default. */
   readonly contrastMode: ContrastMode;
   readonly hud: HudPresentation;
 };
 
-/** Developer overrides of the display switches (developer mode only, I-80); `null` keeps the content value. */
+/**
+ * Developer overrides of the display switches (developer mode only, DEC-54); `null` keeps the
+ * content value.
+ */
 export type DisplayOverrides = { readonly effectsRenderer: EffectsRenderer | null };

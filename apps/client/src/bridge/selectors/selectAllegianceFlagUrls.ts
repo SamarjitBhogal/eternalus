@@ -36,7 +36,7 @@ const flagUrlOf =
 
 /**
  * The allegiance flag's URL per holder, from the HUD chrome's flag asset. Memoised on the three
- * URLs (TAP-07), so a publish that leaves them unchanged returns the same object.
+ * URLs, so a publish that leaves them unchanged returns the same object.
  */
 export const selectAllegianceFlagUrls = createSelector(
   [flagUrlOf('ours'), flagUrlOf('theirs'), flagUrlOf('neutral')],

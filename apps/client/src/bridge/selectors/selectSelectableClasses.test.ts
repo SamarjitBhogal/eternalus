@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classCardFixture } from '../catalogueFixtures';
+import { classCardFixture } from '../__fixtures__/catalogueFixtures';
 import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { createAppStore } from '../store';

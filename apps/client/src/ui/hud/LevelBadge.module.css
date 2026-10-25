@@ -7,7 +7,7 @@
 
 /* XP Colour Fill 65:653: the conic ramp amber → orange → amber runs clockwise from 12
    o'clock over the XP share of the turn (the Figma ≈ 70 %, 0–251.7°), transparent after it.
-   Values jump to each publish (no transition, I-60). Its 1 px inside stroke, the Outer Ring
+   Values jump to each publish (no transition, HC-S2). Its 1 px inside stroke, the Outer Ring
    65:650 (the same circle and colour) and the Inner Ring 65:651 are the SVG `.rings` above it.
    Tuning value: the fill is clipped at r 80.25, a quarter px inside the 80.5 disc, so the
    stroke's outer edge pixels are not tinted by the fill's own edge beneath them (Chrome blends
@@ -44,7 +44,7 @@
   clip-path: circle(calc(80.25 * var(--hud-u)) at 50% 50%);
 }
 
-/* The fill's DROP_SHADOW (--hud-xp-glow, blur 10; FID-07, FID-R2-04): a copy of the fill with
+/* The fill's DROP_SHADOW (--hud-xp-glow, blur 10): a copy of the fill with
    its 1 px inside stroke (it casts the glow around the unfilled sector too), blurred inside a
    wrapper 20 px larger than the disc on every side and masked to outside the disc, so the glow
    shows only around it and is never clipped to the disc's box. Figma draws only the shadow, but a
@@ -108,7 +108,7 @@
 }
 
 /* "42" 65:656: Cinzel Bold 48 in the HUD cream, centred in its 72 × 63 box; both drop shadows and the NOISE
-   grain come from the SVG filter (S9 → CD-25), on its own layer (I-60). */
+   grain come from the SVG filter (CD-25), on its own layer. */
 .level {
   position: absolute;
   left: calc(45 * var(--hud-u));

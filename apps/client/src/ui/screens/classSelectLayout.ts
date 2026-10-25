@@ -12,11 +12,11 @@ import type { ClassCardLook, ClassCardTextOffsets, ClassSlot } from './classSele
 import { offset, originRemainder } from './selectionGeometry';
 import type { FramePoint } from './selectionGeometry.types';
 
-/** Card centres on a 301 px pitch about x 1099 (647.5 / 948.5 / 1249.5 / 1550.5 for four, C§4.10). */
+/** Card centres on a 301 px pitch about x 1099 (647.5 / 948.5 / 1249.5 / 1550.5 for four). */
 const ROW_CENTRE_X = 1099;
 const SLOT_PITCH = 301;
 
-/** Half widths (255 / 2; 62:152 sits 0.184 px right of its slot centre, C§6.1) and tops. */
+/** Half widths (255 / 2; 62:152 sits 0.184 px right of its slot centre) and tops. */
 const CARD_LEFT_OF_CENTRE: Readonly<Record<ClassCardLook, number>> = {
   idle: 127.5,
   picked: 143.485,
@@ -41,7 +41,7 @@ const ALIGNED: FramePoint = { x: 0, y: 0 };
 
 /**
  * 62:125's text centres off their card's centre, per slot of the four-card row (dc centres
- * 646.5 / 646 / 646, 947.5, 1249.12 / 1249.68 / 1249.12, 1550 / 1550.5 / 1550; CSUI §7.2).
+ * 646.5 / 646 / 646, 947.5, 1249.12 / 1249.68 / 1249.12, 1550 / 1550.5 / 1550).
  */
 const FIGMA_TEXT: readonly Readonly<Record<ClassCardLook, ClassCardTextOffsets>>[] = [
   { idle: { name: -1, role: -1.5, allies: -1.5 }, picked: CENTRED },
@@ -53,7 +53,7 @@ const FIGMA_TEXT: readonly Readonly<Record<ClassCardLook, ClassCardTextOffsets>>
 /**
  * 62:125's inner overlay nodes off their art nodes, per slot of the four-card row (62:177 0.859 px
  * right of 62:164, 62:176 aligned with 62:159, 62:178 0.616 px right of 62:154, 62:179 1.077 px
- * right of 62:149; C§4.11, OD-1); aligned in every look and row the Figma does not draw.
+ * right of 62:149; OD-1); aligned in every look and row the Figma does not draw.
  */
 const FIGMA_OVERLAY: readonly Readonly<Record<ClassCardLook, FramePoint>>[] = [
   { idle: { x: 0.859, y: 0.047 }, picked: ALIGNED },
@@ -74,7 +74,7 @@ const snapped = (point: FramePoint): FramePoint => ({
 /**
  * Where slot `index` of a row of `count` classes puts its card and glow copy per look: centred
  * on the 301 px pitch (exact for the Figma's four; the picked card enlarged in place, its
- * neighbours fixed, C§6.1), with the Figma's own text and overlay offsets in the four-card row.
+ * neighbours fixed), with the Figma's own text and overlay offsets in the four-card row.
  */
 export function classSlot(count: number, index: number): ClassSlot {
   const centreX = ROW_CENTRE_X + (index - (count - 1) / 2) * SLOT_PITCH;

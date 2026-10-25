@@ -4,7 +4,7 @@ import type { FontLoaderDeps, LoadableFace } from './FontLoader.types';
 
 /**
  * Loads `font` assets through the FontFace API and registers each loaded face with
- * `document.fonts`, so CSS that names the entry's `family` uses it (DV-40, DEC-51).
+ * `document.fonts`, so CSS that names the entry's `family` uses it (14 §14; DEC-51).
  */
 export class FontLoader<Face extends LoadableFace> implements AssetLoader<Face> {
   public readonly type = 'font';

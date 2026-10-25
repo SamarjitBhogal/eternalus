@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { classCardFixture } from '../catalogueFixtures';
+import { classCardFixture } from '../__fixtures__/catalogueFixtures';
 import type { DisplayCatalogue } from '../catalogue.types';
-import { TEST_HUD_CATALOGUE } from '../hudFixtures';
+import { TEST_HUD_CATALOGUE } from '../__fixtures__/hudFixtures';
 import { contentSlice } from './contentSlice';
 
 const CATALOGUE: DisplayCatalogue = {

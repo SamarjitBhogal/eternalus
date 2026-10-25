@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
+import { TEST_ASSET_BOXES } from '../../bridge/__fixtures__/assetFixtures';
 import { renderWithStore, TEST_CONTENT } from '../testStore';
 import haloStyles from './ClassSelectCardHalo.module.css';
 import { ClassSelectCardRow } from './ClassSelectCardRow';
@@ -12,8 +12,8 @@ import altStepCss from './ClassSelectAltStep.module.css?raw';
 import type { RowPlate } from './selectionGeometry.types';
 
 /**
- * The module stylesheets of every component drawn inside the artboard on the class steps
- * (T-CLS-11): the class-step modules, and the shared ones the shell and the steps render.
+ * The module stylesheets of every component drawn inside the artboard on the class steps: the
+ * class-step modules, and the shared ones the shell and the steps render.
  */
 const MODULES = import.meta.glob<string>(
   [

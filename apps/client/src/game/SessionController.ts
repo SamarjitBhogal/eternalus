@@ -86,7 +86,9 @@ export class SessionController {
     return this.current?.phase ?? null;
   }
 
-  /** Marks the colour set on the theme root (I-81), subscribes to `ui-intent` and enters `boot`. */
+  /**
+   * Marks the colour set on the theme root (DEC-55), subscribes to `ui-intent` and enters `boot`.
+   */
   public start(): void {
     if (this.current !== null) throw new Error('SessionController is already started');
     this.deps.themeRoot.dataset.contrast = this.context.catalogue.contrastMode;

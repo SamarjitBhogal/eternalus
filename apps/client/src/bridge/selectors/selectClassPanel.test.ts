@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classCardFixture, specCardFixture } from '../catalogueFixtures';
+import { classCardFixture, specCardFixture } from '../__fixtures__/catalogueFixtures';
 import type { ClassSelectLayout, DetailRow, DisplayCatalogue } from '../catalogue.types';
 import type { PlayableTeam } from '../domain.types';
 import { contentSlice } from '../slices/contentSlice';
@@ -28,7 +28,7 @@ const PRIMARY_ROWS: readonly DetailRow[] = [
   },
 ];
 
-/** 62:70's flame specialty icon (BCA-27). */
+/** 62:70's flame specialty icon (DEC-52). */
 const ALTERNATE_ROWS: readonly DetailRow[] = [
   SIGNATURE,
   PROFICIENCY,

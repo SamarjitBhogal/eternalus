@@ -22,7 +22,7 @@ type MeterAttributes = {
 /**
  * A meter with a value (`role="meter"` with now, min 0 and max), or, for `null`, an image named
  * "<label>: No data yet" with no value attributes: WAI-ARIA 1.2 requires a meter's
- * `aria-valuenow`, and a live value is often unknown (I-87, DEC-17).
+ * `aria-valuenow`, and a live value is often unknown (CD-13, DEC-17).
  */
 export function meterAttributes(label: string, value: MeterValue | null): MeterAttributes {
   if (value === null) {

@@ -1,5 +1,5 @@
-// Screen-level presentation and the display switches (O5, OA1, OA2): each switch is a content
-// value published on `DisplayCatalogue`, with the Figma original as the default (I-80, I-81).
+// Screen-level presentation and the display switches (DEC-52, DEC-54, DEC-55): each switch is a
+// content value published on `DisplayCatalogue`, with the Figma original as the default.
 import type {
   AssetId,
   BackgroundSet,
@@ -42,7 +42,7 @@ const BACKGROUND_SETS: readonly BackgroundSet[] = [
 
 /** The profile screen's themed name (docs/reference/suggestions/naming.md, a working name). */
 const PROFILE_DISPLAY_NAME = 'Chronicle';
-/** O5: the class step's layout; `'alternate'` draws 62:70. */
+/** DEC-52: the class step's layout; `'alternate'` draws 62:70. */
 const CLASS_SELECT_LAYOUT: ClassSelectLayout = 'primary';
 /** The skull banner behind "Legend Selection" (62:144). */
 const SELECTION_BANNER_ASSET_ID: AssetId = 'selection-banner';
@@ -50,9 +50,9 @@ const SELECTION_BANNER_ASSET_ID: AssetId = 'selection-banner';
 const SELECT_CLASS_CHROME_ASSET_ID: AssetId = 'select-class-chrome';
 /** The Figma-state chrome of LOCK IN (58:277). */
 const LOCK_IN_CHROME_ASSET_ID: AssetId = 'lock-in-chrome';
-/** OA1: the R1 plates draw the Figma effects; `'css'` draws the live CSS path (I-80). */
+/** DEC-54: the Figma-render plates draw the Figma effects; `'css'` draws the live CSS path. */
 const EFFECTS_RENDERER: EffectsRenderer = 'figma-raster';
-/** OA2: the Figma colours; `'minimums'` swaps only the below-minimum tokens (I-81). */
+/** DEC-55: the Figma colours; `'minimums'` swaps only the below-minimum tokens. */
 const CONTRAST_MODE: ContrastMode = 'figma';
 
 /** Everything the client adds to core display content. */

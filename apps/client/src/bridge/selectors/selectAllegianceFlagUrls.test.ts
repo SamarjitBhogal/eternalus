@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { HudChrome } from '../catalogue.types';
-import { TEST_HUD_CATALOGUE } from '../hudFixtures';
+import { TEST_HUD_CATALOGUE } from '../__fixtures__/hudFixtures';
 import { assetsSlice } from '../slices/assetsSlice';
 import { contentSlice } from '../slices/contentSlice';
 import { matchSlice } from '../slices/matchSlice';

@@ -139,7 +139,7 @@ describe('InfoPanel', () => {
     );
   });
 
-  // §11.2 panel regions: class (43, 128)–(529, 744), alternate (63, 128)–(573, 738), Legend
+  // CD-36 panel regions: class (43, 128)–(529, 744), alternate (63, 128)–(573, 738), Legend
   // (53, 128)–(553, 738); each title starts at its panel origin.
   it('fits each title between its panel origin and its region right edge, floor 64 px', () => {
     const origin = (layout: string): number =>

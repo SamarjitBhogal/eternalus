@@ -2,8 +2,8 @@ import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Provider } from 'react-redux';
 
-import { loadedAssetsFor, TEST_ASSET_BOXES } from '../bridge/assetFixtures';
-import { classCardFixture, specCardFixture } from '../bridge/catalogueFixtures';
+import { loadedAssetsFor, TEST_ASSET_BOXES } from '../bridge/__fixtures__/assetFixtures';
+import { classCardFixture, specCardFixture } from '../bridge/__fixtures__/catalogueFixtures';
 import type {
   AssetId,
   ClassHudDisplay,
@@ -11,7 +11,7 @@ import type {
   RasterBox,
 } from '../bridge/catalogue.types';
 import type { MenuRoute, SessionPhase } from '../bridge/events';
-import { TEST_HUD_CATALOGUE } from '../bridge/hudFixtures';
+import { TEST_HUD_CATALOGUE } from '../bridge/__fixtures__/hudFixtures';
 import { sessionSlice } from '../bridge/slices/sessionSlice';
 import { createAppStore, type RootState } from '../bridge/store';
 

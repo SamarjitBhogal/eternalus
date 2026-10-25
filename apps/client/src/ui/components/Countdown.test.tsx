@@ -29,7 +29,7 @@ describe('Countdown', () => {
     expect(countdownCss).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|color-mix\(/);
   });
 
-  // Visual audit (WP-CLASS, 62:125): as text-shadows the four glows left an orange ring around the
+  // The visual audit of 62:125: as text-shadows the four glows left an orange ring around the
   // numerals that Figma does not draw.
   it('draws its four glows with the sel-glow-countdown def, never a text-shadow', () => {
     const rule = /\n\.countdown \{([^}]*)\}/.exec(countdownCss)?.[1] ?? 'missing';
@@ -38,7 +38,7 @@ describe('Countdown', () => {
     expect(countdownCss).not.toMatch(/text-shadow\s*:/);
   });
 
-  // Visual audit (WP-CLASS, 62:125 / 62:70 / 58:271): Chrome draws the numerals 1 px above Figma's
+  // The visual audit of 62:125, 62:70 and 58:271: Chrome draws the numerals 1 px above Figma's
   // in the same 83 px box, so the box sits 1 px below the Figma's (901, 104).
   it('puts the numerals on the Figma rows: the 118 × 83 box at (901, 105)', () => {
     const rule = /\n\.countdown \{([^}]*)\}/.exec(countdownCss)?.[1] ?? 'missing';

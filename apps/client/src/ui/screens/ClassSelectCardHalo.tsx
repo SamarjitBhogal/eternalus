@@ -34,7 +34,7 @@ const MASK_ARCH_CLASSES: Readonly<Record<ClassCardLook, string | undefined>> = {
 
 /**
  * Each look's frost mask: the copy's arch blurred at the halo's σ, so the frost fades across the
- * arch edge as Figma's layer blur fades it, instead of a crisp clip (WP-CLASS CSS audit H1).
+ * arch edge as Figma's layer blur fades it, instead of a crisp clip (the visual audit of 62:125).
  */
 const frostMasks = (): ReactElement => (
   <svg className={styles.defs} width="0" height="0" focusable="false">
@@ -58,7 +58,7 @@ const frostMasks = (): ReactElement => (
  * and name) behind the crisp cards, under the group's LAYER_BLUR 20, over GLASS approximated by
  * one frost pane per copy. The panes are siblings of the blurred layer, never inside it (a
  * filtered ancestor would hide the stage from their backdrop-filter), so the layer blur's fade of
- * their arch edge is drawn by a blurred-arch mask. Drawn only while no row plate is (I-69);
+ * their arch edge is drawn by a blurred-arch mask. Drawn only while no row plate is (CD-16);
  * decorative, `aria-hidden`.
  */
 export function ClassSelectCardHalo({

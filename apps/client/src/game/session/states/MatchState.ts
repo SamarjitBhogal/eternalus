@@ -5,8 +5,9 @@ import { SELECTION_ASSET_GROUPS } from '../selectionAssetGroups';
 
 /**
  * The match (13 §2, DEC-50): created when the match screen's viewport attaches and destroyed
- * when the phase ends (0 listeners, 0 frames); an open overlay pauses it (I-48); `leave-match`
- * returns to the menu. Entering releases the selection screens' assets (F9).
+ * when the phase ends (0 listeners, 0 frames); an open overlay pauses it (13 §7: the match
+ * pauses from `pause-menu`, ES-11; single player, INBOX HC-Q8); `leave-match` returns to the
+ * menu. Entering releases the selection screens' assets (HC-F9).
  */
 export class MatchState implements SessionState {
   public readonly phase: SessionPhase = 'match';

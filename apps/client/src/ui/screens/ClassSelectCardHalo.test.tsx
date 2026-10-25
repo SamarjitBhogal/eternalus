@@ -51,7 +51,7 @@ describe('ClassSelectCardHalo', () => {
     expect(css).not.toMatch(/z-index/);
   });
 
-  // WP-CLASS CSS audit of 62:125 (H1): clipped crisp to each copy's arch, outside the blurred
+  // The visual audit of 62:125: clipped crisp to each copy's arch, outside the blurred
   // layer, the frost drew a hard arch-shaped edge round every card where Figma's halo fades.
   it("fades each frost pane's arch edge with the halo's σ 10 instead of clipping it", () => {
     const html = render('magus');

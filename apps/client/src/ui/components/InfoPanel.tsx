@@ -13,7 +13,7 @@ import { useFitFontSize } from './useFitFontSize';
  * title (`<h3>`), its role line in the content's accent and its description (each omitted when
  * `null`), then the details (`InfoPanelDetails`). Placed by its layout at the Figma panel origin,
  * every part in that layout's Figma px. `titleLive="polite"` announces a title change made without
- * a focus change (the alternate layout's previous/next, TAP-17); by default nothing is live. A
+ * a focus change (the alternate layout's previous/next); by default nothing is live. A
  * title wider than the layout's panel region is scaled down to fit (`INFO_PANEL_TITLE_FIT`).
  */
 export function InfoPanel({

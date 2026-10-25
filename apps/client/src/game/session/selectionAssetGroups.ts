@@ -1,13 +1,16 @@
 import type { ClassSelectLayout, EffectsRenderer } from '../../bridge/catalogue.types';
 import type { AssetGroup } from '../../bridge/events';
 
-/** The extra asset group each class-step layout needs (I-47). */
+/** The extra asset group each class-step layout needs (14 §14). */
 const CLASS_STEP_ASSET_GROUPS: Readonly<Record<ClassSelectLayout, AssetGroup>> = {
   primary: 'selection-primary',
   alternate: 'selection-alternate',
 };
 
-/** The plate groups each effects renderer needs per layout (I-80): only the raster path loads plates. */
+/**
+ * The plate groups each effects renderer needs per layout (DEC-54): only the raster path loads
+ * plates.
+ */
 const EFFECT_ASSET_GROUPS: Readonly<
   Record<EffectsRenderer, Readonly<Record<ClassSelectLayout, readonly AssetGroup[]>>>
 > = {
@@ -19,7 +22,7 @@ const EFFECT_ASSET_GROUPS: Readonly<
 };
 
 /**
- * The groups a session loads for character select (`LoadingState`, I-86): `selection`, the
+ * The groups a session loads for character select (`LoadingState`, 14 §14): `selection`, the
  * layout's group, then the renderer's plates.
  */
 export function selectionAssetGroups(

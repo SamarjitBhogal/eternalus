@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaHudState } from '../../bridge/hudFixtures';
+import { figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import { accessibleNames, renderWithStore } from '../testStore';
 import { FIGMA_MATCH_SETUP, withHudSetup } from './hudTestSupport';

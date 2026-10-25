@@ -1,7 +1,7 @@
 /**
  * Test support: catalogue cards with neutral defaults, so a test names only the fields it is
  * about. Imported only by tests, `ui/testStore.tsx` and the visual harness, never by a module
- * `main.tsx` reaches (I-76).
+ * `main.tsx` reaches (HC-F6).
  */
 import type {
   ColourToken,
@@ -9,7 +9,7 @@ import type {
   LegendClassCard,
   LegendSpecArt,
   LegendSpecCard,
-} from './catalogue.types';
+} from '../catalogue.types';
 
 /** The accent every fixture card has unless the test gives one. */
 const FIXTURE_ACCENT: ColourToken = '--class-magus-accent';

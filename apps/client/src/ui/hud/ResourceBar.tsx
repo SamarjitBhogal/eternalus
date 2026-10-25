@@ -39,9 +39,9 @@ const RESOURCES: Readonly<
 };
 
 /**
- * The health or aether bar (HUD spec §3.9): a `SegmentedBar` with the current value as a numeral
+ * The health or aether bar (Figma 62:284): a `SegmentedBar` with the current value as a numeral
  * over its right end (Figma "1850" 65:642, "4700" 65:643), "—" while it is unknown. No shield
- * segments (I-59). Reads its own two values (a leaf, so a publish re-renders only it).
+ * segments (13 §10). Reads its own two values (a leaf, so a publish re-renders only it).
  */
 export function ResourceBar({
   resource,

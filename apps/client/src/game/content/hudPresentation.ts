@@ -1,5 +1,5 @@
 // HUD presentation (62:231): icon ids, tile groups and order are client presentation; the names
-// of structures and capture points come from core `displayName` (I-53).
+// of structures and capture points come from core `displayName` (13 §3).
 import type { AssetId, ClassHudDisplay } from '../../bridge/catalogue.types';
 import type { HudPresentation } from './CataloguePresentation.types';
 

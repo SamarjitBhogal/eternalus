@@ -44,7 +44,10 @@ export class MatchHost implements RunningMatch {
     }
   }
 
-  /** Pauses (and releases held input) or resumes the match (I-48). */
+  /**
+   * Pauses (and releases held input) or resumes the match (13 §7; held input released on pause:
+   * INBOX HC-Q8).
+   */
   public setPaused(isPaused: boolean): void {
     this.deps.match.setPaused(isPaused);
     if (isPaused) {

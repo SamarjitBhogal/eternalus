@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadedAssetsFor } from '../../bridge/assetFixtures';
-import { classCardFixture } from '../../bridge/catalogueFixtures';
+import { loadedAssetsFor } from '../../bridge/__fixtures__/assetFixtures';
+import { classCardFixture } from '../../bridge/__fixtures__/catalogueFixtures';
 import type { DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import type { RosterEntry } from '../../bridge/events';
@@ -61,7 +61,7 @@ const FIGMA_CONTENT: DisplayCatalogue = {
   ),
 };
 
-/** The same as `buildDisplayCatalogue` resolves it on the `'css'` renderer (I-80). */
+/** The same as `buildDisplayCatalogue` resolves it on the `'css'` renderer (DEC-54). */
 const CSS_CONTENT: DisplayCatalogue = {
   ...FIGMA_CONTENT,
   legendClasses: FIGMA_CONTENT.legendClasses.map((card) => ({

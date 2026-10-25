@@ -74,7 +74,7 @@ describe('SelectionDefs text glows', () => {
     });
   });
 
-  // WP-CLASS visual audit of 62:125 (exp/union, exp/union-cd) and a Chrome probe: as CSS
+  // The visual audit of 62:125 and a Chrome probe: as CSS
   // text-shadows, or with a flood per branch, the haze drifted; alpha branches flooded once match.
   it.each(TEXT_GLOW_FILTERS)(
     'draws $id as alpha-only branches, merged, then flooded once beneath the source',
@@ -133,7 +133,7 @@ describe('SelectionDefs text glows', () => {
     );
   });
 
-  // I-66: per side, the region fraction × the user's box ≥ bleed + 3σ + |offset| px.
+  // Per side, the region fraction × the user's box ≥ bleed + 3σ + |offset| px.
   it.each(
     TEXT_GLOW_FILTERS.flatMap(({ id, region, shadows, users }) =>
       users.map((user) => ({ id, region, shadows, user })),

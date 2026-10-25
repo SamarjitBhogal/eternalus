@@ -24,7 +24,7 @@ export type AllyTile = {
   readonly accentToken: ColourToken | null;
 };
 
-/** The class and Legend a roster entry shows: the player's from the session's selection (F3). */
+/** The class and Legend a roster entry shows: the player's from the session's selection (HC-F3). */
 function pickOf(
   entry: RosterEntry,
   selection: { readonly classId: LegendClassId | null; readonly specId: string | null },
@@ -58,9 +58,9 @@ function toTile(
 }
 
 /**
- * The allied roster as tiles (F3, I-16): each bot's class and Legend from the roster, the player's
- * from the session's selection; memoised on the roster, the selection and the catalogue, so a
- * countdown tick keeps the same array.
+ * The allied roster as tiles (HC-F3, CD-07): each bot's class and Legend from the roster, the
+ * player's from the session's selection; memoised on the roster, the selection and the catalogue,
+ * so a countdown tick keeps the same array.
  */
 export const selectAllyTiles = createSelector(
   [

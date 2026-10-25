@@ -1,5 +1,5 @@
 /* 62:200 lies beneath the crisp cards inside the row (62:146): both halo layers come before the
-   radio group in the row's markup and take no z-index (§5.15). */
+   radio group in the row's markup and take no z-index (Figma's layer order, reference 15 §2). */
 .frostLayer,
 .refractionLayer {
   position: absolute;
@@ -19,8 +19,8 @@
 
 /* --- GLASS panes: frost 52 → backdrop blur 26 px in each copy's arch (CD-15), its edge faded by
    the arch blurred at the halo's σ 10 (the frostMasks defs), as 62:200's LAYER_BLUR 20 fades it
-   in Figma; clipped crisp, each card had a hard arch-shaped frost edge (WP-CLASS CSS audit H1).
-   Literal radius: Safari drops a var() in backdrop-filter. --- */
+   in Figma; clipped crisp, each card had a hard arch-shaped frost edge (the visual audit of
+   62:125). Literal radius: Safari drops a var() in backdrop-filter. --- */
 
 .pane [data-arch-layer='glass'] {
   backdrop-filter: blur(26px);

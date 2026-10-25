@@ -24,7 +24,8 @@ import type { ScreenProps } from './screen.types';
  * container whose `--hud-u` is one Figma px, so the 1920 × 1080 layout scales uniformly) with its
  * nine regions in the Figma's paint order, and the pause overlay beside both. It reads only the
  * open overlay (each HUD leaf reads its own data, so a publish never re-renders it). While an
- * overlay is open the viewport and the HUD are `inert` (I-72) and the session pauses the match.
+ * overlay is open the viewport and the HUD are `inert` (13 §7; CD-11) and the session pauses the
+ * match.
  */
 export function MatchScreen({ viewport }: ScreenProps): ReactElement {
   const overlay = useAppSelector((state) => state.session.overlay);

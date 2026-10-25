@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { FIGMA_HUD_PLAYER } from '../../bridge/hudFixtures';
+import { FIGMA_HUD_PLAYER } from '../../bridge/__fixtures__/hudFixtures';
 import { accessibleNames, renderWithStore } from '../testStore';
 import { ChargePips } from './ChargePips';
 import styles from './ChargePips.module.css';

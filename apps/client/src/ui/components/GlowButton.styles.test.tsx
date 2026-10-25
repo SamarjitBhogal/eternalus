@@ -43,7 +43,7 @@ describe('GlowButton styles', () => {
   });
 
   // 58:277: the group shadow has showShadowBehindNode: false. A CSS drop-shadow() paints it behind
-  // the translucent ring glows and haze (visual audit r2); the knockout defs do not.
+  // the translucent ring glows and haze (seen in the visual audit); the knockout defs do not.
   it('draws the group glow in every state with a knockout def, never a CSS drop-shadow', () => {
     const rule = (selector: string): string =>
       new RegExp(`\\n${selector.replace(/[.:()[\]'=]/g, '\\$&')} \\{([^}]*)\\}`).exec(
@@ -60,7 +60,7 @@ describe('GlowButton styles', () => {
     expect(buttonCss).not.toMatch(/filter:[^;]*drop-shadow\(/);
   });
 
-  // WP-CLASS CSS audit of 62:125 (B1, B2): cast from glowing children, the braces' azure glows
+  // The visual audit of 62:125: cast from glowing children, the braces' azure glows
   // made blue blobs at both ring ends and the group shadow spread all round the ring.
   it('casts the group shadow and the braces glows from plain copies beneath the glowing group', () => {
     const html = renderWithStore(
@@ -101,7 +101,7 @@ describe('GlowButton styles', () => {
     ).toContain('opacity: 0.45;');
   });
 
-  // WP-CLASS CSS audit of 62:125 (D1): on the fractional 62.249 px box Chrome painted the 2 px
+  // The visual audit of 62:125: on the fractional 62.249 px box Chrome painted the 2 px
   // border on whole px while the glow knockout rounded out a row further, leaving a 1 px dark seam
   // between the ring and its glow (LOCK IN's 804.84 / 1114.24 edges too).
   it.each([
@@ -123,8 +123,9 @@ describe('GlowButton styles', () => {
     expect(ring).toContain(`height: ${String(Math.round(y + height) - y)}px;`);
   });
 
-  // WP-ASSETS placement table (frame px) minus each skin's root origin: the box is the plate file's
-  // own pixel size, never cropped (FID-R3-01), so a skin draws only the plate it is measured for.
+  // The plate's manifest draw box (frame px) minus each skin's root origin: the box is the plate
+  // file's own pixel size, never cropped (CD-16), so a skin draws only the plate it is measured
+  // for.
   it.each([
     ['selectClass', 'select-class', 'select-class-chrome', 740, 858, 439, 163, 788, 908],
     ['lockIn', 'lock-in', 'lock-in-chrome', 754, 890, 411, 156, 803, 940],
@@ -144,8 +145,8 @@ describe('GlowButton styles', () => {
     },
   );
 
-  // Visual audit of 62:125 (WP-CLASS): as CSS text-shadows the six sky glows came out wider and
-  // greener than Figma's; the sel-glow-label def draws them as the audit's exp/union measured.
+  // The visual audit of 62:125: as CSS text-shadows the six sky glows came out wider and
+  // greener than Figma's; the sel-glow-label def draws them as the audit measured.
   it('draws the label glows with the sel-glow-label def, never a text-shadow', () => {
     const rule = /\n\.label \{([^}]*)\}/.exec(buttonCss)?.[1] ?? 'missing';
 
@@ -153,7 +154,7 @@ describe('GlowButton styles', () => {
     expect(buttonCss).not.toMatch(/text-shadow\s*:/);
   });
 
-  // Visual audit of 62:125 (WP-CLASS): Chrome snaps the label's text line to whole px, so the
+  // The visual audit of 62:125: Chrome snaps the label's text line to whole px, so the
   // Figma's 4.563 px drew 62:228's glyphs 1 px low; 4 px lands them on Figma's rows.
   it('sets the Select Class label on 62:228’s rows at a whole-pixel 4 px drop', () => {
     const rule = (selector: string): string =>

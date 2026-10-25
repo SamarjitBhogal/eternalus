@@ -32,10 +32,10 @@ const FILL_CLASS: Readonly<Record<SegmentFill['state'], string | undefined>> = {
 };
 
 /**
- * The HUD's three-segment bar (HUD spec §3.6, §3.8, §3.9): full segments flat, the segment holding
- * the value ramps up to it and draws the 1 % white marker, the rest is the dim track; `null` is
- * the no-data hatch (CD-13). A meter with the value as a percentage, or an image "No data yet"
- * (I-87). Values jump to each published value; nothing transitions (I-60).
+ * The HUD's three-segment bar (Figma 62:246, 62:258, 62:284): full segments flat, the segment
+ * holding the value ramps up to it and draws the 1 % white marker, the rest is the dim track;
+ * `null` is the no-data hatch (CD-13). A meter with the value as a percentage, or an image
+ * "No data yet" (CD-13). Values jump to each published value; nothing transitions (HC-S2).
  */
 export function SegmentedBar({
   label,

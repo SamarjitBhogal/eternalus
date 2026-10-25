@@ -75,7 +75,7 @@
   --leading-game-14: 19;
   /* Minimum rendered text size below 1080p (ES-11; Recommendation, INBOX HC-Q14). */
   --text-min: 12px;
-  /* The opaque stop of an alpha mask (a mask reads only alpha), e.g. the XP glow ring (R3-02). */
+  /* The opaque stop of an alpha mask (a mask reads only alpha), e.g. the XP glow ring. */
   --mask-opaque: #000000;
 
   /* Selection screens */
@@ -224,7 +224,7 @@
   --team-dark-hud-letter-shadow: #000000;
   --team-dark-hud-letter-blur: 5;
   /* Reference only, painted by no rule: the flat fills of the objective shield art (65:621 light,
-     65:606 neutral, 65:616 dark; HUD spec §1), which ships as R1 rasters with its own colours. The
+     65:606 neutral, 65:616 dark), which ships as Figma renders (DEC-54) with its own colours. The
      letters' and the shield edges' contrast pairs are measured on them
      (styles/tokenContrast.test.ts). */
   --team-light-hud-shield-art: #1d4a85;
@@ -253,10 +253,10 @@
   }
 }
 
-/* OA2: tokens of the pairs below 13 §7's minimums (CD-21), and only those. The Figma values in
+/* DEC-55: tokens of the pairs below 13 §7's minimums (CD-21), and only those. The Figma values in
    :root stay the default (contrastMode 'figma'). Each value keeps its token's OKLCH hue and alpha
    and moves its lightness by the smallest step that meets 4.5:1 (text) or 3:1 (bars, icons) plus
-   0.05; chroma is reduced only where the sRGB gamut forces it (method: master plan §5.17). */
+   0.05; chroma is reduced only where the sRGB gamut forces it (method: reference 15 §5, CD-21). */
 :root[data-contrast='minimums'] {
   --team-light-hud-letter: #acbcd2;
   --team-neutral-hud-letter: #d7d7d7;

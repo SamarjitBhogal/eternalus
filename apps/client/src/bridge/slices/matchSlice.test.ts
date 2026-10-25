@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaHudState } from '../hudFixtures';
+import { figmaHudState } from '../__fixtures__/hudFixtures';
 import { matchSlice } from './matchSlice';
 
 const { clockChanged, structuresChanged, capturePointsChanged, reset } = matchSlice.actions;

@@ -47,7 +47,8 @@ const logger: Logger = new SinkLogger(
   () => sessionClock.now(),
   [{ sink: consoleSink, minSeverity: SEVERITY.WARN }],
 );
-// The developer flag of 13 §4 (query form, DV-118), read once: explorer chrome and display overrides.
+// The developer flag of 13 §4 (query form, 13 §10), read once: explorer chrome and display
+// overrides.
 const developer = readDeveloperFlags(window.location.search);
 
 connectBusToStore(eventBus, store.dispatch);

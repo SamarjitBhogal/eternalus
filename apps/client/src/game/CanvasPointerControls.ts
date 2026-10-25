@@ -6,9 +6,9 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 /**
  * The match canvas's pointer gestures. Always: a main-button click on the minimap moves the
  * camera there, a short click on the cathedral steps inside (DEC-32), and the chrome's Leave
- * cathedral action steps out (I-55). With the developer explorer only (`?dev=1`): drag to pan,
- * the wheel to zoom, and the toolbar's world overview. Positions arrive in CSS pixels and reach
- * the match in device pixels.
+ * cathedral action steps out (DEC-32, CD-22). With the developer explorer only (`?dev=1`;
+ * demo-only by DEC-32, INBOX HC-F8): drag to pan, the wheel to zoom, and the toolbar's world
+ * overview. Positions arrive in CSS pixels and reach the match in device pixels.
  */
 export class CanvasPointerControls {
   private press: { x: number; y: number; distance: number } | null = null;

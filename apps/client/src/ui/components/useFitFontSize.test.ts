@@ -6,7 +6,7 @@ import { fitFontSize, measureFitAfterLayout } from './useFitFontSize';
 const LEGEND_TITLE = { designSize: 96, minSize: 64, maxWidth: 500 } as const;
 
 describe('fitFontSize', () => {
-  // Widths measured in Chrome at 96 px (WP-LEGEND audit r5, od21 baseline): Elarion 410 (the
+  // Widths measured in Chrome at 96 px (as recorded in CD-36): Elarion 410 (the
   // Figma's 56:34), Veridan 422, Centurion 562, Juggernaut 607.
   it('keeps a Figma title at its design size: no fitted size', () => {
     expect(fitFontSize(410, 96, LEGEND_TITLE)).toBeNull();

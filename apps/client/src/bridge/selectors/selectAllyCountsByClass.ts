@@ -4,7 +4,7 @@ import type { LegendClassId } from '../domain.types';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 
 /**
- * How many allied bots play each class ("2 Allies" on a class card, 72:865; F3): the roster's
+ * How many allied bots play each class ("2 Allies" on a class card, 72:865; HC-F3): the roster's
  * class of every ally except the player, by class id (a class nobody plays is absent). Memoised
  * on the roster, so a countdown tick keeps the same object.
  */

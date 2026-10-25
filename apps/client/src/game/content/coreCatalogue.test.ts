@@ -17,7 +17,9 @@ const classCard = (classId: string): LegendClassCard => {
 const specs = (classId: string): readonly LegendSpecCard[] => classCard(classId).specs;
 const allSpecs = catalogue.legendClasses.flatMap((card) => card.specs);
 
-/** Legend-specific art fields (I-82): each id starts with its spec id, except the one stand-in. */
+/**
+ * Legend-specific art fields (DEC-49): each id starts with its spec id, except the one stand-in.
+ */
 const legendArt = (spec: LegendSpecCard): string[] =>
   [spec.art.card, spec.art.refraction, spec.art.portrait, spec.art.mini, spec.art.rowPlate].filter(
     (id) => id !== null,
@@ -43,7 +45,9 @@ const catalogueTokens = (): ColourToken[] => [
   ),
 ];
 
-/** OA3: no token names a retired title or a Legend's personal name (asset ids: the assets test). */
+/**
+ * DEC-49: no token names a retired title or a Legend's personal name (asset ids: the assets test).
+ */
 const RETIRED_OR_NAMED = /cantor|gravecaller|veridan|elarion|avedrin|nadirev|noirale|nirdeva/i;
 
 describe('coreCatalogue', () => {

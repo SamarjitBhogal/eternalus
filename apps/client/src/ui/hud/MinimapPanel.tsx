@@ -11,8 +11,8 @@ const selectMinimapFrame = (state: RootState) =>
   contentSlice.selectors.selectHudCatalogue(state).chrome?.minimapFrameAssetId ?? null;
 
 /**
- * The minimap ring (Figma 65:743): the R1 render of the compass ring, rim vignette, marks, shadows
- * and NOISE over the canvas minimap, which `MiniMapView` draws inside the same ring
+ * The minimap ring (Figma 65:743): the Figma render (DEC-54) of the compass ring, rim vignette,
+ * marks, shadows and NOISE over the canvas minimap, which `MiniMapView` draws inside the same ring
  * (`bridge/minimapRing.ts`; this module's box is asserted equal to it). Clicks pass through to
  * the canvas (the HUD takes no pointer events).
  */

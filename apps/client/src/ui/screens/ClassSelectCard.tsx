@@ -20,7 +20,7 @@ const LAYERS: readonly ArchLayerKind[] = ['outer-outline', 'art', 'inner-outline
 /**
  * One class card of the class step (62:162 idle, 62:152 picked): a `radio` button at its slot,
  * the arch, the class name in its accent, the role and "N Allies" (allied bots on the class,
- * F3). The art is the look's Figma plate where the catalogue has one, loaded, with a draw box
+ * HC-F3). The art is the look's Figma plate where the catalogue has one, loaded, with a draw box
  * baked at this card's art (plate mode: both 1 px strokes live at their own nodes, OD-1);
  * otherwise the live art (cover mode: the art's own 1 px stroke). Either way the overlay's 1 px
  * stroke sits at the overlay node, the slot's `overlay` offset from the art. A locked class stays

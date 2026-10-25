@@ -2,7 +2,7 @@ import type { GlowFilterDef, GlowShadow, TextGlowDef } from './SelectionDefs.typ
 
 /**
  * Ids of the shared SVG defs, referenced from module CSS as `url(#…)`. None starts with three hex
- * letters, so the colour-literal grep (`#[0-9a-f]{3,8}`) cannot match a reference (SUB §5.4).
+ * letters, so the colour-literal grep (`#[0-9a-f]{3,8}`) cannot match a reference.
  */
 export const SELECTION_DEF_IDS = {
   /** Every card arch (cards, refraction copies, glass panes, Legends-row minis). */
@@ -31,7 +31,7 @@ export const SELECTION_DEF_IDS = {
   glassRim: 'sel-glass-rim',
 } as const;
 
-/** Figma radius 20 → σ 10, radius 10 → σ 5, radius 5 → σ 2.5 (CSUI E11). */
+/** Figma radius 20 → σ 10, radius 10 → σ 5, radius 5 → σ 2.5 (CD-15). */
 const shadow = (dy: number, sigma: number, flood: GlowShadow['flood']): GlowShadow => ({
   dx: 0,
   dy,
@@ -46,10 +46,10 @@ const GLOW_GROUP_USERS: GlowFilterDef['users'] = [
 ];
 
 /**
- * Each multi-shadow glow with its region and its users (I-66). A user's box is its Figma layer
- * box (CSUI §7.4, SUB §5.3, §6.3); its bleed is how far its own paint reaches past the box before
- * the filter (half a centre stroke, or the glow of a filtered child). Every region is sized for
- * its smallest user, so a large card's fraction never clips a small brace (FID-R2-08).
+ * Each multi-shadow glow with its region and its users. A user's box is its Figma layer box; its
+ * bleed is how far its own paint reaches past the box before the filter (half a centre stroke, or
+ * the glow of a filtered child). Every region is sized for its smallest user, so a large card's
+ * fraction never clips a small brace.
  */
 export const GLOW_FILTERS: readonly GlowFilterDef[] = [
   {
@@ -89,8 +89,9 @@ export const GLOW_FILTERS: readonly GlowFilterDef[] = [
     id: SELECTION_DEF_IDS.glowBraces,
     region: { x: -0.25, y: -1.75, width: 1.5, height: 4.5 },
     // Azure radius 20 at 0 −2, 0 2, 0 −2, 0 2, cast from the two 1 px brace strokes only (a plain
-    // copy without their parchment glows, which would cast it from the broad glow alpha: WP-CLASS
-    // CSS audit B1); the braces with their glows are drawn above, unfiltered by this def.
+    // copy without their parchment glows, which would cast it from the broad glow alpha, as the
+    // visual audit of 62:125 showed); the braces with their glows are drawn above, unfiltered by
+    // this def.
     shadows: [
       shadow(-2, 10, 'azure'),
       shadow(2, 10, 'azure'),
@@ -105,8 +106,8 @@ export const GLOW_FILTERS: readonly GlowFilterDef[] = [
     ],
   },
   // The group shadows are cast from a plain copy of ring, haze and brace strokes (no ring, brace or
-  // braces glows: WP-CLASS CSS audit B2) and drawn beneath the unfiltered group; the haze's
-  // blur(25px) reaches 3σ = 75 px past the group box, so the group's bleed is 75 px.
+  // braces glows, per the visual audit of 62:125) and drawn beneath the unfiltered group; the
+  // haze's blur(25px) reaches 3σ = 75 px past the group box, so the group's bleed is 75 px.
   {
     id: SELECTION_DEF_IDS.glowGroup,
     region: { x: -0.3, y: -1.75, width: 1.6, height: 4.5 },
@@ -160,7 +161,7 @@ export const GLOW_FILTERS: readonly GlowFilterDef[] = [
   },
 ];
 
-/** A text-glow shadow: offset, σ = the Figma radius / 2 (CSUI E11) and the colour's alpha. */
+/** A text-glow shadow: offset, σ = the Figma radius / 2 (CD-15) and the colour's alpha. */
 const textShadow = (
   dx: number,
   dy: number,
@@ -169,11 +170,11 @@ const textShadow = (
 ): TextGlowDef['shadows'][number] => ({ dx, dy, sigma, opacity });
 
 /**
- * The text glows (I-66 regions, as above), built as the WP-CLASS visual audit's exp/union and
- * exp/union-cd and pixel-identical to them in Chrome 155 (probe over black and white). CSS
+ * The text glows (regions as above), built as the two experiments of the visual audit of 62:125
+ * and pixel-identical to them in Chrome 155 (probe over black and white). CSS
  * text-shadows, or a flood per shadow, drift the haze hue: the 62:228 haze's mean straight colour
  * was 103, 186, 250 flooded per shadow and 114, 182, 253 flooded once (the sky token is 117, 180,
- * 251); as text-shadows it was greener still. Each region is the experiment's, not the I-66
+ * 251); as text-shadows it was greener still. Each region is the experiment's, not the 3σ
  * minimum: Chrome's blur depends on the region (with this construction, a 4.4-box-tall region
  * moved the LOCK IN haze by up to 13 code values), and these are the measured ones.
  * The σ are measured too (OD-27, stream C's DECISION-glow-sigma.md): Figma's blur radius r renders
@@ -184,7 +185,7 @@ const textShadow = (
 export const TEXT_GLOW_FILTERS: readonly TextGlowDef[] = [
   {
     id: SELECTION_DEF_IDS.glowLabel,
-    // A box width each side also holds a label the I-51 floor sets wider than its box.
+    // A box width each side also holds a label the CD-23 floor sets wider than its box.
     region: { x: -1, y: -3, width: 3, height: 7 },
     // 62:228 / 58:276: sky 0 4 radius 25, then sky 0 −4 and 0 4 radius 50 alternating (five);
     // σ 0.85 × r / 2 (OD-27).

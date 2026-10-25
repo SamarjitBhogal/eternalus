@@ -35,7 +35,7 @@
 }
 
 /* 72:782 header line 141 → 466 on row 777: 1 px white, round caps; an svg rect, never snapped
-   (CSUI E3). */
+   (Chrome snaps fractional CSS boxes, not SVG geometry). */
 .rules {
   position: absolute;
   left: 0;
@@ -97,7 +97,7 @@
 }
 
 /* 72:801 outer frame 105 × 140, 2 px parchment at 60 %; 72:802 inner frame (3, 3) 100 × 135,
-   1 px at 60 % (its GLASS lies under the opaque portrait, N-05). */
+   1 px at 60 % (its GLASS lies under the opaque portrait, CD-17). */
 .mini [data-arch-layer='outer-outline'] {
   width: 105px;
   height: 140px;

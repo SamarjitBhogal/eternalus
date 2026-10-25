@@ -1,19 +1,19 @@
 /**
- * Test support: the Figma HUD's sample values (62:231; HUD spec §3) and a HUD catalogue, for the
- * HUD tests, `ui/testStore.tsx` and the visual harness. A live match never shows these (F6):
- * nothing `main.tsx` reaches imports this file (I-76).
+ * Test support: the Figma HUD's sample values (62:231) and a HUD catalogue, for the HUD tests,
+ * `ui/testStore.tsx` and the visual harness. A live match never shows these (HC-F6): nothing
+ * `main.tsx` reaches imports this file.
  */
-import type { HudSlotId } from './Binding.types';
-import type { HudCatalogue } from './catalogue.types';
-import type { PlayableTeam } from './domain.types';
-import type { MatchClock } from './events';
+import type { HudSlotId } from '../Binding.types';
+import type { HudCatalogue } from '../catalogue.types';
+import type { PlayableTeam } from '../domain.types';
+import type { MatchClock } from '../events';
 import type {
   AbilitySlotStatus,
   CapturePointStatus,
   PlayerHudSnapshot,
   StructureStatus,
-} from './hud.types';
-import type { RootState } from './store';
+} from '../hud.types';
+import type { RootState } from '../store';
 
 /** A ready slot with no ability and no cooldown (the gold-glow look, OD-9), with `changes` applied. */
 const figmaSlot = (
@@ -81,7 +81,7 @@ const FIGMA_CAPTURE = 57 / 62;
 
 const health = (current: number) => ({ current, max: FIGMA_STRUCTURE_MAX });
 
-/** One team's eight strip structures with the Figma values, bound by identity (HUD spec §3.2). */
+/** One team's eight strip structures with the Figma values, bound by identity (CD-04). */
 function figmaStructures(team: PlayableTeam): StructureStatus[] {
   const laneTowers = FIGMA_SPAWNER_FILLS.flatMap((spawnerFill, laneIndex) => [
     {
@@ -158,7 +158,7 @@ export function figmaHudState(): Pick<RootState, 'hud' | 'match'> {
 
 /**
  * The HUD catalogue as a literal (`ui/` never imports `game/`); `game/content/hudPresentation.test.ts`
- * keeps its kinds, groups, order and aggregation equal to `HUD_PRESENTATION`'s (I-74).
+ * keeps its kinds, groups, order and aggregation equal to `HUD_PRESENTATION`'s.
  */
 export const TEST_HUD_CATALOGUE: HudCatalogue = {
   structureKinds: [

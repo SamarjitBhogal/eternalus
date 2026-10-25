@@ -20,7 +20,7 @@ describe('fitStageScale', () => {
   });
 });
 
-// OD-21e: a fitted panel title keeps the I-51 floor its module rule has (motionTokens.test.ts).
+// OD-21e: a fitted panel title keeps the CD-23 floor its module rule has (motionTokens.test.ts).
 describe('stageFontSize', () => {
   it('writes a runtime size in the I-51 form, floored at --text-min on screen', () => {
     expect(stageFontSize(85)).toBe('max(85px, calc(var(--text-min) / var(--stage-scale)))');

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classCardFixture } from '../../bridge/catalogueFixtures';
+import { classCardFixture } from '../../bridge/__fixtures__/catalogueFixtures';
 import { buildMatchSetup } from './buildMatchSetup';
 import { LcgRng } from './LcgRng';
 import type { Rng } from './Rng.types';

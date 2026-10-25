@@ -22,9 +22,9 @@ type LegendSelectStepModel = {
   readonly shown: LegendCardView | null;
   readonly tabbableIndex: number;
   readonly actions: LegendStepActions;
-  /** The picked Legend's row plate while it is loaded and boxed (I-69's one predicate), else `null`. */
+  /** The picked Legend's row plate while loaded and boxed (one predicate, CD-16), else `null`. */
   readonly rowPlate: RowPlate | null;
-  /** LOCK IN's chrome plate: the catalogue's only while the row plate is drawn (FID-R4-01). */
+  /** LOCK IN's chrome plate: the catalogue's only while the row plate is drawn (CD-16). */
   readonly lockInChromeAssetId: AssetId | null;
   readonly onPreview: (specId: string | null) => void;
   readonly onCardKeyDown: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
@@ -32,9 +32,9 @@ type LegendSelectStepModel = {
 
 /**
  * The Legend step's model, or `null` on the class step. A hover or focus previews a Legend in the
- * panel without emitting (SUB P2); arrows move the focus along the cards and pick where they land
- * (`legendStepActions.move`, I-14). The row plate and LOCK IN's chrome plate are decided here
- * once, from the picked Legend (I-69).
+ * panel without emitting; arrows move the focus along the cards and pick where they land
+ * (`legendStepActions.move`; HC-F1). The row plate and LOCK IN's chrome plate are decided here
+ * once, from the picked Legend (CD-16).
  */
 export function useLegendSelectStep(): LegendSelectStepModel | null {
   const view = useAppSelector(selectLegendStepView);

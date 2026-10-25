@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import globalCss from '../styles/global.css?raw';
 
 /**
- * Module CSS rules the OS reduced-motion path and the Cinzel text rules depend on (13 §7, I-49,
- * I-51, I-88). Reads every `ui/**` module stylesheet as text.
+ * Module CSS rules the OS reduced-motion path and the Cinzel text rules depend on (13 §7; HC-S3;
+ * CD-23). Reads every `ui/**` module stylesheet as text.
  */
 const MODULES = import.meta.glob<string>('./**/*.module.css', {
   query: '?raw',
@@ -19,7 +19,7 @@ const REDUCED_MOTION =
 const TIME_LITERAL = /(?:^|[\s,(])[+-]?(?:\d*\.)?\d+m?s\b/;
 const MOTION_PROPERTY = /^(?:transition|animation)(?:-duration|-delay)?$/;
 const MOTION_TOKEN = /var\(--motion-[\w-]+\)/g;
-/** The two I-51 font-size forms: HUD (`--hud-u` units) and selection (px over `--stage-scale`). */
+/** The two CD-23 font-size forms: HUD (`--hud-u` units) and selection (px over `--stage-scale`). */
 const FLOORED_FONT_SIZES = [
   /^max\(\s*calc\(\s*\d+(?:\.\d+)?\s*\*\s*var\(--hud-u\)\s*\)\s*,\s*var\(--text-min\)\s*\)$/,
   /^max\(\s*\d+(?:\.\d+)?px\s*,\s*calc\(\s*var\(--text-min\)\s*\/\s*var\(--stage-scale\)\s*\)\s*\)$/,
@@ -27,16 +27,16 @@ const FLOORED_FONT_SIZES = [
 
 /**
  * Whether a `transition`/`animation` value is timed only by `--motion-*` tokens (the ones the
- * `prefers-reduced-motion` block zeroes, I-49): with those removed, no time literal and no other
- * `var()` is left, since any other custom property may carry a time. A non-time token (an easing
- * variable) is rejected too; widen this when one is first needed.
+ * `prefers-reduced-motion` block zeroes; 13 §10, HC-S3): with those removed, no time literal and
+ * no other `var()` is left, since any other custom property may carry a time. A non-time token
+ * (an easing variable) is rejected too; widen this when one is first needed.
  */
 const isMotionTokenTimed = (value: string): boolean => {
   const rest = value.replace(MOTION_TOKEN, '');
   return !rest.includes('var(') && !TIME_LITERAL.test(rest);
 };
 
-/** Whether `value` is exactly one of the two I-51 font-size forms. */
+/** Whether `value` is exactly one of the two CD-23 font-size forms. */
 const isFlooredFontSize = (value: string): boolean =>
   FLOORED_FONT_SIZES.some((form) => form.test(value));
 

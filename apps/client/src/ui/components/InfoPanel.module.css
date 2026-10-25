@@ -19,7 +19,7 @@
   left: 53px;
 }
 
-/* Text leaves: Cinzel Regular, line height = the Figma AUTO box (I-20). */
+/* Text leaves: Cinzel Regular, line height = the Figma AUTO box. */
 .title,
 .subtitle,
 .description {
@@ -32,7 +32,7 @@
 }
 
 /* 72:750 / 62:81 / 56:34 title at the origin: 96, white. A title wider than its panel region gets a
-   smaller inline font size (≥ 64, the same I-51 floor, OD-21e) and keeps this line box, so nothing
+   smaller inline font size (≥ 64, the same CD-23 floor, OD-21e) and keeps this line box, so nothing
    below it moves. */
 .title {
   color: var(--selection-text);

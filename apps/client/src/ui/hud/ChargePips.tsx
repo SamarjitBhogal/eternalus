@@ -13,7 +13,7 @@ const { size, pitch, fillInset, fillSize, stroke, edgeStepsPerPx } = PIP_GEOMETR
 /** A box edge moved onto the grid the Figma render draws it on (`edgeStepsPerPx`). */
 const renderedEdge = (y: number): number => Math.round(y * edgeStepsPerPx) / edgeStepsPerPx;
 
-/** The unknown count's fill: a 45° hatch (I-87). */
+/** The unknown count's fill: a 45° hatch (CD-13). */
 function hatchPattern(id: string): ReactElement {
   return (
     <defs>
@@ -71,10 +71,10 @@ function pipBox(
 
 /**
  * The ultimate's charge boxes (Figma 62:250), filled from the bottom up: SVG geometry so the
- * 23.861 px boxes at their fractional pitch keep the Figma's edges (FID-08), each box's stroke on
+ * 23.861 px boxes at their fractional pitch keep the Figma's edges, each box's stroke on
  * the 1/8 px edges the Figma render shows (`PIP_GEOMETRY.edgeStepsPerPx`). The count comes from
  * the data (`ultimatePips.total`), the Figma's three while unknown; unknown is the hatch and an
- * image "No data yet" (I-87). No rule defines the pips yet (OQ-64), so a live match shows that.
+ * image "No data yet" (CD-13). No rule defines the pips yet (OQ-64), so a live match shows that.
  */
 export function ChargePips({
   className,

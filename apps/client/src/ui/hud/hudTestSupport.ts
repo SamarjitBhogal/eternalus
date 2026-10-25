@@ -49,7 +49,7 @@ export const FIGMA_MATCH_SETUP: RootState['matchSetup'] = {
 
 /**
  * `state` (the Figma HUD's `figmaHudState()`, which each test file imports from the bridge's HUD
- * fixture module itself, I-76) with the Figma's setup and the HUD's default keys.
+ * fixture module itself, HC-F6) with the Figma's setup and the HUD's default keys.
  */
 export function withHudSetup(state: Partial<RootState>): Partial<RootState> {
   return { ...state, matchSetup: FIGMA_MATCH_SETUP, settings: settingsWith(HUD_BINDINGS) };

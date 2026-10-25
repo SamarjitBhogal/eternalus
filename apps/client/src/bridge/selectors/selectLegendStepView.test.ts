@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LegendClassCard } from '../catalogue.types';
-import { classCardFixture, specCardFixture } from '../catalogueFixtures';
+import { classCardFixture, specCardFixture } from '../__fixtures__/catalogueFixtures';
 import type { PlayableTeam } from '../domain.types';
 import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';

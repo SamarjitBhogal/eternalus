@@ -18,7 +18,7 @@ export type ClassStepActions = {
   /** A hover or focus starts (the class) or ends (`null`) a panel preview; emits nothing. */
   readonly preview: (classId: LegendClassId | null) => void;
   /**
-   * An arrow, Home or End key on the card at `index` (APG radio group, I-14): picks the card it
+   * An arrow, Home or End key on the card at `index` (APG radio group, HC-F1): picks the card it
    * lands on when that one is available, and returns its index for the focus; `null` for any
    * other key. Emits nothing (the class step emits only on Select Class).
    */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ClassHudDisplay, DisplayCatalogue } from '../catalogue.types';
-import { classCardFixture } from '../catalogueFixtures';
+import { classCardFixture } from '../__fixtures__/catalogueFixtures';
 import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { selectHudKit } from './selectHudKit';

@@ -2,7 +2,7 @@
 export type AllyRosterLayout = 'class-step' | 'legend-step';
 
 /**
- * A roster tile's look (I-16): `player` = the class step's player tile (cream 2 px, the local
+ * A roster tile's look (CD-07): `player` = the class step's player tile (cream 2 px, the local
  * pick's sigil); `player-picked` = the Legend step's 70 × 70 player tile (accent 2 px, blue glow);
  * `legend` = a bot with a Legend (portrait, Legend accent 2 px, shadow); `idle` = any other bot
  * (sigil, 1 px).

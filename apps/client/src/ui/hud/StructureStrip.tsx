@@ -25,8 +25,8 @@ const SIDE_CLASS: Readonly<Record<HudSide, string | undefined>> = {
  * One structure strip (Figma 62:303 allied, 65:542 enemy): a tile per structure (one Wall for
  * every wall segment and gate), each a team-inked icon over its own health bar, bound by identity.
  * The enemy strip is laid out mirrored, so each bar stays under its own icon (CD-04), with the
- * `mirrored` icon renditions. Icons are masks inked by the owning team's token (`data-team`, I-62);
- * an icon whose file has not loaded is not drawn.
+ * `mirrored` icon renditions. Icons are masks inked by the owning team's token (`data-team`;
+ * HC-F5, 13 §7); an icon whose file has not loaded is not drawn.
  */
 export function StructureStrip({ side }: { readonly side: HudSide }): ReactElement {
   const tiles = useAppSelector((state) => selectStructureStrip(state, side));

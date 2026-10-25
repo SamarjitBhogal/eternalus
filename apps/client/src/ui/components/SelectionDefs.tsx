@@ -23,8 +23,8 @@ const GEOMETRY = 'geometry';
  * One glow: per shadow, the source alpha offset, blurred and flooded with its token (and, for a
  * knockout def, cut out under the source alpha or under an opaque flood over the user's whole
  * box); the shadows merged in order beneath the source, or alone for a shadow-only def
- * (`source: 'omitted'`). sRGB interpolation, as Figma blends
- * (CSUI E8); no `hardAlpha` colour matrix, which turns blur tails opaque in Chrome (CSUI E10).
+ * (`source: 'omitted'`). sRGB interpolation, as Figma blends; no `hardAlpha` colour matrix, which
+ * turns blur tails opaque in Chrome.
  * The geometry flood's 0 %–100 % subregion is the user's border box (measured in Chrome: the
  * 58:273 ring box, the same as its absolute 0, 0, 309.4 × 55.25); only its alpha is read.
  */

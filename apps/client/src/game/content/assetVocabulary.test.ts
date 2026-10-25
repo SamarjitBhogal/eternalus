@@ -5,7 +5,7 @@ import type {
   RasterBox as BridgeRasterBox,
   RenditionKey as BridgeRenditionKey,
 } from '../../bridge/catalogue.types';
-import { TEST_ASSET_BOXES, TEST_HUD_ASSET_BOXES } from '../../bridge/assetFixtures';
+import { TEST_ASSET_BOXES, TEST_HUD_ASSET_BOXES } from '../../bridge/__fixtures__/assetFixtures';
 import type { AssetGroup as BridgeAssetGroup } from '../../bridge/events';
 import { assetBoxes } from '../../data/resources/assetBoxes';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';

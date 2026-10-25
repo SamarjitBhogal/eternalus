@@ -7,6 +7,9 @@ export type CanvasPointerControlsDeps = {
     Match,
     'lookAtMinimapPoint' | 'panBy' | 'zoomBy' | 'enterAt' | 'overview' | 'leaveInterior'
   >;
-  /** The canvas, its chrome, and whether the developer explorer is on (`?dev=1`, I-55). */
+  /**
+   * The canvas, its chrome, and whether the developer explorer is on (`?dev=1`; DEC-32, INBOX
+   * HC-F8).
+   */
   readonly viewport: MatchViewport;
 };

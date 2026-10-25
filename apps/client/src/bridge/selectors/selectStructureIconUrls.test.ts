@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { FIGMA_HUD_PLAYER, figmaHudState, TEST_HUD_CATALOGUE } from '../hudFixtures';
+import { FIGMA_HUD_PLAYER, figmaHudState, TEST_HUD_CATALOGUE } from '../__fixtures__/hudFixtures';
 import { assetsSlice } from '../slices/assetsSlice';
 import { contentSlice } from '../slices/contentSlice';
 import { hudSlice } from '../slices/hudSlice';

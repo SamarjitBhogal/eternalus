@@ -6,7 +6,7 @@
   height: 60px;
 }
 
-/* The tile box: the image under an INSIDE stroke drawn on top (CSUI E5), shadows outside. */
+/* The tile box: the image under an INSIDE stroke drawn on top, shadows outside. */
 .tile {
   position: absolute;
   left: 0;
@@ -33,7 +33,7 @@
   height: 60px;
 }
 
-/* Every sigil look (player and idle), never a portrait: Figma's paint opacity 0.85 (FID-R2-09). */
+/* Every sigil look (player and idle), never a portrait: Figma's paint opacity 0.85. */
 .sigil {
   opacity: 0.85;
 }
