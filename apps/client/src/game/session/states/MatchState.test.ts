@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { Overlay } from '../../../bridge/events';
+import { FakeSessionContext } from '../../FakeSessionContext';
 import { FakeViewportCanvas } from '../../FakeViewportCanvas';
 import type { MatchViewport } from '../../MatchViewport.types';
-import type { RunningMatch } from '../../SessionController.types';
-import { spyContext } from '../../testSessionDeps';
 import { SELECTION_ASSET_GROUPS } from '../selectionAssetGroups';
 import { MatchState } from './MatchState';
 
@@ -14,56 +13,46 @@ const VIEWPORT: MatchViewport = {
   isExplorerShown: false,
 };
 
-/** A match state entered on a spy context whose factory hands out recorded handles. */
+/** A match state entered on a fake context, whose factory keeps every match it hands out. */
 function setUp() {
-  const context = spyContext();
-  const handles: { destroy: ReturnType<typeof vi.fn>; setPaused: ReturnType<typeof vi.fn> }[] = [];
-  context.createMatch.mockImplementation((): RunningMatch => {
-    const handle = { destroy: vi.fn(), setPaused: vi.fn() };
-    handles.push(handle);
-    return handle;
-  });
+  const context = new FakeSessionContext();
   const overlays: (Overlay | null)[] = [];
   context.bus.on('overlay', ({ overlay }) => overlays.push(overlay));
   const state = new MatchState();
   state.enter(context);
-  return { context, handles, overlays, state };
+  return { context, handles: context.matches, overlays, state };
 }
 
 describe('MatchState', () => {
   it('releases every selection group once, in order, on enter', () => {
     const { context } = setUp();
-    expect(context.releaseAssets.mock.calls.map(([group]) => group)).toEqual(
-      SELECTION_ASSET_GROUPS,
-    );
-    expect(context.createMatch).not.toHaveBeenCalled();
+    expect(context.calls.releaseAssets.map(([group]) => group)).toEqual(SELECTION_ASSET_GROUPS);
+    expect(context.calls.createMatch).toEqual([]);
   });
 
   it('builds the match on attach and destroys it on detach', () => {
     const { context, handles, state } = setUp();
     const detach = state.attachViewport(VIEWPORT, context);
-    expect(context.createMatch).toHaveBeenCalledWith(VIEWPORT);
+    expect(context.calls.createMatch).toEqual([[VIEWPORT]]);
     detach();
-    expect(handles[0]?.destroy).toHaveBeenCalledTimes(1);
+    expect(handles[0]?.destroyCount).toBe(1);
   });
 
   it('replaces the match on a second attach, and a stale detach never ends the newer one', () => {
     const { context, handles, state } = setUp();
     const detachFirst = state.attachViewport(VIEWPORT, context);
     state.attachViewport(VIEWPORT, context);
-    expect(handles[0]?.destroy).toHaveBeenCalledTimes(1);
+    expect(handles[0]?.destroyCount).toBe(1);
     detachFirst();
-    expect(handles[1]?.destroy).not.toHaveBeenCalled();
+    expect(handles[1]?.destroyCount).toBe(0);
   });
 
   it('aborts the match with the error when it cannot be built; the detach does nothing', () => {
     const { context, state } = setUp();
     const error = new Error('no 2D canvas');
-    context.createMatch.mockImplementation(() => {
-      throw error;
-    });
+    context.createMatchError = error;
     const detach = state.attachViewport(VIEWPORT, context);
-    expect(context.abortMatch).toHaveBeenCalledWith(error);
+    expect(context.calls.abortMatch).toEqual([[error]]);
     expect(() => {
       detach();
     }).not.toThrow();
@@ -73,8 +62,8 @@ describe('MatchState', () => {
     const { context, handles, overlays, state } = setUp();
     state.attachViewport(VIEWPORT, context);
     state.exit(context);
-    expect(handles[0]?.destroy).toHaveBeenCalledTimes(1);
-    expect(context.dropWorld).toHaveBeenCalledTimes(1);
+    expect(handles[0]?.destroyCount).toBe(1);
+    expect(context.calls.dropWorld).toHaveLength(1);
     expect(overlays).toEqual([null]);
   });
 
@@ -83,9 +72,9 @@ describe('MatchState', () => {
     state.attachViewport(VIEWPORT, context);
     state.handleIntent({ kind: 'open-overlay', overlay: 'pause' }, context);
     state.handleIntent({ kind: 'open-overlay', overlay: 'settings' }, context);
-    expect(handles[0]?.setPaused.mock.calls).toEqual([[true]]);
+    expect(handles[0]?.pauses).toEqual([true]);
     state.handleIntent({ kind: 'close-overlay' }, context);
-    expect(handles[0]?.setPaused.mock.calls).toEqual([[true], [false]]);
+    expect(handles[0]?.pauses).toEqual([true, false]);
     expect(overlays).toEqual(['pause', 'settings', null]);
   });
 
@@ -93,12 +82,12 @@ describe('MatchState', () => {
     const { context, handles, state } = setUp();
     state.handleIntent({ kind: 'open-overlay', overlay: 'pause' }, context);
     state.attachViewport(VIEWPORT, context);
-    expect(handles[0]?.setPaused.mock.calls).toEqual([[true]]);
+    expect(handles[0]?.pauses).toEqual([true]);
   });
 
   it('returns to the menu on leave-match', () => {
     const { context, state } = setUp();
     state.handleIntent({ kind: 'leave-match' }, context);
-    expect(context.transition.mock.calls).toEqual([['menu']]);
+    expect(context.calls.transition).toEqual([['menu']]);
   });
 });

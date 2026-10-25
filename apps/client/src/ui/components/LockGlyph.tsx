@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 
+import { classNames } from './classNames';
 import styles from './LockGlyph.module.css';
 
 /**
@@ -14,7 +15,7 @@ export function LockGlyph({
 }): ReactElement {
   return (
     <svg
-      className={[styles.glyph, className].join(' ').trim()}
+      className={classNames(styles.glyph, className)}
       viewBox="0 0 16 20"
       aria-hidden="true"
       focusable="false"

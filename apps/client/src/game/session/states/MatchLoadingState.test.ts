@@ -1,22 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetGroup } from '../../../bridge/events';
-import { flushMicrotasks, spyContext, testResources, testSession } from '../../testSessionDeps';
+import { FakeSessionContext } from '../../FakeSessionContext';
+import { flushMicrotasks, testResources, testSession } from '../../testSessionDeps';
 import { REVEAL_COUNTDOWN_MS } from '../sessionTiming.constants';
 import { MatchLoadingState } from './MatchLoadingState';
 
-/** A spy context in match-loading, with the callbacks it gave its `match` group load. */
+/** A fake context in match-loading, with the callbacks it gave its `match` group load. */
 function entered() {
-  const context = spyContext();
-  const cancel = vi.fn();
-  context.loadAssets.mockReturnValue(cancel);
-  const order: string[] = [];
-  context.prepareWorld.mockImplementation(() => order.push('prepareWorld'));
-  context.transition.mockImplementation((to) => order.push(`transition ${to}`));
+  const context = new FakeSessionContext();
   const state = new MatchLoadingState();
   state.enter(context);
-  const [groups, onReady, onFailed] = context.loadAssets.mock.calls[0] ?? [];
-  return { context, cancel, order, state, groups, onReady, onFailed };
+  const [groups, onReady, onFailed] = context.calls.loadAssets[0] ?? [];
+  return { context, state, groups, onReady, onFailed };
 }
 
 /** A real session walked to match-loading (its `match` group load still pending). */
@@ -34,27 +30,26 @@ async function atMatchLoading(overrides: Parameters<typeof testSession>[0] = {})
 
 describe('MatchLoadingState', () => {
   it('loads the match group, then prepares the world, then opens the match', () => {
-    const { order, groups, onReady } = entered();
+    const { context, groups, onReady } = entered();
     expect(groups).toEqual(['match']);
     onReady?.();
-    expect(order).toEqual(['prepareWorld', 'transition match']);
+    expect(context.order).toEqual(['loadAssets', 'prepareWorld', 'transition']);
+    expect(context.calls.transition).toEqual([['match']]);
   });
 
   it('aborts the match when the world cannot be built', () => {
     const { context, onReady } = entered();
     const error = new Error('no stronghold');
-    context.prepareWorld.mockImplementation(() => {
-      throw error;
-    });
+    context.prepareWorldError = error;
     onReady?.();
-    expect(context.abortMatch).toHaveBeenCalledWith(error);
-    expect(context.transition).not.toHaveBeenCalled();
+    expect(context.calls.abortMatch).toEqual([[error]]);
+    expect(context.calls.transition).toEqual([]);
   });
 
   it('cancels its load on exit', () => {
-    const { cancel, state } = entered();
+    const { context, state } = entered();
     state.exit();
-    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(context.cancelledLoads).toEqual([0]);
   });
 
   it('returns to the menu with match-failed and one error when the match load rejects', async () => {

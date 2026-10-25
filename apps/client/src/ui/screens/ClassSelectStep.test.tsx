@@ -6,7 +6,7 @@ import type { DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import type { RosterEntry } from '../../bridge/events';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
-import { CHROME_PLATE_BOXES } from '../components/GlowButton.constants';
+import glowStyles from '../components/GlowButton.module.css';
 import infoPanelStyles from '../components/InfoPanel.module.css';
 import detailsStyles from '../components/InfoPanelDetails.module.css';
 import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
@@ -97,8 +97,8 @@ const radioTags = (html: string): string[] => html.match(/<button[^>]*role="radi
 const attributeOf = (tag: string, name: string): string | undefined =>
   new RegExp(`${name}="([^"]*)"`).exec(tag)?.[1];
 
-const CHROME_BOX = CHROME_PLATE_BOXES['select-class-chrome'];
-const CHROME_STYLE = `style="left:${String(CHROME_BOX?.left)}px;top:${String(CHROME_BOX?.top)}px;width:${String(CHROME_BOX?.width)}px;height:${String(CHROME_BOX?.height)}px"`;
+/** The plate in the Select Class skin, its box that skin's `.chrome` rule (no inline style). */
+const CHROME_IMG = `<button type="button" class="${String(glowStyles.button)} ${String(glowStyles.selectClass)}"><img class="${String(glowStyles.chrome)}" src="/assets/test/select-class-chrome.webp" alt="" aria-hidden="true"`;
 
 describe('ClassSelectStep', () => {
   it('shows the Figma state: four cards, Magus picked, its panel, Legends and the roster (62:125)', () => {
@@ -159,7 +159,7 @@ describe('ClassSelectStep', () => {
       'plate',
       'plate',
     ]);
-    expect(html).toContain(`src="/assets/test/select-class-chrome.webp" ${CHROME_STYLE}`);
+    expect(html).toContain(CHROME_IMG);
     expect(html).not.toMatch(/z-index/);
   });
 
@@ -222,7 +222,7 @@ describe('ClassSelectStep', () => {
     ]);
     expect(html).toContain('>Legionnaire</h3>');
     expect(html).toContain('>Centurion<');
-    expect(html).toContain(`src="/assets/test/select-class-chrome.webp" ${CHROME_STYLE}`);
+    expect(html).toContain(CHROME_IMG);
   });
 
   it("draws no plate at all on the 'css' renderer, every card from its live art (I-80)", () => {

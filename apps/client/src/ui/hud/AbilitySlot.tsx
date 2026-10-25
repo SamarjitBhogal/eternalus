@@ -5,11 +5,11 @@ import type { HudBlockReason } from '../../bridge/hud.types';
 import { shallowEqual, useAppSelector } from '../../bridge/hooks';
 import { type HudSlotLook, selectHudSlotView } from '../../bridge/selectors/selectHudSlotView';
 import { AssetImage } from '../components/AssetImage';
+import { classNames } from '../components/classNames';
 import { KeyGlyph } from '../components/KeyGlyph';
 import { ACTION_LABELS, STRINGS } from '../strings';
 import styles from './AbilitySlot.module.css';
 import { AbilitySlotFrame } from './AbilitySlotFrame';
-import { classNames } from './hudMeter';
 
 /** Where the icon and key glyph sit: the abilities, the ultimate, or a gadget (127 px icon box). */
 type AbilitySlotAppearance = 'ability' | 'ultimate' | 'gadget';

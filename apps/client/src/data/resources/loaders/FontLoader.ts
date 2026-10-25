@@ -9,6 +9,7 @@ import type { FontLoaderDeps, LoadableFace } from './FontLoader.types';
 export class FontLoader<Face extends LoadableFace> implements AssetLoader<Face> {
   public readonly type = 'font';
 
+  /** Builds the loader over the injected `FontFace` factory and `document.fonts`. */
   public constructor(private readonly deps: FontLoaderDeps<Face>) {}
 
   /**

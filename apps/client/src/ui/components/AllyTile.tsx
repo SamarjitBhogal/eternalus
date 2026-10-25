@@ -6,6 +6,7 @@ import { STRINGS } from '../strings';
 import type { AllyRosterLayout, AllyTileLook } from './AllyRoster.types';
 import { ALLY_TILE_RENDITIONS, PLAYER_TILE_LOOKS } from './AllyTile.constants';
 import { AssetImage } from './AssetImage';
+import { classNames } from './classNames';
 import { cssVars } from './cssVars';
 import styles from './AllyTile.module.css';
 
@@ -47,7 +48,7 @@ export function AllyTile({
         <AssetImage
           assetId={image}
           rendition={ALLY_TILE_RENDITIONS[look]}
-          className={showsSigil(look, tile) ? [styles.image, styles.sigil].join(' ') : styles.image}
+          className={classNames(styles.image, showsSigil(look, tile) && styles.sigil)}
         />
       </span>
       <span className={styles.srOnly}>

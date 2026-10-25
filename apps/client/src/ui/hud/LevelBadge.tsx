@@ -5,9 +5,10 @@ import { selectHudKit } from '../../bridge/selectors/selectHudKit';
 import { hudSlice } from '../../bridge/slices/hudSlice';
 import type { RootState } from '../../bridge/store';
 import { AssetImage } from '../components/AssetImage';
+import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { STRINGS } from '../strings';
-import { classNames, meterAttributes, percentOf } from './hudMeter';
+import { meterAttributes, percentOf } from './hudMeter';
 import styles from './LevelBadge.module.css';
 
 const { selectLevel, selectXpFraction } = hudSlice.selectors;

@@ -1,0 +1,152 @@
+import { describe, expect, it } from 'vitest';
+
+import { ASSET_LICENCES } from '../data/resources/assetLicences';
+import { ASSET_MANIFEST } from '../data/resources/AssetManifest';
+import { describeCredits } from '../data/resources/describeCredits';
+import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
+import { FakeRunningMatch } from './FakeRunningMatch';
+import { FakeSessionContext } from './FakeSessionContext';
+import { FakeViewportCanvas } from './FakeViewportCanvas';
+import type { MatchViewport } from './MatchViewport.types';
+
+const VIEWPORT: MatchViewport = {
+  canvas: new FakeViewportCanvas(),
+  chrome: {
+    onInteriorChanged: () => undefined,
+    setLeaveInterior: () => undefined,
+    setOverview: () => undefined,
+  },
+  isExplorerShown: false,
+};
+
+describe('FakeSessionContext', () => {
+  it('carries a real bus and clock, the shipped catalogue and the shipped credits', () => {
+    const context = new FakeSessionContext();
+    const routes: string[] = [];
+    context.bus.on('menu-route', ({ route }) => routes.push(route));
+
+    context.bus.emit('menu-route', { route: 'home' });
+
+    expect(routes).toEqual(['home']);
+    expect(context.clock.now()).toBe(0);
+    expect(context.catalogue).toEqual(shippedCatalogue().load());
+    expect(context.credits).toEqual(describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES));
+  });
+
+  it('records every call with exactly the arguments it was given, and the call order', () => {
+    const context = new FakeSessionContext();
+    const error = new Error('no 2D canvas');
+
+    context.transition('menu');
+    context.transition('menu', 'load-failed');
+    context.newMatchSetup();
+    context.repeatMatchSetup();
+    context.clearMatchSetup();
+    context.prepareWorld();
+    context.dropWorld();
+    context.abortMatch(error);
+    context.releaseAssets('match');
+
+    expect(context.calls).toEqual({
+      transition: [['menu'], ['menu', 'load-failed']],
+      newMatchSetup: [[]],
+      repeatMatchSetup: [[]],
+      clearMatchSetup: [[]],
+      selection: [],
+      recordSelection: [],
+      prepareWorld: [[]],
+      createMatch: [],
+      dropWorld: [[]],
+      abortMatch: [[error]],
+      loadAssets: [],
+      releaseAssets: [['match']],
+    });
+    expect(context.calls.transition[0]).toHaveLength(1);
+    expect(context.order).toEqual([
+      'transition',
+      'transition',
+      'newMatchSetup',
+      'repeatMatchSetup',
+      'clearMatchSetup',
+      'prepareWorld',
+      'dropWorld',
+      'abortMatch',
+      'releaseAssets',
+    ]);
+  });
+
+  it("writes the call order into a test's own log when given one", () => {
+    const log: string[] = ['before'];
+    const context = new FakeSessionContext(log);
+
+    context.releaseAssets('match');
+
+    expect(log).toEqual(['before', 'releaseAssets']);
+    expect(context.order).toBe(log);
+  });
+
+  it('hands back the callbacks of each load and records each cancel by load index', () => {
+    const context = new FakeSessionContext();
+    const onReady = (): void => undefined;
+    const onFailed = (): void => undefined;
+
+    context.loadAssets(['boot'], onReady, onFailed);
+    const cancelSecond = context.loadAssets(['match'], onReady, onFailed);
+    cancelSecond();
+    cancelSecond();
+
+    expect(context.calls.loadAssets).toEqual([
+      [['boot'], onReady, onFailed],
+      [['match'], onReady, onFailed],
+    ]);
+    expect(context.calls.loadAssets[0]?.[1]).toBe(onReady);
+    expect(context.cancelledLoads).toEqual([1, 1]);
+  });
+
+  it('answers selection() with the last recorded pick, null before any', () => {
+    const context = new FakeSessionContext();
+    const before = context.selection();
+
+    context.recordSelection({ classId: 'sentinel', specId: 'colossus' });
+    const picked = context.selection();
+    context.recordSelection(null);
+
+    expect({ before, picked, after: context.selection() }).toEqual({
+      before: null,
+      picked: { classId: 'sentinel', specId: 'colossus' },
+      after: null,
+    });
+    expect(context.calls.recordSelection).toEqual([
+      [{ classId: 'sentinel', specId: 'colossus' }],
+      [null],
+    ]);
+  });
+
+  it('builds a new FakeRunningMatch per createMatch and keeps each in order', () => {
+    const context = new FakeSessionContext();
+
+    const first = context.createMatch(VIEWPORT);
+    const second = context.createMatch(VIEWPORT);
+
+    expect(first).toBeInstanceOf(FakeRunningMatch);
+    expect(second).not.toBe(first);
+    expect(context.matches).toEqual([first, second]);
+    expect(context.matches[1]).toBe(second);
+    expect(context.calls.createMatch).toEqual([[VIEWPORT], [VIEWPORT]]);
+  });
+
+  it('throws the given errors from createMatch and prepareWorld, after recording the call', () => {
+    const context = new FakeSessionContext();
+    const matchError = new Error('no 2D canvas');
+    const worldError = new Error('no stronghold');
+    context.createMatchError = matchError;
+    context.prepareWorldError = worldError;
+
+    expect(() => context.createMatch(VIEWPORT)).toThrow(matchError);
+    expect(() => {
+      context.prepareWorld();
+    }).toThrow(worldError);
+    expect(context.matches).toEqual([]);
+    expect(context.order).toEqual(['createMatch', 'prepareWorld']);
+  });
+});

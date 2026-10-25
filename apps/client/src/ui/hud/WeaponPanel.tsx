@@ -6,10 +6,10 @@ import { selectHudKit } from '../../bridge/selectors/selectHudKit';
 import { hudSlice } from '../../bridge/slices/hudSlice';
 import type { RootState } from '../../bridge/store';
 import { AssetImage } from '../components/AssetImage';
+import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { useAssetBox } from '../components/useAssetBox';
 import { STRINGS } from '../strings';
-import { classNames } from './hudMeter';
 import { SegmentedBar } from './SegmentedBar';
 import styles from './WeaponPanel.module.css';
 

@@ -47,8 +47,3 @@ export function fractionOf(value: number | null, max: number | null): number | n
   const fraction = value / max;
   return Number.isFinite(fraction) ? Math.min(1, Math.max(0, fraction)) : null;
 }
-
-/** The class names that are set, joined for `className`. */
-export function classNames(...names: readonly (string | false | null | undefined)[]): string {
-  return names.filter((name): name is string => typeof name === 'string' && name !== '').join(' ');
-}

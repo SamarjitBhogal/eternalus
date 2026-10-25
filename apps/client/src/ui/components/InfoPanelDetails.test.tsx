@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { DetailRow } from '../../bridge/catalogue.types';
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import { renderWithStore } from '../testStore';
-import { INFO_PANEL_ICON_RENDITIONS } from './InfoPanel.constants';
+import { INFO_PANEL_ICON_RENDITIONS } from './InfoPanelDetails.constants';
 import type { InfoPanelLayout } from './InfoPanel.types';
 import { InfoPanelDetails } from './InfoPanelDetails';
 import styles from './InfoPanelDetails.module.css';

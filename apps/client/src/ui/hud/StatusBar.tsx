@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
 
+import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
-import { classNames, meterAttributes, percentOf } from './hudMeter';
+import { meterAttributes, percentOf } from './hudMeter';
 import styles from './StatusBar.module.css';
 
 /**

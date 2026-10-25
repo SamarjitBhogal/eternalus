@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
 
+import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
-import { classNames, meterAttributes, percentOf } from './hudMeter';
+import { meterAttributes, percentOf } from './hudMeter';
 import { HUD_BAR_TIERS } from './SegmentedBar.constants';
 import styles from './SegmentedBar.module.css';
 import { type SegmentFill, segmentedBarFills } from './segmentedBarFills';

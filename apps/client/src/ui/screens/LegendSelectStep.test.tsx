@@ -6,7 +6,7 @@ import type { DisplayCatalogue, LegendClassCard } from '../../bridge/catalogue.t
 import type { PlayableTeam } from '../../bridge/domain.types';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
-import { CHROME_PLATE_BOXES } from '../components/GlowButton.constants';
+import { BOXED_CHROME_PLATES } from '../components/GlowButton.constants';
 import glowStyles from '../components/GlowButton.module.css';
 import { chromePlateFor } from '../components/useGlowButtonChrome';
 import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
@@ -210,7 +210,10 @@ describe('LegendSelectStep row plate (T-LEG-9, I-69, §5.15)', () => {
     expect(html).not.toContain(String(haloStyles.refractionLayer));
     expect(html).not.toContain(String(haloStyles.glassLayer));
     expect(html).toContain(`<img class="${String(glowStyles.chrome)}" ${LOCK_IN_CHROME}`);
-    expect(html).toContain('style="left:-49px;top:-50px;width:411px;height:156px"');
+    // Its box is the LOCK IN skin's `.chrome` rule, not an inline style.
+    expect(html).toContain(
+      `<button type="button" class="${String(glowStyles.button)} ${String(glowStyles.lockIn)}"><img class="${String(glowStyles.chrome)}" ${LOCK_IN_CHROME} alt=""`,
+    );
   });
 
   it('keeps the row plate whole while LOCK IN is hovered or pressed, and LOCK IN draws live (FID-R3-01)', () => {
@@ -219,15 +222,15 @@ describe('LegendSelectStep row plate (T-LEG-9, I-69, §5.15)', () => {
     const idle = render(FIGMA_STATE);
     const live = render(FIGMA_STATE, { content: { ...TEST_CONTENT, lockInChromeAssetId: null } });
     const chromeUrl = /src="([^"]*lock-in-chrome\.webp)"/.exec(idle)?.[1] ?? null;
-    const chromeBox = CHROME_PLATE_BOXES['lock-in-chrome'];
+    const isBoxed = BOXED_CHROME_PLATES['lock-in'] === 'lock-in-chrome';
     const plateOf = (html: string): string =>
       new RegExp(`${ROW_PLATE.source}[^>]*/>`).exec(html)?.[0] ?? 'missing';
     const plateRule =
       /\.rowPlate \{([^}]*)\}/.exec(stepCss.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1] ?? 'missing';
 
-    expect(chromePlateFor(chromeUrl, chromeBox, false, 'idle')).not.toBeNull();
+    expect(chromePlateFor(chromeUrl, isBoxed, false, 'idle')).not.toBeNull();
     for (const interaction of ['hover', 'pressed'] as const) {
-      expect(chromePlateFor(chromeUrl, chromeBox, false, interaction)).toBeNull();
+      expect(chromePlateFor(chromeUrl, isBoxed, false, interaction)).toBeNull();
     }
     expect(live).not.toContain(LOCK_IN_CHROME);
     expect(live).toContain(`class="${String(glowStyles.ring)}"`);

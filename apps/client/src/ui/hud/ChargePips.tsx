@@ -2,15 +2,72 @@ import { type ReactElement, useId } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
 import { hudSlice } from '../../bridge/slices/hudSlice';
+import { classNames } from '../components/classNames';
 import { STRINGS } from '../strings';
 import { FIGMA_PIP_COUNT, PIP_GEOMETRY } from './ChargePips.constants';
 import styles from './ChargePips.module.css';
-import { classNames, meterAttributes } from './hudMeter';
+import { meterAttributes } from './hudMeter';
 
 const { size, pitch, fillInset, fillSize, stroke, edgeStepsPerPx } = PIP_GEOMETRY;
 
 /** A box edge moved onto the grid the Figma render draws it on (`edgeStepsPerPx`). */
 const renderedEdge = (y: number): number => Math.round(y * edgeStepsPerPx) / edgeStepsPerPx;
+
+/** The unknown count's fill: a 45° hatch (I-87). */
+function hatchPattern(id: string): ReactElement {
+  return (
+    <defs>
+      <pattern
+        id={id}
+        width="5"
+        height="5"
+        patternUnits="userSpaceOnUse"
+        patternTransform="rotate(45)"
+      >
+        <rect className={styles.hatch} width="2" height="5" />
+      </pattern>
+    </defs>
+  );
+}
+
+/**
+ * Box `index` from the top: its fill while charged (or the hatch while unknown) and its stroke on
+ * the rendered edges. `filled` is `null` while the count is unknown.
+ */
+function pipBox(
+  index: number,
+  count: number,
+  filled: number | null,
+  hatchId: string,
+): ReactElement {
+  const top = index * pitch;
+  const edgeTop = renderedEdge(top);
+  const edgeBottom = renderedEdge(top + size);
+  // Box `count - index` counted from the bottom (the Figma fills bottom-up).
+  const isFilled = filled !== null && count - index <= filled;
+  return (
+    <g key={index}>
+      {(isFilled || filled === null) && (
+        <rect
+          className={isFilled ? styles.fill : undefined}
+          x={fillInset}
+          y={top + fillInset}
+          width={fillSize}
+          height={fillSize}
+          fill={filled === null ? `url(#${hatchId})` : undefined}
+        />
+      )}
+      <rect
+        className={styles.box}
+        x={stroke / 2}
+        y={edgeTop + stroke / 2}
+        width={size - stroke}
+        height={edgeBottom - edgeTop - stroke}
+        strokeWidth={stroke}
+      />
+    </g>
+  );
+}
 
 /**
  * The ultimate's charge boxes (Figma 62:250), filled from the bottom up: SVG geometry so the
@@ -40,48 +97,10 @@ export function ChargePips({
         aria-hidden="true"
         focusable="false"
       >
-        {pips === null && (
-          <defs>
-            <pattern
-              id={hatchId}
-              width="5"
-              height="5"
-              patternUnits="userSpaceOnUse"
-              patternTransform="rotate(45)"
-            >
-              <rect className={styles.hatch} width="2" height="5" />
-            </pattern>
-          </defs>
+        {pips === null && hatchPattern(hatchId)}
+        {Array.from({ length: count }, (_, index) =>
+          pipBox(index, count, pips?.filled ?? null, hatchId),
         )}
-        {Array.from({ length: count }, (_, index) => {
-          const top = index * pitch;
-          const edgeTop = renderedEdge(top);
-          const edgeBottom = renderedEdge(top + size);
-          // Box `count - index` counted from the bottom (the Figma fills bottom-up).
-          const isFilled = pips !== null && count - index <= pips.filled;
-          return (
-            <g key={index}>
-              {(isFilled || pips === null) && (
-                <rect
-                  className={isFilled ? styles.fill : undefined}
-                  x={fillInset}
-                  y={top + fillInset}
-                  width={fillSize}
-                  height={fillSize}
-                  fill={pips === null ? `url(#${hatchId})` : undefined}
-                />
-              )}
-              <rect
-                className={styles.box}
-                x={stroke / 2}
-                y={edgeTop + stroke / 2}
-                width={size - stroke}
-                height={edgeBottom - edgeTop - stroke}
-                strokeWidth={stroke}
-              />
-            </g>
-          );
-        })}
       </svg>
     </div>
   );

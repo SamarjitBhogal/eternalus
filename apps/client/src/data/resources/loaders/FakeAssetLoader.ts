@@ -20,6 +20,7 @@ export class FakeAssetLoader implements AssetLoader<FakeAssetHandle> {
   private readonly held = new Set<FakeAssetHandle>();
   private pending: (() => void)[] = [];
 
+  /** Creates a loader with nothing loaded; `options` defaults to pending `ui-image` loads. */
   public constructor(options: FakeAssetLoaderOptions = {}) {
     this.type = options.type ?? 'ui-image';
     this.failingUrls = new Set(options.failingUrls ?? []);

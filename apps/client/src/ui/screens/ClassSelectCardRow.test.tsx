@@ -19,7 +19,7 @@ const MODULES = import.meta.glob<string>(
   [
     './ClassSelect*.module.css',
     './CharacterSelectScreen.module.css',
-    '../components/{SelectionStage,SelectionBanner,Countdown,TeamBadge,InfoPanel,InfoPanelDetails,GlowButton,KeyPrompt,KeyGlyph,AllyRoster,AllyTile,ArchCard,LockGlyph}.module.css',
+    '../components/{SelectionStage,SelectionBanner,Countdown,TeamBadge,InfoPanel,InfoPanelDetails,InfoPanelRules,GlowButton,KeyPrompt,KeyGlyph,AllyRoster,AllyTile,ArchCard,LockGlyph}.module.css',
   ],
   { query: '?raw', import: 'default', eager: true },
 );
