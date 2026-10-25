@@ -1,3 +1,4 @@
+import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -115,6 +116,21 @@ export class EntityStore {
   /** Whether the entity exists and has health left (`false` for anything without `Health`). */
   public isAlive(id: EntityId): boolean {
     return this.entities.get(id)?.findComponent(Health)?.isDead === false;
+  }
+
+  /**
+   * Points the entity's `Combat` at `targetId`. Lets `commands/` set a
+   * target without importing `components/`, as `steer` does for movement.
+   *
+   * @returns `false` when the entity is unknown or cannot attack.
+   */
+  public setAttackTarget(id: EntityId, targetId: EntityId): boolean {
+    const combat = this.entities.get(id)?.findComponent(Combat);
+    if (combat === undefined) {
+      return false;
+    }
+    combat.setTarget(targetId);
+    return true;
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */

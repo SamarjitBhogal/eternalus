@@ -14,7 +14,11 @@ import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { AI_CADENCE } from './content/ai/cadence';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
+import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import type { LevelCurveDefinition } from './content/progression/progression.types';
+import { loadLevelCurves } from './content/progression/loadLevelCurves';
+import { XP_SOURCES } from './content/progression/xpSources';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { DefinitionSource } from './entities/EntityFactory.types';
@@ -55,29 +59,35 @@ export class Simulation {
     debug = RELEASE_DEBUG_CONFIG,
     content,
     map,
+    levelCurves,
   }: SimulationOptions) {
     const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
     this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
+    const curves = levelCurves ?? loadLevelCurves();
     // One factory for commands and spawning, so entity ids come from one counter.
     const controllers = createDefaultControllerRegistry();
-    const definitions =
-      content ?? Simulation.defaultContent(this.state.config.tickRate, controllers);
-    const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
+    const units =
+      content ?? Simulation.defaultContent(this.state.config.tickRate, curves, controllers);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), units);
     this.commandContext = { state: this.state, factory };
     this.systemContext = { state: this.state, logger };
     this.pipeline =
       systems === undefined
-        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), {
-            state: this.state,
-            factory,
-            definitions,
-            space,
-            decide: [
-              new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
-                this.queue.enqueue(command);
-              }),
-            ],
-          })
+        ? new DefaultSystemPipeline(
+            new DefaultInvariantRunner(debug, logger, curves),
+            this.state,
+            { units, curves, xpSources: XP_SOURCES },
+            {
+              factory,
+              definitions: units,
+              space,
+              decide: [
+                new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
+                  this.queue.enqueue(command);
+                }),
+              ],
+            },
+          )
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
@@ -131,9 +141,10 @@ export class Simulation {
   /** The shipped content, checked against the controllers before the match starts. */
   private static defaultContent(
     tickRate: number,
+    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'>,
     controllers: ControllerRegistry,
   ): DefinitionSource {
-    const catalogue = loadDefaultContent(tickRate);
+    const catalogue = loadDefaultContent(tickRate, curves);
     AiSystem.assertRegistered(catalogue.all(), controllers);
     return catalogue;
   }

@@ -93,4 +93,6 @@ export type CommandRejectReason =
   | 'cap-exceeded'
   | 'invalid-direction'
   | 'not-movable'
+  | 'cannot-attack'
+  | 'invalid-target'
   | 'not-supported';

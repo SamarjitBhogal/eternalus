@@ -1,4 +1,5 @@
 import type { CommandHandlers } from './CommandHandler.types';
+import { AttackTargetHandler } from './handlers/AttackTargetHandler';
 import { DevRemoveEntityHandler } from './handlers/DevRemoveEntityHandler';
 import { DevSpawnHandler } from './handlers/DevSpawnHandler';
 import { DevSpawnMobsHandler } from './handlers/DevSpawnMobsHandler';
@@ -12,7 +13,7 @@ export const createDefaultCommandHandlers = (): CommandHandlers => {
   return {
     move: new MoveHandler(),
     stop: new StopHandler(),
-    'attack-target': unsupported, // TODO(sholtzman): with phase 2 combat
+    'attack-target': new AttackTargetHandler(),
     'cast-ability': unsupported, // TODO(sholtzman): with phase 2 abilities
     intent: unsupported, // TODO(sholtzman): with sprint 1.5 PlayerController
     'dev-spawn': new DevSpawnHandler(),

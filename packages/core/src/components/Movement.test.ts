@@ -104,4 +104,18 @@ describe('Movement', () => {
     expect(new Movement(STATS, 'lane-follow').strategyId).toBe('lane-follow');
     expect(new Movement(STATS).strategyId).toBeUndefined();
   });
+
+  it('caps the speed by speedScale, and holds still at 0 without dropping the heading', () => {
+    const movement = new Movement(STATS);
+    movement.steer({ x: 1, y: 0 });
+
+    for (let tick = 0; tick < 5; tick += 1) {
+      movement.advance(0.5);
+    }
+    expect(movement.speed).toBe(1.5);
+
+    movement.advance(0);
+    expect(movement.speed).toBe(0);
+    expect(movement.heading).toEqual({ x: 1, y: 0 });
+  });
 });

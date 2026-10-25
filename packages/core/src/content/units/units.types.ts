@@ -21,6 +21,23 @@ export type MovementProfile = {
  */
 export type MovementStrategyId = 'lane-follow';
 
+/** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
+export type AttackStrategyId = 'melee';
+
+/**
+ * A unit's basic attack (architecture 05 §10, `WeaponAttack`). All values must be positive.
+ * ponytail: lives on the unit until weapons land; then `Combat` reads the equipped weapon's attacks.
+ */
+export type UnitAttack = {
+  readonly strategy: AttackStrategyId;
+  /** Damage per hit, before damage steps. */
+  readonly damage: number;
+  /** Reach in metres, measured edge to edge between the two footprints. */
+  readonly reach: number;
+  /** Time between hits: seconds in content files, ticks once loaded. */
+  readonly interval: number;
+};
+
 /** What every unit definition (Legend or mob) has. Shared, immutable and keyed by `id`. */
 export type UnitDefinition = EntityDefinitionBase & {
   /** Full base health. */
@@ -32,6 +49,8 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly movement: MovementProfile;
   /** The strategy that steers this unit each tick; none for a unit nothing steers. */
   readonly movementStrategy?: MovementStrategyId;
+  /** The basic attack; a unit without one cannot attack (a training dummy). */
+  readonly attack?: UnitAttack;
   /** The controller that drives this unit (architecture 11 §2); none for the player. */
   readonly controller?: ControllerId;
   /** The AI profile its controller reads (`content/ai/profiles/`); the controller id by default. */

@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-16
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -86,6 +86,20 @@ Owner: _ (sim lane B). Week 4.
       projectiles; `TargetingStrategy` port with a nearest-enemy default). Owner: _. Test: a
       dummy attacks the nearest enemy within reach every `attackIntervalTicks`. Done when: the
       strategies are chosen from definitions.
+
+**Status (2026-10-16, PR #34, Claudio):** `DamagePipeline` (no damage types yet), `DamageStep`
+list with `FriendlyFireStep`, `Combat`, `CombatSystem` v1 (melee only, no `TargetingStrategy`) and
+the `attack-target` handler are built, and `DeathSystem` puts the killer on every `died` removal
+with the `no-death-without-killer` invariant (architecture 03 §2 keeps the cause `died` plus the
+killer, instead of new `RemovalCause` members). Status effects, ranged attacks and damage types are
+still open, so no box above is ticked yet.
+
+**Status (2026-10-16, PR #35, Claudio, SCRUM-228):** `StatusEffects` + `StatusEffectRuntime` +
+`StatusEffectSystem` with the six MVP statuses as content (loaded in ticks, `enraged`'s cap from
+config), `refresh` and `intensity` stacking, pooled instances, `StatusEffectApplier` (apply and
+remove), `StatusModifierStep` and `StatusStacksWithinMaxInvariant`; tests cover exact-tick expiry,
+stacking and pooling. FR-029 (aura debuff) is deferred to the BuffTower sprint: removal exists,
+the max-health stat does not. Open numbers and rules are in `INBOX.md`.
 
 **Success metric:** 100% of deaths in a 3,000-tick seeded skirmish (dummies vs dummies) carry a
 killer or a timeline cause; 0 negative-damage or out-of-range health values in invariants.
