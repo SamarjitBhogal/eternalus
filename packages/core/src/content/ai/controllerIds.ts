@@ -1,7 +1,8 @@
-import type { ControllerId } from './ai.types';
-
-/** Every controller id, to check a spawn's controller at runtime (architecture 11 §2). */
-export const CONTROLLER_IDS: readonly ControllerId[] = [
+/**
+ * Every controller id (architecture 11 §2), kebab-case and never renamed once used. The one
+ * source: `ControllerId` is derived from it, and spawns are checked against it at runtime.
+ */
+export const CONTROLLER_IDS = [
   'player',
   'bot-legend',
   'minion',
@@ -9,4 +10,4 @@ export const CONTROLLER_IDS: readonly ControllerId[] = [
   'turret',
   'boss',
   'rover',
-];
+] as const;

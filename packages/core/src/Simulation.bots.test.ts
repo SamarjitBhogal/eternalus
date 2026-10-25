@@ -58,6 +58,8 @@ describe('Simulation with bot laners (minion plan M3)', () => {
 
   it('refuses a roster without a map, and a Rover until its controller exists (M8)', () => {
     expect(() => match(laners('light', 1), false)).toThrow('A roster needs a map');
+    // Two lanes of `legendsPerLane` 3 hold six laners a team.
+    expect(() => match(laners('dark', 7))).toThrow('7 bot laners do not fit');
     expect(() =>
       match([{ team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'normal' }]),
     ).toThrow('controller "rover"');

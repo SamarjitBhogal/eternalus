@@ -14,13 +14,13 @@ import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 import { Match } from './Match';
+import { placeholderRoster } from './placeholderRoster';
 import {
   FOLLOW_VIEW_HEIGHT,
   FOLLOW_VIEW_WIDTH,
   LOG_RING_CAPACITY,
   PLACEHOLDER_MATCH_SEED,
   PLACEHOLDER_PLAYER,
-  placeholderRoster,
 } from './Match.constants';
 import { CLICK_SLOP } from './useMatch.constants';
 

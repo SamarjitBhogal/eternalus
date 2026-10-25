@@ -1526,3 +1526,21 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 676 passed (676)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: the pre-PR gate.
+
+### 2026-10-25 — Minion system M3, pre-PR gate — feat/minion-m3-bot-laners — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `0b59134..1eec4f4`) requested changes with
+  one blocker, fixed: `legendsPerLane` was never read. `assignLanes` now fills lanes up to it and
+  throws when a team's laners do not fit, and `Simulation` assigns every lane before it spawns
+  anything. Should-fixes applied: a bot that heals is shown playing its lane again (a `move`
+  back to the lane, no `stop`); `Regroup` returns to the nearest point of the bot's lane (11 §4.2,
+  "the lane corridor") instead of its own end; an invalid `Placement.controller` throws instead
+  of silently falling back; `placeholderRoster` has its own client file and test. Nits applied:
+  `ControllerId` derives from `CONTROLLER_IDS`, `ControllerSpawn` sits beside `Placement`,
+  retreat points tie-break by id, one test file per class, the condition-notes convention is
+  documented on `BtNode`, doc 18 says roster order. Accepted: `assignLanes` in `state/` (beside
+  `formationSlot`), retreat arrival measured to the structure's centre while structures are map
+  features. Ponytail (lite): lean already, no cuts.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 679 passed (679)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: critic re-check, draft PR; M8 merges these fixes.

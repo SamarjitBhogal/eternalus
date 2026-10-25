@@ -84,7 +84,7 @@ shared ranking helper `ai/aggroRank`, minion attacks from `balancing.md`, `stop`
 attack target (MS-26), the chase in `PathingSystem` (§5.2) and the anchor holding while the leader
 engages (§4). Pull request M3 adds the bot laners (§8): `SimulationOptions.roster` (the bot
 Legends, spawned when the match is built at their own end of their lane, in ranks), `assignLanes`
-for MS-20, a spawn's own controller and starting memory (`Placement.controller`, holding the lane)
+for MS-20 (bots in roster order rather than id order, up to `legendsPerLane`), a spawn's own controller and starting memory (`Placement.controller`, holding the lane)
 and `BotLegendController` playing doc 11 §4.2's laner tree. The Rover waits for its controller
 (M8). Lane objectives, gate holding and guards (M2c onward) wait for structure entities. The pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 

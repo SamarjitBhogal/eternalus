@@ -77,16 +77,22 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
   });
 
   it('Survive: keeps retreating until the rejoin line, then plays its lane again', () => {
-    const { state, bot, decide, hurt } = setUp({ x: 80, y: 20 });
+    const { state, bot, decide, hurt } = setUp({ x: 80, y: 25 });
     hurt(0.5);
 
-    expect(decide({ lane: 'lane-0', isRetreating: true }).memory).toMatchObject({
-      isRetreating: true,
-    });
+    const retreating = decide({ lane: 'lane-0', isRetreating: true });
+    expect(retreating.memory).toMatchObject({ isRetreating: true });
+    // Back to the light SpawnerTower at (60, 20).
+    expect(retreating.commands).toEqual([
+      { type: 'move', actorId: bot, direction: { x: -20, y: -5 } },
+    ]);
     state.entities.get(bot)?.getComponent(Health).heal(1e6);
-    expect(decide({ lane: 'lane-0', isRetreating: true }).memory).toMatchObject({
-      isRetreating: false,
-    });
+    const returning = decide({ lane: 'lane-0', isRetreating: true });
+    expect(returning.memory).toMatchObject({ isRetreating: false });
+    // No allied horde on the lane: back to the nearest point of the lane, (80, 20).
+    expect(returning.commands).toEqual([
+      { type: 'move', actorId: bot, direction: { x: 0, y: -5 } },
+    ]);
   });
 
   it('Fight: attacks the enemy the scorer likes best and closes in, stopping in reach', () => {
@@ -128,13 +134,11 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decide().commands).toEqual([{ type: 'move', actorId: bot, direction: { x: 40, y: 0 } }]);
   });
 
-  it('Regroup: with no allied horde on its lane it waits at its own end, halting once there', () => {
-    const { bot, decide } = setUp({ x: 30, y: 20 });
+  it('Regroup: with no allied horde on its lane it returns to the lane, halting once there', () => {
+    const { bot, decide } = setUp({ x: 30, y: 26 });
 
-    expect(decide().commands).toEqual([
-      { type: 'move', actorId: bot, direction: { x: -10, y: 0 } },
-    ]);
-    expect(setUp({ x: 21, y: 20 }).decide().commands).toEqual([
+    expect(decide().commands).toEqual([{ type: 'move', actorId: bot, direction: { x: 0, y: -6 } }]);
+    expect(setUp({ x: 30, y: 21 }).decide().commands).toEqual([
       { type: 'move', actorId: 'entity-1', direction: { x: 0, y: 0 } },
     ]);
   });
