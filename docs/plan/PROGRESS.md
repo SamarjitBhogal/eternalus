@@ -1420,3 +1420,20 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: merge #38, then this PR.
+
+### 2026-10-25 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai (off feat/minion-m2a-brains-perception) — SamarjitBhogal + Claude Code
+
+- What was done: on SamarjitBhogal's request, the minion plan now plans for enemy bots of every
+  entity type. Doc 18 gets MS-28 (proposed; MS-3 marked superseded), camp mobs and checkpoint
+  defenders in its entity legend, a new §7.1 (both are leashed guards that reuse
+  `GuardController` with a camp or capture point as home), a test line, a "scheduled here,
+  designed elsewhere" note for bosses, the Rover, the bot tree and A\*, and open question 4. The
+  plan gets phases M6 (camps and checkpoint defenders), M7 (bosses) and M8 (Rover, A\*, bot
+  ability use), their PR rows, and a §1.1 coverage table listing every AI-driven entity with its
+  controller, design doc and build phase (turrets stay in Phase 2 sprint 2.3). Pointers in doc 11
+  §4, doc 07 §7 and the Phase 3 plan. Because DEC-47 (sholtzman) kept camps, checkpoint spawns,
+  A\* and the Rover in Phase 3, the change is marked proposed and an `INBOX.md` item asks for
+  sign-off and for the checkpoint defenders' team and leash.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: owner sign-off on the INBOX item; merge after #39 (this branch is cut from M2a).

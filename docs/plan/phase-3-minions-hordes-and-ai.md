@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-25
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -31,6 +31,12 @@ performance budget is proved. The word is **horde**, not "hoard".
 3.1–3.4 and 3.7; its §"Relation to Phase 3" lists exactly which. Read it before any sprint 3.1,
 3.2, 3.3, 3.4 or 3.7 task. A\* for Legends, forest camps, checkpoint assist spawns and the Rover
 stay here (DEC-47).
+
+**Proposed (doc 18 MS-28, owner sign-off pending in `INBOX.md`).** The minion plan also takes over
+the breakdown of A\* for Legends (3.2), forest camps and checkpoint assist spawns (3.4), bosses
+(3.6), and the Rover and bot ability use (3.7), as its phases M6 to M8 (its §1.1 lists every
+AI-driven entity). Nothing is dropped and the work still ships in these weeks. Sprints 3.5 and 3.8
+stay here either way. Until the owner signs off, the paragraph above holds.
 
 - **Branch:** `phase/3-minions-hordes-and-ai` (stacked on `phase/2-…` until it merges).
 - **Weeks:** 6–7 (2026-11-09 → 2026-11-20). Week 6: sprints 3.1, 3.2, 3.3, 3.5; week 7:

@@ -181,6 +181,16 @@ Reply inline (`Decision: …`).
       stat for the FR-029 aura. Confirm or correct.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
+- [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
+      SamarjitBhogal asked (2026-10-25) for the minion plan to cover enemy bots of every
+      entity type. Proposed in doc 18 MS-28 and `docs/plan/minion-system-plan.md` (phases M6
+      to M8, coverage table §1.1): camps and checkpoint assist spawns (3.4), bosses (3.6),
+      A\* for Legends (3.2), and the Rover and bot ability use (3.7) move to the minion plan's
+      breakdown. Nothing is dropped and the work still ships in Phase 3's weeks. Sprints 3.5
+      and 3.8 stay in the Phase 3 plan, and turrets stay with the `Turret` (sprint 2.3). (1)
+      Sign off the move, or keep DEC-47's split. (2) Which team do checkpoint defenders fight
+      for: the zone's owner, the team being captured against, or neutral? (3) Does their leash
+      follow the capture zone (doc 18 §7.1)?
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

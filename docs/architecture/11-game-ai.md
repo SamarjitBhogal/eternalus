@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-25
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -113,6 +113,10 @@ query touches at most the 9 surrounding cells
 results are id-sorted. Fog of war is **post-MVP**; `Vision` is its extension point.
 
 ## 4. Controllers
+
+The build order of every controller below except `PlayerController` and `TurretController` is
+the [minion system plan](../plan/minion-system-plan.md) §1.1 (proposed MS-28 of doc 18, pending the
+owner's sign-off); this section stays their design.
 
 ### 4.1 PlayerController (MVP)
 
