@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
+import { TEST_ASSET_BOXES } from '../../bridge/__fixtures__/assetFixtures';
 import { renderWithStore, TEST_CONTENT } from '../testStore';
 import haloStyles from './ClassSelectCardHalo.module.css';
 import { ClassSelectCardRow } from './ClassSelectCardRow';

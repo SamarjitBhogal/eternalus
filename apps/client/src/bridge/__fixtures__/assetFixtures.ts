@@ -2,9 +2,9 @@
  * Test support: an assets state with every asset a catalogue names loaded, for `ui/testStore.tsx`.
  * Imported only by test support, never by a module `main.tsx` reaches (I-76).
  */
-import type { AssetId, DisplayCatalogue, RasterBox, RenditionKey } from './catalogue.types';
-import { assetsSlice } from './slices/assetsSlice';
-import type { RootState } from './store';
+import type { AssetId, DisplayCatalogue, RasterBox, RenditionKey } from '../catalogue.types';
+import { assetsSlice } from '../slices/assetsSlice';
+import type { RootState } from '../store';
 
 const isAssetId = (id: AssetId | null): id is AssetId => id !== null;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classCardFixture, specCardFixture } from './catalogueFixtures';
+import { classCardFixture, specCardFixture } from './__fixtures__/catalogueFixtures';
 import { canConfirmSelection, isSelectableClass, isSelectableSpec } from './selectionRules';
 
 const warrior = classCardFixture({ classId: 'warrior' });

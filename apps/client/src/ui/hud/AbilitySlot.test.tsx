@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { HudSlotId } from '../../bridge/Binding.types';
 import type { AbilitySlotStatus } from '../../bridge/hud.types';
-import { FIGMA_HUD_PLAYER, figmaHudState } from '../../bridge/hudFixtures';
+import { FIGMA_HUD_PLAYER, figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
 import { accessibleNames, renderWithStore } from '../testStore';
 import { SLOT_FRAMES } from './AbilitySlotFrame.constants';
 import { AbilitySlot } from './AbilitySlot';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadedAssetsFor } from '../../bridge/assetFixtures';
+import { loadedAssetsFor } from '../../bridge/__fixtures__/assetFixtures';
 import type { Binding } from '../../bridge/Binding.types';
 import type { DisplayCatalogue, LegendClassCard } from '../../bridge/catalogue.types';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';

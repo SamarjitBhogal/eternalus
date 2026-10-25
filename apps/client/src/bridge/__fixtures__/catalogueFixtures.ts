@@ -9,7 +9,7 @@ import type {
   LegendClassCard,
   LegendSpecArt,
   LegendSpecCard,
-} from './catalogue.types';
+} from '../catalogue.types';
 
 /** The accent every fixture card has unless the test gives one. */
 const FIXTURE_ACCENT: ColourToken = '--class-magus-accent';

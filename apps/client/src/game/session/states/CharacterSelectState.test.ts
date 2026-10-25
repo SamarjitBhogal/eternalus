@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classCardFixture, specCardFixture } from '../../../bridge/catalogueFixtures';
+import { classCardFixture, specCardFixture } from '../../../bridge/__fixtures__/catalogueFixtures';
 import type { ClassSelection, UiIntent } from '../../../bridge/events';
 import { shippedCatalogue } from '../../content/__fixtures__/shippedCatalogue';
 import { testSession, testSessionDeps } from '../../testSessionDeps';

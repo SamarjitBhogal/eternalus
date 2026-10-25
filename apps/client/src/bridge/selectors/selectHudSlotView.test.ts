@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AbilitySlotStatus } from '../hud.types';
-import { FIGMA_HUD_PLAYER, TEST_HUD_CATALOGUE } from '../hudFixtures';
-import { classCardFixture } from '../catalogueFixtures';
+import { FIGMA_HUD_PLAYER, TEST_HUD_CATALOGUE } from '../__fixtures__/hudFixtures';
+import { classCardFixture } from '../__fixtures__/catalogueFixtures';
 import { contentSlice } from '../slices/contentSlice';
 import { hudSlice } from '../slices/hudSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';

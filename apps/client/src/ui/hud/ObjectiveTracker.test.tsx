@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CapturePointStatus } from '../../bridge/hud.types';
-import { figmaHudState } from '../../bridge/hudFixtures';
+import { figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
 import { STRINGS } from '../strings';
 import { accessibleNames, renderWithStore } from '../testStore';
 import { cssRule, FIGMA_MATCH_SETUP, withHudSetup } from './hudTestSupport';

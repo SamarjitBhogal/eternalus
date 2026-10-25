@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { HudSlotId } from '../../bridge/Binding.types';
-import { TEST_HUD_CATALOGUE } from '../../bridge/hudFixtures';
+import { TEST_HUD_CATALOGUE } from '../../bridge/__fixtures__/hudFixtures';
 import { isSelectableClass } from '../../bridge/selectionRules';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
 import { shippedCatalogue } from './__fixtures__/shippedCatalogue';

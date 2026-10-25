@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadedAssetsFor } from '../../bridge/assetFixtures';
-import { classCardFixture } from '../../bridge/catalogueFixtures';
+import { loadedAssetsFor } from '../../bridge/__fixtures__/assetFixtures';
+import { classCardFixture } from '../../bridge/__fixtures__/catalogueFixtures';
 import type { DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import type { RosterEntry } from '../../bridge/events';

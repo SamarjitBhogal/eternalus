@@ -3,17 +3,17 @@
  * HUD tests, `ui/testStore.tsx` and the visual harness. A live match never shows these (F6):
  * nothing `main.tsx` reaches imports this file (I-76).
  */
-import type { HudSlotId } from './Binding.types';
-import type { HudCatalogue } from './catalogue.types';
-import type { PlayableTeam } from './domain.types';
-import type { MatchClock } from './events';
+import type { HudSlotId } from '../Binding.types';
+import type { HudCatalogue } from '../catalogue.types';
+import type { PlayableTeam } from '../domain.types';
+import type { MatchClock } from '../events';
 import type {
   AbilitySlotStatus,
   CapturePointStatus,
   PlayerHudSnapshot,
   StructureStatus,
-} from './hud.types';
-import type { RootState } from './store';
+} from '../hud.types';
+import type { RootState } from '../store';
 
 /** A ready slot with no ability and no cooldown (the gold-glow look, OD-9), with `changes` applied. */
 const figmaSlot = (

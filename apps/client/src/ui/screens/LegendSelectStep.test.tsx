@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadedAssetsFor, TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
+import { loadedAssetsFor, TEST_ASSET_BOXES } from '../../bridge/__fixtures__/assetFixtures';
 import type { Binding } from '../../bridge/Binding.types';
 import type { DisplayCatalogue, LegendClassCard } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';

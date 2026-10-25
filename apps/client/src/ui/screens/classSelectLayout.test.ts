@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
+import { TEST_ASSET_BOXES } from '../../bridge/__fixtures__/assetFixtures';
 import {
   classArtOrigin,
   classCardStyle,

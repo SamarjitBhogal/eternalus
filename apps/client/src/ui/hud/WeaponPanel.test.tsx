@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadedAssetsFor, TEST_HUD_ASSET_BOXES } from '../../bridge/assetFixtures';
+import { loadedAssetsFor, TEST_HUD_ASSET_BOXES } from '../../bridge/__fixtures__/assetFixtures';
 import type { RasterBox } from '../../bridge/catalogue.types';
-import { FIGMA_HUD_PLAYER, figmaHudState } from '../../bridge/hudFixtures';
+import { FIGMA_HUD_PLAYER, figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
 import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
 import { cssRule, FIGMA_MATCH_SETUP, withHudSetup } from './hudTestSupport';
 import { WeaponPanel } from './WeaponPanel';

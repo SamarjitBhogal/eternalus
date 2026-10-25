@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { DisplayCatalogue } from './catalogue.types';
 import { connectBusToStore } from './connectBusToStore';
 import type { BridgeEventMap, CreditEntry, MatchSetupDraft, RosterEntry } from './events';
-import { FIGMA_HUD_PLAYER, figmaHudState, TEST_HUD_CATALOGUE } from './hudFixtures';
+import { FIGMA_HUD_PLAYER, figmaHudState, TEST_HUD_CATALOGUE } from './__fixtures__/hudFixtures';
 import { createAppStore } from './store';
 import { TypedEventBus } from './TypedEventBus';
 

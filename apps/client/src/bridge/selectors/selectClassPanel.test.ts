@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classCardFixture, specCardFixture } from '../catalogueFixtures';
+import { classCardFixture, specCardFixture } from '../__fixtures__/catalogueFixtures';
 import type { ClassSelectLayout, DetailRow, DisplayCatalogue } from '../catalogue.types';
 import type { PlayableTeam } from '../domain.types';
 import { contentSlice } from '../slices/contentSlice';

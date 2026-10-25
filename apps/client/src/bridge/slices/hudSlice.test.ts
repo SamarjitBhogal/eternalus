@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { FIGMA_HUD_PLAYER } from '../hudFixtures';
+import { FIGMA_HUD_PLAYER } from '../__fixtures__/hudFixtures';
 import type { PlayerHudSnapshot } from '../hud.types';
 import { hudSlice } from './hudSlice';
 

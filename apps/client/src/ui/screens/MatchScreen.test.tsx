@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { figmaHudState } from '../../bridge/hudFixtures';
+import { figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
 
 import type { Overlay } from '../../bridge/events';
 import type { RootState } from '../../bridge/store';
