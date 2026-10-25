@@ -167,6 +167,22 @@ describe('buildDisplayCatalogue', () => {
     ).toThrow('spec "oracle" has no presentation');
   });
 
+  it('throws naming a presentation key left without a content entry (a renamed or removed id)', () => {
+    const [legend, spec, locked] = [CONTENT.legends[0], CONTENT.specs[0], CONTENT.lockedClasses[0]];
+    if (legend === undefined || spec === undefined || locked === undefined) {
+      throw new Error('content has no class, spec or locked class');
+    }
+    expect(() =>
+      build({ content: { legends: CONTENT.legends.filter((entry) => entry !== legend) } }),
+    ).toThrow(`class presentation "${legend.id}" has no content entry`);
+    expect(() =>
+      build({ content: { specs: CONTENT.specs.filter((entry) => entry !== spec) } }),
+    ).toThrow(`spec presentation "${spec.id}" has no content entry`);
+    expect(() => build({ content: { lockedClasses: [] } })).toThrow(
+      `locked class presentation "${locked.id}" has no content entry`,
+    );
+  });
+
   it('throws naming a HUD kind or group without a core name', () => {
     const withKinds = (extra: HudPresentationKinds): Partial<CataloguePresentation> => ({
       hud: { ...HUD_PRESENTATION, structureKinds: [...HUD_PRESENTATION.structureKinds, ...extra] },

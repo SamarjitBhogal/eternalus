@@ -171,6 +171,22 @@ function toLockedCard(
   };
 }
 
+/** Throws naming a presentation key with no content entry (left behind by a content id change). */
+function checkNoLeftoverPresentation(
+  content: DisplayContent,
+  presentation: CataloguePresentation,
+): void {
+  const keyed: readonly (readonly [string, object, readonly { readonly id: string }[]])[] = [
+    ['class', presentation.classes, content.legends],
+    ['spec', presentation.specs, content.specs],
+    ['locked class', presentation.lockedClasses, content.lockedClasses],
+  ];
+  for (const [what, byId, entries] of keyed) {
+    const leftover = Object.keys(byId).find((key) => !entries.some((entry) => entry.id === key));
+    if (leftover !== undefined) fail(`${what} presentation "${leftover}" has no content entry`);
+  }
+}
+
 /** HUD kinds named from core by kind; an aggregated group takes its first named kind's name. */
 function hudCatalogue(
   mapFeatures: DisplayContent['mapFeatures'],
@@ -248,9 +264,9 @@ function catalogueAssetIds(catalogue: DisplayCatalogue): AssetId[] {
  * Joins core display content with client presentation. Detail rows: core names × presentation
  * icons, in slot order. HUD kinds: core names by kind (an aggregated group takes its first named
  * kind's name).
- * @throws Error naming the id: a core class, spec or locked class without presentation, a HUD kind
- *   or group without a core name, or an asset id that is not in `knownAssetIds` (checked at
- *   boot).
+ * @throws Error naming the id: a core class, spec or locked class without presentation, a
+ *   presentation key without a core entry, a HUD kind or group without a core name, or an asset id
+ *   that is not in `knownAssetIds` (checked at boot).
  */
 export function buildDisplayCatalogue(inputs: {
   readonly content: DisplayContent;
@@ -281,6 +297,7 @@ export function buildDisplayCatalogue(inputs: {
     hud: hudCatalogue(content.mapFeatures, presentation.hud),
     teamNames: content.teamNames,
   };
+  checkNoLeftoverPresentation(content, presentation);
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));
   if (unknown !== undefined) fail(`asset "${unknown}" is not in the asset manifest`);
   return RENDERER_VIEWS[effectsRenderer](full);
