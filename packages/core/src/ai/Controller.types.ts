@@ -33,6 +33,8 @@ export type Decision = {
 export interface Controller {
   /** The id content definitions name and the registry keys it by. */
   readonly id: ControllerId;
+  /** Whether this controller has the AI profile `profileId`, so bad content fails before play. */
+  hasProfile(profileId: string): boolean;
   /** Decides for one entity: reads state only and returns the commands and the brain after. */
   decide(input: DecisionInput): Decision;
 }

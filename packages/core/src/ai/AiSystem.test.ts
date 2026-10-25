@@ -33,6 +33,7 @@ const cadenceWith = (maxDecisionsPerTick: number): AiCadence => ({
 /** A controller that stops every entity it is asked about and records who asked. */
 const stopper = (asked: EntityId[]): Controller => ({
   id: 'minion',
+  hasProfile: (profileId) => profileId === 'lane-minion',
   decide: ({ entityId, brain }) => {
     asked.push(entityId);
     const decisions = typeof brain.memory.decisions === 'number' ? brain.memory.decisions : 0;
@@ -183,12 +184,25 @@ describe('AiSystem', () => {
 
   it('checks the definitions against the registry before a match starts', () => {
     expect(() => {
-      AiSystem.assertRegistered([{ id: 'a' }, { id: 'b', controller: 'minion' }], {
-        minion: stopper([]),
-      });
+      AiSystem.assertRegistered(
+        [{ id: 'a' }, { id: 'b', controller: 'minion', aiProfile: 'lane-minion' }],
+        {
+          minion: stopper([]),
+        },
+      );
     }).not.toThrow();
     expect(() => {
       AiSystem.assertRegistered([{ id: 'g', controller: 'guard' }], {});
     }).toThrow('Definition "g" names controller "guard"');
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'p', controller: 'minion', aiProfile: 'lane-minion' }], {
+        minion: stopper([]),
+      });
+    }).not.toThrow();
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'p', controller: 'minion', aiProfile: 'typo' }], {
+        minion: stopper([]),
+      });
+    }).toThrow('Definition "p" names AI profile "typo"');
   });
 });

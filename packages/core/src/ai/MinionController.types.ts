@@ -5,7 +5,7 @@ import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
-import type { UnitClassifier } from './aggroRank';
+import type { UnitClassifier } from './aggroRank.types';
 import type { Perception } from './perception/Perception';
 
 /** A minion's state (architecture 18 §6.1). */

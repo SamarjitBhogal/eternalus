@@ -47,22 +47,36 @@ export class AiSystem {
   }
 
   /**
-   * Checks that every controller the definitions name is registered, so a content error stops
-   * the match at construction instead of mid-tick.
+   * Checks that every controller the definitions name is registered and has the AI profile they
+   * name (the controller id when they name none), so a content error stops the match at
+   * construction instead of mid-tick.
    *
-   * @throws Error naming the first definition whose controller has no implementation.
+   * @throws Error naming the first definition whose controller or profile does not exist.
    */
   public static assertRegistered(
-    definitions: readonly { readonly id: string; readonly controller?: ControllerId }[],
+    definitions: readonly {
+      readonly id: string;
+      readonly controller?: ControllerId;
+      readonly aiProfile?: string;
+    }[],
     controllers: ControllerRegistry,
   ): void {
-    const missing = definitions.find(
-      ({ controller }) => controller !== undefined && controllers[controller] === undefined,
-    );
-    if (missing !== undefined) {
-      throw new Error(
-        `Definition "${missing.id}" names controller "${String(missing.controller)}", which is not registered.`,
-      );
+    for (const { id, controller, aiProfile } of definitions) {
+      if (controller === undefined) {
+        continue;
+      }
+      const implementation = controllers[controller];
+      if (implementation === undefined) {
+        throw new Error(
+          `Definition "${id}" names controller "${controller}", which is not registered.`,
+        );
+      }
+      const profile = aiProfile ?? controller;
+      if (!implementation.hasProfile(profile)) {
+        throw new Error(
+          `Definition "${id}" names AI profile "${profile}", which controller "${controller}" does not have.`,
+        );
+      }
     }
   }
 

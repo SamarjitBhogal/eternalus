@@ -2,6 +2,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { FORMATIONS } from '../content/mobs/formations/formations';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
@@ -75,7 +76,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
-              { [RANKS_FORMATION.id]: RANKS_FORMATION },
+              FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
             ),
           ]),

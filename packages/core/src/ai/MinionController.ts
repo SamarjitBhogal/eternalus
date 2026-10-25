@@ -4,7 +4,7 @@ import { formationSlot } from '../state/formationSlot';
 import type { MutableVec2 } from '../utils/vec2.types';
 import { aggroRank } from './aggroRank';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
-import { FRESH_MINION_MEMORY, MINION_STATES } from './MinionController.constants';
+import { MINION_STATES } from './MinionController.constants';
 import type {
   MinionControllerContent,
   MinionMemory,
@@ -31,6 +31,11 @@ export class MinionController implements Controller {
 
   /** @param content - Aggro profiles, formations and kind classes; the controller holds none. */
   public constructor(private readonly content: MinionControllerContent) {}
+
+  /** Whether `profileId` names one of the injected aggro rules. */
+  public hasProfile(profileId: string): boolean {
+    return this.content.aggro[profileId] !== undefined;
+  }
 
   /**
    * Advances the minion's state machine by one decision.
@@ -154,7 +159,12 @@ export class MinionController implements Controller {
 
   /** The candidate's place in the priority list; infinite when it matches no entry. */
   private rankOf({ state, team, rule }: MinionSituation, candidate: EntityId): number {
-    const rank = aggroRank(candidate, team, rule.priority, state.entities, this.content.classOf);
+    const rank = aggroRank(candidate, {
+      team,
+      priority: rule.priority,
+      entities: state.entities,
+      classOf: this.content.classOf,
+    });
     return rank < 0 ? Number.POSITIVE_INFINITY : rank;
   }
 
@@ -166,8 +176,15 @@ export class MinionController implements Controller {
       return true;
     }
     state.routes.pose(horde.lane, horde.team, horde.progress, this.anchor, this.forward);
-    const followers = horde.memberIds.filter((member) => member !== horde.leaderId);
-    const follower = id === horde.leaderId ? -1 : followers.indexOf(id);
+    // Followers ahead of this member in `memberIds`, the leader left out (18 §5.1).
+    let ahead = 0;
+    for (const member of horde.memberIds) {
+      if (member === id) {
+        break;
+      }
+      ahead += member === horde.leaderId ? 0 : 1;
+    }
+    const follower = id === horde.leaderId ? -1 : ahead;
     formationSlot(this.anchor, this.forward, follower, formation, this.slot);
     const dx = this.slot.x - position.x;
     const dy = this.slot.y - position.y;
@@ -180,7 +197,7 @@ export class MinionController implements Controller {
       const value = memory[key];
       return typeof value === 'number' ? value : 0;
     };
-    const fsm = MINION_STATES.find((state) => state === memory.fsm) ?? FRESH_MINION_MEMORY.fsm;
+    const fsm = MINION_STATES.find((state) => state === memory.fsm) ?? 'marching';
     return {
       fsm,
       targetId: typeof memory.targetId === 'string' ? memory.targetId : null,

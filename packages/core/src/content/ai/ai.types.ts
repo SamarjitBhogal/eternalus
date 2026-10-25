@@ -38,6 +38,9 @@ export type LaneAssessmentWeights = {
   readonly pushedBack: number;
 };
 
+/** The classes the aggro priority list names (architecture 11 §4.3). */
+export type UnitClass = 'legend' | 'minion' | 'turret';
+
 /**
  * One entry of a minion's target priority list (architecture 11 §4.3), best first. `x-attacking-
  * ally-y` is an enemy of class `x` whose attack target is an ally of class `y`; `closest-x` is any

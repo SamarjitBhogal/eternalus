@@ -164,9 +164,12 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
 
     run(simulation, 60 * 30);
 
-    // Each team opened with two hordes of 16.
-    expect(alive('light')).toBeLessThan(32);
-    expect(alive('dark')).toBeLessThan(32);
+    const { initialHordesPerTeam, hordeSizes } = createDefaultGameConfig({
+      match: { initialHordesPerTeam: 2 },
+    }).match;
+    const opened = initialHordesPerTeam * hordeSizes.light;
+    expect(alive('light')).toBeLessThan(opened);
+    expect(alive('dark')).toBeLessThan(opened);
     expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
   });
 

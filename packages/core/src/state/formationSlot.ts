@@ -19,13 +19,14 @@ export const formationSlot = (
   formation: FormationDefinition,
   out: MutableVec2,
 ): MutableVec2 => {
-  const back =
-    follower < 0 ? 0 : (Math.floor(follower / formation.ranksWidth) + 1) * formation.slotSpacing;
+  if (follower < 0) {
+    out.x = anchor.x;
+    out.y = anchor.y;
+    return out;
+  }
+  const back = (Math.floor(follower / formation.ranksWidth) + 1) * formation.slotSpacing;
   const across =
-    follower < 0
-      ? 0
-      : ((follower % formation.ranksWidth) - (formation.ranksWidth - 1) / 2) *
-        formation.slotSpacing;
+    ((follower % formation.ranksWidth) - (formation.ranksWidth - 1) / 2) * formation.slotSpacing;
   // `right` is `forward` turned a quarter: (-forward.y, forward.x).
   out.x = anchor.x - forward.x * back - forward.y * across;
   out.y = anchor.y - forward.y * back + forward.x * across;

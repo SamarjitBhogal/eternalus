@@ -72,7 +72,7 @@ guards and are the lane objectives (§6.2), but doc 07 implements them. The mini
 level-up** (MVP, a `CaptureSystem` reward, 07 §7) and **Ascend** (MVP-if-time, a Legend-kill
 reward) belong to their reward systems, not to this doc.
 
-**Implementation status (2026-10-17).** Minion plan phase M1 (marching) is built: the three
+**Implementation status (2026-10-25).** Minion plan phase M1 (marching) is built: the three
 lane minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team
 spawn counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`,
 `LaneFollowMovementStrategy` with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the

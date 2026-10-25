@@ -212,6 +212,11 @@ describe('MinionController', () => {
     expect(decision.commands).toEqual([]);
   });
 
+  it('knows its aggro profiles', () => {
+    expect(controller.hasProfile('lane-minion')).toBe(true);
+    expect(controller.hasProfile('minion')).toBe(false);
+  });
+
   it('throws on an aggro profile that does not exist', () => {
     const { add, decide } = setUp();
     const self = add('light', 50);

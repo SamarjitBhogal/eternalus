@@ -41,8 +41,8 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 flowchart LR
   CQ[CommandQueue] --> CAS[CommandApplySystem]
   CAS --> AI[AiSystem]
-  AI -- "decide(state, entityId)" --> C[Controller]
-  C -- "Command[] for tick + 1" --> CQ
+  AI -- "decide({ state, entityId, brain, perception })" --> C[Controller]
+  C -- "commands for tick + 1, brain after" --> CQ
   AI --> REST[AbilitySystem, MovementSystem, ...]
 ```
 
@@ -302,7 +302,7 @@ switch is recorded in the replay like everything else.
 
 - Unit tests per controller with fake state: `ai/testing/buildTestState()` builds a minimal
   `GameState` with a handful of entities and a stub `Perception`; tests assert the returned
-  commands, e.g. `expect(minion.decide(state, mobId)).toEqual([{ type: 'attack-target', targetId }])`.
+  decision, e.g. `expect(minion.decide(input).commands).toEqual([{ type: 'attack-target', actorId, targetId }])`.
 - FSM transition tests are table-driven (`from`, event, expected `to`); BT tests cover each node
   class and the tree with stub conditions; considerations are pure functions of numbers.
 - Scenario tests in `ai/scenarios/*.test.ts` drive a real `Simulation` in sim mode: "a minion
@@ -344,6 +344,11 @@ work named:
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
 - The registry holds `MinionController` (M2b); the other controllers are absent until their
   phases, so it is a partial map.
+- A brain's `profileId` names an `AggroRuleDefinition` (`content/ai/aggro/`) directly; the
+  `AiProfileDefinition` of §2, which would group aggro, cadence and difficulty, arrives when a
+  second controller needs a profile. Controllers get their content through their constructor
+  from `Simulation` (the registry), not through `GameState` as §1 says; sign-off asked in
+  `INBOX.md`. `AiSystem.assertRegistered` checks each definition's profile at construction.
 - A definition that names an unregistered controller stops `Simulation` at construction (shipped
   content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities

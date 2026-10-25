@@ -1,13 +1,6 @@
-import type { AggroPriority } from '../content/ai/ai.types';
+import type { AggroPriority, UnitClass } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
-import type { EntityStore } from '../state/EntityStore';
-import type { Team } from '../teams/teams.types';
-
-/** The classes the aggro priority list names (architecture 11 §4.3). */
-type UnitClass = 'legend' | 'minion' | 'turret';
-
-/** The class of an entity kind, or `null` for a kind the priority list never names. */
-export type UnitClassifier = (kind: string) => UnitClass | null;
+import type { AggroRankOptions } from './aggroRank.types';
 
 /** What each priority entry matches: an enemy of `attacker` class, attacking an ally of `victim`. */
 const MEANING: Readonly<
@@ -25,15 +18,12 @@ const MEANING: Readonly<
 
 /**
  * The index of the first entry of `priority` that the enemy `candidate` matches, as seen by a unit
- * of `team` (architecture 11 §4.3, 18 §6.1); lower is better, `-1` when none matches. Pure: the
+ * of `options.team` (architecture 11 §4.3, 18 §6.1); lower is better, `-1` when none matches. Pure: the
  * ranking helper minion and guard controllers share (MS-27).
  */
 export const aggroRank = (
   candidate: EntityId,
-  team: Team,
-  priority: readonly AggroPriority[],
-  entities: EntityStore,
-  classOf: UnitClassifier,
+  { team, priority, entities, classOf }: AggroRankOptions,
 ): number => {
   const kind = entities.get(candidate)?.kind;
   const attacker = kind === undefined ? null : classOf(kind);

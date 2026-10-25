@@ -19,7 +19,8 @@ const setUp = () => {
     entities.add(entity);
     return entity.id;
   };
-  const rank = (candidate: string) => aggroRank(candidate, 'light', PRIORITY, entities, CLASS_OF);
+  const rank = (candidate: string) =>
+    aggroRank(candidate, { team: 'light', priority: PRIORITY, entities, classOf: CLASS_OF });
   return { entities, add, rank };
 };
 

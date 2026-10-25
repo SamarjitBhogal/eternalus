@@ -1481,3 +1481,22 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 655 passed (655)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: the pre-PR gate, then M3 and M5a off this branch.
+
+### 2026-10-25 — Minion system M2b, pre-PR gate — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `7a87de1..35b4361`) approved with five
+  should-fixes, all applied: AI profiles are checked at `Simulation` construction
+  (`Controller.hasProfile`, `AiSystem.assertRegistered`); `aggroRank` takes an options object
+  (four-parameter limit); one `FORMATIONS` record feeds `PathingSystem` and the controller; doc
+  11 §1 and §8 show the new contract, and §10 records the profile and constructor-injection
+  stand-ins. Nits applied: shared ranking types in `aggroRank.types.ts`, the kind classifier as
+  content (`content/ai/unitClasses.ts`, with a turret stand-in row in the plan), no array
+  allocation while returning, TSDoc for `arrivalRadius`, the fight test derives its counts from
+  config. Two better-than-design items (the chase in `PathingSystem`, `state/formationSlot`),
+  constructor injection and the scaled aggro numbers are an `INBOX.md` item. Not changed:
+  `AiSystem` still creates its own `Perception` (accepted). Ponytail (lite): `FRESH_MINION_MEMORY`
+  deleted, `formationSlot` returns early for the leader.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 657 passed (657)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: draft PR; M3 (bot laners, roster option chosen by SamarjitBhogal) and M5a off this
+  branch.

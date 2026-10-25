@@ -6,8 +6,9 @@ import type { MovementContext, MovementStrategy } from './MovementStrategy.types
 
 /**
  * How a lane-horde mob steers (architecture 18 §5.2): toward its target (its formation slot, or
- * the unit it chases) until it is within the context's `arrivalRadius`, plus separation from every neighbour (10 §9, MS-19). Stateless:
- * it reads the context's buffers, writes `context.out` and allocates nothing.
+ * the unit it chases) until it is within the context's `arrivalRadius`, plus separation from every
+ * neighbour (10 §9, MS-19). Stateless: it reads the context's buffers, writes `context.out` and
+ * allocates nothing.
  *
  * @remarks ponytail: wall avoidance and the flow field join with terrain-aware routing (minion
  * plan M4); separation falls off linearly, not as 1/r (minion plan §3).
@@ -16,7 +17,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
   /** @param profile - Distances and weights; the strategy holds no numbers of its own. */
   public constructor(private readonly profile: HordeSteeringProfile) {}
 
-  /** Toward the slot, or none once there, plus the separation push; below `minSteer` is none. */
+  /** Toward the target, or none once there, plus the separation push; below `minSteer` is none. */
   public desiredVelocity(self: number, context: MovementContext): Vec2 {
     const { positions, target, out, found, arrivalRadius } = context;
     const { separationRadius, separationWeight, minSteer } = this.profile;

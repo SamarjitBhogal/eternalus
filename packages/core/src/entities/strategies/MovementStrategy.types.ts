@@ -22,7 +22,10 @@ export type MovementContext = {
   readonly found: Int32Array;
   /** Where the unit wants to be: a horde mob's formation slot, or the unit it chases. */
   readonly target: Vec2;
-  /** Within this distance of `target` the unit is there and stops steering toward it. */
+  /**
+   * Within this distance of `target` the unit is there and stops steering toward it. The one
+   * writable field: `PathingSystem` rewrites it for each member, so the context never allocates.
+   */
   arrivalRadius: number;
   /** Scratch the strategy writes its answer into and returns, so nothing allocates. */
   readonly out: MutableVec2;
