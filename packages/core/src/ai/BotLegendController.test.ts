@@ -76,6 +76,16 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decision.memory).toEqual({ lane: 'lane-0', isRetreating: true, targetId: null });
   });
 
+  it('Survive: of two equally near allied retreat points it takes the lower id', () => {
+    // (55, 30) is as far from the BuffTower at (50, 40) as from the SpawnerTower at (60, 20).
+    const { bot, decide, hurt } = setUp({ x: 55, y: 30 });
+    hurt(1 - NORMAL_BOT.retreatHealthFraction + 0.05);
+
+    expect(decide().commands).toEqual([
+      { type: 'move', actorId: bot, direction: { x: -5, y: 10 } },
+    ]);
+  });
+
   it('Survive: keeps retreating until the rejoin line, then plays its lane again', () => {
     const { state, bot, decide, hurt } = setUp({ x: 80, y: 25 });
     hurt(0.5);
