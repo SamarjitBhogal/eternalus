@@ -22,7 +22,7 @@
 /* HUD key box (65:667): 25 × 25, 1 px inside stroke, no fill; Cinzel Regular 16, white, centred.
    A single character keeps the box; a longer label ("Mouse 4") grows it to the right. The padding
    puts the content centre on the Figma text node 65:668 (26 × 24 at +0, +1): +13, +13. The line
-   height fills that 22-unit content box (FID-17), so a one-line label does not overflow it
+   height fills that 22-unit content box, so a one-line label does not overflow it
    (OD-21 f). */
 .hud {
   display: inline-flex;

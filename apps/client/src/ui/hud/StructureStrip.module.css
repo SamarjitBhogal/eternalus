@@ -4,7 +4,7 @@
   gap: calc(8 * var(--hud-u));
 }
 
-/* The enemy strip: the same identity order, laid out from the right (HUD spec §3.2). */
+/* The enemy strip: the same identity order, laid out from the right (Figma 65:542). */
 .enemy {
   flex-direction: row-reverse;
 }
@@ -16,7 +16,7 @@
   height: calc(62 * var(--hud-u));
 }
 
-/* Absolute team inks (F5): the owning team's colour, whichever side it is on. */
+/* Absolute team inks (HC-F5): the owning team's colour, whichever side it is on. */
 .tile[data-team='light'] {
   --structure-ink: var(--team-light-hud-structure);
 }

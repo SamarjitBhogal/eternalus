@@ -5,7 +5,7 @@ import styles from './Countdown.module.css';
 
 /**
  * The character-select countdown (62:135, 58:281): whole seconds left, the Figma's static look at
- * every value (no urgency state, I-60). A `timer`, so assistive technology reads it on demand and
+ * every value (no urgency state, HC-S1). A `timer`, so assistive technology reads it on demand and
  * never announces each tick. The session owns the time; this only shows it.
  */
 export function Countdown({

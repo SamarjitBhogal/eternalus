@@ -16,7 +16,7 @@
 }
 
 /* The selection screens' host: full bleed and clipped, so the centred artboard and its outward
-   vignettes never scroll the page (I-13). */
+   vignettes never scroll the page (13 §10). */
 .stage {
   position: absolute;
   inset: 0;

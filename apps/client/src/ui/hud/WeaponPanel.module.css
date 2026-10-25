@@ -18,7 +18,7 @@
 
 /* An art its manifest entry places: the draw box (frame px of 62:231) that WeaponPanel sets as
    unitless --weapon-art-left/-top/-width/-height, less the panel's origin (397, 956), at the
-   file's own size. The battle axe's box is (387, 946) 274 × 82: Battle Axe 62:241's R1 render
+   file's own size. The battle axe's box is (387, 946) 274 × 82: Battle Axe 62:241's render (CD-37)
    with its rotation, crop and both shadows baked. */
 .placed {
   left: calc((var(--weapon-art-left) - 397) * var(--hud-u));

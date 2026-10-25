@@ -2,7 +2,7 @@
 export const HUD_FILTER_LEVEL_NUMBER = 'hud-filter-level-number';
 
 /**
- * The level number's effects (spec §2.3), with the two tuning values a Chrome render needs to
+ * The level number's effects (Figma 65:656), with the two tuning values a Chrome render needs to
  * look like the Figma render (measured against hud.figma.png; the grain itself stays CD-25):
  * - shadows: Figma DROP_SHADOW blur 10 and 15 (SVG σ 5 and 7.5) render as σ 3.5 and 5.25, i.e.
  *   0.7 × the nominal σ (the ring 4–25 px around the digits fits best there);

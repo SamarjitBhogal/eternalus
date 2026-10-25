@@ -1,6 +1,6 @@
-/* Rules in one svg at the integer origin (CSUI E3, E4), geometry from the Figma render boxes:
-   white header line and dividers, 1.5 px accents at 40 % red. The class layout's lines have round
-   caps (rx 0.5); 62:70 and 58:271 butt caps. */
+/* Rules in one svg at the integer origin (Chrome snaps fractional CSS boxes, not SVG geometry),
+   geometry from the Figma render boxes: white header line and dividers, 1.5 px accents at 40 %
+   red. The class layout's lines have round caps (rx 0.5); 62:70 and 58:271 butt caps. */
 .rules {
   position: absolute;
   left: 0;

@@ -6,7 +6,7 @@ type SlotFrame = { readonly size: number; readonly readyStroke: number };
 /**
  * Each slot's frame (62:231): the abilities' 70 px boxes (62:264/268/272), the Ultimate Container
  * 83.515 px with its 1.5 px stroke (62:247), the Courage slot 86.633 px (62:281) and the Sword
- * Container 87 px (65:711). Drawn as SVG geometry so the fractional edges are exact (FID-08); the
+ * Container 87 px (65:711). Drawn as SVG geometry so the fractional edges are exact; the
  * slot's module CSS gives its box the same size (asserted by its test).
  */
 export const SLOT_FRAMES: Readonly<Record<HudSlotId, SlotFrame>> = {

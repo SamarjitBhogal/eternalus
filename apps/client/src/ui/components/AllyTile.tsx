@@ -15,13 +15,13 @@ function lookOf(tile: AllyTileView, layout: AllyRosterLayout): AllyTileLook {
   return tile.state === 'legend' ? 'legend' : 'idle';
 }
 
-/** Every look but a picked Legend shows a class sigil, drawn at 85 % (FID-R2-09). */
+/** Every look but a picked Legend shows a class sigil, drawn at 85 %. */
 const showsSigil = (look: AllyTileLook, tile: AllyTileView): boolean =>
   look === 'player' || look === 'idle' || (look === 'player-picked' && tile.state !== 'legend');
 
 /**
- * One roster tile (62:201, 58:342; rule I-16): the image is the tile's rendition at its own box,
- * with no fit or crop (I-45); the border is drawn over it and the shadows around it live (I-70);
+ * One roster tile (62:201, 58:342; CD-07): the image is the tile's rendition at its own box,
+ * with no fit or crop (I-45); the border is drawn over it and the shadows around it live;
  * the accent of a Legend (or the player's pick) arrives as a content token. The class step's
  * player tile shows the local pick's sigil (`playerSigilAssetId`), empty before a pick. Read by
  * assistive technology as "You, Magus" or "<name>, <class>" from the tile's `classDisplayName`

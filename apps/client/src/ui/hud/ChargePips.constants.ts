@@ -14,8 +14,9 @@ export const PIP_GEOMETRY = {
   /**
    * Steps per px of the grid the Figma render puts each box's top and bottom edge on
    * (`hud.figma.png`: 946–969.875, 975.875–999.625, 1005.625–1029.5, i.e. 1/8 px). The stroke is
-   * drawn on those rendered edges, at most 0.063 px from the node geometry (a `normalised` CD
-   * row, WP-HUD audit round 1); the fills keep the node geometry.
+   * drawn on those rendered edges, at most 0.063 px from the node geometry (a `normalised`
+   * difference, reference 15 §2, measured in the HUD visual audit); the fills keep the node
+   * geometry.
    */
   edgeStepsPerPx: 8,
 } as const;

@@ -16,7 +16,7 @@ type GlowButtonChrome = {
 };
 
 /**
- * The URL of the Figma-state chrome plate to draw (I-36, CD-16): only with a loaded URL for the
+ * The URL of the Figma-state chrome plate to draw (CD-16): only with a loaded URL for the
  * plate the skin's box is measured for (`isBoxed`, `BOXED_CHROME_PLATES`), and only in the one
  * state it was exported in: enabled, neither hovered nor pressed. Every other case is `null`, the
  * live chrome (CD-15).

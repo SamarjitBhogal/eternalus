@@ -26,7 +26,9 @@ const FLAG_CLASS: Readonly<Record<HudAllegiance, string | undefined>> = {
 
 const selectChrome = (state: RootState) => contentSlice.selectors.selectHudCatalogue(state).chrome;
 
-/** The objective's letter: A, B, C … from the strings in lane order, past them its number (I-07). */
+/**
+ * The objective's letter: A, B, C … from the strings in lane order, past them its number (OD-20).
+ */
 const letterAt = (index: number): string =>
   STRINGS.hud.objectiveLetters[index] ?? String(index + 1);
 

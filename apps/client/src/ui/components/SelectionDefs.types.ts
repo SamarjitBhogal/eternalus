@@ -2,7 +2,7 @@
 export type GlowFlood =
   'frost' | 'frost-soft' | 'parchment' | 'azure' | 'azure-strong' | 'pale' | 'sky' | 'countdown';
 
-/** One Figma DROP_SHADOW as an SVG shadow: offset and σ = the Figma radius / 2 (CSUI E11). */
+/** One Figma DROP_SHADOW as an SVG shadow: offset and σ = the Figma radius / 2 (CD-15). */
 export type GlowShadow = {
   readonly dx: number;
   readonly dy: number;
@@ -29,10 +29,10 @@ type FilterUser = {
   readonly bleed: number;
 };
 
-/** A multi-shadow glow (Figma's shadows do not compound, so each is its own branch, SUB P8). */
+/** A multi-shadow glow (Figma's shadows do not compound, so each is its own branch). */
 export type GlowFilterDef = {
   readonly id: string;
-  /** Sized for the smallest user: per side ≥ bleed + 3σ + |offset| (I-66). */
+  /** Sized for the smallest user: per side ≥ bleed + 3σ + |offset|. */
   readonly region: FilterRegion;
   /** Bottom to top, merged beneath the source graphic. */
   readonly shadows: readonly GlowShadow[];
@@ -41,14 +41,14 @@ export type GlowFilterDef = {
    * keeps it whole; `'alpha'` cuts it under the source's alpha, so no shadow shows through a
    * translucent source (the glow group's ring glows and haze); `'geometry'` cuts it under the
    * user's whole box, transparent interior included (the rings: Figma draws no glow inside the
-   * 58:273 stroke, visual audit r3).
+   * 58:273 stroke, per the visual audit).
    */
   readonly knockout: 'none' | 'alpha' | 'geometry';
   /**
    * `'merged'`: the user's own paint is merged above the shadows. `'omitted'`: the filter paints
    * the shadows only; its user is a plain copy of the geometry they are cast from (strokes without
    * their own glows) and an unfiltered sibling above draws the content. Figma casts a group's
-   * shadow from its children's geometry, not from their glows (WP-CLASS CSS audit of 62:125: a
+   * shadow from its children's geometry, not from their glows (the visual audit of 62:125: a
    * group filter over glowing children cast its azure from the broad glow alpha).
    */
   readonly source: 'merged' | 'omitted';
@@ -63,7 +63,7 @@ export type GlowFilterDef = {
  */
 export type TextGlowDef = {
   readonly id: string;
-  /** Sized for the smallest user: per side ≥ bleed + 3σ + |offset| (I-66). */
+  /** Sized for the smallest user: per side ≥ bleed + 3σ + |offset|. */
   readonly region: FilterRegion;
   /** Bottom to top, merged beneath the source graphic. `opacity` is the Figma colour's alpha. */
   readonly shadows: readonly {

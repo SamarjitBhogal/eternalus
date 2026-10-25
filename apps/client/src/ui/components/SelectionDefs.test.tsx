@@ -49,7 +49,7 @@ describe('SelectionDefs', () => {
     }
   });
 
-  // WP-CLASS CSS audit of 62:125 (B1, B2): a group filter over glowing children cast its shadows
+  // The visual audit of 62:125: a group filter over glowing children cast its shadows
   // from the broad glow alpha (azure blobs at both ring ends, a group shadow all round the ring).
   // These defs paint shadows only, applied to plain copies of the strokes (and the haze) beneath
   // the unfiltered content.
@@ -126,7 +126,7 @@ describe('SelectionDefs', () => {
     expect(group?.shadows).toEqual([{ dx: 0, dy: 4, sigma: 5, flood: 'azure-strong' }]);
   });
 
-  // I-66, FID-R2-08: per side, the region fraction × the user's box ≥ bleed + 3σ + |offset| px.
+  // Per side, the region fraction × the user's box ≥ bleed + 3σ + |offset| px.
   it.each(
     GLOW_FILTERS.flatMap(({ id, region, shadows, users }) =>
       users.map((user) => ({ id, region, shadows, user })),

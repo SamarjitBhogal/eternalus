@@ -14,7 +14,7 @@
   outline-offset: 4px;
 }
 
-/* The cap keeps its box line height whatever the binding (FID-17); a longer label widens it. */
+/* The cap keeps its box line height whatever the binding; a longer label widens it. */
 .cap {
   display: inline-flex;
   align-items: center;
@@ -86,8 +86,8 @@
   font-variant-ligatures: normal;
 }
 
-/* 62:88: Chrome sets the Bold 16 key label 1 px above Figma's in the 21 px cap (WP-CLASS audit of
-   62:70: zero shift with it); the glyph moves, the cap box stays. */
+/* 62:88: Chrome sets the Bold 16 key label 1 px above Figma's in the 21 px cap (the visual audit
+   of 62:70: zero shift with it); the glyph moves, the cap box stays. */
 .viewDetails .cap > kbd {
   position: relative;
   top: 1px;

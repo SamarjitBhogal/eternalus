@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import type { InfoPanelLayout } from './InfoPanel.types';
 import styles from './InfoPanelRules.module.css';
 
-/** The rules of a panel (header line, three accents, two dividers): SVG rects, never snapped (CSUI E3). */
+/** The rules of a panel (header line, three accents, two dividers): SVG rects, never snapped. */
 const RULES = [
   { rule: 'header-line', className: styles.rule },
   { rule: 'accent-0', className: styles.accent },

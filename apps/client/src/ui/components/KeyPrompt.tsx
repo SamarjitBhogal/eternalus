@@ -15,8 +15,8 @@ const SKIN_CLASSES: Readonly<Record<KeyPromptSkin, string | undefined>> = {
 };
 
 /**
- * A key cap and a label that act together (F7): a button, and while mounted the key or mouse
- * button bound to `action` presses it too (`useActionShortcut`, I-54). The cap shows the live
+ * A key cap and a label that act together (HC-F7): a button, and while mounted the key or mouse
+ * button bound to `action` presses it too (`useActionShortcut`). The cap shows the live
  * binding (`KeyGlyph`), so a rebinding re-renders it; the accessible name is the cap then the
  * label ("Esc back", WCAG 2.5.3). Placed by its skin at its Figma node in the artboard; with
  * `isAutoFocused` it takes the focus when it mounts.

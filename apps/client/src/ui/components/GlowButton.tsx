@@ -71,17 +71,17 @@ const chromePlate = (url: string): ReactElement => (
  * A selection screen's main action: Select Class or LOCK IN. Placed by its skin at its Figma
  * node in the 1920 × 1080 artboard (render it in a full-artboard container).
  *
- * Two effects paths (I-36, I-80): with a `chromeAssetId` whose plate is loaded and boxed, and while
- * enabled and neither hovered nor pressed, Figma's own chrome plate is drawn at its skin's full
- * render-bounds box (the skin's `.chrome` rule); otherwise the live chrome: a backdrop-blur pane
- * beneath (never under a filter, the backdrop-root rule), then the glow group: its shadow (σ = r/2,
- * knocked out as Figma draws it) cast from a plain copy of the ring, haze and brace strokes, and
- * above it, unfiltered, the ring, haze and braces with their glows, the braces' azure glows again
- * cast from plain stroke copies (Figma casts a group's shadow from its children's geometry, not
- * from their glows). The label and its six sky glows (`sel-glow-label`) are always live, above the
- * chrome and outside the group filter (a CSS filter would also shadow the label's glows, which
- * Figma does not show: measured on 58:271). Disabled, it stays focusable with `aria-disabled` and
- * announces `disabledHint`; a press then does nothing.
+ * Two effects paths (CD-16, DEC-54): with a `chromeAssetId` whose plate is loaded and boxed, and
+ * while enabled and neither hovered nor pressed, Figma's own chrome plate is drawn at its skin's
+ * full render-bounds box (the skin's `.chrome` rule); otherwise the live chrome: a backdrop-blur
+ * pane beneath (never under a filter, the backdrop-root rule), then the glow group: its shadow
+ * (σ = r/2, knocked out as Figma draws it) cast from a plain copy of the ring, haze and brace
+ * strokes, and above it, unfiltered, the ring, haze and braces with their glows, the braces' azure
+ * glows again cast from plain stroke copies (Figma casts a group's shadow from its children's
+ * geometry, not from their glows). The label and its six sky glows (`sel-glow-label`) are always
+ * live, above the chrome and outside the group filter (a CSS filter would also shadow the label's
+ * glows, which Figma does not show: measured on 58:271). Disabled, it stays focusable with
+ * `aria-disabled` and announces `disabledHint`; a press then does nothing.
  */
 export function GlowButton({
   label,

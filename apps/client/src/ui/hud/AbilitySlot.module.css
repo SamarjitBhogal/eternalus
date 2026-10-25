@@ -1,5 +1,5 @@
 /* One HUD slot (Figma 62:231). The box has the frame's exact size (SLOT_FRAMES; the frame itself
-   is SVG geometry, FID-08); the parent places it. */
+   is SVG geometry); the parent places it. */
 .slot {
   position: relative;
 }
@@ -46,7 +46,7 @@
 }
 
 /* The class kit's icon raster at its placement box (I-45): abilities (5, 5) 60 × 60, the
-   ultimate (2, 2) 80 × 80, gadgets (−20, −20) 127 × 127 (I-27). */
+   ultimate (2, 2) 80 × 80, gadgets (−20, −20) 127 × 127 (so the glows are not clipped). */
 .icon {
   position: absolute;
 }

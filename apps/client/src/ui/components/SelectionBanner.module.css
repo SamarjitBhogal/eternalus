@@ -1,5 +1,5 @@
-/* 62:144 / 58:290 banner box (102, 2) 1731 × 92 (WP-ASSETS placement table: selection-banner,
-   file 1731 × 92 px): an integer box, the art at its own pixel size, no fit (I-45). */
+/* 62:144 / 58:290 banner box (102, 2) 1731 × 92 (the selection-banner manifest box, file
+   1731 × 92 px): an integer box, the art at its own pixel size, no fit (I-45). */
 .banner {
   position: absolute;
   left: 102px;

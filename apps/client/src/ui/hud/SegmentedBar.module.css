@@ -95,7 +95,7 @@
    ramp from the fill (.6) to the opaque peak; the cream bars stay at .8 up to the value.
    --bar-fade-1…3 are the marker → rest ramp at a quarter, half and three quarters (see .leading):
    tokens of global.css, derived there from each set's rest and marker, never computed here
-   (I-18, OD-25 a). Health and aether fall in Figma's straight alpha (a gradient alone mixes
+   (13 §7, OD-25 a). Health and aether fall in Figma's straight alpha (a gradient alone mixes
    premultiplied, wider and lighter); the cream fades are the gradient's own premultiplied points. */
 .toneHealth {
   --bar-full: var(--hud-health-fill);
@@ -136,7 +136,7 @@
 }
 
 /* The segment holding the value (Figma Max: "… peak 50 %, white 51 %, rest 52–100 %"). The marker
-   is 1 % of the fill, never thinner than 1 px below 1080p (TAP2-08). The fades split the marker →
+   is 1 % of the fill, never thinner than 1 px below 1080p. The fades split the marker →
    rest step in four; `in srgb` names the legacy interpolation space, so a fade token in a
    non-legacy colour syntax can never switch the ramp to oklab. */
 .leading {

@@ -20,7 +20,7 @@ export type ArchLayerKind =
 /**
  * How the art is drawn: `cover` = a master clipped to the arch with live `under`/`over`/`stroke`
  * parts; `image` = one finished rendition at its own pixel box (I-45); `plate` = a Figma GLASS plate
- * (R1 step 2) at its own pixel box, whose two 1 px inner strokes the `inner-outline` layer draws live
+ * (CD-16) at its own pixel box, whose two 1 px inner strokes the `inner-outline` layer draws live
  * at their own origins (OD-1).
  */
 export type ArchArtMode = 'cover' | 'image' | 'plate';
@@ -162,7 +162,7 @@ const LAYER_VIEWS: Readonly<
  * A pointed-arch card, drawn as the stack of layers its consumer names (bottom → top), all
  * `aria-hidden`; the consumer's control (a `button role="radio"`) carries the name and state.
  *
- * Styling contract (DV-60): every layer is an absolutely positioned element with
+ * Styling contract: every layer is an absolutely positioned element with
  * `data-arch-layer="<kind>"`; arch shapes are `<svg viewBox="0 0 1 1">` with the unit arch, whose
  * paths carry `data-arch-part` (`fill`, `stroke`; art parts `under`, `image`, `over`, `stroke`;
  * rasters `image` or `plate`; plate strokes `art-stroke`, `overlay-stroke`). This module only

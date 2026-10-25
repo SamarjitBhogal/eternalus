@@ -1,5 +1,5 @@
 /**
- * Roving focus of the selection radio groups (WAI-ARIA APG radio group, I-14, I-23): its maths
+ * Roving focus of the selection radio groups (WAI-ARIA APG radio group, HC-F1): its maths
  * and the key handler that moves the focus. The class cards and the Legend cards use the same
  * keys, so both steps import this one module.
  */
