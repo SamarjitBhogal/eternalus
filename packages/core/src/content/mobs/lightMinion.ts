@@ -13,6 +13,7 @@ export const LIGHT_MINION = {
   footprintRadius: 0.4, // TUNE: balancing.md light minion
   visionRadius: 10, // TUNE:
   movementStrategy: 'lane-follow',
+  xpValue: 20, // TUNE: balancing.md "XP sources" (light minion kill)
   movement: {
     maxSpeed: 3.5, // TUNE: m/s, balancing.md light minion
     acceleration: 17.5, // TUNE: m/s², top speed after 0.2 s

@@ -8,6 +8,8 @@ import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { loadLevelCurves } from './content/progression/loadLevelCurves';
+import { XP_SOURCES } from './content/progression/xpSources';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
@@ -46,20 +48,23 @@ export class Simulation {
     debug = RELEASE_DEBUG_CONFIG,
     content,
     map,
+    levelCurves,
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed, map ?? null);
+    const curves = levelCurves ?? loadLevelCurves();
     // One factory for commands and spawning, so entity ids come from one counter.
-    const definitions = content ?? loadDefaultContent(this.state.config.tickRate);
-    const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
+    const units = content ?? loadDefaultContent(this.state.config.tickRate, curves);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), units);
     this.commandContext = { state: this.state, factory };
     this.systemContext = { state: this.state, logger };
     this.pipeline =
       systems === undefined
-        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), {
-            state: this.state,
-            factory,
-            definitions,
-          })
+        ? new DefaultSystemPipeline(
+            new DefaultInvariantRunner(debug, logger, curves),
+            this.state,
+            { units, curves, xpSources: XP_SOURCES },
+            { factory, definitions: units },
+          )
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(

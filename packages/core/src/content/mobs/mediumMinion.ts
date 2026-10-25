@@ -12,6 +12,7 @@ export const MEDIUM_MINION = {
   baseHealth: 400, // TUNE: balancing.md medium minion
   footprintRadius: 0.5, // TUNE: balancing.md medium minion
   visionRadius: 10, // TUNE:
+  xpValue: 45, // TUNE: balancing.md "XP sources" (medium minion kill)
   movementStrategy: 'lane-follow',
   movement: {
     maxSpeed: 3.2, // TUNE: m/s, balancing.md medium minion
