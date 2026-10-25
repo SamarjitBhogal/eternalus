@@ -82,6 +82,22 @@ describe('EnragedSystem', () => {
     expect(stacksOf(member)).toBe(1);
   });
 
+  it('gives a horde that spawns in the same update as a loss exactly one stack per lost tower', () => {
+    const { state, system, addHorde, stacksOf, lose } = setUp();
+    lose('light', 'spawner-tower');
+    const { horde, member } = addHorde('light', 'lane-0');
+    state.events.emit('horde-spawned', {
+      hordeId: horde.id,
+      lane: horde.lane,
+      team: horde.team,
+      memberIds: horde.memberIds,
+    });
+
+    system.update({ state, logger });
+
+    expect(stacksOf(member)).toBe(1);
+  });
+
   it('ignores structures that do not enrage, structures off any lane and neutral ones', () => {
     const { state, system, addHorde, stacksOf, lose } = setUp();
     const mine = addHorde('light', 'lane-0').member;

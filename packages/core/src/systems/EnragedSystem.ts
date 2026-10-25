@@ -40,8 +40,17 @@ export class EnragedSystem implements System {
     });
   }
 
-  /** Adds this tick's stacks to the lanes' minions and gives new hordes their lane's stacks. */
+  /**
+   * Gives new hordes their lane's stacks, then adds this tick's losses to every horde on the lane
+   * (new ones included), so a horde never gets a stack twice.
+   */
   public update({ state }: SystemContext): void {
+    for (const hordeId of this.spawned) {
+      const horde = state.hordes.get(hordeId);
+      if (horde !== undefined) {
+        this.enrage(state, horde.memberIds, state.teams[horde.team].enragedByLane[horde.lane] ?? 0);
+      }
+    }
     for (const { team, lane } of this.lost) {
       const byLane = state.teams[team].enragedByLane;
       byLane[lane] = (byLane[lane] ?? 0) + 1;
@@ -50,12 +59,6 @@ export class EnragedSystem implements System {
           this.enrage(state, horde.memberIds, 1);
         }
       });
-    }
-    for (const hordeId of this.spawned) {
-      const horde = state.hordes.get(hordeId);
-      if (horde !== undefined) {
-        this.enrage(state, horde.memberIds, state.teams[horde.team].enragedByLane[horde.lane] ?? 0);
-      }
     }
     this.lost.length = 0;
     this.spawned.length = 0;

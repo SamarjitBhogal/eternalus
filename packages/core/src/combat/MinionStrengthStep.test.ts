@@ -10,7 +10,8 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { MinionStrengthStep } from './MinionStrengthStep';
 
-const CURVE = { k: 0.5, min: 0.75, max: 1.5 };
+/** The shipped curve with `balancing.md`'s 0.75 floor, so the far end shows the clamp. */
+const CURVE = { ...MINION_STRENGTH, min: 0.75 };
 
 /** A light minion in a light horde on lane-0 (160 m from x 20 to x 180), and a Warrior. */
 const setUp = () => {

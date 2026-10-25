@@ -140,6 +140,9 @@ Reply inline (`Decision: …`).
       at 1.0 (never weaker than base). (1) Is the floor right, or should 0.75 stand? (2) DISC-24:
       when a lane tower falls, "the base-stat distance extends further toward the enemy". By
       how much per tower (a fraction of the lane, a fixed distance, or up to the fallen tower)?
+      (3) Better than the design, for sign-off: enraged lives in its own `EnragedSystem` (one
+      purpose, right after `SpawnSystem`), not in `SpawnSystem` as 03 §4's events table says; if
+      accepted, 03 §4's `structure-destroyed` and `horde-spawned` rows name it.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads

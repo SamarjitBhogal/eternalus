@@ -1519,3 +1519,20 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 664 passed (664)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: the pre-PR gate.
+
+### 2026-10-25 — Minion system M5a, pre-PR gate — feat/minion-m5a-modifiers — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `0b59134..389953d`) requested changes with
+  one blocker, fixed: a horde spawned in the same update as a tower loss got the stack twice;
+  `EnragedSystem` now gives new hordes their lane's stacks before it adds the loss, with a test.
+  Should-fixes applied: a scenario test drives a real `Simulation` (light minions near home hit a
+  Warrior harder than base through the damage pipeline) with a same-seed hash check; doc 18's
+  pipeline positions and `paths:` name `EnragedSystem` and `MinionStrengthStep`; the strength
+  test builds its curve from content. Better than the design (INBOX): enraged in its own system
+  rather than `SpawnSystem`. Accepted: the 1.0 floor reads DISC-24 over `balancing.md`; `t` per
+  hit along the polyline; only towers enrage (`balancing.md`); enraged has no live trigger until
+  structure entities (M2c). Not changed: `enragedByLane` stays mutable like its sibling counters.
+  Ponytail (lite): lean already, no cuts.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 667 passed (667)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: draft PR.
