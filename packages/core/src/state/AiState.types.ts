@@ -1,7 +1,8 @@
 import type { AiMemory, ControllerId } from '../content/ai/ai.types';
-
-export type { AiMemory };
 import type { SeededRandomState } from '../utils/SeededRandom.types';
+
+/** Re-exported for `state/` readers; it lives in content types because `components/` reads it. */
+export type { AiMemory };
 
 /**
  * Everything one entity's controller remembers (architecture 11 §2), as plain data in state, so

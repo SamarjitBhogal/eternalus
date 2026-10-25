@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { placeholderRoster } from './Match.constants';
+import { placeholderRoster } from './placeholderRoster';
 
 describe('placeholderRoster', () => {
   it('makes every Legend but each team’s Rover a normal bot laner, classes in turn', () => {

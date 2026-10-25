@@ -1,6 +1,7 @@
 import type { BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { AiMemory } from '../state/AiState.types';
 import type { EntityId } from '../state/EntityStore.types';
+import { compareById } from '../utils/compareById';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -27,7 +28,7 @@ import { UtilityScorer } from './utility/UtilityScorer';
  * 2. `Fight`: an enemy inside `engageRadius` → the `UtilityScorer` picks one by closeness and
  *    weakness; it attacks it and closes in until it is in reach.
  * 3. `Push`: it walks with the most advanced allied horde on its lane, at that horde's anchor.
- * 4. `Regroup`: with no allied horde on its lane, it waits at its own end of the lane.
+ * 4. `Regroup`: with no allied horde on its lane, it returns to the nearest point of its lane.
  *
  * Every step is a `move`, `attack-target` or `stop` command for the next tick. Stateless: its lane,
  * retreat flag and target live in the brain it returns.
@@ -116,16 +117,14 @@ export class BotLegendController implements Controller {
   /** Drops the target and heads for the nearest allied retreat point. */
   private retreat(turn: BotTurn): BtStatus {
     const map = turn.state.map;
-    let best: Vec2 | null = null;
+    let best: { readonly id: string; readonly position: Vec2 } | null = null;
     let bestGap = Number.POSITIVE_INFINITY;
     for (const feature of map?.features ?? []) {
       const gap = BotLegendController.gapSquared(turn.position, feature.position);
-      if (
-        feature.team === turn.team &&
-        this.content.retreatTo.includes(feature.kind) &&
-        gap < bestGap
-      ) {
-        best = feature.position;
+      const isNearer =
+        gap < bestGap || (gap === bestGap && best !== null && compareById(feature.id, best.id) < 0);
+      if (feature.team === turn.team && this.content.retreatTo.includes(feature.kind) && isNearer) {
+        best = feature;
         bestGap = gap;
       }
     }
@@ -136,7 +135,7 @@ export class BotLegendController implements Controller {
       turn.commands.push({ type: 'stop', actorId: turn.id });
       turn.next = { ...turn.next, targetId: null };
     }
-    return this.moveTo(turn, best);
+    return this.moveTo(turn, best.position);
   }
 
   /** Picks the enemy in `engageRadius` the utility scorer likes best. */
@@ -187,6 +186,7 @@ export class BotLegendController implements Controller {
     const routes = state.routes;
     let lead = -1;
     state.hordes.forEach((horde) => {
+      // The progress is all that is read, so which of two equal hordes wins does not matter.
       if (horde.team === team && horde.lane === turn.memory.lane && horde.progress > lead) {
         lead = horde.progress;
       }
@@ -199,13 +199,14 @@ export class BotLegendController implements Controller {
     return true;
   }
 
-  /** Waits at the bot's own end of its lane. */
+  /** Returns to the nearest point of the bot's lane (the lane corridor, 11 §4.2). */
   private regroup(turn: BotTurn): BtStatus {
     const routes = turn.state.routes;
     if (routes === null || turn.memory.lane === '') {
       return 'failure';
     }
-    routes.pose(turn.memory.lane, turn.team, 0, this.anchor, this.forward);
+    const along = routes.distanceAlong(turn.memory.lane, turn.team, turn.position);
+    routes.pose(turn.memory.lane, turn.team, along, this.anchor, this.forward);
     return this.moveTo(turn, this.anchor);
   }
 

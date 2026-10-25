@@ -1,6 +1,7 @@
+import type { CONTROLLER_IDS } from './controllerIds';
+
 /** Which controller drives an entity (architecture 11 §2); kebab-case, never renamed once used. */
-export type ControllerId =
-  'player' | 'bot-legend' | 'minion' | 'guard' | 'turret' | 'boss' | 'rover';
+export type ControllerId = (typeof CONTROLLER_IDS)[number];
 
 /** How often each controller decides, and how many decisions a tick may hold (11 §6). */
 export type AiCadence = {

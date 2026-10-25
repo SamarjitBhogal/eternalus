@@ -1,4 +1,4 @@
-import type { ControllerSpawn } from '../components/ControllerBinding.types';
+import type { ControllerSpawn } from './EntityFactory.types';
 import { CONTROLLER_IDS } from '../content/ai/controllerIds';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
@@ -58,21 +58,25 @@ export class SpawnContextReader {
       );
     }
 
-    const controller = SpawnContextReader.controllerOf(
-      SpawnContextReader.fields(context).controller,
-    );
+    const controller = this.controllerOf(SpawnContextReader.fields(context).controller);
     return controller === undefined ? { ...positioned, team } : { ...positioned, team, controller };
   }
 
-  /** A valid `Placement.controller`, or `undefined` for none (or one that is not valid). */
-  private static controllerOf(candidate: unknown): ControllerSpawn | undefined {
-    if (!SpawnContextReader.isObject(candidate)) {
+  /**
+   * The context's `Placement.controller`, or `undefined` when it gives none.
+   *
+   * @throws Error when it gives one that is not a known controller with a profile and a memory.
+   */
+  private controllerOf(candidate: unknown): ControllerSpawn | undefined {
+    if (candidate === undefined) {
       return undefined;
     }
-    const { controllerId, profileId, memory } = candidate;
+    const { controllerId, profileId, memory } = SpawnContextReader.fields(candidate);
     const id = CONTROLLER_IDS.find((known) => known === controllerId);
     if (id === undefined || typeof profileId !== 'string' || !SpawnContextReader.isObject(memory)) {
-      return undefined;
+      throw new Error(
+        `Entity "${this.entity.id}" was given a spawn controller that is not a known controller with a profile and a memory.`,
+      );
     }
     // Safe: memory is the plain data the spawner wrote (`Placement.controller` is typed).
     return { controllerId: id, profileId, memory: memory as ControllerSpawn['memory'] };

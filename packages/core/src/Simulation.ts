@@ -156,8 +156,9 @@ export class Simulation {
    * laners, in roster order, go to the lane with the fewest Legends, lowest index first, and
    * stand in ranks behind their own end of it, with the lane in their brain's memory.
    *
-   * @throws Error when there are bots but no map, or a bot's controller or difficulty does not
-   *   exist (checked before anything spawns).
+   * @throws Error when there are bots but no map, a team's laners do not fit under
+   *   `legendsPerLane`, or a bot's controller or difficulty does not exist (checked before
+   *   anything spawns).
    */
   private static spawnRoster(
     state: GameState,
@@ -185,9 +186,16 @@ export class Simulation {
     const anchor = { x: 0, y: 0 };
     const forward = { x: 0, y: 0 };
     const at = { x: 0, y: 0 };
-    for (const team of ['light', 'dark'] as const) {
+    // Every lane is assigned before anything spawns, so a roster that does not fit spawns nothing.
+    const plans = (['light', 'dark'] as const).map((team) => {
       const laners = roster.filter((slot) => slot.team === team && slot.role === 'laner');
-      const lanes = assignLanes(laners.length, laneIds);
+      return {
+        team,
+        laners,
+        lanes: assignLanes(laners.length, laneIds, state.config.match.legendsPerLane),
+      };
+    });
+    for (const { team, laners, lanes } of plans) {
       const placed = new Map<string, number>();
       laners.forEach((slot, index) => {
         const lane = lanes[index] ?? '';

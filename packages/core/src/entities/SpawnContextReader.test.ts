@@ -59,7 +59,7 @@ describe('SpawnContextReader', () => {
     }
   });
 
-  it('reads the spawn’s own controller, and ignores one that is not valid', () => {
+  it('reads the spawn’s own controller, and refuses one that is not valid', () => {
     const controller = { controllerId: 'bot-legend', profileId: 'normal', memory: { lane: 'l0' } };
     const base = { definition: DEFINITION, position: POSITION, team: 'light' };
 
@@ -73,9 +73,9 @@ describe('SpawnContextReader', () => {
       { ...controller, profileId: 3 },
       { ...controller, memory: null },
     ]) {
-      expect(
-        reader.placed<typeof DEFINITION>({ ...base, controller: bad }).controller,
-      ).toBeUndefined();
+      expect(() => reader.placed<typeof DEFINITION>({ ...base, controller: bad })).toThrow(
+        'not a known controller',
+      );
     }
   });
 });

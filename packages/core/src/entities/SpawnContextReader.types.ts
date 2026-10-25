@@ -1,4 +1,4 @@
-import type { ControllerSpawn } from '../components/ControllerBinding.types';
+import type { ControllerSpawn } from './EntityFactory.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 
