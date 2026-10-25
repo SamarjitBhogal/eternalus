@@ -55,6 +55,11 @@ export interface SessionContext {
   readonly catalogue: DisplayCatalogue;
   /** The licence blocks of every bundled asset; `BootState` publishes them as `credits`. */
   readonly credits: readonly CreditEntry[];
+  /**
+   * The session's logger (`SessionControllerDeps.logger`): a state reports here what should never
+   * happen, such as an intent naming an id the catalogue does not have.
+   */
+  readonly logger: Logger;
   /** Moves to `to` (exit current → enter next); throws on a pair not in `SESSION_TRANSITIONS`. */
   transition(to: SessionPhase, reason?: SessionReason): void;
   /** Draws a new seed and team, builds both rosters, themes the page and publishes the setup. */

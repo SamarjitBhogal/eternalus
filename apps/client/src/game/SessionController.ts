@@ -44,6 +44,7 @@ export class SessionController {
       clock: deps.clock,
       catalogue: deps.catalogue.load(),
       credits: deps.credits,
+      logger: deps.logger,
       transition: (to, reason) => {
         this.transition(to, reason ?? null);
       },

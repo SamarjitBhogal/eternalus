@@ -77,6 +77,38 @@ describe('CharacterSelectState', () => {
     expect(picks).toEqual([]);
   });
 
+  it('logs ERROR naming a class or Legend id the catalogue does not have, then ignores it', () => {
+    const { picks, send, logger } = atCharacterSelect();
+    send(
+      { kind: 'select-class', classId: 'stale-class' },
+      { kind: 'select-class', classId: 'magus', specId: 'stale-legend' },
+    );
+    expect(picks).toEqual([]);
+    expect(
+      logger.records.map(({ severityText, scope, attributes }) => [
+        severityText,
+        scope,
+        attributes,
+      ]),
+    ).toEqual([
+      ['ERROR', 'client.session', { classId: 'stale-class', specId: null }],
+      ['ERROR', 'client.session', { classId: 'magus', specId: 'stale-legend' }],
+    ]);
+    expect(logger.records[0]?.body).toContain('"stale-class"');
+    expect(logger.records[1]?.body).toContain('"stale-legend"');
+  });
+
+  it('ignores a locked or unselectable pick without logging', () => {
+    const { picks, send, logger } = atCharacterSelect();
+    send(
+      { kind: 'select-class', classId: 'flying' },
+      { kind: 'select-class', classId: 'magus', specId: 'sealed' },
+      { kind: 'select-class', classId: 'warrior', specId: 'oracle' },
+    );
+    expect(picks).toEqual([]);
+    expect(logger.records).toEqual([]);
+  });
+
   it('clears the pick on Back, and Back with nothing picked publishes nothing', () => {
     const { store, picks, send } = atCharacterSelect();
     send({ kind: 'clear-class-selection' });

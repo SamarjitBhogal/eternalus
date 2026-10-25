@@ -1,3 +1,5 @@
+import { MemoryLogger } from '@eternalus/core';
+
 import type { BridgeEventMap, ClassSelection } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { ASSET_LICENCES } from '../data/resources/assetLicences';
@@ -11,17 +13,18 @@ import type { SessionContext } from './SessionController.types';
 
 /**
  * Test double of the session context (02 §8) for a state's unit test: a real bus and
- * `FakeSessionClock`, the shipped catalogue and credits, and a record of every method call (its
- * arguments per method in `calls`, the call order in `order`). `selection()` answers the last
- * `recordSelection`, `createMatch` hands out a new `FakeRunningMatch` each time, and a load's
- * cancel is recorded by load index; set `prepareWorldError` or `createMatchError` to make that
- * method throw.
+ * `FakeSessionClock`, the shipped catalogue and credits, a `MemoryLogger`, and a record of every
+ * method call (its arguments per method in `calls`, the call order in `order`). `selection()`
+ * answers the last `recordSelection`, `createMatch` hands out a new `FakeRunningMatch` each time,
+ * and a load's cancel is recorded by load index; set `prepareWorldError` or `createMatchError` to
+ * make that method throw.
  */
 export class FakeSessionContext implements SessionContext {
   public readonly bus = new TypedEventBus<BridgeEventMap>();
   public readonly clock = new FakeSessionClock();
   public readonly catalogue = shippedCatalogue().load();
   public readonly credits = describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES);
+  public readonly logger = new MemoryLogger();
   /** The arguments of every call, per method. */
   public readonly calls: SessionContextCalls = {
     transition: [],
