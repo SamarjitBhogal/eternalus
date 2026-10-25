@@ -1,3 +1,4 @@
+import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type { MatchViewport } from './MatchViewport.types';
 
 /** The viewport's labels; `main.tsx` passes `STRINGS.viewport` (labels live in `ui/strings.ts`). */
@@ -12,7 +13,8 @@ export type GameCanvasLabels = {
     readonly worldHint: string;
     readonly interiorHint: string;
     readonly overview: string;
-    readonly legend: { readonly light: string; readonly dark: string; readonly camps: string };
+    /** `stronghold` words a team's stronghold from its name (`GameCanvasProps.teamNames`). */
+    readonly legend: { readonly stronghold: (teamName: string) => string; readonly camps: string };
   };
 };
 
@@ -25,4 +27,6 @@ export type GameCanvasProps = {
    */
   readonly isExplorerShown: boolean;
   readonly labels: GameCanvasLabels;
+  /** Each team's display name (the loaded catalogue's `teamNames`): the explorer legend. */
+  readonly teamNames: DisplayCatalogue['teamNames'];
 };

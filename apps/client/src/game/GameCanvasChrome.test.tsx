@@ -14,9 +14,11 @@ const LABELS: GameCanvasLabels = {
     worldHint: 'Drag to explore · Scroll to zoom · Click cathedral to enter',
     interiorHint: 'Drag to explore · Scroll to zoom · Explore the sanctuary',
     overview: 'World overview',
-    legend: { light: 'Light stronghold', dark: 'Dark stronghold', camps: 'Neutral camps' },
+    legend: { stronghold: (teamName) => `${teamName} stronghold`, camps: 'Neutral camps' },
   },
 };
+/** Team names no shipped content uses, so a legend naming them can only come from `teamNames`. */
+const TEAM_NAMES = { light: 'Lux', dark: 'Umbra' };
 
 /**
  * Renders what `GameCanvas` draws over the canvas for a chrome state its hook can only reach in a
@@ -31,6 +33,7 @@ function renderChrome(options: {
       isExplorerShown={options.isExplorerShown}
       isInterior={options.isInterior}
       labels={LABELS}
+      teamNames={TEAM_NAMES}
       onOverview={() => undefined}
       onLeaveInterior={() => undefined}
     />,
@@ -53,6 +56,13 @@ describe('GameCanvasChrome', () => {
     expect(html).not.toContain('Leave cathedral');
   });
 
+  it('names each stronghold in the developer legend after the content team names', () => {
+    const html = renderChrome({ isExplorerShown: true, isInterior: false });
+    expect(html).toContain('Lux stronghold');
+    expect(html).toContain('Umbra stronghold');
+    expect(html).not.toContain('Light stronghold');
+  });
+
   it('runs the leave action, never the overview, when Leave cathedral is clicked', () => {
     const actions: string[] = [];
     // The chrome holds no state, so calling it returns the element a render would draw.
@@ -60,6 +70,7 @@ describe('GameCanvasChrome', () => {
       isExplorerShown: false,
       isInterior: true,
       labels: LABELS,
+      teamNames: TEAM_NAMES,
       onOverview: () => {
         actions.push('overview');
       },

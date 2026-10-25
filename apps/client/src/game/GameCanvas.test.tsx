@@ -14,14 +14,19 @@ const LABELS: GameCanvasLabels = {
     worldHint: 'Drag to explore · Scroll to zoom · Click cathedral to enter',
     interiorHint: 'Drag to explore · Scroll to zoom · Explore the sanctuary',
     overview: 'World overview',
-    legend: { light: 'Light stronghold', dark: 'Dark stronghold', camps: 'Neutral camps' },
+    legend: { stronghold: (teamName) => `${teamName} stronghold`, camps: 'Neutral camps' },
   },
 };
 
 /** Renders the viewport on the server (its attach effect runs only in a browser). */
 function render(isExplorerShown: boolean): string {
   return renderToStaticMarkup(
-    <GameCanvas attach={() => () => undefined} isExplorerShown={isExplorerShown} labels={LABELS} />,
+    <GameCanvas
+      attach={() => () => undefined}
+      isExplorerShown={isExplorerShown}
+      labels={LABELS}
+      teamNames={{ light: 'Lux', dark: 'Umbra' }}
+    />,
   );
 }
 
@@ -31,14 +36,14 @@ describe('GameCanvas', () => {
     expect(html).toContain('<canvas');
     expect(html).toContain('aria-label="Battlefield"');
     expect(html).not.toContain('World overview');
-    expect(html).not.toContain('Light stronghold');
+    expect(html).not.toContain('Lux stronghold');
     expect(html).not.toContain('Leave cathedral');
   });
 
   it('shows the explorer toolbar and the map legend with the developer flag', () => {
     const html = render(true);
     expect(html).toContain('World overview');
-    expect(html).toContain('Light stronghold');
+    expect(html).toContain('Lux stronghold');
   });
 
   it('styles the Leave control from tokens only (I-75)', () => {

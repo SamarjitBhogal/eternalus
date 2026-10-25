@@ -47,7 +47,8 @@ export const STRINGS = {
     // TODO(sam): verdict lines are core content (content/narrative/, selectVerdictLine) once it exists.
     noResult: 'No result recorded.',
     draw: 'Draw.',
-    winner: { light: 'Light wins.', dark: 'Dark wins.' },
+    /** The winning team's name is content (`contentSlice.selectors.selectTeamNames`). */
+    winner: (teamName: string): string => `${teamName} wins.`,
     playAgain: 'Play again',
     mainMenu: 'Main menu',
   },
@@ -103,7 +104,11 @@ export const STRINGS = {
       worldHint: 'Drag to explore · Scroll to zoom · Click cathedral to enter',
       interiorHint: 'Drag to explore · Scroll to zoom · Explore the sanctuary',
       overview: 'World overview',
-      legend: { light: 'Light stronghold', dark: 'Dark stronghold', camps: 'Neutral camps' },
+      /** Team names are content (`DisplayCatalogue.teamNames`, passed by `main.tsx`). */
+      legend: {
+        stronghold: (teamName: string): string => `${teamName} stronghold`,
+        camps: 'Neutral camps',
+      },
     },
   },
   /** Both selection steps (62:125, 62:70, 58:271). Class, Legend and ability names are content. */

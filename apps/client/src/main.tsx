@@ -75,14 +75,17 @@ const resources = new ResourceController({
     logger.log(makeLogRecord('WARN', 'client.resources', body, { attributes }));
   },
 });
+// Loaded once at boot (a content error stops it here): the session runs on it and the viewport
+// names the teams from it.
+const catalogue = createCoreCatalogue({
+  knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
+  overrides: developer.displayOverrides,
+}).load();
 const session = new SessionController({
   bus: eventBus,
   clock: sessionClock,
   states: createDefaultSessionStates(),
-  catalogue: createCoreCatalogue({
-    knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
-    overrides: developer.displayOverrides,
-  }),
+  catalogue: { load: () => catalogue },
   matchConfig: gameConfig.match,
   playerName: PLACEHOLDER_PLAYER_NAME,
   seedSource: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
@@ -126,6 +129,7 @@ createRoot(rootElement).render(
             attach={attachViewport}
             isExplorerShown={developer.isDeveloper}
             labels={STRINGS.viewport}
+            teamNames={catalogue.teamNames}
           />
         }
       />

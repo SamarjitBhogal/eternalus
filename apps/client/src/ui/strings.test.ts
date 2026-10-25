@@ -43,6 +43,13 @@ describe('STRINGS.hud templates', () => {
   });
 });
 
+describe('STRINGS team-name templates', () => {
+  it('names the winner and each stronghold from a team name (content)', () => {
+    expect(STRINGS.results.winner('Lux')).toBe('Lux wins.');
+    expect(STRINGS.viewport.explorer.legend.stronghold('Umbra')).toBe('Umbra stronghold');
+  });
+});
+
 describe('STRINGS.settings templates', () => {
   it('words a binding conflict and a reset', () => {
     expect(STRINGS.settings.conflict('Esc', 'Pause menu')).toBe(

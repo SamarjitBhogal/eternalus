@@ -13,7 +13,12 @@ import { useExplorerChrome } from './useExplorerChrome';
  * `isExplorerShown` (`?dev=1`; DEC-32, INBOX HC-F8). `GameCanvasChrome` draws both from this
  * hook's state.
  */
-export function GameCanvas({ attach, isExplorerShown, labels }: GameCanvasProps): ReactElement {
+export function GameCanvas({
+  attach,
+  isExplorerShown,
+  labels,
+  teamNames,
+}: GameCanvasProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { chrome, isInterior, overview, leaveInterior } = useExplorerChrome();
   useEffect(() => {
@@ -32,6 +37,7 @@ export function GameCanvas({ attach, isExplorerShown, labels }: GameCanvasProps)
         isExplorerShown={isExplorerShown}
         isInterior={isInterior}
         labels={labels}
+        teamNames={teamNames}
         onOverview={overview}
         onLeaveInterior={leaveInterior}
       />
