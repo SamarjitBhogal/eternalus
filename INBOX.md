@@ -131,6 +131,9 @@ Reply inline (`Decision: …`).
       (`MinionController`'s FSM state and timers, M2b). Should `decide` return
       `{ commands, memory, rngState }` for `AiSystem` to write back (`Recommendation:`, keeps
       controllers pure), or may a controller write its own brain?
+  - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
+    `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
+    (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which

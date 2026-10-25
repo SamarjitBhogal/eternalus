@@ -12,7 +12,11 @@ import { validateGameConfig } from './config/validateGameConfig';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
+import { LEGEND_KINDS } from './content/legends/legendKinds';
+import { RANKS_FORMATION } from './content/mobs/formations/ranks';
+import { MOB_KINDS } from './content/mobs/mobKinds';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
@@ -65,7 +69,12 @@ export class Simulation {
     this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
     const curves = levelCurves ?? loadLevelCurves();
     // One factory for commands and spawning, so entity ids come from one counter.
-    const controllers = createDefaultControllerRegistry();
+    const controllers = createDefaultControllerRegistry({
+      aggro: AGGRO_RULES,
+      formations: { [RANKS_FORMATION.id]: RANKS_FORMATION },
+      classOf: (kind) =>
+        LEGEND_KINDS.hasKind(kind) ? 'legend' : MOB_KINDS.hasKind(kind) ? 'minion' : null,
+    });
     const units =
       content ?? Simulation.defaultContent(this.state.config.tickRate, curves, controllers);
     const factory = new EntityFactory(createDefaultEntityRegistry(), units);

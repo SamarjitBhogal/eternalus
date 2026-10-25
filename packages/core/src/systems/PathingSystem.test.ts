@@ -4,6 +4,7 @@ import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -48,7 +49,7 @@ describe('PathingSystem', () => {
       memberIds: [leader.id, ...fillers, member.id],
       progress: 40,
     });
-    const system = new PathingSystem(STRATEGIES, FORMATIONS);
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
 
     // Fill the index the way SpaceSystem does: every unit, in store order.
     space.begin(state.entities.size);
@@ -65,8 +66,54 @@ describe('PathingSystem', () => {
     expect(member.getComponent(Movement).heading).toEqual({ x: 0, y: -1 });
   });
 
+  it('chases a member’s attack target instead of its slot, and stops at attack reach', () => {
+    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 60, y: 20 },
+    });
+    const enemy = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 60, y: 30 },
+    });
+    state.entities.add(minion);
+    state.entities.add(enemy);
+    // The anchor (60, 20) is where the minion stands, so without a target it would not move.
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [minion.id],
+      progress: 40,
+    });
+    state.entities.setAttackTarget(minion.id, enemy.id);
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const index = () => {
+      space.begin(state.entities.size);
+      state.entities.forEach((entity) => {
+        const { x, y } = entity.getComponent(Transform).position;
+        space.add(entity.id, x, y);
+      });
+      space.commit();
+    };
+
+    index();
+    system.update({ state, logger });
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
+
+    // Edge to edge 1.2 m apart: inside the 1.5 m reach, so it stops.
+    enemy.getComponent(Transform).moveTo({ x: 60, y: 22 });
+    index();
+    system.update({ state, logger });
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+  });
+
   it('does nothing without a map or index, without hordes or with an unknown formation', () => {
-    const system = new PathingSystem(STRATEGIES, FORMATIONS);
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
     const state = new GameState(
       createDefaultGameConfig(),
       1,

@@ -79,8 +79,10 @@ spawn counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`,
 one-step fulfilment; `Simulation` takes the map as an option. The PROTO-01 escort, its `AiSystem`
 and its `Brain` are deleted (DEC-35). Pull request M2a adds brains, the `Controller` contract and `AiSystem`, `state.space` with
 `Perception`, `HordeMembershipConsistentInvariant` and developer-menu horde spawns (§3.5).
-Fighting, guards, controllers and lane assignment (M2b onward) are not built, and the damage pipeline and structures do not
-exist yet. The pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
+Pull request M2b adds `MinionController` (§6.1) with the `lane-minion` aggro content and the
+shared ranking helper `ai/aggroRank`, minion attacks from `balancing.md`, `stop` clearing the
+attack target (MS-26), the chase in `PathingSystem` (§5.2) and the anchor holding while the leader
+engages (§4). Lane objectives, gate holding and guards (M2c onward) wait for structure entities. The pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
 

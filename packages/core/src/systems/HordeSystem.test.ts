@@ -90,6 +90,21 @@ describe('HordeSystem', () => {
     expect(state.hordes.get(hordeId)?.progress).toBe(160);
   });
 
+  it('holds the anchor while the leader has an attack target, and marches again after', () => {
+    const { state, system, addHorde } = setUp();
+    const { hordeId, memberIds } = addHorde([['light-mob', 'light-minion']], 10);
+    const [leader = ''] = memberIds;
+    const { memberIds: enemies } = addHorde([['light-mob', 'training-dummy']]);
+    state.entities.setAttackTarget(leader, enemies[0] ?? '');
+
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
+
+    state.entities.clearAttackTarget(leader);
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
+  });
+
   it('does nothing without a map', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const system = new HordeSystem(state, FACTOR);

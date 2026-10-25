@@ -73,9 +73,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
-            new PathingSystem(createDefaultStrategyRegistry().movement, {
-              [RANKS_FORMATION.id]: RANKS_FORMATION,
-            }),
+            new PathingSystem(
+              createDefaultStrategyRegistry().movement,
+              { [RANKS_FORMATION.id]: RANKS_FORMATION },
+              HORDE_STEERING.slotArrivalRadius,
+            ),
           ]),
       new CombatSystem(damage),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.

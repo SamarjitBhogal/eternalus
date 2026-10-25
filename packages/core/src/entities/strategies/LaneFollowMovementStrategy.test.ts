@@ -15,6 +15,7 @@ const contextOf = (points: readonly [number, number][], target: { x: number; y: 
     neighbours,
     found: new Int32Array(points.length),
     target,
+    arrivalRadius: HORDE_STEERING.slotArrivalRadius,
     out: { x: 0, y: 0 },
   } satisfies MovementContext;
 };
@@ -59,5 +60,12 @@ describe('LaneFollowMovementStrategy', () => {
     );
 
     expect(strategy.desiredVelocity(0, context)).toEqual({ x: 0, y: 0 });
+  });
+
+  it('stops at the context’s arrival radius, such as attack reach while chasing', () => {
+    const context = { ...contextOf([[0, 0]], { x: 2, y: 0 }), arrivalRadius: 2.5 };
+
+    expect(strategy.desiredVelocity(0, context)).toEqual({ x: 0, y: 0 });
+    expect(strategy.desiredVelocity(0, { ...context, arrivalRadius: 1 })).toEqual({ x: 1, y: 0 });
   });
 });

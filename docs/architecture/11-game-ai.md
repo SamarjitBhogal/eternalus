@@ -53,18 +53,27 @@ flowchart LR
 export type ControllerId =
   'player' | 'bot-legend' | 'minion' | 'guard' | 'turret' | 'boss' | 'rover';
 
+export type DecisionInput = {
+  state: GameState;
+  entityId: EntityId;
+  brain: Brain;
+  perception: Perception;
+};
+export type Decision = { commands: readonly Command[]; memory: AiMemory; rngState: RngState };
+
 export interface Controller {
   /** Kebab-case id used by content definitions and by the ControllerRegistry. */
   readonly id: ControllerId;
-  /** Decide for one entity. Reads state only and returns commands for the next tick. */
-  decide(state: GameState, entityId: EntityId): readonly Command[];
+  /** Decide for one entity. Reads state only; returns next tick's commands and the brain after. */
+  decide(input: DecisionInput): Decision;
 }
 ```
 
 - Controllers are **stateless strategies**: one shared instance per `ControllerId` (Flyweight).
   Everything a controller remembers between decisions lives in `state.ai.brains` as plain data,
   so it is hashed by `StateHasher`, snapshotted and replayed like any other state ("state is the
-  single source of truth", rule 10).
+  single source of truth", rule 10). A controller never writes it: `decide` returns the memory and
+  RNG state after the decision and `AiSystem` writes them back, so controllers stay pure.
 
 ```ts
 // packages/core/src/state/AiState.types.ts (sketch)
@@ -333,8 +342,8 @@ work named:
   it.
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
-- The controller registry is empty until `MinionController` (M2b). How a controller writes its
-  memory and RNG state back is open (`INBOX.md`), since `decide` returns only commands.
+- The registry holds `MinionController` (M2b); the other controllers are absent until their
+  phases, so it is a partial map.
 - A definition that names an unregistered controller stops `Simulation` at construction (shipped
   content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities

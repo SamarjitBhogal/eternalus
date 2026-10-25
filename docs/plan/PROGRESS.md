@@ -1452,3 +1452,32 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: draft PR to `phase/2-sprint-2-work`, merged after #39; the owner answers the MS-28
   INBOX item.
+
+### 2026-10-25 — Minion system M2b (minion controller) — feat/minion-m2b-minion-controller (off docs/minion-plan-all-enemy-ai) — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **Contract:** `Controller.decide` takes one `DecisionInput` (state, id, brain, perception) and
+    returns `{ commands, memory, rngState }`; `AiSystem` writes the brain back (SamarjitBhogal's
+    answer to the M2a INBOX item, doc 11 §2 updated). `AiSystem` owns one `Perception`.
+  - **`MinionController`** (18 §6.1): `marching → engaging → returning → marching`, acquiring by
+    priority, then distance, then id; switching only to a strictly better rank; ending a chase on
+    death, leash or aggro duration with one `stop`; re-forming within `reformDistance` of its slot
+    with an aggro cooldown. Registered in `defaultControllerRegistry`, with its content injected
+    by `Simulation` (aggro rules, formations, kind classes through the new `KindSet.hasKind`).
+  - **Shared ranking helper** `ai/aggroRank` (MS-27) over 11 §4.3's priority list.
+  - **Content:** `content/ai/aggro/` (`lane-minion`: League/Dota numbers scaled by minion speed,
+    all `TUNE`); the three minions get `controller: 'minion'`, `aiProfile: 'lane-minion'` and
+    their `balancing.md` attacks (12 / 1.0 s, 28 / 1.2 s, 70 / 1.6 s; reach 1.5 m as the
+    Warrior's, `TUNE`).
+  - **Movement:** `PathingSystem` chases a member's attack target and stops at attack reach
+    (`MovementContext.arrivalRadius`); slots come from the new `state/formationSlot`, which the
+    controller also uses. `HordeSystem` holds the anchor while the leader has a target.
+  - **`stop`** clears the attack target too (MS-26), through `EntityStore.clearAttackTarget`;
+    `EntityStore.attackTargetOf` is new.
+  - **Tests:** every FSM transition, the ranking helper, chase and anchor hold, `stop`, and two
+    match scenarios: opposing opening hordes fight with kills on both sides and clean invariants,
+    and the same seed gives the same hash tick for tick. The M1 marching scenarios run with
+    minions that cannot fight.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 655 passed (655)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: the pre-PR gate, then M3 and M5a off this branch.

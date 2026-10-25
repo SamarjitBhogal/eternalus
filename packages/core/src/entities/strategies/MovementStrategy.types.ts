@@ -20,8 +20,10 @@ export type MovementContext = {
   readonly neighbours: NeighbourQuery;
   /** Scratch for neighbour indexes, at least as long as the crowd. */
   readonly found: Int32Array;
-  /** Where the unit wants to be: a horde mob's formation slot. */
+  /** Where the unit wants to be: a horde mob's formation slot, or the unit it chases. */
   readonly target: Vec2;
+  /** Within this distance of `target` the unit is there and stops steering toward it. */
+  arrivalRadius: number;
   /** Scratch the strategy writes its answer into and returns, so nothing allocates. */
   readonly out: MutableVec2;
 };
