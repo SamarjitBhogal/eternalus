@@ -11,6 +11,8 @@ import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { loadLevelCurves } from './content/progression/loadLevelCurves';
+import { XP_SOURCES } from './content/progression/xpSources';
 import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
@@ -49,30 +51,33 @@ export class Simulation {
     systems,
     debug = RELEASE_DEBUG_CONFIG,
     content,
+    levelCurves,
     weapons,
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed);
     const { tickRate } = this.state.config;
+    const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);
+    const units = content ?? loadDefaultContent(tickRate, curves, weaponSource);
     this.commandContext = {
       state: this.state,
-      factory: new EntityFactory(
-        createDefaultEntityRegistry(),
-        content ?? loadDefaultContent(tickRate, weaponSource),
-        undefined,
-        weaponSource,
-      ),
+      factory: new EntityFactory(createDefaultEntityRegistry(), units, undefined, weaponSource),
     };
     this.systemContext = { state: this.state, logger };
     // PROTOTYPE(PROTO-01) TEMPORARY: replace this hand-built controller list with
     // `ai/defaultControllerRegistry.ts` (11 §2) and `FollowLeaderController` with `MinionController`.
     this.pipeline =
       systems === undefined
-        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), this.state, [
-            new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
-              this.queue.enqueue(command);
-            }),
-          ])
+        ? new DefaultSystemPipeline(
+            new DefaultInvariantRunner(debug, logger, curves),
+            this.state,
+            { units, curves, xpSources: XP_SOURCES },
+            [
+              new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
+                this.queue.enqueue(command);
+              }),
+            ],
+          )
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(

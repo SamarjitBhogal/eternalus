@@ -109,7 +109,7 @@ const firstHit = (kind: string, definitionId: string): { amount: number; source:
     testWeapon('test-talons', 50),
     testWeapon('test-axe', 80),
   ]);
-  const units = loadDefaultContent(CONFIG.tickRate, weapons);
+  const units = loadDefaultContent(CONFIG.tickRate, undefined, weapons);
   const warrior = units.get('warrior');
   const content = new ContentCatalogue([
     ...units.all(),

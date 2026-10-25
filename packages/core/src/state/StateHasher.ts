@@ -1,7 +1,9 @@
+import { Aether } from '../components/Aether';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { Progression } from '../components/Progression';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -63,6 +65,10 @@ export class StateHasher {
     if (vision !== undefined) {
       fields.push(['vision', vision.revealedUntilTick]);
     }
+    const aether = entity.findComponent(Aether);
+    if (aether !== undefined) {
+      fields.push(['aether', aether.current, aether.max]);
+    }
     const statuses = entity.findComponent(StatusEffects);
     if (statuses !== undefined && statuses.active.length > 0) {
       fields.push([
@@ -75,6 +81,10 @@ export class StateHasher {
           status.expiresTick,
         ]),
       ]);
+    }
+    const progression = entity.findComponent(Progression);
+    if (progression !== undefined) {
+      fields.push(['progression', progression.xp, progression.level]);
     }
     return fields;
   }

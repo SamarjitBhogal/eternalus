@@ -13,6 +13,9 @@ paths:
     'packages/core/src/loadout/**',
     'packages/core/src/content/abilities/**',
     'packages/core/src/content/weapons/**',
+    'packages/core/src/content/progression/**',
+    'packages/core/src/components/Progression.ts',
+    'packages/core/src/systems/ProgressionSystem.ts',
   ]
 related:
   [
@@ -899,6 +902,23 @@ Display names and icons come from the catalogue the client already loads for the
 | Raptor Talons, obsidian bow, A Fine Line, Magus staff; gadget slots Z/C                                                                                                    | **MVP**                                                                             |
 | Wuuthrad, Lightbringer, Short blades, Mortar, Soul Orb, secondary weapon, passive slot, in-match loadout changes, Ultimate Plus, combos, `summon`                          | **MVP-if-time**                                                                     |
 | Ability tree, class-switch penalty, Barricades, Eagle Eye, Firestorm, `reveal`, armour set, skins, weapon abilities (`WeaponDefinition.abilityIds` reuses `Ability`)       | **post-MVP**                                                                        |
+
+## Implementation status
+
+- **Progression (PR #31, SCRUM-426).** Legends install `Aether` (own component, O1) and
+  `Progression` (`xp`, `level`, `curveId`). Level curves are a catalogue
+  (`content/progression/levelCurveCatalogue.ts`), shape-checked at load (`loadLevelCurves`) and
+  injected into `ProgressionSystem`, the content rules (`KnownLevelCurveRule`) and
+  `level-matches-xp`; `addXp(amount, curve)` takes the resolved curve. `ProgressionSystem` (after
+  combat, before death) subscribes to `entity-died`, prices the kill while the victim is still in
+  the store (a mob's own `xpValue`; a Legend by victim level, `xpSources.ts`), pays nothing for a
+  self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
+  only. A level-up raises max health by the class's share of base health and max aether, and heals
+  and refills by the raise only while the Legend is alive (O3, O4). Not built yet: the share radius
+  and damage bias, assists, structure, checkpoint, camp and boss XP (their systems do not exist),
+  basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
+  dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
+  `TUNE`; the curve is derived from an income estimate in `INBOX.md`.
 
 ## Related
 

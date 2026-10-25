@@ -16,6 +16,17 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
+      `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR
+      #35). (1) Can a stunned unit still act while its aim wobbles, or does stun keep "cannot
+      move, attack, cast or interact"? (2) Do the per-source stuns in `balancing.md` (0.5–1 s)
+      stand, with 2 s only the default? (3) How large is the wobble ("slightly")? (4) Does
+      blind's white vignette replace more-abilities §7's −70% vision radius, or come on top of
+      it, and does its 2–3 s fade start when blind lands or when it ends?
+  - Your answer (chat, 2026-10-16): "2 seconds. blind makes aim slightly wobbly (like stun), but
+    also causes the screen to have a heavy white vignette that dissipates over 2-3 seconds. yes,
+    aimed projectiles miss too"; picks: "Stun default", "Wobble causes misses", "Yes, stun
+    wobbles too".
 - [ ] **DEC-36 / DEC-37 — accept ADR 0016 and answer the plan §9 questions.** The course
       instructor's two new requirements, Duel multiplayer (DEC-36) and a server for hundreds or
       thousands of concurrent players (DEC-37), are planned now; must be implemented by the end of
@@ -58,6 +69,25 @@ Reply inline (`Decision: …`).
       The balance anchors tied to the old length (boss levels at the two marks, the match-length
       metrics in `balancing.md`, the soak length) also need your numbers.
   -     Accept after scaling to planned match time = 30 mins
+- [ ] **Aether (MP) pool sizes per class.** The game doc gives no aether numbers. Branch
+      `feat/legend-aether` adds the `Aether` component (MP) to every Legend, with `baseAether` taken
+      from `suggestions/balancing.md` (level 1: Warrior 100, Sentinel 80, Magus 140; +10 per level,
+      `TUNE`). Confirm the pool sizes or give your own. (Regen rate is a Phase 4 concern, not set
+      yet.) The same branch adds Legend progression with balancing.md's other `Recommendation:`
+      values, also for you to confirm: level cap 10, `xpToNext = 100 + 50·(L−1)`, +8% base health
+      and +10 aether per level, Legend kill 150 + 25 × victim level, minion kill 20 / 45 / 120.
+  - Update after your PR #31 review (O1–O8): cap 50 (O6). **Income estimate to check:**
+    balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
+    135 XP/min (minions about 110 XP/min, the rest kills and objectives). Keeping that income and
+    balancing.md's curve shape (growth = half the first step), the cap-50 curve is
+    `xpToNext(L) = 4 + 2·(L − 1)`, 2,548 XP to level 50, reached around minute 19. Kills are
+    re-priced on the same scale: a Legend kill is 150 + 5 × victim level (a level-L victim is worth
+    what a level-L/5 one was on the cap-10 curve; 400 XP at level 50). Mob XP is each mob's
+    `xpValue` (light minion 20, training dummy 0, O8). If your income figure differs, the curve
+    scales linearly: say the XP/min and I resize it. Still yours to sign off: `level-matches-xp`
+    runs every tick, not heavy (05 §16), because rules 2–4 read this tick's `xp-gained` events.
+    Also on the cap-10 scale: balancing.md's bosses' "expected Legend level" (4 and 7) need
+    rescaling to cap 50 (×5 would give 20 and 35); say if you want that.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?

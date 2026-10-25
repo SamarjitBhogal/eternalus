@@ -17,6 +17,7 @@ export const LIGHT_MINION = {
   footprintRadius: 0.4, // TUNE: balancing.md light minion
   visionRadius: 10, // TUNE:
   controller: 'follow-leader',
+  xpValue: 20, // TUNE: balancing.md "XP sources" (light minion kill)
   movement: {
     maxSpeed: 5.4, // TUNE: m/s; balancing.md says 3.5, raised so the escort keeps up with a 6 m/s Warrior
     acceleration: 27, // TUNE: m/s², top speed after 0.2 s

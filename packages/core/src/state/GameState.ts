@@ -8,7 +8,7 @@ import { SeededRandom } from '../utils/SeededRandom';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
-import type { DamageSource } from './GameEvents.types';
+import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
 import type { MatchPhase, RecordedCommand } from './GameState.types';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
@@ -27,6 +27,8 @@ export class GameState {
   private currentTick = 0;
   private readonly recent = new RingBuffer<RecordedCommand>(RECENT_COMMAND_CAPACITY);
   private readonly announcedRemovals: RemovalRecord[] = [];
+
+  private readonly xpAwards: GameEventMap['xp-gained'][] = [];
   private readonly killers = new Map<EntityId, DamageSource>();
 
   /**
@@ -46,6 +48,9 @@ export class GameState {
     this.events.on('entity-died', ({ entityId, killer }) => {
       this.killers.set(entityId, killer);
     });
+    this.events.on('xp-gained', (award) => {
+      this.xpAwards.push(award);
+    });
   }
 
   /** Number of ticks completed. */
@@ -59,6 +64,7 @@ export class GameState {
     this.entities.beginTick();
     this.announcedRemovals.length = 0;
     this.killers.clear();
+    this.xpAwards.length = 0;
   }
 
   /**
@@ -72,6 +78,11 @@ export class GameState {
   /** Every `entity-removed` event of the current tick, in order (whatever the ring buffer keeps). */
   public removalsAnnouncedThisTick(): readonly RemovalRecord[] {
     return [...this.announcedRemovals];
+  }
+
+  /** Every `xp-gained` event of the current tick, in order (whatever the ring buffer keeps). */
+  public xpAwardsThisTick(): readonly GameEventMap['xp-gained'][] {
+    return [...this.xpAwards];
   }
 
   /** Records a command applied this tick, for diagnostic reports. Called by `Simulation.step()`. */

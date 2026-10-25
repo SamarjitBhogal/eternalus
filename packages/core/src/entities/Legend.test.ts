@@ -15,7 +15,7 @@ const TEST_TALONS: WeaponDefinition = {
   uniqueTo: null,
 };
 const WEAPONS = loadWeapons(30, [TEST_TALONS]);
-const WARRIOR = loadDefaultContent(30, WEAPONS).get('warrior');
+const WARRIOR = loadDefaultContent(30, undefined, WEAPONS).get('warrior');
 const ARMED_WARRIOR = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
 const PLACEMENT = { position: { x: 0, y: 0 }, team: 'light' } as const;
 

@@ -12,6 +12,7 @@ export const WARRIOR = {
   displayName: 'Warrior',
   roleBlurb: 'Lighter, lower health, faster.',
   baseHealth: 600, // TUNE:
+  baseAether: 100, // TUNE: balancing.md (level 1)
   weaponBias: 'light',
   damageFocus: 'mixed',
   pickUp: 'pick-up',
@@ -27,4 +28,6 @@ export const WARRIOR = {
   },
   // Basic attack until weapons (05 §10) land.
   attack: { strategy: 'melee', damage: 45, reach: 1.5, interval: 0.7 }, // TUNE: balancing.md (45 / 0.7 s); reach unspecified
+  levelCurveId: 'legend',
+  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;

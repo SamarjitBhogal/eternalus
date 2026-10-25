@@ -2,6 +2,8 @@ import { ContentCatalogue } from './ContentCatalogue';
 import { createDefaultContentRules } from './defaultContentRules';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { MOB_DEFINITIONS } from './mobs/mobCatalogue';
+import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
+import type { LevelCurveDefinition } from './progression/progression.types';
 import type { UnitDefinition } from './units/units.types';
 import { TickRate } from '../utils/TickRate';
 import { ContentValidator } from './validation/ContentValidator';
@@ -29,18 +31,20 @@ const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): 
  * 02 §6).
  *
  * @param tickRate - Ticks per second (`GameConfig.tickRate`).
+ * @param curves - The level curves Legends may name; the shipped set by default.
  * @param weapons - The weapons Legends may name; the shipped set by default.
  * @throws ContentValidationError listing every broken content rule.
  */
 export const loadDefaultContent = (
   tickRate: number,
+  curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'> = LEVEL_CURVE_CATALOGUE,
   weapons: Pick<ContentCatalogue<WeaponDefinition>, 'has'> = loadWeapons(tickRate),
 ): ContentCatalogue<UnitDefinition> => {
   const authored = new ContentCatalogue<UnitDefinition>([
     ...LEGEND_CLASSES.all(),
     ...MOB_DEFINITIONS.all(),
   ]);
-  new ContentValidator(createDefaultContentRules(weapons)).validate(authored);
+  new ContentValidator(createDefaultContentRules(curves, weapons)).validate(authored);
   const rate = new TickRate(tickRate);
   return new ContentCatalogue(
     authored.all().map((definition) => perTick(definition, tickRate, rate)),

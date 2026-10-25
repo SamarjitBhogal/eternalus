@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-22
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -332,6 +332,10 @@ session or phase named:
   `combat/`; `defaultStrategyRegistry.ts` is a typed record per behaviour (`attack` today), so a
   missing id does not compile. The team
   component is `TeamMembership` because the type `Team` owns that name.
+- Legends also install `Aether` (its own component, owner decision O1) and `Progression` (PR #31):
+  `xp`, `level` and `curveId`, with `addXp(amount, curve)` taking the curve `ProgressionSystem`
+  resolves from the injected catalogue. `Health` and `Aether` gained `raiseMax`, which raises only
+  the cap; `ProgressionSystem` heals and refills by the raise while the Legend is alive (O3, O4).
 - Shipped kinds: `warrior`, `sentinel`, `magus`, `light-mob` (the training dummy only),
   `obstacle` and `projectile`. Other mobs are SCRUM-59; structures and zones get concrete kinds in
   Phase 2 and 3.

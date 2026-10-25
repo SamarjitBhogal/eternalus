@@ -19,7 +19,7 @@ const WEAPONS = loadWeapons(30, [
     uniqueTo: null,
   },
 ]);
-const WARRIOR = loadDefaultContent(30, WEAPONS).get('warrior');
+const WARRIOR = loadDefaultContent(30, undefined, WEAPONS).get('warrior');
 
 /** Hits `entity-2` once with a Warrior spawned from `definition`; returns the damage calls. */
 const hitWith = (definition: typeof WARRIOR): [string, number, DamageSource][] => {

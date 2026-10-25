@@ -1154,6 +1154,123 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   DEC-41's open question; a reflowed sentence). Ponytail-review: lean (the delta only deletes).
   Next step: push and reply on #35; merge order stays #34 → #35 → #31.
 
+### 2026-10-10 — Phase 1 / S2 — feat/legend-aether — Claudio + Claude Code
+
+- What was done: added the `Aether` component (MP pool: `max`/`current`, `canAfford`, `spend`,
+  `restore`, `fraction`, `isEmpty`) in `packages/core/src/components/Aether.ts` with its test.
+  `Legend.installComponents` now installs `Aether(definition.baseAether)` on every Legend (mobs and
+  structures get none); `LegendDefinition` gains `baseAether`, with TUNE placeholders in the Warrior
+  (200), Sentinel (250) and Magus (500) content. `StateHasher` hashes aether, appended only when
+  present so non-legend entities hash unchanged. `Magus.test` asserts the pool; the `Match` test
+  fixture's warrior definition gains `baseAether`. Sub-classes were left out: they are post-MVP
+  (D11, `01-classes-and-subclasses.md`). Aether regen is a Phase 4 system, not added. Aether tuning
+  values raised for the owner in `INBOX.md`. Not checked in a browser.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 472 passed (472)"; client "Tests 416 passed (416)"; "✓ built in 105ms"; "Documentation
+  check passed."
+- Next step: pre-PR gate (critic + ponytail-review), then open the PR (rebased onto
+  `phase/2-sprint-2-work`); owner confirms the aether pool sizes; abilities and regen
+  that spend aether land in Phase 4.
+
+### 2026-10-16 — S2 / SCRUM-426 — feat/legend-aether (progression) — Claudio + Claude Code
+
+- What was done: `Progression` component (XP total, level along a content curve, cap) installed on
+  every Legend; `content/progression/` with `LEVEL_CURVES` (`legend`: 100 + 50·(L−1), cap 10),
+  `XP_SOURCES` (Legend kill 150 + 25 × victim level; mob kill 20 / 45 / 120 by kind) and per-class
+  `levelScaling` (+8% base health, +10 aether per level), all `TUNE` from `balancing.md`;
+  `KnownLevelCurveRule`; `ProgressionSystem` (subscribes to `entity-died` through the state it
+  gets from `DefaultSystemPipeline`, awards in its own pass, raises `Health`/`Aether` max, emits
+  `level-up`); `Health.baseMax` + `raiseMax`, `Aether.raiseMax`; `StateHasher` hashes progression
+  once XP is earned. Aether pools now follow `balancing.md` (100 / 80 / 140) instead of invented
+  placeholders; INBOX item updated. Kills only feed it once `DamagePipeline` (PR #34) emits
+  `entity-died`. Docs 04, 05 and the Phase 4 plan updated.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 488 passed (488)"; client "Tests 416 passed
+  (416)"; "✓ built in 92ms"; "Documentation check passed."
+- Pre-PR gate: critic request-changes, 1 blocker (a level-up revived a killer that died the same
+  tick: `Health.raiseMax` now never heals the dead) → fixed with tests; should-fixes done
+  (`ProgressionLevelInvariant` `progression-level`, pipeline wiring test); nits done (rule uses
+  `Object.hasOwn`, 04 table row, 05 `paths`, damage-before-progression comment, INBOX lists the
+  progression numbers). Ponytail-review after.
+- Next step: push to PR #31; shared/assist XP and potency scaling later.
+
+### 2026-10-22 — Phase 2 / SCRUM-426 — feat/legend-aether (owner review, PR #31) — Claudio + Claude Code
+
+- What: synced with `feat/status-effects` by a plain merge (no force; #34 → #35 → #31 order),
+  then applied Sam's review. Content injected: level curves are a catalogue
+  (`levelCurveCatalogue.ts`, `loadLevelCurves` shape-checks cap and steps at load), passed to
+  `ProgressionSystem`, `KnownLevelCurveRule` and the invariant runner; `Simulation({ levelCurves })`
+  can replace them. `Progression` keeps `curveId` (D2 reverted to the design); `Health.baseMax`
+  removed (D3 reverted: the raise uses the definition's `baseHealth`). Mob XP is
+  `MobDefinition.xpValue` (light minion 20, training dummy 0, O8); `XP_SOURCES` keeps only the
+  Legend kill, re-priced 150 + 5 × victim level for cap 50. O3/O4: `raiseMax` raises only the cap;
+  the system heals and refills by the raise only while alive. O5: self and ally kills pay nothing
+  (teams compared; one check covers both). Every award emits `xp-gained` from one private method;
+  `LevelMatchesXpInvariant` (`level-matches-xp`, 15 §3 name) replaces `ProgressionLevelInvariant`
+  with the four rules. `KindSet` (`LEGEND_KINDS`, `MOB_KINDS`) keys rules on kind without casts.
+  `StateHasher` appends progression at the end, ungated. `Aether.fraction`/`isEmpty` removed (no
+  caller). 04 §3 design rows reverted (O2); 04 bullet rewritten; 05 progression note moved into
+  one "Implementation status" section (ADR 0011 rule 4). INBOX: income estimate for the cap-50
+  curve. TODO(claudiodh) where a dead Legend's award is dropped (respawn, FR-051).
+- Tests shown red by breaking the code: O5 (team check removed), O3 heal and O4 no-heal (guard
+  removed / inverted), O8 and mob XP (xpValue replaced), `xp-gained` (emit skipped), pipeline
+  order (Death before Progression; Combat after Progression), hash rows (each `fields.push`
+  removed), curve shape (each check removed), `KnownLevelCurveRule` (injected `has` forced true;
+  keyed on field instead of kind), `PositiveAetherRule` (keyed on field), `LevelScalingRule`
+  (filter removed), `raiseMax` cap only (heal added back), Legend `curveId` (wrong id). The
+  no-attacker guard's break is a type error (`Award.killerId` is an `EntityId`), not a test.
+- Gate: ponytail-review: no cuts (the invariant's level recompute is independent on purpose).
+  Critic: request-changes, no code blockers; 4 should-fix → fixed red-first: the invariant runner
+  takes the curves (no content default in `diagnostics/`); `loadDefaultContent(tickRate, curves)`
+  validates Legends against the injected curves; `GameState.xpAwardsThisTick()` records every
+  award of the tick, so the 512-event ring buffer can't hide one; rule 4 tested for self and ally
+  awards apart (each condition's removal now fails its own test). Nits taken: the definition
+  lookup hoisted out of the level loop; INBOX notes the cap-10 boss levels. Nits left: an ally
+  award by a recipient already removed this tick is not flagged (the event has no recipient team,
+  Sam's payload); the kind lists are not checked for exhaustiveness. The PR body carries the
+  O1–O8 list, the D-table and the break-per-test table.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 585 passed (585)"; client "Tests 416 passed
+  (416)"; "Documentation check passed."
+- Next step: Sam re-reviews #31 after #34 and #35; Samarjit's medium/heavy minions need `xpValue`
+  (45 / 120) whichever merges second.
+
+### 2026-10-16 — Phase 2 / sprint 2.2 — docs/status-effect-rulings — sholtzman + Claude Code
+
+- What was done: the owner's rulings on PR #35's status-effect questions, as a new 2026-10-16
+  batch of the decisions log:
+  - DEC-40: modifiers multiply, per stack and across statuses (05 §8 `op: 'mul'`).
+  - DEC-41: `StatusEffectApplier` and the cache recomputed on change are accepted as design;
+    whether the approval covers `09a48a6`'s wider applier is open.
+  - DEC-42: stun defaults to 2 s and wobbles aim. Blind's aim wobble makes basic attacks and
+    aimed projectiles veer off and usually miss (a miss is not guaranteed), with a white
+    vignette that fades over 2–3 s.
+  - DEC-38 and DEC-39 are taken elsewhere (skins; the Phase 1 waiver in PR #16). DEC-42's open
+    questions are a new `INBOX.md` item.
+  - Posted on PR #35: a strict-audit review (request changes, 22:55Z) and the rulings comment
+    (01:53Z). The rulings comment was posted without re-fetching the PR. The author's `09a48a6`
+    (reply at 23:32Z) had already applied review items 1 and 4, so the comment's instructions on
+    those are stale, and the guaranteed miss now lives in `CombatSystem`, not
+    `StatusModifierStep`. A correcting comment awaits the owner. The pre-PR critic found this.
+    The other fidelity and accuracy fixes it requested are applied to the rows above.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 91ms"; "Documentation
+  check passed."
+- Next step: PR #35 applies DEC-41's doc updates and DEC-42, and marks questions (1)–(4) of its
+  INBOX item `Decision:`; (5) stays open. The owner answers the DEC-42 item.
+
+### 2026-10-24 — Phase 2 / sprint 2.2 — docs/status-effect-rulings (merge of phase 2) — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/2-sprint-2-work` (`00fee93`, PRs #33, #35 and #31) into
+  this branch to clear PR #36's conflict. Two conflicts, both sides kept: the decisions log holds
+  both 2026-10-16 batches, PR #33's DEC-43 to DEC-47 above this branch's DEC-40 to DEC-42 (newest
+  numbers first), with `last-reviewed` at the later 2026-10-17; this log keeps phase 2's entries
+  and appends this branch's. `INBOX.md` merged cleanly. Against the phase branch the merge only
+  adds this branch's lines. It also gives the DEC-40 to DEC-42 references already on the phase
+  branch (05, 03, 17, `stun.ts`, `blind.ts`, tests) the log rows they cite.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 200ms"; "Documentation
+  check passed."
+- Next step: quick `/pr-review`, then merge PR #36 into `phase/2-sprint-2-work`.
+
 ### 2026-10-22 — Phase 4 (early, O7) / sprint 4.4 — feat/weapons — Claudio + Claude Code
 
 - What: first weapon slice (SCRUM-183 / SCRUM-287, 05 §10). `content/weapons/`
