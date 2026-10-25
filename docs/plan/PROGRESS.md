@@ -1630,3 +1630,30 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Checked 117 Markdown files under docs/." "Documentation check passed."
 - Next step: the roster audit (B7), the owner's sign-offs (HC-T1, HC-B1, HC-C1, HC-Q17), the
   code sweep and the critic's second run.
+
+### 2026-10-25 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the roster rows, the staff fill-in and the PR register's index (stream B, round B7) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only; the branch was first fast-forwarded to the task branch's `dfe56a0`,
+  the code sweep, which touches no docs):
+  - Reference 15: CD-38 registers the Magus staff in the HUD's weapon panel as a `fill-in`
+    (centred at its native size in the weapon art's layout box; no Figma original exists), and the
+    appendix gains OD-37, which supersedes OD-8's "stays unused" for that slot only. INBOX HC-C1
+    lists CD-38.
+  - The unapplied patch (INBOX HC-T1) has 95 rows. The rows that copied a display name, a title or
+    a Legend name now cite DEC-48, DEC-49 or DEC-56 and point to the content files; T-65 replaces
+    reference 01's eight sub-class rows with one pointer row (T-66 to T-72 merged into it). New rows
+    T-103 to T-115 carry DEC-56 into reference 01, reference 10, the glossary, the naming and
+    more-abilities suggestions and the post-MVP backlog, for one sign-off. HC-T1 flags T-93a, the
+    applied FR-057 acceptance sentence, as agent-written. HC-Q16 points to the content file.
+  - The PR register (`docs/changelog/pr-feat-hud-and-character-select.md`) names the round-4
+    critic of R4-08, defines the streams, the lanes, the rounds B1 to B8 and the merged rows T-66
+    to T-72, and follows the code sweep (the fixtures in `bridge/__fixtures__/`). The resolver
+    found a definition in the repository for every id cited on the branch's added lines (869 ids,
+    0 unresolved, on `dfe56a0` plus this round).
+  - `docs/changelog/README.md` lists the register. The index still lacks the earlier PR records
+    (`pr-feat-sim-kernel.md`, `pr-feat-session-shell-home.md`, `pr-feat-settings-keybindings.md`,
+    `pr-feat-minion-follow-prototype.md`); they are not backfilled here.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed."
+- Next step: the roster audit's list of docs (B8), then the owner's sign-offs.
