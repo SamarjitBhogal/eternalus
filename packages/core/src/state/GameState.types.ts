@@ -18,4 +18,6 @@ export type RecordedCommand = {
 export type TeamState = {
   unitsRequested: number;
   unitsSuppressed: number;
+  /** `enraged` stacks this team's minions carry on each lane (by `MapLane.id`; 18 MS-16). */
+  enragedByLane: Record<string, number>;
 };

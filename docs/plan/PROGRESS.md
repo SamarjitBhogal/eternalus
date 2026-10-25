@@ -1500,3 +1500,22 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 657 passed (657)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: draft PR; M3 (bot laners, roster option chosen by SamarjitBhogal) and M5a off this
   branch.
+
+### 2026-10-25 — Minion system M5a (MVP modifiers) — feat/minion-m5a-modifiers (off feat/minion-m2b-minion-controller) — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **Strength by distance** (MS-16, DISC-24): `combat/MinionStrengthStep`, a damage step after
+    `StatusModifierStep`: a horde member's hits × `m(t)` and hits on it ÷ `m(t)`, with
+    `m(t) = clamp(1 + k(1 − 2t), min, max)` over its lane progress; Legends and non-horde units
+    are 1. Content `content/mobs/minionModifiers.ts` (`balancing.md` k 0.5 and max 1.5; min 1.0
+    because DISC-24 makes it an addition on top of base stats; INBOX asks to confirm, and how
+    far a fallen tower moves the base point).
+  - **Enraged** (MS-16): `systems/EnragedSystem` after `SpawnSystem`: each `structure-destroyed`
+    of a SpawnerTower or BuffTower (`ENRAGING_STRUCTURES`) adds one `enraged` stack to the losing
+    team's minions on that lane and to every later horde there. Stacks per team and lane live
+    in `TeamState.enragedByLane`, hashed once any exists.
+  - Stand-ins (plan §3): lane progress follows the polyline until M4's fields; nothing emits
+    `structure-destroyed` until structure entities exist.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 664 passed (664)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: the pre-PR gate.

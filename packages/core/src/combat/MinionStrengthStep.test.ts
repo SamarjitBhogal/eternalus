@@ -1,0 +1,107 @@
+import { describe, expect, it } from 'vitest';
+
+import { Transform } from '../components/Transform';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { loadDefaultContent } from '../content/loadDefaultContent';
+import { MINION_STRENGTH } from '../content/mobs/minionModifiers';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
+import { EntityFactory } from '../entities/EntityFactory';
+import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
+import { GameState } from '../state/GameState';
+import { MinionStrengthStep } from './MinionStrengthStep';
+
+const CURVE = { k: 0.5, min: 0.75, max: 1.5 };
+
+/** A light minion in a light horde on lane-0 (160 m from x 20 to x 180), and a Warrior. */
+const setUp = () => {
+  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+  const minion = factory.create('light-mob', 'light-minion', {
+    team: 'light',
+    position: { x: 20, y: 20 },
+  });
+  const legend = factory.create('warrior', 'warrior', { team: 'dark', position: { x: 0, y: 0 } });
+  state.entities.add(minion);
+  state.entities.add(legend);
+  state.hordes.add({
+    id: 'horde-1',
+    team: 'light',
+    weightClass: 'light',
+    lane: 'lane-0',
+    formationId: 'ranks',
+    memberIds: [minion.id],
+    progress: 0,
+  });
+  const walk = (x: number) => {
+    minion.getComponent(Transform).moveTo({ x, y: 20 });
+  };
+  return { state, minion: minion.id, legend: legend.id, walk };
+};
+
+describe('MinionStrengthStep', () => {
+  it('follows m(t) = clamp(1 + k(1 − 2t)): 1.5 at home, 1 mid-lane, clamped at the far end', () => {
+    const { state, minion, legend, walk } = setUp();
+    const step = new MinionStrengthStep(CURVE);
+    const hit = (from: string, to: string) =>
+      step.adjust(
+        {
+          targetId: to,
+          amount: 100,
+          source: { attackerId: from, kind: 'weapon', definitionId: 'x' },
+        },
+        state,
+      );
+
+    expect(hit(minion, legend)).toBeCloseTo(150);
+    expect(hit(legend, minion)).toBeCloseTo(100 / 1.5);
+    walk(60);
+    expect(hit(minion, legend)).toBeCloseTo(125);
+    walk(100);
+    expect(hit(minion, legend)).toBeCloseTo(100);
+    walk(180);
+    expect(hit(minion, legend)).toBeCloseTo(75);
+  });
+
+  it('never goes below base stats with the shipped curve (DISC-24), and leaves Legends at 1', () => {
+    const { state, minion, legend, walk } = setUp();
+    const step = new MinionStrengthStep(MINION_STRENGTH);
+    walk(180);
+
+    expect(
+      step.adjust(
+        {
+          targetId: legend,
+          amount: 100,
+          source: { attackerId: minion, kind: 'weapon', definitionId: 'x' },
+        },
+        state,
+      ),
+    ).toBeCloseTo(100);
+    expect(
+      step.adjust(
+        {
+          targetId: legend,
+          amount: 40,
+          source: { attackerId: null, kind: 'status', definitionId: 'x' },
+        },
+        state,
+      ),
+    ).toBe(40);
+  });
+
+  it('is 1 for everyone in a match without a map', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const step = new MinionStrengthStep(CURVE);
+
+    expect(
+      step.adjust(
+        {
+          targetId: 'a',
+          amount: 10,
+          source: { attackerId: 'b', kind: 'weapon', definitionId: 'x' },
+        },
+        state,
+      ),
+    ).toBe(10);
+  });
+});

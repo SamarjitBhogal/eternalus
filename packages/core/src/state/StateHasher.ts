@@ -52,6 +52,15 @@ export class StateHasher {
       });
       parts.push(['hordes', ...hordes]);
     }
+    // Enraged stacks are appended only once a lane has one, for the same reason.
+    const enraged = (['light', 'dark'] as const).flatMap((team) =>
+      Object.keys(state.teams[team].enragedByLane)
+        .sort()
+        .map((lane) => [team, lane, state.teams[team].enragedByLane[lane]]),
+    );
+    if (enraged.length > 0) {
+      parts.push(['enraged', ...enraged]);
+    }
     // Brains are appended only once one exists, for the same reason.
     if (state.ai.size > 0 || state.ai.deferred.length > 0) {
       const brains: unknown[] = [...state.ai.deferred];

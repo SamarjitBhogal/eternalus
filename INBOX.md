@@ -134,6 +134,12 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
     `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
     (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
+- [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
+      `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
+      than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it
+      at 1.0 (never weaker than base). (1) Is the floor right, or should 0.75 stand? (2) DISC-24:
+      when a lane tower falls, "the base-stat distance extends further toward the enemy". By
+      how much per tower (a fraction of the lane, a fixed distance, or up to the fallen tower)?
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads

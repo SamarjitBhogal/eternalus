@@ -183,4 +183,18 @@ describe('StateHasher', () => {
 
     expect(new Set([without, withBrain, otherMemory, otherRng, deferred]).size).toBe(5);
   });
+
+  it('hashes enraged stacks once a lane has one, by team and lane', () => {
+    const { state } = stateWithSoldier();
+    const without = hasher.hash(state);
+    state.teams.light.enragedByLane['lane-0'] = 1;
+    const one = hasher.hash(state);
+    state.teams.light.enragedByLane['lane-0'] = 2;
+    const two = hasher.hash(state);
+    state.teams.light.enragedByLane = {};
+    state.teams.dark.enragedByLane['lane-0'] = 2;
+    const dark = hasher.hash(state);
+
+    expect(new Set([without, one, two, dark]).size).toBe(4);
+  });
 });
