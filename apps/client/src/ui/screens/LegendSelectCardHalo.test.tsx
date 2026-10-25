@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LegendCardView } from '../../bridge/selectors/selectLegendStepView';
-import { renderWithStore } from '../testStore';
+import { assetsWithBoxes, renderWithStore } from '../testStore';
 import { LegendSelectCardHalo } from './LegendSelectCardHalo';
 import styles from './LegendSelectCardHalo.module.css';
 import haloCss from './LegendSelectCardHalo.module.css?raw';
@@ -65,6 +65,22 @@ describe('LegendSelectCardHalo', () => {
     // 61:11 sits at (1123, 222); its rendition (1127, 227) relative to that root.
     expect(html).toContain('left:1123px;top:222px');
     expect(html).toContain('--art-left:4px;--art-top:5px;--art-width:306px;--art-height:619px');
+  });
+
+  it("places each copy's rendition at the box the store gives it, and live where it gives none", () => {
+    const html = renderWithStore(<LegendSelectCardHalo legends={MAGUS_ROW} />, {
+      assets: assetsWithBoxes({
+        'necromancer-card-art@refraction-idle': { left: 1128, top: 228, width: 300, height: 600 },
+        'catalyst-card-art@refraction-idle': undefined,
+      }),
+    });
+
+    expect(html).toContain('--art-left:5px;--art-top:6px;--art-width:300px;--art-height:600px');
+    expect(html.match(/data-art-mode="(\w+)"/g)).toEqual([
+      'data-art-mode="cover"',
+      'data-art-mode="image"',
+      'data-art-mode="image"',
+    ]);
   });
 
   it('repeats the card names in the copies, titled in the accent', () => {

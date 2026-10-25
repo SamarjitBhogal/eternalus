@@ -17,6 +17,14 @@ export const MAGUS = {
     'With a mastery of Aether, the Magus bends reality into torrents of destructive energy. ' +
     'Channeling natural and arcane forces to decimate the enemy from afar and enhance nearby ' +
     'allies.', // Figma 72:748, verbatim
+  // Figma 62:82 verbatim, with its hard line breaks (each line ends with a space; HC-Q5 picks the
+  // canonical copy).
+  alternateLayoutDescription:
+    'The masters of Aether, Magus focus on the use of \n' +
+    'abilities, while providing buffs for allies, and de-buffing \n' +
+    'enemy units. Specializing in ranged attacks, Magus \n' +
+    'aim to keep their distance from enemies to dish out \n' +
+    'damage with high sustain. ',
   detailNames: {
     signature: 'Aetheric Recall', // Figma 72:773
     proficiency: 'Staff Proficiency', // Figma 72:767

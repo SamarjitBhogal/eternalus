@@ -1,9 +1,11 @@
+import { assetBoxes } from './assetBoxes';
 import { assetFileFor } from './assetFileFor';
 import type {
   AssetGroup,
   AssetId,
   AssetManifestEntry,
   AssetType,
+  RasterBox,
   RenditionFiles,
   RenditionKey,
 } from './AssetManifest.types';
@@ -115,6 +117,14 @@ export class ResourceController {
       Object.assign(urls, this.cache.get(entry.id)?.urls);
     }
     return urls;
+  }
+
+  /**
+   * The draw boxes `group`'s entries declare, keyed like `urls` (`assetBoxes`). Manifest data,
+   * so the same before a load and after it; the session publishes them with the URLs.
+   */
+  public boxes(group: AssetGroup): Readonly<Record<string, RasterBox>> {
+    return assetBoxes(this.entriesOf(group));
   }
 
   /** Frees `group`; a load still running for it keeps nothing (generation check). */

@@ -78,7 +78,10 @@ const session = new SessionController({
   bus: eventBus,
   clock: sessionClock,
   states: createDefaultSessionStates(),
-  catalogue: createCoreCatalogue(developer.displayOverrides),
+  catalogue: createCoreCatalogue({
+    knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
+    overrides: developer.displayOverrides,
+  }),
   matchConfig: gameConfig.match,
   playerName: PLACEHOLDER_PLAYER_NAME,
   seedSource: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,

@@ -15,6 +15,7 @@ const loaded = assetsSlice.reducer(
   assetsSlice.actions.groupUrlsChanged({
     group: 'selection',
     urls: { 'oracle-portrait': PORTRAIT, 'oracle-portrait@ally-tile': PORTRAIT_TILE },
+    boxes: {},
   }),
 );
 const empty = assetsSlice.getInitialState();

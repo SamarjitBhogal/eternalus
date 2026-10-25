@@ -42,6 +42,7 @@ export const SELECTION_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       bytes: 231062,
       hash: 'e4ac9245f348f51daa24c0b6f680d9a9064a98ee1e384e9bc6df10d74f725878',
     },
+    box: { left: 459, top: 65, width: 1002, height: 936 },
     licence: 'owner',
     source:
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 58:271, protocol R1 render (OA1) on scratch duplicate 96:205 of page 96:2; pass sub-P2a-rowplate: composite over the original frame fill and backdrop; side cards 55:268/55:269, LOCK IN 58:277, R5-R10 and the picked card text hidden (r1-log W13); opaque crop; 1x lossless WebP. file = 61:3 render bounds (459, 65, 1001.65 × 935.23): R0–R3 + 58:351, 55:256, 58:354, 55:255 with stroke and glows cropped to (459, 65, 1002, 936), nothing removed, 2x lossy q92 (alpha lossless)',

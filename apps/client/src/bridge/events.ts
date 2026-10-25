@@ -4,7 +4,7 @@
  * `ui-intent`. `connectBusToStore` copies every game → UI event into its slice.
  */
 import type { InputAction, InputChord } from './Binding.types';
-import type { AssetId, DisplayCatalogue } from './catalogue.types';
+import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
 import type { LegendClassId, PlayableTeam } from './domain.types';
 import type {
   Announcement,
@@ -95,10 +95,15 @@ export type AssetGroup =
  */
 export type AssetUrlKey = AssetId;
 
-/** URLs of a group's loaded images (`{}` after release); `ui/` reads them by asset id. */
+/**
+ * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after
+ * release); `ui/` reads them by asset id.
+ */
 export type AssetUrls = {
   readonly group: AssetGroup;
   readonly urls: Readonly<Record<AssetUrlKey, string>>;
+  /** Keyed like `urls`; only a file the screens place at the slot it was baked for has one. */
+  readonly boxes: Readonly<Record<AssetUrlKey, RasterBox>>;
 };
 
 /** One licence block of the About screen, generated from the asset manifest (13 §3 `selectCredits`). */

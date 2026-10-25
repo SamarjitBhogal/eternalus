@@ -1,16 +1,7 @@
+import type { FramePoint } from './selectionGeometry.types';
+
 /** The two Legend card looks of 58:271: `picked` = the enlarged card (55:267), `idle` (55:268). */
 export type LegendCardLook = 'idle' | 'picked';
-
-/** A point in the 1920 × 1080 artboard's px (Figma 58:271 frame px; may be fractional). */
-export type FramePoint = { readonly x: number; readonly y: number };
-
-/** A raster's draw box in integer px (I-45: its size is the file's pixel size). */
-export type RasterBox = {
-  readonly left: number;
-  readonly top: number;
-  readonly width: number;
-  readonly height: number;
-};
 
 /** How far a card's title and Legend name sit right of the left card's text geometry, in px. */
 export type CardTextOffsets = { readonly title: number; readonly name: number };

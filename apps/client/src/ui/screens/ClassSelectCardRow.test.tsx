@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
+import { TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
 import { renderWithStore, TEST_CONTENT } from '../testStore';
 import haloStyles from './ClassSelectCardHalo.module.css';
-import { CLASS_ROW_PLATE_BOXES } from './ClassSelectCardRow.constants';
 import { ClassSelectCardRow } from './ClassSelectCardRow';
 import styles from './ClassSelectCardRow.module.css';
 import rowCss from './ClassSelectCardRow.module.css?raw';
 import cardCss from './ClassSelectCard.module.css?raw';
 import stepCss from './ClassSelectStep.module.css?raw';
 import altStepCss from './ClassSelectAltStep.module.css?raw';
-import type { ClassRowPlate } from './ClassSelectCardRow.types';
+import type { RowPlate } from './selectionGeometry.types';
 
 /**
  * The module stylesheets of every component drawn inside the artboard on the class steps
@@ -34,13 +34,13 @@ function declarationsOf(css: string, selector: string): string {
   );
 }
 
-const PLATE_BOX = CLASS_ROW_PLATE_BOXES['class-row-plate-magus'];
-const PLATE: ClassRowPlate | null =
+const PLATE_BOX = TEST_ASSET_BOXES['class-row-plate-magus'];
+const PLATE: RowPlate | null =
   PLATE_BOX === undefined
     ? null
     : { url: '/assets/test/class-row-plate-magus.webp', box: PLATE_BOX };
 
-function render(rowPlate: ClassRowPlate | null, pickedClassId: string | null = 'magus'): string {
+function render(rowPlate: RowPlate | null, pickedClassId: string | null = 'magus'): string {
   const noop = (): void => undefined;
   return renderWithStore(
     <ClassSelectCardRow

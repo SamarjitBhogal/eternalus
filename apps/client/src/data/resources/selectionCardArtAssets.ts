@@ -56,6 +56,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 83498,
           hash: '8b797e1aaf389eee970622427776143cf209b1a4a984652f3039136e147f937d',
         },
+        box: { left: 505, top: 255, width: 266, height: 568 },
       },
       'card-picked': {
         file: {
@@ -68,6 +69,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 112208,
           hash: '7e83610e07b9e35f36b7ed24f05338b5e20f4eeda1e7d3a54b8fd25c9b464373',
         },
+        box: { left: 482, top: 210, width: 314, height: 660 },
       },
       'refraction-idle': {
         file: {
@@ -80,6 +82,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 97918,
           hash: 'efbd6f15a7cf63482e0f905e977978779d83ee61fd2704c5313d4ea7883c44ea',
         },
+        box: { left: 485, top: 226, width: 305, height: 620 },
       },
       'refraction-picked': {
         file: {
@@ -92,6 +95,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 128682,
           hash: '75f3fa8f8790926393d27629d4797bd65fefd07e02ff97cbf030340db841a12b',
         },
+        box: { left: 457, top: 181, width: 355, height: 699 },
       },
     },
   },
@@ -124,6 +128,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 59390,
           hash: 'bc85b199a06400e20ac36fcd8a4fa6e98294e7c9120dfed0def5f8e37afedc64',
         },
+        box: { left: 1149, top: 256, width: 265, height: 567 },
       },
       'card-picked': {
         file: {
@@ -136,6 +141,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 79210,
           hash: 'e16a6e6e24c8dbecab947902da09e899ea75455498a2820a4ac99b95b1e156a9',
         },
+        box: { left: 1125, top: 210, width: 315, height: 660 },
       },
       'refraction-idle': {
         file: {
@@ -148,6 +154,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 68550,
           hash: 'b799f75245a375b7835292c35b52b9ce9a770c234a4ced1e90dfa715452915bf',
         },
+        box: { left: 1127, top: 227, width: 306, height: 619 },
       },
       'refraction-picked': {
         file: {
@@ -160,6 +167,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 98736,
           hash: '0358fe469da23a00467e115d3a487df42c2d02817b750d9bb010deb9a4f2c8a6',
         },
+        box: { left: 1101, top: 181, width: 355, height: 699 },
       },
     },
   },
@@ -192,6 +200,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 91932,
           hash: 'f2a1b09f9718c8a42be4c8340b30a6bc95ddbd790ad58dc0a0b27bc270b3f3a5',
         },
+        box: { left: 826, top: 255, width: 266, height: 568 },
       },
       'card-picked': {
         file: {
@@ -204,6 +213,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 115240,
           hash: '11eb627b072117d254e3b342f9fce84b39682e38e3d56c28be5569b7b5350d3c',
         },
+        box: { left: 803, top: 210, width: 315, height: 660 },
       },
     },
   },
@@ -236,6 +246,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 79338,
           hash: '32c3a1521506291fcf86dbe75c738c0c795371ab0acb5ce5e7b6bf8d4c75e72c',
         },
+        box: { left: 806, top: 226, width: 305, height: 620 },
       },
       'refraction-picked': {
         file: {
@@ -248,6 +259,7 @@ export const SELECTION_CARD_ART_ASSETS: readonly AssetManifestEntry[] = [
           bytes: 104716,
           hash: 'a63fd7d0689585a54c4d7478415adb6b749f98c8f24015af6a2168e653041f12',
         },
+        box: { left: 778, top: 181, width: 355, height: 699 },
       },
     },
   },

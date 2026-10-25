@@ -1,4 +1,5 @@
 import type {
+  ClassDetailNames,
   DisplayContent,
   LegendDefinition,
   LegendSpecDefinition,
@@ -31,6 +32,13 @@ const DETAIL_SLOT_ORDER: readonly DetailSlot[] = [
   'specialty',
   'ultimate',
 ];
+
+/** A locked card's detail rows: the class slots, unnamed and without icons (placeholder rows). */
+const LOCKED_DETAIL_NAMES: ClassDetailNames = {
+  signature: null,
+  proficiency: null,
+  specialty: null,
+};
 
 /** What each effects renderer keeps of the full catalogue (I-80; a new renderer is one entry). */
 const RENDERER_VIEWS: Readonly<
@@ -66,26 +74,28 @@ function detailRows(
   }));
 }
 
-/** A layout's own copy and icons; its rows keep core names, with its icons over the class's. */
+/**
+ * A layout's own icons (its rows keep core names, with its icons over the class's), and the
+ * alternate layout's own copy, core's `alternateLayoutDescription` (62:82).
+ */
 function layoutOverrides(
   legend: LegendDefinition,
   shown: ClassPresentation,
 ): LegendClassCard['layoutOverrides'] {
-  return Object.fromEntries(
+  const overrides = Object.fromEntries(
     Object.entries(shown.layoutOverrides).map(
-      ([layout, { description, detailIcons }]): [string, ClassLayoutOverride] => [
+      ([layout, { detailIcons }]): [string, ClassLayoutOverride] => [
         layout,
-        {
-          ...(description === undefined ? {} : { description }),
-          ...(detailIcons === undefined
-            ? {}
-            : {
-                details: detailRows(legend.detailNames, { ...shown.detailIcons, ...detailIcons }),
-              }),
-        },
+        detailIcons === undefined
+          ? {}
+          : { details: detailRows(legend.detailNames, { ...shown.detailIcons, ...detailIcons }) },
       ],
     ),
   );
+  const description = legend.alternateLayoutDescription;
+  return description === null
+    ? overrides
+    : { ...overrides, alternate: { description, ...overrides.alternate } };
 }
 
 /** A core Legend with its presentation: the title and per-team names stay core's objects (OA3). */
@@ -131,6 +141,31 @@ function toClassCard(
       .map((spec) => toSpecCard(spec, presentation)),
     hud: shown.hud,
     layoutOverrides: layoutOverrides(legend, shown),
+  };
+}
+
+/** A core locked class with its presentation: shown, never picked, no Legends or kit (DEC-48). */
+function toLockedCard(
+  locked: DisplayContent['lockedClasses'][number],
+  presentation: CataloguePresentation,
+): LegendClassCard {
+  const shown =
+    presentation.lockedClasses[locked.id] ??
+    fail(`locked class "${locked.id}" has no presentation`);
+  return {
+    classId: locked.id,
+    displayName: locked.displayName,
+    blurb: locked.roleBlurb,
+    status: 'locked',
+    roleLabel: locked.roleLabel,
+    tagline: null,
+    description: null,
+    accentToken: shown.accentToken,
+    details: detailRows(LOCKED_DETAIL_NAMES, {}),
+    art: shown.art,
+    specs: [],
+    hud: null,
+    layoutOverrides: {},
   };
 }
 
@@ -211,8 +246,9 @@ function catalogueAssetIds(catalogue: DisplayCatalogue): AssetId[] {
  * Joins core display content with client presentation. Detail rows: core names × presentation
  * icons, in slot order. HUD kinds: core names by kind (an aggregated group takes its first named
  * kind's name).
- * @throws Error naming the id: a core class or spec without presentation, a HUD kind or group
- *   without a core name, or an asset id that is not in `knownAssetIds` (UD-18; checked at boot).
+ * @throws Error naming the id: a core class, spec or locked class without presentation, a HUD kind
+ *   or group without a core name, or an asset id that is not in `knownAssetIds` (UD-18; checked at
+ *   boot).
  */
 export function buildDisplayCatalogue(inputs: {
   readonly content: DisplayContent;
@@ -230,7 +266,7 @@ export function buildDisplayCatalogue(inputs: {
   const full: DisplayCatalogue = {
     legendClasses: [
       ...content.legends.map((legend) => toClassCard(legend, content, presentation)),
-      ...presentation.lockedClasses,
+      ...content.lockedClasses.map((locked) => toLockedCard(locked, presentation)),
     ],
     backgroundSets: presentation.backgroundSets,
     profileDisplayName: presentation.profileDisplayName,
@@ -241,6 +277,7 @@ export function buildDisplayCatalogue(inputs: {
     effectsRenderer,
     contrastMode: presentation.contrastMode,
     hud: hudCatalogue(content.mapFeatures, presentation.hud),
+    teamNames: content.teamNames,
   };
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));
   if (unknown !== undefined) fail(`asset "${unknown}" is not in the asset manifest`);

@@ -1,47 +1,30 @@
 import type { KeyboardEvent, ReactElement } from 'react';
 
-import type { AssetId, LegendClassCard } from '../../bridge/catalogue.types';
+import type { LegendClassCard } from '../../bridge/catalogue.types';
 import { isSelectableClass } from '../../bridge/selectionRules';
 import { ArchCard, type ArchArtMode, type ArchLayerKind } from '../components/ArchCard';
 import { cssVars } from '../components/cssVars';
 import { LockGlyph } from '../components/LockGlyph';
+import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { STRINGS } from '../strings';
-import {
-  CLASS_CARD_PLATES,
-  type ClassCardPlate,
-  PLATE_BOX_TOLERANCE,
-} from './ClassSelectCard.constants';
 import styles from './ClassSelectCard.module.css';
 import { classArtOrigin, classCardStyle, overlayVars, plateVars } from './classSelectLayout';
 import type { ClassCardLook, ClassSlot } from './classSelectLayout.types';
-import { originRemainder } from './legendSelectLayout';
-import type { FramePoint } from './legendSelectLayout.types';
+import { isBakedAt } from './isBakedAt';
+import { offset, originRemainder } from './selectionGeometry';
 
 /** Bottom to top (62:162): outer frame 62:163, art 62:164, inner GLASS overlay 62:177, focus ring. */
 const LAYERS: readonly ArchLayerKind[] = ['outer-outline', 'art', 'inner-outline', 'focus-ring'];
 
-/** The plate of `plateId` when it was cut at this card's art box (I-45), else `undefined`. */
-function plateHere(
-  plateId: AssetId | undefined,
-  artOrigin: FramePoint,
-): ClassCardPlate | undefined {
-  const plate = plateId === undefined ? undefined : CLASS_CARD_PLATES[plateId];
-  const isHere =
-    plate !== undefined &&
-    Math.abs(plate.box.left - artOrigin.x) < PLATE_BOX_TOLERANCE &&
-    Math.abs(plate.box.top - artOrigin.y) < PLATE_BOX_TOLERANCE;
-  return isHere ? plate : undefined;
-}
-
 /**
  * One class card of the class step (62:162 idle, 62:152 picked): a `radio` button at its slot,
  * the arch, the class name in its accent, the role and "N Allies" (allied bots on the class,
- * F3). The art is the look's Figma plate where the catalogue has one cut at this slot and it is
- * loaded (plate mode: both 1 px strokes live at their own nodes, OD-1); otherwise the live art
- * (cover mode: the art's own 1 px stroke, and the overlay's 1 px stroke at the overlay node, the
- * slot's `overlay` offset). A locked class stays focusable with `aria-disabled` and shows a lock
- * and "Locked" instead of its ally count (CD-05).
+ * F3). The art is the look's Figma plate where the catalogue has one, loaded, with a draw box
+ * baked at this card's art (plate mode: both 1 px strokes live at their own nodes, OD-1);
+ * otherwise the live art (cover mode: the art's own 1 px stroke). Either way the overlay's 1 px
+ * stroke sits at the overlay node, the slot's `overlay` offset from the art. A locked class stays
+ * focusable with `aria-disabled` and shows a lock and "Locked" instead of its ally count (CD-05).
  */
 export function ClassSelectCard({
   card,
@@ -77,9 +60,10 @@ export function ClassSelectCard({
   const look: ClassCardLook = isPicked ? 'picked' : 'idle';
   const origin = slot.card[look];
   const artOrigin = classArtOrigin(origin, look);
-  const plateId = card.art.cardPlates[look];
-  const plateUrl = useAssetUrl(plateId ?? null);
-  const plate = plateUrl === null ? undefined : plateHere(plateId, artOrigin);
+  const plateId = card.art.cardPlates[look] ?? null;
+  const plateUrl = useAssetUrl(plateId);
+  const plateBox = useAssetBox(plateId);
+  const plate = plateUrl !== null && isBakedAt(plateBox, artOrigin) ? plateBox : undefined;
   const artMode: ArchArtMode = plate === undefined ? 'cover' : 'plate';
   const isAvailable = isSelectableClass(card);
   return (
@@ -100,7 +84,7 @@ export function ClassSelectCard({
         ...classCardStyle(origin, slot.text[look]),
         ...(plate === undefined
           ? overlayVars(slot.overlay[look])
-          : plateVars(origin, plate.box, artOrigin, plate.overlayOrigin)),
+          : plateVars(origin, plate, artOrigin, offset(artOrigin, slot.overlay[look]))),
         ...cssVars({ '--card-accent': `var(${card.accentToken})` }),
       }}
       onClick={onPick}
@@ -120,7 +104,7 @@ export function ClassSelectCard({
     >
       <ArchCard
         layers={LAYERS}
-        artAssetId={plate === undefined ? card.art.card : (plateId ?? null)}
+        artAssetId={plate === undefined ? card.art.card : plateId}
         artMode={artMode}
         origin={originRemainder(origin)}
       />

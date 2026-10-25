@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetGroup } from '../../../bridge/events';
 import type { DisplayCatalogue } from '../../../bridge/catalogue.types';
-import { coreCatalogue } from '../../content/coreCatalogue';
+import { shippedCatalogue } from '../../content/__fixtures__/shippedCatalogue';
 import { flushMicrotasks, testSession } from '../../testSessionDeps';
 
 /** A session in the menu whose bus records every load event and phase, in order. */
 async function inMenu(catalogue: Partial<DisplayCatalogue> = {}) {
   const session = testSession({
-    catalogue: { load: () => ({ ...coreCatalogue.load(), ...catalogue }) },
+    catalogue: { load: () => ({ ...shippedCatalogue().load(), ...catalogue }) },
   });
   const load = vi.spyOn(session.resources, 'load');
   session.controller.start();

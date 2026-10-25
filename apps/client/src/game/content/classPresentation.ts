@@ -1,17 +1,13 @@
 // Class and Legend presentation (Figma 62:125, 62:70, 58:271): accents, art, plates and detail
 // icons by content id. Names, titles and copy come from core; art is keyed by spec id, never by a
 // Legend name, because names differ by team (I-82, I-83).
-import type { LegendClassCard, LegendSpecArt } from '../../bridge/catalogue.types';
-import type { ClassPresentation, SpecPresentation } from './CataloguePresentation.types';
+import type { LegendSpecArt } from '../../bridge/catalogue.types';
+import type {
+  ClassPresentation,
+  LockedClassPresentation,
+  SpecPresentation,
+} from './CataloguePresentation.types';
 import { MAGUS_HUD, SENTINEL_HUD, WARRIOR_HUD } from './hudPresentation';
-
-/** 62:82 verbatim, with its hard line breaks (each line ends with a space; DV-114, HC-Q5). */
-const MAGUS_ALTERNATE_DESCRIPTION =
-  'The masters of Aether, Magus focus on the use of \n' +
-  'abilities, while providing buffs for allies, and de-buffing \n' +
-  'enemy units. Specializing in ranged attacks, Magus \n' +
-  'aim to keep their distance from enemies to dish out \n' +
-  'damage with high sustain. ';
 
 /** Keyed by core class id. Plates are present on both renderers; `'css'` empties them (I-80). */
 export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
@@ -57,35 +53,18 @@ export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
     },
     hud: MAGUS_HUD,
     layoutOverrides: {
-      alternate: {
-        description: MAGUS_ALTERNATE_DESCRIPTION,
-        detailIcons: { specialty: 'magus-detail-arcane-intellect-flame' },
-      },
+      alternate: { detailIcons: { specialty: 'magus-detail-arcane-intellect-flame' } },
     },
   },
 };
 
 /**
- * The locked fourth card (DEC-48: shown, never selectable, never given to a bot). Content id
- * `flying` as architecture 04 §2 and 17 R1 reserve it (INBOX HC-F2); "aerial" lower case as in
- * 72:861; the blurb is reference 01's Flying row.
+ * The art and accent of each locked card, keyed by core locked-class id (DEC-48); its name, blurb
+ * and role label are core content.
  */
-export const LOCKED_CLASSES: readonly LegendClassCard[] = [
-  {
-    // TODO(sam): becomes core content with the Flying class (17 R1).
-    classId: 'flying',
-    displayName: 'Harbinger',
-    blurb: 'Air-based; moves primarily in the air, like a jet or helicopter.',
-    status: 'locked',
-    roleLabel: 'aerial',
-    tagline: null,
-    description: null,
+export const LOCKED_CLASS_PRESENTATION: Readonly<Record<string, LockedClassPresentation>> = {
+  flying: {
     accentToken: '--class-flying-accent',
-    details: [
-      { slot: 'signature', displayName: null, iconAssetId: null },
-      { slot: 'proficiency', displayName: null, iconAssetId: null },
-      { slot: 'specialty', displayName: null, iconAssetId: null },
-    ],
     art: {
       card: 'flying-card-art',
       sigil: 'flying-sigil',
@@ -93,11 +72,8 @@ export const LOCKED_CLASSES: readonly LegendClassCard[] = [
       cardPlates: { idle: 'flying-card-plate-idle' },
       rowPlate: null,
     },
-    specs: [],
-    hud: null,
-    layoutOverrides: {},
   },
-];
+};
 
 /** A Legend with no art of its own: the designed placeholders. */
 const NO_LEGEND_ART: LegendSpecArt = {

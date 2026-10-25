@@ -8,7 +8,7 @@ import { cssVars } from '../components/cssVars';
 import styles from './ClassSelectCardHalo.module.css';
 import { classCardStyle, classSlot } from './classSelectLayout';
 import type { ClassCardLook } from './classSelectLayout.types';
-import { originRemainder } from './legendSelectLayout';
+import { originRemainder } from './selectionGeometry';
 
 /** A copy's layers, bottom to top (62:195): outer 62:196, art 62:197, inner overlay 62:198. */
 const COPY_LAYERS: readonly ArchLayerKind[] = ['outer-outline', 'art', 'inner-outline'];

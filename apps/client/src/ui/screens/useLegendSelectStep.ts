@@ -8,14 +8,12 @@ import {
   type LegendStepView,
 } from '../../bridge/selectors/selectLegendStepView';
 import { contentSlice } from '../../bridge/slices/contentSlice';
-import { tabbableRovingIndex } from '../components/rovingRadio';
+import { rovingKeyDown, tabbableRovingIndex } from '../components/rovingRadio';
+import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { legendStepActions, type LegendStepActions } from './legendStepActions';
-import { ROW_PLATE_BOXES } from './LegendSelectStep.constants';
-import type { RasterBox } from './legendSelectLayout.types';
-
-/** The Legend row plate to draw: its URL at its full box. */
-type LegendRowPlate = { readonly url: string; readonly box: RasterBox };
+import { rowPlateOf } from './selectionGeometry';
+import type { RowPlate } from './selectionGeometry.types';
 
 /** The Legend step's state and handlers. */
 type LegendSelectStepModel = {
@@ -25,17 +23,12 @@ type LegendSelectStepModel = {
   readonly tabbableIndex: number;
   readonly actions: LegendStepActions;
   /** The picked Legend's row plate while it is loaded and boxed (I-69's one predicate), else `null`. */
-  readonly rowPlate: LegendRowPlate | null;
+  readonly rowPlate: RowPlate | null;
   /** LOCK IN's chrome plate: the catalogue's only while the row plate is drawn (FID-R4-01). */
   readonly lockInChromeAssetId: AssetId | null;
   readonly onPreview: (specId: string | null) => void;
   readonly onCardKeyDown: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
 };
-
-function rowPlateOf(assetId: AssetId | null, url: string | null): LegendRowPlate | null {
-  const box = assetId === null ? undefined : ROW_PLATE_BOXES[assetId];
-  return url === null || box === undefined ? null : { url, box };
-}
 
 /**
  * The Legend step's model, or `null` on the class step. A hover or focus previews a Legend in the
@@ -49,7 +42,7 @@ export function useLegendSelectStep(): LegendSelectStepModel | null {
   const [previewSpecId, setPreviewSpecId] = useState<string | null>(null);
   const picked = view?.legends.find((legend) => legend.isPicked);
   const plateId = picked?.rowPlateAssetId ?? null;
-  const rowPlate = rowPlateOf(plateId, useAssetUrl(plateId));
+  const rowPlate = rowPlateOf(useAssetUrl(plateId), useAssetBox(plateId));
   if (view === null) return null;
   const actions = legendStepActions(view);
   return {
@@ -64,13 +57,6 @@ export function useLegendSelectStep(): LegendSelectStepModel | null {
     rowPlate,
     lockInChromeAssetId: rowPlate === null ? null : lockInChrome,
     onPreview: setPreviewSpecId,
-    onCardKeyDown: (event, index) => {
-      const next = actions.move(index, event.key);
-      if (next === null) return;
-      event.preventDefault();
-      event.currentTarget.parentElement
-        ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-        [next]?.focus();
-    },
+    onCardKeyDown: rovingKeyDown(actions.move),
   };
 }

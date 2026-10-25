@@ -1,15 +1,16 @@
 /**
  * Geometry of the class row (62:146 in 62:125), shared by the crisp cards and the live halo:
  * where each slot puts a card and its glow copy, and the inline style that places a card root
- * at its integer floor (I-45). Slot positions are the Figma's; plate boxes come from the
- * WP-ASSETS placement table (`ClassSelectCard.constants.ts`).
+ * at its integer floor (I-45). Slot positions are the Figma's; each plate's draw box is its
+ * manifest entry's, read with its URL (`useAssetBox`).
  */
 import type { CSSProperties } from 'react';
 
+import type { RasterBox } from '../../bridge/catalogue.types';
 import { cssVars } from '../components/cssVars';
 import type { ClassCardLook, ClassCardTextOffsets, ClassSlot } from './classSelectLayout.types';
-import { offset, originRemainder } from './legendSelectLayout';
-import type { FramePoint, RasterBox } from './legendSelectLayout.types';
+import { offset, originRemainder } from './selectionGeometry';
+import type { FramePoint } from './selectionGeometry.types';
 
 /** Card centres on a 301 px pitch about x 1099 (647.5 / 948.5 / 1249.5 / 1550.5 for four, C§4.10). */
 const ROW_CENTRE_X = 1099;

@@ -29,18 +29,6 @@ export function initialClassStep(
   };
 }
 
-/**
- * The class the character-select shell remembers for Back (CD-11): the session's selected class
- * while there is one, else the last one remembered. So a pick is remembered, Back (`null`) keeps
- * it, and a new pick replaces it; the shell passes it to the class step as `preferredClassId`.
- */
-export function rememberedClassId(
-  last: LegendClassId | null,
-  current: LegendClassId | null,
-): LegendClassId | null {
-  return current ?? last;
-}
-
 /** Picks `classId`; a locked or unknown class leaves the state unchanged (CS5). */
 export function pickClass(
   state: ClassStepLocal,

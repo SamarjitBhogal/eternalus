@@ -11,6 +11,7 @@ const loadedAssets = assetsSlice.reducer(
   assetsSlice.actions.groupUrlsChanged({
     group: 'selection',
     urls: { 'test-backdrop': BACKDROP_URL },
+    boxes: {},
   }),
 );
 

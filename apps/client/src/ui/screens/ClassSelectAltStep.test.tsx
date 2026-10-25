@@ -43,6 +43,12 @@ const render = (preferredClassId: string | null): string =>
     settings: { ...settingsSlice.getInitialState(), bindings: VIEW_DETAILS_ON_C },
   });
 
+/** The accessible name (text) of every button whose start tag carries `autofocus`. */
+const autofocusedButtons = (html: string): string[] =>
+  [...html.matchAll(/<button([^>]*)>(.*?)<\/button>/g)]
+    .filter(([, attributes = '']) => attributes.includes('autofocus'))
+    .map(([, , inner = '']) => inner.replace(/<[^>]+>/g, '').trim());
+
 /** The `<img>` start tag whose `src` is `url`. */
 const imgTag = (html: string, url: string): string =>
   new RegExp(`<img src="${url.replace(/[.]/g, '\\.')}"[^>]*>`).exec(html)?.[0] ?? '';
@@ -73,6 +79,14 @@ describe('ClassSelectAltStep', () => {
       `class="${String(styles.modelStandIn)}"`,
     );
     expect(html).not.toContain('magus-model');
+  });
+
+  it('after Back, gives the focus to View Details, the control that left the step (CD-11)', () => {
+    expect(autofocusedButtons(render('magus'))).toEqual(['C View Details']);
+  });
+
+  it('focuses nothing on first entry (62:70 shows no focus ring)', () => {
+    expect(autofocusedButtons(render(null))).toEqual([]);
   });
 
   it('has the arrows and View Details with its live key, and no cards, roster or Select Class', () => {

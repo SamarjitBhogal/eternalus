@@ -1,6 +1,5 @@
 import type { InputAction } from '../bridge/Binding.types';
 import type { RoleRatingAxis } from '../bridge/catalogue.types';
-import type { PlayableTeam } from '../bridge/domain.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 
@@ -140,8 +139,6 @@ export const STRINGS = {
     detailLine: (left: string, right: string): string => `${left}  ·  ${right}`,
     countdownLabel: 'Time left to choose',
     rosterLabel: (team: string): string => `${team} team`,
-    // TODO(sam): team display names move to core team content when it exists.
-    teamNames: { light: 'Light', dark: 'Dark' } satisfies Record<PlayableTeam, string>,
     teamBadge: (team: string): string => `You are on the ${team} team`,
     you: 'You',
     /** A roster tile's name: who, then their class once known ("You, Magus"). */

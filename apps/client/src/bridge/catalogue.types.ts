@@ -6,7 +6,7 @@
 import type { LegendName, MapFeatureKind, RoleRatings } from '@eternalus/core';
 
 import type { HudSlotId } from './Binding.types';
-import type { LegendClassId, Team } from './domain.types';
+import type { LegendClassId, PlayableTeam, Team } from './domain.types';
 
 export type { LegendName } from '@eternalus/core';
 
@@ -68,6 +68,21 @@ export type RenditionKey =
   | 'refraction-picked'
   // the mirrored use: enemy-strip structure icons, the "theirs" allegiance flag
   | 'mirrored';
+
+/**
+ * Where a file is drawn, in px of the 1920 × 1080 frame that draws it (the selection artboard, or
+ * the HUD's frame 62:231): the integer origin it was baked at and the file's own pixel size, never
+ * scaled. The manifest declares it for an image the screens place at the slot it was baked for and
+ * for a HUD weapon art; `selectAssetBox` gives it once the group has loaded.
+ * Restated in `data/resources/AssetManifest.types.ts`; `game/content/assetVocabulary.test.ts`
+ * checks both are equal.
+ */
+export type RasterBox = {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+};
 
 /** Which renderer draws the selection screens' Figma effects: R1 plates or live CSS (OA1, I-80). */
 export type EffectsRenderer = 'figma-raster' | 'css';
@@ -239,4 +254,6 @@ export type DisplayCatalogue = {
   /** The colour set; `SessionController` writes it to `data-contrast` on the theme root. */
   readonly contrastMode: ContrastMode;
   readonly hud: HudCatalogue;
+  /** Each playable team's display name (core content): the team badge and the roster labels. */
+  readonly teamNames: Readonly<Record<PlayableTeam, string>>;
 };

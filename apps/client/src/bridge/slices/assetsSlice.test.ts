@@ -4,7 +4,10 @@ import type { CreditEntry } from '../events';
 import { assetsSlice } from './assetsSlice';
 
 const { groupUrlsChanged, creditsLoaded } = assetsSlice.actions;
-const { selectAssetUrl, selectCredits } = assetsSlice.selectors;
+const { selectAssetBox, selectAssetUrl, selectCredits } = assetsSlice.selectors;
+
+const PORTRAIT_TILE = { left: 1775, top: 848, width: 60, height: 60 };
+const FRAME = { left: 1616, top: 27, width: 295, height: 284 };
 
 const loaded = assetsSlice.reducer(
   assetsSlice.reducer(
@@ -15,9 +18,14 @@ const loaded = assetsSlice.reducer(
         'oracle-portrait': '/oracle-portrait.webp',
         'oracle-portrait@ally-tile': '/oracle-portrait@ally-tile.webp',
       },
+      boxes: { 'oracle-portrait@ally-tile': PORTRAIT_TILE },
     }),
   ),
-  groupUrlsChanged({ group: 'match', urls: { 'minimap-frame': '/minimap-frame.webp' } }),
+  groupUrlsChanged({
+    group: 'match',
+    urls: { 'minimap-frame': '/minimap-frame.webp' },
+    boxes: { 'minimap-frame': FRAME },
+  }),
 );
 
 describe('assetsSlice', () => {
@@ -46,10 +54,35 @@ describe('assetsSlice', () => {
   it('has no URL once its group is released', () => {
     const released = assetsSlice.reducer(
       loaded,
-      groupUrlsChanged({ group: 'selection', urls: {} }),
+      groupUrlsChanged({ group: 'selection', urls: {}, boxes: {} }),
     );
     expect(selectAssetUrl({ assets: released }, 'oracle-portrait', 'ally-tile')).toBeNull();
     expect(selectAssetUrl({ assets: released }, 'minimap-frame')).toBe('/minimap-frame.webp');
+  });
+
+  it("gives a file's draw box from any loaded group, by id or id@rendition", () => {
+    const state = { assets: loaded };
+    expect(selectAssetBox(state, 'oracle-portrait', 'ally-tile')).toBe(PORTRAIT_TILE);
+    expect(selectAssetBox(state, 'minimap-frame')).toBe(FRAME);
+  });
+
+  it('has no box before the group loads, for a null id, after release, or for a file without one', () => {
+    const released = assetsSlice.reducer(
+      loaded,
+      groupUrlsChanged({ group: 'selection', urls: {}, boxes: {} }),
+    );
+    expect(selectAssetBox({ assets: assetsSlice.getInitialState() }, 'minimap-frame')).toBeNull();
+    expect(selectAssetBox({ assets: loaded }, null)).toBeNull();
+    expect(selectAssetBox({ assets: released }, 'oracle-portrait', 'ally-tile')).toBeNull();
+    expect(selectAssetBox({ assets: released }, 'minimap-frame')).toBe(FRAME);
+    expect(selectAssetBox({ assets: loaded }, 'oracle-portrait')).toBeNull();
+  });
+
+  it("never lends a rendition its asset's box, nor an asset its rendition's", () => {
+    const state = { assets: loaded };
+    expect(selectAssetUrl(state, 'minimap-frame', 'mirrored')).toBe('/minimap-frame.webp');
+    expect(selectAssetBox(state, 'minimap-frame', 'mirrored')).toBeNull();
+    expect(selectAssetBox(state, 'oracle-portrait')).toBeNull();
   });
 
   it('stores the credits as given', () => {

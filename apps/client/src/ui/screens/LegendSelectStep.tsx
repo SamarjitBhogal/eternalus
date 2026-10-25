@@ -3,6 +3,7 @@ import { useId, type ReactElement } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import { selectAllyTiles } from '../../bridge/selectors/selectAllyTiles';
 import type { LegendCardView } from '../../bridge/selectors/selectLegendStepView';
+import { contentSlice } from '../../bridge/slices/contentSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { AllyRoster } from '../components/AllyRoster';
 import { GlowButton } from '../components/GlowButton';
@@ -37,6 +38,7 @@ export function LegendSelectStep(): ReactElement | null {
   const model = useLegendSelectStep();
   const tiles = useAppSelector(selectAllyTiles);
   const team = useAppSelector(matchSetupSlice.selectors.selectPlayerTeam);
+  const teamNames = useAppSelector(contentSlice.selectors.selectTeamNames);
   const headingId = useId();
   if (model === null) return null;
   const { view, shown, actions, rowPlate } = model;
@@ -93,11 +95,7 @@ export function LegendSelectStep(): ReactElement | null {
       />
       <KeyPrompt action="pause-menu" label={text.back} onPress={actions.back} skin="legend-back" />
       {team !== null && (
-        <AllyRoster
-          tiles={tiles}
-          layout="legend-step"
-          label={text.rosterLabel(text.teamNames[team])}
-        />
+        <AllyRoster tiles={tiles} layout="legend-step" label={text.rosterLabel(teamNames[team])} />
       )}
     </section>
   );

@@ -2,6 +2,7 @@ import { useId, type ReactElement } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
 import { selectAllyTiles } from '../../bridge/selectors/selectAllyTiles';
+import { contentSlice } from '../../bridge/slices/contentSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { AllyRoster } from '../components/AllyRoster';
 import { GlowButton } from '../components/GlowButton';
@@ -26,6 +27,7 @@ export function ClassSelectStep({ preferredClassId }: SelectionStepProps): React
   const model = useClassSelectStep(preferredClassId);
   const tiles = useAppSelector(selectAllyTiles);
   const team = useAppSelector(matchSetupSlice.selectors.selectPlayerTeam);
+  const teamNames = useAppSelector(contentSlice.selectors.selectTeamNames);
   const headingId = useId();
   const panelId = useId();
   const { panel, picked, actions } = model;
@@ -75,7 +77,7 @@ export function ClassSelectStep({ preferredClassId }: SelectionStepProps): React
         <AllyRoster
           tiles={tiles}
           layout="class-step"
-          label={text.rosterLabel(text.teamNames[team])}
+          label={text.rosterLabel(teamNames[team])}
           playerSigilAssetId={picked?.art.sigil ?? null}
         />
       )}

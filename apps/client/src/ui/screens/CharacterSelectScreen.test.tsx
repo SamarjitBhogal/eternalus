@@ -8,8 +8,8 @@ import selectionStageStyles from '../components/SelectionStage.module.css';
 import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
 import { CharacterSelectScreen } from './CharacterSelectScreen';
 import { ClassSelectStep } from './ClassSelectStep';
-import { rememberedClassId } from './classStepState';
 import type { ScreenProps } from './screen.types';
+import { rememberedClassId } from './useRememberedClassId';
 
 /** As `App` mounts it: every screen gets the viewport, which this one must never render. */
 const Screen: ComponentType<ScreenProps> = CharacterSelectScreen;

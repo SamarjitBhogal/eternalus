@@ -8,7 +8,11 @@ import type {
   EffectsRenderer,
 } from '../../bridge/catalogue.types';
 import type { CataloguePresentation } from './CataloguePresentation.types';
-import { CLASS_PRESENTATION, LOCKED_CLASSES, SPEC_PRESENTATION } from './classPresentation';
+import {
+  CLASS_PRESENTATION,
+  LOCKED_CLASS_PRESENTATION,
+  SPEC_PRESENTATION,
+} from './classPresentation';
 import { HUD_PRESENTATION } from './hudPresentation';
 
 /**
@@ -51,10 +55,10 @@ const EFFECTS_RENDERER: EffectsRenderer = 'figma-raster';
 /** OA2: the Figma colours; `'minimums'` swaps only the below-minimum tokens (I-81). */
 const CONTRAST_MODE: ContrastMode = 'figma';
 
-/** Everything the client adds to core display content (02 §7). */
+/** Everything the client adds to core display content. */
 export const CATALOGUE_PRESENTATION: CataloguePresentation = {
   classes: CLASS_PRESENTATION,
-  lockedClasses: LOCKED_CLASSES,
+  lockedClasses: LOCKED_CLASS_PRESENTATION,
   specs: SPEC_PRESENTATION,
   backgroundSets: BACKGROUND_SETS,
   profileDisplayName: PROFILE_DISPLAY_NAME,

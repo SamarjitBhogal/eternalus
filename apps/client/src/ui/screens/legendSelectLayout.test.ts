@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { legendArtBox, legendCardStyle, legendSlot, originRemainder } from './legendSelectLayout';
+import { legendCardStyle, legendSlot } from './legendSelectLayout';
 
 /** Rounds every number to 2 decimals (Figma's own precision), keeping the shape. */
 const near = (point: { readonly x: number; readonly y: number }) => ({
@@ -47,35 +47,6 @@ describe('legendSlot', () => {
   });
 });
 
-describe('legendArtBox', () => {
-  it("gives a rendition its placement-table box where the card's art sits", () => {
-    expect(legendArtBox('oracle-card-art', 'card-picked', { x: 803.42, y: 210 })).toEqual({
-      left: 803,
-      top: 210,
-      width: 315,
-      height: 660,
-    });
-    // 61:14 sits 0.2 px off its copy's geometry (1128.19, 227.91): still its own box.
-    expect(
-      legendArtBox('necromancer-card-art', 'refraction-idle', { x: 1128.19, y: 227.91 }),
-    ).toEqual({
-      left: 1127,
-      top: 227,
-      width: 306,
-      height: 619,
-    });
-  });
-
-  it('gives nothing for an unknown pair, no art, or a box baked for another slot', () => {
-    expect(
-      legendArtBox('oracle-card-art', 'refraction-idle', { x: 806.52, y: 226.91 }),
-    ).toBeUndefined();
-    expect(legendArtBox(null, 'card-idle', { x: 505.51, y: 255.42 })).toBeUndefined();
-    // The oracle's picked art was baked at slot 1; at slot 0 (482.09, 210) it is not drawn.
-    expect(legendArtBox('oracle-card-art', 'card-picked', { x: 482.09, y: 210 })).toBeUndefined();
-  });
-});
-
 describe('legendCardStyle', () => {
   it('floors the root, hands the remainder and text offsets to CSS, and boxes the art (I-45)', () => {
     expect(
@@ -107,11 +78,5 @@ describe('legendCardStyle', () => {
       '--title-dx': '0px',
       '--name-dx': '0px',
     });
-  });
-});
-
-describe('originRemainder', () => {
-  it('is the part of the origin past its integer floor', () => {
-    expect(near(originRemainder({ x: 470.67, y: 194 }))).toEqual({ x: 0.67, y: 0 });
   });
 });

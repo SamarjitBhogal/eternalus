@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react';
 
 import type { PlayableTeam } from '../../bridge/domain.types';
+import { useAppSelector } from '../../bridge/hooks';
+import { contentSlice } from '../../bridge/slices/contentSlice';
 import { STRINGS } from '../strings';
 import styles from './TeamBadge.module.css';
 
@@ -9,8 +11,9 @@ import styles from './TeamBadge.module.css';
  * Cinzel, read out as a sentence. Nothing before the session has assigned a team.
  */
 export function TeamBadge({ team }: { readonly team: PlayableTeam | null }): ReactElement | null {
+  const teamNames = useAppSelector(contentSlice.selectors.selectTeamNames);
   if (team === null) return null;
-  const name = STRINGS.characterSelect.teamNames[team];
+  const name = teamNames[team];
   return (
     <p className={styles.badge}>
       <span className={styles.name} aria-hidden="true">

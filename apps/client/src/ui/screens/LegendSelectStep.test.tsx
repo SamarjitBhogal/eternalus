@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadedAssetsFor } from '../../bridge/assetFixtures';
+import { loadedAssetsFor, TEST_ASSET_BOXES } from '../../bridge/assetFixtures';
 import type { Binding } from '../../bridge/Binding.types';
 import type { DisplayCatalogue, LegendClassCard } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';
@@ -9,10 +9,9 @@ import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import { CHROME_PLATE_BOXES } from '../components/GlowButton.constants';
 import glowStyles from '../components/GlowButton.module.css';
 import { chromePlateFor } from '../components/useGlowButtonChrome';
-import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
+import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
 import haloStyles from './LegendSelectCardHalo.module.css';
 import { LegendSelectStep } from './LegendSelectStep';
-import { ROW_PLATE_BOXES } from './LegendSelectStep.constants';
 import styles from './LegendSelectStep.module.css';
 import stepCss from './LegendSelectStep.module.css?raw';
 
@@ -42,15 +41,17 @@ function render(
     team = 'light',
     content = TEST_CONTENT,
     bindings = ESC,
+    assets = loadedAssetsFor(content),
   }: {
     readonly team?: PlayableTeam;
     readonly content?: DisplayCatalogue;
     readonly bindings?: readonly Binding[];
+    readonly assets?: ReturnType<typeof loadedAssetsFor>;
   } = {},
 ): string {
   return renderWithStore(<LegendSelectStep />, {
     content,
-    assets: loadedAssetsFor(content),
+    assets,
     settings: { ...settingsSlice.getInitialState(), bindings },
     matchSetup: {
       ...matchSetupSlice.getInitialState(),
@@ -68,7 +69,7 @@ const withoutPreloads = (html: string): string =>
 const FIGMA_STATE = { classId: 'magus', specId: 'oracle' } as const;
 const ROW_PLATE = /<img class="[^"]+" src="\/assets\/test\/oracle-row-plate\.webp"/;
 const LOCK_IN_CHROME = 'src="/assets/test/lock-in-chrome.webp"';
-const PLATE_BOX = ROW_PLATE_BOXES['oracle-row-plate'];
+const PLATE_BOX = TEST_ASSET_BOXES['oracle-row-plate'];
 const PLATE_STYLE = `style="left:${String(PLATE_BOX?.left)}px;top:${String(PLATE_BOX?.top)}px;width:${String(PLATE_BOX?.width)}px;height:${String(PLATE_BOX?.height)}px"`;
 
 describe('LegendSelectStep', () => {
@@ -258,11 +259,16 @@ describe('LegendSelectStep row plate (T-LEG-9, I-69, §5.15)', () => {
       ),
     }));
     const html = render(FIGMA_STATE, { content });
+    const unboxed = render(FIGMA_STATE, {
+      assets: assetsWithBoxes({ 'oracle-row-plate': undefined }),
+    });
 
-    expect(ROW_PLATE_BOXES['unboxed-row-plate']).toBeUndefined();
+    expect(TEST_ASSET_BOXES['unboxed-row-plate']).toBeUndefined();
     expect(html).not.toContain('unboxed-row-plate.webp"');
     expect(html).not.toContain(LOCK_IN_CHROME);
     expect(html).toContain(String(haloStyles.refractionLayer));
+    expect([ROW_PLATE.exec(unboxed), unboxed.includes(LOCK_IN_CHROME)]).toEqual([null, false]);
+    expect(unboxed).toContain(String(haloStyles.refractionLayer));
   });
 
   it("on the 'css' renderer draws no plate image anywhere, LOCK IN's chrome included (I-80)", () => {
@@ -281,5 +287,11 @@ describe('LegendSelectStep row plate (T-LEG-9, I-69, §5.15)', () => {
     expect([...rules.matchAll(/z-index: (-?\d+)/g)].map(([, value]) => value)).toEqual(['1']);
     expect(rules).toMatch(/\.breadcrumb \{[^}]*z-index: 1;/);
     expect(String(styles.rowPlate)).not.toBe('');
+  });
+
+  it("labels the roster with the player's team name from the content catalogue", () => {
+    const content = { ...TEST_CONTENT, teamNames: { light: 'Lux', dark: 'Umbra' } };
+
+    expect(render(FIGMA_STATE, { team: 'dark', content })).toContain('aria-label="Umbra team"');
   });
 });

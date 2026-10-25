@@ -5,7 +5,7 @@ import type { EffectsRenderer, LegendClassCard } from '../../bridge/catalogue.ty
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
 import { buildDisplayCatalogue } from './buildDisplayCatalogue';
 import type { CataloguePresentation, DisplayOverrides } from './CataloguePresentation.types';
-import { CLASS_PRESENTATION, LOCKED_CLASSES } from './classPresentation';
+import { CLASS_PRESENTATION } from './classPresentation';
 import { HUD_PRESENTATION } from './hudPresentation';
 import { CATALOGUE_PRESENTATION } from './screenPresentation';
 
@@ -34,6 +34,33 @@ const classCard = (cards: readonly LegendClassCard[], classId: string): LegendCl
   if (card === undefined) throw new Error(`no class ${classId}`);
   return card;
 };
+/** The locked fourth card as the screens show it: core's name, blurb and role label (DEC-48). */
+const HARBINGER_CARD: LegendClassCard = {
+  classId: 'flying',
+  displayName: 'Harbinger',
+  blurb: 'Air-based; moves primarily in the air, like a jet or helicopter.',
+  status: 'locked',
+  roleLabel: 'aerial',
+  tagline: null,
+  description: null,
+  accentToken: '--class-flying-accent',
+  details: [
+    { slot: 'signature', displayName: null, iconAssetId: null },
+    { slot: 'proficiency', displayName: null, iconAssetId: null },
+    { slot: 'specialty', displayName: null, iconAssetId: null },
+  ],
+  art: {
+    card: 'flying-card-art',
+    sigil: 'flying-sigil',
+    model: null,
+    cardPlates: { idle: 'flying-card-plate-idle' },
+    rowPlate: null,
+  },
+  specs: [],
+  hud: null,
+  layoutOverrides: {},
+};
+
 const without = (id: string): ReadonlySet<string> => new Set([...KNOWN].filter((k) => k !== id));
 const omit = <T>(record: Readonly<Record<string, T>>, key: string): Record<string, T> =>
   Object.fromEntries(Object.entries(record).filter(([candidate]) => candidate !== key));
@@ -95,6 +122,23 @@ describe('buildDisplayCatalogue', () => {
       { slot: 'proficiency', displayName: null, iconAssetId: null },
       { slot: 'specialty', displayName: null, iconAssetId: null },
     ]);
+  });
+
+  it('takes the alternate layout description from core, next to the layout icons', () => {
+    const legends = CONTENT.legends.map((legend) => ({
+      ...legend,
+      alternateLayoutDescription: `${legend.id} in the alternate frame`,
+    }));
+    const cards = build({ content: { legends } }).legendClasses;
+
+    expect(classCard(cards, 'magus').layoutOverrides.alternate).toMatchObject({
+      description: 'magus in the alternate frame',
+      details: [{ slot: 'signature' }, { slot: 'proficiency' }, { slot: 'specialty' }],
+    });
+    expect(classCard(cards, 'warrior').layoutOverrides).toEqual({
+      alternate: { description: 'warrior in the alternate frame' },
+    });
+    expect(classCard(build().legendClasses, 'warrior').layoutOverrides).toEqual({});
   });
 
   it('names HUD kinds from core, the aggregated wall tile after its first named kind', () => {
@@ -167,12 +211,45 @@ describe('buildDisplayCatalogue', () => {
       'magus',
       'flying',
     ]);
-    expect(catalogue.legendClasses.at(-1)).toBe(LOCKED_CLASSES[0]);
+    expect(catalogue.legendClasses.at(-1)).toEqual(HARBINGER_CARD);
     expect(classCard(catalogue.legendClasses, 'magus').specs.map((spec) => spec.specId)).toEqual([
       'necromancer',
       'oracle',
       'catalyst',
     ]);
+  });
+
+  it('names a locked card from core and draws it from presentation', () => {
+    const skyborn = {
+      id: 'flying',
+      displayName: 'Skyborn',
+      roleBlurb: 'Rides the wind.',
+      roleLabel: 'aloft',
+    };
+    expect(build({ content: { lockedClasses: [skyborn] } }).legendClasses.at(-1)).toEqual({
+      ...HARBINGER_CARD,
+      displayName: 'Skyborn',
+      blurb: 'Rides the wind.',
+      roleLabel: 'aloft',
+    });
+  });
+
+  it('throws naming the id of a locked class without presentation', () => {
+    const burrowing = {
+      id: 'burrowing',
+      displayName: 'Delver',
+      roleBlurb: 'Digs.',
+      roleLabel: 'under',
+    };
+    expect(() => build({ content: { lockedClasses: [burrowing] } })).toThrow(
+      'locked class "burrowing" has no presentation',
+    );
+  });
+
+  it('carries the core team names', () => {
+    const teamNames = { light: 'Lux', dark: 'Umbra' };
+    expect(build({ content: { teamNames } }).teamNames).toBe(teamNames);
+    expect(build().teamNames).toEqual({ light: 'Light', dark: 'Dark' });
   });
 
   it('carries the core title and the per-team Legend name object', () => {

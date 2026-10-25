@@ -14,6 +14,7 @@ const initialState: DisplayCatalogue = {
   effectsRenderer: 'figma-raster',
   contrastMode: 'figma',
   hud: { structureKinds: [], objectiveKinds: [], chrome: null },
+  teamNames: { light: '', dark: '' },
 };
 
 /** Display-ready content, projected once at boot from the catalogue source. */
@@ -34,5 +35,6 @@ export const contentSlice = createSlice({
     selectSelectClassChromeAssetId: (state) => state.selectClassChromeAssetId,
     selectLockInChromeAssetId: (state) => state.lockInChromeAssetId,
     selectHudCatalogue: (state) => state.hud,
+    selectTeamNames: (state) => state.teamNames,
   },
 });

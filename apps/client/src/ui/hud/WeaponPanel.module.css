@@ -16,20 +16,24 @@
   position: absolute;
 }
 
-/* Battle Axe 62:241: the R1 render with its rotation, crop and both shadows baked, at
-   (387, 946) 274 × 82. */
-.battleAxe {
-  left: calc(-10 * var(--hud-u));
-  top: calc(-10 * var(--hud-u));
-  width: calc(274 * var(--hud-u));
-  height: calc(82 * var(--hud-u));
+/* An art its manifest entry places: the draw box (frame px of 62:231) that WeaponPanel sets as
+   unitless --weapon-art-left/-top/-width/-height, less the panel's origin (397, 956), at the
+   file's own size. The battle axe's box is (387, 946) 274 × 82: Battle Axe 62:241's R1 render
+   with its rotation, crop and both shadows baked. */
+.placed {
+  left: calc((var(--weapon-art-left) - 397) * var(--hud-u));
+  top: calc((var(--weapon-art-top) - 956) * var(--hud-u));
+  width: calc(var(--weapon-art-width) * var(--hud-u));
+  height: calc(var(--weapon-art-height) * var(--hud-u));
 }
 
-/* The Magus staff (133 × 19): not designed in 62:231 (OD-8); centred at whole pixels in the
-   weapon art's layout box (397, 956) 254 × 62, i.e. at (457, 977). A fill-in for the owner. */
-.staff {
-  left: calc(60 * var(--hud-u));
-  top: calc(21 * var(--hud-u));
-  width: calc(133 * var(--hud-u));
-  height: calc(19 * var(--hud-u));
+/* The default for an art its manifest gives no box: the weapon art's layout box, Battle Axe
+   62:241's own box (397, 956) 254 × 62 above the level bar, with the file scaled to fit it whole
+   and centred. */
+.fitted {
+  left: 0;
+  top: 0;
+  width: calc(254 * var(--hud-u));
+  height: calc(62 * var(--hud-u));
+  object-fit: contain;
 }

@@ -1,4 +1,4 @@
-import type { FramePoint } from './legendSelectLayout.types';
+import type { FramePoint } from './selectionGeometry.types';
 
 /** The two class card looks of 62:125: `picked` = the enlarged card (62:152, ×1.12682), `idle` (62:162). */
 export type ClassCardLook = 'idle' | 'picked';

@@ -7,7 +7,8 @@ import { isSelectableClass } from '../../bridge/selectionRules';
 import { selectAllyCountsByClass } from '../../bridge/selectors/selectAllyCountsByClass';
 import { type ClassPanel, selectClassPanel } from '../../bridge/selectors/selectClassPanel';
 import { contentSlice } from '../../bridge/slices/contentSlice';
-import { tabbableRovingIndex } from '../components/rovingRadio';
+import { rovingKeyDown, tabbableRovingIndex } from '../components/rovingRadio';
+import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { classStepActions, type ClassStepActions } from './classStepActions';
 import {
@@ -16,8 +17,8 @@ import {
   initialClassStep,
   shownClassId,
 } from './classStepState';
-import { CLASS_ROW_PLATE_BOXES } from './ClassSelectCardRow.constants';
-import type { ClassRowPlate } from './ClassSelectCardRow.types';
+import { rowPlateOf } from './selectionGeometry';
+import type { RowPlate } from './selectionGeometry.types';
 
 /** State and handlers shared by both class layouts. */
 type ClassSelectStepModel = {
@@ -29,10 +30,13 @@ type ClassSelectStepModel = {
   /** The card picked on screen, not yet selected (`select-class` comes with Select Class). */
   readonly picked: LegendClassCard | undefined;
   readonly tabbableIndex: number;
-  /** The card that takes the focus on mount: the class Back returned to (CD-11), else `null`. */
+  /**
+   * The class Back returned to (CD-11), else `null`: its card (primary) or View Details
+   * (alternate) takes the focus on mount.
+   */
   readonly autoFocusClassId: LegendClassId | null;
   /** The picked class's row plate while it is loaded and boxed (I-69's one predicate), else `null`. */
-  readonly rowPlate: ClassRowPlate | null;
+  readonly rowPlate: RowPlate | null;
   /** Select Class's chrome plate, for every pick (FID-R4-01); `null` = live CSS. */
   readonly selectClassChromeAssetId: AssetId | null;
   readonly actions: ClassStepActions;
@@ -44,11 +48,6 @@ const toStepCard = (card: LegendClassCard): ClassStepCard => ({
   classId: card.classId,
   isAvailable: isSelectableClass(card),
 });
-
-function rowPlateOf(assetId: AssetId | null, url: string | null): ClassRowPlate | null {
-  const box = assetId === null ? undefined : CLASS_ROW_PLATE_BOXES[assetId];
-  return url === null || box === undefined ? null : { url, box };
-}
 
 /**
  * The class step's model for either layout. The pick is local until Select Class / View Details
@@ -65,7 +64,7 @@ export function useClassSelectStep(preferredClassId: LegendClassId | null): Clas
   const panel = useAppSelector((state) => selectClassPanel(state, shownClassId(local, stepCards)));
   const picked = cards.find((card) => card.classId === local.pickedClassId);
   const plateId = picked?.art.rowPlate ?? null;
-  const rowPlate = rowPlateOf(plateId, useAssetUrl(plateId));
+  const rowPlate = rowPlateOf(useAssetUrl(plateId), useAssetBox(plateId));
   const actions = classStepActions(stepCards, local, setLocal);
   return {
     cards,
@@ -80,13 +79,6 @@ export function useClassSelectStep(preferredClassId: LegendClassId | null): Clas
     rowPlate,
     selectClassChromeAssetId: chromeAssetId,
     actions,
-    onCardKeyDown: (event, index) => {
-      const next = actions.move(index, event.key);
-      if (next === null) return;
-      event.preventDefault();
-      event.currentTarget.parentElement
-        ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-        [next]?.focus();
-    },
+    onCardKeyDown: rovingKeyDown(actions.move),
   };
 }

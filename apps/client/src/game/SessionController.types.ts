@@ -137,7 +137,7 @@ export type SessionControllerDeps = {
   /** The resources facade; a structural type so a test can inject a rejecting stub (I-57). */
   readonly resources: Pick<
     ResourceController,
-    'load' | 'urls' | 'release' | 'isLoaded' | 'progress'
+    'load' | 'urls' | 'boxes' | 'release' | 'isLoaded' | 'progress'
   >;
   /** The licence blocks of every bundled asset (`describeCredits` over the manifest). */
   readonly credits: readonly CreditEntry[];

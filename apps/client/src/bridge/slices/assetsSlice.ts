@@ -1,32 +1,40 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { AssetId, RenditionKey } from '../catalogue.types';
+import type { AssetId, RasterBox, RenditionKey } from '../catalogue.types';
 import type { AssetGroup, AssetUrlKey, AssetUrls, CreditEntry } from '../events';
 
-/** Loaded image URLs by asset group, and the credits generated from the manifest. */
+/** One value per URL key, for each asset group. */
+type ByGroup<T> = Readonly<Record<AssetGroup, Readonly<Record<AssetUrlKey, T>>>>;
+
+/** Loaded image URLs and draw boxes by asset group, and the credits generated from the manifest. */
 type AssetsSliceState = {
-  readonly urlsByGroup: Readonly<Record<AssetGroup, Readonly<Record<AssetUrlKey, string>>>>;
+  readonly urlsByGroup: ByGroup<string>;
+  readonly boxesByGroup: ByGroup<RasterBox>;
   readonly credits: readonly CreditEntry[];
 };
 
+/** Every group, nothing loaded. */
+const NO_GROUPS: ByGroup<never> = {
+  boot: {},
+  selection: {},
+  'selection-primary': {},
+  'selection-alternate': {},
+  'selection-raster': {},
+  'selection-primary-raster': {},
+  match: {},
+};
+
 const initialState: AssetsSliceState = {
-  urlsByGroup: {
-    boot: {},
-    selection: {},
-    'selection-primary': {},
-    'selection-alternate': {},
-    'selection-raster': {},
-    'selection-primary-raster': {},
-    match: {},
-  },
+  urlsByGroup: NO_GROUPS,
+  boxesByGroup: NO_GROUPS,
   credits: [],
 };
 
-/** The URL stored under `key` in any loaded group, or `null`. */
-function urlIn(state: AssetsSliceState, key: AssetUrlKey): string | null {
-  for (const urls of Object.values(state.urlsByGroup)) {
-    const url = urls[key];
-    if (url !== undefined) return url;
+/** The value stored under `key` in any loaded group, or `null`. */
+function inAnyGroup<T>(byGroup: ByGroup<T>, key: AssetUrlKey): T | null {
+  for (const values of Object.values(byGroup)) {
+    const value = values[key];
+    if (value !== undefined) return value;
   }
   return null;
 }
@@ -40,6 +48,7 @@ export const assetsSlice = createSlice({
     groupUrlsChanged: (state, action: PayloadAction<AssetUrls>) => ({
       ...state,
       urlsByGroup: { ...state.urlsByGroup, [action.payload.group]: action.payload.urls },
+      boxesByGroup: { ...state.boxesByGroup, [action.payload.group]: action.payload.boxes },
     }),
     creditsLoaded: (state, action: PayloadAction<readonly CreditEntry[]>) => ({
       ...state,
@@ -54,9 +63,19 @@ export const assetsSlice = createSlice({
      */
     selectAssetUrl: (state, id: AssetId | null, rendition?: RenditionKey): string | null => {
       if (id === null) return null;
-      const renditionUrl = rendition === undefined ? null : urlIn(state, `${id}@${rendition}`);
-      return renditionUrl ?? urlIn(state, id);
+      const renditionUrl =
+        rendition === undefined ? null : inAnyGroup(state.urlsByGroup, `${id}@${rendition}`);
+      return renditionUrl ?? inAnyGroup(state.urlsByGroup, id);
     },
+    /**
+     * The draw box of `id`'s file (with a `rendition`, of that rendition's own file) once its
+     * group has loaded; `null` before, for a `null` id, and for a file that declares none. Unlike
+     * the URL there is no fallback: a box belongs to one file, so the caller draws live art.
+     */
+    selectAssetBox: (state, id: AssetId | null, rendition?: RenditionKey): RasterBox | null =>
+      id === null
+        ? null
+        : inAnyGroup(state.boxesByGroup, rendition === undefined ? id : `${id}@${rendition}`),
     selectCredits: (state) => state.credits,
   },
 });

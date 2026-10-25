@@ -4,9 +4,10 @@ import type { ColourToken, LegendClassCard, LegendSpecCard } from '../../bridge/
 import { isSelectableClass, isSelectableSpec } from '../../bridge/selectionRules';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
 import globalCss from '../../styles/global.css?raw';
-import { coreCatalogue, createCoreCatalogue } from './coreCatalogue';
+import { shippedCatalogue } from './__fixtures__/shippedCatalogue';
+import { createCoreCatalogue, NO_DISPLAY_OVERRIDES } from './coreCatalogue';
 
-const catalogue = coreCatalogue.load();
+const catalogue = shippedCatalogue().load();
 
 const classCard = (classId: string): LegendClassCard => {
   const card = catalogue.legendClasses.find((candidate) => candidate.classId === classId);
@@ -152,7 +153,7 @@ describe('coreCatalogue', () => {
   });
 
   it('has no plate reference at all on the css renderer', () => {
-    const css = createCoreCatalogue({ effectsRenderer: 'css' }).load();
+    const css = shippedCatalogue({ effectsRenderer: 'css' }).load();
     const plateIds = ASSET_MANIFEST.assets
       .filter(
         (entry) => entry.group === 'selection-raster' || entry.group === 'selection-primary-raster',
@@ -169,5 +170,14 @@ describe('coreCatalogue', () => {
       null,
       'css',
     ]);
+  });
+
+  it('checks its asset ids against the ids the composition root gives it', () => {
+    const catalogue = createCoreCatalogue({
+      knownAssetIds: new Set(),
+      overrides: NO_DISPLAY_OVERRIDES,
+    });
+
+    expect(() => catalogue.load()).toThrow('is not in the asset manifest');
   });
 });

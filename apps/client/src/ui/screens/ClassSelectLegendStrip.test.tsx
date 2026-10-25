@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LegendStripItem } from '../../bridge/selectors/selectClassPanel';
-import { renderWithStore } from '../testStore';
+import { assetsWithBoxes, renderWithStore } from '../testStore';
 import { ClassSelectLegendStrip } from './ClassSelectLegendStrip';
 
 const FIGMA_ITEMS: readonly LegendStripItem[] = [
@@ -49,6 +49,22 @@ describe('ClassSelectLegendStrip', () => {
     expect(tags.map((tag) => /data-art-mode="(\w+)"/.exec(tag)?.[1])).toEqual(['cover', 'cover']);
     expect(html).toContain('data-arch-art="missing"');
     expect(html).not.toContain('oracle-mini');
+  });
+
+  it('leaves the empty arch for a portrait the store gives no box, or one baked 2 px lower', () => {
+    const assets = assetsWithBoxes({
+      'catalyst-mini@legend-mini': undefined,
+      'necromancer-mini@legend-mini': { left: 341, top: 806, width: 102, height: 137 },
+    });
+    const tags = miniTags(
+      renderWithStore(<ClassSelectLegendStrip items={FIGMA_ITEMS} />, { assets }),
+    );
+
+    expect(tags.map((tag) => /data-art-mode="(\w+)"/.exec(tag)?.[1])).toEqual([
+      'cover',
+      'image',
+      'cover',
+    ]);
   });
 
   it('shows at most the three Figma slots', () => {

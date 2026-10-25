@@ -11,7 +11,7 @@ import type { AssetManifest } from '../data/resources/AssetManifest.types';
 import { describeCredits } from '../data/resources/describeCredits';
 import { FakeAssetLoader } from '../data/resources/loaders/FakeAssetLoader';
 import { ResourceController } from '../data/resources/ResourceController';
-import { coreCatalogue } from './content/coreCatalogue';
+import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { SessionController } from './SessionController';
@@ -23,9 +23,13 @@ import { SELECTION_ASSET_GROUPS } from './session/selectionAssetGroups';
 /** Rounds of `await` that let a settled fake load reach the session's callbacks. */
 const MICROTASK_ROUNDS = 20;
 
+/** The draw box of `test-selection`, the one placed image of `testResources()`. */
+export const TEST_SELECTION_BOX = { left: 10, top: 20, width: 30, height: 40 } as const;
+
 /**
- * Resources whose every group holds one small image (`test-<group>`), loaded by a
- * `FakeAssetLoader` that keeps each load pending until `loader.resolveAll()` (no timers).
+ * Resources whose every group holds one small image (`test-<group>`; `test-selection` with the
+ * draw box `TEST_SELECTION_BOX`), loaded by a `FakeAssetLoader` that keeps each load pending
+ * until `loader.resolveAll()` (no timers).
  */
 export function testResources(): {
   readonly resources: ResourceController;
@@ -41,6 +45,7 @@ export function testResources(): {
       file: { url: `/test/${group}.webp`, bytes: 10, hash: '0'.repeat(64) },
       licence: 'owner',
       source: 'test fixture',
+      ...(group === 'selection' ? { box: TEST_SELECTION_BOX } : {}),
     })),
   };
   const loader = new FakeAssetLoader();
@@ -55,7 +60,7 @@ export function testResources(): {
 
 /**
  * A full `SessionControllerDeps` for tests (02 §8: real classes, fakes at the ports): a real
- * bus, a `FakeSessionClock`, the default states, `coreCatalogue`, core's match config, seeds
+ * bus, a `FakeSessionClock`, the default states, `shippedCatalogue()`, core's match config, seeds
  * counting from 42, `LcgRng`, a bare theme root, worlds from `prepareMatchWorld`, a match factory
  * returning an inert handle, a `MemoryLogger`, resources over an empty manifest (every load is
  * synchronous; pass `testResources()` for pending loads) and the shipped credits.
@@ -69,7 +74,7 @@ export function testSessionDeps(
     bus: new TypedEventBus(),
     clock: new FakeSessionClock(),
     states: createDefaultSessionStates(),
-    catalogue: coreCatalogue,
+    catalogue: shippedCatalogue(),
     matchConfig: config.match,
     playerName: 'Tester',
     seedSource: () => ++seed,
@@ -150,7 +155,7 @@ export function spyContext() {
   return {
     bus: new TypedEventBus<BridgeEventMap>(),
     clock: new FakeSessionClock(),
-    catalogue: coreCatalogue.load(),
+    catalogue: shippedCatalogue().load(),
     credits: describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES),
     transition: vi.fn<SessionContext['transition']>(),
     newMatchSetup: vi.fn<SessionContext['newMatchSetup']>(),

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { classCardFixture, specCardFixture } from '../../../bridge/catalogueFixtures';
 import type { ClassSelection, UiIntent } from '../../../bridge/events';
-import { coreCatalogue } from '../../content/coreCatalogue';
+import { shippedCatalogue } from '../../content/__fixtures__/shippedCatalogue';
 import { testSession, testSessionDeps } from '../../testSessionDeps';
 import { SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
 
@@ -11,7 +11,7 @@ import { SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
  * class, over the shipped catalogue.
  */
 const CATALOGUE = {
-  ...coreCatalogue.load(),
+  ...shippedCatalogue().load(),
   legendClasses: [
     classCardFixture({
       classId: 'warrior',
