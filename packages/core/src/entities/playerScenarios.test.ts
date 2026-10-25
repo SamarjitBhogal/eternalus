@@ -29,6 +29,13 @@ const EAST: Vec2 = { x: 1, y: 0 };
 
 /** The shipped unit definitions as the simulation loads them (speeds per tick at 30 ticks/s). */
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
+const newFactory = (): EntityFactory =>
+  new EntityFactory(
+    createDefaultEntityRegistry(),
+    UNIT_DEFINITIONS,
+    undefined,
+    loadWeapons(createDefaultGameConfig().tickRate),
+  );
 
 /** Spawns `definitionId` the way a spawn command will: by the definition's kind. */
 const spawnUnit = (
@@ -77,12 +84,7 @@ describe('Player scenarios', () => {
     });
 
     it('lets the player spawn whichever class they pick', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
 
       for (const legend of LEGEND_CLASSES.all()) {
         const spawned = spawnUnit(factory, legend.id, 'light');
@@ -95,12 +97,7 @@ describe('Player scenarios', () => {
 
   describe('entering the match', () => {
     it('spawns the player at their capital with full health, on their team', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
       const capital = { x: 85, y: 450 };
 
       const player = spawnUnit(factory, 'warrior', 'dark', capital);
@@ -112,12 +109,7 @@ describe('Player scenarios', () => {
     });
 
     it('treats teammates as allies, the other team and neutral camps as enemies', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
       const player = spawnUnit(factory, 'magus', 'light').getComponent(TeamMembership);
 
       const teammate = spawnUnit(factory, 'sentinel', 'light').getComponent(TeamMembership);
@@ -132,12 +124,7 @@ describe('Player scenarios', () => {
 
   describe('moving around the map', () => {
     it('lets a Warrior win a short sprint and a Sentinel win a long run', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
       const sprint = (id: string, metres: number): number =>
         ticksToRun(spawnUnit(factory, id, 'light'), metres);
 
@@ -146,12 +133,7 @@ describe('Player scenarios', () => {
     });
 
     it('never lets a Legend go faster than its top speed, however long it runs', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
       const sentinel = spawnUnit(factory, 'sentinel', 'dark');
 
       for (let tick = 0; tick < 3000; tick += 1) {
@@ -164,12 +146,7 @@ describe('Player scenarios', () => {
     });
 
     it('halts at once on a hard stop (a zero direction straight to the component)', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
       const player = spawnUnit(factory, 'warrior', 'light');
       stepToward(player, EAST);
       stepToward(player, EAST);
@@ -184,12 +161,7 @@ describe('Player scenarios', () => {
 
     it('moves the same way on every run (deterministic)', () => {
       const run = (): Vec2 => {
-        const factory = new EntityFactory(
-          createDefaultEntityRegistry(),
-          UNIT_DEFINITIONS,
-          undefined,
-          loadWeapons(createDefaultGameConfig().tickRate),
-        );
+        const factory = newFactory();
         const player = spawnUnit(factory, 'magus', 'light');
 
         for (let tick = 0; tick < 90; tick += 1) {
@@ -205,12 +177,7 @@ describe('Player scenarios', () => {
 
   describe('fighting', () => {
     it('kills a Legend when damage reaches its base health and reports the overkill', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
       const warrior = spawnUnit(factory, 'warrior', 'light');
       const health = warrior.getComponent(Health);
 
@@ -222,12 +189,7 @@ describe('Player scenarios', () => {
     });
 
     it('removes a dead unit only with a cause, and it keeps nothing afterwards', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
       const mob = spawnUnit(factory, 'training-dummy', 'dark');
       mob.getComponent(Health).applyDamage(1000);
 
@@ -241,12 +203,7 @@ describe('Player scenarios', () => {
     });
 
     it('lets a Magus revive a fallen enemy mob to fight for the Magus team', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
       const magus = spawnUnit(factory, 'magus', 'light');
       const fallen = spawnUnit(factory, 'training-dummy', 'dark');
       fallen.getComponent(Health).applyDamage(1000);
@@ -267,12 +224,7 @@ describe('Player scenarios', () => {
 
   describe('a horde leaving the spawner', () => {
     it('spawns 16 light mobs (training dummies) with unique ids, all on the spawner team', () => {
-      const factory = new EntityFactory(
-        createDefaultEntityRegistry(),
-        UNIT_DEFINITIONS,
-        undefined,
-        loadWeapons(createDefaultGameConfig().tickRate),
-      );
+      const factory = newFactory();
 
       const horde = Array.from({ length: 16 }, () => spawnUnit(factory, 'training-dummy', 'dark'));
 
@@ -282,12 +234,7 @@ describe('Player scenarios', () => {
 
     it('gives the same ids on every replay of the same spawns', () => {
       const ids = (): string[] => {
-        const factory = new EntityFactory(
-          createDefaultEntityRegistry(),
-          UNIT_DEFINITIONS,
-          undefined,
-          loadWeapons(createDefaultGameConfig().tickRate),
-        );
+        const factory = newFactory();
         return Array.from({ length: 4 }, () => spawnUnit(factory, 'training-dummy', 'light').id);
       };
 

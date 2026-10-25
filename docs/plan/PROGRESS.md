@@ -1308,6 +1308,17 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   Legend with no weapon. Shipped `raptor-talons` (Warrior), `wuuthrad` (Sentinel), `magus-staff`
   (Magus, melee only until SCRUM-169) from the 05 §10 table, numbers = each class's `balancing.md`
   basic attack, all `TUNE`; INBOX item updated. Tests that spawn Legends now pass a weapon source.
-- Checks run: see the PR.
+- Gate: critic approve, no blockers. Should-fix done: the Wuuthrad note no longer says "no heavy
+  weapon is MVP" (07 rates spear / battle axe MVP; only Wuuthrad is MVP-if-time); the
+  `UnitAttack` comment says a mob's attack lives on its definition and a Legend's on its weapon.
+  The 05 §10 design sentence "Until weapons land, a unit's basic attack is
+  `UnitDefinition.attack`" is left as written (design docs are append-only); the Implementation
+  status covers it. Nits left: a raw `TypeError` for a Legend without `defaultLoadout` passed
+  through unvalidated `SimulationOptions.content` (types require it; a guard trips
+  `no-unnecessary-condition`); import order of the new `loadWeapons` imports. Ponytail-review: 3
+  cuts (one `newFactory()` helper in `playerScenarios`, `DefaultSystemPipeline` and `AiSystem`
+  tests, −73 lines).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 608 passed (608)"; client "Tests 416 passed
+  (416)"; "✓ built in 98ms"; "Documentation check passed."
 - Next step: Sam confirms the default weapons and numbers (INBOX); ranged attacks with
   projectiles (SCRUM-169, Aryan).

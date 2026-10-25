@@ -647,7 +647,7 @@ the Legend: `LegendDefinition` has no `attack` and must name its weapon with
 `KnownWeaponRule` checks every Legend names one and that it resolves. The shipped catalogue is the
 three default weapons from the table above, with each class's `balancing.md` basic attack as
 `TUNE` numbers until the owner sets weapon numbers and default weapons (`INBOX.md`): Warrior
-`raptor-talons`, Sentinel `wuuthrad` (no heavy weapon is MVP), Magus `magus-staff` (melee only). `EntityFactory` passes the
+`raptor-talons`, Sentinel `wuuthrad` (no MVP spear or battle axe is named yet; Wuuthrad is MVP-if-time), Magus `magus-staff` (melee only). `EntityFactory` passes the
 injected weapon source in the spawn context, `Legend` builds `Combat` from the weapon's first attack
 and `Combat.weaponId` names it, so the `DamageSource` is the entity plus its weapon; mobs keep
 their own `attack` and name their own definition (04 §5). Not built yet: ranged attacks and flex

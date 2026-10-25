@@ -10,15 +10,18 @@ import { AiSystem } from './AiSystem';
 import type { Controller } from './Controller.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 
+const newFactory = (): EntityFactory =>
+  new EntityFactory(
+    createDefaultEntityRegistry(),
+    loadDefaultContent(30),
+    undefined,
+    loadWeapons(30),
+  );
+
 describe('AiSystem', () => {
   it('queues the decisions of each controlled entity, in store order', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
-    const factory = new EntityFactory(
-      createDefaultEntityRegistry(),
-      loadDefaultContent(30),
-      undefined,
-      loadWeapons(30),
-    );
+    const factory = newFactory();
     const spawn = (kind: string, definitionId: string) => {
       const entity = factory.create(kind, definitionId, {
         position: { x: 0, y: 0 },
@@ -48,12 +51,7 @@ describe('AiSystem', () => {
 
   it('asks each entity only on its own cadence tick, spread by store position', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
-    const factory = new EntityFactory(
-      createDefaultEntityRegistry(),
-      loadDefaultContent(30),
-      undefined,
-      loadWeapons(30),
-    );
+    const factory = newFactory();
     const ids = [0, 1, 2].map(() => {
       const entity = factory.create('light-mob', 'light-minion', {
         position: { x: 0, y: 0 },
@@ -83,12 +81,7 @@ describe('AiSystem', () => {
 
   it('throws when an entity names a controller that is not registered', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
-    const factory = new EntityFactory(
-      createDefaultEntityRegistry(),
-      loadDefaultContent(30),
-      undefined,
-      loadWeapons(30),
-    );
+    const factory = newFactory();
     state.entities.add(
       factory.create('light-mob', 'light-minion', { position: { x: 0, y: 0 }, team: 'light' }),
     );
