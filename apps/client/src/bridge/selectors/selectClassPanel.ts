@@ -10,7 +10,7 @@ import type { RootState } from '../store';
 /** One mini card of the class panel's Legends strip (72:786), in content order. */
 export type LegendStripItem = {
   readonly key: string;
-  /** The Legend's name for the player's team, else its sub-class title (I-83). */
+  /** The Legend's name for the player's team, else its sub-class title (DEC-49). */
   readonly name: string;
   readonly miniAssetId: AssetId | null;
 };
@@ -25,10 +25,10 @@ export type ClassPanel = {
 };
 
 /**
- * The panel of `classId` for the catalogue's class-step layout (O5): `layoutOverrides[layout]`
+ * The panel of `classId` for the catalogue's class-step layout (DEC-52): `layoutOverrides[layout]`
  * replaces the description and the detail rows it names (62:70 keeps its older copy and icons);
  * the Legends strip names each Legend for the player's team, or by its title when it has no name
- * (OA3). `undefined` for a class the catalogue lacks. Memoised per class id (weakMapMemoize), so
+ * (DEC-49). `undefined` for a class the catalogue lacks. Memoised per class id (weakMapMemoize), so
  * a countdown tick or a preview of another class keeps the same object.
  */
 export const selectClassPanel = createSelector(

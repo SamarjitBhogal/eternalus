@@ -42,7 +42,7 @@ export type AbilitySlotStatus = {
 
 /**
  * The human Legend as the HUD shows it: 05 §15 `PlayerSnapshot` with every value nullable
- * (DEC-17). Differences a later core `PlayerSnapshot` maps over (PR1-18): core's fields are
+ * (DEC-17). Differences a later core `PlayerSnapshot` maps over: core's fields are
  * non-null, so the bridge mirror maps them 1:1 and drops the nulls; `statusIds`, shield bars and
  * the slots' `varietyId` are added here with their first reader; `weaponProgress`/`ultimatePips`
  * exist only here.
@@ -89,7 +89,7 @@ export type CapturePointStatus = {
   readonly progress: number | null;
 };
 
-/** Which strip a structure tile is in, seen from the player (PR1-03: shared, so it lives here). */
+/** Which strip a structure tile is in, seen from the player (shared, so it lives here). */
 export type HudSide = 'allied' | 'enemy';
 /** Who holds a capture point, seen from the player. */
 export type HudAllegiance = 'ours' | 'theirs' | 'neutral';

@@ -70,7 +70,7 @@ function assetUses(catalogue: DisplayCatalogue): ReadonlyMap<AssetId, ReadonlySe
 }
 
 /**
- * The group rule (I-47, §5.13, PR2-07): an id only a plate field names is in its step's raster
+ * The group rule (14 §14): an id only a plate field names is in its step's raster
  * group; an id only the HUD draws is in `match`; an id only one layout's class step draws is in
  * that layout's group; anything else (both layouts, or the Legend step) is in `selection`.
  */

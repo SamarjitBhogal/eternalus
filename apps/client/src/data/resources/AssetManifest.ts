@@ -9,7 +9,7 @@ import { SELECTION_RASTER_ASSETS } from './selectionRasterAssets';
 
 /**
  * The asset list: the only one (02 §9, 14 §11). Each group's entries sit in that group's file
- * beside this one (DV-131); adding an asset is a line in its group's file. Every file under
+ * beside this one (14 §14); adding an asset is a line in its group's file. Every file under
  * `src/assets/` is an entry here, except the licence texts `assetLicences.ts` reads.
  */
 export const ASSET_MANIFEST: AssetManifest = {

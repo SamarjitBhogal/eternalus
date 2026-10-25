@@ -10,10 +10,11 @@ import { startCountdown } from '../startCountdown';
 
 /**
  * Character select (reference 14 §2): two steps in one phase, the class and then its Legend,
- * under one 60 s countdown that a pick or Back never restarts (F1). Nothing is selected on entry;
- * the session records the pick (`context.recordSelection`). A locked class or Legend is display
- * only (DEC-48). Confirming a selectable pick, or the countdown ending with a class picked, goes
- * to `pre-launch`; ending with none cancels to `menu` with reason `'select-timeout'`.
+ * under one 60 s countdown that a pick or Back never restarts (HC-F1). Nothing is selected on
+ * entry; the session records the pick (`context.recordSelection`). A locked class or Legend is
+ * display only (DEC-48). Confirming a selectable pick, or the countdown ending with a class
+ * picked, goes to `pre-launch`; ending with none cancels to `menu` with reason
+ * `'select-timeout'`.
  */
 export class CharacterSelectState implements SessionState {
   public readonly phase: SessionPhase = 'character-select';

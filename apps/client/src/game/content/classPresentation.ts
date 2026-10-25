@@ -1,6 +1,6 @@
 // Class and Legend presentation (Figma 62:125, 62:70, 58:271): accents, art, plates and detail
 // icons by content id. Names, titles and copy come from core; art is keyed by spec id, never by a
-// Legend name, because names differ by team (I-82, I-83).
+// Legend name, because names differ by team (DEC-49).
 import type { LegendSpecArt } from '../../bridge/catalogue.types';
 import type {
   ClassPresentation,
@@ -9,7 +9,7 @@ import type {
 } from './CataloguePresentation.types';
 import { MAGUS_HUD, SENTINEL_HUD, WARRIOR_HUD } from './hudPresentation';
 
-/** Keyed by core class id. Plates are present on both renderers; `'css'` empties them (I-80). */
+/** Keyed by core class id. Plates are present on both renderers; `'css'` empties them (DEC-54). */
 export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
   warrior: {
     accentToken: '--class-warrior-accent',
@@ -84,7 +84,7 @@ const NO_LEGEND_ART: LegendSpecArt = {
   rowPlate: null,
 };
 
-/** The Legionnaire Legends share the class stand-in portrait until their art exists (OA3). */
+/** The Legionnaire Legends share the class stand-in portrait until their art exists (DEC-49). */
 const LEGIONNAIRE_LEGEND: SpecPresentation = {
   status: 'available',
   accentToken: '--class-warrior-accent',
@@ -92,7 +92,7 @@ const LEGIONNAIRE_LEGEND: SpecPresentation = {
   detailIcons: {},
 };
 
-/** The Sentinel Legends draw the designed placeholders (OA3: no art yet). */
+/** The Sentinel Legends draw the designed placeholders (DEC-49: no art yet). */
 const SENTINEL_LEGEND: SpecPresentation = {
   status: 'available',
   accentToken: '--class-sentinel-accent',
@@ -100,7 +100,7 @@ const SENTINEL_LEGEND: SpecPresentation = {
   detailIcons: {},
 };
 
-/** Keyed by core spec id; every Legend is selectable (I-11, I-82). */
+/** Keyed by core spec id; every Legend is selectable (DEC-49). */
 export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
   assassin: LEGIONNAIRE_LEGEND,
   knight: LEGIONNAIRE_LEGEND,

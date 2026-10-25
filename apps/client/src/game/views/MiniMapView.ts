@@ -24,7 +24,7 @@ export class MiniMapView {
 
   /**
    * Creates a mini map that shows `scene` shrunk to fit the whole of `map`, inside `ring`
-   * (injected by `Match`, I-68).
+   * (injected by `Match`, 06 §10).
    */
   public constructor(map: MapDefinition, scene: WorldLayer, ring: MiniMapRing) {
     this.map = map;

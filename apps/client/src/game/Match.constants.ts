@@ -6,7 +6,7 @@ export const BACKGROUND_COLOR = '#202927';
 
 /**
  * The HUD minimap ring both minimaps (battlefield and interior) draw inside: the one value
- * `bridge/minimapRing.ts` holds for `game/` and `ui/` (I-68, DV-95), injected into `MiniMapView`.
+ * `bridge/minimapRing.ts` holds for `game/` and `ui/` (01 §2; 06 §10), injected into `MiniMapView`.
  */
 export const HUD_MINIMAP_RING: MiniMapRing = {
   frame: MINI_MAP_DESIGN_FRAME,

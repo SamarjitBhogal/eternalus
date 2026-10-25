@@ -2,13 +2,16 @@ import type { EffectsRenderer } from '../bridge/catalogue.types';
 import type { DisplayOverrides } from './content/CataloguePresentation.types';
 import { NO_DISPLAY_OVERRIDES } from './content/coreCatalogue';
 
-/** The `fx` values a developer may pass, by the effects renderer each selects (I-80). */
+/** The `fx` values a developer may pass, by the effects renderer each selects (DEC-54). */
 const FX_RENDERERS: ReadonlyMap<string, EffectsRenderer> = new Map([
   ['css', 'css'],
   ['raster', 'figma-raster'],
 ]);
 
-/** What the developer query flag turns on for this page, decided once (13 §4; DV-118: query form until `settings.developer.menuEnabled` exists). */
+/**
+ * What the developer query flag turns on for this page, decided once (13 §4; 13 §10: query form
+ * until `settings.developer.menuEnabled` exists).
+ */
 export type DeveloperFlags = {
   /** `?dev=1`: the explorer chrome (`GameCanvas` `isExplorerShown`) and the display overrides are on. */
   readonly isDeveloper: boolean;

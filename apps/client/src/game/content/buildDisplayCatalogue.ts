@@ -40,7 +40,7 @@ const LOCKED_DETAIL_NAMES: ClassDetailNames = {
   specialty: null,
 };
 
-/** What each effects renderer keeps of the full catalogue (I-80; a new renderer is one entry). */
+/** What each effects renderer keeps of the full catalogue (DEC-54; a new renderer is one entry). */
 const RENDERER_VIEWS: Readonly<
   Record<EffectsRenderer, (full: DisplayCatalogue) => DisplayCatalogue>
 > = {
@@ -98,7 +98,9 @@ function layoutOverrides(
     : { ...overrides, alternate: { description, ...overrides.alternate } };
 }
 
-/** A core Legend with its presentation: the title and per-team names stay core's objects (OA3). */
+/**
+ * A core Legend with its presentation: the title and per-team names stay core's objects (DEC-49).
+ */
 function toSpecCard(
   spec: LegendSpecDefinition,
   presentation: CataloguePresentation,
@@ -247,7 +249,7 @@ function catalogueAssetIds(catalogue: DisplayCatalogue): AssetId[] {
  * icons, in slot order. HUD kinds: core names by kind (an aggregated group takes its first named
  * kind's name).
  * @throws Error naming the id: a core class, spec or locked class without presentation, a HUD kind
- *   or group without a core name, or an asset id that is not in `knownAssetIds` (UD-18; checked at
+ *   or group without a core name, or an asset id that is not in `knownAssetIds` (checked at
  *   boot).
  */
 export function buildDisplayCatalogue(inputs: {
@@ -256,8 +258,8 @@ export function buildDisplayCatalogue(inputs: {
   readonly knownAssetIds: ReadonlySet<AssetId>;
   /**
    * The effects renderer is `overrides.effectsRenderer ?? presentation.effectsRenderer`; on `'css'`
-   * every `cardPlates` is `{}` and every `rowPlate` and both chrome ids are `null` (I-80). Plate ids
-   * are validated against `knownAssetIds` on both renderers.
+   * every `cardPlates` is `{}` and every `rowPlate` and both chrome ids are `null` (DEC-54). Plate
+   * ids are validated against `knownAssetIds` on both renderers.
    */
   readonly overrides: DisplayOverrides;
 }): DisplayCatalogue {

@@ -3,7 +3,8 @@ import type { SessionContext, SessionState } from '../../SessionController.types
 
 /**
  * Boot (13 §2): projects content and the asset credits into the store, loads the `boot` group
- * (the font), then opens the menu; a load bug opens it with reason `'load-failed'` (I-57).
+ * (the font), then opens the menu; a load bug opens it with reason `'load-failed'` (13 §10,
+ * Session).
  */
 export class BootState implements SessionState {
   public readonly phase: SessionPhase = 'boot';

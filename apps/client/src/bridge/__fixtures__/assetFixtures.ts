@@ -1,6 +1,6 @@
 /**
  * Test support: an assets state with every asset a catalogue names loaded, for `ui/testStore.tsx`.
- * Imported only by test support, never by a module `main.tsx` reaches (I-76).
+ * Imported only by test support, never by a module `main.tsx` reaches (HC-F6).
  */
 import type { AssetId, DisplayCatalogue, RasterBox, RenditionKey } from '../catalogue.types';
 import { assetsSlice } from '../slices/assetsSlice';

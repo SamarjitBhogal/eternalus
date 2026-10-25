@@ -9,9 +9,9 @@ import { matchSlice } from '../slices/matchSlice';
 /** One capture objective as the HUD shows it; its letter comes from its place in the list. */
 export type HudObjectiveView = {
   readonly pointId: string;
-  /** The kind's display name from core (I-53): "Capture Point", "Cathedral". */
+  /** The kind's display name from core (13 §3): "Capture Point", "Cathedral". */
   readonly kindName: string;
-  /** The absolute owner: it picks the shield art and the letter ink (F5). */
+  /** The absolute owner: it picks the shield art and the letter ink (HC-F5). */
   readonly ownerTeam: Team;
   /** The owner seen from the player: the non-colour cue (allegiance flag, label; 13 §7). */
   readonly allegiance: HudAllegiance;
@@ -33,7 +33,7 @@ const captureFractionOf = (progress: number | null): number | null =>
 /**
  * The capture objectives in lane order (no lane last) with their owner, allegiance and capture
  * progress. A kind without a catalogue entry is not shown; `[]` before the player has a team.
- * Memoised (TAP-07).
+ * Memoised.
  */
 export const selectObjectives = createSelector(
   [

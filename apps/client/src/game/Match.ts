@@ -147,7 +147,7 @@ export class Match implements LoopTarget {
 
   /**
    * Stops the loop (pause) or starts it again; the loop keeps its remainder and restarts its frame
-   * clock, so paused time is not simulated (I-48).
+   * clock, so paused time is not simulated (13 §7: the match pauses from `pause-menu`; ES-11).
    */
   public setPaused(isPaused: boolean): void {
     if (isPaused) {
@@ -226,7 +226,10 @@ export class Match implements LoopTarget {
     this.camera.overview();
   }
 
-  /** Leaves the cathedral interior and returns the camera to following the player (I-55). */
+  /**
+   * Leaves the cathedral interior and returns the camera to following the player (DEC-32 keeps the
+   * interior in normal play; CD-22).
+   */
   public leaveInterior(): void {
     this.camera.leaveInterior();
   }

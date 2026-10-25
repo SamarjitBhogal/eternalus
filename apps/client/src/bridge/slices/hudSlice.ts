@@ -27,7 +27,7 @@ export const hudSlice = createSlice({
   name: 'hud',
   initialState,
   reducers: {
-    // The snapshot is readonly and stored as given (PR1-21), so the reducer returns new state.
+    // The snapshot is readonly and stored as given, so the reducer returns new state.
     hudStateChanged: (state, action: PayloadAction<PlayerHudSnapshot | null>) => ({
       player: action.payload,
       announcements: state.announcements,

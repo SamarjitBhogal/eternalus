@@ -24,7 +24,7 @@ export type ViewportCanvas = EventTarget &
 
 /**
  * How the match's pointer controls talk back to `GameCanvas`'s chrome: the cathedral interior
- * (normal play, DEC-32) and the developer explorer's overview (`?dev=1`, I-55).
+ * (normal play, DEC-32) and the developer explorer's overview (`?dev=1`; DEC-32, INBOX HC-F8).
  */
 export type ViewportChrome = {
   /** The view went inside the cathedral (`true`) or back to the battlefield (`false`). */
@@ -39,6 +39,9 @@ export type ViewportChrome = {
 export type MatchViewport = {
   readonly canvas: ViewportCanvas;
   readonly chrome: ViewportChrome;
-  /** Whether the developer explorer (drag, wheel, overview) is on: `?dev=1` (I-55). */
+  /**
+   * Whether the developer explorer (drag, wheel, overview) is on: `?dev=1` (demo-only by DEC-32;
+   * INBOX HC-F8).
+   */
   readonly isExplorerShown: boolean;
 };

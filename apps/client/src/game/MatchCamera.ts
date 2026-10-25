@@ -159,7 +159,7 @@ export class MatchCamera implements Projection {
     this.isFollowing = false;
   }
 
-  /** Leaves the cathedral interior and returns to following the player (I-55). */
+  /** Leaves the cathedral interior and returns to following the player (DEC-32; CD-22). */
   public leaveInterior(): void {
     this.explorer.overview();
     this.isExploring = false;

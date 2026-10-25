@@ -28,7 +28,7 @@ const PRIMARY_ROWS: readonly DetailRow[] = [
   },
 ];
 
-/** 62:70's flame specialty icon (BCA-27). */
+/** 62:70's flame specialty icon (DEC-52). */
 const ALTERNATE_ROWS: readonly DetailRow[] = [
   SIGNATURE,
   PROFICIENCY,

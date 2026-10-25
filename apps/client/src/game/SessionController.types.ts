@@ -22,7 +22,7 @@ import type { Rng } from './session/Rng.types';
 /** What the session hands the match factory (architecture 13 §2 `createMatch(setup)`). */
 export type MatchRequest = {
   readonly setup: MatchSetupDraft;
-  /** The player's class and team, from the selection and the setup (F4). */
+  /** The player's class and team, from the selection and the setup (HC-F4). */
   readonly player: PlayerChoice;
   /** The world prepared in `match-loading`; every Match built on it shares it and never changes it. */
   readonly world: PreparedWorld;
@@ -34,7 +34,10 @@ export type MatchRequest = {
 export interface RunningMatch {
   /** Stops the loop and releases every listener, device and adapter; safe to call twice. */
   destroy(): void;
-  /** Stops (`true`) or resumes (`false`) ticking and rendering; held input is released on pause (I-48). */
+  /**
+   * Stops (`true`) or resumes (`false`) ticking and rendering; held input is released on pause
+   * (13 §7; INBOX HC-Q8).
+   */
   setPaused(isPaused: boolean): void;
 }
 
@@ -82,7 +85,8 @@ export interface SessionContext {
    * Loads `groups` in order: `loading-progress` while loading, then `ready` and `asset-urls` per
    * group, then `onReady` once. Synchronous when nothing is left to load. An unexpected rejection
    * (a bug: asset failures never reject) logs ERROR `client.session`, publishes `loading-progress`
-   * `failed` and calls `onFailed`; `onReady` is then never called (I-57).
+   * `failed` and calls `onFailed`; `onReady` is then never called (13 §2 `loading` and
+   * `match-loading` rows: a failed load returns to `menu` with a banner; 13 §10, Session).
    * @returns Cancels: neither callback is called afterwards.
    */
   loadAssets(
@@ -125,7 +129,7 @@ export type SessionControllerDeps = {
   readonly createRng: (seed: number) => Rng;
   /**
    * Receives `data-team="light|dark"` while a match setup exists and `data-contrast` (the
-   * catalogue's colour set, I-81) while the session runs (`<html>` in the app).
+   * catalogue's colour set, DEC-55) while the session runs (`<html>` in the app).
    */
   readonly themeRoot: Pick<HTMLElement, 'dataset'>;
   /** Builds a match's world from its seed (`prepareMatchWorld` over the page's `GameConfig`). */
@@ -134,7 +138,10 @@ export type SessionControllerDeps = {
   readonly createMatch: MatchFactory;
   /** Where the session reports a match that could not start or a load bug. */
   readonly logger: Logger;
-  /** The resources facade; a structural type so a test can inject a rejecting stub (I-57). */
+  /**
+   * The resources facade; a structural type so a test can inject a rejecting stub (13 §2: a failed
+   * load returns to `menu`).
+   */
   readonly resources: Pick<
     ResourceController,
     'load' | 'urls' | 'boxes' | 'release' | 'isLoaded' | 'progress'

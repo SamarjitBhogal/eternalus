@@ -1,5 +1,5 @@
 /**
- * The HUD minimap ring (Figma 62:231, 65:743 Compass Ring), one value for both readers (DV-95):
+ * The HUD minimap ring (Figma 62:231, 65:743 Compass Ring), one value for both readers (06 §10):
  * `ui/hud/MinimapPanel` draws the ring in CSS (its test asserts the same box) and `game/Match`
  * passes it to `MiniMapView`, which draws the map inside it. Design pixels of the 1920 × 1080 frame.
  */

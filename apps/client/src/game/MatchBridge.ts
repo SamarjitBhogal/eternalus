@@ -6,7 +6,7 @@ import type { MatchBridgeDeps } from './MatchBridge.types';
 
 /**
  * All game → UI publishing for one match (architecture 12 §8, 13 §5), owned by `Match`. It
- * publishes only what the simulation has today (DEC-17, F6: no made-up values):
+ * publishes only what the simulation has today (DEC-17, HC-F6: no made-up values):
  * - `match-clock` and `hud-state` (the player's health; every other value `null`) every
  *   `publishEveryTicks`;
  * - the team structures and the capture points from the map's features (health `null`, owner
@@ -53,7 +53,7 @@ export class MatchBridge {
 
   /**
    * The player's HUD values: health from the snapshot, everything else `null` until core
-   * publishes it (interim until core fills a player snapshot; DV-115).
+   * publishes it (interim until core fills a player snapshot; 13 §10).
    */
   private static playerOf(snapshot: Snapshot, playerId: EntityId | null): PlayerHudSnapshot | null {
     const entity = snapshot.entities.find((candidate) => candidate.id === playerId);

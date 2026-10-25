@@ -6,7 +6,7 @@ import { SELECTION_SCREEN_ASSETS } from './selectionScreenAssets';
 
 /**
  * The `selection` group: loaded in `loading` for both class-step layouts and the Legend step
- * (I-47). Its entries sit in parts by what draws them.
+ * (14 §14). Its entries sit in parts by what draws them.
  */
 export const SELECTION_ASSETS: readonly AssetManifestEntry[] = [
   ...SELECTION_SCREEN_ASSETS,

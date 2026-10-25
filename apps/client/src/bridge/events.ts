@@ -41,7 +41,9 @@ export type UiIntent =
   | { readonly kind: 'navigate'; readonly route: MenuRoute }
   | { readonly kind: 'select-class'; readonly classId: LegendClassId; readonly specId?: string }
   | { readonly kind: 'confirm-selection' }
-  /** Back from the Legend step: clears the class (and Legend) pick; the countdown runs on (F1). */
+  /**
+   * Back from the Legend step: clears the class (and Legend) pick; the countdown runs on (HC-F1).
+   */
   | { readonly kind: 'clear-class-selection' }
   | { readonly kind: 'cancel-match' }
   | { readonly kind: 'leave-match' }
@@ -76,8 +78,8 @@ export type SessionReason = 'select-timeout' | 'cancelled' | 'match-failed' | 'l
 
 /**
  * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
- * layout groups the rest (I-47); the `-raster` groups hold only plates, loaded only on the
- * `'figma-raster'` effects renderer (I-80, I-86). Restated in `data/resources/AssetManifest.types.ts`.
+ * layout groups the rest (14 §14); the `-raster` groups hold only plates, loaded only on the
+ * `'figma-raster'` effects renderer (DEC-54). Restated in `data/resources/AssetManifest.types.ts`.
  */
 export type AssetGroup =
   | 'boot'

@@ -4,8 +4,8 @@ import { selectionAssetGroups } from '../selectionAssetGroups';
 
 /**
  * Start-match loading (13 §2): loads the selection screens' asset groups for the catalogue's
- * layout and effects renderer (I-47, I-86), then opens character select; a load bug returns to
- * the menu with reason `'load-failed'` (I-57).
+ * layout and effects renderer (14 §14), then opens character select; a load bug returns to the
+ * menu with reason `'load-failed'` (13 §2 `loading` row: failed → `menu`).
  */
 export class LoadingState implements SessionState {
   public readonly phase: SessionPhase = 'loading';

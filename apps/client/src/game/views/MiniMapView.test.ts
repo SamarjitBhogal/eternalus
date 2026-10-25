@@ -27,7 +27,7 @@ const VIEW = { x: 0, y: 200, width: 640, height: 360 };
 
 /**
  * The HUD ring as `Match` injects it (Figma 65:743: 255 × 244 at 1636, 47 in the 1920 × 1080
- * frame, 4 px stroke). Written out here because views import nothing from `bridge/` (I-68).
+ * frame, 4 px stroke). Written out here because views import nothing from `bridge/` (01 §2).
  */
 const RING: MiniMapRing = {
   frame: { width: 1920, height: 1080 },

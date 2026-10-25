@@ -6,8 +6,8 @@ import magusModel2x from '../../assets/selection-alternate/classes/magus-model@2
 import type { AssetManifestEntry } from './AssetManifest.types';
 
 /**
- * The `selection-alternate` group: art that only the alternate class-step layout draws (I-47,
- * DEC-52).
+ * The `selection-alternate` group: art that only the alternate class-step layout draws
+ * (14 §14; DEC-52).
  */
 export const SELECTION_ALTERNATE_ASSETS: readonly AssetManifestEntry[] = [
   {

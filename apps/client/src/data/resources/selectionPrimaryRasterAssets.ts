@@ -15,7 +15,7 @@ import type { AssetManifestEntry } from './AssetManifest.types';
 
 /**
  * The `selection-primary-raster` group: the class step's plates, loaded only with the `figma-
- * raster` effects renderer (I-47, DEC-54).
+ * raster` effects renderer (14 §14; DEC-54).
  */
 export const SELECTION_PRIMARY_RASTER_ASSETS: readonly AssetManifestEntry[] = [
   {

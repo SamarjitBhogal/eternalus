@@ -12,7 +12,7 @@ export type AssetId = string;
 export type AssetType = 'ui-image' | 'font';
 
 /**
- * When an asset loads (13 §2, I-47): `boot` before the menu; the `selection` groups in `loading`
+ * When an asset loads (13 §2; 14 §14): `boot` before the menu; the `selection` groups in `loading`
  * (`selection` for both class-step layouts and the Legend step, `selection-primary` and
  * `selection-alternate` for one layout's class step, `selection-primary-raster` and
  * `selection-raster` for the plates the `figma-raster` effects renderer draws); `match` in
@@ -80,16 +80,16 @@ type EntryBase = {
   readonly group: AssetGroup;
   /**
    * The file used at a device pixel ratio of 1 (and at 2 when there is no `file2x`); lossless
-   * where the visual audit sees it (I-46). An entry whose every use has a rendition repeats one
+   * where the visual audit sees it (HC-Q15). An entry whose every use has a rendition repeats one
    * rendition's files here.
    */
   readonly file: AssetFile;
   readonly file2x?: AssetFile;
   readonly licence: LicenceId;
   /**
-   * Provenance (O4, DEC-51): the Figma node or the downloaded file, the master's SHA-256 and the
-   * conversion applied (the R1 render, its scratch duplicate and background pair, the paints
-   * removed, the holes and the crop).
+   * Provenance (DEC-51): the Figma node or the downloaded file, the master's SHA-256 and the
+   * conversion applied (the scratch-page render of DEC-54, its duplicate and background pair, the
+   * paints removed, the holes and the crop).
    */
   readonly source: string;
 };

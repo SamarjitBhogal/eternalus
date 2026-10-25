@@ -17,9 +17,9 @@ export type RoleRatingAxis = keyof RoleRatings;
 export type AssetId = string;
 /** A custom property declared in `styles/global.css`. Content names tokens, never colours (13 §7). */
 export type ColourToken = `--${string}`;
-/** `locked`: shown, never selectable, never given to a bot (O1). */
+/** `locked`: shown, never selectable, never given to a bot (DEC-48). */
 export type SelectionStatus = 'available' | 'locked';
-/** The class-step layout (O5): `primary` = Figma 62:125, `alternate` = 62:70. */
+/** The class-step layout (DEC-52): `primary` = Figma 62:125, `alternate` = 62:70. */
 export type ClassSelectLayout = 'primary' | 'alternate';
 /** The two looks of a selection card: `picked` = the enlarged card (62:152, 55:267). */
 type CardLook = 'idle' | 'picked';
@@ -84,12 +84,18 @@ export type RasterBox = {
   readonly height: number;
 };
 
-/** Which renderer draws the selection screens' Figma effects: R1 plates or live CSS (OA1, I-80). */
+/**
+ * Which renderer draws the selection screens' Figma effects: Figma-render plates or live CSS
+ * (DEC-54).
+ */
 export type EffectsRenderer = 'figma-raster' | 'css';
-/** Which colour set the token pairs below 13 §7's minimums use (OA2, I-81). */
+/** Which colour set the token pairs below 13 §7's minimums use (DEC-55). */
 export type ContrastMode = 'figma' | 'minimums';
 
-/** Art of one Legend, keyed by spec id, never by a Legend name (I-82); `null` renders the placeholder. */
+/**
+ * Art of one Legend, keyed by spec id, never by a Legend name (DEC-49); `null` renders the
+ * placeholder.
+ */
 export type LegendSpecArt = {
   readonly card: AssetId | null;
   /** Blurred copy behind the cards (61:8); `null` reuses `card` (61:14, 61:20). */
@@ -98,21 +104,24 @@ export type LegendSpecArt = {
   /** Mini card of the class step's Legends row (72:803 …). */
   readonly mini: AssetId | null;
   /**
-   * Figma's render of the Legend row with this Legend picked (61:3 + 58:351 + 55:255; FID-R2-01,
-   * I-69): opaque, valid only over the static backdrop, only while this Legend is picked and the row
+   * Figma's render of the Legend row with this Legend picked (61:3 + 58:351 + 55:255; CD-16):
+   * opaque, valid only over the static backdrop, only while this Legend is picked and the row
    * lists the ids it was exported with; drawn uncropped beneath every element Figma draws above
-   * 61:3 (§5.15 paint-order contract). Id `<specId>-row-plate`. `null` = live halo and glows
-   * (always `null` on the `'css'` renderer, I-80).
+   * 61:3 (Figma's layer order, reference 15 §2). Id `<specId>-row-plate`. `null` = live halo and
+   * glows (always `null` on the `'css'` renderer, DEC-54).
    */
   readonly rowPlate: AssetId | null;
 };
 
-/** A Legend (sub-class, O2) as the selection screens show it. Setup data; gameplay post-MVP (17 R2). */
+/**
+ * A Legend (sub-class, DEC-49) as the selection screens show it. Setup data; gameplay post-MVP
+ * (17 R2).
+ */
 export type LegendSpecCard = {
   readonly specId: string;
-  /** The sub-class title ("Oracle"), the same on both teams (OA3). */
+  /** The sub-class title ("Oracle"), the same on both teams (DEC-49). */
   readonly displayName: string;
-  /** The Legend's own name per team (OA3, I-83); `null` while the owner has named none. */
+  /** The Legend's own name per team (DEC-49); `null` while the owner has named none. */
   readonly legendName: LegendName | null;
   readonly roleLabel: string | null;
   readonly description: string | null;
@@ -201,7 +210,7 @@ export type HudStructureKind = {
   readonly kind: MapFeatureKind;
   /** Kinds sharing a group share one tile kind (`wall-segment` and `gate` are both `'wall'`). */
   readonly tileGroup: string;
-  /** Accessible name of the tile: core `displayName` of the group's first named kind (I-53). */
+  /** Accessible name of the tile: core `displayName` of the group's first named kind (13 §3). */
   readonly displayName: string;
   /** A monochrome icon drawn as a CSS mask in the owning team's colour. */
   readonly iconAssetId: AssetId;
@@ -211,7 +220,7 @@ export type HudStructureKind = {
   readonly isAggregated: boolean;
 };
 
-/** How one capture-point kind shows; `displayName` from core (I-53). */
+/** How one capture-point kind shows; `displayName` from core (13 §3). */
 type HudObjectiveKind = { readonly kind: MapFeatureKind; readonly displayName: string };
 
 /** Class-agnostic HUD art, by asset id. */
@@ -246,7 +255,7 @@ export type DisplayCatalogue = {
   readonly selectClassChromeAssetId: AssetId | null;
   /**
    * Figma-state chrome of LOCK IN (58:277, label live), exported over the oracle-picked row, so
-   * used only while the Legend row plate is drawn (FID-R4-01); `null` = live CSS (always on `'css'`).
+   * used only while the Legend row plate is drawn (CD-16); `null` = live CSS (always on `'css'`).
    */
   readonly lockInChromeAssetId: AssetId | null;
   /** The renderer this catalogue was built for; `LoadingState` picks the asset groups by it. */

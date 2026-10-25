@@ -17,7 +17,9 @@ import { SELECTION_PRIMARY_ASSETS } from './selectionPrimaryAssets';
 import { SELECTION_PRIMARY_RASTER_ASSETS } from './selectionPrimaryRasterAssets';
 import { SELECTION_RASTER_ASSETS } from './selectionRasterAssets';
 
-/** The seven groups (I-47); a new `AssetGroup` member fails the `expectTypeOf` case until added. */
+/**
+ * The seven groups (14 §14); a new `AssetGroup` member fails the `expectTypeOf` case until added.
+ */
 const GROUPS = [
   'boot',
   'selection',
@@ -39,7 +41,7 @@ const GROUP_FILES: readonly (readonly [AssetGroup, readonly AssetManifestEntry[]
   ['match', MATCH_ASSETS],
 ];
 
-/** The WebP files, read inline as data URLs (spike S1), for their RIFF chunk. */
+/** The WebP files, read inline as data URLs, for their RIFF chunk. */
 const INLINE_IMAGES = import.meta.glob<string>('../../assets/**/*.webp', {
   query: '?inline',
   import: 'default',

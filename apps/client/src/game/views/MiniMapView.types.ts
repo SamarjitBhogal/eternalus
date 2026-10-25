@@ -1,6 +1,6 @@
 /**
- * The HUD ring the minimap is drawn inside, in design pixels of `frame` (I-68). `Match` passes the
- * one value `bridge/minimapRing.ts` holds, so the canvas map and the DOM ring (`MinimapPanel`)
+ * The HUD ring the minimap is drawn inside, in design pixels of `frame` (06 §10). `Match` passes
+ * the one value `bridge/minimapRing.ts` holds, so the canvas map and the DOM ring (`MinimapPanel`)
  * always agree; views import nothing from `bridge/`. At a screen size the ring scales by
  * `min(width / frame.width, height / frame.height)` and keeps its distance from the top-right
  * corner.

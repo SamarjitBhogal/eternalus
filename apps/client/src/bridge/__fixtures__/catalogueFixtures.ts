@@ -1,7 +1,7 @@
 /**
  * Test support: catalogue cards with neutral defaults, so a test names only the fields it is
  * about. Imported only by tests, `ui/testStore.tsx` and the visual harness, never by a module
- * `main.tsx` reaches (I-76).
+ * `main.tsx` reaches (HC-F6).
  */
 import type {
   ColourToken,

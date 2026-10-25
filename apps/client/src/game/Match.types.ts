@@ -28,7 +28,7 @@ export interface IntentSource {
 
 /**
  * Which Legend the player plays and on which team: the selection's class and the setup's team
- * (F4). The Legend (sub-class) pick is setup data only and never reaches the match (I-58).
+ * (HC-F4). The Legend (sub-class) pick is setup data only and never reaches the match (DEC-49).
  */
 export type PlayerChoice = {
   /** The class id, which is also the Legend's definition id in core content (`'magus'`). */

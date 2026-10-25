@@ -9,8 +9,9 @@ import { useExplorerChrome } from './useExplorerChrome';
  * The match viewport (13 §1): owns the canvas and hands it to the session when it mounts
  * (`attach` → `SessionController.attachViewport`, which builds the match), and the returned
  * detach when it unmounts. In normal play only a "Leave cathedral" control is drawn, while inside
- * the interior (an interim, DV-119); the developer explorer's toolbar and legend show only with
- * `isExplorerShown` (`?dev=1`, I-55). `GameCanvasChrome` draws both from this hook's state.
+ * the interior (an interim, CD-22); the developer explorer's toolbar and legend show only with
+ * `isExplorerShown` (`?dev=1`; DEC-32, INBOX HC-F8). `GameCanvasChrome` draws both from this
+ * hook's state.
  */
 export function GameCanvas({ attach, isExplorerShown, labels }: GameCanvasProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);

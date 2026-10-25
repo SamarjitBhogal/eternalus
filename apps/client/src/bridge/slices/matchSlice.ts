@@ -28,7 +28,7 @@ export const matchSlice = createSlice({
   name: 'match',
   initialState,
   reducers: {
-    // Payloads are readonly and stored as given (PR1-21), so the reducers return new state.
+    // Payloads are readonly and stored as given, so the reducers return new state.
     clockChanged: (state, action: PayloadAction<MatchClock>) => ({
       ...state,
       clock: action.payload,
