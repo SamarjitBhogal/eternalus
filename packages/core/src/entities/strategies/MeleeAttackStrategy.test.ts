@@ -19,7 +19,7 @@ const WEAPONS = loadWeapons(30, [
     uniqueTo: null,
   },
 ]);
-const WARRIOR = loadDefaultContent(30, undefined, WEAPONS).get('warrior');
+const WARRIOR = loadDefaultContent(30).get('warrior');
 
 /** Hits `entity-2` once with a Warrior spawned from `definition`; returns the damage calls. */
 const hitWith = (definition: typeof WARRIOR): [string, number, DamageSource][] => {
@@ -37,13 +37,7 @@ const hitWith = (definition: typeof WARRIOR): [string, number, DamageSource][] =
 };
 
 describe('MeleeAttackStrategy', () => {
-  it('deals the attack damage at once, naming the attacker as the source', () => {
-    expect(hitWith(WARRIOR)).toEqual([
-      ['entity-2', 40, { attackerId: 'entity-1', kind: 'weapon', definitionId: 'warrior' }],
-    ]);
-  });
-
-  it('names the weapon when the attacker has one', () => {
+  it('deals the weapon damage at once, naming the attacker and its weapon as the source', () => {
     const armed = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
 
     expect(hitWith(armed)).toEqual([

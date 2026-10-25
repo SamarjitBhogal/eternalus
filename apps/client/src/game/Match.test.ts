@@ -51,6 +51,7 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
       baseAether: 100,
       levelCurveId: 'legend',
       levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 },
+      defaultLoadout: { primaryWeaponId: 'raptor-talons' },
       ...unit,
     },
     // PROTOTYPE(PROTO-01) TEMPORARY: only because the demo escort spawns in every match.

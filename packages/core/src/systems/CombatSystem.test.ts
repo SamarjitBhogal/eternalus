@@ -27,6 +27,8 @@ const setUp = () => {
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(CONFIG.tickRate),
+    undefined,
+    loadWeapons(CONFIG.tickRate),
   );
   const spawn = (kind: string, definitionId: string, x: number, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x, y: 0 }, team });
@@ -109,7 +111,7 @@ const firstHit = (kind: string, definitionId: string): { amount: number; source:
     testWeapon('test-talons', 50),
     testWeapon('test-axe', 80),
   ]);
-  const units = loadDefaultContent(CONFIG.tickRate, undefined, weapons);
+  const units = loadDefaultContent(CONFIG.tickRate);
   const warrior = units.get('warrior');
   const content = new ContentCatalogue([
     ...units.all(),

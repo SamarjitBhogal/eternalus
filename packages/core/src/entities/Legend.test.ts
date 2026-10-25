@@ -15,7 +15,7 @@ const TEST_TALONS: WeaponDefinition = {
   uniqueTo: null,
 };
 const WEAPONS = loadWeapons(30, [TEST_TALONS]);
-const WARRIOR = loadDefaultContent(30, undefined, WEAPONS).get('warrior');
+const WARRIOR = loadDefaultContent(30).get('warrior');
 const ARMED_WARRIOR = { ...WARRIOR, defaultLoadout: { primaryWeaponId: 'test-talons' } };
 const PLACEMENT = { position: { x: 0, y: 0 }, team: 'light' } as const;
 
@@ -30,13 +30,14 @@ describe('Legend', () => {
     expect(combat.attack).toMatchObject({ damage: 50, reach: 1.5, interval: 15 });
   });
 
-  it('keeps its own attack when it names no weapon', () => {
+  it('builds its Combat from its shipped default weapon', () => {
     const legend = new Warrior('entity-1', 'warrior');
 
-    legend.spawn({ ...PLACEMENT, definition: WARRIOR, weapons: WEAPONS });
+    legend.spawn({ ...PLACEMENT, definition: WARRIOR, weapons: loadWeapons(30) });
 
-    expect(legend.getComponent(Combat).weaponId).toBeNull();
-    expect(legend.getComponent(Combat).attack).toEqual(WARRIOR.attack);
+    const combat = legend.getComponent(Combat);
+    expect(combat.weaponId).toBe('raptor-talons');
+    expect(combat.attack).toMatchObject({ damage: 45, reach: 1.5, interval: 21 });
   });
 
   it('throws when it names a weapon but was spawned without a weapon source', () => {

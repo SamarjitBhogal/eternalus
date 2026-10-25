@@ -641,10 +641,13 @@ by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks 
 **Implementation status (SCRUM-183 / SCRUM-287, first slice).** `content/weapons/` holds
 `WeaponDefinition` (`id`, `displayName`, `weaponClass`, `attacks`, `allowedClasses`, `uniqueTo`;
 `attacks` are `UnitAttack`s, seconds authored and ticks once loaded) and `weaponCatalogue.ts`;
-`loadWeapons` converts and validates at load. The shipped catalogue is empty and shipped Legends keep
-their `attack` until the owner sets weapon numbers and each class's default weapon (`INBOX.md`). A
-Legend names its weapon with `defaultLoadout.primaryWeaponId`, the one field of the design's
-`LoadoutTemplate` built so far; `KnownWeaponRule` checks it resolves. `EntityFactory` passes the
+`loadWeapons` converts and validates at load. A Legend's damage comes from its weapon, never from
+the Legend: `LegendDefinition` has no `attack` and must name its weapon with
+`defaultLoadout.primaryWeaponId`, the one field of the design's `LoadoutTemplate` built so far;
+`KnownWeaponRule` checks every Legend names one and that it resolves. The shipped catalogue is the
+three default weapons from the table above, with each class's `balancing.md` basic attack as
+`TUNE` numbers until the owner sets weapon numbers and default weapons (`INBOX.md`): Warrior
+`raptor-talons`, Sentinel `wuuthrad` (no heavy weapon is MVP), Magus `magus-staff` (melee only). `EntityFactory` passes the
 injected weapon source in the spawn context, `Legend` builds `Combat` from the weapon's first attack
 and `Combat.weaponId` names it, so the `DamageSource` is the entity plus its weapon; mobs keep
 their own `attack` and name their own definition (04 §5). Not built yet: ranged attacks and flex

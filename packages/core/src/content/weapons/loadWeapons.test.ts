@@ -27,8 +27,8 @@ describe('loadWeapons', () => {
     ).toBe(1);
   });
 
-  it('ships no weapons until the owner sets their numbers', () => {
-    expect(loadWeapons(30).ids).toEqual([]);
+  it('ships each class default weapon', () => {
+    expect(loadWeapons(30).ids).toEqual(['raptor-talons', 'wuuthrad', 'magus-staff']);
   });
 
   it('rejects a weapon with no attacks', () => {

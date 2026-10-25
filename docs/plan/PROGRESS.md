@@ -1296,3 +1296,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   (416)"; "✓ built in 94ms"; "Documentation check passed."
 - Next step: the owner's answers in INBOX (weapon numbers, default weapons), then the shipped
   weapons; open the PR to `phase/2-sprint-2-work` once #34 and #35 are merged.
+
+### 2026-10-25 — Phase 2 / SCRUM-183 — feat/weapons (damage from weapons) — Claudio + Claude Code
+
+- What: merged `origin/phase/2-sprint-2-work` (PRs #31, #34, #35, #36) by a plain merge (no
+  force); conflicts kept both sides (level curves and weapons injected side by side:
+  `loadDefaultContent(tickRate, curves, weapons)`, `createDefaultContentRules(curves, weapons)`,
+  `Simulation({ levelCurves, weapons })`). Then a Legend's damage comes from its weapon, not the
+  Legend: `LegendDefinition` drops `attack` (`attack?: never`) and requires
+  `defaultLoadout.primaryWeaponId`; `Legend.basicAttack` has no fallback; `KnownWeaponRule` flags a
+  Legend with no weapon. Shipped `raptor-talons` (Warrior), `wuuthrad` (Sentinel), `magus-staff`
+  (Magus, melee only until SCRUM-169) from the 05 §10 table, numbers = each class's `balancing.md`
+  basic attack, all `TUNE`; INBOX item updated. Tests that spawn Legends now pass a weapon source.
+- Checks run: see the PR.
+- Next step: Sam confirms the default weapons and numbers (INBOX); ranged attacks with
+  projectiles (SCRUM-169, Aryan).

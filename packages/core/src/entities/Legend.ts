@@ -38,18 +38,14 @@ export abstract class Legend extends Unit {
   }
 
   /**
-   * The default weapon's attack when the definition names one (05 §10, §12), else the unit's own.
+   * The default weapon's attack (05 §10, §12): a Legend's damage comes from its weapon.
    *
-   * @throws Error when the definition names a weapon but the spawn context has no weapon source, or
-   *   the weapon has no attacks.
+   * @throws Error when the spawn context has no weapon source, or the weapon has no attacks.
    */
-  protected override basicAttack(context: unknown): BasicAttack | undefined {
+  protected override basicAttack(context: unknown): BasicAttack {
     const reader = new SpawnContextReader(this);
     const weaponId =
-      reader.placed<LegendDefinition>(context).definition.defaultLoadout?.primaryWeaponId;
-    if (weaponId === undefined) {
-      return super.basicAttack(context);
-    }
+      reader.placed<LegendDefinition>(context).definition.defaultLoadout.primaryWeaponId;
     const weapons = reader.weapons(context);
     if (weapons === null) {
       throw new Error(`Legend "${this.id}" needs a weapon source to equip "${weaponId}".`);
