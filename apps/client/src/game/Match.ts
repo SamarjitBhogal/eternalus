@@ -1,4 +1,5 @@
 import {
+  type Command,
   type EntityId,
   makeLogRecord,
   type MapDefinition,
@@ -59,7 +60,8 @@ export class Match implements LoopTarget {
   private lastMove: Vec2 = { x: 0, y: 0 };
 
   /**
-   * Creates the match, queues the player's spawn and points the camera at the spawn point.
+   * Creates the match, queues the player's spawn (`spawnPlayer`) and points the camera at the
+   * spawn point.
    *
    * @throws Error when the map has no stronghold for the player's team.
    */
@@ -104,20 +106,7 @@ export class Match implements LoopTarget {
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
     this.bridge = new MatchBridge({ ...bridge, tickRate, map });
-    this.stopListening = simulation.on('entity-spawned', ({ entityId, kind, team }) => {
-      if (this.playerId === null && kind === player.legend && team === player.team) {
-        this.playerId = entityId;
-      }
-    });
-
-    simulation.enqueueCommand({
-      type: 'dev-spawn',
-      kind: player.legend,
-      definitionId: player.legend,
-      team: player.team,
-      at: spawnPoint,
-      count: 1,
-    });
+    this.stopListening = this.spawnPlayer(spawnPoint);
     // PROTOTYPE(PROTO-01) TEMPORARY: demo escort; delete with `spawnEscort`.
     Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
@@ -241,6 +230,44 @@ export class Match implements LoopTarget {
   public destroy(): void {
     this.loop.destroy();
     this.stopListening();
+  }
+
+  /**
+   * Queues the player's spawn at `at` and watches for it: the spawned Legend becomes
+   * `playerEntityId`; a rejected spawn logs ERROR `client.match` naming the class id and the
+   * reason (the match then runs with no player Legend). Returns the unsubscribe.
+   */
+  private spawnPlayer(at: Vec2): () => void {
+    const { simulation, player, logger } = this.deps;
+    const spawn: Command<'dev-spawn'> = {
+      type: 'dev-spawn',
+      kind: player.legend,
+      definitionId: player.legend,
+      team: player.team,
+      at,
+      count: 1,
+    };
+    const stopSpawned = simulation.on('entity-spawned', ({ entityId, kind, team }) => {
+      if (this.playerId === null && kind === player.legend && team === player.team) {
+        this.playerId = entityId;
+      }
+    });
+    const stopRejected = simulation.on('command-rejected', ({ command, reason }) => {
+      if (command !== spawn) return;
+      logger.log(
+        makeLogRecord(
+          'ERROR',
+          'client.match',
+          `The player's Legend "${player.legend}" did not spawn: ${reason}.`,
+          { attributes: { classId: player.legend, reason } },
+        ),
+      );
+    });
+    simulation.enqueueCommand(spawn);
+    return () => {
+      stopSpawned();
+      stopRejected();
+    };
   }
 
   private applyIntent(): void {

@@ -1,4 +1,10 @@
-import { createDefaultGameConfig, type InputIntent, NullLogger, Simulation } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  type InputIntent,
+  MemoryLogger,
+  NullLogger,
+  Simulation,
+} from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap, MatchClock } from '../bridge/events';
@@ -84,6 +90,41 @@ describe('Match lifecycle', () => {
     expect(on).not.toHaveBeenCalled();
   });
 
+  it('logs ERROR client.match naming the class id and the reason when the player cannot spawn', () => {
+    const logger = new MemoryLogger();
+    const stale: PlayerChoice = { legend: 'stale-class', team: 'dark' };
+    const match = new Match({ ...matchDeps().deps, logger, player: stale });
+
+    match.tick();
+
+    const errors = logger.records.filter((record) => record.severityText === 'ERROR');
+    expect(errors.map(({ scope, attributes }) => [scope, attributes])).toEqual([
+      ['client.match', { classId: 'stale-class', reason: 'unknown-kind' }],
+    ]);
+    expect(errors[0]?.body).toContain('"stale-class"');
+    expect(errors[0]?.body).toContain('unknown-kind');
+    expect(match.playerEntityId).toBeNull();
+  });
+
+  it('logs no error when the player spawns, nor for a rejected command that is not its spawn', () => {
+    const logger = new MemoryLogger();
+    const { deps } = matchDeps();
+    const match = new Match({ ...deps, logger });
+    deps.simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'stale-class',
+      definitionId: 'stale-class',
+      team: 'dark',
+      at: { x: 0, y: 0 },
+      count: 1,
+    });
+
+    match.tick();
+
+    expect(match.playerEntityId).not.toBeNull();
+    expect(logger.records.filter((record) => record.severityText === 'ERROR')).toEqual([]);
+  });
+
   it('runs whole ticks from the loop: 100 ms of frames is 3 ticks', () => {
     const { match, simulation, scheduler } = build();
     match.start();
@@ -157,7 +198,7 @@ describe('Match lifecycle', () => {
     expect(simulation.tick).toBe(6);
   });
 
-  it('stops the loop and its subscription on destroy: 0 scheduled frames, 0 listeners', () => {
+  it('stops the loop and its subscriptions on destroy: 0 scheduled frames, 0 listeners', () => {
     const { match, scheduler, simulation, unsubscribes } = build();
     match.start();
 
@@ -166,6 +207,7 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    expect(unsubscribes.count).toBe(1);
+    // Both of its subscriptions: the player's spawn and its rejection.
+    expect(unsubscribes.count).toBe(2);
   });
 });

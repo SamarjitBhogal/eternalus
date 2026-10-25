@@ -168,13 +168,14 @@ describe('SessionController with the real match, end to end', () => {
 
     expect(first?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(first, firstCanvas)).toBe(0);
-    expect(first?.unsubscribed).toEqual([1]);
+    // Each simulation subscription (the player's spawn and its rejection) dropped exactly once.
+    expect(first?.unsubscribed).toEqual([1, 1]);
     expect(session.bus.listenerCount()).toBe(busWithOne);
 
     session.intent({ kind: 'leave-match' });
     expect(second?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(second, secondCanvas)).toBe(0);
-    expect(second?.unsubscribed).toEqual([1]);
+    expect(second?.unsubscribed).toEqual([1, 1]);
     expect(session.bus.listenerCount()).toBe(busBefore);
   });
 
