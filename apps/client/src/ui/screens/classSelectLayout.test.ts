@@ -35,7 +35,7 @@ describe('classSlot', () => {
     expect(classSlot(3, 0).text.idle).toEqual({ name: 0, role: 0, allies: 0 });
   });
 
-  // OD-1 without a plate (WP-CLASS CSS audit C1): aligned with the art, Figma's overlay stroke
+  // OD-1 without a plate (the visual audit of 62:125): aligned with the art, Figma's overlay stroke
   // (0.616 to 1.077 px off) was missing along three arches.
   it("keeps the Figma's own overlay offsets only in the four-card row", () => {
     expect([0, 1, 2, 3].map((index) => classSlot(4, index).overlay)).toEqual([

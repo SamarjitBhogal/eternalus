@@ -28,11 +28,12 @@ function roleLine(legend: LegendCardView): string | null {
 
 /**
  * The Legend step of character select (58:271): the breadcrumb, the shown Legend's panel and
- * rating bars, the Legend cards, LOCK IN, Back (`pause-menu`, F7) and the allied roster; `null`
+ * rating bars, the Legend cards, LOCK IN, Back (`pause-menu`, HC-F7) and the allied roster; `null`
  * on the class step. A pick emits `select-class {classId, specId}`, LOCK IN `confirm-selection`
- * (only while `canLockIn`), Back `clear-class-selection`. Paint order (§5.15): the picked
- * Legend's row plate is the section's first child, so everything Figma draws above 61:3 paints
- * above it; LOCK IN takes its chrome plate only while the row plate is drawn (FID-R4-01).
+ * (only while `canLockIn`), Back `clear-class-selection`. Paint order (Figma's layer order,
+ * reference 15 §2): the picked Legend's row plate is the section's first child, so everything
+ * Figma draws above 61:3 paints above it; LOCK IN takes its chrome plate only while the row plate
+ * is drawn (CD-16).
  */
 export function LegendSelectStep(): ReactElement | null {
   const model = useLegendSelectStep();

@@ -10,10 +10,11 @@ import type { RowPlate } from './selectionGeometry.types';
 
 /**
  * The class cards of the class step (62:146), the top-most layer of 62:125: its root is lifted
- * above every other element of the step and the shell by its module's `z-index: 1` (§5.15). Inside
- * it, bottom to top: the picked class's row plate while it is drawn (I-69: Figma's own halo, its
- * three holes left empty so the text beneath shows), else the live halo; then one radio group in
- * content order, labelled by the step heading. Only the cards take pointer events.
+ * above every other element of the step and the shell by its module's `z-index: 1` (Figma's
+ * layer order, reference 15 §2). Inside it, bottom to top: the picked class's row plate while it
+ * is drawn (CD-16: Figma's own halo, its three holes left empty so the text beneath shows), else
+ * the live halo; then one radio group in content order, labelled by the step heading. Only the
+ * cards take pointer events.
  */
 export function ClassSelectCardRow({
   labelledBy,

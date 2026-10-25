@@ -1,7 +1,7 @@
 /* The class step (62:125) fills the artboard and creates no stacking context (no z-index,
-   transform, filter, opacity, isolation or containment; §5.15): its children stack in
-   SelectionStage's artboard, where the card row's z-index 1 lifts it above the shell's banner,
-   countdown and badge, as 62:146 is 62:125's top-most layer. */
+   transform, filter, opacity, isolation or containment; Figma's layer order, reference 15 §2):
+   its children stack in SelectionStage's artboard, where the card row's z-index 1 lifts it above
+   the shell's banner, countdown and badge, as 62:146 is 62:125's top-most layer. */
 .step {
   position: absolute;
   inset: 0;

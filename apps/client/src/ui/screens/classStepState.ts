@@ -29,7 +29,7 @@ export function initialClassStep(
   };
 }
 
-/** Picks `classId`; a locked or unknown class leaves the state unchanged (CS5). */
+/** Picks `classId`; a locked or unknown class leaves the state unchanged (HC-F2). */
 export function pickClass(
   state: ClassStepLocal,
   cards: readonly ClassStepCard[],

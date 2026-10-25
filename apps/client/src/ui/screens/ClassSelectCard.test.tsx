@@ -112,8 +112,8 @@ describe('ClassSelectCard', () => {
     expect(render('magus')).toContain('src="/assets/test/magus-card-art.webp"');
   });
 
-  // OD-1 without a plate (WP-CLASS CSS audit C1): drawn at the art's origin, the overlay's 1 px
-  // stroke left a light line missing along three arches (Harbinger art 1 px left of Figma's).
+  // OD-1 without a plate (the visual audit of 62:125): drawn at the art's origin, the overlay's
+  // 1 px stroke left a light line missing along three arches (Harbinger art 1 px left of Figma's).
   it("draws the overlay's 1 px stroke at its own node in cover mode, off the art's stroke", () => {
     const coverTransform = (look: string): string =>
       new RegExp(

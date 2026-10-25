@@ -11,7 +11,8 @@ import { legendSlot } from './legendSelectLayout';
  * step heading; each card in its slot (`legendSlot`), the picked one enlarged in place. Beneath
  * them the live halo (61:3) while no row plate is drawn: with `isRowPlateShown` the plate holds
  * the halo and the picked card's art, so the halo is dropped and the picked card draws only its
- * text, focus ring and hit area (I-69). The row plate itself is the step's (§5.15).
+ * text, focus ring and hit area (CD-16). The row plate itself is the step's (Figma's layer
+ * order, reference 15 §2).
  */
 export function LegendSelectCardRow({
   labelledBy,

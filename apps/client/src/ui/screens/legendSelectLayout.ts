@@ -12,7 +12,7 @@ import type { CardTextOffsets, LegendCardLook, LegendSlot } from './legendSelect
 import { offset } from './selectionGeometry';
 import type { FramePoint } from './selectionGeometry.types';
 
-/** The row's centre and its mean slot pitch (321.33 left, 322.33 right; SUB P3) for 1, 2 or 4+. */
+/** The row's centre and its mean slot pitch (321.33 left, 322.33 right; CD-14) for 1, 2 or 4+. */
 const ROW_CENTRE_X = 960;
 const SLOT_PITCH = 321.83;
 
@@ -65,7 +65,7 @@ const FIGMA_ROW: readonly LegendSlot[] = [
 
 /**
  * Where slot `index` of a row of `count` Legends puts its card and refraction copy: the Figma's
- * slots for three (enlarged in place, neighbours fixed; SUB P1), otherwise slots on the mean pitch
+ * slots for three (enlarged in place, neighbours fixed), otherwise slots on the mean pitch
  * centred on the artboard (1–2 Legends, CD-14).
  */
 export function legendSlot(count: number, index: number): LegendSlot {

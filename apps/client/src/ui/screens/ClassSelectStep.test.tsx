@@ -61,7 +61,7 @@ const FIGMA_CONTENT: DisplayCatalogue = {
   ),
 };
 
-/** The same as `buildDisplayCatalogue` resolves it on the `'css'` renderer (I-80). */
+/** The same as `buildDisplayCatalogue` resolves it on the `'css'` renderer (DEC-54). */
 const CSS_CONTENT: DisplayCatalogue = {
   ...FIGMA_CONTENT,
   legendClasses: FIGMA_CONTENT.legendClasses.map((card) => ({

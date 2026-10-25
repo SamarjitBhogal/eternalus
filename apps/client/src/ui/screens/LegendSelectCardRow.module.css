@@ -1,6 +1,6 @@
 /* The row covers the artboard and creates no stacking context (no z-index, filter, opacity or
    transform), so its halo layers (-1) and cards (0, 1) stack with the step's other elements in the
-   artboard (§5.15). Only the cards take the pointer. */
+   artboard (Figma's layer order, reference 15 §2). Only the cards take the pointer. */
 .row,
 .cards {
   position: absolute;

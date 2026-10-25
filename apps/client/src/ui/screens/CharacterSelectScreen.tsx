@@ -15,7 +15,7 @@ import { LegendSelectStep } from './LegendSelectStep';
 import { SessionCountdown } from './SessionCountdown';
 import { useRememberedClassId } from './useRememberedClassId';
 
-/** Which component draws each step of the phase (F1). */
+/** Which component draws each step of the phase (HC-F1). */
 const SELECTION_STEPS: Readonly<Record<SelectionStep, ComponentType<SelectionStepProps>>> = {
   class: ClassStep,
   legend: LegendSelectStep,
@@ -29,7 +29,7 @@ const STEP_VIGNETTES: Readonly<Record<SelectionStep, readonly VignetteEdge[]>> =
 
 /**
  * Character select (13 §2, reference 14 §2): the shell of both steps on one scaled artboard.
- * The step follows the session (the class step until a class is selected, F1); the shared SVG
+ * The step follows the session (the class step until a class is selected, HC-F1); the shared SVG
  * defs come first, the banner, countdown and team badge after the step. It remembers the last
  * selected class, so Back from the Legend step returns to it, picked and focused (CD-11). Takes
  * no props: it never renders the game viewport `App` passes every screen.

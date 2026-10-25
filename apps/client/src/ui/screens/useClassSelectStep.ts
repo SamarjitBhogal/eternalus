@@ -35,9 +35,9 @@ type ClassSelectStepModel = {
    * (alternate) takes the focus on mount.
    */
   readonly autoFocusClassId: LegendClassId | null;
-  /** The picked class's row plate while it is loaded and boxed (I-69's one predicate), else `null`. */
+  /** The picked class's row plate while loaded and boxed (one predicate, CD-16), else `null`. */
   readonly rowPlate: RowPlate | null;
-  /** Select Class's chrome plate, for every pick (FID-R4-01); `null` = live CSS. */
+  /** Select Class's chrome plate, for every pick (CD-16); `null` = live CSS. */
   readonly selectClassChromeAssetId: AssetId | null;
   readonly actions: ClassStepActions;
   /** Arrow / Home / End on the card at `index`: picks where it lands and moves the focus there. */
@@ -51,9 +51,9 @@ const toStepCard = (card: LegendClassCard): ClassStepCard => ({
 
 /**
  * The class step's model for either layout. The pick is local until Select Class / View Details
- * (CS3): a hover or focus previews a class in the panel, arrows move the focus and pick where
- * they land (I-14), nothing is emitted meanwhile. `preferredClassId` (Back) is picked again and
- * focused on mount. The row plate is decided here once, from the pick (I-69).
+ * (HC-F1): a hover or focus previews a class in the panel, arrows move the focus and pick where
+ * they land, nothing is emitted meanwhile. `preferredClassId` (Back) is picked again and
+ * focused on mount. The row plate is decided here once, from the pick (CD-16).
  */
 export function useClassSelectStep(preferredClassId: LegendClassId | null): ClassSelectStepModel {
   const cards = useAppSelector(contentSlice.selectors.selectLegendClasses);

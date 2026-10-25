@@ -7,7 +7,7 @@ import type { SelectionStepProps } from './characterSelect.types';
 import { ClassSelectAltStep } from './ClassSelectAltStep';
 import { ClassSelectStep } from './ClassSelectStep';
 
-/** Which component draws the class step (O5: a content switch, never a player setting). */
+/** Which component draws the class step (DEC-52: a content switch, never a player setting). */
 const CLASS_STEP_LAYOUTS: Readonly<Record<ClassSelectLayout, ComponentType<SelectionStepProps>>> = {
   primary: ClassSelectStep,
   alternate: ClassSelectAltStep,

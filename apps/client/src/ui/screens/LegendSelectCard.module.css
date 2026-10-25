@@ -1,7 +1,7 @@
 /* One crisp Legend card (55:270): a radio at its slot's integer floor (inline left/top, I-45). Its
    live layers and text carry the slot's fractional remainder; its art rendition sits at its own
    integer box (inline --art-*). Idle cards stack above the picked one, so the picked glow passes
-   under its neighbours as in Figma (55:267 first, then 55:268, 55:269; SUB §2). */
+   under its neighbours as in Figma (55:267 first, then 55:268, 55:269). */
 .card {
   position: absolute;
   padding: 0;
@@ -51,7 +51,7 @@
 }
 
 /* 55:256 inner frame (16.84, 22.32) 301.52 × 646.37: 36 % fill, 1 px parchment, two azure radius-5
-   glows (sel-glow-inner). Its GLASS lies under the opaque art (S§5 item 3) and is not drawn. */
+   glows (sel-glow-inner). Its GLASS lies under the opaque art and is not drawn. */
 .card[data-look='picked'] [data-arch-layer='inner-outline'] {
   left: 16px;
   top: 22px;
@@ -67,7 +67,7 @@
   stroke-width: 1px;
 }
 
-/* 58:354 Rectangle 32 (17, 507) 301 × 162, 36 %, beneath the art as designed (Q9). */
+/* 58:354 Rectangle 32 (17, 507) 301 × 162, 36 %, beneath the art as designed. */
 .card[data-look='picked'] [data-arch-layer='text-scrim'] {
   left: 17px;
   top: 507px;

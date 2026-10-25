@@ -27,7 +27,7 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Regions (Figma 62:231 anchoring, HUD spec §1); every leaf positions itself inside its region. */
+/* Regions (Figma 62:231 anchoring); every leaf positions itself inside its region. */
 
 /* Ultimate cluster and abilities 62:240: (42, 946) 613 × 113, bottom 21. */
 .abilities {

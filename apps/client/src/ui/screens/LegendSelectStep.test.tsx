@@ -25,7 +25,7 @@ const withClasses = (
   edit: (card: LegendClassCard) => LegendClassCard,
 ): DisplayCatalogue => ({ ...content, legendClasses: content.legendClasses.map(edit) });
 
-/** TEST_CONTENT as `buildDisplayCatalogue` resolves it on the `'css'` renderer (I-80). */
+/** TEST_CONTENT as `buildDisplayCatalogue` resolves it on the `'css'` renderer (DEC-54). */
 const CSS_CONTENT: DisplayCatalogue = {
   ...withClasses(TEST_CONTENT, (card) => ({
     ...card,

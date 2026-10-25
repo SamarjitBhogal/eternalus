@@ -10,7 +10,7 @@ const METER_MAX = 100;
  * One role-rating bar of the Legend step (58:323): the axis label over an outlined track whose
  * fill spans `value` of the track's inner travel. A rated Legend's bar is a `meter`; an unrated
  * one (`null`) shows the empty track and is an image named "<label>: No data yet" with no value
- * attributes (I-87). Placed by its parent; one row is 401 × 38.
+ * attributes (CD-13). Placed by its parent; one row is 401 × 38.
  */
 export function LegendSelectRatingBar({
   label,

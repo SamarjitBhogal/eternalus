@@ -1,6 +1,7 @@
 /* 61:3 lies beneath every element of 58:271 but the backdrop and the bottom vignette (62:229),
    so both halo layers stack at -1: after the vignette (-1, earlier in the artboard) and below
-   everything at auto or above, the panel and the rating bars included (§5.15 paint order). */
+   everything at auto or above, the panel and the rating bars included (Figma's layer order,
+   reference 15 §2). */
 .glassLayer,
 .refractionLayer {
   position: absolute;

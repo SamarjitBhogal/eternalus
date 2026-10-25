@@ -49,7 +49,7 @@ describe('LegendSelectCardHalo', () => {
       new RegExp(`^<div class="${String(styles.glassLayer)}" aria-hidden="true">`),
     );
     expect(html).toContain(`<div class="${String(styles.refractionLayer)}" aria-hidden="true">`);
-    // The panes come first, as siblings of the blurred layer (backdrop-root rule, S§5).
+    // The panes come first, as siblings of the blurred layer (the CSS backdrop-root rule).
     expect(html.indexOf(String(styles.glassLayer))).toBeLessThan(
       html.indexOf(String(styles.refractionLayer)),
     );

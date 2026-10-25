@@ -41,7 +41,7 @@
   height: 5px;
 }
 
-/* Paint style "Stat Bar", relative to the fill's own width (S§3); the width is inline (13 §7). */
+/* Paint style "Stat Bar", relative to the fill's own width; the width is inline (13 §7). */
 .fill {
   display: block;
   height: 100%;

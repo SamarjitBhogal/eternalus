@@ -19,9 +19,10 @@ const { characterSelect: text } = STRINGS;
 /**
  * The class step of character select, primary layout (62:125): "Choose Your Class", the class
  * cards, the shown class's panel and Legends strip, Select Class and the allied roster. Picks are
- * local; only Select Class emits (`select-class { classId }`, CS3). Reading and tab order: the
- * cards (one tab stop), then Select Class. Paint order (§5.15): the card row is lifted above
- * everything else by its own module; this section creates no stacking context.
+ * local; only Select Class emits (`select-class { classId }`, HC-F1). Reading and tab order: the
+ * cards (one tab stop), then Select Class. Paint order (Figma's layer order, reference 15 §2):
+ * the card row is lifted above everything else by its own module; this section creates no
+ * stacking context.
  */
 export function ClassSelectStep({ preferredClassId }: SelectionStepProps): ReactElement {
   const model = useClassSelectStep(preferredClassId);

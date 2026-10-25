@@ -36,15 +36,15 @@ const LOOK_LAYERS: Readonly<Record<LegendCardLook, readonly ArchLayerKind[]>> = 
   idle: ['outer-outline', 'inner-outline', 'art', 'focus-ring'],
 };
 
-/** In row-plate mode the plate holds the picked card's art, frame and glows (I-69). */
+/** In row-plate mode the plate holds the picked card's art, frame and glows (CD-16). */
 const ROW_PLATE_LAYERS: readonly ArchLayerKind[] = ['focus-ring'];
 
 /**
  * One Legend card of the Legend step (55:267 picked, 55:268 idle): a `radio` button at its slot
  * with the arch drawn live and the sub-class title in the Legend's accent, then the Legend's name
- * for the player's team (omitted when it has none, I-83). The art is the look's rendition at its
+ * for the player's team (omitted when it has none, DEC-49). The art is the look's rendition at its
  * manifest draw box (I-45); without a box baked for this card, the art in cover mode or the
- * placeholder. In row-plate mode (`isRowPlateMode`, I-69) only the text, the focus ring and the
+ * placeholder. In row-plate mode (`isRowPlateMode`, CD-16) only the text, the focus ring and the
  * hit area are drawn. A locked Legend stays focusable with `aria-disabled` and a lock with "Locked".
  */
 export function LegendSelectCard({

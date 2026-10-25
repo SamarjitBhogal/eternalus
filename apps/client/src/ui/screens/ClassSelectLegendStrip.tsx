@@ -17,7 +17,7 @@ const INNER_INSET = 3;
 
 /**
  * The class panel's Legends strip (72:786): the "Legends" header box and rule, then up to three
- * mini arch cards with the Legend's name for the player's team, else its sub-class title (I-83).
+ * mini arch cards with the Legend's name for the player's team, else its sub-class title (DEC-49).
  * Informational: nothing in it is focusable or clickable. A class with no Legend shows the
  * pending line (CD-13); a portrait the catalogue lacks, one without a draw box, or one baked for
  * another slot, leaves the designed empty arch.

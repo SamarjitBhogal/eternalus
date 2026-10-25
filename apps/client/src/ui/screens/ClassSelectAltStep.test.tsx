@@ -8,7 +8,7 @@ import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassSelectAltStep } from './ClassSelectAltStep';
 import styles from './ClassSelectAltStep.module.css';
 
-/** The alternate layout with the Magus's 62:70 copy and flame icon (BCA-27). */
+/** The alternate layout with the Magus's 62:70 copy and flame icon (DEC-52). */
 const ALTERNATE: DisplayCatalogue = {
   ...TEST_CONTENT,
   classSelectLayout: 'alternate',
@@ -31,7 +31,7 @@ const ALTERNATE: DisplayCatalogue = {
   ),
 };
 
-/** The default `gadget-2` binding (View Details, F7). */
+/** The default `gadget-2` binding (View Details, HC-F7). */
 const VIEW_DETAILS_ON_C: readonly Binding[] = [
   { action: 'gadget-2', chords: [{ device: 'keyboard', code: 'KeyC', label: 'C' }] },
 ];
