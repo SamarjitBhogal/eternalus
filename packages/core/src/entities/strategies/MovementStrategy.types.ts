@@ -11,6 +11,17 @@ type NeighbourQuery = {
 };
 
 /**
+ * A lane's flow field as a strategy sees it. `map/FlowField` satisfies it; a port because
+ * `entities/` may not import `map/` (architecture 02 §2).
+ */
+export type FlowQuery = {
+  /** Whether the first `maxDistance` of the straight line between two points is walkable. */
+  isLineClear(fromX: number, fromY: number, toX: number, toY: number, maxDistance: number): boolean;
+  /** Writes the field's unit direction at `(x, y)` into `out`; `false` where it has none. */
+  directionAt(x: number, y: number, out: MutableVec2): boolean;
+};
+
+/**
  * What a movement strategy may read this tick (architecture 10 §9, 18 §5.2): the neighbour index
  * and `PathingSystem`'s scratch. A strategy reads them and keeps nothing.
  */
@@ -27,6 +38,8 @@ export type MovementContext = {
    * writable field: `PathingSystem` rewrites it for each member, so the context never allocates.
    */
   arrivalRadius: number;
+  /** The flow field of the unit's lane and team, or `null` when the match has none. */
+  readonly flow: FlowQuery | null;
   /** Scratch the strategy writes its answer into and returns, so nothing allocates. */
   readonly out: MutableVec2;
 };
