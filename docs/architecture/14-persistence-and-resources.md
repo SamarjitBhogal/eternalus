@@ -517,6 +517,9 @@ onProgress)` with byte progress from the manifest, `isLoaded`, `progress`, `urls
   1x or 2x file is fixed for the session. Not built yet: `get`, `AssetCache` and the canvas
   `ImageBitmap` path (no sprite atlas exists; Phase 6, sprint 6.3), and the audio and JSON loaders
   (no such assets).
+  An asset that fails to load never rejects its group: it is warned about through an injected
+  callback and listed in the load's outcome, and a failed rendition falls back to the entry's own
+  file; §12's typed error is not built.
 - **The manifest** is typed TypeScript in `data/resources/`: `AssetManifest.ts` concatenates one
   file per asset group (the ~300-line file rule; `selectionAssets.ts` and `matchAssets.ts` join
   part files) into the one `ASSET_MANIFEST`. An entry has a `file` and an optional `file2x` (each
