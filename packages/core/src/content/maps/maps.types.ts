@@ -92,7 +92,7 @@ export type MapFeatureDefinition = {
    *
    * TODO(sam): when structure content exists, the stronghold, wall, tower and cathedral names move
    * to `StructureDefinition.displayName` (one per kind, 04 §5); this field then keeps only kinds
-   * without a structure definition (capture-point) (DV-126).
+   * without a structure definition (capture-point).
    */
   readonly displayName: string | null;
 };

@@ -13,7 +13,7 @@ export type SpecDetailNames = {
 };
 
 /**
- * A Legend's own name on each team (OA3): the factions are mirror universes, so the Dark name is
+ * A Legend's own name on each team (DEC-49): the factions are mirror universes, so the Dark name is
  * the Light name spelled backwards. Both are stored; nothing computes one from the other.
  */
 export type LegendName = {
