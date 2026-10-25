@@ -235,8 +235,8 @@ export class Capturable {
 ```
 
 `CaptureSystem`: if exactly one team has units inside and `lockedBy === null`, progress moves
-toward that team; crossing a checkpoint threshold spawns that checkpoint's defenders (held by
-`GuardController` with the zone as home, [18](18-minion-system.md) §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
+toward that team; crossing a checkpoint threshold spawns that checkpoint's defenders (proposed: held by
+`GuardController` with the zone as home, [18](18-minion-system.md) MS-28, §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
 "Balrog-type" mob) and, when cleared, awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
 `StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,

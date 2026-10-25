@@ -1437,3 +1437,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: owner sign-off on the INBOX item; merge after #39 (this branch is cut from M2a).
+
+### 2026-10-25 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai (review fixes) — SamarjitBhogal + Claude Code
+
+- What was done: `/pr-review` on `13553b0..4f0feab` requested changes with four should-fixes,
+  all applied. (1) The new rows of doc 18's decision and entity tables and the plan's phase table
+  are now as wide as the existing columns, so Prettier no longer reflows the untouched rows (the
+  phases are renamed M6 Camps, M7 Bosses, M8 Rover, and the entity row "Zone defender"). (2)
+  `camp-cleared` is not in 03's event catalogue: §7.1 now says M6 adds it, with `SpawnSystem` as
+  the emitter only a `Recommendation:`. (3) Doc 07 §7 marks the defenders' `GuardController`
+  holding as proposed (MS-28). (4) M7 is also blocked by M3, since its done-when fights bot
+  Legends.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: draft PR to `phase/2-sprint-2-work`, merged after #39; the owner answers the MS-28
+  INBOX item.
