@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-10-25
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -311,13 +311,18 @@ owner in `INBOX.md` HC-T1:
   `bridge/selectors/` folder and the new `assetsSlice` ([13](13-game-interface.md) §10).
 - **Game.** `game/content/` builds the display catalogue the UI reads from core's display content
   (`coreCatalogue.ts`, `buildDisplayCatalogue.ts` and the presentation files) in place of
-  `placeholderCatalogue.ts`; `game/session/` gains `selectionAssetGroups.ts` and loses
-  `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`, `game/MatchHost.ts`,
-  `game/createBrowserMatch.ts` and `game/prepareMatchWorld.ts`; `game/useMatch.ts` is gone
-  (DEC-50).
-- **Core.** `loadDisplayContent()` is exported from `@eternalus/core`: the Legend and
-  Legend-spec display data, validated through the content rules, and the map features' display
-  names (DEC-49; ADR 0018, proposed); the specs live in `packages/core/src/content/legends/specs/`.
+  `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with the manifest's asset ids
+  and the developer overrides, so no `game/content/` module reads `data/`; the shipped catalogue for
+  tests is `game/content/__fixtures__/shippedCatalogue.ts`. `game/session/` gains
+  `selectionAssetGroups.ts` and loses `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`,
+  `game/MatchHost.ts`, `game/createBrowserMatch.ts` and `game/prepareMatchWorld.ts`;
+  `game/useMatch.ts` is gone (DEC-50).
+- **Core.** `loadDisplayContent()` is exported from `@eternalus/core`: the Legend and Legend-spec
+  display data, the locked class cards (DEC-48) and the team display names, each catalogue validated
+  through the content rules, and the map features' display names (DEC-49; ADR 0018). It takes
+  optional catalogues, each defaulting to the shipped one. The specs live in
+  `packages/core/src/content/legends/specs/`, the locked cards in `content/legends/locked/` and the
+  team names in `content/teams/teamDisplayNames.ts`.
 
 ## Related
 

@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-25
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -33,7 +33,7 @@ in Phase 4. Every number below is `TUNE` from the game doc's "Stronghold Defense
 - **Branch:** `phase/2-structures-and-combat` (stacked on `phase/1-…` until it merges).
 - **Weeks:** 4–5 (2026-10-26 → 2026-11-06). Week 4: sprints 2.1, 2.2, 2.6, 2.8; week 5:
   sprints 2.3, 2.4, 2.5, 2.7, 2.9.
-- **Requirement areas served:** "FR: lanes & towers", "FR: strongholds & walls", "FR: capture
+- **Requirement areas served:** "FR: character select" (FR-119, the Legend pick; Track B carry-over), "FR: lanes & towers", "FR: strongholds & walls", "FR: capture
   points", "FR: hordes & spawning" (schedule), "FR: map & minimap" (structures on both), "FR:
   runtime monitoring & logging" (pass-through and unexplained-death checks), "NFR: no
   hardcoding" (ammo, multipliers and schedule in content).

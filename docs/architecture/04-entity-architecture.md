@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-22
+last-reviewed: 2026-10-25
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -265,16 +265,18 @@ are `Camp` structures (neutral spawners) and bosses are `Boss` units with `team:
 "neutral" queries are a filter on `Team`, not an `instanceof`. Nothing is lost: every place the
 old design would have said `NeutralEntity` now says `team === 'neutral'`.
 
-## 9. Sub-classes and specialisations (D11, post-MVP)
+## 9. Sub-classes and specialisations (D11)
 
-Assassin/Knight/Paladin, Colossus, Necromancer/Druid/Mage and Hover/Strafe arrive after the MVP
-as `LegendSpecDefinition` data (stat modifiers, ability overrides, pick-up strategy, skin) that the
-existing class consumes; no new code class. Only unique behaviour earns a class, and note the
-depth budget: `Entity → Unit → Legend → Warrior` already uses the three levels, so an
-`Assassin extends Warrior` is forbidden. A behaviour-unique specialisation becomes a **sibling**
-concrete kind under `Legend` (`Necromancer extends Legend`) whose definition `extends: 'magus'`
-for its data; shared behaviour is reached through strategies and components, never through a
-fourth inheritance level.
+Sub-classes (Legends) are MVP (ADR 0018), each as `LegendSpecDefinition` data (stat modifiers,
+ability overrides, pick-up strategy, skin) that the existing class consumes; no new code class. The
+roster is content (the specs in `packages/core/src/content/legends/specs/` and the class files
+beside them), never copied into a doc. The player already picks a Legend at character select as
+display and setup data (DEC-49); its gameplay is MVP scope, and the phase that builds it is open
+(`INBOX.md` HC-Q17). Only unique behaviour earns a class, and note the depth budget:
+`Entity → Unit → Legend → Warrior` already uses the three levels, so a sub-class class extending
+`Warrior` is forbidden. A behaviour-unique specialisation becomes a **sibling** concrete kind under
+`Legend` (`<Name> extends Legend`) whose definition `extends` its class's id for its data; shared
+behaviour is reached through strategies and components, never through a fourth inheritance level.
 
 ## 10. Renaming is cheap by rule
 

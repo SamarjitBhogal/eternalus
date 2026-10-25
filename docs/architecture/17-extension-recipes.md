@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-10-25
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -88,9 +88,12 @@ R14 "new view" and R16 "new command".
 - **Skill:** `new-entity` · [04 §12](04-entity-architecture.md#12-worked-example-adding-a-fourth-legend-class).
   Untouched: every system, `LoadoutScreen`, `LegendView`, the minimap, keybindings, the store.
 
-### R2. Add a Legend specialization (post-MVP)
+### R2. Add a Legend specialization
 
-- **When:** Assassin/Knight/Paladin, Colossus, Necromancer/Druid/Mage, Hover/Strafe (D11): stat
+- **When:** a class gains a sub-class (Legend), or a sub-class gains its gameplay (D11; MVP scope,
+  ADR 0018, its phase open in `INBOX.md` HC-Q17). The roster is content
+  (`packages/core/src/content/legends/specs/`), and the MVP already ships each spec's display and
+  setup part (`loadDisplayContent()`, DEC-49); this recipe adds the gameplay: stat
   modifiers, ability overrides, a pick-up id and a skin the existing class consumes. Behaviour no
   strategy can express becomes a **sibling** kind under `Legend` (R1), never a fourth level.
 - **Files:** `core/content/legends/specs/<id>.ts` (`LegendSpecDefinition`; the folder is a
@@ -100,7 +103,7 @@ R14 "new view" and R16 "new command".
 - **Tests:** `validateContent()` accepts an empty spec (the Phase 4.1 done-when); a spec changes
   exactly the documented stat at spawn; a `LoadoutRule` rejects a spec of another class.
 - **Docs:** the backlog row moves into a phase doc; `01-classes-and-subclasses.md` status.
-- **Skill:** `new-content`, or `new-entity` for a sibling class · [04 §9](04-entity-architecture.md#9-sub-classes-and-specialisations-d11-post-mvp).
+- **Skill:** `new-content`, or `new-entity` for a sibling class · [04 §9](04-entity-architecture.md#9-sub-classes-and-specialisations-d11).
 
 ### R3. Add a mob type
 
@@ -564,12 +567,17 @@ the branch are carried out today; the recipe text itself waits for the owner in 
   §14).
 - **A Legend's display data** (R2): one `LegendSpecDefinition` in
   `packages/core/src/content/legends/specs/` and its catalogue line, validated by the content
-  rules through `loadDisplayContent()`. It is display and setup data only (DEC-49; ADR 0018,
-  proposed); R2's gameplay part is unchanged and still post-MVP.
+  rules through `loadDisplayContent()`. It ships as display and setup data (DEC-49); sub-class
+  gameplay, R2's other part, is MVP scope, and the phase that builds it is open (ADR 0018;
+  `INBOX.md` HC-Q17).
 - **A screen or HUD element** (R19, R20, [13](13-game-interface.md) §9): a layout variant of one
   of the owner's frames is one content value and one registry entry (DEC-52, DEC-53).
-- **Display names** (R26): `warrior` displays "Legionnaire" and the reserved `flying` class
-  displays "Harbinger" as a locked card on the selection screen (DEC-48); the ids are unchanged.
+- **Display names** (R26): the class display names, including the reserved flying class shown as
+  a locked card (DEC-48), and the team names are core content: each class file's `displayName` in
+  `packages/core/src/content/legends/`, a `LockedClassDefinition` in `content/legends/locked/`
+  (returned by `loadDisplayContent()` as `lockedClasses`) and `content/teams/teamDisplayNames.ts`.
+  The ids are unchanged; the client adds only the locked card's look
+  (`game/content/classPresentation.ts`).
 - **A8:** the renderer is created (`Canvas2dRenderer.fromCanvas`) in `game/createBrowserMatch.ts`,
   the match factory bound only by `main.tsx` (DEC-50); it is still the composition root, so the
   anti-recipe's intent holds.

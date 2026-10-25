@@ -1565,3 +1565,68 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Checked 116 Markdown files under docs/." "Documentation check passed."
 - Next step: the working ids that resolve nowhere in the repository (the DV rows and the work
   package names) wait for a ruling; then the critic's second run.
+
+### 2026-10-25 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the pre-PR critic's rework round (lanes A and B) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (code; recorded by stream B from the orchestrator's facts and the lane reports):
+  - Lane A, `fix/hud-charselect-critic-a`, 20 commits for the critic's S1, S2, N4, N5, NF3, S4,
+    N9, N6, N7 and NF4: `loadDisplayContent()` takes injectable catalogues and both its
+    validations are tested; the locked fourth card, the Magus's alternate-layout description and
+    the team names are core display content; `main.tsx` injects the catalogue's known asset ids,
+    so `game/content/` reads no `data/` module; each placed image declares its draw box on its
+    manifest entry, published with the URLs, replacing five `ui/` tables (the HUD weapon art
+    included); the character-select shell is split into its own files and hooks; both card rows
+    share one tested focus helper, and Back returns focus to View Details in the alternate layout.
+  - Lane B, `fix/hud-charselect-critic-b`, 15 commits for N10 to N16, N2, N3 and N22: derived
+    selectors moved to `bridge/selectors/`; companion files renamed after their owners;
+    `classNames` moved to `ui/components/`; the glow buttons' plate boxes moved into their skin
+    rules; oversized files and functions split; sibling tests for `useAssetUrl`, `useStageScale`,
+    `FakeViewportCanvas` and `GameCanvasChrome`; a recording `FakeSessionContext` replaces
+    `spyContext`; the bridge re-exports core's `PlayableTeam` and `Team`; three constructors
+    gained TSDoc. `GameCanvasChrome`'s CSS stays in `GameCanvas.module.css` (a PR note).
+  - Merged into `feat/hud-and-character-select` as `751a057` (lane A), `e260398` (lane B) and
+    `f529a90` (with the docs round 4b56fc6). Conflicts: `testSessionDeps.ts` and
+    `FakeSessionContext` (lane B's recording fake, reading lane A's `shippedCatalogue()`), the
+    `WeaponPanel.tsx` imports, and `boxes: {}` added to lane B's three tests that dispatch
+    `groupUrlsChanged`.
+  - Not in this round: N1 (the test fixtures still live in `bridge/`) and S3 (a separate code
+    sweep of the working ids cited in code). Open gap: the one-line hook wiring
+    `rovingKeyDown(actions.move)` is untested; the helper is tested.
+  - Reports: `eternalus-agent-work/hud-charselect/critic/rework1/` (A1 to A4, B1 to B3), outside
+    the repository. The pixel re-shoot of the merged tree was still running when this entry was
+    written.
+- Checks run (merged tree, as reported by the orchestrator): `npm run check` → `EXIT=0`; core
+  "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %.
+- Next step: the pixel re-shoot result, the code sweep (S3), then the critic's second run.
+
+### 2026-10-25 — Phase 2 / Track B (S1 carry-over) / HUD and character select, ADR 0018 accepted as corrected, the PR register and doc drift (stream B, round B6) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only):
+  - The owner accepted ADR 0018 on 2026-10-24 and corrected it on 2026-10-25 (DEC-56, his words
+    quoted in the decisions log): sub-classes (Legends) are MVP, and the pick ships first as setup
+    data. ADR 0018 is rewritten to match, retitled "Sub-classes (Legends) are MVP" (the file keeps
+    its name) and accepted. Applied, revised to match: ADR 0006's Status line; FR-057 keeps only
+    mid-match class switching, and the new FR-119 (MVP) covers sub-classes and names the content
+    files instead of copying the roster; architecture 04 §9 (heading too), 17 R2 and the
+    architecture README's D11 row; the phase 2 and phase 4 plan items. HC-Q1 (5) is answered;
+    HC-Q17 asks which phase builds sub-class gameplay. DEC-56, FR-119 and HC-Q17 were checked
+    free on every local and remote ref after a fetch.
+  - The unapplied patch (INBOX HC-T1) now has 89 rows: the applied ones left it, T-100 to T-102
+    carry ADR 0018's id wording to `AGENTS.md`, 04 §10 and 17 R26 for the owner, and T-64, T-73
+    and T-78 now say sub-classes are MVP.
+  - New `docs/changelog/pr-feat-hud-and-character-select.md` (build ruling OD-35): the plan's
+    deviation table DV-01 to DV-138 with final DEC numbers, the applied ADR 0018 rows, and one
+    line for each working id the branch cites (249 ids, drafted from the plan's sources by two
+    subagents and reviewed; 14 render-log lines are marked as restated from the asset sources,
+    because that log was not recovered). A resolver script found a definition in the repository
+    for every id cited on the branch's added lines (849 ids, 0 unresolved).
+  - Status notes match the merged code: 02 §12 (`loadDisplayContent()` also returns the locked
+    cards and the team names, with optional catalogues; `main.tsx` injects the catalogue's asset
+    ids), 13 §10 and 14 §14 (draw boxes on manifest entries and in `asset-urls`), 17 §12 (the
+    display names are core content, named by file).
+  - Reference 15's appendix gains OD-34 to OD-36.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed."
+- Next step: the roster audit (B7), the owner's sign-offs (HC-T1, HC-B1, HC-C1, HC-Q17), the
+  code sweep and the critic's second run.

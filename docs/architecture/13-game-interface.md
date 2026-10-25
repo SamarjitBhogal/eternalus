@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-10-25
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -548,14 +548,14 @@ DEC-55). Where the text above differs, its corrections wait for the owner in `IN
   warned) opens the menu with `load-failed` until `BootScreen` offers a retry (plan Phase 5,
   sprint 5.2). Nothing produces `results` yet: `match-ended` comes with the `MatchDirector`
   (Phase 3, sprint 3.5).
-- **Bridge.** New events beyond §5's sketch: `structure-state`, `asset-urls` and `credits`; §5's
-  `capture-state` is now published;
-  `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md) §14);
-  `hud-state` is `{ player }` with no `spectatedLegendId` (no spectate producer yet). The
-  display types live in `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also
-  gains `selectionRules.ts`, `minimapRing.ts` and `legendNames.ts`, and `assetsSlice`. The HUD
-  data is in `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and
-  `match-setup` resets the setup, HUD and match slices so a rematch shows no stale HUD.
+- **Bridge.** New events beyond §5's sketch: `structure-state`, `asset-urls` (each image's URL and,
+  where the manifest declares one, its draw box) and `credits`; §5's `capture-state` is now
+  published; `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md)
+  §14); `hud-state` is `{ player }` with no `spectatedLegendId` (no spectate producer yet). The
+  display types live in `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains
+  `selectionRules.ts`, `minimapRing.ts` and `legendNames.ts`, and `assetsSlice`. The HUD data is in
+  `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and `match-setup` resets the
+  setup, HUD and match slices so a rematch shows no stale HUD.
 - **HUD data.** `MatchBridge` publishes `match-clock` and `hud-state` every 6 ticks and
   `structure-state` and `capture-state` every 30, from `Match`'s tick. Core's `Snapshot` has no
   `player`, so it projects the HUD player from the player's `EntitySnapshot` (health and maximum
@@ -565,18 +565,19 @@ DEC-55). Where the text above differs, its corrections wait for the owner in `IN
   state (sprint 2.6), XP and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
   [05](05-abilities-weapons-and-loadouts.md) §15).
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
-  (weapon art and the weapon-level bar, OQ-63), `GadgetBar` (the gadget slots, each with
-  `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64), `StructureStrip`, `ObjectiveTracker`
-  (with an allegiance flag, register CD-03) and `CrystalStatus`. `HealthBar` and `AetherBar` are
-  one-line leaves over `ResourceBar`; no shield segment is drawn, because the snapshot carries no
-  shield data and no plan entry yet publishes it to the HUD. `AbilityBar` places its slots at the
-  frame's fixed positions (the ultimate, then abilities 1 to 3; the gadgets in `GadgetBar`), and the
-  `default-action` prompt of [05](05-abilities-weapons-and-loadouts.md) §15 is not built; no plan
-  entry schedules it. `MatchClock` shows no phase label until `match-clock` carries the phase (Phase
-  3, sprint 3.5). `MinimapPanel` is a frame only: there is no `minimap-click` intent (the canvas
-  handles a click) and no `minimapVisible` setting, and the canvas draws the minimap inside the
-  HUD's ring ([06](06-map-and-minimap.md) §10). Not built, because the frames do not draw them, each
-  with the plan entry that schedules it: `Scoreboard` (named for Phase 3, sprint 3.5 in [the Phase 2
+  (the weapon art at its manifest draw box, and the weapon-level bar, OQ-63), `GadgetBar` (the
+  gadget slots, each with `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64),
+  `StructureStrip`, `ObjectiveTracker` (with an allegiance flag, register CD-03) and
+  `CrystalStatus`. `HealthBar` and `AetherBar` are one-line leaves over `ResourceBar`; no shield
+  segment is drawn, because the snapshot carries no shield data and no plan entry yet publishes it
+  to the HUD. `AbilityBar` places its slots at the frame's fixed positions (the ultimate, then
+  abilities 1 to 3; the gadgets in `GadgetBar`), and the `default-action` prompt of
+  [05](05-abilities-weapons-and-loadouts.md) §15 is not built; no plan entry schedules it.
+  `MatchClock` shows no phase label until `match-clock` carries the phase (Phase 3, sprint 3.5).
+  `MinimapPanel` is a frame only: there is no `minimap-click` intent (the canvas handles a click)
+  and no `minimapVisible` setting, and the canvas draws the minimap inside the HUD's ring
+  ([06](06-map-and-minimap.md) §10). Not built, because the frames do not draw them, each with the
+  plan entry that schedules it: `Scoreboard` (named for Phase 3, sprint 3.5 in [the Phase 2
   architecture plan](../plan/phase-2-architecture.md), with no task line yet), `Announcer` (Phase 2,
   sprint 2.8, and Phase 3, sprint 3.5), `DeveloperMenu` (v0 in Phase 1, sprint 1.5; complete in
   Phase 5, sprint 5.5) and `PerfOverlay` (v1 in Phase 1, sprint 1.5; v2 in Phase 5, sprint 5.5).

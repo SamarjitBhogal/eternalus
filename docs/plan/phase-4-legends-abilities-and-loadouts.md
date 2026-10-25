@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-25
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -59,7 +59,9 @@ Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architectu
       pending) and "Necromancy") applied through `StatusEffects`/modifiers. Owner: _. Test: each
       passive changes the documented stat. Done when: passives are entries, not subclasses.
 - [ ] **`LegendSpecDefinition` extension point** (D11: sub-classes as data-driven
-      specializations; no MVP content). Owner: _. Test: an empty spec is accepted by validation.
+      specializations; MVP since ADR 0018: the specs ship as display and setup data, and the phase
+      that builds their gameplay is open, `INBOX.md` HC-Q17). Owner: _. Test: an empty spec is
+      accepted by validation.
       Done when: [17-extension-recipes.md](../architecture/17-extension-recipes.md) shows the
       recipe.
 
