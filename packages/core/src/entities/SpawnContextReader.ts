@@ -1,3 +1,5 @@
+import type { ControllerSpawn } from '../components/ControllerBinding.types';
+import { CONTROLLER_IDS } from '../content/ai/controllerIds';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
 import { SPAWNABLE_TEAMS } from './SpawnContextReader.constants';
@@ -56,7 +58,24 @@ export class SpawnContextReader {
       );
     }
 
-    return { ...positioned, team };
+    const controller = SpawnContextReader.controllerOf(
+      SpawnContextReader.fields(context).controller,
+    );
+    return controller === undefined ? { ...positioned, team } : { ...positioned, team, controller };
+  }
+
+  /** A valid `Placement.controller`, or `undefined` for none (or one that is not valid). */
+  private static controllerOf(candidate: unknown): ControllerSpawn | undefined {
+    if (!SpawnContextReader.isObject(candidate)) {
+      return undefined;
+    }
+    const { controllerId, profileId, memory } = candidate;
+    const id = CONTROLLER_IDS.find((known) => known === controllerId);
+    if (id === undefined || typeof profileId !== 'string' || !SpawnContextReader.isObject(memory)) {
+      return undefined;
+    }
+    // Safe: memory is the plain data the spawner wrote (`Placement.controller` is typed).
+    return { controllerId: id, profileId, memory: memory as ControllerSpawn['memory'] };
   }
 
   private static fields(context: unknown): Readonly<Record<string, unknown>> {

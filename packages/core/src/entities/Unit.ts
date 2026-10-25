@@ -15,7 +15,8 @@ import { SpawnContextReader } from './SpawnContextReader';
  * Abstract base for entities of the `unit` family. It installs the components every unit has
  * (architecture 04 §1): `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider`
  * on the unit layer, `Vision` and `StatusEffects`, from a definition, a position and a team; plus
- * `Combat` when the definition has an attack and a `ControllerBinding` when it names a controller.
+ * `Combat` when the definition has an attack and a `ControllerBinding` when the spawn or the
+ * definition names a controller (the spawn's wins).
  */
 export abstract class Unit extends Entity {
   /** Always `'unit'`. */
@@ -41,9 +42,9 @@ export abstract class Unit extends Entity {
    * @throws Error when the context has no definition, position or team.
    */
   protected override installComponents(context: unknown): void {
-    const { definition, position, team } = new SpawnContextReader(this).placed<UnitDefinition>(
-      context,
-    );
+    const { definition, position, team, controller } = new SpawnContextReader(
+      this,
+    ).placed<UnitDefinition>(context);
 
     this.addComponent(new Transform(position, definition.footprintRadius));
     this.addComponent(new Health(definition.baseHealth));
@@ -55,7 +56,11 @@ export abstract class Unit extends Entity {
     if (definition.attack !== undefined) {
       this.addComponent(new Combat(definition.attack));
     }
-    if (definition.controller !== undefined) {
+    if (controller !== undefined) {
+      this.addComponent(
+        new ControllerBinding(controller.controllerId, controller.profileId, controller.memory),
+      );
+    } else if (definition.controller !== undefined) {
       this.addComponent(
         new ControllerBinding(definition.controller, definition.aiProfile ?? definition.controller),
       );

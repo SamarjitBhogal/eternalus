@@ -74,3 +74,24 @@ export type AggroRuleDefinition = {
   /** A returning mob this close to its formation slot is marching again. */
   readonly reformDistance: number;
 };
+
+/** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */
+export type AiMemory = Readonly<Record<string, string | number | boolean | null>>;
+
+/**
+ * How hard a bot Legend plays (architecture 11 §4.2): a `BotDifficultyDefinition` in
+ * `content/ai/difficulties/`, named by the bot's AI profile. Distances are metres.
+ */
+export type BotDifficultyDefinition = {
+  readonly id: string;
+  /** Below this fraction of its health the bot retreats (`Survive`). */
+  readonly retreatHealthFraction: number;
+  /** A retreating bot rejoins its lane at or above this fraction of its health. */
+  readonly rejoinHealthFraction: number;
+  /** Enemies this close make the bot fight (`Fight`). */
+  readonly engageRadius: number;
+  /** A bot this close to where it is going stops there. */
+  readonly arrivalDistance: number;
+  /** The `UtilityScorer`'s weight for each target consideration. */
+  readonly utilityWeights: Readonly<Record<'closeness' | 'weakness', number>>;
+};

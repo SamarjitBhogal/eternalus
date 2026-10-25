@@ -134,6 +134,12 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
     `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
     (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
+- [ ] **Minion M3 — bot numbers and base healing.** (1) The bot difficulty knobs have no
+      reference values; `content/ai/difficulties/normal.ts` starts them as `TUNE`: retreat
+      below 30% health, rejoin at 80%, engage within 12 m, arrive within 2 m, closeness and
+      weakness weighted 1 each. Confirm or give values. (2) Doc 11 §4.2's `Survive` sends a bot
+      "back to base", and the Phase 3 plan expects it to "return to base to heal", but nothing
+      heals a Legend yet and no doc says how. Is there base healing (where, how fast)?
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads

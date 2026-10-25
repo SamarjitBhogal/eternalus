@@ -1,3 +1,4 @@
+import type { ControllerSpawn } from '../components/ControllerBinding.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -17,4 +18,6 @@ export interface DefinitionSource {
 export type Placement = {
   readonly position: Vec2;
   readonly team?: Team;
+  /** A controller for this entity alone, in place of its definition's (a bot Legend). */
+  readonly controller?: ControllerSpawn;
 };

@@ -1,3 +1,4 @@
+import type { ControllerSpawn } from '../components/ControllerBinding.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 
@@ -18,4 +19,6 @@ export type PositionedSpawnContext<Definition extends DefinitionRef> = {
 export type PlacedSpawnContext<Definition extends DefinitionRef> =
   PositionedSpawnContext<Definition> & {
     readonly team: Team;
+    /** The spawn's own controller, when it gives one (`Placement.controller`). */
+    readonly controller?: ControllerSpawn;
   };

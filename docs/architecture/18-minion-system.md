@@ -82,7 +82,11 @@ and its `Brain` are deleted (DEC-35). Pull request M2a adds brains, the `Control
 Pull request M2b adds `MinionController` (§6.1) with the `lane-minion` aggro content and the
 shared ranking helper `ai/aggroRank`, minion attacks from `balancing.md`, `stop` clearing the
 attack target (MS-26), the chase in `PathingSystem` (§5.2) and the anchor holding while the leader
-engages (§4). Lane objectives, gate holding and guards (M2c onward) wait for structure entities. The pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
+engages (§4). Pull request M3 adds the bot laners (§8): `SimulationOptions.roster` (the bot
+Legends, spawned when the match is built at their own end of their lane, in ranks), `assignLanes`
+for MS-20, a spawn's own controller and starting memory (`Placement.controller`, holding the lane)
+and `BotLegendController` playing doc 11 §4.2's laner tree. The Rover waits for its controller
+(M8). Lane objectives, gate holding and guards (M2c onward) wait for structure entities. The pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
 

@@ -58,4 +58,24 @@ describe('SpawnContextReader', () => {
       );
     }
   });
+
+  it('reads the spawn’s own controller, and ignores one that is not valid', () => {
+    const controller = { controllerId: 'bot-legend', profileId: 'normal', memory: { lane: 'l0' } };
+    const base = { definition: DEFINITION, position: POSITION, team: 'light' };
+
+    expect(reader.placed<typeof DEFINITION>({ ...base, controller }).controller).toEqual(
+      controller,
+    );
+    expect(reader.placed<typeof DEFINITION>(base).controller).toBeUndefined();
+    for (const bad of [
+      'bot-legend',
+      { ...controller, controllerId: 'wizard' },
+      { ...controller, profileId: 3 },
+      { ...controller, memory: null },
+    ]) {
+      expect(
+        reader.placed<typeof DEFINITION>({ ...base, controller: bad }).controller,
+      ).toBeUndefined();
+    }
+  });
 });

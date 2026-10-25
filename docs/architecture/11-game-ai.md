@@ -342,8 +342,16 @@ work named:
   it.
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
-- The registry holds `MinionController` (M2b); the other controllers are absent until their
-  phases, so it is a partial map.
+- The registry holds `MinionController` (M2b) and `BotLegendController` (M3); the other
+  controllers are absent until their phases, so it is a partial map.
+- `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
+  (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
+  with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness
+  and weakness, picking the best score with an id tie-break (no weighted-random pick yet). A
+  `BotDifficultyDefinition` (`content/ai/difficulties/`) holds only the knobs the tree reads;
+  `reactionDelayTicks`, `aimErrorRadius` and `abilityUseChance` join with aiming and abilities.
+  A bot gets its controller from its spawn (`Placement.controller`), with its lane in the brain's
+  starting memory, rather than from its Legend definition.
 - A brain's `profileId` names an `AggroRuleDefinition` (`content/ai/aggro/`) directly; the
   `AiProfileDefinition` of §2, which would group aggro, cadence and difficulty, arrives when a
   second controller needs a profile. Controllers get their content through their constructor

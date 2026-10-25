@@ -20,6 +20,7 @@ import {
   LOG_RING_CAPACITY,
   PLACEHOLDER_MATCH_SEED,
   PLACEHOLDER_PLAYER,
+  placeholderRoster,
 } from './Match.constants';
 import { CLICK_SLOP } from './useMatch.constants';
 
@@ -64,7 +65,13 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger, map }),
+        simulation: new Simulation({
+          config,
+          seed: PLACEHOLDER_MATCH_SEED,
+          logger,
+          map,
+          roster: placeholderRoster(config.match.legendsPerTeam),
+        }),
         map,
         tickRate: config.tickRate,
         scheduler: new RafFrameScheduler({
