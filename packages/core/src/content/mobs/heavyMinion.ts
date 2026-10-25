@@ -12,6 +12,7 @@ export const HEAVY_MINION = {
   baseHealth: 1200, // TUNE: balancing.md heavy minion
   footprintRadius: 0.8, // TUNE: balancing.md heavy minion
   visionRadius: 10, // TUNE:
+  xpValue: 120, // TUNE: balancing.md "XP sources" (heavy minion kill)
   movementStrategy: 'lane-follow',
   movement: {
     maxSpeed: 2.8, // TUNE: m/s, balancing.md heavy minion

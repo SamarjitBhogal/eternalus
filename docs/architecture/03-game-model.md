@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-22
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -37,7 +37,7 @@ carried over unchanged.
 flowchart LR
   IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q[CommandQueue]
   Q -->|next tick| APPLY[CommandApplySystem]
-  APPLY --> SYS[SystemPipeline: AiSystem ... DeathSystem ... InvariantSystem]
+  APPLY --> SYS[SystemPipeline: AiSystem ... MovementSystem, CombatSystem, DeathSystem ... InvariantSystem]
   SYS -->|mutates| STATE[(GameState)]
   SYS -->|emits| EV[GameEvents]
   SYS --> SNAP[SnapshotSystem]
@@ -163,7 +163,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | Event                               | Payload                                                | Emitted by                        | Typical listeners                                                  |
 | ----------------------------------- | ------------------------------------------------------ | --------------------------------- | ------------------------------------------------------------------ |
 | `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem` | `SnapshotSystem`, views                                            |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause }`                    | `DeathSystem` only                | `HordeSystem`, `ProjectilePool`, invariants                        |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                | `HordeSystem`, `ProjectilePool`, invariants                        |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                  | `ProgressionSystem` (assists), `AiSystem` (aggro)                  |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                   | `DeathSystem`, `ProgressionSystem`, `Scoring`                      |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                 | `SpawnSystem` (enraged hordes), `StructureSystem` (walls, shields) |
@@ -172,7 +172,8 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                   | `Scoring`, `MatchDirector`, `StatusEffectSystem`                   |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchDirectorSystem`             | `SpawnSystem`, `Announcer`                                         |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                   | views (VFX), `Announcer`                                           |
-| `status-applied` / `status-expired` | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`              | views, HUD                                                         |
+| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)    | views, HUD                                                         |
+| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`              | views, HUD                                                         |
 | `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`     | `MinimapView`                                                      |
 | `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`               | `AbilitySystem` (scaling), HUD                                     |
 | `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                  | `HordeSystem`, views                                               |
