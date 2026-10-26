@@ -8,6 +8,7 @@ import { STRINGS } from '../strings';
 import { MINI_SLOT_LEFTS, MINI_TOP } from './ClassSelectLegendStrip.constants';
 import styles from './ClassSelectLegendStrip.module.css';
 import { isBakedAt } from './isBakedAt';
+import { artBoxVars } from './selectionGeometry';
 
 /** A mini card's layers, bottom to top: outer frame 72:801, inner frame 72:802, portrait 72:803. */
 const MINI_LAYERS: readonly ArchLayerKind[] = ['outer-outline', 'inner-outline', 'art'];
@@ -56,16 +57,7 @@ export function ClassSelectLegendStrip({
                 className={styles.mini}
                 data-slot={index}
                 data-art-mode={box === undefined ? 'cover' : 'image'}
-                style={
-                  box === undefined
-                    ? undefined
-                    : cssVars({
-                        '--art-left': `${String(box.left - left)}px`,
-                        '--art-top': `${String(box.top - MINI_TOP)}px`,
-                        '--art-width': `${String(box.width)}px`,
-                        '--art-height': `${String(box.height)}px`,
-                      })
-                }
+                style={box === undefined ? undefined : cssVars(artBoxVars(box, left, MINI_TOP))}
               >
                 <ArchCard
                   layers={MINI_LAYERS}

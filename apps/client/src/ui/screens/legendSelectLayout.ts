@@ -9,7 +9,7 @@ import type { CSSProperties } from 'react';
 import type { RasterBox } from '../../bridge/catalogue.types';
 import { cssVars } from '../components/cssVars';
 import type { CardTextOffsets, LegendCardLook, LegendSlot } from './legendSelectLayout.types';
-import { offset } from './selectionGeometry';
+import { artBoxVars, offset, originRemainder, px } from './selectionGeometry';
 import type { FramePoint } from './selectionGeometry.types';
 
 /** The row's centre and its mean slot pitch (321.33 left, 322.33 right; CD-14) for 1, 2 or 4+. */
@@ -73,10 +73,6 @@ export function legendSlot(count: number, index: number): LegendSlot {
   return figmaSlot ?? slotAt(ROW_CENTRE_X + (index - (count - 1) / 2) * SLOT_PITCH);
 }
 
-const px = (value: number): string => `${String(value)}px`;
-/** Remainders to 4 decimals, finer than any Figma value they come from. */
-const remainder = (value: number): string => px(Number((value - Math.floor(value)).toFixed(4)));
-
 /**
  * The inline style of a card or copy root at `origin` (I-45): the root at the integer floor,
  * `--card-fx`/`--card-fy` = the fractional remainder its text leaves are moved by, the text's own
@@ -90,24 +86,16 @@ export function legendCardStyle(
 ): CSSProperties {
   const left = Math.floor(origin.x);
   const top = Math.floor(origin.y);
-  const art =
-    artBox === undefined
-      ? {}
-      : {
-          '--art-left': px(artBox.left - left),
-          '--art-top': px(artBox.top - top),
-          '--art-width': px(artBox.width),
-          '--art-height': px(artBox.height),
-        };
+  const fraction = originRemainder(origin);
   return {
     left,
     top,
     ...cssVars({
-      '--card-fx': remainder(origin.x),
-      '--card-fy': remainder(origin.y),
+      '--card-fx': px(fraction.x),
+      '--card-fy': px(fraction.y),
       '--title-dx': px(text.title),
       '--name-dx': px(text.name),
-      ...art,
+      ...(artBox === undefined ? {} : artBoxVars(artBox, left, top)),
     }),
   };
 }
