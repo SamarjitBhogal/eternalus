@@ -8,7 +8,13 @@ import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import glowStyles from '../components/GlowButton.module.css';
 import { chromePlateFor } from '../components/useGlowButtonChrome';
-import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
+import {
+  accessibleNames,
+  assetsWithBoxes,
+  renderWithStore,
+  TEST_CONTENT,
+  withoutPreloads,
+} from '../testStore';
 import haloStyles from './LegendSelectCardHalo.module.css';
 import { LegendSelectStep } from './LegendSelectStep';
 import styles from './LegendSelectStep.module.css';
@@ -60,10 +66,6 @@ function render(
     },
   });
 }
-
-/** React's server renderer hoists a `<link rel="preload">` per image ahead of the markup. */
-const withoutPreloads = (html: string): string =>
-  html.replace(/^(?:<link rel="preload"[^>]*\/>)+/, '');
 
 const FIGMA_STATE = { classId: 'magus', specId: 'oracle' } as const;
 const ROW_PLATE = /<img class="[^"]+" src="\/assets\/test\/oracle-row-plate\.webp"/;

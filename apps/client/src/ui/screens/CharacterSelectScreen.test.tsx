@@ -5,7 +5,7 @@ import type { DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import selectionStageStyles from '../components/SelectionStage.module.css';
-import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
+import { accessibleNames, autofocusedClassIds, renderWithStore, TEST_CONTENT } from '../testStore';
 import { CharacterSelectScreen } from './CharacterSelectScreen';
 import { ClassSelectStep } from './ClassSelectStep';
 import type { ScreenProps } from './screen.types';
@@ -39,12 +39,6 @@ function render(
 
 const vignettes = (html: string): string[] =>
   [...html.matchAll(/data-vignette="(\w+)"/g)].map(([, edge = '']) => edge);
-
-/** The `data-class-id` of every `role="radio"` card whose start tag carries `autofocus`. */
-const autofocusedClassIds = (html: string): string[] =>
-  (html.match(/<button[^>]*role="radio"[^>]*>/g) ?? [])
-    .filter((tag) => tag.includes('autofocus'))
-    .map((tag) => /data-class-id="([^"]*)"/.exec(tag)?.[1] ?? '');
 
 /** TEST_CONTENT with the shipped catalogue's two selection sets (one per playable team). */
 const SELECTION_SETS_CONTENT: DisplayCatalogue = {
