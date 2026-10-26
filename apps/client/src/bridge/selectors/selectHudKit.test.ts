@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ClassHudDisplay, DisplayCatalogue } from '../catalogue.types';
-import { classCardFixture } from '../__fixtures__/catalogueFixtures';
-import { contentSlice } from '../slices/contentSlice';
-import { matchSetupSlice } from '../slices/matchSetupSlice';
+import type { ClassHudDisplay } from '../catalogue.types';
+import { classCardFixture, pickedClassState } from '../__fixtures__/catalogueFixtures';
 import { selectHudKit } from './selectHudKit';
 
 const WARRIOR_KIT: ClassHudDisplay = {
@@ -17,19 +15,7 @@ const CLASSES = [
   classCardFixture({ classId: 'flying', status: 'locked' }),
 ];
 
-const stateWith = (classId: string | null) => ({
-  content: contentSlice.reducer(
-    undefined,
-    contentSlice.actions.catalogueLoaded({
-      ...contentSlice.getInitialState(),
-      legendClasses: CLASSES,
-    } satisfies DisplayCatalogue),
-  ),
-  matchSetup: matchSetupSlice.reducer(
-    undefined,
-    matchSetupSlice.actions.select(classId === null ? null : { classId, specId: null }),
-  ),
-});
+const stateWith = (classId: string | null) => pickedClassState(CLASSES, classId);
 
 describe('selectHudKit', () => {
   it('is the picked class kit, the stored reference', () => {
