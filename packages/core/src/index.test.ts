@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { LEGEND_SPECS } from './content/legends/specs/legendSpecCatalogue';
 import * as core from './index';
 
 describe('@eternalus/core public API', () => {
@@ -27,7 +28,7 @@ describe('@eternalus/core public API', () => {
   it('keeps the raw content catalogues internal: display content comes from loadDisplayContent', () => {
     expect(Object.keys(core)).not.toContain('LEGEND_CLASSES');
     expect(Object.keys(core)).not.toContain('LEGEND_SPECS');
-    expect(core.loadDisplayContent().specs).toHaveLength(8);
+    expect(core.loadDisplayContent().specs).toEqual(LEGEND_SPECS.all());
   });
 
   it('generates the default map-1 from the default config', () => {
