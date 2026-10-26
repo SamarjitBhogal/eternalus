@@ -6,7 +6,7 @@ export type RoleRatings = {
 };
 
 /** Display names of a Legend's selection-screen detail rows (Figma 56:47); `null` until named. */
-export type SpecDetailNames = {
+type SpecDetailNames = {
   readonly signature: string | null;
   readonly specialty: string | null;
   readonly ultimate: string | null;

@@ -31,7 +31,6 @@ export type {
   LegendName,
   LegendSpecDefinition,
   RoleRatings,
-  SpecDetailNames,
 } from './content/legends/specs/legendSpecs.types';
 export { loadDisplayContent } from './content/loadDisplayContent';
 export type { DisplayContent } from './content/loadDisplayContent';
