@@ -219,8 +219,8 @@ Reply inline (`Decision: …`).
       your reference docs change only with your approval (PR #31), each edit shown to you in a table
       (PR #33). So the branch splits its edits (OD-26). **Applied, append-only:** one
       Implementation-status note each in architecture 01 (new §8), 02 (new §12), 05 (new §18), 06
-      §10, 13 §10, 14 §14 and 17 (new §12), recording what the branch built (13 §10 also lists your
-      decisions DEC-50 and DEC-52 to DEC-55, whose design text waits as T-86 to T-88); and
+      §10, 13 §10, 14 §14 and 17 (new §12), recording what the branch built (13 §10 also lists
+      your decisions DEC-50 and DEC-52 to DEC-55, whose design text waits as T-86 to T-88); and
       `last-reviewed` on each. **Applied when you accepted ADR 0018 as you corrected it (DEC-56):**
       its amendments, rows T-49 to T-49b (17 R2), T-52 to T-53b (04 §9), T-60 and T-60a (the
       architecture README's D11 row), T-91 (ADR 0006's Status line), T-92 to T-97 (FR-057 keeps
@@ -253,7 +253,7 @@ Reply inline (`Decision: …`).
       copies of class names and "post-MVP sub-classes" from your requirements, architecture,
       plans and reference docs and point to the content files; T-118, T-120, T-132 and T-133 are
       optional. T-125 changes architecture 18, which SamarjitBhogal owns, so it is his to approve,
-      not yours. T-100 to T-102 and T-136 to T-142 change "never renamed once used" to "never
+      not yours. T-100 to T-102 and T-136 to T-144 change "never renamed once used" to "never
       renamed once a save or a release stores it"; their wording waits for your answer to HC-Q18
       (4). Two texts of yours are stale and flagged, not edited: CP-13's "Why" line
       (`docs/requirements/02-coding-principles.md`: placeholder names keep their "(rename pending)"
@@ -387,6 +387,8 @@ Reply inline (`Decision: …`).
   | T-140 | 16, skills table, `new-content` (`docs/architecture/16-agentic-harness.md:176`)                                                                                                                                                                              | "ids never renamed"                                                       | once a save or a release stores them                                                                       | ADR 0018 point 5 (DEC-56; OD-36): no saves or release yet, so an id rename is a content refactor until they exist; roster audit (OD-38) (its note on id permanence)        | n                                                                                                             | pending owner; the wording waits for INBOX HC-Q18 (4)               |
   | T-141 | reference 08, a saved loadout with a renamed id (`docs/reference/game-design/08-loadout.md:85`)                                                                                                                                                              | "never renamed once used"                                                 | once a save or a release stores them                                                                       | ADR 0018 point 5 (DEC-56; OD-36): no saves or release yet, so an id rename is a content refactor until they exist; roster audit (OD-38) (its note on id permanence)        | n                                                                                                             | pending owner; the wording waits for INBOX HC-Q18 (4)               |
   | T-142 | suggestions README, rule 4 (`docs/reference/suggestions/README.md:46`)                                                                                                                                                                                       | "never renamed once used"                                                 | once a save or a release stores them                                                                       | ADR 0018 point 5 (DEC-56; OD-36): no saves or release yet, so an id rename is a content refactor until they exist; roster audit (OD-38) (its note on id permanence)        | n                                                                                                             | pending owner; the wording waits for INBOX HC-Q18 (4)               |
+  | T-143 | naming suggestions, in-code convention, rule 3 (`docs/reference/suggestions/naming.md:313`)                                                                                                                                                                  | "never change once used"; IDs stored in saves, replays and test fixtures  | once a save or a release stores them; until then a checked content refactor                                | ADR 0018 point 5 (DEC-56; OD-36): no saves or release yet, so an id rename is a content refactor until they exist; roster audit (OD-38) (found when round B8 was checked)  | n: unchanged once saves exist                                                                                 | pending owner; the wording waits for INBOX HC-Q18 (4)               |
+  | T-144 | naming suggestions, sketch, the `id` comment (`docs/reference/suggestions/naming.md:322`)                                                                                                                                                                    | "never renamed once used"                                                 | once a save or a release stores it                                                                         | ADR 0018 point 5 (DEC-56; OD-36): no saves or release yet, so an id rename is a content refactor until they exist; roster audit (OD-38) (found when round B8 was checked)  | n: a comment in a sketch                                                                                      | pending owner; the wording waits for INBOX HC-Q18 (4)               |
 
 - [ ] **HC-B1 — Better than the design, or new, for sign-off (`feat/hud-and-character-select`; asked
       after the pre-PR critic).** Reconciled on 2026-10-24 with the branch's deviation table (the DV
@@ -461,7 +463,16 @@ Reply inline (`Decision: …`).
       one class's weapon, so there is no original to keep live. Keep it, or say if the panel should
       stay empty. CD-21 is resolved by your answer to HC-Q13 (DEC-55), and CD-27
       records your direction on the effects renderers (DEC-54). The agents' scratch nodes 140:2 and
-      140:3 on page 96:2 join the others there for you to delete with the page.
+      140:3 on page 96:2 join the others there for you to delete with the page. On 2026-10-25,
+      having viewed the live host on 2026-10-24, you said: "if the pixel match is looking at what
+      i already saw in the live hosted preview, then i think the output is good enough for the
+      MVP. i have some functional UI/UX improvements i would like to make but they can wait for
+      sprint 3" (OD-39). You then looked at the live host on the current head and confirmed it
+      (OD-39a): the axe re-export (CD-37) is "fine as is", and the measured glow is fine for the
+      MVP. At your "sure, check it", the Legend title centring was checked: the title is centred,
+      and its ink box matches your 58:271 on all four sides. CD-25's mask, CD-30 and CD-38 go to
+      Sprint 3 with your UI/UX list (HC-U1). The rows still wait for your keep, change or reject;
+      tick this item when you have reviewed them.
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
@@ -579,15 +590,21 @@ Reply inline (`Decision: …`).
       tasks and move the backlog row.
 - [ ] **HC-Q18 — Making roster changes cheap: four decisions (not urgent; they save time later;
       OD-38).** An audit renamed a sub-class title, a Legend name, a class display name and a
-      Legend id on scratch copies to see what each change touches. The cheap fixes are code work in
+      Legend id on scratch copies to see what each change touches. The cheap fixes are now built in
       this pull request (team names, name guards and test pins read from content; a stale or
       unknown id fails loudly). Four need you:
       (1) **The art-id prefix guard.** A test in `game/content/coreCatalogue.test.ts` requires every
-      Legend art id to start with its Legend's id (plan ruling I-82). Today renaming one of the
-      named Legends' ids touches 39 files (23 text files and 16 renamed images), all failing loudly
-      until fixed. Recommendation: replace only that prefix check with the content-driven name guard
-      this branch adds, keep the rest of I-82, and record the change. Agents may not change a
-      guardrail without you.
+      Legend art id to start with its Legend's id (plan ruling I-82). Before the fixes, the audit
+      found that renaming one of the named Legends' ids touches 39 files (23 text files and 16
+      renamed images), all failing loudly until fixed. Recommendation: replace only that prefix
+      check with the content-driven name guard this branch adds, keep the rest of I-82, and record
+      the change. Agents may not change a guardrail without you. A trial after the fixes found a
+      limit: once `oracle` stops being an id, the new name guard sees "oracle" only as a title, so
+      it flags every `oracle-*` art id and the `--legend-oracle-accent` colour token, which is 7
+      asset ids in 20 image files and 1 token (the audit counted 5 ids and 16 files). Replacing
+      only the prefix check would not shorten that rename (inferred, not run). The same holds for
+      `catalyst` and `necromancer`, whose ids equal their lower-cased titles. The recommendation
+      shortens a rename only when the id and the title change together.
       (2) **Class id versus entity kind.** Today a class's content id is also the entity kind that
       spawns it. Option A: spawn by the definition's `kind`, as the mobs already do (the
       `light-minion` definition has kind `light-mob`), so renaming a class id is a content edit plus
@@ -600,8 +617,10 @@ Reply inline (`Decision: …`).
       content, but "Magus focus" shows why that may not read well. Your call.
       (4) **How far "renamable until a save or a release stores it" reaches.** ADR 0018 point 5
       says it for Legend ids. Does it cover every content id? Your answer decides the wording of
-      HC-T1 rows T-100 to T-102 and T-136 to T-142 (`AGENTS.md`, `CONTRIBUTING.md` and the docs
-      that say "never renamed once used").
+      HC-T1 rows T-100 to T-102 and T-136 to T-144 (`AGENTS.md`, `CONTRIBUTING.md` and the docs
+      that say "never renamed once used"). The fixes already apply point 5 to the locked class's
+      id too (the TSDoc in `packages/core/src/content/legends/locked/lockedClasses.types.ts`,
+      citing HC-F2), so your answer may change that comment as well.
       No answer needed: the About screen's provenance strings and credits stay as the record of
       where the art came from (DEC-51), and the asset `legionnaire-legend-portrait` is renamed to
       `warrior-legend-portrait` (its four files moved with checksums).
@@ -641,6 +660,13 @@ Reply inline (`Decision: …`).
       pre-launch screen instead: which? (3) For each one you want: on by default, or your
       original by default? (4) UE-07's low-health threshold: 25 % (the plan's recommendation) or
       your value? Your polish notes, when you have them, become new rows in the same plan.
+- [ ] **HC-U1 — For Sprint 3: your functional UI/UX improvements to the HUD and character select
+      (not urgent; you supply the list; OD-39).** On 2026-10-25 you judged the visuals good enough
+      for the MVP and said your functional UI/UX improvements can wait for Sprint 3 (HC-C1). Send
+      the list when Sprint 3 starts. It is not a defect list and does not block this pull request.
+      Three visual residuals travel with it (reference 15): CD-25's mask on the level number
+      (HC-C1 (1)), CD-30 (the glow floor and Select Class's open label-glow residual) and CD-38
+      (the staff in a Magus player's weapon panel).
 
 - [ ] **Combat — friendly fire (PR #34, `feat/combat-damage-pipeline`).** No reference doc says
       whether allies can hurt each other. The combat pipeline ships `FriendlyFireStep` as the

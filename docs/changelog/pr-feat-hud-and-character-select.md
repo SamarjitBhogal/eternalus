@@ -4,7 +4,7 @@ description: The record for the pull request of feat/hud-and-character-select (c
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-26
 tags: [changelog, pull-request, ui, hud, character-select]
 related:
   [
@@ -579,12 +579,30 @@ Protocol R1 (DEC-54) renders the owner's frames from duplicates on one scratch p
 
 ### The coordinated build's streams, lanes and rounds
 
-| Id                                       | What it is                                                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Stream A, stream B, stream C             | The three sessions of the coordinated build: A, integration and the merge train (the coordinating session, on the task branch); B, documentation (`docs/hud-charselect-docs`); C, the final visual audit and HUD rework (`fix/hud-charselect-visual`).                                                                                                                                           |
-| Lane A, lane B                           | The two code sessions of the pre-PR critic's rework (`fix/hud-charselect-critic-a` and `fix/hud-charselect-critic-b`).                                                                                                                                                                                                                                                                           |
-| B1, B2, B3, B4, B5, B6, B7, B8           | The coordinating session's follow-up rounds for stream B, each opened with "GO Bn" and closed with "DONE Bn": for example, B5 applied the pre-PR critic's doc findings, B6 recorded ADR 0018 as the owner corrected it and added this file, B7 rewrote the edit-table rows that copied names, and B8 is the roster audit's list of docs. Not the critic's finding B1 or the CSS audit's item B2. |
-| T-66, T-67, T-68, T-69, T-70, T-71, T-72 | Former rows of the `INBOX.md` HC-T1 edit table, which renamed reference 01's sub-class rows one by one; merged into T-65 in round B7 so that no row copies the roster (ADR 0018 point 4).                                                                                                                                                                                                        |
+| Id                                       | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stream A, stream B, stream C             | The three sessions of the coordinated build: A, integration and the merge train (the coordinating session, on the task branch); B, documentation (`docs/hud-charselect-docs`); C, the final visual audit and HUD rework (`fix/hud-charselect-visual`).                                                                                                                                                                                                                                             |
+| Lane A, lane B                           | The two code sessions of the pre-PR critic's rework (`fix/hud-charselect-critic-a` and `fix/hud-charselect-critic-b`).                                                                                                                                                                                                                                                                                                                                                                             |
+| Roster-fix round                         | Lane B's code round for build ruling OD-38 on `fix/hud-charselect-critic-b`: 12 commits (`f23ce76` to `f896faf`), merged together with round B8 into the task branch as `fcc7c85`. It built the roster audit's items P1 to P5, P7 and P11 (defined below).                                                                                                                                                                                                                                         |
+| B1, B2, B3, B4, B5, B6, B7, B8, B9       | The coordinating session's follow-up rounds for stream B, each opened with "GO Bn" and closed with "DONE Bn": for example, B5 applied the pre-PR critic's doc findings, B6 recorded ADR 0018 as the owner corrected it and added this file, B7 rewrote the edit-table rows that copied names, B8 is the roster audit's list of docs, and B9 records the roster-fix round and the owner's visual sign-off (build rulings OD-39 and OD-39a). Not the critic's finding B1 or the CSS audit's item B2. |
+| T-66, T-67, T-68, T-69, T-70, T-71, T-72 | Former rows of the `INBOX.md` HC-T1 edit table, which renamed reference 01's sub-class rows one by one; merged into T-65 in round B7 so that no row copies the roster (ADR 0018 point 4).                                                                                                                                                                                                                                                                                                          |
+
+### The roster audit's fix items (OD-38)
+
+The roster rename-friction audit (build ruling OD-38; its report is in the coordinating session's
+working folder) listed fixes P1 to P11. The roster-fix round built P1 to P5, P7 and P11; P8 waits
+for the owner (`INBOX.md` HC-Q18 (1)), and the audit's other items were not built.
+
+| Id  | What it is                                                                                                                                                                                                                                                         |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P1  | Team names come from content: the Results screen's "X wins." line and the explorer's stronghold labels.                                                                                                                                                            |
+| P2  | The content tests build their expected prose from `displayName`, so a rename that leaves the old word in the prose fails there.                                                                                                                                    |
+| P3  | The art-name guards build their list of names from content; the one asset id named after a display name, `legionnaire-legend-portrait`, became `warrior-legend-portrait`.                                                                                          |
+| P4  | Value pins outside the content's own tests read the expected names from content; the content's own tests keep their pins.                                                                                                                                          |
+| P5  | Stale or unknown ids fail loudly: (a) boot fails on a presentation key with no content entry; (b) character select logs ERROR for a class or Legend id the catalogue does not have, and ignores it; (c) the match logs ERROR when core rejects the player's spawn. |
+| P7  | Tests take the shipped Legend ids from content (helpers in `apps/client/src/game/content/__fixtures__/shippedCatalogue.ts`) instead of literals.                                                                                                                   |
+| P8  | Not built: replace plan ruling I-82's art-id prefix check with P3's guard. A test guardrail, so it needs the owner (`INBOX.md` HC-Q18 (1)).                                                                                                                        |
+| P11 | Id-permanence TSDoc: the Legend and locked-class id fields say that an id can change until a save or a release stores it (ADR 0018 point 5).                                                                                                                       |
 
 ## Related
 
@@ -594,4 +612,4 @@ Protocol R1 (DEC-54) renders the owner's frames from duplicates on one scratch p
 - [`../reference/game-design/13-owner-decisions-log.md`](../reference/game-design/13-owner-decisions-log.md):
   DEC-48 to DEC-56.
 - [`../plan/PROGRESS.md`](../plan/PROGRESS.md): the branch's progress entries (2026-10-17 to
-  2026-10-25).
+  2026-10-26).

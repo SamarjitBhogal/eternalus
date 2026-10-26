@@ -1685,3 +1685,69 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Checked 117 Markdown files under docs/." "Documentation check passed."
 - Next step: the code fixes' round and its progress entry, then the owner's sign-offs (HC-T1,
   HC-Q17, HC-Q18).
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the roster audit's code fixes (lane B, OD-38) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (code; recorded by stream B from the orchestrator's facts and the proof in
+  `eternalus-agent-work/hud-charselect/roster-audit/fixes/`, outside the repository; the audit's
+  items P1 to P11 are defined in `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - Lane B, `fix/hud-charselect-critic-b`, 12 commits (`f23ce76`, `51b4e61`, `59c7bdc`,
+    `c1671e0`, `b4637d5`, `1cc5568`, `d0be63f`, `84cf26c`, `eed8002`, `6703db0`, `cbdcb27`,
+    `f896faf`), merged together with round B8 (`0b85863`) into `feat/hud-and-character-select`
+    as `fcc7c85`.
+  - P1: the Results screen's "X wins." and the explorer's stronghold labels read the team names
+    from content.
+  - P5: (a) boot fails on a presentation key with no content entry; (b) `CharacterSelectState`
+    logs ERROR `client.session` for a class or Legend id the catalogue does not have and ignores
+    it (`SessionContext` gained `logger`); a judgement call: a known Legend id under the wrong
+    class is ignored silently; (c) `Match` logs ERROR `client.match` when core rejects the
+    player's spawn.
+  - P2: the content tests build their expected prose from `displayName`.
+  - P3: the art-name guards read the names from content. The asset id
+    `legionnaire-legend-portrait` became `warrior-legend-portrait` (4 webp files moved with
+    `git mv`, 100 % similarity, the same SHA-256), the constant `LEGIONNAIRE_LEGEND` became
+    `WARRIOR_LEGEND`, and the About screen's collapsed credits show the new id.
+  - P4 and P7: tests read the expected names and ids from content (helpers
+    `rosterNamesThatAreNotIds` and `firstAvailableSpecId` in
+    `apps/client/src/game/content/__fixtures__/shippedCatalogue.ts`).
+  - P11: id TSDoc in `legendSpecs.types.ts` and `lockedClasses.types.ts`. `f896faf` dropped the
+    stale "ADR 0018, proposed" from two content comments.
+  - Pixels: 246 of 250 shots are byte-identical to the baseline. The 4 that differ are the
+    harness's own asset-check page (`check-assets-fonts`, 4 variants): the same thumbnails,
+    reordered because the renamed URL sorts later, checked by eye and by the bounding box. No app
+    screen changed.
+  - Trial renames, before → after: a sub-class title with its Legend names, 4 failures in 3 files
+    plus stale prose → 2 tests, both in `legendSpecCatalogue.test.ts`; a class display name, 3
+    tests → 1; a Legend id, 16 tests in 6 files → 6 in 3 files. The Legend-id trial found that
+    the new name guard flags that Legend's art ids once its id differs from its title (`INBOX.md`
+    HC-Q18 (1)).
+  - Disclosed for the critic: `Match.ts` has 335 lines and `buildDisplayCatalogue.ts` 304, both
+    past the ~300-line guideline.
+- Checks run (at `fcc7c85`, the orchestrator's log `results/verify-fcc7c85.log` in the same
+  folder): `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  615 passed (615)"; client "Tests 1312 passed (1312)", statements 96.02 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed." The id resolver: 900
+  ids, 0 without a definition.
+- Next step: the production live probe (running), the critic's second run, ponytail, `/verify`.
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the roster-fix round's record, the owner's visual sign-off and two id-wording rows (stream B, round B9) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, after fast-forwarding the docs branch to `fcc7c85`):
+  - The progress entry above for the roster-fix round, from the orchestrator's facts.
+  - PR register (`docs/changelog/pr-feat-hud-and-character-select.md`): the roster-fix round,
+    round B9, and the audit's items P1 to P5, P7, P8 and P11.
+  - Reference 15: the appendix gains OD-39 (the owner judged the visuals good enough for the
+    MVP; his functional UI/UX improvements wait for Sprint 3) and OD-39a (he confirmed it on the
+    current head; the Legend title centring was checked), with his words.
+  - INBOX: new HC-U1 for Sprint 3 (his UI/UX list, carrying CD-25's mask, CD-30 and CD-38).
+    HC-C1 records his words and that he viewed the live host; its box stays his to tick. HC-Q18
+    (1) gains the trial finding (the name guard flags 7 art ids in 20 files and 1 token once
+    `oracle` stops being an id), and (4) notes that the locked-class id's TSDoc already applies
+    ADR 0018 point 5. HC-T1 gains T-143 and T-144 (the naming suggestions' "never change once
+    used" and "never renamed once used"), which wait for HC-Q18 (4); the table has 124 rows, and
+    the intro's one 104-character line is rewrapped.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1312 passed (1312)", statements 96.02 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed." `git apply --check` on
+  the unapplied patch prints nothing; the id resolver: 908 ids, 0 without a definition.
+- Next step: the owner's sign-offs (HC-T1, HC-C1, HC-Q17, HC-Q18), then the critic's second run.
