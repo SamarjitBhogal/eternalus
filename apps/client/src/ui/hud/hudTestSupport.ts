@@ -6,6 +6,7 @@ import type { Binding, HudSlotId, InputAction, InputChord } from '../../bridge/B
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import type { RootState } from '../../bridge/store';
+import resourceStyles from './ResourceBar.module.css';
 
 /** A keyboard binding of `action` to `code`, shown as `label`. */
 const key = (action: InputAction, code: string, label: string): Binding => ({
@@ -70,3 +71,9 @@ export function cssRule(css: string, selector: string): string {
   if (declarations === undefined) throw new Error(`no rule with the selector "${selector}"`);
   return declarations;
 }
+
+/** The numeral a ResourceBar draws over its right end (its aria-hidden `.value` span), if any. */
+export const resourceNumeral = (html: string): string | undefined =>
+  new RegExp(
+    `<span class="${String(resourceStyles.value)}" aria-hidden="true">([^<]*)</span>`,
+  ).exec(html)?.[1];
