@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LegendCardView } from '../../bridge/selectors/selectLegendStepView';
-import { assetsWithBoxes, renderWithStore } from '../testStore';
+import { assetsWithBoxes, renderWithStore, withoutPreloads } from '../testStore';
 import { LegendSelectCardHalo } from './LegendSelectCardHalo';
 import styles from './LegendSelectCardHalo.module.css';
 import haloCss from './LegendSelectCardHalo.module.css?raw';
@@ -34,10 +34,6 @@ const MAGUS_ROW = [
 ];
 
 const count = (html: string, text: string): number => html.split(text).length - 1;
-
-/** React's server renderer hoists a `<link rel="preload">` per image ahead of the markup. */
-const withoutPreloads = (html: string): string =>
-  html.replace(/^(?:<link rel="preload"[^>]*\/>)+/, '');
 
 describe('LegendSelectCardHalo', () => {
   it('draws one frost pane and one blurred copy per Legend, all decorative (61:3)', () => {

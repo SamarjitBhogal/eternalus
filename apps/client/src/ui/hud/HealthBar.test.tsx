@@ -3,12 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { FIGMA_HUD_PLAYER } from '../../bridge/__fixtures__/hudFixtures';
 import { accessibleNames, renderWithStore } from '../testStore';
 import { HealthBar } from './HealthBar';
+import { resourceNumeral as numeral } from './hudTestSupport';
 import styles from './ResourceBar.module.css';
-
-const numeral = (html: string) =>
-  new RegExp(`<span class="${String(styles.value)}" aria-hidden="true">([^<]*)</span>`).exec(
-    html,
-  )?.[1];
 
 describe('HealthBar', () => {
   it('shows the Figma health 1850 of 2220 as the Health meter with its numeral', () => {

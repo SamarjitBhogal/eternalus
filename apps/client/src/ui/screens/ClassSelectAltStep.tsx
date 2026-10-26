@@ -22,7 +22,7 @@ const { characterSelect: text } = STRINGS;
  * focused.
  */
 export function ClassSelectAltStep({ preferredClassId }: SelectionStepProps): ReactElement {
-  const { panel, actions, autoFocusClassId } = useClassSelectStep(preferredClassId);
+  const { panel, actions } = useClassSelectStep(preferredClassId);
   const modelId = panel?.card.art.model ?? null;
   return (
     <section className={styles.step} aria-label={text.chooseClass}>
@@ -60,7 +60,7 @@ export function ClassSelectAltStep({ preferredClassId }: SelectionStepProps): Re
         label={text.viewDetails}
         onPress={actions.selectShown}
         skin="view-details"
-        isAutoFocused={autoFocusClassId !== null}
+        isAutoFocused={preferredClassId !== null}
       />
     </section>
   );

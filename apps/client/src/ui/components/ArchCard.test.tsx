@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
-import { renderWithStore } from '../testStore';
+import { renderWithStore, withoutPreloads } from '../testStore';
 import { ArchCard, type ArchLayerKind } from './ArchCard';
 import styles from './ArchCard.module.css';
 import cardCss from './ArchCard.module.css?raw';
@@ -16,10 +16,6 @@ const ALL_LAYERS: readonly ArchLayerKind[] = [
   'art',
   'focus-ring',
 ];
-
-/** React's server renderer hoists a `<link rel="preload">` per image ahead of the markup. */
-const withoutPreloads = (html: string): string =>
-  html.replace(/^(?:<link rel="preload"[^>]*\/>)+/, '');
 
 /** The data attributes in document order, e.g. every `data-arch-layer` value. */
 const valuesOf = (html: string, attribute: string): string[] =>

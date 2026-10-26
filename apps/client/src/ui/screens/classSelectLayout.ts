@@ -9,7 +9,7 @@ import type { CSSProperties } from 'react';
 import type { RasterBox } from '../../bridge/catalogue.types';
 import { cssVars } from '../components/cssVars';
 import type { ClassCardLook, ClassCardTextOffsets, ClassSlot } from './classSelectLayout.types';
-import { offset, originRemainder } from './selectionGeometry';
+import { artBoxVars, offset, originRemainder, px } from './selectionGeometry';
 import type { FramePoint } from './selectionGeometry.types';
 
 /** Card centres on a 301 px pitch about x 1099 (647.5 / 948.5 / 1249.5 / 1550.5 for four). */
@@ -104,9 +104,6 @@ export function classArtOrigin(cardOrigin: FramePoint, look: ClassCardLook): Fra
   return snapped(offset(cardOrigin, CLASS_ART_INSET[look]));
 }
 
-/** Px to 4 decimals, finer than any Figma value they come from. */
-const px = (value: number): string => `${String(Number(value.toFixed(4)))}px`;
-
 /**
  * The inline style of a card or copy root at `origin` (I-45): the root at the integer floor,
  * `--card-fx`/`--card-fy` = the fractional remainder its text leaves carry, and the text
@@ -145,10 +142,7 @@ export function plateVars(
   const strokeX = (x: number): string => px(x - box.left - fraction.x);
   const strokeY = (y: number): string => px(y - box.top - fraction.y);
   return cssVars({
-    '--art-left': px(box.left - Math.floor(origin.x)),
-    '--art-top': px(box.top - Math.floor(origin.y)),
-    '--art-width': px(box.width),
-    '--art-height': px(box.height),
+    ...artBoxVars(box, Math.floor(origin.x), Math.floor(origin.y)),
     '--art-stroke-x': strokeX(artOrigin.x),
     '--art-stroke-y': strokeY(artOrigin.y),
     '--overlay-stroke-x': strokeX(overlayOrigin.x),

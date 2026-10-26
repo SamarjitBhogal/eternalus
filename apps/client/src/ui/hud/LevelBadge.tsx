@@ -5,7 +5,6 @@ import { selectHudKit } from '../../bridge/selectors/selectHudKit';
 import { hudSlice } from '../../bridge/slices/hudSlice';
 import type { RootState } from '../../bridge/store';
 import { AssetImage } from '../components/AssetImage';
-import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { STRINGS } from '../strings';
 import { meterAttributes, percentOf } from './hudMeter';
@@ -21,11 +20,7 @@ const selectEmblem = (state: RootState) => selectHudKit(state)?.emblemAssetId ??
  * the Figma), the number is the total level. Without an XP value the ring stays dark and the
  * badge is an image "No data yet"; without a level the number is "—" (CD-13).
  */
-export function LevelBadge({
-  className,
-}: {
-  readonly className?: string | undefined;
-}): ReactElement {
+export function LevelBadge(): ReactElement {
   const level = useAppSelector(selectLevel);
   const xpFraction = useAppSelector(selectXpFraction);
   const emblem = useAppSelector(selectEmblem);
@@ -41,7 +36,7 @@ export function LevelBadge({
         });
   return (
     <div
-      className={classNames(styles.badge, className)}
+      className={styles.badge}
       style={
         xpFraction === null ? undefined : cssVars({ '--level-badge-progress': String(xpFraction) })
       }
@@ -60,7 +55,7 @@ export function LevelBadge({
         <circle className={styles.ringStroke} cx="80.5" cy="80.5" r="80" strokeWidth="1" />
         <circle className={styles.innerDisc} cx="81" cy="81" r="69.5" strokeWidth="1" />
       </svg>
-      <AssetImage assetId={emblem} className={classNames(styles.emblem)} />
+      <AssetImage assetId={emblem} className={styles.emblem} />
       <span className={styles.level} aria-hidden="true">
         {level === null ? STRINGS.hud.noData : String(level)}
       </span>

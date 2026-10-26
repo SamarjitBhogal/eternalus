@@ -179,6 +179,9 @@
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
+  font-weight: 400;
+  font-kerning: normal;
+  font-variant-ligatures: normal;
 }
 
 .name,
@@ -193,31 +196,22 @@
 .name {
   left: calc(var(--card-fx) + var(--name-dx));
   font-family: var(--font-game);
-  font-weight: 400;
   font-size: max(32px, calc(var(--text-min) / var(--stage-scale)));
   line-height: calc(var(--leading-game-32) * 1px);
-  font-kerning: normal;
-  font-variant-ligatures: normal;
 }
 
 .role {
   left: calc(var(--card-fx) + var(--role-dx));
   font-family: var(--font-game);
-  font-weight: 400;
   font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
   line-height: calc(var(--leading-game-24) * 1px);
-  font-kerning: normal;
-  font-variant-ligatures: normal;
 }
 
 .allies {
   left: calc(var(--card-fx) + var(--allies-dx));
   font-family: var(--font-game);
-  font-weight: 400;
   font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
   line-height: calc(var(--leading-game-20) * 1px);
-  font-kerning: normal;
-  font-variant-ligatures: normal;
 }
 
 .card[data-look='idle'] .name,

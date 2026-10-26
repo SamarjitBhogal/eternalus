@@ -62,7 +62,7 @@ export function ClassSelectCardRow({
           draggable={false}
         />
       )}
-      <div className={styles.cards} role="radiogroup" aria-labelledby={labelledBy}>
+      <div role="radiogroup" aria-labelledby={labelledBy}>
         {cards.map((card, index) => (
           <ClassSelectCard
             key={card.classId}

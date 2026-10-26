@@ -66,7 +66,7 @@ export function AbilitySlot({
     >
       <AbilitySlotFrame slot={slot} look={view.look} cooldownFraction={view.cooldownFraction} />
       {view.look === 'no-data' && <div className={styles.hatch} aria-hidden="true" />}
-      <AssetImage assetId={view.iconAssetId} className={classNames(styles.icon)} />
+      <AssetImage assetId={view.iconAssetId} className={styles.icon} />
       <span className={styles.glyph}>
         <KeyGlyph action={slot} appearance="hud" />
       </span>

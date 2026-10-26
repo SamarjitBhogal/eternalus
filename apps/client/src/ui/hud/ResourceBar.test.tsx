@@ -2,16 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { FIGMA_HUD_PLAYER } from '../../bridge/__fixtures__/hudFixtures';
 import { accessibleNames, renderWithStore } from '../testStore';
+import { resourceNumeral as numeral } from './hudTestSupport';
 import { ResourceBar } from './ResourceBar';
-import styles from './ResourceBar.module.css';
 import css from './ResourceBar.module.css?raw';
 
 const withFigmaPlayer = { hud: { player: FIGMA_HUD_PLAYER, announcements: [] } };
-
-const numeral = (html: string) =>
-  new RegExp(`<span class="${String(styles.value)}" aria-hidden="true">([^<]*)</span>`).exec(
-    html,
-  )?.[1];
 
 describe('ResourceBar', () => {
   it('shows the Figma health 1850 of 2220 as a meter at 83 % with its numeral', () => {

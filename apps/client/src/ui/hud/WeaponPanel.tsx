@@ -1,13 +1,13 @@
-import type { CSSProperties, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 
-import type { AssetId, RasterBox } from '../../bridge/catalogue.types';
+import type { AssetId } from '../../bridge/catalogue.types';
 import { useAppSelector } from '../../bridge/hooks';
 import { selectHudKit } from '../../bridge/selectors/selectHudKit';
 import { hudSlice } from '../../bridge/slices/hudSlice';
 import type { RootState } from '../../bridge/store';
 import { AssetImage } from '../components/AssetImage';
 import { classNames } from '../components/classNames';
-import { cssVars } from '../components/cssVars';
+import { boxVars } from '../components/cssVars';
 import { useAssetBox } from '../components/useAssetBox';
 import { STRINGS } from '../strings';
 import { SegmentedBar } from './SegmentedBar';
@@ -15,16 +15,6 @@ import styles from './WeaponPanel.module.css';
 
 const selectWeaponArt = (state: RootState): AssetId | null =>
   selectHudKit(state)?.weapon?.iconAssetId ?? null;
-
-/** The art's manifest draw box (frame px) as the unitless numbers `.placed` reads. */
-function artBoxVars(box: RasterBox): CSSProperties {
-  return cssVars({
-    '--weapon-art-left': String(box.left),
-    '--weapon-art-top': String(box.top),
-    '--weapon-art-width': String(box.width),
-    '--weapon-art-height': String(box.height),
-  });
-}
 
 /**
  * The weapon panel (Figma 62:258): the class kit's weapon art over the weapon level bar, in the
@@ -38,7 +28,7 @@ export function WeaponPanel(): ReactElement {
   const box = useAssetBox(art);
   const progress = useAppSelector(hudSlice.selectors.selectWeaponProgress);
   return (
-    <div className={styles.panel} style={box === null ? undefined : artBoxVars(box)}>
+    <div className={styles.panel} style={box === null ? undefined : boxVars('weapon-art', box)}>
       <SegmentedBar
         label={STRINGS.hud.weaponLevel}
         fraction={progress}

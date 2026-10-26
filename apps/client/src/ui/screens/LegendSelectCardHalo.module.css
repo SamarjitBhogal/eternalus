@@ -184,6 +184,9 @@
   margin: 0;
   text-align: center;
   white-space: nowrap;
+  font-weight: 400;
+  font-kerning: normal;
+  font-variant-ligatures: normal;
 }
 
 .name {
@@ -196,11 +199,8 @@
   top: calc(571.57px + var(--card-fy));
   width: 379px;
   font-family: var(--font-game);
-  font-weight: 400;
   font-size: max(40px, calc(var(--text-min) / var(--stage-scale)));
   line-height: calc(var(--leading-game-40) * 1px);
-  font-kerning: normal;
-  font-variant-ligatures: normal;
 }
 
 /* 61:10 name 24, glyph top 793.97 − 5.77; centre x 189.56. */
@@ -209,11 +209,8 @@
   top: calc(623.2px + var(--card-fy));
   width: 379px;
   font-family: var(--font-game);
-  font-weight: 400;
   font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
   line-height: calc(var(--leading-game-24) * 1px);
-  font-kerning: normal;
-  font-variant-ligatures: normal;
 }
 
 /* 61:21 title 36, glyph top 711.5 − 9.3; centre x 157.88 of the copy. */
@@ -222,11 +219,8 @@
   top: calc(481.2px + var(--card-fy));
   width: 316.64px;
   font-family: var(--font-game);
-  font-weight: 400;
   font-size: max(36px, calc(var(--text-min) / var(--stage-scale)));
   line-height: calc(var(--leading-game-36) * 1px);
-  font-kerning: normal;
-  font-variant-ligatures: normal;
 }
 
 /* 61:22 name 20, glyph top 752.58 − 6; centre x 158.01. */
@@ -235,9 +229,6 @@
   top: calc(525.58px + var(--card-fy));
   width: 316.64px;
   font-family: var(--font-game);
-  font-weight: 400;
   font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
   line-height: calc(var(--leading-game-20) * 1px);
-  font-kerning: normal;
-  font-variant-ligatures: normal;
 }

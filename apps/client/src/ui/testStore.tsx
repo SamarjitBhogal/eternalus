@@ -255,3 +255,13 @@ export function buttonNames(html: string): string[] {
     inner.replace(/<[^>]+>/g, '').trim(),
   );
 }
+
+/** React's server renderer hoists a `<link rel="preload">` per image ahead of the markup. */
+export const withoutPreloads = (html: string): string =>
+  html.replace(/^(?:<link rel="preload"[^>]*\/>)+/, '');
+
+/** The `data-class-id` of every `role="radio"` card whose start tag carries `autofocus`. */
+export const autofocusedClassIds = (html: string): string[] =>
+  (html.match(/<button[^>]*role="radio"[^>]*>/g) ?? [])
+    .filter((tag) => tag.includes('autofocus'))
+    .map((tag) => /data-class-id="([^"]*)"/.exec(tag)?.[1] ?? '');

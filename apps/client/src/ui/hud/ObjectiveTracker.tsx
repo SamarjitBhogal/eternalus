@@ -61,7 +61,7 @@ export function ObjectiveTracker(): ReactElement {
             <span className={styles.shieldRing}>
               <AssetImage
                 assetId={chrome?.objectiveShieldAssetIds[objective.ownerTeam] ?? null}
-                className={classNames(styles.shield)}
+                className={styles.shield}
               />
             </span>
             <span className={styles.letter} aria-hidden="true">

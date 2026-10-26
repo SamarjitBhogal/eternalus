@@ -1,8 +1,8 @@
-import { useId, type CSSProperties, type ReactElement } from 'react';
+import { useId, type ReactElement } from 'react';
 
-import type { AssetId, RasterBox } from '../../bridge/catalogue.types';
+import type { AssetId } from '../../bridge/catalogue.types';
 import { classNames } from './classNames';
-import { cssVars } from './cssVars';
+import { boxVars } from './cssVars';
 import { BRACE_MIRRORED_UNIT_PATH, BRACE_UNIT_PATH } from './GlowButton.constants';
 import styles from './GlowButton.module.css';
 import type { GlowButtonPlate, GlowButtonSkin } from './GlowButton.types';
@@ -56,16 +56,6 @@ const liveChrome = (): ReactElement => (
   </>
 );
 
-/** The plate's manifest draw box (frame px) as the unitless numbers the `.chrome` rules read. */
-function plateBoxVars(box: RasterBox): CSSProperties {
-  return cssVars({
-    '--glow-chrome-left': String(box.left),
-    '--glow-chrome-top': String(box.top),
-    '--glow-chrome-width': String(box.width),
-    '--glow-chrome-height': String(box.height),
-  });
-}
-
 /** Figma's chrome plate at its manifest draw box, its full render bounds (the `.chrome` rules). */
 const chromePlate = ({ url, box }: GlowButtonPlate): ReactElement => (
   <img
@@ -75,7 +65,7 @@ const chromePlate = ({ url, box }: GlowButtonPlate): ReactElement => (
     aria-hidden="true"
     decoding="async"
     draggable={false}
-    style={plateBoxVars(box)}
+    style={boxVars('glow-chrome', box)}
   />
 );
 

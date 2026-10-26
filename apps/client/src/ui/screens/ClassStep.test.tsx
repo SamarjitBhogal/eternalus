@@ -1,19 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ClassSelectLayout } from '../../bridge/catalogue.types';
-import { accessibleNames, renderWithStore, TEST_CONTENT } from '../testStore';
+import { accessibleNames, autofocusedClassIds, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassStep } from './ClassStep';
 
 const render = (classSelectLayout: ClassSelectLayout, preferredClassId: string | null): string =>
   renderWithStore(<ClassStep preferredClassId={preferredClassId} />, {
     content: { ...TEST_CONTENT, classSelectLayout },
   });
-
-/** The `data-class-id` of every `role="radio"` card whose start tag carries `autofocus`. */
-const autofocusedClassIds = (html: string): string[] =>
-  (html.match(/<button[^>]*role="radio"[^>]*>/g) ?? [])
-    .filter((tag) => tag.includes('autofocus'))
-    .map((tag) => /data-class-id="([^"]*)"/.exec(tag)?.[1] ?? '');
 
 describe('ClassStep', () => {
   it("draws the primary layout's card row (62:125) for the primary catalogue", () => {
