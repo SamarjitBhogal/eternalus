@@ -8,6 +8,7 @@ import type { LegendSpecDefinition } from './legendSpecs.types';
 export const NECROMANCER = {
   id: 'necromancer',
   classId: 'magus',
+  isSelectable: true,
   displayName: 'Necromancer',
   legendName: { light: 'Avedrin', dark: 'Nirdeva' },
   roleLabel: null,

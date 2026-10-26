@@ -1,0 +1,101 @@
+/* The developer chrome sits top-left, clear of the HUD regions; its look is unchanged (OD-14). */
+.toolbar {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid #71807480;
+  background: #172322ed;
+  font:
+    11px/1.5 system-ui,
+    sans-serif;
+}
+.toolbar b {
+  margin: 0 8px;
+  color: #b79f70;
+}
+.toolbar button {
+  border: 1px solid #b79f7080;
+  padding: 8px 12px;
+  background: #34413a;
+  color: #eee5cd;
+  cursor: pointer;
+  font: inherit;
+}
+.toolbar button:hover {
+  background: #536050;
+}
+.toolbar button:focus-visible {
+  outline: 2px solid #e0c795;
+  outline-offset: 3px;
+}
+.legend {
+  position: absolute;
+  top: 96px;
+  left: 32px;
+  display: flex;
+  gap: 16px;
+  font:
+    10px system-ui,
+    sans-serif;
+  background: #172322db;
+  padding: 12px;
+}
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend i {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+}
+.light {
+  background: #6db9bc;
+}
+.dark {
+  background: #aa718f;
+}
+.camp {
+  background: #d5b77b;
+}
+@media (max-width: 700px) {
+  .toolbar {
+    top: 12px;
+    left: 12px;
+    max-width: 60%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .legend {
+    top: 120px;
+    left: 12px;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+/*
+ * Interim normal-play control (CD-22): leaves the cathedral interior, at the toolbar's
+ * place, only while inside. Tokens only; its upgrade path is a ui/hud control (13 §9 recipe).
+ */
+.leaveInterior {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--text-muted);
+  border-radius: var(--radius-sm);
+  background: var(--surface-scrim);
+  color: var(--text-primary);
+  font-family: var(--font-game);
+  font-size: max(16px, var(--text-min));
+  cursor: pointer;
+}
+.leaveInterior:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

@@ -8,6 +8,7 @@ import type { LegendSpecDefinition } from './legendSpecs.types';
 export const CATALYST = {
   id: 'catalyst',
   classId: 'magus',
+  isSelectable: true,
   displayName: 'Catalyst',
   legendName: {
     light: 'Veridan',

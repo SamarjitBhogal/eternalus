@@ -13,6 +13,7 @@ import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
 import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import type { MapFeatureKind } from './maps/maps.types';
+import { PROFILE_DISPLAY_NAME } from './profile/profileDisplayName';
 import { TEAM_DISPLAY_NAMES } from './teams/teamDisplayNames';
 import { ContentValidator } from './validation/ContentValidator';
 
@@ -29,6 +30,8 @@ export type DisplayContent = {
   }[];
   /** Each playable team's display name (the team badge and the roster labels). */
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
+  /** The profile screen's display name (the main menu item and the screen's title). */
+  readonly profileDisplayName: string;
 };
 
 /** The catalogues `loadDisplayContent` validates and returns; each defaults to the shipped one. */
@@ -68,5 +71,6 @@ export const loadDisplayContent = ({
       displayName,
     })),
     teamNames: TEAM_DISPLAY_NAMES,
+    profileDisplayName: PROFILE_DISPLAY_NAME,
   };
 };

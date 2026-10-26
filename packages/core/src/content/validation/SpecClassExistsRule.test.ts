@@ -7,6 +7,7 @@ import { SpecClassExistsRule } from './SpecClassExistsRule';
 const spec = (classId: string): LegendSpecDefinition => ({
   id: 'test-legend',
   classId,
+  isSelectable: true,
   displayName: 'Test Legend',
   legendName: null,
   roleLabel: null,

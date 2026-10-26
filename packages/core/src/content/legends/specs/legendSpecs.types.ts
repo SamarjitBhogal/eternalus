@@ -6,7 +6,7 @@ export type RoleRatings = {
 };
 
 /** Display names of a Legend's selection-screen detail rows (Figma 56:47); `null` until named. */
-export type SpecDetailNames = {
+type SpecDetailNames = {
   readonly signature: string | null;
   readonly specialty: string | null;
   readonly ultimate: string | null;
@@ -41,12 +41,14 @@ export type LegendSpecDefinition = {
    * checks that it names a loaded Legend class.
    */
   readonly classId: string;
+  /**
+   * Whether a player can pick this Legend at character select (DEC-49: setup data); one that is not
+   * shows as a locked card and cannot be locked in.
+   */
+  readonly isSelectable: boolean;
   /** The sub-class title players see ("Oracle"), the same on both teams; never mirrored. */
   readonly displayName: string;
-  /**
-   * The Legend's name per team; `null` while the owner has named none (every Legionnaire and
-   * Sentinel Legend today).
-   */
+  /** The Legend's name per team; `null` while the owner has named none. */
   readonly legendName: LegendName | null;
   /** Role line after the title ("Support"); `null` until written. */
   readonly roleLabel: string | null;

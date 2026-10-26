@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { GameCanvasLabels } from './GameCanvas.types';
 import { GameCanvasChrome } from './GameCanvasChrome';
+import css from './GameCanvasChrome.module.css?raw';
 
 /** The labels `main.tsx` passes (`STRINGS.viewport`; `game/` never imports `ui/`). */
 const LABELS: GameCanvasLabels = {
@@ -89,5 +90,13 @@ describe('GameCanvasChrome', () => {
       label: 'Leave cathedral',
     });
     expect(actions).toEqual(['leave-interior']);
+  });
+
+  it('styles the Leave control from tokens only, in its own sheet (I-75)', () => {
+    const rule = /\.leaveInterior \{[^}]*\}/.exec(css)?.[0] ?? '';
+    expect(rule).not.toBe('');
+    expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(/);
+    expect(rule).toContain('var(--font-game)');
+    expect(rule).toContain('var(--text-min)');
   });
 });

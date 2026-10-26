@@ -99,7 +99,8 @@ function layoutOverrides(
 }
 
 /**
- * A core Legend with its presentation: the title and per-team names stay core's objects (DEC-49).
+ * A core Legend with its presentation: the title and per-team names stay core's objects, and core's
+ * `isSelectable` gives the status (DEC-49).
  */
 function toSpecCard(
   spec: LegendSpecDefinition,
@@ -112,7 +113,7 @@ function toSpecCard(
     legendName: spec.legendName,
     roleLabel: spec.roleLabel,
     description: spec.description,
-    status: shown.status,
+    status: spec.isSelectable ? 'available' : 'locked',
     accentToken: shown.accentToken,
     ratings: spec.roleRatings,
     details: detailRows(spec.detailNames, shown.detailIcons),
@@ -287,7 +288,7 @@ export function buildDisplayCatalogue(inputs: {
       ...content.lockedClasses.map((locked) => toLockedCard(locked, presentation)),
     ],
     backgroundSets: presentation.backgroundSets,
-    profileDisplayName: presentation.profileDisplayName,
+    profileDisplayName: content.profileDisplayName,
     classSelectLayout: presentation.classSelectLayout,
     selectionBannerAssetId: presentation.selectionBannerAssetId,
     selectClassChromeAssetId: presentation.selectClassChromeAssetId,

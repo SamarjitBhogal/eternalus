@@ -13,7 +13,6 @@ import type {
   HudStructureKind,
   LegendClassArt,
   LegendSpecArt,
-  SelectionStatus,
 } from '../../bridge/catalogue.types';
 
 /** The icon of each detail row; a slot without one renders the designed placeholder icon box. */
@@ -41,9 +40,8 @@ export type ClassPresentation = {
 /** What the client adds to a core locked class (DEC-48): its accent and art. */
 export type LockedClassPresentation = Pick<ClassPresentation, 'accentToken' | 'art'>;
 
-/** What the client adds to a core Legend (sub-class): status, accent, art and detail icons. */
+/** What the client adds to a core Legend (sub-class): accent, art and detail icons. */
 export type SpecPresentation = {
-  readonly status: SelectionStatus;
   readonly accentToken: ColourToken;
   readonly art: LegendSpecArt;
   readonly detailIcons: DetailIcons;
@@ -68,7 +66,6 @@ export type CataloguePresentation = {
   /** Keyed by core spec id; a core spec without an entry fails at boot. */
   readonly specs: Readonly<Record<string, SpecPresentation>>;
   readonly backgroundSets: readonly BackgroundSet[];
-  readonly profileDisplayName: string;
   readonly classSelectLayout: ClassSelectLayout;
   readonly selectionBannerAssetId: AssetId | null;
   readonly selectClassChromeAssetId: AssetId;

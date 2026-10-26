@@ -5,11 +5,14 @@
  */
 import { loadDisplayContent } from '@eternalus/core';
 
+import type { DisplayCatalogue } from '../../../bridge/catalogue.types';
 import { isSelectableSpec } from '../../../bridge/selectionRules';
 import { ASSET_MANIFEST } from '../../../data/resources/AssetManifest';
+import { buildDisplayCatalogue } from '../buildDisplayCatalogue';
 import type { CatalogueSource } from '../CatalogueSource.types';
 import type { DisplayOverrides } from '../CataloguePresentation.types';
 import { createCoreCatalogue, NO_DISPLAY_OVERRIDES } from '../coreCatalogue';
+import { CATALOGUE_PRESENTATION } from '../screenPresentation';
 
 /** The shipped catalogue with `overrides` (none by default). */
 export function shippedCatalogue(
@@ -34,6 +37,35 @@ export function firstAvailableSpecId(classId: string): string {
   const spec = card?.specs.find(isSelectableSpec);
   if (spec === undefined) throw new Error(`no selectable Legend for class "${classId}"`);
   return spec.specId;
+}
+
+/**
+ * The shipped catalogue built as at boot (core content, then `buildDisplayCatalogue`) after core
+ * content marks one Legend unselectable: the first whose class offers another Legend, so that class
+ * still needs a Legend to lock in (DEC-49). Returns the catalogue and that Legend's class and id.
+ *
+ * @throws Error when no class offers two Legends.
+ */
+export function catalogueWithUnselectableLegend(): {
+  readonly catalogue: DisplayCatalogue;
+  readonly classId: string;
+  readonly specId: string;
+} {
+  const content = loadDisplayContent();
+  const sealed = content.specs.find((spec) =>
+    content.specs.some((other) => other.id !== spec.id && other.classId === spec.classId),
+  );
+  if (sealed === undefined) throw new Error('no class offers two Legends');
+  const specs = content.specs.map((spec) =>
+    spec === sealed ? { ...spec, isSelectable: false } : spec,
+  );
+  const catalogue = buildDisplayCatalogue({
+    content: { ...content, specs },
+    presentation: CATALOGUE_PRESENTATION,
+    knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
+    overrides: NO_DISPLAY_OVERRIDES,
+  });
+  return { catalogue, classId: sealed.classId, specId: sealed.id };
 }
 
 /** Titles the roster no longer uses (DEC-49: the Figma's "Cantor", the earlier "Gravecaller"). */

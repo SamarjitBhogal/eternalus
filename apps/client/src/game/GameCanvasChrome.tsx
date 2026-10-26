@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import styles from './GameCanvas.module.css';
+import styles from './GameCanvasChrome.module.css';
 import type { GameCanvasLabels, GameCanvasProps } from './GameCanvas.types';
 
 /**
@@ -8,7 +8,7 @@ import type { GameCanvasLabels, GameCanvasProps } from './GameCanvas.types';
  * `isExplorerShown` (`?dev=1`; DEC-32, INBOX HC-F8) the developer toolbar and legend; in normal
  * play only the interim "Leave cathedral" control, while inside the interior (CD-22). The legend
  * names each team's stronghold from `teamNames` (content). It holds no state, so its test renders
- * every state on the server. Its rules are the viewport's one sheet, `GameCanvas.module.css` (the
+ * every state on the server. Its rules are its own sheet, `GameCanvasChrome.module.css` (the
  * developer chrome's look is unchanged, OD-14).
  */
 export function GameCanvasChrome({

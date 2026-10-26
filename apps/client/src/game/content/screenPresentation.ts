@@ -40,8 +40,6 @@ const BACKGROUND_SETS: readonly BackgroundSet[] = [
   },
 ];
 
-/** The profile screen's themed name (docs/reference/suggestions/naming.md, a working name). */
-const PROFILE_DISPLAY_NAME = 'Chronicle';
 /** DEC-52: the class step's layout; `'alternate'` draws 62:70. */
 const CLASS_SELECT_LAYOUT: ClassSelectLayout = 'primary';
 /** The skull banner behind "Legend Selection" (62:144). */
@@ -61,7 +59,6 @@ export const CATALOGUE_PRESENTATION: CataloguePresentation = {
   lockedClasses: LOCKED_CLASS_PRESENTATION,
   specs: SPEC_PRESENTATION,
   backgroundSets: BACKGROUND_SETS,
-  profileDisplayName: PROFILE_DISPLAY_NAME,
   classSelectLayout: CLASS_SELECT_LAYOUT,
   selectionBannerAssetId: SELECTION_BANNER_ASSET_ID,
   selectClassChromeAssetId: SELECT_CLASS_CHROME_ASSET_ID,

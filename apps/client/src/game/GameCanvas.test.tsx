@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { GameCanvas } from './GameCanvas';
-import css from './GameCanvas.module.css?raw';
 import type { GameCanvasLabels } from './GameCanvas.types';
 
 /** The labels `main.tsx` passes (`STRINGS.viewport`; `game/` never imports `ui/`). */
@@ -44,13 +43,5 @@ describe('GameCanvas', () => {
     const html = render(true);
     expect(html).toContain('World overview');
     expect(html).toContain('Lux stronghold');
-  });
-
-  it('styles the Leave control from tokens only (I-75)', () => {
-    const rule = /\.leaveInterior \{[^}]*\}/.exec(css)?.[0] ?? '';
-    expect(rule).not.toBe('');
-    expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(/);
-    expect(rule).toContain('var(--font-game)');
-    expect(rule).toContain('var(--text-min)');
   });
 });

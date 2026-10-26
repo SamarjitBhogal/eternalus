@@ -11,5 +11,7 @@ export default defineConfig({
   build: {
     target: 'es2023',
     sourcemap: true,
+    // Never inline assets as data: URIs: each loads with its own group, by bytes (14 §11).
+    assetsInlineLimit: 0,
   },
 });

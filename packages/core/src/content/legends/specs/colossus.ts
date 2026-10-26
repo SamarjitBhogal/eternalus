@@ -8,6 +8,7 @@ import type { LegendSpecDefinition } from './legendSpecs.types';
 export const COLOSSUS = {
   id: 'colossus',
   classId: 'sentinel',
+  isSelectable: true,
   displayName: 'Colossus',
   legendName: null,
   roleLabel: null,

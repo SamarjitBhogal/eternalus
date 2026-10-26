@@ -1,9 +1,10 @@
 /**
  * Display types of the match HUD (architecture 05 §15, 13 §3, §5): what `hud-state`,
  * `structure-state` and `capture-state` carry, and the view vocabulary several HUD files share.
- * A value the simulation cannot supply yet is `null` (DEC-17) and the HUD draws its "no data yet"
- * state. Types only: imports no slice and not events.ts (events.ts imports this file). A type is
- * exported once a file outside this one reads it (knip).
+ * A value the simulation cannot supply yet is `null` (core has no `Snapshot.player` yet, and
+ * structures and capture are not simulated) and the HUD draws its "no data yet" state. Types only:
+ * imports no slice and not events.ts (events.ts imports this file). A type is exported once a file
+ * outside this one reads it (knip).
  */
 import type { MapFeatureKind } from '@eternalus/core';
 
@@ -41,11 +42,11 @@ export type AbilitySlotStatus = {
 };
 
 /**
- * The human Legend as the HUD shows it: 05 §15 `PlayerSnapshot` with every value nullable
- * (DEC-17). Differences a later core `PlayerSnapshot` maps over: core's fields are
- * non-null, so the bridge mirror maps them 1:1 and drops the nulls; `statusIds`, shield bars and
- * the slots' `varietyId` are added here with their first reader; `weaponProgress`/`ultimatePips`
- * exist only here.
+ * The human Legend as the HUD shows it: 05 §15 `PlayerSnapshot` with every value nullable,
+ * because core has no `Snapshot.player` yet. Differences a later core `PlayerSnapshot` maps over:
+ * core's fields are non-null, so the bridge mirror maps them 1:1 and drops the nulls; `statusIds`,
+ * shield bars and the slots' `varietyId` are added here with their first reader;
+ * `weaponProgress`/`ultimatePips` exist only here.
  */
 export type PlayerHudSnapshot = {
   readonly entityId: string;
@@ -74,7 +75,7 @@ export type StructureStatus = {
   readonly team: PlayableTeam;
   /** The lane's `index`; `null` for structures without a lane (stronghold ring). */
   readonly laneIndex: number | null;
-  /** `null` until structures are simulated (Phase 2; DEC-17). */
+  /** `null` until structures are simulated (Phase 2). */
   readonly health: { readonly current: number; readonly max: number } | null;
 };
 

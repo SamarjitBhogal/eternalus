@@ -86,7 +86,6 @@ const NO_LEGEND_ART: LegendSpecArt = {
 
 /** The warrior Legends share the class stand-in portrait until their art exists (DEC-49). */
 const WARRIOR_LEGEND: SpecPresentation = {
-  status: 'available',
   accentToken: '--class-warrior-accent',
   art: { ...NO_LEGEND_ART, portrait: 'warrior-legend-portrait' },
   detailIcons: {},
@@ -94,13 +93,12 @@ const WARRIOR_LEGEND: SpecPresentation = {
 
 /** The Sentinel Legends draw the designed placeholders (DEC-49: no art yet). */
 const SENTINEL_LEGEND: SpecPresentation = {
-  status: 'available',
   accentToken: '--class-sentinel-accent',
   art: NO_LEGEND_ART,
   detailIcons: {},
 };
 
-/** Keyed by core spec id; every Legend is selectable (DEC-49). */
+/** Keyed by core spec id; whether a Legend can be picked is core content (DEC-49). */
 export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
   assassin: WARRIOR_LEGEND,
   knight: WARRIOR_LEGEND,
@@ -108,7 +106,6 @@ export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
   colossus: SENTINEL_LEGEND,
   juggernaut: SENTINEL_LEGEND,
   catalyst: {
-    status: 'available',
     accentToken: '--legend-catalyst-accent',
     art: {
       ...NO_LEGEND_ART,
@@ -119,7 +116,6 @@ export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
     detailIcons: {},
   },
   oracle: {
-    status: 'available',
     accentToken: '--legend-oracle-accent',
     art: {
       card: 'oracle-card-art',
@@ -135,7 +131,6 @@ export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
     },
   },
   necromancer: {
-    status: 'available',
     accentToken: '--legend-necromancer-accent',
     art: {
       ...NO_LEGEND_ART,
