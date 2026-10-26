@@ -84,11 +84,11 @@ const NO_LEGEND_ART: LegendSpecArt = {
   rowPlate: null,
 };
 
-/** The Legionnaire Legends share the class stand-in portrait until their art exists (DEC-49). */
-const LEGIONNAIRE_LEGEND: SpecPresentation = {
+/** The warrior Legends share the class stand-in portrait until their art exists (DEC-49). */
+const WARRIOR_LEGEND: SpecPresentation = {
   status: 'available',
   accentToken: '--class-warrior-accent',
-  art: { ...NO_LEGEND_ART, portrait: 'legionnaire-legend-portrait' },
+  art: { ...NO_LEGEND_ART, portrait: 'warrior-legend-portrait' },
   detailIcons: {},
 };
 
@@ -102,9 +102,9 @@ const SENTINEL_LEGEND: SpecPresentation = {
 
 /** Keyed by core spec id; every Legend is selectable (DEC-49). */
 export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
-  assassin: LEGIONNAIRE_LEGEND,
-  knight: LEGIONNAIRE_LEGEND,
-  paladin: LEGIONNAIRE_LEGEND,
+  assassin: WARRIOR_LEGEND,
+  knight: WARRIOR_LEGEND,
+  paladin: WARRIOR_LEGEND,
   colossus: SENTINEL_LEGEND,
   juggernaut: SENTINEL_LEGEND,
   catalyst: {

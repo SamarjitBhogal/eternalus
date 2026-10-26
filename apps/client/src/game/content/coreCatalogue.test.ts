@@ -4,7 +4,7 @@ import type { ColourToken, LegendClassCard, LegendSpecCard } from '../../bridge/
 import { isSelectableClass, isSelectableSpec } from '../../bridge/selectionRules';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
 import globalCss from '../../styles/global.css?raw';
-import { shippedCatalogue } from './__fixtures__/shippedCatalogue';
+import { rosterNamesThatAreNotIds, shippedCatalogue } from './__fixtures__/shippedCatalogue';
 import { createCoreCatalogue, NO_DISPLAY_OVERRIDES } from './coreCatalogue';
 
 const catalogue = shippedCatalogue().load();
@@ -25,7 +25,7 @@ const legendArt = (spec: LegendSpecCard): string[] =>
     (id) => id !== null,
   );
 const SHARED_LEGEND_ART = {
-  id: 'legionnaire-legend-portrait',
+  id: 'warrior-legend-portrait',
   specIds: ['assassin', 'knight', 'paladin'],
 };
 
@@ -46,9 +46,12 @@ const catalogueTokens = (): ColourToken[] => [
 ];
 
 /**
- * DEC-49: no token names a retired title or a Legend's personal name (asset ids: the assets test).
+ * DEC-49: no token names a retired title, a display name or a Legend's personal name (asset ids:
+ * the assets test). The names come from content, so a renamed one is still guarded.
  */
-const RETIRED_OR_NAMED = /cantor|gravecaller|veridan|elarion|avedrin|nadirev|noirale|nirdeva/i;
+const ROSTER_NAMES = rosterNamesThatAreNotIds();
+const namesRoster = (token: string): boolean =>
+  ROSTER_NAMES.some((name) => token.toLowerCase().includes(name));
 
 describe('coreCatalogue', () => {
   it('lists the three MVP classes and the locked Harbinger, with blurbs', () => {
@@ -115,7 +118,7 @@ describe('coreCatalogue', () => {
   });
 
   it('keys Legend art and tokens by spec id, never by a title or a Legend name (OA3, I-82)', () => {
-    expect(catalogueTokens().filter((token) => RETIRED_OR_NAMED.test(token))).toEqual([]);
+    expect(catalogueTokens().filter(namesRoster)).toEqual([]);
     const owners = new Map<string, string[]>();
     for (const spec of allSpecs) {
       for (const id of legendArt(spec)) owners.set(id, [...(owners.get(id) ?? []), spec.specId]);

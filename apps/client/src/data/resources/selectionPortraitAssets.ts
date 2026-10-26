@@ -2,10 +2,6 @@ import catalystPortraitAllyTile from '../../assets/selection/legends/catalyst-po
 import catalystPortraitAllyTile2x from '../../assets/selection/legends/catalyst-portrait@ally-tile@2x.webp';
 import catalystPortraitPlayerTilePicked from '../../assets/selection/legends/catalyst-portrait@player-tile-picked.webp';
 import catalystPortraitPlayerTilePicked2x from '../../assets/selection/legends/catalyst-portrait@player-tile-picked@2x.webp';
-import legionnaireLegendPortraitAllyTile from '../../assets/selection/legends/legionnaire-legend-portrait@ally-tile.webp';
-import legionnaireLegendPortraitAllyTile2x from '../../assets/selection/legends/legionnaire-legend-portrait@ally-tile@2x.webp';
-import legionnaireLegendPortraitPlayerTilePicked from '../../assets/selection/legends/legionnaire-legend-portrait@player-tile-picked.webp';
-import legionnaireLegendPortraitPlayerTilePicked2x from '../../assets/selection/legends/legionnaire-legend-portrait@player-tile-picked@2x.webp';
 import necromancerPortraitAllyTile from '../../assets/selection/legends/necromancer-portrait@ally-tile.webp';
 import necromancerPortraitAllyTile2x from '../../assets/selection/legends/necromancer-portrait@ally-tile@2x.webp';
 import necromancerPortraitPlayerTilePicked from '../../assets/selection/legends/necromancer-portrait@player-tile-picked.webp';
@@ -14,6 +10,10 @@ import oraclePortraitAllyTile from '../../assets/selection/legends/oracle-portra
 import oraclePortraitAllyTile2x from '../../assets/selection/legends/oracle-portrait@ally-tile@2x.webp';
 import oraclePortraitPlayerTilePicked from '../../assets/selection/legends/oracle-portrait@player-tile-picked.webp';
 import oraclePortraitPlayerTilePicked2x from '../../assets/selection/legends/oracle-portrait@player-tile-picked@2x.webp';
+import warriorLegendPortraitAllyTile from '../../assets/selection/legends/warrior-legend-portrait@ally-tile.webp';
+import warriorLegendPortraitAllyTile2x from '../../assets/selection/legends/warrior-legend-portrait@ally-tile@2x.webp';
+import warriorLegendPortraitPlayerTilePicked from '../../assets/selection/legends/warrior-legend-portrait@player-tile-picked.webp';
+import warriorLegendPortraitPlayerTilePicked2x from '../../assets/selection/legends/warrior-legend-portrait@player-tile-picked@2x.webp';
 
 import type { AssetManifestEntry } from './AssetManifest.types';
 
@@ -64,16 +64,16 @@ export const SELECTION_PORTRAIT_ASSETS: readonly AssetManifestEntry[] = [
     },
   },
   {
-    id: 'legionnaire-legend-portrait',
+    id: 'warrior-legend-portrait',
     type: 'ui-image',
     group: 'selection',
     file: {
-      url: legionnaireLegendPortraitAllyTile,
+      url: warriorLegendPortraitAllyTile,
       bytes: 6894,
       hash: 'd0b5f3caedde148fecaa080db87fd2cf7427ef69fe39de2341646716e5fef1e5',
     },
     file2x: {
-      url: legionnaireLegendPortraitAllyTile2x,
+      url: warriorLegendPortraitAllyTile2x,
       bytes: 22802,
       hash: '5eac2eca5928787636559bcb67dc46bc61b92a0fd2d8b0cbe99bf478ae508431',
     },
@@ -83,24 +83,24 @@ export const SELECTION_PORTRAIT_ASSETS: readonly AssetManifestEntry[] = [
     renditions: {
       'ally-tile': {
         file: {
-          url: legionnaireLegendPortraitAllyTile,
+          url: warriorLegendPortraitAllyTile,
           bytes: 6894,
           hash: 'd0b5f3caedde148fecaa080db87fd2cf7427ef69fe39de2341646716e5fef1e5',
         },
         file2x: {
-          url: legionnaireLegendPortraitAllyTile2x,
+          url: warriorLegendPortraitAllyTile2x,
           bytes: 22802,
           hash: '5eac2eca5928787636559bcb67dc46bc61b92a0fd2d8b0cbe99bf478ae508431',
         },
       },
       'player-tile-picked': {
         file: {
-          url: legionnaireLegendPortraitPlayerTilePicked,
+          url: warriorLegendPortraitPlayerTilePicked,
           bytes: 9066,
           hash: 'c4790c0f6aa8a2b3802e8be9ebbc20c51e4977326b5ee5486a26c0d46ae1bad9',
         },
         file2x: {
-          url: legionnaireLegendPortraitPlayerTilePicked2x,
+          url: warriorLegendPortraitPlayerTilePicked2x,
           bytes: 29528,
           hash: '977cbca1c5bd0e7c33221230cdf912537c84f454548f27e3585a654a790d48cf',
         },

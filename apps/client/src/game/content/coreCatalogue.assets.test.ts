@@ -4,7 +4,7 @@ import type { AssetId, DisplayCatalogue, RenditionKey } from '../../bridge/catal
 import type { AssetGroup } from '../../bridge/events';
 import { assetBoxes } from '../../data/resources/assetBoxes';
 import { ASSET_MANIFEST } from '../../data/resources/AssetManifest';
-import { shippedCatalogue } from './__fixtures__/shippedCatalogue';
+import { rosterNamesThatAreNotIds, shippedCatalogue } from './__fixtures__/shippedCatalogue';
 
 /**
  * Where a screen draws an asset: the primary class step (62:125), the alternate class step
@@ -129,10 +129,9 @@ describe('coreCatalogue assets', () => {
     expect(expectedGroup(uses.get('magus-detail-aetheric-recall') ?? new Set())).toBe('selection');
   });
 
-  it('names no asset after a retired title or a Legend name (OA3)', () => {
-    const named = [...uses.keys()].filter((id) =>
-      /cantor|gravecaller|veridan|elarion|avedrin|nadirev|noirale|nirdeva/.test(id),
-    );
+  it('names no asset after a retired title, a display name or a Legend name (OA3)', () => {
+    const names = rosterNamesThatAreNotIds();
+    const named = [...uses.keys()].filter((id) => names.some((name) => id.includes(name)));
     expect(named).toEqual([]);
   });
 

@@ -63,7 +63,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
           art: {
             card: null,
             refraction: null,
-            portrait: 'legionnaire-legend-portrait',
+            portrait: 'warrior-legend-portrait',
             mini: null,
             rowPlate: null,
           },
