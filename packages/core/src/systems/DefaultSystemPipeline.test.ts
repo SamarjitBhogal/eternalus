@@ -72,6 +72,7 @@ describe('DefaultSystemPipeline', () => {
         factory,
         definitions: UNIT_DEFINITIONS,
         space,
+        world: null,
         decide: [{ name: 'ai', update: () => undefined }],
       },
     );

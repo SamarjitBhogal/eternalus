@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-26
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -352,6 +352,19 @@ work named:
   `reactionDelayTicks`, `aimErrorRadius` and `abilityUseChance` join with aiming and abilities.
   A bot gets its controller from its spawn (`Placement.controller`), with its lane in the brain's
   starting memory, rather than from its Legend definition.
+- `RoverController` (M8) plays §4.7 on the laner's leaves (`ai/BotLeaves`): `Survive`, `Hunt`
+  (the human within `huntRadius` while the Rover leads on health by `huntAdvantage`), `Fight`,
+  `Mirror` (the human's lane) and `Defend` (the lane `assessLanes` names, for
+  `StructurePressure`). Until the match state names the human (12 §4), the human is the enemy
+  Legend no controller drives, sensed through `Perception` within the `senseRadius` of
+  `content/ai/rover.ts`. No `LaneAdvantage` push yet. Its numbers are `TUNE` (`INBOX.md`).
+- Bots cast `ability-1` at their enemy when `abilityUseChance` comes up on the brain's own RNG
+  stream, at most every `castIntervalTicks`; the cast handler refuses casts until abilities land
+  (Phase 4), with no controller change needed then.
+- A\* for Legends (M8) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`):
+  bots steer by `move` commands, not by `PathingSystem`, so it is a query the bot leaves call when
+  the straight line is blocked, not a second `MovementStrategy` (Phase 3 plan sprint 3.2). One
+  `WorldMap` serves it and the lane flow fields.
 - A brain's `profileId` names an `AggroRuleDefinition` (`content/ai/aggro/`) directly; the
   `AiProfileDefinition` of §2, which would group aggro, cadence and difficulty, arrives when a
   second controller needs a profile. Controllers get their content through their constructor

@@ -56,15 +56,58 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     expect(runs[0]?.hash).toBe(runs[1]?.hash);
   });
 
-  it('refuses a roster without a map, and a Rover until its controller exists (M8)', () => {
+  it('refuses a roster without a map, laners that do not fit, or a difficulty that does not exist', () => {
     expect(() => match(laners('light', 1), false)).toThrow('A roster needs a map');
     // Two lanes of `legendsPerLane` 3 hold six laners a team.
     expect(() => match(laners('dark', 7))).toThrow('7 bot laners do not fit');
     expect(() =>
-      match([{ team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'normal' }]),
-    ).toThrow('controller "rover"');
-    expect(() =>
       match([{ team: 'light', definitionId: 'warrior', role: 'laner', difficulty: 'nightmare' }]),
     ).toThrow('AI profile "nightmare"');
+  });
+
+  it('spawns a Rover at its Stronghold with no lane, playing the Rover tree (M8)', () => {
+    const simulation = match([
+      { team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
+    ]);
+
+    const rover = simulation
+      .snapshot()
+      .entities.find(({ kind, team }) => kind === 'warrior' && team === 'dark');
+    // The dark Stronghold of the two-lane map stands at (190, 30).
+    expect(rover?.transform).toMatchObject({ x: 190, y: 30 });
+    expect(() =>
+      match([{ team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'nightmare' }]),
+    ).toThrow('AI profile "nightmare"');
+  });
+
+  it('plays laners and a Rover together with no warnings, the same way twice (M8)', () => {
+    const roster: RosterSlot[] = [
+      ...laners('light', 2),
+      ...laners('dark', 2),
+      { team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
+    ];
+    const runs = [1, 2].map(() => {
+      const logger = new MemoryLogger();
+      const simulation = new Simulation({
+        config: createDefaultGameConfig({
+          match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
+        }),
+        seed: 1,
+        logger,
+        debug: TEST_DEBUG_CONFIG,
+        map: TWO_LANE_MAP,
+        roster,
+      });
+      for (let tick = 0; tick < 20 * 30; tick += 1) {
+        simulation.step();
+      }
+      return {
+        hash: simulation.hash(),
+        warnings: logger.records.filter(({ severityText }) => severityText !== 'INFO'),
+      };
+    });
+
+    expect(runs[0]?.warnings).toEqual([]);
+    expect(runs[0]?.hash).toBe(runs[1]?.hash);
   });
 });

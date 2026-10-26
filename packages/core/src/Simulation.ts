@@ -14,6 +14,12 @@ import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
+import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
+import { ASTAR_MAX_EXPANSIONS } from './content/ai/pathfinding';
+import { ROVER_TACTICS } from './content/ai/rover';
+import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
+import { AStarPathfinder } from './map/AStarPathfinder';
+import { WorldMap } from './map/WorldMap';
 import { RETREAT_STRUCTURES } from './content/ai/botLaner';
 import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
@@ -70,13 +76,31 @@ export class Simulation {
     levelCurves,
     roster = [],
   }: SimulationOptions) {
+    const valid = validateGameConfig(config);
     const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
-    this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
+    // One walkability grid, shared by the lane flow fields and A* for Legends.
+    const world =
+      map === undefined
+        ? null
+        : WorldMap.fromDefinition(
+            map,
+            valid.map.navCellSize,
+            (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+          );
+    const paths = world === null ? null : new AStarPathfinder(world, ASTAR_MAX_EXPANSIONS);
+    this.state = new GameState(valid, seed, map ?? null, space, paths);
     const curves = levelCurves ?? loadLevelCurves();
     // One factory for commands and spawning, so entity ids come from one counter.
     const controllers = createDefaultControllerRegistry({
       minion: { aggro: AGGRO_RULES, formations: FORMATIONS, classOf: unitClassOf },
       botLegend: { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES },
+      rover: {
+        difficulties: BOT_DIFFICULTIES,
+        retreatTo: RETREAT_STRUCTURES,
+        tactics: ROVER_TACTICS,
+        classOf: unitClassOf,
+        laneWeights: LANE_ASSESSMENT_WEIGHTS,
+      },
     });
     const units =
       content ?? Simulation.defaultContent(this.state.config.tickRate, curves, controllers);
@@ -94,6 +118,7 @@ export class Simulation {
               factory,
               definitions: units,
               space,
+              world,
               decide: [
                 new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
                   this.queue.enqueue(command);
@@ -152,9 +177,9 @@ export class Simulation {
   }
 
   /**
-   * Spawns the bot Legends at the start of their lanes (architecture 18 §8, MS-20): each team's
-   * laners, in roster order, go to the lane with the fewest Legends, lowest index first, and
-   * stand in ranks behind their own end of it, with the lane in their brain's memory.
+   * Spawns the bot Legends (architecture 18 §8, MS-20): each team's laners, in roster order, go
+   * to the lane with the fewest Legends, lowest index first, and stand in ranks behind their own
+   * end of it, with the lane in their brain's memory; Rovers start at their Stronghold.
    *
    * @throws Error when there are bots but no map, a team's laners do not fit under
    *   `legendsPerLane`, or a bot's controller or difficulty does not exist (checked before
@@ -212,6 +237,32 @@ export class Simulation {
             memory: { lane },
           },
         });
+      });
+    }
+    Simulation.spawnRovers(state, factory, roster);
+  }
+
+  /**
+   * Spawns the roster's Rovers at their team's Stronghold (11 §4.7): they take no lane (MS-20).
+   *
+   * @throws Error when a Rover's team has no Stronghold on the map.
+   */
+  private static spawnRovers(
+    state: GameState,
+    factory: EntityFactory,
+    roster: readonly RosterSlot[],
+  ): void {
+    for (const slot of roster.filter(({ role }) => role === 'rover')) {
+      const stronghold = state.map?.features.find(
+        ({ kind, team }) => kind === 'stronghold' && team === slot.team,
+      );
+      if (stronghold === undefined) {
+        throw new Error(`The map has no ${slot.team} Stronghold for the ${slot.team} Rover.`);
+      }
+      Simulation.spawnBot(state, factory, slot, {
+        position: { x: stronghold.position.x, y: stronghold.position.y },
+        team: slot.team,
+        controller: { controllerId: 'rover', profileId: slot.difficulty, memory: {} },
       });
     }
   }

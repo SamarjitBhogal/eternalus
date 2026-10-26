@@ -18,6 +18,7 @@ import type { HordeRequest } from './HordeRequest.types';
 import { HordeStore } from './HordeStore';
 import { LaneRoutes } from './LaneRoutes';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
+import type { PathQuery } from './PathQuery.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
 /**
@@ -65,6 +66,8 @@ export class GameState {
     public readonly map: MapDefinition | null = null,
     /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
     public readonly space: SpaceQuery | null = null,
+    /** A\* for Legends over the map's grid (architecture 10 §9); `null` without a map. */
+    public readonly paths: PathQuery | null = null,
   ) {
     this.rng = new SeededRandom(seed);
     this.routes = map === null ? null : new LaneRoutes(map);

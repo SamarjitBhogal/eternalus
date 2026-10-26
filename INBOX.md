@@ -143,6 +143,14 @@ Reply inline (`Decision: …`).
       Better than the design, for sign-off: bot laners take lanes in roster order, the order
       match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
       `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
+- [ ] **Minion M8 — Rover and cast numbers, A\* placement.** (1) No reference doc gives the
+      Rover's numbers; `content/ai/difficulties/rover.ts` and `content/ai/rover.ts` start them
+      as `TUNE` (retreat below 20%, engage within 16 m, hunt within 20 m when 0.2 of a health
+      bar ahead, sense the human within 400 m), and `normal`/`rover` cast with chance 0.3/0.6
+      at most every 3 s/2 s. Confirm or give values. (2) Better than the design, for sign-off:
+      the Phase 3 plan wants A\* "as a second `MovementStrategy`", but bots steer by `move`
+      commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). If accepted, sprint
+      3.2's line changes.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads

@@ -1620,3 +1620,27 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 680 passed (680)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: draft PR.
+
+### 2026-10-26 — Minion system M8 (Rover, A\* for Legends, bot casts) — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **A\* for Legends** (10 §9): `map/AStarPathfinder` (octile costs and heuristic, no corner
+    cutting, ties by cell index, string pulling, a cell budget from `content/ai/pathfinding.ts`)
+    behind the new `state/PathQuery` port (`state.paths`). `Simulation` builds one `WorldMap`
+    for it and the lane flow fields. The flow-field heap is now `map/CellHeap`, shared by both,
+    and line of sight is `WorldMap.isLineClear` (`FlowField` delegates).
+  - **Bot leaves:** `ai/BotLeaves` holds the conditions and actions both bot trees use;
+    `moveTo` heads for the A\* waypoint when the straight line is blocked.
+  - **Bot casts:** a fighting bot casts `ability-1` at its enemy when `abilityUseChance` comes
+    up on its brain's RNG stream, at most every `castIntervalTicks` (difficulty content).
+  - **`RoverController`** (11 §4.7): `Survive`, `Hunt`, `Fight`, `Mirror`, `Defend`; content
+    `content/ai/difficulties/rover.ts` and `content/ai/rover.ts`. Roster Rovers spawn at their
+    Stronghold with no lane; the client's placeholder roster adds the enemy Rover.
+  - **Tests:** the pathfinder (clear line, detour, determinism, no way), line of sight, the
+    heap, the Rover's branches (a driven Legend is not the human), bot routing and casting, and
+    match scenarios: a Rover spawns at its Stronghold, laners and a Rover play with no warnings
+    and the same hash twice.
+  - Stand-ins (plan §3) and INBOX (numbers; A\* as a query rather than a movement strategy).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 717 passed (717)"; client "Tests 417 passed (417)"; "Documentation check passed."
+- Next step: the pre-PR gate.

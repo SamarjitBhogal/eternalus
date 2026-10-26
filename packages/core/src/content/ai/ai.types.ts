@@ -100,4 +100,18 @@ export type BotDifficultyDefinition = {
   readonly arrivalDistance: number;
   /** The `UtilityScorer`'s weight for each target consideration. */
   readonly utilityWeights: Readonly<Record<'closeness' | 'weakness', number>>;
+  /** The chance, each time a cast is allowed, that a fighting bot casts an ability (0 to 1). */
+  readonly abilityUseChance: number;
+  /** At least this many ticks between two casts. */
+  readonly castIntervalTicks: number;
+};
+
+/** How the Rover hunts and mirrors the human (architecture 11 §4.7). Distances are metres. */
+export type RoverTactics = {
+  /** How far the Rover senses Legends for `HumanProximity` and mirroring. */
+  readonly senseRadius: number;
+  /** The human this close may be hunted. */
+  readonly huntRadius: number;
+  /** It hunts when its health fraction leads the human's by at least this much. */
+  readonly huntAdvantage: number;
 };
