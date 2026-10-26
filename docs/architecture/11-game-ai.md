@@ -354,8 +354,11 @@ work named:
   starting memory, rather than from its Legend definition.
 - `RoverController` (M8) plays §4.7 on the laner's leaves (`ai/BotLeaves`): `Survive`, `Hunt`
   (the human within `huntRadius` while the Rover leads on health by `huntAdvantage`), `Fight`,
-  `Mirror` (the human's lane) and `Defend` (the lane `assessLanes` names, for
-  `StructurePressure`). Until the match state names the human (12 §4), the human is the enemy
+  then `Lane`: one utility pick over the lanes between `StructurePressure` (the lane's
+  `laneScores` score, counted from the team's calmest lane) and `HumanProximity` (1 on the
+  human's lane), weighted by `ROVER_TACTICS.laneWeights`; on the human's lane it mirrors the
+  human, on another it defends with that lane's lead horde, and a full tie goes to the lane
+  nearest the middle. Until the match state names the human (12 §4), the human is the enemy
   Legend no controller drives, sensed through `Perception` within the `senseRadius` of
   `content/ai/rover.ts`. No `LaneAdvantage` push yet. Its numbers are `TUNE` (`INBOX.md`).
 - Bots cast `ability-1` at their enemy when `abilityUseChance` comes up on the brain's own RNG

@@ -5,8 +5,8 @@ import type { GameState } from './GameState';
 /**
  * How badly `team` is doing on each lane (MS-9, architecture 18 §3.3), lanes in index order: the
  * weighted score of structure damage not dealt, structures lost and how far enemy hordes have
- * pushed past the lane's midpoint, and the most that score can be. Reads only `state`;
- * O(lanes × hordes).
+ * pushed past the lane's midpoint. Reads only `state`; O(lanes × hordes). `mostLaneScore` is the
+ * highest a score can be.
  *
  * @remarks ponytail: damage-not-dealt is 1 and structures-lost 0 on every lane until structure
  * entities exist (minion plan M2c), so only `pushedBack` separates lanes for now.
@@ -34,6 +34,10 @@ export const laneScores = (
     return { id: lane.id, index: lane.index, score };
   });
 };
+
+/** The highest score `laneScores` can give a lane: every term at its most (each runs to 1). */
+export const mostLaneScore = (weights: LaneAssessmentWeights): number =>
+  weights.damageNotDealt + weights.structuresLost + weights.pushedBack;
 
 /**
  * The lane where `team` is worst off: the highest `laneScores` score. Ties go to the lane nearest

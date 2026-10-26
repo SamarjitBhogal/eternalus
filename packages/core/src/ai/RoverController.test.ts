@@ -133,6 +133,15 @@ describe('RoverController (11 §4.7)', () => {
     ]);
   });
 
+  it('Lane: with no pressure and no human it goes to the middle lane', () => {
+    // Two lanes: the middle is index 1, lane-1 along y 40; its point nearest (100, 30) is (100, 40).
+    const { rover, decide } = setUp({ x: 100, y: 30 });
+
+    expect(decide().commands).toEqual([
+      { type: 'move', actorId: rover, direction: { x: 0, y: 10 } },
+    ]);
+  });
+
   it('treats a Legend a controller drives as a bot, not the human', () => {
     // 18 m away: inside the hunt radius, outside the engage radius.
     const human = setUp();

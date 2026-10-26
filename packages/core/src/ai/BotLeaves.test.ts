@@ -16,7 +16,6 @@ const leaves = new BotLeaves({
   retreatTo: RETREAT_STRUCTURES,
 });
 
-/** A turn for a bot at `position` on the blocked-lane map (rift at x 50..70, y 10..30). */
 /** A pathfinder stub: past x 50 it leads via (60, 34), otherwise straight to the goal. */
 const STUB_PATHS: PathQuery = {
   waypoint: (_start, goal, out) => {
@@ -27,6 +26,7 @@ const STUB_PATHS: PathQuery = {
   },
 };
 
+/** A turn for a bot at `position` on the blocked-lane map, with or without pathfinding. */
 const turnAt = (position: { x: number; y: number }, withPaths: boolean): BotTurn => {
   const state = new GameState(createDefaultGameConfig(), 1, BLOCKED_LANE_MAP, {
     paths: withPaths ? STUB_PATHS : null,

@@ -1,5 +1,5 @@
 import type { EntityId } from '../state/EntityStore.types';
-import { laneScores } from '../state/LaneAssessment';
+import { laneScores, mostLaneScore } from '../state/LaneAssessment';
 import { Action } from './bt/Action';
 import { ActiveSelector } from './bt/ActiveSelector';
 import type { BtNode } from './bt/BtNode.types';
@@ -102,12 +102,16 @@ export class RoverController implements Controller {
     const humanAt = human === null ? undefined : BotLeaves.positionOf(state, human);
     const humanLane = humanAt === undefined ? undefined : state.routes?.nearestLane(humanAt)?.id;
     const scores = laneScores(state, turn.team, this.content.laneWeights);
-    const { damageNotDealt, structuresLost, pushedBack } = this.content.laneWeights;
     // Pressure counts from the calmest lane, so what every lane shares does not dilute it.
     const calmest = Math.min(...scores.map(({ score }) => score));
-    const most = damageNotDealt + structuresLost + pushedBack - calmest;
+    const most = mostLaneScore(this.content.laneWeights) - calmest;
+    // Lanes nearest the middle first, so a full tie goes there (as `assessLanes` breaks ties).
+    const middle = Math.floor(scores.length / 2);
+    const byMiddle = [...scores].sort(
+      (a, b) => Math.abs(a.index - middle) - Math.abs(b.index - middle) || a.index - b.index,
+    );
     const lane = this.laneScorer.best(
-      scores.map(({ id }) => id),
+      byMiddle.map(({ id }) => id),
       (id) => ({
         pressure: share((scores.find((score) => score.id === id)?.score ?? 0) - calmest, most),
         human: id === humanLane ? 1 : 0,

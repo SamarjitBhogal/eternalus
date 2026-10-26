@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-26
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -273,8 +273,12 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
 
 ## 12. Implementation status
 
-`physics/SpatialHash` (minion plan M1, M2a) is §5's counting-sort grid with `rebuild` and an
-exact, ascending `queryCircle`, over points only: no radii and no `queryRect` yet.
+`physics/SpatialHash` (minion plan M1, M2a) has §5's `rebuild` and an exact, ascending
+`queryCircle`, over points only: no radii and no `queryRect` yet. Since M8 it does not keep §5's
+per-cell `cellStart` array: `rebuild` sorts the points by `cell × count + index` and a query
+binary-searches each covered cell's run, so a rebuild costs what the points cost, not the
+`cols × rows` of the world (on a generated map the per-cell passes dominated the tick). Sign-off
+asked in `INBOX.md`; §5 changes once given.
 `physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
 `MovementSystem`. Horde separation (18 §5.2) falls off linearly with distance, not as 1/r.
 

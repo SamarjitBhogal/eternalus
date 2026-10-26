@@ -143,11 +143,20 @@ Reply inline (`Decision: …`).
       Better than the design, for sign-off: bot laners take lanes in roster order, the order
       match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
       `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
+- [ ] **Minion M8 — the neighbour grid's layout (better than the design, for sign-off).** Doc
+      10 §5 stores `SpatialHash` as a counting sort over a per-cell `cellStart` array. On a
+      generated map that array has hundreds of thousands of cells, and clearing and summing it
+      every tick took about three quarters of the simulation's time (the 3- and 5-lane routing
+      scenarios ran 57–60 s under coverage against a 60 s limit). M8 sorts the points by cell
+      instead (cost by unit count; queries binary-search a cell's run, results unchanged, now
+      5–9 s). If accepted, 10 §5's storage paragraph changes.
 - [ ] **Minion M8 — Rover and cast numbers, A\* placement.** (1) No reference doc gives the
       Rover's numbers; `content/ai/difficulties/rover.ts` and `content/ai/rover.ts` start them
       as `TUNE` (retreat below 20%, engage within 16 m, hunt within 20 m when 0.2 of a health
       bar ahead, sense the human within 400 m), and `normal`/`rover` cast with chance 0.3/0.6
-      at most every 3 s/2 s. Confirm or give values. (2) Better than the design, for sign-off:
+      at most every 3 s/2 s. The Rover weighs a lane's pressure against the human's lane 3 to 1
+      (`ROVER_TACTICS.laneWeights`), counting pressure from its team's calmest lane, so it
+      leaves the human for a lane pushed most of the way to its end. Confirm or give values. (2) Better than the design, for sign-off:
       the Phase 3 plan wants A\* "as a second `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked

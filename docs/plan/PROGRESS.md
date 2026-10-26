@@ -1669,3 +1669,23 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   earlier run timed out M4's 5-lane routing scenario at its 60 s limit under coverage while the
   machine was loaded; it takes about 10 s without coverage.
 - Next step: critic re-check, then the draft PR.
+
+### 2026-10-26 — Minion system M8, critic re-check — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: the re-check (`ab0dad2..1da6bbc`) confirmed the three blockers fixed and found
+  a new one: `npm run check` failed because M4's 3- and 5-lane routing scenarios took 57–60 s
+  under coverage against a 60 s limit. Timed at `9f3842c` (before M8) they were as slow, and a
+  profile put three quarters of the time in `SpaceSystem`: M2a's `SpatialHash.rebuild` cleared
+  and prefix-summed a per-cell array of hundreds of thousands of cells every tick. Root-cause
+  fix: `rebuild` sorts the points by cell and index and queries binary-search each cell's run,
+  so the cost follows the unit count (the scenarios now take 5–9 s under coverage), with a
+  regression test on a 10^6 × 10^6-cell world. This departs from 10 §5's counting-sort storage,
+  so it is a better-than-design item in INBOX and doc 10 §12. Should-fixes: doc 11 §10
+  describes the Rover's `Lane` pick; doc 03's config table lists the A\* fields; INBOX lists the
+  Rover's lane weights and the calmest-lane rule. Nits: `mostLaneScore` replaces the Rover's
+  copy of the score maximum; a full lane tie goes to the middle lane (tested);
+  `UtilityScorer.best` is generic over the option id; TSDoc fixes. Not changed: no cross-field
+  check of `pathSnapCells` against footprint sizes.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 726 passed (726)"; client "Tests 417 passed (417)"; "Documentation check passed."
+- Next step: critic re-check, then the draft PR.

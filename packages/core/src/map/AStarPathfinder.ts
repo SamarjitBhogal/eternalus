@@ -74,7 +74,10 @@ export class AStarPathfinder {
     return true;
   }
 
-  /** The open cell nearest `point` within `snapCells` (lower index on a tie), or -1. */
+  /**
+   * An open cell near `point`: the nearest on the first ring (by grid steps) that has one, within
+   * `snapCells`, lower index on a tie; -1 when there is none.
+   */
   private openCellNear(point: Vec2): number {
     const cell = this.grid.cellAt(point);
     if (cell === null) {
