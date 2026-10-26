@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-26
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -503,8 +503,8 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-24; the owner
 DEC-55). Where the text above differs, its corrections wait for the owner in `INBOX.md` HC-T1:
 
 - **Owner decisions the design text will state** once the owner approves its wording (`INBOX.md`
-  HC-T1, rows T-86 to T-88, applied together with the §2 row and sketch rows T-07, T-08 and T-14
-  to T-16, [decisions log](../reference/game-design/13-owner-decisions-log.md)): DEC-50,
+  HC-T1, rows T-87 and T-88, and T-86 applied together with the §2 row and sketch rows T-07, T-08
+  and T-14 to T-16, [decisions log](../reference/game-design/13-owner-decisions-log.md)): DEC-50,
   `SessionController` owns the `Match` lifetime (the world prepared in `match-loading`, the
   `Match` created when the match screen attaches its viewport and destroyed on leaving `match`);
   DEC-53 to DEC-55, on the screens built from the owner's Figma the Figma look is the default and
@@ -547,7 +547,10 @@ DEC-55). Where the text above differs, its corrections wait for the owner in `IN
   `match-failed`, `load-failed`); a `boot` load that rejects (a loader bug; a missing asset is only
   warned) opens the menu with `load-failed` until `BootScreen` offers a retry (plan Phase 5,
   sprint 5.2). Nothing produces `results` yet: `match-ended` comes with the `MatchDirector`
-  (Phase 3, sprint 3.5).
+  (Phase 3, sprint 3.5). Nothing catches an exception thrown by `Simulation.step()` during a
+  match, so no repro payload is logged and the session does not move on (`match-failed` covers
+  only a match that cannot start); Phase 6, sprint 6.4 ("Error boundaries and loop safety")
+  schedules it.
 - **Bridge.** New events beyond §5's sketch: `structure-state`, `asset-urls` (each image's URL and,
   where the manifest declares one, its draw box) and `credits`; §5's `capture-state` is now
   published; `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md)
@@ -569,18 +572,23 @@ DEC-55). Where the text above differs, its corrections wait for the owner in `IN
   gadget slots, each with `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64),
   `StructureStrip`, `ObjectiveTracker` (with an allegiance flag, register CD-03) and
   `CrystalStatus`. `HealthBar` and `AetherBar` are one-line leaves over `ResourceBar`; no shield
-  segment is drawn, because the snapshot carries no shield data and no plan entry yet publishes it
-  to the HUD. `AbilityBar` places its slots at the frame's fixed positions (the ultimate, then
+  segment is drawn, because the snapshot carries no shield data; Phase 4, sprint 4.7 builds
+  `HealthBar` on live Legend data as §3 designs it, shield segments included, though its task does
+  not name them. `AbilityBar` places its slots at the frame's fixed positions (the ultimate, then
   abilities 1 to 3; the gadgets in `GadgetBar`), and the `default-action` prompt of
-  [05](05-abilities-weapons-and-loadouts.md) §15 is not built; no plan entry schedules it.
+  [05](05-abilities-weapons-and-loadouts.md) §15 is not built: it belongs to Phase 4, sprint 4.7,
+  whose `AbilityBar` reads 05 §15's slot list (`default-action` is its last slot, prompted on
+  `<KeyGlyph action="interact" />`), though the sprint's task does not name it.
   `MatchClock` shows no phase label until `match-clock` carries the phase (Phase 3, sprint 3.5).
   `MinimapPanel` is a frame only: there is no `minimap-click` intent (the canvas handles a click)
   and no `minimapVisible` setting, and the canvas draws the minimap inside the HUD's ring
-  ([06](06-map-and-minimap.md) §10). Not built, because the frames do not draw them, each with the
-  plan entry that schedules it: `Scoreboard` (named for Phase 3, sprint 3.5 in [the Phase 2
-  architecture plan](../plan/phase-2-architecture.md), with no task line yet), `Announcer` (Phase 2,
-  sprint 2.8, and Phase 3, sprint 3.5), `DeveloperMenu` (v0 in Phase 1, sprint 1.5; complete in
-  Phase 5, sprint 5.5) and `PerfOverlay` (v1 in Phase 1, sprint 1.5; v2 in Phase 5, sprint 5.5).
+  ([06](06-map-and-minimap.md) §10). The `toggle-minimap` binding (M) has no handler, so the key
+  does nothing, and no plan task builds the setting or the intent (`INBOX.md` HC-Q19). Not built,
+  because the frames do not draw them, each with the plan entry that schedules it: `Scoreboard`
+  (named for Phase 3, sprint 3.5 in [the Phase 2 architecture
+  plan](../plan/phase-2-architecture.md), with no task line yet), `Announcer` (Phase 2, sprint 2.8,
+  and Phase 3, sprint 3.5), `DeveloperMenu` (v0 in Phase 1, sprint 1.5; complete in Phase 5,
+  sprint 5.5) and `PerfOverlay` (v1 in Phase 1, sprint 1.5; v2 in Phase 5, sprint 5.5).
 - **Styling and accessibility.** The selection screens are one 1920 × 1080 artboard scaled as a
   whole; the HUD is sized by its own unit `--hud-u`; both keep text at or above `--text-min`.
   The display switches (DEC-54, DEC-55) are built (`effectsRenderer` with the developer override

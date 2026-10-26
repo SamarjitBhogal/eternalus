@@ -1751,3 +1751,34 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Checked 117 Markdown files under docs/." "Documentation check passed." `git apply --check` on
   the unapplied patch prints nothing; the id resolver: 908 ids, 0 without a definition.
 - Next step: the owner's sign-offs (HC-T1, HC-C1, HC-Q17, HC-Q18), then the critic's second run.
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the doc side of the pre-PR critic's second run (stream B, round B10) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only; the critic's code findings are being reworked in lanes A and B):
+  - PR register (`docs/changelog/pr-feat-hud-and-character-select.md`): a section for the critic's
+    second run at `fcc7c85`. It records the verdict (request-changes, no blockers), each finding
+    with its severity, class and where it goes, the refuted list, and build-01: the JavaScript
+    bundle grew from 385.94 kB at base to 666.44 kB, partly from 62 inlined images. It also holds
+    the notes for the pull request's description and the merge preconditions.
+  - INBOX HC-T1: a note at its top splits the rows. Group (i) is 47 rows that only record the
+    owner's decisions or align `apps/client/AGENTS.md` with the approved design; it is the merge
+    precondition the critic asked for, and its patch also applies on its own. Group (ii) needs his
+    judgement. Nothing is ticked. New row T-145 schedules the replacement of the interim "Leave
+    cathedral" control in Phase 2, sprint 2.8 (register CD-22). T-32, T-36, T-41 and T-43 add the
+    manifest entry's draw box and the bridge's shared HUD layout geometry, and T-79, the drafted
+    architecture 08 status note, now names `createBrowserMatch` and `MatchHost`. The table has 125
+    rows.
+  - INBOX: HC-Q7 (1) names FR-111 and asks for the terms of the art tools, a merge precondition;
+    new HC-Q19 asks about the minimap's click intent, its visibility setting and the M key.
+  - Architecture 13 §10 (the branch's status note): the Session bullet names the uncaught
+    `Simulation.step()` exception and Phase 6, sprint 6.4; shield segments and the `default-action`
+    prompt point at Phase 4, sprint 4.7; the `toggle-minimap` binding has no handler (HC-Q19).
+  - Architecture 08 gains no note directly: an earlier one was removed so that 08 stays unchanged
+    until the owner approves its note (`fb310c6`), so the note stays HC-T1 row T-79.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1312 passed (1312)", statements 96.02 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed." `git apply --check`
+  prints nothing for the whole patch and for group (i) alone; the id resolver: 913 ids, 0
+  without a definition.
+- Next step: the next round, with the rework's facts; the owner's sign-off of HC-T1 group (i)
+  and his answer to HC-Q7 (1).
