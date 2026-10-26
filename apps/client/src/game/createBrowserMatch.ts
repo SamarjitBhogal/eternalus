@@ -76,12 +76,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         simulation: new Simulation({ config: gameConfig, seed: request.setup.seed, logger }),
         world: request.world,
         tickRate: gameConfig.tickRate,
-        scheduler: new RafFrameScheduler({
-          requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),
-          cancelAnimationFrame: (handle) => {
-            window.cancelAnimationFrame(handle);
-          },
-        }),
+        scheduler: new RafFrameScheduler(window),
         renderer,
         camera,
         input,
