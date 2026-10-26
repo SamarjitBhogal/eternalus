@@ -12,13 +12,12 @@ import { SegmentedBar } from './SegmentedBar';
 /** The two resource bars of the HUD (62:284). */
 type HudResource = 'health' | 'aether';
 
-/** What each resource bar reads and how it draws (a registry, rule 12). */
+/** What each resource bar reads (a registry, rule 12); its key is its `SegmentedBar` tone. */
 const RESOURCES: Readonly<
   Record<
     HudResource,
     {
       readonly label: string;
-      readonly tone: HudResource;
       readonly selectCurrent: (state: RootState) => number | null;
       readonly selectMax: (state: RootState) => number | null;
     }
@@ -26,13 +25,11 @@ const RESOURCES: Readonly<
 > = {
   health: {
     label: STRINGS.hud.health,
-    tone: 'health',
     selectCurrent: hudSlice.selectors.selectHealth,
     selectMax: hudSlice.selectors.selectMaxHealth,
   },
   aether: {
     label: STRINGS.hud.aether,
-    tone: 'aether',
     selectCurrent: hudSlice.selectors.selectAether,
     selectMax: hudSlice.selectors.selectMaxAether,
   },
@@ -50,7 +47,7 @@ export function ResourceBar({
   readonly resource: HudResource;
   readonly className?: string | undefined;
 }): ReactElement {
-  const { label, tone, selectCurrent, selectMax } = RESOURCES[resource];
+  const { label, selectCurrent, selectMax } = RESOURCES[resource];
   const current = useAppSelector(selectCurrent);
   const max = useAppSelector(selectMax);
   const fraction = fractionOf(current, max);
@@ -64,7 +61,7 @@ export function ResourceBar({
             ? undefined
             : STRINGS.hud.meterValue(Math.round(current), max)
         }
-        tone={tone}
+        tone={resource}
         size="resource"
       />
       <span className={styles.value} aria-hidden="true">
