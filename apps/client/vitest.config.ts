@@ -11,7 +11,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       name: 'client',
-      include: ['src/**/*.test.{ts,tsx}'],
+      include: ['src/**/*.test.{ts,tsx}', 'vite.config.test.ts'],
       environment: 'node',
       sequence: { shuffle: true, seed: 20260926 },
       restoreMocks: true,
