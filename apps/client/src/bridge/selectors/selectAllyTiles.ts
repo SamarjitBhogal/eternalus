@@ -24,18 +24,6 @@ export type AllyTile = {
   readonly accentToken: ColourToken | null;
 };
 
-/** The class and Legend a roster entry shows: the player's from the session's selection (HC-F3). */
-function pickOf(
-  entry: RosterEntry,
-  selection: { readonly classId: LegendClassId | null; readonly specId: string | null },
-): { readonly classId: LegendClassId | null; readonly specId: string | null } {
-  if (!entry.isPlayer) return { classId: entry.classId, specId: entry.specId };
-  return {
-    classId: selection.classId,
-    specId: selection.classId === null ? null : selection.specId,
-  };
-}
-
 function toTile(
   entry: RosterEntry,
   pick: { readonly classId: LegendClassId | null; readonly specId: string | null },
@@ -69,5 +57,5 @@ export const selectAllyTiles = createSelector(
     contentSlice.selectors.selectLegendClasses,
   ],
   (allies, selection, classes): readonly AllyTile[] =>
-    allies.map((entry) => toTile(entry, pickOf(entry, selection), classes)),
+    allies.map((entry) => toTile(entry, entry.isPlayer ? selection : entry, classes)),
 );

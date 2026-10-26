@@ -13,10 +13,6 @@
     11px/1.5 system-ui,
     sans-serif;
 }
-.toolbar b {
-  margin: 0 8px;
-  color: #b79f70;
-}
 .toolbar button {
   border: 1px solid #b79f7080;
   padding: 8px 12px;

@@ -10,6 +10,9 @@ import type {
   LegendSpecArt,
   LegendSpecCard,
 } from '../catalogue.types';
+import { contentSlice } from '../slices/contentSlice';
+import { matchSetupSlice } from '../slices/matchSetupSlice';
+import type { RootState } from '../store';
 
 /** The accent every fixture card has unless the test gives one. */
 const FIXTURE_ACCENT: ColourToken = '--class-magus-accent';
@@ -48,6 +51,26 @@ export function classCardFixture(
     hud: null,
     layoutOverrides: {},
     ...overrides,
+  };
+}
+
+/**
+ * The content and matchSetup slices with `legendClasses` loaded and `classId` picked (`null`: no
+ * pick).
+ */
+export function pickedClassState(
+  legendClasses: readonly LegendClassCard[],
+  classId: string | null,
+): Pick<RootState, 'content' | 'matchSetup'> {
+  return {
+    content: contentSlice.reducer(
+      undefined,
+      contentSlice.actions.catalogueLoaded({ ...contentSlice.getInitialState(), legendClasses }),
+    ),
+    matchSetup: matchSetupSlice.reducer(
+      undefined,
+      matchSetupSlice.actions.select(classId === null ? null : { classId, specId: null }),
+    ),
   };
 }
 

@@ -1,10 +1,10 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import type { AssetId, RasterBox, RenditionKey } from '../catalogue.types';
-import type { AssetGroup, AssetUrlKey, AssetUrls, CreditEntry } from '../events';
+import type { AssetGroup, AssetUrls, CreditEntry } from '../events';
 
 /** One value per URL key, for each asset group. */
-type ByGroup<T> = Readonly<Record<AssetGroup, Readonly<Record<AssetUrlKey, T>>>>;
+type ByGroup<T> = Readonly<Record<AssetGroup, Readonly<Record<AssetId, T>>>>;
 
 /** Loaded image URLs and draw boxes by asset group, and the credits generated from the manifest. */
 type AssetsSliceState = {
@@ -31,7 +31,7 @@ const initialState: AssetsSliceState = {
 };
 
 /** The value stored under `key` in any loaded group, or `null`. */
-function inAnyGroup<T>(byGroup: ByGroup<T>, key: AssetUrlKey): T | null {
+function inAnyGroup<T>(byGroup: ByGroup<T>, key: AssetId): T | null {
   for (const values of Object.values(byGroup)) {
     const value = values[key];
     if (value !== undefined) return value;

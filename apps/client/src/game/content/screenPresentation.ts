@@ -1,12 +1,6 @@
 // Screen-level presentation and the display switches (DEC-52, DEC-54, DEC-55): each switch is a
 // content value published on `DisplayCatalogue`, with the Figma original as the default.
-import type {
-  AssetId,
-  BackgroundSet,
-  ClassSelectLayout,
-  ContrastMode,
-  EffectsRenderer,
-} from '../../bridge/catalogue.types';
+import type { BackgroundSet } from '../../bridge/catalogue.types';
 import type { CataloguePresentation } from './CataloguePresentation.types';
 import {
   CLASS_PRESENTATION,
@@ -40,30 +34,23 @@ const BACKGROUND_SETS: readonly BackgroundSet[] = [
   },
 ];
 
-/** DEC-52: the class step's layout; `'alternate'` draws 62:70. */
-const CLASS_SELECT_LAYOUT: ClassSelectLayout = 'primary';
-/** The skull banner behind "Legend Selection" (62:144). */
-const SELECTION_BANNER_ASSET_ID: AssetId = 'selection-banner';
-/** The Figma-state chrome of Select Class (62:222). */
-const SELECT_CLASS_CHROME_ASSET_ID: AssetId = 'select-class-chrome';
-/** The Figma-state chrome of LOCK IN (58:277). */
-const LOCK_IN_CHROME_ASSET_ID: AssetId = 'lock-in-chrome';
-/** DEC-54: the Figma-render plates draw the Figma effects; `'css'` draws the live CSS path. */
-const EFFECTS_RENDERER: EffectsRenderer = 'figma-raster';
-/** DEC-55: the Figma colours; `'minimums'` swaps only the below-minimum tokens. */
-const CONTRAST_MODE: ContrastMode = 'figma';
-
 /** Everything the client adds to core display content. */
 export const CATALOGUE_PRESENTATION: CataloguePresentation = {
   classes: CLASS_PRESENTATION,
   lockedClasses: LOCKED_CLASS_PRESENTATION,
   specs: SPEC_PRESENTATION,
   backgroundSets: BACKGROUND_SETS,
-  classSelectLayout: CLASS_SELECT_LAYOUT,
-  selectionBannerAssetId: SELECTION_BANNER_ASSET_ID,
-  selectClassChromeAssetId: SELECT_CLASS_CHROME_ASSET_ID,
-  lockInChromeAssetId: LOCK_IN_CHROME_ASSET_ID,
-  effectsRenderer: EFFECTS_RENDERER,
-  contrastMode: CONTRAST_MODE,
+  /** DEC-52: the class step's layout; `'alternate'` draws 62:70. */
+  classSelectLayout: 'primary',
+  /** The skull banner behind "Legend Selection" (62:144). */
+  selectionBannerAssetId: 'selection-banner',
+  /** The Figma-state chrome of Select Class (62:222). */
+  selectClassChromeAssetId: 'select-class-chrome',
+  /** The Figma-state chrome of LOCK IN (58:277). */
+  lockInChromeAssetId: 'lock-in-chrome',
+  /** DEC-54: the Figma-render plates draw the Figma effects; `'css'` draws the live CSS path. */
+  effectsRenderer: 'figma-raster',
+  /** DEC-55: the Figma colours; `'minimums'` swaps only the below-minimum tokens. */
+  contrastMode: 'figma',
   hud: HUD_PRESENTATION,
 };

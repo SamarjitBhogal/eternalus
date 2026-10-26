@@ -1,26 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { classCardFixture } from '../__fixtures__/catalogueFixtures';
-import type { DisplayCatalogue } from '../catalogue.types';
-import { contentSlice } from '../slices/contentSlice';
+import { classCardFixture, pickedClassState } from '../__fixtures__/catalogueFixtures';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { selectSelectedClassCard } from './selectSelectedClassCard';
 
 const CLASSES = [classCardFixture({ classId: 'warrior' }), classCardFixture({ classId: 'magus' })];
 
-const stateWith = (classId: string | null) => ({
-  content: contentSlice.reducer(
-    undefined,
-    contentSlice.actions.catalogueLoaded({
-      ...contentSlice.getInitialState(),
-      legendClasses: CLASSES,
-    } satisfies DisplayCatalogue),
-  ),
-  matchSetup: matchSetupSlice.reducer(
-    undefined,
-    matchSetupSlice.actions.select(classId === null ? null : { classId, specId: null }),
-  ),
-});
+const stateWith = (classId: string | null) => pickedClassState(CLASSES, classId);
 
 describe('selectSelectedClassCard', () => {
   it('finds the catalogue card of the picked class, the same one after a countdown tick', () => {

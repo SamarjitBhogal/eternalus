@@ -175,7 +175,6 @@ export class ResourceController {
       }
     }
     this.cache.set(entry.id, {
-      group: entry.group,
       bytes,
       urls: entry.type === 'ui-image' ? urls : {},
       release: freeAll,
