@@ -8,6 +8,7 @@ import type { LegendSpecDefinition } from './legendSpecs.types';
 export const JUGGERNAUT = {
   id: 'juggernaut',
   classId: 'sentinel',
+  isSelectable: true,
   displayName: 'Juggernaut',
   legendName: null,
   roleLabel: null,

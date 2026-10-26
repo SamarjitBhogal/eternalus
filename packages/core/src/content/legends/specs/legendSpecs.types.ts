@@ -41,6 +41,11 @@ export type LegendSpecDefinition = {
    * checks that it names a loaded Legend class.
    */
   readonly classId: string;
+  /**
+   * Whether a player can pick this Legend at character select (DEC-49: setup data); one that is not
+   * shows as a locked card and cannot be locked in.
+   */
+  readonly isSelectable: boolean;
   /** The sub-class title players see ("Oracle"), the same on both teams; never mirrored. */
   readonly displayName: string;
   /** The Legend's name per team; `null` while the owner has named none. */

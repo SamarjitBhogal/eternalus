@@ -118,6 +118,10 @@ describe('LEGEND_SPECS', () => {
     expect(LEGEND_SPECS.get('necromancer').description).toBeNull();
   });
 
+  it('makes every Legend selectable (DEC-49)', () => {
+    expect(LEGEND_SPECS.all().filter((spec) => !spec.isSelectable)).toEqual([]);
+  });
+
   it('offers at least one Legend for every MVP class', () => {
     for (const classId of LEGEND_CLASSES.ids) {
       expect(LEGEND_SPECS.all().some((spec) => spec.classId === classId)).toBe(true);

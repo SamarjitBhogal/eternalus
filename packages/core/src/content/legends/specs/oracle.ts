@@ -9,6 +9,7 @@ import type { LegendSpecDefinition } from './legendSpecs.types';
 export const ORACLE = {
   id: 'oracle',
   classId: 'magus',
+  isSelectable: true,
   displayName: 'Oracle',
   legendName: { light: 'Elarion', dark: 'Noirale' },
   roleLabel: 'Support', // Figma 57:35

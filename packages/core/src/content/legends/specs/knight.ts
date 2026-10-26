@@ -8,6 +8,7 @@ import type { LegendSpecDefinition } from './legendSpecs.types';
 export const KNIGHT = {
   id: 'knight',
   classId: 'warrior',
+  isSelectable: true,
   displayName: 'Centurion',
   legendName: null,
   roleLabel: null,
