@@ -1657,3 +1657,31 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %; "✓ built";
   "Checked 117 Markdown files under docs/." "Documentation check passed."
 - Next step: the roster audit's list of docs (B8), then the owner's sign-offs.
+
+### 2026-10-25 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the roster audit's doc items (stream B, round B8) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only; the roster rename-friction audit and its rulings are build ruling
+  OD-38, and the code fixes are a separate round):
+  - The unapplied patch (INBOX HC-T1) has 122 rows. New rows T-116 to T-135 remove the remaining
+    copies of class names and "post-MVP sub-classes" from the requirements, architecture 04, 05,
+    17 and 18, the phase 4 plan, the backlog, reference 10 and 11, the glossary and the reference
+    README, each pointing to the content files; four are optional, and T-125 (architecture 18) is
+    addressed to its owner, SamarjitBhogal. T-136 to T-142 and the revised T-100 to T-102 change
+    "never renamed once used" to "never renamed once a save or a release stores it"; their
+    wording waits for the owner's answer to HC-Q18 (4). T-77's term is now "Flying", and T-101
+    no longer quotes a stale display name. Two stale texts of the owner's are flagged in HC-T1,
+    not edited (CP-13's "Why" line and phase 4's exit criterion 3).
+  - Reference 15: the shipped side of the Figma's renamed Legends (§1, CD-13, CD-14, CD-26) now
+    points to `packages/core/src/content/legends/specs/`; the Figma's own strings stay. The
+    appendix gains OD-38.
+  - INBOX: HC-F2 cites ADR 0018 point 5 (the id stays the owner's question); new HC-Q18 asks four
+    decisions with recommendations (the art-id prefix guard, class id versus entity kind,
+    self-naming prose, how far id permanence reaches) and notes the provenance strings and the
+    asset rename.
+  - The resolver found a definition in the repository for every id cited on the branch's added
+    lines (900 ids, 0 unresolved).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed."
+- Next step: the code fixes' round and its progress entry, then the owner's sign-offs (HC-T1,
+  HC-Q17, HC-Q18).
