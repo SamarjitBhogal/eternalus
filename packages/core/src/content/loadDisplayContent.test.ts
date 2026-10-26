@@ -35,7 +35,7 @@ describe('loadDisplayContent', () => {
   it('returns the validated Legend classes and Legends, in catalogue order', () => {
     const content = loadDisplayContent();
 
-    expect(content.legends.map((legend) => legend.id)).toEqual(['warrior', 'sentinel', 'magus']);
+    expect(content.legends.map((legend) => legend.id)).toEqual(LEGEND_CLASSES.ids);
     expect(content.legends).toEqual(LEGEND_CLASSES.all());
     expect(content.specs).toEqual(LEGEND_SPECS.all());
     expect(content.specs.map((spec) => spec.id)).toEqual(LEGEND_SPECS.ids);
