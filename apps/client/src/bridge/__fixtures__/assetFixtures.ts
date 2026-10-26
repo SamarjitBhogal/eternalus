@@ -102,6 +102,8 @@ export const TEST_ASSET_BOXES: Readonly<Record<string, RasterBox>> = {
   'flying-card-plate-idle': { left: 1427, top: 277, width: 246, height: 525 },
   'class-row-plate-magus': { left: 491, top: 198, width: 1216, height: 683 },
   'oracle-row-plate': { left: 459, top: 65, width: 1002, height: 936 },
+  'select-class-chrome': { left: 740, top: 858, width: 439, height: 163 },
+  'lock-in-chrome': { left: 754, top: 890, width: 411, height: 156 },
 };
 
 /**

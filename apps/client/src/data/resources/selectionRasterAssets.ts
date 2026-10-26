@@ -24,6 +24,7 @@ export const SELECTION_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       bytes: 12736,
       hash: '6ff9e81b6930b5a3357c07e827a2ec916d3020d0c087479a6305b375481f2135',
     },
+    box: { left: 754, top: 890, width: 411, height: 156 },
     licence: 'owner',
     source:
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 58:271, protocol R1 render (OA1) on scratch duplicate 96:205 of page 96:2; pass sub-P2b-lockin: composite over the original frame fill and backdrop with the oracle-picked row beneath; every layer above 58:277 and the label 58:276 hidden (r1-log W15); opaque crop; 1x lossless WebP. file = 58:277 with 58:276 hidden (render bounds 754.84, 890, 409.4 × 155.25) cropped to (754, 890, 411, 156), nothing removed, 2x lossy q92 (alpha lossless)',

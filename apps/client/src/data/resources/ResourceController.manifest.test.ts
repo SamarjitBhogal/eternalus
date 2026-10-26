@@ -91,6 +91,7 @@ describe('ResourceController with the shipped manifest', () => {
     await resources.load('selection-primary', () => undefined);
 
     expect(resources.boxes('selection-raster')).toEqual({
+      'lock-in-chrome': { left: 754, top: 890, width: 411, height: 156 },
       'oracle-row-plate': { left: 459, top: 65, width: 1002, height: 936 },
     });
     expect(resources.boxes('selection-primary')).toEqual(before);

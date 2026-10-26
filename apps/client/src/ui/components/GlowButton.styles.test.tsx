@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { TEST_ASSET_BOXES } from '../../bridge/__fixtures__/assetFixtures';
 import globalCss from '../../styles/global.css?raw';
 import { renderWithStore } from '../testStore';
 import { GlowButton } from './GlowButton';
-import { BOXED_CHROME_PLATES } from './GlowButton.constants';
 import styles from './GlowButton.module.css';
 import buttonCss from './GlowButton.module.css?raw';
 import { SELECTION_DEF_IDS } from './SelectionDefs.constants';
@@ -123,24 +123,27 @@ describe('GlowButton styles', () => {
     expect(ring).toContain(`height: ${String(Math.round(y + height) - y)}px;`);
   });
 
-  // The plate's manifest draw box (frame px) minus each skin's root origin: the box is the plate
-  // file's own pixel size, never cropped (CD-16), so a skin draws only the plate it is measured
-  // for.
+  // The plate's manifest draw box (frame px, which GlowButton sets as --glow-chrome-left/-top/
+  // -width/-height) minus each skin's root origin, at the box's own size: the box is the plate
+  // file's own pixel size, so the plate is never scaled or cropped (CD-16).
   it.each([
-    ['selectClass', 'select-class', 'select-class-chrome', 740, 858, 439, 163, 788, 908],
-    ['lockIn', 'lock-in', 'lock-in-chrome', 754, 890, 411, 156, 803, 940],
+    ['selectClass', 'select-class-chrome', 740, 858, 439, 163, 788, 908],
+    ['lockIn', 'lock-in-chrome', 754, 890, 411, 156, 803, 940],
   ] as const)(
     'places the %s chrome plate at its full render-bounds box',
-    (skinClass, skin, plateId, x, y, width, height, rootX, rootY) => {
+    (skinClass, plateId, x, y, width, height, rootX, rootY) => {
       const rule = (selector: string): string =>
         new RegExp(`\\n${selector.replace(/\./g, '\\.')} \\{([^}]*)\\}`).exec(buttonCss)?.[1] ??
         'missing';
       const root = rule(`.${skinClass}`);
 
-      expect(BOXED_CHROME_PLATES[skin]).toBe(plateId);
+      expect(TEST_ASSET_BOXES[plateId]).toEqual({ left: x, top: y, width, height });
       expect(root).toContain(`\n  left: ${String(rootX)}px;\n  top: ${String(rootY)}px;\n`);
       expect(rule(`.${skinClass} .chrome`)).toBe(
-        `\n  left: ${String(x - rootX)}px;\n  top: ${String(y - rootY)}px;\n  width: ${String(width)}px;\n  height: ${String(height)}px;\n`,
+        `\n  left: calc((var(--glow-chrome-left) - ${String(rootX)}) * 1px);\n  top: calc((var(--glow-chrome-top) - ${String(rootY)}) * 1px);\n`,
+      );
+      expect(rule('.chrome')).toContain(
+        '\n  width: calc(var(--glow-chrome-width) * 1px);\n  height: calc(var(--glow-chrome-height) * 1px);\n',
       );
     },
   );

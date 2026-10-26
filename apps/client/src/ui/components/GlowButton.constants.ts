@@ -1,6 +1,3 @@
-import type { AssetId } from '../../bridge/catalogue.types';
-import type { GlowButtonSkin } from './GlowButton.types';
-
 /**
  * The left brace of either button in a unit box (62:227 at 17.654 × 48.762, 58:322 at
  * 16.114 × 43.279: one shape), its point at the left; stroked 1 px, round caps.
@@ -17,13 +14,3 @@ export const BRACE_UNIT_PATH =
 export const BRACE_MIRRORED_UNIT_PATH =
   'M 0 0 L 0.17142857 0.031914894 L 0.45714286 0 L 0.45714286 0.31914894 L 1 0.5106383 ' +
   'L 0.45714286 0.64893617 L 0.45714286 0.9893617 L 0.17142857 0.95744681 L 0 1';
-
-/**
- * The plate each skin's chrome box is measured for: the box is that file's own pixel size, set by
- * the skin's `.chrome` rule in `GlowButton.module.css` (fixed at build time, so never an inline
- * style). Any other plate id draws the live chrome instead.
- */
-export const BOXED_CHROME_PLATES: Readonly<Record<GlowButtonSkin, AssetId>> = {
-  'select-class': 'select-class-chrome',
-  'lock-in': 'lock-in-chrome',
-};
