@@ -5,7 +5,6 @@ import { selectHudKit } from '../../bridge/selectors/selectHudKit';
 import { hudSlice } from '../../bridge/slices/hudSlice';
 import type { RootState } from '../../bridge/store';
 import { AssetImage } from '../components/AssetImage';
-import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { STRINGS } from '../strings';
 import { meterAttributes, percentOf } from './hudMeter';
@@ -56,7 +55,7 @@ export function LevelBadge(): ReactElement {
         <circle className={styles.ringStroke} cx="80.5" cy="80.5" r="80" strokeWidth="1" />
         <circle className={styles.innerDisc} cx="81" cy="81" r="69.5" strokeWidth="1" />
       </svg>
-      <AssetImage assetId={emblem} className={classNames(styles.emblem)} />
+      <AssetImage assetId={emblem} className={styles.emblem} />
       <span className={styles.level} aria-hidden="true">
         {level === null ? STRINGS.hud.noData : String(level)}
       </span>
