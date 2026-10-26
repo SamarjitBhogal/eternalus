@@ -274,6 +274,15 @@ describe('buildDisplayCatalogue', () => {
     expect(build().teamNames).toEqual(CONTENT.teamNames);
   });
 
+  it("maps core's isSelectable to the Legend status: true is available, false is locked", () => {
+    const statuses = (isSelectable: boolean) =>
+      build({ content: { specs: CONTENT.specs.map((spec) => ({ ...spec, isSelectable })) } })
+        .legendClasses.flatMap((card) => card.specs)
+        .map((spec) => spec.status);
+    expect(new Set(statuses(true))).toEqual(new Set(['available']));
+    expect(new Set(statuses(false))).toEqual(new Set(['locked']));
+  });
+
   it('carries the core profile display name', () => {
     expect(build({ content: { profileDisplayName: 'Annals' } }).profileDisplayName).toBe('Annals');
     expect(build().profileDisplayName).toBe(CONTENT.profileDisplayName);

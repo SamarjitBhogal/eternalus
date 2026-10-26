@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { classCardFixture, specCardFixture } from '../../../bridge/__fixtures__/catalogueFixtures';
+import type { DisplayCatalogue } from '../../../bridge/catalogue.types';
 import type { ClassSelection, UiIntent } from '../../../bridge/events';
-import { shippedCatalogue } from '../../content/__fixtures__/shippedCatalogue';
+import { selectLegendStepView } from '../../../bridge/selectors/selectLegendStepView';
+import {
+  catalogueWithUnselectableLegend,
+  shippedCatalogue,
+} from '../../content/__fixtures__/shippedCatalogue';
 import { testSession, testSessionDeps } from '../../testSessionDeps';
 import { SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
 
@@ -29,9 +34,9 @@ const CATALOGUE = {
 };
 
 /** The real states at character select (every load synchronous), recording each pick. */
-function atCharacterSelect() {
+function atCharacterSelect(catalogue: DisplayCatalogue = CATALOGUE) {
   const session = testSession({
-    catalogue: { load: () => CATALOGUE },
+    catalogue: { load: () => catalogue },
     resources: testSessionDeps().resources,
   });
   const picks: (ClassSelection | null)[] = [];
@@ -107,6 +112,21 @@ describe('CharacterSelectState', () => {
     );
     expect(picks).toEqual([]);
     expect(logger.records).toEqual([]);
+  });
+
+  it('shows a Legend core content marks unselectable as locked and never locks it in', () => {
+    const { catalogue, classId, specId } = catalogueWithUnselectableLegend();
+    const { controller, store, picks, send } = atCharacterSelect(catalogue);
+    send(
+      { kind: 'select-class', classId },
+      { kind: 'select-class', classId, specId },
+      { kind: 'confirm-selection' },
+    );
+    expect(picks).toEqual([{ classId, specId: null }]);
+    expect(controller.phase).toBe('character-select');
+    const view = selectLegendStepView(store.getState());
+    expect(view?.legends.find((legend) => legend.specId === specId)?.isAvailable).toBe(false);
+    expect(view?.canLockIn).toBe(false);
   });
 
   it('clears the pick on Back, and Back with nothing picked publishes nothing', () => {

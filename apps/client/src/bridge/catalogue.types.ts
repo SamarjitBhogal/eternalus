@@ -18,7 +18,7 @@ export type AssetId = string;
 /** A custom property declared in `styles/global.css`. Content names tokens, never colours (13 §7). */
 export type ColourToken = `--${string}`;
 /** `locked`: shown, never selectable, never given to a bot (DEC-48). */
-export type SelectionStatus = 'available' | 'locked';
+type SelectionStatus = 'available' | 'locked';
 /** The class-step layout (DEC-52): `primary` = Figma 62:125, `alternate` = 62:70. */
 export type ClassSelectLayout = 'primary' | 'alternate';
 /** The two looks of a selection card: `picked` = the enlarged card (62:152, 55:267). */
