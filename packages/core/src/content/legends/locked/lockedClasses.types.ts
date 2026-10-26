@@ -5,7 +5,12 @@
  * and this record goes.
  */
 export type LockedClassDefinition = {
-  /** Kebab-case content id the playable class will keep; never renamed once used (17 R26). */
+  /**
+   * Kebab-case content id the playable class will keep. No save, loadout, replay or release stores
+   * it yet, so renaming it is a content refactor whose missed references must fail the checks, as
+   * for a Legend id (ADR 0018 point 5; INBOX HC-F2 asks whether it stays `flying`); once a save or
+   * a release references it, it is never renamed (17 R26).
+   */
   readonly id: string;
   /** The name on the card. */
   readonly displayName: string;

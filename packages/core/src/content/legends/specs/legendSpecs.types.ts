@@ -30,7 +30,11 @@ export type LegendName = {
  * different things: the title is the same on both teams, the name is per team.
  */
 export type LegendSpecDefinition = {
-  /** Kebab-case content id; never renamed once used (17 R26). */
+  /**
+   * Kebab-case content id. No save or release stores it yet, so renaming it is a content refactor
+   * whose missed references must fail the checks (ADR 0018 point 5); once a save or a release
+   * references it, it is never renamed (17 R26).
+   */
   readonly id: string;
   /**
    * The class's content id (kebab-case, like every id reference in content); `SpecClassExistsRule`
