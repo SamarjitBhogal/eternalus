@@ -105,4 +105,8 @@ describe('loadDisplayContent', () => {
   it('names the two playable teams', () => {
     expect(loadDisplayContent().teamNames).toEqual({ light: 'Light', dark: 'Dark' });
   });
+
+  it('names the profile screen', () => {
+    expect(loadDisplayContent().profileDisplayName).toBe('Chronicle');
+  });
 });
