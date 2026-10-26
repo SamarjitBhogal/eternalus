@@ -1,3 +1,4 @@
+import { loadDisplayContent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import type { ColourToken, LegendClassCard, LegendSpecCard } from '../../bridge/catalogue.types';
@@ -8,6 +9,8 @@ import { rosterNamesThatAreNotIds, shippedCatalogue } from './__fixtures__/shipp
 import { createCoreCatalogue, NO_DISPLAY_OVERRIDES } from './coreCatalogue';
 
 const catalogue = shippedCatalogue().load();
+/** The core content the catalogue joins; its own tests pin the roster values (DEC-48, DEC-49). */
+const CONTENT = loadDisplayContent();
 
 const classCard = (classId: string): LegendClassCard => {
   const card = catalogue.legendClasses.find((candidate) => candidate.classId === classId);
@@ -54,13 +57,16 @@ const namesRoster = (token: string): boolean =>
   ROSTER_NAMES.some((name) => token.toLowerCase().includes(name));
 
 describe('coreCatalogue', () => {
-  it('lists the three MVP classes and the locked Harbinger, with blurbs', () => {
-    expect(catalogue.legendClasses.map((card) => [card.classId, card.displayName])).toEqual([
-      ['warrior', 'Legionnaire'],
-      ['sentinel', 'Sentinel'],
-      ['magus', 'Magus'],
-      ['flying', 'Harbinger'],
-    ]);
+  it('lists the three MVP classes and the locked flying class by content name, with blurbs', () => {
+    const names = new Map(
+      [...CONTENT.legends, ...CONTENT.lockedClasses].map(({ id, displayName }) => [
+        id,
+        displayName,
+      ]),
+    );
+    expect(catalogue.legendClasses.map((card) => [card.classId, card.displayName])).toEqual(
+      ['warrior', 'sentinel', 'magus', 'flying'].map((id) => [id, names.get(id)]),
+    );
     for (const card of catalogue.legendClasses) expect(card.blurb.length).toBeGreaterThan(0);
     expect(classCard('flying')).toMatchObject({ status: 'locked', hud: null, specs: [] });
     const available = catalogue.legendClasses.filter(isSelectableClass);
@@ -72,20 +78,13 @@ describe('coreCatalogue', () => {
   it('carries the owner’s Legend ids and sub-class titles (OA3)', () => {
     const titles = (classId: string) =>
       specs(classId).map((spec) => [spec.specId, spec.displayName]);
-    expect(titles('warrior')).toEqual([
-      ['assassin', 'Velite'],
-      ['knight', 'Centurion'],
-      ['paladin', 'Praetorian'],
-    ]);
-    expect(titles('sentinel')).toEqual([
-      ['colossus', 'Colossus'],
-      ['juggernaut', 'Juggernaut'],
-    ]);
-    expect(titles('magus')).toEqual([
-      ['catalyst', 'Catalyst'],
-      ['oracle', 'Oracle'],
-      ['necromancer', 'Necromancer'],
-    ]);
+    const contentTitles = (classId: string) =>
+      CONTENT.specs
+        .filter((spec) => spec.classId === classId)
+        .map((spec) => [spec.id, spec.displayName]);
+    expect(titles('warrior')).toEqual(contentTitles('warrior'));
+    expect(titles('sentinel')).toEqual(contentTitles('sentinel'));
+    expect(titles('magus')).toEqual(contentTitles('magus'));
   });
 
   it('defaults the display switches to the Figma originals', () => {

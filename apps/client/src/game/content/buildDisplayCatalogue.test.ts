@@ -34,13 +34,15 @@ const classCard = (cards: readonly LegendClassCard[], classId: string): LegendCl
   if (card === undefined) throw new Error(`no class ${classId}`);
   return card;
 };
+const CORE_FLYING = CONTENT.lockedClasses.find((locked) => locked.id === 'flying');
+if (CORE_FLYING === undefined) throw new Error('content has no flying locked class');
 /** The locked fourth card as the screens show it: core's name, blurb and role label (DEC-48). */
-const HARBINGER_CARD: LegendClassCard = {
+const FLYING_CARD: LegendClassCard = {
   classId: 'flying',
-  displayName: 'Harbinger',
-  blurb: 'Air-based; moves primarily in the air, like a jet or helicopter.',
+  displayName: CORE_FLYING.displayName,
+  blurb: CORE_FLYING.roleBlurb,
   status: 'locked',
-  roleLabel: 'aerial',
+  roleLabel: CORE_FLYING.roleLabel,
   tagline: null,
   description: null,
   accentToken: '--class-flying-accent',
@@ -227,7 +229,7 @@ describe('buildDisplayCatalogue', () => {
       'magus',
       'flying',
     ]);
-    expect(catalogue.legendClasses.at(-1)).toEqual(HARBINGER_CARD);
+    expect(catalogue.legendClasses.at(-1)).toEqual(FLYING_CARD);
     expect(classCard(catalogue.legendClasses, 'magus').specs.map((spec) => spec.specId)).toEqual([
       'necromancer',
       'oracle',
@@ -243,7 +245,7 @@ describe('buildDisplayCatalogue', () => {
       roleLabel: 'aloft',
     };
     expect(build({ content: { lockedClasses: [skyborn] } }).legendClasses.at(-1)).toEqual({
-      ...HARBINGER_CARD,
+      ...FLYING_CARD,
       displayName: 'Skyborn',
       blurb: 'Rides the wind.',
       roleLabel: 'aloft',
@@ -265,18 +267,22 @@ describe('buildDisplayCatalogue', () => {
   it('carries the core team names', () => {
     const teamNames = { light: 'Lux', dark: 'Umbra' };
     expect(build({ content: { teamNames } }).teamNames).toBe(teamNames);
-    expect(build().teamNames).toEqual({ light: 'Light', dark: 'Dark' });
+    expect(build().teamNames).toEqual(CONTENT.teamNames);
   });
 
   it('carries the core title and the per-team Legend name object', () => {
     const coreOracle = CONTENT.specs.find((spec) => spec.id === 'oracle');
+    if (coreOracle === undefined) throw new Error('content has no oracle');
     const oracle = classCard(build().legendClasses, 'magus').specs.find(
       (spec) => spec.specId === 'oracle',
     );
-    expect(oracle?.legendName).toBe(coreOracle?.legendName);
-    expect(oracle?.legendName).toEqual({ light: 'Elarion', dark: 'Noirale' });
-    expect(oracle?.displayName).toBe('Oracle');
-    expect(oracle?.ratings).toBe(coreOracle?.roleRatings);
+    expect(oracle?.legendName).toBe(coreOracle.legendName);
+    expect(oracle?.legendName).toEqual({
+      light: expect.any(String) as string,
+      dark: expect.any(String) as string,
+    });
+    expect(oracle?.displayName).toBe(coreOracle.displayName);
+    expect(oracle?.ratings).toBe(coreOracle.roleRatings);
   });
 
   it('keeps the plates on figma-raster and empties every plate on css', () => {
