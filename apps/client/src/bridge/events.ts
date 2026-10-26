@@ -91,21 +91,15 @@ export type AssetGroup =
   | 'match';
 
 /**
- * URL key of an asset (`id`) or of one of its renditions (`` `${AssetId}@${RenditionKey}` ``, e.g.
- * `oracle-portrait@ally-tile`). Both forms are strings while `AssetId` is `string`, so the type is
- * `AssetId` itself.
- */
-export type AssetUrlKey = AssetId;
-
-/**
  * URLs of a group's loaded images and the draw boxes its entries declare (both `{}` after
  * release); `ui/` reads them by asset id.
  */
 export type AssetUrls = {
   readonly group: AssetGroup;
-  readonly urls: Readonly<Record<AssetUrlKey, string>>;
+  /** By asset id, or `id@rendition` for a rendition's own file (a string, as `AssetId` is). */
+  readonly urls: Readonly<Record<AssetId, string>>;
   /** Keyed like `urls`; only a file the screens place at the slot it was baked for has one. */
-  readonly boxes: Readonly<Record<AssetUrlKey, RasterBox>>;
+  readonly boxes: Readonly<Record<AssetId, RasterBox>>;
 };
 
 /** One licence block of the About screen, generated from the asset manifest (13 §3 `selectCredits`). */
