@@ -21,11 +21,7 @@ const selectEmblem = (state: RootState) => selectHudKit(state)?.emblemAssetId ??
  * the Figma), the number is the total level. Without an XP value the ring stays dark and the
  * badge is an image "No data yet"; without a level the number is "—" (CD-13).
  */
-export function LevelBadge({
-  className,
-}: {
-  readonly className?: string | undefined;
-}): ReactElement {
+export function LevelBadge(): ReactElement {
   const level = useAppSelector(selectLevel);
   const xpFraction = useAppSelector(selectXpFraction);
   const emblem = useAppSelector(selectEmblem);
@@ -41,7 +37,7 @@ export function LevelBadge({
         });
   return (
     <div
-      className={classNames(styles.badge, className)}
+      className={styles.badge}
       style={
         xpFraction === null ? undefined : cssVars({ '--level-badge-progress': String(xpFraction) })
       }
