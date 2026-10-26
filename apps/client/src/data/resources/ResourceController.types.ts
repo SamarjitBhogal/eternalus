@@ -45,7 +45,6 @@ export type PlannedFile = {
 
 /** A loaded entry: what its group's `urls` lists, its loaded bytes, and how to free it. */
 export type CachedAsset = {
-  readonly group: AssetGroup;
   readonly bytes: number;
   readonly urls: Readonly<Record<string, string>>;
   readonly release: () => void;
