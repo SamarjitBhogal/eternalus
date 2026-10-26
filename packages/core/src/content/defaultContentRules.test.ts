@@ -8,6 +8,7 @@ import {
 } from './defaultContentRules';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
+import { ORACLE } from './legends/specs/oracle';
 import { ContentValidator } from './validation/ContentValidator';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
@@ -57,7 +58,7 @@ describe('createLegendSpecRules', () => {
   it('accepts every shipped Legend and reports each broken rule of a bad spec', () => {
     const validator = new ContentValidator(createLegendSpecRules(LEGEND_CLASSES));
     const broken = new ContentCatalogue([
-      { ...LEGEND_SPECS.get('oracle'), id: 'Bad_Id', classId: 'flying' },
+      { ...LEGEND_SPECS.get(ORACLE.id), id: 'Bad_Id', classId: 'flying' },
     ]);
 
     expect(() => {
