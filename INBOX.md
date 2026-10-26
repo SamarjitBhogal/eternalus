@@ -663,13 +663,13 @@ Reply inline (`Decision: …`).
       the canvas path, because the canvas draws the minimap and hit-tests the click; (2) Phase 5,
       sprint 5.4 (settings and keybindings), with the M handler in the same task.
 - [ ] **HC-Q20 — JavaScript bundle size (not urgent; decide in Sprint 3; pre-PR critic, run 2:
-      build-01).** The boot bundle is 557.32 kB (gzip 174.19 kB), against 385.94 kB at the branch's
-      base, and Vite warns above 500 kB. Images are no longer inlined into it: each loads with its
-      own asset group (architecture 14 §11). The rest of the growth is code: the asset manifest's
-      data (about 65 kB) and the new screens, components and HUD (about 70 kB). Option: load the
-      character-select and HUD code lazily (`React.lazy` or a dynamic import per screen), so the
-      boot bundle holds only what the menus need. Recommendation: decide in Sprint 3; it does not
-      block the MVP.
+      build-01).** The boot bundle is 556.27 kB (gzip 173.96 kB) at `a9e8295`, against 385.94 kB at
+      the branch's base, and Vite warns above 500 kB. Images are no longer inlined into it: each
+      loads with its own asset group (architecture 14 §11). The rest of the growth is code: the
+      asset manifest's data (about 65 kB) and the new screens, components and HUD (about 70 kB).
+      Option: load the character-select and HUD code lazily (`React.lazy` or a dynamic import per
+      screen), so the boot bundle holds only what the menus need. Recommendation: decide in Sprint
+      3; it does not block the MVP.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).

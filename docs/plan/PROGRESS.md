@@ -1847,3 +1847,42 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   without a definition.
 - Next step: the next round after the ponytail cuts and the critic's delta; the owner's sign-off
   of HC-T1 group (i) and his answer to HC-Q7 (1).
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the ponytail cuts, the critic's delta re-check and the final check (pre-PR gate steps 2 and 3) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (code in lanes A and B; recorded by stream B in round B12 from the orchestrator's
+  facts and the evidence in `eternalus-agent-work/hud-charselect/{ponytail,critic/delta,results}/`,
+  outside the repository; the cut and finding ids are defined in
+  `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - Ponytail (ADR 0010, level lite): four area reviewers proposed 20 cuts; a skeptic per area
+    accepted 19 and rejected pt-ui-hud-components-1 (a shared screen-reader-only stylesheet would
+    belong to no component, against ADR 0002). The orchestrator added pt-orch-1, the second pin of
+    the class ids in `loadDisplayContent.test.ts`. Lane A (`ui/`, 10 commits, `b45b295` to
+    `98f9ab2`, net −84 lines) merged as `30329db`; lane B (core, bridge, game and data, 10 commits,
+    `cc8ff8c` to `09a86ab`, net −64 lines) merged as `a9e8295`. Net −148 lines.
+  - Tests unchanged in number (core 617, client 1331); every changed test file keeps its number of
+    tests and expectations; one expectation changed on purpose (pt-orch-1).
+  - Pixels at `a9e8295`: 246 of 250 byte-identical to the baseline; the 4 that differ are the
+    known reorder on the harness's asset-check page, byte-identical to the shots verified in the
+    roster-fix round. "Worktree untouched: NO" was 3 gitignored build outputs only.
+  - Live probe at `a9e8295`: the development build passes every criterion, with its long-frame
+    check during character select information only (OD-30); the production build passes every
+    criterion, that one included. The in-match check confirms pt-game-data-1 in a real browser.
+  - The critic's delta re-check (`fcc7c85` to `a9e8295`): request-changes only because owner
+    items remain (C-01 and core-bridge-01 through `INBOX.md` HC-T1 group (i); HC-Q7 (1) for C-02
+    and ui-hud-components-assets-04). Every upheld run-2 code violation is closed, and the delta
+    adds no code violation. New: d-core-game-bridge-01 (acceptable: three public API changes of
+    `@eternalus/core` to call out in the pull request) and C-03 (this entry). Refuted: d-ui-01.
+  - Round B12 (docs): the PR register gains the ponytail table, the delta verdict, the API note
+    and the remaining merge preconditions; `INBOX.md` HC-Q20 gives the bundle size at `a9e8295`.
+    The pull request's description is drafted outside the repository
+    (`eternalus-agent-work/hud-charselect/streams/docs/PR-DESCRIPTION.md`).
+- Checks run: step 3 at `a9e8295` (the orchestrator's log `results/verify-a9e8295.log`):
+  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 617
+  passed (617)"; client "Tests 1331 passed (1331)", statements 96.3 %; the JavaScript bundle
+  556.27 kB (gzip 173.96 kB); "✓ built"; "Documentation check passed." Round B12's docs commit:
+  `npm run check` → `EXIT=0` with the same test totals, "Documentation check passed.";
+  `git apply --check` prints nothing for the whole patch and for group (i) alone; the id
+  resolver: 919 ids, 0 without a definition.
+- Next step: the owner's sign-off of HC-T1 group (i) and his answer to HC-Q7 (1), the merge
+  preconditions; then the pull request opens with the drafted description.

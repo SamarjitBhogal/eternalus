@@ -301,9 +301,10 @@ copy the bundle measured 557.03 kB (gzip 174.07 kB), with no data URIs. The warn
 ordinary code growth: the manifest data is about 65 kB, and the screens, components and HUD about
 70 kB.
 
-Outcome (`dc5bdfa`): the build sets `assetsInlineLimit: 0`, checked by `vite.config.test.ts`.
-At the merged `66482f4` the bundle is 557.32 kB (gzip 174.19 kB), with no data URIs, and each
-image is its own file. The warning remains at 557 kB, from that code growth (`INBOX.md` HC-Q20).
+Outcome (`dc5bdfa`): the build sets `assetsInlineLimit: 0`, checked by `vite.config.test.ts`. At the
+merged `66482f4` the bundle is 557.32 kB (gzip 174.19 kB), with no data URIs, and each image is its
+own file; after the ponytail cuts, at `a9e8295`, it is 556.27 kB (gzip 173.96 kB). The warning
+remains, from that code growth (`INBOX.md` HC-Q20).
 
 **The rework** of the critic's findings ran in two lanes, merged as `6b84d64` (lane A, seven
 commits) and `66482f4` (lane B, ten commits). At `66482f4`, `npm run check` exits 0 with core
@@ -343,8 +344,13 @@ and asked to record):
   source in the decisions log (tiers, post-MVP), the pips none.
 - core-bridge-03: `loadDisplayContent()` is better than the design; once the owner signs
   `INBOX.md` HC-B1, the design text of architecture 02 §6 and 05 §15 follows.
+- d-core-game-bridge-01 (the delta re-check, below): the rework changed the public API of
+  `@eternalus/core` three ways, as 02 §6 asks a pull request to say: `SpecDetailNames` is no
+  longer exported (core-bridge-04), `LegendSpecDefinition` gains a required `isSelectable`
+  (game-data-03) and `DisplayContent` gains `profileDisplayName` (game-data-02).
 
-**Merge preconditions** the critic asked for:
+**Merge preconditions** the critic asked for. After the rework, the ponytail cuts and the delta
+re-check, only these owner items remain:
 
 - **`INBOX.md` HC-T1 group (i)** (C-01, core-bridge-01): the 48 rows that only record the owner's
   decisions (DEC-48 to DEC-56, ADR 0018) or align a text with the approved design or rules
@@ -359,6 +365,76 @@ Architecture 08's status note (game-data-05) is not appended directly: an earlie
 removed so that 08 stays unchanged until the owner approves its note (`fb310c6`; the open
 `INBOX.md` item "Session C/H → Sam (2026-10-09, PRs #18 and #19)"). HC-T1 T-79 is that note,
 updated to name `createBrowserMatch` and `MatchHost`.
+
+## Ponytail (pre-PR gate step 2)
+
+The ponytail review (ADR 0010, level lite) ran on the branch at `66482f4`. Four area reviewers
+proposed 20 cuts; a skeptic per area checked each against the code and the design, accepted 19 and
+rejected one. The coordinating session accepted the 19 and added one of its own (pt-orch-1). Two
+lanes applied them: lane A (`ui/`, net −84 lines) merged as `30329db`, lane B (core, bridge, game
+and data, net −64 lines) as `a9e8295`, net −148 lines in all. The number of tests is unchanged
+(core 617, client 1331); every changed test file keeps its number of tests and expectations, and
+one expectation changed on purpose (pt-orch-1). The review and the lanes' notes are in the
+coordinating session's working folder (`ponytail/`), outside the repository.
+
+| Id                     | Cut                                                                                                                                        | Commit    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| pt-ui-screens-1        | The `px` and `--art-*` box helpers are shared in `selectionGeometry`.                                                                      | `b45b295` |
+| pt-ui-screens-2        | Two pass-through fields of the class step's model are dropped.                                                                             | `aa0f6fa` |
+| pt-ui-screens-3        | Cinzel's weight, kerning and ligatures are set once per selection module.                                                                  | `1f04753` |
+| pt-ui-screens-4        | The test helpers `withoutPreloads` and `autofocusedClassIds` are shared from `testStore`.                                                  | `fd3c862` |
+| pt-ui-screens-5        | A redundant `pointer-events` rule of the class row is dropped.                                                                             | `eaa5d59` |
+| pt-ui-hud-components-2 | `LevelBadge`'s unused `className` prop is dropped.                                                                                         | `1b185d8` |
+| pt-ui-hud-components-3 | One shared `boxVars` helper for manifest draw-box variables.                                                                               | `f96fe87` |
+| pt-ui-hud-components-4 | Single module classes are passed directly, without a `classNames` wrapper.                                                                 | `334e440` |
+| pt-ui-hud-components-5 | `ResourceBar`'s registry drops its `tone` field, which repeated its key.                                                                   | `d9d5bac` |
+| pt-ui-hud-components-6 | The `ResourceBar` numeral test helper is shared from `hudTestSupport`.                                                                     | `98f9ab2` |
+| pt-core-bridge-1       | The allegiance flag URLs are built from two input selectors.                                                                               | `cc8ff8c` |
+| pt-core-bridge-2       | `pickOf` is dropped; the roster entry or the selection goes straight to `toTile`.                                                          | `dca8470` |
+| pt-core-bridge-3       | The `AssetUrlKey` alias is folded into `AssetId`.                                                                                          | `4442956` |
+| pt-core-bridge-4       | One picked-class state builder for two selector tests.                                                                                     | `e338032` |
+| pt-game-data-1         | `RafFrameScheduler` is built on the window itself.                                                                                         | `78ce022` |
+| pt-game-data-2         | The unread `group` field of a cached asset is dropped.                                                                                     | `a84b2cf` |
+| pt-game-data-3         | A dead `.toolbar b` rule is dropped.                                                                                                       | `1a962e2` |
+| pt-game-data-4         | An optional chain finds the confirmed class card.                                                                                          | `bf133cc` |
+| pt-game-data-5         | The screen presentation values sit on their fields, with the DEC-52, DEC-54 and DEC-55 comments kept.                                      | `067c179` |
+| pt-orch-1              | The coordinating session's addition: a test compares the loaded class ids with `LEGEND_CLASSES.ids` instead of pinning them a second time. | `09a86ab` |
+
+**Rejected:** pt-ui-hud-components-1, one shared screen-reader-only rule for three components.
+A shared stylesheet would belong to no component, against ADR 0002's one CSS module per
+component, so the skeptic rejected it as a design change.
+
+## The critic's delta re-check (pre-PR gate step 3)
+
+The critic re-checked the change from `fcc7c85` to `a9e8295` (its report: `critic/delta/REPORT.md`
+in the coordinating session's working folder). **Verdict: request-changes, only because owner-only
+items remain open.** Every upheld run-2 violation in the code is closed, and the delta adds no
+code violation. `npm run check` at `a9e8295` exits 0 (the coordinating session's run).
+
+| Status at `a9e8295`                             | Run-2 findings                                                                                                                                                                                                                                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Closed by the rework                            | game-data-02, ui-screens-01, core-bridge-04, core-bridge-10, core-bridge-11, game-data-03, game-data-07, ui-screens-06, ui-screens-07, ui-screens-08, ui-hud-components-assets-01, ui-hud-components-assets-06, ui-hud-components-assets-07, core-bridge-06, and game-data-01's residual |
+| Open, for the owner (merge preconditions below) | C-01 and core-bridge-01 (`INBOX.md` HC-T1 group (i)); C-02 and ui-hud-components-assets-04 (HC-Q7 (1))                                                                                                                                                                                   |
+| Recorded, waiting on owner rows or answers      | core-bridge-09, game-data-05, game-data-06, game-data-12, ui-hud-components-assets-02 (queued HC-T1 rows and HC-Q19); core-bridge-03, core-bridge-05, core-bridge-07, core-bridge-08, ui-hud-components-assets-03 (HC-B1, HC-Q5, HC-Q2, HC-T1)                                           |
+| Notes in the pull request                       | core-bridge-02, game-data-04, ui-screens-02, ui-screens-04, ui-screens-09, ui-screens-10                                                                                                                                                                                                 |
+
+New findings of the delta:
+
+| Id                    | Severity | Class                  | What                                                                                                                                                                                                                    | Where it goes                                              |
+| --------------------- | -------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| d-core-game-bridge-01 | nit      | acceptable             | The public API of `@eternalus/core` changed three ways in the rework: `SpecDetailNames` is no longer exported, `LegendSpecDefinition` gains a required `isSelectable`, and `DisplayContent` gains `profileDisplayName`. | A note in the pull request (above).                        |
+| C-03                  | nit      | violation (sequencing) | The ponytail round had no `PROGRESS.md` entry and no record here.                                                                                                                                                       | Added in round B12: this section and the 2026-10-26 entry. |
+
+**Refuted:** d-ui-01 (the shared box helpers have no direct tests): their rounding is pinned by
+the layout tests, the manifest test checks that real inputs are integers, and every output string
+is pinned by the calling components' tests.
+
+The live probe at `a9e8295` passed every criterion in the production build and in the development
+build, where its check for long animation frames during character select is information only (build
+ruling OD-30). Its in-match check confirms the cut pt-game-data-1 in a real browser: the loop runs
+at about 30 frames per 500 ms. 246 of the 250 screenshots are byte-identical to the baseline; the
+other four are the visual harness's own asset-check page, byte-identical to the shots verified in
+the roster-fix round.
 
 ## Working ids
 
@@ -706,13 +782,13 @@ Protocol R1 (DEC-54) renders the owner's frames from duplicates on one scratch p
 
 ### The coordinated build's streams, lanes and rounds
 
-| Id                                           | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stream A, stream B, stream C                 | The three sessions of the coordinated build: A, integration and the merge train (the coordinating session, on the task branch); B, documentation (`docs/hud-charselect-docs`); C, the final visual audit and HUD rework (`fix/hud-charselect-visual`).                                                                                                                                                                                                                                                                                                                            |
-| Lane A, lane B                               | The two code sessions of the pre-PR critic's rework (`fix/hud-charselect-critic-a` and `fix/hud-charselect-critic-b`).                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Roster-fix round                             | Lane B's code round for build ruling OD-38 on `fix/hud-charselect-critic-b`: 12 commits (`f23ce76` to `f896faf`), merged together with round B8 into the task branch as `fcc7c85`. It built the roster audit's items P1 to P5, P7 and P11 (defined below).                                                                                                                                                                                                                                                                                                                        |
-| B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11 | The coordinating session's follow-up rounds for stream B, each opened with "GO Bn" and closed with "DONE Bn": for example, B5 applied the pre-PR critic's doc findings, B6 recorded ADR 0018 as the owner corrected it and added this file, B7 rewrote the edit-table rows that copied names, B8 is the roster audit's list of docs, B9 records the roster-fix round and the owner's visual sign-off (build rulings OD-39 and OD-39a), B10 is the doc side of the critic's second run, and B11 records that run's rework. Not the critic's finding B1 or the CSS audit's item B2. |
-| T-66, T-67, T-68, T-69, T-70, T-71, T-72     | Former rows of the `INBOX.md` HC-T1 edit table, which renamed reference 01's sub-class rows one by one; merged into T-65 in round B7 so that no row copies the roster (ADR 0018 point 4).                                                                                                                                                                                                                                                                                                                                                                                         |
+| Id                                                | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stream A, stream B, stream C                      | The three sessions of the coordinated build: A, integration and the merge train (the coordinating session, on the task branch); B, documentation (`docs/hud-charselect-docs`); C, the final visual audit and HUD rework (`fix/hud-charselect-visual`).                                                                                                                                                                                                                                                                                                                                                                                            |
+| Lane A, lane B                                    | The two code sessions of the pre-PR critic's rework (`fix/hud-charselect-critic-a` and `fix/hud-charselect-critic-b`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Roster-fix round                                  | Lane B's code round for build ruling OD-38 on `fix/hud-charselect-critic-b`: 12 commits (`f23ce76` to `f896faf`), merged together with round B8 into the task branch as `fcc7c85`. It built the roster audit's items P1 to P5, P7 and P11 (defined below).                                                                                                                                                                                                                                                                                                                                                                                        |
+| B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12 | The coordinating session's follow-up rounds for stream B, each opened with "GO Bn" and closed with "DONE Bn": for example, B5 applied the pre-PR critic's doc findings, B6 recorded ADR 0018 as the owner corrected it and added this file, B7 rewrote the edit-table rows that copied names, B8 is the roster audit's list of docs, B9 records the roster-fix round and the owner's visual sign-off (build rulings OD-39 and OD-39a), B10 is the doc side of the critic's second run, B11 records that run's rework, and B12 records the ponytail round and the critic's delta re-check. Not the critic's finding B1 or the CSS audit's item B2. |
+| T-66, T-67, T-68, T-69, T-70, T-71, T-72          | Former rows of the `INBOX.md` HC-T1 edit table, which renamed reference 01's sub-class rows one by one; merged into T-65 in round B7 so that no row copies the roster (ADR 0018 point 4).                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ### The roster audit's fix items (OD-38)
 
