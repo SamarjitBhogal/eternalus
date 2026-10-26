@@ -43,10 +43,7 @@ export type LegendSpecDefinition = {
   readonly classId: string;
   /** The sub-class title players see ("Oracle"), the same on both teams; never mirrored. */
   readonly displayName: string;
-  /**
-   * The Legend's name per team; `null` while the owner has named none (every Legionnaire and
-   * Sentinel Legend today).
-   */
+  /** The Legend's name per team; `null` while the owner has named none. */
   readonly legendName: LegendName | null;
   /** Role line after the title ("Support"); `null` until written. */
   readonly roleLabel: string | null;
