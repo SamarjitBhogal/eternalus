@@ -23,7 +23,7 @@ export type LegendName = {
 
 /**
  * A Legend: a named specialisation of a class (DEC-49; 17 R2). Display and setup data only (ADR
- * 0018, proposed): no stat modifiers or ability overrides until R2's gameplay lands, so picking
+ * 0018): no stat modifiers or ability overrides until R2's gameplay lands, so picking
  * one changes nothing in the simulation.
  *
  * @remarks The sub-class title (`displayName`) and the Legend's name (`legendName`) are two

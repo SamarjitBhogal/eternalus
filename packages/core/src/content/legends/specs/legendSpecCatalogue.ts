@@ -11,7 +11,7 @@ import { PALADIN } from './paladin';
 
 /**
  * Every Legend (a class's sub-class), in class order and then, for the Magus, the Figma's
- * left-to-right order. Display and setup data only (DEC-49; ADR 0018, proposed); the client reads
+ * left-to-right order. Display and setup data only (DEC-49; ADR 0018); the client reads
  * it through `loadDisplayContent()`.
  */
 export const LEGEND_SPECS = new ContentCatalogue<LegendSpecDefinition>([
