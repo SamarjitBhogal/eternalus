@@ -30,7 +30,7 @@ const RNG = { seed: 1, words: [1, 2, 3, 4] as const };
 /** A light Warrior laner on lane-0 (from x 20 to x 180 along y 20) of the two-lane map. */
 const setUp = (at = { x: 60, y: 20 }) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const perception = new Perception(state);
   const add = (

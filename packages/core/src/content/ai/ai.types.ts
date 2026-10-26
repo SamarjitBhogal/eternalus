@@ -114,4 +114,9 @@ export type RoverTactics = {
   readonly huntRadius: number;
   /** It hunts when its health fraction leads the human's by at least this much. */
   readonly huntAdvantage: number;
+  /**
+   * How it weighs a lane (11 §4.7): `pressure` (`StructurePressure`: how badly its team is doing
+   * there, 0 to 1) against `human` (`HumanProximity`: 1 on the human's lane).
+   */
+  readonly laneWeights: Readonly<Record<'pressure' | 'human', number>>;
 };

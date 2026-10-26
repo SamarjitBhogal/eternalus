@@ -1,4 +1,3 @@
-import { BLOCKED_LANE_MAP } from './__fixtures__/blockedLaneMap';
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_MAP_CONFIG } from '../content/maps/defaultMapConfig';
@@ -8,6 +7,7 @@ import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapGenerator } from './MapGenerator';
 import type { MapConfig } from './MapGenerator.types';
+import { BLOCKED_LANE_MAP } from './__fixtures__/blockedLaneMap';
 import { WorldMap } from './WorldMap';
 
 const isBlocking = (definitionId: string): boolean =>

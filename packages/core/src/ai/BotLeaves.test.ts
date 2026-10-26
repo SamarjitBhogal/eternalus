@@ -4,8 +4,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
-import { AStarPathfinder } from '../map/AStarPathfinder';
-import { WorldMap } from '../map/WorldMap';
+import type { PathQuery } from '../state/PathQuery.types';
 import { GameState } from '../state/GameState';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { BotTurn } from './BotLegendController.types';
@@ -18,15 +17,20 @@ const leaves = new BotLeaves({
 });
 
 /** A turn for a bot at `position` on the blocked-lane map (rift at x 50..70, y 10..30). */
+/** A pathfinder stub: past x 50 it leads via (60, 34), otherwise straight to the goal. */
+const STUB_PATHS: PathQuery = {
+  waypoint: (_start, goal, out) => {
+    const isBlocked = goal.x > 50;
+    out.x = isBlocked ? 60 : goal.x;
+    out.y = isBlocked ? 34 : goal.y;
+    return true;
+  },
+};
+
 const turnAt = (position: { x: number; y: number }, withPaths: boolean): BotTurn => {
-  const grid = WorldMap.fromDefinition(BLOCKED_LANE_MAP, 2, () => false);
-  const state = new GameState(
-    createDefaultGameConfig(),
-    1,
-    BLOCKED_LANE_MAP,
-    null,
-    withPaths ? new AStarPathfinder(grid, 10_000) : null,
-  );
+  const state = new GameState(createDefaultGameConfig(), 1, BLOCKED_LANE_MAP, {
+    paths: withPaths ? STUB_PATHS : null,
+  });
   const memory = { lane: 'lane-0', isRetreating: false, targetId: null, nextCastTick: 0 };
   return {
     state,
@@ -45,13 +49,12 @@ const turnAt = (position: { x: number; y: number }, withPaths: boolean): BotTurn
 };
 
 describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
-  it('heads for a waypoint around the rift when the straight line crosses it', () => {
+  it('heads for the pathfinder’s waypoint when it gives one', () => {
     const turn = turnAt({ x: 40, y: 20 }, true);
 
     leaves.moveTo(turn, { x: 80, y: 20 });
 
-    const [move] = turn.commands;
-    expect(move?.type === 'move' && move.direction.y !== 0).toBe(true);
+    expect(turn.commands).toEqual([{ type: 'move', actorId: 'bot', direction: { x: 20, y: 14 } }]);
   });
 
   it('walks straight when the line is clear, or when the match has no pathfinding', () => {

@@ -1,3 +1,5 @@
+import type { PathQuery } from './PathQuery.types';
+import type { SpaceQuery } from './SpaceQuery.types';
 /** Where a match is in its timeline (architecture 12 §2). */
 export type MatchPhase =
   'countdown' | 'early-game' | 'quarter-mark' | 'mid-game' | 'end-game' | 'victory' | 'defeat';
@@ -18,4 +20,12 @@ export type RecordedCommand = {
 export type TeamState = {
   unitsRequested: number;
   unitsSuppressed: number;
+};
+
+/** The match's spatial indexes, built by `Simulation` (none in most unit tests). */
+export type GameStateIndexes = {
+  /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
+  readonly space?: SpaceQuery | null;
+  /** A\* for Legends over the map's grid (architecture 10 §9). */
+  readonly paths?: PathQuery | null;
 };

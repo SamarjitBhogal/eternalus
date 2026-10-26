@@ -8,7 +8,7 @@ import { BOT_DIFFICULTIES } from '../content/ai/difficulties/botDifficulties';
 import { ROVER_BOT } from '../content/ai/difficulties/rover';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from '../content/ai/rover';
-import { unitClassOf } from '../content/ai/unitClasses';
+import { LEGEND_KIND_IDS } from '../content/legends/legendKinds';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
@@ -23,14 +23,14 @@ const controller = new RoverController({
   difficulties: { ...BOT_DIFFICULTIES, rover: { ...ROVER_BOT, abilityUseChance: 0 } },
   retreatTo: RETREAT_STRUCTURES,
   tactics: ROVER_TACTICS,
-  classOf: unitClassOf,
+  legendKinds: LEGEND_KIND_IDS,
   laneWeights: LANE_ASSESSMENT_WEIGHTS,
 });
 
 /** A dark Rover on the two-lane map (lane-0 along y 20, lane-1 along y 40, x 20 to 180). */
 const setUp = (at = { x: 100, y: 30 }) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const perception = new Perception(state);
   const add = (team: 'light' | 'dark', x: number, y: number, kind = 'warrior') => {
@@ -76,7 +76,7 @@ describe('RoverController (11 §4.7)', () => {
     });
   });
 
-  it('Mirror: goes to the human’s lane, at the point nearest the human, when not hunting', () => {
+  it('Lane: goes to the human’s lane when no lane is under pressure (mirror)', () => {
     const { add, rover, decide } = setUp({ x: 100, y: 30 });
     // Far beyond the engage radius, at full health: no hunt and no fight.
     add('light', 40, 42);
@@ -87,13 +87,50 @@ describe('RoverController (11 §4.7)', () => {
     ]);
   });
 
-  it('Defend: with no human in sight it holds the lane the assessment names', () => {
-    const { rover, decide } = setUp({ x: 100, y: 30 });
+  it('Lane: defends the lane the light hordes push deepest, over the human’s lane', () => {
+    const { state, add, rover, decide } = setUp({ x: 100, y: 30 });
+    add('light', 40, 42);
+    const lightHorde = (lane: string, progress: number) => {
+      state.hordes.add({
+        id: `horde-${lane}`,
+        team: 'light',
+        weightClass: 'light',
+        lane,
+        formationId: 'ranks',
+        memberIds: [add('light', 5, 5, 'light-mob')],
+        progress,
+      });
+    };
+    // Light has pushed all the way down lane-0 (160 m): the dark team's worst lane.
+    lightHorde('lane-0', 160);
 
-    const [move] = decide().commands;
-    expect(move).toMatchObject({ type: 'move', actorId: rover });
-    // It heads onto a lane (y 20 or y 40), not along the map's middle.
-    expect(move?.type === 'move' && Math.abs(move.direction.y)).toBe(10);
+    // No dark horde there, so the Rover takes the lane point nearest it: (100, 20).
+    expect(decide().commands).toEqual([
+      { type: 'move', actorId: rover, direction: { x: 0, y: -10 } },
+    ]);
+
+    // Now lane-1 is pushed as deep: the tie goes to the human's lane, lane-1, at (40, 40).
+    lightHorde('lane-1', 160);
+    expect(decide().commands).toEqual([
+      { type: 'move', actorId: rover, direction: { x: -60, y: 10 } },
+    ]);
+  });
+
+  it('Lane: with no human in sight it defends the worst lane alone', () => {
+    const { state, add, rover, decide } = setUp({ x: 100, y: 30 });
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-1',
+      formationId: 'ranks',
+      memberIds: [add('light', 5, 5, 'light-mob')],
+      progress: 160,
+    });
+
+    expect(decide().commands).toEqual([
+      { type: 'move', actorId: rover, direction: { x: 0, y: 10 } },
+    ]);
   });
 
   it('treats a Legend a controller drives as a bot, not the human', () => {

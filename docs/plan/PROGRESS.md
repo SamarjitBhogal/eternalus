@@ -1644,3 +1644,28 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 717 passed (717)"; client "Tests 417 passed (417)"; "Documentation check passed."
 - Next step: the pre-PR gate.
+
+### 2026-10-26 — Minion system M8, pre-PR gate — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `9f3842c..ab0dad2`) requested changes with
+  three blockers, all fixed. (1) A\* is shown taking the shorter side of an off-centre stamped
+  footprint, with the hand-computed optimal octile cost (`lastCost`), and going straight again
+  once the footprint is cleared. (2) The Rover's `Defend` could never run because `Mirror`
+  always came first: the two are now one utility pick over the lanes, `StructurePressure` (from
+  the new `laneScores`, counted from the calmest lane) against `HumanProximity` (the human's
+  lane), weighted in `content/ai/rover.ts`. (3) Tests show the Rover choosing the pushed lane
+  over the human's, the human's on a tie, and the worst lane with no human in sight.
+  Should-fixes: A\* snaps a blocked start or goal to the nearest open cell (a Rover inside its
+  Stronghold's footprint walks out); string pulling walks forward and stops at the first unseen
+  cell; `CellHeap.clear` resets only queued cells; the human search asks `Perception` for
+  Legends only and the stand-in names the rule it bends; `GameState` takes its indexes as one
+  object; `Simulation` builds the world and the controllers in helpers; A\*'s limits are
+  validated `GameConfig.map` values (`pathMaxExpansions`, `pathSnapCells`). Nits: the leaf test
+  uses a stub `PathQuery`; doc 18's status wording; import order; the INBOX item states that A\*
+  now costs inside the decision budget. Not changed: no path cache yet (a stand-in row);
+  `castIntervalTicks` stays in ticks, recorded in 11 §10. Ponytail (lite): lean already.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 724 passed (724)"; client "Tests 417 passed (417)"; "Documentation check passed." One
+  earlier run timed out M4's 5-lane routing scenario at its 60 s limit under coverage while the
+  machine was loaded; it takes about 10 s without coverage.
+- Next step: critic re-check, then the draft PR.

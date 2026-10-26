@@ -24,7 +24,7 @@ const STRATEGIES = createDefaultStrategyRegistry().movement;
 describe('PathingSystem', () => {
   it('sends the leader to the anchor and each member to its rank and file behind it', () => {
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
     const { slotSpacing, ranksWidth } = RANKS_FORMATION;
     // Light on lane-0 walks +x along y 20; the anchor is 40 m in, at (60, 20).
@@ -70,7 +70,7 @@ describe('PathingSystem', () => {
 
   it('chases a member’s attack target instead of its slot, and stops at attack reach', () => {
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
     const minion = factory.create('light-mob', 'light-minion', {
       team: 'light',
@@ -116,12 +116,9 @@ describe('PathingSystem', () => {
 
   it('does nothing without a map or index, without hordes or with an unknown formation', () => {
     const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
-    const state = new GameState(
-      createDefaultGameConfig(),
-      1,
-      TWO_LANE_MAP,
-      new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2),
-    );
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, {
+      space: new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2),
+    });
     state.hordes.add({
       id: 'horde-1',
       team: 'light',

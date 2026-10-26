@@ -149,8 +149,11 @@ Reply inline (`Decision: …`).
       bar ahead, sense the human within 400 m), and `normal`/`rover` cast with chance 0.3/0.6
       at most every 3 s/2 s. Confirm or give values. (2) Better than the design, for sign-off:
       the Phase 3 plan wants A\* "as a second `MovementStrategy`", but bots steer by `move`
-      commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). If accepted, sprint
-      3.2's line changes.
+      commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
+      the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
+      shows the cost.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads

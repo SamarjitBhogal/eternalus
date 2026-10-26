@@ -86,7 +86,7 @@ engages (§4). Pull request M3 adds the bot laners (§8): `SimulationOptions.ros
 Legends, spawned when the match is built at their own end of their lane, in ranks), `assignLanes`
 for MS-20 (bots in roster order rather than id order, up to `legendsPerLane`), a spawn's own controller and starting memory (`Placement.controller`, holding the lane)
 and `BotLegendController` playing doc 11 §4.2's laner tree. The Rover waits for its controller
-(M8, now built: it spawns at its Stronghold and takes no lane; doc 11 §10). Phase M4's lane flow fields are built as well (`map/LaneFlowFields`, the
+(M8; doc 11 §10). Phase M4's lane flow fields are built as well (`map/LaneFlowFields`, the
 Stronghold-to-gate ground included), and `LaneFollowMovementStrategy` follows them where the line
 to its target is blocked (§5.2). Lane objectives, gate holding and guards (M2c onward) wait for structure entities. The pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 

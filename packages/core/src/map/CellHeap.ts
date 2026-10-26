@@ -26,9 +26,11 @@ export class CellHeap {
     return this.count;
   }
 
-  /** Empties the heap. */
+  /** Empties the heap, touching only the cells still queued. */
   public clear(): void {
-    this.slots.fill(-1);
+    for (let slot = 0; slot < this.count; slot += 1) {
+      this.slots[this.cells[slot] ?? 0] = -1;
+    }
     this.count = 0;
   }
 

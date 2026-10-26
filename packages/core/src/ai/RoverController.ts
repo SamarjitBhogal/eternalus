@@ -1,5 +1,5 @@
 import type { EntityId } from '../state/EntityStore.types';
-import { assessLanes } from '../state/LaneAssessment';
+import { laneScores } from '../state/LaneAssessment';
 import { Action } from './bt/Action';
 import { ActiveSelector } from './bt/ActiveSelector';
 import type { BtNode } from './bt/BtNode.types';
@@ -9,6 +9,8 @@ import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 import type { RoverControllerContent } from './RoverController.types';
+import { share } from './utility/considerations';
+import { UtilityScorer } from './utility/UtilityScorer';
 
 /**
  * The enemy Rover, the hard bot (architecture 11 §4.7): no lane (18 §8), the laner's leaves and a
@@ -18,24 +20,27 @@ import type { RoverControllerContent } from './RoverController.types';
  * 2. `Hunt` (`HumanProximity`, `HumanVulnerability`): the human within `huntRadius` while the
  *    Rover's health fraction leads the human's by `huntAdvantage` → it fights the human.
  * 3. `Fight`, as a laner.
- * 4. `Mirror`: it goes to the point of the human's lane nearest the human.
- * 5. `Defend` (`StructurePressure`): with no human in sight it holds the team's worst lane, the one
- *    the lane assessment names, with that lane's lead horde.
+ * 4. `Lane`: a utility pick over the lanes, `StructurePressure` (how much worse its team is doing
+ *    on the lane than on its calmest one) against `HumanProximity` (the human's lane), weighted by `tactics.laneWeights`. On
+ *    the human's lane it mirrors the human (the lane point nearest them); on another it defends,
+ *    with that lane's lead horde.
  *
  * @remarks ponytail: the human is the enemy Legend no controller drives, sensed through
- * `Perception` within `senseRadius`, until the match state names it (12 §4 `humanLegendId`); the
- * lane assessment stands in for structure health per lane until structure entities exist
- * (minion plan M2c); no `LaneAdvantage` push yet.
+ * `Perception` (Legends only) within `senseRadius`, wider than 11 §3's vision-sized queries, until
+ * the match state names it (12 §4 `humanLegendId`); the lane scores stand in for structure health
+ * per lane until structure entities exist (minion plan M2c); no `LaneAdvantage` push yet.
  */
 export class RoverController implements Controller {
   public readonly id = 'rover';
   private readonly leaves: BotLeaves;
   private readonly root: BtNode<BotTurn>;
+  private readonly laneScorer: UtilityScorer<'pressure' | 'human'>;
 
   /** @param content - Difficulties, retreat points, tactics, kind classes and lane weights. */
   public constructor(private readonly content: RoverControllerContent) {
     const leaves = new BotLeaves(content);
     this.leaves = leaves;
+    this.laneScorer = new UtilityScorer(content.tactics.laneWeights);
     this.root = new ActiveSelector<BotTurn>([
       new Sequence([
         new Condition((turn) => leaves.shouldRetreat(turn)),
@@ -50,11 +55,7 @@ export class RoverController implements Controller {
         new Action((turn) => leaves.fight(turn)),
       ]),
       new Sequence([
-        new Condition((turn) => this.findHumanLane(turn)),
-        new Action((turn) => leaves.moveTo(turn, turn.destination)),
-      ]),
-      new Sequence([
-        new Condition((turn) => this.findWorstLane(turn)),
+        new Condition((turn) => this.chooseLane(turn)),
         new Action((turn) => leaves.moveTo(turn, turn.destination)),
       ]),
     ]);
@@ -94,19 +95,29 @@ export class RoverController implements Controller {
     return true;
   }
 
-  /** The point of the human's lane nearest the human. */
-  private findHumanLane(turn: BotTurn): boolean {
+  /** Picks the lane to play (pressure against the human's lane) and where on it to go. */
+  private chooseLane(turn: BotTurn): boolean {
+    const { state } = turn;
     const human = this.humanNear(turn, this.content.tactics.senseRadius);
-    const at = human === null ? undefined : BotLeaves.positionOf(turn.state, human);
-    const lane = at === undefined ? undefined : turn.state.routes?.nearestLane(at);
-    return at !== undefined && lane !== undefined && this.leaves.findLanePoint(turn, lane.id, at);
-  }
-
-  /** The lead allied horde of the lane the assessment names, or that lane's nearest point. */
-  private findWorstLane(turn: BotTurn): boolean {
-    const lane = assessLanes(turn.state, turn.team, this.content.laneWeights);
-    if (lane === undefined) {
+    const humanAt = human === null ? undefined : BotLeaves.positionOf(state, human);
+    const humanLane = humanAt === undefined ? undefined : state.routes?.nearestLane(humanAt)?.id;
+    const scores = laneScores(state, turn.team, this.content.laneWeights);
+    const { damageNotDealt, structuresLost, pushedBack } = this.content.laneWeights;
+    // Pressure counts from the calmest lane, so what every lane shares does not dilute it.
+    const calmest = Math.min(...scores.map(({ score }) => score));
+    const most = damageNotDealt + structuresLost + pushedBack - calmest;
+    const lane = this.laneScorer.best(
+      scores.map(({ id }) => id),
+      (id) => ({
+        pressure: share((scores.find((score) => score.id === id)?.score ?? 0) - calmest, most),
+        human: id === humanLane ? 1 : 0,
+      }),
+    );
+    if (lane === null) {
       return false;
+    }
+    if (lane === humanLane && humanAt !== undefined) {
+      return this.leaves.findLanePoint(turn, lane, humanAt);
     }
     return (
       this.leaves.findHorde(turn, lane) || this.leaves.findLanePoint(turn, lane, turn.position)
@@ -116,16 +127,16 @@ export class RoverController implements Controller {
   /** The nearest enemy Legend within `radius` that no controller drives, or `null`. */
   private humanNear(turn: BotTurn, radius: number): EntityId | null {
     const { state, team, position, perception } = turn;
-    const legends = perception.unitsWithin(position, radius, { hostileTo: team, aliveOnly: true });
+    const legends = perception.unitsWithin(position, radius, {
+      hostileTo: team,
+      aliveOnly: true,
+      kinds: this.content.legendKinds,
+    });
     let best: EntityId | null = null;
     let bestGap = Number.POSITIVE_INFINITY;
     for (const id of legends) {
-      const kind = state.entities.get(id)?.kind;
       const at = BotLeaves.positionOf(state, id);
-      const isHuman =
-        kind !== undefined &&
-        this.content.classOf(kind) === 'legend' &&
-        state.ai.get(id) === undefined;
+      const isHuman = state.ai.get(id) === undefined;
       const gap = at === undefined ? Number.POSITIVE_INFINITY : BotLeaves.gapSquared(position, at);
       // Candidates come in id order, so a strict comparison keeps the lower id on a tie.
       if (isHuman && gap < bestGap) {
