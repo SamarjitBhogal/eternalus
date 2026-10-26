@@ -31,10 +31,11 @@ describe('LEGEND_CLASSES', () => {
     const magus = LEGEND_CLASSES.get('magus');
 
     expect(magus.tagline).toBe('Aether  ·  Ranged Support');
+    // The prose names the class: built from `displayName`, a name renamed without it fails here.
     expect(magus.description).toBe(
-      'With a mastery of Aether, the Magus bends reality into torrents of destructive energy. ' +
-        'Channeling natural and arcane forces to decimate the enemy from afar and enhance nearby ' +
-        'allies.',
+      `With a mastery of Aether, the ${magus.displayName} bends reality into torrents of ` +
+        'destructive energy. Channeling natural and arcane forces to decimate the enemy from afar ' +
+        'and enhance nearby allies.',
     );
     for (const kind of ['warrior', 'sentinel'] as const) {
       expect(LEGEND_CLASSES.get(kind).tagline).toBeNull();
@@ -43,10 +44,12 @@ describe('LEGEND_CLASSES', () => {
   });
 
   it('gives the Magus the alternate layout description (62:82) and none to the others', () => {
-    expect(LEGEND_CLASSES.get('magus').alternateLayoutDescription).toBe(
-      'The masters of Aether, Magus focus on the use of \n' +
+    const magus = LEGEND_CLASSES.get('magus');
+
+    expect(magus.alternateLayoutDescription).toBe(
+      `The masters of Aether, ${magus.displayName} focus on the use of \n` +
         'abilities, while providing buffs for allies, and de-buffing \n' +
-        'enemy units. Specializing in ranged attacks, Magus \n' +
+        `enemy units. Specializing in ranged attacks, ${magus.displayName} \n` +
         'aim to keep their distance from enemies to dish out \n' +
         'damage with high sustain. ',
     );

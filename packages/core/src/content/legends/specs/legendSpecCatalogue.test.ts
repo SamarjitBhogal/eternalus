@@ -78,9 +78,11 @@ describe('LEGEND_SPECS', () => {
     const oracle = LEGEND_SPECS.get('oracle');
 
     expect(oracle.roleLabel).toBe('Support');
+    // The prose names the title: built from `displayName`, a title renamed without it fails here.
     expect(oracle.description).toBe(
-      'A voice of the Unison. The Oracle bends the Aether into chants that strengthen allies and ' +
-        'sap the will of the enemy, healing, warding, and stripping the courage from enemy Host.',
+      `A voice of the Unison. The ${oracle.displayName} bends the Aether into chants that ` +
+        'strengthen allies and sap the will of the enemy, healing, warding, and stripping the ' +
+        'courage from enemy Host.',
     );
     expect(oracle.roleRatings?.damage).toBe(152 / 395);
     expect(oracle.roleRatings?.support).toBe(333 / 395);
