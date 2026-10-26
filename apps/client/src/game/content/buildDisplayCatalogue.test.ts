@@ -274,6 +274,11 @@ describe('buildDisplayCatalogue', () => {
     expect(build().teamNames).toEqual(CONTENT.teamNames);
   });
 
+  it('carries the core profile display name', () => {
+    expect(build({ content: { profileDisplayName: 'Annals' } }).profileDisplayName).toBe('Annals');
+    expect(build().profileDisplayName).toBe(CONTENT.profileDisplayName);
+  });
+
   it('carries the core title and the per-team Legend name object', () => {
     const core = CONTENT.specs.find(
       (spec) => spec.legendName !== null && spec.roleRatings !== null,

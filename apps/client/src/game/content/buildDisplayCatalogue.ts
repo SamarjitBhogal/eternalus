@@ -287,7 +287,7 @@ export function buildDisplayCatalogue(inputs: {
       ...content.lockedClasses.map((locked) => toLockedCard(locked, presentation)),
     ],
     backgroundSets: presentation.backgroundSets,
-    profileDisplayName: presentation.profileDisplayName,
+    profileDisplayName: content.profileDisplayName,
     classSelectLayout: presentation.classSelectLayout,
     selectionBannerAssetId: presentation.selectionBannerAssetId,
     selectClassChromeAssetId: presentation.selectClassChromeAssetId,

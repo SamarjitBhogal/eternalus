@@ -246,7 +246,7 @@ export type DisplayCatalogue = {
   /** Card order; locked classes last (shown, never picked). */
   readonly legendClasses: readonly LegendClassCard[];
   readonly backgroundSets: readonly BackgroundSet[];
-  /** Themed display name of the profile screen ("Chronicle", naming.md). */
+  /** Themed display name of the profile screen (core content, naming.md). */
   readonly profileDisplayName: string;
   readonly classSelectLayout: ClassSelectLayout;
   /** Skull banner behind "Legend Selection" (62:144). */

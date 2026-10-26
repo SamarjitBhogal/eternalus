@@ -68,7 +68,6 @@ export type CataloguePresentation = {
   /** Keyed by core spec id; a core spec without an entry fails at boot. */
   readonly specs: Readonly<Record<string, SpecPresentation>>;
   readonly backgroundSets: readonly BackgroundSet[];
-  readonly profileDisplayName: string;
   readonly classSelectLayout: ClassSelectLayout;
   readonly selectionBannerAssetId: AssetId | null;
   readonly selectClassChromeAssetId: AssetId;

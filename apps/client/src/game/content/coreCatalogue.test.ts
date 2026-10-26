@@ -91,7 +91,10 @@ describe('coreCatalogue', () => {
     expect(catalogue.effectsRenderer).toBe('figma-raster');
     expect(catalogue.contrastMode).toBe('figma');
     expect(catalogue.classSelectLayout).toBe('primary');
-    expect(catalogue.profileDisplayName).toBe('Chronicle');
+  });
+
+  it("takes the profile screen's name from core content", () => {
+    expect(catalogue.profileDisplayName).toBe(CONTENT.profileDisplayName);
   });
 
   it('has a background set for the menu and for each team, coloured by token names only', () => {
