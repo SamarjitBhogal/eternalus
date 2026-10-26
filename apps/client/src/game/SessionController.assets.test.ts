@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetGroup, AssetUrls, SessionPhase } from '../bridge/events';
 import { assetsSlice } from '../bridge/slices/assetsSlice';
-import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
+import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import type {
   SessionContext,
   SessionControllerDeps,
@@ -44,7 +44,11 @@ function sessionWithResults(overrides: Partial<SessionControllerDeps> = {}) {
   const toMatch = async (): Promise<void> => {
     session.intent({ kind: 'start-match' });
     await session.resolveLoads();
-    session.intent({ kind: 'select-class', classId: 'magus', specId: 'oracle' });
+    session.intent({
+      kind: 'select-class',
+      classId: 'magus',
+      specId: firstAvailableSpecId('magus'),
+    });
     session.intent({ kind: 'confirm-selection' });
     session.clock.advance(REVEAL_COUNTDOWN_MS);
     await session.resolveLoads();

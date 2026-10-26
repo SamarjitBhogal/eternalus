@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetGroup } from '../../../bridge/events';
+import { firstAvailableSpecId } from '../../content/__fixtures__/shippedCatalogue';
 import { FakeSessionContext } from '../../FakeSessionContext';
 import { flushMicrotasks, testResources, testSession } from '../../testSessionDeps';
 import { REVEAL_COUNTDOWN_MS } from '../sessionTiming.constants';
 import { MatchLoadingState } from './MatchLoadingState';
+
+/** The Legend these tests pick for the sentinel class. */
+const SENTINEL_LEGEND = firstAvailableSpecId('sentinel');
 
 /** A fake context in match-loading, with the callbacks it gave its `match` group load. */
 function entered() {
@@ -22,7 +26,7 @@ async function atMatchLoading(overrides: Parameters<typeof testSession>[0] = {})
   await session.resolveLoads();
   session.intent({ kind: 'start-match' });
   await session.resolveLoads();
-  session.intent({ kind: 'select-class', classId: 'sentinel', specId: 'colossus' });
+  session.intent({ kind: 'select-class', classId: 'sentinel', specId: SENTINEL_LEGEND });
   session.intent({ kind: 'confirm-selection' });
   session.clock.advance(REVEAL_COUNTDOWN_MS);
   return session;
@@ -80,7 +84,7 @@ describe('MatchLoadingState', () => {
     await settle();
     session.intent({ kind: 'start-match' });
     await settle();
-    session.intent({ kind: 'select-class', classId: 'sentinel', specId: 'colossus' });
+    session.intent({ kind: 'select-class', classId: 'sentinel', specId: SENTINEL_LEGEND });
     session.intent({ kind: 'confirm-selection' });
     session.clock.advance(REVEAL_COUNTDOWN_MS);
     await settle();

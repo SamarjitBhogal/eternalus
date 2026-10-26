@@ -1,6 +1,7 @@
 import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
@@ -17,6 +18,8 @@ import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTimin
 import { testSession } from './testSessionDeps';
 
 const CONFIG = createDefaultGameConfig();
+/** The Legend these tests pick for the magus class. */
+const MAGUS_LEGEND = firstAvailableSpecId('magus');
 
 const CHROME = {
   onInteriorChanged: () => undefined,
@@ -70,7 +73,7 @@ function setUp(overrides: Partial<SessionControllerDeps> = {}) {
       session.intent({ kind: 'start-match' });
       await session.resolveLoads();
     }
-    session.intent({ kind: 'select-class', classId: 'magus', specId: 'catalyst' });
+    session.intent({ kind: 'select-class', classId: 'magus', specId: MAGUS_LEGEND });
     session.intent({ kind: 'confirm-selection' });
     session.clock.advance(REVEAL_COUNTDOWN_MS);
   };
@@ -90,7 +93,7 @@ describe('SessionController match lifetime', () => {
     const session = setUp();
     await session.toCharacterSelect();
     session.clock.advance(SELECT_COUNTDOWN_MS - 1);
-    session.intent({ kind: 'select-class', classId: 'magus', specId: 'catalyst' });
+    session.intent({ kind: 'select-class', classId: 'magus', specId: MAGUS_LEGEND });
     session.intent({ kind: 'confirm-selection' });
     session.clock.advance(REVEAL_COUNTDOWN_MS);
 

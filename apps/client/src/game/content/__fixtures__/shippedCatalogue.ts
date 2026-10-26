@@ -5,6 +5,7 @@
  */
 import { loadDisplayContent } from '@eternalus/core';
 
+import { isSelectableSpec } from '../../../bridge/selectionRules';
 import { ASSET_MANIFEST } from '../../../data/resources/AssetManifest';
 import type { CatalogueSource } from '../CatalogueSource.types';
 import type { DisplayOverrides } from '../CataloguePresentation.types';
@@ -18,6 +19,21 @@ export function shippedCatalogue(
     knownAssetIds: new Set(ASSET_MANIFEST.assets.map((entry) => entry.id)),
     overrides,
   });
+}
+
+/**
+ * The first selectable Legend of `classId` in the shipped catalogue: a test that needs a real pick
+ * names the class and takes the Legend from here, so a renamed Legend id needs no test edit.
+ *
+ * @throws Error when the shipped catalogue offers no selectable Legend for `classId`.
+ */
+export function firstAvailableSpecId(classId: string): string {
+  const card = shippedCatalogue()
+    .load()
+    .legendClasses.find((candidate) => candidate.classId === classId);
+  const spec = card?.specs.find(isSelectableSpec);
+  if (spec === undefined) throw new Error(`no selectable Legend for class "${classId}"`);
+  return spec.specId;
 }
 
 /** Titles the roster no longer uses (DEC-49: the Figma's "Cantor", the earlier "Gravecaller"). */

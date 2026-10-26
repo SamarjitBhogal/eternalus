@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ASSET_LICENCES } from '../data/resources/assetLicences';
 import { ASSET_MANIFEST } from '../data/resources/AssetManifest';
 import { describeCredits } from '../data/resources/describeCredits';
-import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
+import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeRunningMatch } from './FakeRunningMatch';
 import { FakeSessionContext } from './FakeSessionContext';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
@@ -107,19 +107,18 @@ describe('FakeSessionContext', () => {
     const context = new FakeSessionContext();
     const before = context.selection();
 
-    context.recordSelection({ classId: 'sentinel', specId: 'colossus' });
+    const pick = { classId: 'sentinel', specId: firstAvailableSpecId('sentinel') };
+
+    context.recordSelection(pick);
     const picked = context.selection();
     context.recordSelection(null);
 
     expect({ before, picked, after: context.selection() }).toEqual({
       before: null,
-      picked: { classId: 'sentinel', specId: 'colossus' },
+      picked: pick,
       after: null,
     });
-    expect(context.calls.recordSelection).toEqual([
-      [{ classId: 'sentinel', specId: 'colossus' }],
-      [null],
-    ]);
+    expect(context.calls.recordSelection).toEqual([[pick], [null]]);
   });
 
   it('builds a new FakeRunningMatch per createMatch and keeps each in order', () => {

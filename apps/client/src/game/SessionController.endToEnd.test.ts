@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BridgeEventMap } from '../bridge/events';
 import { isSelectableClass } from '../bridge/selectionRules';
 import { TypedEventBus } from '../bridge/TypedEventBus';
-import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
+import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { Camera } from './engine/Camera';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
@@ -108,13 +108,17 @@ describe('SessionController with the real match, end to end', () => {
       return host;
     };
     const session = testSession({ bus, createMatch });
-    /** Boot, character select (Magus, Catalyst), the reveal and the match load. */
+    /** Boot, character select (the magus class, its first Legend), the reveal and the match load. */
     const toMatch = async (): Promise<void> => {
       session.controller.start();
       await session.resolveLoads();
       session.intent({ kind: 'start-match' });
       await session.resolveLoads();
-      session.intent({ kind: 'select-class', classId: 'magus', specId: 'catalyst' });
+      session.intent({
+        kind: 'select-class',
+        classId: 'magus',
+        specId: firstAvailableSpecId('magus'),
+      });
       session.intent({ kind: 'confirm-selection' });
       session.clock.advance(REVEAL_COUNTDOWN_MS);
       await session.resolveLoads();

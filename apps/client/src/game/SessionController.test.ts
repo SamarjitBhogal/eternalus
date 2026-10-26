@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SessionPhase } from '../bridge/events';
+import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
 import type { SessionContext, SessionState } from './SessionController.types';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
@@ -78,7 +79,7 @@ describe('SessionController with the default states', () => {
 
     intent({ kind: 'select-class', classId: 'sentinel' });
     expect(store.getState().matchSetup.selection).toEqual({ classId: 'sentinel', specId: null });
-    intent({ kind: 'select-class', classId: 'sentinel', specId: 'colossus' });
+    intent({ kind: 'select-class', classId: 'sentinel', specId: firstAvailableSpecId('sentinel') });
     intent({ kind: 'confirm-selection' });
     expect(controller.phase).toBe('pre-launch');
     expect(store.getState().matchSetup.revealMs).toBe(REVEAL_COUNTDOWN_MS);
@@ -131,7 +132,7 @@ describe('SessionController with the default states', () => {
 
   it('goes to pre-launch when the countdown ends with an unconfirmed selection', async () => {
     const { controller, clock, intent } = await atCharacterSelect();
-    intent({ kind: 'select-class', classId: 'warrior', specId: 'knight' });
+    intent({ kind: 'select-class', classId: 'warrior', specId: firstAvailableSpecId('warrior') });
     clock.advance(SELECT_COUNTDOWN_MS);
     expect(controller.phase).toBe('pre-launch');
   });
@@ -141,7 +142,8 @@ describe('SessionController with the default states', () => {
     // `flying` is the locked Harbinger card: shown, never selectable (DEC-48).
     intent({ kind: 'select-class', classId: 'flying' });
     intent({ kind: 'select-class', classId: 'unknown-class' });
-    intent({ kind: 'select-class', classId: 'magus', specId: 'colossus' });
+    // A Sentinel Legend under the magus class: a known Legend of another class.
+    intent({ kind: 'select-class', classId: 'magus', specId: firstAvailableSpecId('sentinel') });
     intent({ kind: 'confirm-selection' });
     expect(controller.phase).toBe('character-select');
     expect(store.getState().matchSetup.selection).toEqual({ classId: null, specId: null });
@@ -184,7 +186,11 @@ describe('SessionController with the default states', () => {
     const playToResults = async (): Promise<void> => {
       session.intent({ kind: 'start-match' });
       await session.resolveLoads();
-      session.intent({ kind: 'select-class', classId: 'sentinel', specId: 'juggernaut' });
+      session.intent({
+        kind: 'select-class',
+        classId: 'sentinel',
+        specId: firstAvailableSpecId('sentinel'),
+      });
       session.intent({ kind: 'confirm-selection' });
       session.clock.advance(REVEAL_COUNTDOWN_MS);
       await session.resolveLoads();

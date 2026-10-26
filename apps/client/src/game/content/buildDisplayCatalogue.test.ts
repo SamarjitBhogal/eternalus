@@ -105,8 +105,9 @@ describe('buildDisplayCatalogue', () => {
     ]);
     expect(magus.layoutOverrides.alternate?.details?.[2]?.displayName).toBe('Arcane Intellect');
     expect(magus.layoutOverrides.alternate?.description).toMatch(/^The masters of Aether/);
-    const oracle = magus.specs.find((spec) => spec.specId === 'oracle');
-    expect(oracle?.details).toEqual([
+    // The Legend whose detail rows core names; presentation gives them icons.
+    const detailed = CONTENT.specs.find((spec) => spec.detailNames.specialty !== null);
+    expect(magus.specs.find((spec) => spec.specId === detailed?.id)?.details).toEqual([
       {
         slot: 'signature',
         displayName: 'Aetheric Recall',
@@ -164,9 +165,11 @@ describe('buildDisplayCatalogue', () => {
     expect(() => build({ presentation: { classes: omit(CLASS_PRESENTATION, 'magus') } })).toThrow(
       'class "magus" has no presentation',
     );
+    const [spec] = CONTENT.specs;
+    if (spec === undefined) throw new Error('content has no Legend');
     expect(() =>
-      build({ presentation: { specs: omit(CATALOGUE_PRESENTATION.specs, 'oracle') } }),
-    ).toThrow('spec "oracle" has no presentation');
+      build({ presentation: { specs: omit(CATALOGUE_PRESENTATION.specs, spec.id) } }),
+    ).toThrow(`spec "${spec.id}" has no presentation`);
   });
 
   it('throws naming a presentation key left without a content entry (a renamed or removed id)', () => {
@@ -230,11 +233,12 @@ describe('buildDisplayCatalogue', () => {
       'flying',
     ]);
     expect(catalogue.legendClasses.at(-1)).toEqual(FLYING_CARD);
-    expect(classCard(catalogue.legendClasses, 'magus').specs.map((spec) => spec.specId)).toEqual([
-      'necromancer',
-      'oracle',
-      'catalyst',
-    ]);
+    expect(classCard(catalogue.legendClasses, 'magus').specs.map((spec) => spec.specId)).toEqual(
+      CONTENT.specs
+        .filter((spec) => spec.classId === 'magus')
+        .map((spec) => spec.id)
+        .reverse(),
+    );
   });
 
   it('names a locked card from core and draws it from presentation', () => {
@@ -271,18 +275,20 @@ describe('buildDisplayCatalogue', () => {
   });
 
   it('carries the core title and the per-team Legend name object', () => {
-    const coreOracle = CONTENT.specs.find((spec) => spec.id === 'oracle');
-    if (coreOracle === undefined) throw new Error('content has no oracle');
-    const oracle = classCard(build().legendClasses, 'magus').specs.find(
-      (spec) => spec.specId === 'oracle',
+    const core = CONTENT.specs.find(
+      (spec) => spec.legendName !== null && spec.roleRatings !== null,
     );
-    expect(oracle?.legendName).toBe(coreOracle.legendName);
-    expect(oracle?.legendName).toEqual({
+    if (core === undefined) throw new Error('content has no named Legend with ratings');
+    const card = classCard(build().legendClasses, core.classId).specs.find(
+      (spec) => spec.specId === core.id,
+    );
+    expect(card?.legendName).toBe(core.legendName);
+    expect(card?.legendName).toEqual({
       light: expect.any(String) as string,
       dark: expect.any(String) as string,
     });
-    expect(oracle?.displayName).toBe(coreOracle.displayName);
-    expect(oracle?.ratings).toBe(coreOracle.roleRatings);
+    expect(card?.displayName).toBe(core.displayName);
+    expect(card?.ratings).toBe(core.roleRatings);
   });
 
   it('keeps the plates on figma-raster and empties every plate on css', () => {
