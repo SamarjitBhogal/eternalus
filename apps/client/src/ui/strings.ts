@@ -14,6 +14,9 @@ const REASON_BANNERS: Readonly<Record<string, string>> = {
   'load-failed': 'Loading failed.',
 } satisfies Record<SessionReason, string>;
 
+/** A value not known yet, e.g. before the first publish (CD-13, DEC-17). */
+const NO_DATA_YET = 'No data yet';
+
 /**
  * UI labels (architecture 13 §1). Game names (classes, the profile screen's "Chronicle") come
  * from content through the store, never from here.
@@ -74,6 +77,10 @@ export const STRINGS = {
   },
   /** Shown where an action has no binding (`KeyGlyph`, the settings list). */
   unbound: '—',
+  /** A value not known yet: a HUD slot's or structure's state (CD-13, DEC-17). */
+  noDataYet: NO_DATA_YET,
+  /** The name of the image that stands in for a meter without a value: "<label>: No data yet" (CD-13). */
+  noDataFor: (label: string): string => `${label}: ${NO_DATA_YET}`,
   settings: {
     title: 'Settings',
     tablist: 'Settings sections',
@@ -134,7 +141,6 @@ export const STRINGS = {
     allyCount: (count: number): string => (count === 1 ? '1 Ally' : `${String(count)} Allies`),
     locked: 'Locked',
     missingName: '—',
-    noRating: 'No data yet',
     ratingAxes: {
       damage: 'Damage',
       support: 'Support',
@@ -165,7 +171,6 @@ export const STRINGS = {
     objectives: 'Capture points',
     captureProgress: 'Capture progress',
     noData: '—',
-    noDataLabel: 'No data yet',
     emptySlot: 'empty',
     ready: 'ready',
     notReady: 'not ready',

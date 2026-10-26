@@ -36,10 +36,18 @@ describe('STRINGS.hud templates', () => {
   });
 
   it('names structures and objectives with their holder', () => {
-    expect(hud.structure('Wall', hud.noDataLabel)).toBe('Wall, No data yet');
+    expect(hud.structure('Wall', STRINGS.noDataYet)).toBe('Wall, No data yet');
     expect(hud.objective('A', 'Capture Point', hud.allegiance.ours)).toBe(
       'Capture Point A, held by your team',
     );
+  });
+});
+
+describe('STRINGS no-data template', () => {
+  it('names an image that stands in for a meter without a value (CD-13)', () => {
+    expect(STRINGS.noDataFor('Health')).toBe('Health: No data yet');
+    expect(STRINGS.noDataFor('Level 42')).toBe(`Level 42: ${STRINGS.noDataYet}`);
+    expect(STRINGS.noDataYet).toBe('No data yet');
   });
 });
 

@@ -23,11 +23,7 @@ export function LegendSelectRatingBar({
   const labelId = useId();
   if (value === null) {
     return (
-      <div
-        className={styles.bar}
-        role="img"
-        aria-label={`${label}: ${STRINGS.characterSelect.noRating}`}
-      >
+      <div className={styles.bar} role="img" aria-label={STRINGS.noDataFor(label)}>
         <span className={styles.label} aria-hidden="true">
           {label}
         </span>
