@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import type { RasterBox } from '../../bridge/catalogue.types';
+import { TEST_ASSET_BOXES } from '../../bridge/__fixtures__/assetFixtures';
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
-import { accessibleNames, renderWithStore } from '../testStore';
+import { accessibleNames, assetsWithBoxes, renderWithStore } from '../testStore';
 import { GlowButton } from './GlowButton';
 import { BRACE_MIRRORED_UNIT_PATH, BRACE_UNIT_PATH } from './GlowButton.constants';
 import styles from './GlowButton.module.css';
@@ -19,6 +21,18 @@ const SKIN_CLASS: Readonly<Record<GlowButtonSkin, string>> = {
   'select-class': String(styles.selectClass),
   'lock-in': String(styles.lockIn),
 };
+
+/** The manifest's draw box of `assetId`, as the UI tests' fixture restates it. */
+const boxOf = (assetId: string): RasterBox => {
+  const box = TEST_ASSET_BOXES[assetId];
+  if (box === undefined) throw new Error(`no box for ${assetId}`);
+  return box;
+};
+
+/** `box` as the plate's inline style: the unitless frame px the skin's `.chrome` rule reads. */
+const boxVars = ({ left, top, width, height }: RasterBox): string =>
+  `--glow-chrome-left:${String(left)};--glow-chrome-top:${String(top)};` +
+  `--glow-chrome-width:${String(width)};--glow-chrome-height:${String(height)}`;
 
 /** The live chrome's layers: the backdrop pane, the ring, the haze and the braces. */
 const LIVE_LAYERS = ['pane', 'ring', 'haze', 'braces'] as const;
@@ -81,10 +95,11 @@ describe('GlowButton', () => {
     expect(html).not.toContain('hint');
   });
 
-  // The box is the skin's `.chrome` rule (GlowButton.styles.test.tsx), never an inline style: it
-  // is fixed at build time (apps/client/AGENTS.md: inline style only for runtime values).
+  // The box is the plate's manifest draw box, on the plate as unitless custom properties (a
+  // runtime value: it arrives with the plate's asset group, apps/client/AGENTS.md); the skin's
+  // `.chrome` rule subtracts the skin's root origin (GlowButton.styles.test.tsx).
   it.each(['select-class', 'lock-in'] as const)(
-    '%s draws its Figma-state chrome plate at its skin’s box, with no live ring or pane',
+    '%s draws its Figma-state chrome plate at its manifest draw box, with no live ring or pane',
     (skin) => {
       const html = renderWithStore(
         <GlowButton label="x" onPress={noop} skin={skin} chromeAssetId={CHROME[skin]} />,
@@ -97,7 +112,8 @@ describe('GlowButton', () => {
       expect(html).toContain(
         `<img class="${String(styles.chrome)}" src="/assets/test/${CHROME[skin]}.webp" alt="" aria-hidden="true"`,
       );
-      expect(html).not.toContain('style=');
+      expect(html.match(/ style="/g)).toHaveLength(1);
+      expect(html).toContain(`draggable="false" style="${boxVars(boxOf(CHROME[skin]))}"/>`);
       expect(hasNoLiveChrome(html)).toBe(true);
       expect(html).toContain(`class="${String(styles.label)}">x</span>`);
     },
@@ -130,21 +146,44 @@ describe('GlowButton', () => {
     }
   });
 
-  // Each skin's box is measured for its own plate file, so the other skin's plate (another size)
-  // draws the live chrome rather than a plate at the wrong box.
-  it('draws the live chrome for the other skin’s plate', () => {
-    const cases = [
-      renderWithStore(
-        <GlowButton label="x" onPress={noop} skin="lock-in" chromeAssetId="select-class-chrome" />,
-      ),
-      renderWithStore(
-        <GlowButton label="x" onPress={noop} skin="select-class" chromeAssetId="lock-in-chrome" />,
-      ),
-    ];
+  it('takes the plate’s box from the loaded assets, so a changed manifest box moves the plate', () => {
+    const moved: RasterBox = { left: 700, top: 800, width: 411, height: 156 };
+    const html = renderWithStore(
+      <GlowButton label="x" onPress={noop} skin="lock-in" chromeAssetId="lock-in-chrome" />,
+      { assets: assetsWithBoxes({ 'lock-in-chrome': moved }) },
+    );
 
-    for (const html of cases) {
-      expect(html).not.toContain('<img');
-      expect(hasLiveChrome(html)).toBe(true);
+    expect(boxOf('lock-in-chrome')).not.toEqual(moved);
+    expect(html).toContain(`style="${boxVars(moved)}"`);
+  });
+
+  // Plate or live chrome is decided by the manifest entry's box: without one the plate has no
+  // place to be drawn at.
+  it('draws the live chrome for a loaded plate whose manifest entry has no box', () => {
+    const html = renderWithStore(
+      <GlowButton label="x" onPress={noop} skin="lock-in" chromeAssetId="lock-in-chrome" />,
+      { assets: assetsWithBoxes({ 'lock-in-chrome': undefined }) },
+    );
+
+    expect(html).not.toContain('<img');
+    expect(hasLiveChrome(html)).toBe(true);
+  });
+
+  // The box belongs to the plate, not to the skin: another skin's plate is drawn at its own
+  // manifest box, its own place in the artboard, never moved to this button's box.
+  it('draws another skin’s plate at that plate’s own manifest box', () => {
+    const cases = [
+      ['lock-in', 'select-class-chrome'],
+      ['select-class', 'lock-in-chrome'],
+    ] as const;
+
+    for (const [skin, plateId] of cases) {
+      const html = renderWithStore(
+        <GlowButton label="x" onPress={noop} skin={skin} chromeAssetId={plateId} />,
+      );
+      expect(html).toContain(`src="/assets/test/${plateId}.webp"`);
+      expect(html).toContain(`style="${boxVars(boxOf(plateId))}"`);
+      expect(hasNoLiveChrome(html)).toBe(true);
     }
   });
 

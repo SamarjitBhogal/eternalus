@@ -1,6 +1,5 @@
-import type { KeyboardEvent, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 
-import type { LegendClassCard } from '../../bridge/catalogue.types';
 import { isSelectableClass } from '../../bridge/selectionRules';
 import { ArchCard, type ArchArtMode, type ArchLayerKind } from '../components/ArchCard';
 import { cssVars } from '../components/cssVars';
@@ -9,9 +8,11 @@ import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { STRINGS } from '../strings';
 import styles from './ClassSelectCard.module.css';
+import type { ClassSelectCardProps } from './ClassSelectCard.types';
 import { classArtOrigin, classCardStyle, overlayVars, plateVars } from './classSelectLayout';
-import type { ClassCardLook, ClassSlot } from './classSelectLayout.types';
+import type { ClassCardLook } from './classSelectLayout.types';
 import { isBakedAt } from './isBakedAt';
+import { previewHandlers } from './previewHandlers';
 import { offset, originRemainder } from './selectionGeometry';
 
 /** Bottom to top (62:162): outer frame 62:163, art 62:164, inner GLASS overlay 62:177, focus ring. */
@@ -38,25 +39,7 @@ export function ClassSelectCard({
   onPick,
   onPreview,
   onKeyDown,
-}: {
-  readonly card: LegendClassCard;
-  /** The card's slot in the row (`classSlot`). */
-  readonly slot: ClassSlot;
-  readonly allyCount: number;
-  readonly isPicked: boolean;
-  /** A hover or focus preview shows this card in the panel (the hover cue, CD-11). */
-  readonly isPreviewed: boolean;
-  /** Holds the group's tab stop (roving tabindex). */
-  readonly isTabbable: boolean;
-  /** Takes the focus on mount: the class Back returned to (CD-11, WCAG 2.4.3). */
-  readonly isAutoFocused: boolean;
-  /** Id of the panel that describes the shown class. */
-  readonly describedBy: string;
-  readonly onPick: () => void;
-  /** A hover or focus starts (`true`) or ends (`false`) this card's panel preview. */
-  readonly onPreview: (isPreviewing: boolean) => void;
-  readonly onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-}): ReactElement {
+}: ClassSelectCardProps): ReactElement {
   const look: ClassCardLook = isPicked ? 'picked' : 'idle';
   const origin = slot.card[look];
   const artOrigin = classArtOrigin(origin, look);
@@ -89,18 +72,7 @@ export function ClassSelectCard({
       }}
       onClick={onPick}
       onKeyDown={onKeyDown}
-      onFocus={() => {
-        onPreview(true);
-      }}
-      onBlur={() => {
-        onPreview(false);
-      }}
-      onPointerEnter={() => {
-        onPreview(true);
-      }}
-      onPointerLeave={() => {
-        onPreview(false);
-      }}
+      {...previewHandlers(onPreview)}
     >
       <ArchCard
         layers={LAYERS}

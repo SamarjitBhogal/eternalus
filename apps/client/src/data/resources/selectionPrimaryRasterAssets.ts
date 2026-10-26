@@ -89,6 +89,7 @@ export const SELECTION_PRIMARY_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       bytes: 16688,
       hash: '2a4d24a699e058b1faaa73e4526e0ba3b172b672e631e4330e1a722d9cc4c93a',
     },
+    box: { left: 740, top: 858, width: 439, height: 163 },
     licence: 'owner',
     source:
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:125, protocol R1 render (OA1) on scratch duplicate 96:3 of page 96:2; pass cs-P2c-chrome: composite over the original frame fill and backdrop; 62:146 (cards and halo) and the label 62:228 hidden (r1-log W6); opaque crop; 1x lossless WebP. file = 62:222 with 62:228 hidden (render bounds 740.02, 858, 438.96 × 162.25) cropped to (740, 858, 439, 163), nothing removed, 2x lossy q92 (alpha lossless)',

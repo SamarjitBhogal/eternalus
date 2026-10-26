@@ -26,7 +26,7 @@ type MeterAttributes = {
  */
 export function meterAttributes(label: string, value: MeterValue | null): MeterAttributes {
   if (value === null) {
-    return { role: 'img', 'aria-label': `${label}: ${STRINGS.hud.noDataLabel}` };
+    return { role: 'img', 'aria-label': STRINGS.noDataFor(label) };
   }
   return {
     role: 'meter',

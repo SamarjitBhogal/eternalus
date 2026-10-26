@@ -55,13 +55,18 @@ export function withHudSetup(state: Partial<RootState>): Partial<RootState> {
   return { ...state, matchSetup: FIGMA_MATCH_SETUP, settings: settingsWith(HUD_BINDINGS) };
 }
 
-/** The declarations of the rule whose selector is exactly `selector` in a module's CSS text. */
+/**
+ * The declarations of the rule whose selector is exactly `selector` in a module's CSS text, with
+ * every comment stripped.
+ * @throws Error when no rule has that selector, so an assertion about a renamed rule fails instead
+ *   of checking an empty string (a negative one would pass).
+ */
 export function cssRule(css: string, selector: string): string {
-  return (
-    css
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .split('}')
-      .map((block) => block.split('{'))
-      .find(([head]) => head?.trim() === selector)?.[1] ?? ''
-  );
+  const declarations = css
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('}')
+    .map((block) => block.split('{'))
+    .find(([head]) => head?.trim() === selector)?.[1];
+  if (declarations === undefined) throw new Error(`no rule with the selector "${selector}"`);
+  return declarations;
 }

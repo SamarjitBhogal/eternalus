@@ -46,7 +46,7 @@ export function StructureStrip({ side }: { readonly side: HudSide }): ReactEleme
             aria-label={STRINGS.hud.structure(
               tile.displayName,
               tile.healthFraction === null
-                ? STRINGS.hud.noDataLabel
+                ? STRINGS.noDataYet
                 : `${String(percentOf(tile.healthFraction))}%`,
             )}
             data-team={tile.team}

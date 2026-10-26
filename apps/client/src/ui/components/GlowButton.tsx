@@ -1,10 +1,11 @@
-import { useId, type ReactElement } from 'react';
+import { useId, type CSSProperties, type ReactElement } from 'react';
 
-import type { AssetId } from '../../bridge/catalogue.types';
+import type { AssetId, RasterBox } from '../../bridge/catalogue.types';
 import { classNames } from './classNames';
+import { cssVars } from './cssVars';
 import { BRACE_MIRRORED_UNIT_PATH, BRACE_UNIT_PATH } from './GlowButton.constants';
 import styles from './GlowButton.module.css';
-import type { GlowButtonSkin } from './GlowButton.types';
+import type { GlowButtonPlate, GlowButtonSkin } from './GlowButton.types';
 import { useGlowButtonChrome } from './useGlowButtonChrome';
 
 const SKIN_CLASSES: Readonly<Record<GlowButtonSkin, string | undefined>> = {
@@ -55,8 +56,18 @@ const liveChrome = (): ReactElement => (
   </>
 );
 
-/** Figma's chrome plate, at its skin's full render-bounds box (the skin's `.chrome` rule). */
-const chromePlate = (url: string): ReactElement => (
+/** The plate's manifest draw box (frame px) as the unitless numbers the `.chrome` rules read. */
+function plateBoxVars(box: RasterBox): CSSProperties {
+  return cssVars({
+    '--glow-chrome-left': String(box.left),
+    '--glow-chrome-top': String(box.top),
+    '--glow-chrome-width': String(box.width),
+    '--glow-chrome-height': String(box.height),
+  });
+}
+
+/** Figma's chrome plate at its manifest draw box, its full render bounds (the `.chrome` rules). */
+const chromePlate = ({ url, box }: GlowButtonPlate): ReactElement => (
   <img
     className={styles.chrome}
     src={url}
@@ -64,6 +75,7 @@ const chromePlate = (url: string): ReactElement => (
     aria-hidden="true"
     decoding="async"
     draggable={false}
+    style={plateBoxVars(box)}
   />
 );
 
@@ -71,13 +83,13 @@ const chromePlate = (url: string): ReactElement => (
  * A selection screen's main action: Select Class or LOCK IN. Placed by its skin at its Figma
  * node in the 1920 × 1080 artboard (render it in a full-artboard container).
  *
- * Two effects paths (CD-16, DEC-54): with a `chromeAssetId` whose plate is loaded and boxed, and
- * while enabled and neither hovered nor pressed, Figma's own chrome plate is drawn at its skin's
- * full render-bounds box (the skin's `.chrome` rule); otherwise the live chrome: a backdrop-blur
- * pane beneath (never under a filter, the backdrop-root rule), then the glow group: its shadow
- * (σ = r/2, knocked out as Figma draws it) cast from a plain copy of the ring, haze and brace
- * strokes, and above it, unfiltered, the ring, haze and braces with their glows, the braces' azure
- * glows again cast from plain stroke copies (Figma casts a group's shadow from its children's
+ * Two effects paths (CD-16, DEC-54): with a `chromeAssetId` whose plate is loaded with the draw box
+ * its manifest entry declares, and while enabled and neither hovered nor pressed, Figma's own
+ * chrome plate is drawn at that box, its full render bounds; otherwise the live chrome: a
+ * backdrop-blur pane beneath (never under a filter, the backdrop-root rule), then the glow group:
+ * its shadow (σ = r/2, knocked out as Figma draws it) cast from a plain copy of the ring, haze and
+ * brace strokes, and above it, unfiltered, the ring, haze and braces with their glows, the braces'
+ * azure glows again cast from plain stroke copies (Figma casts a group's shadow from its children's
  * geometry, not from their glows). The label and its six sky glows (`sel-glow-label`) are always
  * live, above the chrome and outside the group filter (a CSS filter would also shadow the label's
  * glows, which Figma does not show: measured on 58:271). Disabled, it stays focusable with
@@ -101,7 +113,7 @@ export function GlowButton({
   readonly chromeAssetId: AssetId | null;
 }): ReactElement {
   const hintId = useId();
-  const { plateUrl, ...pointerHandlers } = useGlowButtonChrome(chromeAssetId, skin, isDisabled);
+  const { plate, ...pointerHandlers } = useGlowButtonChrome(chromeAssetId, isDisabled);
   const hasHint = isDisabled && disabledHint !== undefined;
   return (
     <>
@@ -115,7 +127,7 @@ export function GlowButton({
         }}
         {...pointerHandlers}
       >
-        {plateUrl === null ? liveChrome() : chromePlate(plateUrl)}
+        {plate === null ? liveChrome() : chromePlate(plate)}
         <span className={styles.label}>{label}</span>
       </button>
       {/* Outside the button: a description, never part of its name. */}

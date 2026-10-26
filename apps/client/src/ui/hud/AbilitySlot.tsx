@@ -25,7 +25,7 @@ const LOOK_STATE: Readonly<Record<HudSlotLook, (reason: HudBlockReason | null) =
   ready: () => STRINGS.hud.ready,
   cooldown: () => STRINGS.hud.blockedBy['on-cooldown'],
   idle: (reason) => (reason === null ? STRINGS.hud.notReady : STRINGS.hud.blockedBy[reason]),
-  'no-data': () => STRINGS.hud.noDataLabel,
+  'no-data': () => STRINGS.noDataYet,
 };
 
 /**

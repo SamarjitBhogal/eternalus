@@ -12,6 +12,7 @@ import { rovingKeyDown, tabbableRovingIndex } from '../components/rovingRadio';
 import { useAssetBox } from '../components/useAssetBox';
 import { useAssetUrl } from '../components/useAssetUrl';
 import { legendStepActions, type LegendStepActions } from './legendStepActions';
+import { shownLegend } from './legendStepState';
 import { rowPlateOf } from './selectionGeometry';
 import type { RowPlate } from './selectionGeometry.types';
 
@@ -47,11 +48,7 @@ export function useLegendSelectStep(): LegendSelectStepModel | null {
   const actions = legendStepActions(view);
   return {
     view,
-    shown:
-      view.legends.find((legend) => legend.specId === previewSpecId) ??
-      picked ??
-      view.legends[0] ??
-      null,
+    shown: shownLegend(view.legends, previewSpecId),
     tabbableIndex: tabbableRovingIndex(view.legends),
     actions,
     rowPlate,

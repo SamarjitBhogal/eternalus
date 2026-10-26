@@ -1,7 +1,6 @@
-import type { KeyboardEvent, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 
 import type { RenditionKey } from '../../bridge/catalogue.types';
-import type { LegendCardView } from '../../bridge/selectors/selectLegendStepView';
 import { ArchCard, type ArchLayerKind } from '../components/ArchCard';
 import { cssVars } from '../components/cssVars';
 import { LockGlyph } from '../components/LockGlyph';
@@ -9,8 +8,10 @@ import { useAssetBox } from '../components/useAssetBox';
 import { STRINGS } from '../strings';
 import { isBakedAt } from './isBakedAt';
 import styles from './LegendSelectCard.module.css';
+import type { LegendSelectCardProps } from './LegendSelectCard.types';
 import { legendCardStyle } from './legendSelectLayout';
-import type { LegendCardLook, LegendSlot } from './legendSelectLayout.types';
+import type { LegendCardLook } from './legendSelectLayout.types';
+import { previewHandlers } from './previewHandlers';
 import { offset, originRemainder } from './selectionGeometry';
 import type { FramePoint } from './selectionGeometry.types';
 
@@ -55,18 +56,7 @@ export function LegendSelectCard({
   onPick,
   onPreview,
   onKeyDown,
-}: {
-  readonly legend: LegendCardView;
-  /** The card's slot in the row (`legendSlot`): its box and text offsets per look. */
-  readonly slot: LegendSlot;
-  readonly isRowPlateMode: boolean;
-  /** Holds the group's tab stop (roving tabindex) and the focus on entry. */
-  readonly isTabbable: boolean;
-  readonly onPick: () => void;
-  /** A hover or focus starts (`true`) or ends (`false`) this card's panel preview. */
-  readonly onPreview: (isPreviewing: boolean) => void;
-  readonly onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-}): ReactElement {
+}: LegendSelectCardProps): ReactElement {
   const look: LegendCardLook = legend.isPicked ? 'picked' : 'idle';
   const origin = slot.card[look];
   const rendition = CARD_RENDITIONS[look];
@@ -91,18 +81,7 @@ export function LegendSelectCard({
       }}
       onClick={onPick}
       onKeyDown={onKeyDown}
-      onFocus={() => {
-        onPreview(true);
-      }}
-      onBlur={() => {
-        onPreview(false);
-      }}
-      onPointerEnter={() => {
-        onPreview(true);
-      }}
-      onPointerLeave={() => {
-        onPreview(false);
-      }}
+      {...previewHandlers(onPreview)}
     >
       <ArchCard
         layers={isRowPlateMode ? ROW_PLATE_LAYERS : LOOK_LAYERS[look]}

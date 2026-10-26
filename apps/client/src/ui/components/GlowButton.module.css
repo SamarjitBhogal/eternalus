@@ -25,29 +25,27 @@
   height: 55.25px;
 }
 
-/* The Figma-state chrome plate (CD-16): at its skin's full render-bounds box, 1:1, never fitted.
-   Each box is the plate's manifest draw box (frame px) minus the skin's root origin; it equals the
-   file's pixel size and is never cropped, so a skin draws only the plate it is measured for
-   (BOXED_CHROME_PLATES). */
+/* The Figma-state chrome plate (CD-16): at its full render-bounds box, 1:1, never fitted. The box
+   is the plate's manifest draw box (frame px), which GlowButton sets as the unitless
+   --glow-chrome-left/-top/-width/-height; each skin subtracts its root origin. The box is the
+   file's own pixel size, so the plate is never scaled or cropped. */
 .chrome {
   position: absolute;
   display: block;
+  width: calc(var(--glow-chrome-width) * 1px);
+  height: calc(var(--glow-chrome-height) * 1px);
 }
 
-/* select-class-chrome (740, 858) 439 × 163 − the Select Class root (788, 908), 62:222. */
+/* Less the Select Class root (788, 908), 62:222. */
 .selectClass .chrome {
-  left: -48px;
-  top: -50px;
-  width: 439px;
-  height: 163px;
+  left: calc((var(--glow-chrome-left) - 788) * 1px);
+  top: calc((var(--glow-chrome-top) - 908) * 1px);
 }
 
-/* lock-in-chrome (754, 890) 411 × 156 − the LOCK IN root (803, 940), 58:277. */
+/* Less the LOCK IN root (803, 940), 58:277. */
 .lockIn .chrome {
-  left: -49px;
-  top: -50px;
-  width: 411px;
-  height: 156px;
+  left: calc((var(--glow-chrome-left) - 803) * 1px);
+  top: calc((var(--glow-chrome-top) - 940) * 1px);
 }
 
 /* The glass body's BACKGROUND_BLUR 60 (σ 30) and GLASS approximated by a backdrop blur (CD-15),
