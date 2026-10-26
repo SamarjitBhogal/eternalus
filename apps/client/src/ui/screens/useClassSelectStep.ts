@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 
-import type { AssetId, LegendClassCard } from '../../bridge/catalogue.types';
+import type { LegendClassCard } from '../../bridge/catalogue.types';
 import type { LegendClassId } from '../../bridge/domain.types';
 import { useAppSelector } from '../../bridge/hooks';
 import { isSelectableClass } from '../../bridge/selectionRules';
@@ -30,15 +30,8 @@ type ClassSelectStepModel = {
   /** The card picked on screen, not yet selected (`select-class` comes with Select Class). */
   readonly picked: LegendClassCard | undefined;
   readonly tabbableIndex: number;
-  /**
-   * The class Back returned to (CD-11), else `null`: its card (primary) or View Details
-   * (alternate) takes the focus on mount.
-   */
-  readonly autoFocusClassId: LegendClassId | null;
   /** The picked class's row plate while loaded and boxed (one predicate, CD-16), else `null`. */
   readonly rowPlate: RowPlate | null;
-  /** Select Class's chrome plate, for every pick (CD-16); `null` = live CSS. */
-  readonly selectClassChromeAssetId: AssetId | null;
   readonly actions: ClassStepActions;
   /** Arrow / Home / End on the card at `index`: picks where it lands and moves the focus there. */
   readonly onCardKeyDown: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
@@ -58,7 +51,6 @@ const toStepCard = (card: LegendClassCard): ClassStepCard => ({
 export function useClassSelectStep(preferredClassId: LegendClassId | null): ClassSelectStepModel {
   const cards = useAppSelector(contentSlice.selectors.selectLegendClasses);
   const allyCounts = useAppSelector(selectAllyCountsByClass);
-  const chromeAssetId = useAppSelector(contentSlice.selectors.selectSelectClassChromeAssetId);
   const stepCards = cards.map(toStepCard);
   const [local, setLocal] = useState(() => initialClassStep(stepCards, preferredClassId));
   const panel = useAppSelector((state) => selectClassPanel(state, shownClassId(local, stepCards)));
@@ -75,9 +67,7 @@ export function useClassSelectStep(preferredClassId: LegendClassId | null): Clas
     tabbableIndex: tabbableRovingIndex(
       stepCards.map((card) => ({ ...card, isPicked: card.classId === local.pickedClassId })),
     ),
-    autoFocusClassId: preferredClassId,
     rowPlate,
-    selectClassChromeAssetId: chromeAssetId,
     actions,
     onCardKeyDown: rovingKeyDown(actions.move),
   };

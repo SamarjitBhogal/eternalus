@@ -29,6 +29,8 @@ export function ClassSelectStep({ preferredClassId }: SelectionStepProps): React
   const tiles = useAppSelector(selectAllyTiles);
   const team = useAppSelector(matchSetupSlice.selectors.selectPlayerTeam);
   const teamNames = useAppSelector(contentSlice.selectors.selectTeamNames);
+  /** Select Class's chrome plate, for every pick (CD-16); `null` = live CSS. */
+  const chromeAssetId = useAppSelector(contentSlice.selectors.selectSelectClassChromeAssetId);
   const headingId = useId();
   const panelId = useId();
   const { panel, picked, actions } = model;
@@ -45,7 +47,7 @@ export function ClassSelectStep({ preferredClassId }: SelectionStepProps): React
         pickedClassId={model.local.pickedClassId}
         previewClassId={model.local.previewClassId}
         tabbableIndex={model.tabbableIndex}
-        autoFocusClassId={model.autoFocusClassId}
+        autoFocusClassId={preferredClassId}
         rowPlate={model.rowPlate}
         onPick={actions.pick}
         onPreview={actions.preview}
@@ -72,7 +74,7 @@ export function ClassSelectStep({ preferredClassId }: SelectionStepProps): React
         skin="select-class"
         isDisabled={picked === undefined}
         disabledHint={text.selectClassHint}
-        chromeAssetId={model.selectClassChromeAssetId}
+        chromeAssetId={chromeAssetId}
       />
       {team !== null && (
         <AllyRoster
