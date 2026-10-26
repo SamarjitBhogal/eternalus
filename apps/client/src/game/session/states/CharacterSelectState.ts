@@ -55,10 +55,7 @@ export class CharacterSelectState implements SessionState {
       if (context.selection() !== null) context.recordSelection(null);
     } else if (intent.kind === 'confirm-selection') {
       const selection = context.selection();
-      const card =
-        selection === null
-          ? undefined
-          : context.catalogue.legendClasses.find((c) => c.classId === selection.classId);
+      const card = context.catalogue.legendClasses.find((c) => c.classId === selection?.classId);
       if (selection !== null && card !== undefined && canConfirmSelection(card, selection)) {
         context.transition('pre-launch');
       }
