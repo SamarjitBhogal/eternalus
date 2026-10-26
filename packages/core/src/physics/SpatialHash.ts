@@ -3,7 +3,8 @@
  * points by cell, then by index, into one dense typed array, so its cost follows the point count,
  * not the size of the world; `queryCircle` finds each covered cell's run by binary search and
  * returns the indexes of the points within the circle, ascending, so results never depend on the
- * grid layout. Allocates only when the point count outgrows its buffers.
+ * grid layout. O(n log n) per rebuild; allocates a buffer only when the point count outgrows it,
+ * and one view object per rebuild. A point at a NaN position is never found.
  *
  * @remarks ponytail: points only, no radii (`rebuild(positions, radii, count)` in 10 §5) and no
  * `queryRect`; add them when a unit's size or a box query matters to a caller.
@@ -48,8 +49,16 @@ export class SpatialHash {
   /**
    * Replaces the contents with `count` points, point `i` at `(positions[2i], positions[2i + 1])`.
    * Points outside the world go to the nearest edge cell.
+   *
+   * @throws RangeError when cells × points passes `Number.MAX_SAFE_INTEGER`, where the sort keys
+   *   would stop being exact.
    */
   public rebuild(positions: Float64Array, count: number): void {
+    if (this.columns * this.rows * Math.max(1, count) > Number.MAX_SAFE_INTEGER) {
+      throw new RangeError(
+        `SpatialHash cannot key ${String(count)} points over ${String(this.columns * this.rows)} cells exactly.`,
+      );
+    }
     if (this.keys.length < count) {
       this.keys = new Float64Array(count);
     }

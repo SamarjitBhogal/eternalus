@@ -78,4 +78,12 @@ describe('SpatialHash', () => {
     expect(hash.queryCircle(999_999, 999_999, 1, out)).toBe(1);
     expect(out[0]).toBe(2);
   });
+
+  it('refuses more points than its keys can hold exactly', () => {
+    const hash = new SpatialHash(1e9, 1e9, 1);
+
+    expect(() => {
+      hash.rebuild(new Float64Array(20_000), 10_000);
+    }).toThrow(RangeError);
+  });
 });

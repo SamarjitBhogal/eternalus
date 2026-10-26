@@ -1689,3 +1689,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 726 passed (726)"; client "Tests 417 passed (417)"; "Documentation check passed."
 - Next step: critic re-check, then the draft PR.
+
+### 2026-10-26 — Minion system M8, critic round 3 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: the third critic pass (`1da6bbc..8b84fd3`) approved: the check is green (the
+  routing scenarios take 8–13 s under coverage) and the new `SpatialHash` is correct. Its nits
+  applied: `rebuild` throws a `RangeError` (tested) when cells × points would make the sort keys
+  inexact; the TSDoc and the INBOX sign-off item say a rebuild is O(n log n) with one view object
+  per rebuild, and that a NaN position is never found; an INBOX line is re-wrapped.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 727 passed (727)"; client "Tests 417 passed (417)"; "Documentation check passed."
+- Next step: the draft PR.

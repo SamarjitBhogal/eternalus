@@ -149,15 +149,17 @@ Reply inline (`Decision: …`).
       every tick took about three quarters of the simulation's time (the 3- and 5-lane routing
       scenarios ran 57–60 s under coverage against a 60 s limit). M8 sorts the points by cell
       instead (cost by unit count; queries binary-search a cell's run, results unchanged, now
-      5–9 s). If accepted, 10 §5's storage paragraph changes.
+      5–9 s). If accepted, 10 §5's storage paragraph changes, and with it two claims there: a
+      rebuild becomes O(n log n), not O(n), and allocates one view object per rebuild.
 - [ ] **Minion M8 — Rover and cast numbers, A\* placement.** (1) No reference doc gives the
       Rover's numbers; `content/ai/difficulties/rover.ts` and `content/ai/rover.ts` start them
       as `TUNE` (retreat below 20%, engage within 16 m, hunt within 20 m when 0.2 of a health
       bar ahead, sense the human within 400 m), and `normal`/`rover` cast with chance 0.3/0.6
       at most every 3 s/2 s. The Rover weighs a lane's pressure against the human's lane 3 to 1
       (`ROVER_TACTICS.laneWeights`), counting pressure from its team's calmest lane, so it
-      leaves the human for a lane pushed most of the way to its end. Confirm or give values. (2) Better than the design, for sign-off:
-      the Phase 3 plan wants A\* "as a second `MovementStrategy`", but bots steer by `move`
+      leaves the human for a lane pushed most of the way to its end. Confirm or give values.
+      (2) Better than the design, for sign-off: the Phase 3 plan wants A\* "as a second
+      `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
       the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
       decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
