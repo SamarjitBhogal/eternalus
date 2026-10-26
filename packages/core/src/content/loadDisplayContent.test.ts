@@ -42,14 +42,8 @@ describe('loadDisplayContent', () => {
   });
 
   it('returns the locked classes the selection screen shows after the playable ones', () => {
-    expect(loadDisplayContent().lockedClasses).toEqual([
-      {
-        id: 'flying',
-        displayName: 'Harbinger',
-        roleBlurb: 'Air-based; moves primarily in the air, like a jet or helicopter.',
-        roleLabel: 'aerial',
-      },
-    ]);
+    // The card's values are pinned once, in lockedClassCatalogue.test.ts.
+    expect(loadDisplayContent().lockedClasses).toEqual([FLYING]);
   });
 
   it('names the HUD map-feature kinds and leaves every other feature unnamed', () => {
