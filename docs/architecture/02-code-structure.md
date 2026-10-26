@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-26
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -319,10 +319,12 @@ owner in `INBOX.md` HC-T1:
   `game/useMatch.ts` is gone (DEC-50).
 - **Core.** `loadDisplayContent()` is exported from `@eternalus/core`: the Legend and Legend-spec
   display data, the locked class cards (DEC-48) and the team display names, each catalogue validated
-  through the content rules, and the map features' display names (DEC-49; ADR 0018). It takes
-  optional catalogues, each defaulting to the shipped one. The specs live in
-  `packages/core/src/content/legends/specs/`, the locked cards in `content/legends/locked/` and the
-  team names in `content/teams/teamDisplayNames.ts`.
+  through the content rules, the map features' display names (DEC-49; ADR 0018) and the profile
+  screen's display name. It takes optional catalogues, each defaulting to the shipped one. The
+  specs live in `packages/core/src/content/legends/specs/` (each says whether it can be picked,
+  `isSelectable`, which gates LOCK IN; the client adds only art, accents and icons), the locked
+  cards in `content/legends/locked/`, the team names in `content/teams/teamDisplayNames.ts` and the
+  profile screen's name in `content/profile/profileDisplayName.ts`.
 
 ## Related
 

@@ -217,19 +217,19 @@ Reply inline (`Decision: …`).
 - [ ] **HC-T1 — Approve the text of the design-doc edits (`feat/hud-and-character-select`; asked
       after the pre-PR critic).** **Approve group (i) in one go: it is the merge precondition
       (pre-PR critic, run 2: C-01, core-bridge-01).** Group (i) only records what you already
-      decided (DEC-48 to DEC-56; ADR 0018 as you accepted it) or aligns `apps/client/AGENTS.md` with
-      design text you already approved (02 §3, 12 §8, 13 §5, 14 §1 and §11): T-01 to T-04, T-06,
-      T-50, T-54, T-61 to T-65, T-73, T-74, T-76 to T-78, T-87, T-88, T-103 to T-117, T-119, T-121
-      to T-124, T-126 to T-131, T-134 and T-135 (47 rows, marked "group (i)" in the table; their
-      patch also applies on its own). Group (ii) needs your judgement row by row: DEC-50's sketch,
-      table rows and paragraph, which also carry HC-B1's DV-01, HC-F9 and HC-Q8 (T-07, T-08, T-14 to
-      T-16 and T-86, applied together); the rows on defaults (T-12, T-28, T-75); the branch's
-      deviations and new features (T-05, T-09 to T-11, T-13, T-17 to T-27, T-29 to T-48, T-51, T-55
-      to T-59, T-79); the critic's new items (T-89, T-90); phase-plan ticks, notes and one new task
-      (T-80 to T-85, T-145); the optional rows (T-118, T-120, T-132, T-133); and the id wording that
-      waits for HC-Q18 (4) (T-100 to T-102, T-136 to T-144). The critic's minimum also named T-05
-      and DEC-50's rows; they are in group (ii) because of those open items. T-125 is
-      SamarjitBhogal's. Nothing is ticked.
+      decided (DEC-48 to DEC-56; ADR 0018 as you accepted it) or aligns `apps/client/AGENTS.md` and
+      FR-090 with the design and rules you already approved (02 §3, 12 §8, 13 §5, 14 §1 and §11;
+      rule 11): T-01 to T-04, T-06, T-50, T-54, T-61 to T-65, T-73, T-74, T-76 to T-78, T-87, T-88,
+      T-103 to T-117, T-119, T-121 to T-124, T-126 to T-131, T-134, T-135 and T-146 (48 rows, marked
+      "group (i)" in the table; their patch also applies on its own). Group (ii) needs your
+      judgement row by row: DEC-50's sketch, table rows and paragraph, which also carry HC-B1's
+      DV-01, HC-F9 and HC-Q8 (T-07, T-08, T-14 to T-16 and T-86, applied together); the rows on
+      defaults (T-12, T-28, T-75); the branch's deviations and new features (T-05, T-09 to T-11,
+      T-13, T-17 to T-27, T-29 to T-48, T-51, T-55 to T-59, T-79); the critic's new items (T-89,
+      T-90); phase-plan ticks, notes and one new task (T-80 to T-85, T-145); the optional rows
+      (T-118, T-120, T-132, T-133); and the id wording that waits for HC-Q18 (4) (T-100 to T-102,
+      T-136 to T-144). The critic's minimum also named T-05 and DEC-50's rows; they are in group
+      (ii) because of those open items. T-125 is SamarjitBhogal's. Nothing is ticked.
       Your rule is that architecture docs, the `AGENTS.md` files and
       your reference docs change only with your approval (PR #31), each edit shown to you in a table
       (PR #33). So the branch splits its edits (OD-26). **Applied, append-only:** one
@@ -279,7 +279,9 @@ Reply inline (`Decision: …`).
       sprint 2.8 (register CD-22; your PR #34 rule that an interim ships only with its replacement
       scheduled); T-32 and T-43 add the manifest entry's draw box, files and renditions (14 §11, 02
       §9), and T-36 and T-41 add the bridge's per-team Legend name and its shared HUD layout
-      geometry (02 §3). Approve all, or name the rows to change or drop.
+      geometry (02 §3). **Round B11:** T-146 corrects FR-090's acceptance, which put the profile
+      screen's display name in `ui/`; the critic's rework moved it into core content (your rule 11),
+      so T-146 joins group (i). Approve all, or name the rows to change or drop.
 
   | #     | Where (doc §, line)                                                                                                                                                                                                                                          | Base design said                                                          | Branch says                                                                                                           | Basis (DEC/DV/factual)                                                                                                                                                     | Changes general design? y/n + why                                                                             | Status                                                              |
   | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -410,6 +412,7 @@ Reply inline (`Decision: …`).
   | T-143 | naming suggestions, in-code convention, rule 3 (`docs/reference/suggestions/naming.md:313`)                                                                                                                                                                  | "never change once used"; IDs stored in saves, replays and test fixtures  | once a save or a release stores them; until then a checked content refactor                                           | ADR 0018 point 5 (DEC-56; OD-36): no saves or release yet, so an id rename is a content refactor until they exist; roster audit (OD-38) (found when round B8 was checked)  | n: unchanged once saves exist                                                                                 | pending owner; the wording waits for INBOX HC-Q18 (4)               |
   | T-144 | naming suggestions, sketch, the `id` comment (`docs/reference/suggestions/naming.md:322`)                                                                                                                                                                    | "never renamed once used"                                                 | once a save or a release stores it                                                                                    | ADR 0018 point 5 (DEC-56; OD-36): no saves or release yet, so an id rename is a content refactor until they exist; roster audit (OD-38) (found when round B8 was checked)  | n: a comment in a sketch                                                                                      | pending owner; the wording waits for INBOX HC-Q18 (4)               |
   | T-145 | phase 2 plan, sprint 2.8, new task after the HUD `HealthBar` task (`docs/plan/phase-2-structures-and-combat.md:216`)                                                                                                                                         | (no task: the interim control has no scheduled replacement)               | a `ui/hud/` control and a `leave-interior` intent in sprint 2.8                                                       | critic run 2 game-data-06; CD-22, DV-119; the owner's PR #34 review (an interim ships only with its replacement scheduled)                                                 | n: schedules the design's own path (13 §3, §5, §9); adds no gameplay                                          | pending owner                                                       |
+  | T-146 | MVP requirements, FR-090, acceptance (`docs/requirements/06-mvp-requirements.md:192`)                                                                                                                                                                        | the display name in one place in `ui/`                                    | in one place, core content                                                                                            | AGENTS.md rule 11 and 02 §7, §10 (display names are core content); critic run 2 game-data-02, reworked in `61401b2` and `e93e61e`                                          | n: follows rule 11; the name itself stays a working name                                                      | pending owner; group (i), for the merge                             |
 
 - [ ] **HC-B1 — Better than the design, or new, for sign-off (`feat/hud-and-character-select`; asked
       after the pre-PR critic).** Reconciled on 2026-10-24 with the branch's deviation table (the DV
@@ -659,6 +662,14 @@ Reply inline (`Decision: …`).
       pressing M does nothing; no plan task builds either. Which sprint? Recommendation: (1) keep
       the canvas path, because the canvas draws the minimap and hit-tests the click; (2) Phase 5,
       sprint 5.4 (settings and keybindings), with the M handler in the same task.
+- [ ] **HC-Q20 — JavaScript bundle size (not urgent; decide in Sprint 3; pre-PR critic, run 2:
+      build-01).** The boot bundle is 557.32 kB (gzip 174.19 kB), against 385.94 kB at the branch's
+      base, and Vite warns above 500 kB. Images are no longer inlined into it: each loads with its
+      own asset group (architecture 14 §11). The rest of the growth is code: the asset manifest's
+      data (about 65 kB) and the new screens, components and HUD (about 70 kB). Option: load the
+      character-select and HUD code lazily (`React.lazy` or a dynamic import per screen), so the
+      boot bundle holds only what the menus need. Recommendation: decide in Sprint 3; it does not
+      block the MVP.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).

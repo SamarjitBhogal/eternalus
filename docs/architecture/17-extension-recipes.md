@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-26
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -573,9 +573,10 @@ the branch are carried out today; the recipe text itself waits for the owner in 
 - **A screen or HUD element** (R19, R20, [13](13-game-interface.md) §9): a layout variant of one
   of the owner's frames is one content value and one registry entry (DEC-52, DEC-53).
 - **Display names** (R26): the class display names, including the reserved flying class shown as
-  a locked card (DEC-48), and the team names are core content: each class file's `displayName` in
-  `packages/core/src/content/legends/`, a `LockedClassDefinition` in `content/legends/locked/`
-  (returned by `loadDisplayContent()` as `lockedClasses`) and `content/teams/teamDisplayNames.ts`.
+  a locked card (DEC-48), the team names and the profile screen's display name are core content:
+  each class file's `displayName` in `packages/core/src/content/legends/`, a
+  `LockedClassDefinition` in `content/legends/locked/` (returned by `loadDisplayContent()` as
+  `lockedClasses`), `content/teams/teamDisplayNames.ts` and `content/profile/profileDisplayName.ts`.
   The ids are unchanged; the client adds only the locked card's look
   (`game/content/classPresentation.ts`).
 - **A8:** the renderer is created (`Canvas2dRenderer.fromCanvas`) in `game/createBrowserMatch.ts`,

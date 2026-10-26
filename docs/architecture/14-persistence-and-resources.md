@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-26
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -530,6 +530,9 @@ DEC-51). Where §1 and §11 differ, their corrections wait for the owner in `INB
   The seven groups (`boot`, `selection`, `selection-primary`, `selection-alternate`,
   `selection-raster`, `selection-primary-raster`, `match`) let a session load only its layout's art
   and, with the `'css'` effects renderer, no Figma plates (`game/session/selectionAssetGroups.ts`).
+  The build emits every asset as its own file and inlines none into the JavaScript
+  (`assetsInlineLimit: 0` in `apps/client/vite.config.ts`, tested), so a group's bytes download
+  only when the group loads.
 - **Loaders** sit behind the `AssetLoader` port in `data/resources/loaders/`, with the
   `describeAssetLoader` contract suite: `UiImageLoader` decodes images for the DOM, whose URLs reach
   `ui/` through the `asset-urls` event and `assetsSlice` (the event carries the group's draw boxes

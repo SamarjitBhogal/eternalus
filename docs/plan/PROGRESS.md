@@ -1782,3 +1782,68 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   without a definition.
 - Next step: the next round, with the rework's facts; the owner's sign-off of HC-T1 group (i)
   and his answer to HC-Q7 (1).
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the rework of the pre-PR critic's second run (lanes A and B) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (code; recorded by stream B from the orchestrator's facts and the evidence in
+  `eternalus-agent-work/hud-charselect/critic/run2/rework/`, outside the repository; the finding
+  ids are defined in `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - Lane A, `fix/hud-charselect-critic-a`, 7 commits, merged as `6b84d64`: the `accessibleNames`
+    tests moved beside their file (`3244c4d`, ui-screens-06); `legendStepState.shownLegend`
+    extracted and tested (`c2b1182`, ui-screens-01); one "No data yet" string and the template
+    `STRINGS.noDataFor(label)` replace two strings (`c0a1713`, ui-screens-07); the selection cards'
+    props types in companion files and a shared `previewHandlers.ts`, the card functions now 66 and
+    61 lines (`8a6eb2f`, ui-screens-08); `cssRule` throws on a missing selector, with
+    `hudTestSupport.test.ts`, and its 21 callers pass (`3140a5f`, ui-hud-components-assets-07);
+    `bindLatestActionShortcut`, tested in Node, and the unused `isEnabled` dropped (`e450fa0`,
+    ui-hud-components-assets-06); the glow buttons' chrome plates placed at their manifest draw
+    boxes, with `BOXED_CHROME_PLATES` and the literal CSS boxes deleted (`7c8d70b`,
+    ui-hud-components-assets-01). Disclosed: one test was inverted on purpose, because a plate's
+    box now belongs to the plate; the chrome image gains inline CSS custom properties, runtime
+    values from the manifest, as `WeaponPanel` does.
+  - Lane B, `fix/hud-charselect-critic-b`, 10 commits, merged as `66482f4`: a roster fact dropped
+    from a TSDoc (`8893235`, core-bridge-11); a size pin replaced by a comparison with
+    `LEGEND_SPECS.all()` (`a2e825b`, core-bridge-10); the `SpecDetailNames` export dropped
+    (`b90d942`, core-bridge-04); the profile screen's display name moved into core content,
+    `content/profile/profileDisplayName.ts`, through `loadDisplayContent()` (`61401b2`, `e93e61e`,
+    game-data-02); `LegendSpecDefinition.isSelectable`, true for every Legend today, replaces the
+    client presentation's status (`c17e116`, `4dfb446`, game-data-03); the HUD mirror's TSDoc gives
+    its real reason (`6b2e4a6`, core-bridge-06); `GameCanvasChrome.module.css`, with the built CSS
+    byte-identical once class names are normalised (`63a9de1`, game-data-07);
+    `assetsInlineLimit: 0` with `vite.config.test.ts` (`dc5bdfa`, build-01): 666.44 → 557.09 kB,
+    gzip 242.72 → 174.14 kB, data URIs 62 → 0, image files emitted 99 → 152.
+  - Tests: core 615 → 617, client 1312 → 1331; no assertion dropped (per-file counts in each
+    lane's notes).
+  - Pixels: 246 of 250 shots byte-identical to the baseline. The 4 that differ are the harness's
+    asset-check page (`check-assets-fonts`, 4 variants), byte-identical to the shots verified in
+    the roster-fix round. The shoot reported "worktree untouched: NO"; the only files it changed
+    were 36 gitignored TypeScript build outputs, and no tracked file changed.
+- Checks run (at `66482f4`, the orchestrator's log `results/verify-66482f4.log` in the same
+  folder): `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  617 passed (617)"; client "Tests 1331 passed (1331)", statements 96.3 %; the JavaScript bundle
+  557.32 kB (gzip 174.19 kB); "✓ built"; "Documentation check passed." The id resolver: 913 ids,
+  0 without a definition.
+- Next step: the ponytail review (running) and its cuts, the critic's delta check, the final
+  check and the live probe.
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the record of the critic's second-run rework (stream B, round B11) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, after fast-forwarding the docs branch to `66482f4`):
+  - The progress entry above for the rework round, from the orchestrator's facts.
+  - PR register: each reworked finding of the second run names its commit; build-01's outcome (no
+    image inlined; the bundle at 557.32 kB, still over Vite's 500 kB warning from code growth);
+    the rework's test totals and pixel proof; the N22 definition now says the control's CSS has
+    its own module.
+  - Status notes: architecture 02 §12 names `content/profile/profileDisplayName.ts` and
+    `LegendSpecDefinition.isSelectable`; 17 §12's display-name bullet adds the profile screen's
+    name; 14 §14 says the build inlines no asset, so each group's bytes load with the group.
+  - INBOX: HC-T1 gains T-146, FR-090's acceptance (the profile screen's display name lives in
+    core content, not `ui/`), in group (i) because its basis is rule 11 (48 rows in group (i), 126
+    in the table); new HC-Q20 on the bundle size, to decide in Sprint 3.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 617 passed (617)"; client "Tests 1331 passed (1331)", statements 96.3 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed." `git apply --check`
+  prints nothing for the whole patch and for group (i) alone; the id resolver: 917 ids, 0
+  without a definition.
+- Next step: the next round after the ponytail cuts and the critic's delta; the owner's sign-off
+  of HC-T1 group (i) and his answer to HC-Q7 (1).
