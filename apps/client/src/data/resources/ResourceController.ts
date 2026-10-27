@@ -75,7 +75,9 @@ export class ResourceController {
    * Loads what `group` still lacks, reporting progress as each entry loads (its bytes are those
    * of its loaded files, so progress never counts a failed entry and never goes down). A second
    * call while the group loads returns the same promise and adds its listener; with nothing left
-   * to load it resolves at once without a progress report.
+   * to load it resolves at once without a progress report. A load that rejects (only a bug can) is
+   * retired like a released one: the entries it still loads keep nothing, and the next call starts
+   * afresh.
    */
   public load(
     group: AssetGroup,
@@ -98,6 +100,12 @@ export class ResourceController {
     };
     const promise = Promise.all(missing.map((entry) => this.loadEntry(entry, job)))
       .then((results) => ({ group, failed: results.filter((id): id is AssetId => id !== null) }))
+      .catch((error: unknown) => {
+        if (this.pending.get(group)?.job === job) {
+          this.retire(group);
+        }
+        throw error;
+      })
       .finally(() => {
         if (this.pending.get(group)?.job === job) {
           this.pending.delete(group);
@@ -129,12 +137,17 @@ export class ResourceController {
 
   /** Frees `group`; a load still running for it keeps nothing (generation check). */
   public release(group: AssetGroup): void {
-    this.generations.set(group, (this.generations.get(group) ?? 0) + 1);
-    this.pending.delete(group);
+    this.retire(group);
     for (const entry of this.entriesOf(group)) {
       this.cache.get(entry.id)?.release();
       this.cache.delete(entry.id);
     }
+  }
+
+  /** Ends `group`'s load in flight: whatever it still loads is freed, not kept (`isCurrent`). */
+  private retire(group: AssetGroup): void {
+    this.generations.set(group, (this.generations.get(group) ?? 0) + 1);
+    this.pending.delete(group);
   }
 
   private async loadEntry(entry: AssetManifestEntry, job: LoadJob): Promise<AssetId | null> {
@@ -155,8 +168,8 @@ export class ResourceController {
       return null;
     }
     if (!main.isLoaded) {
-      this.deps.warn('asset failed', this.failure(entry.id, main.file.url, main.error));
       freeAll();
+      this.deps.warn('asset failed', this.failure(entry.id, main.file.url, main.error));
       return entry.id;
     }
     const urls: Record<string, string> = {};

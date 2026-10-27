@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetFile, AssetManifestEntry } from './AssetManifest.types';
 import { FakeAssetLoader } from './loaders/FakeAssetLoader';
 import { ResourceController } from './ResourceController';
-import type { LoadProgress } from './ResourceController.types';
+import type { LoadProgress, ResourceControllerDeps } from './ResourceController.types';
 
 /** A file named `url` with `bytes` bytes (the hash is not read by the controller). */
 function file(url: string, bytes: number): AssetFile {
@@ -66,24 +66,37 @@ const MANIFEST = { version: 'test', assets: [FONT, IMAGE_A, IMAGE_B, IMAGE_C, IM
 /** The selection group at a pixel ratio of 1: img-a 10 + 5 + 6, img-b 20, img-c 7 + 9. */
 const SELECTION_BYTES_1X = 57;
 
-/** A controller over fake loaders, with the warnings it reported. */
+/** A controller over fake loaders, with the warnings it reported (none when `warn` is given). */
 function setup(
   options: {
     failingUrls?: readonly string[];
+    failingFontUrls?: readonly string[];
     pixelRatio?: number;
     assets?: readonly AssetManifestEntry[];
+    warn?: ResourceControllerDeps['warn'];
   } = {},
 ) {
   const images = new FakeAssetLoader({ failingUrls: options.failingUrls ?? [] });
-  const fonts = new FakeAssetLoader({ type: 'font' });
+  const fonts = new FakeAssetLoader({ type: 'font', failingUrls: options.failingFontUrls ?? [] });
   const warnings: { body: string; attributes: unknown }[] = [];
   const resources = new ResourceController({
     manifest: { ...MANIFEST, assets: options.assets ?? MANIFEST.assets },
     loaders: [images, fonts],
     pixelRatio: () => options.pixelRatio ?? 1,
-    warn: (body, attributes) => warnings.push({ body, attributes }),
+    warn: options.warn ?? ((body, attributes) => warnings.push({ body, attributes })),
   });
   return { resources, images, fonts, warnings };
+}
+
+/** A `warn` that throws on its first call, as a bug would, and then reports nothing. */
+function warnThatThrowsOnce(): ResourceControllerDeps['warn'] {
+  let isBroken = true;
+  return () => {
+    if (isBroken) {
+      isBroken = false;
+      throw new Error('warn bug');
+    }
+  };
 }
 
 describe('ResourceController', () => {
@@ -322,18 +335,9 @@ describe('ResourceController', () => {
   });
 
   it('starts a fresh load after a group load rejected (a bug), and that load resolves', async () => {
-    const images = new FakeAssetLoader({ failingUrls: ['/img-b.webp'] });
-    let isWarnBroken = true;
-    const resources = new ResourceController({
-      manifest: MANIFEST,
-      loaders: [images, new FakeAssetLoader({ type: 'font' })],
-      pixelRatio: () => 1,
-      warn: () => {
-        if (isWarnBroken) {
-          isWarnBroken = false;
-          throw new Error('warn bug');
-        }
-      },
+    const { resources, images } = setup({
+      failingUrls: ['/img-b.webp'],
+      warn: warnThatThrowsOnce(),
     });
     const rejected = resources.load('selection', () => undefined);
     images.resolveAll();
@@ -345,6 +349,75 @@ describe('ResourceController', () => {
     expect(retry).not.toBe(rejected);
     await expect(retry).resolves.toEqual({ group: 'selection', failed: ['img-b'] });
     expect(images.calls.map((call) => call.url).at(-1)).toBe('/img-b.webp');
+    // img-a and img-c loaded before the rejection: kept, so the retry asks only for img-b again.
+    expect(images.calls).toHaveLength(7);
+    const heldAfterRetry = images.heldCount;
+    resources.release('selection');
+    expect({ heldAfterRetry, heldAfterRelease: images.heldCount }).toEqual({
+      heldAfterRetry: 5,
+      heldAfterRelease: 0,
+    });
+  });
+
+  it('frees the entries a rejected group load was still loading, so a retry loads them once and leaks nothing', async () => {
+    const { resources, images, fonts } = setup({
+      assets: [FONT, { ...IMAGE_A, group: 'boot' }],
+      failingFontUrls: ['/font-a.woff2'],
+      warn: warnThatThrowsOnce(),
+    });
+    const rejected = resources.load('boot', () => undefined);
+    fonts.resolveAll();
+    await expect(rejected).rejects.toThrow('warn bug');
+
+    // img-a's three files are still loading for the rejected load when the retry starts.
+    const retry = resources.load('boot', () => undefined);
+    fonts.resolveAll();
+    images.resolveAll();
+    await expect(retry).resolves.toEqual({ group: 'boot', failed: ['font-a'] });
+
+    // Each file once for the rejected load (its handles freed) and once for the retry (kept).
+    const imgA = ['/img-a.webp', '/img-a@ally-tile.webp', '/img-a@mirrored.webp'];
+    expect(images.calls.map((call) => call.url)).toEqual([...imgA, ...imgA]);
+    expect(fonts.calls).toHaveLength(2);
+    const heldAfterRetry = images.heldCount;
+    resources.release('boot');
+    expect({ heldAfterRetry, heldAfterRelease: images.heldCount }).toEqual({
+      heldAfterRetry: 3,
+      heldAfterRelease: 0,
+    });
+  });
+
+  it('keeps the fresh load when a released load it replaced rejects later (a bug)', async () => {
+    const { resources, images, fonts } = setup({ assets: [FONT, { ...IMAGE_A, group: 'boot' }] });
+    const stale = resources.load('boot', () => undefined);
+    resources.release('boot');
+    const fresh = resources.load('boot', () => undefined);
+    vi.spyOn(images, 'release').mockImplementationOnce(() => {
+      throw new Error('release bug');
+    });
+
+    images.resolveAll();
+    await expect(stale).rejects.toThrow('release bug');
+    // The fresh load's font is still loading when the stale load rejects.
+    fonts.resolveAll();
+
+    await expect(fresh).resolves.toEqual({ group: 'boot', failed: [] });
+    expect(resources.isLoaded('boot')).toBe(true);
+  });
+
+  it('frees the renditions an entry loaded when warning that its own file failed throws (a bug)', async () => {
+    const { resources, images } = setup({
+      assets: [FONT, IMAGE_A],
+      failingUrls: ['/img-a.webp'],
+      warn: warnThatThrowsOnce(),
+    });
+
+    const load = resources.load('selection', () => undefined);
+    images.resolveAll();
+    await expect(load).rejects.toThrow('warn bug');
+
+    expect(images.calls).toHaveLength(3);
+    expect(images.heldCount).toBe(0);
   });
 
   it('refuses a duplicate id, a type with no loader and a font outside boot', () => {
