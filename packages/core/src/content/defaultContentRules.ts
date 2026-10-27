@@ -10,6 +10,7 @@ import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
+import { RoleRatingRangeRule } from './validation/RoleRatingRangeRule';
 import { SpecClassExistsRule } from './validation/SpecClassExistsRule';
 
 /**
@@ -37,6 +38,7 @@ export const createLegendSpecRules = (
 ): readonly ContentRule<LegendSpecDefinition>[] => [
   new KebabCaseIdRule(),
   new SpecClassExistsRule(legends),
+  new RoleRatingRangeRule(),
 ];
 
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */

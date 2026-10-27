@@ -1,4 +1,7 @@
-/** The three role-rating bars (Figma 58:323), each a fraction from 0 to 1. */
+/**
+ * The three role-rating bars (Figma 58:323), each a fraction from 0 to 1; `RoleRatingRangeRule`
+ * checks it.
+ */
 export type RoleRatings = {
   readonly damage: number;
   readonly support: number;
