@@ -54,7 +54,7 @@ const LOCKED_ONLY = classCardFixture({
   classId: 'sentinel',
   specs: [specCardFixture({ specId: 'colossus', status: 'locked' })],
 });
-const NO_LEGENDS = classCardFixture({ classId: 'flying' });
+const NO_LEGENDS = classCardFixture({ classId: 'class-without-legends' });
 
 function storeWith(
   selection: { readonly classId: string; readonly specId: string | null } | null,
@@ -151,8 +151,8 @@ describe('selectLegendStepView', () => {
     expect(viewOf({ classId: 'magus', specId: 'oracle' })?.canLockIn).toBe(true);
     expect(viewOf({ classId: 'magus', specId: null })?.canLockIn).toBe(false);
     expect(viewOf({ classId: 'sentinel', specId: null })?.canLockIn).toBe(true);
-    expect(viewOf({ classId: 'flying', specId: null })?.legends).toEqual([]);
-    expect(viewOf({ classId: 'flying', specId: null })?.canLockIn).toBe(true);
+    expect(viewOf({ classId: 'class-without-legends', specId: null })?.legends).toEqual([]);
+    expect(viewOf({ classId: 'class-without-legends', specId: null })?.canLockIn).toBe(true);
   });
 
   it('keeps the same object after a countdown tick and builds a new one after a pick', () => {
