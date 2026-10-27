@@ -72,9 +72,10 @@ export class ResourceController {
   }
 
   /**
-   * Loads what `group` still lacks, reporting progress as files arrive. A second call while the
-   * group loads returns the same promise and adds its listener; with nothing left to load it
-   * resolves at once without a progress report.
+   * Loads what `group` still lacks, reporting progress as each entry loads (its bytes are those
+   * of its loaded files, so progress never counts a failed entry and never goes down). A second
+   * call while the group loads returns the same promise and adds its listener; with nothing left
+   * to load it resolves at once without a progress report.
    */
   public load(
     group: AssetGroup,
@@ -139,7 +140,7 @@ export class ResourceController {
   private async loadEntry(entry: AssetManifestEntry, job: LoadJob): Promise<AssetId | null> {
     const loader = this.loaderFor(entry.type);
     const results = await Promise.all(
-      this.plansOf(entry.id).map((file) => this.loadFile(loader, entry, file, job)),
+      this.plansOf(entry.id).map((file) => this.loadFile(loader, entry, file)),
     );
     const freeAll = (): void => {
       for (const result of results) {
@@ -178,7 +179,10 @@ export class ResourceController {
       urls: entry.type === 'ui-image' ? urls : {},
       release: freeAll,
     });
-    this.report(job, { loaded: job.progress.loaded + 1 });
+    this.report(job, {
+      loaded: job.progress.loaded + 1,
+      loadedBytes: job.progress.loadedBytes + bytes,
+    });
     return null;
   }
 
@@ -186,13 +190,9 @@ export class ResourceController {
     loader: AssetLoader<unknown>,
     entry: AssetManifestEntry,
     file: PlannedFile,
-    job: LoadJob,
   ): Promise<FileResult> {
     try {
       const handle = await loader.load(entry, file.url);
-      if (this.isCurrent(job)) {
-        this.report(job, { loadedBytes: job.progress.loadedBytes + file.bytes });
-      }
       return { file, isLoaded: true, handle };
     } catch (error) {
       return { file, isLoaded: false, error };

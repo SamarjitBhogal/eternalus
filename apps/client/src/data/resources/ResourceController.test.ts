@@ -159,6 +159,20 @@ describe('ResourceController', () => {
     expect(resources.progress('selection').loadedBytes).toBe(SELECTION_BYTES_1X - 5);
   });
 
+  it('never lowers byte progress when an entry fails after its renditions loaded', async () => {
+    const { resources, images } = setup({ failingUrls: ['/img-a.webp'] });
+    const bytes: number[] = [];
+
+    const load = resources.load('selection', (progress) => bytes.push(progress.loadedBytes));
+    images.resolveAll();
+    await load;
+    bytes.push(resources.progress('selection').loadedBytes);
+
+    expect(bytes).toEqual([...bytes].sort((a, b) => a - b));
+    // img-a's own file (10) and its renditions (5 + 6) are not loaded bytes.
+    expect(bytes.at(-1)).toBe(SELECTION_BYTES_1X - (10 + 5 + 6));
+  });
+
   it('serves id and id@rendition keys, loading a file shared by an entry and a rendition once', async () => {
     const { resources, images } = setup();
 
