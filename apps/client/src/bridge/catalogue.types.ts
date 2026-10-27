@@ -114,8 +114,8 @@ export type LegendSpecArt = {
 };
 
 /**
- * A Legend (sub-class, DEC-49) as the selection screens show it. Setup data; gameplay post-MVP
- * (17 R2).
+ * A Legend (sub-class, DEC-49) as the selection screens show it. Setup data until its gameplay
+ * is built (ADR 0018: MVP scope, phase open; 17 R2).
  */
 export type LegendSpecCard = {
   readonly specId: string;

@@ -159,6 +159,20 @@ describe('ResourceController', () => {
     expect(resources.progress('selection').loadedBytes).toBe(SELECTION_BYTES_1X - 5);
   });
 
+  it('never lowers byte progress when an entry fails after its renditions loaded', async () => {
+    const { resources, images } = setup({ failingUrls: ['/img-a.webp'] });
+    const bytes: number[] = [];
+
+    const load = resources.load('selection', (progress) => bytes.push(progress.loadedBytes));
+    images.resolveAll();
+    await load;
+    bytes.push(resources.progress('selection').loadedBytes);
+
+    expect(bytes).toEqual([...bytes].sort((a, b) => a - b));
+    // img-a's own file (10) and its renditions (5 + 6) are not loaded bytes.
+    expect(bytes.at(-1)).toBe(SELECTION_BYTES_1X - (10 + 5 + 6));
+  });
+
   it('serves id and id@rendition keys, loading a file shared by an entry and a rendition once', async () => {
     const { resources, images } = setup();
 
@@ -305,6 +319,32 @@ describe('ResourceController', () => {
     expect(fresh).not.toBe(stale);
     expect(resources.isLoaded('selection')).toBe(true);
     expect(images.calls).toHaveLength(12);
+  });
+
+  it('starts a fresh load after a group load rejected (a bug), and that load resolves', async () => {
+    const images = new FakeAssetLoader({ failingUrls: ['/img-b.webp'] });
+    let isWarnBroken = true;
+    const resources = new ResourceController({
+      manifest: MANIFEST,
+      loaders: [images, new FakeAssetLoader({ type: 'font' })],
+      pixelRatio: () => 1,
+      warn: () => {
+        if (isWarnBroken) {
+          isWarnBroken = false;
+          throw new Error('warn bug');
+        }
+      },
+    });
+    const rejected = resources.load('selection', () => undefined);
+    images.resolveAll();
+    await expect(rejected).rejects.toThrow('warn bug');
+
+    const retry = resources.load('selection', () => undefined);
+    images.resolveAll();
+
+    expect(retry).not.toBe(rejected);
+    await expect(retry).resolves.toEqual({ group: 'selection', failed: ['img-b'] });
+    expect(images.calls.map((call) => call.url).at(-1)).toBe('/img-b.webp');
   });
 
   it('refuses a duplicate id, a type with no loader and a font outside boot', () => {
