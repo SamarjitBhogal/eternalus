@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState } from 'react';
 
 import type { AssetId } from '../../bridge/catalogue.types';
 import { useAppSelector } from '../../bridge/hooks';
@@ -28,7 +28,7 @@ type LegendSelectStepModel = {
   /** LOCK IN's chrome plate: the catalogue's only while the row plate is drawn (CD-16). */
   readonly lockInChromeAssetId: AssetId | null;
   readonly onPreview: (specId: string | null) => void;
-  readonly onCardKeyDown: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
+  readonly onCardKeyDown: ReturnType<typeof rovingKeyDown>;
 };
 
 /**
