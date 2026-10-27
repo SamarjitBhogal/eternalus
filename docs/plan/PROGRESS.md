@@ -1886,3 +1886,28 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   resolver: 919 ids, 0 without a definition.
 - Next step: the owner's sign-off of HC-T1 group (i) and his answer to HC-Q7 (1), the merge
   preconditions; then the pull request opens with the drafted description.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the doc side of the /pr-review before the merge (stream B, round B13) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `a171761`; the review's finding ids are defined in the PR register's
+  new `/pr-review` section, `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - The `/pr-review` (six areas and a skeptic, at `a171761`): request-changes, no blocker upheld.
+    The register records the verdict, the failing checklist items, every finding's handling, the
+    owner items, the items not changed with their reasons, and an integration recipe for the merges
+    with the nine sibling pull requests. HC-B1 joins the merge preconditions. The code repairs are
+    in progress in other worktrees.
+  - Reference 12: OQ-03's status says MVP (DEC-56) with the phase open (HC-Q17). The Phase 6 plan is
+    back to its base text: its UI enhancements task line waits as `INBOX.md` HC-T1 T-152 until
+    HC-S5 is answered, and the UI enhancements plan says the task is unscheduled.
+  - HC-T1 gains T-147 to T-151 in group (i) (the naming suggestions record DEC-48; the D11 row
+    records ADR 0018) and T-152 in group (ii): 132 rows, 53 in group (i).
+  - Proposed for the owner: ADR 0019 (DEC-50) and ADR 0020 (the client test configuration), both
+    in the decisions index; new `INBOX.md` HC-Q21 (the merge order) and HC-Q22 (the HUD's weapon art
+    against `feat/weapons`). The pull request's description is rewritten to the template, outside
+    the repository.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  617 passed (617)"; client "Tests 1331 passed (1331)"; "✓ built"; "Checked 119 Markdown files
+  under docs/." "Documentation check passed." `git apply --check` prints nothing for the whole
+  patch and for group (i) alone; the id resolver: 935 ids, 0 without a definition.
+- Next step: the code repairs' commits (recorded in a later round); the owner's answers to the merge
+  preconditions (HC-T1 group (i), HC-Q7 (1) and (3), HC-B1), ADR 0019 and ADR 0020, and HC-Q21.
