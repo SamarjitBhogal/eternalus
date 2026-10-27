@@ -18,15 +18,6 @@ import {
   withBinding,
 } from './hudTestSupport';
 
-const SLOTS: readonly HudSlotId[] = [
-  'ability-1',
-  'ability-2',
-  'ability-3',
-  'ability-4',
-  'gadget-1',
-  'gadget-2',
-];
-
 /** The Figma HUD with `slot`'s runtime entry replaced by `changes` (or removed for `null`). */
 function render(slot: HudSlotId, changes: Partial<AbilitySlotStatus> | null = {}) {
   const store = withHudSetup(figmaHudState());
@@ -115,10 +106,13 @@ describe('AbilitySlot', () => {
     expect(names(html)).toEqual(['Gadget 1: empty, Cooling down']);
   });
 
-  it.each(SLOTS)('gives %s a box of its frame size in its module CSS', (slot) => {
-    const size = `calc(${String(SLOT_FRAMES[slot].size)} * var(--hud-u))`;
-    const declarations = cssRule(css, `.slot[data-slot='${slot}']`);
-    expect(declarations).toContain(`width: ${size}`);
-    expect(declarations).toContain(`height: ${size}`);
-  });
+  it.each(Object.entries(SLOT_FRAMES))(
+    'gives %s a box of its frame size in its module CSS',
+    (slot, frame) => {
+      const size = `calc(${String(frame.size)} * var(--hud-u))`;
+      const declarations = cssRule(css, `.slot[data-slot='${slot}']`);
+      expect(declarations).toContain(`width: ${size}`);
+      expect(declarations).toContain(`height: ${size}`);
+    },
+  );
 });
