@@ -51,6 +51,16 @@ describe('InfoPanelDetails', () => {
     ).toEqual(['Aetheric Recall', 'Unison Ward', 'Severed Accord']);
   });
 
+  it('places each row by its data-row alone: the list items carry no class', () => {
+    const html = renderDetails('legend', ORACLE_ROWS);
+
+    expect(html.match(/<li [^>]*>/g)).toEqual([
+      '<li data-row="0">',
+      '<li data-row="1">',
+      '<li data-row="2">',
+    ]);
+  });
+
   it.each(LAYOUTS)('draws %s icons from that layout’s rendition (I-45)', (layout) => {
     const html = renderDetails(layout, ORACLE_ROWS);
 

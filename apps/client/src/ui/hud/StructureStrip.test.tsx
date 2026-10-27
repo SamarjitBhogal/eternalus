@@ -37,6 +37,16 @@ describe('StructureStrip', () => {
     expect(accessibleNames(html, '[role=group]')[0]).toBe('Your structures');
   });
 
+  it('lays the allied strip out in the default layout: the strip class alone, which has a rule', () => {
+    const html = renderWithStore(<StructureStrip side="allied" />, withHudSetup(figmaHudState()));
+    expect(html).toMatch(
+      new RegExp(
+        `^<div role="group" aria-label="Your structures" class="${String(styles.strip)}">`,
+      ),
+    );
+    expect(css).toMatch(/\.strip\s*\{/);
+  });
+
   it('lays the enemy strip out mirrored, in the same identity order, with mirrored icons', () => {
     const html = renderWithStore(<StructureStrip side="enemy" />, withHudSetup(figmaHudState()));
     expect(html).toContain(`class="${String(styles.strip)} ${String(styles.enemy)}"`);
