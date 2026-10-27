@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState } from 'react';
 
 import type { LegendClassCard } from '../../bridge/catalogue.types';
 import type { LegendClassId } from '../../bridge/domain.types';
@@ -34,7 +34,7 @@ type ClassSelectStepModel = {
   readonly rowPlate: RowPlate | null;
   readonly actions: ClassStepActions;
   /** Arrow / Home / End on the card at `index`: picks where it lands and moves the focus there. */
-  readonly onCardKeyDown: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
+  readonly onCardKeyDown: ReturnType<typeof rovingKeyDown>;
 };
 
 const toStepCard = (card: LegendClassCard): ClassStepCard => ({

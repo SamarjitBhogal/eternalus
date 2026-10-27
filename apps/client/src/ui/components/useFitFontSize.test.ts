@@ -69,6 +69,7 @@ function titleElement(scrollWidth: number, fontSize: string, reads: string[]): H
       return scrollWidth;
     },
   };
+  // Node has no HTMLElement; only scrollWidth is read off it (the globals it meets are stubbed).
   return element as unknown as HTMLElement;
 }
 

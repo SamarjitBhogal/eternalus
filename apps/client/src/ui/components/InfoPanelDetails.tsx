@@ -16,7 +16,7 @@ function detailRow(
 ): ReactElement {
   const iconAssetId = row?.iconAssetId ?? null;
   return (
-    <li key={index} className={styles.row} data-row={index}>
+    <li key={index} data-row={index}>
       {iconAssetId === null ? (
         <span className={styles.placeholder} aria-hidden="true" />
       ) : (

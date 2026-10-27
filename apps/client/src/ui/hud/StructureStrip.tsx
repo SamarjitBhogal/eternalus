@@ -17,7 +17,8 @@ const SIDE_LABEL: Readonly<Record<HudSide, string>> = {
 };
 
 const SIDE_CLASS: Readonly<Record<HudSide, string | undefined>> = {
-  allied: styles.allied,
+  // The allied strip is `.strip`'s default layout; only the enemy strip adds a class.
+  allied: undefined,
   enemy: styles.enemy,
 };
 

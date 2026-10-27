@@ -18,7 +18,14 @@ import {
   withBinding,
 } from './hudTestSupport';
 
-const SLOTS = Object.keys(SLOT_FRAMES) as HudSlotId[];
+const SLOTS: readonly HudSlotId[] = [
+  'ability-1',
+  'ability-2',
+  'ability-3',
+  'ability-4',
+  'gadget-1',
+  'gadget-2',
+];
 
 /** The Figma HUD with `slot`'s runtime entry replaced by `changes` (or removed for `null`). */
 function render(slot: HudSlotId, changes: Partial<AbilitySlotStatus> | null = {}) {

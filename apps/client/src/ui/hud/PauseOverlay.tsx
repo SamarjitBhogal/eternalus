@@ -1,4 +1,4 @@
-import { type ReactElement, useEffect, useId, useRef } from 'react';
+import { type ReactElement, useId } from 'react';
 
 import { emitIntent } from '../../bridge/eventBus';
 import { useAppSelector } from '../../bridge/hooks';
@@ -7,14 +7,16 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { STRINGS } from '../strings';
 import styles from './PauseOverlay.module.css';
 import type { PauseOpenerRef } from './usePauseMenuKey';
+import { usePauseOverlayFocus } from './usePauseOverlayFocus';
 
 /**
  * The in-match pause overlay: Resume, Settings (the settings screen embedded) and Leave match, as
  * a modal dialog beside the `inert` viewport and HUD (13 §7; CD-11). Resume takes focus when the
  * pause view mounts (again on settings → pause); the settings view focuses the dialog itself. When
  * the overlay closes, focus returns to `openerRef` (stored by the pause key before it opened) if
- * that element is still in the document; switching between pause and settings never restores.
- * `MatchScreen` mounts it always; it shows only while the session's overlay is open.
+ * that element is still in the document; switching between pause and settings never restores
+ * (`usePauseOverlayFocus`). `MatchScreen` mounts it always; it shows only while the session's
+ * overlay is open.
  */
 export function PauseOverlay({
   openerRef,
@@ -23,19 +25,7 @@ export function PauseOverlay({
 }): ReactElement | null {
   const overlay = useAppSelector((state) => state.session.overlay);
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const isOpen = overlay !== null;
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    // The pause key stored the opener before the overlay opened, so it is in place here.
-    const opener = openerRef.current;
-    return () => {
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
-    };
-  }, [isOpen, openerRef]);
-  useEffect(() => {
-    if (overlay === 'settings') dialogRef.current?.focus();
-  }, [overlay]);
+  const dialogRef = usePauseOverlayFocus(overlay, openerRef);
   if (overlay === null) {
     return null;
   }
