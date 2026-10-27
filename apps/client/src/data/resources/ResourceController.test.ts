@@ -307,6 +307,32 @@ describe('ResourceController', () => {
     expect(images.calls).toHaveLength(12);
   });
 
+  it('starts a fresh load after a group load rejected (a bug), and that load resolves', async () => {
+    const images = new FakeAssetLoader({ failingUrls: ['/img-b.webp'] });
+    let isWarnBroken = true;
+    const resources = new ResourceController({
+      manifest: MANIFEST,
+      loaders: [images, new FakeAssetLoader({ type: 'font' })],
+      pixelRatio: () => 1,
+      warn: () => {
+        if (isWarnBroken) {
+          isWarnBroken = false;
+          throw new Error('warn bug');
+        }
+      },
+    });
+    const rejected = resources.load('selection', () => undefined);
+    images.resolveAll();
+    await expect(rejected).rejects.toThrow('warn bug');
+
+    const retry = resources.load('selection', () => undefined);
+    images.resolveAll();
+
+    expect(retry).not.toBe(rejected);
+    await expect(retry).resolves.toEqual({ group: 'selection', failed: ['img-b'] });
+    expect(images.calls.map((call) => call.url).at(-1)).toBe('/img-b.webp');
+  });
+
   it('refuses a duplicate id, a type with no loader and a font outside boot', () => {
     const build =
       (assets: readonly AssetManifestEntry[], withFonts = true) =>

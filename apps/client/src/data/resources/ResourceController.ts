@@ -95,14 +95,13 @@ export class ResourceController {
       listeners: [onProgress],
       progress: this.settledProgress(group),
     };
-    const promise = Promise.all(missing.map((entry) => this.loadEntry(entry, job))).then(
-      (results) => {
+    const promise = Promise.all(missing.map((entry) => this.loadEntry(entry, job)))
+      .then((results) => ({ group, failed: results.filter((id): id is AssetId => id !== null) }))
+      .finally(() => {
         if (this.pending.get(group)?.job === job) {
           this.pending.delete(group);
         }
-        return { group, failed: results.filter((id): id is AssetId => id !== null) };
-      },
-    );
+      });
     this.pending.set(group, { job, promise });
     return promise;
   }
