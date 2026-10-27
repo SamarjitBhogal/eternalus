@@ -34,7 +34,7 @@ describe('LoadingState', () => {
       'selection-raster',
       'selection-primary-raster',
     ];
-    // Progress repeats as files arrive; the order is what matters: loading … ready, URLs, next.
+    // Progress repeats as each asset loads; the order is what matters: loading … ready, URLs, next.
     const collapsed = session.log.filter((entry, index) => entry !== session.log[index - 1]);
     expect(collapsed).toEqual([
       'phase loading',
