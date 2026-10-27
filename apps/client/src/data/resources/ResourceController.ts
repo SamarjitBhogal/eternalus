@@ -177,11 +177,6 @@ export class ResourceController {
     for (const result of results) {
       if (result.isLoaded) {
         bytes += result.file.bytes;
-      } else {
-        this.deps.warn('asset rendition failed', {
-          ...this.failure(entry.id, result.file.url, result.error),
-          rendition: result.file.renditions.join(' '),
-        });
       }
       for (const key of this.keysOf(entry.id, result.file)) {
         urls[key] = result.isLoaded ? result.file.url : main.file.url;
@@ -196,6 +191,15 @@ export class ResourceController {
       loaded: job.progress.loaded + 1,
       loadedBytes: job.progress.loadedBytes + bytes,
     });
+    // Warned after caching, so a throwing warn (a bug) cannot strand the handles: release frees them.
+    for (const result of results) {
+      if (!result.isLoaded) {
+        this.deps.warn('asset rendition failed', {
+          ...this.failure(entry.id, result.file.url, result.error),
+          rendition: result.file.renditions.join(' '),
+        });
+      }
+    }
     return null;
   }
 

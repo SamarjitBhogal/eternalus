@@ -420,6 +420,21 @@ describe('ResourceController', () => {
     expect(images.heldCount).toBe(0);
   });
 
+  it('keeps an entry whose failed-rendition warning throws (a bug), so a release frees it', async () => {
+    const { resources, images } = setup({
+      assets: [FONT, IMAGE_A],
+      failingUrls: ['/img-a@ally-tile.webp'],
+      warn: warnThatThrowsOnce(),
+    });
+
+    const load = resources.load('selection', () => undefined);
+    images.resolveAll();
+    await expect(load).rejects.toThrow('warn bug');
+    resources.release('selection');
+
+    expect(images.heldCount).toBe(0);
+  });
+
   it('refuses a duplicate id, a type with no loader and a font outside boot', () => {
     const build =
       (assets: readonly AssetManifestEntry[], withFonts = true) =>
