@@ -8,6 +8,18 @@ reviews:
   auto_approvals:
     enabled: true
     allow_author_approval: false # authors cannot run @coderabbitai approve/resolve on their own PR
+    # This file is read from the PR branch, so PRs that touch review or guardrail config
+    # always need a teammate's approval.
+    overrides:
+      - enabled: false
+        paths:
+          - '.coderabbit.yaml'
+          - '.github/**'
+          - '.githooks/**'
+          - '.claude/settings.json'
+          - 'eslint.config.js'
+          - '**/tsconfig*.json'
+          - '**/vitest.config.ts'
   auto_review:
     drafts: true # drafts are reviewed too
     base_branches: ['main', 'phase/.*']

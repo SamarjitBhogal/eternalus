@@ -152,7 +152,7 @@ skill, the checklists, the architecture docs, `guardrails.md`, `CONTRIBUTING.md`
 `AGENTS.md` as code guidelines, adds a path instruction that maps the skill's severities, and
 runs one blocking pre-merge check for the skill's blockers. Auto approvals let it request
 changes and approve; authors cannot run `@coderabbitai approve` on their own PR or override the
-failing check. To verify it runs, open a PR and
+failing check, and it withholds approval on PRs that touch review or guardrail config. To verify it runs, open a PR and
 check for CodeRabbit's walkthrough and the "pr-review skill verdict" check, or comment
 `@coderabbitai configuration` to see the config it loaded.
 

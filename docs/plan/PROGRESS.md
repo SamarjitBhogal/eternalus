@@ -1330,3 +1330,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."
 - Next step: the owner enables the "phase branches" ruleset (PR, 1 approval, required CI, Code
   Owner review off), adds required CI on `main`, and accepts ADR 0018.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review — SamarjitBhogal + Claude Code
+
+- What was done: third round of CodeRabbit threads on PR #48. `.coderabbit.yaml` reads from the
+  PR branch, so `auto_approvals.overrides` now withholds CodeRabbit's approval on PRs that touch
+  review or guardrail config. ADR 0018 rewritten as accepted (team decision including the
+  product owner): context, numbered decision, options, consequences. The "phase branches"
+  ruleset is active (PR, 1 approval, Code Owner review off, the three CI checks required).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 191ms"; "Documentation
+  check passed."
+- Next step: add the three CI checks as required on `main`.
