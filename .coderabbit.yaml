@@ -23,8 +23,10 @@ reviews:
         binding contract or an allowed interim stand-in) or `better-than-design`. A design-doc
         edit in this PR that the description records as signed off by the human is not a
         violation.
-        Map severities: `blocker` = critical/major finding that must be fixed (request changes);
-        `should-fix` = minor; `nit` = nitpick. Cite file:line and the rule for each finding.
+        Map severities: `blocker` = critical/major finding that must be fixed. Any actionable
+        inline comment requests changes, so post only blockers as actionable inline comments;
+        post `should-fix` and `nit` findings as nitpick comments in the review summary.
+        Cite file:line and the rule for each finding.
         Do not suggest new dependencies, `any`, `@ts-ignore`, skipped tests or weakened assertions
         as fixes. Do not make product or game-design decisions; flag them instead.
   pre_merge_checks:

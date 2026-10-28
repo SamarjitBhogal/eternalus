@@ -56,6 +56,8 @@ request asks for both); a blocking check for every checklist item (rejected, LLM
 - Harder: `.coderabbit.yaml` is now a guardrail config; changing it needs an ADR
   (`guardrails.md` §1 row "CodeRabbit review").
 - Watch: CodeRabbit may approve before CI finishes, so CI must be a required check on every
-  base branch it reviews. Open question for the product owner: does CodeRabbit's approval count
-  toward the one required approval (`guardrails.md` §5)? Until this ADR is accepted, it does
-  not; a teammate still approves.
+  base branch it reviews. CodeRabbit's approval counts toward GitHub's required approvals, and
+  any actionable inline comment requests changes, so only blockers are posted that way. Open
+  question for the product owner: may CodeRabbit's approval replace a teammate's? Until this ADR
+  is accepted, branch protection requires a Code Owner review (`.github/CODEOWNERS` lists only
+  people), so a teammate still approves (`guardrails.md` §5).

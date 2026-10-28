@@ -115,5 +115,6 @@ protection rule (or ruleset) for `main`:
 - Block force pushes and deletions.
 - Require linear history; allow squash merge only.
 - Require the same CI checks on `phase/*`, since CodeRabbit can approve PRs into them.
-- Whether CodeRabbit's approval counts toward the required approval is open in ADR 0018; until
-  it is accepted, a teammate still approves.
+- Require review from Code Owners. CodeRabbit's approval counts toward the required approval,
+  and `.github/CODEOWNERS` lists only people, so this keeps a teammate's approval required while
+  ADR 0018's open question stands.

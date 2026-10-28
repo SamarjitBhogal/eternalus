@@ -1302,3 +1302,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `guardrails.md` §5, ADR 0018 in `related:`).
 - Next step: the product owner accepts ADR 0018 and answers whether CodeRabbit's approval
   counts toward the required approval; make CI a required check on `main` and `phase/*`.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review (CodeRabbit review of PR #48) — SamarjitBhogal + Claude Code
+
+- What was done: addressed CodeRabbit's two major comments on PR #48. Any actionable inline
+  comment makes CodeRabbit request changes, so the path instruction now posts only blockers that
+  way and `should-fix`/`nit` findings as nitpicks in the summary. CodeRabbit's approval counts
+  toward GitHub's required approvals, so `guardrails.md` §5 now asks for a Code Owner review
+  (`.github/CODEOWNERS` lists only people) and ADR 0018 says so. The minor comment
+  (`auto_pause_after_reviewed_commits: 0`) was declined and resolved: we should not demand too
+  many reviews from CodeRabbit.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 192ms"; "Documentation
+  check passed."
+- Next step: the owner turns on "Require review from Code Owners" and required CI on `main` and
+  `phase/*`, and accepts ADR 0018.
