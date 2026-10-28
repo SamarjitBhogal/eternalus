@@ -639,6 +639,55 @@ the development and production builds (the development build's long-frame check 
 select is information only, OD-30). At `932c7c7`, 246 of 250 screenshots are byte-identical to the
 baseline; the other 4 are the known reorder on the harness's asset-check page.
 
+## The owner's critic loop
+
+After the repairs, the coordinating session ran the owner's critic loop: two critics in parallel,
+one for correctness against the governing docs as they stood at `230a330` and one for
+over-engineering (the ponytail lens), for two rounds at most. Round 1 read `a171761` to `df70ab5`,
+round 2 `df70ab5` to `be4aca3`. The reports are in the coordinating session's working folder
+(`pr-review/cycle-critics-r1.json` and `-r2.json`), outside the repository. Their ids are `cc-`
+(correctness) or `pc-` (ponytail) and a number in round 1, and `cc2-` or `pc2-` and a number in
+round 2.
+
+**Round 1: both critics approve**, with one should-fix (cc-01) and ten nits. **Round 2: both
+approve.** It finds every accepted round-1 finding fixed, cc-03 and pc-01 only in part (cc-03 below;
+pc-01's rest is pc2-01), and adds five findings, one of them should-fix (cc2-01). The loop stops
+after round 2, so the round-2 findings were fixed without a third round. Stream B's rounds for the
+loop:
+
+- **B15**: round 1's doc findings (pc-03 to pc-06 and the plan part of pc-07), `66eca5e` to
+  `8ec45f9`, on `b783682`.
+- **B16**: round 2's doc findings (cc2-01 to cc2-03, pc2-02): this section, its progress entry with
+  the check on the final code, and 14 §14's shorter status note.
+
+| Id     | Lens, severity          | What                                                                                                                               | Handling                                                                                                                                                                            |
+| ------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| cc-01  | correctness, should-fix | The repairs had no progress entry and no check at the merged head, and this register still called them in progress (as rd-01).     | Fixed in round B14 (`b783682`): [the repairs and their review](#the-repairs-and-their-review).                                                                                      |
+| cc-02  | correctness, nit        | A throwing `loader.release` (a bug) stopped `freeAll` at the first handle and made `release(group)` skip forgetting later entries. | Fixed in `eade1c2`: both go on past a throw and rethrow the first error, and `release(group)` forgets each entry first. Red before the fix (2 tests) and with either half reverted. |
+| cc-03  | correctness, nit        | The open-or-closed key that `usePauseOverlayFocus`'s focus restore follows was reached by no test.                                 | Fixed in part in `4bbe7e8`: an exported, tested `isOverlayOpen`. The effect's dependency array stays out of reach of the Node-only tests.                                           |
+| cc-04  | correctness, nit        | `LoadJob`'s TSDoc said only `release` bumps its generation.                                                                        | Fixed in `8439831`: a rejected load bumps it too.                                                                                                                                   |
+| pc-01  | ponytail, nit           | The two select-step hook tests each carried the same fake key-press helper.                                                        | Fixed in `289f793` (one helper in `ui/testStore.tsx`), then in `6750f03` (pc2-01).                                                                                                  |
+| pc-02  | ponytail, nit           | `StructureStrip`'s `SIDE_CLASS` record could be one `side === 'enemy'` expression (about 6 lines).                                 | Rejected by the coordinating session: the record matches its sibling variant-to-class records, the registry style of `AGENTS.md` rule 12.                                           |
+| pc-03  | ponytail, nit           | ADR 0019's and ADR 0020's long titles re-padded the generated decisions index.                                                     | Fixed in round B15 (`66eca5e`).                                                                                                                                                     |
+| pc-04  | ponytail, nit           | One `INBOX.md` HC-T1 row wider than its columns re-padded the whole table.                                                         | Fixed in round B15 (`b1f7121`, and in the D2b generator outside the repository).                                                                                                    |
+| pc-05  | ponytail, nit           | The owner items repeated the merge preconditions.                                                                                  | Fixed in round B15 (`6e838a6`).                                                                                                                                                     |
+| pc-06  | ponytail, nit           | ADR 0020 and this register gave the same reasons for the tests that pin stylesheet text.                                           | Fixed in round B15 (`8765a16`): this register points to ADR 0020.                                                                                                                   |
+| pc-07  | ponytail, nit           | `PauseOverlay`'s TSDoc repeated the focus rule in full, and the UI enhancements plan's Related line repeated "unscheduled".        | Fixed in `0c05712` (the TSDoc) and in round B15 (`6cfabc8`, the plan).                                                                                                              |
+| cc2-01 | correctness, should-fix | The round-1 code fixes had no progress entry and no check after them, and this register no record of the loop.                     | Fixed in round B16: this section and round B16's progress entry, with its check.                                                                                                    |
+| cc2-02 | correctness, nit        | Round B15 and the loop's ids were defined nowhere in the repository.                                                               | Fixed in round B16: this section.                                                                                                                                                   |
+| cc2-03 | correctness, nit        | Round B14's progress entry reads as if `90f915a` and `c0ec551` repaired pr-ui-screens-04 and -05.                                  | Fixed in round B16: a correction in round B16's progress entry; round B14's entry is not rewritten.                                                                                 |
+| pc2-01 | ponytail, nit           | pc-01's fix added a second fake key-event builder beside `rovingRadio.test.ts`'s `radioGroup`.                                     | Fixed in `6750f03`: `radioGroup` moved into `ui/testStore.tsx` and the other builder went; the test count is unchanged, and a deliberate break turned 4 tests red.                  |
+| pc2-02 | ponytail, nit           | 14 §14's status note copied `ResourceController.load`'s TSDoc and cited three commit hashes.                                       | Fixed in round B16: one sentence, the one HC-T1 T-153 depends on, with no hash.                                                                                                     |
+
+The round-1 code fixes (`eade1c2`, `8439831`, `4bbe7e8`, `0c05712`, `289f793`) merged into the task
+branch as `be4aca3`, and `6750f03` follows it. cc-03's remainder stays: changing the effect to
+depend on the overlay instead of on whether it is open would still pass every test, which round 2
+records. Checks at `be4aca3`, the coordinating session's runs: `npm run check` exits 0 (core "Tests
+619 passed (619)", client "Tests 1360 passed (1360)", statements 96.47 %; the JavaScript bundle
+556.75 kB, gzip 174.10 kB; "Documentation check passed."); the live probe passes every criterion in
+the development and production builds (the development build's long-frame check during character
+select is information only, OD-30). Round B16's progress entry records the check on the final code.
+
 ## Working ids
 
 One line each, saying what the id is. Most come from the plan's sources, which are outside the
