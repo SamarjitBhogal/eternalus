@@ -510,9 +510,9 @@ Every finding and how it is handled:
 | pr-docs-process-04             | should-fix, owner (upheld)            | As pr-game-data-01; `vite.config.ts` is not a guardrail config (the skeptic).                 | Owner: ADR 0020.                                                                                                                                              |
 | pr-docs-process-05             | should-fix, owner (upheld)            | A Phase 6 task line was applied although HC-S5 is unanswered.                                 | Repaired: the plan is back to its base text; the line waits as HC-T1 T-152, and the UI enhancements plan says the task is unscheduled.                        |
 | pr-docs-process-06             | should-fix (upheld)                   | OQ-03's status and a TSDoc still say sub-class gameplay is post-MVP.                          | Repaired in reference 12 (OQ-03: MVP, DEC-56; phase: HC-Q17) and in the TSDoc (`b918397`).                                                                    |
-| pr-docs-process-07             | blocker, owner (upheld as should-fix) | The merge preconditions are open.                                                             | Owner: the merge preconditions (below).                                                                                                                       |
+| pr-docs-process-07             | blocker, owner (upheld as should-fix) | The merge preconditions are open.                                                             | Owner: the merge preconditions (above).                                                                                                                       |
 | pr-docs-process-08             | should-fix, owner (upheld as nit)     | FR-057's agent-written acceptance sentence was applied.                                       | Owner: HC-T1 T-93a, flagged for his check.                                                                                                                    |
-| pr-docs-process-09             | should-fix, owner (upheld)            | HC-B1 was listed as not blocking the merge.                                                   | Owner: HC-B1 joins the merge preconditions (below).                                                                                                           |
+| pr-docs-process-09             | should-fix, owner (upheld)            | HC-B1 was listed as not blocking the merge.                                                   | Owner: HC-B1 joins the merge preconditions (above).                                                                                                           |
 | pr-docs-process-10             | nit, owner                            | Squash or merge commit for a branch of 111 commits (125 with merges).                         | Owner: asked in the pull request's description.                                                                                                               |
 | pr-docs-process-11             | nit                                   | Relative links in the description.                                                            | Repaired: absolute GitHub links.                                                                                                                              |
 | pr-docs-process-12             | nit, owner                            | The HC-T1 patch is outside the repository, so the other reviewers cannot read it.             | Owner: once he approves group (i), its rows are applied on the branch and show in the pull request's diff; the rest waits in the patch unless he asks for it. |
@@ -528,8 +528,8 @@ Every finding and how it is handled:
 
 **Owner items** (each in `INBOX.md` or in the pull request's description):
 
-- The merge preconditions below: HC-T1 group (i), now 54 rows; HC-Q7 (1), with (3), the credit's
-  wording; HC-B1.
+- The merge preconditions, listed under
+  [the pre-PR critic's second run](#the-pre-pr-critics-second-run).
 - ADR 0019 (DEC-50, the basis of HC-T1 T-07, T-08, T-14 to T-16 and T-86) and ADR 0020 (the test
   configuration): accept or refuse; both are proposed.
 - HC-Q21: the merge order with the nine sibling pull requests, before either side merges.
