@@ -18,6 +18,9 @@ export type RecordedCommand = {
 export type TeamState = {
   unitsRequested: number;
   unitsSuppressed: number;
-  /** `enraged` stacks this team's minions carry on each lane (by `MapLane.id`; 18 MS-16). */
-  enragedByLane: Record<string, number>;
+  /**
+   * Lane towers this team has lost on each lane (by `MapLane.id`; 18 MS-16): its minions carry one
+   * `enraged` stack per loss, and each loss moves the enemy's base-stat point toward it (DISC-24).
+   */
+  towersLostByLane: Record<string, number>;
 };

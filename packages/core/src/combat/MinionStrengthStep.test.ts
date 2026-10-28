@@ -90,6 +90,38 @@ describe('MinionStrengthStep', () => {
     ).toBe(40);
   });
 
+  it('moves the base-stat point toward the enemy per tower the enemy lost (DISC-24), capped', () => {
+    const { state, minion, legend, walk } = setUp();
+    const step = new MinionStrengthStep(MINION_STRENGTH);
+    const hit = () =>
+      step.adjust(
+        {
+          targetId: legend,
+          amount: 100,
+          source: { attackerId: minion, kind: 'weapon', definitionId: 'x' },
+        },
+        state,
+      );
+    walk(100);
+
+    // Its own losses never shift its point: still base stats at mid-lane.
+    state.teams.light.towersLostByLane['lane-0'] = 2;
+    expect(hit()).toBeCloseTo(100);
+    // One dark loss: the base-stat point moves to 0.6, so mid-lane is 1 + 0.5 · (1 − 0.5 / 0.6).
+    state.teams.dark.towersLostByLane['lane-0'] = 1;
+    expect(hit()).toBeCloseTo(100 * (1 + 0.5 * (1 - 0.5 / 0.6)));
+    // Home strength does not change.
+    walk(20);
+    expect(hit()).toBeCloseTo(150);
+    // Nine losses would pass the cap: the point stops at maxBasePoint (0.9).
+    state.teams.dark.towersLostByLane['lane-0'] = 9;
+    walk(100);
+    expect(hit()).toBeCloseTo(100 * (1 + 0.5 * (1 - 0.5 / 0.9)));
+    // A loss on another lane changes nothing here.
+    state.teams.dark.towersLostByLane = { 'lane-1': 3 };
+    expect(hit()).toBeCloseTo(100);
+  });
+
   it('is 1 for everyone in a match without a map', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const step = new MinionStrengthStep(CURVE);

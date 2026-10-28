@@ -52,11 +52,11 @@ export class StateHasher {
       });
       parts.push(['hordes', ...hordes]);
     }
-    // Enraged stacks are appended only once a lane has one, for the same reason.
+    // Lost towers are appended only once a lane has one, for the same reason.
     const enraged = (['light', 'dark'] as const).flatMap((team) =>
-      Object.keys(state.teams[team].enragedByLane)
+      Object.keys(state.teams[team].towersLostByLane)
         .sort()
-        .map((lane) => [team, lane, state.teams[team].enragedByLane[lane]]),
+        .map((lane) => [team, lane, state.teams[team].towersLostByLane[lane]]),
     );
     if (enraged.length > 0) {
       parts.push(['enraged', ...enraged]);

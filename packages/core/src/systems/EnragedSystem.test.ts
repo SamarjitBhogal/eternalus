@@ -62,7 +62,7 @@ describe('EnragedSystem', () => {
     expect(stacksOf(mine)).toBe(2);
     expect(stacksOf(otherLane)).toBe(0);
     expect(stacksOf(enemy)).toBe(0);
-    expect(state.teams.light.enragedByLane).toEqual({ 'lane-0': 2 });
+    expect(state.teams.light.towersLostByLane).toEqual({ 'lane-0': 2 });
   });
 
   it('gives a horde spawned later on the lane the lane’s stacks', () => {
@@ -108,6 +108,6 @@ describe('EnragedSystem', () => {
     system.update({ state, logger });
 
     expect(stacksOf(mine)).toBe(0);
-    expect(state.teams.light.enragedByLane).toEqual({});
+    expect(state.teams.light.towersLostByLane).toEqual({});
   });
 });

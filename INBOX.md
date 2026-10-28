@@ -143,6 +143,14 @@ Reply inline (`Decision: …`).
       (3) Better than the design, for sign-off: enraged lives in its own `EnragedSystem` (one
       purpose, right after `SpawnSystem`), not in `SpawnSystem` as 03 §4's events table says; if
       accepted, 03 §4's `structure-destroyed` and `horde-spawned` rows name it.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (3) accepted; 03 §4's rows name
+    `EnragedSystem` (PR #45). (2) "Address it": with no reference amount, the agent built a tenth
+    of the lane per tower (`MINION_STRENGTH.shiftPerTowerLost`, `TUNE`, capped at 0.9 of the
+    lane). A team's base-stat point moves toward the enemy for each lane tower the enemy has
+    lost on that lane (the front moves toward the team that lost the tower); its own losses do
+    not move it (enraged covers those). The owner may correct the amount or the reading.
+    (1) Not answered yet: the floor stays at 1.0, as DISC-24's "addition on top of base stats"
+    reads. Base healing (M3 item) is out of the minion system's scope.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads

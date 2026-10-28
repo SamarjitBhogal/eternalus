@@ -36,8 +36,8 @@ export class GameState {
   public readonly hordeRequests: HordeRequest[] = [];
   /** Each playable team's match counters. */
   public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = {
-    light: { unitsRequested: 0, unitsSuppressed: 0, enragedByLane: {} },
-    dark: { unitsRequested: 0, unitsSuppressed: 0, enragedByLane: {} },
+    light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+    dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
   };
   /** The map's lanes as each team walks them; `null` for a match without a map. */
   public readonly routes: LaneRoutes | null;

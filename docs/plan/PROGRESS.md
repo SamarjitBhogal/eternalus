@@ -1536,3 +1536,19 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 667 passed (667)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: draft PR.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m5a-modifiers (DISC-24 tower shift, sign-off) — SamarjitBhogal + Claude Code
+
+- What was done: on SamarjitBhogal's answers in chat. (1) DISC-24's shift is built: a team's
+  base-stat point starts at mid-lane and moves toward the enemy by
+  `MINION_STRENGTH.shiftPerTowerLost` (0.1 of the lane, `TUNE`, the agent's judgement with no
+  reference) for each lane tower the enemy has lost on that lane, capped at `maxBasePoint` (0.9);
+  the curve is `m(t) = clamp(1 + k · (1 − t / c), min, max)`. `TeamState.enragedByLane` is renamed
+  `towersLostByLane`, since enraged and the shift read the same count, which `EnragedSystem`
+  keeps. New `MinionStrengthStep` test. (2) `EnragedSystem` as its own system is accepted: 03 §4's
+  `structure-destroyed` and `horde-spawned` rows name it; docs 05 and 18 describe the shift. The
+  INBOX item records the decision; the floor stays 1.0 until the owner says otherwise.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 668 passed (668)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: none for M5a; nothing emits `structure-destroyed` until M2c, so the shift is live
+  only in tests until then.

@@ -6,13 +6,14 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
 
 /**
  * Lane minions are stronger near home (architecture 05 §9, 18 MS-16, DISC-24): a horde member's
- * hits are multiplied, and hits on it divided, by `m(t) = clamp(1 + k · (1 − 2t), min, max)`,
- * where `t` is its progress down its lane from its own end (0) to the enemy's (1). Health never
+ * hits are multiplied, and hits on it divided, by `m(t) = clamp(1 + k · (1 − t / c), min, max)`,
+ * where `t` is its progress down its lane from its own end (0) to the enemy's (1) and `c` its
+ * base-stat point. `c` starts at mid-lane and moves toward the enemy by `shiftPerTowerLost` for
+ * each lane tower the enemy has lost on that lane (DISC-24), up to `maxBasePoint`. Health never
  * rescales, so a health bar never jumps. Anything outside a horde (Legends included) is 1.
  *
  * @remarks ponytail: `t` follows the lane polyline; the flow-field distance `balancing.md`
- * recommends replaces it with minion plan M4, and the DISC-24 shift when a tower falls waits for
- * the owner's amount (`INBOX.md`).
+ * recommends replaces it with minion plan M4.
  */
 export class MinionStrengthStep implements DamageStep {
   public readonly name = 'minion-strength';
@@ -35,7 +36,10 @@ export class MinionStrengthStep implements DamageStep {
     const length = state.routes.length(horde.lane);
     const t =
       length > 0 ? state.routes.distanceAlong(horde.lane, horde.team, position) / length : 0;
-    const { k, min, max } = this.curve;
-    return Math.min(max, Math.max(min, 1 + k * (1 - 2 * t)));
+    const { k, min, max, basePoint, shiftPerTowerLost, maxBasePoint } = this.curve;
+    const enemy = horde.team === 'light' ? 'dark' : 'light';
+    const lost = state.teams[enemy].towersLostByLane[horde.lane] ?? 0;
+    const c = Math.min(maxBasePoint, basePoint + shiftPerTowerLost * lost);
+    return Math.min(max, Math.max(min, 1 + k * (1 - t / c)));
   }
 }

@@ -8,8 +8,9 @@ import type { System, SystemContext } from './System.types';
  * Enrages a lane's minions when their team loses a tower on it (architecture 07 §8, 18 MS-16,
  * `balancing.md` "Enraged buff on structure loss"): each lost enraging structure adds one
  * `enraged` stack to the team's minions already on that lane and to every horde spawned there
- * later, for the rest of the match. The stack count per team and lane is state (`TeamState`), so
- * it is hashed and replayed. Runs after `SpawnSystem`, so a horde spawned this tick is covered.
+ * later, for the rest of the match. It records the loss per team and lane in
+ * `TeamState.towersLostByLane`, so it is hashed and replayed, and `MinionStrengthStep` reads the
+ * same count (DISC-24's shift). Runs after `SpawnSystem`, so a horde spawned this tick is covered.
  *
  * @remarks ponytail: no structure can fall until structure entities exist (minion plan M2c), so
  * in a live match nothing emits `structure-destroyed` yet.
@@ -48,11 +49,15 @@ export class EnragedSystem implements System {
     for (const hordeId of this.spawned) {
       const horde = state.hordes.get(hordeId);
       if (horde !== undefined) {
-        this.enrage(state, horde.memberIds, state.teams[horde.team].enragedByLane[horde.lane] ?? 0);
+        this.enrage(
+          state,
+          horde.memberIds,
+          state.teams[horde.team].towersLostByLane[horde.lane] ?? 0,
+        );
       }
     }
     for (const { team, lane } of this.lost) {
-      const byLane = state.teams[team].enragedByLane;
+      const byLane = state.teams[team].towersLostByLane;
       byLane[lane] = (byLane[lane] ?? 0) + 1;
       state.hordes.forEach((horde) => {
         if (horde.team === team && horde.lane === lane) {

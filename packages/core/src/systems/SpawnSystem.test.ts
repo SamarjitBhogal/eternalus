@@ -96,7 +96,7 @@ describe('SpawnSystem', () => {
     expect(state.teams.dark).toEqual({
       unitsRequested: 60,
       unitsSuppressed: 16,
-      enragedByLane: {},
+      towersLostByLane: {},
     });
     expect(spawned.every(({ memberIds }) => memberIds.length > 0)).toBe(true);
   });
