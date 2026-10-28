@@ -44,7 +44,9 @@ skill and cannot run `npm run check`.
   (`auto_approvals.enabled`), with `allow_author_approval: false` (authors cannot run
   `@coderabbitai approve` or `resolve` on their own PR; automatic approval still applies) and
   `override_requested_reviewers_only: true` (only requested reviewers can override a failing
-  check).
+  check);
+- let CodeRabbit's approval be the one required approval on task PRs into `phase/*`, while phase
+  PRs into `main` keep a Code Owner (teammate) approval (team decision, 2026-10-27).
 
 Options considered: path instructions only (no approve or request changes; rejected, the
 request asks for both); a blocking check for every checklist item (rejected, LLM judgement on
@@ -57,7 +59,6 @@ request asks for both); a blocking check for every checklist item (rejected, LLM
   (`guardrails.md` §1 row "CodeRabbit review").
 - Watch: CodeRabbit may approve before CI finishes, so CI must be a required check on every
   base branch it reviews. CodeRabbit's approval counts toward GitHub's required approvals, and
-  any actionable inline comment requests changes, so only blockers are posted that way. Open
-  question for the product owner: may CodeRabbit's approval replace a teammate's? Until this ADR
-  is accepted, branch protection requires a Code Owner review (`.github/CODEOWNERS` lists only
-  people), so a teammate still approves (`guardrails.md` §5).
+  any actionable inline comment requests changes, so only blockers are posted that way. On
+  `main`, a Code Owner review keeps a teammate's approval required (`.github/CODEOWNERS` lists
+  only people); on `phase/*` it is off (`guardrails.md` §5).

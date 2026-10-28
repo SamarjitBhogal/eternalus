@@ -125,7 +125,8 @@ git push -u origin feat/health-shield-bars
 - Reviewers walk `docs/agents/checklists.md` §2 for AI-written code.
 - CodeRabbit reviews PRs as configured in `.coderabbit.yaml`, by the `pr-review` skill, and
   approves or requests changes (ADR 0018). It cannot run `npm run check`, so CI stays a
-  required check, and a teammate still approves.
+  required check. Its approval can merge a task PR into a phase branch; a phase PR into `main`
+  still needs a teammate's approval.
 - A phase PR additionally includes: the phase exit checklist (§4 of the same file), the
   measured success metrics, and the changelog entry in `docs/changelog/`.
 - CI must be green on ubuntu, macos and windows. No `--no-verify`, ever.

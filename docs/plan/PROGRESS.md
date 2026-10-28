@@ -1317,3 +1317,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."
 - Next step: the owner turns on "Require review from Code Owners" and required CI on `main` and
   `phase/*`, and accepts ADR 0018.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review — SamarjitBhogal + Claude Code
+
+- What was done: second round of CodeRabbit threads on PR #48. Team decision: CodeRabbit's
+  approval is enough for task PRs into `phase/*`; phase PRs into `main` keep a Code Owner
+  (teammate) approval. Recorded in ADR 0018, `guardrails.md` §5, `git-workflow.md` and
+  `sdlc.md` §4. Declined the PROGRESS heading nit: a note after the branch is an existing
+  convention in this log.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 186ms"; "Documentation
+  check passed."
+- Next step: the owner enables the "phase branches" ruleset (PR, 1 approval, required CI, Code
+  Owner review off), adds required CI on `main`, and accepts ADR 0018.

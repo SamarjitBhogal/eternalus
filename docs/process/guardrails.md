@@ -115,6 +115,7 @@ protection rule (or ruleset) for `main`:
 - Block force pushes and deletions.
 - Require linear history; allow squash merge only.
 - Require the same CI checks on `phase/*`, since CodeRabbit can approve PRs into them.
-- Require review from Code Owners. CodeRabbit's approval counts toward the required approval,
-  and `.github/CODEOWNERS` lists only people, so this keeps a teammate's approval required while
-  ADR 0018's open question stands.
+- On `main`, require review from Code Owners: CodeRabbit's approval counts toward the required
+  approval and `.github/CODEOWNERS` lists only people, so a phase PR still needs a teammate.
+- On `phase/*`, require a PR with 1 approval and Code Owner review off, so CodeRabbit's approval
+  can merge a task PR (ADR 0018).
