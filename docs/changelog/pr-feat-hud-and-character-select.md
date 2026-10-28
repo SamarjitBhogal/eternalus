@@ -543,10 +543,8 @@ Every finding and how it is handled:
 - pr-game-data-05, `Renderer.strokeScreenRect`: a method of the base `Renderer` port, with its two
   implementations and their tests. The branch removed its only caller (the old minimap border).
   Removing it changes the port and deletes tests, which this pull request does not need.
-- pr-ui-hud-components-assets-06, the tests that pin stylesheet text: they pin the Figma geometry
-  the visual audit verified against the owner's frames, where every deliberate difference is
-  registered (DEC-53, reference 15); the critic's first run kept them (N8, build ruling OD-33).
-  New tests prefer invariants ([ADR 0020](../decisions/0020-client-test-configuration.md)).
+- pr-ui-hud-components-assets-06, the tests that pin stylesheet text: kept, for the reasons in
+  [ADR 0020](../decisions/0020-client-test-configuration.md), Consequences.
 - pr-integration-05, the player's identity next to allied bots of the same class: no such bot
   exists until M3 merges, so the test belongs to the integration commit (recipe step 3).
 - pr-game-data-02, the client coverage floor of 55: the gap predates this branch (sprint-1 audit
