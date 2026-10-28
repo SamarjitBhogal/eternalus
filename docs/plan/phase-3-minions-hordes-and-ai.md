@@ -29,14 +29,14 @@ performance budget is proved. The word is **horde**, not "hoard".
 **Minion work moved.** The [minion system plan](minion-system-plan.md) (design:
 [18-minion-system](../architecture/18-minion-system.md)) supersedes the minion items of sprints
 3.1–3.4 and 3.7; its §"Relation to Phase 3" lists exactly which. Read it before any sprint 3.1,
-3.2, 3.3, 3.4 or 3.7 task. A\* for Legends, forest camps, checkpoint assist spawns and the Rover
-stay here (DEC-47).
+3.2, 3.3, 3.4 or 3.7 task. DEC-47 kept A\* for Legends, forest camps, checkpoint assist spawns
+and the Rover here; MS-28 (below) moves them.
 
-**Proposed (doc 18 MS-28, owner sign-off pending in `INBOX.md`).** The minion plan also takes over
-the breakdown of A\* for Legends (3.2), forest camps and checkpoint assist spawns (3.4), bosses
-(3.6), and the Rover and bot ability use (3.7), as its phases M6 to M8 (its §1.1 lists every
-AI-driven entity). Nothing is dropped and the work still ships in these weeks. Sprints 3.5 and 3.8
-stay here either way. Until the owner signs off, the paragraph above holds.
+**Amended by doc 18 MS-28 (owner, 2026-10-27).** The minion plan also takes over the breakdown of
+A\* for Legends (3.2), forest camps and checkpoint assist spawns (3.4), and the Rover and bot
+ability use (3.7), as its phases M6 and M8 (its §1.1 lists every AI-driven entity). Nothing is
+dropped and the work still ships in these weeks. Sprints 3.5, 3.6 (bosses: the minion system does
+not control them) and 3.8 stay here.
 
 - **Branch:** `phase/3-minions-hordes-and-ai` (stacked on `phase/2-…` until it merges).
 - **Weeks:** 6–7 (2026-11-09 → 2026-11-20). Week 6: sprints 3.1, 3.2, 3.3, 3.5; week 7:
@@ -195,7 +195,7 @@ Owner: _ (AI owner). Week 7. Depends on 3.3.
       later, ability choice; ticked at 5 Hz with `entityId % 6` stagger, per
       [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots)).
       Owner: _. Test: a laner pushes its lane, retreats below a health threshold and returns to
-      base to heal; 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
+      base (healing there is outside the minion system for now; owner, 2026-10-27); 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
       `Command`s only.
 - [ ] **`RoverController`** (the "hard bot": reacts to structure health across lanes, mirrors
       or targets the human player). Owner: _. Test: the Rover moves to the lane with the lowest

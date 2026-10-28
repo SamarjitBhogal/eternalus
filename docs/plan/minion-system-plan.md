@@ -1,11 +1,11 @@
 ---
 title: Minion system plan
-description: The build plan for the minion system of architecture doc 18 and every other AI-driven enemy - eight phases M1 to M8 with their contents, blockers and done-when checks, who builds the dependencies, the pull requests they ship as, the interim stand-ins each phase uses with the phase that removes them, and a coverage table of every AI-driven entity and where it is built; read this before picking up any minion, horde, guard, camp, boss, spawning or bot task.
+description: The build plan for the minion system of architecture doc 18 and every other AI-driven enemy except bosses - phases M1 to M6 and M8 with their contents, blockers and done-when checks, who builds the dependencies, the pull requests they ship as, the interim stand-ins each phase uses with the phase that removes them, and a coverage table of every AI-driven entity and where it is built; read this before picking up any minion, horde, guard, camp, spawning or bot task.
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
 last-reviewed: 2026-10-27
-tags: [plan, minions, hordes, guards, camps, bosses, bots, spawning, ai]
+tags: [plan, minions, hordes, guards, camps, bots, spawning, ai]
 related:
   - docs/architecture/18-minion-system.md
   - docs/plan/phase-3-minions-hordes-and-ai.md
@@ -18,20 +18,21 @@ related:
 
 **Purpose.** Read this before you pick up minion or enemy AI work. It orders the design of
 [18-minion-system](../architecture/18-minion-system.md), and the enemy controllers of
-[11-game-ai](../architecture/11-game-ai.md) §4, into eight phases, M1 to M8, each with its
-blockers and a done-when check. It lists the interim stand-ins a phase uses until a later one
+[11-game-ai](../architecture/11-game-ai.md) §4 except the boss controller, into phases M1 to
+M6 and M8, each with its blockers and a done-when check. There is no M7: it was bosses, which
+stay outside the minion system (MS-28). It lists the interim stand-ins a phase uses until a later one
 replaces them, and (§1.1) every AI-driven entity with the phase or sprint that builds it. Section
 and decision numbers (§, MS-n) refer to doc 18.
 
-**Relation to Phase 3 (MS-28, proposed).** This plan takes over the breakdown, blockers and pull
+**Relation to Phase 3 (MS-28, owner sign-off 2026-10-27).** This plan takes over the breakdown, blockers and pull
 requests of these Phase 3 items: sprint 3.1 (mob classes, `Horde`, `HordeSystem`, the minion
 modifiers), sprint 3.2 (flow fields, steering and A\* for Legends), sprint 3.3 (controllers,
 `MinionController`, targeting), sprint 3.4 (`GuardController`, forest camps, checkpoint assist
-spawns), sprint 3.6 (bosses) and sprint 3.7 (`BotLegendController`, `RoverController`, ability
-use). Sprints 3.5 (`MatchDirector`) and 3.8 (sim mode and the soak) stay in the
-[Phase 3 plan](phase-3-minions-hordes-and-ai.md). No Phase 3 scope is dropped and the moved items
-still ship inside Phase 3's weeks (DEC-47); the owner signs off the move (`INBOX.md`). Until then,
-DEC-47's split holds and M6 to M8 are the proposed breakdown of those sprints.
+spawns) and sprint 3.7 (`BotLegendController`, `RoverController`, ability use). Sprints 3.5
+(`MatchDirector`), 3.6 (bosses and `BossController`: the minion system does not control bosses)
+and 3.8 (sim mode and the soak) stay in the [Phase 3 plan](phase-3-minions-hordes-and-ai.md). No
+Phase 3 scope is dropped and the moved items still ship inside Phase 3's weeks. This amends
+DEC-47's split.
 
 ## 1. Phases and blockers
 
@@ -43,7 +44,6 @@ DEC-47's split holds and M6 to M8 are the proposed breakdown of those sprints.
 | **M4 Flow fields** | Flow fields per lane and team (10 §9, FR-038), including the Stronghold-to-gate ground; lane following on flow fields behind the same strategy                                                                                                                                                                                                                                                                                                                                        | M2                                                                             | Hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5; a gate change re-routes the field within the per-tick cell budget                                                                                   |
 | **M5 Modifiers**   | Before the MVP ships: strength by distance (MVP-full, DISC-24) and enraged (MVP). MVP-if-time: minion XP and level-up, the ghosted first wave, Tower Guardians                                                                                                                                                                                                                                                                                                                        | M2                                                                             | Each modifier is a content table with a scenario test; the MVP items are done before the MVP ships, the MVP-if-time items when time allows                                                                                |
 | **M6 Camps**       | Forest camps: the `Camp` spawner's group, spawned after its activation cooldown and held by `GuardController` with the camp as home (18 §7.1); `camp-cleared`, added to 03's event catalogue. Checkpoint assist spawns: `CaptureSystem`'s checkpoint tables spawned through `SpawnSystem` and held by `GuardController` with the capture point as home. Corner camps (MVP-if-time) are a second `Camp` definition                                                                     | M2c; `Camp` (sprint 2.1), `CaptureSystem` (sprint 2.6)                         | Camps are inert before their cooldown and emit `camp-cleared` when emptied; each checkpoint spawns its listed composition; no camp mob or zone defender leaves its leash in a soak (`GuardWithinLeashInvariant`)          |
-| **M7 Bosses**      | `BossController` (11 §4.6) for `MiniBoss` and `GreaterBoss`: the `roam → telegraph → execute → recover` FSM over `BossMoveDefinition` content, zone leash, targets either team; spawning stays the `MatchDirector` timeline's (sprint 3.5) and the `Cathedral` spawner's                                                                                                                                                                                                              | M2c, M3; `MatchDirector` (sprint 3.5); boss moves stub `AbilityEffect`         | A boss never leaves its zone; move selection is seeded and replayable; both boss types finish a scripted fight against bot Legends with 0 invariant violations                                                            |
 | **M8 Rover**       | `RoverController` (11 §4.7) with its considerations and the `rover` difficulty; A\* for Legends (10 §9) as a `PathQuery` for bots off the lane flow fields (11 §6); bot ability use through `cast-ability` (11 §4.2)                                                                                                                                                                                                                                                                  | M3, M4; abilities (Phase 4, stubbed until then)                                | The Rover moves to the lane with the lowest allied structure health; A\* finds the shortest path around a stamped footprint; the tree's `cast-ability` commands need no controller change when Phase 4 lands              |
 
 Every phase also meets the cost and determinism rules of doc 11 §5–§6 and the performance targets
@@ -55,15 +55,15 @@ sprint 1.3) and `Spawner`/`SpawnSystem` (Phase 2 sprint 2.7). Removing the PROTO
 overlaps work item W6 of the [multiplayer and scalability plan](multiplayer-and-scalability-plan.md);
 whichever lands first does it.
 
-Bosses, camps, checkpoint defenders, turrets and the Rover need structures, capture points,
+Camps, checkpoint defenders, turrets and the Rover need structures, capture points,
 projectiles and the match director, all built by other developers (Phase 2 sprints 2.1, 2.3 and
 2.6; Phase 3 sprint 3.5) and consumed here.
 
 ### 1.1 Coverage: every AI-driven entity
 
 Every entity a controller drives, with the doc that designs its behaviour and where it is built.
-Turrets are the one AI entity this plan does not build: their controller ships with the `Turret`
-entity.
+Turrets and bosses are the AI entities this plan does not build: the turret controller ships
+with the `Turret` entity, and bosses keep their own controller in Phase 3 sprint 3.6.
 
 | Entity                                           | Controller                       | Behaviour designed in | Built in                                 |
 | ------------------------------------------------ | -------------------------------- | --------------------- | ---------------------------------------- |
@@ -71,7 +71,7 @@ entity.
 | Tower guards                                     | `GuardController`                | 18 §7                 | M2                                       |
 | Forest and corner camp mobs                      | `GuardController` (camp home)    | 18 §7.1               | M6                                       |
 | Checkpoint assist defenders                      | `GuardController` (zone home)    | 18 §7.1               | M6                                       |
-| `MiniBoss`, `GreaterBoss`                        | `BossController`                 | 11 §4.6               | M7                                       |
+| `MiniBoss`, `GreaterBoss`                        | `BossController`                 | 11 §4.6               | Phase 3 sprint 3.6 (not this plan)       |
 | Bot Legends (laners)                             | `BotLegendController`            | 11 §4.2, 18 §8        | M3, M8 (A\*, abilities)                  |
 | The Rover (both teams)                           | `RoverController` / `rover` role | 11 §4.7               | M8                                       |
 | Turrets                                          | `TurretController`               | 11 §4.5, 07 §5        | Phase 2 sprint 2.3, with the `Turret`    |
@@ -96,7 +96,6 @@ blocker. Each one follows the pre-PR gate (`AGENTS.md`).
 | M5a | `feat/minion-m5a-modifiers`         | Phase M5, MVP items                                                                                                                                                                               | M2b                               |
 | M5b | `feat/minion-m5b-if-time`           | Phase M5, MVP-if-time items                                                                                                                                                                       | M2c                               |
 | M6  | `feat/minion-m6-camps-defenders`    | Phase M6                                                                                                                                                                                          | M2c; `Camp`, `CaptureSystem`      |
-| M7  | `feat/minion-m7-bosses`             | Phase M7                                                                                                                                                                                          | M2c; `MatchDirector`              |
 | M8  | `feat/minion-m8-rover-astar`        | Phase M8                                                                                                                                                                                          | M3, M4                            |
 
 M4 needs only `WorldMap`, so it can run beside M2.
@@ -132,4 +131,4 @@ Each stand-in is removed by the phase named.
 - [Phase 2 plan](phase-2-structures-and-combat.md): sprints 2.1 (structures) and 2.2 (damage pipeline), the M2 blockers.
 - [Phase 3 plan](phase-3-minions-hordes-and-ai.md): the Phase 3 items this plan does not cover.
 - [Post-MVP backlog](backlog-post-mvp.md): the goal seam and horde redirection.
-- [11-game-ai](../architecture/11-game-ai.md): the boss, Rover, bot-Legend and turret controllers M3 and M6 to M8 build.
+- [11-game-ai](../architecture/11-game-ai.md): the Rover and bot-Legend controllers M3 and M8 build, and the boss and turret controllers built outside this plan.

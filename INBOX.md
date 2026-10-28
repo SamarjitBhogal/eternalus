@@ -143,6 +143,10 @@ Reply inline (`Decision: …`).
       Better than the design, for sign-off: bot laners take lanes in roster order, the order
       match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
       `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) numbers from the design docs, else the
+    agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
+    out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
+    Accepted; doc 18 §8 says roster order (PR #46).
 - [ ] **Minion M8 — the neighbour grid's layout (better than the design, for sign-off).** Doc
       10 §5 stores `SpatialHash` as a counting sort over a per-cell `cellStart` array. On a
       generated map that array has hundreds of thousands of cells, and clearing and summing it
@@ -182,6 +186,10 @@ Reply inline (`Decision: …`).
       `reformDistance` is 2 m with no reference. Design note: 18 §6.1 ends every chase after
       the aggro duration (69 ticks) followed by a 90-tick cooldown, minion against minion too,
       which may give a fight, walk back, fight again rhythm; Dota applies it to hero aggro only.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1)–(3) accepted; doc 18 §5.1, §5.2 and §7
+    and doc 11 §1 updated (PR #44). Numbers: use the design docs, else the agent's judgement,
+    which the owner may correct later, so the aggro radii and `reformDistance` stay as built.
+    The design note on the chase rhythm stays open.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
@@ -242,6 +250,15 @@ Reply inline (`Decision: …`).
       Sign off the move, or keep DEC-47's split. (2) Which team do checkpoint defenders fight
       for: the zone's owner, the team being captured against, or neutral? (3) Does their leash
       follow the capture zone (doc 18 §7.1)?
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) signed off, except bosses: the minion
+    system does not control bosses, so `BossController` stays in Phase 3 sprint 3.6 and the
+    plan has no M7; every other mob type may be driven by the minion system. (2) The team that
+    owns the checkpoint. Docs 18 MS-28 and §7.1, 07, 11 §4, the Phase 3 plan and the minion
+    plan updated (PR #43). Awaits the decisions log.
+- [ ] **Checkpoint defenders — leash (doc 18 §10, item 4).** Still open after the MS-28 answer.
+      Does a defender's leash follow the capture zone (its radius; `Recommendation:`), or is it a
+      radius of its own in the checkpoint table? And are the defenders of a point no team owns
+      yet neutral (`Recommendation:`)? Nothing is built on this until M6.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
