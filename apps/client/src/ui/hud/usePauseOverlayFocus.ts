@@ -34,10 +34,18 @@ export function focusDialogInSettings(
 }
 
 /**
+ * Whether the overlay is open: the key the focus restore follows. The pause and the settings view
+ * are both open, so a switch between them is not a close.
+ */
+export function isOverlayOpen(overlay: Overlay | null): boolean {
+  return overlay !== null;
+}
+
+/**
  * The pause overlay's focus (13 §7; CD-11; I-72): when the overlay closes, the focus returns to
  * `openerRef`'s element if it is still in the document (`restoreFocusOnClose`). The restore
- * follows only whether the overlay is open, so switching between pause and settings never
- * restores. The settings view focuses the dialog (`focusDialogInSettings`).
+ * follows only whether the overlay is open (`isOverlayOpen`), so switching between pause and
+ * settings never restores. The settings view focuses the dialog (`focusDialogInSettings`).
  * @returns The ref for the dialog element.
  */
 export function usePauseOverlayFocus(
@@ -45,7 +53,7 @@ export function usePauseOverlayFocus(
   openerRef: PauseOpenerRef,
 ): RefObject<HTMLDivElement | null> {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const isOpen = overlay !== null;
+  const isOpen = isOverlayOpen(overlay);
   useEffect(() => {
     // The pause key stored the opener before the overlay opened, so it is in place here.
     const opener = openerRef.current;

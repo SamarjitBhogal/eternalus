@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { focusDialogInSettings, restoreFocusOnClose } from './usePauseOverlayFocus';
+import { focusDialogInSettings, isOverlayOpen, restoreFocusOnClose } from './usePauseOverlayFocus';
 
 /** A stand-in for an element: it counts the times it took the focus, and can leave the document. */
 function fakeElement() {
@@ -49,6 +49,17 @@ describe('restoreFocusOnClose', () => {
 
     expect(restoreFocusOnClose(false, opener)).toBeUndefined();
     expect(opener.focusCount()).toBe(0);
+  });
+});
+
+describe('isOverlayOpen', () => {
+  it('is open in the pause and the settings view alike, so a switch between them restores nothing', () => {
+    expect(isOverlayOpen('pause')).toBe(true);
+    expect(isOverlayOpen('settings')).toBe(true);
+  });
+
+  it('is closed with no overlay', () => {
+    expect(isOverlayOpen(null)).toBe(false);
   });
 });
 
