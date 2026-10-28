@@ -1,5 +1,5 @@
 ---
-title: 0019. SessionController owns the Match; the Match is built when the match viewport attaches
+title: 0019. SessionController owns the Match
 description: Proposed record of the owner's decision DEC-50 - SessionController owns the Match lifetime, match-loading only loads the match assets and prepares the world, and the Match is built through an injected factory when the match screen attaches its viewport and destroyed on leaving the match - amending architecture 13 §2, where the Match was created in match-loading; read this before changing the session phases, the match factory, GameCanvas or anything that creates or destroys a Match.
 audience: [humans, agents]
 status: draft
@@ -13,7 +13,7 @@ related:
   - 'apps/client/AGENTS.md'
 ---
 
-# 0019. SessionController owns the Match; the Match is built when the match viewport attaches
+# 0019. SessionController owns the Match
 
 - Status: proposed (drafted 2026-10-27 to record the owner's decision DEC-50 of 2026-10-17, which
   `feat/hud-and-character-select` implements; the product owner accepts or refuses it)
