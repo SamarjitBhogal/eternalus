@@ -57,8 +57,8 @@ posts makes it request changes.
    - Task PR into `phase/*`: one approval; CodeRabbit's is enough.
    - Phase PR into `main`: a Code Owner (teammate) approval (`.github/CODEOWNERS` lists only
      people).
-   - Any PR that touches review or guardrail config: CodeRabbit withholds approval
-     (`auto_approvals.overrides`), so a teammate approves.
+   - Any PR that touches review or guardrail config, the `pr-review` skill included:
+     CodeRabbit withholds approval (`auto_approvals.overrides`), so a teammate approves.
 5. **CI gates every merge.** The three `npm run check` jobs are required checks on `phase/*`
    and should be on `main` (`guardrails.md` §5), so an approval never merges red code.
 

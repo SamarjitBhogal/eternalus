@@ -17,6 +17,8 @@ reviews:
           - '.github/**'
           - '.githooks/**'
           - '.claude/settings.json'
+          - '.claude/skills/pr-review/**'
+          - '.agents/skills/pr-review/**'
           - 'eslint.config.js'
           - '**/tsconfig*.json'
           - '**/vitest.config.ts'
