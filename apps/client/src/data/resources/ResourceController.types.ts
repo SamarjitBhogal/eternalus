@@ -50,7 +50,10 @@ export type CachedAsset = {
   readonly release: () => void;
 };
 
-/** A group load in flight: its generation (bumped by `release`), its listeners and its progress. */
+/**
+ * A group load in flight: its generation (bumped when the load is retired: by `release`, or when
+ * it rejects), its listeners and its progress.
+ */
 export type LoadJob = {
   readonly group: AssetGroup;
   readonly generation: number;
