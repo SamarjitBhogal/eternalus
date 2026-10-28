@@ -4,7 +4,7 @@ description: The record for the pull request of feat/hud-and-character-select (c
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-28
 tags: [changelog, pull-request, ui, hud, character-select]
 related:
   [
@@ -371,6 +371,12 @@ re-check, only these owner items remain:
   the docs within the pull request, so the owner signs HC-B1 before the merge, or defers it
   explicitly and the description says so.
 
+**Status on 2026-10-28** ([the owner's answers](#owner-answers-of-2026-10-28)): group (i) is
+approved and applied; HC-B1 is approved and its rows are applied wherever no other open item holds
+them; HC-Q7 (1) is answered except the terms of the tools the art was made with. What remains before
+the merge: those terms, if the owner deems them needed, and the integration with the sibling pull
+requests in the order he chose (HC-Q21 (b)).
+
 Architecture 08's status note (game-data-05) is not appended directly: an earlier 08 §11 was
 removed so that 08 stays unchanged until the owner approves its note (`fb310c6`; the open
 `INBOX.md` item "Session C/H → Sam (2026-10-09, PRs #18 and #19)"). HC-T1 T-79 is that note,
@@ -471,11 +477,11 @@ Failing checklist items ([checklists](../agents/checklists.md)) and how each is 
 
 | Checklist item                                                             | Failed in                                                                  | Handling                                                                                                                                                                                    |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| §2 Guardrail configs untouched, or changed through an ADR linked in the PR | game-data, ui-screens, ui-hud-components-assets, docs-process, integration | Owner: [ADR 0020](../decisions/0020-client-test-configuration.md) (proposed) records the three lines; the pull request links it, and its guardrail box stays unticked until he accepts it.  |
+| §2 Guardrail configs untouched, or changed through an ADR linked in the PR | game-data, ui-screens, ui-hud-components-assets, docs-process, integration | Owner: [ADR 0020](../decisions/0020-client-test-configuration.md) records the three lines; the pull request links it; the owner accepted it on 2026-10-28.                                  |
 | §2 Docs, frontmatter and PROGRESS entry present; PR template complete      | core-bridge, docs-process                                                  | Repaired: the description follows `.github/pull_request_template.md` (outside the repository until the pull request opens); the naming suggestions' gap is `INBOX.md` HC-T1 T-147 to T-150. |
 | PR template complete (the description draft)                               | docs-process                                                               | Repaired, as above (pr-docs-process-01 to -03, -11).                                                                                                                                        |
 | §2 No product or game-design decisions by the agent                        | docs-process                                                               | Repaired for the Phase 6 task line (taken out; HC-T1 T-152 waits for HC-S5); owner for FR-057's agent-written acceptance sentence (HC-T1, T-93a).                                           |
-| §3 Documented: ADR if a decision changed                                   | game-data, docs-process                                                    | Owner: [ADR 0019](../decisions/0019-session-controller-owns-the-match.md) records DEC-50; ADR 0020 the test configuration. Both proposed.                                                   |
+| §3 Documented: ADR if a decision changed                                   | game-data, docs-process                                                    | Owner: [ADR 0019](../decisions/0019-session-controller-owns-the-match.md) records DEC-50; ADR 0020 the test configuration. Both accepted on 2026-10-28.                                     |
 | §1 Definition of done: the sprint checkbox ticked                          | docs-process                                                               | Owner: the phase 1, sprint 1.4 tick is HC-T1 T-80 (group (ii)).                                                                                                                             |
 | Every source file has a sibling test (02 §8, `AGENTS.md` "Testing")        | ui-screens                                                                 | Repaired: `c3290dd` (pr-ui-screens-02).                                                                                                                                                     |
 | No semantic conflict with the open sibling pull requests                   | integration                                                                | Owner: the merge order (HC-Q21) and the weapon art (HC-Q22); the resolution is the integration recipe below.                                                                                |
@@ -513,15 +519,15 @@ Every finding and how it is handled:
 | pr-docs-process-07             | blocker, owner (upheld as should-fix) | The merge preconditions are open.                                                             | Owner: the merge preconditions (above).                                                                                                                       |
 | pr-docs-process-08             | should-fix, owner (upheld as nit)     | FR-057's agent-written acceptance sentence was applied.                                       | Owner: HC-T1 T-93a, flagged for his check.                                                                                                                    |
 | pr-docs-process-09             | should-fix, owner (upheld)            | HC-B1 was listed as not blocking the merge.                                                   | Owner: HC-B1 joins the merge preconditions (above).                                                                                                           |
-| pr-docs-process-10             | nit, owner                            | Squash or merge commit for a branch of 111 commits (125 with merges).                         | Owner: asked in the pull request's description.                                                                                                               |
+| pr-docs-process-10             | nit, owner                            | Squash or merge commit for a branch of 111 commits (125 with merges).                         | Owner: answered on 2026-10-28: a merge commit (below).                                                                                                        |
 | pr-docs-process-11             | nit                                   | Relative links in the description.                                                            | Repaired: absolute GitHub links.                                                                                                                              |
 | pr-docs-process-12             | nit, owner                            | The HC-T1 patch is outside the repository, so the other reviewers cannot read it.             | Owner: once he approves group (i), its rows are applied on the branch and show in the pull request's diff; the rest waits in the patch unless he asks for it. |
 | pr-docs-process-13             | nit, owner                            | DEC-50 changes an architecture decision without an ADR.                                       | Owner: ADR 0019.                                                                                                                                              |
 | pr-docs-process-14             | nit                                   | The D11 row names ADR 0018 but records only ADR 0006.                                         | Repaired as a row for the owner: HC-T1 T-151, group (i).                                                                                                      |
 | pr-integration-01              | should-fix (upheld as nit)            | Resolving M1's `useMatch.ts` change can silently drop the map handed to the simulation.       | The integration recipe (below); not a defect at this head.                                                                                                    |
 | pr-integration-02              | should-fix (upheld as nit)            | After M3 and M8 the bots have two roster sources and a Rover keyed to a fixed team.           | The integration recipe (below).                                                                                                                               |
-| pr-integration-03              | should-fix, owner (upheld as nit)     | The HUD's class-keyed weapon art against `feat/weapons`' default weapons.                     | Owner: HC-Q22.                                                                                                                                                |
-| pr-integration-04              | should-fix, owner (upheld as nit)     | The merge order with the nine sibling pull requests.                                          | Owner: HC-Q21.                                                                                                                                                |
+| pr-integration-03              | should-fix, owner (upheld as nit)     | The HUD's class-keyed weapon art against `feat/weapons`' default weapons.                     | Owner: HC-Q22, answered on 2026-10-28 (DEC-57).                                                                                                               |
+| pr-integration-04              | should-fix, owner (upheld as nit)     | The merge order with the nine sibling pull requests.                                          | Owner: HC-Q21, answered on 2026-10-28: (b).                                                                                                                   |
 | pr-integration-05              | nit                                   | The player's identity is untested when allied bots share the player's class.                  | Not changed at this head (below); in the recipe.                                                                                                              |
 | pr-integration-06              | nit, owner                            | As pr-game-data-01.                                                                           | Owner: ADR 0020.                                                                                                                                              |
 | pr-integration-07              | nit                                   | Trivial text conflicts with the siblings.                                                     | The integration recipe (below).                                                                                                                               |
@@ -531,11 +537,12 @@ Every finding and how it is handled:
 - The merge preconditions, listed under
   [the pre-PR critic's second run](#the-pre-pr-critics-second-run).
 - ADR 0019 (DEC-50, the basis of HC-T1 T-07, T-08, T-14 to T-16 and T-86) and ADR 0020 (the test
-  configuration): accept or refuse; both are proposed.
-- HC-Q21: the merge order with the nine sibling pull requests, before either side merges.
-- HC-Q22: each class's start weapon and the HUD's weapon art, when `feat/weapons` merges.
-- Squash or merge commit (pr-docs-process-10): `docs/process/git-workflow.md` §4 squash-merges task
-  pull requests, which would fold the branch's 111 commits into one; asked in the description.
+  configuration): both accepted on 2026-10-28.
+- HC-Q21: the merge order with the nine sibling pull requests: answered on 2026-10-28, (b).
+- HC-Q22: each class's start weapon and the HUD's weapon art: answered on 2026-10-28 (DEC-57).
+- Squash or merge commit (pr-docs-process-10): a merge commit, the owner's choice for this pull
+  request (2026-10-28). It departs from `docs/process/git-workflow.md`'s default, which squash-merges
+  task pull requests (§4, §5), and keeps the branch's commits.
 - HC-T1 T-93a (FR-057's acceptance sentence) and the rest of HC-T1, row by row.
 
 **Not changed, with reasons:**
@@ -555,8 +562,9 @@ Every finding and how it is handled:
 
 ### Integration recipe
 
-For whoever resolves the merges with the sibling pull requests, whichever order HC-Q21 picks; the
-side that merges second applies it. The siblings that target `phase/2-sprint-2-work`, as the
+For whoever resolves the merges with the sibling pull requests. The owner picked HC-Q21's option
+(b) on 2026-10-28: the minion stack and `feat/weapons` merge first, and this branch, which merges
+second, applies the recipe once. The siblings that target `phase/2-sprint-2-work`, as the
 remote-tracking refs stood on 2026-10-27 (the phase branch was still `230a330`):
 
 | Id      | Branch                              | Built on                     |
@@ -603,8 +611,9 @@ remote-tracking refs stood on 2026-10-27 (the phase branch was still `230a330`):
    `packages/core/src/content/defaultContentRules.ts` (Weapons): keep all four imports
    (`RoleRatingRangeRule`, added by `42bb212`, `SpecClassExistsRule`, `WEAPONS` and
    `WeaponDefinition`). Run Prettier on the touched docs.
-5. **Then** run `npm run check`, have the critic check the integration change (ADR 0010), and apply
-   the owner's answer to HC-Q22 once `feat/weapons` is in.
+5. **Then** run `npm run check` and have the critic check the integration change (ADR 0010).
+   HC-Q22 is answered (DEC-57): the HUD keeps its class-keyed Figma art, so the integration changes
+   no HUD art; each Legend's start weapon is `feat/weapons`' to set.
 
 ### The repairs and their review
 
@@ -687,6 +696,38 @@ records. Checks at `be4aca3`, the coordinating session's runs: `npm run check` e
 556.75 kB, gzip 174.10 kB; "Documentation check passed."); the live probe passes every criterion in
 the development and production builds (the development build's long-frame check during character
 select is information only, OD-30). Round B16's progress entry records the check on the final code.
+
+## Owner answers of 2026-10-28
+
+The owner answered the merge decisions in chat on 2026-10-28, from a decision page whose items were
+numbered D1 to D8. These numbers are used only for that page (here, in `INBOX.md` and in the status
+column of the HC-T1 table); they are not the docs stream's phase D1
+([below](#the-docs-streams-phases-d1-d2a-d2b)) or the architecture README's decisions D1 to D11. His
+words are quoted in `INBOX.md` under each item and, for D2 and D8, in the decisions log.
+
+| Item | Asked                                                                            | His answer                                                                                                                                                                                     | Applied                                                                                                                                                                                                                                           |
+| ---- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1   | `INBOX.md` HC-T1 group (i): 54 doc edits                                         | "Approve all 54"                                                                                                                                                                               | the 54 rows (`b1121f5`), with `last-reviewed` on the 18 docs they touch                                                                                                                                                                           |
+| D2   | HC-Q7 (1) and (3): the selection art in the MVP; the tools' terms and the credit | "Art is MVP; terms and credit in the note", with a note: the art changes when a digital artist is employed for the project; until then the Figma art is what is included; more artwork follows | DEC-51's appended note and FR-111 reworded (`7b87f76`); references 10 and 11 wait as HC-T1 T-155 to T-157; the credit is drafted from his words for his confirmation (HC-Q7 (3)); the tools' terms are not stated (HC-Q7 (1) stays open for them) |
+| D3   | HC-B1: the better-than-design and new items                                      | "Approve all"                                                                                                                                                                                  | the HC-T1 rows whose only open basis was HC-B1 (`e28854b`); DEC-22's appended note (BD1)                                                                                                                                                          |
+| D4   | ADR 0019: `SessionController` owns the `Match`                                   | "Accept"                                                                                                                                                                                       | ADR 0019 accepted (`9f7cb80`); HC-T1 T-07, T-08, T-14, T-15 and T-86 (`e28854b`)                                                                                                                                                                  |
+| D5   | ADR 0020: the client test configuration                                          | "Accept"                                                                                                                                                                                       | ADR 0020 accepted (`9f7cb80`)                                                                                                                                                                                                                     |
+| D6   | HC-Q21: the merge order with the nine sibling pull requests                      | "(b) Minions and weapons first; this branch resolves once"                                                                                                                                     | recorded; this branch waits for them, then applies the [integration recipe](#integration-recipe) once                                                                                                                                             |
+| D7   | Squash or merge commit for this pull request                                     | "Merge commit"                                                                                                                                                                                 | recorded here and in the description: a departure, for this pull request, from the squash default of `docs/process/git-workflow.md` §4 and §5                                                                                                     |
+| D8   | HC-Q22: each class's start weapon and the HUD's weapon art                       | "Keep the per-class Figma art", and the start weapon of each Legend                                                                                                                            | DEC-57; the HUD keeps its class-keyed art; it answers point (2) of `feat/weapons`' INBOX item                                                                                                                                                     |
+
+With D3 and D4, 24 HC-T1 rows are applied: T-07, T-08, T-09, T-14, T-15, T-21, T-25, T-27, T-30,
+T-32 to T-35, T-37, T-40, T-42 to T-45, T-48, T-51, T-55, T-86 and T-89. Rows that HC-B1 or ADR 0019
+name but that also carry another open item stay pending: T-11, T-24 and T-31 (HC-Q7 (2)), T-16
+(HC-F9, HC-Q8), T-23 (HC-Q2), T-29 (HC-Q14) and T-90 (HC-F7). The HC-T1 table keeps every applied
+row as the owner saw it, with its status changed; 59 rows stay pending.
+
+**What remains before the merge:** the terms of the tools the art was made with, if the owner deems
+them needed (HC-Q7 (1)), and the integration with the sibling pull requests that D6 orders: once the
+minion stack and `feat/weapons` have merged into `phase/2-sprint-2-work`, this branch merges it
+once, resolves with the integration recipe, re-runs `npm run check` and has the critic check the
+integration change (ADR 0010). The credit drafted in HC-Q7 (3) replaces the notice marked
+`TODO(sam)` in `apps/client/src/data/resources/assetLicences.ts` once he confirms it.
 
 ## Working ids
 
