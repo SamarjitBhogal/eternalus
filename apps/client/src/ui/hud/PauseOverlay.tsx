@@ -12,11 +12,9 @@ import { usePauseOverlayFocus } from './usePauseOverlayFocus';
 /**
  * The in-match pause overlay: Resume, Settings (the settings screen embedded) and Leave match, as
  * a modal dialog beside the `inert` viewport and HUD (13 §7; CD-11). Resume takes focus when the
- * pause view mounts (again on settings → pause); the settings view focuses the dialog itself. When
- * the overlay closes, focus returns to `openerRef` (stored by the pause key before it opened) if
- * that element is still in the document; switching between pause and settings never restores
- * (`usePauseOverlayFocus`). `MatchScreen` mounts it always; it shows only while the session's
- * overlay is open.
+ * pause view mounts (again on settings → pause); the rest of the focus, including its return to
+ * `openerRef` on close, is `usePauseOverlayFocus`'s. `MatchScreen` mounts it always; it shows only
+ * while the session's overlay is open.
  */
 export function PauseOverlay({
   openerRef,
