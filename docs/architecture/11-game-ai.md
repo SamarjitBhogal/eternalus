@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-26
+last-reviewed: 2026-10-27
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -284,8 +284,11 @@ Staggering: a brain is due when `(tick + entityId) % cadence === 0`, which sprea
 (`TUNE`; `Recommendation:` 96, since 288 mobs / 5 plus Legends and turrets is about 70) and stops
 when it is spent; the round-robin cursor lives in `state.ai.cursor`, so deferral is deterministic
 and the skipped brains go first next tick. A decision is atomic and cheap: radius-bounded queries,
-no allocation in hot paths, scratch vectors reused. Heavy work (flow fields, A\*) belongs to
-`PathingSystem`, which time-slices its rebuilds
+no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
+`move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
+blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
+path cache in the brain is the next step if profiling shows the cost). Other heavy work (flow
+fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
 ## 7. Sim mode (MVP)
@@ -364,10 +367,9 @@ work named:
 - Bots cast `ability-1` at their enemy when `abilityUseChance` comes up on the brain's own RNG
   stream, at most every `castIntervalTicks`; the cast handler refuses casts until abilities land
   (Phase 4), with no controller change needed then.
-- A\* for Legends (M8) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`):
-  bots steer by `move` commands, not by `PathingSystem`, so it is a query the bot leaves call when
-  the straight line is blocked, not a second `MovementStrategy` (Phase 3 plan sprint 3.2). One
-  `WorldMap` serves it and the lane flow fields.
+- A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
+  One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
+  each blocked decision.
 - A brain's `profileId` names an `AggroRuleDefinition` (`content/ai/aggro/`) directly; the
   `AiProfileDefinition` of §2, which would group aggro, cadence and difficulty, arrives when a
   second controller needs a profile. Controllers get their content through their constructor

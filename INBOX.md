@@ -151,6 +151,8 @@ Reply inline (`Decision: …`).
       instead (cost by unit count; queries binary-search a cell's run, results unchanged, now
       5–9 s). If accepted, 10 §5's storage paragraph changes, and with it two claims there: a
       rebuild becomes O(n log n), not O(n), and allocates one view object per rebuild.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): accepted; doc 10 §5 describes the sorted
+    layout and its costs (PR #47). Awaits the decisions log.
 - [ ] **Minion M8 — Rover and cast numbers, A\* placement.** (1) No reference doc gives the
       Rover's numbers; `content/ai/difficulties/rover.ts` and `content/ai/rover.ts` start them
       as `TUNE` (retreat below 20%, engage within 16 m, hunt within 20 m when 0.2 of a health
@@ -165,6 +167,9 @@ Reply inline (`Decision: …`).
       decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
       sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
       shows the cost.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
+    line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
+    judgement, which the owner may correct later, so they stay as built.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads

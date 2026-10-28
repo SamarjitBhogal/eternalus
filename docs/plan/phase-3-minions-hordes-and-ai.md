@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-27
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -98,7 +98,8 @@ Owner: _ (map owner). Weeks 5–6. Follows
       steering loop allocates nothing per unit.
 - [ ] **A\* for Legends and camp chases** (octile heuristic, string-pulling; used by bots only
       — the human moves with WASD). Owner: _. Test: shortest path around a stamped footprint.
-      Done when: A\* is a second `MovementStrategy`, selected by definition.
+      Done when: A\* is a `PathQuery` (`state.paths`) the bot leaves call when the straight line
+      is blocked (doc 11 §6; owner, 2026-10-27), since bots steer by `move` commands.
 
 **Success metric:** pathing plus steering for 288 mobs costs ≤ 2.5 ms per tick p95 in
 `npm run bench` (`Recommendation:` budget split from the 8 ms tick), and a terrain change is

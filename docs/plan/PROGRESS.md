@@ -1700,3 +1700,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 727 passed (727)"; client "Tests 417 passed (417)"; "Documentation check passed."
 - Next step: the draft PR.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar (owner sign-offs) — SamarjitBhogal + Claude Code
+
+- What was done: SamarjitBhogal accepted both M8 better-than-design items in chat. Doc 10 §5
+  now describes the sorted `SpatialHash` layout (O(n log n) rebuild, one view per rebuild) and
+  §12 drops the deviation; doc 11 §6 says a bot's A\* is a `PathQuery` inside the decision
+  budget, and sprint 3.2's done-when and the minion plan's M8 row follow. The Rover and cast
+  numbers stay as built (design docs first, else the agent's judgement). INBOX records the
+  decisions. Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 727 passed (727)"; client "Tests 417 passed (417)"; "Documentation check passed."
+- Next step: merge the updated M3 branch in, so this PR carries the M2b and M3 answers too.

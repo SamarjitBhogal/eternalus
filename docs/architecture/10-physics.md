@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-26
+last-reviewed: 2026-10-27
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -143,12 +143,14 @@ generator). `Zone`s have no collider.
 
 Uniform grid over the map, cell size = the largest unit diameter (from the radii above,
 TUNE) so a query touches only the 9 surrounding cells. Storage is dense typed arrays rebuilt every
-tick by counting sort (Muller's layout): `cellStart: Int32Array(cols × rows + 1)`,
-`entries: Int32Array(maxEntities)`; zero allocation after construction.
+tick by sorting the points by `cell × count + index`; a query binary-searches each covered cell's
+run. No per-cell array is kept, so a rebuild costs what the points cost (O(n log n)), never the
+`cols × rows` of the world, which on a generated map is hundreds of thousands of cells. A rebuild
+allocates one sorted view; nothing else allocates after construction.
 
 ```ts
 export class SpatialHash {
-  rebuild(positions: Float64Array, radii: Float32Array, count: number): void; // O(n)
+  rebuild(positions: Float64Array, radii: Float32Array, count: number): void; // O(n log n)
   queryCircle(x: number, y: number, r: number, out: Int32Array): number; // count; id-sorted
   queryRect(rect: Rect, out: Int32Array): number;
 }
@@ -274,11 +276,7 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
 ## 12. Implementation status
 
 `physics/SpatialHash` (minion plan M1, M2a) has §5's `rebuild` and an exact, ascending
-`queryCircle`, over points only: no radii and no `queryRect` yet. Since M8 it does not keep §5's
-per-cell `cellStart` array: `rebuild` sorts the points by `cell × count + index` and a query
-binary-searches each covered cell's run, so a rebuild costs what the points cost, not the
-`cols × rows` of the world (on a generated map the per-cell passes dominated the tick). Sign-off
-asked in `INBOX.md`; §5 changes once given.
+`queryCircle`, over points only: no radii and no `queryRect` yet.
 `physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
 `MovementSystem`. Horde separation (18 §5.2) falls off linearly with distance, not as 1/r.
 
