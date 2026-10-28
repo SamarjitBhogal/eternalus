@@ -1555,3 +1555,13 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 680 passed (680)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: draft PR.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m3-bot-laners (owner answers) — SamarjitBhogal + Claude Code
+
+- What was done: SamarjitBhogal answered the M3 INBOX item in chat. Roster order for bot lanes
+  is accepted, so doc 18 §8 says roster order; base healing is out of the minion system's scope
+  for now (the Phase 3 plan's laner test says so); the bot numbers stay as built (design docs
+  first, else the agent's judgement). The INBOX item records the decision. Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 680 passed (680)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: none for M3; merge after #44.

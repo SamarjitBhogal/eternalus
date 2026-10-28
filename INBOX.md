@@ -143,6 +143,10 @@ Reply inline (`Decision: …`).
       Better than the design, for sign-off: bot laners take lanes in roster order, the order
       match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
       `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) numbers from the design docs, else the
+    agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
+    out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
+    Accepted; doc 18 §8 says roster order (PR #46).
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads

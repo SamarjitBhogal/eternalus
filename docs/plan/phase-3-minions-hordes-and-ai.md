@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-27
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -194,7 +194,7 @@ Owner: _ (AI owner). Week 7. Depends on 3.3.
       later, ability choice; ticked at 5 Hz with `entityId % 6` stagger, per
       [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots)).
       Owner: _. Test: a laner pushes its lane, retreats below a health threshold and returns to
-      base to heal; 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
+      base (healing there is outside the minion system for now; owner, 2026-10-27); 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
       `Command`s only.
 - [ ] **`RoverController`** (the "hard bot": reacts to structure health across lanes, mirrors
       or targets the human player). Owner: _. Test: the Rover moves to the lane with the lowest
