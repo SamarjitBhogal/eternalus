@@ -1995,3 +1995,46 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   patch and for group (i) alone; the id resolver: 936 ids, 0 without a definition.
 - Next step: unchanged from round B14: the owner's decisions (ADR 0019, ADR 0020, HC-Q21, HC-Q22,
   HC-B1, squash or merge commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's critic loop and its fixes (stream B, round B16) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (code on `fix/hud-charselect-critic-b`, merged into the task branch, and docs on
+  this branch; recorded by stream B from the evidence in
+  `eternalus-agent-work/hud-charselect/pr-review/`, outside the repository; the finding ids and
+  rounds B15 and B16 are defined in the PR register's section "The owner's critic loop",
+  `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - The loop: two critics in parallel, correctness and ponytail, for two rounds at most. Round 1
+    (`a171761` to `df70ab5`): both approve; cc-01 should-fix, cc-02 to cc-04 and pc-01 to pc-07
+    nits. Round 2 (`df70ab5` to `be4aca3`): both approve; every accepted round-1 finding fixed,
+    cc-03 and pc-01 in part; new cc2-01 (should-fix), cc2-02, cc2-03, pc2-01 and pc2-02. The loop
+    stops after round 2, so these were fixed without a third round.
+  - Round 1's findings: cc-01 fixed in round B14 (`b783682`); cc-02 in `eade1c2` (`freeAll` and
+    `release(group)` go on past a throwing release and rethrow the first error; red before the fix
+    (2 tests) and with either half reverted); cc-03 in part in `4bbe7e8` (an exported, tested
+    `isOverlayOpen`; red on the break `overlay === 'pause'`), the effect's dependency array staying
+    out of reach of the Node-only tests; cc-04 in `8439831` (TSDoc); pc-01 in `289f793`, then
+    `6750f03`; pc-02 rejected: `StructureStrip`'s `SIDE_CLASS` record matches its sibling
+    variant-to-class records, the registry style of `AGENTS.md` rule 12, for about 6 lines; pc-03 to
+    pc-06 in round B15 (`66eca5e`, `b1f7121`, `6e838a6`, `8765a16`); pc-07 in `0c05712` (the TSDoc)
+    and in round B15 (`6cfabc8`, the plan). The five code commits (`eade1c2`, `8439831`, `4bbe7e8`,
+    `0c05712`, `289f793`) merged as `be4aca3`, with 3 new client tests.
+  - Round 2's findings: pc2-01 fixed in `6750f03` (`radioGroup` moved into `ui/testStore.tsx` and
+    the second builder deleted; the test count unchanged; a deliberate break turned 4 tests red);
+    cc2-01 and cc2-02 in this round (this entry, and the register's new section, which defines the
+    loop's ids and rounds B15 and B16); cc2-03 by the correction at the end of this entry; pc2-02 in
+    this round (14 §14's status note keeps one sentence on progress, the one HC-T1 T-153 depends on,
+    without commit hashes).
+- Checks run: at `be4aca3` (the coordinating session's log `pr-review/check-be4aca3.log`):
+  `npm run check` → `EXIT=0`: core "Tests 619 passed (619)"; client "Tests 1360 passed (1360)",
+  statements 96.47 %; the JavaScript bundle 556.75 kB (gzip 174.10 kB); "Documentation check
+  passed." Live probe at `be4aca3`: development ALL PASS (its long-frame check information only,
+  OD-30), production ALL PASS. This round, on the final code (`6750f03`) with this round's docs:
+  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 619 passed
+  (619)"; client "Tests 1360 passed (1360)", statements 96.48 %; the JavaScript bundle 556.75 kB
+  (gzip 174.10 kB); "✓ built"; "Checked 119 Markdown files under docs/." "Documentation check
+  passed." `git apply --check` prints nothing for the whole patch and for group (i) alone; the id
+  resolver: 937 ids, 0 without a definition.
+- Next step: unchanged from round B14: the owner's decisions (ADR 0019, ADR 0020, HC-Q21, HC-Q22,
+  HC-B1, squash or merge commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
+- Correction (cc2-03; round B14's entry is not rewritten): `90f915a` and `c0ec551` in round B14's
+  entry are pr-ui-hud-components-assets-04 and -05.
