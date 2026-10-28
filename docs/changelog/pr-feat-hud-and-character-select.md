@@ -717,10 +717,10 @@ words are quoted in `INBOX.md` under each item and, for D2 and D8, in the decisi
 | D8   | HC-Q22: each class's start weapon and the HUD's weapon art                       | "Keep the per-class Figma art", and the start weapon of each Legend                                                                                                                            | DEC-57; the HUD keeps its class-keyed art; it answers point (2) of `feat/weapons`' INBOX item                                                                                                                                                     |
 
 With D3 and D4, 24 HC-T1 rows are applied: T-07, T-08, T-09, T-14, T-15, T-21, T-25, T-27, T-30,
-T-32 to T-35, T-37, T-40, T-42 to T-45, T-48, T-51, T-55, T-86 and T-89. Rows that HC-B1 or ADR 0019
-name but that also carry another open item stay pending: T-11, T-24 and T-31 (HC-Q7 (2)), T-16
-(HC-F9, HC-Q8), T-23 (HC-Q2), T-29 (HC-Q14) and T-90 (HC-F7). The HC-T1 table keeps every applied
-row as the owner saw it, with its status changed; 59 rows stay pending.
+T-32 to T-35, T-37, T-40, T-42 to T-45, T-48, T-51, T-55, T-86 and T-89. Rows tied to HC-B1 or ADR
+0019 that also carry another open item stay pending: T-11 and T-31 (HC-Q7 (2)), T-16 (HC-F9, HC-Q8),
+T-23 (HC-Q2), T-29 (HC-Q14) and T-90 (HC-F7). The HC-T1 table keeps every applied row as the owner
+saw it, with its status changed; 59 rows stay pending.
 
 **What remains before the merge:** the terms of the tools the art was made with, if the owner deems
 them needed (HC-Q7 (1)), and the integration with the sibling pull requests that D6 orders: once the

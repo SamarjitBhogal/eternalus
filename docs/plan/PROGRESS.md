@@ -2038,3 +2038,80 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   HC-B1, squash or merge commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
 - Correction (cc2-03; round B14's entry is not rewritten): `90f915a` and `c0ec551` in round B14's
   entry are pr-ui-hud-components-assets-04 and -05.
+
+### 2026-10-28 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's answers to the merge decisions (stream B, round B17) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `7a55b2e`; the owner's answers of 2026-10-28, given in chat from a
+  decision page whose items D1 to D8 the PR register's new section "Owner answers of 2026-10-28"
+  defines):
+  - D1, `INBOX.md` HC-T1 group (i) ("Approve all 54"): `d2b-group-i.patch` applied once
+    `git apply --check` printed nothing; the 19 files equal the generator's group (i) copies
+    (`b1121f5`).
+  - D3, HC-B1 ("Approve all"), and D4, ADR 0019 ("Accept"): the 24 HC-T1 rows whose only open basis
+    was HC-B1 or DEC-50 applied with the D2b generator's new `--apply-b17` (`e28854b`). Six rows
+    tied to HC-B1 or ADR 0019 stay pending because they also carry another open item: T-11 and T-31
+    (HC-Q7 (2)), T-16 (HC-F9, HC-Q8), T-23 (HC-Q2), T-29 (HC-Q14) and T-90 (HC-F7). DEC-22 gets the
+    appended note HC-B1's BD1 promised.
+  - D4 and D5: ADR 0019 and ADR 0020 accepted, recorded as ADR 0018 records its acceptance
+    (`9f7cb80`).
+  - D2, HC-Q7 (1) and (3): DEC-51's appended note and FR-111 reworded (`7b87f76`); new HC-T1 rows
+    T-155 to T-157 propose the same for references 10 and 11 (pending: no row existed for them);
+    HC-Q7 (3) holds a credit drafted from his words for his confirmation. He did not state the
+    tools' terms, so HC-Q7 stays open for them and for (2), (4) and (5).
+  - D8, HC-Q22: new DEC-57 in a new batch 2026-10-28, with his words. DEC-57 was free on all 82
+    local and remote refs after `git fetch` and in every local worktree (the game-loop plan's
+    working copy names DEC-57 as the next free number and assigns none).
+  - D6 and D7: HC-Q21 (b) and the merge commit recorded in `INBOX.md`, the PR register (owner items,
+    the integration recipe, the /pr-review's disposition cells) and the pull request's description
+    (outside the repository); the merge commit departs from `docs/process/git-workflow.md`'s squash
+    default (§4, §5) for this pull request only.
+  - `INBOX.md` (`160d096`): HC-T1's prose and table (78 rows applied, 59 pending, each open item
+    named), HC-B1, HC-Q21 and HC-Q22 ticked with his answers, HC-Q7's answer, a Done entry.
+  - Every edit to a sholtzman-owned doc this round (`last-reviewed` 2026-10-28 on each doc):
+    - Group (i) rows: `apps/client/AGENTS.md` T-01 to T-04, T-06; architecture 04 T-50, T-54, T-119,
+      T-121; 05 T-122; 13 T-87, T-88; 17 T-123, T-124; the architecture README T-151; reference 01
+      T-61 to T-65, T-103 to T-106, T-115; reference 10 T-107, T-128, T-129; reference 11 T-130,
+      T-131; the decisions log T-154; reference 14 T-73, T-74; the glossary T-76 to T-78, T-108; the
+      naming suggestions T-109, T-110, T-147 to T-150; the more-abilities suggestions T-111 to
+      T-113; the reference README T-134, T-135; the backlog T-114, T-126; the phase 4 plan T-127;
+      requirements 02 T-117; requirements 06 T-116, T-146.
+    - HC-B1 and ADR 0019 rows: architecture 01 T-45; 02 T-37, T-40, T-42 to T-44, T-89; 04 T-51; 05
+      T-55; 13 T-07 to T-09, T-14, T-15, T-21, T-25, T-27, T-86; 14 T-30, T-32 to T-35; 17 T-48.
+    - The branch's Implementation-status notes (not design text): 01 §8, 02 §12 and 17 §12 say which
+      of their rows are now in the design text; in 13 §10 the bullet on DEC-50 and DEC-52 to DEC-55
+      is replaced by one on the `match` row that still waits (T-16).
+    - ADR 0019 and ADR 0020: Status line, frontmatter `status: active` and description.
+    - Decisions log: the batch 2026-10-28 with DEC-57; appended notes at the end of DEC-22's and
+      DEC-51's decision cells (Prettier re-padded the DEC-21 to DEC-24 table, whitespace only).
+    - Requirements 06: FR-111's statement, source and status; its acceptance and phase are
+      unchanged.
+    - PR register: the section "Owner answers of 2026-10-28", a dated status under the merge
+      preconditions, the owner items, the integration recipe's intro and step 5, and five /pr-review
+      disposition cells.
+    - `docs/README.md` regenerated (the descriptions changed by T-103 and T-111, and ADR 0019's and
+      ADR 0020's).
+  - Outside the repository (`eternalus-agent-work/hud-charselect/streams/docs/`): the D2b generator
+    gains `--apply-b17` and the rows T-155 to T-157; `d2b.patch` now holds the 59 pending rows over
+    30 files and `EDIT-TABLE.rows.md` all 137 rows plus A-1 and A-2; `d2b-group-i.patch` is applied
+    and no longer generated. The id resolver now ignores `FNV-1a`, a hash name that a group (i)
+    table re-pad put on an added line. Backups in `b17-backup/`.
+- Checks run, on `160d096` with this entry and the register's last fix in the working tree:
+  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 619 passed
+  (619)"; client "Tests 1360 passed (1360)", statements 96.48 %; the JavaScript bundle 556.75 kB
+  (gzip 174.10 kB); "✓ built"; "Checked 119 Markdown files under docs/." "Documentation check passed."
+  `git apply --check d2b.patch` (the 59 pending rows) prints nothing; the post-B17 tree plus that
+  patch equals round B16's fully patched copies in all 36 files of B16's patch except this round's
+  own edits (the four status notes, T-155 to T-157), `last-reviewed` ignored; the id resolver: 958
+  ids, 0 without a definition (it resolves D1 to D8 to the architecture README's decision rows, the
+  first definition it finds; the register's new section defines the decision page's D1 to D8 and
+  says they differ).
+- Next step: the owner's remaining answers (the tools' terms in HC-Q7 (1) if he wants them stated,
+  the credit draft in HC-Q7 (3), the rest of HC-T1); the code change to `assetLicences.ts` once he
+  confirms the credit; then, once the minion stack and `feat/weapons` have merged into
+  `phase/2-sprint-2-work`, the one integration with the register's recipe (HC-Q21 (b)), and the pull
+  request, merged with a merge commit.
+- Flag for the owner: the requirements README ("How to cite and change a requirement") and NFR-010
+  change a requirement only through an accepted ADR. FR-111 was reworded on his answer to HC-Q7 (1),
+  which the item said would decide its wording, and on DEC-51's note; no ADR records it.
+- Correction (`b1121f5`'s message is not rewritten): it says T-103 and T-113 changed the two index
+  descriptions; they are T-103 and T-111.
