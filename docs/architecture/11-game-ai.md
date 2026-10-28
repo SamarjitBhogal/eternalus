@@ -125,9 +125,10 @@ results are id-sorted. Fog of war is **post-MVP**; `Vision` is its extension poi
 
 ## 4. Controllers
 
-The build order of every controller below except `PlayerController` and `TurretController` is
-the [minion system plan](../plan/minion-system-plan.md) §1.1 (proposed MS-28 of doc 18, pending the
-owner's sign-off); this section stays their design.
+The build order of every controller below except `PlayerController`, `TurretController` and
+`BossController` is the [minion system plan](../plan/minion-system-plan.md) §1.1 (MS-28 of doc 18);
+this section stays their design. Bosses are not controlled by the minion system: `BossController`
+is built in Phase 3 sprint 3.6.
 
 ### 4.1 PlayerController (MVP)
 

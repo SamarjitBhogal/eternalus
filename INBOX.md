@@ -210,6 +210,15 @@ Reply inline (`Decision: …`).
       Sign off the move, or keep DEC-47's split. (2) Which team do checkpoint defenders fight
       for: the zone's owner, the team being captured against, or neutral? (3) Does their leash
       follow the capture zone (doc 18 §7.1)?
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) signed off, except bosses: the minion
+    system does not control bosses, so `BossController` stays in Phase 3 sprint 3.6 and the
+    plan has no M7; every other mob type may be driven by the minion system. (2) The team that
+    owns the checkpoint. Docs 18 MS-28 and §7.1, 07, 11 §4, the Phase 3 plan and the minion
+    plan updated (PR #43). Awaits the decisions log.
+- [ ] **Checkpoint defenders — leash (doc 18 §10, item 4).** Still open after the MS-28 answer.
+      Does a defender's leash follow the capture zone (its radius; `Recommendation:`), or is it a
+      radius of its own in the checkpoint table? And are the defenders of a point no team owns
+      yet neutral (`Recommendation:`)? Nothing is built on this until M6.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
