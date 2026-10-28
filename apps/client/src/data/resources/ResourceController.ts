@@ -135,13 +135,31 @@ export class ResourceController {
     return assetBoxes(this.entriesOf(group));
   }
 
-  /** Frees `group`; a load still running for it keeps nothing (generation check). */
+  /**
+   * Frees `group`; a load still running for it keeps nothing (generation check). A throwing loader
+   * release (a bug) still lets every other handle go and the group be forgotten; the first error is
+   * rethrown at the end.
+   */
   public release(group: AssetGroup): void {
     this.retire(group);
-    for (const entry of this.entriesOf(group)) {
-      this.cache.get(entry.id)?.release();
+    this.freeEach(this.entriesOf(group), (entry) => {
+      const asset = this.cache.get(entry.id);
       this.cache.delete(entry.id);
+      asset?.release();
+    });
+  }
+
+  /** Calls `free` on every item, even past one that throws (a bug); rethrows the first error. */
+  private freeEach<T>(items: Iterable<T>, free: (item: T) => void): void {
+    const errors: unknown[] = [];
+    for (const item of items) {
+      try {
+        free(item);
+      } catch (error) {
+        errors.push(error);
+      }
     }
+    if (errors.length > 0) throw errors[0];
   }
 
   /** Ends `group`'s load in flight: whatever it still loads is freed, not kept (`isCurrent`). */
@@ -156,11 +174,9 @@ export class ResourceController {
       this.plansOf(entry.id).map((file) => this.loadFile(loader, entry, file)),
     );
     const freeAll = (): void => {
-      for (const result of results) {
-        if (result.isLoaded) {
-          loader.release(result.handle);
-        }
-      }
+      this.freeEach(results, (result) => {
+        if (result.isLoaded) loader.release(result.handle);
+      });
     };
     const [main] = results;
     if (main === undefined || !this.isCurrent(job)) {
