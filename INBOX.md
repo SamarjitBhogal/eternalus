@@ -217,59 +217,60 @@ Reply inline (`Decision: …`).
 - [ ] **HC-T1 — Approve the text of the design-doc edits (`feat/hud-and-character-select`; asked
       after the pre-PR critic).** **Approve group (i) in one go: it is the merge precondition
       (pre-PR critic, run 2: C-01, core-bridge-01).** Group (i) only records what you already
-      decided (DEC-48 to DEC-56; ADR 0018 as you accepted it) or aligns `apps/client/AGENTS.md` and
-      FR-090 with the design and rules you already approved (02 §3, 12 §8, 13 §5, 14 §1 and §11;
-      rule 11): T-01 to T-04, T-06, T-50, T-54, T-61 to T-65, T-73, T-74, T-76 to T-78, T-87, T-88,
-      T-103 to T-117, T-119, T-121 to T-124, T-126 to T-131, T-134, T-135, T-146 and T-147 to T-151
-      (53 rows, marked "group (i)" in the table; their patch also applies on its own). Group (ii)
-      needs your judgement row by row: DEC-50's sketch, table rows and paragraph, which also carry
-      HC-B1's DV-01, HC-F9 and HC-Q8 (T-07, T-08, T-14 to T-16 and T-86, applied together); the rows
-      on defaults (T-12, T-28, T-75); the branch's deviations and new features (T-05, T-09 to T-11,
-      T-13, T-17 to T-27, T-29 to T-48, T-51, T-55 to T-59, T-79); the critic's new items (T-89,
-      T-90); phase-plan ticks, notes and two new tasks (T-80 to T-85, T-145, T-152); the optional
-      rows (T-118, T-120, T-132, T-133); and the id wording that waits for HC-Q18 (4) (T-100 to
-      T-102, T-136 to T-144). The critic's minimum also named T-05 and DEC-50's rows; they are in
-      group (ii) because of those open items. T-125 is SamarjitBhogal's. Nothing is ticked. Your
-      rule is that architecture docs, the `AGENTS.md` files and your reference docs change only with
-      your approval (PR #31), each edit shown to you in a table (PR #33). So the branch splits its
-      edits (OD-26). **Applied, append-only:** one Implementation-status note each in architecture
-      01 (new §8), 02 (new §12), 05 (new §18), 06 §10, 13 §10, 14 §14 and 17 (new §12), recording
-      what the branch built (13 §10 also lists your decisions DEC-50 and DEC-52 to DEC-55, whose
-      design text waits as T-86 to T-88); and `last-reviewed` on each. **Applied when you accepted
-      ADR 0018 as you corrected it (DEC-56):** its amendments, rows T-49 to T-49b (17 R2), T-52 to
-      T-53b (04 §9), T-60 and T-60a (the architecture README's D11 row), T-91 (ADR 0006's Status
-      line), T-92 to T-97 (FR-057 keeps only class switching; the new FR-119 and its traceability)
-      and T-98 and T-99 (the phase 2 and phase 4 plans); they left this table, and the pull
-      request's description lists them. One of them is agent-written and needs your check: T-93a,
-      the new acceptance sentence of FR-057 ("No MVP code path changes a Legend's class during a
-      match; the switch and its ultimate penalty arrive post-MVP."), because its old acceptance was
-      about sub-classes and moved to FR-119. **Not applied, for your approval:** every other change
-      to existing text, the rows below. T-80 to T-85 tick one phase-plan task whose test the branch
-      meets and add notes to five others. T-86 to T-88 restore three paragraphs in architecture 13
-      (§2 DEC-50, §7 the display switches, §9 the variants) that the pre-PR critic asked to keep in
-      §10 until you approve them, applied together with the §2 row and sketch rows T-07, T-08 and
-      T-14 to T-16; T-89 and T-90 are the critic's new items NF3 and NF5 (HC-B1). T-100 to T-102
-      carry ADR 0018's point 5 into the id wording of `AGENTS.md`, architecture 04 §10 and 17 R26:
-      until saves or a release exist, an id rename is a content refactor whose missed references
-      fail the checks. No row copies the roster (ADR 0018 point 4): a row that records a name
-      decision cites DEC-48, DEC-49 or DEC-56 and points to the content file; T-65 now replaces the
-      eight sub-class rows of reference 01 with one row pointing to the content (rows T-66 to T-72
-      merged into it). T-103 to T-115 are consequences of DEC-56 (2026-10-25) in your reference docs
-      and plans, for one sign-off: reference 01 (description, sub-classes heading and intro, the
-      Flying note, the open question), reference 10's sub-class names row, the glossary's
-      `LegendSpecDefinition` row, the naming suggestions' and more-abilities' sub-class sections,
-      and the backlog's sub-class row, which now says MVP scope with the phase open (HC-Q17). They
-      are kept as a patch outside the repository until you approve them, and the pull request's
-      description repeats this table. A-1 and A-2 were merged earlier and stay unless you refuse
-      them. T-79 drafts an 08 §11 status section, which waits for you because an earlier one was
-      removed for that reason; the critic's second run asks for that note (game-data-05), and T-79
-      now names `createBrowserMatch` and `MatchHost`. **Round B8 (the roster audit, OD-38):** T-116
-      to T-135 remove the remaining copies of class names and "post-MVP sub-classes" from your
-      requirements, architecture, plans and reference docs and point to the content files; T-118,
-      T-120, T-132 and T-133 are optional. T-125 changes architecture 18, which SamarjitBhogal owns,
-      so it is his to approve, not yours. T-100 to T-102 and T-136 to T-144 change "never renamed
-      once used" to "never renamed once a save or a release stores it"; their wording waits for your
-      answer to HC-Q18 (4). Two texts of yours are stale and flagged, not edited: CP-13's "Why" line
+      decided (DEC-48 to DEC-56; ADR 0018 as you accepted it) or aligns `apps/client/AGENTS.md`,
+      FR-090 and DEC-49's file list with the design and rules you already approved (02 §3, 12 §8, 13
+      §5, 14 §1 and §11; rule 11; the decisions log's purpose): T-01 to T-04, T-06, T-50, T-54, T-61
+      to T-65, T-73, T-74, T-76 to T-78, T-87, T-88, T-103 to T-117, T-119, T-121 to T-124, T-126 to
+      T-131, T-134, T-135, T-146, T-147 to T-151 and T-154 (54 rows, marked "group (i)" in the
+      table; their patch also applies on its own). Group (ii) needs your judgement row by row:
+      DEC-50's sketch, table rows and paragraph, which also carry HC-B1's DV-01, HC-F9 and HC-Q8
+      (T-07, T-08, T-14 to T-16 and T-86, applied together); the rows on defaults (T-12, T-28,
+      T-75); the branch's deviations and new features (T-05, T-09 to T-11, T-13, T-17 to T-27, T-29
+      to T-48, T-51, T-55 to T-59, T-79, T-153); the critic's new items (T-89, T-90); phase-plan
+      ticks, notes and two new tasks (T-80 to T-85, T-145, T-152); the optional rows (T-118, T-120,
+      T-132, T-133); and the id wording that waits for HC-Q18 (4) (T-100 to T-102, T-136 to T-144).
+      The critic's minimum also named T-05 and DEC-50's rows; they are in group (ii) because of
+      those open items. T-125 is SamarjitBhogal's. Nothing is ticked. Your rule is that architecture
+      docs, the `AGENTS.md` files and your reference docs change only with your approval (PR #31),
+      each edit shown to you in a table (PR #33). So the branch splits its edits (OD-26). **Applied,
+      append-only:** one Implementation-status note each in architecture 01 (new §8), 02 (new §12),
+      05 (new §18), 06 §10, 13 §10, 14 §14 and 17 (new §12), recording what the branch built (13 §10
+      also lists your decisions DEC-50 and DEC-52 to DEC-55, whose design text waits as T-86 to
+      T-88); and `last-reviewed` on each. **Applied when you accepted ADR 0018 as you corrected it
+      (DEC-56):** its amendments, rows T-49 to T-49b (17 R2), T-52 to T-53b (04 §9), T-60 and T-60a
+      (the architecture README's D11 row), T-91 (ADR 0006's Status line), T-92 to T-97 (FR-057 keeps
+      only class switching; the new FR-119 and its traceability) and T-98 and T-99 (the phase 2 and
+      phase 4 plans); they left this table, and the pull request's description lists them. One of
+      them is agent-written and needs your check: T-93a, the new acceptance sentence of FR-057 ("No
+      MVP code path changes a Legend's class during a match; the switch and its ultimate penalty
+      arrive post-MVP."), because its old acceptance was about sub-classes and moved to FR-119.
+      **Not applied, for your approval:** every other change to existing text, the rows below. T-80
+      to T-85 tick one phase-plan task whose test the branch meets and add notes to five others.
+      T-86 to T-88 restore three paragraphs in architecture 13 (§2 DEC-50, §7 the display switches,
+      §9 the variants) that the pre-PR critic asked to keep in §10 until you approve them, applied
+      together with the §2 row and sketch rows T-07, T-08 and T-14 to T-16; T-89 and T-90 are the
+      critic's new items NF3 and NF5 (HC-B1). T-100 to T-102 carry ADR 0018's point 5 into the id
+      wording of `AGENTS.md`, architecture 04 §10 and 17 R26: until saves or a release exist, an id
+      rename is a content refactor whose missed references fail the checks. No row copies the roster
+      (ADR 0018 point 4): a row that records a name decision cites DEC-48, DEC-49 or DEC-56 and
+      points to the content file; T-65 now replaces the eight sub-class rows of reference 01 with
+      one row pointing to the content (rows T-66 to T-72 merged into it). T-103 to T-115 are
+      consequences of DEC-56 (2026-10-25) in your reference docs and plans, for one sign-off:
+      reference 01 (description, sub-classes heading and intro, the Flying note, the open question),
+      reference 10's sub-class names row, the glossary's `LegendSpecDefinition` row, the naming
+      suggestions' and more-abilities' sub-class sections, and the backlog's sub-class row, which
+      now says MVP scope with the phase open (HC-Q17). They are kept as a patch outside the
+      repository until you approve them, and the pull request's description repeats this table. A-1
+      and A-2 were merged earlier and stay unless you refuse them. T-79 drafts an 08 §11 status
+      section, which waits for you because an earlier one was removed for that reason; the critic's
+      second run asks for that note (game-data-05), and T-79 now names `createBrowserMatch` and
+      `MatchHost`. **Round B8 (the roster audit, OD-38):** T-116 to T-135 remove the remaining
+      copies of class names and "post-MVP sub-classes" from your requirements, architecture, plans
+      and reference docs and point to the content files; T-118, T-120, T-132 and T-133 are optional.
+      T-125 changes architecture 18, which SamarjitBhogal owns, so it is his to approve, not yours.
+      T-100 to T-102 and T-136 to T-144 change "never renamed once used" to "never renamed once a
+      save or a release stores it"; their wording waits for your answer to HC-Q18 (4). Two texts of
+      yours are stale and flagged, not edited: CP-13's "Why" line
       (`docs/requirements/02-coding-principles.md`: placeholder names keep their "(rename pending)"
       note in docs and TSDoc) and phase 4's exit criterion 3 (every "(rename pending)" note still
       visible in content display names), both overtaken by DEC-48. **Round B10 (the critic's second
@@ -289,8 +290,14 @@ Reply inline (`Decision: …`).
       to accept (both proposed): ADR 0019 records DEC-50, the basis of T-07, T-08, T-14 to T-16 and
       T-86 (`docs/decisions/0019-session-controller-owns-the-match.md`); ADR 0020 records three
       test-configuration lines the branch changed without one
-      (`docs/decisions/0020-client-test-configuration.md`). Approve all, or name the rows to change
-      or drop.
+      (`docs/decisions/0020-client-test-configuration.md`). **Round B14 (the /pr-review's code
+      repairs):** T-153 says that 14 §11's progress ends at the manifest sum only when every file
+      loads; with a failed file it ends below the sum, as the code has done since the branch's
+      foundation commit `4a6dec6` (a test pins it). It is in group (ii) because the other choice,
+      counting a failed file as loaded, is yours. T-154 adds `RoleRatingRangeRule.ts`, the new
+      content rule that keeps every Legend role rating from 0 to 1, to DEC-49's "Affects" cell
+      beside `SpecClassExistsRule.ts`; it only records where DEC-49's content is checked, so it is
+      in group (i). Approve all, or name the rows to change or drop.
 
   | #     | Where (doc §, line)                                                                                                                                                                                                                                          | Base design said                                                          | Branch says                                                                                                                | Basis (DEC/DV/factual)                                                                                                                                                                             | Changes general design? y/n + why                                                                             | Status                                                              |
   | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -428,6 +435,8 @@ Reply inline (`Decision: …`).
   | T-150 | naming suggestions, summary table, Flying (class) row, recommended pick (`docs/reference/suggestions/naming.md:277`)                                                                                                                                         | a recommended pick                                                        | decided (DEC-48), in content (the Flying section names the file)                                                           | DEC-48; ADR 0018 point 4; 17 R26 (its docs step records the pick in the naming suggestions); /pr-review (2026-10-27) pr-core-bridge-01                                                             | n                                                                                                             | pending owner; group (i), for the merge                             |
   | T-151 | architecture README §4, D11 row, "Recorded in" (`docs/architecture/README.md:136`)                                                                                                                                                                           | ADR 0006                                                                  | ADR 0006 and ADR 0018                                                                                                      | ADR 0018 "Documents amended on acceptance" (the D11 row; accepted as the owner corrected it, DEC-56); /pr-review (2026-10-27) pr-docs-process-14                                                   | n: names the ADR the row already cites                                                                        | pending owner; group (i), for the merge                             |
   | T-152 | phase 6 plan, sprint 6.3, new task after the "Audio and announcer" task (`docs/plan/phase-6-hardening-balance-and-release.md:143`)                                                                                                                           | (no task)                                                                 | a task for the UI enhancements follow-up (`docs/plan/ui-enhancements-plan.md`): UE-03 first, then the ones picked in HC-S5 | INBOX HC-S5 (unanswered); OD-26 and OD-31 (a new task in the owner's plan waits for him, as T-145 does); /pr-review (2026-10-27) pr-docs-process-05 (applied in `97f801b`, taken out in round B13) | n: schedules a follow-up; adds no gameplay                                                                    | pending owner; waits for INBOX HC-S5                                |
+  | T-153 | 14 §11, the progress bullet (`docs/architecture/14-persistence-and-resources.md:443`)                                                                                                                                                                        | "ends at the manifest sum"                                                | ends at the manifest sum when every file loads, below it with a failed file (only a loaded entry's loaded files count)     | factual: `ResourceController` since `4a6dec6`, pinned by the test "warns once for a failed rendition and serves its key with the entry url"; the /pr-review's repair-delta review                  | n: byte-based and monotonic stay. Your call: count a failed file as loaded instead                            | pending owner                                                       |
+  | T-154 | decisions log, DEC-49 row, "Affects" column (the core files) (`docs/reference/game-design/13-owner-decisions-log.md:55`)                                                                                                                                     | the content rules `defaultContentRules.ts` and `SpecClassExistsRule.ts`   | adds `RoleRatingRangeRule.ts`, the rule that keeps every Legend role rating from 0 to 1                                    | `42bb212` (/pr-review (2026-10-27) pr-ui-screens-04), a rule on the Legend specs DEC-49 added; the log's Purpose (a decision lists what it affects); 04 §5 (one rule class per check)              | n: a file pointer; the decision text is unchanged                                                             | pending owner; group (i), for the merge                             |
 
 - [ ] **HC-B1 — Better than the design, or new, for sign-off (`feat/hud-and-character-select`; asked
       after the pre-PR critic).** Reconciled on 2026-10-24 with the branch's deviation table (the DV

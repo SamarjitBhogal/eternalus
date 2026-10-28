@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-26
+last-reviewed: 2026-10-27
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -520,7 +520,11 @@ DEC-51). Where §1 and §11 differ, their corrections wait for the owner in `INB
   (no such assets).
   An asset that fails to load never rejects its group: it is warned about through an injected
   callback and listed in the load's outcome, and a failed rendition falls back to the entry's own
-  file; §12's typed error is not built.
+  file; §12's typed error is not built. Progress is reported once per entry, when the entry is
+  cached, with the bytes of its loaded files, so it stays monotonic and never counts a failed entry
+  (`2a58d2d`). A group load that rejects (only a bug can) is retired the way `release(group)`
+  retires one: the entries it was still loading keep nothing, and the next load of the group starts
+  afresh (`2fbe59b`, `76bae8e`).
 - **The manifest** is typed TypeScript in `data/resources/`: `AssetManifest.ts` concatenates one
   file per asset group (the ~300-line file rule; `selectionAssets.ts` and `matchAssets.ts` join part
   files) into the one `ASSET_MANIFEST`. An entry has a `file` and an optional `file2x` (each with

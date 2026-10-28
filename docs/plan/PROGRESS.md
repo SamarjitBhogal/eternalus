@@ -1936,3 +1936,37 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Next step: unchanged from round B13: the code repairs' commits (a later round); the owner's
   answers to the merge preconditions (HC-T1 group (i), HC-Q7 (1) and (3), HC-B1), ADR 0019 and
   ADR 0020, and HC-Q21.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the /pr-review's code repairs and their review (stream B, round B14) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (code in lanes A and B and one follow-up; recorded by stream B from the evidence in
+  `eternalus-agent-work/hud-charselect/pr-review/`, outside the repository; the finding ids are
+  defined in the PR register's `/pr-review` section,
+  `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - Lane A, merged as `a632723`: `14d90cd` (pr-ui-hud-components-assets-01: `usePauseOverlayFocus`
+    and 7 tests), `c3290dd` (pr-ui-screens-02: sibling tests for `useClassSelectStep`, 6, and
+    `useLegendSelectStep`, 5; `onCardKeyDown` typed as `ReturnType<typeof rovingKeyDown>`),
+    `90f915a` (-04) and `c0ec551` (-05). Lane B, merged as `932c7c7`: `2fbe59b` (pr-game-data-04),
+    `2a58d2d` (pr-game-data-03: progress reported once per entry, still monotonic), `42bb212`
+    (pr-ui-screens-04: `RoleRatingRangeRule`), `1853e14` (pr-core-bridge-03) and `b918397` (the
+    code part of pr-docs-process-06). Every new or changed test went red first.
+  - The repairs' review (one reviewer and a skeptic, `a171761` to `932c7c7`): no blocker; rd-01,
+    this record, upheld as should-fix; the nits rd-02 to rd-04 fixed in `76bae8e`, `71a5b24` and
+    `7166412`, and `c72266b` caches an entry before its rendition warnings (red, then green).
+  - Docs: the register marks each repaired finding with its commit, records the review, and its
+    integration recipe keeps four imports in `defaultContentRules.ts`; 14 §14's status note records
+    the per-entry progress and the retired rejected load. HC-T1 gains T-153 (group (ii): 14 §11's
+    "ends at the manifest sum" holds only when every file loads) and T-154 (group (i): DEC-49's file
+    list names `RoleRatingRangeRule.ts`): 134 rows, 54 in group (i).
+- Checks run: at `c72266b` (the orchestrator's log `pr-review/check-c72266b.log`): `npm run check`
+  → `EXIT=0`: core "Tests 619 passed (619)"; client "Tests 1357 passed (1357)", statements
+  96.45 %; the JavaScript bundle 556.61 kB (gzip 174.04 kB); "Documentation check passed." Live
+  probe at `c72266b`: development ALL PASS (its long-frame check information only, OD-30),
+  production ALL PASS. Pixels at `932c7c7`: 246 of 250 byte-identical, the 4 others the known
+  asset-check page reorder. This round's docs commit: `npm run check` → `EXIT=0`: "All matched
+  files use Prettier code style!"; core "Tests 619 passed (619)"; client "Tests 1357 passed
+  (1357)"; "✓ built"; "Checked 119 Markdown files under docs/." "Documentation check passed."
+  `git apply --check` prints nothing for the whole patch and for group (i) alone; the id
+  resolver: 938 ids, 0 without a definition.
+- Next step: the owner's decisions (ADR 0019, ADR 0020, HC-Q21, HC-Q22, HC-B1, squash or merge
+  commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
