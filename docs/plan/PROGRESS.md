@@ -1270,3 +1270,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 200ms"; "Documentation
   check passed."
 - Next step: quick `/pr-review`, then merge PR #36 into `phase/2-sprint-2-work`.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review — SamarjitBhogal + Claude Code
+
+- What was done: added `.coderabbit.yaml` so CodeRabbit reviews every PR into `main` or a
+  `phase/*` branch (drafts included) by `.claude/skills/pr-review/SKILL.md`: the skill, the
+  checklists, `AGENTS.md` files, the code-structure doc and `CONTRIBUTING.md` are loaded as code
+  guidelines, a `**/*` path instruction maps the skill's severities, and a blocking
+  (`mode: error`) pre-merge check holds the skill's blocker list. `auto_approvals.enabled` lets
+  CodeRabbit request changes on blockers and approve once they are resolved. The config
+  validates against CodeRabbit's `schema.v2.json`. `docs/process/git-workflow.md` §review
+  rules notes it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; "Documentation
+  check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 227ms".
+- Next step: the owner makes CI a required status check on `main` and `phase/*` (CodeRabbit
+  cannot run `npm run check`), then confirms CodeRabbit reviews this branch's PR.
