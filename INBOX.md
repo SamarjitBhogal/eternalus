@@ -467,7 +467,10 @@ Reply inline (`Decision: …`).
       OD-25), so the modules still name tokens only; the minimap ring is written once in `bridge/`
       and passed into the canvas view (OD-13). DV-132 to DV-136 are your own directions of
       2026-10-17 (DEC-49, DEC-54, DEC-55), listed for the record and not asked again. Approve each,
-      or say what to change.
+      or say what to change. **Since the `/pr-review` of 2026-10-27, this item is a merge
+      precondition** (pr-docs-process-09): ADR 0010 and the pull request template expect
+      better-than-design items to be signed off and folded into the docs within the pull request.
+      Sign it before the merge, or defer it explicitly; the pull request's description then says so.
 - [ ] **HC-C1 — The differences from your Figma, for review (asked after the pre-PR critic).** Every
       place the build differs from your frames on purpose is registered in
       `docs/reference/game-design/15-figma-frames-and-creative-decisions.md` (DEC-53), so the visual
@@ -583,7 +586,10 @@ Reply inline (`Decision: …`).
       About screen lists the manifest's licences (13 §3, plan 5.3): do that now (default) or in 5.3,
       and how should the credits word your own art? (4) Should DEC-53's rule also be a line in
       `AGENTS.md`'s pre-PR gate? (5) Cinzel is used on the new screens only (token `--font-game`);
-      should the menus switch to it too (default: no, they keep `--font-display`)?
+      should the menus switch to it too (default: no, they keep `--font-display`)? **Since the
+      `/pr-review` of 2026-10-27** (pr-ui-hud-components-assets-03), the credit wording in (3) goes
+      with (1) before the merge: it replaces the agent-drafted notice marked `TODO(sam)` in the
+      About screen's credits (`apps/client/src/data/resources/assetLicences.ts`).
 - [ ] **HC-Q8 — Match runtime (confirm).** Pause is built as ES-11 requires: in single player the
       pause overlay stops the simulation and the rendering, and held keys are released. Confirm.
       (1) Route `Simulation.step()` exceptions to the session next (audit AC-1 point 2)? (2) Accept

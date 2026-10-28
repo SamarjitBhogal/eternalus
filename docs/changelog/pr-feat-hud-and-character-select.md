@@ -359,9 +359,12 @@ re-check, only these owner items remain:
   (`apps/client/AGENTS.md`; FR-090 with rule 11), among them the reference 01, 11 and 14 rows. HC-T1
   lists them at its top. The critic's minimum also named T-05 and DEC-50's rows (T-07, T-08, T-14 to
   T-16, T-86); they are in group (ii), because they also carry open items (DV-130; HC-B1's DV-01,
-  HC-F9, HC-Q8). The description lists the rows still pending.
+  HC-F9, HC-Q8). The description lists the rows still pending. Since the `/pr-review` of
+  2026-10-27, group (i) has 53 rows: T-147 to T-151 joined it.
 - **`INBOX.md` HC-Q7 (1)** (C-02, ui-hud-components-assets-04): the selection art in the MVP, with
-  FR-111's wording and the terms of the tools the art was made with.
+  FR-111's wording and the terms of the tools the art was made with. With it, HC-Q7 (3) (added
+  after the `/pr-review`, pr-ui-hud-components-assets-03): the wording of the owner's credit on the
+  About screen, which replaces the agent-drafted notice marked `TODO(sam)`.
 - **`INBOX.md` HC-B1** (added after the `/pr-review` of 2026-10-27, pr-docs-process-09): ADR 0010
   and the pull request template expect better-than-design items to be signed off and folded into
   the docs within the pull request, so the owner signs HC-B1 before the merge, or defers it
