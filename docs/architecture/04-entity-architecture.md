@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-28
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -72,16 +72,16 @@ classDiagram
   Zone <|-- CapturePoint
 ```
 
-| Family (abstract)       | Concrete kinds (`EntityKind`)                                                                      | Installs                                                                                                           | Owned per tick by                                              | Status                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
-| `Unit`                  | (abstract: mobile things)                                                                          | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`       | `MovementSystem`, `CollisionSystem`, `CombatSystem`            | MVP                                                      |
-| `Legend`                | `warrior` (rename pending), `sentinel`, `magus`; `flying` reserved                                 | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `flying` **post-MVP** (D12)                         |
-| `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                             | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                           | `HordeSystem`, `PathingSystem`, `MinionController`             | MVP                                                      |
-| `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                          | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                              | `BossController`                                               | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
-| `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral` | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed | `StructureSystem`, `SpawnSystem`, `TurretController`           | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
-| `Zone`                  | `capture-point`                                                                                    | `Transform`, `Capturable`, `Team`; no `Collider`                                                                   | `CaptureSystem`                                                | MVP                                                      |
-| `Obstacle` (concrete)   | `obstacle` with data-driven `kind`: tree, rock, bridge-segment                                     | `Transform`, `Collider`, optional `Health` (breakable), carry weight                                               | `StructureSystem` (breakability), `Carry` via `PickUpStrategy` | MVP (static); felling, burning, throwing **MVP-if-time** |
-| `Projectile` (concrete) | `projectile`                                                                                       | `Transform`, `Movement`, `Collider`, `Team`; pooled                                                                | `MovementSystem` (swept), `CombatSystem`                       | MVP                                                      |
+| Family (abstract)       | Concrete kinds (`EntityKind`)                                                                                                  | Installs                                                                                                           | Owned per tick by                                              | Status                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
+| `Unit`                  | (abstract: mobile things)                                                                                                      | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`       | `MovementSystem`, `CollisionSystem`, `CombatSystem`            | MVP                                                      |
+| `Legend`                | `warrior` (display name in content, DEC-48), `sentinel`, `magus`; `flying` reserved (shown as a locked selection card, DEC-48) | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `flying` **post-MVP** (D12)                         |
+| `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                                                         | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                           | `HordeSystem`, `PathingSystem`, `MinionController`             | MVP                                                      |
+| `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                                                      | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                              | `BossController`                                               | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
+| `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral`                             | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed | `StructureSystem`, `SpawnSystem`, `TurretController`           | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
+| `Zone`                  | `capture-point`                                                                                                                | `Transform`, `Capturable`, `Team`; no `Collider`                                                                   | `CaptureSystem`                                                | MVP                                                      |
+| `Obstacle` (concrete)   | `obstacle` with data-driven `kind`: tree, rock, bridge-segment                                                                 | `Transform`, `Collider`, optional `Health` (breakable), carry weight                                               | `StructureSystem` (breakability), `Carry` via `PickUpStrategy` | MVP (static); felling, burning, throwing **MVP-if-time** |
+| `Projectile` (concrete) | `projectile`                                                                                                                   | `Transform`, `Movement`, `Collider`, `Team`; pooled                                                                | `MovementSystem` (swept), `CombatSystem`                       | MVP                                                      |
 
 Subclasses exist only where an instance genuinely needs different lifecycle code (a Legend levels
 up and respawns; a Mob despawns with its horde; a Structure never moves). Everything tunable is a
@@ -180,9 +180,9 @@ copy-down by `ContentCatalogue` so the runtime never walks a chain (research §9
 ```ts
 // Sketch: packages/core/src/content/EntityDefinition.types.ts
 export type EntityDefinitionBase = {
-  readonly id: string; // 'warrior', never renamed once used
+  readonly id: string; // kebab-case content id (17 R26)
   readonly kind: EntityKind; // which concrete class builds it
-  readonly displayName: string; // 'Warrior (formerly Assault)' lives here, not in code
+  readonly displayName: string; // the name players see; lives here, not in code
   readonly extends?: string; // single parent, same family
   readonly sprite: SpriteRef;
   readonly minimapGlyph?: MinimapGlyph; // 06 §8; absent = DEFAULT_MINIMAP_GLYPH
@@ -297,7 +297,8 @@ client-side (views) and pooled there; mobs may be pooled later if profiling show
 
 ## 12. Worked example: adding a fourth Legend class
 
-`flying` (rename pending, post-MVP) needs a unique movement layer, so it is a class, not data.
+`flying` (shown locked, its display name in content, DEC-48;
+post-MVP) needs a unique movement layer, so it is a class, not data.
 
 | Step | File                                                                                                    | Change                                                                                     |
 | ---- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -338,7 +339,8 @@ session or phase named:
   `xp`, `level` and `curveId`, with `addXp(amount, curve)` taking the curve `ProgressionSystem`
   resolves from the injected catalogue. `Health` and `Aether` gained `raiseMax`, which raises only
   the cap; `ProgressionSystem` heals and refills by the raise while the Legend is alive (O3, O4).
-- Shipped kinds: `warrior`, `sentinel`, `magus`, `light-mob` (the training dummy only),
+- Shipped kinds: the Legend classes of `LEGEND_KINDS` (`content/legends/legendKinds.ts`),
+  `light-mob` (the training dummy only),
   `obstacle` and `projectile`. Other mobs are SCRUM-59; structures and zones get concrete kinds in
   Phase 2 and 3.
 

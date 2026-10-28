@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-10-28
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -669,7 +669,7 @@ export type LoadoutSlot =
 export type AbilityChoice = { readonly abilityId: AbilityId; readonly varietyId: VarietyId | null };
 export type Loadout = {
   readonly classId: LegendId;
-  readonly specId: LegendSpecId | null; // post-MVP specialisation (D11); null in the MVP
+  readonly specId: LegendSpecId | null; // gameplay spec (ADR 0018); null until built (HC-Q17)
   readonly primaryWeaponId: WeaponId; // MVP
   readonly secondaryWeaponId: WeaponId | null; // MVP-if-time
   readonly passiveId: AbilityId | null; // MVP-if-time (Magus: Studious or Necromancy)

@@ -4,7 +4,7 @@ description: The code-level requirements CP-01 to CP-16 (SOLID, DRY, KISS/YAGNI 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-28
 tags: [requirements, coding, solid, patterns]
 paths: ['packages/core/src/**', 'apps/client/src/**']
 related:
@@ -215,8 +215,8 @@ registry.register('blink', () => new BlinkEffect());
 ### CP-13 Naming for rename-cheapness
 
 - **Requirement.** Display names live in content, never in class names or code strings. Content
-  IDs are kebab-case and never renamed once used. Class names are code identifiers: renaming
-  `Warrior` (rename pending) is an IDE rename of the class, its imports and the `extends` headers
+  IDs are kebab-case and never renamed once used. Class names are code identifiers: renaming a
+  class such as `Warrior` is an IDE rename of the class, its imports and the `extends` headers
   of its subclasses, and nothing else, because no rule, ID, save file or string compares against
   the class name. Kinds are string-literal unions declared once in content types; `kind` values
   are derived from definitions, not from `constructor.name`.

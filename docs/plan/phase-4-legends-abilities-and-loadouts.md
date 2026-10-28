@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-28
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -21,8 +21,8 @@ related:
 ## Purpose
 
 Read this when you pick up a Phase 4 task or review the Phase 4 PR. Phase 4 replaces the
-placeholder Legend with the three MVP classes (**Warrior** (rename pending), **Sentinel**,
-**Magus**), adds the ability framework the requirements doc demands to be "extremely simple"
+placeholder Legend with the MVP classes (`content/legends/`;
+reference 01), adds the ability framework the requirements doc demands to be "extremely simple"
 to extend (a new ability is one `AbilityEffect` strategy plus one content entry plus one
 `AbilityRegistry` line), the MVP ability set and ultimates from the game doc, weapons and
 artifacts as definitions, the `Loadout` model, XP-based scaling, and the HUD `AbilityBar` whose

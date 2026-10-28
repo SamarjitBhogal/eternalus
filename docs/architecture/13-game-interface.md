@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-26
+last-reviewed: 2026-10-28
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -421,6 +421,14 @@ every prompt with no code change: the requirements doc's acceptance test (§8).
   per file plus its `.module.css` and `.test.tsx`; no `dangerouslySetInnerHTML` (ES-08); labels in
   one strings file; game names from content; `ui/` never imports `game/`, `data/` or core (rule
   5; the planned lint block is in [02](02-code-structure.md) §11).
+- **Display switches** (owner decisions DEC-53, DEC-54 and DEC-55,
+  [decisions log](../reference/game-design/13-owner-decisions-log.md)). On the screens built from
+  the owner's Figma, the Figma look is the default and each alternative is chosen by one content
+  value: `effectsRenderer` (`'figma-raster'` or `'css'`) for the selection screens' glass, halos
+  and button chrome, and `contrastMode` (`'figma'` or `'minimums'`, also chosen by the OS setting
+  `prefers-contrast: more`) for the HUD colours that fall below the minimums above, which stay
+  listed exceptions in the `'figma'` set. A later improvement on a frame ships the same way, with
+  the frame's original kept as a live, selectable variant.
 
 ## 8. Tests
 
@@ -469,6 +477,12 @@ it('rebinds move-up from W to Up Arrow and every prompt follows', () => {
 
 Nothing else changes: the OCP litmus test holds because the registries (`App.tsx`, `events.ts`,
 `combineSlices`, `INPUT_ACTIONS`) are the only lists.
+
+A layout variant of a screen (the class step's alternate frame 62:70, DEC-52) or an improvement
+on one of the owner's frames (DEC-53) is chosen by one content value, never by a player setting
+unless the owner asks for one; the frame's original stays a live, selectable variant, and the
+difference is registered in
+[reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md).
 
 ## 10. Implementation status
 

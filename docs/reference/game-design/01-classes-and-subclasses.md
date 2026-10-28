@@ -1,10 +1,10 @@
 ---
 title: Classes and sub-classes
-description: The four Legend classes, their post-MVP sub-classes, class default actions, passives, pick-up/throw interactives, character sizes and movement profiles; read it before designing or implementing anything Legend-specific.
+description: The four Legend classes, their sub-classes (MVP since DEC-56; the roster is content), class default actions, passives, pick-up/throw interactives, character sizes and movement profiles; read it before designing or implementing anything Legend-specific.
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-28
 tags: [reference, game-design, legends, classes]
 paths: ['packages/core/src/content/legends/**', 'packages/core/src/entities/**']
 related:
@@ -26,22 +26,26 @@ Players pick one of four classes. The MVP ships three; the Flying class is **pos
 in the game doc; brief decision D12). The game doc's later tables use the shorthand **Tank**
 (Sentinel), **Mage** (Magus) and **Air** (Flying); these docs use the class names.
 
-| Class                      | Code name  | Build and movement                                                  | Weapon bias   | Damage focus                       | Ability stats               | Other                                                          | Status       |
-| -------------------------- | ---------- | ------------------------------------------------------------------- | ------------- | ---------------------------------- | --------------------------- | -------------------------------------------------------------- | ------------ |
-| Warrior (formerly Assault) | `Warrior`  | Lighter, lower health, faster                                       | Light weapons | Split between magic and physical   | Better light ability stats  | —                                                              | **MVP**      |
-| Sentinel                   | `Sentinel` | Heavy, slower (low base speed; see movement profile), more powerful | Heavy weapons | Physical                           | Better heavy ability stats  | —                                                              | **MVP**      |
-| Magus                      | `Magus`    | Magical; floats or walks                                            | Staves        | Magic, with a higher ability focus | Better medium ability stats | Applies buffs or debuffs; can revive allies (if not destroyed) | **MVP**      |
-| Flying (rename pending)    | `[Flying]` | Air-based; moves primarily in the air, like a jet or helicopter     | —             | Ability damage and range           | —                           | Can melee physically if desired, but it is risky               | **post-MVP** |
+| Class                                                       | Code name  | Build and movement                                                  | Weapon bias   | Damage focus                       | Ability stats               | Other                                                          | Status       |
+| ----------------------------------------------------------- | ---------- | ------------------------------------------------------------------- | ------------- | ---------------------------------- | --------------------------- | -------------------------------------------------------------- | ------------ |
+| Warrior (formerly Assault; display name in content, DEC-48) | `Warrior`  | Lighter, lower health, faster                                       | Light weapons | Split between magic and physical   | Better light ability stats  | —                                                              | **MVP**      |
+| Sentinel                                                    | `Sentinel` | Heavy, slower (low base speed; see movement profile), more powerful | Heavy weapons | Physical                           | Better heavy ability stats  | —                                                              | **MVP**      |
+| Magus                                                       | `Magus`    | Magical; floats or walks                                            | Staves        | Magic, with a higher ability focus | Better medium ability stats | Applies buffs or debuffs; can revive allies (if not destroyed) | **MVP**      |
+| Flying (display name in content, DEC-48)                    | `[Flying]` | Air-based; moves primarily in the air, like a jet or helicopter     | —             | Ability damage and range           | —                           | Can melee physically if desired, but it is risky               | **post-MVP** |
 
 Notes:
 
-- "Warrior" and "Flying" are placeholders. The requirements doc spells the flying class "arial"
+- "Warrior" and "Flying" are code names. Their display names are decided (DEC-48) and live in
+  content: each class file's `displayName` in `packages/core/src/content/legends/`, and the flying
+  class's locked selection card in `content/legends/locked/` until the class is built.
+  The requirements doc spells the flying class "arial"
   and also asks for a new name. The code name stays stable; the display name lives in content, so
   a rename is a class rename plus its imports and nothing else (requirements doc: "should be very
   easy").
 - The Flying class row is reserved in the entity taxonomy (`[Flying]`) so the extension point is
   explicit, but no code, content or abilities are built for it in the MVP. Its abilities (Eagle
-  Eye, Grasp, Firestorm) and sub-classes are therefore **post-MVP** by derivation even though the
+  Eye, Grasp, Firestorm) and its sub-classes are therefore **post-MVP** by derivation (the playable
+  classes' sub-classes are MVP, DEC-56) even though the
   PDF did not highlight those rows.
 - Each MVP class's abilities and ultimates, including the ones the owner approved on 2026-10-10
   (DEC-11: Warrior Hamstring, Fan of Sorrows, Eclipse; Sentinel Shield Wall, Sunder, Colossus
@@ -52,29 +56,28 @@ Notes:
   selecting/creating their loadout" (owner, confirmed in chat 2026-10-10). So the "3 abilities +
   ultimate" slots of the `Legend` contract below stand.
 
-## Sub-classes (names pending) — post-MVP
+## Sub-classes — MVP (DEC-56)
 
-Each class has sub-classes. They are **post-MVP** (brief decision D11): they will be modelled as
+Each class has sub-classes. They are **MVP** (DEC-56, ADR 0018) and, by brief
+decision D11, are modelled as
 data-driven _specializations_ (`LegendSpecDefinition` in content) consumed by the class, with an
-optional subclass only when behaviour is unique.
+optional subclass only when behaviour is unique. The player picks a sub-class's Legend at character
+select today, as setup data, and the phase that builds their gameplay is open (`INBOX.md`
+HC-Q17). The titles, the Legend names (per team, for the Legends that have one), the roles and
+the descriptions are content in `packages/core/src/content/legends/specs/` (DEC-49, DEC-56);
+sub-class titles are the same on both teams. The game document's original sub-classes and their
+focuses are in its transcription
+([../source/game-project-eternalus-v2.md](../source/game-project-eternalus-v2.md)).
 
-| Class    | Sub-class   | Focus                                                               | Status       |
-| -------- | ----------- | ------------------------------------------------------------------- | ------------ |
-| Warrior  | Assassin    | Lighter, higher burst damage                                        | **post-MVP** |
-| Warrior  | Knight      | Balanced weight, balanced damage                                    | **post-MVP** |
-| Warrior  | Paladin     | Heavier, higher sustain damage                                      | **post-MVP** |
-| Sentinel | Colossus    | Melee focus, extra resistance                                       | **post-MVP** |
-| Sentinel | TBD         | TBD                                                                 | **post-MVP** |
-| Magus    | Necromancer | Debuff focus; Revive nearby fallen entities to fight for their team | **post-MVP** |
-| Magus    | Druid       | Buff focus                                                          | **post-MVP** |
-| Magus    | Mage        | Self-focus                                                          | **post-MVP** |
-| Flying   | Hover       | Better health, higher sustain damage, slower                        | **post-MVP** |
-| Flying   | Strafe      | Lower health, higher burst damage, faster                           | **post-MVP** |
+| Class                    | Sub-class                                                                                     | Focus                                             | Status                                                                                |
+| ------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Warrior, Sentinel, Magus | Each class's Legends, in content: `packages/core/src/content/legends/specs/` (DEC-49, DEC-56) | Per Legend, in its spec file; open where OQ-69 is | **MVP** (DEC-56): picked as setup data today; gameplay phase open (`INBOX.md` HC-Q17) |
+| Flying                   | Hover                                                                                         | Better health, higher sustain damage, slower      | **post-MVP**                                                                          |
+| Flying                   | Strafe                                                                                        | Lower health, higher burst damage, faster         | **post-MVP**                                                                          |
 
 **Open question** (OQ in `12-open-questions.md`): should each class's sub-classes follow a
-generic damage / balance / support split, or mix it up? The current list is mixed: Warrior's
-three are a weight/damage-curve spread, Magus's three are a debuff/buff/self split, Sentinel has
-one named entry.
+generic damage / balance / support split, or mix it up? The game document's list was
+mixed (its transcription has it); the roles of the owner's Legends are open (OQ-69).
 
 Note on the Necromancer: "Revive nearby fallen entities to fight for their team" implies a unit
 changing team after death. This is one reason team is a property/component on units rather than

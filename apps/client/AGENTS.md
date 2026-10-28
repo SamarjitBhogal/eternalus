@@ -20,20 +20,21 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 **Planned** layout (create folders as code is added):
 
-| Folder                | Holds                                                                          |
-| --------------------- | ------------------------------------------------------------------------------ |
-| `game/engine/`        | `GameLoop` (fixed 30 TPS + interpolation), `Renderer`, `Camera`, `AssetLoader` |
-| `game/views/`         | Drawing code. `SceneView.draw` is the single place that defines draw order     |
-| `game/input/`         | `keybindings.ts` (the only place keys are bound), input → `Command`            |
-| `game/settings/`      | `SettingsController`: settings intents → `settings` event + persistence        |
-| `game/Match.ts`       | Wires simulation, loop, renderer, input, views and bridge together             |
-| `game/GameCanvas.tsx` | The React component that owns the canvas and the `Match` lifetime              |
-| `ui/screens/`         | Full-screen layouts                                                            |
-| `ui/hud/`             | In-game overlay elements                                                       |
-| `ui/components/`      | Reusable presentational components                                             |
-| `bridge/`             | `store` (Redux), event bus and event types                                     |
-| `styles/`             | Global CSS variables and reset only                                            |
-| `assets/`             | Asset manifest (licensed or team-made assets only)                             |
+| Folder                | Holds                                                                                                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `game/engine/`        | `GameLoop` (fixed 30 TPS + interpolation), `Renderer`, `Camera`                                                                                                                                                                |
+| `game/views/`         | Drawing code. `SceneView.draw` is the single place that defines draw order                                                                                                                                                     |
+| `game/input/`         | `keybindings.ts` (the only place keys are bound), input → `Command`                                                                                                                                                            |
+| `game/settings/`      | `SettingsController`: settings intents → `settings` event + persistence                                                                                                                                                        |
+| `game/Match.ts`       | Wires simulation, loop, renderer, input, views and bridge together                                                                                                                                                             |
+| `game/GameCanvas.tsx` | The React component that owns the canvas elements and hands them to `SessionController` (`attachViewport`); `SessionController` owns the `Match` lifetime (DEC-50)                                                             |
+| `ui/screens/`         | Full-screen layouts                                                                                                                                                                                                            |
+| `ui/hud/`             | In-game overlay elements                                                                                                                                                                                                       |
+| `ui/components/`      | Reusable presentational components                                                                                                                                                                                             |
+| `bridge/`             | `store` (Redux), event bus and event types                                                                                                                                                                                     |
+| `data/resources/`     | `ResourceController`, the typed asset manifest (`AssetManifest.ts`, one file per asset group) and `loaders/` (the `AssetLoader` port and its adapters)                                                                         |
+| `styles/`             | Global CSS variables and reset only                                                                                                                                                                                            |
+| `assets/`             | Licensed or team-made asset files only, one folder per asset group, licence texts in `licences/`; the typed manifest is `data/resources/AssetManifest.ts` (the generated `manifest.json` of architecture 14 §11 stays planned) |
 
 ## Adding code
 
@@ -42,7 +43,7 @@ Package-specific rules. The root `AGENTS.md` still applies.
 - Styles in the co-located `.module.css` with camelCase class names. No inline `style` except
   for values computed at runtime.
 - New game → UI data: add the event to `bridge/events.ts`, publish it (throttled) from
-  `Match.ts`, copy it into the store in `bridge/store.ts`, read it with a selector.
+  `MatchBridge.ts`, copy it into the store in `bridge/store.ts`, read it with a selector.
 - Redux: there is exactly **one** store, `bridge/store.ts` (Redux Toolkit). Add state as a slice
   (`createSlice`) in `bridge/`, registered in the store's `combineSlices(...)`. Never call
   `configureStore` anywhere else. With the first slice, add `RootState`/`AppDispatch` types and

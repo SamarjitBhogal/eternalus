@@ -4,7 +4,7 @@ description: The product owner's design for the MVP screens - home menu, start-m
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-03
+last-reviewed: 2026-10-28
 tags: [reference, game-design, ui, hud, screens]
 related:
   [
@@ -42,7 +42,8 @@ directly.
 1. **Start-match loading screen** — a dynamic, themed background (image(s), slow motion,
    mood). Graphics are configurable and swappable as content, never hardcoded.
 2. **Character / class selection** — once the background assets are loaded. The player picks a
-   class and the sub-class they want (MVP: three classes; sub-class slots shown but post-MVP).
+   class and the sub-class they want (MVP: three classes plus a locked card, DEC-48;
+   sub-classes are MVP, picked as setup data first, ADR 0018).
    The screen shows **which team you are on** (Light or Dark; **randomly assigned** in the MVP;
    matchmaking by skill/profile level is full-game). Allied Legends stand on **pedestals** with
    their loadout applied; background and pedestals follow the team (light architecture for
@@ -58,8 +59,12 @@ directly.
 
 ## 3. HUD
 
-Battlefield 6 / Destiny 2 inspired. A basic placeholder for now; detailed design is in the
-works. Name tags above characters; bots carry a special, non-spoofable icon before their name
+Battlefield 6 / Destiny 2 inspired. The detailed design is the owner's Figma frame HUD Draft
+(62:231); the selection screens are frames 62:125 (class, with 62:70 as a data-selected
+alternate, DEC-52) and 58:271 (Legend);
+[15-figma-frames-and-creative-decisions.md](15-figma-frames-and-creative-decisions.md) lists them
+and every registered difference.
+Name tags above characters; bots carry a special, non-spoofable icon before their name
 (decision log, Naming).
 
 ## 4. Side notes from the owner

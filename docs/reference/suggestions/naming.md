@@ -4,7 +4,7 @@ description: Themed name proposals for every placeholder in the game doc and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-28
 tags: [reference, suggestions, naming, content]
 paths: ['packages/core/src/content/**']
 related:
@@ -23,6 +23,8 @@ Conventions used here: **Recommended** = the author's pick; every option carries
 
 ### Warrior (formerly Assault) — MVP
 
+**Decided (DEC-48).** The display name is content: `displayName` in `packages/core/src/content/legends/warrior.ts`. The options below are kept as the record of the proposal.
+
 The class is lighter, lower health, faster, with light weapons and damage split between magic and physical. Its sub-classes are Assassin, Knight and Paladin, so the class name has to sit above a stealthy, a balanced and a sustained fighter without being any one of them.
 
 | Option       | Why                                                                                                                       |
@@ -34,7 +36,9 @@ The class is lighter, lower health, faster, with light weapons and damage split 
 | Warden       | Neutral and orderly (both factions "favoured order"), but it suggests defence rather than attack                          |
 | Champion     | Fits the lore of orderly factions sending champions, but it is also what MOBAs call every player character                |
 
-### Flying (rename pending) — post-MVP
+### Flying — post-MVP
+
+**Decided (DEC-48).** The display name is content: `displayName` in `packages/core/src/content/legends/locked/flying.ts`. The class stays post-MVP. The options below are kept as the record of the proposal.
 
 Air-based, moves like a jet or helicopter, ability damage and range, can melee at a risk. Sub-classes Hover and Strafe.
 
@@ -46,9 +50,9 @@ Air-based, moves like a jet or helicopter, ability damage and range, can melee a
 | Valkyr      | Chooser of the slain; strong image, but gendered and heavily used elsewhere                                           |
 | Corsair     | Aerial raider; fits Strafe better than Hover                                                                          |
 
-## Sub-classes (names pending) — post-MVP (D11)
+## Sub-classes (decided, DEC-49; MVP since DEC-56)
 
-The game doc labels all sub-class names as pending, so every row has options; the working name is listed first. Sentinel's second sub-class has no working name or focus yet, so its row proposes both.
+The owner decided the sub-class titles and Legend names (DEC-49); they are content in `packages/core/src/content/legends/specs/`, and sub-classes are MVP (DEC-56). The proposals below are kept as the record. The game doc labels all sub-class names as pending, so every row has options; the working name is listed first. Sentinel's second sub-class has no working name or focus yet, so its row proposes both.
 
 | Class    | Working name | Focus (from the game doc)                                          | Recommended     | Alternates                                                | Why                                                                                                                       |
 | -------- | ------------ | ------------------------------------------------------------------ | --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -273,8 +277,8 @@ Code identifier stays `DeveloperMenu` (`apps/client/src/ui/hud/DeveloperMenu`).
 
 | Placeholder (today)               | Recommended pick                           | Alternates                                     | MVP status  |
 | --------------------------------- | ------------------------------------------ | ---------------------------------------------- | ----------- |
-| Warrior (class)                   | Vanguard                                   | Striker, Duelist, Reaver, Warden, Champion     | MVP         |
-| Flying (class)                    | Harrier                                    | Skyborne, Zephyr, Valkyr, Corsair              | post-MVP    |
+| Warrior (class)                   | decided (DEC-48), in content               | Striker, Duelist, Reaver, Warden, Champion     | MVP         |
+| Flying (class)                    | decided (DEC-48), in content               | Skyborne, Zephyr, Valkyr, Corsair              | post-MVP    |
 | Warrior / Assassin                | Shade                                      | Wraith, Nightblade, Cutthroat                  | post-MVP    |
 | Warrior / Knight                  | Blade                                      | Duelist, Sellsword, Lancer                     | post-MVP    |
 | Warrior / Paladin                 | Templar                                    | Zealot, Crusader, Justicar                     | post-MVP    |
