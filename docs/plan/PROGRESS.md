@@ -1270,3 +1270,55 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 200ms"; "Documentation
   check passed."
 - Next step: quick `/pr-review`, then merge PR #36 into `phase/2-sprint-2-work`.
+
+### 2026-10-22 — Phase 4 (early, O7) / sprint 4.4 — feat/weapons — Claudio + Claude Code
+
+- What: first weapon slice (SCRUM-183 / SCRUM-287, 05 §10). `content/weapons/`
+  (`WeaponDefinition`, empty `WEAPONS` catalogue, `loadWeapons` with seconds→ticks via `TickRate`
+  and validation at load); `LegendDefinition.defaultLoadout.primaryWeaponId` +
+  `KnownWeaponRule`; `EntityFactory` and `Simulation({ weapons })` inject the weapon source;
+  `Legend.basicAttack` builds `Combat` from the weapon (`Combat.weaponId`); `MeleeAttackStrategy`
+  names the weapon in the `DamageSource` (mobs name their own definition). No weapon numbers
+  shipped: owner questions in INBOX. Answers Sam's Discord ask (dealer = entity + weapon; damage
+  changes with the weapon on the same class).
+- Tests shown red by breaking the code: interval conversion, no attacks, each non-positive
+  field, kebab id, `uniqueTo` outside `allowedClasses` (loader checks removed); unknown weapon
+  (`KnownWeaponRule` forced true); rule listing (rule unregistered); `Combat.weaponId` (default
+  changed); Legend equips / throws without a source (override bypassed); factory forwarding
+  (spread removed); `Simulation` wiring (weapon source not passed); weapon and mob source names
+  (`definitionId` reverted / replaced).
+- Gate: ponytail-review 1 cut (reuse `KEBAB_CASE`). Critic: request-changes, 1 blocker (a double
+  cast in `SpawnContextReader.weapons`) → replaced by a type guard; 1 should-fix (a weapon with no
+  attacks left a Legend without `Combat`) → `Legend` now throws; both red first. Nits kept: the
+  factory test's `as FactoryEntity` copies the existing pattern; `WeaponSource` / `loadWeapons`
+  stay off `src/index.ts` until the client needs them.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 557 passed (557)"; client "Tests 416 passed
+  (416)"; "✓ built in 94ms"; "Documentation check passed."
+- Next step: the owner's answers in INBOX (weapon numbers, default weapons), then the shipped
+  weapons; open the PR to `phase/2-sprint-2-work` once #34 and #35 are merged.
+
+### 2026-10-25 — Phase 2 / SCRUM-183 — feat/weapons (damage from weapons) — Claudio + Claude Code
+
+- What: merged `origin/phase/2-sprint-2-work` (PRs #31, #34, #35, #36) by a plain merge (no
+  force); conflicts kept both sides (level curves and weapons injected side by side:
+  `loadDefaultContent(tickRate, curves, weapons)`, `createDefaultContentRules(curves, weapons)`,
+  `Simulation({ levelCurves, weapons })`). Then a Legend's damage comes from its weapon, not the
+  Legend: `LegendDefinition` drops `attack` (`attack?: never`) and requires
+  `defaultLoadout.primaryWeaponId`; `Legend.basicAttack` has no fallback; `KnownWeaponRule` flags a
+  Legend with no weapon. Shipped `raptor-talons` (Warrior), `wuuthrad` (Sentinel), `magus-staff`
+  (Magus, melee only until SCRUM-169) from the 05 §10 table, numbers = each class's `balancing.md`
+  basic attack, all `TUNE`; INBOX item updated. Tests that spawn Legends now pass a weapon source.
+- Gate: critic approve, no blockers. Should-fix done: the Wuuthrad note no longer says "no heavy
+  weapon is MVP" (07 rates spear / battle axe MVP; only Wuuthrad is MVP-if-time); the
+  `UnitAttack` comment says a mob's attack lives on its definition and a Legend's on its weapon.
+  The 05 §10 design sentence "Until weapons land, a unit's basic attack is
+  `UnitDefinition.attack`" is left as written (design docs are append-only); the Implementation
+  status covers it. Nits left: a raw `TypeError` for a Legend without `defaultLoadout` passed
+  through unvalidated `SimulationOptions.content` (types require it; a guard trips
+  `no-unnecessary-condition`); import order of the new `loadWeapons` imports. Ponytail-review: 3
+  cuts (one `newFactory()` helper in `playerScenarios`, `DefaultSystemPipeline` and `AiSystem`
+  tests, −73 lines).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 608 passed (608)"; client "Tests 416 passed
+  (416)"; "✓ built in 98ms"; "Documentation check passed."
+- Next step: Sam confirms the default weapons and numbers (INBOX); ranged attacks with
+  projectiles (SCRUM-169, Aryan).

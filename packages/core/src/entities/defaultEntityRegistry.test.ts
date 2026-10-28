@@ -13,6 +13,7 @@ import { createDefaultEntityRegistry } from './defaultEntityRegistry';
 import { Entity } from './Entity';
 import { EntityFactory } from './EntityFactory';
 import { Mob } from './Mob';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 
 const MAX_DEPTH_BELOW_ENTITY = 3;
 
@@ -58,7 +59,12 @@ describe('createDefaultEntityRegistry', () => {
   });
 
   it('spawns every unit definition with the unit components', () => {
-    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      UNIT_DEFINITIONS,
+      undefined,
+      loadWeapons(createDefaultGameConfig().tickRate),
+    );
 
     for (const definition of UNIT_DEFINITIONS.all()) {
       const entity = factory.create(definition.kind, definition.id, PLACEMENT);

@@ -17,8 +17,16 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
+const newFactory = (): EntityFactory =>
+  new EntityFactory(
+    createDefaultEntityRegistry(),
+    UNIT_DEFINITIONS,
+    undefined,
+    loadWeapons(createDefaultGameConfig().tickRate),
+  );
 const PROGRESSION = { units: UNIT_DEFINITIONS, curves: loadLevelCurves(), xpSources: XP_SOURCES };
 
 describe('DefaultSystemPipeline', () => {
@@ -30,7 +38,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       PROGRESSION,
     );
-    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const factory = newFactory();
     const runner = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
@@ -64,7 +72,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       PROGRESSION,
     );
-    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
@@ -93,7 +101,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       PROGRESSION,
     );
-    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
@@ -123,7 +131,7 @@ describe('DefaultSystemPipeline', () => {
       state,
       PROGRESSION,
     );
-    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const factory = newFactory();
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
       team: 'light',
