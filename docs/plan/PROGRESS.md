@@ -1565,3 +1565,29 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 680 passed (680)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: none for M3; merge after #44.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller (owner sign-offs) — SamarjitBhogal + Claude Code
+
+- What was done: SamarjitBhogal accepted the M2b better-than-design items in chat. Doc 18 §5.2
+  now says `PathingSystem` reads `Combat.targetId` and hands the strategy a target and arrival
+  radius; §7's guard strategy follows; §5.1 names `state/formationSlot.ts` as the slot function's
+  home; doc 11 §1 says controllers get their content through their constructor from `Simulation`
+  (the §10 deviation line is gone). The INBOX item records the decision; the numbers stay as built
+  (design docs first, else the agent's judgement). Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 657 passed (657)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: none for M2b; merge after #43.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai (MS-28 answered) — SamarjitBhogal + Claude Code
+
+- What was done: SamarjitBhogal answered the MS-28 item in chat. The minion system does not
+  control bosses; every other mob type may be driven by it. Doc 18 MS-28 is now an owner
+  decision that excludes bosses, and a "Not handled here: bosses" note replaces bosses in the
+  "scheduled here" note. The plan drops M7 (the numbering keeps M8 so branch and PR names stay
+  valid), and its §1.1 row for bosses points to Phase 3 sprint 3.6. Doc 11 §4 and the Phase 3
+  plan say `BossController` stays in sprint 3.6. Checkpoint defenders fight for the team that
+  owns the point (doc 18 §7.1, doc 07 §7). The defenders' leash, and the team of an unowned
+  point's defenders, are a new open INBOX item.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: the owner answers the leash item before M6.
