@@ -1970,3 +1970,28 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   resolver: 938 ids, 0 without a definition.
 - Next step: the owner's decisions (ADR 0019, ADR 0020, HC-Q21, HC-Q22, HC-B1, squash or merge
   commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the ponytail review's doc cuts before the merge (stream B, round B15) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `b783682`; the second review round's ponytail findings pc-03 to
+  pc-06 and the plan part of pc-07, in `eternalus-agent-work/hud-charselect/pr-review/`, outside
+  the repository):
+  - pc-03: ADR 0019 and ADR 0020 have short titles like the other ADRs ("0019. SessionController
+    owns the Match", "0020. Client test configuration"); their descriptions keep the detail. The
+    regenerated `docs/README.md` index now differs from `a171761` by the two new rows only.
+  - pc-04: in the D2b generator, HC-T1 row T-152 loses the basis note that the prose above the
+    table already gives and gets a shorter "Branch says" cell; T-153 and T-154, added in round
+    B14, were also wider than their columns and are shortened too. No cell is wider than its
+    column at `a171761`, so the inline table differs from `a171761` by its eight new rows only
+    (T-147 to T-154). The two patches are unchanged.
+  - pc-05: the PR register's owner items point to the merge preconditions instead of repeating
+    them, and the findings rows pr-docs-process-07 and -09 say "(above)", where the list is.
+  - pc-06: the register's "Not changed" entry for pr-ui-hud-components-assets-06 points to ADR
+    0020's Consequences, which keeps the reasons.
+  - pc-07: the UI enhancements plan's Related line no longer repeats §1's "unscheduled".
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  619 passed (619)"; client "Tests 1357 passed (1357)"; "✓ built"; "Checked 119 Markdown files
+  under docs/." "Documentation check passed." `git apply --check` prints nothing for the whole
+  patch and for group (i) alone; the id resolver: 936 ids, 0 without a definition.
+- Next step: unchanged from round B14: the owner's decisions (ADR 0019, ADR 0020, HC-Q21, HC-Q22,
+  HC-B1, squash or merge commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
