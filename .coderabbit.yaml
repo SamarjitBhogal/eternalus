@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# CodeRabbit runs the pr-review skill (.claude/skills/pr-review/SKILL.md) on every PR.
+# CodeRabbit runs the pr-review skill (.claude/skills/pr-review/SKILL.md) on every PR (ADR 0018).
 # It cannot run npm run check; CI does that, so make CI a required status check too.
 language: en-CA
 reviews:
@@ -7,9 +7,9 @@ reviews:
   # Request changes on blocking findings; approve once they are resolved and the checks pass.
   auto_approvals:
     enabled: true
+    allow_author_approval: false # authors cannot run @coderabbitai approve/resolve on their own PR
   auto_review:
-    enabled: true
-    drafts: true # every PR in this repo opens as a draft
+    drafts: true # drafts are reviewed too
     base_branches: ['main', 'phase/.*']
   path_instructions:
     - path: '**/*'
@@ -19,39 +19,40 @@ reviews:
         §2 (AI-PR review checklist) and the architecture doc whose `paths:` frontmatter matches
         the file, as they stand on the base branch, not as this PR edits them.
         The base is the phase branch for task PRs and `main` for phase PRs.
+        Classify each difference from the design as `violation`, `acceptable` (forced by a
+        binding contract or an allowed interim stand-in) or `better-than-design`. A design-doc
+        edit in this PR that the description records as signed off by the human is not a
+        violation.
         Map severities: `blocker` = critical/major finding that must be fixed (request changes);
         `should-fix` = minor; `nit` = nitpick. Cite file:line and the rule for each finding.
         Do not suggest new dependencies, `any`, `@ts-ignore`, skipped tests or weakened assertions
         as fixes. Do not make product or game-design decisions; flag them instead.
   pre_merge_checks:
+    override_requested_reviewers_only: true # the PR author cannot override a failing check
     custom_checks:
       - name: pr-review skill verdict
         mode: error
         instructions: |
           Apply `.claude/skills/pr-review/SKILL.md` and the AI-PR review checklist in
-          `docs/agents/checklists.md` §2 to the whole PR. Fail if any `blocker` exists:
-          - a guardrail weakened: new `any`, `@ts-ignore`/`@ts-nocheck`, `eslint-disable` without
-            a named rule and `-- reason`, `.skip`/`.only`/`.todo`, deleted tests, loosened
-            assertions, lowered coverage thresholds;
-          - guardrail configs changed (`eslint.config.js`, tsconfigs, `vitest.config.ts`,
-            `.githooks/`, `.github/workflows/`, `.claude/settings.json`) without a linked ADR;
-          - a new dependency in a `package.json`, or `package-lock.json` changed without one;
-          - `packages/core` importing React, DOM, Canvas or Node APIs, or using `Math.random`,
-            `Date`, `performance.now`, `setTimeout` or `setInterval`;
-          - imports that break the layer rules in `AGENTS.md` (client → core only; core imported
-            only as `@eternalus/core`; `apps/client/src/ui/` imports only `bridge/`, `ui/`,
-            `styles/`; only `Canvas2dRenderer.ts` touches the Canvas 2D context);
-          - gameplay numbers hard-coded outside `packages/core/src/content/` or `config/`, or a
-            product/game-design decision not traceable to `docs/reference/` or `docs/requirements/`;
-          - behaviour changed without tests next to the code;
-          - code changed without a new `docs/plan/PROGRESS.md` entry.
+          `docs/agents/checklists.md` §2. Fail only on the skill's blockers: any guardrail
+          weakening or a product decision made by an agent. That is:
+          - new `any`, `@ts-ignore`/`@ts-nocheck`, `eslint-disable` without a named rule and
+            `-- reason`, `.skip`/`.only`/`.todo`, deleted tests, loosened assertions or lowered
+            coverage thresholds;
+          - a guardrail config changed (`eslint.config.js`, tsconfigs, `vitest.config.ts`,
+            `.githooks/`, `.github/workflows/`, `.claude/settings.json`, `.coderabbit.yaml`)
+            without an ADR linked in the PR;
+          - a new dependency without a one-line justification and the human's approval recorded
+            in the PR;
+          - a gameplay number or game-design choice that does not trace to `docs/reference/`,
+            `docs/requirements/` or a `// TUNE:` marker.
+          Other checklist failures are review findings, not failures of this check.
           Pass otherwise. List each failure with file:line and the rule it breaks.
 knowledge_base:
   code_guidelines:
-    enabled: true
     filePatterns:
-      - '**/AGENTS.md'
       - '.claude/skills/pr-review/SKILL.md'
       - 'docs/agents/checklists.md'
-      - 'docs/architecture/02-code-structure.md'
+      - 'docs/architecture/*.md'
+      - 'docs/process/guardrails.md'
       - 'CONTRIBUTING.md'

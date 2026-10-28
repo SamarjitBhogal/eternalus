@@ -4,7 +4,7 @@ description: Line-by-line explanation of the committed agent configuration (Clau
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-27
 tags: [agents, harness, tooling, claude-code, codex, gemini, copilot, cursor]
 paths:
   [
@@ -14,12 +14,14 @@ paths:
     'scripts/hooks/**',
     'GEMINI.md',
     '.github/copilot-instructions.md',
+    '.coderabbit.yaml',
   ]
 related:
   [
     'docs/agents/README.md',
     'docs/research/agentic-harness-research.md',
     'docs/decisions/0015-agents-push-task-branches-and-open-prs.md',
+    'docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md',
   ]
 ---
 
@@ -142,6 +144,17 @@ node -e "const s=require('./.claude/settings.json');console.log(Object.keys(s.ho
 
 Expected: exit code 0 for the first and third commands; the second exits 2 only if
 `npm run check:quick` fails. If a hook prints nothing, check that Node 24 is active (`.nvmrc`).
+
+## 7. CodeRabbit
+
+`.coderabbit.yaml` makes CodeRabbit review PRs by the `pr-review` skill (ADR 0018). It loads the
+skill, the checklists, the architecture docs, `guardrails.md`, `CONTRIBUTING.md` and every
+`AGENTS.md` as code guidelines, adds a path instruction that maps the skill's severities, and
+runs one blocking pre-merge check for the skill's blockers. Auto approvals let it request
+changes and approve; authors cannot run `@coderabbitai approve` on their own PR or override the
+failing check. To verify it runs, open a PR and
+check for CodeRabbit's walkthrough and the "pr-review skill verdict" check, or comment
+`@coderabbitai configuration` to see the config it loaded.
 
 ## Related
 

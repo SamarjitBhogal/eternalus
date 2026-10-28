@@ -1285,3 +1285,20 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 227ms".
 - Next step: the owner makes CI a required status check on `main` and `phase/*` (CodeRabbit
   cannot run `npm run check`), then confirms CodeRabbit reviews this branch's PR.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review (pre-PR gate) — SamarjitBhogal + Claude Code
+
+- What was done: pre-PR gate on the CodeRabbit config. The critic requested changes (2
+  blockers). Fixes: `allow_author_approval: false`; ADR 0018 (proposed) records the decision,
+  with a `guardrails.md` §1 row and a §5 note; the blocking check now fails only on the skill's
+  blockers (guardrail weakening, agent product decisions; approved dependencies pass) and the
+  rest are review findings; the path instruction adds the three-way classification;
+  `tool-setup.md` §7 documents CodeRabbit; architecture docs and `guardrails.md` are loaded as
+  guidelines. Ponytail cut 3 lines of defaults from `.coderabbit.yaml`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 182ms"; "Documentation
+  check passed." Critic second pass: approve; its should-fix items are applied
+  (`override_requested_reviewers_only: true`, accurate self-approval wording, CI on `phase/*` in
+  `guardrails.md` §5, ADR 0018 in `related:`).
+- Next step: the product owner accepts ADR 0018 and answers whether CodeRabbit's approval
+  counts toward the required approval; make CI a required check on `main` and `phase/*`.
