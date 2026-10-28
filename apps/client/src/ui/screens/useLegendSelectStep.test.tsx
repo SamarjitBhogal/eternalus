@@ -9,7 +9,7 @@ import type { UiIntent } from '../../bridge/events';
 import { isSelectableSpec } from '../../bridge/selectionRules';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import type { RootState } from '../../bridge/store';
-import { assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
+import { assetsWithBoxes, keyOnRadioCards, renderWithStore, TEST_CONTENT } from '../testStore';
 import { useLegendSelectStep } from './useLegendSelectStep';
 
 type Model = ReturnType<typeof useLegendSelectStep>;
@@ -68,23 +68,7 @@ function modelOf(
 }
 
 /** A key press on a card among `CLASS`'s Legend cards, recording which card takes the focus. */
-function keyOnCards(key: string) {
-  const focused: number[] = [];
-  let prevented = 0;
-  const radios = LEGENDS.map((_, at) => ({
-    focus: () => {
-      focused.push(at);
-    },
-  }));
-  const event = {
-    key,
-    preventDefault: () => {
-      prevented += 1;
-    },
-    currentTarget: { parentElement: { querySelectorAll: () => radios } },
-  };
-  return { event, focused, prevented: () => prevented };
-}
+const keyOnCards = (key: string) => keyOnRadioCards(LEGENDS.length, key);
 
 let stop: () => void = () => undefined;
 afterEach(() => {

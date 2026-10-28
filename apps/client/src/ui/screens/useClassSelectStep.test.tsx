@@ -7,7 +7,7 @@ import type { LegendClassId } from '../../bridge/domain.types';
 import { isSelectableClass } from '../../bridge/selectionRules';
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import type { RootState } from '../../bridge/store';
-import { assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
+import { assetsWithBoxes, keyOnRadioCards, renderWithStore, TEST_CONTENT } from '../testStore';
 import { useClassSelectStep } from './useClassSelectStep';
 
 type Model = ReturnType<typeof useClassSelectStep>;
@@ -71,23 +71,7 @@ function modelOf(
 }
 
 /** A key press on a card among the class cards, recording which card takes the focus. */
-function keyOnCards(key: string) {
-  const focused: number[] = [];
-  let prevented = 0;
-  const radios = CARDS.map((_, at) => ({
-    focus: () => {
-      focused.push(at);
-    },
-  }));
-  const event = {
-    key,
-    preventDefault: () => {
-      prevented += 1;
-    },
-    currentTarget: { parentElement: { querySelectorAll: () => radios } },
-  };
-  return { event, focused, prevented: () => prevented };
-}
+const keyOnCards = (key: string) => keyOnRadioCards(CARDS.length, key);
 
 describe('useClassSelectStep', () => {
   it('picks the preferred class (Back) and puts the tab stop on it', () => {
