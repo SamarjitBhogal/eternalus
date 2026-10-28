@@ -192,5 +192,5 @@ not be opened, the claim rests on a search summary, marked "(summary)".
 - [../reference/game-design/15-figma-frames-and-creative-decisions.md](../reference/game-design/15-figma-frames-and-creative-decisions.md): the frames and the register each enhancement joins.
 - [../reference/game-design/13-owner-decisions-log.md](../reference/game-design/13-owner-decisions-log.md): DEC-53 to DEC-55.
 - [../architecture/13-game-interface.md](../architecture/13-game-interface.md): §7 styling, accessibility and the display switches.
-- [phase-6-hardening-balance-and-release.md](phase-6-hardening-balance-and-release.md): sprint 6.3, where the proposed task line would go (unscheduled; it waits on `INBOX.md` HC-S5).
+- [phase-6-hardening-balance-and-release.md](phase-6-hardening-balance-and-release.md): sprint 6.3, where the proposed task line would go.
 - [phase-5-meta-ui-and-persistence.md](phase-5-meta-ui-and-persistence.md): sprint 5.5's accessibility minimums.
