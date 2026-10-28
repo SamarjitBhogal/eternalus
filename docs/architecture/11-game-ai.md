@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-27
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -27,8 +27,10 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 ## 1. Where AI sits
 
 - Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (core `AGENTS.md`): `ai/` may
-  import only `state/`, `commands/` and `utils/`. Definitions, spatial queries and flow fields
-  reach a controller through `GameState`, never through imports (DIP).
+  import only `state/`, `commands/` and `utils/`. Spatial queries and flow fields reach a
+  controller through `GameState`; its content (aggro rules, formations, difficulties) comes
+  through its constructor, injected by `Simulation` when it fills the registry. Never through
+  imports (DIP).
 - One system, `AiSystem`, runs second in the `SystemPipeline`, right after `CommandApplySystem`.
   It asks each due controller for decisions and enqueues them in the `CommandQueue` for the next
   tick. Controllers never mutate state, never call systems and never compute paths.
@@ -346,9 +348,7 @@ work named:
   phases, so it is a partial map.
 - A brain's `profileId` names an `AggroRuleDefinition` (`content/ai/aggro/`) directly; the
   `AiProfileDefinition` of §2, which would group aggro, cadence and difficulty, arrives when a
-  second controller needs a profile. Controllers get their content through their constructor
-  from `Simulation` (the registry), not through `GameState` as §1 says; sign-off asked in
-  `INBOX.md`. `AiSystem.assertRegistered` checks each definition's profile at construction.
+  second controller needs a profile. `AiSystem.assertRegistered` checks each definition's profile at construction.
 - A definition that names an unregistered controller stops `Simulation` at construction (shipped
   content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities

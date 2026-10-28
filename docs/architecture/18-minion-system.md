@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-27
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -301,15 +301,18 @@ default, `ranks`, is a block: the leader at the front centre, the other members 
   leader excluded): rank `floor(i / ranksWidth) + 1`, file `i % ranksWidth − (ranksWidth − 1) / 2`, so
   the block is centred on the lane. The offset is `−forward × rank × slotSpacing + right × file × slotSpacing`, where `forward` is
   the lane's direction at `progress` and `right` its perpendicular, as vectors (ADR 0012). When a
-  member dies the ranks close up on the next tick, with no bookkeeping.
+  member dies the ranks close up on the next tick, with no bookkeeping. The slot function lives in
+  `state/formationSlot.ts`, the one folder that `systems/` (`PathingSystem`) and `ai/`
+  (`MinionController`, which checks arrival at the slot) may both import.
 - **Another shape** (wedge, column) is a new formation entry and its slot function, not a change to
   `HordeSystem` or the strategy.
 
 ### 5.2 Lane following and steering
 
 `LaneFollowMovementStrategy` is a `MovementStrategy` (04 §4), chosen by the mob definition and
-called by `PathingSystem` (10 §9). It reads the mob's `Combat.targetId`, which only
-`attack-target` sets and `stop` clears:
+called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targetId`, which only
+`attack-target` sets and `stop` clears, and hands the strategy the target and an arrival radius
+(the attack reach), so the strategy never reads components:
 
 | Mob state (§6.1) | `Combat.targetId` | Steering target                                                                    |
 | ---------------- | ----------------- | ---------------------------------------------------------------------------------- |
@@ -381,7 +384,8 @@ and melee guards at the `Stronghold`, per the game doc) are Mobs owned by their 
   structure's `GuardPlan.leashRadius` (07 §6; game doc: guards "don't leave the tower's
   perimeter") and the idle state holds the guard's post near the structure.
 - Guards move with `LeashedChaseMovementStrategy` (04 §4; 10 §9's "seek/arrival inside their
-  leash"): chase `Combat.targetId` while it is set, otherwise return to the post.
+  leash"): chase the target `PathingSystem` hands it (from `Combat.targetId`, §5.2) while one is
+  set, otherwise return to the post.
 - `GuardWithinLeashInvariant` (15 §3) checks that no guard is farther than `leashRadius` plus a
   `TUNE` tolerance (the distance it can cover between two decisions) from its structure.
 - Spawning and respawning are the structure's `GuardPlan`, run by `SpawnSystem`, never controller
