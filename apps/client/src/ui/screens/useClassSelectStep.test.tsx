@@ -7,7 +7,7 @@ import type { LegendClassId } from '../../bridge/domain.types';
 import { isSelectableClass } from '../../bridge/selectionRules';
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import type { RootState } from '../../bridge/store';
-import { assetsWithBoxes, keyOnRadioCards, renderWithStore, TEST_CONTENT } from '../testStore';
+import { assetsWithBoxes, radioGroup, renderWithStore, TEST_CONTENT } from '../testStore';
 import { useClassSelectStep } from './useClassSelectStep';
 
 type Model = ReturnType<typeof useClassSelectStep>;
@@ -70,9 +70,6 @@ function modelOf(
   return last;
 }
 
-/** A key press on a card among the class cards, recording which card takes the focus. */
-const keyOnCards = (key: string) => keyOnRadioCards(CARDS.length, key);
-
 describe('useClassSelectStep', () => {
   it('picks the preferred class (Back) and puts the tab stop on it', () => {
     const model = modelOf(PLATED.classId);
@@ -111,11 +108,11 @@ describe('useClassSelectStep', () => {
 
   it('moves the focus along the cards with an arrow, and leaves any other key alone', () => {
     const model = modelOf(null);
-    const arrow = keyOnCards('ArrowLeft');
-    const tab = keyOnCards('Tab');
+    const arrow = radioGroup(CARDS.length);
+    const tab = radioGroup(CARDS.length);
 
-    model.onCardKeyDown(arrow.event, 0);
-    model.onCardKeyDown(tab.event, 0);
+    model.onCardKeyDown(arrow.keyOn('ArrowLeft'), 0);
+    model.onCardKeyDown(tab.keyOn('Tab'), 0);
 
     expect(arrow.focused).toEqual([CARDS.length - 1]);
     expect(arrow.prevented()).toBe(1);
@@ -127,7 +124,7 @@ describe('useClassSelectStep', () => {
     const from = (CARDS.indexOf(PLATED) + 1) % CARDS.length;
     const model = modelOf(null, {
       press: (first) => {
-        first.onCardKeyDown(keyOnCards('ArrowLeft').event, from);
+        first.onCardKeyDown(radioGroup(CARDS.length).keyOn('ArrowLeft'), from);
       },
     });
 

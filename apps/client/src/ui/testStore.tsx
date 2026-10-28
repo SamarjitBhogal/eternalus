@@ -267,23 +267,30 @@ export const autofocusedClassIds = (html: string): string[] =>
     .map((tag) => /data-class-id="([^"]*)"/.exec(tag)?.[1] ?? '');
 
 /**
- * A key press on one of `count` radio cards, as the roving focus move reads it (its key, its
- * default, its parent's radios), recording which card takes the focus.
+ * A group of `count` radios, each a stand-in that records taking the focus, and `keyOn(key)`: a
+ * key event on one of them, as the focus move reads it (its key, its default, its parent).
  */
-export function keyOnRadioCards(count: number, key: string) {
+export function radioGroup(count: number, { isOrphan = false } = {}) {
   const focused: number[] = [];
+  const queried: string[] = [];
   let prevented = 0;
   const radios = Array.from({ length: count }, (_, at) => ({
     focus: () => {
       focused.push(at);
     },
   }));
-  const event = {
+  const parent = {
+    querySelectorAll: (selectors: string) => {
+      queried.push(selectors);
+      return radios;
+    },
+  };
+  const keyOn = (key: string) => ({
     key,
     preventDefault: () => {
       prevented += 1;
     },
-    currentTarget: { parentElement: { querySelectorAll: () => radios } },
-  };
-  return { event, focused, prevented: () => prevented };
+    currentTarget: { parentElement: isOrphan ? null : parent },
+  });
+  return { focused, queried, keyOn, prevented: () => prevented };
 }

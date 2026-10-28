@@ -9,7 +9,7 @@ import type { UiIntent } from '../../bridge/events';
 import { isSelectableSpec } from '../../bridge/selectionRules';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import type { RootState } from '../../bridge/store';
-import { assetsWithBoxes, keyOnRadioCards, renderWithStore, TEST_CONTENT } from '../testStore';
+import { assetsWithBoxes, radioGroup, renderWithStore, TEST_CONTENT } from '../testStore';
 import { useLegendSelectStep } from './useLegendSelectStep';
 
 type Model = ReturnType<typeof useLegendSelectStep>;
@@ -67,9 +67,6 @@ function modelOf(
   return last;
 }
 
-/** A key press on a card among `CLASS`'s Legend cards, recording which card takes the focus. */
-const keyOnCards = (key: string) => keyOnRadioCards(LEGENDS.length, key);
-
 let stop: () => void = () => undefined;
 afterEach(() => {
   stop();
@@ -117,9 +114,9 @@ describe('useLegendSelectStep', () => {
     stop = eventBus.on('ui-intent', (intent) => {
       intents.push(intent);
     });
-    const arrow = keyOnCards('ArrowRight');
+    const arrow = radioGroup(LEGENDS.length);
 
-    model?.onCardKeyDown(arrow.event, from);
+    model?.onCardKeyDown(arrow.keyOn('ArrowRight'), from);
 
     expect(target !== undefined && isSelectableSpec(target)).toBe(true);
     expect(intents).toEqual([
@@ -135,9 +132,9 @@ describe('useLegendSelectStep', () => {
     stop = eventBus.on('ui-intent', (intent) => {
       intents.push(intent);
     });
-    const tab = keyOnCards('Tab');
+    const tab = radioGroup(LEGENDS.length);
 
-    model?.onCardKeyDown(tab.event, LEGENDS.indexOf(PLATED));
+    model?.onCardKeyDown(tab.keyOn('Tab'), LEGENDS.indexOf(PLATED));
 
     expect(intents).toEqual([]);
     expect(tab.focused).toEqual([]);

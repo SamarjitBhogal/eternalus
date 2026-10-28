@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { radioGroup } from '../testStore';
 import { nextRovingIndex, rovingKeyDown, tabbableRovingIndex } from './rovingRadio';
 
 const item = (isAvailable: boolean, isPicked = false) => ({ isAvailable, isPicked });
@@ -52,35 +53,6 @@ describe('tabbableRovingIndex', () => {
     expect(tabbableRovingIndex([])).toBe(0);
   });
 });
-
-/**
- * A group of `count` radios, each a stand-in that records taking the focus, and `keyOn(key)`: a
- * key event on one of them, as the focus move reads it (its key, its default, its parent).
- */
-function radioGroup(count: number, { isOrphan = false } = {}) {
-  const focused: number[] = [];
-  const queried: string[] = [];
-  let prevented = 0;
-  const radios = Array.from({ length: count }, (_, at) => ({
-    focus: () => {
-      focused.push(at);
-    },
-  }));
-  const parent = {
-    querySelectorAll: (selectors: string) => {
-      queried.push(selectors);
-      return radios;
-    },
-  };
-  const keyOn = (key: string) => ({
-    key,
-    preventDefault: () => {
-      prevented += 1;
-    },
-    currentTarget: { parentElement: isOrphan ? null : parent },
-  });
-  return { focused, queried, keyOn, prevented: () => prevented };
-}
 
 describe('rovingKeyDown', () => {
   it("asks `move` where the key goes, focuses that radio among the group's, and keeps the key", () => {
