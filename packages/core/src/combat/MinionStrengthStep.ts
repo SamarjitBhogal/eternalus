@@ -18,8 +18,19 @@ import type { DamageHit, DamageStep } from './DamageStep.types';
 export class MinionStrengthStep implements DamageStep {
   public readonly name = 'minion-strength';
 
-  /** @param curve - The curve's slope and clamps, from content. */
-  public constructor(private readonly curve: MinionStrengthCurve) {}
+  /**
+   * @param curve - The curve's slope, clamps and base-stat point, from content.
+   * @throws Error when the base-stat point is not inside the lane (`0 < basePoint ≤ maxBasePoint ≤ 1`).
+   */
+  public constructor(private readonly curve: MinionStrengthCurve) {
+    if (!(
+      curve.basePoint > 0 &&
+      curve.basePoint <= curve.maxBasePoint &&
+      curve.maxBasePoint <= 1
+    )) {
+      throw new Error('MinionStrengthCurve needs 0 < basePoint ≤ maxBasePoint ≤ 1.');
+    }
+  }
 
   /** Returns the amount after the attacker's and the target's strength. */
   public adjust({ targetId, amount, source }: DamageHit, state: GameState): number {

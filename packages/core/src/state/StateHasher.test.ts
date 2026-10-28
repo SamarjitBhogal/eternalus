@@ -184,7 +184,7 @@ describe('StateHasher', () => {
     expect(new Set([without, withBrain, otherMemory, otherRng, deferred]).size).toBe(5);
   });
 
-  it('hashes enraged stacks once a lane has one, by team and lane', () => {
+  it('hashes lost towers once a lane has one, by team and lane', () => {
     const { state } = stateWithSoldier();
     const without = hasher.hash(state);
     state.teams.light.towersLostByLane['lane-0'] = 1;

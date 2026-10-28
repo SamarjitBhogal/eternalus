@@ -1552,3 +1552,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 668 passed (668)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: none for M5a; nothing emits `structure-destroyed` until M2c, so the shift is live
   only in tests until then.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m5a-modifiers (critic on the tower shift) — SamarjitBhogal + Claude Code
+
+- What was done: the `architecture-reviewer` critic approved 2af508f with one should-fix: the
+  shift's direction is the agent's reading of DISC-24, not the owner's decision. INBOX now
+  records only what the owner decided and asks the direction as its own question, with
+  readings (a), built as an interim, (b) and (c). Nits applied: `MinionStrengthStep` refuses a
+  base-stat point outside the lane (new test), and `StateHasher`'s variable and test name say
+  lost towers (the hash tag stays `enraged`, so hashes do not change).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 669 passed (669)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: the owner picks the DISC-24 reading; merge after #44.

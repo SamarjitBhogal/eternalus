@@ -122,6 +122,13 @@ describe('MinionStrengthStep', () => {
     expect(hit()).toBeCloseTo(100);
   });
 
+  it('refuses a base-stat point outside the lane', () => {
+    expect(() => new MinionStrengthStep({ ...MINION_STRENGTH, basePoint: 0 })).toThrow('basePoint');
+    expect(() => new MinionStrengthStep({ ...MINION_STRENGTH, maxBasePoint: 0.4 })).toThrow(
+      'basePoint',
+    );
+  });
+
   it('is 1 for everyone in a match without a map', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const step = new MinionStrengthStep(CURVE);
