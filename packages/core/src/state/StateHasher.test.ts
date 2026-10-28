@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { Aether } from '../components/Aether';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
@@ -32,6 +34,8 @@ class Scout extends Entity {
     this.addComponent(new Movement({ maxSpeed: 2, acceleration: 0.5, mass: 1 }));
     this.addComponent(new Collider({ kind: 'circle', radius: 0.5 }, 'unit'));
     this.addComponent(new Vision(10));
+    this.addComponent(new Aether(50));
+    this.addComponent(new Progression('test'));
   }
 }
 
@@ -130,6 +134,18 @@ describe('StateHasher', () => {
       'a reveal',
       (scout) => {
         scout.getComponent(Vision).revealUntil(90);
+      },
+    ],
+    [
+      'aether',
+      (scout) => {
+        scout.getComponent(Aether).spend(1);
+      },
+    ],
+    [
+      'progression',
+      (scout) => {
+        scout.getComponent(Progression).addXp(1, { id: 'test', cap: 2, xpToNext: [10] });
       },
     ],
   ])('changes when %s changes on an entity that has it', (_, change) => {

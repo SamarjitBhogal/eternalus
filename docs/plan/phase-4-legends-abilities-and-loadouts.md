@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-16
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -165,6 +165,10 @@ Owner: _ (sim lane). Week 8.
 - [ ] **In-match loadout adjustment (MVP-if-time)** (changing an ability or ultimate resets its
       cooldown; requires visiting a BuffTower or the Stronghold, `TUNE`). Owner: _. Test: only if
       implemented. Done when: documented either way.
+
+**Status (2026-10-16, PR #31, Claudio):** `Progression` + `ProgressionSystem` started early (S2,
+SCRUM-426): level curve and per-level health and aether from content, kill XP to the killer. Shared,
+assist, structure, checkpoint, camp and boss XP and potency scaling remain, so the box stays open.
 
 **Success metric:** a bot-vs-bot match ends with every Legend at a level consistent with its
 XP events (asserted by an invariant), and loadout validation rejects 100% of a fixture set of

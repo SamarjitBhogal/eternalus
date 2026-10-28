@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-22
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -113,7 +113,7 @@ R14 "new view" and R16 "new command".
 - **Tests:** content validation; a `SpawnSystem` scenario spawns a horde of it at the configured
   size; a `MinionController` scenario (attacks within N ticks); determinism.
 - **Docs:** `../reference/game-design/02-entities-and-units.md`; `TUNE` values in `balancing.md`.
-- **Skill:** `new-content` or `new-entity` · [04 §1](04-entity-architecture.md#1-the-family-tree), [11 §4.3](11-game-ai.md#43-minioncontroller-mvp).
+- **Skill:** `new-content` or `new-entity` · [04 §1](04-entity-architecture.md#1-the-family-tree), [11 §4.3](11-game-ai.md#43-minioncontroller-mvp), [18-minion-system](18-minion-system.md) §6.
 
 ### R4. Add a boss
 
@@ -204,8 +204,9 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 - **Files:** `core/content/status-effects/<camelId>.ts` (`StatusEffectDefinition`: `polarity`,
   `stacking`, `modifiers[]`, `flags[]`, `periodic`, `onExpire`) + `statusEffectCatalogue.ts` line.
 - **Registry line:** none. A new **stacking mode** is one `StatusStacking` member plus one `case`
-  in `StatusEffectRuntime.apply` (the one closed switch, 05 §8); a new **flag** or modifier
-  **stat** is one union member read by the component that owns the stat.
+  in `StatusEffectRuntime.reapply` (the one closed switch, 05 §8); a new **flag** or modifier
+  **stat** is one union member read by the component that owns the stat. Producers apply it
+  through the match's one `StatusEffectApplier` (DEC-41), never `StatusEffects` directly.
 - **Tests:** content validation (ids resolve); the table-driven stacking test if a mode was
   added; a scenario: apply, modifier table, `status-applied` / `status-expired`.
 - **Docs:** the status table in `../reference/suggestions/more-abilities.md` §7; reference 06.
@@ -270,12 +271,27 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 - **Files:** `core/entities/strategies/<Behaviour><Family>Strategy.ts` (stateless, shared; uses
   the context `Rng` and vectors, never angles) + `.test.ts`; the definition field that selects it
   by id (`definition.movement`, `weapon.attack`, `definition.pickUp`, `definition.targeting`).
-- **Registry line:** `core/entities/strategies/defaultStrategyRegistry.ts`:
-  `registry.register('<id>', new <Name>Strategy());`
+- **Registry line:** `core/entities/strategies/defaultStrategyRegistry.ts`: one entry in the
+  behaviour's record (`attack: { melee: new MeleeAttackStrategy(), <id>: new <Name>Strategy() }`)
+  plus the id in its union (`AttackStrategyId`); a missing entry does not compile.
 - **Tests:** a unit test with a stub state; the content test proves every strategy id used in
   content is registered; the calling system's tests do not change.
 - **Docs:** the table in 04 §4; naming in 02 §4.
 - **Skill:** `new-system` (step 4) or `new-entity` · [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind).
+
+### R13a. Add a damage rule
+
+- **When:** something changes every hit before it reaches `Health`: a status (`sundered`,
+  `enraged`), a structure multiplier, breakability, a resistance. Not for a new way of attacking
+  (R13) or for an effect that applies damage (it calls the pipeline).
+- **Files:** `core/combat/<Name>Step.ts` (implements `DamageStep`: `adjust(hit, state)` returns
+  the new amount, 0 blocks the hit; reads state through `state.entities`, numbers from content)
+  - `.test.ts`.
+- **Registry line:** `core/combat/defaultDamageSteps.ts`, at its position in the order.
+- **Tests:** the step alone with a small `GameState`; one `DamagePipeline` test if the order
+  matters.
+- **Docs:** 05 §9 (the step and its place in the order).
+- **Skill:** `new-system` · [05 §9](05-abilities-weapons-and-loadouts.md#9-combat-pipeline-combat).
 
 ## 5. Map and config (R14–R15)
 

@@ -1,10 +1,10 @@
 ---
 title: Game AI
-description: How every non-player entity decides what to do (the Controller contract, bot Legends, minions, guards, turrets, bosses, the Rover) and the determinism and cost rules controllers obey; read before adding, changing or tuning any bot behaviour.
+description: How every non-player entity decides what to do (the Controller contract, bot Legends, minions, guards, turrets, bosses, the Rover; minion and guard behaviour: see doc 18) and the determinism and cost rules controllers obey; read before adding, changing or tuning any bot behaviour.
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-17
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -12,6 +12,7 @@ related:
   - docs/architecture/10-physics.md
   - docs/architecture/12-game-story-and-match-director.md
   - docs/architecture/15-diagnostics-and-runtime-testing.md
+  - docs/architecture/18-minion-system.md
   - docs/research/game-architecture-and-performance-research.md
 ---
 
@@ -152,18 +153,8 @@ are additional trees selected by data, not new controllers.
 
 ### 4.3 MinionController (MVP)
 
-A finite state machine (State pattern) per Mob with memory
-`{ fsm, targetId, aggroUntilTick, cooldownUntilTick, leashAnchor, lastEvaluatedTick }`:
-
-- `marching`: follow the lane flow field for `(lane, team)`. The Mob's `MovementStrategy`
-  (`LaneFlowFollow`) handles vectors every tick; the controller only asserts `move-along-lane`.
-- acquire (at cadence, and again between attack windups as League does): candidates are
-  `perception.unitsWithin(pos, acquisitionRadius, { hostileTo: team })` plus structures; rank by
-  the profile's priority list, then distance, then id; switch only to a strictly higher priority.
-- `engaging`: `attack { targetId }` until the target dies, the Mob leaves `leashRadius` of
-  `leashAnchor`, or `aggroDurationTicks` elapse.
-- `returning`: `move-to leashAnchor`; back on the corridor → `marching`, with
-  `aggroCooldownTicks` before it may re-acquire.
+The minion state machine, lane movement and lane objectives are owned by
+[18-minion-system](18-minion-system.md) §6. This section keeps the aggro content it reads.
 
 Aggro rules are content (`AggroRuleDefinition` in `content/ai/aggro/`), seeded from published MOBA
 rules as `TUNE` starting points
@@ -186,6 +177,7 @@ export const laneMinionAggro = {
     'turret-attacking-ally-minion',
     'closest-minion',
     'closest-legend',
+    'lane-objective', // the horde's next standing structure (18 §6.2)
   ],
   reevaluateEveryTicks: 15, // TUNE
   leashRadius: 700, // TUNE
@@ -202,14 +194,7 @@ after a structure falls (game doc) are `CombatSystem`/`StatusEffectSystem` conte
 
 ### 4.4 GuardController (MVP)
 
-Tower guards (light guards at a `SpawnerTower`, "numerous" medium guards at a `BuffTower`, ranged
-and melee guards at the `Stronghold`, per the game doc) are Mobs owned by the structure's
-`Spawner` component. The FSM `holding → engaging → returning` reuses the minion's acquire, engage
-and return logic through a shared `LeashBehaviour` helper (DRY). The differences are data: the
-anchor is the home structure, `leashRadius` is the structure's `guardPerimeterRadius` (`TUNE`,
-game doc: guards "don't leave the tower's perimeter") and the idle behaviour is hold position.
-Respawn every 2 minutes (`TUNE`, game doc) is `Spawner` data consumed by `SpawnSystem`, not
-controller logic (SRP).
+Owned by [18-minion-system](18-minion-system.md) §7.
 
 ### 4.5 TurretController (MVP; manual control MVP-if-time)
 

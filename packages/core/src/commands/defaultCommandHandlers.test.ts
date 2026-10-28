@@ -12,7 +12,6 @@ import { createDefaultCommandHandlers } from './defaultCommandHandlers';
 import { UnsupportedCommandHandler } from './handlers/UnsupportedCommandHandler';
 
 const NOT_YET_SUPPORTED: readonly Command[] = [
-  { type: 'attack-target', actorId: 'entity-1', targetId: 'entity-2' },
   {
     type: 'cast-ability',
     actorId: 'entity-1',

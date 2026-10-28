@@ -44,7 +44,15 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
   const movement = { maxSpeed: 0.2, acceleration: 0.05, mass: 1 };
   const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movement };
   const definitions = [
-    { id: 'warrior', kind: 'warrior', displayName: 'Warrior', ...unit },
+    {
+      id: 'warrior',
+      kind: 'warrior',
+      displayName: 'Warrior',
+      baseAether: 100,
+      levelCurveId: 'legend',
+      levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 },
+      ...unit,
+    },
     // PROTOTYPE(PROTO-01) TEMPORARY: only because the demo escort spawns in every match.
     {
       id: 'light-minion',

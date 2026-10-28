@@ -11,6 +11,7 @@ export const TRAINING_DUMMY = {
   baseHealth: 100, // TUNE:
   footprintRadius: 0.4, // TUNE:
   visionRadius: 10, // TUNE:
+  xpValue: 0, // owner decision O8 (PR #31 review): a test and dev unit pays nothing
   movement: {
     maxSpeed: 3, // TUNE: m/s
     acceleration: 45, // TUNE: m/s²

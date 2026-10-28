@@ -45,4 +45,10 @@ describe('loadDefaultContent', () => {
   it('throws UnknownDefinitionError for a dangling definition id', () => {
     expect(() => loadDefaultContent(TICK_RATE).get('no-such-unit')).toThrow(UnknownDefinitionError);
   });
+
+  it('validates Legends against the level curves it is given', () => {
+    expect(() => loadDefaultContent(TICK_RATE, { has: () => false })).toThrow(
+      'warrior: levelCurveId "legend" is not a known curve',
+    );
+  });
 });
