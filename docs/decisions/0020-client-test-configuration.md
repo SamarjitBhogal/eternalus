@@ -1,10 +1,10 @@
 ---
 title: 0020. Client test configuration
-description: Proposed record of three additive changes to the client's guardrail configs made on feat/hud-and-character-select without an ADR - Vitest processes `.css?raw` imports so tests can read stylesheet text, Vitest runs vite.config.test.ts, and tsconfig.node.json type-checks it - with why none weakens a check and why reading stylesheets through node:fs or dropping the build-config test would be worse; read this before changing apps/client/vitest.config.ts, apps/client/tsconfig.node.json or a test that reads CSS text.
+description: Record of three additive changes to the client's guardrail configs made on feat/hud-and-character-select without an ADR, accepted 2026-10-28 - Vitest processes `.css?raw` imports so tests can read stylesheet text, Vitest runs vite.config.test.ts, and tsconfig.node.json type-checks it - with why none weakens a check and why reading stylesheets through node:fs or dropping the build-config test would be worse; read this before changing apps/client/vitest.config.ts, apps/client/tsconfig.node.json or a test that reads CSS text.
 audience: [humans, agents]
-status: draft
+status: active
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-28
 tags: [adr, guardrail, testing, vitest, tsconfig, css, build]
 related:
   - 'docs/process/guardrails.md'
@@ -17,9 +17,8 @@ related:
 
 # 0020. Client test configuration
 
-- Status: proposed (drafted 2026-10-27; the three changes are already on
-  `feat/hud-and-character-select`, so accepting this ADR approves them, and refusing it means
-  reverting them together with the tests that need them; the product owner decides)
+- Status: accepted (product owner decision in chat, 2026-10-28; drafted 2026-10-27; the three
+  changes are on `feat/hud-and-character-select`, and the acceptance approves them)
 - Date: 2026-10-27
 
 ## Context

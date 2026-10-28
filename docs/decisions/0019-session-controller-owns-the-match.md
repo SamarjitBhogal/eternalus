@@ -1,10 +1,10 @@
 ---
 title: 0019. SessionController owns the Match
-description: Proposed record of the owner's decision DEC-50 - SessionController owns the Match lifetime, match-loading only loads the match assets and prepares the world, and the Match is built through an injected factory when the match screen attaches its viewport and destroyed on leaving the match - amending architecture 13 §2, where the Match was created in match-loading; read this before changing the session phases, the match factory, GameCanvas or anything that creates or destroys a Match.
+description: Record of the owner's decision DEC-50, accepted 2026-10-28 - SessionController owns the Match lifetime, match-loading only loads the match assets and prepares the world, and the Match is built through an injected factory when the match screen attaches its viewport and destroyed on leaving the match - amending architecture 13 §2, where the Match was created in match-loading; read this before changing the session phases, the match factory, GameCanvas or anything that creates or destroys a Match.
 audience: [humans, agents]
-status: draft
+status: active
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-28
 tags: [adr, session, match, lifecycle, client]
 related:
   - 'docs/architecture/13-game-interface.md'
@@ -15,8 +15,10 @@ related:
 
 # 0019. SessionController owns the Match
 
-- Status: proposed (drafted 2026-10-27 to record the owner's decision DEC-50 of 2026-10-17, which
-  `feat/hud-and-character-select` implements; the product owner accepts or refuses it)
+- Status: accepted (product owner decision in chat, 2026-10-28; drafted 2026-10-27 to record the
+  owner's decision DEC-50 of 2026-10-17, which `feat/hud-and-character-select` implements; on
+  acceptance `INBOX.md` HC-T1 rows T-01, T-07, T-08, T-14, T-15 and T-86 were applied, and T-16
+  waits for HC-F9 and HC-Q8)
 - Date: 2026-10-27
 
 ## Context
