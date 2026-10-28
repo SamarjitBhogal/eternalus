@@ -520,11 +520,8 @@ DEC-51). Where §1 and §11 differ, their corrections wait for the owner in `INB
   (no such assets).
   An asset that fails to load never rejects its group: it is warned about through an injected
   callback and listed in the load's outcome, and a failed rendition falls back to the entry's own
-  file; §12's typed error is not built. Progress is reported once per entry, when the entry is
-  cached, with the bytes of its loaded files, so it stays monotonic and never counts a failed entry
-  (`2a58d2d`). A group load that rejects (only a bug can) is retired the way `release(group)`
-  retires one: the entries it was still loading keep nothing, and the next load of the group starts
-  afresh (`2fbe59b`, `76bae8e`).
+  file; §12's typed error is not built. Progress counts an entry's loaded files once the entry is
+  cached, so a failed file never counts (`ResourceController.load`; HC-T1 T-153).
 - **The manifest** is typed TypeScript in `data/resources/`: `AssetManifest.ts` concatenates one
   file per asset group (the ~300-line file rule; `selectionAssets.ts` and `matchAssets.ts` join part
   files) into the one `ASSET_MANIFEST`. An entry has a `file` and an optional `file2x` (each with
