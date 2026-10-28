@@ -836,8 +836,9 @@ are the same string literals as the `InputAction`s in `keybindings.ts`
 ([09 §3](09-hardware-abstraction.md#3-the-mapping-pipeline-device--inputaction--command)), so the
 glyph needs no mapping table and a rebinding updates every prompt with no code change;
 `default-action` is a contextual prompt on `<KeyGlyph action="interact" />` (`Recommendation:`).
-Display names and icons come from the catalogue the client already loads for the `LoadoutScreen`
-(`loadDefaultContent()`), resolved once at match start into the slice, never from entities.
+Display names and icons come from the display catalogue the client builds at boot (core's
+`loadDisplayContent()` and the client's own presentation data), joined with the player's selection
+by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event.
 `AetherBar` and `HealthBar` read the same record; `LoadoutScreen` edits a `Loadout` value and calls
 `validateLoadout` through the public API.
 

@@ -219,6 +219,9 @@ can check the ids a definition names (dangling references), and the validator re
 broken rule at once in one `ContentValidationError`. The rules are listed in one file,
 `content/defaultContentRules.ts` (`createDefaultContentRules()`); a new rule is a class and one
 line there.
+`loadDisplayContent()` validates the display-only families (Legends and Legend specs) through the
+same `ContentValidator`; the rules that need the Legend catalogue come from
+`createLegendSpecRules(legends)` (ADR 0018).
 
 ## 6. `EntityFactory` and `EntityRegistry`
 

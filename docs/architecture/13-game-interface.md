@@ -89,30 +89,37 @@ export class SessionController {
     bus: TypedEventBus<BridgeEventMap>;
     persistence: PersistenceController;
     resources: ResourceController;
-    createMatch: (setup: MatchSetup) => Match; // Match stays the composition root of a match
+    prepareWorld: (seed: number) => PreparedWorld; // pure: the map from the seed, run in 'match-loading' (DEC-50)
+    createMatch: (request: MatchRequest, viewport: MatchViewport) => RunningMatch; // the match factory main.tsx binds; Match stays the composition root of a match (DEC-50)
     states: Readonly<Record<SessionPhase, SessionState>>; // defaultSessionStates.ts, the only file naming them
     logger: Logger;
   }) {}
   public start(): Promise<void>; // enters 'boot'
-  public attachViewport(host: HTMLElement): void; // from GameCanvas.tsx
+  public attachViewport(viewport: MatchViewport): () => void; // from MatchScreen's GameCanvas.tsx; in 'match' it creates the Match and returns its detach (DEC-50)
   private transition(to: SessionPhase): Promise<void>; // checks TRANSITIONS, exit → enter, emits 'session-phase'
 }
 ```
 
-| From               | To                          | Trigger                                                                                                                                    | Work done in `enter`/`exit`                                                                                                                                                                                 |
-| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `boot`             | `menu`                      | manifest loaded (`boot` group), `persistence.open()` resolved (`ready` or `degraded`)                                                      | creates the default profile on first boot (settings and bindings load beside the phase machine, in `SettingsController`, §6.3); projects the content catalogue (`loadDefaultContent()`) into `contentSlice` |
-| `menu`             | `loading`                   | `ui-intent { kind: 'start-match' }`                                                                                                        | builds `MatchSetup` (seed, `GameConfig` from the preset plus developer overrides, random `playerTeam`, the saved or auto-built `Loadout`)                                                                   |
-| `loading`          | `character-select` / `menu` | selection-screen asset group loaded / cancelled or failed                                                                                  | loads the `selection` asset group (themed background set for the player's team) and shows `LoadingScreen`; the `MatchSetup` draft (seed, config, `playerTeam`) already exists from `menu`                   |
-| `character-select` | `pre-launch` / `menu`       | player confirmed a class before the 60 s `SessionClock` countdown ended / countdown expired with no selection (`reason: 'select-timeout'`) | builds the rosters from content (allies + enemies), assigns `playerTeam` from the setup RNG stream, starts the countdown through the injected `SessionClock`                                                |
-| `pre-launch`       | `match-loading`             | 10 s `SessionClock` reveal elapsed                                                                                                         | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                                                |
-| `match-loading`    | `match` / `menu`            | `match` asset group loaded / failed                                                                                                        | `createMatch(setup)`, `match.start()`; on failure logs and returns to `menu` with a banner                                                                                                                  |
-| `match`            | `results` / `menu`          | `match-ended { result }` from `Simulation.on`, a `Simulation.step()` exception, `forfeit` / `leave-match`                                  | `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                                           |
-| `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                | releases the `match` asset group                                                                                                                                                                            |
+| From               | To                          | Trigger                                                                                                                                    | Work done in `enter`/`exit`                                                                                                                                                                                                              |
+| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `boot`             | `menu`                      | manifest loaded (`boot` group), `persistence.open()` resolved (`ready` or `degraded`)                                                      | creates the default profile on first boot (settings and bindings load beside the phase machine, in `SettingsController`, §6.3); projects the display content (`loadDisplayContent()`, [02](02-code-structure.md) §6) into `contentSlice` |
+| `menu`             | `loading`                   | `ui-intent { kind: 'start-match' }`                                                                                                        | builds `MatchSetup` (seed, `GameConfig` from the preset plus developer overrides, random `playerTeam`, the saved or auto-built `Loadout`)                                                                                                |
+| `loading`          | `character-select` / `menu` | selection-screen asset group loaded / cancelled or failed                                                                                  | loads the `selection` asset group (themed background set for the player's team) and shows `LoadingScreen`; the `MatchSetup` draft (seed, config, `playerTeam`) already exists from `menu`                                                |
+| `character-select` | `pre-launch` / `menu`       | player confirmed a class before the 60 s `SessionClock` countdown ended / countdown expired with no selection (`reason: 'select-timeout'`) | builds the rosters from content (allies + enemies), assigns `playerTeam` from the setup RNG stream, starts the countdown through the injected `SessionClock`                                                                             |
+| `pre-launch`       | `match-loading`             | 10 s `SessionClock` reveal elapsed                                                                                                         | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                                                                             |
+| `match-loading`    | `match` / `menu`            | `match` asset group loaded and the match world prepared / either failed                                                                    | prepares the match world (`prepareWorld`: the map from `setup.seed`) once the `match` group has loaded; on failure logs and returns to `menu` with a banner. The `Match` is created in `match` (DEC-50)                                  |
+| `match`            | `results` / `menu`          | `match-ended { result }` from `Simulation.on`, a `Simulation.step()` exception, `forfeit` / `leave-match`                                  | `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                                                                        |
+| `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                | releases the `match` asset group                                                                                                                                                                                                         |
 
 The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The
 table is the test (`SessionController.test.ts` walks every pair with fake states, a
 `MemoryStorageAdapter` and a fake `ResourceController`).
+
+**Owner decision DEC-50 (2026-10-17).** `SessionController` owns the `Match` lifetime: the match
+world is prepared in `match-loading`, the `Match` is created when the match screen attaches its
+viewport (`attachViewport`) and is destroyed on leaving `match`, so no map, simulation or game
+loop exists during character select
+([decisions log](../reference/game-design/13-owner-decisions-log.md)).
 
 ## 3. Screens and HUD
 
@@ -133,7 +140,7 @@ show comes from content through the store (`contentSlice`, `matchSlice`), never 
 
 | HUD element                | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                   | Status  |
 | -------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `HealthBar`, `AetherBar`   | `matchSlice.player` (from `hud-state`)                                                     | base bar plus one patterned segment per shield bar (never colour alone); `aether / maxAether` with level and XP-to-next                                                                                                     | **MVP** |
+| `HealthBar`, `AetherBar`   | `matchSlice.player` (from `hud-state`)                                                     | base bar plus one patterned segment per shield bar (never colour alone); `aether / maxAether`; level and XP in `LevelBadge`                                                                                                 | **MVP** |
 | `AbilityBar`               | `selectAbilitySlots` ([05](05-abilities-weapons-and-loadouts.md) §15)                      | one slot per `AbilitySlotSnapshot`: icon, cooldown sweep, ultimate charge, `blockedBy` hint, `<KeyGlyph action={slot.slot} />`                                                                                              | **MVP** |
 | `MinimapPanel`             | `settingsSlice.hud.minimapVisible`                                                         | the frame around the `'minimap'` renderer layer that `GameCanvas.tsx` positions under it ([08](08-game-engine.md) §4); a click emits `minimap-click { u, v }` (normalised), which `Match` projects with `MinimapProjection` | **MVP** |
 | `MatchClock`, `Scoreboard` | `matchSlice.clock` (5 Hz), `matchSlice.scoreboard` (1 Hz)                                  | `mm:ss` and the phase label; team scores, structures alive, per-Legend rows                                                                                                                                                 | **MVP** |
@@ -208,6 +215,9 @@ export type BridgeEventMap = {
     readonly teams: Readonly<Record<PlayableTeam, TeamStats>>;
   };
   'capture-state': { readonly points: readonly CapturePointSnapshot[] };
+  'structure-state': { readonly structures: readonly StructureSnapshot[] }; // the structure strip; every 30 ticks
+  'asset-urls': { readonly group: AssetGroup; readonly urls: Readonly<Record<AssetId, string>> }; // images the DOM shows (14 §11, DEC-51)
+  credits: { readonly entries: readonly CreditEntry[] }; // AboutScreen, from the manifest's licence and source (DEC-51)
   announce: {
     readonly id: AnnouncementId;
     readonly params: Readonly<Record<string, string>>;
@@ -253,7 +263,8 @@ Slices (`bridge/slices/`): `sessionSlice` (phase, `menuRoute`, banners), `matchS
 player, scoreboard, capture points, announcements, result), `settingsSlice` (bindings, audio,
 accessibility, developer, hud), `loadingSlice`, `persistenceSlice`, and the `Recommendation:`s
 `contentSlice` (display-ready content index), `profileSlice` (summary, loadouts, history,
-achievements) and `diagnosticsSlice` (perf samples, violations, log tail). Slice state is plain
+achievements), `diagnosticsSlice` (perf samples, violations, log tail) and `assetsSlice`
+(the URLs of the loaded images and the credits, [14](14-persistence-and-resources.md) §11). Slice state is plain
 data typed with core `import type`s (`PlayerSnapshot`, `MatchResult`, `Loadout`); the `data/`
 vocabulary (persistence status, asset groups) is re-stated as string unions in `events.ts`
 because `bridge/` may not import `data/`.
@@ -516,16 +527,10 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-24; the owner
 [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md); DEC-48 to
 DEC-55). Where the text above differs, its corrections wait for the owner in `INBOX.md` HC-T1:
 
-- **Owner decisions the design text will state** once the owner approves its wording (`INBOX.md`
-  HC-T1, rows T-87 and T-88, and T-86 applied together with the §2 row and sketch rows T-07, T-08
-  and T-14 to T-16, [decisions log](../reference/game-design/13-owner-decisions-log.md)): DEC-50,
-  `SessionController` owns the `Match` lifetime (the world prepared in `match-loading`, the
-  `Match` created when the match screen attaches its viewport and destroyed on leaving `match`);
-  DEC-53 to DEC-55, on the screens built from the owner's Figma the Figma look is the default and
-  each alternative is one content value (`effectsRenderer`, and `contrastMode`, which the OS
-  setting `prefers-contrast: more` also selects); DEC-52 and DEC-53, a layout variant or an
-  improvement on a frame is chosen by one content value, with the frame's original kept live and
-  the difference registered in reference 15.
+- **The `match` row of §2's table** does not yet say that the match is created when the viewport
+  attaches, that the selection art is released and that overlays pause the match: that row waits
+  for `INBOX.md` HC-F9 and HC-Q8 (HC-T1 T-16). §2's sketch, its other rows and the DEC-50
+  paragraph state the lifetime since 2026-10-28 (ADR 0019).
 - **Screens.** `CharacterSelectScreen` runs the class step (62:125, or 62:70 when the content value
   `classSelectLayout` is `'alternate'`, through the registry `CLASS_STEP_LAYOUTS`; DEC-52) and then
   the Legend step (58:271; DEC-49) inside the one `character-select` phase. `MatchScreen` holds

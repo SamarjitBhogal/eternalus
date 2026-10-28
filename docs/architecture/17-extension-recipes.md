@@ -79,7 +79,8 @@ R14 "new view" and R16 "new command".
 - **Files:** `core/content/legends/<id>.ts` (`LegendDefinition` with `kind`, stats, ability
   ids, `pickUp`, `defaultLoadout`, `minimapGlyph`) + `legendCatalogue.ts` line; its abilities
   (R8); `core/entities/legends/<Name>.ts` (`extends Legend`, overrides `attachComponents`) +
-  `.test.ts`; a strategy if movement or pick-up is new (R13); sprites in `AssetManifest.ts`.
+  `.test.ts`; a strategy if movement or pick-up is new (R13); sprites in its asset group's manifest
+  file (concatenated by `AssetManifest.ts`).
 - **Registry line:** `core/entities/defaultEntityRegistry.ts`:
   `registry.register('<kind>', (id, def) => new <Name>(id, def));`
 - **Tests:** `legendCatalogue.test.ts`; the factory spawns it with the `Legend` component set;
@@ -558,7 +559,8 @@ The review checklists ask "what else changed?" for every PR
 ## 12. Implementation status
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-24). How the recipes touched by
-the branch are carried out today; the recipe text itself waits for the owner in `INBOX.md` HC-T1:
+the branch are carried out today; the recipe text the owner has not approved yet waits for him in
+`INBOX.md` HC-T1:
 
 - **An asset** (R1's sprites, every image and font): one line in its group's file in
   `apps/client/src/data/resources/` (`<group>Assets.ts`, concatenated by `AssetManifest.ts`) with

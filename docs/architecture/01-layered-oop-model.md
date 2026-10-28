@@ -4,7 +4,7 @@ description: The four-layer model, who may import whom, ports and adapters, the 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-10-28
 tags: [architecture, layers, solid, rules, ports-and-adapters]
 paths: ['packages/core/src/**', 'apps/client/src/**']
 related:
@@ -95,16 +95,17 @@ without depending on its concrete class. A **port** is an `interface` owned by t
 the capability; an **adapter** is a class that implements it against a real API. Every adapter has
 a test double so the code that depends on the port can be tested in Node.
 
-| Port             | Owned by (file)                                      | Layer | Adapters (production / test)                                         | Injected by                             |
-| ---------------- | ---------------------------------------------------- | ----- | -------------------------------------------------------------------- | --------------------------------------- |
-| `Rng`            | `packages/core/src/utils/Rng.types.ts`               | L2    | `SeededRandom` (sfc32) / `SeededRandom` with a fixed seed            | `Simulation` from the match seed        |
-| `Logger`         | `packages/core/src/diagnostics/Logger.types.ts`      | L2    | `ConsoleSink`, `RingBufferSink` (client) / `MemoryLogger`            | `Match` into `Simulation`               |
-| `Renderer`       | `apps/client/src/game/engine/render/Renderer.ts`     | L1    | `Canvas2dRenderer` / `RecordingRenderer`                             | `Match` into views                      |
-| `FrameScheduler` | `apps/client/src/game/engine/loop/FrameScheduler.ts` | L1    | `RafFrameScheduler` / `FakeFrameScheduler`                           | `Match` into `GameLoop`                 |
-| `InputDevice`    | `apps/client/src/game/engine/input/InputDevice.ts`   | L1    | `KeyboardDevice`, `MouseDevice`, `GamepadDevice` / `FakeInputDevice` | `Match` into `InputMapper`              |
-| `AudioOutput`    | `apps/client/src/game/engine/audio/AudioOutput.ts`   | L1    | `WebAudioOutput` / `NullAudioOutput`                                 | `Match`                                 |
-| `Clock`          | `apps/client/src/game/engine/time/Clock.ts`          | L1    | `PerformanceClock` / `FakeClock`                                     | `GameLoop`                              |
-| `StorageAdapter` | `apps/client/src/data/persistence/StorageAdapter.ts` | L3    | `IndexedDbStorageAdapter` / `MemoryStorageAdapter`                   | `main.tsx` into `PersistenceController` |
+| Port             | Owned by (file)                                         | Layer | Adapters (production / test)                                                            | Injected by                             |
+| ---------------- | ------------------------------------------------------- | ----- | --------------------------------------------------------------------------------------- | --------------------------------------- |
+| `Rng`            | `packages/core/src/utils/Rng.types.ts`                  | L2    | `SeededRandom` (sfc32) / `SeededRandom` with a fixed seed                               | `Simulation` from the match seed        |
+| `Logger`         | `packages/core/src/diagnostics/Logger.types.ts`         | L2    | `ConsoleSink`, `RingBufferSink` (client) / `MemoryLogger`                               | `Match` into `Simulation`               |
+| `Renderer`       | `apps/client/src/game/engine/render/Renderer.ts`        | L1    | `Canvas2dRenderer` / `RecordingRenderer`                                                | `Match` into views                      |
+| `FrameScheduler` | `apps/client/src/game/engine/loop/FrameScheduler.ts`    | L1    | `RafFrameScheduler` / `FakeFrameScheduler`                                              | `Match` into `GameLoop`                 |
+| `InputDevice`    | `apps/client/src/game/engine/input/InputDevice.ts`      | L1    | `KeyboardDevice`, `MouseDevice`, `GamepadDevice` / `FakeInputDevice`                    | `Match` into `InputMapper`              |
+| `AudioOutput`    | `apps/client/src/game/engine/audio/AudioOutput.ts`      | L1    | `WebAudioOutput` / `NullAudioOutput`                                                    | `Match`                                 |
+| `Clock`          | `apps/client/src/game/engine/time/Clock.ts`             | L1    | `PerformanceClock` / `FakeClock`                                                        | `GameLoop`                              |
+| `StorageAdapter` | `apps/client/src/data/persistence/StorageAdapter.ts`    | L3    | `IndexedDbStorageAdapter` / `MemoryStorageAdapter`                                      | `main.tsx` into `PersistenceController` |
+| `AssetLoader`    | `apps/client/src/data/resources/loaders/AssetLoader.ts` | L3    | `UiImageLoader`, `FontLoader` / `FakeAssetLoader` (contract: `AssetLoader.contract.ts`) | `main.tsx` into `ResourceController`    |
 
 Two consequences worth spelling out. First, core defines only the two ports it genuinely needs
 (`Rng`, `Logger`); everything else about the platform is invisible to it, which is what makes the
@@ -198,8 +199,9 @@ new ones. When the team agrees a folder is needed:
 ## 8. Implementation status
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-24). One more port exists in
-the client, and the browser adapters of a match are chosen in a factory rather than in `Match`;
-the matching §3 rows wait for the owner in `INBOX.md` HC-T1:
+the client, and the browser adapters of a match are chosen in a factory rather than in `Match`.
+The port's §3 row is in the table since 2026-10-28; the §3 sentence on the composition root waits
+for the owner in `INBOX.md` HC-T1:
 
 - **`AssetLoader`** (`apps/client/src/data/resources/loaders/AssetLoader.ts`, L3, owned by
   `ResourceController`): adapters `UiImageLoader` (images for the DOM) and `FontLoader` (the

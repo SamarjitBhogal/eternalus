@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-28
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -46,7 +46,7 @@ data/persistence/   PersistenceController.ts (facade), StorageAdapter.ts (port +
                     (+ idbPromises.ts), MemoryStorageAdapter.ts, schema/migrations.ts, repositories/<Name>Repository.ts
                     (interface) + Storage<Name>Repository.ts (class), dto/<Name>Dto.ts (+ validate/upgrade/mappers),
                     StorageError.ts, EvictionPolicy.ts, profileExport.ts
-data/resources/     ResourceController.ts, AssetManifest.ts, AssetCache.ts, loaders/ImageLoader.ts, AudioLoader.ts, JsonLoader.ts
+data/resources/     ResourceController.ts, AssetManifest.ts (+ one file per asset group), AssetCache.ts, loaders/AssetLoader.ts (port) + AssetLoader.contract.ts, ImageLoader.ts, UiImageLoader.ts, FontLoader.ts, AudioLoader.ts, JsonLoader.ts
 ```
 
 ## 2. `PersistenceController`
@@ -399,7 +399,10 @@ export type AssetType = 'image' | 'audio' | 'json';
 export type AssetGroup = 'boot' | 'menu' | 'match';
 export type AssetManifestEntry = {
   readonly id: AssetId;
-  readonly url: string;
+  readonly file: AssetFile; // { url, bytes, hash } at device pixel ratio 1
+  readonly file2x?: AssetFile; // the same at 2, chosen once per session
+  readonly renditions?: Readonly<Partial<Record<RenditionKey, RenditionFiles>>>; // per-use exports (size, rotation, mirroring), each with its files and optional box
+  readonly box?: RasterBox; // the draw box of an image placed at the slot it was baked for (a plate, a HUD weapon art)
   readonly type: AssetType;
   readonly group: AssetGroup;
   readonly bytes: number;
@@ -420,6 +423,8 @@ export interface AssetLoader<T> {
 export class ImageLoader implements AssetLoader<ImageBitmap> {} // fetch → blob → createImageBitmap (crops sprite frames from a sheet)
 export class AudioLoader implements AssetLoader<AudioBuffer> {} // fetch → arrayBuffer → injected decode (WebAudioOutput's decodeAudioData)
 export class JsonLoader implements AssetLoader<Json> {} // fetch → json → injected validator (atlas frame tables; content stays TS in core)
+export class UiImageLoader implements AssetLoader<HTMLImageElement> {} // an image decoded for the DOM (decode()); its URL reaches ui/ through the store (DEC-51)
+export class FontLoader implements AssetLoader<LoadableFace> {} // a FontFace added to document.fonts; no @font-face, no CDN (DEC-51)
 export class AssetCache {
   get<T>(id: AssetId): T;
   has(id: AssetId): boolean;
@@ -440,6 +445,14 @@ export class ResourceController {
 }
 ```
 
+- **Images the DOM shows** (screens and the HUD are React, [13](13-game-interface.md) §3) are
+  decoded for the DOM, not as `ImageBitmap`s: `SessionController` publishes the loaded group's
+  asset id → URL map as the `asset-urls` event, and `ui/` resolves an id with a selector, so `ui/`
+  never names a file (rule 13; DEC-51). Fonts are assets too: `FontLoader` adds Cinzel to
+  `document.fonts` from the `boot` group, and `--font-game` names the family first.
+- **Density and groups.** The device pixel ratio is read once per session and picks each entry's
+  `file` or `file2x`; art only one class-step layout or one effects renderer draws sits in its own
+  group, so a session never loads the other's.
 - Progress is byte-based from the manifest (`loadedBytes / totalBytes`), monotonic, and ends at
   the manifest sum; `SessionController` publishes it as `loading-progress` for `BootScreen`
   ([research A4](../research/persistence-input-diagnostics-research.md#a4-game-resources-manifests-preloading-caching-progress)).
@@ -478,11 +491,11 @@ export class ResourceController {
 
 ## 13. Recipes
 
-| I am adding…                  | Files                                                                                                                                | Plus                                                                                                          |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts` | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures     |
-| A field or a settings group   | bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; or one `group` literal with its `value` DTO and default             | a fixture at the old version in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
-| An asset or a storage backend | one `ASSET_MANIFEST` line with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                 | nothing else (views ask by id); one line in `main.tsx`                                                        |
+| I am adding…                  | Files                                                                                                                                                                       | Plus                                                                                                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts`                                        | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures     |
+| A field or a settings group   | bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; or one `group` literal with its `value` DTO and default                                                    | a fixture at the old version in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
+| An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter` | nothing else (views ask by id); one line in `main.tsx`                                                        |
 
 ## 14. Implementation status
 
