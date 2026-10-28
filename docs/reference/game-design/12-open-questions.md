@@ -4,7 +4,7 @@ description: Every open question and naming to-do from the game doc and the requ
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-27
 tags: [reference, game-design, open-questions, naming, decisions]
 related:
   - 'docs/reference/source/game-project-eternalus-v2.md'
@@ -38,7 +38,7 @@ comment.
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------ | ----- | -------- |
 | OQ-01 | Rename the Assault class: **decided 2026-10-03 → Warrior** (class `Warrior`, id `warrior`); displays as **Legionnaire** (DEC-48).                  | game doc: Naming; Classes                                         | decided (2026-10-03; DEC-48)                     |       |          |
 | OQ-02 | Rename the Flying class (requirements doc spells it "arial" and also asks for a new name). **Decided (DEC-48): Harbinger**; id `flying` (HC-F2).   | game doc: Naming (teal); requirements                             | decided (DEC-48); post-mvp                       |       |          |
-| OQ-03 | Name all sub-classes; Sentinel's second sub-class is TBD in both name and focus. **Decided 2026-10-17 (DEC-49)**; Legend names open (OQ-69).       | game doc: Naming; Sub-classes                                     | decided (DEC-49); gameplay post-mvp              |       |          |
+| OQ-03 | Name all sub-classes; Sentinel's second sub-class is TBD in both name and focus. **Decided 2026-10-17 (DEC-49)**; Legend names open (OQ-69).       | game doc: Naming; Sub-classes                                     | decided (DEC-49); MVP (DEC-56); phase: HC-Q17    |       |          |
 | OQ-04 | Rename Enchantment (the support form change).                                                                                                      | game doc: Naming; Form change                                     | open; needs-planning                             |       |          |
 | OQ-05 | Rename Titan.                                                                                                                                      | game doc: Naming (red)                                            | removed (replaced by "Eternal (rename pending)") |       |          |
 | OQ-06 | Name the central boss and the final-hit form; "Eternal (rename pending)" is used for both, and the source also writes "Mage Prime" and "Warrior′". | game doc: Central boss; Form change                               | open                                             |       |          |

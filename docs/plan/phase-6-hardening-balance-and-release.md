@@ -4,7 +4,7 @@ description: Sprint checklists for the performance pass against budgets, the hea
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-09-30
 tags: [plan, phase-6, performance, balance, art, audio, reliability, release]
 paths: ['packages/core/src/content/**', 'packages/core/src/diagnostics/**', 'apps/client/assets/**']
 related:
@@ -142,14 +142,6 @@ Owner: _ (art owner + client lane; product owner signs off). Week 9; anything no
       fallback in the `Announcer` HUD always on). Owner: _. Test: a fake `AudioOutput` receives
       one play per `GameEvents` type from a content table; muted buses play nothing. Done when:
       the event → sound mapping is a content table.
-- [ ] **UI enhancements on the owner's Figma screens** (the follow-up to
-      `feat/hud-and-character-select`, specified in [ui-enhancements-plan.md](ui-enhancements-plan.md):
-      the in-game reduce-motion setting applied to every reduced-motion rule (UE-03, INBOX HC-S3),
-      then the enhancements the owner picks in INBOX HC-S5, each a data-selectable variant with
-      the Figma original kept live and the default, DEC-53; may start early once that branch has
-      merged). Owner: _. Test: the plan's unit and visual acceptance per enhancement; every Figma
-      scenario is byte-identical with no enhancement selected. Done when: each built enhancement
-      has its `creative` row in reference 15 and the owner's review of its scenario.
 
 **Success metric:** 100% of manifest entries carry a licence and a source; 100% of entity kinds
 have a sprite (registry walk); the announcer fires for every timeline event in a scripted match;

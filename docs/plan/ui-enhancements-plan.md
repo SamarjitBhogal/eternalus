@@ -4,7 +4,7 @@ description: Specification of the follow-up pull request that adds data-selectab
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-10-27
 tags: [plan, ui, hud, character-select, accessibility, motion, follow-up]
 related:
   - 'docs/reference/game-design/15-figma-frames-and-creative-decisions.md'
@@ -27,10 +27,14 @@ original.
 
 ## 1. Scope and status
 
-- **Task line:** [Phase 6, sprint
-  6.3](phase-6-hardening-balance-and-release.md#sprint-63--art-and-audio-pass) ("UI enhancements on
-  the owner's Figma screens"). The work may start before sprint 6.3, in the phase branch open at the
-  time, once `feat/hud-and-character-select` has merged ([README](README.md) §1, stacking).
+- **Task line:** unscheduled; it waits on the owner's answer to `INBOX.md` HC-S5. The proposed line
+  ("UI enhancements on the owner's Figma screens", in [Phase 6, sprint
+  6.3](phase-6-hardening-balance-and-release.md#sprint-63--art-and-audio-pass)) is `INBOX.md` HC-T1
+  row T-152, for his approval, because a new task in his plan needs it (build rulings OD-26 and
+  OD-31). Once scheduled, the work may start before its sprint, in the phase branch open at the
+  time, once `feat/hud-and-character-select` has merged ([README](README.md) §1, stacking). The
+  owner's own functional UI/UX list is separate: it waits for Sprint 3 (`INBOX.md` HC-U1, build
+  ruling OD-39).
 - **Branch:** one task branch, `feat/ui-enhancements`, one pull request. UE-03 lands first, because
   every other enhancement relies on it.
 - **Inputs:** owner decision DEC-53 (a creative change ships only beside a live original, through
@@ -188,5 +192,5 @@ not be opened, the claim rests on a search summary, marked "(summary)".
 - [../reference/game-design/15-figma-frames-and-creative-decisions.md](../reference/game-design/15-figma-frames-and-creative-decisions.md): the frames and the register each enhancement joins.
 - [../reference/game-design/13-owner-decisions-log.md](../reference/game-design/13-owner-decisions-log.md): DEC-53 to DEC-55.
 - [../architecture/13-game-interface.md](../architecture/13-game-interface.md): §7 styling, accessibility and the display switches.
-- [phase-6-hardening-balance-and-release.md](phase-6-hardening-balance-and-release.md): sprint 6.3, where the task line lives.
+- [phase-6-hardening-balance-and-release.md](phase-6-hardening-balance-and-release.md): sprint 6.3, where the proposed task line would go (unscheduled; it waits on `INBOX.md` HC-S5).
 - [phase-5-meta-ui-and-persistence.md](phase-5-meta-ui-and-persistence.md): sprint 5.5's accessibility minimums.

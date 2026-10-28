@@ -4,7 +4,7 @@ description: The record for the pull request of feat/hud-and-character-select (c
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-26
+last-reviewed: 2026-10-27
 tags: [changelog, pull-request, ui, hud, character-select]
 related:
   [
@@ -13,6 +13,8 @@ related:
     'docs/reference/game-design/15-figma-frames-and-creative-decisions.md',
     'docs/reference/game-design/13-owner-decisions-log.md',
     'docs/decisions/0018-mvp-legend-pick-as-setup-data.md',
+    'docs/decisions/0019-session-controller-owns-the-match.md',
+    'docs/decisions/0020-client-test-configuration.md',
   ]
 ---
 
@@ -357,9 +359,16 @@ re-check, only these owner items remain:
   (`apps/client/AGENTS.md`; FR-090 with rule 11), among them the reference 01, 11 and 14 rows. HC-T1
   lists them at its top. The critic's minimum also named T-05 and DEC-50's rows (T-07, T-08, T-14 to
   T-16, T-86); they are in group (ii), because they also carry open items (DV-130; HC-B1's DV-01,
-  HC-F9, HC-Q8). The description lists the rows still pending.
+  HC-F9, HC-Q8). The description lists the rows still pending. Since the `/pr-review` of
+  2026-10-27, group (i) has 53 rows: T-147 to T-151 joined it.
 - **`INBOX.md` HC-Q7 (1)** (C-02, ui-hud-components-assets-04): the selection art in the MVP, with
-  FR-111's wording and the terms of the tools the art was made with.
+  FR-111's wording and the terms of the tools the art was made with. With it, HC-Q7 (3) (added
+  after the `/pr-review`, pr-ui-hud-components-assets-03): the wording of the owner's credit on the
+  About screen, which replaces the agent-drafted notice marked `TODO(sam)`.
+- **`INBOX.md` HC-B1** (added after the `/pr-review` of 2026-10-27, pr-docs-process-09): ADR 0010
+  and the pull request template expect better-than-design items to be signed off and folded into
+  the docs within the pull request, so the owner signs HC-B1 before the merge, or defers it
+  explicitly and the description says so.
 
 Architecture 08's status note (game-data-05) is not appended directly: an earlier 08 §11 was
 removed so that 08 stays unchanged until the owner approves its note (`fb310c6`; the open
@@ -435,6 +444,166 @@ ruling OD-30). Its in-match check confirms the cut pt-game-data-1 in a real brow
 at about 30 frames per 500 ms. 246 of the 250 screenshots are byte-identical to the baseline; the
 other four are the visual harness's own asset-check page, byte-identical to the shots verified in
 the roster-fix round.
+
+## The /pr-review before the merge
+
+At the owner's request, a `/pr-review` (the `pr-review` skill) checked the branch on 2026-10-27, at
+`a171761` against its base `230a330`: six area reviewers (core-bridge, game-data, ui-screens,
+ui-hud-components-assets, docs-process, integration), each judging against the governing docs as
+they stood at the base, and a skeptic who re-checked every should-fix finding and every owner
+question. The review is in the coordinating session's working folder (`pr-review/review.json`),
+outside the repository. Its finding ids are `pr-`, the area and a number. `npm run check` at
+`a171761` exits 0 (the coordinating session's run: core "Tests 617 passed (617)", client "Tests
+1331 passed (1331)", "Documentation check passed.").
+
+**Verdict: request-changes, with no blocker upheld.** Four areas asked for changes (game-data,
+ui-screens, ui-hud-components-assets, docs-process); core-bridge approved, and integration approved
+with conditions (the recipe below). The docs-process area's one blocker, pr-docs-process-07, is the
+existing merge precondition: the skeptic upheld it as should-fix that only the owner can clear. Of
+the 39 findings, the skeptic checked 18: 15 upheld and 3 not verifiable (the description draft,
+outside the repository; repaired anyway). Each finding is repaired, in repair, returned to the owner
+or not changed with a reason, except pr-ui-screens-03, which is open (below). The code repairs run
+in other worktrees; their commits are recorded when they merge.
+
+Failing checklist items ([checklists](../agents/checklists.md)) and how each is handled:
+
+| Checklist item                                                             | Failed in                                                                  | Handling                                                                                                                                                                                    |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §2 Guardrail configs untouched, or changed through an ADR linked in the PR | game-data, ui-screens, ui-hud-components-assets, docs-process, integration | Owner: [ADR 0020](../decisions/0020-client-test-configuration.md) (proposed) records the three lines; the pull request links it, and its guardrail box stays unticked until he accepts it.  |
+| §2 Docs, frontmatter and PROGRESS entry present; PR template complete      | core-bridge, docs-process                                                  | Repaired: the description follows `.github/pull_request_template.md` (outside the repository until the pull request opens); the naming suggestions' gap is `INBOX.md` HC-T1 T-147 to T-150. |
+| PR template complete (the description draft)                               | docs-process                                                               | Repaired, as above (pr-docs-process-01 to -03, -11).                                                                                                                                        |
+| §2 No product or game-design decisions by the agent                        | docs-process                                                               | Repaired for the Phase 6 task line (taken out; HC-T1 T-152 waits for HC-S5); owner for FR-057's agent-written acceptance sentence (HC-T1, T-93a).                                           |
+| §3 Documented: ADR if a decision changed                                   | game-data, docs-process                                                    | Owner: [ADR 0019](../decisions/0019-session-controller-owns-the-match.md) records DEC-50; ADR 0020 the test configuration. Both proposed.                                                   |
+| §1 Definition of done: the sprint checkbox ticked                          | docs-process                                                               | Owner: the phase 1, sprint 1.4 tick is HC-T1 T-80 (group (ii)).                                                                                                                             |
+| Every source file has a sibling test (02 §8, `AGENTS.md` "Testing")        | ui-screens                                                                 | Repair in progress (pr-ui-screens-02).                                                                                                                                                      |
+| No semantic conflict with the open sibling pull requests                   | integration                                                                | Owner: the merge order (HC-Q21) and the weapon art (HC-Q22); the resolution is the integration recipe below.                                                                                |
+| §3 DRY: one definition per fact                                            | integration                                                                | Not a defect at this head: the second roster source and the second simulation wiring appear only when the sibling branches merge; the recipe below resolves them (pr-integration-01, -02).  |
+| §2 CI green; `npm run check` reproduced                                    | not verifiable in any area                                                 | The review was read-only; the coordinating session ran `npm run check` at `a171761` (exit 0). CI runs when the pull request opens.                                                          |
+
+Every finding and how it is handled:
+
+| Id                             | Severity, owner (skeptic)             | What                                                                                          | Handling                                                                                                                                                      |
+| ------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pr-core-bridge-01              | nit                                   | The naming suggestions still show the two class names DEC-48 decided as open recommendations. | Repaired as rows for the owner: HC-T1 T-147 to T-150, group (i).                                                                                              |
+| pr-core-bridge-02              | nit, owner                            | Guardrail configs changed without an ADR (as pr-game-data-01).                                | Owner: ADR 0020.                                                                                                                                              |
+| pr-core-bridge-03              | nit                                   | A selector test uses the locked class's id as an available class.                             | Repair in progress.                                                                                                                                           |
+| pr-game-data-01                | should-fix, owner (upheld)            | Three guardrail-config lines changed without an ADR.                                          | Owner: ADR 0020.                                                                                                                                              |
+| pr-game-data-02                | nit, owner                            | The client coverage floor stays at 55 against 96.3 % measured.                                | Not changed (below).                                                                                                                                          |
+| pr-game-data-03                | nit                                   | Byte progress can drop when an entry's own file fails but its renditions load.                | Repair in progress.                                                                                                                                           |
+| pr-game-data-04                | nit                                   | A rejected group load stays pending, so every later load of the group fails at once.          | Repair in progress.                                                                                                                                           |
+| pr-game-data-05                | nit                                   | `Renderer.strokeScreenRect` has no production caller left.                                    | Not changed (below).                                                                                                                                          |
+| pr-ui-screens-01               | should-fix, owner (upheld)            | As pr-game-data-01.                                                                           | Owner: ADR 0020.                                                                                                                                              |
+| pr-ui-screens-02               | nit                                   | `useClassSelectStep.ts` and `useLegendSelectStep.ts` have no sibling test.                    | Repair in progress.                                                                                                                                           |
+| pr-ui-screens-03               | nit                                   | `motionTokens.test.ts` is named after no source file, and half of it tests the font rules.    | Open: not among the repairs in progress or the owner items; the coordinating session decides (a test file's name and place only).                             |
+| pr-ui-screens-04               | nit                                   | The rating meter trusts content to keep the ratings between 0 and 1.                          | Repair in progress (a content rule).                                                                                                                          |
+| pr-ui-hud-components-assets-01 | should-fix (upheld)                   | `PauseOverlay`'s focus restore and its settings-view focus are untested.                      | Repair in progress.                                                                                                                                           |
+| pr-ui-hud-components-assets-02 | should-fix, owner (upheld)            | As pr-game-data-01.                                                                           | Owner: ADR 0020.                                                                                                                                              |
+| pr-ui-hud-components-assets-03 | should-fix, owner (upheld)            | The art's licence trail: the tools' terms and the credit's wording.                           | Owner: `INBOX.md` HC-Q7 (1) and (3); (1) is a merge precondition.                                                                                             |
+| pr-ui-hud-components-assets-04 | nit                                   | Two test casts without a stated reason.                                                       | Repair in progress.                                                                                                                                           |
+| pr-ui-hud-components-assets-05 | nit                                   | Two CSS-module class references with no rule behind them.                                     | Repair in progress.                                                                                                                                           |
+| pr-ui-hud-components-assets-06 | nit                                   | Some tests pin stylesheet text rather than behaviour.                                         | Not changed (below).                                                                                                                                          |
+| pr-docs-process-01             | should-fix (not verifiable)           | The description draft does not follow the template.                                           | Repaired: rewritten to the template.                                                                                                                          |
+| pr-docs-process-02             | should-fix (not verifiable)           | Its title is the branch name, not a Conventional Commit.                                      | Repaired: a `feat(client)` title.                                                                                                                             |
+| pr-docs-process-03             | should-fix (not verifiable)           | Its head, counts and check are stale.                                                         | Repaired: the head, the counts and the check are filled in at the final head.                                                                                 |
+| pr-docs-process-04             | should-fix, owner (upheld)            | As pr-game-data-01; `vite.config.ts` is not a guardrail config (the skeptic).                 | Owner: ADR 0020.                                                                                                                                              |
+| pr-docs-process-05             | should-fix, owner (upheld)            | A Phase 6 task line was applied although HC-S5 is unanswered.                                 | Repaired: the plan is back to its base text; the line waits as HC-T1 T-152, and the UI enhancements plan says the task is unscheduled.                        |
+| pr-docs-process-06             | should-fix (upheld)                   | OQ-03's status and a TSDoc still say sub-class gameplay is post-MVP.                          | Repaired in reference 12 (OQ-03: MVP, DEC-56; phase: HC-Q17); the TSDoc repair is in progress.                                                                |
+| pr-docs-process-07             | blocker, owner (upheld as should-fix) | The merge preconditions are open.                                                             | Owner: the merge preconditions (below).                                                                                                                       |
+| pr-docs-process-08             | should-fix, owner (upheld as nit)     | FR-057's agent-written acceptance sentence was applied.                                       | Owner: HC-T1 T-93a, flagged for his check.                                                                                                                    |
+| pr-docs-process-09             | should-fix, owner (upheld)            | HC-B1 was listed as not blocking the merge.                                                   | Owner: HC-B1 joins the merge preconditions (below).                                                                                                           |
+| pr-docs-process-10             | nit, owner                            | Squash or merge commit for a branch of 111 commits (125 with merges).                         | Owner: asked in the pull request's description.                                                                                                               |
+| pr-docs-process-11             | nit                                   | Relative links in the description.                                                            | Repaired: absolute GitHub links.                                                                                                                              |
+| pr-docs-process-12             | nit, owner                            | The HC-T1 patch is outside the repository, so the other reviewers cannot read it.             | Owner: once he approves group (i), its rows are applied on the branch and show in the pull request's diff; the rest waits in the patch unless he asks for it. |
+| pr-docs-process-13             | nit, owner                            | DEC-50 changes an architecture decision without an ADR.                                       | Owner: ADR 0019.                                                                                                                                              |
+| pr-docs-process-14             | nit                                   | The D11 row names ADR 0018 but records only ADR 0006.                                         | Repaired as a row for the owner: HC-T1 T-151, group (i).                                                                                                      |
+| pr-integration-01              | should-fix (upheld as nit)            | Resolving M1's `useMatch.ts` change can silently drop the map handed to the simulation.       | The integration recipe (below); not a defect at this head.                                                                                                    |
+| pr-integration-02              | should-fix (upheld as nit)            | After M3 and M8 the bots have two roster sources and a Rover keyed to a fixed team.           | The integration recipe (below).                                                                                                                               |
+| pr-integration-03              | should-fix, owner (upheld as nit)     | The HUD's class-keyed weapon art against `feat/weapons`' default weapons.                     | Owner: HC-Q22.                                                                                                                                                |
+| pr-integration-04              | should-fix, owner (upheld as nit)     | The merge order with the nine sibling pull requests.                                          | Owner: HC-Q21.                                                                                                                                                |
+| pr-integration-05              | nit                                   | The player's identity is untested when allied bots share the player's class.                  | Not changed at this head (below); in the recipe.                                                                                                              |
+| pr-integration-06              | nit, owner                            | As pr-game-data-01.                                                                           | Owner: ADR 0020.                                                                                                                                              |
+| pr-integration-07              | nit                                   | Trivial text conflicts with the siblings.                                                     | The integration recipe (below).                                                                                                                               |
+
+**Owner items** (each in `INBOX.md` or in the pull request's description):
+
+- The merge preconditions below: HC-T1 group (i), now 53 rows; HC-Q7 (1), with (3), the credit's
+  wording; HC-B1.
+- ADR 0019 (DEC-50, the basis of HC-T1 T-07, T-08, T-14 to T-16 and T-86) and ADR 0020 (the test
+  configuration): accept or refuse; both are proposed.
+- HC-Q21: the merge order with the nine sibling pull requests, before either side merges.
+- HC-Q22: each class's start weapon and the HUD's weapon art, when `feat/weapons` merges.
+- Squash or merge commit (pr-docs-process-10): `docs/process/git-workflow.md` §4 squash-merges task
+  pull requests, which would fold the branch's 111 commits into one; asked in the description.
+- HC-T1 T-93a (FR-057's acceptance sentence) and the rest of HC-T1, row by row.
+
+**Not changed, with reasons:**
+
+- pr-game-data-05, `Renderer.strokeScreenRect`: a method of the base `Renderer` port, with its two
+  implementations and their tests. The branch removed its only caller (the old minimap border).
+  Removing it changes the port and deletes tests, which this pull request does not need.
+- pr-ui-hud-components-assets-06, the tests that pin stylesheet text: they pin the Figma geometry
+  the visual audit verified against the owner's frames, where every deliberate difference is
+  registered (DEC-53, reference 15); the critic's first run kept them (N8, build ruling OD-33).
+  New tests prefer invariants ([ADR 0020](../decisions/0020-client-test-configuration.md)).
+- pr-integration-05, the player's identity next to allied bots of the same class: no such bot
+  exists until M3 merges, so the test belongs to the integration commit (recipe step 3).
+- pr-game-data-02, the client coverage floor of 55: the gap predates this branch (sprint-1 audit
+  AD-2, open), and the phase exit checklist raises the thresholds to the phase target
+  ([checklists §4](../agents/checklists.md#4-phase-exit-checklist)). Guardrails §2 also asks for a
+  raise in the pull request when coverage rises well above a threshold; the owner may ask for it
+  here.
+
+### Integration recipe
+
+For whoever resolves the merges with the sibling pull requests, whichever order HC-Q21 picks; the
+side that merges second applies it. The siblings that target `phase/2-sprint-2-work`, as the
+remote-tracking refs stood on 2026-10-27 (the phase branch was still `230a330`):
+
+| Id      | Branch                              | Built on                     |
+| ------- | ----------------------------------- | ---------------------------- |
+| M1      | `feat/minion-m1-marching`           | the phase branch             |
+| M2a     | `feat/minion-m2a-brains-perception` | M1                           |
+| Plan    | `docs/minion-plan-all-enemy-ai`     | M2a                          |
+| M2b     | `feat/minion-m2b-minion-controller` | the plan                     |
+| M3      | `feat/minion-m3-bot-laners`         | M2b                          |
+| M4      | `feat/minion-m4-flow-fields`        | M1                           |
+| M5a     | `feat/minion-m5a-modifiers`         | M2b                          |
+| M8      | `feat/minion-m8-rover-astar`        | M3                           |
+| Weapons | `feat/weapons` (pull request #42)   | the phase branch (no minion) |
+
+1. **The map (pr-integration-01, M1).** M1 makes the simulation's `map` option optional ("Without
+   one, nothing spawns on lanes") and passes it in `game/useMatch.ts`, which this branch deleted.
+   Here the simulation is built in `apps/client/src/game/createBrowserMatch.ts`, and again in
+   `SessionController.endToEnd.test.ts`. Taking the deletion typechecks and passes every test, yet
+   no minion spawns. Pass the prepared world's map (`map: request.world.map`) where
+   `createBrowserMatch.ts` builds the `Simulation`; build the simulation in one function that the
+   factory and the end-to-end test both call; add a test that fails without the map (for example,
+   the first wave's minions in the match's snapshot) and record its deliberate break.
+2. **One roster source (pr-integration-02, M3 and M8).** M3 and M8 build the bots from
+   `placeholderRoster.ts` and `PLACEHOLDER_BOT_CLASSES`, and M8 keys the bot Rover on
+   `PLACEHOLDER_PLAYER.team`, a constant fixed to one team, while this branch draws the player's
+   team from the seed (`game/session/buildMatchSetup.ts`) and shows the setup's rosters on the
+   selection screens. Delete `placeholderRoster.ts` with its test, and bring back neither
+   placeholder constant. Add a pure mapper in `game/session/` from the match setup to core's roster
+   slots (the allied bots and every enemy; the class id as the definition; role `rover` for the
+   Rover, else `laner`; the entry's team), port the old test's assertions to it (nine laners per
+   team, one bot Rover on the non-player team only, checked for both player teams) and wire it
+   into the shared simulation builder of step 1. Then update the interim row in M8's
+   `docs/plan/minion-system-plan.md`. The bots keep M3's and M8's difficulties (laners `normal`,
+   the enemy Rover `rover`); a difficulty picked in the menu would be a new feature for a later
+   question.
+3. **The player's identity (pr-integration-05, once M3's bots exist).** `Match` takes as the player
+   the first spawned entity of the player's class and team. On M8, allied bots of that class spawn
+   inside the `Simulation` constructor, before `Match` subscribes, but nothing pins that order. Add a
+   `Match` test whose roster has an allied bot of the player's class and assert that the player's
+   entity is the Legend at the player's Stronghold.
+4. **The text conflicts (pr-integration-07).** `PROGRESS.md` (all nine): keep both sides' entries
+   in date order and drop none. Architecture 05 (M5a) and 06 (M4, M8): only `last-reviewed`
+   conflicts; take the later date, or the resolution date if the resolver edits the doc.
+   `packages/core/src/content/defaultContentRules.ts` (Weapons): keep all three imports
+   (`SpecClassExistsRule`, `WEAPONS`, `WeaponDefinition`). Run Prettier on the touched docs.
+5. **Then** run `npm run check`, have the critic check the integration change (ADR 0010), and apply
+   the owner's answer to HC-Q22 once `feat/weapons` is in.
 
 ## Working ids
 
@@ -782,13 +951,13 @@ Protocol R1 (DEC-54) renders the owner's frames from duplicates on one scratch p
 
 ### The coordinated build's streams, lanes and rounds
 
-| Id                                                | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stream A, stream B, stream C                      | The three sessions of the coordinated build: A, integration and the merge train (the coordinating session, on the task branch); B, documentation (`docs/hud-charselect-docs`); C, the final visual audit and HUD rework (`fix/hud-charselect-visual`).                                                                                                                                                                                                                                                                                                                                                                                            |
-| Lane A, lane B                                    | The two code sessions of the pre-PR critic's rework (`fix/hud-charselect-critic-a` and `fix/hud-charselect-critic-b`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Roster-fix round                                  | Lane B's code round for build ruling OD-38 on `fix/hud-charselect-critic-b`: 12 commits (`f23ce76` to `f896faf`), merged together with round B8 into the task branch as `fcc7c85`. It built the roster audit's items P1 to P5, P7 and P11 (defined below).                                                                                                                                                                                                                                                                                                                                                                                        |
-| B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12 | The coordinating session's follow-up rounds for stream B, each opened with "GO Bn" and closed with "DONE Bn": for example, B5 applied the pre-PR critic's doc findings, B6 recorded ADR 0018 as the owner corrected it and added this file, B7 rewrote the edit-table rows that copied names, B8 is the roster audit's list of docs, B9 records the roster-fix round and the owner's visual sign-off (build rulings OD-39 and OD-39a), B10 is the doc side of the critic's second run, B11 records that run's rework, and B12 records the ponytail round and the critic's delta re-check. Not the critic's finding B1 or the CSS audit's item B2. |
-| T-66, T-67, T-68, T-69, T-70, T-71, T-72          | Former rows of the `INBOX.md` HC-T1 edit table, which renamed reference 01's sub-class rows one by one; merged into T-65 in round B7 so that no row copies the roster (ADR 0018 point 4).                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Id                                                     | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Stream A, stream B, stream C                           | The three sessions of the coordinated build: A, integration and the merge train (the coordinating session, on the task branch); B, documentation (`docs/hud-charselect-docs`); C, the final visual audit and HUD rework (`fix/hud-charselect-visual`).                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Lane A, lane B                                         | The two code sessions of the pre-PR critic's rework (`fix/hud-charselect-critic-a` and `fix/hud-charselect-critic-b`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Roster-fix round                                       | Lane B's code round for build ruling OD-38 on `fix/hud-charselect-critic-b`: 12 commits (`f23ce76` to `f896faf`), merged together with round B8 into the task branch as `fcc7c85`. It built the roster audit's items P1 to P5, P7 and P11 (defined below).                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13 | The coordinating session's follow-up rounds for stream B, each opened with "GO Bn" and closed with "DONE Bn": for example, B5 applied the pre-PR critic's doc findings, B6 recorded ADR 0018 as the owner corrected it and added this file, B7 rewrote the edit-table rows that copied names, B8 is the roster audit's list of docs, B9 records the roster-fix round and the owner's visual sign-off (build rulings OD-39 and OD-39a), B10 is the doc side of the critic's second run, B11 records that run's rework, B12 records the ponytail round and the critic's delta re-check, and B13 records the `/pr-review` before the merge. Not the critic's finding B1 or the CSS audit's item B2. |
+| T-66, T-67, T-68, T-69, T-70, T-71, T-72               | Former rows of the `INBOX.md` HC-T1 edit table, which renamed reference 01's sub-class rows one by one; merged into T-65 in round B7 so that no row copies the roster (ADR 0018 point 4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ### The roster audit's fix items (OD-38)
 
