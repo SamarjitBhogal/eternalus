@@ -265,3 +265,25 @@ export const autofocusedClassIds = (html: string): string[] =>
   (html.match(/<button[^>]*role="radio"[^>]*>/g) ?? [])
     .filter((tag) => tag.includes('autofocus'))
     .map((tag) => /data-class-id="([^"]*)"/.exec(tag)?.[1] ?? '');
+
+/**
+ * A key press on one of `count` radio cards, as the roving focus move reads it (its key, its
+ * default, its parent's radios), recording which card takes the focus.
+ */
+export function keyOnRadioCards(count: number, key: string) {
+  const focused: number[] = [];
+  let prevented = 0;
+  const radios = Array.from({ length: count }, (_, at) => ({
+    focus: () => {
+      focused.push(at);
+    },
+  }));
+  const event = {
+    key,
+    preventDefault: () => {
+      prevented += 1;
+    },
+    currentTarget: { parentElement: { querySelectorAll: () => radios } },
+  };
+  return { event, focused, prevented: () => prevented };
+}

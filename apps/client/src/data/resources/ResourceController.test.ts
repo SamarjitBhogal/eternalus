@@ -403,6 +403,31 @@ describe('ResourceController', () => {
 
     await expect(fresh).resolves.toEqual({ group: 'boot', failed: [] });
     expect(resources.isLoaded('boot')).toBe(true);
+    // The fresh load's three handles and the stale one whose release threw (the mock never freed
+    // it); the stale load's other two are freed.
+    expect(images.heldCount).toBe(4);
+  });
+
+  it('frees every other handle and forgets the group when one release throws (a bug)', async () => {
+    const { resources, images } = setup();
+    const load = resources.load('selection', () => undefined);
+    images.resolveAll();
+    await load;
+    vi.spyOn(images, 'release').mockImplementationOnce(() => {
+      throw new Error('release bug');
+    });
+
+    expect(() => {
+      resources.release('selection');
+    }).toThrow('release bug');
+
+    // Only the handle whose release threw is held; the group's other five are freed.
+    expect({
+      held: images.heldCount,
+      urls: resources.urls('selection'),
+      isLoaded: resources.isLoaded('selection'),
+      loaded: resources.progress('selection').loaded,
+    }).toEqual({ held: 1, urls: {}, isLoaded: false, loaded: 0 });
   });
 
   it('frees the renditions an entry loaded when warning that its own file failed throws (a bug)', async () => {
