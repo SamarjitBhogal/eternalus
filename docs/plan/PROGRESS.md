@@ -2186,3 +2186,64 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   the weapon panel, CD-25's mask, the Magus description, HC-Q7 (1) and (4), the enhancements,
   T-155 to T-157, T-162, T-163, T-23); next sprint: the class kits and sub-class gameplay; then
   the integration with the sibling pull requests (HC-Q21 (b)).
+
+### 2026-10-28 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the critic's check of round B18, loop 1 (stream B, round B19) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `0cd98b7`: `f35683d` ADR 0023, `bfd6607` the corrected rows,
+  `38dc4d1` the decisions log, `6f0430c` INBOX and the PR register). The architecture critic, loop 1
+  of the owner's three, read the 49 rows round B18 applied against the design at `230a330`: no
+  blocker, 3 should-fix findings and 7 nits (its report is outside the repository, in
+  `eternalus-agent-work/hud-charselect/decisions/record-and-research.json`). All ten are fixed:
+  - Should-fix: `cancel-match` left 13 §3's `CharacterSelectScreen` Emits (T-166; no `ui/` file
+    emits it, DEC-60); 13 §6.2 now gives the reason 13 §10 gives for reading the pause key in `ui/`
+    (a paused match's stopped loop cannot read it) and the `clientActions` sketch marks
+    `pause-menu` as the exception (T-169, T-170); the content-id rule cites the new ADR 0023 and
+    `INBOX.md` HC-Q18 (4) instead of ADR 0018 point 5, which covers Legend ids only (T-175 to
+    T-179, and the basis cells of HC-T1 rows T-100 to T-102 and T-136 to T-144).
+  - Nits: the owner's Keep of 2026-10-28 beside the `Recommendation:` labels of HC-F9, HC-F7 and
+    HC-Q14, and `--text-min` named in place of a copied 12 px (T-164, T-167, T-168, T-169); the
+    `MemoryStorageAdapter` target kept (T-165); 02 §3's interim wording moved to 02 §12 (T-171);
+    09 §2's sentence order (T-172); the exact test name (T-173); "no non-test file" (T-174);
+    `Recommendation:` notes appended to DEC-61 and DEC-62 for the recorder's interim defaults.
+  - ADR numbers: 0023 was free on all 82 local and remote refs after `git fetch`, in every local
+    worktree, in `INBOX.md` and in `eternalus-agent-work/`, and is used for the content-id record.
+    **0024 is reserved for the coming "load on demand" ADR** (DEC-68; INBOX HC-Q20). The load-on-
+    demand research (`eternalus-agent-work/hud-charselect/decisions/research/load-on-demand.md`)
+    calls that ADR "0023" while leaving the number to the orchestrator; read it as 0024. 0021
+    stays the game-loop plan's.
+  - Every edit to a sholtzman-owned doc this round (`last-reviewed` already 2026-10-28 on each):
+    - HC-T1 rows applied (16, `--apply-b19` of the D2b generator): `AGENTS.md` T-175; architecture
+      02 T-171; 04 T-176; 09 T-172; 13 T-164 to T-170; 17 T-177; the phase 1 plan T-173, T-174;
+      the naming suggestions T-179; requirements 02 (CP-13) T-178. Prettier re-padded 13 §2's
+      table, whitespace only.
+    - Implementation-status notes (not design text): 13 §10's Session bullet (`SessionController`
+      takes no `persistence` yet, so its transitions test has no `MemoryStorageAdapter`) and 02
+      §12's Assets bullet (the generated `assets/manifest.json` of 14 §11 stays planned).
+    - The decisions log: notes appended to the decision cells of DEC-61 and DEC-62 (the rows are
+      not rewritten; no other row changed).
+    - ADR 0023 (new, accepted on the owner's delegation of 2026-10-28, as ADR 0022 was;
+      `docs/README.md` regenerated); the PR register's new section "The critic's check of round
+      B18 (loop 1)"; this entry.
+    - `INBOX.md` (not under `docs/`): HC-T1's round B19 bullet and regenerated table, a line under
+      HC-Q18 naming ADR 0023, a Done entry.
+  - Not changed: T-12's pending redraft still names `cancel-match` as a trigger; HC-T1 flags it for
+    the DEC-60 build. The TSDoc of `lockedClasses.types.ts` and `legendSpecs.types.ts` still cites
+    ADR 0018 point 5 (code; ADR 0023 says it can cite the new record when that code next changes).
+  - Outside the repository: the D2b generator gains T-164 to T-179, `--apply-b19`,
+    `B19-APPLIED.rows.md` and `basis_b19()`; its README records the round. Backups in
+    `b19-backup/`. The new rows were first numbered after the row each corrects, with a letter
+    suffix, and renumbered before any commit, because a six-character id would have re-padded all
+    of HC-T1's table (pc-04).
+- Checks run, on `0cd98b7` with all of this round's edits except this entry in the working tree:
+  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 619 passed
+  (619)", statements 99.19 %; client "Tests 1360 passed (1360)", statements 96.48 %; the
+  JavaScript bundle 556.83 kB (gzip 174.14 kB); "✓ built"; "Checked 121 Markdown files under
+  docs/." "Documentation check passed." Before any change the B18 generator reproduced every B18
+  output byte for byte on `0cd98b7`. After it, `git apply --check d2b.patch` (the 16 pending rows)
+  prints nothing; the patched copies differ from round B18's only by this round's own edits (04,
+  13, 17 and the naming suggestions; the other seven files are byte for byte the same); no edit-
+  table cell is wider than its column, so the inline table changes only in its 12 basis cells and
+  16 new rows. T-164 to T-179 were free on every ref and in the agent working folders. The id
+  resolver against `230a330`, with this entry written: 1028 ids, 0 without a definition.
+- Next step: a second critic loop on round B19 if the coordinating session runs one (two of the
+  owner's three remain); then the build work round B18 listed, ADR 0024 (load on demand) among it.
