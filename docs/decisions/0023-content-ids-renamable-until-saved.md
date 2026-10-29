@@ -18,8 +18,9 @@ related:
 # 0023. Content ids are renamable until saved or released
 
 - Status: accepted (the product owner's answer to `INBOX.md` HC-Q18 (4) on his non-blocking
-  decision page, given in chat on 2026-10-28, and his delegation of this record the same day;
-  written and accepted on that delegation, 2026-10-28, as ADR 0022 was)
+  decision page, given in chat on 2026-10-28, and his delegation of the FR-111 record (N2) the
+  same day, read as covering this one; written and accepted on that reading, 2026-10-28, as ADR
+  0022 was)
 - Date: 2026-10-28
 
 ## Context
