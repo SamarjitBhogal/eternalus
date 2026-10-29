@@ -15,7 +15,7 @@ describe('LOCKED_CLASSES', () => {
     ]);
   });
 
-  it('never ships the retired id `flying` (renamed to `harbinger`, owner ruling F2)', () => {
+  it('never ships the retired id `flying` (renamed to `harbinger`, DEC-59)', () => {
     expect(LOCKED_CLASSES.has('flying')).toBe(false);
   });
 

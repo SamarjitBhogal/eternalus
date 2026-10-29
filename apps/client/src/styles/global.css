@@ -36,7 +36,6 @@
   --color-bg: var(--surface-0);
   --color-text: var(--text-primary);
 
-  /* Every screen uses Cinzel (owner ruling N1); both menu tokens alias `--font-game`. */
   --font-display: var(--font-game);
   --font-body: var(--font-game);
 

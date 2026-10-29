@@ -12,7 +12,6 @@ export const CATALYST = {
   displayName: 'Catalyst',
   legendName: {
     light: 'Veridan',
-    // TODO(sam): Dark name derived from the mirror rule; confirm (INBOX HC-Q16)
     dark: 'Nadirev',
   },
   roleLabel: null,

@@ -1,7 +1,7 @@
 import type { LegendDefinition } from './legends.types';
 
 /**
- * Warrior (formerly Assault): lighter, lower health, faster. Its title is `displayName` (DEC-48).
+ * Warrior (formerly Assault): lighter, lower health, faster. Its title is `displayName` (DEC-58).
  * The content id stays `warrior` (17 R26).
  *
  * TUNE: health and movement are placeholders that only keep the class ordering from
@@ -10,7 +10,7 @@ import type { LegendDefinition } from './legends.types';
 export const WARRIOR = {
   id: 'warrior',
   kind: 'warrior',
-  displayName: 'Vanguard', // DEC-48
+  displayName: 'Vanguard', // DEC-58
   roleBlurb: 'Lighter, lower health, faster.',
   roleLabel: 'Assault', // Figma 72:858: a role label, not the class name
   tagline: null,

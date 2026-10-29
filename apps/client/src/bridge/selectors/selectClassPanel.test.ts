@@ -67,7 +67,7 @@ const MAGUS = classCardFixture({
   },
 });
 
-const LEGIONNAIRE = classCardFixture({
+const WARRIOR = classCardFixture({
   classId: 'warrior',
   displayName: 'Vanguard',
   specs: [
@@ -80,7 +80,7 @@ const LEGIONNAIRE = classCardFixture({
 function storeWith(layout: ClassSelectLayout, team: PlayableTeam | null = 'light') {
   const content: DisplayCatalogue = {
     ...contentSlice.getInitialState(),
-    legendClasses: [LEGIONNAIRE, MAGUS],
+    legendClasses: [WARRIOR, MAGUS],
     classSelectLayout: layout,
   };
   return createAppStore({

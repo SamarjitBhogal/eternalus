@@ -127,7 +127,7 @@ describe('coreCatalogue', () => {
     }
     expect(owners.get(SHARED_LEGEND_ART.id)).toEqual(SHARED_LEGEND_ART.specIds);
     const others = [...owners].filter(([id]) => id !== SHARED_LEGEND_ART.id);
-    expect(others.length).toBeGreaterThan(0);
+    expect(others).toHaveLength(11);
     expect(others.filter(([, owner]) => owner.length !== 1)).toEqual([]);
   });
 

@@ -69,8 +69,7 @@ export function catalogueWithUnselectableLegend(): {
 }
 
 /**
- * Titles the roster no longer uses: DEC-49's "Cantor" and "Gravecaller", and the titles the T5 rename
- * retired. "Juggernaut" and "Necromancer" are left out: they are still content ids.
+ * Titles the roster no longer uses and that are not ids (DEC-58).
  */
 const RETIRED_NAMES = ['cantor', 'gravecaller', 'legionnaire', 'velite', 'centurion', 'praetorian'];
 
