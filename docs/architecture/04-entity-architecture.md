@@ -286,7 +286,7 @@ one-line content change. Renaming the class is a file rename plus the imports an
 clause of its subclasses (an IDE refactor), exactly as the requirements doc asks. The content
 **id** (`'warrior'`) is the one thing that does not change once a save or a release stores it,
 because replays, loadouts and match history reference it; if the team ever insists, that is a
-persistence migration (Recommendation: do not). No saves or release exist yet (ADR 0018): until
+persistence migration (Recommendation: do not). No saves or release exist yet (ADR 0023): until
 they do, renaming an id is a content refactor, and a reference it misses must fail the checks (a
 test or the boot-time content validation), never silently.
 

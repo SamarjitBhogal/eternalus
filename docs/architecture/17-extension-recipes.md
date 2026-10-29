@@ -516,7 +516,7 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   IDE rename of the symbol and its file, its imports and the `extends` clauses of subclasses.
   Content id (`'warrior'`): **never** once a save or a release stores it, because replays,
   loadouts and match history reference it (a persistence migration plus new replay fixtures if the
-  team insists; `Recommendation:` do not). Until saves or a release exist (none yet, ADR 0018),
+  team insists; `Recommendation:` do not). Until saves or a release exist (none yet, ADR 0023),
   renaming an id is a content refactor, and a reference it misses must fail the checks, never
   silently.
 - **Registry line:** the one registry line that names the class (the rename tool updates it).

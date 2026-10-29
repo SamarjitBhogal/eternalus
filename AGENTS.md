@@ -152,7 +152,7 @@ decision table is in `docs/architecture/02-code-structure.md`.
 - Naming: `PascalCase` classes/types/components, `camelCase` functions/variables,
   `SCREAMING_SNAKE_CASE` constants, `kebab-case` content IDs (never renamed once a save
   or a release stores them; until then a rename is a content refactor whose missed references
-  fail the checks, ADR 0018),
+  fail the checks; ADR 0023, `INBOX.md` HC-Q18 (4)),
   booleans prefixed `is/has/can/should/was`.
 - Files: each class has a single purpose and its file (`MovementSystem.ts`) contains **only that
   class**. Put the class's custom types in `MovementSystem.types.ts` and its constants in

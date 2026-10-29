@@ -94,8 +94,8 @@ export interface InputDevice {
   gesture, so the settings screen shows "press any button" before listing them.
 - **Focus loss**: `MatchHost`, the match's browser host, subscribes to `window` `blur` and
   `document` `visibilitychange` (hidden) and releases every device's held input (also when the
-  match pauses), so `Match` uses no browser API; because no `keyup` arrives for keys held
-  across a focus loss. The loop's clamp handles the time gap.
+  match pauses), because no `keyup` arrives for keys held across a focus loss. With the host
+  doing this, `Match` uses no browser API. The loop's clamp handles the time gap.
 - `navigator.keyboard.lock()` is progressive enhancement only (guarded by `'keyboard' in
 navigator`), used for fullscreen matches so Ctrl+W does not close the tab.
 

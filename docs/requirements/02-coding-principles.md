@@ -216,7 +216,7 @@ registry.register('blink', () => new BlinkEffect());
 
 - **Requirement.** Display names live in content, never in class names or code strings. Content
   IDs are kebab-case and never renamed once a save or a release stores
-  them. Class names are code identifiers: renaming a
+  them (ADR 0023; `INBOX.md` HC-Q18 (4)). Class names are code identifiers: renaming a
   class such as `Warrior` is an IDE rename of the class, its imports and the `extends` headers
   of its subclasses, and nothing else, because no rule, ID, save file or string compares against
   the class name. Kinds are string-literal unions declared once in content types; `kind` values

@@ -100,7 +100,7 @@ client/src/
   ui/hud/                     HealthBar, AetherBar, AbilityBar, MinimapPanel, MatchClock, Scoreboard, ...
   ui/components/              reusable presentational components, e.g. <KeyGlyph action="..."/>
   styles/                     global.css: tokens + reset only
-  assets/                     licensed or team-made asset files, one folder per asset group, licences/ (the typed manifest is data/resources/AssetManifest.ts; the generated manifest.json of 14 §11 stays planned)
+  assets/                     licensed or team-made asset files, one folder per asset group, licences/ (the typed manifest is data/resources/AssetManifest.ts, 14 §11)
 ```
 
 | Folder                                       | Responsibility                                                                                                                                          | May import                                                                                    | Key classes and files                                                                                                                                                                                                                                                                             |
@@ -307,9 +307,10 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   MIT texts, DEC-51). The typed manifest is not in `assets/`: it is
   `data/resources/AssetManifest.ts`, which concatenates one file per group
   (`data/resources/<group>Assets.ts`), so adding an asset is one line in its group's file with
-  its `licence` and `source`, plus the file. The loaders are `data/resources/loaders/`
-  (`AssetLoader.ts` port, `UiImageLoader.ts`, `FontLoader.ts`); there is no `AssetCache` yet
-  ([14](14-persistence-and-resources.md) §14).
+  its `licence` and `source`, plus the file. The generated `assets/manifest.json` of
+  [14](14-persistence-and-resources.md) §11 stays planned. The loaders are
+  `data/resources/loaders/` (`AssetLoader.ts` port, `UiImageLoader.ts`, `FontLoader.ts`); there is
+  no `AssetCache` yet ([14](14-persistence-and-resources.md) §14).
 - **Bridge.** `bridge/catalogue.types.ts` and `bridge/hud.types.ts` (display types shared with
   `ui/`), `bridge/selectionRules.ts`, `bridge/minimapRing.ts`, `bridge/legendNames.ts`, the
   `bridge/selectors/` folder and the new `assetsSlice` ([13](13-game-interface.md) §10).
