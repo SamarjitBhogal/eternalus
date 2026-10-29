@@ -813,6 +813,34 @@ hotkey (DEC-66); Cinzel in the menus (DEC-67); load on demand (DEC-68); simulati
 the session (HC-Q8 (1)); the art-id guard (HC-Q18 (1)); the `TODO(sam)` on Nadirev. For next
 sprint: the class kits (DEC-63), sub-class gameplay (DEC-70) and his Sprint 3 list (HC-U1).
 
+## The critic's check of round B18 (loop 1)
+
+His approvals of the deviation rows, the plan rows and T-153 hold "if they pass critical checks",
+with at most three critic loops (the section above). In loop 1 the architecture critic read the 49
+rows round B18 applied (`5415d6d` to `0cd98b7`) against the design at `230a330`; its report is in
+the coordinating session's working folder (`decisions/record-and-research.json`), outside the
+repository. **Verdict: request changes**, with no blocker, 3 should-fix findings and 7 nits; every
+other applied row passes, and so do DEC-58 to DEC-70, ADR 0022 and the history checks. Stream B's
+round B19 fixed all ten with the new `INBOX.md` HC-T1 rows T-164 to T-179, each correcting the row
+its status names:
+
+| Finding (severity)                                                                                                | Fix                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T-18 (should-fix): `CharacterSelectScreen` emits `cancel-match`, which no `ui/` file emits                        | T-166 drops it from 13 §3's Emits. T-12's pending redraft still names `cancel-match` as a trigger, which `INBOX.md` HC-T1 flags.                                   |
+| T-90 (should-fix): 13 §6.2's reason does not cover the pause key and contradicts the `clientActions` sketch       | T-169 gives the reason 13 §10 gives (a paused match's stopped loop cannot read the key); T-170 marks `pause-menu` as the exception in the sketch.                  |
+| The id rows (should-fix): they cite ADR 0018 point 5, which covers Legend ids only, and CP-13 changed with no ADR | ADR 0023 records the owner's HC-Q18 (4) answer; T-175, T-176, T-177, T-178 and T-179 cite it, and so does the basis of T-100 to T-102 and T-136 to T-144 in HC-T1. |
+| T-59 (nit): a dangling "because" clause                                                                           | T-172.                                                                                                                                                             |
+| T-38 (nit): interim state in 02 §3's tree                                                                         | T-171; the planned `assets/manifest.json` moves to 02 §12's status note.                                                                                           |
+| T-17 (nit): the base design's `MemoryStorageAdapter` dropped                                                      | T-165 keeps it as the target; 13 §10 says the session takes no persistence yet.                                                                                    |
+| T-16, T-28, T-29, T-90 (nit): `Recommendation:` labels the owner kept; 13 §7 copied 12 px                         | T-164, T-167, T-168 and T-169 note his Keep of 2026-10-28; T-168 names `--text-min` in `styles/global.css` instead of the value.                                   |
+| T-80 (nit): the test name misquoted                                                                               | T-173.                                                                                                                                                             |
+| T-85 (nit): "no such import" holds for non-test files only                                                        | T-174.                                                                                                                                                             |
+| DEC-61, DEC-62 (nit): the recorder's interim defaults are not labelled                                            | Notes appended to both rows label them `Recommendation:`; the rows are not rewritten.                                                                              |
+
+The critic also asks that the pull request description raise ADR 0022's "accepted on delegation"
+with the owner: it is a reading of an unclear answer, quoted in full in the ADR. ADR 0023 rests on
+the same reading. A second loop, if the coordinating session runs one, checks round B19.
+
 ## Working ids
 
 One line each, saying what the id is. Most come from the plan's sources, which are outside the
