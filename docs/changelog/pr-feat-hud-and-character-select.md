@@ -729,6 +729,90 @@ once, resolves with the integration recipe, re-runs `npm run check` and has the 
 integration change (ADR 0010). The credit drafted in HC-Q7 (3) replaces the notice marked
 `TODO(sam)` in `apps/client/src/data/resources/assetLicences.ts` once he confirms it.
 
+## Owner answers of 2026-10-28 (non-blocking)
+
+Later the same day the owner answered the 42 non-blocking questions in chat, from a second decision
+page whose items were keyed N1 to N5, F1 to F17, R1 to R7, Q1 to Q6, T1 to T5, S1 and S2. These
+keys belong to that page and to this table only: they are not the plan's flow defaults F1 to F9 or
+the critic's findings N1 to N29 and S1 to S5 ([working ids](#working-ids)). Elsewhere each answer
+is cited by its `INBOX.md` item. His words are quoted under each item he answered in `INBOX.md`; the
+game-design decisions among them are DEC-58 to DEC-70 in the decisions log (with appended notes on
+DEC-48, DEC-49, DEC-51 and DEC-57), and his answer on FR-111 is recorded in
+[ADR 0022](../decisions/0022-fr-111-selection-art-is-mvp.md). His instruction with them: "Make sure
+all of these items are written down. Don't want to have to write this all again." His rename (T5)
+replaces every name in the other answers.
+
+| Key | Item                                                 | His answer, short                                                                                         | Recorded; what follows                                                                                         |
+| --- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| N1  | HC-Q7 (2) to (5) and the credit                      | keep the credit; (2) yes "if this doesn't mess with the architecture"; (4) misread; (5) Cinzel everywhere | HC-Q7; DEC-67; HC-T1 T-11, T-24, T-31 applied; open: the tools' terms, (4) asked again; build: the menus' font |
+| N2  | FR-111 and NFR-010                                   | "I don't care what number is used"                                                                        | ADR 0022, accepted on that delegation                                                                          |
+| N3  | DEC-57 against reference 07                          | "Same weapons, new names; Bastions move into the MVP"; the rest in scope; staffs ranged by default        | DEC-64; DEC-57's note; HC-Q22                                                                                  |
+| N4  | HC-T1 T-155 to T-157                                 | "Review them one by one first": explain them                                                              | HC-T1 (explained by name); pending                                                                             |
+| N5  | HC-T1 A-1 and A-2                                    | "Keep both"                                                                                               | accepted                                                                                                       |
+| F1  | HC-F1, the character-select flow                     | the countdown is always 60 s; bots 3/3/3 per team plus an enemy mirror, filled at LOCK IN                 | DEC-60, DEC-61; open: the bots' Legends; build; T-10, T-13 held, T-12, T-75 redrafted                          |
+| F2  | HC-F2, the locked fourth class                       | "Use the id harbinger"; a "Coming Soon..." look                                                           | DEC-59; T-158 to T-161 approved, T-162, T-163 pending; build: the content rename and the look                  |
+| F3  | HC-F3, ally tiles, team badge, backdrop              | "Keep"; names, art and backdrops stay easy to add by team                                                 | DEC-70; HC-F3 (1) still open                                                                                   |
+| F4  | HC-F4, the pick reaches the match                    | "Keep"; every pick holds for the match                                                                    | DEC-61; ticked                                                                                                 |
+| F5  | HC-F5, team colours, flag, key glyphs                | "Keep"; on the Dark team your points and towers are red                                                   | DEC-62; ticked                                                                                                 |
+| F6  | HC-F6, real game data only                           | "Keep"; empty frames, weapon container and shield, except the Vanguard's helmet                           | DEC-62; open: the weapon panel against DEC-57; build                                                           |
+| F7  | HC-F7, the reused keys                               | "Keep the reused keys"                                                                                    | T-28, T-90 applied; ticked                                                                                     |
+| F8  | HC-F8, developer tools                               | "Show the developer tools for the course demo", as a show-or-hide developer hotkey                        | DEC-66; build                                                                                                  |
+| F9  | HC-F9, selection art released at the match           | "Keep"                                                                                                    | T-16 applied (with R6); ticked                                                                                 |
+| F10 | HC-Q6, eight visual defaults                         | "Keep all eight"; his improvement notes                                                                   | HC-Q6 ticked; the notes are his Sprint 3 list (HC-U1)                                                          |
+| F11 | HC-Q9, behaviours the frames do not show             | "Veto one": no Esc on the class step; LOCK IN keeps a locked view                                         | DEC-60; build                                                                                                  |
+| F12 | HC-Q10, nine short texts                             | "Keep all nine"                                                                                           | ticked                                                                                                         |
+| F13 | HC-Q12, the class ids the match accepts              | "Keep the open id with its checks"                                                                        | ticked                                                                                                         |
+| F14 | HC-Q14, the 12 px text floor                         | "Keep 12 px"                                                                                              | T-29 applied; ticked                                                                                           |
+| F15 | HC-Q15, lossless image sizes                         | "Accept the lossless sizes"                                                                               | ticked                                                                                                         |
+| F16 | HC-Q16, Catalyst's Dark name                         | "Confirm Nadirev"                                                                                         | DEC-58, DEC-49's note; build: remove the `TODO(sam)` marker                                                    |
+| F17 | HC-C1, the register rows CD-01 to CD-38              | "Keep every row"                                                                                          | HC-C1; CD-25, CD-30, CD-38 explained (HC-U1); open: CD-25's mask                                               |
+| R1  | HC-Q1, the missing Legend details                    | "Later": he details abilities and weapons next sprint; Light and Dark alike but for art and names         | DEC-70; open until next sprint                                                                                 |
+| R2  | HC-Q2, the HUD's weapon level, ultimate, bars, clock | "Rules in the note"                                                                                       | DEC-62; T-23 redrafted, pending; open: the ultimate's tiers and pips, the clock                                |
+| R3  | HC-Q3, the Figma's abilities                         | default abilities, proficiencies and passives per class; "majority not MVP, documented regardless"        | DEC-63; next sprint                                                                                            |
+| R4  | HC-Q4, the structure strip                           | "Keep for MVP"; a CSS destroyed look, health bar hidden                                                   | DEC-69; build                                                                                                  |
+| R5  | HC-Q5, the alternate class layout                    | Ultimate / Abilities rows; a full-screen View Details modal; at most three critic loops                   | DEC-65; open: the Magus description (asked by wording); build                                                  |
+| R6  | HC-Q8, the match runtime                             | "Confirm pause; keep MatchHost; yes to (1) and (2)"; critics compare with the architecture                | T-16, T-59 applied; build: step errors to the session                                                          |
+| R7  | HC-Q17, sub-class gameplay                           | "Later": the selection screen now, the rest next sprint                                                   | DEC-70; plan tasks for next sprint                                                                             |
+| Q1  | HC-Q18 (1), the art-id prefix check                  | "Replace the prefix check"                                                                                | HC-Q18; code change                                                                                            |
+| Q2  | HC-Q18 (2), class id versus entity kind              | no choice: research the open branches, then follow the architecture                                       | HC-Q18; research                                                                                               |
+| Q3  | HC-Q18 (3), content text naming itself               | no choice: "Whichever fits the architecture best"                                                         | HC-Q18; as built until agents next change it                                                                   |
+| Q4  | HC-Q18 (4), ids renamable until saved                | "Every content id"                                                                                        | T-100 to T-102, T-136 to T-144 applied                                                                         |
+| Q5  | HC-Q19, minimap click, setting, M key                | "Keep canvas path; setting and M in sprint 5.4"; did not know the setting and the key                     | HC-Q19 (explained); plan task and doc rows to come                                                             |
+| Q6  | HC-Q20, the first download size                      | "Load on demand now": "Look ahead, remember behind."                                                      | DEC-68; build                                                                                                  |
+| T1  | HC-T1, the 20 deviation rows                         | "Approve all 20", "if they pass critical checks"                                                          | 18 applied; T-10, T-13 held (DEC-61)                                                                           |
+| T2  | HC-T1 T-80 to T-85                                   | "Approve all six", same condition                                                                         | applied                                                                                                        |
+| T3  | HC-T1 T-145                                          | "Approve"; task-recording rows approved in general                                                        | applied                                                                                                        |
+| T4  | HC-T1 T-153                                          | "Approve: it ends lower", same condition                                                                  | applied                                                                                                        |
+| T5  | HC-T1 T-118, T-120, T-132, T-133                     | "Approve all four", with the rename                                                                       | applied; the rename is DEC-58                                                                                  |
+| S1  | HC-S5, the UI enhancements                           | "Build these, switched on by default", no enhancement named                                               | HC-S5; open: which ones (planned: all eleven, on by default); T-152 pending                                    |
+| S2  | HC-U1, his Sprint 3 list                             | "List in the note"; did not know CD-25, CD-30, CD-38                                                      | HC-U1 (his four notes; the three rows explained)                                                               |
+
+**HC-T1 after these answers:** 49 more rows applied (`--apply-b18` of the D2b generator, outside
+the repository): T-05, T-11, T-16 to T-20, T-22, T-24, T-26, T-28, T-29, T-31, T-36, T-38, T-39,
+T-41, T-46, T-47, T-56 to T-59, T-79 to T-85, T-90, T-100 to T-102, T-118, T-120, T-132, T-133,
+T-136 to T-145 and T-153; A-1 and A-2 accepted. 16 rows are pending: T-10 and T-13 (held for the
+bot-roster build), T-12 and T-75 (redrafted to DEC-60, applied with that build), T-23 (redrafted to
+DEC-62, for his approval), T-125 (SamarjitBhogal's), T-152 (waits for his list of enhancements),
+T-155 to T-157 (explained, for his approval), T-158 to T-161 (approved, applied with the content
+rename of `flying` to `harbinger`) and T-162, T-163 (for his approval). His approvals of the
+deviation rows, the plan rows and T-153 were given "if they pass critical checks"; each row was
+checked against his answers, and the critic's check of the integration covers the applied text.
+
+**Rules he set with these answers**, for the work that follows: at most three critic loops on a
+check ("Max 3 loops on the critic check we blew out my weekly limit last week."); critics compare
+the match-runtime work against the architecture and approve it only as in line with it, as good or
+better; doc rows that only record finished work as tasks are approved in general ("If this is just
+task recording for already-finished work, I approve all items like this"); numbering of decisions,
+work items and pull requests is left to the agents.
+
+**Build work that follows** (none of it on this branch yet): the content rename (DEC-58, DEC-59)
+and the locked card's look; the fixed countdown, the locked view, no Esc on the class step and the
+bot rosters (DEC-60, DEC-61); the HUD's empty frames and emblems (DEC-62); the destroyed-structure
+look (DEC-69); the Legend step's detail rows and the View Details modal (DEC-65); the developer
+hotkey (DEC-66); Cinzel in the menus (DEC-67); load on demand (DEC-68); simulation-step errors to
+the session (HC-Q8 (1)); the art-id guard (HC-Q18 (1)); the `TODO(sam)` on Nadirev. For next
+sprint: the class kits (DEC-63), sub-class gameplay (DEC-70) and his Sprint 3 list (HC-U1).
+
 ## Working ids
 
 One line each, saying what the id is. Most come from the plan's sources, which are outside the
