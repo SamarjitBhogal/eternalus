@@ -4,7 +4,7 @@ description: Sprint checklists for the persistence layer (IndexedDB behind Persi
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-28
 tags: [plan, phase-5, persistence, resources, ui, settings, keybindings, developer-menu]
 paths: ['apps/client/src/data/**', 'apps/client/src/ui/**', 'apps/client/src/game/input/**']
 related:
@@ -111,7 +111,7 @@ Owner: _ (UI owner + persistence owner). Week 7. Depends on 5.1. In
       fakes). Owner: _. Test: a fake `fetch` streams bytes and each loader reports byte progress;
       one failed asset yields a typed error, not a failed group. Done when: loaders are the only
       `fetch` callers for assets.
-- [ ] **`ResourceController` facade + `AssetCache` + `loadingSlice`** (`load(group)`, `get(id)`,
+- [ ] _(feat/hud-and-character-select: a minimal `ResourceController` (`load(group, onProgress)` with byte progress, `urls`, `release`) and seven asset groups in place of `menu`; no `get`, `AssetCache` or canvas `ImageBitmap` path yet, architecture 14 §14)_ **`ResourceController` facade + `AssetCache` + `loadingSlice`** (`load(group)`, `get(id)`,
       `release(group)`; groups `boot`, `menu`, `match`; the cache deduplicates concurrent loads
       and calls `ImageBitmap.close()` on release; progress = loaded bytes / manifest bytes,
       published through the bridge; no service worker or Cache API for the MVP, per research A4).
@@ -122,7 +122,7 @@ Owner: _ (UI owner + persistence owner). Week 7. Depends on 5.1. In
       for the `match` group, so the "simple loading screen" is one screen). Owner: _. Test:
       `react-dom/server` snapshots at 0%, 50%, error, "storage not persisted". Done when: the
       screen reads the store only.
-- [ ] **`SessionController`** (State pattern over boot → menu → loading → match → results →
+- [ ] _(feat/hud-and-character-select: owns the `Match` lifetime and destroys the match on leaving `match`, DEC-50 (`MatchHost.test.ts`: 0 listeners); the transition table and the illegal-transition throw are tested in `SessionController.transitions.test.ts`; `main.tsx` mounts `<App/>` behind the `Provider`; the default profile waits for persistence, sprint 5.1)_ **`SessionController`** (State pattern over boot → menu → loading → match → results →
       menu; menu sub-screens are a `menuRoute` in the store, not session states; owns the
       `Match` lifetime and calls `Match.destroy()` on leaving `match`; creates the default profile
       on first boot). Owner: _. Test: the transition table; an illegal transition throws; leaving

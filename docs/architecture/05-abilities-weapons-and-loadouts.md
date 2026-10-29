@@ -84,7 +84,7 @@ export type AbilityTargeting =
   | { readonly kind: 'directional' }; // dashes: the aim vector, no range
 
 export type AbilityDefinition = {
-  readonly id: AbilityId; // 'blade-runner'; never renamed once used
+  readonly id: AbilityId; // 'blade-runner'; never renamed once a save or a release stores it
   readonly displayName: string; // 'Death Ray (working title)' lives here, not in code
   readonly classId: LegendId; // abilities are class-specific (game doc); enforced by LoadoutValidator
   readonly slot: AbilitySlotKind;

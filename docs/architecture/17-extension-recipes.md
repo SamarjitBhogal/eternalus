@@ -514,9 +514,11 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   name reads badly. Three different things: a display name, a class identifier, a content id.
 - **Files:** display name: the `displayName` line in the content file, nothing else. Class: an
   IDE rename of the symbol and its file, its imports and the `extends` clauses of subclasses.
-  Content id (`'warrior'`): **never** once used, because replays, loadouts and match history
-  reference it (a persistence migration plus new replay fixtures if the team insists;
-  `Recommendation:` do not).
+  Content id (`'warrior'`): **never** once a save or a release stores it, because replays,
+  loadouts and match history reference it (a persistence migration plus new replay fixtures if the
+  team insists; `Recommendation:` do not). Until saves or a release exist (none yet, ADR 0018),
+  renaming an id is a content refactor, and a reference it misses must fail the checks, never
+  silently.
 - **Registry line:** the one registry line that names the class (the rename tool updates it).
 - **Tests:** none new; `npm run check` (typecheck follows the imports, knip flags a stale export).
 - **Docs:** the pick in `../reference/suggestions/naming.md`; the "(rename pending)" note in the
@@ -540,18 +542,18 @@ controller support is R21 on the existing `GamepadDevice` adapter; first-person 
 Stop and report (the `new-entity` skill says so at its step 4) when a task makes you do any of
 the following. Each row is a missing seam; the fix is the seam, not the feature.
 
-| #   | Sign                                                                                                          | What it means                                       | The seam to use instead                                                                                                                          |
-| --- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A1  | A `switch` or `if` chain on `kind`, `family`, `classId`, `variant` or `team` in a system, view or controller  | Behaviour that varies by kind is not a strategy     | A `Strategy` chosen by a definition field (R13) or a registry (R14); the only closed switches are `applyCommand` and `StatusEffectRuntime.apply` |
-| A2  | Editing three files to add one variant                                                                        | The variant is code that should be data             | A content entry (R2, R3, R6, R9, R10) with at most one class and one registry line                                                               |
-| A3  | A number in gameplay code (`0.7`, `60`, `16`)                                                                 | Tuning or world shape hidden from the content tests | Content with `// TUNE:` (rule 11) or `GameConfig` (R15)                                                                                          |
-| A4  | A system importing or calling a sibling system                                                                | Hidden ordering coupling; the pipeline order lies   | A `GameEvent` (R17) plus a deferred pass in the listener; the order in `defaultSystemPipeline.ts`                                                |
-| A5  | `ui/` importing core values, `game/` or an entity class                                                       | Two sources of truth; React re-renders at 60 Hz     | A `Snapshot` field, a bridge event and a selector (R19)                                                                                          |
-| A6  | A second registry for the same concept (a `Map<kind, ...>` in a system, a list of classes in a view)          | The single place of change was duplicated           | The one registry of 02 §9; delete the copy                                                                                                       |
-| A7  | A fourth inheritance level (`<Legend> extends <Class>`) or a subclass for a data-only difference              | Taxonomy used for behaviour                         | A sibling kind whose definition `extends` the parent's data (R2), a component (R12), a strategy (R13)                                            |
-| A8  | `new Warrior(...)` outside `defaultEntityRegistry.ts`; `new Canvas2dRenderer()` outside `Match` or `main.tsx` | The factory or the composition root was bypassed    | `EntityFactory.spawn` (R1–R7); constructor injection from the root (R25)                                                                         |
-| A9  | A cheat, test hook or bot that mutates state without a `Command`                                              | The replay log no longer replays                    | A `dev-*` command (R24) or a controller (R18)                                                                                                    |
-| A10 | `Math.random`, `Date`, timers or `Math.atan2` in core; an `onTick` method on an entity                        | Determinism or the system/entity split is broken    | The seeded `Rng`, tick counts, `deterministicMath.ts`; a component (R12) plus a system (R11)                                                     |
+| #   | Sign                                                                                                                                                                     | What it means                                       | The seam to use instead                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A1  | A `switch` or `if` chain on `kind`, `family`, `classId`, `variant` or `team` in a system, view or controller                                                             | Behaviour that varies by kind is not a strategy     | A `Strategy` chosen by a definition field (R13) or a registry (R14); the only closed switches are `applyCommand` and `StatusEffectRuntime.apply` |
+| A2  | Editing three files to add one variant                                                                                                                                   | The variant is code that should be data             | A content entry (R2, R3, R6, R9, R10) with at most one class and one registry line                                                               |
+| A3  | A number in gameplay code (`0.7`, `60`, `16`)                                                                                                                            | Tuning or world shape hidden from the content tests | Content with `// TUNE:` (rule 11) or `GameConfig` (R15)                                                                                          |
+| A4  | A system importing or calling a sibling system                                                                                                                           | Hidden ordering coupling; the pipeline order lies   | A `GameEvent` (R17) plus a deferred pass in the listener; the order in `defaultSystemPipeline.ts`                                                |
+| A5  | `ui/` importing core values, `game/` or an entity class                                                                                                                  | Two sources of truth; React re-renders at 60 Hz     | A `Snapshot` field, a bridge event and a selector (R19)                                                                                          |
+| A6  | A second registry for the same concept (a `Map<kind, ...>` in a system, a list of classes in a view)                                                                     | The single place of change was duplicated           | The one registry of 02 §9; delete the copy                                                                                                       |
+| A7  | A fourth inheritance level (`<Legend> extends <Class>`) or a subclass for a data-only difference                                                                         | Taxonomy used for behaviour                         | A sibling kind whose definition `extends` the parent's data (R2), a component (R12), a strategy (R13)                                            |
+| A8  | `new Warrior(...)` outside `defaultEntityRegistry.ts`; `new Canvas2dRenderer()` outside the composition root (`Match`, `main.tsx` or the match factory `main.tsx` binds) | The factory or the composition root was bypassed    | `EntityFactory.spawn` (R1–R7); constructor injection from the root (R25)                                                                         |
+| A9  | A cheat, test hook or bot that mutates state without a `Command`                                                                                                         | The replay log no longer replays                    | A `dev-*` command (R24) or a controller (R18)                                                                                                    |
+| A10 | `Math.random`, `Date`, timers or `Math.atan2` in core; an `onTick` method on an entity                                                                                   | Determinism or the system/entity split is broken    | The seeded `Rng`, tick counts, `deterministicMath.ts`; a component (R12) plus a system (R11)                                                     |
 
 The review checklists ask "what else changed?" for every PR
 ([../agents/checklists.md](../agents/checklists.md) §3); the recipe's expected diff is the answer.
@@ -559,8 +561,8 @@ The review checklists ask "what else changed?" for every PR
 ## 12. Implementation status
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-24). How the recipes touched by
-the branch are carried out today; the recipe text the owner has not approved yet waits for him in
-`INBOX.md` HC-T1:
+the branch are carried out today. The owner approved the recipe text on 2026-10-28 (`INBOX.md`
+HC-T1); R1's word for the locked class's id changes with that id's content rename (DEC-59):
 
 - **An asset** (R1's sprites, every image and font): one line in its group's file in
   `apps/client/src/data/resources/` (`<group>Assets.ts`, concatenated by `AssetManifest.ts`) with

@@ -395,8 +395,16 @@ as the registry, one loader per asset type, one cache.
 
 ```ts
 // Sketch: apps/client/src/data/resources/AssetManifest.ts — the ONLY list of assets (02 §9); a script checks files, bytes, hash and licence in CI
-export type AssetType = 'image' | 'audio' | 'json';
-export type AssetGroup = 'boot' | 'menu' | 'match';
+export type AssetType = 'image' | 'audio' | 'json' | 'ui-image' | 'font'; // 'ui-image': decoded for the DOM; 'font': DEC-51
+export type AssetGroup =
+  // a session loads only its layout's and its effects renderer's art (DEC-52, DEC-54)
+  | 'boot'
+  | 'selection'
+  | 'selection-primary'
+  | 'selection-alternate'
+  | 'selection-raster'
+  | 'selection-primary-raster'
+  | 'match';
 export type AssetManifestEntry = {
   readonly id: AssetId;
   readonly file: AssetFile; // { url, bytes, hash } at device pixel ratio 1
@@ -454,7 +462,9 @@ export class ResourceController {
   `file` or `file2x`; art only one class-step layout or one effects renderer draws sits in its own
   group, so a session never loads the other's.
 - Progress is byte-based from the manifest (`loadedBytes / totalBytes`), monotonic, and ends at
-  the manifest sum; `SessionController` publishes it as `loading-progress` for `BootScreen`
+  the manifest sum when every file loads: only the loaded files of a loaded entry count, so a load
+  with a failed file ends below the sum; `SessionController` publishes it as `loading-progress` for
+  `BootScreen`
   ([research A4](../research/persistence-input-diagnostics-research.md#a4-game-resources-manifests-preloading-caching-progress)).
 - Decoders are injected (`createImageBitmap`, the audio decode function, `fetch`), so loader
   tests run in Node with fakes; the cache deduplicates concurrent loads of one id. The typed
@@ -522,7 +532,8 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
   fallback yet (§10): a failed open leaves the settings on defaults.
 
 Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
-DEC-51). Where §1 and §11 differ, their corrections wait for the owner in `INBOX.md` HC-T1:
+DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the
+detail:
 
 - **A minimal `ResourceController`** (`data/resources/ResourceController.ts`):
   `load(group, onProgress)` with byte progress from the manifest, `isLoaded`, `progress`,

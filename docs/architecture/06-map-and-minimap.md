@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-10-28
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -410,20 +410,20 @@ part of §2–§6; why each one differs is recorded in
 
 Still interim:
 
-| Topic                     | Today                                                                                                                                                                                                                                                                         | Until                                                                                              |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Minimap (§8)              | `MiniMapView` draws each layer's `drawMinimap`; `MapView` draws every feature's `minimapGlyph`                                                                                                                                                                                | Session H's `ViewRegistry`, `EntityView` and the snapshot-driven `MinimapView`                     |
-| Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                                                                                                                                                                                                | Session A's swap to session B's `SeededRandom`, `GameConfig` and `validateGameConfig` (`INBOX.md`) |
-| Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                                                                                                                                                                                                             | Session A's swap to `config.map.navCellSize`                                                       |
-| `WorldMap` (§6)           | Walkability grid with stamping                                                                                                                                                                                                                                                | Cost grid and flow fields (Phase 3)                                                                |
-| Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                                                                                                                                                                                                             | Session H's layers and sprites                                                                     |
-| Map scenery (08 §4)       | `MapSceneryBuilder` dresses the generated map with presentation-only polygons authored in map-1's 1600 × 900 sketch (`content/maps/map1Scenery.ts`, `map1Landforms.ts`) and stretched to the world size; `MapView` draws the `ground` layer, `SceneryView` the `detail` layer | Per-preset scenery and sprite assets                                                               |
-| Free view and interior    | `MapExplorer` in `Match`: drag pan, wheel zoom, overview and the presentation-only cathedral interior (`CathedralInteriorBuilder`); walking returns to the following camera outside the cathedral                                                                             | Player movement, doorways and collision into the interior                                          |
-| Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                                                                                                                                                                                                 | The owner's answer to DEC-15                                                                       |
+| Topic                     | Today                                                                                                                                                                                                                                                                                                                             | Until                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Minimap (§8)              | `MiniMapView` draws into the main canvas every frame, clipped to the HUD's ring by `Renderer.clipToEllipse`, with the ring from `bridge/minimapRing.ts` passed in by `Match`; `MapView` draws every feature's `minimapGlyph`; no entity glyphs                                                                                    | Session H's `ViewRegistry`, `EntityView` and the snapshot-driven `MinimapView`                     |
+| Kernel stand-ins (§1, §2) | `MapRandom`, a local `MapConfig` and `DEFAULT_MAP_CONFIG`, `validateMapConfig`                                                                                                                                                                                                                                                    | Session A's swap to session B's `SeededRandom`, `GameConfig` and `validateGameConfig` (`INBOX.md`) |
+| Grid resolution (§6)      | `MapLayout.navCellSize` (content)                                                                                                                                                                                                                                                                                                 | Session A's swap to `config.map.navCellSize`                                                       |
+| `WorldMap` (§6)           | Walkability grid with stamping                                                                                                                                                                                                                                                                                                    | Cost grid and flow fields (Phase 3)                                                                |
+| Renderer port (08 §4)     | The `feat/map-view` method set plus glyph drawing                                                                                                                                                                                                                                                                                 | Session H's layers and sprites                                                                     |
+| Map scenery (08 §4)       | `MapSceneryBuilder` dresses the generated map with presentation-only polygons authored in map-1's 1600 × 900 sketch (`content/maps/map1Scenery.ts`, `map1Landforms.ts`) and stretched to the world size; `MapView` draws the `ground` layer, `SceneryView` the `detail` layer                                                     | Per-preset scenery and sprite assets                                                               |
+| Free view and interior    | `MapExplorer` in `MatchCamera`: drag pan, wheel zoom and the overview only with the developer flag `?dev=1` (DEC-32; INBOX HC-F8), and the presentation-only cathedral interior with its Leave button in normal play (register CD-22) (`CathedralInteriorBuilder`); walking returns to the following camera outside the cathedral | Player movement, doorways and collision into the interior                                          |
+| Camp weights (§3 step 5)  | Depth-based classes (DISC-42)                                                                                                                                                                                                                                                                                                     | The owner's answer to DEC-15                                                                       |
 
-Minimap and camera (`feat/hud-and-character-select`, 2026-10-24); this note supersedes the "Today"
-cells of the "Minimap (§8)" and "Free view and interior" rows above, whose corrections wait for
-the owner in `INBOX.md` HC-T1:
+Minimap and camera (`feat/hud-and-character-select`, 2026-10-24); the "Today" cells of the
+"Minimap (§8)" and "Free view and interior" rows above say this since 2026-10-28 (the owner
+approved them, `INBOX.md` HC-T1), and this note gives the detail:
 
 - `MiniMapView` draws into the main canvas every frame, clipped to the HUD's minimap ring by
   `Renderer.clipToEllipse`, with the whole map inscribed in the ring (INBOX HC-Q6 (4)). The ring's
@@ -434,7 +434,8 @@ the owner in `INBOX.md` HC-T1:
   moves the camera through `Match`, with no `Command`), no lower redraw cadence and no entity
   glyphs (those come with Phase 2, sprint 2.8).
 - `MapExplorer` belongs to `MatchCamera`. The free camera (drag pan, wheel zoom), the overview,
-  the explorer toolbar and the map legend need the developer flag `?dev=1` (DEC-32; INBOX HC-F8).
+  the explorer toolbar and the map legend need the developer flag `?dev=1` (DEC-32; INBOX HC-F8);
+  the owner's show-or-hide developer hotkey (DEC-66) is not built yet.
   The cathedral click and a "Leave cathedral" button stay in normal play (register CD-22 in
   [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md)).
 

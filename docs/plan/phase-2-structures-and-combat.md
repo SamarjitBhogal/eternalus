@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-28
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -215,6 +215,13 @@ Owner: _ (client lane). Weeks 4–5.
 - [ ] **HUD `HealthBar` for the selected structure and `Announcer` events** (tower razed, point
       captured) via the bridge. Owner: _. Test: bridge events reach the store throttled. Done
       when: `ui/` still imports only `bridge/`.
+- [ ] **HUD leave-interior control** (replaces the interim "Leave cathedral" button in
+      `game/GameCanvasChrome.tsx`, register CD-22: the bridge publishes whether the camera is
+      inside the cathedral interior, a `ui/hud/` control shows only then, styled from tokens, and
+      emits a `leave-interior` `UiIntent` that `Match` handles, per the architecture 13 §9
+      recipe). Owner: _. Test: the control renders only while the camera is inside and dispatches
+      `leave-interior`; `Match` returns to the following camera on the intent. Done when: `game/`
+      renders no normal-play control.
 
 **Success metric:** every structure and obstacle kind renders on the map and minimap with 0
 kind-specific code outside `ViewRegistry` entries.

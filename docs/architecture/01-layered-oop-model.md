@@ -118,8 +118,8 @@ folder (decided, D3).
 
 Constructor injection is the only wiring mechanism. There is no Service Locator and no singleton
 apart from the Redux store and the bridge event bus (both in `bridge/`, both L3). If a class needs
-a port, it takes it as a constructor parameter and the composition root (`Match`, `main.tsx` or a
-test) passes the adapter.
+a port, it takes it as a constructor parameter and the composition root (`Match`, `main.tsx`, the
+match factory `main.tsx` binds, or a test) passes the adapter.
 
 ## 4. The architecture rules
 
@@ -200,8 +200,8 @@ new ones. When the team agrees a folder is needed:
 
 HUD and character select (`feat/hud-and-character-select`, 2026-10-24). One more port exists in
 the client, and the browser adapters of a match are chosen in a factory rather than in `Match`.
-The port's §3 row is in the table since 2026-10-28; the §3 sentence on the composition root waits
-for the owner in `INBOX.md` HC-T1:
+The port's §3 row and the §3 sentence on the composition root are in the design text since
+2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
 
 - **`AssetLoader`** (`apps/client/src/data/resources/loaders/AssetLoader.ts`, L3, owned by
   `ResourceController`): adapters `UiImageLoader` (images for the DOM) and `FontLoader` (the

@@ -61,7 +61,7 @@ Numbers are quoted from the sources and are `TUNE` (they live in `GameConfig`/co
 | ---------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------------------------------------- |
 | 10 v 10 Legends, all bots except 1 user-controlled Legend; 3 per lane + 1 Rover per team                                     | **MVP**          | requirements; game doc                   |
 | 2 teams (light, dark): allied team, enemy team, randomly chosen for the player; neutral camps/bosses                         | **MVP**          | requirements                             |
-| 3 classes: Warrior (formerly Assault), Sentinel, Magus                                                                       | **MVP**          | requirements; game doc                   |
+| 3 classes (reference 01; the class files in `packages/core/src/content/legends/`)                                            | **MVP**          | requirements; game doc                   |
 | Flying class, mounts                                                                                                         | **post-MVP**     | game doc (orange); brief D12             |
 | Sub-classes (Legends): picked as setup data today (FR-119); the phase that builds their gameplay is open (`INBOX.md` HC-Q17) | **MVP** (DEC-56) | owner; brief D11                         |
 | Minion hordes of 16 (light), 8 (medium), 4 (heavy)                                                                           | **MVP**          | requirements                             |

@@ -4,7 +4,7 @@ description: The coding-agent harness as it exists in the repository (instructio
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-28
 tags: [architecture, agents, harness, hooks, skills, verification]
 paths: ['.claude/**', '.agents/**', 'scripts/hooks/**', 'docs/agents/**']
 related:
@@ -173,7 +173,7 @@ Skills auto-trigger on their `description`, or `/name` invokes them; every one e
 | `new-system`    | `<Name>System` in `systems/`, one `SystemPipeline` line, a component or strategy instead of a `switch`, deterministic tests, an invariant                   | 02, 03, 17                  | R11–R13, R16–R18, R23         |
 | `new-ability`   | A content definition, one `AbilityEffect` class only if no kind fits, restrictions as data, scenario tests; the HUD does not change                         | 05, 17                      | R8–R10                        |
 | `new-screen`    | Folder choice, a CSS module, bridge event to slice to selector, `<KeyGlyph/>`, server-render tests, one mounting place                                      | 13, `apps/client/AGENTS.md` | R19–R21, R24                  |
-| `new-content`   | Definitions and `GameConfig` values only; ids never renamed; `TUNE`; validation tests; the `numLanes` litmus test                                           | 03 §10, 04 §5               | R2, R3, R6, R15, R26          |
+| `new-content`   | Definitions and `GameConfig` values only; ids never renamed once a save or a release stores them; `TUNE`; validation tests; the `numLanes` litmus test      | 03 §10, 04 §5               | R2, R3, R6, R15, R26          |
 | `pr-review`     | The AI-PR and architecture checklists as findings by severity with a verdict; `allowed-tools` limits it to reading, `git diff/log/show` and `npm run check` | checklists, 01, 02, 03      | "what else changed?"          |
 | `doc-gardening` | `npm run docs:check`, stale `last-reviewed`, the single-place-of-change claims, `AGENTS.md` length, `npm run docs:index`                                    | frontmatter schema, 02      | the Docs line                 |
 | `verify`        | `git status --short`, `npm run check`, the verbatim tail per failing step, then the PROGRESS entry; read-only `allowed-tools`                               | `AGENTS.md`                 | the last step of every recipe |

@@ -4,7 +4,7 @@ description: The ports-and-adapters layer that isolates the game from the browse
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-10-28
 tags: [architecture, hal, input, ports, adapters, keybindings]
 paths:
   [
@@ -92,8 +92,9 @@ export interface InputDevice {
   and `axes[i]` with a per-binding deadzone, and trusts `mapping === 'standard'` (0–3 face buttons,
   4/5 shoulders, 6/7 triggers, 12–15 d-pad, axes 0/1 left stick). Pads appear only after a user
   gesture, so the settings screen shows "press any button" before listing them.
-- **Focus loss**: `Match` subscribes to `window` `blur` and `document` `visibilitychange`
-  (hidden) and calls `releaseAll()` on every device, because no `keyup` arrives for keys held
+- **Focus loss**: `MatchHost`, the match's browser host, subscribes to `window` `blur` and
+  `document` `visibilitychange` (hidden) and releases every device's held input (also when the
+  match pauses), so `Match` uses no browser API; because no `keyup` arrives for keys held
   across a focus loss. The loop's clamp handles the time gap.
 - `navigator.keyboard.lock()` is progressive enhancement only (guarded by `'keyboard' in
 navigator`), used for fullscreen matches so Ctrl+W does not close the tab.

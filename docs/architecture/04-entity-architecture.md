@@ -235,9 +235,7 @@ export class EntityRegistry {
 // Sketch: packages/core/src/entities/defaultEntityRegistry.ts — the ONLY file that names concrete classes
 export function createDefaultEntityRegistry(): EntityRegistry {
   const registry = new EntityRegistry();
-  registry.register('warrior', (id, def) => new Warrior(id, def));
-  registry.register('sentinel', (id, def) => new Sentinel(id, def));
-  registry.register('magus', (id, def) => new Magus(id, def));
+  registry.register('<kind>', (id, def) => new <Class>(id, def)); // one line per Legend class
   registry.register('light-mob', (id, def) => new LightMob(id, def));
   // ... one line per concrete kind
   return registry;
@@ -283,12 +281,14 @@ behaviour is reached through strategies and components, never through a fourth i
 
 ## 10. Renaming is cheap by rule
 
-Display names live in content (`displayName: 'Warrior (formerly Assault)'`), so a rename the
-players see is a one-line content change. Renaming the class is a file rename plus the imports
-and the `extends` clause of its subclasses (an IDE refactor), exactly as the requirements doc asks.
-The content **id** (`'warrior'`) is the one thing that does not change once used, because replays,
-loadouts and match history reference it; if the team ever insists, that is a persistence migration
-(Recommendation: do not).
+Display names live in content (each definition's `displayName`), so a rename the players see is a
+one-line content change. Renaming the class is a file rename plus the imports and the `extends`
+clause of its subclasses (an IDE refactor), exactly as the requirements doc asks. The content
+**id** (`'warrior'`) is the one thing that does not change once a save or a release stores it,
+because replays, loadouts and match history reference it; if the team ever insists, that is a
+persistence migration (Recommendation: do not). No saves or release exist yet (ADR 0018): until
+they do, renaming an id is a content refactor, and a reference it misses must fail the checks (a
+test or the boot-time content validation), never silently.
 
 ## 11. Object pooling
 
