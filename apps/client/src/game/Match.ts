@@ -23,6 +23,7 @@ import {
 import type { MatchDeps } from './Match.types';
 import { MapExplorer } from './MapExplorer';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
+import { CapturePointLayer } from './views/CapturePointLayer';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { MapView } from './views/MapView';
@@ -42,6 +43,8 @@ export class Match implements LoopTarget {
   private readonly loop: GameLoop;
 
   private readonly entities: EntityLayer;
+
+  private readonly capturePoints = new CapturePointLayer();
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
@@ -108,6 +111,7 @@ export class Match implements LoopTarget {
     const scene = new SceneView([
       new MapView(map, scenery),
       new SceneryView(scenery, 'detail'),
+      this.capturePoints,
       this.entities,
     ]);
     this.world = { scene, miniMap: new MiniMapView(map, scene) };
@@ -194,6 +198,7 @@ export class Match implements LoopTarget {
     const { scene, miniMap } = this.views;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
+    this.capturePoints.show(this.current);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     scene.draw(renderer);
     miniMap.draw(renderer, this.screenWidth, this.screenHeight, view);

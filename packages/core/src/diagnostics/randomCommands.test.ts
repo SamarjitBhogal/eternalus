@@ -16,6 +16,7 @@ const snapshotWith = (...ids: string[]): Snapshot => ({
     transform: null,
     health: null,
   })),
+  capturePoints: [],
 });
 
 const stream = (seed: number, snapshot: Snapshot, count: number): unknown[] => {

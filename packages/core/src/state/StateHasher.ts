@@ -1,3 +1,4 @@
+import { NEUTRAL_TEAM } from '../capture/capture.constants';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -22,7 +23,14 @@ export class StateHasher {
     state.entities.forEach((entity) => {
       entities.push(StateHasher.fieldsOf(entity));
     });
-    return fnv1a(JSON.stringify([state.tick, state.phase, state.rng.getState(), entities]));
+    const parts: unknown[] = [state.tick, state.phase, state.rng.getState(), entities];
+    // Capture points are appended only once one has changed, so a match where none has hashes
+    // exactly as before (recorded replay checkpoints stay valid).
+    const capture = state.capturePoints.hashFields(NEUTRAL_TEAM);
+    if (capture.length > 0) {
+      parts.push(['capture', capture]);
+    }
+    return fnv1a(JSON.stringify(parts));
   }
 
   private static fieldsOf(entity: Entity): unknown[] {

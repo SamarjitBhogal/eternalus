@@ -63,6 +63,7 @@ describe('GameState', () => {
     expect(state.snapshot()).toEqual({
       tick: 1,
       phase: 'countdown',
+      capturePoints: [],
       entities: [
         {
           id: 'entity-1',
