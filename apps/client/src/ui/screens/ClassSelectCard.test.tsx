@@ -14,7 +14,7 @@ const cardOf = (classId: string): LegendClassCard => {
   return card;
 };
 
-const INDEX: Readonly<Record<string, number>> = { warrior: 0, sentinel: 1, magus: 2, flying: 3 };
+const INDEX: Readonly<Record<string, number>> = { warrior: 0, sentinel: 1, magus: 2, harbinger: 3 };
 
 function render(
   classId: string,
@@ -120,7 +120,7 @@ describe('ClassSelectCard', () => {
         `\\.card\\[data-look='${look}'\\]\\[data-art-mode='cover'\\] \\[data-arch-layer='inner-outline'\\] \\{([^}]*)\\}`,
       ).exec(cardCss)?.[1] ?? 'missing';
 
-    expect(rootTag(render('flying', { isLoaded: false }))).toContain(
+    expect(rootTag(render('harbinger', { isLoaded: false }))).toContain(
       '--overlay-dx:1.077px;--overlay-dy:0.047px',
     );
     expect(rootTag(render('warrior', { isLoaded: false }))).toContain(
@@ -171,7 +171,7 @@ describe('ClassSelectCard', () => {
   });
 
   it('shows a locked class with a lock and "Locked" instead of its ally count (CD-05)', () => {
-    const html = render('flying');
+    const html = render('harbinger');
 
     expect(rootTag(html)).toContain('aria-disabled="true"');
     expect(rootTag(html)).toContain('tabindex="-1"');

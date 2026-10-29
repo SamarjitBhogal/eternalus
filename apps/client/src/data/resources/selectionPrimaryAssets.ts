@@ -1,6 +1,6 @@
 import catalystMiniLegendMini from '../../assets/selection-primary/legends/catalyst-mini@legend-mini.webp';
 import catalystMiniLegendMini2x from '../../assets/selection-primary/legends/catalyst-mini@legend-mini@2x.webp';
-import flyingCardArt from '../../assets/selection-primary/classes/flying-card-art.webp';
+import harbingerCardArt from '../../assets/selection-primary/classes/harbinger-card-art.webp';
 import magusCardArt from '../../assets/selection-primary/classes/magus-card-art.webp';
 import magusDetailArcaneIntellectDetailClass from '../../assets/selection-primary/details/magus-detail-arcane-intellect@detail-class.webp';
 import magusDetailArcaneIntellectDetailClass2x from '../../assets/selection-primary/details/magus-detail-arcane-intellect@detail-class@2x.webp';
@@ -52,11 +52,11 @@ export const SELECTION_PRIMARY_ASSETS: readonly AssetManifestEntry[] = [
     },
   },
   {
-    id: 'flying-card-art',
+    id: 'harbinger-card-art',
     type: 'ui-image',
     group: 'selection-primary',
     file: {
-      url: flyingCardArt,
+      url: harbingerCardArt,
       bytes: 151310,
       hash: '4cd3dedb7a4c46e154089a131c7b87244c4199cd8d703591adc1d8a1e5d1238c',
     },

@@ -35,7 +35,7 @@ const WARRIOR = classCardFixture({
   art: { card: null, sigil: 'warrior-sigil', model: null, cardPlates: {}, rowPlate: null },
 });
 const HARBINGER = classCardFixture({
-  classId: 'flying',
+  classId: 'harbinger',
   displayName: 'Harbinger',
   status: 'locked',
 });
@@ -56,7 +56,7 @@ const ALLIES: readonly RosterEntry[] = [
   entry({ legendId: 'bot-class', classId: 'warrior' }),
   entry({ legendId: 'bot-legend', classId: 'magus', specId: 'oracle' }),
   entry({ legendId: 'bot-no-portrait', classId: 'magus', specId: 'catalyst' }),
-  entry({ legendId: 'bot-unknown', classId: 'flying', specId: 'harbinger-legend' }),
+  entry({ legendId: 'bot-unknown', classId: 'harbinger', specId: 'harbinger-legend' }),
 ];
 
 function storeWith(
@@ -147,7 +147,7 @@ describe('selectAllyTiles', () => {
 
   it('has no class name, image, accent or Legend for a class the catalogue lacks', () => {
     expect(tileOf(null, 'bot-unknown')).toMatchObject({
-      classId: 'flying',
+      classId: 'harbinger',
       classDisplayName: null,
       specId: null,
       state: 'class',
@@ -156,7 +156,7 @@ describe('selectAllyTiles', () => {
     });
   });
 
-  it('names each tile’s class by its catalogue display name: a flying bot is the Harbinger', () => {
+  it('names each tile’s class by its catalogue display name: a harbinger bot is the Harbinger', () => {
     const tiles = selectAllyTiles(storeWith(null, [WARRIOR, MAGUS, HARBINGER]).getState());
 
     expect(tiles.map((tile) => [tile.legendId, tile.classDisplayName])).toEqual([

@@ -11,7 +11,7 @@ const CARDS: readonly ClassStepCard[] = [
   { classId: 'warrior', isAvailable: true },
   { classId: 'sentinel', isAvailable: true },
   { classId: 'magus', isAvailable: true },
-  { classId: 'flying', isAvailable: false },
+  { classId: 'harbinger', isAvailable: false },
 ];
 
 const NOTHING: ClassStepLocal = { pickedClassId: null, previewClassId: null };
@@ -51,7 +51,7 @@ describe('classStepActions', () => {
   it('picks on click locally and emits nothing; a locked card stays unpicked', () => {
     const step = harness();
     step.actions().pick('magus');
-    step.actions().pick('flying');
+    step.actions().pick('harbinger');
 
     expect(step.state().pickedClassId).toBe('magus');
     expect(seen).toEqual([]);
@@ -73,9 +73,9 @@ describe('classStepActions', () => {
 
   it('previews without picking or emitting', () => {
     const step = harness();
-    step.actions().preview('flying');
+    step.actions().preview('harbinger');
 
-    expect(step.state()).toEqual({ pickedClassId: null, previewClassId: 'flying' });
+    expect(step.state()).toEqual({ pickedClassId: null, previewClassId: 'harbinger' });
     expect(seen).toEqual([]);
   });
 

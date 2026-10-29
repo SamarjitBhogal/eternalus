@@ -16,7 +16,7 @@ const CARDS: readonly ClassStepCard[] = [
   { classId: 'warrior', isAvailable: true },
   { classId: 'sentinel', isAvailable: true },
   { classId: 'magus', isAvailable: true },
-  { classId: 'flying', isAvailable: false },
+  { classId: 'harbinger', isAvailable: false },
 ];
 
 const NOTHING = { pickedClassId: null, previewClassId: null } as const;
@@ -31,7 +31,7 @@ describe('initialClassStep', () => {
 
   it('picks nothing on first entry, for a locked class and for an unknown one', () => {
     expect(initialClassStep(CARDS, null)).toEqual(NOTHING);
-    expect(initialClassStep(CARDS, 'flying')).toEqual(NOTHING);
+    expect(initialClassStep(CARDS, 'harbinger')).toEqual(NOTHING);
     expect(initialClassStep(CARDS, 'druid')).toEqual(NOTHING);
   });
 });
@@ -41,14 +41,14 @@ describe('pickClass and previewClass', () => {
     const picked = pickClass(NOTHING, CARDS, 'sentinel');
 
     expect(picked.pickedClassId).toBe('sentinel');
-    expect(pickClass(picked, CARDS, 'flying')).toBe(picked);
+    expect(pickClass(picked, CARDS, 'harbinger')).toBe(picked);
     expect(pickClass(picked, CARDS, 'druid')).toBe(picked);
   });
 
   it('sets and clears the preview, a locked class included', () => {
-    const previewing = previewClass(NOTHING, 'flying');
+    const previewing = previewClass(NOTHING, 'harbinger');
 
-    expect(previewing.previewClassId).toBe('flying');
+    expect(previewing.previewClassId).toBe('harbinger');
     expect(previewClass(previewing, null).previewClassId).toBeNull();
   });
 });
@@ -57,10 +57,10 @@ describe('shownClassId', () => {
   it('shows the preview, then the pick, then the first available, then the first card', () => {
     const picked = pickClass(NOTHING, CARDS, 'magus');
 
-    expect(shownClassId(previewClass(picked, 'flying'), CARDS)).toBe('flying');
+    expect(shownClassId(previewClass(picked, 'harbinger'), CARDS)).toBe('harbinger');
     expect(shownClassId(picked, CARDS)).toBe('magus');
     expect(shownClassId(NOTHING, CARDS)).toBe('warrior');
-    expect(shownClassId(NOTHING, [{ classId: 'flying', isAvailable: false }])).toBe('flying');
+    expect(shownClassId(NOTHING, [{ classId: 'harbinger', isAvailable: false }])).toBe('harbinger');
     expect(shownClassId(NOTHING, [])).toBeNull();
   });
 });
@@ -81,7 +81,7 @@ describe('cycleClass', () => {
   });
 
   it('leaves the state alone when no class is available', () => {
-    const locked: readonly ClassStepCard[] = [{ classId: 'flying', isAvailable: false }];
+    const locked: readonly ClassStepCard[] = [{ classId: 'harbinger', isAvailable: false }];
 
     expect(cycleClass(NOTHING, locked, 1)).toBe(NOTHING);
   });
@@ -101,7 +101,7 @@ describe('intents', () => {
       kind: 'select-class',
       classId: 'warrior',
     });
-    expect(selectShownIntent(previewClass(NOTHING, 'flying'), CARDS)).toBeNull();
+    expect(selectShownIntent(previewClass(NOTHING, 'harbinger'), CARDS)).toBeNull();
     expect(selectShownIntent(NOTHING, [])).toBeNull();
   });
 });

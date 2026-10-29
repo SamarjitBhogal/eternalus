@@ -21,9 +21,9 @@ describe('SpecClassExistsRule', () => {
     expect(new SpecClassExistsRule(LEGEND_CLASSES).check(spec('magus'))).toEqual([]);
   });
 
-  it('flags a class id with no Legend class, such as the reserved flying', () => {
-    expect(new SpecClassExistsRule(LEGEND_CLASSES).check(spec('flying'))).toEqual([
-      'classId "flying" is not a Legend class',
+  it('flags a class id with no Legend class, such as the reserved harbinger', () => {
+    expect(new SpecClassExistsRule(LEGEND_CLASSES).check(spec('harbinger'))).toEqual([
+      'classId "harbinger" is not a Legend class',
     ]);
   });
 });

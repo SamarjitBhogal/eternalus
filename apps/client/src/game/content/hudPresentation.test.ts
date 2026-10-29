@@ -28,7 +28,7 @@ describe('HUD presentation', () => {
     for (const card of available) {
       expect(card.hud?.slots.map((slot) => slot.slot)).toEqual(SLOT_ORDER);
     }
-    expect(catalogue.legendClasses.find((card) => card.classId === 'flying')?.hud).toBeNull();
+    expect(catalogue.legendClasses.find((card) => card.classId === 'harbinger')?.hud).toBeNull();
   });
 
   it('names only match-group assets', () => {

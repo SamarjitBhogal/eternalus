@@ -34,11 +34,11 @@ const ALLIES_62_125: readonly RosterEntry[] = [
   ally('ally-2', 'warrior', { specId: 'knight' }),
   ally('ally-3', 'sentinel'),
   ally('ally-4', 'sentinel'),
-  ally('ally-5', 'flying'),
+  ally('ally-5', 'harbinger'),
   ally('ally-6', 'warrior'),
   ally('ally-7', 'magus', { specId: 'necromancer' }),
   ally('ally-8', 'sentinel'),
-  ally('ally-9', 'flying'),
+  ally('ally-9', 'harbinger'),
   ally('ally-10', 'magus', { specId: 'catalyst' }),
 ];
 
@@ -110,7 +110,7 @@ describe('ClassSelectStep', () => {
       'warrior',
       'sentinel',
       'magus',
-      'flying',
+      'harbinger',
     ]);
     expect(tags.map((tag) => attributeOf(tag, 'data-look'))).toEqual([
       'idle',

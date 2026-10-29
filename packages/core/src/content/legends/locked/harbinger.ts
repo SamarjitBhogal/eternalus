@@ -1,11 +1,11 @@
 import type { LockedClassDefinition } from './lockedClasses.types';
 
 /**
- * The post-MVP flying class, displayed as Harbinger and shown as the locked fourth card (DEC-48).
- * Content id `flying` as architecture 04 §2 and 17 R1 reserve it (INBOX HC-F2).
+ * The post-MVP flying class, content id `harbinger`, displayed as Harbinger and shown as the locked fourth card (DEC-48).
+ * The id replaces the earlier `flying` (owner ruling F2, ADR 0018 point 5).
  */
-export const FLYING = {
-  id: 'flying',
+export const HARBINGER = {
+  id: 'harbinger',
   displayName: 'Harbinger', // DEC-48
   roleBlurb: 'Air-based; moves primarily in the air, like a jet or helicopter.', // reference 01, Flying row
   roleLabel: 'aerial', // Figma 72:861, lower case

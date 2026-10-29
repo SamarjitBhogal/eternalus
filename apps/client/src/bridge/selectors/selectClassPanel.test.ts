@@ -142,7 +142,7 @@ describe('selectClassPanel', () => {
   it('is undefined for a class the catalogue lacks, and for no class', () => {
     const state = storeWith('primary').getState();
 
-    expect(selectClassPanel(state, 'flying')).toBeUndefined();
+    expect(selectClassPanel(state, 'harbinger')).toBeUndefined();
     expect(selectClassPanel(state, null)).toBeUndefined();
   });
 
