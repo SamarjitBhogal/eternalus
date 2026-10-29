@@ -2115,3 +2115,74 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   which the item said would decide its wording, and on DEC-51's note; no ADR records it.
 - Correction (`b1121f5`'s message is not rewritten): it says T-103 and T-113 changed the two index
   descriptions; they are T-103 and T-111.
+
+### 2026-10-28 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's non-blocking answers (stream B, round B18) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `5415d6d`: `a6ed088` ADR 0022, `ac007bd` the decisions log,
+  `a1c03fb` the applied rows, `bdafffa` INBOX and the register; the owner's 42 answers of
+  2026-10-28 to the non-blocking questions, given in chat from a second decision page whose keys
+  N1 to S2 the PR register's new section "Owner answers of 2026-10-28 (non-blocking)" defines; his
+  verbatim answers and a ledger, one row per answer with where it is recorded, are outside the
+  repository in `eternalus-agent-work/hud-charselect/decisions/`):
+  - `INBOX.md`: an "Answered 2026-10-28" line with his words under each of the 34 items he answered;
+    HC-F4, HC-F5, HC-F7, HC-F9, HC-Q6, HC-Q10, HC-Q12, HC-Q14 and HC-Q15 ticked; HC-T1's answer
+    and its regenerated table (127 rows applied, 16 pending); his Sprint 3 list in HC-U1; the
+    register rows CD-25, CD-30 and CD-38, row T-153's section and rows T-155 to T-157 explained by
+    name and content; a Done entry.
+  - Decisions log: a new batch 2026-10-28 with DEC-58 to DEC-70 (his rename, "still not final";
+    the `harbinger` id and the "Coming Soon..." card; the fixed 60 s countdown and the locked view;
+    the bot rosters; the HUD rules; the class kits; the weapons; the detail rows and the View
+    Details modal; the developer hotkey; Cinzel everywhere; load on demand; the destroyed-structure
+    look; sub-class gameplay next sprint), his words quoted, readings marked; notes appended to
+    the decision cells of DEC-48, DEC-49, DEC-51 and DEC-57 (Prettier re-padded those two tables,
+    whitespace only). DEC-58 to DEC-70 were free on all 82 local and remote refs after `git fetch`,
+    in every local worktree and in `INBOX.md`.
+  - ADR 0022 (new, accepted on his delegation, "I don't care what number is used"): records his
+    answer that made FR-111's rewording of round B17, as NFR-010 asks; adds nothing beyond it.
+    0022 was free on every ref; 0021 stays the game-loop plan's. `docs/README.md` regenerated.
+  - Every edit to a sholtzman-owned doc this round (`last-reviewed` 2026-10-28 on each):
+    - HC-T1 rows applied (49, `--apply-b18` of the D2b generator): `AGENTS.md` T-100;
+      `CONTRIBUTING.md` T-136; `apps/client/AGENTS.md` T-05; architecture 01 T-46; 02 T-36, T-38,
+      T-39, T-41, T-138; 04 T-101, T-120; 05 T-139; 06 T-56, T-57; 08 T-58, T-79 (a new §11
+      status section); 09 T-59; 13 T-11, T-16 to T-20, T-22, T-24, T-26, T-28, T-29, T-90; 14
+      T-31, T-153; 16 T-140; 17 T-47, T-102; plans phase 1 T-80 (sprint 1.4's `Match` task
+      ticked), T-85; phase 2 T-145 (a new sprint 2.8 task); phase 3 T-84; phase 4 T-83; phase 5
+      T-81, T-82; reference 08 T-141; reference 11 T-132; the glossary T-133; the suggestions
+      README T-142; the naming suggestions T-143, T-144; requirements 02 (CP-13) T-137;
+      requirements 06 (FR-047's statement) T-118.
+    - Implementation-status notes (not design text): the lead sentences of 01 §8, 02 §12, 06 §10,
+      14 §14 and 17 §12 now say their rows are in the design text; 13 §10's first bullet now names
+      what still waits (the `character-select` and `menu` → `loading` rows, §3's HUD rows); 06
+      §10's camera bullet adds that the developer hotkey (DEC-66) is not built.
+    - Decisions log, ADR 0022 and the PR register's new section, as above; `last-reviewed` only on
+      06, 08, 09, 16, the phase 1, 2, 3 and 5 plans, reference 08 and the suggestions README (the
+      others already had 2026-10-28).
+  - Not applied, with reasons (`INBOX.md` HC-T1): T-10 and T-13 held, because his bots are filled
+    at LOCK IN with the enemy mirroring the player (DEC-61), which changes where the rosters are
+    completed; T-12 and T-75 redrafted to DEC-60 and applied with that build; T-23 redrafted to
+    his HUD rules (DEC-62), for his approval; T-152 waits for his list of enhancements; T-155 to
+    T-157 explained, for his approval; T-125 is SamarjitBhogal's. New rows T-158 to T-161
+    (`flying` to `harbinger` in architecture 04 §1 and §12, 17 R1 and the phase 4 plan's sprint
+    4.1; approved with HC-F2, applied with the content rename) and T-162, T-163 (reference 12
+    OQ-02 and the naming suggestions; for his approval).
+  - Outside the repository: the D2b generator gains `--apply-b18`, the redrafts and T-158 to
+    T-163; `d2b.patch` now holds the 16 pending rows over 11 files. Backups in `b18-backup/`.
+- Checks run, on `5415d6d` with all of this round's edits in the working tree (this entry's
+  checks line still a placeholder): `npm run check` → `EXIT=0`: "All matched files use Prettier
+  code style!"; core "Tests 619 passed (619)", statements 99.19 %; client "Tests 1360 passed
+  (1360)", statements 96.48 %; the JavaScript bundle 556.83 kB (gzip 174.14 kB); "✓ built";
+  "Checked 120 Markdown files under docs/." "Documentation check passed."
+  `git apply --check d2b.patch` (the 16 pending rows) prints nothing; the post-B18 tree plus that
+  patch equals round B17's fully patched copies in all 30 files of B17's patch except this
+  round's own edits (T-12, T-23, T-75 and T-152 redrafted, T-158 to T-163, the status notes),
+  `last-reviewed` and table padding ignored; before any change, the B17 generator reproduced every
+  B17 output byte for byte on `5415d6d`. The id resolver: 1010 ids, 0 without a definition (it
+  resolves a decision-page key such as N2 or F10 to the first definition it finds; the register's
+  new section defines the page's keys and says they differ).
+- Next step: the build work his answers order (the content rename and the "Coming Soon..." card;
+  the fixed countdown, the locked view and the bot rosters; the HUD's empty frames; the
+  destroyed-structure look; the developer hotkey; Cinzel in the menus; load on demand; step errors
+  to the session; the art-id guard), each with its doc rows; his open answers (the bots' Legends,
+  the weapon panel, CD-25's mask, the Magus description, HC-Q7 (1) and (4), the enhancements,
+  T-155 to T-157, T-162, T-163, T-23); next sprint: the class kits and sub-class gameplay; then
+  the integration with the sibling pull requests (HC-Q21 (b)).
