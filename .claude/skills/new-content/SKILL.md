@@ -15,7 +15,8 @@ ID. Follow `docs/architecture/03-game-model.md` (GameConfig) and `04-entity-arch
 1. Find the owning definition: `packages/core/src/content/<area>/<kebab-id>.ts` for game data,
    `packages/core/src/config/` for world/match parameters. If the value is in code, that is a
    bug: move it to content and reference it by ID (report it in the PR).
-2. IDs are kebab-case and are **never renamed** once used (save files and replays reference
+2. IDs are kebab-case. Until a save or a release stores them, renaming one is a checked content
+   refactor (ADR 0023); once stored, they are **never renamed** (save files and replays reference
    them). Display names may change freely.
 3. Keep definitions immutable (`as const satisfies ...`); every provisional number carries
    `// TUNE:` with the source (game doc section or `docs/reference/suggestions/balancing.md`).
