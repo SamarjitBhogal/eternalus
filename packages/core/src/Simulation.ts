@@ -48,8 +48,9 @@ export class Simulation {
     systems,
     debug = RELEASE_DEBUG_CONFIG,
     content,
+    capturePoints,
   }: SimulationOptions) {
-    this.state = new GameState(validateGameConfig(config), seed);
+    this.state = new GameState(validateGameConfig(config), seed, capturePoints);
     this.commandContext = {
       state: this.state,
       factory: new EntityFactory(

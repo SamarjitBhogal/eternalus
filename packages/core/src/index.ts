@@ -88,3 +88,6 @@ export type TeamId = PlayableTeam;
  * @deprecated Use `Team`. Kept for one release for code written against `feat/map`.
  */
 export type FeatureOwner = Team;
+
+export type { CapturePointSnapshot } from './capture/CapturePoint.types';
+export { capturePointsFromMap } from './capture/capturePointsFromMap';

@@ -1,3 +1,4 @@
+import type { CapturePointDefinition } from './capture/CapturePoint.types';
 import type { GameConfig } from './config/GameConfig.types';
 import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
@@ -18,4 +19,6 @@ export type SimulationOptions = {
   readonly debug?: DebugConfig;
   /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
+  /** The match's capture zones, usually `capturePointsFromMap(map)`; none when omitted. */
+  readonly capturePoints?: readonly CapturePointDefinition[];
 };

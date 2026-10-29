@@ -16,6 +16,7 @@ describe('@eternalus/core public API', () => {
       'SeededRandom',
       'Simulation',
       'StateHasher',
+      'capturePointsFromMap',
       'createDefaultGameConfig',
       'makeLogRecord',
       'runReplay',
@@ -44,7 +45,12 @@ describe('@eternalus/core public API', () => {
       logger: new core.NullLogger(),
     });
     sim.step();
-    expect(sim.snapshot()).toEqual({ tick: 1, phase: 'countdown', entities: [] });
+    expect(sim.snapshot()).toEqual({
+      tick: 1,
+      phase: 'countdown',
+      entities: [],
+      capturePoints: [],
+    });
   });
 
   it('builds a default config that passes validation', () => {

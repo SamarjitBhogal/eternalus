@@ -1,3 +1,4 @@
+import type { CapturePointSnapshot } from '../capture/CapturePoint.types';
 import type { Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 import type { MatchPhase } from './GameState.types';
@@ -26,4 +27,6 @@ export type Snapshot = {
   readonly phase: MatchPhase;
   /** In the store's insertion order. */
   readonly entities: readonly EntitySnapshot[];
+  /** Every capture point, in a fixed order. */
+  readonly capturePoints: readonly CapturePointSnapshot[];
 };

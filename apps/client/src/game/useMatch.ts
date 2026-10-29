@@ -1,4 +1,10 @@
-import { createDefaultGameConfig, MapGenerator, SEVERITY, Simulation } from '@eternalus/core';
+import {
+  capturePointsFromMap,
+  createDefaultGameConfig,
+  MapGenerator,
+  SEVERITY,
+  Simulation,
+} from '@eternalus/core';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import { ConsoleSink } from '../data/logging/ConsoleSink';
@@ -64,7 +70,12 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger }),
+        simulation: new Simulation({
+          config,
+          seed: PLACEHOLDER_MATCH_SEED,
+          logger,
+          capturePoints: capturePointsFromMap(map),
+        }),
         map,
         tickRate: config.tickRate,
         scheduler: new RafFrameScheduler({

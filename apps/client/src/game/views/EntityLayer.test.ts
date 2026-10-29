@@ -22,6 +22,7 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
   tick,
   phase: 'countdown',
   entities,
+  capturePoints: [],
 });
 
 /** A view that records what it was asked to draw. */
