@@ -42,7 +42,7 @@ describe('ClassSelectLegendStrip', () => {
   it('leaves the empty arch for a Legend with no portrait, or one baked for another slot (CD-13)', () => {
     const html = render([
       { key: 'oracle', name: 'Elarion', miniAssetId: 'oracle-mini' },
-      { key: 'paladin', name: 'Praetorian', miniAssetId: null },
+      { key: 'paladin', name: 'Paladin', miniAssetId: null },
     ]);
     const tags = miniTags(html);
 

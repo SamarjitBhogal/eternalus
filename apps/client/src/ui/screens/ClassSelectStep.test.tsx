@@ -125,7 +125,7 @@ describe('ClassSelectStep', () => {
       'false',
     ]);
     expect(accessibleNames(html, '[role=radio]')).toEqual([
-      'Legionnaire Assault 2 Allies',
+      'Vanguard Assault 2 Allies',
       'Sentinel Tank 3 Allies',
       'Magus Ranged 2 Allies',
       'Harbinger aerial Locked',
@@ -187,7 +187,7 @@ describe('ClassSelectStep', () => {
       false,
       false,
     ]);
-    expect(html).toContain('>Legionnaire</h3>');
+    expect(html).toContain('>Vanguard</h3>');
     expect(html).toMatch(/aria-disabled="true"[^>]*>(?:(?!<\/button>).)*Select Class/);
     expect(html).toContain(`id="${String(hintId)}"`);
     expect(html).toContain('Choose a class first.');
@@ -220,8 +220,8 @@ describe('ClassSelectStep', () => {
       'cover',
       'plate',
     ]);
-    expect(html).toContain('>Legionnaire</h3>');
-    expect(html).toContain('>Centurion<');
+    expect(html).toContain('>Vanguard</h3>');
+    expect(html).toContain('>Templar<');
     expect(html).toContain(CHROME_IMG);
   });
 
@@ -257,7 +257,7 @@ describe('ClassSelectStep', () => {
   it('draws the designed placeholders for a class with no art, copy, details or Legends (CD-13)', () => {
     const content: DisplayCatalogue = {
       ...TEST_CONTENT,
-      legendClasses: [classCardFixture({ classId: 'warrior', displayName: 'Legionnaire' })],
+      legendClasses: [classCardFixture({ classId: 'warrior', displayName: 'Vanguard' })],
     };
     const html = render('warrior', { content });
     const subtitle = `class="${String(infoPanelStyles.subtitle)}"`;
@@ -269,7 +269,7 @@ describe('ClassSelectStep', () => {
     expect(radioTags(html).map((tag) => attributeOf(tag, 'data-art-mode'))).toEqual(['cover']);
     expect(html).toContain('data-arch-art="missing"');
     expect(html).not.toMatch(/<img[^>]*(card-art|card-plate|row-plate)/);
-    expect(html).toContain('>Legionnaire</h3>');
+    expect(html).toContain('>Vanguard</h3>');
     expect(html).not.toContain(subtitle);
     expect(html).not.toContain(description);
     expect(html.match(/>—</g)).toHaveLength(3);

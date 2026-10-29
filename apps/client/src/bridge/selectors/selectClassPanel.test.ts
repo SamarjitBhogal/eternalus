@@ -58,7 +58,7 @@ const MAGUS = classCardFixture({
     }),
     specCardFixture({
       specId: 'necromancer',
-      displayName: 'Necromancer',
+      displayName: 'Heretic',
       legendName: { light: 'Avedrin', dark: 'Nirdeva' },
     }),
   ],
@@ -69,11 +69,11 @@ const MAGUS = classCardFixture({
 
 const LEGIONNAIRE = classCardFixture({
   classId: 'warrior',
-  displayName: 'Legionnaire',
+  displayName: 'Vanguard',
   specs: [
-    specCardFixture({ specId: 'assassin', displayName: 'Velite' }),
-    specCardFixture({ specId: 'knight', displayName: 'Centurion' }),
-    specCardFixture({ specId: 'paladin', displayName: 'Praetorian' }),
+    specCardFixture({ specId: 'assassin', displayName: 'Zealot' }),
+    specCardFixture({ specId: 'knight', displayName: 'Templar' }),
+    specCardFixture({ specId: 'paladin', displayName: 'Paladin' }),
   ],
 });
 
@@ -136,11 +136,7 @@ describe('selectClassPanel', () => {
   it('titles unnamed Legends by their sub-class (OA3)', () => {
     const panel = selectClassPanel(storeWith('primary', 'dark').getState(), 'warrior');
 
-    expect(panel?.legendStrip.map((item) => item.name)).toEqual([
-      'Velite',
-      'Centurion',
-      'Praetorian',
-    ]);
+    expect(panel?.legendStrip.map((item) => item.name)).toEqual(['Zealot', 'Templar', 'Paladin']);
   });
 
   it('is undefined for a class the catalogue lacks, and for no class', () => {

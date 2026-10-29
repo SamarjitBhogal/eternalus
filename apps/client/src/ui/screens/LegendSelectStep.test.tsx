@@ -96,7 +96,7 @@ describe('LegendSelectStep', () => {
     expect(accessibleNames(html, '[role=radio]')).toEqual([
       'Catalyst Veridan',
       'Oracle Elarion',
-      'Necromancer Avedrin',
+      'Heretic Avedrin',
     ]);
     expect(html).toMatch(/data-spec-id="oracle"[^>]*data-look="picked"/);
     expect(html).toMatch(/aria-checked="true"[^>]*data-spec-id="oracle"/);
@@ -109,16 +109,16 @@ describe('LegendSelectStep', () => {
     expect(accessibleNames(html, '[role=radio]')).toEqual([
       'Catalyst Nadirev',
       'Oracle Noirale',
-      'Necromancer Nirdeva',
+      'Heretic Nirdeva',
     ]);
   });
 
   it('titles an unnamed Legend by its sub-class alone, card and panel (CD-13)', () => {
     const html = render({ classId: 'warrior', specId: 'knight' });
 
-    expect(accessibleNames(html, '[role=radio]')).toEqual(['Centurion']);
-    expect(html).toContain('>Centurion</h3>');
-    expect(html).toContain('Legionnaire &gt; Choose Your Legend');
+    expect(accessibleNames(html, '[role=radio]')).toEqual(['Templar']);
+    expect(html).toContain('>Templar</h3>');
+    expect(html).toContain('Vanguard &gt; Choose Your Legend');
   });
 
   it('shows unrated Legends as "No data yet" images, never meters (I-87)', () => {
@@ -243,7 +243,7 @@ describe('LegendSelectStep row plate (T-LEG-9, I-69, §5.15)', () => {
 
   it.each([
     ['catalyst', { classId: 'magus', specId: 'catalyst' }],
-    ['a Legionnaire Legend', { classId: 'warrior', specId: 'knight' }],
+    ['a Vanguard Legend', { classId: 'warrior', specId: 'knight' }],
   ])('with %s picked draws no plate, the live halo and the live LOCK IN chrome', (_, pick) => {
     const html = render(pick);
 

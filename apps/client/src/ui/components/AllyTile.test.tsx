@@ -19,7 +19,7 @@ const tile = (overrides: Partial<AllyTileView>): AllyTileView => ({
   displayName: 'Ally 3',
   isPlayer: false,
   classId: 'warrior',
-  classDisplayName: 'Legionnaire',
+  classDisplayName: 'Vanguard',
   specId: null,
   state: 'class',
   imageAssetId: 'warrior-sigil',
@@ -142,7 +142,7 @@ describe('AllyTile', () => {
 
     expect(html).toContain('data-look="idle"');
     expect(html).toContain('src="/assets/test/warrior-sigil@ally-tile.webp"');
-    expect(html).toContain('>Ally 3, Legionnaire</span>');
+    expect(html).toContain('>Ally 3, Vanguard</span>');
     expect(imageClassOf(html)).toBe(`${String(styles.image)} ${String(styles.sigil)}`);
     expect(html).not.toContain('--tile-accent');
   });

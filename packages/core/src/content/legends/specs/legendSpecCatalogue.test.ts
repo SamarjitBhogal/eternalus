@@ -40,14 +40,14 @@ describe('LEGEND_SPECS', () => {
 
   it('gives each Legend its sub-class title, one string for both teams (DEC-49)', () => {
     expect(LEGEND_SPECS.all().map((spec) => spec.displayName)).toEqual([
-      'Velite',
-      'Centurion',
-      'Praetorian',
+      'Zealot',
+      'Templar',
+      'Paladin',
       'Colossus',
-      'Juggernaut',
+      'Bulwark',
       'Catalyst',
       'Oracle',
-      'Necromancer',
+      'Heretic',
     ]);
   });
 
@@ -94,7 +94,7 @@ describe('LEGEND_SPECS', () => {
     });
   });
 
-  it("uses the owner's Sentinel descriptions and writes none for the Legionnaire Legends", () => {
+  it("uses the owner's Sentinel descriptions and writes none for the warrior Legends", () => {
     expect(LEGEND_SPECS.get('colossus').description).toBe(
       'Heaviest, slowest, strongest — a walking tank that specialises in fortifications.',
     );

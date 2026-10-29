@@ -30,7 +30,7 @@ const MAGUS = classCardFixture({
 });
 const WARRIOR = classCardFixture({
   classId: 'warrior',
-  displayName: 'Legionnaire',
+  displayName: 'Vanguard',
   accentToken: '--class-warrior-accent',
   art: { card: null, sigil: 'warrior-sigil', model: null, cardPlates: {}, rowPlate: null },
 });
@@ -121,7 +121,7 @@ describe('selectAllyTiles', () => {
     expect(tileOf(null, 'bot-class')).toMatchObject({
       isPlayer: false,
       classId: 'warrior',
-      classDisplayName: 'Legionnaire',
+      classDisplayName: 'Vanguard',
       state: 'class',
       imageAssetId: 'warrior-sigil',
       accentToken: '--class-warrior-accent',
@@ -161,7 +161,7 @@ describe('selectAllyTiles', () => {
 
     expect(tiles.map((tile) => [tile.legendId, tile.classDisplayName])).toEqual([
       ['player', null],
-      ['bot-class', 'Legionnaire'],
+      ['bot-class', 'Vanguard'],
       ['bot-legend', 'Magus'],
       ['bot-no-portrait', 'Magus'],
       ['bot-unknown', 'Harbinger'],

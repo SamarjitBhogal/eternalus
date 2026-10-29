@@ -37,14 +37,14 @@ const testKit = (
 
 /**
  * A small catalogue for UI tests (ui/ may not import the game's catalogue): the three MVP classes,
- * the locked Harbinger, one unnamed Legend each for Legionnaire and Sentinel and the three named
+ * the locked Harbinger, one unnamed Legend each for Vanguard and Sentinel and the three named
  * Magus Legends (both team names, as content stores them), the oracle with its full display data.
  */
 export const TEST_CONTENT: DisplayCatalogue = {
   legendClasses: [
     classCardFixture({
       classId: 'warrior',
-      displayName: 'Legionnaire',
+      displayName: 'Vanguard',
       blurb: 'Quick and light.',
       roleLabel: 'Assault',
       accentToken: '--class-warrior-accent',
@@ -58,7 +58,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
       specs: [
         specCardFixture({
           specId: 'knight',
-          displayName: 'Centurion',
+          displayName: 'Templar',
           accentToken: '--class-warrior-accent',
           art: {
             card: null,
@@ -161,7 +161,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
         }),
         specCardFixture({
           specId: 'necromancer',
-          displayName: 'Necromancer',
+          displayName: 'Heretic',
           legendName: { light: 'Avedrin', dark: 'Nirdeva' },
           accentToken: '--legend-necromancer-accent',
           art: {

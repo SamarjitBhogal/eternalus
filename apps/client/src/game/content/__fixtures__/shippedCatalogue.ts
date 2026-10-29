@@ -68,8 +68,11 @@ export function catalogueWithUnselectableLegend(): {
   return { catalogue, classId: sealed.classId, specId: sealed.id };
 }
 
-/** Titles the roster no longer uses (DEC-49: the Figma's "Cantor", the earlier "Gravecaller"). */
-const RETIRED_NAMES = ['cantor', 'gravecaller'];
+/**
+ * Titles the roster no longer uses: DEC-49's "Cantor" and "Gravecaller", and the titles the T5 rename
+ * retired. "Juggernaut" and "Necromancer" are left out: they are still content ids.
+ */
+const RETIRED_NAMES = ['cantor', 'gravecaller', 'legionnaire', 'velite', 'centurion', 'praetorian'];
 
 /**
  * Every name no asset id or colour token may contain (DEC-49, OA3: art is keyed by content id),

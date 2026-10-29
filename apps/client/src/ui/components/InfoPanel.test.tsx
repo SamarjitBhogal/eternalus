@@ -123,7 +123,7 @@ describe('InfoPanel', () => {
     const html = renderWithStore(
       <InfoPanel
         layout="legend"
-        title="Juggernaut"
+        title="Bulwark"
         subtitle={null}
         subtitleAccentToken="--class-sentinel-accent"
         description={null}
@@ -132,7 +132,7 @@ describe('InfoPanel', () => {
       />,
     );
 
-    expect(html).toContain(`<h3 class="${String(styles.title)}">Juggernaut</h3>`);
+    expect(html).toContain(`<h3 class="${String(styles.title)}">Bulwark</h3>`);
     expect(html).not.toContain('font-size');
     expect(/\n\.title \{([^}]*)\}/.exec(panelCss)?.[1]).toContain(
       `font-size: ${stageFontSize(INFO_PANEL_TITLE_FIT.designSize)};`,

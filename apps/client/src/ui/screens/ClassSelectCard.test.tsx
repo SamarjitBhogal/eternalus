@@ -64,7 +64,7 @@ describe('ClassSelectCard', () => {
   it('is a radio named by its class, role and ally count, described by the panel', () => {
     const html = render('warrior', { isTabbable: true });
 
-    expect(accessibleNames(html, '[role=radio]')).toEqual(['Legionnaire Assault 2 Allies']);
+    expect(accessibleNames(html, '[role=radio]')).toEqual(['Vanguard Assault 2 Allies']);
     expect(rootTag(html)).toContain('type="button"');
     expect(rootTag(html)).toContain('aria-checked="false"');
     expect(rootTag(html)).toContain('aria-describedby="panel"');
@@ -103,7 +103,7 @@ describe('ClassSelectCard', () => {
     expect(html).not.toContain('magus-card-art');
   });
 
-  it('draws the live art where the look has no plate (Magus idle, Legionnaire picked)', () => {
+  it('draws the live art where the look has no plate (Magus idle, Vanguard picked)', () => {
     for (const html of [render('magus'), render('warrior', { isPicked: true })]) {
       expect(rootTag(html)).toContain('data-art-mode="cover"');
       expect(rootTag(html)).not.toContain('--art-left');
