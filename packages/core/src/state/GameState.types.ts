@@ -16,6 +16,6 @@ export type RecordedCommand = {
  * the unit cap kept out of a horde (architecture 18 §3.4), `unitsRequested` every member asked for.
  */
 export type TeamState = {
-  unitsRequested: number;
-  unitsSuppressed: number;
+  readonly unitsRequested: number;
+  readonly unitsSuppressed: number;
 };
