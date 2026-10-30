@@ -278,6 +278,12 @@ exact, ascending `queryCircle`, over points only: no radii and no `queryRect` ye
 `physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
 `MovementSystem`. Horde separation (18 §5.2) falls off linearly with distance, not as 1/r.
 
+Flow-field follow (§9, minion plan M4) is built for lane hordes: `LaneFollowMovementStrategy` takes
+the bilinear field direction instead of its slot while the next `blockedLookAhead` (content) of the
+straight line to the slot crosses an unwalkable cell. There is no `CollisionSystem` and no
+wall-avoidance term yet; until they arrive, the blocked corridor cells beside open ground point
+back out of it, so the field itself leads a unit pushed into a wall back to open ground.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

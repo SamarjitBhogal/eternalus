@@ -12,6 +12,8 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
+import { LaneFlowFields } from '../map/LaneFlowFields';
+import { WorldMap } from '../map/WorldMap';
 import { GameState } from '../state/GameState';
 import { PathingSystem } from './PathingSystem';
 
@@ -174,5 +176,30 @@ describe('PathingSystem', () => {
       system.update({ state, logger });
       expect(heading()).toEqual({ x: 0, y: 0 });
     });
+  });
+
+  it('rebuilds dirty flow fields within the configured cell budget each tick', () => {
+    const config = createDefaultGameConfig({ map: { flowFieldCellBudget: 10 } });
+    const grid = WorldMap.fromDefinition(TWO_LANE_MAP, config.map.navCellSize, () => false);
+    const fields = new LaneFlowFields(grid, TWO_LANE_MAP, config.map.flowFieldCorridorHalfWidth);
+    const field = fields.fields[0];
+    const system = new PathingSystem(
+      STRATEGIES,
+      FORMATIONS,
+      HORDE_STEERING.slotArrivalRadius,
+      fields,
+    );
+    const state = new GameState(config, 1, TWO_LANE_MAP);
+    fields.markDirty([field?.goal ?? 0]);
+    const serving = field?.integration;
+
+    system.update({ state, logger });
+    const isServingAfterOneTick = field?.integration === serving;
+    for (let tick = 1; tick < Math.ceil((field?.cellCount ?? 0) / 10); tick += 1) {
+      system.update({ state, logger });
+    }
+
+    expect(isServingAfterOneTick).toBe(true);
+    expect(field?.integration).not.toBe(serving);
   });
 });

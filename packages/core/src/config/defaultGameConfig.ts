@@ -17,6 +17,8 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
     worldWidth: 1600, // TUNE: traced from the team sketch
     worldHeight: 900, // TUNE: traced from the team sketch
     navCellSize: 5, // TUNE: was DEFAULT_MAP_LAYOUT.navCellSize on feat/map-generator
+    flowFieldCorridorHalfWidth: 25, // TUNE: room to route a 4-wide formation around an obstacle
+    flowFieldCellBudget: 2000, // TUNE: Recommendation (sprint 3.2): rebuild cost well under 1 ms
     presetId: 'map-1',
   },
   match: {
