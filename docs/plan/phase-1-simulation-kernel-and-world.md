@@ -119,10 +119,11 @@ Follows [04-entity-architecture.md](../architecture/04-entity-architecture.md).
       removal has a cause; tick advanced once. Owner: _. Test: an injected corrupt state yields a
       violation record with tick, seed, entity id and the last commands. Done when: violations
       throw in tests and log through `Logger` in the browser.
-- [ ] **`IdGenerator`, `RingBuffer`, `ObjectPool` base** in `utils/`. Owner: _. Test: pool
+- [x] **`IdGenerator`, `RingBuffer`, `ObjectPool` base** in `utils/`. Owner: _. Test: pool
       resets fields on acquire and nulls references on release. Done when: `GameEvents` payloads
-      for high-frequency events come from the pool. Status (2026-10-29, SCRUM-427): the
-      `ObjectPool` base is built; wiring event payloads waits for the INBOX item.
+      for high-frequency events come from the pool. Status (2026-10-30, SCRUM-427): the
+      `ObjectPool` base is built; by DEC-94, event payloads stay unpooled until profiling shows
+      a need, so the item is done.
 
 **Success metric:** an added test that registers a new fake unit kind touches exactly three
 places (class, content entry, registry line); coverage in `packages/core` ≥ 82% (raised from 80%,

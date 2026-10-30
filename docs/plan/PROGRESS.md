@@ -2472,3 +2472,21 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 768 passed (768)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: Sam answers the open INBOX points for this PR; team review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/object-pool (review fixes) — Sam Holtzman + Claude Code, for claudiodh
+
+- What was done: PR #51 review fixes, applied on Sam's request on behalf of the author. F1: merged
+  `phase/2-sprint-2-work` again; the only conflict was `PROGRESS.md`, resolved by keeping both
+  sides' entries, ordered by date. T2: the "allocates none after construction" test now counts
+  `create` calls and asserts the count stays at `capacity` over acquire and release cycles, and
+  keeps the identity assertion. DEC-94 applied: `ObjectPool` TSDoc says event payloads are not
+  pooled; the INBOX item is ticked with the answer; the phase 1 plan item is ticked with an
+  updated status sentence (`IdGenerator` and `RingBuffer` already exist in `utils/`).
+- Fail-first breaks (run, then restored): (A) `acquire` made one extra `create()` call and
+  discarded it → "reuses the same objects and allocates none after construction" red ("expected 6
+  to be 2"), the only failing test. (B) `acquire` returned `create()` instead of the pooled object
+  → "resets fields on acquire", "nulls references on release", the reuse test and "rejects a double
+  release" red.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 796 passed (796)"; client "Tests 419 passed
+  (419)"; "Documentation check passed."
+- Next step: squash-merge: the branch history has revert/merge noise.

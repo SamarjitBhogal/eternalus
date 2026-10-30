@@ -308,7 +308,7 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
-- [ ] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
+- [x] **ObjectPool — pooled `GameEvents` payloads (SCRUM-427, branch `feat/object-pool`).** The
       `ObjectPool` base is built in `utils/` (phase 1 plan, sprint 1.2: "pool resets fields on
       acquire and nulls references on release"). The item's "done when" (high-frequency
       `GameEvents` payloads come from the pool) is **not wired**, because it clashes with how
@@ -322,6 +322,8 @@ Reply inline (`Decision: …`).
       item, which list event payloads as pooled; 04 §11 already names only projectiles.
       Option (2) also needs a snapshot rule: payloads hold nested references (`DamageSource`,
       `memberIds`, `bars`), so the ring buffer would need a deep or immutable copy, not a shallow one.
+  - Answered 2026-10-30 (DEC-94): option (1), pool projectiles only; payloads stay unpooled until
+    profiling shows GC pauses.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
