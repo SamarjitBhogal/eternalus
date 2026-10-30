@@ -14,6 +14,7 @@ import { ORACLE } from './legends/specs/oracle';
 import { WARRIOR } from './legends/warrior';
 import { loadDisplayContent } from './loadDisplayContent';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
+import { BOT_ROSTER } from './teams/botRoster';
 
 /** The shipped Legends plus one whose class is the reserved, unplayable `harbinger`. */
 const SPECS_WITH_HARBINGER = new ContentCatalogue<LegendSpecDefinition>([
@@ -108,5 +109,19 @@ describe('loadDisplayContent', () => {
 
   it('names the profile screen', () => {
     expect(loadDisplayContent().profileDisplayName).toBe('Chronicle');
+  });
+
+  it('returns the shipped bot roster (DEC-61, DEC-102)', () => {
+    expect(loadDisplayContent().botRoster).toBe(BOT_ROSTER);
+  });
+
+  it('rejects a bot roster that gives a bot the locked harbinger (DEC-48)', () => {
+    const botRoster = { ...BOT_ROSTER, laners: [...BOT_ROSTER.laners.slice(1), 'harbinger'] };
+
+    expect(() => loadDisplayContent({ botRoster })).toThrow(
+      new ContentValidationError(
+        'Invalid content: standard: laner class "harbinger" is not a playable Legend class',
+      ),
+    );
   });
 });

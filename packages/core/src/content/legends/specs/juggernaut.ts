@@ -14,5 +14,5 @@ export const JUGGERNAUT = {
   roleLabel: null,
   description: 'A siege-breaker — faster, lower health, used to assault front lines.',
   roleRatings: null,
-  detailNames: { signature: null, specialty: null, ultimate: null },
+  detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
 } as const satisfies LegendSpecDefinition;

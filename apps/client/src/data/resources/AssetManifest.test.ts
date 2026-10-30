@@ -208,6 +208,17 @@ describe('ASSET_MANIFEST', () => {
     ]);
   });
 
+  it('puts only the primary layout art in the selection-primary group', () => {
+    // The Legend minis are shared: both layouts' View Details draw them (DEC-109).
+    expect(SELECTION_PRIMARY_ASSETS.map((entry) => entry.id)).toEqual([
+      'harbinger-card-art',
+      'magus-card-art',
+      'magus-detail-arcane-intellect',
+      'sentinel-card-art',
+      'warrior-card-art',
+    ]);
+  });
+
   it('puts the plates in the raster-only groups of their step', () => {
     expect(SELECTION_RASTER_ASSETS.map((entry) => entry.id)).toEqual([
       'lock-in-chrome',

@@ -87,10 +87,13 @@ describe('LEGEND_SPECS', () => {
     expect(oracle.roleRatings?.damage).toBe(152 / 395);
     expect(oracle.roleRatings?.support).toBe(333 / 395);
     expect(oracle.roleRatings?.control).toBe(201 / 395);
+    // DEC-65: the Ultimate on top, then abilities 1 to 3, and no Aetheric Recall (the class's
+    // default ability); DEC-103: Unison Ward is ability 1, a preview until next sprint's abilities.
     expect(oracle.detailNames).toEqual({
-      signature: 'Aetheric Recall',
-      specialty: 'Unison Ward',
       ultimate: 'Severed Accord',
+      'ability-1': 'Unison Ward',
+      'ability-2': null,
+      'ability-3': null,
     });
   });
 
@@ -112,7 +115,12 @@ describe('LEGEND_SPECS', () => {
 
       expect(spec.roleLabel).toBeNull();
       expect(spec.roleRatings).toBeNull();
-      expect(spec.detailNames).toEqual({ signature: null, specialty: null, ultimate: null });
+      expect(spec.detailNames).toEqual({
+        ultimate: null,
+        'ability-1': null,
+        'ability-2': null,
+        'ability-3': null,
+      });
     }
     expect(LEGEND_SPECS.get('catalyst').description).toBeNull();
     expect(LEGEND_SPECS.get('necromancer').description).toBeNull();

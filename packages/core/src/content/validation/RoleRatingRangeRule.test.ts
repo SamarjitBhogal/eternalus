@@ -12,7 +12,7 @@ const spec = (roleRatings: RoleRatings | null): LegendSpecDefinition => ({
   roleLabel: null,
   description: null,
   roleRatings,
-  detailNames: { signature: null, specialty: null, ultimate: null },
+  detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
 });
 
 describe('RoleRatingRangeRule', () => {

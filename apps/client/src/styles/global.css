@@ -97,6 +97,8 @@
   --selection-countdown: #ff1a00;
   --selection-countdown-glow: rgb(255 26 0 / 15%);
   --selection-detail-accent: rgb(255 26 0 / 40%);
+  /* View Details (145:2): the row names (148:180 …) and dividers (145:84, 148:184). */
+  --selection-detail-name: #00d9ff;
   --selection-banner-title: #710b00;
   --selection-brace: #b2ccd9;
   --selection-glow-frost: #bddeff;

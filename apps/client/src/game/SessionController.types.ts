@@ -1,4 +1,4 @@
-import type { Logger, MapFeatureKind } from '@eternalus/core';
+import type { Logger, MapFeatureKind, SeededRandom } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -73,12 +73,19 @@ export interface SessionContext {
   /** Records the pick, or clears it with `null`, and publishes `class-selection`. */
   recordSelection(selection: ClassSelection | null): void;
   /**
+   * LOCK IN (DEC-61): fills both rosters from the setup and the pick (`fillRosters`) and publishes
+   * them as `selection-locked`. The setup itself stays as built, for a rematch.
+   * @throws Without a setup or a pick.
+   */
+  lockIn(): void;
+  /**
    * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`).
    * @throws Without a setup, or when generation fails.
    */
   prepareWorld(): void;
   /**
-   * Builds and starts the match on `viewport` from the setup, the selection and the world.
+   * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
+   * selection and the world.
    * @throws When one of them is missing or the factory fails.
    */
   createMatch(viewport: MatchViewport): RunningMatch;
@@ -132,6 +139,12 @@ export type SessionControllerDeps = {
   readonly seedSource: () => number;
   /** The match's random stream from its seed. */
   readonly createRng: (seed: number) => Rng;
+  /**
+   * The stream LOCK IN draws the bots' Legends from (`fillRosters`), apart from `createRng`'s team
+   * draw: `session/createRosterRng.ts`. Its own factory because core's `nextInt(min, max)` is not
+   * the `Rng` port's `nextInt(maxExclusive)`.
+   */
+  readonly createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>;
   /**
    * Receives `data-team="light|dark"` while a match setup exists and `data-contrast` (the
    * catalogue's colour set, DEC-55) while the session runs (`<html>` in the app).

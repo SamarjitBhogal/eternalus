@@ -3,6 +3,7 @@ import { type LogAttributes, makeLogRecord } from '@eternalus/core';
 import type {
   AssetGroup,
   ClassSelection,
+  FilledRosters,
   LoadingProgress,
   MatchSetupDraft,
   SessionPhase,
@@ -18,6 +19,7 @@ import type {
   SessionState,
 } from './SessionController.types';
 import { buildMatchSetup } from './session/buildMatchSetup';
+import { fillRosters } from './session/fillRosters';
 import { IllegalSessionTransition } from './session/IllegalSessionTransition';
 
 /**
@@ -26,12 +28,14 @@ import { IllegalSessionTransition } from './session/IllegalSessionTransition';
  * to the current state; every phase change is checked against `SESSION_TRANSITIONS` and published
  * as `session-phase`. Owns the match's lifetime (DEC-50): `match-loading` prepares the world,
  * `attachViewport` in `match` creates the `Match`, leaving `match` destroys it. Loads and releases
- * the asset groups each phase needs through the resources facade.
+ * the asset groups each phase needs through the resources facade. Keeps the setup as built (what a
+ * rematch republishes) apart from the rosters LOCK IN fills (what the match is built from).
  */
 export class SessionController {
   private current: SessionState | null = null;
   private setup: MatchSetupDraft | null = null;
   private selection: ClassSelection | null = null;
+  private rosters: FilledRosters | null = null;
   private world: PreparedWorld | null = null;
   private readonly publishedGroups = new Set<AssetGroup>();
   private stopListening = (): void => undefined;
@@ -62,6 +66,9 @@ export class SessionController {
       recordSelection: (selection) => {
         this.selection = selection;
         deps.bus.emit('class-selection', selection);
+      },
+      lockIn: () => {
+        this.lockIn();
       },
       prepareWorld: () => {
         if (this.setup === null) throw new Error('No match setup to prepare a world for');
@@ -144,16 +151,21 @@ export class SessionController {
         seed,
         rng: this.deps.createRng(seed),
         legendClasses: this.context.catalogue.legendClasses,
+        botRoster: this.context.catalogue.botRoster,
         legendsPerTeam: this.deps.matchConfig.legendsPerTeam,
         playerName: this.deps.playerName,
       }),
     );
   }
 
-  /** Every published setup starts clean: no pick, no world (as `connectBusToStore` resets the store). */
+  /**
+   * Every published setup starts clean: no pick, no filled rosters, no world (as
+   * `connectBusToStore` resets the store).
+   */
   private publishSetup(setup: MatchSetupDraft): void {
     this.setup = setup;
     this.selection = null;
+    this.rosters = null;
     this.world = null;
     this.deps.themeRoot.dataset.team = setup.playerTeam;
     this.deps.bus.emit('match-setup', setup);
@@ -162,19 +174,34 @@ export class SessionController {
   private clearMatchSetup(): void {
     this.setup = null;
     this.selection = null;
+    this.rosters = null;
     this.world = null;
     delete this.deps.themeRoot.dataset.team;
     this.deps.bus.emit('match-setup', null);
   }
 
+  private lockIn(): void {
+    const { setup, selection } = this;
+    if (setup === null || selection === null) throw new Error('LOCK IN needs a setup and a pick');
+    const { legendClasses, botRoster } = this.context.catalogue;
+    this.rosters = fillRosters({
+      draft: setup,
+      selection,
+      legendClasses,
+      enemyRover: botRoster.enemyRover,
+      rng: this.deps.createRosterRng(setup.seed),
+    });
+    this.deps.bus.emit('selection-locked', this.rosters);
+  }
+
   private createMatch(viewport: MatchViewport): RunningMatch {
-    const { setup, selection, world } = this;
-    if (setup === null || selection === null || world === null) {
-      throw new Error('A match needs a setup, a class selection and a prepared world');
+    const { setup, selection, rosters, world } = this;
+    if (setup === null || selection === null || rosters === null || world === null) {
+      throw new Error('A match needs a setup, a locked-in selection and a prepared world');
     }
     return this.deps.createMatch(
       {
-        setup,
+        setup: { ...setup, ...rosters },
         world,
         player: { legend: selection.classId, team: setup.playerTeam },
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),

@@ -1,18 +1,18 @@
 import type { InputAction } from '../bridge/Binding.types';
-import type { RoleRatingAxis } from '../bridge/catalogue.types';
+import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 
 /**
- * Banner text per `session.reason`: every `SessionReason` has one (a missing reason is a compile
- * error); the store holds the reason as a string, so an unknown one shows no banner.
+ * Banner text per `session.reason`: every `SessionReason` but `select-timeout` has one (a missing
+ * reason is a compile error); `select-timeout` shows `selectTimeoutPopup` instead (DEC-102). The
+ * store holds the reason as a string, so an unknown one shows no banner.
  */
 const REASON_BANNERS: Readonly<Record<string, string>> = {
-  'select-timeout': 'Match cancelled: no character selected.',
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
   'load-failed': 'Loading failed.',
-} satisfies Record<SessionReason, string>;
+} satisfies Record<Exclude<SessionReason, 'select-timeout'>, string>;
 
 /** A value not known yet, e.g. before the first publish (CD-13, DEC-17). */
 const NO_DATA_YET = 'No data yet';
@@ -32,6 +32,15 @@ export const STRINGS = {
     about: 'About / credits',
   },
   reasonBanners: REASON_BANNERS,
+  /** The popup over the home screen when the select countdown ended before LOCK IN (DEC-102). */
+  selectTimeoutPopup: {
+    // DEC-102: the owner's title and text, word for word.
+    title: 'Failed to Choose Legend',
+    text: 'The countdown ended before you locked in a Legend. You have been returned to the lobby.',
+    // Recommendation: the review page's preview of the one close control, not the owner's words
+    // (DEC-102).
+    close: 'Continue',
+  },
   comingSoon: 'Coming in sprint 2.',
   about: {
     title: 'About / credits',
@@ -126,12 +135,28 @@ export const STRINGS = {
     selectClassHint: 'Choose a class first.',
     classDetailsHeader: 'Default ability / Weapon Proficiency / Specialty',
     classAlternateDetailsHeader: 'Signature / Proficiency / Specialty',
-    legendDetailsHeader: 'Signature / Specialty / Ultimate',
+    /** DEC-65: the Ultimate on top, then abilities 1 to 3. */
+    legendDetailsHeader: 'Ultimate / Abilities',
     legendsHeader: 'Legends',
     legendsPending: 'Legends to come',
     legendBreadcrumb: (classDisplayName: string): string =>
       `${classDisplayName} > Choose Your Legend`,
     viewDetails: 'View Details',
+    /**
+     * View Details' row labels (DEC-65, DEC-103): the class rows as the Figma's View Details
+     * Example draws them (145:2: 148:179 …), the Legend's Ultimate as the owner names it (DEC-65).
+     */
+    detailLabels: {
+      signature: 'Default ability',
+      proficiency: 'Weapon Proficiency',
+      specialty: 'Specialty',
+      ultimate: 'Ultimate',
+      // Recommendation: "Ability n". The owner names the rows "abilities 1, 2, and 3" (DEC-65) but
+      // gives them no labels.
+      'ability-1': 'Ability 1',
+      'ability-2': 'Ability 2',
+      'ability-3': 'Ability 3',
+    } satisfies Record<DetailSlot, string>,
     previousClass: 'Previous class',
     nextClass: 'Next class',
     // Cinzel draws lower case as small capitals (58:276, 58:326).
@@ -224,6 +249,7 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'camera-zoom-out': 'Zoom out',
   'toggle-minimap': 'Toggle minimap',
   'pause-menu': 'Pause menu',
+  'view-details': 'View Details',
   'toggle-developer-menu': 'Developer menu',
   'toggle-perf-overlay': 'Performance overlay',
 };

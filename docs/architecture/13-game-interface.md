@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-30
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -544,16 +544,25 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-24; the owner
 DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), except:
 
 - **§2's `character-select` row** says the phase ends when the player confirms a class and builds
-  the rosters there; the branch builds them in `menu`. The owner's answers of 2026-10-28 keep the
-  countdown running its full 60 s with a locked view after LOCK IN (DEC-60) and fill the bots at
-  LOCK IN, the enemy's tenth bot mirroring the player (DEC-61); none of that is built yet, and the
-  row (with the `menu` → `loading` row) is redrafted with that work (HC-T1). **§3's
-  `LevelBadge`, `WeaponPanel`, ultimate and structure rows** are not in the table yet: their draft,
-  redrafted to his HUD rules (DEC-62), waits for his approval (HC-T1).
+  the rosters there. The branch builds the rosters in `menu`, each bot by class from the bot
+  roster content, and runs the owner's flow (2026-10-30, `feat/hud-plan-b2`): the countdown always
+  runs its full 60 s, LOCK IN locks the pick and shows a locked view (DEC-60) and fills each bot's
+  Legend, the enemy's tenth bot copying the player's pick (DEC-61, DEC-102), and a countdown that
+  ends before LOCK IN starts no match (DEC-102). The row and the `menu` → `loading` row are
+  redrafted to that flow and wait for his approval (HC-T1 T-10, T-12, T-13). **§3's
+  `CharacterSelectScreen` row, §6.1 and §6.4** do not name the locked view, View Details or its
+  `view-details` action yet (HC-T1 T-181 to T-184). **§3's `LevelBadge`, `WeaponPanel`, ultimate
+  and structure rows** are not in the table yet: their draft, redrafted to his HUD rules (DEC-62),
+  waits for his approval (HC-T1).
 - **Screens.** `CharacterSelectScreen` runs the class step (62:125, or 62:70 when the content value
   `classSelectLayout` is `'alternate'`, through the registry `CLASS_STEP_LAYOUTS`; DEC-52) and then
-  the Legend step (58:271; DEC-49) inside the one `character-select` phase. `MatchScreen` holds
-  the HUD and the pause overlay. `ui/App.tsx` registers both in `PHASE_SCREENS`, and only
+  the Legend step (58:271; DEC-49) inside the one `character-select` phase, then, from LOCK IN
+  until the countdown ends, the locked view (`LockedSelectStep`, DEC-60); each step is one entry of
+  its registry `SELECTION_STEPS`. Key V opens View Details over the class and Legend steps
+  (`ViewDetailsScreen`; the class case, `ClassDetailsScreen`, is shared by both class layouts;
+  DEC-103, DEC-109): a component inside the screen, neither a `MenuRoute` nor a `SessionPhase`.
+  After a select timeout the menu shows the popup `SelectTimeoutNotice` (DEC-102). `MatchScreen`
+  holds the HUD and the pause overlay. `ui/App.tsx` registers both in `PHASE_SCREENS`, and only
   `MatchScreen` renders the viewport, so no canvas exists outside `match`.
 - **`Match` lifetime (DEC-50).** `match-loading` loads the `match` group, then calls `prepareWorld`
   (`game/prepareMatchWorld.ts`: the map from `setup.seed`). In `match`, `MatchState.attachViewport`
@@ -577,26 +586,31 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   probe's records in the coordinating session's working folder
   (`eternalus-agent-work/hud-charselect/wf7/probe-r2/` and `results/f2.json`), outside the
   repository.
-- **Session.** `menu` builds the setup draft (seed, `playerTeam`, allied and enemy rosters; no
-  config or loadout yet). `SessionController` holds the class and Legend pick;
-  `canConfirmSelection` (`bridge/selectionRules.ts`) is the one rule for LOCK IN, in the session
-  and in the UI. The countdown's end with a class picked goes on to `pre-launch`; `cancel-match`
-  returns to `menu`. Failures carry a `SessionReason` banner (`select-timeout`, `cancelled`,
-  `match-failed`, `load-failed`); a `boot` load that rejects (a loader bug; a missing asset is only
-  warned) opens the menu with `load-failed` until `BootScreen` offers a retry (plan Phase 5,
-  sprint 5.2). Nothing produces `results` yet: `match-ended` comes with the `MatchDirector`
-  (Phase 3, sprint 3.5). Nothing catches an exception thrown by `Simulation.step()` during a
-  match, so no repro payload is logged and the session does not move on (`match-failed` covers
-  only a match that cannot start); Phase 6, sprint 6.4 ("Error boundaries and loop safety")
-  schedules it. `SessionController` takes no `persistence` yet (`main.tsx` opens it beside the
-  session, and nothing saves a match result), so its transitions test has no
+- **Session.** `menu` builds the setup draft (seed, `playerTeam`, and the allied and enemy
+  rosters by class from the bot roster content, `buildMatchSetup`; no config or loadout yet).
+  `SessionController` holds the class and Legend pick; `canConfirmSelection`
+  (`bridge/selectionRules.ts`) is the one rule for LOCK IN, in the session and in the UI. LOCK IN
+  fills the rosters (`fillRosters`: each bot a Legend of its class from the seed's roster stream,
+  the enemy Rover a copy of the pick) and publishes them (`selection-locked`); every later intent
+  is ignored. The countdown's end after LOCK IN goes on to `pre-launch`; before it, with or
+  without a class, to `menu` with `select-timeout`, which the menu shows as a popup, not a banner.
+  `cancel-match` returns to `menu`, but no screen sends it. The other failures carry a
+  `SessionReason` banner (`cancelled`, `match-failed`, `load-failed`); a `boot` load that rejects (a
+  loader bug; a missing asset is only warned) opens the menu with `load-failed` until `BootScreen`
+  offers a retry (plan Phase 5, sprint 5.2). Nothing produces `results` yet: `match-ended` comes
+  with the `MatchDirector` (Phase 3, sprint 3.5). Nothing catches an exception thrown by
+  `Simulation.step()` during a match, so no repro payload is logged and the session does not move on
+  (`match-failed` covers only a match that cannot start); Phase 6, sprint 6.4 ("Error boundaries and
+  loop safety") schedules it. `SessionController` takes no `persistence` yet (`main.tsx` opens it
+  beside the session, and nothing saves a match result), so its transitions test has no
   `MemoryStorageAdapter` (§2).
 - **Bridge.** New events beyond §5's sketch: `structure-state`, `asset-urls` (each image's URL and,
-  where the manifest declares one, its draw box) and `credits`; §5's `capture-state` is now
-  published; `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md)
-  §14); `hud-state` is `{ player }` with no `spectatedLegendId` (no spectate producer yet). The
-  display types live in `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains
-  `selectionRules.ts`, `minimapRing.ts` and `legendNames.ts`, and `assetsSlice`. The HUD data is in
+  where the manifest declares one, its draw box), `credits` and `selection-locked` (the rosters LOCK
+  IN filled); §5's `capture-state` is now published; `loading-progress` names seven asset groups
+  ([14](14-persistence-and-resources.md) §14); `hud-state` is `{ player }` with no
+  `spectatedLegendId` (no spectate producer yet). The display types live in
+  `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains `selectionRules.ts`,
+  `minimapRing.ts` and `legendNames.ts`, and `assetsSlice`. The HUD data is in
   `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and `match-setup` resets the
   setup, HUD and match slices so a rematch shows no stale HUD.
 - **HUD data.** `MatchBridge` publishes `match-clock` and `hud-state` every 6 ticks and
@@ -634,8 +648,21 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   The display switches (DEC-54, DEC-55) are built (`effectsRenderer` with the developer override
   `?dev=1&fx=css` or `fx=raster`; `contrastMode` written to `data-contrast` on `<html>` by
   `SessionController`). The in-game reduce-motion setting is saved but not yet applied to the
-  page; only `prefers-reduced-motion` reaches CSS (INBOX HC-S3; specified as UE-03 in
-  [the UI enhancements plan](../plan/ui-enhancements-plan.md)).
+  page; only `prefers-reduced-motion` reaches CSS, except in View Details, which reads the setting
+  itself (`data-reduce-motion` on its own root) until UE-03 applies it everywhere (INBOX HC-S3;
+  specified as UE-03 in [the UI enhancements plan](../plan/ui-enhancements-plan.md)).
+- **Character select, known gaps (2026-10-30).** Content has no description of a class's default
+  ability, proficiency or specialty, or of a Legend's abilities, so View Details' rows show a
+  label and a name only, and several Legends have no lore paragraph yet (register CD-41). View
+  Details' icons are the panels' renditions, smaller than frame 145:2's, until new renditions exist
+  (CD-40). While View Details is open its filter (`ui/components/modalKeyFilter.ts`) stops every
+  key press and every press of a mouse button bound to an action; a `pause-menu` key or button
+  closes the view, and a click still reaches the view's own buttons. The tests render in Node with
+  no DOM (§8), so View Details' open path (the V press or the prompt click that opens it, the focus
+  it keeps and gives back) runs in no test; a DOM test environment (jsdom or happy-dom) is a new
+  development dependency, which needs the owner's approval (`INBOX.md` HC-Q23). The open and
+  closed renders are tested (`ViewDetailsScreen`, and the class case in `ClassDetailsScreen`), and
+  the focus helper is tested with the pause overlay.
 - **Developer chrome and pause.** The developer flag is the `?dev=1` query only, because
   `settings.developer.menuEnabled` does not exist yet. The free camera, the overview, the explorer
   toolbar and the map legend need it (DEC-32; INBOX HC-F8). The cathedral click and a "Leave

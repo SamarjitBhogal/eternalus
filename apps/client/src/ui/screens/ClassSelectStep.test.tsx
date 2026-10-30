@@ -2,15 +2,29 @@ import { describe, expect, it } from 'vitest';
 
 import { loadedAssetsFor } from '../../bridge/__fixtures__/assetFixtures';
 import { classCardFixture } from '../../bridge/__fixtures__/catalogueFixtures';
+import type { Binding } from '../../bridge/Binding.types';
 import type { DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import type { RosterEntry } from '../../bridge/events';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
+import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import glowStyles from '../components/GlowButton.module.css';
 import infoPanelStyles from '../components/InfoPanel.module.css';
 import detailsStyles from '../components/InfoPanelDetails.module.css';
+import promptStyles from '../components/KeyPrompt.module.css';
 import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassSelectStep } from './ClassSelectStep';
+import stripStyles from './ClassSelectLegendStrip.module.css';
+
+/** View Details' default key (game/input/keybindings.ts, DEC-103). */
+const VIEW_DETAILS_ON_V: readonly Binding[] = [
+  { action: 'view-details', chords: [{ device: 'keyboard', code: 'KeyV', label: 'V' }] },
+];
+
+/** The step's own markup, before the View Details screen it renders after its section. */
+const stepPart = (html: string): string => html.slice(0, html.indexOf('role="dialog"'));
+/** The View Details screen's markup. */
+const detailsPart = (html: string): string => html.slice(html.indexOf('role="dialog"'));
 
 const ally = (
   legendId: string,
@@ -83,6 +97,7 @@ function render(
   return renderWithStore(<ClassSelectStep preferredClassId={preferredClassId} />, {
     content,
     assets: loadedAssetsFor(content),
+    settings: { ...settingsSlice.getInitialState(), bindings: VIEW_DETAILS_ON_V },
     matchSetup: {
       ...matchSetupSlice.getInitialState(),
       playerTeam: team,
@@ -272,12 +287,45 @@ describe('ClassSelectStep', () => {
     expect(html).toContain('>Vanguard</h3>');
     expect(html).not.toContain(subtitle);
     expect(html).not.toContain(description);
-    expect(html.match(/>—</g)).toHaveLength(3);
+    expect(stepPart(html).match(/>—</g)).toHaveLength(3);
     expect(
-      html.match(new RegExp(`class="${String(detailsStyles.placeholder)}"`, 'g')),
+      stepPart(html).match(new RegExp(`class="${String(detailsStyles.placeholder)}"`, 'g')),
     ).toHaveLength(3);
     expect(html).toContain('>Legends to come</p>');
     expect(html).not.toContain('data-slot=');
+  });
+
+  // DEC-103: V opens View Details. Recommendation: the prompt sits bottom left (P4's default).
+  it('offers V View Details bottom left, its screen closed and inert until opened', () => {
+    const html = render('magus');
+
+    expect(stepPart(html)).toContain(
+      `class="${String(promptStyles.prompt)} ${String(promptStyles.keyLine)} ${String(promptStyles.classViewDetails)}"`,
+    );
+    expect(accessibleNames(stepPart(html), 'button')).toContain('V View Details');
+    expect(stepPart(html)).not.toMatch(/<section[^>]*inert/);
+    expect(detailsPart(html)).toMatch(
+      /^role="dialog" aria-modal="true" aria-label="View Details" data-open="false" data-reduce-motion="false" inert=""/,
+    );
+  });
+
+  // DEC-103: "most items carry over from the previous screen, just new placement and added
+  // words": the class panel in 145:2's left column, its rows labelled as 145:2 draws them, the
+  // Legends strip carried over, and no details header.
+  it('lays the shown class out again in View Details: rows labelled, the Legends strip moved', () => {
+    const details = detailsPart(render('magus'));
+    const labels = [
+      ...details.matchAll(new RegExp(`class="${String(detailsStyles.label)}">([^<]+)<`, 'g')),
+    ].map(([, label]) => label);
+
+    expect(details).toContain('data-layout="class-details"');
+    expect(details).toContain('>Magus</h3>');
+    expect(labels).toEqual(['Default ability', 'Weapon Proficiency', 'Specialty']);
+    expect(details).toContain('>Aetheric Recall<');
+    expect(details).not.toContain(`class="${String(detailsStyles.headerText)}"`);
+    expect(details).toContain(
+      `<div class="${String(stripStyles.strip)}" data-placement="view-details">`,
+    );
   });
 
   it('carries no colour literal in its markup', () => {

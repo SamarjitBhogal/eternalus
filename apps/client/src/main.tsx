@@ -27,6 +27,7 @@ import type { MatchViewport } from './game/MatchViewport.types';
 import { prepareMatchWorld } from './game/prepareMatchWorld';
 import { SettingsController } from './game/settings/SettingsController';
 import { SessionController } from './game/SessionController';
+import { createRosterRng } from './game/session/createRosterRng';
 import { createDefaultSessionStates } from './game/session/defaultSessionStates';
 import { LcgRng } from './game/session/LcgRng';
 import { App } from './ui/App';
@@ -90,6 +91,7 @@ const session = new SessionController({
   playerName: PLACEHOLDER_PLAYER_NAME,
   seedSource: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
   createRng: (seed) => new LcgRng(seed),
+  createRosterRng,
   themeRoot: document.documentElement,
   prepareWorld: (seed) => prepareMatchWorld(gameConfig, seed),
   createMatch: createBrowserMatch({

@@ -4,6 +4,12 @@ import type { UnitDefinition } from '../units/units.types';
 /** The MVP Legend classes (DEC-08: Assault is now Warrior). */
 export type LegendKind = 'warrior' | 'sentinel' | 'magus';
 
+/**
+ * Content id of a Legend class (a `LegendDefinition` id: `'warrior'`, `'sentinel'`, `'magus'`). A
+ * plain id, not a closed union, so other content (the bot roster, Legend specs) can name a class.
+ */
+export type LegendClassId = string;
+
 /** Kebab-case id of the weapon group a class favours (`01-classes`, Classes table): `light`, `heavy`, `staff`. */
 type WeaponBias = string;
 

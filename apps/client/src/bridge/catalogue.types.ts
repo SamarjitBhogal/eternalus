@@ -3,7 +3,7 @@
  * `content-catalogue` carries a `DisplayCatalogue`; `contentSlice` stores it. Types only: imports
  * no slice and not events.ts. A type is exported once a file outside this one reads it (knip).
  */
-import type { LegendName, MapFeatureKind, RoleRatings } from '@eternalus/core';
+import type { BotRosterDefinition, LegendName, MapFeatureKind, RoleRatings } from '@eternalus/core';
 
 import type { HudSlotId } from './Binding.types';
 import type { LegendClassId, PlayableTeam, Team } from './domain.types';
@@ -25,8 +25,12 @@ export type ClassSelectLayout = 'primary' | 'alternate';
 type CardLook = 'idle' | 'picked';
 /** Figma-baked renders of a class card look (GLASS has no CSS equivalent); a missing look uses the live art. */
 type CardPlates = Readonly<Partial<Record<CardLook, AssetId>>>;
-/** What a detail row stands for; also the key of its icon box in the panel's CSS. */
-export type DetailSlot = 'signature' | 'proficiency' | 'specialty' | 'ultimate';
+/**
+ * What a detail row stands for: a class's default ability, weapon proficiency and specialty, or a
+ * Legend's ultimate and abilities 1 to 3 (DEC-65, "Ultimate / Abilities").
+ */
+export type DetailSlot =
+  'signature' | 'proficiency' | 'specialty' | 'ultimate' | 'ability-1' | 'ability-2' | 'ability-3';
 /** One icon-and-name row of a class or Legend detail list (72:757, 56:47). */
 export type DetailRow = {
   readonly slot: DetailSlot;
@@ -265,4 +269,6 @@ export type DisplayCatalogue = {
   readonly hud: HudCatalogue;
   /** Each playable team's display name (core content): the team badge and the roster labels. */
   readonly teamNames: Readonly<Record<PlayableTeam, string>>;
+  /** Who the bots are (core content, DEC-61, DEC-102); the session builds the rosters from it. */
+  readonly botRoster: BotRosterDefinition;
 };

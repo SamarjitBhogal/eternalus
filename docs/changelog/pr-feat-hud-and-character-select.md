@@ -204,6 +204,12 @@ to existing design text moved to D2b, the patch in `INBOX.md` HC-T1.
   HC-B1).
 - Rows the pre-PR critic named as new features or better than the design are merged into
   `INBOX.md` HC-B1 under its ids (BD1, BD2, NF1 to NF5).
+- DV-70, DV-71 and DV-81 (2026-10-30, batch 2 of the build plan, `feat/hud-plan-b2`): superseded.
+  DV-70: on the alternate layout View Details no longer commits the shown class; it opens the class
+  details screen, and a Select Class button commits (DEC-109, `f6b1b5c`). DV-71: View Details
+  answers its own `view-details` action (V), not `gadget-2` (DEC-103, `d7b7b15`); Back keeps
+  `pause-menu`. DV-81: the locked-in state exists: LOCK IN shows the locked view until the
+  countdown ends (DEC-60, `fb3b8cd`).
 
 ## ADR 0018's amendments, applied in this pull request
 
@@ -614,6 +620,17 @@ remote-tracking refs stood on 2026-10-27 (the phase branch was still `230a330`):
 5. **Then** run `npm run check` and have the critic check the integration change (ADR 0010).
    HC-Q22 is answered (DEC-57): the HUD keeps its class-keyed Figma art, so the integration changes
    no HUD art; each Legend's start weapon is `feat/weapons`' to set.
+
+**Added 2026-10-30** (batch 2, `feat/hud-plan-b2`; the architecture critic's loop 1): two more
+items for step 2, once M3 (pull request #46) has merged. (a)
+`packages/core/src/content/teams/botRoster.test.ts` restates M3's lane rule
+(`packages/core/src/state/assignLanes.ts`) in a local helper, `lanesInRosterOrder`, to check that
+the bot roster's order puts one Vanguard, one Sentinel and one Magus in each lane (DEC-102). Make
+the test import `assignLanes` and delete the helper. (b) `assignLanes` also takes `occupied`, the
+Legends already on each lane ("a human laner in sim or developer mode", its TSDoc), and starts its
+round from the emptiest lane, so with a human laner the roster's order can put two bots of one
+class in one lane. M3 passes no `occupied` today; whoever wires a human laner adds a test for the
+mix, and the owner decides whether DEC-102's mix holds in that mode.
 
 ### The repairs and their review
 

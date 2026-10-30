@@ -105,20 +105,18 @@ describe('buildDisplayCatalogue', () => {
     ]);
     expect(magus.layoutOverrides.alternate?.details?.[2]?.displayName).toBe('Arcane Intellect');
     expect(magus.layoutOverrides.alternate?.description).toMatch(/^The masters of Aether/);
-    // The Legend whose detail rows core names; presentation gives them icons.
-    const detailed = CONTENT.specs.find((spec) => spec.detailNames.specialty !== null);
+    // The Legend whose detail rows core names; presentation gives them icons. Ultimate on top,
+    // then abilities 1 to 3, no Aetheric Recall (DEC-65); Unison Ward is ability 1 (DEC-103).
+    const detailed = CONTENT.specs.find((spec) => spec.detailNames.ultimate !== null);
     expect(magus.specs.find((spec) => spec.specId === detailed?.id)?.details).toEqual([
-      {
-        slot: 'signature',
-        displayName: 'Aetheric Recall',
-        iconAssetId: 'magus-detail-aetheric-recall',
-      },
-      { slot: 'specialty', displayName: 'Unison Ward', iconAssetId: 'oracle-detail-unison-ward' },
       {
         slot: 'ultimate',
         displayName: 'Severed Accord',
         iconAssetId: 'oracle-detail-severed-accord',
       },
+      { slot: 'ability-1', displayName: 'Unison Ward', iconAssetId: 'oracle-detail-unison-ward' },
+      { slot: 'ability-2', displayName: null, iconAssetId: null },
+      { slot: 'ability-3', displayName: null, iconAssetId: null },
     ]);
     expect(classCard(build().legendClasses, 'warrior').details).toEqual([
       { slot: 'signature', displayName: null, iconAssetId: null },
@@ -272,6 +270,11 @@ describe('buildDisplayCatalogue', () => {
     const teamNames = { light: 'Lux', dark: 'Umbra' };
     expect(build({ content: { teamNames } }).teamNames).toBe(teamNames);
     expect(build().teamNames).toEqual(CONTENT.teamNames);
+  });
+
+  it('carries the core bot roster (DEC-61, DEC-102)', () => {
+    const botRoster = { id: 'test', laners: ['magus'], enemyRover: 'mirror-player' } as const;
+    expect(build({ content: { botRoster } }).botRoster).toBe(botRoster);
   });
 
   it("maps core's isSelectable to the Legend status: true is available, false is locked", () => {

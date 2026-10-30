@@ -124,10 +124,10 @@ export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
       mini: 'oracle-mini',
       rowPlate: 'oracle-row-plate',
     },
+    // DEC-65: no Aetheric Recall row on a Legend; DEC-103: Unison Ward is ability 1 (a preview).
     detailIcons: {
-      signature: 'magus-detail-aetheric-recall',
-      specialty: 'oracle-detail-unison-ward',
       ultimate: 'oracle-detail-severed-accord',
+      'ability-1': 'oracle-detail-unison-ward',
     },
   },
   necromancer: {

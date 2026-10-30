@@ -22,6 +22,12 @@ describe('keybindings', () => {
     expect(PRESETS.arrows.map((binding) => binding.action)).toEqual(INPUT_ACTIONS);
   });
 
+  it('opens View Details with V by default (DEC-103)', () => {
+    expect(DEFAULT_CHORDS['view-details']).toEqual([
+      { device: 'keyboard', code: 'KeyV', label: 'V' },
+    ]);
+  });
+
   it('moves with the arrow keys in the arrows preset and keeps the other defaults', () => {
     const arrows = new Map(PRESETS.arrows.map((binding) => [binding.action, binding.chords]));
 

@@ -82,3 +82,25 @@
   width: 496px;
   transform: translate(4px, 149px);
 }
+
+/* View Details (145:2, DEC-103): the left column at 145:98's origin (116, 254): title 96, role line
+   145:97 (4.7, 125.3) w 562 in 24, description 145:96 (4.7, 173.3) w 555 in 20. */
+.panel[data-layout='class-details'],
+.panel[data-layout='legend-details'] {
+  left: 116px;
+  top: 254px;
+}
+
+.panel[data-layout='class-details'] .subtitle,
+.panel[data-layout='legend-details'] .subtitle {
+  width: 562px;
+  transform: translate(4.7px, 125.3px);
+}
+
+.panel[data-layout='class-details'] .description,
+.panel[data-layout='legend-details'] .description {
+  width: 555px;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  transform: translate(4.7px, 173.3px);
+}

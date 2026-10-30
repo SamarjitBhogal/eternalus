@@ -18,12 +18,12 @@ describe('MainMenuScreen', () => {
     expect(html).toContain('data-background="test-neutral"');
   });
 
-  it('shows the cancellation banner after a select timeout', () => {
+  it('shows no banner after a select timeout: the popup tells it (DEC-102)', () => {
     const html = renderWithStore(<MainMenuScreen />, {
       session: sessionAt('menu', { reason: 'select-timeout' }),
     });
-    expect(html).toContain('role="status"');
-    expect(html).toContain(STRINGS.reasonBanners['select-timeout']);
+    expect(STRINGS.reasonBanners['select-timeout']).toBeUndefined();
+    expect(html).not.toContain('role="status"');
   });
 
   it.each([

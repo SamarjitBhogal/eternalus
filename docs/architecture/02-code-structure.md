@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-30
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -319,17 +319,22 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with the manifest's asset ids
   and the developer overrides, so no `game/content/` module reads `data/`; the shipped catalogue for
   tests is `game/content/__fixtures__/shippedCatalogue.ts`. `game/session/` gains
-  `selectionAssetGroups.ts` and loses `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`,
+  `selectionAssetGroups.ts`, `fillRosters.ts` (LOCK IN's roster fill, DEC-61) and
+  `createRosterRng.ts` (its random stream, injected as `SessionControllerDeps.createRosterRng`) and
+  loses `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`,
   `game/MatchHost.ts`, `game/createBrowserMatch.ts` and `game/prepareMatchWorld.ts`;
   `game/useMatch.ts` is gone (DEC-50).
 - **Core.** `loadDisplayContent()` is exported from `@eternalus/core`: the Legend and Legend-spec
-  display data, the locked class cards (DEC-48) and the team display names, each catalogue validated
-  through the content rules, the map features' display names (DEC-49; ADR 0018) and the profile
-  screen's display name. It takes optional catalogues, each defaulting to the shipped one. The
-  specs live in `packages/core/src/content/legends/specs/` (each says whether it can be picked,
-  `isSelectable`, which gates LOCK IN; the client adds only art, accents and icons), the locked
-  cards in `content/legends/locked/`, the team names in `content/teams/teamDisplayNames.ts` and the
-  profile screen's name in `content/profile/profileDisplayName.ts`.
+  display data, the locked class cards (DEC-48), the team display names and the bot roster (DEC-61,
+  DEC-102), each validated through the content rules, the map features' display names (DEC-49;
+  ADR 0018) and the profile screen's display name; core also exports the types `LegendClassId`,
+  `BotRosterDefinition` and `EnemyRoverRule`. It takes optional catalogues, each defaulting to the
+  shipped one. The specs live in `packages/core/src/content/legends/specs/` (each says whether it
+  can be picked, `isSelectable`, which gates LOCK IN; the client adds only art, accents and icons),
+  the locked cards in `content/legends/locked/`, the team names in
+  `content/teams/teamDisplayNames.ts`, the bot roster in `content/teams/botRoster.ts` (checked by
+  `content/validation/BotRosterClassRule.ts`) and the profile screen's name in
+  `content/profile/profileDisplayName.ts`.
 
 ## Related
 
