@@ -15,7 +15,8 @@ import type {
 /**
  * Drives a lane minion (architecture 18 §6.1, 11 §4.3): `marching → engaging → returning →
  * marching`, through the `LeashBehaviour` it shares with `GuardController`. Marching, it
- * acquires the best-ranked enemy in `acquisitionRadius` (priority, then distance, then id) and emits one `attack-target`; engaging, it switches only to a strictly
+ * acquires the best-ranked enemy in `acquisitionRadius` (priority, then distance, then id)
+ * and emits one `attack-target`; engaging, it switches only to a strictly
  * better-ranked enemy, and ends the chase with one `stop` when the target dies, the mob leaves its
  * leash or the aggro duration runs out; returning, it marches again within `reformDistance` of its
  * formation slot, with a cooldown before it may acquire. The chase itself is `PathingSystem`'s and
