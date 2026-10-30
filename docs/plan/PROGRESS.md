@@ -1624,6 +1624,29 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: merge up the stack again.
 
+### 2026-10-29 — Phase 2 / sprint 2.2 — fix/phase-2-failing-tests — SamarjitBhogal + Claude Code
+
+- What was done: CI on `phase/2-sprint-2-work` failed on Windows: `LaneFlowFields.test.ts`
+  "mirrors each lane's Light field onto its Dark field: 5 lanes" timed out (6.3 s > 5 s) under
+  coverage. It ran three `expect`s per grid cell; it now finds the first non-mirrored cell in a
+  plain loop and asserts there is none (2088 ms → 27 ms locally with coverage). Same check:
+  mask, integration and mirrored direction per cell; a no-flip mutation fails it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  663 passed (663)"; client "Tests 415 passed (415)"; "✓ built in 165ms"; "Documentation check
+  passed."
+- Next step: merge into `phase/2-sprint-2-work` so the phase PR goes green.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — fix/phase-2-failing-tests — SamarjitBhogal + Claude Code
+
+- What was done: PR #53's Ubuntu job then timed out on `Simulation.hordes.test.ts` "gives the same
+  hash on the generated map for the same seed, tick for tick" (5.09 s; 1.5 s locally). Core's
+  `vitest.config.ts` now sets `testTimeout: 60_000`, so no whole-match simulation test fails on
+  runner speed alone. No test or assertion changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  663 passed (663)"; client "Tests 415 passed (415)"; "✓ built in 174ms"; "Documentation check
+  passed."
+- Next step: merge into `phase/2-sprint-2-work`.
+
 ### 2026-10-29 — Phase 2 / sprint 2.2 — feat/status-control-immune — claudiodh + Claude Code
 
 - What was done: SCRUM-228 follow-up (05 §8, more-abilities §7). Status definitions gain
