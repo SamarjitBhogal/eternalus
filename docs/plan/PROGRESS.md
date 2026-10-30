@@ -1962,3 +1962,17 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   716 passed (716)"; client "Tests 415 passed (415)"; "✓ built in 169ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; merge into M5a (#45) and M3 (#46).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #44. Separation was added after a held chaser's steering
+  was zeroed, so a neighbour behind it could push it onto unwalkable ground.
+  `LaneFollowMovementStrategy` now checks the final heading (separation included) over
+  `blockedLookAhead` and holds any mob it would take onto blocked ground. Regression test (a held
+  chaser with a neighbour one unit behind) fails on the old code. The routing test's stub now
+  blocks only the line toward the slot; its no-direction case now expects a hold, not a step onto
+  blocked ground. Doc 18 §5.2 updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  717 passed (717)"; client "Tests 415 passed (415)"; "✓ built in 177ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; merge into M5a (#45) and M3 (#46).

@@ -9,7 +9,8 @@ import type { MovementContext, MovementStrategy } from './MovementStrategy.types
  * the unit it chases) until it is within the context's `arrivalRadius`, plus separation from every
  * neighbour (10 §9, MS-19). While the next `blockedLookAhead` of the straight line to the target
  * crosses unwalkable ground, a marching mob follows the lane's flow field instead and a chasing
- * mob holds there. Stateless: it reads the context's buffers, writes `context.out` and allocates
+ * mob holds there. Whatever the final heading (separation included), a mob it would take onto
+ * unwalkable ground holds. Stateless: it reads the context's buffers, writes `context.out` and allocates
  * nothing.
  *
  * @remarks ponytail: no wall avoidance term yet (it arrives with `CollisionSystem`, 10 §8);
@@ -23,7 +24,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
   /** Toward the target, or none once there, plus the separation push; below `minSteer` is none. */
   public desiredVelocity(self: number, context: MovementContext): Vec2 {
     const { positions, target, out, found, arrivalRadius } = context;
-    const { separationRadius, separationWeight, minSteer } = this.profile;
+    const { separationRadius, separationWeight, minSteer, blockedLookAhead } = this.profile;
     const x = positions[2 * self] ?? 0;
     const y = positions[2 * self + 1] ?? 0;
     const dx = target.x - x;
@@ -32,9 +33,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
     const isThere = gap <= arrivalRadius;
     const { flow, isChasing } = context;
     const isBlocked =
-      !isThere &&
-      flow !== null &&
-      !flow.isLineClear(x, y, target.x, target.y, this.profile.blockedLookAhead);
+      !isThere && flow !== null && !flow.isLineClear(x, y, target.x, target.y, blockedLookAhead);
     // Where the straight line is blocked a march follows the lane flow field (MS-19); a chase
     // holds, since the lane field leads to the lane's end, not to the chased unit.
     const isRouted = isBlocked && !isChasing && flow.directionAt(x, y, out);
@@ -57,7 +56,20 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
       out.x += (awayX / apart) * strength;
       out.y += (awayY / apart) * strength;
     }
-    if (length(out) < minSteer) {
+    // The final heading, separation included, never steps onto unwalkable ground (18 §5.2:
+    // obstacle avoidance comes first); a mob it would take there holds this tick instead.
+    const steer = length(out);
+    const isIntoBlocked =
+      flow !== null &&
+      steer >= minSteer &&
+      !flow.isLineClear(
+        x,
+        y,
+        x + (out.x / steer) * blockedLookAhead,
+        y + (out.y / steer) * blockedLookAhead,
+        blockedLookAhead,
+      );
+    if (steer < minSteer || isIntoBlocked) {
       out.x = 0;
       out.y = 0;
     }
