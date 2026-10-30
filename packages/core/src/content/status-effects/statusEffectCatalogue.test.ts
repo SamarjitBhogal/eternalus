@@ -11,6 +11,7 @@ describe('STATUS_EFFECTS', () => {
       'blind',
       'enraged',
       'crushed',
+      'control-immune',
     ]);
   });
 });

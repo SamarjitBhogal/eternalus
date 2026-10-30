@@ -2239,3 +2239,39 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   759 passed (759)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: push, then CodeRabbit re-review and approval.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/status-control-immune — claudiodh + Claude Code
+
+- What was done: SCRUM-228 follow-up (05 §8, more-abilities §7). Status definitions gain
+  `polarity`, `controlClass` and `onExpire` (`apply-status` specs; unknown ids rejected at load).
+  New status `control-immune` (Unshaken, 0.5 s, `TUNE`). `StatusEffectApplier.expire` runs
+  `onExpire` on time-out only, credited to the same source, so `stun` is followed by
+  `control-immune`; `apply` refuses `hard` control on a `control-immune` target. 05's
+  Implementation status note and the INBOX status-effects item updated (crushed's class to
+  confirm).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 612 passed (612)"; client "Tests 416 passed (416)"; "✓ built in 101ms"; "Documentation
+  check passed."
+- Next step: Sam confirms INBOX item (6); then `slowed` with `independent` stacking (crushed's
+  release), `controlResistance` and the DEC-42 wobble once its questions are answered.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/status-control-immune (review round) — claudiodh + Claude Code
+
+- What was done: PR #52 review round (CodeRabbit, Copilot). Documented in 05's Implementation
+  status that `control-immune` stops chains of separate stuns only: a stun refreshed before it
+  expires never expires, so a steady refresher still locks the target. The recovery rule is a new
+  INBOX question (status effects, point 7). `crushed` as `hard` stays the open point (6).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 667 passed (667)"; client "Tests 415 passed (415)"; "✓ built in 95ms"; "Documentation
+  check passed."
+- Next step: Sam answers points (6) and (7).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/status-control-immune (sync) — claudiodh + Claude Code
+
+- What was done: PR #52 synced with `phase/2-sprint-2-work` at the author's explicit request. The
+  earlier revert was reverted first, so the base's commits stay in the branch. This picks up the
+  `LaneFlowFields` mirror test fix (`923f336`) that failed the Windows runner. The duplicate
+  `PROGRESS.md` heading now reads `(review round)`. No feature code changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 763 passed (763)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: Sam answers the open INBOX points for this PR; team review.

@@ -2,10 +2,27 @@
 export type StatusStat = 'moveSpeed' | 'attackSpeed' | 'damageDealt' | 'damageTaken';
 
 /**
- * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4); the others are
- * read by `MovementSystem` and `CombatSystem`.
+ * A yes/no rule a status imposes. `cannot-cast` waits for `AbilitySystem` (phase 4);
+ * `cannot-move` and `cannot-attack` are read by `MovementSystem` and `CombatSystem`;
+ * `control-immune` is read by `StatusEffectApplier`, which then refuses hard control.
  */
-export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast';
+export type StatusFlag = 'cannot-move' | 'cannot-attack' | 'cannot-cast' | 'control-immune';
+
+/** Whether a status helps, hurts or transforms its target (architecture 05 section 8). */
+type StatusPolarity = 'buff' | 'debuff' | 'form';
+
+/**
+ * How strongly a status controls its target (architecture 05 section 8). `hard` (stun) is refused
+ * while the target is `control-immune`; `soft` (concussion, blind) and `none` always land.
+ */
+type ControlClass = 'none' | 'soft' | 'hard';
+
+/**
+ * One thing a status does when it runs out, shaped like the `AbilityEffectSpec` it will become
+ * (05 section 3): `apply-status` lands another status, credited to the same source (stun is
+ * followed by `control-immune`, more-abilities.md section 7).
+ */
+export type StatusExpireSpec = { readonly kind: 'apply-status'; readonly statusId: string };
 
 /**
  * What reapplying an active status does (more-abilities.md section 7). `refresh` restarts the
@@ -37,9 +54,13 @@ export type StatusTickKind = StatusTickSpec['kind'];
 type StatusEffectBase = {
   readonly id: string;
   readonly displayName: string;
+  readonly polarity: StatusPolarity;
+  readonly controlClass: ControlClass;
   readonly stacking: StatusStacking;
   readonly modifiers: readonly StatModifier[];
   readonly flags: readonly StatusFlag[];
+  /** Run when the status times out (`StatusEffectApplier.expire`), not when it is removed early. */
+  readonly onExpire: readonly StatusExpireSpec[];
 };
 
 /**

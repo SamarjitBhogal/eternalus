@@ -239,6 +239,16 @@ Reply inline (`Decision: …`).
       `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
       slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
       stat for the FR-029 aura. Confirm or correct.
+      (6) 2026-10-29 (`feat/status-control-immune`): `polarity`, `controlClass`, `onExpire` and
+      `control-immune` are built from 05 §8 and more-abilities §7. Kinds mapped to `controlClass`:
+      hard control → `hard` (stun, crushed), control-lite → `soft` (concussion, blind), the rest
+      `none`. `control-immune` refuses every `hard` status, so it also blocks `crushed`, which §7's
+      kind calls hard control but its immunity list (stun, knockup, pulled, taunted) leaves out;
+      and no `control-immune` follows `crushed`. Confirm or correct.
+      (7) Still open after (6): a `stun` refreshed before it runs out (`refresh` restarts its
+      timer) never expires, so `control-immune` never follows; a producer that reapplies every
+      second keeps a 2 s stun up forever. What guarantees the recovery window: a hard status
+      cannot be refreshed while active, a cap on total stun time, or something else?
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 - [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**

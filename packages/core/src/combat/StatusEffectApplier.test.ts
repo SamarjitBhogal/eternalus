@@ -85,4 +85,55 @@ describe('StatusEffectApplier', () => {
     ]);
     expect(dummy.getComponent(StatusEffects).active).toHaveLength(0);
   });
+
+  it('follows a stun that runs out with control-immune, credited to the same source', () => {
+    const { state, dummy, events, applier } = setUp();
+    applier.apply(state, dummy.id, 'stun', 'entity-9');
+    const statuses = dummy.getComponent(StatusEffects);
+    const stunTicks = statuses.active[0]?.definition.durationTicks ?? 0;
+
+    for (let tick = 0; tick < stunTicks; tick += 1) {
+      state.advanceTick();
+    }
+    applier.expire(state, dummy.id);
+
+    expect(statuses.has('cannot-move')).toBe(false);
+    expect(statuses.has('control-immune')).toBe(true);
+    expect(events.slice(-2)).toEqual([
+      ['expired', { entityId: dummy.id, statusId: 'stun', sourceId: 'entity-9' }],
+      ['applied', { entityId: dummy.id, statusId: 'control-immune', sourceId: 'entity-9' }],
+    ]);
+  });
+
+  it('refuses hard control on a control-immune target, but not soft control', () => {
+    const { state, dummy, applier } = setUp();
+    applier.apply(state, dummy.id, 'control-immune', null);
+
+    expect(applier.apply(state, dummy.id, 'stun', 'entity-9')).toBe(false);
+    expect(applier.apply(state, dummy.id, 'crushed', 'entity-9')).toBe(false);
+    expect(applier.apply(state, dummy.id, 'concussion', 'entity-9')).toBe(true);
+    expect(dummy.getComponent(StatusEffects).has('cannot-move')).toBe(false);
+  });
+
+  it('runs onExpire only when a status times out, not when it is removed early', () => {
+    const { state, dummy, applier } = setUp();
+    applier.apply(state, dummy.id, 'stun', null);
+    applier.remove(state, dummy.id, 'stun');
+
+    expect(dummy.getComponent(StatusEffects).has('control-immune')).toBe(false);
+  });
+
+  it('lets hard control land again once control-immune has run out', () => {
+    const { state, dummy, applier } = setUp();
+    applier.apply(state, dummy.id, 'control-immune', null);
+    const statuses = dummy.getComponent(StatusEffects);
+    const immuneTicks = statuses.active[0]?.definition.durationTicks ?? 0;
+
+    for (let tick = 0; tick < immuneTicks; tick += 1) {
+      state.advanceTick();
+    }
+    applier.expire(state, dummy.id);
+
+    expect(applier.apply(state, dummy.id, 'stun', 'entity-9')).toBe(true);
+  });
 });

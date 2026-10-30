@@ -7,10 +7,13 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const BLEED = {
   id: 'bleed',
   displayName: 'Bleeding',
+  polarity: 'debuff',
+  controlClass: 'none',
   durationSeconds: 4,
   stacking: 'intensity',
   maxStacks: 3,
   modifiers: [],
   flags: [],
   periodic: { everySeconds: 1, effects: [{ kind: 'damage', amount: 6 }] },
+  onExpire: [],
 } as const satisfies AuthoredStatusEffect;

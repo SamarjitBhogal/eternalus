@@ -2,6 +2,7 @@ import { ContentCatalogue } from '../ContentCatalogue';
 import { BLEED } from './bleed';
 import { BLIND } from './blind';
 import { CONCUSSION } from './concussion';
+import { CONTROL_IMMUNE } from './controlImmune';
 import { CRUSHED } from './crushed';
 import { ENRAGED } from './enraged';
 import type { AuthoredStatusEffect } from './statusEffects.types';
@@ -15,4 +16,5 @@ export const STATUS_EFFECTS = new ContentCatalogue<AuthoredStatusEffect>([
   BLIND,
   ENRAGED,
   CRUSHED,
+  CONTROL_IMMUNE,
 ]);
