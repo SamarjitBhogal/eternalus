@@ -1750,3 +1750,25 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   692 passed (692)"; client "Tests 415 passed (415)"; "✓ built in 234ms"; "Documentation check
   passed."
 - Next step: merge into M5a (#45) and M3 (#46).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: second CodeRabbit round (threads on #38, #40, #44, #45). `EntityStore.countOnTeam`
+  counts living units only, so a unit killed earlier in the tick no longer blocks a wave under the
+  cap before `DeathSystem` removes it (regression test fails on the old count). `StateHasher`
+  tests cover counters without any horde and change only `memberIds` (two-member horde).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  641 passed (641)"; client "Tests 415 passed (415)"; "✓ built in 319ms"; "Documentation check
+  passed."
+- Next step: merge up the stack again.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: second CodeRabbit round on PR #39. Owner signed off `ai/` importing `content/`
+  types; architecture 11 §1 now matches 02 §2 and the core `AGENTS.md` (recorded in the PR
+  description). The brain hash test also varies `controllerId` and `profileId`. Merged M1's
+  living-unit cap fix.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  668 passed (668)"; client "Tests 415 passed (415)"; "✓ built in 179ms"; "Documentation check
+  passed."
+- Next step: merge up the stack again.
