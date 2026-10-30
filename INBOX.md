@@ -16,6 +16,56 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
+      checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
+      which is only on PR #49 (`feat/capture-points`); that branch predates the minion work and
+      conflicts in six core files, so it was not folded in. Once #49 is on the phase branch,
+      defenders are a guard plan per checkpoint asked for by `CaptureSystem`. Recommendations
+      ready for then: the leash is the zone's radius; defenders at an unowned point are neutral
+      (doc 18 §10, item 4). (2) **Camps as built:** inactive until the countdown ends; light 4
+      light, medium 2 medium + 2 light, heavy 1 heavy + 2 medium (balancing.md); 6 m leash; the
+      whole group respawns 120 s after its last mob dies, and `camp-cleared` fires then. A camp
+      never stays gone. Camp mobs use the minion stats and `xpValue` of their class (no reference
+      gives them their own); the 50 XP clear bonus waits for `ProgressionSystem`. (3) **One-way
+      aggro (needs your decision):** `Perception` never offers neutral units as targets, so lane
+      minions, guards and bots ignore camp mobs, while camp mobs attack light and dark units within
+      4 m of their posts. A horde passing a camp near its lane would take hits and not fight back.
+      Should lane minions fight camp mobs that attack them, or ignore camps entirely (then camp
+      mobs should not attack minions either)? Approve, or say what to change.
+
+- [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
+      blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
+      or ranged `AttackStrategy` exists until sprint 2.3) and numbers no reference gives ("higher
+      damage/health than minions"). Give their health and damage, or say to build them melee-only
+      on the guard plans. (2) **Minion XP as built:** a horde minion that kills another horde
+      minion counts the kill (the game doc's "another minion"; guards and camp mobs do not count); every 2 kills, up to level 3, +10% max health (healing by the
+      same) and +10% damage (`veteran`); a levelled minion gives +5% damage (`rallied`) to other
+      friendly horde minions within 4 m, refreshed every 0.5 s, never to itself. (3) **Ghosted
+      first wave** ships off (`ghostFirstWaveTicks: 0`, as 11 §4.3's sketch); League uses 18–28 s.
+      Turn it on, and with what value? (4) Plan row M5 still lists Tower Guardians; they are
+      deferred until you answer (1). Approve, or say what to change.
+
+- [ ] **Minion M2c (`feat/minion-m2c-objectives-guards`, overnight 2026-10-30) — four items for
+      sign-off, all applied as below so the work could continue.** (1) **Better than the design:**
+      a horde gathered at its objective (anchor within `acquisitionRadius` of the objective's
+      front) acquires it from every rank, not only the front rank in reach; and attacking a
+      structure ignores the leash and the aggro timeout (doc 18 §6.1 lists both as ways a chase
+      ends, but a minion stands still at a tower, so the timeout made it stop hitting every 2.3 s).
+      (2) **Design gap:** the Stronghold stands off the lane, 60 m inside its wall ring; a horde
+      gathers at the lane's end (the gate) and then charges it under (1). Doc 18 §4 says only "at
+      the lane's end the horde stays". (3) **Interpretation:** a guard's leash is measured from its
+      structure's **edge** ("don't leave the tower's perimeter"); from the centre, an 8 m leash is
+      inside a 14 m tower. (4) **Stand-in:** the Stronghold's "ranged" light guards fight in melee
+      until projectiles exist (sprint 2.3). (5) **Better than the design:** the lane-order
+      structure list (18 §6.2 puts it in the `WorldMap` structures index) is `state/LaneStructures`,
+      built from the structure entities once they spawn, so `ai/` reads it through `state/` and it
+      carries each structure's starting health. (6) **Stronghold leash:** 07 §6 says Stronghold
+      guards "leash to the walls"; the code leashes them 8 m from the Stronghold's edge (about 60 m
+      inside the wall ring). Leash to the wall ring's radius instead? (7) **Guard XP:** a killed
+      guard pays its minion class's `xpValue`; no reference gives guards their own. (8) **DISC-21
+      timing:** a lost SpawnerTower drops two light Stronghold posts, but a guard already on one
+      stays until it dies. Approve, or say what to change; doc 18 follows.
+
 - [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR
       #35). (1) Can a stunned unit still act while its aim wobbles, or does stun keep "cannot
@@ -118,6 +168,10 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §3 stand-in). Details: doc 18 §10.
+  - Agent note (overnight 2026-10-30, applied per your instruction to take the
+    `Recommendation:`s): (1) the three terms, one third each and the middle-lane tie-break are
+    built in full in M2c (#56), with the worked example as a test; (2) kept as built: sizes from
+    `hordeSizes`, cadence per spawner. Both still need your sign-off to close.
 - [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
@@ -126,11 +180,33 @@ Reply inline (`Decision: …`).
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
       to the store lookup.
+  - Agent note (overnight 2026-10-30, applied per your instruction): (1) the first heavy horde
+    leaves when the countdown ends (the `Recommendation:`), as built; (2) the store lookup stays,
+    doc text unchanged until you sign off.
 - [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
       "never mutate state", yet a brain's `memory` and `rngState` change with each decision
       (`MinionController`'s FSM state and timers, M2b). Should `decide` return
       `{ commands, memory, rngState }` for `AiSystem` to write back (`Recommendation:`, keeps
       controllers pure), or may a controller write its own brain?
+  - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
+    `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
+    (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
+- [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
+      Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
+      the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
+      components (18 §5.2 says the strategy reads `Combat.targetId`); if accepted, 18 §5.2 and
+      §7's guard strategy note change. (2) The formation slot function lives in
+      `state/formationSlot.ts`, the one folder both `systems/` and `ai/` may import. (3)
+      Controllers get their content (aggro rules, formations, kind classes) through their
+      constructor from `Simulation`, not through `GameState` (11 §1). Numbers to confirm: the
+      aggro radii scale League/Dota's 500 / 700 units by minion speed (5.4 m and 7.5 m), and
+      `reformDistance` is 2 m with no reference. Design note: 18 §6.1 ends every chase after
+      the aggro duration (69 ticks) followed by a 90-tick cooldown, minion against minion too,
+      which may give a fight, walk back, fight again rhythm; Dota applies it to hero aggro only.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1)–(3) accepted; doc 18 §5.1, §5.2 and §7
+    and doc 11 §1 updated (PR #44). Numbers: use the design docs, else the agent's judgement,
+    which the owner may correct later, so the aggro radii and `reformDistance` stay as built.
+    The design note on the chase rhythm stays open.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which

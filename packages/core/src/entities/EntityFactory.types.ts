@@ -18,6 +18,8 @@ export interface DefinitionSource {
 export type Placement = {
   readonly position: Vec2;
   readonly team?: Team;
+  /** The lane a lane structure stands on (`MapLane.id`). */
+  readonly laneId?: string;
 };
 
 /**

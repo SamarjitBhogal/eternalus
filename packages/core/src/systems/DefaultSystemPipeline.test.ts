@@ -92,6 +92,8 @@ describe('DefaultSystemPipeline', () => {
       'pathing',
       'combat',
       'progression',
+      'veterancy',
+      'structure',
       'spawn',
       'death',
       'invariants',
