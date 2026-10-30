@@ -1,0 +1,63 @@
+/* View Details (145:2, DEC-103) over the selection artboard: above the card row (z-index 1) and
+   the shell's banner, countdown and badge, which paint after the step. Closed, it is hidden. Its
+   visibility transitions with the fade, so it stays visible while it fades out and shows at once
+   when it opens. */
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  visibility: hidden;
+  transition: visibility var(--motion-fast);
+}
+
+.screen[data-open='true'] {
+  visibility: visible;
+}
+
+/* 145:149 Rectangle 34: one shape with a background blur (Figma radius 20, which its own SVG export
+   writes as blur(10px)) and a black radial fill, the vignette of DEC-103: 20 % opacity at the 60 %
+   stop, 60 % opacity at the 100 % stop (--selection-art-shade, --selection-drop-shadow), on the
+   960 × 540 ellipse centred on the artboard. Extended 1000 px past the artboard like the vignettes,
+   so a letterbox band is covered too. It fades but never scales, and no ancestor takes opacity
+   (that would cut the blur off from the page behind). */
+.backdrop {
+  position: absolute;
+  inset: -1000px;
+  opacity: 0;
+  background: radial-gradient(
+    960px 540px at 50% 50%,
+    var(--selection-art-shade) 60%,
+    var(--selection-drop-shadow) 100%
+  );
+  backdrop-filter: blur(10px);
+  transition: opacity var(--motion-fast) ease-out;
+}
+
+/* The details in the artboard's px. DEC-65: they grow to fill the screen as they fade in, and
+   shrink to 80 % as they fade out. */
+.content {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity var(--motion-fast) ease-out,
+    transform var(--motion-fast) ease-out;
+}
+
+.screen[data-open='true'] .backdrop,
+.screen[data-open='true'] .content {
+  opacity: 1;
+}
+
+.screen[data-open='true'] .content {
+  transform: none;
+}
+
+/* The in-game reduce-motion setting: no motion, the same open and closed states. The OS setting
+   zeroes the motion tokens (styles/global.css). */
+.screen[data-reduce-motion='true'],
+.screen[data-reduce-motion='true'] .backdrop,
+.screen[data-reduce-motion='true'] .content {
+  transition: none;
+}

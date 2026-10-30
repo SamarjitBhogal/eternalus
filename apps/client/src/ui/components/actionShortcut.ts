@@ -39,7 +39,7 @@ export function matchesActionButton(
 }
 
 /** A key event (the browser's `KeyboardEvent`, or an `Event` carrying the same fields in Node). */
-function isKeyEvent(event: Event): event is Event & ShortcutKey {
+export function isKeyEvent(event: Event): event is Event & ShortcutKey {
   return 'code' in event && typeof event.code === 'string';
 }
 
