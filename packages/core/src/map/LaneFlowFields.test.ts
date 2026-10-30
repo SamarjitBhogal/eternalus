@@ -121,16 +121,27 @@ describe('LaneFlowFields', () => {
       for (const lane of map.lanes) {
         const light = fields.field(lane.id, 'light');
         const dark = fields.field(lane.id, 'dark');
-        for (let row = 0; row < grid.rows; row += 1) {
-          for (let col = 0; col < grid.cols; col += 1) {
-            const cell = row * grid.cols + col;
-            const twin = row * grid.cols + (grid.cols - 1 - col);
-            expect(dark?.mask[twin]).toBe(light?.mask[cell]);
-            expect(dark?.integration[twin]).toBe(light?.integration[cell]);
-            const step = light?.direction[cell] ?? NO_DIRECTION;
-            expect(dark?.direction[twin]).toBe(step === NO_DIRECTION ? step : mirrorStep[step]);
+        if (light === undefined || dark === undefined) {
+          throw new Error(`lane ${lane.id} has no Light or Dark field`);
+        }
+        // The first cell whose Dark twin does not mirror it, or -1. A plain loop with one expect
+        // per lane: per-cell expects, and even typed-array toEqual, timed out on the Windows
+        // runner under coverage.
+        let mismatch = -1;
+        for (let cell = 0; cell < light.mask.length && mismatch === -1; cell += 1) {
+          const row = Math.floor(cell / grid.cols);
+          const twin = row * grid.cols + (grid.cols - 1 - (cell % grid.cols));
+          const step = light.direction[cell] ?? NO_DIRECTION;
+          const mirrored = step === NO_DIRECTION ? step : mirrorStep[step];
+          if (
+            dark.mask[twin] !== light.mask[cell] ||
+            dark.integration[twin] !== light.integration[cell] ||
+            dark.direction[twin] !== mirrored
+          ) {
+            mismatch = cell;
           }
         }
+        expect(mismatch, `first non-mirrored cell in ${lane.id}`).toBe(-1);
       }
     },
   );

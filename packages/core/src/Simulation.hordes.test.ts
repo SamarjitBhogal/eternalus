@@ -8,6 +8,7 @@ import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { BLOCKED_LANE_MAP } from './map/__fixtures__/blockedLaneMap';
 import { MapGenerator } from './map/MapGenerator';
+import { OPENING_WAVE } from './content/structures/spawnWaves';
 import { WorldMap } from './map/WorldMap';
 import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
@@ -16,14 +17,17 @@ import type { MapDefinition } from './content/maps/maps.types';
 /** A match on `map` whose countdown outlasts the test, so only the opening hordes march. */
 const match = (map: MapDefinition, seed = 1) => {
   const logger = new MemoryLogger();
+  const config = createDefaultGameConfig({
+    match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
+  });
   const simulation = new Simulation({
-    config: createDefaultGameConfig({ match: { initialHordesPerTeam: 2, countdownSeconds: 600 } }),
+    config,
     seed,
     logger,
     debug: TEST_DEBUG_CONFIG,
     map,
   });
-  return { simulation, logger };
+  return { simulation, logger, config };
 };
 
 const run = (simulation: Simulation, ticks: number): void => {
@@ -34,7 +38,7 @@ const run = (simulation: Simulation, ticks: number): void => {
 
 describe('Simulation with lane hordes (architecture 18, M1)', () => {
   it('walks every opening horde down its lane to the enemy end, invariants clean', () => {
-    const { simulation, logger } = match(TWO_LANE_MAP);
+    const { simulation, logger, config } = match(TWO_LANE_MAP);
     const spawned: string[] = [];
     simulation.on('horde-spawned', ({ team, lane }) => spawned.push(`${team} ${lane}`));
 
@@ -43,7 +47,9 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
 
     expect(spawned).toEqual(['light lane-0', 'light lane-1', 'dark lane-0', 'dark lane-1']);
     const minions = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
-    expect(minions).toHaveLength(64);
+    expect(minions).toHaveLength(
+      2 * config.match.initialHordesPerTeam * config.match.hordeSizes[OPENING_WAVE.weightClass],
+    );
     const near = (x: number) => (minion: (typeof minions)[number]) =>
       Math.abs((minion.transform?.x ?? 0) - x) < 15;
     expect(minions.filter(({ team }) => team === 'light').every(near(180))).toBe(true);
@@ -79,6 +85,28 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
 
     expect(Math.min(...forming)).toBeGreaterThan(diameter - 0.2);
     expect(Math.min(...marching)).toBeGreaterThan(diameter);
+  });
+
+  it('spawns a developer-menu horde on the named lane, clipped to the unit cap', () => {
+    const { simulation } = match(TWO_LANE_MAP);
+    const spawned: string[] = [];
+    simulation.on('horde-spawned', ({ team, lane, memberIds }) =>
+      spawned.push(`${team} ${lane} ${String(memberIds.length)}`),
+    );
+    simulation.step();
+    const cap = createDefaultGameConfig().limits.maxUnitsPerTeam;
+
+    simulation.enqueueCommand({
+      type: 'dev-spawn-mobs',
+      team: 'light',
+      definitionId: 'heavy-minion',
+      count: cap,
+      origin: { kind: 'lane', lane: 'lane-1', t: 0.5 },
+    });
+    simulation.step();
+
+    // The two opening hordes hold 32 of the cap; the heavy horde gets the rest.
+    expect(spawned.slice(4)).toEqual([`light lane-1 ${String(cap - 32)}`]);
   });
 
   it('gives the same hash for the same seed and map, tick for tick', () => {
@@ -179,20 +207,24 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
     expect(warnings).toEqual([]);
   });
 
-  it.each([3, 5])(
-    'brings every opening horde to its enemy end with no stuck mob: %i lanes',
-    (numLanes) => {
-      const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes } }), 1);
-      // The longest lane is about 1.5 km; light minions march it in under 500 s.
-      const { mobs, farthest, offGroundShare, warnings } = march(map, numLanes, 530 * 30);
-
-      expect(mobs).toBe(2 * numLanes * 16);
-      expect(farthest).toBeLessThan(15);
-      expect(offGroundShare).toBeLessThan(0.01);
-      expect(warnings).toEqual([]);
-    },
-    60_000,
-  );
+  // Commented out on 2026-10-30 at the owner's request (PR #39): this full 530 s match takes
+  // about 8 s locally but over 100 s on the GitHub runners under coverage, past the 60 s
+  // timeout. Restore it once it is made cheaper (fewer ticks or a non-coverage soak job).
+  // eslint-disable-next-line vitest/no-commented-out-tests -- too slow for CI under coverage (above)
+  // it.each([3, 5])(
+  //   'brings every opening horde to its enemy end with no stuck mob: %i lanes',
+  //   (numLanes) => {
+  //     const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes } }), 1);
+  //     // The longest lane is about 1.5 km; light minions march it in under 500 s.
+  //     const { mobs, farthest, offGroundShare, warnings } = march(map, numLanes, 530 * 30);
+  //
+  //     expect(mobs).toBe(2 * numLanes * 16);
+  //     expect(farthest).toBeLessThan(15);
+  //     expect(offGroundShare).toBeLessThan(0.01);
+  //     expect(warnings).toEqual([]);
+  //   },
+  //   60_000,
+  // );
 
   it('gives the same hash on the generated map for the same seed, tick for tick', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes: 5 } }), 1);
@@ -203,5 +235,6 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
       run(second, 300);
       expect(first.hash()).toBe(second.hash());
     }
-  });
+    // A 5-lane soak of 1,500 ticks per run; coverage instrumentation makes it slow (as in M8).
+  }, 60_000);
 });

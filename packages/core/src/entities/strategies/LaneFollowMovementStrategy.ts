@@ -20,10 +20,10 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
 
   /** Toward the slot, or none once there, plus the separation push; below `minSteer` is none. */
   public desiredVelocity(self: number, context: MovementContext): Vec2 {
-    const { xs, ys, target, out, found } = context;
+    const { positions, target, out, found } = context;
     const { slotArrivalRadius, separationRadius, separationWeight, minSteer } = this.profile;
-    const x = xs[self] ?? 0;
-    const y = ys[self] ?? 0;
+    const x = positions[2 * self] ?? 0;
+    const y = positions[2 * self + 1] ?? 0;
     const dx = target.x - x;
     const dy = target.y - y;
     const gap = sqrt(dx * dx + dy * dy);
@@ -39,11 +39,11 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
       out.x = isThere ? 0 : dx / gap;
       out.y = isThere ? 0 : dy / gap;
     }
-    const count = context.neighbours.collectNear(x, y, separationRadius, found);
+    const count = context.neighbours.queryCircle(x, y, separationRadius, found);
     for (let at = 0; at < count; at += 1) {
       const other = found[at] ?? self;
-      const awayX = x - (xs[other] ?? x);
-      const awayY = y - (ys[other] ?? y);
+      const awayX = x - (positions[2 * other] ?? x);
+      const awayY = y - (positions[2 * other + 1] ?? y);
       const apart = sqrt(awayX * awayX + awayY * awayY);
       if (other === self || apart === 0 || apart >= separationRadius) {
         continue;

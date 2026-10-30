@@ -1277,6 +1277,49 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: merge into `feat/minion-m1-marching`.
 
+### 2026-10-17 — Minion system M2a (brains and perception) — feat/minion-m2a-brains-perception (off feat/minion-m1-marching) — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **PR split:** the rest of the minion work is cut into pull requests M2a, M4, M2b, M2c, M3,
+    M5a and M5b, with their blockers (minion plan §2; stand-ins are now §3).
+  - **DEC renumber:** the PR #33 owner rulings became DEC-43 to DEC-47 on PR #33 and were merged
+    into M1 (PR #38) before branching.
+  - **Neighbour index:** `SpatialHash` is now 10 §5's counting-sort grid with an exact, ascending
+    `queryCircle`; `physics/SpaceIndex` is `state.space` (the `SpaceQuery` port in `state/`),
+    rebuilt by the new `SpaceSystem` after `MovementSystem`; `PathingSystem` and the steering
+    strategy read it instead of their own grid.
+  - **Perception** (`ai/perception/`): `unitsWithin` and `nearest`, filtered by hostility, kind
+    and liveness through the re-added `EntityStore.teamOf` / `isAlive` (PR #34's signatures).
+  - **Brains and AI:** `content/ai/cadence.ts` (11 §6), the `ControllerId` union in content
+    types, a `ControllerBinding` component from `UnitDefinition.controller` / `aiProfile`,
+    `state.ai` (`AiState`: brains with their own RNG stream, the deferred queue; hashed), the
+    `Controller` contract, an empty controller registry, and `AiSystem` (stagger by id hash,
+    budget with deferral) composed first by `Simulation`.
+  - **`HordeMembershipConsistentInvariant`** (15 §3), against the store lookup.
+  - **`dev-spawn-mobs`** (13 §4, 18 §3.5, DEC-46): its handler resolves the origin (structure,
+    `{ lane, t }`, point) to a lane and queues a `HordeRequest` on `state.hordeRequests`;
+    `SpawnSystem` fulfils queued requests and scheduled waves through one shape, clipped to the cap.
+  - **Docs:** 03 §3 union and status, 10 §12, a new 11 §10 implementation status, 18 status, plan
+    §2 table and §3 stand-ins; INBOX question on how a controller writes its memory back.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 507 passed (507)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review; commit on the human's request; the pre-PR gate; M4 can start in parallel.
+
+### 2026-10-17 — Minion system M2a, pre-PR gate — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `62e8a61..d13bbfa`) approved with
+  should-fixes, all applied: `Perception` returns ids in string order and breaks `nearest` ties
+  toward the lower id (11 §3, §5), with a test across `entity-9` / `entity-10`; a `StateHasher`
+  test covers every brain field and the deferred queue, and an `AiSystem` determinism test
+  compares the ask order and the hash of two runs; `SpatialHash.queryCircle` sorts in place
+  (no allocation per query); the weight classes have one source (`state/Horde.constants.ts`);
+  an unregistered controller fails at `Simulation` construction for shipped content and at
+  attach time otherwise; nits (pipeline TSDoc, `PathingSystem.test` no longer imports
+  `SpaceSystem`, new `SpaceIndex` and `ControllerBinding` tests, the cadence test checks the
+  ticks actually used). Ponytail: the redundant `queryCircle` guard is gone and `nearest` walks
+  the query's indexes.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 514 passed (514)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: open the draft PR to `phase/2-sprint-2-work`; M4 is in progress in its worktree.
+
 ### 2026-10-17 — Minion system M4 (flow fields) — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
 
 - What was done:
@@ -1428,6 +1471,21 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 609 passed (609)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: carry this merge into #39 (M2a) and #40 (M4).
+
+### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception (merge of M1 and phase 2) — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated `feat/minion-m1-marching` (`68a6e31`, which carries
+  `origin/phase/2-sprint-2-work` at `230a330`) into PR #39's branch. 8 conflicts. The pipeline
+  keeps M1's merged signature and adds this branch's AI and neighbour index to the `hordes`
+  wiring: ai → hordes → status effects → movement → space → pathing → combat → progression →
+  spawn → death → invariants, pinned by its test. `Unit` installs `StatusEffects`, `Combat` and
+  `ControllerBinding`; `UnitDefinition` keeps `attack` beside `controller: ControllerId` and
+  `aiProfile`; `EntityStore` keeps `teamOf`, `isAlive`, `setAttackTarget` and `controllerOf`;
+  the invariant runner lists `horde-membership-consistent` beside the combat and progression
+  invariants; `Simulation.defaultContent` passes the level curves through.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: merge #38, then this PR.
 
 ### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields (merge of M1 and phase 2) — SamarjitBhogal + Claude Code
 
@@ -1593,6 +1651,19 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 222ms"; "Documentation check passed."
 - Next step: merge this into the stacked minion PRs (#39, #40 and up).
 
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M1 (with `phase/2-sprint-2-work`) into PR #39 and answered
+  its CodeRabbit threads. `SpawnSystem` validates the opening and scheduled waves when it is built
+  (unknown mob, wrong weight class → `ContentValidationError`) and keeps the Stronghold as a
+  spawner even without recurring waves, so its opening hordes still spawn. The horde integration
+  test derives its minion count from the config; the plan's M4 blocker is M1; the core
+  `AGENTS.md` import table matches architecture 02 (`ai/` may import `content/` types).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  666 passed (666)"; client "Tests 415 passed (415)"; "✓ built in 175ms"; "Documentation check
+  passed."
+- Next step: merge this into the enemy-AI plan (#43) and M2b (#44).
+
 ### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
 
 - What was done: CodeRabbit on PR #40 (which carries M1's commits): team spawn counters change
@@ -1623,6 +1694,85 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   641 passed (641)"; client "Tests 415 passed (415)"; "✓ built in 319ms"; "Documentation check
   passed."
 - Next step: merge up the stack again.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: second CodeRabbit round on PR #39. Owner signed off `ai/` importing `content/`
+  types; architecture 11 §1 now matches 02 §2 and the core `AGENTS.md` (recorded in the PR
+  description). The brain hash test also varies `controllerId` and `profileId`. Merged M1's
+  living-unit cap fix.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  668 passed (668)"; client "Tests 415 passed (415)"; "✓ built in 179ms"; "Documentation check
+  passed."
+- Next step: merge up the stack again.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — fix/phase-2-failing-tests — SamarjitBhogal + Claude Code
+
+- What was done: CI on `phase/2-sprint-2-work` failed on Windows: `LaneFlowFields.test.ts`
+  "mirrors each lane's Light field onto its Dark field: 5 lanes" timed out (6.3 s > 5 s) under
+  coverage. It ran three `expect`s per grid cell; it now finds the first non-mirrored cell in a
+  plain loop and asserts there is none (2088 ms → 27 ms locally with coverage). Same check:
+  mask, integration and mirrored direction per cell; a no-flip mutation fails it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  663 passed (663)"; client "Tests 415 passed (415)"; "✓ built in 165ms"; "Documentation check
+  passed."
+- Next step: merge into `phase/2-sprint-2-work` so the phase PR goes green.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — fix/phase-2-failing-tests — SamarjitBhogal + Claude Code
+
+- What was done: PR #53's Ubuntu job then timed out on `Simulation.hordes.test.ts` "gives the same
+  hash on the generated map for the same seed, tick for tick" (5.09 s; 1.5 s locally). Core's
+  `vitest.config.ts` now sets `testTimeout: 60_000`, so no whole-match simulation test fails on
+  runner speed alone. No test or assertion changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  663 passed (663)"; client "Tests 415 passed (415)"; "✓ built in 174ms"; "Documentation check
+  passed."
+- Next step: merge into `phase/2-sprint-2-work`.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (now with M4, PR #40) into PR #39. M4 and M2a were
+  built in parallel, so the steering code was joined: `PathingSystem` keeps M2a's `state.space`
+  neighbours and gains M4's flow fields (rebuilt within `flowFieldCellBudget`, one per horde lane);
+  `LaneFollowMovementStrategy` routes along the field where the line to the slot is blocked and
+  queries `queryCircle`; M4's own grid and `cellSize` are dropped. Doc 18's status note covers both.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  690 passed (690)"; client "Tests 415 passed (415)"; "✓ built in 174ms"; "Documentation check
+  passed."
+- Next step: merge into the enemy-AI plan (#43) and up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (now with the CI test-timeout fix, PR #53) into
+  PR #39. The only conflict was `PROGRESS.md`; both sides' entries are kept in date order.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  690 passed (690)"; client "Tests 415 passed (415)"; "✓ built in 149ms"; "Documentation check
+  passed."
+- Next step: merge into the enemy-AI plan (#43) and up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: third CodeRabbit round on PR #39. Doc 18's implementation status no longer says
+  the damage pipeline is missing (`combat/DamagePipeline` is built; structures have only the
+  `Structure` base). `SpawnSystem` now reads definitions from the factory
+  (`EntityFactory.definitions` is public read-only) and `DefaultSystemPipeline` drops its separate
+  `definitions` option, so a horde request the dev-spawn handler accepted can always be spawned.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  690 passed (690)"; client "Tests 415 passed (415)"; "✓ built in 150ms"; "Documentation check
+  passed."
+- Next step: merge into the enemy-AI plan (#43) and up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: at the owner's request, commented out `Simulation.hordes.test.ts` "brings every
+  opening horde to its enemy end with no stuck mob" (3 and 5 lanes). With M2a's brains and
+  perception the 530 s march takes about 8 s locally but 95–125 s on the GitHub runners under
+  coverage, past the 60 s timeout. A named `vitest/no-commented-out-tests` disable with a reason
+  sits above it. Restore it once the march is cheaper or runs in a separate non-coverage job.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 155ms"; "Documentation check
+  passed."
+- Next step: restore the march test (owner to choose: shorter march or soak job).
 
 ### 2026-10-29 — Phase 2 / sprint 2.2 — feat/status-control-immune — claudiodh + Claude Code
 

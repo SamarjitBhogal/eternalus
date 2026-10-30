@@ -3,65 +3,63 @@ import { describe, expect, it } from 'vitest';
 import { SeededRandom } from '../utils/SeededRandom';
 import { SpatialHash } from './SpatialHash';
 
-const near = (hash: SpatialHash, x: number, y: number, radius: number): number[] => {
-  const out = new Int32Array(2000);
-  return [...out.subarray(0, hash.collectNear(x, y, radius, out))].sort((a, b) => a - b);
+const positionsOf = (points: readonly { x: number; y: number }[]): Float64Array =>
+  Float64Array.from(points.flatMap(({ x, y }) => [x, y]));
+
+const query = (hash: SpatialHash, x: number, y: number, radius: number, size = 2000) => {
+  const out = new Int32Array(size);
+  return [...out.subarray(0, hash.queryCircle(x, y, radius, out))];
 };
 
 describe('SpatialHash', () => {
-  it('finds every point within the radius, as a brute-force scan does', () => {
+  it('returns exactly the points within the radius, ascending, as a brute-force scan does', () => {
     const rng = new SeededRandom(7);
     const hash = new SpatialHash(100, 60, 4);
     const points = Array.from({ length: 1000 }, () => ({
       x: rng.nextFloat() * 100,
       y: rng.nextFloat() * 60,
     }));
-    points.forEach((point, index) => {
-      hash.insert(index, point.x, point.y);
-    });
+    hash.rebuild(positionsOf(points), points.length);
 
     for (const probe of points.slice(0, 50)) {
-      const radius = 4;
       const exact = points
         .map((point, index) => ({ index, gap: Math.hypot(point.x - probe.x, point.y - probe.y) }))
-        .filter(({ gap }) => gap <= radius)
+        .filter(({ gap }) => gap <= 4)
         .map(({ index }) => index);
-      const candidates = near(hash, probe.x, probe.y, radius);
-      expect(candidates).toEqual(expect.arrayContaining(exact));
+      expect(query(hash, probe.x, probe.y, 4)).toEqual(exact);
     }
   });
 
-  it('puts points outside the world into the edge cells and forgets everything on clear', () => {
+  it('puts points outside the world into the edge cells and forgets old points on rebuild', () => {
     const hash = new SpatialHash(10, 10, 5);
-    hash.insert(0, -3, -3);
-    hash.insert(1, 50, 50);
+    hash.rebuild(
+      positionsOf([
+        { x: -3, y: -3 },
+        { x: 50, y: 50 },
+      ]),
+      2,
+    );
 
-    expect(near(hash, 0, 0, 1)).toEqual([0]);
-    expect(near(hash, 10, 10, 1)).toEqual([1]);
+    expect(query(hash, 0, 0, 5)).toEqual([0]);
+    expect(query(hash, 49, 49, 2)).toEqual([1]);
 
-    hash.clear();
-    expect(near(hash, 0, 0, 20)).toEqual([]);
-  });
-
-  it('visits in the same order for the same inserts', () => {
-    const fill = (): number[] => {
-      const hash = new SpatialHash(20, 20, 2);
-      [3, 1, 4, 1.5, 9, 2.6].forEach((x, index) => {
-        hash.insert(index, x, 5);
-      });
-      const out = new Int32Array(6);
-      return [...out.subarray(0, hash.collectNear(4, 5, 6, out))];
-    };
-    expect(fill()).toEqual(fill());
+    hash.rebuild(positionsOf([{ x: 9, y: 9 }]), 1);
+    expect(query(hash, 0, 0, 20)).toEqual([0]);
+    expect(query(hash, 0, 0, 1)).toEqual([]);
   });
 
   it('stops at the end of the output buffer', () => {
     const hash = new SpatialHash(10, 10, 5);
-    [0, 1, 2].forEach((index) => {
-      hash.insert(index, 1, 1);
-    });
+    hash.rebuild(
+      positionsOf([
+        { x: 1, y: 1 },
+        { x: 1, y: 1 },
+        { x: 1, y: 1 },
+      ]),
+      3,
+    );
 
-    expect(hash.collectNear(1, 1, 1, new Int32Array(2))).toBe(2);
+    expect(hash.queryCircle(1, 1, 1, new Int32Array(2))).toBe(2);
   });
 
   it('rejects a size that is not positive', () => {
