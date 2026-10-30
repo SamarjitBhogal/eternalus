@@ -146,7 +146,8 @@ TUNE) so a query touches only the 9 surrounding cells. Storage is dense typed ar
 tick by sorting the points by `cell × count + index`; a query binary-searches each covered row's
 run of cells. No per-cell array is kept, so a rebuild costs what the points cost (O(n log n)), never the
 `cols × rows` of the world, which on a generated map is hundreds of thousands of cells. A rebuild
-allocates one sorted view; nothing else allocates after construction.
+allocates one sorted view, plus a larger key buffer when the point count first passes the
+current capacity (grown once, then reused); queries never allocate.
 
 ```ts
 export class SpatialHash {
