@@ -78,7 +78,6 @@ describe('DefaultSystemPipeline', () => {
       PROGRESSION,
       {
         factory,
-        definitions: UNIT_DEFINITIONS,
         space,
         decide: [{ name: 'ai', update: () => undefined }],
       },

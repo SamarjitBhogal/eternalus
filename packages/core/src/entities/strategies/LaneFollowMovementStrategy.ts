@@ -6,12 +6,13 @@ import type { MovementContext, MovementStrategy } from './MovementStrategy.types
 
 /**
  * How a lane-horde mob steers (architecture 18 §5.2): toward its target (its formation slot, or
- * the unit it chases) until it is within the context's `arrivalRadius`, plus separation from every
- * neighbour (10 §9, MS-19). Stateless: it reads the context's buffers, writes `context.out` and
- * allocates nothing.
+ * the unit it chases) until it is within the context's `arrivalRadius`, or along the lane's flow
+ * field while the next `blockedLookAhead` of the straight line to the target crosses unwalkable
+ * ground, plus separation from every neighbour (10 §9, MS-19). Stateless: it reads the context's
+ * buffers, writes `context.out` and allocates nothing.
  *
- * @remarks ponytail: wall avoidance and the flow field join with terrain-aware routing (minion
- * plan M4); separation falls off linearly, not as 1/r (minion plan §3).
+ * @remarks ponytail: no wall avoidance term yet (it arrives with `CollisionSystem`, 10 §8);
+ * separation falls off linearly, not as 1/r (minion plan §2).
  */
 export class LaneFollowMovementStrategy implements MovementStrategy {
   /** @param profile - Distances and weights; the strategy holds no numbers of its own. */
@@ -27,8 +28,17 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
     const dy = target.y - y;
     const gap = sqrt(dx * dx + dy * dy);
     const isThere = gap <= arrivalRadius;
-    out.x = isThere ? 0 : dx / gap;
-    out.y = isThere ? 0 : dy / gap;
+    const { flow } = context;
+    // The lane flow field takes over where the straight line to the slot is blocked (MS-19).
+    const isRouted =
+      !isThere &&
+      flow !== null &&
+      !flow.isLineClear(x, y, target.x, target.y, this.profile.blockedLookAhead) &&
+      flow.directionAt(x, y, out);
+    if (!isRouted) {
+      out.x = isThere ? 0 : dx / gap;
+      out.y = isThere ? 0 : dy / gap;
+    }
     const count = context.neighbours.queryCircle(x, y, separationRadius, found);
     for (let at = 0; at < count; at += 1) {
       const other = found[at] ?? self;

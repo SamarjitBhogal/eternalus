@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-30
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -76,22 +76,28 @@ guards and are the lane objectives (§6.2), but doc 07 implements them. The mini
 level-up** (MVP, a `CaptureSystem` reward, 07 §7) and **Ascend** (MVP-if-time, a Legend-kill
 reward) belong to their reward systems, not to this doc.
 
-**Implementation status (2026-10-25).** Minion plan phase M1 (marching) is built: the three
-lane minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team
-spawn counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`,
-`LaneFollowMovementStrategy` with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the
-one-step fulfilment; `Simulation` takes the map as an option. The PROTO-01 escort, its `AiSystem`
-and its `Brain` are deleted (DEC-35). Pull request M2a adds brains, the `Controller` contract and `AiSystem`, `state.space` with
-`Perception`, `HordeMembershipConsistentInvariant` and developer-menu horde spawns (§3.5).
-Pull request M2b adds `MinionController` (§6.1) with the `lane-minion` aggro content and the
-shared ranking helper `ai/aggroRank`, minion attacks from `balancing.md`, `stop` clearing the
-attack target (MS-26), the chase in `PathingSystem` (§5.2) and the anchor holding while the leader
-engages (§4). Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the
-damage steps (strength by distance, floored at base stats per DISC-24, its base-stat point moving
-toward the enemy for each lane tower the enemy has lost there) and `EnragedSystem`, its own system
-right after `SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the
-losses are kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads
-too). Lane objectives, gate holding and guards (M2c onward) wait for structure entities. The pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
+**Implementation status (2026-10-30).** Minion plan phase M1 (marching) is built: the three lane
+minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team spawn
+counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`, `LaneFollowMovementStrategy`
+with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the one-step fulfilment;
+`Simulation` takes the map as an option. The PROTO-01 escort, its `AiSystem` and its `Brain` are
+deleted (DEC-35). Pull request M2a adds brains, the `Controller` contract and `AiSystem`,
+`state.space` with `Perception`, `HordeMembershipConsistentInvariant` and developer-menu horde
+spawns (§3.5). Phase M4's lane flow fields are built as well (`map/LaneFlowFields`, the
+Stronghold-to-gate ground included), and `LaneFollowMovementStrategy` follows them where the line to
+its target is blocked (§5.2). Pull request M2b adds `MinionController` (§6.1) with the `lane-minion`
+aggro content and the shared ranking helper `ai/aggroRank`, minion attacks from `balancing.md`,
+`stop` clearing the attack target (MS-26), the chase in `PathingSystem` (§5.2) and the anchor
+holding while the leader engages (§4). Pull request M5a adds the MVP minion modifiers (MS-16):
+`MinionStrengthStep` in the damage steps (strength by distance, floored at base stats per DISC-24,
+its base-stat point moving toward the enemy for each lane tower the enemy has lost there) and
+`EnragedSystem`, its own system right after `SpawnSystem` (one `enraged` stack per lost SpawnerTower
+or BuffTower on the lane; the losses are kept per team and lane in `TeamState.towersLostByLane`,
+which the strength step reads too). Lane objectives, gate holding and guards (M2c onward) wait for
+structure entities, and lane assignment (M3 onward) is not built. The damage pipeline
+(`combat/DamagePipeline`) is built; structures have only the `Structure` base class, with no
+Stronghold, tower or gate kind yet. The pull requests and interim stand-ins are in the [minion
+system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
 
