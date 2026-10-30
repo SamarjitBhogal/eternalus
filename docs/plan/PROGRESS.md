@@ -2426,3 +2426,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   787 passed (787)"; client "Tests 417 passed (417)"; "✓ built in 163ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit, roster test) — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's "Pr-Review Skill Verdict" pre-merge check on PR #47 flagged
+  `placeholderRoster.test.ts` as loosened (checklists §2): M8 had narrowed it to the laners and
+  used `find` for the dark-player Rover. For both player teams it now asserts the full roster's
+  length (19), the laner checks and the exact non-laner list. CodeRabbit accepted the deferred
+  line-check finding.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 159ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; review and merge.

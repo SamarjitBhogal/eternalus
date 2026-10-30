@@ -3,26 +3,36 @@ import { describe, expect, it } from 'vitest';
 import { placeholderRoster } from './placeholderRoster';
 
 describe('placeholderRoster', () => {
-  it('makes every Legend but each Rover a normal bot laner, classes in turn', () => {
-    const laners = placeholderRoster(10, 'light').filter(({ role }) => role === 'laner');
+  it.each(['light', 'dark'] as const)(
+    'makes every Legend but each Rover a normal bot laner, classes in turn: player on %s',
+    (playerTeam) => {
+      const roster = placeholderRoster(10, playerTeam);
+      const laners = roster.filter(({ role }) => role === 'laner');
 
-    expect(laners).toHaveLength(18);
-    expect(laners.filter(({ team }) => team === 'dark')).toHaveLength(9);
-    expect(laners.every(({ difficulty }) => difficulty === 'normal')).toBe(true);
-    expect(laners.slice(0, 4).map(({ definitionId }) => definitionId)).toEqual([
-      'warrior',
-      'sentinel',
-      'magus',
-      'warrior',
-    ]);
-  });
+      expect(roster).toHaveLength(19);
+      expect(laners).toHaveLength(18);
+      expect(laners.filter(({ team }) => team === 'dark')).toHaveLength(9);
+      expect(laners.every(({ difficulty }) => difficulty === 'normal')).toBe(true);
+      expect(roster.slice(0, 4).map(({ definitionId }) => definitionId)).toEqual([
+        'warrior',
+        'sentinel',
+        'magus',
+        'warrior',
+      ]);
+    },
+  );
 
-  it('gives only the other team a bot Rover: the player is their own team’s Rover', () => {
-    const rovers = placeholderRoster(10, 'light').filter(({ role }) => role === 'rover');
+  it.each([
+    ['light', 'dark'],
+    ['dark', 'light'],
+  ] as const)(
+    'gives only the other team a bot Rover: the player on %s is their own team’s Rover',
+    (playerTeam, botTeam) => {
+      const rovers = placeholderRoster(10, playerTeam).filter(({ role }) => role !== 'laner');
 
-    expect(rovers).toEqual([
-      { team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
-    ]);
-    expect(placeholderRoster(10, 'dark').find(({ role }) => role === 'rover')?.team).toBe('light');
-  });
+      expect(rovers).toEqual([
+        { team: botTeam, definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
+      ]);
+    },
+  );
 });
