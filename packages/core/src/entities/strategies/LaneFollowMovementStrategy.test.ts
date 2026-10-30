@@ -146,4 +146,31 @@ describe('LaneFollowMovementStrategy', () => {
     expect(strategy.desiredVelocity(0, behind)).toEqual({ x: 0, y: 0 });
     expect(strategy.desiredVelocity(0, ahead).x).toBeLessThan(0);
   });
+
+  it('closes on a target in front of blocked ground, checking no farther than the target', () => {
+    // Ground from x 50 on is blocked. The chaser at x 46 has a clear line to its target at x 49,
+    // outside attack reach, so it must keep closing even though x 50 is within the look-ahead.
+    const blockedFrom50 = {
+      isLineClear: (
+        fromX: number,
+        fromY: number,
+        toX: number,
+        toY: number,
+        maxDistance: number,
+      ) => {
+        const span = Math.hypot(toX - fromX, toY - fromY);
+        const reach = Math.min(span, maxDistance);
+        return span === 0 || fromX + ((toX - fromX) * reach) / span < 50;
+      },
+      directionAt: () => false,
+    };
+    const chase = {
+      ...contextOf([[46, 10]], { x: 49, y: 10 }),
+      isChasing: true,
+      arrivalRadius: 2.3,
+      flow: blockedFrom50,
+    };
+
+    expect(strategy.desiredVelocity(0, chase)).toEqual({ x: 1, y: 0 });
+  });
 });

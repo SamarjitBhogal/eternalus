@@ -57,18 +57,16 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
       out.y += (awayY / apart) * strength;
     }
     // The final heading, separation included, never steps onto unwalkable ground (18 §5.2:
-    // obstacle avoidance comes first); a mob it would take there holds this tick instead.
+    // obstacle avoidance comes first); a mob it would take there holds this tick instead. A chase
+    // with a clear line probes only up to its target, where arrival stops it, so ground beyond a
+    // reachable target never holds it out of attack reach. A march keeps the full look-ahead,
+    // which keeps formations from edging into a wall's face.
     const steer = length(out);
+    const probe = isChasing && !isBlocked ? Math.min(blockedLookAhead, gap) : blockedLookAhead;
     const isIntoBlocked =
       flow !== null &&
       steer >= minSteer &&
-      !flow.isLineClear(
-        x,
-        y,
-        x + (out.x / steer) * blockedLookAhead,
-        y + (out.y / steer) * blockedLookAhead,
-        blockedLookAhead,
-      );
+      !flow.isLineClear(x, y, x + (out.x / steer) * probe, y + (out.y / steer) * probe, probe);
     if (steer < minSteer || isIntoBlocked) {
       out.x = 0;
       out.y = 0;
