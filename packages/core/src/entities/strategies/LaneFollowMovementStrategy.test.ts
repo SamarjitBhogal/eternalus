@@ -16,6 +16,7 @@ const contextOf = (points: readonly [number, number][], target: { x: number; y: 
     found: new Int32Array(points.length),
     target,
     out: { x: 0, y: 0 },
+    flow: null,
   } satisfies MovementContext;
 };
 
@@ -59,5 +60,30 @@ describe('LaneFollowMovementStrategy', () => {
     );
 
     expect(strategy.desiredVelocity(0, context)).toEqual({ x: 0, y: 0 });
+  });
+
+  it('follows the flow field while the line to the slot is blocked, and only then', () => {
+    const blockedAhead = (isClear: boolean) => ({
+      isLineClear: (_x: number, _y: number, _tx: number, _ty: number, maxDistance: number) =>
+        isClear || maxDistance !== HORDE_STEERING.blockedLookAhead,
+      directionAt: (_x: number, _y: number, out: { x: number; y: number }) => {
+        out.x = 0;
+        out.y = 1;
+        return true;
+      },
+    });
+    const noField = {
+      isLineClear: () => false,
+      directionAt: () => false,
+    };
+
+    const routed = { ...contextOf([[10, 10]], { x: 40, y: 10 }), flow: blockedAhead(false) };
+    const clear = { ...contextOf([[10, 10]], { x: 40, y: 10 }), flow: blockedAhead(true) };
+    const unrouted = { ...contextOf([[10, 10]], { x: 40, y: 10 }), flow: noField };
+
+    expect(strategy.desiredVelocity(0, routed)).toEqual({ x: 0, y: 1 });
+    expect(strategy.desiredVelocity(0, clear)).toEqual({ x: 1, y: 0 });
+    // Where the field has no direction the mob still heads for its slot.
+    expect(strategy.desiredVelocity(0, unrouted)).toEqual({ x: 1, y: 0 });
   });
 });

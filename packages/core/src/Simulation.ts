@@ -87,7 +87,6 @@ export class Simulation {
             { units, curves, xpSources: XP_SOURCES },
             {
               factory,
-              definitions: units,
               space,
               decide: [
                 new AiSystem(this.state, controllers, AI_CADENCE, (command) => {

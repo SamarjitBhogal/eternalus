@@ -2,14 +2,16 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { SpaceIndex } from '../physics/SpaceIndex';
-import type { DefinitionSource } from '../entities/EntityFactory.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import { LaneFlowFields } from '../map/LaneFlowFields';
+import { WorldMap } from '../map/WorldMap';
 import type { GameState } from '../state/GameState';
 import { CombatSystem } from './CombatSystem';
 import { DeathSystem } from './DeathSystem';
@@ -42,7 +44,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
    * @param state - The match; its config sets the tick rate and lane structure count statuses load
    *   with, and systems that listen to its events subscribe here.
    * @param progression - The content kills are priced and levels applied with, injected.
-   * @param hordes - The factory, definitions, neighbour index and AI the horde systems
+   * @param hordes - The factory (and its definitions), neighbour index and AI the horde systems
    *   (architecture 11, 18) need; without them nothing decides, marches, steers or spawns on lanes.
    */
   public constructor(
@@ -51,7 +53,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
     progression: ProgressionContent,
     hordes?: {
       readonly factory: EntityFactory;
-      readonly definitions: DefinitionSource;
       /** The index `state.space` exposes; `null` for a match without a map. */
       readonly space: SpaceIndex | null;
       /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
@@ -63,6 +64,18 @@ export class DefaultSystemPipeline extends SystemPipeline {
     const statuses = new StatusEffectApplier(
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
     );
+    const flowFields =
+      hordes === undefined || state.map === null
+        ? null
+        : new LaneFlowFields(
+            WorldMap.fromDefinition(
+              state.map,
+              map.navCellSize,
+              (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+            ),
+            state.map,
+            map.flowFieldCorridorHalfWidth,
+          );
     super([
       ...(hordes === undefined
         ? []
@@ -73,9 +86,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
-            new PathingSystem(createDefaultStrategyRegistry().movement, {
-              [RANKS_FORMATION.id]: RANKS_FORMATION,
-            }),
+            new PathingSystem(
+              createDefaultStrategyRegistry().movement,
+              { [RANKS_FORMATION.id]: RANKS_FORMATION },
+              flowFields,
+            ),
           ]),
       new CombatSystem(damage),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
@@ -84,7 +99,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             new SpawnSystem(state, hordes.factory, {
-              definitions: hordes.definitions,
+              definitions: hordes.factory.definitions,
               openingWave: OPENING_WAVE,
               waves: SPAWN_WAVES,
               steering: HORDE_STEERING,
