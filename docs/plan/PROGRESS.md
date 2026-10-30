@@ -2002,3 +2002,24 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   blockers. Ponytail: lean, no cuts. Final `npm run check` → `EXIT=0`: core "Tests 755 passed
   (755)", client "Tests 416 passed (416)", "✓ built in 172ms", "Documentation check passed."
 - Next step: M5b.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/struggling-lane-signals (on PR #56) — Claude Code for sholtzman
+
+- What was done: the owner's most-struggling lane (DEC-89) in `assessLanes`. The three terms are
+  now `structureDamageTaken` (the team's own lane structures' lost share of their starting
+  health), `pushedBack` (unchanged) and `alliesHurt` (the lane's share of the damage the team's
+  Legends and mobs took). New `state/AllyDamageStore` on `GameState.allyDamage`, fed by a
+  `damage-applied` subscriber in `GameState` (lane = `LaneRoutes.nearestLane` of the victim; only
+  hits from the victim's enemy team count) and hashed by `StateHasher` while it holds
+  damage. `SpawnSystem` clears a team's tally right after it picks that team's Stronghold
+  heavy-wave lane. Weights 1/3 each, `TUNE: DEC-89`. Doc 18 §3.3, §10 item 1 and the MS-9 row
+  updated. Written for Samarjit to integrate into PR #56 (no capacity on his side).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  768 passed (768)"; client "Tests 416 passed (416)"; "✓ built in 270ms"; "Documentation check
+  passed." Every new test was seen red against a deliberate break first.
+- Critic round 2 (same day): the enemy-only rule (a removed or same-team attacker no longer
+  counts; new test seen red first, "expected 2 to be +0"), trimmed `AllyDamageStore` TSDoc, doc 18
+  MS-9 note and §3.3 bullet. Correctness critic: PASS. `npm run check` → `EXIT=0`: core "Tests 769
+  passed (769)"; client "Tests 416 passed (416)"; "Checked 115 Markdown files under docs/."
+- Next step: the pre-PR gate (critic, ponytail) and Samarjit's integration into PR #56. PR #47
+  refactors `LaneAssessment` into `laneScores`/`mostLaneScore`: expect a merge conflict there.
