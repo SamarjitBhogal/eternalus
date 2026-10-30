@@ -1,11 +1,11 @@
 ---
 title: Minion system
-description: The owning design for lane hordes, tower guards and the lanes of bot Legends - spawning from the schedule, the lane assessment that picks the worst lane, the Horde composite and its formation, lane following, minion and guard behaviour and disengaging; read this before working on mobs, hordes, guards, spawning or bot lane assignment.
+description: The owning design for lane hordes, tower guards, camp mobs, checkpoint defenders and the lanes of bot Legends - spawning from the schedule, the lane assessment that picks the worst lane, the Horde composite and its formation, lane following, minion and leashed-guard behaviour and disengaging; its plan also schedules the Rover and bot-Legend controllers of doc 11 (bosses stay outside it). Read this before working on mobs, hordes, guards, camps, spawning or bots.
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
 last-reviewed: 2026-10-30
-tags: [architecture, minions, hordes, guards, spawning, ai, core]
+tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
     'packages/core/src/ai/MinionController*',
@@ -13,9 +13,13 @@ paths:
     'packages/core/src/state/Horde*',
     'packages/core/src/state/LaneAssessment*',
     'packages/core/src/state/LaneRoutes*',
+    'packages/core/src/state/assignLanes*',
+    'packages/core/src/state/formationSlot*',
     'packages/core/src/systems/HordeSystem*',
     'packages/core/src/systems/SpawnSystem*',
     'packages/core/src/systems/PathingSystem*',
+    'packages/core/src/systems/EnragedSystem*',
+    'packages/core/src/combat/MinionStrengthStep*',
     'packages/core/src/entities/strategies/LaneFollowMovementStrategy*',
     'packages/core/src/content/mobs/**',
     'packages/core/src/content/ai/hordeSteering*',
@@ -53,32 +57,53 @@ from doc [04 §1](04-entity-architecture.md#1-the-family-tree):
 | Medium lane minion | `medium-mob`                         | `Mob`    | Spawned in hordes by BuffTowers                                                                                                                                                       | `MinionController`       |
 | Heavy lane minion  | `heavy-mob`                          | `Mob`    | Spawned in hordes by the Stronghold down the worst lane                                                                                                                               | `MinionController`       |
 | Tower guard        | a `Mob` kind with a guard definition | `Mob`    | Light guards at SpawnerTowers, medium at BuffTowers, ranged and melee at the Stronghold; spawned and respawned by the structure's `GuardPlan`; hold its perimeter; belong to no horde | `GuardController`        |
+| Camp mob           | a `Mob` kind with a camp definition  | `Mob`    | Forest camps (corner: MVP-if-time) spawn their group after the camp's cooldown (07 §6); held by `GuardController` with the camp as home (§7.1); in no horde                           | `GuardController`        |
+| Zone defender      | a `Mob` kind from a checkpoint table | `Mob`    | Spawned when a capture point crosses a checkpoint (07 §7); held by `GuardController` with the capture point as home (§7.1); in no horde                                               | `GuardController`        |
 | Bot Legend (laner) | `warrior`, `sentinel`, `magus`       | `Legend` | Gets a lane at match setup (§8); the doc 11 laner tree plays it                                                                                                                       | `BotLegendController`    |
 | Horde              | none (not an entity)                 | —        | The composite that groups lane minions: members, leader, formation, lane progress                                                                                                     | `HordeSystem` (a system) |
 
-**Not handled here.** Bosses (`mini-boss`, `greater-boss`) and their `BossController`, forest and
-corner camps, checkpoint assist spawns, A\* for Legends, turrets, projectiles, zones, the enemy
-Rover (doc 11 §4.7; it takes no lane, §8) and the human player's Legend are out of scope; docs 07,
-10, 11 and 12 and the [Phase 3 plan](../plan/phase-3-minions-hordes-and-ai.md) own them. Structures
+**Scheduled here, designed elsewhere (MS-28).** The Rover (11 §4.7; it takes no lane, §8), the
+bot Legends' behaviour tree and ability use (11 §4.2) and A\* for Legends (10 §9) are built by the
+[minion system plan](../plan/minion-system-plan.md) (M3, M8), but this doc does not restate their
+design.
+
+**Not handled here: bosses (MS-28).** The minion system never controls a boss. `MiniBoss`,
+`GreaterBoss` and their `BossController` (11 §4.6) are built in Phase 3 sprint 3.6, and their
+spawns come from the `MatchDirector` timeline and the `Cathedral` spawner (docs 07 and 12).
+
+**Not handled here.** Turrets and `TurretController` (built with the `Turret`, 07 §5, Phase 2
+sprint 2.3), projectiles, zones and capture logic, and the human player's Legend. Structures
 (`stronghold`, `spawner-tower`, `buff-tower`, `gate`) are only consumed: they host spawners and
 guards and are the lane objectives (§6.2), but doc 07 implements them. The minion modifiers **zone
 level-up** (MVP, a `CaptureSystem` reward, 07 §7) and **Ascend** (MVP-if-time, a Legend-kill
 reward) belong to their reward systems, not to this doc.
 
-**Implementation status (2026-10-30).** Minion plan phase M1 (marching) is built: the three
-lane minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team
-spawn counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`,
-`LaneFollowMovementStrategy` with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the
-one-step fulfilment; `Simulation` takes the map as an option. The PROTO-01 escort, its `AiSystem`
-and its `Brain` are deleted (DEC-35). Pull request M2a adds brains, the `Controller` contract and
-`AiSystem`, `state.space` with `Perception`, `HordeMembershipConsistentInvariant` and
-developer-menu horde spawns (§3.5). Phase M4's lane flow fields are built as well
-(`map/LaneFlowFields`, the Stronghold-to-gate ground included), and `LaneFollowMovementStrategy`
-follows them where the line to the slot is blocked (§5.2). Fighting, guards, controllers and lane
-assignment (M2b onward) are not built. The damage pipeline (`combat/DamagePipeline`) is built;
-structures have only the `Structure` base class, with no Stronghold, tower or gate kind yet. The
-pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md)
-§2–§3.
+**Implementation status (2026-10-30).** Minion plan phase M1 (marching) is built: the three lane
+minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team spawn
+counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`, `LaneFollowMovementStrategy`
+with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the one-step fulfilment;
+`Simulation` takes the map as an option. The PROTO-01 escort, its `AiSystem` and its `Brain` are
+deleted (DEC-35). Pull request M2a adds brains, the `Controller` contract and `AiSystem`,
+`state.space` with `Perception`, `HordeMembershipConsistentInvariant` and developer-menu horde
+spawns (§3.5). Phase M4's lane flow fields are built as well (`map/LaneFlowFields`, the
+Stronghold-to-gate ground included), and `LaneFollowMovementStrategy` follows them where the line to
+its target is blocked (§5.2). Pull request M2b adds `MinionController` (§6.1) with the `lane-minion`
+aggro content and the shared ranking helper `ai/aggroRank`, minion attacks from `balancing.md`,
+`stop` clearing the attack target (MS-26), the chase in `PathingSystem` (§5.2) and the anchor
+holding while the leader engages (§4). Pull request M3 adds the bot laners (§8):
+`SimulationOptions.roster` (the bot Legends, spawned when the match is built at their own end of
+their lane, in ranks), `assignLanes` for MS-20 (bots in roster order, up to `legendsPerLane`), a
+spawn's own controller and starting memory (`Placement.controller`, holding the lane) and
+`BotLegendController` playing doc 11 §4.2's laner tree. The Rover waits for its controller (M8).
+Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
+(strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
+enemy for each lane tower the enemy has lost there) and `EnragedSystem`, its own system right after
+`SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the losses are
+kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads too). Lane
+objectives, gate holding and guards (M2c onward) wait for structure entities. The damage pipeline
+(`combat/DamagePipeline`) is built; structures have only the `Structure` base class, with no
+Stronghold, tower or gate kind yet. The pull requests and interim stand-ins are in the [minion
+system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
 
@@ -91,7 +116,7 @@ the build split moved to the plan).
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | MS-1  | All minion, horde and bot behaviour is scripted and deterministic in core. No model or network in the loop.                                                                 | all        |
 | MS-2  | This doc owns hordes, minion and guard behaviour and the spawn flow; doc 04 §7 and doc 11 §4.3–4.4 point here.                                                              | all        |
-| MS-3  | Scope: lane hordes, tower guards and bot Legends' lane assignment. Camps, bosses, turrets and checkpoint spawns stay in docs 07, 11 and 12.                                 | legend     |
+| MS-3  | Superseded by MS-28. Was: lane hordes, tower guards and bot lanes only; camps, bosses, turrets and checkpoint spawns stay in docs 07, 11 and 12.                            | legend     |
 | MS-4  | A horde marches as a group and fights as individuals; survivors re-form and march on.                                                                                       | §4, §5, §6 |
 | MS-7  | Lane following targets the lane's flow field (10 §9).                                                                                                                       | §5         |
 | MS-8  | Spawning follows the full DISC-10 schedule.                                                                                                                                 | §3         |
@@ -109,6 +134,7 @@ the build split moved to the plan).
 | MS-25 | **Owner, DEC-45, DEC-46.** Every lane minion spawns as part of a horde, developer-menu spawns included; no mob exists without its horde record.                             | §3.2, §3.5 |
 | MS-26 | A mob disengages with `stop`, which clears both heading and attack target (03 §3).                                                                                          | §6.1       |
 | MS-27 | Controllers own target selection: minions and guards rank candidates in `ai/`, not through a `TargetingStrategy`.                                                           | §6.1       |
+| MS-28 | **Owner, 2026-10-27 (amends DEC-47).** The minion plan schedules every AI-driven enemy except bosses; camp mobs and zone defenders are leashed guards (§7.1).               | §7.1, plan |
 
 ## 2. Where it sits
 
@@ -162,13 +188,13 @@ spawner's own lane, or §3.3 for the Stronghold's heavy horde), checks the cap (
 `nextWaveTick`. A suppressed batch is never queued, so the schedule does not drift.
 
 The request is fulfilled at the end of the tick (deferred spawns, 07 §6) in **one step**: the
-members are created through `EntityFactory` with `hordeId` already set, the `Horde` record (§4) is
-inserted into `state.hordes`, and only then are `entity-spawned` (per member) and
+members are created through `EntityFactory`, the `Horde` record (§4) is inserted into
+`state.hordes`, and only then are `entity-spawned` (per member) and
 `horde-spawned { hordeId, lane, team, memberIds }` emitted. No listener creates the record, so no
 mob ever exists without its horde (MS-25).
 
 **Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `MovementSystem` →
-`PathingSystem` → `CollisionSystem` (10 §9) → … → `SpawnSystem` (schedule and fulfilment) → `DeathSystem`
+`PathingSystem` → `CollisionSystem` (10 §9) → … → `SpawnSystem` (schedule and fulfilment) → `EnragedSystem` (MS-16) → `DeathSystem`
 → `InvariantSystem` → `SnapshotSystem`. A horde spawned on tick N has its members and record when
 the invariants and the snapshot of tick N run, and its first decisions in tick N+1.
 
@@ -251,8 +277,10 @@ the point (ties by `MapLane.index`). `progress` starts at the lane point nearest
 
 ## 4. The `Horde` composite
 
-A horde is **not** an entity (04 §7, FR-037); it is a record in `state.hordes`, and each member mob
-carries the back-pointer `hordeId` that `HordeMembershipConsistentInvariant` (15) checks:
+A horde is **not** an entity (04 §7, FR-037); it is a record in `state.hordes`, which is the only
+record of membership: mobs carry no `hordeId`, `state.hordes.hordeOf(id)` finds a mob's horde, and
+the store refuses to file a mob under two hordes, so there is no back-pointer to drift
+(`HordeMembershipConsistentInvariant`, 15, checks the records):
 
 ```ts
 // packages/core/src/state/Horde.types.ts (sketch)
@@ -296,15 +324,18 @@ default, `ranks`, is a block: the leader at the front centre, the other members 
   leader excluded): rank `floor(i / ranksWidth) + 1`, file `i % ranksWidth − (ranksWidth − 1) / 2`, so
   the block is centred on the lane. The offset is `−forward × rank × slotSpacing + right × file × slotSpacing`, where `forward` is
   the lane's direction at `progress` and `right` its perpendicular, as vectors (ADR 0012). When a
-  member dies the ranks close up on the next tick, with no bookkeeping.
+  member dies the ranks close up on the next tick, with no bookkeeping. The slot function lives in
+  `state/formationSlot.ts`, the one folder that `systems/` (`PathingSystem`) and `ai/`
+  (`MinionController`, which checks arrival at the slot) may both import.
 - **Another shape** (wedge, column) is a new formation entry and its slot function, not a change to
   `HordeSystem` or the strategy.
 
 ### 5.2 Lane following and steering
 
 `LaneFollowMovementStrategy` is a `MovementStrategy` (04 §4), chosen by the mob definition and
-called by `PathingSystem` (10 §9). It reads the mob's `Combat.targetId`, which only
-`attack-target` sets and `stop` clears:
+called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targetId`, which only
+`attack-target` sets and `stop` clears, and hands the strategy the target and an arrival radius
+(the attack reach), so the strategy never reads components:
 
 | Mob state (§6.1) | `Combat.targetId` | Steering target                                                                    |
 | ---------------- | ----------------- | ---------------------------------------------------------------------------------- |
@@ -315,8 +346,12 @@ called by `PathingSystem` (10 §9). It reads the mob's `Combat.targetId`, which 
 - `PathingSystem` combines the strategy's target with the rest of 10 §9 by priority: **obstacle
   and wall avoidance**, then **separation from all neighbours** (through `SpatialHash`,
   [10 §5](10-physics.md#5-broad-phase-spatialhash), id-ordered), then the strategy's target, then
-  the lane flow field when the straight line is blocked (MS-19). A mob blocked by terrain leaves
-  its slot and returns to it once clear, because keeping the slot is never the top priority.
+  the lane flow field when the straight line to the slot is blocked (MS-19). An engaging mob never
+  follows the lane field, which leads to the lane's end rather than to its target: where the line to
+  its target is blocked it holds, keeping obstacle avoidance first. The final heading, separation
+  included, is checked the same way, so no push steers a mob onto unwalkable ground. A mob blocked
+  by terrain leaves its slot and returns to it once clear, because keeping the slot is never the
+  top priority.
 - Vectors only, no angles (ADR 0012). All distances and factors are content (`TUNE`). The
   strategy never queries the whole entity list; steering cost per mob is one bounded neighbour
   query.
@@ -376,7 +411,8 @@ and melee guards at the `Stronghold`, per the game doc) are Mobs owned by their 
   structure's `GuardPlan.leashRadius` (07 §6; game doc: guards "don't leave the tower's
   perimeter") and the idle state holds the guard's post near the structure.
 - Guards move with `LeashedChaseMovementStrategy` (04 §4; 10 §9's "seek/arrival inside their
-  leash"): chase `Combat.targetId` while it is set, otherwise return to the post.
+  leash"): chase the target `PathingSystem` hands it (from `Combat.targetId`, §5.2) while one is
+  set, otherwise return to the post.
 - `GuardWithinLeashInvariant` (15 §3) checks that no guard is farther than `leashRadius` plus a
   `TUNE` tolerance (the distance it can cover between two decisions) from its structure.
 - Spawning and respawning are the structure's `GuardPlan`, run by `SpawnSystem`, never controller
@@ -386,6 +422,29 @@ The owner's Tower Guardians refinement (four specialised heavy guards per tower,
 a fixed radius, never chase, replacement after a delay; decisions log, MVP-if-time) is guard
 content plus a second idle rule, not a new controller.
 
+### 7.1 Camp mobs and checkpoint defenders (MS-28)
+
+Forest camp mobs (corner camps are MVP-if-time) and checkpoint assist defenders are leashed
+guards too, so they reuse `GuardController`, `LeashBehaviour` and `LeashedChaseMovementStrategy`
+without a new controller. Only the home changes, and it is data on the spawning `Spawner`'s
+`GuardPlan` (07 §6):
+
+- **Camp mobs.** The home is the `Camp` structure and the leash its `GuardPlan.leashRadius`. When
+  the group spawns and respawns is the camp's spawner data (07 §6), never controller logic. When
+  the last one dies, the match learns of it through `camp-cleared` (Phase 3 sprint 3.4), which M6
+  adds to 03's event catalogue; `Recommendation:` `SpawnSystem` emits it, since it owns the
+  camp's spawner. Its rewards belong to `ProgressionSystem`, not to AI.
+- **Zone defenders (checkpoint assist spawns).** `CaptureSystem` asks for a checkpoint's table (07 §7) and
+  `SpawnSystem` fulfils it like any other spawn. The home is the `CapturePoint`. Defenders fight
+  for the team that owns the capture point (owner, 2026-10-27). Their leash radius is open (§10,
+  item 4); `Recommendation:` the leash is the zone's radius, so a capture cannot be dragged away
+  from its defenders.
+- Neither kind joins a horde (MS-25 covers lane minions only). A mob on a team counts against that
+  team's unit cap (§3.4).
+- `GuardWithinLeashInvariant` (15 §3) is defined for tower guards, measured from the structure's
+  `GuardPlan.leashRadius`. Covering camp mobs and checkpoint defenders changes that definition and
+  its tests (M6); defenders stay uncovered until their leash radius is decided (§10, item 4).
+
 ## 8. Bot Legends: lane assignment (MS-20)
 
 The laner behaviour tree, its utility scoring and difficulty data stay in doc
@@ -394,7 +453,9 @@ where it comes from.
 
 - At match setup each team's lanes are filled in `MapLane.index` order up to
   `GameConfig.match.legendsPerLane`. The human's Legend counts against the lane it starts on. Bot
-  laners are placed in id order into the lane with the fewest Legends, lowest index first.
+  laners are placed in roster order (the order match setup lists them; ids sort as strings, so
+  `entity-10` would come before `entity-9`) into the lane with the fewest Legends, lowest index
+  first.
 - The Rover (`RoverController`, 11 §4.7) takes no lane.
 - The lane is stored as the `MapLane.id` in the bot-Legend `AiMemory` (11 §2) and does not change
   during the match.
@@ -404,7 +465,7 @@ where it comes from.
 Per doc 11 §8, plus:
 
 - Spawn pipeline: a horde request yields its members and its record in the same tick, with
-  `hordeId` set before `entity-spawned`; developer-menu spawns form a horde for each origin kind.
+  the horde record in `state.hordes` before `entity-spawned`; developer-menu spawns form a horde for each origin kind.
 - `HordeSystem`: member removal on `entity-removed` and `team-changed`; leader promotion in string
   order; dissolve at zero; the anchor holds at a standing objective and while the leader engages;
   a tower-spawned horde advances from the tower, never back toward its own gate.
@@ -418,6 +479,9 @@ Per doc 11 §8, plus:
 - `MinionController` and `GuardController`: table-driven transitions; `returning` emits `stop` and
   the target is cleared; gate holding until `structure-breakability-changed`.
 - `GuardWithinLeashInvariant`: a test that deliberately drags a guard past its leash triggers it.
+- Camp mobs and checkpoint defenders (§7.1): a camp is inert before its cooldown and emits
+  `camp-cleared` when emptied; each checkpoint spawns its listed composition; a camp mob or
+  defender pulled past its home's leash returns.
 - Lane assignment: `legendsPerLane` is respected with the human counted and the Rover excluded.
 - Determinism: the same seed and command log give the same hash with hordes, guards and bots.
 
@@ -432,6 +496,9 @@ Per doc 11 §8, plus:
    §3.1 and 07 §6's source table rows follow the answer.
 3. **PROTO-01, part 2 (`INBOX.md`).** May `AiSystem` live in `systems/`, or must it stay in `ai/`?
    It bears on §2's folder list.
+4. **Checkpoint defenders' leash (§7.1).** Does a defender's leash follow the capture zone (its
+   radius), or a radius of its own in the checkpoint table? And a point no team owns yet: are its
+   defenders neutral (`Recommendation:`)? MS-28 itself and the defenders' team are decided.
 
 ## Related
 

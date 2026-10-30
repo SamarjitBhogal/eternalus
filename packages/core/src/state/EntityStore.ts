@@ -2,9 +2,11 @@ import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
+import { length, sub } from '../utils/vec2';
 import type { Entity } from '../entities/Entity';
 import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
 
@@ -109,6 +111,39 @@ export class EntityStore {
     }
     movement.steer(direction);
     return true;
+  }
+
+  /** The entity's health as a fraction of its maximum, or `undefined` without `Health`. */
+  public healthFractionOf(id: EntityId): number | undefined {
+    const health = this.entities.get(id)?.findComponent(Health);
+    return health === undefined ? undefined : health.current / health.max;
+  }
+
+  /**
+   * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
+   * two footprints (architecture 05 §10); `false` when either is unknown or the attacker cannot
+   * attack.
+   */
+  public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
+    const attacker = this.entities.get(attackerId);
+    const combat = attacker?.findComponent(Combat);
+    const from = attacker?.findComponent(Transform);
+    const to = this.entities.get(targetId)?.findComponent(Transform);
+    if (combat === undefined || from === undefined || to === undefined) {
+      return false;
+    }
+    const gap = length(sub(to.position, from.position));
+    return gap - from.radius - to.radius <= combat.attack.reach;
+  }
+
+  /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */
+  public attackTargetOf(id: EntityId): EntityId | null {
+    return this.entities.get(id)?.findComponent(Combat)?.targetId ?? null;
+  }
+
+  /** Clears the entity's attack target; does nothing when it cannot attack or is unknown. */
+  public clearAttackTarget(id: EntityId): void {
+    this.entities.get(id)?.findComponent(Combat)?.setTarget(null);
   }
 
   /** The entity's team, or `undefined` when it is unknown or has no team. */

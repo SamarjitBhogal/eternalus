@@ -13,9 +13,41 @@ import { WorldMap } from './map/WorldMap';
 import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import type { MapDefinition } from './content/maps/maps.types';
+import { ContentCatalogue } from './content/ContentCatalogue';
+import { loadDefaultContent } from './content/loadDefaultContent';
+import type { UnitDefinition } from './content/units/units.types';
 
-/** A match on `map` whose countdown outlasts the test, so only the opening hordes march. */
-const match = (map: MapDefinition, seed = 1) => {
+/** The shipped content with every minion's controller and attack taken away, so hordes only march. */
+const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
+  loadDefaultContent(30)
+    .all()
+    .map((definition) => {
+      if (definition.controller !== 'minion') {
+        return definition;
+      }
+      const { id, kind, displayName, baseHealth, footprintRadius, visionRadius, movement } =
+        definition;
+      const marcher: UnitDefinition = {
+        id,
+        kind,
+        displayName,
+        baseHealth,
+        footprintRadius,
+        visionRadius,
+        movement,
+        ...(definition.movementStrategy === undefined
+          ? {}
+          : { movementStrategy: definition.movementStrategy }),
+      };
+      return marcher;
+    }),
+);
+
+/**
+ * A match on `map` whose countdown outlasts the test, so only the opening hordes march; with
+ * `isMarchingOnly`, minions never fight.
+ */
+const match = (map: MapDefinition, seed = 1, isMarchingOnly = false) => {
   const logger = new MemoryLogger();
   const config = createDefaultGameConfig({
     match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
@@ -26,6 +58,7 @@ const match = (map: MapDefinition, seed = 1) => {
     logger,
     debug: TEST_DEBUG_CONFIG,
     map,
+    ...(isMarchingOnly ? { content: MARCHING_ONLY } : {}),
   });
   return { simulation, logger, config };
 };
@@ -38,7 +71,7 @@ const run = (simulation: Simulation, ticks: number): void => {
 
 describe('Simulation with lane hordes (architecture 18, M1)', () => {
   it('walks every opening horde down its lane to the enemy end, invariants clean', () => {
-    const { simulation, logger, config } = match(TWO_LANE_MAP);
+    const { simulation, logger, config } = match(TWO_LANE_MAP, 1, true);
     const spawned: string[] = [];
     simulation.on('horde-spawned', ({ team, lane }) => spawned.push(`${team} ${lane}`));
 
@@ -58,7 +91,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
   });
 
   it('marches in formation with no overlap beyond a tolerance', () => {
-    const { simulation } = match(TWO_LANE_MAP);
+    const { simulation } = match(TWO_LANE_MAP, 1, true);
     // Light minions are 0.8 m across; forming up outside the gate may squeeze them by 0.2 m.
     const diameter = 0.8;
     const closest = (): number => {
@@ -131,6 +164,38 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
       2 * config.match.initialHordesPerTeam * config.match.hordeSizes.light,
     );
   });
+
+  it('fights when opposing hordes meet: kills on both sides, invariants clean (M2b)', () => {
+    const { simulation, logger } = match(TWO_LANE_MAP);
+    const alive = (team: string) =>
+      simulation
+        .snapshot()
+        .entities.filter((entity) => entity.family === 'mob' && entity.team === team).length;
+
+    run(simulation, 60 * 30);
+
+    const { initialHordesPerTeam, hordeSizes } = createDefaultGameConfig({
+      match: { initialHordesPerTeam: 2 },
+    }).match;
+    const opened = initialHordesPerTeam * hordeSizes.light;
+    expect(alive('light')).toBeLessThan(opened);
+    expect(alive('dark')).toBeLessThan(opened);
+    expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
+  });
+
+  it('fights the same way twice: the same seed gives the same hash, tick for tick (M2b)', () => {
+    const hashes = [1, 2].map(() => {
+      const { simulation } = match(TWO_LANE_MAP);
+      const seen: number[] = [];
+      for (let tick = 0; tick < 60 * 30; tick += 100) {
+        run(simulation, 100);
+        seen.push(simulation.hash());
+      }
+      return seen;
+    });
+
+    expect(hashes[0]).toEqual(hashes[1]);
+  });
 });
 
 /** The generated map's walkability grid, as the pipeline builds it. */
@@ -141,14 +206,24 @@ const gridOf = (map: MapDefinition, config: GameConfig): WorldMap =>
     (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
   );
 
-/** A match with one opening horde per lane and team, and no later waves. */
-const laneMatch = (map: MapDefinition, numLanes: number) => {
+/**
+ * A match with one opening horde per lane and team, and no later waves; with `isMarchingOnly`,
+ * minions never fight, so every mob is still alive at the end of a march.
+ */
+const laneMatch = (map: MapDefinition, numLanes: number, isMarchingOnly = false) => {
   const config = createDefaultGameConfig({
     map: { numLanes, campsPerSide: numLanes === 1 ? 0 : 6 },
     match: { initialHordesPerTeam: numLanes, countdownSeconds: 6000 },
   });
   const logger = new MemoryLogger();
-  return { config, logger, simulation: new Simulation({ config, seed: 1, logger, map }) };
+  const simulation = new Simulation({
+    config,
+    seed: 1,
+    logger,
+    map,
+    ...(isMarchingOnly ? { content: MARCHING_ONLY } : {}),
+  });
+  return { config, logger, simulation };
 };
 
 /**
@@ -157,7 +232,7 @@ const laneMatch = (map: MapDefinition, numLanes: number) => {
  * walkable ground (the Stronghold hordes spawn inside the Stronghold's footprint).
  */
 const march = (map: MapDefinition, numLanes: number, ticks: number) => {
-  const { config, logger, simulation } = laneMatch(map, numLanes);
+  const { config, logger, simulation } = laneMatch(map, numLanes, true);
   const grid = gridOf(map, config);
   const hasLeft = new Set<string>();
   let samples = 0;

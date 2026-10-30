@@ -14,6 +14,7 @@ import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 import { Match } from './Match';
+import { placeholderRoster } from './placeholderRoster';
 import {
   FOLLOW_VIEW_HEIGHT,
   FOLLOW_VIEW_WIDTH,
@@ -64,7 +65,13 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger, map }),
+        simulation: new Simulation({
+          config,
+          seed: PLACEHOLDER_MATCH_SEED,
+          logger,
+          map,
+          roster: placeholderRoster(config.match.legendsPerTeam),
+        }),
         map,
         tickRate: config.tickRate,
         scheduler: new RafFrameScheduler({

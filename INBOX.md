@@ -118,7 +118,7 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §3 stand-in). Details: doc 18 §10.
-- [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
+- [x] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
       after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
@@ -126,11 +126,71 @@ Reply inline (`Decision: …`).
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
       to the store lookup.
+  - Decision (SamarjitBhogal, chat, 2026-10-29): (1) the first heavy horde leaves when the
+    countdown ends, like the towers' waves (the code's current schedule). (2) Signed off: horde
+    membership lives only in `state.hordes`; doc 18 §3.2, §4, §9 and 15's invariant updated in
+    `feat/minion-m3-bot-laners`.
 - [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
       "never mutate state", yet a brain's `memory` and `rngState` change with each decision
       (`MinionController`'s FSM state and timers, M2b). Should `decide` return
       `{ commands, memory, rngState }` for `AiSystem` to write back (`Recommendation:`, keeps
       controllers pure), or may a controller write its own brain?
+  - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
+    `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
+    (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
+- [ ] **Minion M3 — bot numbers and base healing.** (1) The bot difficulty knobs have no
+      reference values; `content/ai/difficulties/normal.ts` starts them as `TUNE`: retreat
+      below 30% health, rejoin at 80%, engage within 12 m, arrive within 2 m, closeness and
+      weakness weighted 1 each. Confirm or give values. (2) Doc 11 §4.2's `Survive` sends a bot
+      "back to base", and the Phase 3 plan expects it to "return to base to heal", but nothing
+      heals a Legend yet and no doc says how. Is there base healing (where, how fast)? (3)
+      Better than the design, for sign-off: bot laners take lanes in roster order, the order
+      match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
+      `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) numbers from the design docs, else the
+    agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
+    out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
+    Accepted; doc 18 §8 says roster order (PR #46).
+- [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
+      `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
+      than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it
+      at 1.0 (never weaker than base). (1) Is the floor right, or should 0.75 stand? (2) DISC-24:
+      when a lane tower falls, "the base-stat distance extends further toward the enemy". By
+      how much per tower (a fraction of the lane, a fixed distance, or up to the fallen tower)?
+      (3) Better than the design, for sign-off: enraged lives in its own `EnragedSystem` (one
+      purpose, right after `SpawnSystem`), not in `SpawnSystem` as 03 §4's events table says; if
+      accepted, 03 §4's `structure-destroyed` and `horde-spawned` rows name it.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (3) accepted; 03 §4's rows name
+    `EnragedSystem` (PR #45). (2) Build the tower shift; the amount is the agent's judgement with
+    no reference: a tenth of the lane per tower (`MINION_STRENGTH.shiftPerTowerLost`, `TUNE`),
+    capped at 0.9 of the lane (`maxBasePoint`). (1) Not answered: the floor stays at 1.0, as
+    DISC-24's "addition on top of base stats" reads.
+- [x] **DISC-24 — which way the tower shift goes (question for the owner).** PR #45 builds
+      reading (a) as an interim that is easy to change (one function, `MinionStrengthStep`):
+      (a) the team that destroyed the tower gets its base-stat point moved toward the enemy; the
+      losing team's point stays put. (b) One shared front: as (a), and the losing team's point
+      also moves back toward its own home, so its minions drop to base stats sooner. (c) A
+      comeback: the losing team's strong zone grows instead. Which one? Nothing can destroy a
+      tower until M2c, so no live match uses it yet.
+  - Decision (SamarjitBhogal, chat, 2026-10-30): (a). The team that destroyed the tower gets its
+    base-stat point moved toward the enemy; the losing team's point stays put. Built in PR #45
+    (`MinionStrengthStep`); recorded as DEC-48 in the decisions log.
+- [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
+      Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
+      the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
+      components (18 §5.2 says the strategy reads `Combat.targetId`); if accepted, 18 §5.2 and
+      §7's guard strategy note change. (2) The formation slot function lives in
+      `state/formationSlot.ts`, the one folder both `systems/` and `ai/` may import. (3)
+      Controllers get their content (aggro rules, formations, kind classes) through their
+      constructor from `Simulation`, not through `GameState` (11 §1). Numbers to confirm: the
+      aggro radii scale League/Dota's 500 / 700 units by minion speed (5.4 m and 7.5 m), and
+      `reformDistance` is 2 m with no reference. Design note: 18 §6.1 ends every chase after
+      the aggro duration (69 ticks) followed by a 90-tick cooldown, minion against minion too,
+      which may give a fight, walk back, fight again rhythm; Dota applies it to hero aggro only.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1)–(3) accepted; doc 18 §5.1, §5.2 and §7
+    and doc 11 §1 updated (PR #44). Numbers: use the design docs, else the agent's judgement,
+    which the owner may correct later, so the aggro radii and `reformDistance` stay as built.
+    The design note on the chase rhythm stays open.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
@@ -181,6 +241,25 @@ Reply inline (`Decision: …`).
       stat for the FR-029 aura. Confirm or correct.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
+- [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
+      SamarjitBhogal asked (2026-10-25) for the minion plan to cover enemy bots of every
+      entity type. Proposed in doc 18 MS-28 and `docs/plan/minion-system-plan.md` (phases M6
+      to M8, coverage table §1.1): camps and checkpoint assist spawns (3.4), bosses (3.6),
+      A\* for Legends (3.2), and the Rover and bot ability use (3.7) move to the minion plan's
+      breakdown. Nothing is dropped and the work still ships in Phase 3's weeks. Sprints 3.5
+      and 3.8 stay in the Phase 3 plan, and turrets stay with the `Turret` (sprint 2.3). (1)
+      Sign off the move, or keep DEC-47's split. (2) Which team do checkpoint defenders fight
+      for: the zone's owner, the team being captured against, or neutral? (3) Does their leash
+      follow the capture zone (doc 18 §7.1)?
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) signed off, except bosses: the minion
+    system does not control bosses, so `BossController` stays in Phase 3 sprint 3.6 and the
+    plan has no M7; every other mob type may be driven by the minion system. (2) The team that
+    owns the checkpoint. Docs 18 MS-28 and §7.1, 07, 11 §4, the Phase 3 plan and the minion
+    plan updated (PR #43). Awaits the decisions log.
+- [ ] **Checkpoint defenders — leash (doc 18 §10, item 4).** Still open after the MS-28 answer.
+      Does a defender's leash follow the capture zone (its radius; `Recommendation:`), or is it a
+      radius of its own in the checkpoint table? And are the defenders of a point no team owns
+      yet neutral (`Recommendation:`)? Nothing is built on this until M6.
 - [ ] **Weapons — numbers and default weapons (SCRUM-183 / SCRUM-287, branch `feat/weapons`).**
       The weapon slice is built (05 §10 Implementation status), but no doc has per-weapon numbers
       (`balancing.md` only names `content/weapons/*.ts`). Placeholders shipped (2026-10-25, all

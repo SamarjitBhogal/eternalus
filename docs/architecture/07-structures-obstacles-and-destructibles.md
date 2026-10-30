@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-27
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -235,8 +235,8 @@ export class Capturable {
 ```
 
 `CaptureSystem`: if exactly one team has units inside and `lockedBy === null`, progress moves
-toward that team; crossing a checkpoint threshold spawns that checkpoint's defenders through a
-`Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
+toward that team; crossing a checkpoint threshold spawns that checkpoint's defenders (held by `GuardController` with the zone as home and fighting
+for the team that owns the point, [18](18-minion-system.md) MS-28, §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
 "Balrog-type" mob) and, when cleared, awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
 `StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,

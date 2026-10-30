@@ -31,10 +31,20 @@ export type MovementContext = {
   readonly neighbours: NeighbourQuery;
   /** Scratch for neighbour indexes, at least as long as the crowd. */
   readonly found: Int32Array;
-  /** Where the unit wants to be: a horde mob's formation slot. */
+  /** Where the unit wants to be: a horde mob's formation slot, or the unit it chases. */
   readonly target: Vec2;
   /** The flow field of the unit's lane and team, or `null` when the match has none. */
   readonly flow: FlowQuery | null;
+  /**
+   * Within this distance of `target` the unit is there and stops steering toward it. Writable, like
+   * `isChasing`: `PathingSystem` rewrites both for each member, so the context never allocates.
+   */
+  arrivalRadius: number;
+  /**
+   * Whether `target` is a unit being chased rather than a formation slot. A chase never follows the
+   * lane field, which leads to the lane's end, not to the target; blocked ground stops it instead.
+   */
+  isChasing: boolean;
   /** Scratch the strategy writes its answer into and returns, so nothing allocates. */
   readonly out: MutableVec2;
 };
