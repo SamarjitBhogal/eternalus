@@ -118,7 +118,7 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §3 stand-in). Details: doc 18 §10.
-- [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
+- [x] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
       after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
@@ -126,6 +126,10 @@ Reply inline (`Decision: …`).
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
       to the store lookup.
+  - Decision (SamarjitBhogal, chat, 2026-10-29): (1) the first heavy horde leaves when the
+    countdown ends, like the towers' waves (the code's current schedule). (2) Signed off: horde
+    membership lives only in `state.hordes`; doc 18 §3.2, §4, §9 and 15's invariant updated in
+    `feat/minion-m3-bot-laners`.
 - [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
       "never mutate state", yet a brain's `memory` and `rngState` change with each decision
       (`MinionController`'s FSM state and timers, M2b). Should `decide` return
@@ -134,6 +138,19 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
     `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
     (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
+- [ ] **Minion M3 — bot numbers and base healing.** (1) The bot difficulty knobs have no
+      reference values; `content/ai/difficulties/normal.ts` starts them as `TUNE`: retreat
+      below 30% health, rejoin at 80%, engage within 12 m, arrive within 2 m, closeness and
+      weakness weighted 1 each. Confirm or give values. (2) Doc 11 §4.2's `Survive` sends a bot
+      "back to base", and the Phase 3 plan expects it to "return to base to heal", but nothing
+      heals a Legend yet and no doc says how. Is there base healing (where, how fast)? (3)
+      Better than the design, for sign-off: bot laners take lanes in roster order, the order
+      match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
+      `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) numbers from the design docs, else the
+    agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
+    out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
+    Accepted; doc 18 §8 says roster order (PR #46).
 - [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
       `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
       than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it

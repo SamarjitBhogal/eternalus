@@ -1,4 +1,6 @@
 import type { ControllerId } from '../content/ai/ai.types';
+import { BotLegendController } from './BotLegendController';
+import type { BotLegendControllerContent } from './BotLegendController.types';
 import type { Controller } from './Controller.types';
 import { MinionController } from './MinionController';
 import type { MinionControllerContent } from './MinionController.types';
@@ -9,12 +11,14 @@ export type ControllerRegistry = Readonly<Partial<Record<ControllerId, Controlle
 /**
  * The controller registry: one line per controller (architecture 02 §9).
  *
- * @param content - What the controllers read besides the state, injected by `Simulation`.
+ * @param content - What each controller reads besides the state, injected by `Simulation`.
  * @remarks ponytail: partial until every id has a controller; it becomes total (`Record`, so a
  * missing id does not compile) once the last one lands.
  */
-export const createDefaultControllerRegistry = (
-  content: MinionControllerContent,
-): ControllerRegistry => ({
-  minion: new MinionController(content),
+export const createDefaultControllerRegistry = (content: {
+  readonly minion: MinionControllerContent;
+  readonly botLegend: BotLegendControllerContent;
+}): ControllerRegistry => ({
+  minion: new MinionController(content.minion),
+  'bot-legend': new BotLegendController(content.botLegend),
 });
