@@ -13,6 +13,8 @@ paths:
     'packages/core/src/state/Horde*',
     'packages/core/src/state/LaneAssessment*',
     'packages/core/src/state/LaneRoutes*',
+    'packages/core/src/state/assignLanes*',
+    'packages/core/src/state/formationSlot*',
     'packages/core/src/systems/HordeSystem*',
     'packages/core/src/systems/SpawnSystem*',
     'packages/core/src/systems/PathingSystem*',
