@@ -4,7 +4,7 @@ description: Sprint checklists for the persistence layer (IndexedDB behind Persi
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-29
 tags: [plan, phase-5, persistence, resources, ui, settings, keybindings, developer-menu]
 paths: ['apps/client/src/data/**', 'apps/client/src/ui/**', 'apps/client/src/game/input/**']
 related:
@@ -262,7 +262,7 @@ passes the keyboard-only walk.
 3. Architecture docs 13 and 14 match the code, or an ADR records the deviation; the IndexedDB
    test-fake decision is recorded; the profile screen's themed name is decided (INBOX OQ-15) or
    still visibly marked "(themed name pending)".
-4. Phase PR approved (sholtzman + sim lane lead), CI green on three OSes, merged by SamarjitBhogal.
+4. Phase PR approved (sholtzman + sim lane lead), CI green on Linux and Windows, merged by SamarjitBhogal.
 
 ## Demo script
 

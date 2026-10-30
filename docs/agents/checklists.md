@@ -4,7 +4,7 @@ description: The Definition of Done for agent tasks, the AI-PR review checklist,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-29
 tags: [agents, process, review, checklist]
 related:
   [
@@ -41,7 +41,7 @@ written with an agent (AI-PR review), check a design (architecture review) or cl
 
 ## 2. AI-PR review checklist (reviewer: human or `pr-review` skill / `architecture-reviewer`)
 
-- [ ] CI is green on all three OSes; `npm run check` reproduced locally.
+- [ ] CI is green on Linux and Windows; `npm run check` reproduced locally.
 - [ ] Every modified test was read: no removed or loosened assertions, no snapshots of wrong output.
 - [ ] New tests test behaviour, not lines.
 - [ ] No new `eslint-disable`, `@ts-expect-error`, `as` casts or `!` assertions without a convincing reason.

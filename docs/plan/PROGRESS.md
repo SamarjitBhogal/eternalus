@@ -1426,7 +1426,7 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   validates against CodeRabbit's `schema.v2.json`. `docs/process/git-workflow.md` §review
   rules notes it.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; "Documentation
-  check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 227ms".
+  check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 225ms".
 - Next step: the owner makes CI a required status check on `main` and `phase/*` (CodeRabbit
   cannot run `npm run check`), then confirms CodeRabbit reviews this branch's PR.
 
@@ -1496,3 +1496,38 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 182ms"; "Documentation
   check passed."
 - Next step: add the three CI checks as required on `main`.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: CI matrix drops `macos-latest` and keeps `ubuntu-latest` and `windows-latest`,
+  to save Actions minutes on the education plan. macOS behaves like Linux for the Node tooling,
+  and the git hooks plus the local `npm run check` still run on macOS machines. `guardrails.md`,
+  `git-workflow.md`, `sdlc.md`, the PR checklist, the harness doc, phase exit criteria and
+  NFR-019 / ES-07 updated to match (requirement change needs sholtzman sign-off on the PR).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 225ms"; "Documentation
+  check passed."
+- Next step: the repo admin removes the `npm run check (macos-latest)` required check from the
+  `main` protection and the "phase branches" ruleset.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit review on PR #50. Added ADR 0019 (proposed) because requirement
+  changes need an ADR plus product-owner acceptance (`docs/requirements/README.md`). NFR-019,
+  ES-07 and the `ci.yml` comment now say macOS developers run the full check locally; the git
+  hooks run only `check:quick` and are not full coverage.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 230ms"; "Documentation
+  check passed."
+- Next step: sholtzman accepts ADR 0019 on the PR (then flip its status to accepted); the admin
+  removes the macOS required check.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: ADR 0019 marked accepted by the repository admin (SamarjitBhogal); no separate
+  product-owner sign-off needed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 226ms"; "Documentation
+  check passed."
+- Next step: the admin removes the `npm run check (macos-latest)` required check, then PR #50
+  merges.

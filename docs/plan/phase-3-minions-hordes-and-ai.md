@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-29
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -238,7 +238,7 @@ invariant violations; identical hashes on replay.
    spawns at 60 s, a camp activating, the quarter-mark mini-boss, and the match ending when a
    Stronghold falls; then switch to sim mode and let bots finish a match.
 3. Architecture docs 11 and 12 match the code, or an ADR records the deviation.
-4. Phase PR approved (sholtzman + map owner), CI green on three OSes, merged by SamarjitBhogal.
+4. Phase PR approved (sholtzman + map owner), CI green on Linux and Windows, merged by SamarjitBhogal.
 5. The MVP-core line of the roadmap is now demoable end to end.
 
 ## Risks
