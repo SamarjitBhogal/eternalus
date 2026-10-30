@@ -234,6 +234,7 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'camera-zoom-out': 'Zoom out',
   'toggle-minimap': 'Toggle minimap',
   'pause-menu': 'Pause menu',
+  'view-details': 'View Details',
   'toggle-developer-menu': 'Developer menu',
   'toggle-perf-overlay': 'Performance overlay',
 };

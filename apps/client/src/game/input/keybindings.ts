@@ -29,6 +29,8 @@ export const DEFAULT_CHORDS: Readonly<Record<InputAction, readonly InputChord[]>
   'camera-zoom-out': [key('Minus', '-')],
   'toggle-minimap': [key('KeyM', 'M')],
   'pause-menu': [key('Escape', 'Esc')],
+  // DEC-103: V opens View Details on the selection steps (it replaces HC-F7's reused C there).
+  'view-details': [key('KeyV', 'V')],
   'toggle-developer-menu': [key('F1', 'F1')],
   'toggle-perf-overlay': [key('F9', 'F9')],
 };

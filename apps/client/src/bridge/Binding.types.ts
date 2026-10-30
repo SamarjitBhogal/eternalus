@@ -26,6 +26,7 @@ export type InputAction =
   | 'camera-zoom-out'
   | 'toggle-minimap'
   | 'pause-menu'
+  | 'view-details'
   | 'toggle-developer-menu'
   | 'toggle-perf-overlay';
 
