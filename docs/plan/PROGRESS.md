@@ -2439,6 +2439,42 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: CodeRabbit re-review; review and merge.
 
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/coderabbit-review — sholtzman + Claude Code
+
+- What was done: applied the product owner's rulings on the review of the merged PR #48 (DEC-95
+  to DEC-98, with the owner's follow-up picks on the critic's questions). ADR 0018 gained a dated
+  amendment: player-facing and architecture decisions go to the product owner as blockers
+  (visibility, not a veto); CodeRabbit blocks but never approves; nobody's text is a sign-off for
+  someone else (the owner's own description counts on the owner's own PRs); drafts are not
+  reviewed; learnings stay in this repo, wait 7 days for an admin, and
+  are logged for the product owner. `.coderabbit.yaml` follows it (validated against
+  `schema.v2.json`). The SDLC, git workflow, guardrails and tool-setup docs say "humans approve"
+  again. New `scripts/coderabbit/collect-learnings.mjs` (zero dependencies, `gh api`) writes
+  `docs/agents/coderabbit-learnings.md`; its 7 tests each failed on a deliberate break. The
+  workflow that runs it every 2 days (`.github/workflows/coderabbit-learnings.yml`) and the
+  `workflow_dispatch:` line in `ci.yml` were added by the product owner: agents may not edit
+  workflows.
+- Checks run (with the workflow files in, after merging the phase tip `9c58897`; only
+  `PROGRESS.md` and the decisions log conflicted, both sides kept): `npm run check` → `EXIT=0`:
+  "All matched files use Prettier code style!"; core "Tests 787 passed (787)"; client "Tests 419
+  passed (419)"; "✓ built in 112ms"; "Documentation check passed." Pre-PR gate: architecture critic PASS after 2 rounds;
+  ponytail review "Lean already".
+- Next step: the repo admin turns on Code Owner review on `phase/**` and `main`, only then allows
+  Actions to create and approve PRs, and deletes the stored "no human approval" learning in the
+  CodeRabbit app.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/renumber-dec-48 — sholtzman + Claude Code
+
+- What was done: PR #45 logged its DISC-24 tower-shift decision as DEC-48, but the HUD and
+  character-select branches have used DEC-48 since 2026-10-18 (class names are display names) and
+  cite it in about 36 files. The tower-shift row is now DEC-120, with a note under its batch that
+  maps the old number; its `INBOX.md` citation follows. The 2026-10-30 PR #45 entry above still
+  says DEC-48: past entries are not rewritten, and the note maps it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 258ms"; "Documentation check
+  passed."
+- Next step: none; the HUD branches keep DEC-48.
+
 ### 2026-10-30 — Phase 2 / sprint 2.2 (fix, hordes leave the Stronghold) — fix/horde-leave-stronghold — SamarjitBhogal + Claude Code
 
 - What was done: lane minions never left their base on the generated map. Hordes spawn at the
@@ -2457,3 +2493,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   when the heading was reverted, and a `ponytail:` note that the walk-out is narrowed when
   `CollisionSystem` lands. Ponytail review: lean already.
 - Next step: draft PR into `phase/2-sprint-2-work`; owner sign-off on the doc 18 §5.2 update.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (merge, sign-off) — fix/horde-leave-stronghold — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (PRs #59, #60) into PR #61; only this file
+  conflicted, both sides kept. CodeRabbit's one finding asks for the product owner's sign-off on
+  the doc 18 §5.2 change. Under ADR 0018's amendment (DEC-96) only the owner's own review or
+  comment counts, so it stays open with the `INBOX.md` item; the thread is answered on the PR.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  791 passed (791)"; client "Tests 419 passed (419)"; "✓ built in 172ms"; "Documentation check
+  passed."
+- Next step: the product owner signs off (or not) on the PR; then mark ready for review.

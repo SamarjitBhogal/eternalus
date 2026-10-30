@@ -4,7 +4,7 @@ description: How Eternalus is delivered - phases, one-week sprints, task briefs,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [process, sdlc, sprints, reviews]
 related:
   [
@@ -71,8 +71,10 @@ docs + frontmatter + PROGRESS updated, PR opened against the phase branch.
 
 ## 4. Reviews
 
-- **Task PR**: one approval, a teammate's or CodeRabbit's (ADR 0018); agent-written code gets a `pr-review` /
-  `architecture-reviewer` pass first (agents grade their own work generously).
+- **Task PR**: one teammate approval (ES-13; for agent PRs a human, AI-07); agent-written code
+  gets a `pr-review` / `architecture-reviewer` pass first (agents grade their own work
+  generously). CodeRabbit then reviews it by the same skill and can block it, but never
+  approves; taste, design and architecture decisions go to the product owner (ADR 0018).
 - **Architecture review**: any new folder, family, port or registry goes through
   checklist §3 before code is written, usually as a short design note in the PR or an ADR.
 - **Phase PR**: the named phase reviewer walks checklist §4 with the demo script; the `main`
@@ -93,7 +95,8 @@ docs + frontmatter + PROGRESS updated, PR opened against the phase branch.
   only through an ADR and a PR that updates `guardrails.md` in the same change.
 - Requirements change through the product owner: a new or edited FR row, then the phase
   doc, then tasks. Agents never change requirements or make product decisions.
-- Dependencies: none added without a human approval line in the PR.
+- Dependencies: none added unless a person other than the author approves each one in their
+  own review or comment on the PR (ADR 0018).
 - Every non-trivial change gets a changelog entry saying what changed, what was added or
   removed, and why (the Phase 0 entry is the model).
 
