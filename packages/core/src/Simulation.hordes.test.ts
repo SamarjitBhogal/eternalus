@@ -327,6 +327,23 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
 });
 
 describe('Simulation structures', () => {
+  it('fills the generated map’s forest camps when the countdown ends (18 §7.1)', () => {
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 1 } });
+    const map = new MapGenerator().generate(config, 1);
+    const logger = new MemoryLogger();
+    const simulation = new Simulation({ config, seed: 1, logger, debug: TEST_DEBUG_CONFIG, map });
+    const campMobs = () =>
+      simulation.snapshot().entities.filter(({ definitionId }) => definitionId.endsWith('-camp-mob'));
+
+    run(simulation, config.tickRate);
+    expect(campMobs()).toEqual([]);
+
+    run(simulation, 2);
+    expect(campMobs().length).toBeGreaterThanOrEqual(2 * config.map.campsPerSide * 3);
+    expect(campMobs().every(({ team }) => team === 'neutral')).toBe(true);
+    expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
+  });
+
   it('sends tower guards after an enemy that walks in, then back to their posts (18 §7)', () => {
     const { simulation, logger } = match(STRONGHOLDS_ONLY);
     simulation.step();

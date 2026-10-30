@@ -37,6 +37,8 @@ export class SpawnSystem implements System {
   public readonly name = 'spawn';
   private readonly spawners: readonly Structure[];
   private readonly guards: GuardRoster;
+  /** The definition ids of the structures on this map, whose guard plans are checked. */
+  private readonly homes = new Set<string>();
 
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points.
@@ -53,6 +55,9 @@ export class SpawnSystem implements System {
     // The Stronghold sends the opening wave even when it has no recurring waves.
     const spawners: Structure[] = [];
     state.entities.forEach((entity) => {
+      if (entity instanceof Structure) {
+        this.homes.add(entity.definitionId);
+      }
       const team = state.entities.teamOf(entity.id);
       if (
         entity instanceof Structure &&
@@ -81,8 +86,9 @@ export class SpawnSystem implements System {
       ),
     ];
     const { definitions } = this.plan;
-    const guardProblems = Object.entries(this.plan.guards).flatMap(([id, { table }]) =>
-      table.flatMap(({ mobId }) =>
+    // Only the plans of structures on this map, so a match without them needs no guard content.
+    const guardProblems = [...this.homes].flatMap((id) =>
+      (this.plan.guards[id]?.table ?? []).flatMap(({ mobId }) =>
         definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
       ),
     );
