@@ -59,7 +59,8 @@
      Figma variables, so each value is the frame's literal and the name says its role. */
 
   /* Cinzel 400/700 (SIL OFL 1.1), registered by FontLoader from the boot group (DEC-51). A capitals
-     face: never text-transform content text. Menus read it through --font-display and --font-body. */
+     face: never text-transform content text. Menus read it through --font-display and --font-body
+     (DEC-67: Cinzel everywhere). */
   --font-game: 'Cinzel', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
   /* Cinzel line heights = Figma AUTO box heights (unitless px; selection uses ×1px, HUD ×--hud-u). */
   --leading-game-96: 129;
