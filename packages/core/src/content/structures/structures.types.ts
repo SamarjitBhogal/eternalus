@@ -1,4 +1,5 @@
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
+import type { BreakabilityRule } from './breakability.types';
 
 /** The structure kinds (`04-entity-architecture.md`, family table). Their classes arrive in Phase 2. */
 export type StructureKind =
@@ -22,6 +23,8 @@ export type StructureDefinition = EntityDefinitionBase & {
   readonly baseHealth: number;
   /** Collider circle radius in world units (convex polygon footprints arrive in Phase 2). */
   readonly footprintRadius: number;
+  /** When it may take damage (07 §3). */
+  readonly breakability: BreakabilityRule;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */

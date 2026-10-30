@@ -24,6 +24,8 @@ import { ProgressionSystem } from './ProgressionSystem';
 import type { ProgressionContent } from './ProgressionSystem.types';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
+import { StructureSystem } from './StructureSystem';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
@@ -31,7 +33,7 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, the neighbour index, steering, combat, progression (kill XP),
- * spawning, death, then invariants last. This is the one place a system is added, at its position
+ * structure losses and breakability, spawning, death, then invariants last. This is the one place a system is added, at its position
  * in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
@@ -97,6 +99,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new CombatSystem(damage),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
+      new StructureSystem(STRUCTURE_DEFINITIONS),
       ...(hordes === undefined
         ? []
         : [

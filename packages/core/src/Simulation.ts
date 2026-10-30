@@ -19,6 +19,8 @@ import { FORMATIONS } from './content/mobs/formations/formations';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
+import { compareById } from './utils/compareById';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
@@ -80,10 +82,11 @@ export class Simulation {
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
-      units,
+      Simulation.withStructures(units),
       undefined,
       weaponSource,
     );
+    Simulation.spawnStructures(this.state, factory);
     this.commandContext = { state: this.state, factory };
     this.systemContext = { state: this.state, logger };
     this.pipeline =
@@ -150,6 +153,30 @@ export class Simulation {
   /** A 32-bit fingerprint of the current state; equal runs give equal hashes. */
   public hash(): number {
     return this.hasher.hash(this.state);
+  }
+
+  /** `units` plus the structure definitions, so one factory builds both (architecture 04 §6). */
+  private static withStructures(units: DefinitionSource): DefinitionSource {
+    return {
+      has: (id) => units.has(id) || STRUCTURE_DEFINITIONS.has(id),
+      get: (id) => (units.has(id) ? units.get(id) : STRUCTURE_DEFINITIONS.get(id)),
+    };
+  }
+
+  /**
+   * Builds the map's structures, in feature id order, before anything else spawns (architecture
+   * 07 §1): every feature whose definition is a structure becomes that structure, with its team
+   * and lane. Features without a structure definition (walls, turrets, camps) stay map data.
+   */
+  private static spawnStructures(state: GameState, factory: EntityFactory): void {
+    const features = [...(state.map?.features ?? [])].sort((a, b) => compareById(a.id, b.id));
+    for (const { definitionId, position, team, laneId } of features) {
+      if (STRUCTURE_DEFINITIONS.has(definitionId)) {
+        const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
+        const placement = { position, team, ...(laneId !== undefined && { laneId }) };
+        state.entities.add(factory.create(kind, definitionId, placement));
+      }
+    }
   }
 
   /** The shipped content, checked against the controllers before the match starts. */

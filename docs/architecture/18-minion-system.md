@@ -88,8 +88,9 @@ follows them where the line to its target is blocked (§5.2). Pull request M2b a
 `ai/aggroRank`, minion attacks from `balancing.md`, `stop` clearing the attack target (MS-26), the
 chase in `PathingSystem` (§5.2) and the anchor holding while the leader engages (§4). Lane
 objectives, gate holding and guards (M2c onward) wait for structure entities, and lane assignment
-(M3 onward) is not built. The damage pipeline (`combat/DamagePipeline`) is built; structures have
-only the `Structure` base class, with no Stronghold, tower or gate kind yet. The pull requests and
+(M3 onward) is not built. The damage pipeline (`combat/DamagePipeline`) is built. Pull request
+`feat/minion-structures` adds the Stronghold, tower and gate entities with breakability and
+`structure-destroyed` (07, Implementation status), which M2c builds on. The pull requests and
 interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions

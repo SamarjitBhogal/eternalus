@@ -1962,3 +1962,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   716 passed (716)"; client "Tests 415 passed (415)"; "✓ built in 169ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; merge into M5a (#45) and M3 (#46).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-structures — SamarjitBhogal + Claude Code
+
+- What was done: the part of sprint 2.1 the minion plan's M2c needs (unowned, so built here as
+  plan row M2s). `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate` entities with
+  `content/structures/structureCatalogue.ts` (base health from `balancing.md`) and registry lines;
+  `Simulation` builds one per map structure feature, in feature id order, with its lane.
+  `BreakabilityRule` content, `StructureSystem` (emits `structure-destroyed` and
+  `structure-breakability-changed`, gates unbreakable until 2 of 3 BuffTowers are down) and
+  `BreakabilityStep` in the damage pipeline. The client registers an empty `StructureView` (the map
+  layer already draws buildings). Docs 03, 07, 18 and the minion plan updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  727 passed (727)"; client "Tests 416 passed (416)"; "✓ built in 160ms"; "Documentation check
+  passed."
+- Next step: M2c on top of this branch.

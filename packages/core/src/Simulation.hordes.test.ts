@@ -313,3 +313,24 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
     // A 5-lane soak of 1,500 ticks per run; coverage instrumentation makes it slow (as in M8).
   }, 60_000);
 });
+
+describe('Simulation structures', () => {
+  it('builds every lane structure of the map before anything else spawns', () => {
+    const { simulation } = match(TWO_LANE_MAP);
+
+    const structures = simulation
+      .snapshot()
+      .entities.filter(({ family }) => family === 'structure')
+      .map(({ id, kind, team }) => ({ id, kind, team }));
+
+    // Feature id order: buff towers, spawner towers, then strongholds; the cathedral stays map data.
+    expect(structures).toEqual([
+      { id: 'entity-1', kind: 'buff-tower', team: 'dark' },
+      { id: 'entity-2', kind: 'buff-tower', team: 'light' },
+      { id: 'entity-3', kind: 'spawner-tower', team: 'dark' },
+      { id: 'entity-4', kind: 'spawner-tower', team: 'light' },
+      { id: 'entity-5', kind: 'stronghold', team: 'dark' },
+      { id: 'entity-6', kind: 'stronghold', team: 'light' },
+    ]);
+  });
+});
