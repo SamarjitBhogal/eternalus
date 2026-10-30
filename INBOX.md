@@ -709,7 +709,7 @@ Reply inline (`Decision: …`).
     Legends are validated by both loaders). Where an item's text also carries another open item, its
     row waits in HC-T1: NF2's asset groups (T-31, HC-Q7 (2)), NF5's paragraph (T-90, HC-F7), DV-55
     and DV-56's scaling bullet (T-29, HC-Q14) and DV-93's HUD rows (T-23, HC-Q2).
-- [ ] **HC-B2 — Better than the design, for sign-off: a view that opens over a selection step
+- [x] **HC-B2 — Better than the design, for sign-off: a view that opens over a selection step
       (`feat/hud-and-character-select`, batch 2; the architecture critic's loop 1, 2026-10-30).**
       The game-interface architecture (`docs/architecture/13-game-interface.md`, §9, "Recipe: a
       screen, a HUD element, an action") offers two kinds of screen: "a `MenuRoute` literal or a
@@ -724,6 +724,8 @@ Reply inline (`Decision: …`).
       (`ViewDetailsScreen`, `ClassDetailsScreen`); `Overlay` is the other choice (the pause menu is
       `PauseOverlay`). Once you sign, a recipe row for it joins that table as an HC-T1 row, for your
       approval of its text. **Recommendation:** none on the name; your call.
+  - Answered 2026-10-30 (in chat): "sure" (DEC-110). No name given, so the files keep `Screen`
+    (full-screen layouts, as `ui/screens/` holds). The recipe row for 13 §9 is pending in HC-T1.
 - [ ] **HC-C1 — The differences from your Figma, for review (asked after the pre-PR critic).** Every
       place the build differs from your frames on purpose is registered in
       `docs/reference/game-design/15-figma-frames-and-creative-decisions.md` (DEC-53), so the visual
@@ -1274,7 +1276,7 @@ Reply inline (`Decision: …`).
     whose names your rename replaces (DEC-58). Readings to check: "in-scope" as MVP scope; "Raptor
     claws" as the Raptor Talons; "wuuthraad" as Wuuthrad; the dual blades as the weapons reference's
     Short blades. The weapon panel's art is asked again in HC-F6.
-- [ ] **HC-Q23 — A DOM test environment: add it or not? (not urgent; the architecture critic's
+- [x] **HC-Q23 — A DOM test environment: add it or not? (not urgent; the architecture critic's
       loop 1 on batch 2, 2026-10-30).** The client's tests run in Node with no browser page (the
       client rules, `apps/client/AGENTS.md`: "Tests run in Node (no DOM)"), so no test presses V or
       clicks the "V View Details" prompt to open View Details, or checks the focus it keeps and
@@ -1286,6 +1288,9 @@ Reply inline (`Decision: …`).
       a `jsdom`/`happy-dom` environment in Vitest (**Recommendation:** needs the team's dependency
       approval)". Add one (which one), or keep the tests without a page? **Recommendation:** none;
       your call.
+  - Answered 2026-10-30 (in chat): "sure as long as it doesn't negatively impact performance"
+    (DEC-111). Built: happy-dom, opted into per test file; the bundle is unchanged and the suite's
+    run time stayed within its spread. First page test: `ClassSelectStep.viewDetails.test.tsx`.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).

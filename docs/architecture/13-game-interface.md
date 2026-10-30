@@ -662,7 +662,10 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   it keeps and gives back) runs in no test; a DOM test environment (jsdom or happy-dom) is a new
   development dependency, which needs the owner's approval (`INBOX.md` HC-Q23). The open and
   closed renders are tested (`ViewDetailsScreen`, and the class case in `ClassDetailsScreen`), and
-  the focus helper is tested with the pause overlay.
+  the focus helper is tested with the pause overlay. **Appended 2026-10-30:** the owner approved a
+  page for such tests (DEC-111); `ClassSelectStep.viewDetails.test.tsx` runs in happy-dom and
+  covers the V press, the prompt click, the focus on Esc Back and its return on close. A side
+  button that closes the view no longer steps the browser's history (DEC-112).
 - **Developer chrome and pause.** The developer flag is the `?dev=1` query only, because
   `settings.developer.menuEnabled` does not exist yet. The free camera, the overview, the explorer
   toolbar and the map legend need it (DEC-32; INBOX HC-F8). The cathedral click and a "Leave
