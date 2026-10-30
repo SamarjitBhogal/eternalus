@@ -1602,3 +1602,13 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 236ms"; "Documentation check
   passed."
 - Next step: merge into M2a (#39) and M4 (#40) and up the stack.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M1 (with `phase/2-sprint-2-work`, the M1 CodeRabbit fixes and
+  the `GameState.recordSpawnRequest` counter guard) into PR #40 and answered its CodeRabbit
+  threads. Spawn-wave validation landed in M2a (PR #39) and reaches M4 through the merge order.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  661 passed (661)"; client "Tests 415 passed (415)"; "✓ built in 229ms"; "Documentation check
+  passed."
+- Next step: merge into M8 (#47) after M3.
