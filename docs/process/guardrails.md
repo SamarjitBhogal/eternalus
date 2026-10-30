@@ -4,7 +4,7 @@ description: Every automated guardrail in the repository (TypeScript, ESLint, kn
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [process, guardrails, ci, tooling]
 paths:
   [
@@ -54,7 +54,7 @@ human and every AI tool. Everything else is policy, checked in review.
 | Lockfile in sync           | `npm ci` fails if `package-lock.json` doesn't match `package.json`                                                                                 | npm (CI install step)                              | `.github/workflows/ci.yml`                                         | `npm ci can only install packages when your package.json and package-lock.json are in sync`                        | Run `npm install` and commit both files; never hand-edit the lockfile                |
 | Exact versions / engines   | `save-exact`, `engine-strict`, `packageManager`                                                                                                    | npm                                                | `.npmrc`, `package.json`                                           | `EBADENGINE Unsupported engine`                                                                                    | Switch to the Node version in `.nvmrc`                                               |
 | Pre-PR gate                | After the Definition of done: independent critic, ponytail pass, `npm run check` re-run, then the PR                                               | Review (no hook); PR template checklist            | `AGENTS.md`, ADR 0010, `.github/pull_request_template.md`          | PR opened without the gate results in its description                                                              | Run the gate; record critic verdict, ponytail cuts and the check                     |
-| CodeRabbit review          | Every PR reviewed by the `pr-review` skill; blocker check fails on guardrail weakening or agent product decisions; auto approve or request changes | CodeRabbit GitHub app                              | `.coderabbit.yaml`, ADR 0018                                       | CodeRabbit requests changes; pre-merge check "pr-review skill verdict" fails                                       | Fix the finding, resolve the thread; only requested reviewers can override the check |
+| CodeRabbit review          | Every ready PR reviewed by the `pr-review` skill; blocker check fails on guardrail weakening or decisions without a sign-off; never approves       | CodeRabbit GitHub app                              | `.coderabbit.yaml`, ADR 0018                                       | CodeRabbit requests changes; pre-merge check "pr-review skill verdict" fails                                       | Fix the finding; decisions need the product owner's own sign-off; no author override |
 | Ponytail level and scope   | Ponytail at `lite`; subagent injection limited to coding subagents                                                                                 | Claude Code plugin `ponytail@ponytail` + env       | `.claude/settings.json` (`env`), ADR 0010                          | Reviewer or doc agent output shaped by ponytail                                                                    | Check `PONYTAIL_SUBAGENT_MATCHER`; never widen it to reviewers                       |
 | Doc longevity              | Design docs state intent, name value sources, keep interim state in one status note; records never rewritten                                       | Review (no tool); OG-12 guard on bulk edits        | `docs/requirements/03-organization-guidelines.md` OG-12, ADR 0011  | Copied tuning numbers, a target design replaced by interim code, a rewritten record                                | Revert the edit; state the rule and point at the source                              |
 
@@ -113,8 +113,10 @@ protection rule (or ruleset) for `main`:
 - Require the CI status checks to pass (`npm run check (ubuntu-latest)`, `(windows-latest)`).
 - Block force pushes and deletions.
 - Require linear history; allow squash merge only.
-- Require the same CI checks on `phase/*`, since CodeRabbit can approve PRs into them.
-- On `main`, require review from Code Owners: CodeRabbit's approval counts toward the required
-  approval and `.github/CODEOWNERS` lists only people, so a phase PR still needs a teammate.
-- On `phase/*`, require a PR with 1 approval and Code Owner review off, so CodeRabbit's approval
-  can merge a task PR (ADR 0018).
+- Require the same CI checks and a PR with 1 approval on `phase/*`.
+- On `main` and `phase/*`, require review from Code Owners. `.github/CODEOWNERS` lists only
+  people, so a person approves every PR. A PR can edit `.coderabbit.yaml` to make CodeRabbit
+  approve, but that approval never counts as a Code Owner review (ADR 0018).
+- Only after that, turn on "Allow GitHub Actions to create and approve pull requests"
+  (Settings → Actions → General → Workflow permissions), so the CodeRabbit learnings workflow
+  can open its docs PR (ADR 0018). Without Code Owner review, a workflow's approval would count.

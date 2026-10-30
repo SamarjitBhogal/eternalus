@@ -10,6 +10,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The CodeRabbit learnings workflow starts CI this way: its pushes start no workflow (ADR 0018).
+  workflow_dispatch:
 
 permissions:
   contents: read
