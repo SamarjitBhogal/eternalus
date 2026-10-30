@@ -199,6 +199,8 @@ export const STRINGS = {
     captureProgress: 'Capture progress',
     noData: '—',
     emptySlot: 'empty',
+    /** A structure tile's state once its structure is destroyed (DEC-69). */
+    destroyed: 'destroyed',
     ready: 'ready',
     notReady: 'not ready',
     /** Objective shield letters in lane order (65:620, 65:613, 65:617); past the end, `index + 1`. */
