@@ -203,8 +203,8 @@ export const laneMinionAggro = {
 } satisfies AggroRuleDefinition;
 ```
 
-Ghosted first wave (**MVP-if-time**, `Recommendation:`; built in minion plan M5b, shipped off):
-while `ghostFirstWaveTicks` runs after the countdown, minions ignore Legends as targets, so the three opening hordes meet mid-lane before
+Ghosted first wave (**MVP-if-time**, `Recommendation:`): while `ghostFirstWaveTicks` runs after
+the countdown, minions ignore Legends as targets, so the three opening hordes meet mid-lane before
 a Legend can bait them. Minion strength scaling with distance from home and the "enraged" buff
 after a structure falls (game doc) are `CombatSystem`/`StatusEffectSystem` content, not AI.
 

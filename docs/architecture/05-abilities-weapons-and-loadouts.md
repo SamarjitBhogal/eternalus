@@ -520,7 +520,8 @@ status event: `apply` (by id) emits `status-applied`; `remove` ends a status ear
 and `expire`, called by `StatusEffectSystem`, removes the timed-out ones, both with
 `status-expired`. `DefaultSystemPipeline` loads the statuses for the match's config and builds the
 one applier, next to the one `DamagePipeline`, so later producers (turret concussion 2.3, gate
-fire 2.4, enraged 3.3) receive it there.
+fire 2.4, enraged 3.3) receive it there. Minion plan M5b adds `veteran` and `rallied` (minion XP,
+MS-16, `balancing.md`), applied by `VeterancySystem`.
 `periodic.effects` are `StatusTickSpec`s shaped like `AbilityEffectSpec`, run by `StatusTickEffect`
 strategies (`combat/defaultStatusTickEffects.ts`, `DamageStatusTick`) until the `AbilityRegistry`
 lands; their damage goes through the match's one `DamagePipeline` with `kind: 'status'`, crediting

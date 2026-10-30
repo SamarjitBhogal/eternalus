@@ -8,6 +8,7 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
+import { VETERAN } from '../content/status-effects/veteran';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
@@ -43,8 +44,21 @@ const setUp = () => {
     memberIds: [killer.id, neighbour.id, far.id],
     progress: 0,
   });
-  const kill = () => {
+  let hordes = 1;
+  const kill = (isMinion = true) => {
     const victim = add('dark', 51);
+    if (isMinion) {
+      hordes += 1;
+      state.hordes.add({
+        id: `horde-${String(hordes)}`,
+        team: 'dark',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [victim.id],
+        progress: 0,
+      });
+    }
     victim.getComponent(Health).applyDamage(1e6);
     state.events.emit('entity-died', {
       entityId: victim.id,
@@ -99,19 +113,43 @@ describe('VeterancySystem', () => {
     expect(statusesOf(killer).map(([id]) => id)).not.toContain('rallied');
   });
 
-  it('ignores kills by a unit in no horde and kills of a structure-free non-mob victim', () => {
-    const { state, enemy, step } = setUp();
-    const victim = state.entities.get(enemy.id);
+  it('counts only kills of lane minions by lane minions', () => {
+    const { state, killer, enemy, kill, step } = setUp();
+    kill(false); // a mob in no horde: a guard or camp mob
     state.events.emit('entity-died', {
-      entityId: 'entity-404',
+      entityId: killer.id,
       killer: { attackerId: enemy.id, kind: 'weapon', definitionId: 'light-minion' },
-    });
-    state.events.emit('entity-died', {
-      entityId: enemy.id,
-      killer: { attackerId: null, kind: 'environment', definitionId: 'rift' },
     });
     step();
 
-    expect(victim?.findComponent(Veterancy)).toBeUndefined();
+    expect(killer.findComponent(Veterancy)).toBeUndefined();
+    expect(enemy.findComponent(Veterancy)).toBeUndefined();
+  });
+
+  it('stops at the level cap, with one veteran stack per level', () => {
+    const { killer, kill, step } = setUp();
+    for (let count = 0; count < 2 * MINION_VETERANCY.maxLevel + 2; count += 1) {
+      kill();
+    }
+    step();
+
+    expect(killer.getComponent(Veterancy).level).toBe(MINION_VETERANCY.maxLevel);
+    expect(killer.getComponent(Health).max).toBeCloseTo(
+      150 * (1 + 0.1 * MINION_VETERANCY.maxLevel),
+    );
+    expect(statusesOf(killer)).toContainEqual(['veteran', MINION_VETERANCY.maxLevel]);
+    // The veteran status caps its stacks where the levels stop.
+    expect(VETERAN.maxStacks).toBe(MINION_VETERANCY.maxLevel);
+  });
+
+  it('spreads the aura only on its cadence', () => {
+    const { state, neighbour, kill, step } = setUp();
+    kill();
+    kill();
+    state.advanceTick(); // tick 1: off the cadence (every 15 ticks)
+
+    step();
+
+    expect(statusesOf(neighbour)).toEqual([]);
   });
 });
