@@ -29,7 +29,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
     const gap = sqrt(dx * dx + dy * dy);
     const isThere = gap <= arrivalRadius;
     const { flow } = context;
-    // The lane flow field takes over where the straight line to the slot is blocked (MS-19).
+    // The lane flow field takes over where the straight line to the target is blocked (MS-19).
     const isRouted =
       !isThere &&
       flow !== null &&

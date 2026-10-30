@@ -2155,3 +2155,50 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   765 passed (765)"; client "Tests 417 passed (417)"; "✓ built in 159ms"; "Documentation check
   passed."
 - Next step: review and merge after M3.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PRs #43 and #47. Doc 18 §7.1 no longer says
+  `GuardWithinLeashInvariant` covers camp mobs and defenders unchanged (doc 15 defines it for tower
+  guards; extending it is M6 work, defenders wait on §10 item 4). The minion plan's M6 blockers add
+  the owner's answer on the defenders' leash and unowned-point team; its description and purpose
+  exclude turrets as well as bosses, matching the coverage table. Docs index regenerated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 159ms"; "Documentation check
+  passed."
+- Next step: merge up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #44 (and the critic's follow-ups). A chasing minion no
+  longer follows the lane flow field, which leads to the lane's end, not to its target:
+  `PathingSystem` hands the strategy no field while a member has an attack target. Regression test
+  (upstream target across the blocked lane's rift) fails on the old code. Doc 18 §5.2 says so; a
+  `ponytail:` remark names the ceiling (terrain between chaser and target can stall it; A* to the
+  target replaces it). Merged the enemy-AI plan's latest doc fixes.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  715 passed (715)"; client "Tests 415 passed (415)"; "✓ built in 161ms"; "Documentation check
+  passed."
+- Next step: merge into M5a (#45) and M3 (#46).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m3-bot-laners — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #46. `Simulation` now refuses a roster whose team has more
+  Legends than `match.legendsPerTeam`, before anything spawns (five lanes of `legendsPerLane` 3
+  held 11 laners against a cap of 10); test in `Simulation.bots.test.ts`. Merged M2b's chase fix.
+  The `packages/core/AGENTS.md` import-boundary thread still needs the owner's sign-off.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  741 passed (741)"; client "Tests 416 passed (416)"; "✓ built in 179ms"; "Documentation check
+  passed."
+- Next step: owner sign-off; merge into M8 (#47).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M3 (#46) into PR #47: M2b's chase fix (no lane field while
+  chasing), M3's roster cap and the enemy-AI plan's doc fixes, which also answer #47's CodeRabbit
+  thread (the plan's scope now excludes turrets as well as bosses). The plan table keeps M8's row
+  (`PathQuery`) and the new M6 blockers; the new chase test uses M8's `GameState` indexes object.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  766 passed (766)"; client "Tests 417 passed (417)"; "✓ built in 169ms"; "Documentation check
+  passed."
+- Next step: review and merge after M3.

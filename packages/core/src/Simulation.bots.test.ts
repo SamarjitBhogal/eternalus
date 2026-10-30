@@ -16,9 +16,15 @@ const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
     difficulty: 'normal',
   }));
 
-const match = (roster: readonly RosterSlot[], withMap = true) =>
+const match = (
+  roster: readonly RosterSlot[],
+  withMap = true,
+  legendsPerTeam = createDefaultGameConfig().match.legendsPerTeam,
+) =>
   new Simulation({
-    config: createDefaultGameConfig({ match: { initialHordesPerTeam: 2, countdownSeconds: 600 } }),
+    config: createDefaultGameConfig({
+      match: { initialHordesPerTeam: 2, countdownSeconds: 600, legendsPerTeam },
+    }),
     seed: 1,
     logger: new MemoryLogger(),
     debug: TEST_DEBUG_CONFIG,
@@ -60,6 +66,8 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     expect(() => match(laners('light', 1), false)).toThrow('A roster needs a map');
     // Two lanes of `legendsPerLane` 3 hold six laners a team.
     expect(() => match(laners('dark', 7))).toThrow('7 bot laners do not fit');
+    // Five laners fit on the lanes but not under a team cap of four.
+    expect(() => match(laners('light', 5), true, 4)).toThrow('match.legendsPerTeam allows 4');
     expect(() =>
       match([{ team: 'light', definitionId: 'warrior', role: 'laner', difficulty: 'nightmare' }]),
     ).toThrow('AI profile "nightmare"');
