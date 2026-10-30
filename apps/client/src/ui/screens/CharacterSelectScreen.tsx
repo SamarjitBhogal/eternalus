@@ -24,8 +24,9 @@ const SELECTION_STEPS: Readonly<Record<SelectionStep, ComponentType<SelectionSte
 };
 
 /**
- * Vignettes per step: 62:125 and 62:70 darken both edges, 58:271 only the bottom. The locked view
- * keeps the Legend step's (DEC-60: LOCK IN "keeps the user on their selected character screen").
+ * Vignettes per step: 62:125 and 62:70 darken both edges, 58:271 only the bottom.
+ * Recommendation: the locked view keeps the Legend step's, as LOCK IN "keeps the user on their
+ * selected character screen" (DEC-60); its layout is not in the owner's Figma.
  */
 const STEP_VIGNETTES: Readonly<Record<SelectionStep, readonly VignetteEdge[]>> = {
   class: ['top', 'bottom'],
