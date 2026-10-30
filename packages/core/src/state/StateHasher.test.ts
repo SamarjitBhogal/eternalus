@@ -178,11 +178,18 @@ describe('StateHasher', () => {
     const otherMemory = hasher.hash(state);
     state.ai.set('entity-1', { ...brain, rngState: new SeededRandom(4).getState() });
     const otherRng = hasher.hash(state);
+    state.ai.set('entity-1', { ...brain, controllerId: 'guard' });
+    const otherController = hasher.hash(state);
+    state.ai.set('entity-1', { ...brain, profileId: 'other' });
+    const otherProfile = hasher.hash(state);
     state.ai.set('entity-1', brain);
     state.ai.defer(['entity-1']);
     const deferred = hasher.hash(state);
 
-    expect(new Set([without, withBrain, otherMemory, otherRng, deferred]).size).toBe(5);
+    expect(
+      new Set([without, withBrain, otherMemory, otherRng, otherController, otherProfile, deferred])
+        .size,
+    ).toBe(7);
   });
 
   describe('hordes', () => {

@@ -1633,3 +1633,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   641 passed (641)"; client "Tests 415 passed (415)"; "✓ built in 319ms"; "Documentation check
   passed."
 - Next step: merge up the stack again.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: second CodeRabbit round on PR #39. Owner signed off `ai/` importing `content/`
+  types; architecture 11 §1 now matches 02 §2 and the core `AGENTS.md` (recorded in the PR
+  description). The brain hash test also varies `controllerId` and `profileId`. Merged M1's
+  living-unit cap fix.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  668 passed (668)"; client "Tests 415 passed (415)"; "✓ built in 179ms"; "Documentation check
+  passed."
+- Next step: merge up the stack again.
