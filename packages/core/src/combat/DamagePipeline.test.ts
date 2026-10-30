@@ -5,20 +5,25 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import type { MapDefinition } from '../content/maps/maps.types';
+import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { DamagePipeline } from './DamagePipeline';
 import type { DamageSource } from '../state/GameEvents.types';
 
 const SOURCE: DamageSource = { attackerId: 'entity-9', kind: 'weapon', definitionId: 'sword' };
 
-const setUp = (): GameState => {
-  const state = new GameState(createDefaultGameConfig(), 1);
+const setUp = (map: MapDefinition | null = null): GameState => {
+  const state = new GameState(createDefaultGameConfig(), 1, map);
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(createDefaultGameConfig().tickRate),
   );
   state.entities.add(
     factory.create('light-mob', 'training-dummy', { position: { x: 0, y: 0 }, team: 'dark' }),
+  );
+  state.entities.add(
+    factory.create('light-mob', 'training-dummy', { position: { x: 0, y: 0 }, team: 'light' }),
   );
   return state;
 };
@@ -55,6 +60,18 @@ describe('DamagePipeline', () => {
     const died = state.events.recentEvents().filter((event) => event.type === 'entity-died');
     expect(died).toHaveLength(1);
     expect(died[0]?.payload).toEqual({ entityId: 'entity-1', killer: SOURCE });
+  });
+
+  it("counts a lethal hit, before the body is removed, as its team's ally damage (DEC-89)", () => {
+    const state = setUp(TWO_LANE_MAP);
+
+    new DamagePipeline().apply(state, 'entity-1', 1_000_000, { ...SOURCE, attackerId: 'entity-2' });
+
+    const counted: string[] = [];
+    state.allyDamage.forEach((team, lane, amount) => {
+      counted.push(`${team} ${lane} ${String(amount)}`);
+    });
+    expect(counted).toEqual([`dark lane-0 ${String(healthOf(state).max)}`]);
   });
 
   it('blocks a hit between teammates (friendly fire)', () => {

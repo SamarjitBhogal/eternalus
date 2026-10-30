@@ -160,13 +160,23 @@ export class SpawnSystem implements System {
         const lane =
           scheduled.lane === 'own-lane'
             ? (spawner.laneId ?? undefined)
-            : assessLanes(state, team, this.plan.weights);
+            : this.worstLane(state, team);
         if (lane !== undefined) {
           wave(team, position, lane, scheduled);
         }
       }
     }
     return due;
+  }
+
+  /**
+   * The lane `team`'s Stronghold heavy wave takes (18 §3.3). Picking it ends the team's ally-damage
+   * window, so its tally is cleared right after (DEC-89).
+   */
+  private worstLane(state: GameState, team: PlayableTeam): string | undefined {
+    const lane = assessLanes(state, team, this.plan.weights);
+    state.allyDamage.clear(team);
+    return lane;
   }
 
   /** Spawns one horde and its record in a grid around its origin, clipped to the unit cap. */

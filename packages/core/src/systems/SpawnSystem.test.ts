@@ -210,6 +210,26 @@ describe('SpawnSystem', () => {
     expect(() => newSystem(state, factory, plan)).toThrow(message);
   });
 
+  it('sends the heavy horde down the lane its allies were hurt on, then clears that team’s tally (DEC-89)', () => {
+    const { state, spawned, runTo } = setUp({ match: { initialHordesPerTeam: 0 } });
+    // Dark's Stronghold is down, so only Light sends a heavy horde and only Light's tally clears.
+    state.entities.forEach((entity) => {
+      if (entity.kind === 'stronghold' && state.entities.teamOf(entity.id) === 'dark') {
+        entity.getComponent(Health).applyDamage(1e6);
+      }
+    });
+    state.allyDamage.add('light', 'lane-0', 40);
+    state.allyDamage.add('dark', 'lane-1', 25);
+
+    runTo(2 * TICK_RATE);
+
+    const heavies = spawned.filter(({ memberIds }) => memberIds.length === 4);
+    // Without the tally Light would tie on both lanes and take the middle one, lane-1.
+    expect(summary(heavies)).toEqual(['light lane-0 4']);
+    expect(state.allyDamage.share('light', 'lane-0')).toBe(0);
+    expect(state.allyDamage.share('dark', 'lane-1')).toBe(1);
+  });
+
   it('stops a destroyed tower’s waves', () => {
     const { state, runTo } = setUp({ match: { initialHordesPerTeam: 0 } });
     state.entities.forEach((entity) => {

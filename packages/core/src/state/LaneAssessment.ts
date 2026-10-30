@@ -3,32 +3,27 @@ import type { LaneAssessmentWeights } from '../content/ai/ai.types';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { GameState } from './GameState';
 
-/** The enemy's lane structures' remaining health over their starting total; 1 with none. */
-const damageNotDealt = (state: GameState, lane: string, enemy: PlayableTeam): number => {
+/** The share of `team`'s own lane structures' starting health they have lost; 0 with none. */
+const structureDamageTaken = (state: GameState, lane: string, team: PlayableTeam): number => {
   let remaining = 0;
   let starting = 0;
-  for (const { id, startingHealth } of state.laneStructures.onLane(lane, enemy)) {
+  for (const { id, startingHealth } of state.laneStructures.onLane(lane, team)) {
     starting += startingHealth;
     remaining += state.entities.get(id)?.findComponent(Health)?.total ?? 0;
   }
-  return starting === 0 ? 1 : Math.min(1, remaining / starting);
-};
-
-/** The share of `team`'s lane structures already destroyed; 0 with none. */
-const structuresLost = (state: GameState, lane: string, team: PlayableTeam): number => {
-  const own = state.laneStructures.onLane(lane, team);
-  const lost = own.filter(({ id }) => !state.entities.isAlive(id)).length;
-  return own.length === 0 ? 0 : lost / own.length;
+  return starting === 0 ? 0 : Math.max(0, 1 - remaining / starting);
 };
 
 /**
- * The lane where `team` is worst off (MS-9, architecture 18 §3.3): the highest weighted score of
- * structure damage not dealt, structures lost and how far enemy hordes have pushed past the
- * lane's midpoint. Ties go to the lane nearest the middle (`floor(numLanes / 2)` by index), then
+ * The lane where `team` is struggling most (MS-9, DEC-89, architecture 18 §3.3): the highest
+ * weighted score of the damage its own lane structures took, how far enemy hordes have pushed
+ * past the lane's midpoint and the lane's share of the damage its Legends and mobs took since its
+ * last heavy wave. Ties go to the lane nearest the middle (`floor(numLanes / 2)` by index), then
  * to the lower index, so at match start it is the middle lane. Reads only `state`; O(lanes ×
- * hordes).
- * Structure terms read `state.laneStructures` (the lane's towers and gate at match start) and
- * each one's current `Health.total`; a destroyed structure counts as 0 remaining.
+ * (hordes + lanes)).
+ * The structure term reads `state.laneStructures` (the lane's towers and gate at match start) and
+ * each one's current `Health.total`; a destroyed structure counts as 0 remaining. The ally term
+ * reads `state.allyDamage`.
  *
  * @returns The lane's `MapLane.id`, or `undefined` for a match without a map.
  */
@@ -54,9 +49,9 @@ export const assessLanes = (
     });
     const pushedBack = half === 0 ? 0 : Math.max(0, deepest - half) / half;
     const score =
-      weights.damageNotDealt * damageNotDealt(state, lane.id, team === 'light' ? 'dark' : 'light') +
-      weights.structuresLost * structuresLost(state, lane.id, team) +
-      weights.pushedBack * pushedBack;
+      weights.structureDamageTaken * structureDamageTaken(state, lane.id, team) +
+      weights.pushedBack * pushedBack +
+      weights.alliesHurt * state.allyDamage.share(team, lane.id);
     const offMiddle = Math.abs(lane.index - middle);
     // Lanes come in ascending index, so a strict comparison keeps the lower index on a full tie.
     if (

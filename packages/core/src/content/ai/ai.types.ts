@@ -41,11 +41,11 @@ export type HordeSteeringProfile = {
   readonly spawnColumns: number;
 };
 
-/** The weights of the lane assessment (architecture 18 §3.3); each term runs from 0 to 1. */
+/** The weights of the lane assessment (architecture 18 §3.3, DEC-89); each term runs from 0 to 1. */
 export type LaneAssessmentWeights = {
-  readonly damageNotDealt: number;
-  readonly structuresLost: number;
+  readonly structureDamageTaken: number;
   readonly pushedBack: number;
+  readonly alliesHurt: number;
 };
 
 /** The classes the aggro priority list names (architecture 11 §4.3). */

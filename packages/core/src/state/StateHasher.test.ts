@@ -284,4 +284,36 @@ describe('StateHasher', () => {
       expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
     });
   });
+
+  describe('ally damage (DEC-89)', () => {
+    const withTally = (...tallies: readonly ['light' | 'dark', string, number][]): number => {
+      const { state } = stateWithSoldier();
+      for (const [team, lane, amount] of tallies) {
+        state.allyDamage.add(team, lane, amount);
+      }
+      return hasher.hash(state);
+    };
+
+    it('hashes the same tallies the same, and a cleared tally as none', () => {
+      const { state } = stateWithSoldier();
+      const none = hasher.hash(state);
+      state.allyDamage.add('dark', 'lane-1', 9);
+      state.allyDamage.clear('dark');
+
+      expect(withTally(['light', 'lane-0', 5])).toBe(withTally(['light', 'lane-0', 5]));
+      expect(hasher.hash(state)).toBe(none);
+    });
+
+    it('changes with the team, the lane and the amount of a tally', () => {
+      const hashes = [
+        hasher.hash(stateWithSoldier().state),
+        withTally(['light', 'lane-0', 5]),
+        withTally(['dark', 'lane-0', 5]),
+        withTally(['light', 'lane-1', 5]),
+        withTally(['light', 'lane-0', 6]),
+      ];
+
+      expect(new Set(hashes).size).toBe(5);
+    });
+  });
 });

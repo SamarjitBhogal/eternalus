@@ -8,6 +8,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
 import { AiState } from './AiState';
+import { AllyDamageStore } from './AllyDamageStore';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
@@ -36,6 +37,8 @@ export class GameState {
   public readonly hordes = new HordeStore();
   /** Every structure's guard posts (architecture 18 §7). */
   public readonly guards = new GuardStore();
+  /** Each team's ally damage per lane since its last heavy wave (DEC-89, architecture 18 §3.3). */
+  public readonly allyDamage = new AllyDamageStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<
@@ -87,6 +90,34 @@ export class GameState {
     this.events.on('xp-gained', (award) => {
       this.xpAwards.push(award);
     });
+    this.events.on('damage-applied', (hit) => {
+      this.countAllyDamage(hit);
+    });
+  }
+
+  /**
+   * Adds a hit on a playable team's Legend or mob to `allyDamage`, on the lane nearest the victim
+   * (DEC-89, architecture 18 §3.3). Only a hit from the victim's enemy team counts: not one with no
+   * attacker, or from a neutral (forest camp), removed or same-team attacker; nor any hit in a
+   * match without a map.
+   */
+  private countAllyDamage({ targetId, amount, source }: GameEventMap['damage-applied']): void {
+    const victim = this.entities.get(targetId);
+    const team = this.entities.teamOf(targetId);
+    const position = victim?.findComponent(Transform)?.position;
+    if (
+      (victim?.family !== 'legend' && victim?.family !== 'mob') ||
+      (team !== 'light' && team !== 'dark') ||
+      source.attackerId === null ||
+      this.entities.teamOf(source.attackerId) !== (team === 'light' ? 'dark' : 'light') ||
+      position === undefined
+    ) {
+      return;
+    }
+    const lane = this.routes?.nearestLane(position);
+    if (lane !== undefined) {
+      this.allyDamage.add(team, lane.id, amount);
+    }
   }
 
   /** The lane structures as they stood at match start (architecture 18 §6.2); empty until indexed. */
