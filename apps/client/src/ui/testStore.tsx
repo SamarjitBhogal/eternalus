@@ -115,7 +115,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
         specCardFixture({
           specId: 'catalyst',
           displayName: 'Catalyst',
-          // The Dark name is derived from the mirror rule, pending owner confirmation (INBOX HC-Q16).
+          // The Dark name follows the mirror rule; the owner confirmed it (DEC-58, INBOX HC-Q16).
           legendName: { light: 'Veridan', dark: 'Nadirev' },
           accentToken: '--legend-catalyst-accent',
           art: {
