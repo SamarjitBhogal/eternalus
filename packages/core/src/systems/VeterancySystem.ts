@@ -10,7 +10,7 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) that
- * kills a mob counts the kill in its `Veterancy`; each level it earns raises its max health by
+ * kills another lane minion counts the kill in its `Veterancy`; each level it earns raises its max health by
  * `healthPerLevel` of its base health (healing by the same) and adds a stack of the veteran
  * status. Every `aura.everySeconds`, each minion with a level gives the aura status to the other
  * friendly horde minions within `aura.radius`. Kills come from `entity-died`, counted on this
@@ -54,10 +54,12 @@ export class VeterancySystem implements System {
 
   private countKill(state: GameState, killerId: EntityId, victimId: EntityId): void {
     const killer = state.entities.get(killerId);
-    const isMobKill = state.entities.get(victimId)?.family === 'mob';
+    // "A minion that kills another minion" (game doc): the victim must be a lane minion too,
+    // still in its horde record this tick, so guards and camp mobs never count.
+    const isMinionKill = state.hordes.hordeOf(victimId) !== undefined;
     if (
       killer === undefined ||
-      !isMobKill ||
+      !isMinionKill ||
       !state.entities.isAlive(killerId) ||
       state.hordes.hordeOf(killerId) === undefined
     ) {

@@ -2012,5 +2012,10 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `AggroRuleDefinition.ghostFirstWaveTicks` read by `LeashBehaviour.rankOf`, shipped at 0 (off).
   Tower Guardians not built (ranged attacks and numbers missing; `INBOX.md`). Docs 11 and 18
   updated.
-- Checks run: see the pre-PR gate line below.
+- Pre-PR gate: critic approve, no blockers; should-fixes applied (only kills of lane minions count,
+  per the game doc; tests for the level cap, non-minion victims and the aura cadence; a hasher test
+  for `Veterancy`; doc 05's status note; doc 11's design text restored). Ponytail: lean, no cuts.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  763 passed (763)"; client "Tests 416 passed (416)"; "✓ built in 153ms"; "Documentation check
+  passed."
 - Next step: M6.

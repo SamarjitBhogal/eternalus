@@ -7,6 +7,7 @@ import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { Veterancy } from '../components/Veterancy';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
@@ -110,6 +111,17 @@ describe('StateHasher', () => {
     const before = hasher.hash(state);
 
     collider.setUnbreakable(true);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when a minion counts a kill', () => {
+    const { state, soldier } = stateWithSoldier();
+    const veterancy = new Veterancy();
+    soldier.addComponent(veterancy);
+    const before = hasher.hash(state);
+
+    veterancy.recordKill(2, 3);
 
     expect(hasher.hash(state)).not.toBe(before);
   });
