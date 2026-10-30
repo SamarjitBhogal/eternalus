@@ -7,6 +7,7 @@ import { LEGEND_CLASSES } from '../../content/legends/legendCatalogue';
 import { Legend } from '../Legend';
 import { Unit } from '../Unit';
 import { Warrior } from './Warrior';
+import { loadWeapons } from '../../content/weapons/loadWeapons';
 
 describe('Warrior', () => {
   it('is a concrete legend of kind "warrior"', () => {
@@ -22,7 +23,7 @@ describe('Warrior', () => {
     const definition = LEGEND_CLASSES.get('warrior');
     const entity = new Warrior('entity-1', 'warrior');
 
-    entity.spawn({ definition, position: { x: 0, y: 0 }, team: 'light' });
+    entity.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: loadWeapons(30) });
 
     expect(entity.getComponent(Health).current).toBe(definition.baseHealth);
     expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);

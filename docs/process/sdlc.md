@@ -4,7 +4,7 @@ description: How Eternalus is delivered - phases, one-week sprints, task briefs,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-27
 tags: [process, sdlc, sprints, reviews]
 related:
   [
@@ -12,6 +12,7 @@ related:
     'docs/process/git-workflow.md',
     'docs/agents/checklists.md',
     'docs/requirements/05-engineering-standards.md',
+    'docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md',
   ]
 ---
 
@@ -70,7 +71,7 @@ docs + frontmatter + PROGRESS updated, PR opened against the phase branch.
 
 ## 4. Reviews
 
-- **Task PR**: one teammate approval; agent-written code gets a `pr-review` /
+- **Task PR**: one approval, a teammate's or CodeRabbit's (ADR 0018); agent-written code gets a `pr-review` /
   `architecture-reviewer` pass first (agents grade their own work generously).
 - **Architecture review**: any new folder, family, port or registry goes through
   checklist §3 before code is written, usually as a short design note in the PR or an ADR.

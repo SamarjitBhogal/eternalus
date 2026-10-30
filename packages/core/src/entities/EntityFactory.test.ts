@@ -101,4 +101,24 @@ describe('EntityFactory', () => {
       'Invalid entity registration for "factory-entity": constructor must create an Entity.',
     );
   });
+
+  it('forwards its weapon source in the spawn context', () => {
+    const registry = new EntityRegistry();
+    registry.register('factory-entity', FactoryEntity);
+    const weapons = new ContentCatalogue([]);
+    const factory = new EntityFactory(
+      registry,
+      new ContentCatalogue([DEFINITION]),
+      undefined,
+      weapons,
+    );
+
+    const entity = factory.create('factory-entity', 'factory-definition', PLACEMENT);
+
+    expect((entity as FactoryEntity).spawnPayload).toEqual({
+      ...PLACEMENT,
+      definition: DEFINITION,
+      weapons,
+    });
+  });
 });
