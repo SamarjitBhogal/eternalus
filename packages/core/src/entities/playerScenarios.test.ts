@@ -141,7 +141,7 @@ describe('Player scenarios', () => {
       }
 
       expect(sentinel.getComponent(Movement).speed).toBe(
-        UNIT_DEFINITIONS.get('sentinel').movement.maxSpeed,
+        UNIT_DEFINITIONS.get('sentinel').movementProfile.maxSpeed,
       );
     });
 

@@ -22,6 +22,22 @@ const contextOf = (points: readonly [number, number][], target: { x: number; y: 
   } satisfies MovementContext;
 };
 
+const NORTH_EAST = { x: 0.6, y: -0.8 };
+
+/** A lane field leading along `direction` everywhere, with a wall wherever `isBlocked` says. */
+const fieldWithWall = (
+  direction: { x: number; y: number },
+  isBlocked: (fromX: number, fromY: number, toX: number, toY: number) => boolean,
+) => ({
+  isLineClear: (fromX: number, fromY: number, toX: number, toY: number) =>
+    !isBlocked(fromX, fromY, toX, toY),
+  directionAt: (_x: number, _y: number, out: { x: number; y: number }) => {
+    out.x = direction.x;
+    out.y = direction.y;
+    return true;
+  },
+});
+
 const strategy = new LaneFollowMovementStrategy(HORDE_STEERING);
 
 describe('LaneFollowMovementStrategy', () => {
@@ -49,6 +65,25 @@ describe('LaneFollowMovementStrategy', () => {
 
     expect(steer.x).toBeLessThan(0);
     expect(steer.y).toBe(0);
+  });
+
+  it('weights the push 1/r, shifted to reach 0 at the separation radius (10 §9)', () => {
+    const { separationRadius: radius, separationWeight: weight } = HORDE_STEERING;
+    const pushAt = (apart: number) =>
+      strategy.desiredVelocity(
+        0,
+        contextOf(
+          [
+            [10, 10],
+            [10 + apart, 10],
+          ],
+          { x: 10, y: 10 },
+        ),
+      ).x;
+
+    // weight × (radius / apart − 1): the weight at half the radius, three times it at a quarter.
+    expect(pushAt(radius / 2)).toBeCloseTo(-weight);
+    expect(pushAt(radius / 4)).toBeCloseTo(-3 * weight);
   });
 
   it('drops a steer shorter than minSteer, so a settled horde stands still', () => {
@@ -145,6 +180,52 @@ describe('LaneFollowMovementStrategy', () => {
 
     expect(strategy.desiredVelocity(0, behind)).toEqual({ x: 0, y: 0 });
     expect(strategy.desiredVelocity(0, ahead).x).toBeLessThan(0);
+  });
+
+  it('turns a heading that meets a wall along it, larger open axis first, chase or march', () => {
+    // The field leads north-east from (10, 10) and the slot is out of sight, so the march is routed.
+    const eastWall = fieldWithWall(NORTH_EAST, (fromX, _fromY, toX) => toX > fromX + 1);
+    const northWall = fieldWithWall(NORTH_EAST, (_fromX, fromY, _toX, toY) => toY < fromY - 1);
+    // Only the corner ahead is blocked, so both axes are open and the larger one wins.
+    const corner = fieldWithWall(
+      NORTH_EAST,
+      (fromX, fromY, toX, toY) => toX > fromX + 1 && toY < fromY - 1,
+    );
+    const march = contextOf([[10, 10]], { x: 40, y: -20 });
+    // A chase north with a clear line, until a neighbour just west of it pushes the heading east,
+    // into the wall: it turns back north, along the wall, rather than hold.
+    const chase = {
+      ...contextOf(
+        [
+          [10, 10],
+          [9.3, 10],
+        ],
+        { x: 10, y: 4 },
+      ),
+      isChasing: true,
+      arrivalRadius: 1,
+      flow: eastWall,
+    };
+
+    expect(strategy.desiredVelocity(0, { ...march, flow: eastWall })).toEqual({ x: 0, y: -0.8 });
+    expect(strategy.desiredVelocity(0, { ...march, flow: northWall })).toEqual({ x: 0.6, y: 0 });
+    expect(strategy.desiredVelocity(0, { ...march, flow: corner })).toEqual({ x: 0, y: -0.8 });
+    expect(strategy.desiredVelocity(0, chase)).toEqual({ x: 0, y: -1 });
+  });
+
+  it('keeps a march going where no axis is open, or the open one is under minSteer', () => {
+    // Holding the march would strand it there for good; the wall cells' field leads it back out
+    // (architecture 10 §9). East of a steep heading is open, but too weak to turn to.
+    const steep = { x: 0.2, y: -0.98 };
+    const march = contextOf([[10, 10]], { x: 40, y: -20 });
+    const walled = { ...march, flow: fieldWithWall(NORTH_EAST, () => true) };
+    const northWall = {
+      ...march,
+      flow: fieldWithWall(steep, (_fromX, fromY, _toX, toY) => toY < fromY - 1),
+    };
+
+    expect(strategy.desiredVelocity(0, walled)).toEqual(NORTH_EAST);
+    expect(strategy.desiredVelocity(0, northWall)).toEqual(steep);
   });
 
   it('closes on a target in front of blocked ground, checking no farther than the target', () => {

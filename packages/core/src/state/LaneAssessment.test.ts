@@ -5,6 +5,7 @@ import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
 import { GameState } from './GameState';
+import { matchWorldOf } from './__fixtures__/matchWorld';
 import type { PlayableTeam } from '../teams/teams.types';
 import { assessLanes } from './LaneAssessment';
 
@@ -22,7 +23,7 @@ const mapWithLanes = (count: number): MapDefinition => ({
 });
 
 const stateWith = (lanes: number, hordes: readonly [string, PlayableTeam, number][]) => {
-  const state = new GameState(createDefaultGameConfig(), 1, mapWithLanes(lanes));
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(mapWithLanes(lanes)));
   hordes.forEach(([lane, team, progress], index) => {
     state.hordes.add({
       id: `horde-${String(index)}`,

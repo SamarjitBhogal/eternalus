@@ -25,7 +25,7 @@ const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
       if (definition.controller !== 'minion') {
         return definition;
       }
-      const { id, kind, displayName, baseHealth, footprintRadius, visionRadius, movement } =
+      const { id, kind, displayName, baseHealth, footprintRadius, visionRadius, movementProfile } =
         definition;
       const marcher: UnitDefinition = {
         id,
@@ -34,7 +34,7 @@ const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
         baseHealth,
         footprintRadius,
         visionRadius,
-        movement,
+        movementProfile,
         ...(definition.movementStrategy === undefined
           ? {}
           : { movementStrategy: definition.movementStrategy }),
@@ -44,14 +44,13 @@ const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
 );
 
 /**
- * A match on `map` whose countdown outlasts the test, so only the opening hordes march; with
- * `isMarchingOnly`, minions never fight.
+ * A match on `map`: one opening horde per lane and team at tick 0, and the first wave 120 s after
+ * the countdown (DEC-87), so a test that stops before 120 s (tick 3,600) sees only the opening
+ * hordes; with `isMarchingOnly`, minions never fight.
  */
 const match = (map: MapDefinition, seed = 1, isMarchingOnly = false) => {
   const logger = new MemoryLogger();
-  const config = createDefaultGameConfig({
-    match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
-  });
+  const config = createDefaultGameConfig();
   const simulation = new Simulation({
     config,
     seed,
@@ -78,11 +77,10 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     // Lanes are 160 m long and light minions walk 3.5 m/s: about 46 s, so 60 s is plenty.
     run(simulation, 60 * 30);
 
-    expect(spawned).toEqual(['light lane-0', 'light lane-1', 'dark lane-0', 'dark lane-1']);
+    expect(spawned).toEqual(['dark lane-0', 'dark lane-1', 'light lane-0', 'light lane-1']);
     const minions = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
-    expect(minions).toHaveLength(
-      2 * config.match.initialHordesPerTeam * config.match.hordeSizes[OPENING_WAVE.weightClass],
-    );
+    // Two teams, two lanes, one opening horde of `hordeSizes.light` each.
+    expect(minions).toHaveLength(2 * 2 * config.match.hordeSizes[OPENING_WAVE.weightClass]);
     const near = (x: number) => (minion: (typeof minions)[number]) =>
       Math.abs((minion.transform?.x ?? 0) - x) < 15;
     expect(minions.filter(({ team }) => team === 'light').every(near(180))).toBe(true);
@@ -152,18 +150,23 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     }
   });
 
-  it('spawns the opening hordes of the generated map at its Strongholds', () => {
-    const config = createDefaultGameConfig();
-    const map = new MapGenerator().generate(config, 1);
-    const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map });
+  it.each([
+    [3, 48],
+    [5, 80],
+  ])(
+    'spawns one opening horde per lane on the generated map: %i lanes, %i light mobs a team (FR-004)',
+    (numLanes, perTeam) => {
+      const config = createDefaultGameConfig({ map: { numLanes } });
+      const map = new MapGenerator().generate(config, 1);
+      const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map });
 
-    simulation.step();
+      simulation.step();
 
-    const minions = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
-    expect(minions).toHaveLength(
-      2 * config.match.initialHordesPerTeam * config.match.hordeSizes.light,
-    );
-  });
+      const minions = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
+      expect(minions.filter(({ team }) => team === 'light')).toHaveLength(perTeam);
+      expect(minions.filter(({ team }) => team === 'dark')).toHaveLength(perTeam);
+    },
+  );
 
   it('fights when opposing hordes meet: kills on both sides, invariants clean (M2b)', () => {
     const { simulation, logger } = match(TWO_LANE_MAP);
@@ -174,10 +177,8 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
 
     run(simulation, 60 * 30);
 
-    const { initialHordesPerTeam, hordeSizes } = createDefaultGameConfig({
-      match: { initialHordesPerTeam: 2 },
-    }).match;
-    const opened = initialHordesPerTeam * hordeSizes.light;
+    // The two opening hordes of each team; the first wave is 120 s after the countdown (DEC-87).
+    const opened = 2 * createDefaultGameConfig().match.hordeSizes.light;
     expect(alive('light')).toBeLessThan(opened);
     expect(alive('dark')).toBeLessThan(opened);
     expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
@@ -207,13 +208,13 @@ const gridOf = (map: MapDefinition, config: GameConfig): WorldMap =>
   );
 
 /**
- * A match with one opening horde per lane and team, and no later waves; with `isMarchingOnly`,
- * minions never fight, so every mob is still alive at the end of a march.
+ * A match with one opening horde per lane and team at tick 0 and the DISC-10 waves from 120 s
+ * after the countdown (DEC-87); with `isMarchingOnly`, minions never fight, so every mob is still
+ * alive at the end of a march.
  */
 const laneMatch = (map: MapDefinition, numLanes: number, isMarchingOnly = false) => {
   const config = createDefaultGameConfig({
     map: { numLanes, campsPerSide: numLanes === 1 ? 0 : 6 },
-    match: { initialHordesPerTeam: numLanes, countdownSeconds: 6000 },
   });
   const logger = new MemoryLogger();
   const simulation = new Simulation({
@@ -227,9 +228,10 @@ const laneMatch = (map: MapDefinition, numLanes: number, isMarchingOnly = false)
 };
 
 /**
- * Runs `ticks` ticks and returns how far the farthest mob ends from its enemy end, and the share
- * of samples (every 10 ticks) that found a mob on unwalkable ground after it first stood on
- * walkable ground (the Stronghold hordes spawn inside the Stronghold's footprint).
+ * Runs `ticks` ticks and returns how many opening-horde mobs (those of tick 0) there are and how
+ * far the farthest of them ends from its enemy end (later waves are still on their way), and the
+ * share of samples (every 10 ticks) that found any mob on unwalkable ground after it first stood
+ * on walkable ground.
  */
 const march = (map: MapDefinition, numLanes: number, ticks: number) => {
   const { config, logger, simulation } = laneMatch(map, numLanes, true);
@@ -237,8 +239,12 @@ const march = (map: MapDefinition, numLanes: number, ticks: number) => {
   const hasLeft = new Set<string>();
   let samples = 0;
   let offGround = 0;
+  let opening: ReadonlySet<string> = new Set();
   for (let tick = 0; tick < ticks; tick += 1) {
     simulation.step();
+    if (tick === 0) {
+      opening = new Set(simulation.snapshot().entities.map(({ id }) => id));
+    }
     if (tick % 10 !== 0) {
       continue;
     }
@@ -256,7 +262,9 @@ const march = (map: MapDefinition, numLanes: number, ticks: number) => {
       }
     }
   }
-  const mobs = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
+  const mobs = simulation
+    .snapshot()
+    .entities.filter(({ id, family }) => family === 'mob' && opening.has(id));
   const farthest = Math.max(
     ...mobs.map(({ team, transform }) =>
       Math.min(

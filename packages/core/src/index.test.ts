@@ -44,7 +44,16 @@ describe('@eternalus/core public API', () => {
       logger: new core.NullLogger(),
     });
     sim.step();
-    expect(sim.snapshot()).toEqual({ tick: 1, phase: 'countdown', entities: [] });
+    expect(sim.snapshot()).toEqual({
+      tick: 1,
+      phase: 'countdown',
+      entities: [],
+      hordes: [],
+      teams: {
+        light: { unitsRequested: 0, unitsSuppressed: 0 },
+        dark: { unitsRequested: 0, unitsSuppressed: 0 },
+      },
+    });
   });
 
   it('builds a default config that passes validation', () => {

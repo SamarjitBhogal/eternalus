@@ -172,10 +172,10 @@ export class MinionController implements Controller {
   private isAtSlot({ state, id, position, rule }: MinionSituation): boolean {
     const horde = state.hordes.hordeOf(id);
     const formation = horde === undefined ? undefined : this.content.formations[horde.formationId];
-    if (horde === undefined || formation === undefined || state.routes === null) {
+    if (horde === undefined || formation === undefined || state.world === null) {
       return true;
     }
-    state.routes.pose(horde.lane, horde.team, horde.progress, this.anchor, this.forward);
+    state.world.routes.pose(horde.lane, horde.team, horde.progress, this.anchor, this.forward);
     const follower = followerIndex(horde.memberIds, horde.leaderId, id);
     formationSlot(this.anchor, this.forward, follower, formation, this.slot);
     const dx = this.slot.x - position.x;

@@ -48,7 +48,7 @@ export abstract class Unit extends Entity {
 
     this.addComponent(new Transform(position, definition.footprintRadius));
     this.addComponent(new Health(definition.baseHealth));
-    this.addComponent(new Movement(definition.movement, definition.movementStrategy));
+    this.addComponent(new Movement(definition.movementProfile, definition.movementStrategy));
     this.addComponent(new TeamMembership(team));
     this.addComponent(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
     this.addComponent(new Vision(definition.visionRadius));

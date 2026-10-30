@@ -28,7 +28,7 @@ const setUp = () => {
     memberIds,
     progress: 0,
   });
-  return { state, horde, memberIds };
+  return { state, factory, horde, memberIds };
 };
 
 const invariant = new HordeMembershipConsistentInvariant();
@@ -70,5 +70,30 @@ describe('HordeMembershipConsistentInvariant', () => {
       'Horde "horde-1" has no members and was not dissolved.',
       `Horde "horde-2" lists "${memberIds[0] ?? ''}", which the store files elsewhere.`,
     ]);
+  });
+
+  it('flags a member listed twice (injected)', () => {
+    const { state, horde, memberIds } = setUp();
+    const [first = '', second = '', third = ''] = memberIds;
+    Reflect.set(horde, 'memberIds', [first, second, second, third]);
+
+    expect(messages(state)).toEqual([`Horde "horde-1" lists "${second}" twice.`]);
+  });
+
+  it('flags a living lane minion in no horde (MS-25), but not a dead one or a mob without the minion brain', () => {
+    const { state, factory } = setUp();
+    const place = (definitionId: string) => {
+      const entity = factory.create('light-mob', definitionId, {
+        team: 'light',
+        position: { x: 9, y: 0 },
+      });
+      state.entities.add(entity);
+      return entity;
+    };
+    const stray = place('light-minion');
+    place('light-minion').getComponent(Health).applyDamage(1e6);
+    place('training-dummy');
+
+    expect(messages(state)).toEqual([`Mob "${stray.id}" is a lane minion in no horde.`]);
   });
 });

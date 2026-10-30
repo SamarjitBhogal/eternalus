@@ -19,6 +19,7 @@ import { FORMATIONS } from './content/mobs/formations/formations';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
@@ -28,10 +29,12 @@ import { EntityFactory } from './entities/EntityFactory';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
+import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import type { SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
+import { WorldMap } from './map/WorldMap';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -66,8 +69,20 @@ export class Simulation {
     levelCurves,
     weapons,
   }: SimulationOptions) {
+    const validConfig = validateGameConfig(config);
+    const world =
+      map === undefined
+        ? null
+        : new MatchWorld(
+            map,
+            WorldMap.fromDefinition(
+              map,
+              validConfig.map.navCellSize,
+              (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+            ),
+          );
     const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
-    this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
+    this.state = new GameState(validConfig, seed, world, space);
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);

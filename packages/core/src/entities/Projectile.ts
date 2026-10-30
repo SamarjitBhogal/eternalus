@@ -30,7 +30,7 @@ export class Projectile extends Entity {
     ).placed<ProjectileDefinition>(context);
 
     this.addComponent(new Transform(position, definition.footprintRadius));
-    this.addComponent(new Movement(definition.movement));
+    this.addComponent(new Movement(definition.movementProfile));
     this.addComponent(
       new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'projectile'),
     );

@@ -1,5 +1,6 @@
 import { Movement } from '../components/Movement';
 import type { EntityId } from '../state/EntityStore.types';
+import type { GameEventMap } from '../state/GameEvents.types';
 import type { GameState } from '../state/GameState';
 import type { Horde } from '../state/Horde.types';
 import type { System, SystemContext } from './System.types';
@@ -44,8 +45,8 @@ export class HordeSystem implements System {
       }
     }
     this.leaving.length = 0;
-    const routes = state.routes;
-    if (routes === null) {
+    const routes = state.world?.routes;
+    if (routes === undefined) {
       return;
     }
     state.hordes.forEach((horde) => {
@@ -71,12 +72,7 @@ export class HordeSystem implements System {
     });
   }
 
-  private static payloadOf(horde: Horde): {
-    readonly hordeId: string;
-    readonly lane: string;
-    readonly team: Horde['team'];
-    readonly memberIds: readonly EntityId[];
-  } {
+  private static payloadOf(horde: Horde): GameEventMap['horde-dissolved'] {
     return { hordeId: horde.id, lane: horde.lane, team: horde.team, memberIds: horde.memberIds };
   }
 }

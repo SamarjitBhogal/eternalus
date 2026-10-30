@@ -18,8 +18,8 @@ export const assessLanes = (
   team: PlayableTeam,
   weights: LaneAssessmentWeights,
 ): string | undefined => {
-  const routes = state.routes;
-  if (routes === null) {
+  const routes = state.world?.routes;
+  if (routes === undefined) {
     return undefined;
   }
   const middle = Math.floor(routes.lanes.length / 2);

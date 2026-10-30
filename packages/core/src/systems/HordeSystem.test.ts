@@ -8,13 +8,14 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { HordeSystem } from './HordeSystem';
 
 const FACTOR = 0.5;
 const logger = new NullLogger();
 
 const setUp = () => {
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
   const system = new HordeSystem(state, FACTOR);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const addHorde = (members: readonly [string, string][], progress = 0) => {

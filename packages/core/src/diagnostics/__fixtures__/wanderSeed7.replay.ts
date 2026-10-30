@@ -31,7 +31,6 @@ export const WANDER_SEED_7: Replay = {
         medium: 8,
         heavy: 4,
       },
-      initialHordesPerTeam: 3,
       plannedMatchSeconds: 1200,
     },
     limits: {

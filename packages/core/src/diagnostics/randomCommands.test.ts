@@ -16,6 +16,11 @@ const snapshotWith = (...ids: string[]): Snapshot => ({
     transform: null,
     health: null,
   })),
+  hordes: [],
+  teams: {
+    light: { unitsRequested: 0, unitsSuppressed: 0 },
+    dark: { unitsRequested: 0, unitsSuppressed: 0 },
+  },
 });
 
 const stream = (seed: number, snapshot: Snapshot, count: number): unknown[] => {

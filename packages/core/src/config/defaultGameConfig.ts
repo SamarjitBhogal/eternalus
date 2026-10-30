@@ -26,7 +26,6 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
     legendsPerLane: 3,
     countdownSeconds: 60,
     hordeSizes: { light: 16, medium: 8, heavy: 4 },
-    initialHordesPerTeam: 3,
     plannedMatchSeconds: 1200, // TUNE: DEC-13 pending
   },
   limits: {

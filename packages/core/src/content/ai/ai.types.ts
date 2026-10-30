@@ -24,7 +24,7 @@ export type HordeSteeringProfile = {
    * cell it follows the lane's flow field instead (architecture 18 §5.2).
    */
   readonly blockedLookAhead: number;
-  /** Push at contact, falling to 0 at `separationRadius`. */
+  /** Push at half `separationRadius`; it scales as 1/distance, shifted to 0 at the radius (10 §9). */
   readonly separationWeight: number;
   /** A combined steer shorter than this counts as none, so a settled horde stands still. */
   readonly minSteer: number;

@@ -32,7 +32,8 @@ export class HordeStore {
   /**
    * Adds a horde; its members are sorted in string order and the lowest id leads.
    *
-   * @throws Error when the id is taken, it has no members or a member is already in a horde.
+   * @throws Error when the id is taken, it has no members, or a member is already in a horde or
+   *   listed twice.
    */
   public add(horde: Omit<Horde, 'leaderId'>): Horde {
     if (this.hordes.has(horde.id)) {
@@ -46,6 +47,11 @@ export class HordeStore {
     const taken = memberIds.find((id) => this.owners.has(id));
     if (taken !== undefined) {
       throw new Error(`Entity "${taken}" is already in a horde.`);
+    }
+    // Sorted, so a repeated id sits next to itself.
+    const repeated = memberIds.find((id, at) => id === memberIds[at - 1]);
+    if (repeated !== undefined) {
+      throw new Error(`Entity "${repeated}" is listed twice in horde "${horde.id}".`);
     }
     const stored: StoredHorde = { ...horde, memberIds, leaderId };
     this.hordes.set(horde.id, stored);

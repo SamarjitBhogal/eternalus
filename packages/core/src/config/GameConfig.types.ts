@@ -32,7 +32,6 @@ export type MatchConfig = {
     readonly medium: number;
     readonly heavy: number;
   };
-  readonly initialHordesPerTeam: number;
   readonly plannedMatchSeconds: number;
 };
 
