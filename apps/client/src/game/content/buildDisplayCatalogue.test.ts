@@ -274,6 +274,11 @@ describe('buildDisplayCatalogue', () => {
     expect(build().teamNames).toEqual(CONTENT.teamNames);
   });
 
+  it('carries the core bot roster (DEC-61, DEC-102)', () => {
+    const botRoster = { id: 'test', laners: ['magus'], enemyRover: 'mirror-player' } as const;
+    expect(build({ content: { botRoster } }).botRoster).toBe(botRoster);
+  });
+
   it("maps core's isSelectable to the Legend status: true is available, false is locked", () => {
     const statuses = (isSelectable: boolean) =>
       build({ content: { specs: CONTENT.specs.map((spec) => ({ ...spec, isSelectable })) } })

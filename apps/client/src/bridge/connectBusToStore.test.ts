@@ -60,6 +60,7 @@ describe('connectBusToStore', () => {
       contrastMode: 'minimums',
       hud: TEST_HUD_CATALOGUE,
       teamNames: { light: 'Lux', dark: 'Umbra' },
+      botRoster: { id: 'test', laners: ['warrior'], enemyRover: 'mirror-player' },
     };
     bus.emit('content-catalogue', catalogue);
     bus.emit('loading-progress', {
@@ -89,10 +90,28 @@ describe('connectBusToStore', () => {
       enemies: DRAFT.enemies,
       countdownMs: 59_000,
       revealMs: 9_000,
+      isLockedIn: false,
     });
     bus.emit('match-setup', null);
     expect(store.getState().matchSetup.playerTeam).toBeNull();
     expect(store.getState().matchSetup.allies).toEqual([]);
+  });
+
+  it('locks the pick and takes the filled rosters on selection-locked; a new setup unlocks', () => {
+    const { bus, store } = connected();
+    const filled = {
+      allies: [{ ...entry('dark-1', true), classId: 'magus', specId: 'oracle' }],
+      enemies: [{ ...entry('light-1', false), classId: 'magus', specId: 'oracle' }],
+    };
+    bus.emit('match-setup', DRAFT);
+    bus.emit('selection-locked', filled);
+    expect(store.getState().matchSetup).toMatchObject({ ...filled, isLockedIn: true });
+    bus.emit('match-setup', DRAFT);
+    expect(store.getState().matchSetup).toMatchObject({
+      allies: DRAFT.allies,
+      enemies: DRAFT.enemies,
+      isLockedIn: false,
+    });
   });
 
   it('clears the class pick on a null class-selection', () => {

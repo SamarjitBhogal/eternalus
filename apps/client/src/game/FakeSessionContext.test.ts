@@ -42,6 +42,7 @@ describe('FakeSessionContext', () => {
     context.newMatchSetup();
     context.repeatMatchSetup();
     context.clearMatchSetup();
+    context.lockIn();
     context.prepareWorld();
     context.dropWorld();
     context.abortMatch(error);
@@ -54,6 +55,7 @@ describe('FakeSessionContext', () => {
       clearMatchSetup: [[]],
       selection: [],
       recordSelection: [],
+      lockIn: [[]],
       prepareWorld: [[]],
       createMatch: [],
       dropWorld: [[]],
@@ -68,6 +70,7 @@ describe('FakeSessionContext', () => {
       'newMatchSetup',
       'repeatMatchSetup',
       'clearMatchSetup',
+      'lockIn',
       'prepareWorld',
       'dropWorld',
       'abortMatch',

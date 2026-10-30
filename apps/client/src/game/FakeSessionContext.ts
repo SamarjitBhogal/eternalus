@@ -33,6 +33,7 @@ export class FakeSessionContext implements SessionContext {
     clearMatchSetup: [],
     selection: [],
     recordSelection: [],
+    lockIn: [],
     prepareWorld: [],
     createMatch: [],
     dropWorld: [],
@@ -87,6 +88,11 @@ export class FakeSessionContext implements SessionContext {
   public recordSelection(selection: ClassSelection | null): void {
     this.record('recordSelection', [selection]);
     this.picked = selection;
+  }
+
+  /** Records the call. */
+  public lockIn(): void {
+    this.record('lockIn', []);
   }
 
   /** Records the call, then throws `prepareWorldError` when it is set. */

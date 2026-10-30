@@ -297,6 +297,7 @@ export function buildDisplayCatalogue(inputs: {
     contrastMode: presentation.contrastMode,
     hud: hudCatalogue(content.mapFeatures, presentation.hud),
     teamNames: content.teamNames,
+    botRoster: content.botRoster,
   };
   checkNoLeftoverPresentation(content, presentation);
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));

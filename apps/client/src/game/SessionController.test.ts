@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { SessionPhase } from '../bridge/events';
+import type { MatchSetupDraft, SessionPhase } from '../bridge/events';
 import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
 import type { SessionContext, SessionState } from './SessionController.types';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
@@ -81,6 +81,9 @@ describe('SessionController with the default states', () => {
     expect(store.getState().matchSetup.selection).toEqual({ classId: 'sentinel', specId: null });
     intent({ kind: 'select-class', classId: 'sentinel', specId: firstAvailableSpecId('sentinel') });
     intent({ kind: 'confirm-selection' });
+    expect(controller.phase).toBe('character-select');
+    expect(store.getState().matchSetup.isLockedIn).toBe(true);
+    clock.advance(SELECT_COUNTDOWN_MS - 1_000);
     expect(controller.phase).toBe('pre-launch');
     expect(store.getState().matchSetup.revealMs).toBe(REVEAL_COUNTDOWN_MS);
 
@@ -130,11 +133,12 @@ describe('SessionController with the default states', () => {
     expect(store.getState().session.reason).toBe('select-timeout');
   });
 
-  it('goes to pre-launch when the countdown ends with an unconfirmed selection', async () => {
-    const { controller, clock, intent } = await atCharacterSelect();
+  it('starts no match when the countdown ends with a pick not locked in (DEC-102)', async () => {
+    const { controller, clock, store, intent } = await atCharacterSelect();
     intent({ kind: 'select-class', classId: 'warrior', specId: firstAvailableSpecId('warrior') });
     clock.advance(SELECT_COUNTDOWN_MS);
-    expect(controller.phase).toBe('pre-launch');
+    expect(controller.phase).toBe('menu');
+    expect(store.getState().session.reason).toBe('select-timeout');
   });
 
   it('ignores unknown classes or specs and a confirm with nothing selected', async () => {
@@ -192,6 +196,8 @@ describe('SessionController with the default states', () => {
         specId: firstAvailableSpecId('sentinel'),
       });
       session.intent({ kind: 'confirm-selection' });
+      // DEC-60: LOCK IN holds the full select countdown; the reveal follows it.
+      session.clock.advance(SELECT_COUNTDOWN_MS);
       session.clock.advance(REVEAL_COUNTDOWN_MS);
       await session.resolveLoads();
       captured.context?.transition('results');
@@ -202,13 +208,20 @@ describe('SessionController with the default states', () => {
     session.intent({ kind: 'navigate', route: 'profile' });
     expect(session.store.getState().session).toMatchObject({ phase: 'menu', menuRoute: 'profile' });
 
+    const drafts: (MatchSetupDraft | null)[] = [];
+    session.bus.on('match-setup', (draft) => drafts.push(draft));
     await playToResults();
     const before = session.store.getState().matchSetup;
     session.intent({ kind: 'start-match' });
     const after = session.store.getState().matchSetup;
     expect(session.controller.phase).toBe('loading');
     expect(after).toMatchObject({ seed: before.seed, playerTeam: before.playerTeam });
-    expect(after.allies).toEqual(before.allies);
+    // The rematch shows the setup as built, not last match's bot Legends or mirror (DEC-61).
+    expect(drafts).toHaveLength(2);
+    expect(drafts[1]).toBe(drafts[0]);
+    expect(after.allies).toEqual(drafts[0]?.allies);
+    expect([...after.allies, ...after.enemies].every((entry) => entry.specId === null)).toBe(true);
+    expect(after.isLockedIn).toBe(false);
     expect(after.selection).toEqual({ classId: null, specId: null });
     expect(session.themeRoot.dataset.team).toBe(before.playerTeam);
   });

@@ -15,6 +15,7 @@ const initialState: DisplayCatalogue = {
   contrastMode: 'figma',
   hud: { structureKinds: [], objectiveKinds: [], chrome: null },
   teamNames: { light: '', dark: '' },
+  botRoster: { id: '', laners: [], enemyRover: 'mirror-player' },
 };
 
 /** Display-ready content, projected once at boot from the catalogue source. */

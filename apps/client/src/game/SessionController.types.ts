@@ -73,12 +73,19 @@ export interface SessionContext {
   /** Records the pick, or clears it with `null`, and publishes `class-selection`. */
   recordSelection(selection: ClassSelection | null): void;
   /**
+   * LOCK IN (DEC-61): fills both rosters from the setup and the pick (`fillRosters`) and publishes
+   * them as `selection-locked`. The setup itself stays as built, for a rematch.
+   * @throws Without a setup or a pick.
+   */
+  lockIn(): void;
+  /**
    * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`).
    * @throws Without a setup, or when generation fails.
    */
   prepareWorld(): void;
   /**
-   * Builds and starts the match on `viewport` from the setup, the selection and the world.
+   * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
+   * selection and the world.
    * @throws When one of them is missing or the factory fails.
    */
   createMatch(viewport: MatchViewport): RunningMatch;

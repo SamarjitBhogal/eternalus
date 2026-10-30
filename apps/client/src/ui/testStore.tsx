@@ -211,6 +211,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
   contrastMode: 'figma',
   hud: TEST_HUD_CATALOGUE,
   teamNames: { light: 'Light', dark: 'Dark' },
+  botRoster: { id: 'test', laners: ['warrior', 'sentinel', 'magus'], enemyRover: 'mirror-player' },
 };
 
 /** Session slice state at `phase`, optionally on a menu route with a reason. */

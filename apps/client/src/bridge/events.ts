@@ -134,6 +134,9 @@ export type MatchSetupDraft = {
 /** The player's class pick on the character-select screen. */
 export type ClassSelection = { readonly classId: LegendClassId; readonly specId: string | null };
 
+/** Both rosters once LOCK IN has filled them: every bot with its Legend, the enemy Rover mirrored. */
+export type FilledRosters = Pick<MatchSetupDraft, 'allies' | 'enemies'>;
+
 /** Simulation time for the match clock. */
 export type MatchClock = { readonly tick: number; readonly seconds: number };
 
@@ -149,6 +152,11 @@ export type BridgeEventMap = {
   'match-setup': MatchSetupDraft | null;
   /** `null` clears the pick (back to the class step). */
   'class-selection': ClassSelection | null;
+  /**
+   * LOCK IN: the pick is locked until the countdown ends (DEC-60), and the rosters carry every
+   * bot's Legend and the enemy Rover's mirror of the pick (DEC-61).
+   */
+  'selection-locked': FilledRosters;
   /** Remaining session time of the select (60 s) or reveal (10 s) countdown. */
   countdown: { readonly kind: 'select' | 'reveal'; readonly remainingMs: number };
   'match-clock': MatchClock;

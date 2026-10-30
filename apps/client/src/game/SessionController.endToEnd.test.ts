@@ -21,7 +21,7 @@ import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { MatchViewport } from './MatchViewport.types';
 import type { MatchFactory } from './SessionController.types';
-import { REVEAL_COUNTDOWN_MS } from './session/sessionTiming.constants';
+import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
 import { testSession } from './testSessionDeps';
 
 const CONFIG = createDefaultGameConfig();
@@ -120,6 +120,8 @@ describe('SessionController with the real match, end to end', () => {
         specId: firstAvailableSpecId('magus'),
       });
       session.intent({ kind: 'confirm-selection' });
+      // DEC-60: LOCK IN holds the full select countdown; the reveal follows it.
+      session.clock.advance(SELECT_COUNTDOWN_MS);
       session.clock.advance(REVEAL_COUNTDOWN_MS);
       await session.resolveLoads();
     };

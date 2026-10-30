@@ -75,6 +75,8 @@ function setUp(overrides: Partial<SessionControllerDeps> = {}) {
     }
     session.intent({ kind: 'select-class', classId: 'magus', specId: MAGUS_LEGEND });
     session.intent({ kind: 'confirm-selection' });
+    // DEC-60: LOCK IN holds the full select countdown; the reveal follows it.
+    session.clock.advance(SELECT_COUNTDOWN_MS);
     session.clock.advance(REVEAL_COUNTDOWN_MS);
   };
   const toMatch = async (): Promise<void> => {
@@ -95,6 +97,7 @@ describe('SessionController match lifetime', () => {
     session.clock.advance(SELECT_COUNTDOWN_MS - 1);
     session.intent({ kind: 'select-class', classId: 'magus', specId: MAGUS_LEGEND });
     session.intent({ kind: 'confirm-selection' });
+    session.clock.advance(1);
     session.clock.advance(REVEAL_COUNTDOWN_MS);
 
     expect(session.controller.phase).toBe('match-loading');
@@ -122,9 +125,12 @@ describe('SessionController match lifetime', () => {
 
     session.controller.attachViewport(attached);
 
-    const { seed, playerTeam } = session.store.getState().matchSetup;
+    const { seed, playerTeam, allies, enemies } = session.store.getState().matchSetup;
     const [request, passed] = session.createMatch.mock.calls[0] ?? [];
     expect(request?.setup.seed).toBe(seed);
+    // The rosters LOCK IN filled: every bot with its Legend, the enemy Rover mirrored (DEC-61).
+    expect(request?.setup).toMatchObject({ allies, enemies });
+    expect(request?.setup.enemies[0]).toMatchObject({ classId: 'magus', specId: MAGUS_LEGEND });
     expect(request?.player).toEqual({ legend: 'magus', team: playerTeam });
     expect(request?.world).toBe(session.worlds[0]);
     expect(request?.captureKinds).toEqual(['capture-point', 'cathedral']);

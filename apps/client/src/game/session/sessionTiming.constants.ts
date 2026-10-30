@@ -1,6 +1,9 @@
 // Session (wall-clock) timings. They move to content once core has a home for them.
 
-/** Character-select countdown (reference 14 §2: 60 s). */
+/**
+ * Character-select countdown (reference 14 §2: 60 s). It always runs in full, even after an early
+ * LOCK IN (DEC-60).
+ */
 export const SELECT_COUNTDOWN_MS = 60_000;
 
 /** Pre-launch reveal of the allied team (reference 14 §2: 10 s). */
