@@ -1,4 +1,4 @@
-import type { Logger, MapFeatureKind } from '@eternalus/core';
+import type { Logger, MapFeatureKind, SeededRandom } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -139,6 +139,12 @@ export type SessionControllerDeps = {
   readonly seedSource: () => number;
   /** The match's random stream from its seed. */
   readonly createRng: (seed: number) => Rng;
+  /**
+   * The stream LOCK IN draws the bots' Legends from (`fillRosters`), apart from `createRng`'s team
+   * draw: `new SeededRandom(seed).fork(ROSTER_RNG_STREAM)`. Its own factory because core's
+   * `nextInt(min, max)` is not the `Rng` port's `nextInt(maxExclusive)`.
+   */
+  readonly createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>;
   /**
    * Receives `data-team="light|dark"` while a match setup exists and `data-contrast` (the
    * catalogue's colour set, DEC-55) while the session runs (`<html>` in the app).

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { restoreFocusOnClose } from '../hud/usePauseOverlayFocus';
 
 /** Whether View Details is open, and its two actions. */
-export type ViewDetailsToggle = {
+type ViewDetailsToggle = {
   readonly isOpen: boolean;
   readonly open: () => void;
   readonly close: () => void;

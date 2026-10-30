@@ -1,4 +1,4 @@
-import { type LogAttributes, makeLogRecord, SeededRandom } from '@eternalus/core';
+import { type LogAttributes, makeLogRecord } from '@eternalus/core';
 
 import type {
   AssetGroup,
@@ -11,7 +11,7 @@ import type {
 } from '../bridge/events';
 import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
-import { ROSTER_RNG_STREAM, SESSION_TRANSITIONS } from './SessionController.constants';
+import { SESSION_TRANSITIONS } from './SessionController.constants';
 import type {
   RunningMatch,
   SessionContext,
@@ -189,7 +189,7 @@ export class SessionController {
       selection,
       legendClasses,
       enemyRover: botRoster.enemyRover,
-      rng: new SeededRandom(setup.seed).fork(ROSTER_RNG_STREAM),
+      rng: this.deps.createRosterRng(setup.seed),
     });
     this.deps.bus.emit('selection-locked', this.rosters);
   }

@@ -24,8 +24,9 @@ type LegendDetailsView = 'panel' | 'view-details';
 
 /**
  * How each view configures the shared `InfoPanel`: the step's panel has the "Ultimate / Abilities"
- * header and the rating bars; View Details labels each row instead and shows no ratings (DEC-103:
- * "no legends in the corner").
+ * header and the rating bars; View Details labels each row instead and shows no ratings.
+ * Recommendation: no ratings, as frame 145:2's class case has none and DEC-103 asks for "a similar
+ * thing" (its "no legends in the corner" is the Legends strip only; register CD-42, HC-C1).
  */
 const VIEWS = {
   panel: { layout: 'legend', detailsHeader: text.legendDetailsHeader, hasRatings: true },

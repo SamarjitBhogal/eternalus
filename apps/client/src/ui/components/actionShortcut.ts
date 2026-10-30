@@ -44,7 +44,7 @@ export function isKeyEvent(event: Event): event is Event & ShortcutKey {
 }
 
 /** A mouse or pointer event (`MouseEvent`, `PointerEvent`, or an `Event` with `button` in Node). */
-function isButtonEvent(event: Event): event is Event & Pick<MouseEvent, 'button'> {
+export function isButtonEvent(event: Event): event is Event & Pick<MouseEvent, 'button'> {
   return 'button' in event && typeof event.button === 'number';
 }
 
