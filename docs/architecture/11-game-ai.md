@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -339,7 +339,9 @@ work named:
 
 - `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
   the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open
-  PROTO-01 question).
+  PROTO-01 question). It is second, after `CommandApplySystem` (§1), once that system heads the
+  pipeline; until then, `Simulation.step()` applies the queued commands before it (03,
+  implementation status).
 - `EntityFactory` cannot reach the state, so a unit whose definition names a `controller` gets a
   `ControllerBinding` component at spawn, and `AiSystem` creates its brain the first tick it sees
   it.
