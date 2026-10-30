@@ -30,7 +30,7 @@ are the **planned** layout; create them as code is added.
 | `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher`  | lower layers                                           |
 | `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams   | `state/`, `utils/`, types of `commands/` and `config/` |
 | `systems/`      | Per-tick logic implementing `System`. Never import another system.  | everything except `ai/`                                |
-| `ai/`           | Bot controllers. They only return `Command`s.                       | `state/`, `commands/`, `utils/`                        |
+| `ai/`           | Bot controllers. They only return `Command`s.                       | `state/`, `commands/`, `content/` (types), `utils/`    |
 | `Simulation.ts` | Composes everything; the only thing the client drives               | everything                                             |
 
 These import rules are checked in review.

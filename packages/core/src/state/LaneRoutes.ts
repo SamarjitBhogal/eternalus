@@ -1,6 +1,6 @@
 import type { MapDefinition, MapLane } from '../content/maps/maps.types';
 import type { PlayableTeam } from '../teams/teams.types';
-import { distance } from '../utils/geometry';
+import { distance, distanceToPath } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { Route } from './LaneRoutes.types';
@@ -96,6 +96,20 @@ export class LaneRoutes {
     point.y = a.y + t * (b.y - a.y);
     forward.x = span === 0 ? 0 : (b.x - a.x) / span;
     forward.y = span === 0 ? 0 : (b.y - a.y) / span;
+  }
+
+  /** The lane whose path passes closest to `point`; ties go to the lower index. */
+  public nearestLane(point: Vec2): MapLane | undefined {
+    let nearest: MapLane | undefined;
+    let best = Number.POSITIVE_INFINITY;
+    for (const lane of this.lanes) {
+      const gap = distanceToPath(point, lane.path);
+      if (gap < best) {
+        best = gap;
+        nearest = lane;
+      }
+    }
+    return nearest;
   }
 
   private static routeOf(points: readonly Vec2[]): Route {
