@@ -1,5 +1,5 @@
 import type { InputAction } from '../bridge/Binding.types';
-import type { RoleRatingAxis } from '../bridge/catalogue.types';
+import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 
@@ -142,6 +142,21 @@ export const STRINGS = {
     legendBreadcrumb: (classDisplayName: string): string =>
       `${classDisplayName} > Choose Your Legend`,
     viewDetails: 'View Details',
+    /**
+     * View Details' row labels (DEC-65, DEC-103): the class rows as the Figma's View Details
+     * Example draws them (145:2: 148:179 …), the Legend's Ultimate as the owner names it (DEC-65).
+     */
+    detailLabels: {
+      signature: 'Default ability',
+      proficiency: 'Weapon Proficiency',
+      specialty: 'Specialty',
+      ultimate: 'Ultimate',
+      // Recommendation: "Ability n". The owner names the rows "abilities 1, 2, and 3" (DEC-65) but
+      // gives them no labels.
+      'ability-1': 'Ability 1',
+      'ability-2': 'Ability 2',
+      'ability-3': 'Ability 3',
+    } satisfies Record<DetailSlot, string>,
     previousClass: 'Previous class',
     nextClass: 'Next class',
     // Cinzel draws lower case as small capitals (58:276, 58:326).

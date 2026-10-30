@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { LegendStripItem } from '../../bridge/selectors/selectClassPanel';
 import { assetsWithBoxes, renderWithStore } from '../testStore';
 import { ClassSelectLegendStrip } from './ClassSelectLegendStrip';
+import styles from './ClassSelectLegendStrip.module.css';
+import stripCss from './ClassSelectLegendStrip.module.css?raw';
 
 const FIGMA_ITEMS: readonly LegendStripItem[] = [
   { key: 'catalyst', name: 'Veridan', miniAssetId: 'catalyst-mini' },
@@ -82,5 +84,19 @@ describe('ClassSelectLegendStrip', () => {
 
   it('is informational: nothing focusable or clickable', () => {
     expect(render(FIGMA_ITEMS)).not.toMatch(/<button|tabindex=|role="/);
+  });
+  // DEC-103: View Details carries the strip over; 145:61 puts its header box at (116, 624).
+  it('moves the whole strip, by whole px, from 72:784 (45, 767) to View Details’ 145:61 (116, 624)', () => {
+    const moved = renderWithStore(
+      <ClassSelectLegendStrip items={FIGMA_ITEMS} placement="view-details" />,
+    );
+
+    expect(render(FIGMA_ITEMS)).toContain(
+      `<div class="${String(styles.strip)}" data-placement="class-step">`,
+    );
+    expect(moved).toContain(`<div class="${String(styles.strip)}" data-placement="view-details">`);
+    expect(stripCss).toMatch(
+      /\.strip\[data-placement='view-details'\] \{\s*position: absolute;\s*left: 71px;\s*top: -143px;\s*\}/,
+    );
   });
 });

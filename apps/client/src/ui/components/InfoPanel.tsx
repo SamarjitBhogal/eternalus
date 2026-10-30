@@ -1,6 +1,6 @@
 import { type ReactElement, useEffect, useRef } from 'react';
 
-import type { ColourToken, DetailRow } from '../../bridge/catalogue.types';
+import type { ColourToken, DetailRow, DetailSlot } from '../../bridge/catalogue.types';
 import { INFO_PANEL_TITLE_FIT } from './InfoPanel.constants';
 import styles from './InfoPanel.module.css';
 import type { InfoPanelLayout } from './InfoPanel.types';
@@ -24,7 +24,8 @@ export function focusTitleIfAsked(
  * a focus change (the alternate layout's previous/next); by default nothing is live. A
  * title wider than the layout's panel region is scaled down to fit (`INFO_PANEL_TITLE_FIT`).
  * `shouldFocusTitle` makes the title focusable from script and focuses it when the panel mounts
- * (the locked view, where the LOCK IN that had the focus is gone, DEC-60).
+ * (the locked view, where the LOCK IN that had the focus is gone, DEC-60). View Details (DEC-103)
+ * passes no header and labels each row instead (`rowLabels`).
  */
 export function InfoPanel({
   id,
@@ -35,6 +36,7 @@ export function InfoPanel({
   description,
   detailsHeader,
   rows,
+  rowLabels,
   titleLive = 'off',
   shouldFocusTitle = false,
 }: {
@@ -44,8 +46,11 @@ export function InfoPanel({
   readonly subtitle: string | null;
   readonly subtitleAccentToken: ColourToken;
   readonly description: string | null;
-  readonly detailsHeader: string;
+  /** The details header box and text; `null` draws none (View Details). */
+  readonly detailsHeader: string | null;
   readonly rows: readonly DetailRow[];
+  /** A label over each row's name, by slot (View Details, 145:2); none by default. */
+  readonly rowLabels?: Readonly<Record<DetailSlot, string>> | undefined;
   readonly titleLive?: 'off' | 'polite' | undefined;
   readonly shouldFocusTitle?: boolean;
 }): ReactElement {
@@ -72,7 +77,7 @@ export function InfoPanel({
         </p>
       )}
       {description !== null && <p className={styles.description}>{description}</p>}
-      <InfoPanelDetails layout={layout} header={detailsHeader} rows={rows} />
+      <InfoPanelDetails layout={layout} header={detailsHeader} rows={rows} rowLabels={rowLabels} />
     </div>
   );
 }

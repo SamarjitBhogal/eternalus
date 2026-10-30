@@ -6,12 +6,20 @@ import { KeyGlyph } from './KeyGlyph';
 import styles from './KeyPrompt.module.css';
 import { useActionShortcut } from './useActionShortcut';
 
-/** The two key prompts of the selection screens: Back (58:328) and View Details (62:84). */
-export type KeyPromptSkin = 'legend-back' | 'view-details';
+/**
+ * The key prompts of the selection screens: Back (58:328), the alternate layout's View Details
+ * (62:84), V View Details on the class and Legend steps (DEC-103) and View Details' own Back
+ * (148:203). All but `view-details` share 58:328's key line (`keyLine`) and differ in place.
+ */
+export type KeyPromptSkin =
+  'legend-back' | 'view-details' | 'class-view-details' | 'legend-view-details' | 'details-back';
 
-const SKIN_CLASSES: Readonly<Record<KeyPromptSkin, string | undefined>> = {
-  'legend-back': styles.legendBack,
-  'view-details': styles.viewDetails,
+const SKIN_CLASSES: Readonly<Record<KeyPromptSkin, readonly (string | undefined)[]>> = {
+  'legend-back': [styles.keyLine, styles.legendBack],
+  'view-details': [styles.viewDetails],
+  'class-view-details': [styles.keyLine, styles.classViewDetails],
+  'legend-view-details': [styles.keyLine, styles.legendViewDetails],
+  'details-back': [styles.keyLine, styles.detailsBack],
 };
 
 /**
@@ -38,7 +46,7 @@ export function KeyPrompt({
   return (
     <button
       type="button"
-      className={classNames(styles.prompt, SKIN_CLASSES[skin])}
+      className={classNames(styles.prompt, ...SKIN_CLASSES[skin])}
       onClick={onPress}
       autoFocus={isAutoFocused}
     >

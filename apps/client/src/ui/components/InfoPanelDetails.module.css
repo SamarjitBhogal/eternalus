@@ -99,6 +99,22 @@
   border-radius: 2px;
 }
 
+/* View Details' row labels (148:179 …): Cinzel Regular 20 white, above each name. */
+.label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(20px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-20) * 1px);
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  white-space: nowrap;
+  transform: translate(var(--label-x), var(--label-y));
+}
+
 /* Row names: Cinzel Regular 24 white at each Figma origin (the Figma's x 243 vs 233 kept as drawn,
    reference 15 §2). */
 .name {
@@ -214,4 +230,96 @@
   --icon-h: 56px;
   --name-x: 192px;
   --name-y: 577px;
+}
+
+/* View Details (145:2, DEC-103), in the panel's px from (116, 254): the right column's rows at
+   x 1038, each icon centred in 145:87's 118 × 151 icon box but at its panel rendition's own size
+   (I-45), its label at x 1214 and its name 35 px below in Cinzel 32 cyan (148:180 …). The class
+   rows are 148:177, 148:178 and 148:185 at y 227, 471.5 and 692.6. */
+.details[data-layout='class-details'] .name,
+.details[data-layout='legend-details'] .name {
+  color: var(--selection-detail-name);
+  font-size: max(32px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-32) * 1px);
+}
+
+.details[data-layout='class-details'] [data-row='0'] {
+  --icon-x: 936px;
+  --icon-y: -4px;
+  --icon-w: 90px;
+  --icon-h: 115px;
+  --label-x: 1098px;
+  --label-y: -27px;
+  --name-x: 1098px;
+  --name-y: 8px;
+}
+
+.details[data-layout='class-details'] [data-row='1'] {
+  --icon-x: 945px;
+  --icon-y: 250px;
+  --icon-w: 73px;
+  --icon-h: 72px;
+  --label-x: 1098px;
+  --label-y: 217.5px;
+  --name-x: 1098px;
+  --name-y: 252.5px;
+}
+
+.details[data-layout='class-details'] [data-row='2'] {
+  --icon-x: 954px;
+  --icon-y: 487px;
+  --icon-w: 54px;
+  --icon-h: 64px;
+  --label-x: 1098px;
+  --label-y: 438.6px;
+  --name-x: 1098px;
+  --name-y: 473.6px;
+}
+
+/* The Legend's four rows (DEC-65, DEC-103) in the same column: the Ultimate in 148:177's larger
+   row (y 227), then abilities 1 to 3 in 140 px rows from y 420 (its dividers at y 410, 570 and
+   730), the label-to-name spacing of 145:2. Recommendation: the four-row geometry (145:2 draws only
+   the class). Icon boxes as on the Legend step. */
+.details[data-layout='legend-details'] [data-row='0'] {
+  --icon-x: 956px;
+  --icon-y: 26px;
+  --icon-w: 51px;
+  --icon-h: 56px;
+  --label-x: 1098px;
+  --label-y: -27px;
+  --name-x: 1098px;
+  --name-y: 8px;
+}
+
+.details[data-layout='legend-details'] [data-row='1'] {
+  --icon-x: 945px;
+  --icon-y: 213px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --label-x: 1098px;
+  --label-y: 176px;
+  --name-x: 1098px;
+  --name-y: 211px;
+}
+
+.details[data-layout='legend-details'] [data-row='2'] {
+  --icon-x: 945px;
+  --icon-y: 373px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --label-x: 1098px;
+  --label-y: 336px;
+  --name-x: 1098px;
+  --name-y: 371px;
+}
+
+.details[data-layout='legend-details'] [data-row='3'] {
+  --icon-x: 945px;
+  --icon-y: 533px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --label-x: 1098px;
+  --label-y: 496px;
+  --name-x: 1098px;
+  --name-y: 531px;
 }

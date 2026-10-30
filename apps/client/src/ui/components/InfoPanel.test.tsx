@@ -193,11 +193,16 @@ describe('InfoPanel', () => {
       class: 529 - origin('class'),
       'class-alternate': 573 - origin('class-alternate'),
       legend: 553 - origin('legend'),
+      // View Details (145:2, one rule for both): the left column to 145:96's right edge, x 676.
+      'class-details': 676 - origin('legend-details'),
+      'legend-details': 676 - origin('legend-details'),
     });
     expect(INFO_PANEL_TITLE_FIT.maxWidth).toEqual({
       class: 484,
       'class-alternate': 508,
       legend: 500,
+      'class-details': 560,
+      'legend-details': 560,
     });
   });
 

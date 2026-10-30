@@ -148,3 +148,39 @@
   y: 567px;
   height: 52px;
 }
+
+/* View Details (145:2): no accents; 1 px cyan dividers 781 wide from x 1015 (145:84, 148:184 at
+   y 427.8 and 648.8; their 4 px slant is not drawn), round caps. The Legend's dividers sit between
+   its four rows (InfoPanelDetails), a Recommendation like them. */
+.rules[data-layout='class-details'] .accent,
+.rules[data-layout='legend-details'] .accent {
+  display: none;
+}
+
+.rules[data-layout='class-details'] [data-rule^='divider'],
+.rules[data-layout='legend-details'] [data-rule^='divider'] {
+  x: 899px;
+  width: 781px;
+  rx: 0.5px;
+  fill: var(--selection-detail-name);
+}
+
+.rules[data-layout='class-details'] [data-rule='divider-0'] {
+  y: 173.8px;
+}
+
+.rules[data-layout='class-details'] [data-rule='divider-1'] {
+  y: 394.8px;
+}
+
+.rules[data-layout='legend-details'] [data-rule='divider-0'] {
+  y: 156px;
+}
+
+.rules[data-layout='legend-details'] [data-rule='divider-1'] {
+  y: 316px;
+}
+
+.rules[data-layout='legend-details'] [data-rule='divider-2'] {
+  y: 476px;
+}

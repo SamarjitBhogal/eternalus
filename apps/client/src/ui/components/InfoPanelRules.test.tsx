@@ -38,6 +38,28 @@ describe('InfoPanelRules', () => {
     },
   );
 
+  it('draws no header line for a panel without a header (View Details, DEC-103)', () => {
+    const html = renderToStaticMarkup(<InfoPanelRules layout="class-details" hasHeader={false} />);
+
+    expect([...html.matchAll(/data-rule="([^"]+)"/g)].map(([, rule]) => rule)).toEqual([
+      'accent-0',
+      'accent-1',
+      'accent-2',
+      'divider-0',
+      'divider-1',
+    ]);
+  });
+
+  // 145:2 draws cyan dividers (145:84, 148:184) and no accents.
+  it('draws View Details’ dividers in the detail-name cyan and hides its accents', () => {
+    expect(rulesCss).toMatch(
+      /\.rules\[data-layout='legend-details'\] \[data-rule\^='divider'\] \{\s*x: 899px;\s*width: 781px;\s*rx: 0\.5px;\s*fill: var\(--selection-detail-name\);\s*\}/,
+    );
+    expect(rulesCss).toMatch(
+      /\.rules\[data-layout='legend-details'\] \.accent \{\s*display: none;\s*\}/,
+    );
+  });
+
   it('places each rule by the svg’s layout and takes every colour from a token', () => {
     const selectors = [...rulesCss.matchAll(/\n([^\n{}]+) \{/g)].map(
       ([, selector = '']) => selector,

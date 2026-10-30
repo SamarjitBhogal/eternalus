@@ -21,12 +21,15 @@ const INNER_INSET = 3;
  * mini arch cards with the Legend's name for the player's team, else its sub-class title (DEC-49).
  * Informational: nothing in it is focusable or clickable. A class with no Legend shows the
  * pending line (CD-13); a portrait the catalogue lacks, one without a draw box, or one baked for
- * another slot, leaves the designed empty arch.
+ * another slot, leaves the designed empty arch. `placement="view-details"` moves the whole strip
+ * to View Details' left column (145:61 at (116, 624), DEC-103) at the same size.
  */
 export function ClassSelectLegendStrip({
   items,
+  placement = 'class-step',
 }: {
   readonly items: readonly LegendStripItem[];
+  readonly placement?: 'class-step' | 'view-details';
 }): ReactElement {
   const boxes = useAssetBoxes(
     MINI_SLOT_LEFTS.map((_, index) => ({
@@ -35,7 +38,7 @@ export function ClassSelectLegendStrip({
     })),
   );
   return (
-    <div className={styles.strip}>
+    <div className={styles.strip} data-placement={placement}>
       <span className={styles.headerBox} aria-hidden="true" />
       <h4 className={styles.headerText}>{STRINGS.characterSelect.legendsHeader}</h4>
       <svg className={styles.rules} aria-hidden="true" focusable="false">

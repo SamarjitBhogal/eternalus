@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { DetailRow } from '../../bridge/catalogue.types';
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
+import { STRINGS } from '../strings';
 import { renderWithStore } from '../testStore';
 import { INFO_PANEL_ICON_RENDITIONS } from './InfoPanelDetails.constants';
 import type { InfoPanelLayout } from './InfoPanel.types';
@@ -112,6 +113,34 @@ describe('InfoPanelDetails', () => {
     expect([0, 1, 2, 3].map(rowRule)).not.toContain('missing');
     expect(bands[0]).toBeGreaterThan(bands[1] ?? Number.NaN);
     expect(bands[1]).toBe(bands[2]);
+  });
+
+  // DEC-103 (145:2): View Details draws no header and labels each row over its name.
+  it('draws no header and labels each row by slot when given labels (View Details)', () => {
+    const html = renderWithStore(
+      <InfoPanelDetails
+        layout="legend-details"
+        header={null}
+        rows={ORACLE_ROWS}
+        rowLabels={STRINGS.characterSelect.detailLabels}
+      />,
+    );
+
+    expect(html).not.toContain(String(styles.headerBox));
+    expect(html).not.toContain('<h4');
+    expect(html).not.toContain('data-rule="header-line"');
+    expect(html).toContain(
+      `<li data-row="0"><img src="/assets/test/oracle-detail-severed-accord@detail-legend.webp" alt="" aria-hidden="true" class="${String(styles.icon)}" decoding="async" draggable="false"/><span class="${String(styles.label)}">Ultimate</span><span class="${String(styles.name)}">Severed Accord</span></li>`,
+    );
+    expect(
+      [...html.matchAll(new RegExp(`class="${String(styles.label)}">([^<]+)<`, 'g'))].map(
+        ([, label]) => label,
+      ),
+    ).toEqual(['Ultimate', 'Ability 1', 'Ability 2', 'Ability 3']);
+  });
+
+  it('draws no labels by default (the selection panels)', () => {
+    expect(renderDetails('legend', ORACLE_ROWS)).not.toContain(String(styles.label));
   });
 
   it('leaves an icon out until its URL loads (no layout shift: every slot box is fixed)', () => {
