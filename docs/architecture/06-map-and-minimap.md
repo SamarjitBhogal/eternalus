@@ -438,6 +438,11 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   the owner's show-or-hide developer hotkey (DEC-66) is not built yet.
   The cathedral click and a "Leave cathedral" button stay in normal play (register CD-22 in
   [reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md)).
+- **Explorer shown or hidden (2026-10-30).** The developer flag `?dev=1` starts a match with the
+  explorer tools shown, and the hotkey Cmd+Shift+F3 or Ctrl+Shift+F3 shows or hides them in any
+  build (DEC-105, DEC-117, DEC-118); `MatchHost` runs the hotkey, because the explorer belongs to
+  its pointer controls, not to `Match`. The `MapExplorer` bullet above says the hotkey "is not
+  built yet"; it is built. The design wording is pending in `INBOX.md` HC-T1 (T-199).
 
 ## Related
 

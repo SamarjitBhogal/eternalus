@@ -2421,3 +2421,39 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Next step: critic loop 1 (running), merge into `feat/hud-and-character-select`, the owner's
   acceptance of ADR 0025, the step-12 report lane, steps 15 and 16; step 17 waits for PRs #55 to
   #58.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 1 (items m1, m2, n1, n3, A2, B1, M2; DEC-117, DEC-118; docs pass, round B25) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: code fixes from the critic's loop 1 (the orchestrator's, uncommitted when this docs
+  pass ran): `MatchHost` runs a client-only one-shot action from a table of action to handler
+  (`runOneShotAction`, one entry: `toggle-developer-camera`; m1, DEC-117); the two default chords of
+  `toggle-developer-camera` are ordered by platform at load, Cmd first on an Apple device (n1,
+  DEC-118); a test ties the stored chord modifiers (`CHORD_MODIFIERS`) to the bridge's
+  `ChordModifier` type (m2); the test order nit (n3); a `ponytail:` comment on `endCrashedMatch`
+  (A2: the menu banner is DEC-106's interim; build-plan step 12 replaces it with ADR 0025's report
+  popup and `ErrorBoundary`). Red proofs 8/8 in
+  `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop1.txt` (outside the repository).
+  - Docs (round B25): `13-owner-decisions-log.md` gets a fourth batch of 2026-10-30 with DEC-117 and
+    DEC-118 (the owner's answers B1, m1 and n1; DEC-119 stays unused) and dated notes on DEC-57,
+    DEC-62 and DEC-105; reference 15 gets CD-47 (a destroyed structure's look, DEC-69, `cf7efbe`);
+    status notes in architecture 13 §10, architecture 06 §10 and architecture 14 §14 (the chord
+    `modifiers` field added inside schema version 1); `INBOX.md`: HC-T1's round B25 bullet and table
+    (T-196 redrafted, T-209 to T-212 new, 39 pending), HC-B3, HC-Q28 and HC-Q29 (answered), a Done
+    entry.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-117 and DEC-118 rows; dated notes on
+    DEC-57, DEC-62 and DEC-105), reference 15 (the CD-47 row), architecture 13 §10, 06 §10 and 14 §14
+    (one dated status note each), this entry. The design-text changes (T-196's redraft and four new
+    rows) are pending rows in the D2b patch, not applied.
+  - The orchestrator, after the docs pass: the 14 §14 note words the optional field as a reading
+    for the owner, not an interim, and `INBOX.md` gains HC-B4 (better than the design: an optional
+    field that old saves lack needs no new save version; open). ADR 0025's draft is checked against
+    the installed Vite 8.3.1 and React 19.3 types (one fix: `componentStack` may be null) and added
+    as `docs/decisions/0025-error-reports-through-the-local-dev-server.md` (proposed); HC-Q27 names
+    it.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1482/1482, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop1-fixes.log`, outside the
+  repository). The previous entry's final check, run on `3588904`: EXIT=0 (core 628/628, client
+  1477/1477; `b34-check-3588904.log` in the same folder). This docs pass also ran `npm run
+docs:check`, Prettier on the touched files and `git apply --check` of the D2b patch.
+- Next step: critic loop 2, merge into `feat/hud-and-character-select`, the owner's acceptance of
+  ADR 0025, the step-12 report lane.

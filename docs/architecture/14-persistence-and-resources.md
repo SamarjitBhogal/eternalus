@@ -530,6 +530,16 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
 - A quarantine is reported through an injected `warn` callback, because `data/` imports core
   types only (§1); `main.tsx` turns it into a `Logger` record. No `degraded` status or memory
   fallback yet (§10): a failed open leaves the settings on defaults.
+- **Stored chord modifiers (2026-10-30).** A stored keyboard chord has an optional `modifiers`
+  field (DEC-105), added inside schema version 1: records saved before it still read, because the
+  field is optional, so no upgrade step was needed and none was written. §13's recipe "A field or
+  a settings group" says to bump `schemaVersion`. The branch reads that rule as applying to a
+  field old records cannot satisfy (a required, renamed or retyped field); an optional field that
+  old records simply lack needs no bump. That reading waits for the owner (`INBOX.md` HC-B4); if he
+  keeps the recipe as written, the settings record moves to version 2 with a pass-through upgrade.
+  `CHORD_MODIFIERS` in `dto/SettingsDto.ts` lists the allowed names, and a test in
+  `settingsState.test.ts` ties that list to the bridge's `ChordModifier` type, so the two cannot
+  drift apart.
 
 Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
 DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the
