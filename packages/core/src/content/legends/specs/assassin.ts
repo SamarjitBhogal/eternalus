@@ -1,7 +1,7 @@
 import type { LegendSpecDefinition } from './legendSpecs.types';
 
 /**
- * A Legionnaire Legend whose sub-class title is "Velite" (content id `assassin`; DEC-49). The title
+ * A warrior Legend whose sub-class title is its `displayName` (content id `assassin`; DEC-49). The title
  * is the same on both teams. The Legend has no name yet (`legendName: null`): only its class and
  * sub-class title exist, so its description, role, ratings and detail rows are not written.
  */
@@ -9,7 +9,7 @@ export const ASSASSIN = {
   id: 'assassin',
   classId: 'warrior',
   isSelectable: true,
-  displayName: 'Velite',
+  displayName: 'Zealot',
   legendName: null,
   roleLabel: null,
   description: null,

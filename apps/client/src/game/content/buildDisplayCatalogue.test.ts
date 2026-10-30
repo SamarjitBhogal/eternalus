@@ -34,28 +34,28 @@ const classCard = (cards: readonly LegendClassCard[], classId: string): LegendCl
   if (card === undefined) throw new Error(`no class ${classId}`);
   return card;
 };
-const CORE_FLYING = CONTENT.lockedClasses.find((locked) => locked.id === 'flying');
-if (CORE_FLYING === undefined) throw new Error('content has no flying locked class');
+const CORE_HARBINGER = CONTENT.lockedClasses.find((locked) => locked.id === 'harbinger');
+if (CORE_HARBINGER === undefined) throw new Error('content has no harbinger locked class');
 /** The locked fourth card as the screens show it: core's name, blurb and role label (DEC-48). */
-const FLYING_CARD: LegendClassCard = {
-  classId: 'flying',
-  displayName: CORE_FLYING.displayName,
-  blurb: CORE_FLYING.roleBlurb,
+const HARBINGER_CARD: LegendClassCard = {
+  classId: 'harbinger',
+  displayName: CORE_HARBINGER.displayName,
+  blurb: CORE_HARBINGER.roleBlurb,
   status: 'locked',
-  roleLabel: CORE_FLYING.roleLabel,
+  roleLabel: CORE_HARBINGER.roleLabel,
   tagline: null,
   description: null,
-  accentToken: '--class-flying-accent',
+  accentToken: '--class-harbinger-accent',
   details: [
     { slot: 'signature', displayName: null, iconAssetId: null },
     { slot: 'proficiency', displayName: null, iconAssetId: null },
     { slot: 'specialty', displayName: null, iconAssetId: null },
   ],
   art: {
-    card: 'flying-card-art',
-    sigil: 'flying-sigil',
+    card: 'harbinger-card-art',
+    sigil: 'harbinger-sigil',
     model: null,
-    cardPlates: { idle: 'flying-card-plate-idle' },
+    cardPlates: { idle: 'harbinger-card-plate-idle' },
     rowPlate: null,
   },
   specs: [],
@@ -230,9 +230,9 @@ describe('buildDisplayCatalogue', () => {
       'warrior',
       'sentinel',
       'magus',
-      'flying',
+      'harbinger',
     ]);
-    expect(catalogue.legendClasses.at(-1)).toEqual(FLYING_CARD);
+    expect(catalogue.legendClasses.at(-1)).toEqual(HARBINGER_CARD);
     expect(classCard(catalogue.legendClasses, 'magus').specs.map((spec) => spec.specId)).toEqual(
       CONTENT.specs
         .filter((spec) => spec.classId === 'magus')
@@ -243,13 +243,13 @@ describe('buildDisplayCatalogue', () => {
 
   it('names a locked card from core and draws it from presentation', () => {
     const skyborn = {
-      id: 'flying',
+      id: 'harbinger',
       displayName: 'Skyborn',
       roleBlurb: 'Rides the wind.',
       roleLabel: 'aloft',
     };
     expect(build({ content: { lockedClasses: [skyborn] } }).legendClasses.at(-1)).toEqual({
-      ...FLYING_CARD,
+      ...HARBINGER_CARD,
       displayName: 'Skyborn',
       blurb: 'Rides the wind.',
       roleLabel: 'aloft',

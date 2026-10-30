@@ -37,14 +37,14 @@ const testKit = (
 
 /**
  * A small catalogue for UI tests (ui/ may not import the game's catalogue): the three MVP classes,
- * the locked Harbinger, one unnamed Legend each for Legionnaire and Sentinel and the three named
+ * the locked Harbinger, one unnamed Legend each for Vanguard and Sentinel and the three named
  * Magus Legends (both team names, as content stores them), the oracle with its full display data.
  */
 export const TEST_CONTENT: DisplayCatalogue = {
   legendClasses: [
     classCardFixture({
       classId: 'warrior',
-      displayName: 'Legionnaire',
+      displayName: 'Vanguard',
       blurb: 'Quick and light.',
       roleLabel: 'Assault',
       accentToken: '--class-warrior-accent',
@@ -58,7 +58,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
       specs: [
         specCardFixture({
           specId: 'knight',
-          displayName: 'Centurion',
+          displayName: 'Templar',
           accentToken: '--class-warrior-accent',
           art: {
             card: null,
@@ -115,7 +115,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
         specCardFixture({
           specId: 'catalyst',
           displayName: 'Catalyst',
-          // The Dark name is derived from the mirror rule, pending owner confirmation (INBOX HC-Q16).
+          // The Dark name follows the mirror rule; the owner confirmed it (DEC-58, INBOX HC-Q16).
           legendName: { light: 'Veridan', dark: 'Nadirev' },
           accentToken: '--legend-catalyst-accent',
           art: {
@@ -161,7 +161,7 @@ export const TEST_CONTENT: DisplayCatalogue = {
         }),
         specCardFixture({
           specId: 'necromancer',
-          displayName: 'Necromancer',
+          displayName: 'Heretic',
           legendName: { light: 'Avedrin', dark: 'Nirdeva' },
           accentToken: '--legend-necromancer-accent',
           art: {
@@ -176,17 +176,17 @@ export const TEST_CONTENT: DisplayCatalogue = {
       hud: testKit(null, 'magus-weapon-staff', null),
     }),
     classCardFixture({
-      classId: 'flying',
+      classId: 'harbinger',
       displayName: 'Harbinger',
       blurb: 'Takes to the air.',
       status: 'locked',
       roleLabel: 'aerial',
-      accentToken: '--class-flying-accent',
+      accentToken: '--class-harbinger-accent',
       art: {
-        card: 'flying-card-art',
-        sigil: 'flying-sigil',
+        card: 'harbinger-card-art',
+        sigil: 'harbinger-sigil',
         model: null,
-        cardPlates: { idle: 'flying-card-plate-idle' },
+        cardPlates: { idle: 'harbinger-card-plate-idle' },
         rowPlate: null,
       },
     }),

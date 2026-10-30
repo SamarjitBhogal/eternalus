@@ -34,11 +34,11 @@ const ALLIES_62_125: readonly RosterEntry[] = [
   ally('ally-2', 'warrior', { specId: 'knight' }),
   ally('ally-3', 'sentinel'),
   ally('ally-4', 'sentinel'),
-  ally('ally-5', 'flying'),
+  ally('ally-5', 'harbinger'),
   ally('ally-6', 'warrior'),
   ally('ally-7', 'magus', { specId: 'necromancer' }),
   ally('ally-8', 'sentinel'),
-  ally('ally-9', 'flying'),
+  ally('ally-9', 'harbinger'),
   ally('ally-10', 'magus', { specId: 'catalyst' }),
 ];
 
@@ -110,7 +110,7 @@ describe('ClassSelectStep', () => {
       'warrior',
       'sentinel',
       'magus',
-      'flying',
+      'harbinger',
     ]);
     expect(tags.map((tag) => attributeOf(tag, 'data-look'))).toEqual([
       'idle',
@@ -125,7 +125,7 @@ describe('ClassSelectStep', () => {
       'false',
     ]);
     expect(accessibleNames(html, '[role=radio]')).toEqual([
-      'Legionnaire Assault 2 Allies',
+      'Vanguard Assault 2 Allies',
       'Sentinel Tank 3 Allies',
       'Magus Ranged 2 Allies',
       'Harbinger aerial Locked',
@@ -187,7 +187,7 @@ describe('ClassSelectStep', () => {
       false,
       false,
     ]);
-    expect(html).toContain('>Legionnaire</h3>');
+    expect(html).toContain('>Vanguard</h3>');
     expect(html).toMatch(/aria-disabled="true"[^>]*>(?:(?!<\/button>).)*Select Class/);
     expect(html).toContain(`id="${String(hintId)}"`);
     expect(html).toContain('Choose a class first.');
@@ -220,8 +220,8 @@ describe('ClassSelectStep', () => {
       'cover',
       'plate',
     ]);
-    expect(html).toContain('>Legionnaire</h3>');
-    expect(html).toContain('>Centurion<');
+    expect(html).toContain('>Vanguard</h3>');
+    expect(html).toContain('>Templar<');
     expect(html).toContain(CHROME_IMG);
   });
 
@@ -257,7 +257,7 @@ describe('ClassSelectStep', () => {
   it('draws the designed placeholders for a class with no art, copy, details or Legends (CD-13)', () => {
     const content: DisplayCatalogue = {
       ...TEST_CONTENT,
-      legendClasses: [classCardFixture({ classId: 'warrior', displayName: 'Legionnaire' })],
+      legendClasses: [classCardFixture({ classId: 'warrior', displayName: 'Vanguard' })],
     };
     const html = render('warrior', { content });
     const subtitle = `class="${String(infoPanelStyles.subtitle)}"`;
@@ -269,7 +269,7 @@ describe('ClassSelectStep', () => {
     expect(radioTags(html).map((tag) => attributeOf(tag, 'data-art-mode'))).toEqual(['cover']);
     expect(html).toContain('data-arch-art="missing"');
     expect(html).not.toMatch(/<img[^>]*(card-art|card-plate|row-plate)/);
-    expect(html).toContain('>Legionnaire</h3>');
+    expect(html).toContain('>Vanguard</h3>');
     expect(html).not.toContain(subtitle);
     expect(html).not.toContain(description);
     expect(html.match(/>—</g)).toHaveLength(3);

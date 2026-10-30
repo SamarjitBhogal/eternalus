@@ -215,7 +215,7 @@ describe('ASSET_MANIFEST', () => {
     ]);
     expect(SELECTION_PRIMARY_RASTER_ASSETS.map((entry) => entry.id)).toEqual([
       'class-row-plate-magus',
-      'flying-card-plate-idle',
+      'harbinger-card-plate-idle',
       'magus-card-plate-picked',
       'select-class-chrome',
       'sentinel-card-plate-idle',

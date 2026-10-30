@@ -17,7 +17,7 @@ const placeholderSlots = (gadget1: AssetId | null): ClassHudDisplay['slots'] => 
   { slot: 'gadget-2', displayName: null, iconAssetId: 'icon-placeholder-sword' },
 ];
 
-/** The Legionnaire kit the Figma draws: gadget 65:672, battle axe 62:241, helmet emblem 65:645. */
+/** The warrior kit the Figma draws: gadget 65:672, battle axe 62:241, helmet emblem 65:645. */
 export const WARRIOR_HUD: ClassHudDisplay = {
   emblemAssetId: 'warrior-hud-emblem',
   weapon: { displayName: null, iconAssetId: 'warrior-weapon-battle-axe' },

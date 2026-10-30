@@ -74,7 +74,7 @@ describe('ClassSelectAltStep', () => {
   it('shows the first available class with nothing picked, its card art standing in for a model', () => {
     const html = render(null);
 
-    expect(html).toContain('>Legionnaire</h3>');
+    expect(html).toContain('>Vanguard</h3>');
     expect(imgTag(html, '/assets/test/warrior-card-art.webp')).toContain(
       `class="${String(styles.modelStandIn)}"`,
     );

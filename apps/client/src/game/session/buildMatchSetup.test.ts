@@ -67,10 +67,10 @@ describe('buildMatchSetup', () => {
   });
 
   it('never gives a locked class to anyone and cycles the selectable classes in order', () => {
-    const locked = classCardFixture({ classId: 'flying', status: 'locked' });
+    const locked = classCardFixture({ classId: 'harbinger', status: 'locked' });
     const { allies, enemies } = build(new LcgRng(1), [locked, ...CLASSES]);
     const roster = [...allies, ...enemies];
-    expect(roster.filter((entry) => entry.classId === 'flying')).toEqual([]);
+    expect(roster.filter((entry) => entry.classId === 'harbinger')).toEqual([]);
     expect(allies.slice(0, 4).map((entry) => entry.classId)).toEqual([
       'warrior',
       'sentinel',
@@ -80,7 +80,7 @@ describe('buildMatchSetup', () => {
   });
 
   it('refuses a catalogue with only locked classes', () => {
-    const locked = classCardFixture({ classId: 'flying', status: 'locked' });
+    const locked = classCardFixture({ classId: 'harbinger', status: 'locked' });
     expect(() => build(new LcgRng(1), [locked])).toThrow('no selectable Legend classes');
   });
 });

@@ -166,6 +166,16 @@ Reply inline (`Decision: …`).
     and your Legend. **Waits for the build:** the fixed countdown, the bots filled at LOCK IN and
     the locked view (HC-Q9). The doc rows for this flow (HC-T1 T-12 and T-75) are redrafted to match
     and are applied with that build.
+  - Answered 2026-10-29 (build-plan question P3, in a dialog, and the review page, in chat):
+    "Option 1, but if you timeout without picking a legend, you are returned to the home screen with
+    a themed popup stating you did not select a legend and were returned to lobby"; the popup: title
+    "Failed to Choose Legend", text "The countdown ended before you locked in a Legend. You have
+    been returned to the lobby." Recorded as DEC-102, with notes on DEC-60 and DEC-61. So (1)
+    changes: a countdown that ends before LOCK IN, with or without a class, starts no match; you
+    return to the home screen and see that popup. (2): one Vanguard, one Sentinel and one Magus in
+    each lane, and two bots may share a Legend; each bot's Legend stays a random one of its class
+    (`Recommendation:`, DEC-61) unless you say otherwise. **Waits for the build**, with HC-T1 T-12,
+    whose redraft changes again to this rule.
 - [ ] **HC-F2 — Harbinger is a locked card, with the content id `flying` (default applied, with
       one correction).** The fourth card shows "Harbinger" (DEC-48) as locked: `aria-disabled`, a
       lock glyph and the word "Locked" (never colour alone), no hover emphasis, refused by the
@@ -188,6 +198,12 @@ Reply inline (`Decision: …`).
     Read: "the new name, not flying" is taken as the id; the description "the flying class" in prose
     stays. **Waits for the build:** the content rename from `flying` to `harbinger` and the new
     locked look; then those rows are applied and register row CD-05 is updated.
+  - Applied 2026-10-29: the content id is `harbinger` (`6ce2141`), and HC-T1 T-158 to T-163 are
+    applied (`3849c8b`; you approved T-162 and T-163 on the review page: "approve both"), with T-180
+    (04 §1's Status cell, round B20a); 04 §12's worked-example table waits for the HC-Q18 (2) build.
+    The locked look is now DEC-104 (your build-plan answer P5 and the review page: only "Coming
+    Soon...", a purple-to-black void in the church-window frame, a weathered CSS lock in the
+    middle). **Waits for the build:** that look; then register row CD-05 is updated.
 - [ ] **HC-F3 — Ally tiles on the selection screens, your team and the backdrop (default applied;
       veto).** The right-hand column (62:201, 58:342) shows your team from the match setup (team
       size from config): your own tile highlighted as drawn (a cream border and the sigil of your
@@ -258,6 +274,10 @@ Reply inline (`Decision: …`).
     empty weapon container, which removes the staff a Magus player sees today (register row CD-38).
     **Waits for the build:** empty frames for abilities that do not exist yet, and an empty emblem
     shield on every class but the Vanguard (its helmet).
+  - Answered 2026-10-29 (build-plan question P2): "Empty kit (Recommended)". Recorded as DEC-101:
+    in a live match every class shows empty ability frames, an empty weapon slot and an empty
+    shield, the Vanguard keeps its helmet, and the Figma comparison keeps your art. This replaces
+    the interim above (the Vanguard's battle axe). **Waits for the build.**
 - [x] **HC-F7 — "Esc back" and "C view details" use existing bindings (default applied; veto).**
       The Legend step's Back prompt shows your `pause-menu` key and the alternate layout's View
       details shows your `gadget-2` key, both as live key glyphs that also answer a mouse binding;
@@ -283,6 +303,9 @@ Reply inline (`Decision: …`).
     (Windows/Linux)+F3. Show or hide." Recorded as DEC-66. **Waits for the build:** the show-or-hide
     hotkey for the free camera, the overview, the explorer toolbar and the map legend; the map
     architecture's status note (06 §10) says it is not built yet.
+  - Answered 2026-10-29 (build-plan question P6): "Cmd/Ctrl+Shift+F3 (Recommended)". Recorded as
+    DEC-105: Cmd+Shift+F3 on a Mac and Ctrl+Shift+F3 on Windows and Linux (Cmd+F3 is the Mac's Show
+    Desktop key), in every build. **Waits for the build.**
 - [x] **HC-F9 — When the selection art is freed (default applied).** The character-select art (the
       selection asset groups) is released when the match starts and loaded again for a rematch;
       13 §2 did not say. Nothing to answer unless you prefer to keep it loaded.
@@ -412,6 +435,15 @@ Reply inline (`Decision: …`).
       to the home screen), which no screen sends; when T-12 is applied with the DEC-60 build, either
       the screen that sends it joins the screen table or the trigger is dropped. The counts above
       are from before this round: the table now holds 143 applied rows and 16 pending.
+    - Round B20 (2026-10-29): T-155 to T-163 are applied (`3849c8b`): your build-plan answer P8
+      ("Approve all three (Recommended)") approved T-155 to T-157, your review page ("approve both")
+      T-162 and T-163, and T-158 to T-161 followed the content rename (`6ce2141`). Round B20a
+      (2026-10-30, the critic's loop 2): new row T-180 changes the last `flying` in 04 §1 (approved
+      with HC-F2, as T-158); T-155 keeps the row's `[STATUS: needs-planning]` marker; T-159 changed
+      only the first line of 04 §12, and the worked example's table waits for the HC-Q18 (2) build.
+      7 rows pending: T-10, T-12, T-13, T-23, T-75, T-125 and T-152; T-12 and T-152 predate DEC-102
+      and DEC-100 (the PR register's section "Owner answers of 2026-10-29" says how). The table now
+      holds 153 applied rows and 7 pending.
 
   | #     | Where (doc §, line)                                                                                                                                                                                                                                          | Base design said                                                          | Branch says                                                                                                                                                           | Basis (DEC/DV/factual)                                                                                                                                                                                                   | Changes general design? y/n + why                                                                             | Status                                                                                                                                                                         |
   | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -551,15 +583,15 @@ Reply inline (`Decision: …`).
   | T-152 | phase 6 plan, sprint 6.3, new task after the "Audio and announcer" task (`docs/plan/phase-6-hardening-balance-and-release.md:143`)                                                                                                                           | (no task)                                                                 | the UI enhancements follow-up task (`docs/plan/ui-enhancements-plan.md`): UE-03 first, then the HC-S5 picks, on by default                                            | INBOX HC-S5 (answered 2026-10-28: "Build these, switched on by default", no enhancement named); OD-26 and OD-31 (a new task in the owner's plan waits for him, as T-145 did); /pr-review (2026-10-27) pr-docs-process-05 | n: schedules a follow-up; adds no gameplay                                                                    | pending owner; waits for INBOX HC-S5: which enhancements (your answer named none)                                                                                              |
   | T-153 | 14 §11, the progress bullet (`docs/architecture/14-persistence-and-resources.md:456`)                                                                                                                                                                        | "ends at the manifest sum"                                                | ends at the manifest sum when every file loads, below it if a file fails (only a loaded entry's loaded files count)                                                   | factual: `ResourceController` since `4a6dec6`, pinned by the test "warns once for a failed rendition and serves its key with the entry url"; the review of the repairs                                                   | n: byte-based and monotonic stay. Your call: count a failed file as loaded instead                            | applied 2026-10-28 (owner approved: progress ends lower)                                                                                                                       |
   | T-154 | decisions log, DEC-49 row, "Affects" column (the core files) (`docs/reference/game-design/13-owner-decisions-log.md:55`)                                                                                                                                     | the content rules `defaultContentRules.ts` and `SpecClassExistsRule.ts`   | adds `RoleRatingRangeRule.ts`, the rule that keeps every Legend role rating from 0 to 1                                                                               | `42bb212` (/pr-review (2026-10-27) pr-ui-screens-04) checks DEC-49's Legend specs; the log's Purpose (a decision lists what it affects); 04 §5 (one rule class per check)                                                | n: a file pointer; the decision text is unchanged                                                             | applied 2026-10-28 (owner approved, D1)                                                                                                                                        |
-  | T-155 | reference 10, art theme table, selection-screen art row (`docs/reference/game-design/10-art-and-lore.md:29`)                                                                                                                                                 | **post-MVP**                                                              | **MVP**: the owner's Figma art for now, until a digital artist is employed                                                                                            | consequence of the owner's answer to INBOX HC-Q7 (1) (2026-10-28, D2; DEC-51's note of that day)                                                                                                                         | n: records the owner's decision                                                                               | pending owner; you asked for them to be explained first (INBOX HC-T1)                                                                                                          |
-  | T-156 | reference 11, controls, UI and presentation table, selection-screen art row (`docs/reference/game-design/11-mvp-scope.md:117`)                                                                                                                               | **post-MVP**                                                              | **MVP**, the owner's Figma art for now                                                                                                                                | consequence of the owner's answer to INBOX HC-Q7 (1) (2026-10-28, D2; DEC-51's note of that day)                                                                                                                         | n: records the owner's decision                                                                               | pending owner; you asked for them to be explained first (INBOX HC-T1)                                                                                                          |
-  | T-157 | reference 11, the game doc's "MVP decisions so far", the art bullet (`docs/reference/game-design/11-mvp-scope.md:139`)                                                                                                                                       | selection-screen art **post-MVP**                                         | selection-screen art **MVP** since 2026-10-28                                                                                                                         | consequence of the owner's answer to INBOX HC-Q7 (1) (2026-10-28, D2; DEC-51's note of that day)                                                                                                                         | n: records the owner's decision                                                                               | pending owner; you asked for them to be explained first (INBOX HC-T1)                                                                                                          |
+  | T-155 | reference 10, art theme table, selection-screen art row (`docs/reference/game-design/10-art-and-lore.md:29`)                                                                                                                                                 | **post-MVP**                                                              | **MVP**: the owner's Figma art for now, until a digital artist is employed                                                                                            | consequence of the owner's answer to INBOX HC-Q7 (1) (2026-10-28, D2; DEC-51's note of that day)                                                                                                                         | n: records the owner's decision                                                                               | applied 2026-10-29 (owner: "Approve all three", build-plan answer P8; `3849c8b`)                                                                                               |
+  | T-156 | reference 11, controls, UI and presentation table, selection-screen art row (`docs/reference/game-design/11-mvp-scope.md:117`)                                                                                                                               | **post-MVP**                                                              | **MVP**, the owner's Figma art for now                                                                                                                                | consequence of the owner's answer to INBOX HC-Q7 (1) (2026-10-28, D2; DEC-51's note of that day)                                                                                                                         | n: records the owner's decision                                                                               | applied 2026-10-29 (owner: "Approve all three", build-plan answer P8; `3849c8b`)                                                                                               |
+  | T-157 | reference 11, the game doc's "MVP decisions so far", the art bullet (`docs/reference/game-design/11-mvp-scope.md:139`)                                                                                                                                       | selection-screen art **post-MVP**                                         | selection-screen art **MVP** since 2026-10-28                                                                                                                         | consequence of the owner's answer to INBOX HC-Q7 (1) (2026-10-28, D2; DEC-51's note of that day)                                                                                                                         | n: records the owner's decision                                                                               | applied 2026-10-29 (owner: "Approve all three", build-plan answer P8; `3849c8b`)                                                                                               |
   | T-158 | 04 §1 table, `Legend` row (`docs/architecture/04-entity-architecture.md:78`)                                                                                                                                                                                 | `flying` reserved                                                         | `harbinger` reserved                                                                                                                                                  | DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2 named these words)                                                                                                                                    | n: one id                                                                                                     | approved 2026-10-28 (your Harbinger id answer, INBOX HC-F2); applied with the content rename                                                                                   |
-  | T-159 | 04 §12, the worked example's first line (`docs/architecture/04-entity-architecture.md:303`)                                                                                                                                                                  | `flying`                                                                  | `harbinger`; the example table's file, constant and class names follow INBOX HC-Q18 (2) (class id or entity kind)                                                     | DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2 named these words)                                                                                                                                    | n: one id                                                                                                     | approved 2026-10-28 (your Harbinger id answer, INBOX HC-F2); applied with the content rename                                                                                   |
+  | T-159 | 04 §12, the worked example's first line (`docs/architecture/04-entity-architecture.md:303`)                                                                                                                                                                  | `flying`                                                                  | `harbinger`; the example table's file, constant and class names follow INBOX HC-Q18 (2) (class id or entity kind)                                                     | DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2 named these words)                                                                                                                                    | n: one id                                                                                                     | first line applied 2026-10-29 (`3849c8b`); the worked-example table's file, constant and class names wait for the HC-Q18 (2) build                                             |
   | T-160 | 17 R1, when (`docs/architecture/17-extension-recipes.md:76`)                                                                                                                                                                                                 | `flying`                                                                  | `harbinger`                                                                                                                                                           | DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2 named these words)                                                                                                                                    | n: one id                                                                                                     | approved 2026-10-28 (your Harbinger id answer, INBOX HC-F2); applied with the content rename                                                                                   |
   | T-161 | phase 4 plan, sprint 4.1, the `Legend` task (`docs/plan/phase-4-legends-abilities-and-loadouts.md:49`)                                                                                                                                                       | `[Flying]` reserved as a content id                                       | `harbinger` reserved as a content id                                                                                                                                  | DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2 named these words)                                                                                                                                    | n: one id                                                                                                     | approved 2026-10-28 (your Harbinger id answer, INBOX HC-F2); applied with the content rename                                                                                   |
-  | T-162 | reference 12, OQ-02 (`docs/reference/game-design/12-open-questions.md:40`)                                                                                                                                                                                   | id `flying` (HC-F2)                                                       | id `harbinger` (DEC-59)                                                                                                                                               | consequence of DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2)                                                                                                                                       | n: one id                                                                                                     | pending owner; a consequence of your Harbinger id answer; applied with the content rename                                                                                      |
-  | T-163 | naming suggestions, Flying section, the decided note (`docs/reference/suggestions/naming.md:41`)                                                                                                                                                             | `locked/flying.ts`                                                        | `locked/harbinger.ts` (the file renamed with the id)                                                                                                                  | consequence of DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2)                                                                                                                                       | n: a file path                                                                                                | pending owner; a consequence of your Harbinger id answer; applied with the content rename                                                                                      |
+  | T-162 | reference 12, OQ-02 (`docs/reference/game-design/12-open-questions.md:40`)                                                                                                                                                                                   | id `flying` (HC-F2)                                                       | id `harbinger` (DEC-59)                                                                                                                                               | consequence of DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2)                                                                                                                                       | n: one id                                                                                                     | applied 2026-10-29 (owner: "approve both", review page; `3849c8b`)                                                                                                             |
+  | T-163 | naming suggestions, Flying section, the decided note (`docs/reference/suggestions/naming.md:41`)                                                                                                                                                             | `locked/flying.ts`                                                        | `locked/harbinger.ts` (the file renamed with the id)                                                                                                                  | consequence of DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2)                                                                                                                                       | n: a file path                                                                                                | applied 2026-10-29 (owner: "approve both", review page; `3849c8b`)                                                                                                             |
   | T-164 | 13 §2 table, `match` row, work, the HC-F9 label (`docs/architecture/13-game-interface.md:111`)                                                                                                                                                               | `Recommendation:`, INBOX HC-F9 (T-16)                                     | `Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-F9                                                                                                        | INBOX HC-F9 ("Keep", 2026-10-28); architecture critic, loop 1 (2026-10-28) (nit)                                                                                                                                         | n: a label                                                                                                    | applied 2026-10-28 (critic loop 1; corrects T-16: notes your Keep, INBOX HC-F9)                                                                                                |
   | T-165 | 13 §2, the paragraph after the table, the transitions test (`docs/architecture/13-game-interface.md:115`)                                                                                                                                                    | fake states and a fake asset loader (T-17)                                | fake states, a `MemoryStorageAdapter` and a fake asset loader: the target kept; 13 §10 says the session takes no persistence yet                                      | architecture critic, loop 1 (2026-10-28) (nit: T-17 described only today's test; OG-12)                                                                                                                                  | n: keeps the base design's target                                                                             | applied 2026-10-28 (critic loop 1; corrects T-17, which you approved if it passed the critic's check)                                                                          |
   | T-166 | 13 §3 screens table, `CharacterSelectScreen` row, Emits (`docs/architecture/13-game-interface.md:138`)                                                                                                                                                       | `confirm-selection`, `cancel-match` (T-18)                                | no `cancel-match`: no `ui/` file emits it, and DEC-60 takes Esc off the class step                                                                                    | architecture critic, loop 1 (2026-10-28) (should-fix); DEC-60                                                                                                                                                            | n: matches the code                                                                                           | applied 2026-10-28 (critic loop 1; corrects T-18, which you approved if it passed the critic's check)                                                                          |
@@ -576,6 +608,7 @@ Reply inline (`Decision: …`).
   | T-177 | 17 R26, files, content id, the citation (`docs/architecture/17-extension-recipes.md:519`)                                                                                                                                                                    | "none yet, ADR 0018" (T-102)                                              | "none yet, ADR 0023"                                                                                                                                                  | ADR 0023 and INBOX HC-Q18 (4) (the owner, 2026-10-28: "Every content id"; ADR 0018 point 5 covers Legend ids only); architecture critic, loop 1 (2026-10-28) (should-fix)                                                | n: a citation                                                                                                 | applied 2026-10-28 (critic loop 1; corrects T-102: cites ADR 0023, the record of your HC-Q18 (4) answer)                                                                       |
   | T-178 | CP-13, requirement, content ids, a citation (`docs/requirements/02-coding-principles.md:218`)                                                                                                                                                                | (no citation) (T-137)                                                     | "(ADR 0023; `INBOX.md` HC-Q18 (4))"                                                                                                                                   | ADR 0023 and INBOX HC-Q18 (4) (the owner, 2026-10-28: "Every content id"; ADR 0018 point 5 covers Legend ids only); architecture critic, loop 1 (2026-10-28) (should-fix); NFR-010: a requirement changes only by an ADR | n: a citation                                                                                                 | applied 2026-10-28 (critic loop 1; corrects T-137: cites ADR 0023, the record of your HC-Q18 (4) answer)                                                                       |
   | T-179 | naming suggestions, in-code convention, rule 3, the citation (`docs/reference/suggestions/naming.md:317`)                                                                                                                                                    | "(ADR 0018 point 5)" (T-143)                                              | "(ADR 0023)"                                                                                                                                                          | ADR 0023 and INBOX HC-Q18 (4) (the owner, 2026-10-28: "Every content id"; ADR 0018 point 5 covers Legend ids only); architecture critic, loop 1 (2026-10-28) (should-fix)                                                | n: a citation                                                                                                 | applied 2026-10-28 (critic loop 1; corrects T-143: cites ADR 0023, the record of your HC-Q18 (4) answer)                                                                       |
+  | T-180 | 04 §1 table, `Legend` row, Status (`docs/architecture/04-entity-architecture.md:78`)                                                                                                                                                                         | `flying` **post-MVP**                                                     | `harbinger` **post-MVP**                                                                                                                                              | DEC-59 (the owner, 2026-10-28: "Use the id harbinger"; INBOX HC-F2 named these words)                                                                                                                                    | n: one id                                                                                                     | approved 2026-10-28 (your Harbinger id answer, INBOX HC-F2); applied with the content rename                                                                                   |
 
 - [x] **HC-B1 — Better than the design, or new, for sign-off (`feat/hud-and-character-select`; asked
       after the pre-PR critic).** Reconciled on 2026-10-24 with the branch's deviation table (the DV
@@ -771,6 +804,10 @@ Reply inline (`Decision: …`).
     a destroyed structure's tile gets a dark layer over its frame with lighter crack lines, in CSS,
     and its health bar disappears. **Waits for the build**, and for the structures' health data
     (HC-Q2 (3)).
+  - Answered 2026-10-29 (build-plan question P11 and the review page): "When at least one segment
+    has been breached"; "Wall tile breach: any wall segment or gate". Recorded as DEC-108: the one
+    Wall tile shows destroyed as soon as any wall segment or gate is destroyed. **Waits for the
+    build.**
 - [ ] **HC-Q5 — The alternate class layout (62:70, DEC-52).** It has no class cards, ally tiles or
       Select button: the build adds previous and next arrows, and View Details confirms the shown
       class (default; register CD-10). What should View Details open (no design exists)? Which
@@ -804,6 +841,11 @@ Reply inline (`Decision: …`).
     And do the class step's row titles (today "Signature", "Proficiency", "Specialty") become
     Default Ability, Proficiency and Passive, as in the View Details modal? **Waits for the build:**
     the four Legend rows and the modal.
+  - Answered 2026-10-29 (build-plan question P4 and the review page; your words are in DEC-103):
+    key V opens View Details as a full screen after your frame "View Details Example", built from
+    the existing components, with a vignette backdrop; Oracle's "Unison Ward" is ability 1 as a
+    preview until abilities are designed next sprint. Still open: the Magus description and the
+    class step's row titles (above). **Waits for the build.**
 - [x] **HC-Q6 — Visual details your frames leave open (defaults applied).** (1) The picked card is
       the enlarged one, hover and focus preview a card, and there is no default pick: right? Is the
       hover cue the same look as selected, and is the focus ring right (drawn over the backdrop,
@@ -873,6 +915,9 @@ Reply inline (`Decision: …`).
     checklist in `AGENTS.md`)? Yes or no; nothing changes until you say. New: FR-111's acceptance
     line ("no screen depends on a character portrait asset") was not reworded with its statement,
     and the selection screens show portraits: reword it, or keep it.
+  - 2026-10-29: (4) answered (build-plan question P9: "No (Recommended)"): DEC-53 is not written
+    into `AGENTS.md` (DEC-107). (5) applied: the menu and body font tokens are Cinzel (`d4cbc70`,
+    DEC-67). Still open: (1) the tools' terms, and FR-111's acceptance line.
 - [ ] **HC-Q8 — Match runtime (confirm).** Pause is built as ES-11 requires: in single player the
       pause overlay stops the simulation and the rendering, and held keys are released. Confirm.
       (1) Route `Simulation.step()` exceptions to the session next (audit AC-1 point 2)? (2) Accept
@@ -889,6 +934,10 @@ Reply inline (`Decision: …`).
     `Match` owner" below. HC-T1 rows T-16 and T-59 are applied. **Waits for the build:** (1) a
     `Simulation.step()` error goes to the session; that work's critic checks it against the
     architecture, as you ask.
+  - 2026-10-29 (build-plan question P7 and the review page): a crash in the game loop returns you
+    to the menu with "The match stopped because of an error." and an optional note; every error and
+    crash is saved as a traceable report in `logs/errors/` by the local server (option A). Recorded
+    as DEC-106, with what each report holds. **Waits for the build**, with (1).
 - [ ] **HC-Q9 — Behaviour your frames do not show (defaults applied; veto).** Esc on the class step
       does nothing; the Legends strip on the class step is informational, not clickable; after
       LOCK IN the screen leaves at once, with no waiting state.
@@ -936,7 +985,7 @@ Reply inline (`Decision: …`).
     with: "Likely fine unless the lossy doesn't degrade the display a notable amount." Read: the
     lossless files stay; where a lossy file would not visibly degrade the display, it may replace
     one later (the load-on-demand work, HC-Q20, may look at sizes again).
-- [ ] **HC-Q16 — One Legend's Dark name is derived, not stated (flag; DEC-49).** The Dark name in
+- [x] **HC-Q16 — One Legend's Dark name is derived, not stated (flag; DEC-49).** The Dark name in
       `packages/core/src/content/legends/specs/catalyst.ts` (its `legendName.dark`, marked
       `TODO(sam)`) was derived from your mirror rule (the Light name spelled backwards); you stated
       the other named Legends' Dark names yourself (DEC-49). Confirm it, or give the Dark name. No
@@ -945,6 +994,8 @@ Reply inline (`Decision: …`).
   - Answered 2026-10-28 (the non-blocking decision page, in chat): "Confirm Nadirev". Recorded in
     DEC-58 and in a note to DEC-49. **Waits for:** the `TODO(sam)` marker on it in
     `packages/core/src/content/legends/specs/catalyst.ts` to be removed (a code change).
+  - Applied 2026-10-29: the `TODO(sam)` marker is removed (`6a3e437`), and the spec's TSDoc and the
+    client test store's comment cite DEC-58 (`4fca16b`).
 - [ ] **HC-Q17 — Sub-class gameplay: which phase builds it? (DEC-56, ADR 0018).** Sub-classes
       are MVP, and this branch ships the Legend pick as setup data only: nothing in a match reads
       it yet. Their gameplay (the `LegendSpecDefinition` fields a class consumes: stat modifiers,
@@ -1012,6 +1063,13 @@ Reply inline (`Decision: …`).
     Round B19: (4) is recorded in ADR 0023, because CP-13 is a requirement and changes only through
     an ADR (NFR-010); CP-13, `AGENTS.md`, the entity architecture (04 §10), recipe R26 and the
     naming suggestions cite it.
+  - 2026-10-29: (1) applied: the art-id prefix check is replaced by the content-driven name guard;
+    the one-owner check and the exact count of Legend art owners stay (`b57b919`, `6a3e437`). (2)
+    decided under your answer ("Whichever follows the architecture or is better than it"): option A,
+    spawn by the definition's `kind`, which architecture 04 §6 already designs and the minion
+    stack's `SpawnSystem` already does (the research of 2026-10-28, outside the repository), shown
+    to you as build-plan step 14. Not built yet: it lands with the merge of the minion stack (the
+    integration recipe), where the player's spawn moves to the same path.
 - [ ] **HC-Q19 — The minimap's click intent, its visibility setting and the M key (not urgent;
       pre-PR critic, run 2: ui-hud-components-assets-02).** (1) A click on the minimap is handled by
       the canvas, which moves the camera there (`Match`), because the canvas draws the minimap
@@ -1045,6 +1103,9 @@ Reply inline (`Decision: …`).
     scaffold. Post-selection, pre-game loading screen finishes game asset loading. Look ahead,
     remember behind." Recorded as DEC-68; it replaces the recommendation to decide in Sprint 3.
     **Waits for the build.**
+  - 2026-10-29 (build-plan question P10): "Local only (Recommended)": the game is served locally
+    for the demo, so load on demand needs no handling for a web host (DEC-107). **Waits for the
+    build.**
 - [x] **HC-Q21 — Merge order with the nine open sibling pull requests (decide before either side
       merges; /pr-review of 2026-10-27: pr-integration-04).** Besides this one, nine open pull
       requests target `phase/2-sprint-2-work`: the minion stack (`feat/minion-m1-marching`,
@@ -1115,10 +1176,13 @@ Reply inline (`Decision: …`).
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
   - Answered 2026-10-28 with HC-S5 (below): on by default, once you name the enhancements.
+  - 2026-10-29: chosen as UE-01, on by default, with a slightly larger pulse on the number from 5 s
+    (HC-S5, DEC-100).
 - [ ] **HC-S2 — Suggestion, not built: HUD value transitions.** 200 ms transitions on the bars, the
       cooldown sweeps and the XP ring between updates. If you want it, it comes back the same way
       as HC-S1, after a paint check on a slowed-down CPU.
   - Answered 2026-10-28 with HC-S5 (below): on by default, once you name the enhancements.
+  - 2026-10-29: chosen as UE-02, on by default (HC-S5, DEC-100).
 - [ ] **HC-S3 — For Phase 5 sprint 5.5 (architecture 13 §7 schedules the accessibility minimums
       there): the in-game reduced-motion setting.** Apply the setting (FR-084) to every
       reduced-motion rule, including the background layers' own rules (today `ThemedBackground`'s),
@@ -1135,6 +1199,7 @@ Reply inline (`Decision: …`).
       variant with CD-25's filter kept live (DEC-53), rendered again from your file, because the
       agents' scratch copy no longer exists. Nothing to answer unless you want it.
   - Answered 2026-10-28 with HC-S5 (below): on by default, once you name the enhancements.
+  - 2026-10-29: chosen as UE-04, on by default (HC-S5, DEC-100).
 - [ ] **HC-S5 — The UI enhancements follow-up: choose what to build (pointer).** Your playtest of
       2026-10-24 found the screens working and left visual polish and HUD changes for later (see
       Done). The enhancements suggested so far (HC-S1 to HC-S4 and the research's ideas) are
@@ -1161,6 +1226,14 @@ Reply inline (`Decision: …`).
     screen now stays after LOCK IN (DEC-60), so the flare plays there. (4) UE-07's threshold stays
     at the plan's 25 % unless you give another. HC-T1 row T-152 waits for your list; its wording now
     says "on by default".
+  - Answered 2026-10-29 (build-plan question P1: "Please give me an HTML page to review decisions,
+    as per spec"; then the review page, in chat): all eleven, "P1 low-health threshold: 25 %", and:
+    "All approved. Minor changes: at 5 seconds remaining, urgency countdown should have a slightly
+    larger pulse on the number. Idle shimmer should pulse every 5 seconds instead of 7. Level-up
+    flare could be more dramatic and the colour should match the theme, not be light blue. We use
+    gold, red, and bronze often." Recorded as DEC-100; `docs/plan/ui-enhancements-plan.md` now has
+    your values for UE-01, UE-07, UE-08 and UE-12, and every enhancement on by default. **Waits for
+    the build**, and HC-T1 T-152 for your approval.
 - [ ] **HC-U1 — For Sprint 3: your functional UI/UX improvements to the HUD and character select
       (not urgent; you supply the list; OD-39).** On 2026-10-25 you judged the visuals good enough
       for the MVP and said your functional UI/UX improvements can wait for Sprint 3 (HC-C1). Send
@@ -1421,6 +1494,14 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-10-29 — **Your answers to the build plan of `feat/hud-and-character-select`** (questions P1
+  to P11 in three dialogs, and the enhancement review page in chat): recorded with your words as
+  DEC-100 to DEC-108 in `docs/reference/game-design/13-owner-decisions-log.md` (numbering in its
+  batch intro), with notes on DEC-48, DEC-51, DEC-53, DEC-57, DEC-59 to DEC-62, DEC-65, DEC-66 and
+  DEC-69, and under HC-F1, HC-F2, HC-F6, HC-F8, HC-Q4, HC-Q5, HC-Q7, HC-Q8, HC-Q20 and HC-S1 to
+  HC-S5. HC-T1 T-155 to T-163 and T-180 applied (7 rows pending); HC-Q16 ticked; HC-Q18 (1) applied.
+  Your instruction: "Answers must be documented in the code so I do not need to make these decisions
+  again."
 - 2026-10-28 — **The critic's check of the doc rows applied on 2026-10-28 (loop 1 of 3)**: 3
   should-fix findings and 7 nits, all fixed as HC-T1 rows T-164 to T-179; ADR 0023 records your
   HC-Q18 (4) answer (every content id) for CP-13; DEC-61 and DEC-62 gain notes that label the

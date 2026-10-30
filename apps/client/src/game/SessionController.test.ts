@@ -39,7 +39,7 @@ describe('SessionController with the default states', () => {
       'warrior',
       'sentinel',
       'magus',
-      'flying',
+      'harbinger',
     ]);
     expect(state.loading).toMatchObject({ group: 'boot', status: 'ready' });
   });
@@ -139,8 +139,8 @@ describe('SessionController with the default states', () => {
 
   it('ignores unknown classes or specs and a confirm with nothing selected', async () => {
     const { controller, store, intent } = await atCharacterSelect();
-    // `flying` is the locked Harbinger card: shown, never selectable (DEC-48).
-    intent({ kind: 'select-class', classId: 'flying' });
+    // `harbinger` is the locked Harbinger card: shown, never selectable (DEC-48).
+    intent({ kind: 'select-class', classId: 'harbinger' });
     intent({ kind: 'select-class', classId: 'unknown-class' });
     // A Sentinel Legend under the magus class: a known Legend of another class.
     intent({ kind: 'select-class', classId: 'magus', specId: firstAvailableSpecId('sentinel') });

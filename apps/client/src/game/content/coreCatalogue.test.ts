@@ -21,7 +21,7 @@ const specs = (classId: string): readonly LegendSpecCard[] => classCard(classId)
 const allSpecs = catalogue.legendClasses.flatMap((card) => card.specs);
 
 /**
- * Legend-specific art fields (DEC-49): each id starts with its spec id, except the one stand-in.
+ * Legend-specific art fields (DEC-49): each id has one owning spec, except the one stand-in.
  */
 const legendArt = (spec: LegendSpecCard): string[] =>
   [spec.art.card, spec.art.refraction, spec.art.portrait, spec.art.mini, spec.art.rowPlate].filter(
@@ -57,7 +57,7 @@ const namesRoster = (token: string): boolean =>
   ROSTER_NAMES.some((name) => token.toLowerCase().includes(name));
 
 describe('coreCatalogue', () => {
-  it('lists the three MVP classes and the locked flying class by content name, with blurbs', () => {
+  it('lists the three MVP classes and the locked harbinger class by content name, with blurbs', () => {
     const names = new Map(
       [...CONTENT.legends, ...CONTENT.lockedClasses].map(({ id, displayName }) => [
         id,
@@ -65,10 +65,10 @@ describe('coreCatalogue', () => {
       ]),
     );
     expect(catalogue.legendClasses.map((card) => [card.classId, card.displayName])).toEqual(
-      ['warrior', 'sentinel', 'magus', 'flying'].map((id) => [id, names.get(id)]),
+      ['warrior', 'sentinel', 'magus', 'harbinger'].map((id) => [id, names.get(id)]),
     );
     for (const card of catalogue.legendClasses) expect(card.blurb.length).toBeGreaterThan(0);
-    expect(classCard('flying')).toMatchObject({ status: 'locked', hud: null, specs: [] });
+    expect(classCard('harbinger')).toMatchObject({ status: 'locked', hud: null, specs: [] });
     const available = catalogue.legendClasses.filter(isSelectableClass);
     expect(available).toHaveLength(3);
     for (const card of available)
@@ -119,7 +119,7 @@ describe('coreCatalogue', () => {
     expect(tokens.filter((token) => !DECLARED_TOKENS.has(token))).toEqual([]);
   });
 
-  it('keys Legend art and tokens by spec id, never by a title or a Legend name (OA3, I-82)', () => {
+  it('gives Legend art one owner and keeps titles and Legend names out of tokens (OA3, I-82)', () => {
     expect(catalogueTokens().filter(namesRoster)).toEqual([]);
     const owners = new Map<string, string[]>();
     for (const spec of allSpecs) {
@@ -129,7 +129,6 @@ describe('coreCatalogue', () => {
     const others = [...owners].filter(([id]) => id !== SHARED_LEGEND_ART.id);
     expect(others).toHaveLength(11);
     expect(others.filter(([, owner]) => owner.length !== 1)).toEqual([]);
-    expect(others.filter(([id, [owner]]) => !id.startsWith(`${owner ?? ''}-`))).toEqual([]);
   });
 
   it('gives a row plate only to the Figma state it was exported from (I-69)', () => {
@@ -137,7 +136,7 @@ describe('coreCatalogue', () => {
       'warrior',
       'sentinel',
       'magus',
-      'flying',
+      'harbinger',
     ]);
     expect(
       catalogue.legendClasses

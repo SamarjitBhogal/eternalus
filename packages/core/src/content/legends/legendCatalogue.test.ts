@@ -10,10 +10,10 @@ const secondsToTopSpeed = (kind: LegendKind): number => {
 };
 
 describe('LEGEND_CLASSES', () => {
-  it('lists the three MVP classes in character-select order (DEC-48: Legionnaire)', () => {
+  it('lists the three MVP classes in character-select order (display names from content)', () => {
     expect(LEGEND_CLASSES.ids).toEqual(['warrior', 'sentinel', 'magus']);
     expect(LEGEND_CLASSES.all().map((legend) => legend.displayName)).toEqual([
-      'Legionnaire',
+      'Vanguard',
       'Sentinel',
       'Magus',
     ]);

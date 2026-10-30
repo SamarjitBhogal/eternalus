@@ -12,7 +12,7 @@ const WARRIOR_KIT: ClassHudDisplay = {
 
 const CLASSES = [
   classCardFixture({ classId: 'warrior', hud: WARRIOR_KIT }),
-  classCardFixture({ classId: 'flying', status: 'locked' }),
+  classCardFixture({ classId: 'harbinger', status: 'locked' }),
 ];
 
 const stateWith = (classId: string | null) => pickedClassState(CLASSES, classId);
@@ -24,6 +24,6 @@ describe('selectHudKit', () => {
 
   it('is null without a pick and for the locked class, which has no kit', () => {
     expect(selectHudKit(stateWith(null))).toBeNull();
-    expect(selectHudKit(stateWith('flying'))).toBeNull();
+    expect(selectHudKit(stateWith('harbinger'))).toBeNull();
   });
 });

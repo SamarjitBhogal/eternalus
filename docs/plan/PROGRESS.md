@@ -2247,3 +2247,43 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   resolver against `230a330`, with this entry written: 1028 ids, 0 without a definition.
 - Next step: a second critic loop on round B19 if the coordinating session runs one (two of the
   owner's three remain); then the build work round B18 listed, ADR 0024 (load on demand) among it.
+
+### 2026-10-29 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's build-plan answers (batch 1 docs pass, round B20) — feat/hud-plan-b1 — sholtzman + Claude Code
+
+- What was done (docs, plus code comments): `3849c8b` the applied rows, `4fca16b` two Nadirev
+  comments, `90442f6` the records; on 2026-10-30 the critic's loop 2 (approve, no blocker) and its
+  ponytail review were applied in place to this unmerged text, in one `docs(docs)` and one
+  `chore(client)` commit. On 2026-10-29 the owner answered the build plan's P1 to P11 and the
+  enhancement review page (verbatim in
+  `eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-10-29-plan.md`), with the
+  instruction: "Answers must be documented in the code so I do not need to make these decisions
+  again."
+  - Decisions log: DEC-100 to DEC-108 (numbering in the log's batch intro), and dated notes on
+    DEC-48, DEC-51, DEC-53, DEC-57, DEC-59 to DEC-62, DEC-65, DEC-66 and DEC-69.
+  - HC-T1: T-155 to T-163 applied; the critic's loop 2 (round B20a) added T-180 and restored the
+    marker T-155 had dropped; 7 rows pending (`INBOX.md` HC-T1).
+  - Every edit to a sholtzman-owned doc (detail in the commits; `last-reviewed` bumped on each but
+    this log):
+    - `docs/architecture/04-entity-architecture.md`: HC-T1 T-158, T-159 (first line only), T-180.
+    - `docs/architecture/17-extension-recipes.md`: T-160.
+    - `docs/plan/phase-4-legends-abilities-and-loadouts.md`: T-161.
+    - `docs/reference/game-design/10-art-and-lore.md`: T-155.
+    - `docs/reference/game-design/11-mvp-scope.md`: T-156, T-157.
+    - `docs/reference/game-design/12-open-questions.md`: T-162.
+    - `docs/reference/suggestions/naming.md`: T-163.
+    - `docs/reference/game-design/13-owner-decisions-log.md`: the new batch and the eleven notes.
+    - `docs/plan/ui-enhancements-plan.md`: DEC-100's values (UE-01, UE-06, UE-07, UE-08, UE-12,
+      every default on) and the answered owner question.
+    - `docs/changelog/pr-feat-hud-and-character-select.md`: the section "Owner answers of
+      2026-10-29"; notes on ruling I-82 and roster item P8.
+    - `docs/plan/PROGRESS.md`: this entry.
+    - `INBOX.md` (not under `docs/`): dated notes on the answered items, HC-T1's bullet and table, a
+      Done entry; HC-Q1 (1)'s "Necromancer" is the question as asked on 2026-10-17 and is left as
+      written.
+  - Code comments: Nadirev cites DEC-58 (`4fca16b`); `RETIRED_NAMES` cites DEC-49 and DEC-58, and
+    `--font-game` cites DEC-67 (the `chore(client)` commit).
+  - Stale text that changes with the build: what `INBOX.md` HC-F1, HC-F8 and HC-Q4 track, and also
+    13 §10's status note, reference 14 §5, `bridge/selectors/selectStructureStrip.ts` (the Wall
+    tile) and `game/input/keybindings.ts` (no V).
+- Checks run: `npm run check` EXIT=0, core 620/620, client 1363/1363; `npm run docs:check` passes.
+- Next step: merge into `feat/hud-and-character-select`; steps 6 and 7 of the build plan.

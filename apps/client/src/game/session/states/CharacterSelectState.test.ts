@@ -29,7 +29,7 @@ const CATALOGUE = {
         specCardFixture({ specId: 'sealed', status: 'locked' }),
       ],
     }),
-    classCardFixture({ classId: 'flying', status: 'locked' }),
+    classCardFixture({ classId: 'harbinger', status: 'locked' }),
   ],
 };
 
@@ -74,7 +74,7 @@ describe('CharacterSelectState', () => {
   it("ignores a locked class, an unknown class, a locked Legend and another class's Legend", () => {
     const { picks, send } = atCharacterSelect();
     send(
-      { kind: 'select-class', classId: 'flying' },
+      { kind: 'select-class', classId: 'harbinger' },
       { kind: 'select-class', classId: 'unknown-class' },
       { kind: 'select-class', classId: 'magus', specId: 'sealed' },
       { kind: 'select-class', classId: 'warrior', specId: 'oracle' },
@@ -106,7 +106,7 @@ describe('CharacterSelectState', () => {
   it('ignores a locked or unselectable pick without logging', () => {
     const { picks, send, logger } = atCharacterSelect();
     send(
-      { kind: 'select-class', classId: 'flying' },
+      { kind: 'select-class', classId: 'harbinger' },
       { kind: 'select-class', classId: 'magus', specId: 'sealed' },
       { kind: 'select-class', classId: 'warrior', specId: 'oracle' },
     );

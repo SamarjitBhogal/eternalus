@@ -66,7 +66,7 @@ describe('createLegendSpecRules', () => {
       {
         ...LEGEND_SPECS.get(ORACLE.id),
         id: 'Bad_Id',
-        classId: 'flying',
+        classId: 'harbinger',
         roleRatings: { damage: 0.5, support: 1.5, control: 0.5 },
       },
     ]);
@@ -78,7 +78,7 @@ describe('createLegendSpecRules', () => {
       validator.validate(broken);
     }).toThrow(
       'Invalid content: Bad_Id: id must be kebab-case; ' +
-        'Bad_Id: classId "flying" is not a Legend class; ' +
+        'Bad_Id: classId "harbinger" is not a Legend class; ' +
         'Bad_Id: roleRatings.support must be a fraction from 0 to 1',
     );
   });

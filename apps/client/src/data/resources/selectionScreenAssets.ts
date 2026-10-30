@@ -1,9 +1,9 @@
-import flyingSigilAllyTile from '../../assets/selection/classes/flying-sigil@ally-tile.webp';
-import flyingSigilAllyTile2x from '../../assets/selection/classes/flying-sigil@ally-tile@2x.webp';
-import flyingSigilPlayerTile from '../../assets/selection/classes/flying-sigil@player-tile.webp';
-import flyingSigilPlayerTile2x from '../../assets/selection/classes/flying-sigil@player-tile@2x.webp';
-import flyingSigilPlayerTilePicked from '../../assets/selection/classes/flying-sigil@player-tile-picked.webp';
-import flyingSigilPlayerTilePicked2x from '../../assets/selection/classes/flying-sigil@player-tile-picked@2x.webp';
+import harbingerSigilAllyTile from '../../assets/selection/classes/harbinger-sigil@ally-tile.webp';
+import harbingerSigilAllyTile2x from '../../assets/selection/classes/harbinger-sigil@ally-tile@2x.webp';
+import harbingerSigilPlayerTile from '../../assets/selection/classes/harbinger-sigil@player-tile.webp';
+import harbingerSigilPlayerTile2x from '../../assets/selection/classes/harbinger-sigil@player-tile@2x.webp';
+import harbingerSigilPlayerTilePicked from '../../assets/selection/classes/harbinger-sigil@player-tile-picked.webp';
+import harbingerSigilPlayerTilePicked2x from '../../assets/selection/classes/harbinger-sigil@player-tile-picked@2x.webp';
 import magusSigilAllyTile from '../../assets/selection/classes/magus-sigil@ally-tile.webp';
 import magusSigilAllyTile2x from '../../assets/selection/classes/magus-sigil@ally-tile@2x.webp';
 import magusSigilPlayerTile from '../../assets/selection/classes/magus-sigil@player-tile.webp';
@@ -32,16 +32,16 @@ import type { AssetManifestEntry } from './AssetManifest.types';
 /** Part of the `selection` group: the backdrop, the banner and the four class sigils. */
 export const SELECTION_SCREEN_ASSETS: readonly AssetManifestEntry[] = [
   {
-    id: 'flying-sigil',
+    id: 'harbinger-sigil',
     type: 'ui-image',
     group: 'selection',
     file: {
-      url: flyingSigilAllyTile,
+      url: harbingerSigilAllyTile,
       bytes: 778,
       hash: '9c1f4cb6423e8bd070a083587abc3cfca2a2b2e3397fd938acbf2ebd8704e9ff',
     },
     file2x: {
-      url: flyingSigilAllyTile2x,
+      url: harbingerSigilAllyTile2x,
       bytes: 1908,
       hash: '334778392c752267dd8659f55c852019fe7b15cc4f91b0184d0a61b516410704',
     },
@@ -51,36 +51,36 @@ export const SELECTION_SCREEN_ASSETS: readonly AssetManifestEntry[] = [
     renditions: {
       'ally-tile': {
         file: {
-          url: flyingSigilAllyTile,
+          url: harbingerSigilAllyTile,
           bytes: 778,
           hash: '9c1f4cb6423e8bd070a083587abc3cfca2a2b2e3397fd938acbf2ebd8704e9ff',
         },
         file2x: {
-          url: flyingSigilAllyTile2x,
+          url: harbingerSigilAllyTile2x,
           bytes: 1908,
           hash: '334778392c752267dd8659f55c852019fe7b15cc4f91b0184d0a61b516410704',
         },
       },
       'player-tile': {
         file: {
-          url: flyingSigilPlayerTile,
+          url: harbingerSigilPlayerTile,
           bytes: 778,
           hash: '9c1f4cb6423e8bd070a083587abc3cfca2a2b2e3397fd938acbf2ebd8704e9ff',
         },
         file2x: {
-          url: flyingSigilPlayerTile2x,
+          url: harbingerSigilPlayerTile2x,
           bytes: 1908,
           hash: '334778392c752267dd8659f55c852019fe7b15cc4f91b0184d0a61b516410704',
         },
       },
       'player-tile-picked': {
         file: {
-          url: flyingSigilPlayerTilePicked,
+          url: harbingerSigilPlayerTilePicked,
           bytes: 950,
           hash: '9c2a85ea48c71f0235c351d8de7ca86bfb74cde12944fe9b47291898dc34f97a',
         },
         file2x: {
-          url: flyingSigilPlayerTilePicked2x,
+          url: harbingerSigilPlayerTilePicked2x,
           bytes: 2342,
           hash: '4f994d07c4c910f2b9ebde2529da7661ef28937a375b272a945123f58eef8bed',
         },

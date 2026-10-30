@@ -47,7 +47,7 @@ function render(rowPlate: RowPlate | null, pickedClassId: string | null = 'magus
       labelledBy="choose"
       describedBy="panel"
       cards={TEST_CONTENT.legendClasses}
-      allyCounts={{ warrior: 2, sentinel: 3, magus: 2, flying: 2 }}
+      allyCounts={{ warrior: 2, sentinel: 3, magus: 2, harbinger: 2 }}
       pickedClassId={pickedClassId}
       previewClassId={null}
       tabbableIndex={2}
@@ -69,7 +69,7 @@ describe('ClassSelectCardRow', () => {
       'warrior',
       'sentinel',
       'magus',
-      'flying',
+      'harbinger',
     ]);
     expect(html.match(/tabindex="0"/g)).toHaveLength(1);
     expect(html).toMatch(/data-count="4"/);

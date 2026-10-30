@@ -13,7 +13,7 @@ describe('selectSelectableClasses', () => {
       ...contentSlice.getInitialState(),
       legendClasses: [
         classCardFixture({ classId: 'warrior' }),
-        classCardFixture({ classId: 'flying', status: 'locked' }),
+        classCardFixture({ classId: 'harbinger', status: 'locked' }),
         classCardFixture({ classId: 'magus' }),
       ],
     }),

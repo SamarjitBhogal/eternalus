@@ -63,13 +63,13 @@ export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
  * and role label are core content.
  */
 export const LOCKED_CLASS_PRESENTATION: Readonly<Record<string, LockedClassPresentation>> = {
-  flying: {
-    accentToken: '--class-flying-accent',
+  harbinger: {
+    accentToken: '--class-harbinger-accent',
     art: {
-      card: 'flying-card-art',
-      sigil: 'flying-sigil',
+      card: 'harbinger-card-art',
+      sigil: 'harbinger-sigil',
       model: null,
-      cardPlates: { idle: 'flying-card-plate-idle' },
+      cardPlates: { idle: 'harbinger-card-plate-idle' },
       rowPlate: null,
     },
   },

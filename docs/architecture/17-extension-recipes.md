@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-29
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -73,7 +73,7 @@ R14 "new view" and R16 "new command".
 
 ### R1. Add a Legend class
 
-- **When:** a playable class whose behaviour no existing class has (`flying`, **post-MVP**,
+- **When:** a playable class whose behaviour no existing class has (`harbinger`, **post-MVP**,
   needs an altitude layer). Numbers, abilities or a skin alone: R2 or plain content.
   `Entity → Unit → Legend → <Name>` is the last allowed level (04 §9).
 - **Files:** `core/content/legends/<id>.ts` (`LegendDefinition` with `kind`, stats, ability
