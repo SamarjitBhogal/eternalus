@@ -1,10 +1,15 @@
 import type { DtoCheck } from './DtoCheck.types';
 
+/** The modifier keys a stored keyboard chord may name (`bridge/Binding.types.ts` `ChordModifier`). */
+const CHORD_MODIFIERS = ['Alt', 'Control', 'Meta', 'Shift'] as const;
+
 /** A stored chord: the same shape as `bridge/Binding.types.ts` `InputChord`. */
 type ChordDtoV1 = {
   readonly device: 'keyboard' | 'mouse' | 'gamepad';
   readonly code: string;
   readonly label: string;
+  /** Optional, so records saved before modifier chords (DEC-105) still read as version 1. */
+  readonly modifiers?: readonly (typeof CHORD_MODIFIERS)[number][];
 };
 
 /** A stored binding. `action` is a plain string here: `data/` does not know the action list. */
@@ -36,12 +41,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isModifierList(value: unknown): boolean {
+  const known: readonly unknown[] = CHORD_MODIFIERS;
+  return value === undefined || (Array.isArray(value) && value.every((key) => known.includes(key)));
+}
+
 function isChord(value: unknown): boolean {
   return (
     isRecord(value) &&
     CHORD_DEVICES.includes(value.device) &&
     typeof value.code === 'string' &&
-    typeof value.label === 'string'
+    typeof value.label === 'string' &&
+    isModifierList(value.modifiers)
   );
 }
 

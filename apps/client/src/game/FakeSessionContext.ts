@@ -38,6 +38,7 @@ export class FakeSessionContext implements SessionContext {
     createMatch: [],
     dropWorld: [],
     abortMatch: [],
+    endCrashedMatch: [],
     loadAssets: [],
     releaseAssets: [],
   };
@@ -118,6 +119,11 @@ export class FakeSessionContext implements SessionContext {
   /** Records the call. */
   public abortMatch(error: unknown): void {
     this.record('abortMatch', [error]);
+  }
+
+  /** Records the call. */
+  public endCrashedMatch(...args: Parameters<SessionContext['endCrashedMatch']>): void {
+    this.record('endCrashedMatch', args);
   }
 
   /** Records the call; the returned cancel adds this load's index to `cancelledLoads`. */

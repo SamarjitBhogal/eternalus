@@ -33,6 +33,12 @@ export const DEFAULT_CHORDS: Readonly<Record<InputAction, readonly InputChord[]>
   'view-details': [key('KeyV', 'V')],
   'toggle-developer-menu': [key('F1', 'F1')],
   'toggle-perf-overlay': [key('F9', 'F9')],
+  // DEC-105: Ctrl+Shift+F3 on Windows and Linux, Cmd+Shift+F3 on a Mac (Cmd+F3 is the Mac's Show
+  // Desktop). Recommendation: both chords on every platform, so no platform detection is needed.
+  'toggle-developer-camera': [
+    { device: 'keyboard', code: 'F3', label: 'Ctrl+Shift+F3', modifiers: ['Control', 'Shift'] },
+    { device: 'keyboard', code: 'F3', label: 'Cmd+Shift+F3', modifiers: ['Meta', 'Shift'] },
+  ],
 };
 
 /** Every action, in the order the settings screen lists them. */

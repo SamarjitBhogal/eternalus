@@ -47,6 +47,7 @@ const setUp = () => {
     input,
     player: { legend: 'warrior', team: 'light' },
     logger: new NullLogger(),
+    onCrash: () => undefined,
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),
       publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

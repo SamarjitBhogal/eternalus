@@ -9,7 +9,12 @@ import { MatchState } from './MatchState';
 
 const VIEWPORT: MatchViewport = {
   canvas: new FakeViewportCanvas(),
-  chrome: { onInteriorChanged: vi.fn(), setLeaveInterior: vi.fn(), setOverview: vi.fn() },
+  chrome: {
+    onInteriorChanged: vi.fn(),
+    onExplorerChanged: vi.fn(),
+    setLeaveInterior: vi.fn(),
+    setOverview: vi.fn(),
+  },
   isExplorerShown: false,
 };
 
@@ -33,7 +38,7 @@ describe('MatchState', () => {
   it('builds the match on attach and destroys it on detach', () => {
     const { context, handles, state } = setUp();
     const detach = state.attachViewport(VIEWPORT, context);
-    expect(context.calls.createMatch).toEqual([[VIEWPORT]]);
+    expect(context.calls.createMatch).toEqual([[VIEWPORT, expect.any(Function)]]);
     detach();
     expect(handles[0]?.destroyCount).toBe(1);
   });
@@ -56,6 +61,19 @@ describe('MatchState', () => {
     expect(() => {
       detach();
     }).not.toThrow();
+  });
+
+  it('ends the match on a crash of the running match, never of a replaced one (DEC-106)', () => {
+    const { context, state } = setUp();
+    const crash = { error: new Error('step failed'), tick: 7 };
+    state.attachViewport(VIEWPORT, context);
+    state.attachViewport(VIEWPORT, context);
+    const [replaced, running] = context.calls.createMatch.map(([, onCrash]) => onCrash);
+
+    replaced?.(crash);
+    expect(context.calls.endCrashedMatch).toEqual([]);
+    running?.(crash);
+    expect(context.calls.endCrashedMatch).toEqual([[crash]]);
   });
 
   it('destroys the match, drops the world and closes any overlay on exit', () => {

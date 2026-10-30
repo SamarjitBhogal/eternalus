@@ -5,8 +5,9 @@ import type { RunningMatch } from './SessionController.types';
 /**
  * Hosts one match in the page: sizes the canvas to its device pixels, attaches the keyboard to
  * the window and the mouse and pointer controls to the canvas, follows the player's bindings,
- * releases held input on focus loss, a hidden tab or pause, and tears all of it down again,
- * leaving 0 listeners and 0 frames (13 §2). It owns the match and the adapters it is given.
+ * releases held input on focus loss, a hidden tab or pause, shows or hides the developer explorer
+ * on its hotkey (DEC-105, every build), and tears all of it down again, leaving 0 listeners and
+ * 0 frames (13 §2). It owns the match and the adapters it is given.
  */
 export class MatchHost implements RunningMatch {
   private readonly pointer: CanvasPointerControls;
@@ -30,6 +31,7 @@ export class MatchHost implements RunningMatch {
       this.resize();
       window.addEventListener('resize', this.resize);
       window.addEventListener('blur', this.releaseInput);
+      window.addEventListener('keydown', this.toggleExplorerOnHotkey);
       document.addEventListener('visibilitychange', this.releaseInputWhenHidden);
       keyboard.attach(window);
       mouse.attach(viewport.canvas);
@@ -64,6 +66,7 @@ export class MatchHost implements RunningMatch {
     const { match, window, document, keyboard, mouse, adapters } = this.deps;
     window.removeEventListener('resize', this.resize);
     window.removeEventListener('blur', this.releaseInput);
+    window.removeEventListener('keydown', this.toggleExplorerOnHotkey);
     document.removeEventListener('visibilitychange', this.releaseInputWhenHidden);
     keyboard.detach();
     mouse.detach();
@@ -88,6 +91,14 @@ export class MatchHost implements RunningMatch {
   private readonly releaseInput = (): void => {
     this.deps.input.releaseAll();
     this.pointer.cancelDrag();
+  };
+
+  /** A press (not a repeat) of `toggle-developer-camera`'s chord shows or hides the explorer (DEC-105). */
+  private readonly toggleExplorerOnHotkey = (event: Event): void => {
+    const key = event as KeyboardEvent;
+    if (key.repeat || !this.deps.mapper.isActionKey('toggle-developer-camera', key)) return;
+    key.preventDefault();
+    this.pointer.toggleExplorer();
   };
 
   private readonly releaseInputWhenHidden = (): void => {

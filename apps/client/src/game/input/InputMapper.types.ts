@@ -1,6 +1,9 @@
 import type { InputAction } from '../../bridge/Binding.types';
 import type { ScreenPoint } from '../engine/input/InputDevice.types';
 
+/** The parts of a `keydown` a key-press lookup reads (a plain object in Node tests). */
+export type KeyPress = Pick<KeyboardEvent, 'code' | 'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey'>;
+
 /**
  * The actions active this frame. `pressed` and `released` are the edges since the last frame;
  * `pointer` is carried through so `toIntent` can project it into the world.

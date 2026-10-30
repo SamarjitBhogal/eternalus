@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
 import { MouseDevice } from './engine/input/MouseDevice';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
+import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { MatchHost } from './MatchHost';
 import { settingsWithDefaults } from './settings/settingsState';
@@ -38,11 +40,18 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     leaveInterior: vi.fn(),
   };
   const input = { releaseAll: vi.fn() };
-  const mapper = { setBindings: vi.fn() };
+  // The real key lookup over the default bindings, so DEC-105's hotkey is the shipped chord.
+  const defaults = new InputMapper(PRESETS.wasd);
+  const mapper = { setBindings: vi.fn(), isActionKey: defaults.isActionKey.bind(defaults) };
   const adapters = ['renderer', 'camera'].map((name) => ({
     destroy: vi.fn(() => log.push(`${name}.destroy`)),
   }));
-  const chrome = { onInteriorChanged: vi.fn(), setLeaveInterior: vi.fn(), setOverview: vi.fn() };
+  const chrome = {
+    onInteriorChanged: vi.fn(),
+    onExplorerChanged: vi.fn(),
+    setLeaveInterior: vi.fn(),
+    setOverview: vi.fn(),
+  };
   const host = new MatchHost({
     match,
     viewport: { canvas, chrome, isExplorerShown: false },
@@ -57,7 +66,20 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
   });
   const listeners = (): number =>
     window.listenerCount() + document.listenerCount() + canvas.listenerCount();
-  return { host, window, document, canvas, bus, log, atStart, match, input, mapper, listeners };
+  return {
+    host,
+    window,
+    document,
+    canvas,
+    bus,
+    log,
+    atStart,
+    match,
+    input,
+    mapper,
+    chrome,
+    listeners,
+  };
 }
 
 describe('MatchHost', () => {
@@ -74,10 +96,10 @@ describe('MatchHost', () => {
     expect(atStart.busListeners).toBe(busBefore + 1);
   });
 
-  it('attaches the keyboard to the window and the mouse to the canvas', () => {
+  it('attaches the keyboard and the developer hotkey to the window and the mouse to the canvas', () => {
     const { host, window, canvas } = setUp();
     host.start();
-    expect(window.listenerCount('keydown')).toBe(1);
+    expect(window.listenerCount('keydown')).toBe(2);
     expect(canvas.listenerCount('pointermove')).toBe(1);
   });
 
@@ -108,6 +130,35 @@ describe('MatchHost', () => {
     const settings = { ...settingsWithDefaults(null), bindings: PRESETS.arrows };
     bus.emit('settings', settings);
     expect(mapper.setBindings).toHaveBeenCalledWith(PRESETS.arrows);
+  });
+
+  it('shows, then hides the developer explorer on Ctrl+Shift+F3 and Cmd+Shift+F3 (DEC-105)', () => {
+    const { host, window, canvas, chrome } = setUp();
+    host.start();
+    const ctrlShiftF3 = fakeKeyEvent('keydown', 'F3', { ctrlKey: true, shiftKey: true });
+
+    window.dispatchEvent(ctrlShiftF3);
+    expect(canvas.listenerCount('wheel')).toBe(1);
+    window.dispatchEvent(fakeKeyEvent('keydown', 'F3', { metaKey: true, shiftKey: true }));
+
+    expect(ctrlShiftF3.defaultPrevented).toBe(true);
+    expect(chrome.onExplorerChanged.mock.calls).toEqual([[true], [false]]);
+    expect(canvas.listenerCount('wheel')).toBe(0);
+  });
+
+  it('ignores F3 without both modifiers, with an extra one, and a held repeat (DEC-105)', () => {
+    const { host, window, chrome } = setUp();
+    host.start();
+    for (const options of [
+      {},
+      { ctrlKey: true },
+      { shiftKey: true },
+      { ctrlKey: true, shiftKey: true, altKey: true },
+      { ctrlKey: true, shiftKey: true, repeat: true },
+    ]) {
+      window.dispatchEvent(fakeKeyEvent('keydown', 'F3', options));
+    }
+    expect(chrome.onExplorerChanged).not.toHaveBeenCalled();
   });
 
   it('pauses the match and releases held input; resuming releases nothing', () => {
