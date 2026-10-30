@@ -36,9 +36,13 @@ The block from DEC-48 to DEC-94 is reserved by other branches, so these rows are
 
 ## Batch 2026-10-30 (PR #45 review: minion M5a, SamarjitBhogal)
 
-| ID     | Decision                                                                                                                                                                                                                                 | Docs changed                                                                      |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| DEC-48 | **DISC-24's tower shift helps the team that destroyed the tower**: when a lane tower falls, the destroying team's base-stat point in that lane moves toward the enemy; the losing team's point stays put (no shared front, no comeback). | None: `architecture/05-abilities-weapons-and-loadouts.md` §9 already describes it |
+| ID      | Decision                                                                                                                                                                                                                                 | Docs changed                                                                      |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| DEC-120 | **DISC-24's tower shift helps the team that destroyed the tower**: when a lane tower falls, the destroying team's base-stat point in that lane moves toward the enemy; the losing team's point stays put (no shared front, no comeback). | None: `architecture/05-abilities-weapons-and-loadouts.md` §9 already describes it |
+
+DEC-120 was logged as DEC-48 on 2026-10-30 and renumbered the same day: the HUD and
+character-select work has used DEC-48 since 2026-10-18. Unmerged branches used numbers up to
+DEC-113 that day, so the new number leaves room above them.
 
 ## Batch 2026-10-16 (PR #33 review: the minion system design, sholtzman)
 
