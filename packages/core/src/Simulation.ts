@@ -1,26 +1,40 @@
 import { AiSystem } from './ai/AiSystem';
-import { FollowLeaderController } from './ai/FollowLeaderController';
+import {
+  createDefaultControllerRegistry,
+  type ControllerRegistry,
+} from './ai/defaultControllerRegistry';
 import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { validateGameConfig } from './config/validateGameConfig';
-import { FOLLOW_LEADER_PROFILE } from './content/ai/followLeaderProfile';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { AI_CADENCE } from './content/ai/cadence';
+import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
+import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import type { LevelCurveDefinition } from './content/progression/progression.types';
+import { loadLevelCurves } from './content/progression/loadLevelCurves';
+import { XP_SOURCES } from './content/progression/xpSources';
+import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
+import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import type { SimulationOptions } from './Simulation.types';
+import { SpaceIndex } from './physics/SpaceIndex';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
+import { WorldObjectStore } from './state/WorldObjectStore';
+import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
+import { CollisionSystem } from './systems/CollisionSystem';
 
 /**
  * The deterministic simulation of one match, and the only thing the client drives
@@ -48,25 +62,68 @@ export class Simulation {
     systems,
     debug = RELEASE_DEBUG_CONFIG,
     content,
+    map,
+    mapObjects,
+    levelCurves,
+    weapons,
   }: SimulationOptions) {
-    this.state = new GameState(validateGameConfig(config), seed);
-    this.commandContext = {
-      state: this.state,
-      factory: new EntityFactory(
-        createDefaultEntityRegistry(),
-        content ?? loadDefaultContent(this.state.config.tickRate),
-      ),
+    const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
+    this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
+    const { tickRate } = this.state.config;
+    const curves = levelCurves ?? loadLevelCurves();
+    const weaponSource = weapons ?? loadWeapons(tickRate);
+    // One factory for commands and spawning, so entity ids come from one counter.
+    const controllers = createDefaultControllerRegistry();
+    const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
+    const objectsById = new Map(
+      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+    );
+    const definitions = {
+      has: (id: string): boolean => objectsById.has(id) || units.has(id),
+      get: (id: string) => objectsById.get(id) ?? units.get(id),
     };
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      definitions,
+      undefined,
+      weaponSource,
+    );
+    this.commandContext = { state: this.state, factory };
+    if (mapObjects !== undefined && map === undefined)
+      throw new Error('Map objects require a generated map');
+    if (mapObjects !== undefined) {
+      this.state.worldObjects = new WorldObjectStore(
+        mapObjects,
+        this.commandContext.factory,
+        this.state.entities,
+        MAP_OBJECT_DEFINITIONS,
+      );
+      this.state.events.on('entity-removed', ({ entityId }) =>
+        this.state.worldObjects?.removed(entityId),
+      );
+    }
+
     this.systemContext = { state: this.state, logger };
-    // PROTOTYPE(PROTO-01) TEMPORARY: replace this hand-built controller list with
-    // `ai/defaultControllerRegistry.ts` (11 §2) and `FollowLeaderController` with `MinionController`.
     this.pipeline =
       systems === undefined
-        ? new DefaultSystemPipeline(new DefaultInvariantRunner(debug, logger), [
-            new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
-              this.queue.enqueue(command);
-            }),
-          ])
+        ? new DefaultSystemPipeline(
+            new DefaultInvariantRunner(debug, logger, curves),
+            this.state,
+            { units, curves, xpSources: XP_SOURCES },
+            {
+              factory,
+              space,
+              collisions:
+                map === undefined || mapObjects === undefined
+                  ? []
+                  : [new CollisionSystem(map, mapObjects)],
+              decide: [
+                new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
+                  this.queue.enqueue(command);
+                }),
+              ],
+            },
+          )
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
@@ -115,5 +172,17 @@ export class Simulation {
   /** A 32-bit fingerprint of the current state; equal runs give equal hashes. */
   public hash(): number {
     return this.hasher.hash(this.state);
+  }
+
+  /** The shipped content, checked against the controllers before the match starts. */
+  private static defaultContent(
+    tickRate: number,
+    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'>,
+    controllers: ControllerRegistry,
+    weapons: WeaponSource,
+  ): DefinitionSource {
+    const catalogue = loadDefaultContent(tickRate, curves, weapons);
+    AiSystem.assertRegistered(catalogue.all(), controllers);
+    return catalogue;
   }
 }

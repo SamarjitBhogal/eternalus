@@ -1,9 +1,113 @@
+import { cos, sin } from '../utils/deterministicMath';
 import type { MapDecoration, MapDecorationLayer } from '../content/maps/maps.types';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
+import type { MapObjectArt, MapObjectKind } from '../content/maps/mapObjects.types';
 
 /** Shared polygon assembly for authored map scenery and interior architecture. */
 export abstract class MapDecorationBuilder {
   protected readonly pieces: MapDecoration[] = [];
+  protected buildingId?: string;
+  protected visibility?: MapDecoration['visibility'];
+  protected layer?: MapDecorationLayer;
+  protected isMirrored: true | undefined;
+  protected isFootprint: true | undefined;
+  private object: MapObjectArt | undefined;
+
+  /** Assigns physical ownership explicitly while the object's art is authored. */
+  protected beginObject(id: string, kind: MapObjectKind): void {
+    this.object = { id, kind, isFootprint: false };
+  }
+
+  /** Subsequent ground marks belong to no physical object. */
+  protected endObject(): void {
+    this.object = undefined;
+  }
+
+  /** Uses the just-authored blob or ellipse itself as collision geometry. */
+  protected blockLastShape(kind: MapObjectKind = 'furniture'): void {
+    const piece = this.pieces.at(-1);
+    if (piece === undefined) return;
+    this.pieces[this.pieces.length - 1] = {
+      ...piece,
+      object: {
+        id: this.object?.id ?? piece.id,
+        kind: this.object?.kind ?? kind,
+        isFootprint: true,
+      },
+    };
+  }
+
+  protected markPassage(): void {
+    const piece = this.pieces.at(-1);
+    if (piece !== undefined) this.pieces[this.pieces.length - 1] = { ...piece, isPassage: true };
+  }
+
+  /** Marks an exact solid footprint without treating shadows or roofs as collision shapes. */
+  protected blockPolygon(
+    id: string,
+    shape: Polygon,
+    color: string,
+    kind: MapObjectKind = 'furniture',
+  ): void {
+    const owner = this.object;
+    this.object = { id: owner?.id ?? id, kind: owner?.kind ?? kind, isFootprint: true };
+    this.polygon(id, shape, color);
+    this.object = owner;
+  }
+
+  protected blockRect(
+    id: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: string,
+    kind: MapObjectKind = 'furniture',
+  ): void {
+    this.blockPolygon(
+      id,
+      [
+        { x, y },
+        { x: x + width, y },
+        { x: x + width, y: y + height },
+        { x, y: y + height },
+      ],
+      color,
+      kind,
+    );
+  }
+
+  protected blockEllipse(
+    id: string,
+    x: number,
+    y: number,
+    rx: number,
+    ry: number,
+    color: string,
+  ): void {
+    this.ellipse(id, x, y, rx, ry, color);
+    this.blockLastShape();
+  }
+
+  protected ellipse(
+    id: string,
+    x: number,
+    y: number,
+    rx: number,
+    ry: number,
+    color: string,
+    layer: MapDecorationLayer = 'detail',
+  ): void {
+    this.polygon(
+      id,
+      Array.from({ length: Math.min(rx, ry) < 5 ? 12 : 64 }, (_, i) => ({
+        x: x + cos((i * Math.PI * 2) / (Math.min(rx, ry) < 5 ? 12 : 64)) * rx,
+        y: y + sin((i * Math.PI * 2) / (Math.min(rx, ry) < 5 ? 12 : 64)) * ry,
+      })),
+      color,
+      layer,
+    );
+  }
 
   /** A repeatable pseudo-random number for a position, so scenery varies without an RNG. */
   protected variation(x: number, y: number): number {
@@ -100,7 +204,17 @@ export abstract class MapDecorationBuilder {
     color: string,
     layer: MapDecorationLayer = 'detail',
   ): void {
-    this.pieces.push({ id, shape, color, layer });
+    this.pieces.push({
+      id,
+      shape,
+      color,
+      layer: this.layer ?? layer,
+      ...(this.buildingId === undefined ? {} : { buildingId: this.buildingId }),
+      ...(this.visibility === undefined ? {} : { visibility: this.visibility }),
+      ...(this.object === undefined ? {} : { object: this.object }),
+      ...(this.isMirrored === undefined ? {} : { isMirrored: this.isMirrored }),
+      ...(this.isFootprint === undefined ? {} : { isFootprint: this.isFootprint }),
+    });
   }
 
   protected rect(

@@ -1,4 +1,5 @@
 import type { Team } from '../../teams/teams.types';
+import type { MapObjectArt } from './mapObjects.types';
 import type { Polygon, Vec2 } from '../../utils/geometry.types';
 
 /**
@@ -189,10 +190,38 @@ export type MapPreset = {
 /** Which pass draws a decoration: `ground` under terrain and lanes, `detail` above features. */
 export type MapDecorationLayer = 'ground' | 'detail';
 
-/** A presentation-only polygon; it never changes collision, ownership or gameplay. */
+/** Cosmetic roof cutaways never change collision or ownership. */
+type MapDecorationVisibility = 'roof' | 'interior';
+
+/** Authored artwork with explicit selection, reflection and physical-object metadata. */
 export type MapDecoration = {
   readonly id: string;
   readonly shape: Polygon;
   readonly color: string;
   readonly layer: MapDecorationLayer;
+  /** Main building that owns this piece, if any. */
+  readonly buildingId?: string;
+  /** Roof/interior visibility; omitted for permanent walls and ground. */
+  readonly visibility?: MapDecorationVisibility;
+  /** Floor or doorway included in the building's roof-toggle target. */
+  readonly isFootprint?: true;
+  /** Reflect this west-half piece as a complete polygon. */
+  readonly isMirrored?: true;
+  /** Optional authored identity for the reflected artwork. */
+  readonly mirrorId?: string;
+  readonly object?: MapObjectArt;
+  /** A bridge deck cuts a walkable corridor through otherwise solid decorative terrain. */
+  readonly isPassage?: true;
+};
+
+/** A selectable same-world building, derived from its interior floor and door polygons. */
+export type MapBuilding = {
+  readonly id: string;
+  readonly footprint: readonly Polygon[];
+};
+
+/** Presentation data kept separate from the generated simulation map contract. */
+export type MapPresentation = {
+  readonly scenery: readonly MapDecoration[];
+  readonly buildings: readonly MapBuilding[];
 };

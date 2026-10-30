@@ -1,7 +1,8 @@
-import { Brain } from '../components/Brain';
+import { Combat } from '../components/Combat';
+import { ControllerBinding } from '../components/ControllerBinding';
+import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
-import { Transform } from '../components/Transform';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from '../entities/Entity';
@@ -76,11 +77,19 @@ export class EntityStore {
     this.sizeAtStart = this.entities.size;
   }
 
-  /** How many live instances of `entityClass` (e.g. `Unit`, `Legend`) fight for `team`. */
+  /**
+   * How many living instances of `entityClass` (e.g. `Unit`, `Legend`) fight for `team`. A unit
+   * killed this tick is still stored until `DeathSystem` removes it, but no longer counts, so the
+   * caps it frees can be filled in the same tick.
+   */
   public countOnTeam(team: Team, entityClass: EntityClass): number {
     let total = 0;
     this.entities.forEach((entity) => {
-      if (entity instanceof entityClass && entity.findComponent(TeamMembership)?.team === team) {
+      if (
+        entity instanceof entityClass &&
+        entity.findComponent(TeamMembership)?.team === team &&
+        entity.findComponent(Health)?.isDead !== true
+      ) {
         total += 1;
       }
     });
@@ -102,31 +111,34 @@ export class EntityStore {
     return true;
   }
 
-  /**
-   * PROTOTYPE(PROTO-01) TEMPORARY: delete this and the three helpers below; controllers read
-   * through `Perception` over `SpatialHash` (11 §3).
-   *
-   * The entity's live position, for `ai/`, which may not import `components/`. Read it, do not
-   * keep it: it changes as the entity moves.
-   */
-  public positionOf(id: EntityId): Vec2 | undefined {
-    return this.entities.get(id)?.findComponent(Transform)?.position;
-  }
-
   /** The entity's team, or `undefined` when it is unknown or has no team. */
   public teamOf(id: EntityId): Team | undefined {
     return this.entities.get(id)?.findComponent(TeamMembership)?.team;
   }
 
-  /** Whether the entity has a heading to move along (`false` when stopped, unknown or immovable). */
-  public isSteering(id: EntityId): boolean {
-    const heading = this.entities.get(id)?.findComponent(Movement)?.heading;
-    return heading !== undefined && (heading.x !== 0 || heading.y !== 0);
+  /** The controller that drives the entity and its AI profile, or `undefined` when none does. */
+  public controllerOf(id: EntityId): ControllerBinding | undefined {
+    return this.entities.get(id)?.findComponent(ControllerBinding);
   }
 
-  /** The id of the controller that drives the entity, or `undefined` when nothing does. */
-  public controllerOf(id: EntityId): string | undefined {
-    return this.entities.get(id)?.findComponent(Brain)?.controllerId;
+  /** Whether the entity exists and has health left (`false` for anything without `Health`). */
+  public isAlive(id: EntityId): boolean {
+    return this.entities.get(id)?.findComponent(Health)?.isDead === false;
+  }
+
+  /**
+   * Points the entity's `Combat` at `targetId`. Lets `commands/` set a
+   * target without importing `components/`, as `steer` does for movement.
+   *
+   * @returns `false` when the entity is unknown or cannot attack.
+   */
+  public setAttackTarget(id: EntityId, targetId: EntityId): boolean {
+    const combat = this.entities.get(id)?.findComponent(Combat);
+    if (combat === undefined) {
+      return false;
+    }
+    combat.setTarget(targetId);
+    return true;
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */

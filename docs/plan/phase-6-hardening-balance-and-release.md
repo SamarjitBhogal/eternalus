@@ -4,7 +4,7 @@ description: Sprint checklists for the performance pass against budgets, the hea
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-29
 tags: [plan, phase-6, performance, balance, art, audio, reliability, release]
 paths: ['packages/core/src/content/**', 'packages/core/src/diagnostics/**', 'apps/client/assets/**']
 related:
@@ -256,7 +256,7 @@ PROGRESS.
 4. Sim mode: the bots finish the match; results → Profile history; export the replay and replay
    it in `npm run test` to the same hash.
 5. `numLanes` 3 → 5 in the preset: map, minimap, flow fields and spawn schedule follow.
-6. `npm run check` green on three OSes; `npm run test:balance` summary inside the targets.
+6. `npm run check` green on Linux and Windows; `npm run test:balance` summary inside the targets.
 
 ## Risks
 

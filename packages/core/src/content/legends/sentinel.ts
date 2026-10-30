@@ -12,6 +12,7 @@ export const SENTINEL = {
   displayName: 'Sentinel',
   roleBlurb: 'Heavy and powerful; needs a long runway to reach a very high top speed.',
   baseHealth: 1200, // TUNE:
+  baseAether: 80, // TUNE: balancing.md (level 1)
   weaponBias: 'heavy',
   damageFocus: 'physical',
   pickUp: 'grab',
@@ -25,4 +26,7 @@ export const SENTINEL = {
     acceleration: 0.18, // TUNE: m/s², top speed after 50 s
     mass: 6, // TUNE:
   },
+  defaultLoadout: { primaryWeaponId: 'wuuthrad' }, // TUNE: default weapon (05 §10 table) until the owner picks one (INBOX)
+  levelCurveId: 'legend',
+  levelScaling: { healthPerLevel: 0.08, aetherPerLevel: 10 }, // TUNE: balancing.md
 } as const satisfies LegendDefinition;

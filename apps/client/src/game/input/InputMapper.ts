@@ -65,6 +65,7 @@ export class InputMapper {
     const y = axis('move-up', 'move-down');
     const scale = x !== 0 && y !== 0 ? Math.SQRT1_2 : 1;
     return {
+      ...(held.has('attack') ? { isAttacking: true } : {}),
       move: { x: x * scale, y: y * scale },
       aim: pointer === null ? null : projection.screenToWorld(pointer),
       triggered: CAST_SLOTS.filter((slot) => pressed.has(slot)),

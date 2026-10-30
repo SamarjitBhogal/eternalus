@@ -1,10 +1,10 @@
 ---
 title: Game AI
-description: How every non-player entity decides what to do (the Controller contract, bot Legends, minions, guards, turrets, bosses, the Rover) and the determinism and cost rules controllers obey; read before adding, changing or tuning any bot behaviour.
+description: How every non-player entity decides what to do (the Controller contract, bot Legends, minions, guards, turrets, bosses, the Rover; minion and guard behaviour: see doc 18) and the determinism and cost rules controllers obey; read before adding, changing or tuning any bot behaviour.
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-29
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -12,6 +12,7 @@ related:
   - docs/architecture/10-physics.md
   - docs/architecture/12-game-story-and-match-director.md
   - docs/architecture/15-diagnostics-and-runtime-testing.md
+  - docs/architecture/18-minion-system.md
   - docs/research/game-architecture-and-performance-research.md
 ---
 
@@ -25,9 +26,10 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 
 ## 1. Where AI sits
 
-- Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (core `AGENTS.md`): `ai/` may
-  import only `state/`, `commands/` and `utils/`. Definitions, spatial queries and flow fields
-  reach a controller through `GameState`, never through imports (DIP).
+- Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (02 §2, core `AGENTS.md`): `ai/` may
+  import only `state/`, `commands/`, `content/` types and `utils/`. Definition values, spatial
+  queries and flow fields reach a controller through `GameState` or injection, never through
+  imports (DIP); only `content/` types are imported.
 - One system, `AiSystem`, runs second in the `SystemPipeline`, right after `CommandApplySystem`.
   It asks each due controller for decisions and enqueues them in the `CommandQueue` for the next
   tick. Controllers never mutate state, never call systems and never compute paths.
@@ -113,6 +115,11 @@ results are id-sorted. Fog of war is **post-MVP**; `Vision` is its extension poi
 
 ## 4. Controllers
 
+The build order of every controller below except `PlayerController`, `TurretController` and
+`BossController` is the [minion system plan](../plan/minion-system-plan.md) §1.1 (MS-28 of doc 18);
+this section stays their design. Bosses are not controlled by the minion system: `BossController`
+is built in Phase 3 sprint 3.6.
+
 ### 4.1 PlayerController (MVP)
 
 The human's Legend has a brain too. The client's `InputMapper` turns device state into an
@@ -152,18 +159,8 @@ are additional trees selected by data, not new controllers.
 
 ### 4.3 MinionController (MVP)
 
-A finite state machine (State pattern) per Mob with memory
-`{ fsm, targetId, aggroUntilTick, cooldownUntilTick, leashAnchor, lastEvaluatedTick }`:
-
-- `marching`: follow the lane flow field for `(lane, team)`. The Mob's `MovementStrategy`
-  (`LaneFlowFollow`) handles vectors every tick; the controller only asserts `move-along-lane`.
-- acquire (at cadence, and again between attack windups as League does): candidates are
-  `perception.unitsWithin(pos, acquisitionRadius, { hostileTo: team })` plus structures; rank by
-  the profile's priority list, then distance, then id; switch only to a strictly higher priority.
-- `engaging`: `attack { targetId }` until the target dies, the Mob leaves `leashRadius` of
-  `leashAnchor`, or `aggroDurationTicks` elapse.
-- `returning`: `move-to leashAnchor`; back on the corridor → `marching`, with
-  `aggroCooldownTicks` before it may re-acquire.
+The minion state machine, lane movement and lane objectives are owned by
+[18-minion-system](18-minion-system.md) §6. This section keeps the aggro content it reads.
 
 Aggro rules are content (`AggroRuleDefinition` in `content/ai/aggro/`), seeded from published MOBA
 rules as `TUNE` starting points
@@ -186,6 +183,7 @@ export const laneMinionAggro = {
     'turret-attacking-ally-minion',
     'closest-minion',
     'closest-legend',
+    'lane-objective', // the horde's next standing structure (18 §6.2)
   ],
   reevaluateEveryTicks: 15, // TUNE
   leashRadius: 700, // TUNE
@@ -202,14 +200,7 @@ after a structure falls (game doc) are `CombatSystem`/`StatusEffectSystem` conte
 
 ### 4.4 GuardController (MVP)
 
-Tower guards (light guards at a `SpawnerTower`, "numerous" medium guards at a `BuffTower`, ranged
-and melee guards at the `Stronghold`, per the game doc) are Mobs owned by the structure's
-`Spawner` component. The FSM `holding → engaging → returning` reuses the minion's acquire, engage
-and return logic through a shared `LeashBehaviour` helper (DRY). The differences are data: the
-anchor is the home structure, `leashRadius` is the structure's `guardPerimeterRadius` (`TUNE`,
-game doc: guards "don't leave the tower's perimeter") and the idle behaviour is hold position.
-Respawn every 2 minutes (`TUNE`, game doc) is `Spawner` data consumed by `SpawnSystem`, not
-controller logic (SRP).
+Owned by [18-minion-system](18-minion-system.md) §7.
 
 ### 4.5 TurretController (MVP; manual control MVP-if-time)
 
@@ -330,6 +321,26 @@ Flying class, the `Vision` component for fog of war, `jungler`/`support` trees, 
 `MovementStrategy`. GOAP and HTN are not planned: a small fixed action vocabulary suits FSM, BT
 and utility better
 [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots).
+
+## 10. Implementation status
+
+Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
+work named:
+
+- `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
+  the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open
+  PROTO-01 question).
+- `EntityFactory` cannot reach the state, so a unit whose definition names a `controller` gets a
+  `ControllerBinding` component at spawn, and `AiSystem` creates its brain the first tick it sees
+  it.
+- The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
+  `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
+- The controller registry is empty until `MinionController` (M2b). How a controller writes its
+  memory and RNG state back is open (`INBOX.md`), since `decide` returns only commands.
+- A definition that names an unregistered controller stops `Simulation` at construction (shipped
+  content) or the first tick `AiSystem` sees the entity (injected content).
+- `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities
+  (M2c).
 
 ## Related
 

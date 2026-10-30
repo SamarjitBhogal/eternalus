@@ -1,6 +1,7 @@
 import type { MapDefinition, MapDecoration } from '../content/maps/maps.types';
 import { MAP_PALETTE as P, SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { LAKES, LAVA_RIVERS, SNOW_PATCHES } from '../content/maps/map1Landforms';
+import type { SceneryLake } from './sceneryPlacement.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 /** Layers local snow, flowing lava, water and weathered ground beneath landmarks. */
@@ -9,6 +10,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
   public constructor(
     private readonly map: MapDefinition,
     private readonly isClear: (point: Vec2) => boolean,
+    private readonly lakePositions: readonly SceneryLake[] = LAKES,
   ) {
     super();
   }
@@ -16,8 +18,11 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
   public build(): readonly MapDecoration[] {
     this.snow();
     this.lava();
+    this.isMirrored = true;
     this.lakes();
     this.ground();
+    this.isMirrored = undefined;
+    this.laneRoads();
     this.bridges();
     return this.pieces.map((piece) => ({
       ...piece,
@@ -37,7 +42,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
           patch.y,
           patch.rx + edge * 5,
           patch.ry + edge * 2,
-          edge === 0 ? P.snow : 'rgba(207,219,206,0.12)',
+          edge === 0 ? P.snow : P.snowFade,
           'ground',
         );
       this.blob(
@@ -53,30 +58,35 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
   }
 
   private lava(): void {
+    this.endObject();
     LAVA_RIVERS.forEach((path, i) => {
       for (let edge = 6; edge > 0; edge--)
         this.ribbon(
           `lava-weathering-${String(i)}-${String(edge)}`,
           path,
           28 + edge * 9,
-          'rgba(68,57,47,0.10)',
+          P.lavaWeathering,
         );
       this.ribbon(`lava-bank-${String(i)}`, path, 34, P.basalt);
-      this.ribbon(`lava-river-${String(i)}`, path, 23, '#ad4930');
+      this.beginObject(`lava-river-${String(i)}`, 'terrain');
+      this.ribbon(`lava-river-${String(i)}`, path, 23, P.lavaRiver);
+      this.blockLastShape();
       this.ribbon(`lava-flow-${String(i)}`, path, 14, P.lava);
       this.ribbon(`lava-core-${String(i)}`, path, 5, P.lavaLight);
     });
   }
 
   private lakes(): void {
-    LAKES.forEach((lake, i) => {
+    this.endObject();
+    this.lakePositions.forEach((lake, i) => {
+      this.beginObject(`lake-${String(i)}`, 'terrain');
       this.blob(
         `lake-shore-${String(i)}`,
         lake.x,
         lake.y,
         lake.rx + 9,
         lake.ry + 6,
-        '#85866a',
+        P.lakeShore,
         'ground',
       );
       this.blob(
@@ -85,16 +95,17 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
         lake.y,
         lake.rx,
         lake.ry,
-        '#628e87',
+        P.lakeShallows,
         'ground',
       );
+      this.blockLastShape();
       this.blob(
         `lake-deep-${String(i)}`,
         lake.x + 4,
         lake.y + 3,
         lake.rx * 0.79,
         lake.ry * 0.75,
-        '#416e73',
+        P.lakeDeep,
         'ground',
       );
       for (let j = 0; j < 5; j++)
@@ -105,12 +116,13 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
             { x: lake.x + 15 + j * 4, y: lake.y - 17 + j * 7 },
           ],
           1,
-          '#88aaa0',
+          P.lakeRipple,
         );
     });
   }
 
   private ground(): void {
+    this.endObject();
     for (let y: number = S.margin; y < this.map.height - S.margin; y += S.gridStep) {
       for (let x: number = S.margin; x < this.map.width - S.margin; x += S.gridStep) {
         const n = this.variation(x, y);
@@ -121,7 +133,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
             y,
             9 + (n % 12),
             4 + (n % 6),
-            'rgba(139,151,104,0.18)',
+            P.groundFleck,
             'ground',
           );
       }
@@ -137,6 +149,7 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
     ] as const) {
       this.rect(`lava-bridge-${String(i)}-shadow`, x - 19, y - 22, 42, 49, P.shadow);
       this.rect(`lava-bridge-${String(i)}-deck`, x - 16, y - 24, 32, 48, P.stone);
+      this.markPassage();
       for (let plank = 0; plank < 8; plank++)
         this.rect(
           `lava-bridge-${String(i)}-joint-${String(plank)}`,
@@ -146,8 +159,22 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
           1,
           P.stoneDark,
         );
-      this.rect(`lava-bridge-${String(i)}-west-rail`, x - 17, y - 25, 4, 50, '#cac0a5');
-      this.rect(`lava-bridge-${String(i)}-east-rail`, x + 13, y - 25, 4, 50, '#cac0a5');
+      this.blockRect(`lava-bridge-${String(i)}-west-rail`, x - 17, y - 25, 4, 50, P.bridgeRail);
+      this.blockRect(`lava-bridge-${String(i)}-east-rail`, x + 13, y - 25, 4, 50, P.bridgeRail);
+    }
+  }
+
+  private laneRoads(): void {
+    for (const lane of this.map.lanes) {
+      for (let edge = 3; edge > 0; edge--)
+        this.ribbon(
+          `lane-road-${lane.id}-verge-${String(edge)}`,
+          lane.path,
+          3 + edge,
+          P.laneVerge,
+          'ground',
+        );
+      this.ribbon(`lane-road-${lane.id}-track`, lane.path, 3, P.road, 'ground');
     }
   }
 }

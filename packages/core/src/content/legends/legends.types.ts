@@ -1,3 +1,4 @@
+import type { LevelCurveId, LevelScalingDefinition } from '../progression/progression.types';
 import type { UnitDefinition } from '../units/units.types';
 
 /** The MVP Legend classes (DEC-08: Assault is now Warrior). */
@@ -27,6 +28,12 @@ export type LegendDefinition = UnitDefinition & {
   readonly kind: LegendKind;
   /** One line for the character-select screen. */
   readonly roleBlurb: string;
+  /** Full aether (MP) pool; abilities and class default actions spend it (`01-classes`). */
+  readonly baseAether: number;
+  /** The XP table this class levels along (`content/progression/levelCurves.ts`). */
+  readonly levelCurveId: LevelCurveId;
+  /** What each level adds (06 XP-based scaling). */
+  readonly levelScaling: LevelScalingDefinition;
   readonly weaponBias: WeaponBias;
   readonly damageFocus: DamageFocus;
   readonly pickUp: PickUpStyle;
@@ -36,4 +43,11 @@ export type LegendDefinition = UnitDefinition & {
   readonly defaultAction: DefaultActionId | null;
   /** Reference height in metres, for art and hit-box tuning (not used by physics). */
   readonly referenceHeight: number;
+  /**
+   * The one field of the design's `defaultLoadout: LoadoutTemplate` (04 §5) built so far: the weapon
+   * the Legend spawns with (05 §12 `primaryWeaponId`, MVP). A Legend's damage comes from it.
+   */
+  readonly defaultLoadout: { readonly primaryWeaponId: string };
+  /** A Legend attacks with its weapon, never an attack of its own (05 §10). */
+  readonly attack?: never;
 };

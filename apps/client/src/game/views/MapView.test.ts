@@ -27,6 +27,42 @@ const drawMain = (): RecordingRenderer => {
 };
 
 describe('MapView', () => {
+  it('hides main-view building markers with roofs closed as well as open', () => {
+    const building = MAP.features.find((feature) => feature.kind === 'cathedral');
+    if (building === undefined) throw new Error('Missing building');
+    for (const roofs of [new Set<string>(), new Set([building.id])]) {
+      const renderer = new RecordingRenderer();
+      new MapView(MAP, [], roofs, undefined, [{ id: building.id, footprint: [] }]).draw(renderer);
+      const glyphs = renderer.calls.filter((call) => call.op === 'drawWorldGlyph');
+      expect(glyphs.some((call) => call.args[1] === building.position)).toBe(false);
+      expect(glyphs).toHaveLength(
+        MAP.features.filter((feature) => !footprintKinds.has(feature.kind)).length - 1,
+      );
+    }
+  });
+  it('removes destroyed feature markers from the minimap', () => {
+    const feature = MAP.features[0];
+    if (feature === undefined) throw new Error('Missing feature');
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [], new Set(), undefined, [], (id) => id === feature.id).drawMinimap(renderer);
+    expect(renderer.calls.filter((call) => call.op === 'drawGlyph')).toHaveLength(
+      MAP.features.length - 1,
+    );
+  });
+  it('keeps capture data while hiding the covered marker in an open cutaway', () => {
+    const cathedral = MAP.features.find((f) => f.kind === 'cathedral');
+    expect(cathedral).toBeDefined();
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [], new Set([cathedral?.id ?? ''])).draw(renderer);
+    const glyphs = renderer.calls.filter((c) => c.op === 'drawWorldGlyph');
+    expect(glyphs).toHaveLength(MAP.features.filter((f) => !footprintKinds.has(f.kind)).length - 1);
+    expect(glyphs.some((c) => c.args[1] === cathedral?.position)).toBe(false);
+    const minimap = new RecordingRenderer();
+    new MapView(MAP, [], new Set(MAP.features.map((f) => f.id))).drawMinimap(minimap);
+    const markers = minimap.calls.filter((c) => c.op === 'drawGlyph');
+    expect(markers).toHaveLength(MAP.features.length);
+    expect(markers.some((c) => c.args[1] === cathedral?.position)).toBe(true);
+  });
   it('draws the ground first, then every terrain shape, then footprint features', () => {
     const fills = drawMain().calls.flatMap((call) =>
       call.op === 'fillPolygon' ? [call.args] : [],

@@ -4,8 +4,9 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Removes every entity whose health reached 0, with the cause `died`, and announces each removal
- * with `entity-removed` (architecture 03 §4). Runs after the systems that deal damage, so a unit
- * killed this tick leaves the world this tick.
+ * with `entity-removed` carrying the killer from this tick's `entity-died` (architecture 03 §2,
+ * §4). Runs after the systems that deal damage, so a unit killed this tick leaves the world this
+ * tick. A death with no killer is left for `no-death-without-killer` to report.
  */
 export class DeathSystem implements System {
   public readonly name = 'death';
@@ -21,7 +22,12 @@ export class DeathSystem implements System {
 
     for (const entityId of dead) {
       state.entities.remove(entityId, 'died');
-      state.events.emit('entity-removed', { entityId, cause: 'died' });
+      const killer = state.killerOf(entityId);
+      state.events.emit('entity-removed', {
+        entityId,
+        cause: 'died',
+        ...(killer !== undefined && { killer }),
+      });
     }
   }
 }

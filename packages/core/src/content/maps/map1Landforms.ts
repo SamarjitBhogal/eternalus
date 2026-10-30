@@ -38,12 +38,3 @@ export const LAVA_RIVERS = [
     { x: 947, y: 834 },
   ],
 ] as const;
-/** Major landmark dimensions in original sketch coordinates. */
-export const LANDMARK_SETTINGS = {
-  cathedralHalfWidth: 100,
-  cathedralHalfHeight: 118,
-  strongholdWidth: 220,
-  strongholdHeight: 250,
-  interiorWidth: 1800,
-  interiorHeight: 2200,
-} as const;

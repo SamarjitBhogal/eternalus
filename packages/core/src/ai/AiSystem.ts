@@ -1,56 +1,119 @@
 import type { Command } from '../commands/Command.types';
+import type { AiCadence, ControllerId } from '../content/ai/ai.types';
+import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
-import type { Controller } from './Controller.types';
+import { compareById } from '../utils/compareById';
+import { fnv1a } from '../utils/fnv1a';
+import { SeededRandom } from '../utils/SeededRandom';
+import type { ControllerRegistry } from './defaultControllerRegistry';
 
 /**
- * Asks each entity's controller what it does next and queues the answers for the next tick
- * (architecture 11 §1). Runs first in the pipeline. Fits the `System` contract by shape, because
- * `ai/` may not import `systems/`.
+ * Asks each due entity's controller what it does next and queues the answers for the next tick
+ * (architecture 11 §1, §5, §6). Runs first in the pipeline. Fits the `System` contract by shape,
+ * because `ai/` may not import `systems/`.
  *
- * An entity is due when `(tick + its store position) % cadenceTicks === 0`, which spreads
- * decisions across ticks (11 §6; ids are strings, so the store position stands in for the id).
- *
- * PROTOTYPE(PROTO-01) TEMPORARY: replace with the designed `AiSystem` (11 §1, §6: decision
- * budget, round-robin cursor, `entityId` stagger, brains in state) in the folder the owner picks.
- *
- * @remarks ponytail: no per-tick decision budget or round-robin cursor yet (11 §6); add them when
- * unit counts grow past the prototype's handful.
+ * - **Brains.** An entity whose definition names a controller gets a brain the first tick this
+ *   system sees it, with its own RNG stream seeded from the match seed and its id; the brain goes
+ *   when the entity is removed (on this system's next pass, 03 §4).
+ * - **Cadence.** An entity is due when `(tick + fnv1a(id)) % everyTicks[controller] === 0`, which
+ *   spreads decisions across ticks (ids are strings, so their hash stands in for 11 §6's number).
+ * - **Budget.** Last tick's deferred entities go first, then the due ones in id order; past
+ *   `maxDecisionsPerTick` the rest wait for the next tick, first in line.
  */
 export class AiSystem {
   public readonly name = 'ai';
-  private readonly controllers: ReadonlyMap<string, Controller>;
+  private readonly removed: EntityId[] = [];
 
   /**
-   * @param controllers - Every controller, looked up by `id`.
-   * @param enqueue - Where decisions go; the simulation's command queue.
+   * @param state - The match whose removals this system listens to.
+   * @param controllers - Every controller, by id.
+   * @param cadence - How often each controller decides, and the per-tick budget.
+   * @param enqueue - Where decisions go: the simulation's command queue.
    */
   public constructor(
-    controllers: readonly Controller[],
+    state: GameState,
+    private readonly controllers: ControllerRegistry,
+    private readonly cadence: AiCadence,
     private readonly enqueue: (command: Command) => void,
   ) {
-    this.controllers = new Map(controllers.map((controller) => [controller.id, controller]));
+    state.events.on('entity-removed', ({ entityId }) => {
+      this.removed.push(entityId);
+    });
   }
 
   /**
-   * Asks every due entity's controller for its commands.
+   * Checks that every controller the definitions name is registered, so a content error stops
+   * the match at construction instead of mid-tick.
    *
-   * @throws Error when an entity names a controller that is not registered (a content error).
+   * @throws Error naming the first definition whose controller has no implementation.
+   */
+  public static assertRegistered(
+    definitions: readonly { readonly id: string; readonly controller?: ControllerId }[],
+    controllers: ControllerRegistry,
+  ): void {
+    const missing = definitions.find(
+      ({ controller }) => controller !== undefined && controllers[controller] === undefined,
+    );
+    if (missing !== undefined) {
+      throw new Error(
+        `Definition "${missing.id}" names controller "${String(missing.controller)}", which is not registered.`,
+      );
+    }
+  }
+
+  /**
+   * Gives new entities their brains and asks every due one for its commands.
+   *
+   * @throws Error when an entity names a controller that is not registered (a content error the
+   *   construction check could not see, such as injected content).
    */
   public update({ state }: { readonly state: GameState }): void {
-    let position = 0;
-    state.entities.forEach((entity) => {
-      const controllerId = state.entities.controllerOf(entity.id);
-      position += 1;
-      if (controllerId === undefined) {
+    const { ai, entities } = state;
+    for (const id of this.removed) {
+      ai.delete(id);
+    }
+    this.removed.length = 0;
+    const waiting = new Set(ai.deferred);
+    const due: EntityId[] = [];
+    entities.forEach(({ id }) => {
+      const binding = entities.controllerOf(id);
+      if (binding === undefined) {
         return;
       }
-      const controller = this.controllers.get(controllerId);
-      if (controller === undefined) {
-        throw new Error(`Entity "${entity.id}" names unknown controller "${controllerId}".`);
+      if (ai.get(id) === undefined) {
+        if (this.controllers[binding.controllerId] === undefined) {
+          throw new Error(
+            `Entity "${id}" names controller "${binding.controllerId}", which is not registered.`,
+          );
+        }
+        ai.set(id, {
+          controllerId: binding.controllerId,
+          profileId: binding.profileId,
+          memory: {},
+          rngState: new SeededRandom(fnv1a(`${String(state.seed)}:${id}`)).getState(),
+        });
       }
-      if ((state.tick + position) % controller.cadenceTicks === 0) {
-        controller.decide(state, entity.id).forEach(this.enqueue);
+      const every = this.cadence.everyTicks[binding.controllerId];
+      if (!waiting.has(id) && (state.tick + fnv1a(id)) % every === 0) {
+        due.push(id);
       }
     });
+    const queue = [
+      ...ai.deferred.filter((id) => ai.get(id) !== undefined),
+      ...due.sort(compareById),
+    ];
+    const budget = this.cadence.maxDecisionsPerTick;
+    for (const id of queue.slice(0, budget)) {
+      this.decide(state, id);
+    }
+    ai.defer(queue.slice(budget));
+  }
+
+  private decide(state: GameState, id: EntityId): void {
+    const controllerId = state.ai.get(id)?.controllerId;
+    const controller = controllerId === undefined ? undefined : this.controllers[controllerId];
+    for (const command of controller?.decide(state, id) ?? []) {
+      this.enqueue(command);
+    }
   }
 }

@@ -16,6 +16,17 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
+      `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR
+      #35). (1) Can a stunned unit still act while its aim wobbles, or does stun keep "cannot
+      move, attack, cast or interact"? (2) Do the per-source stuns in `balancing.md` (0.5–1 s)
+      stand, with 2 s only the default? (3) How large is the wobble ("slightly")? (4) Does
+      blind's white vignette replace more-abilities §7's −70% vision radius, or come on top of
+      it, and does its 2–3 s fade start when blind lands or when it ends?
+  - Your answer (chat, 2026-10-16): "2 seconds. blind makes aim slightly wobbly (like stun), but
+    also causes the screen to have a heavy white vignette that dissipates over 2-3 seconds. yes,
+    aimed projectiles miss too"; picks: "Stun default", "Wobble causes misses", "Yes, stun
+    wobbles too".
 - [ ] **DEC-36 / DEC-37 — accept ADR 0016 and answer the plan §9 questions.** The course
       instructor's two new requirements, Duel multiplayer (DEC-36) and a server for hundreds or
       thousands of concurrent players (DEC-37), are planned now; must be implemented by the end of
@@ -58,6 +69,25 @@ Reply inline (`Decision: …`).
       The balance anchors tied to the old length (boss levels at the two marks, the match-length
       metrics in `balancing.md`, the soak length) also need your numbers.
   -     Accept after scaling to planned match time = 30 mins
+- [ ] **Aether (MP) pool sizes per class.** The game doc gives no aether numbers. Branch
+      `feat/legend-aether` adds the `Aether` component (MP) to every Legend, with `baseAether` taken
+      from `suggestions/balancing.md` (level 1: Warrior 100, Sentinel 80, Magus 140; +10 per level,
+      `TUNE`). Confirm the pool sizes or give your own. (Regen rate is a Phase 4 concern, not set
+      yet.) The same branch adds Legend progression with balancing.md's other `Recommendation:`
+      values, also for you to confirm: level cap 10, `xpToNext = 100 + 50·(L−1)`, +8% base health
+      and +10 aether per level, Legend kill 150 + 25 × victim level, minion kill 20 / 45 / 120.
+  - Update after your PR #31 review (O1–O8): cap 50 (O6). **Income estimate to check:**
+    balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
+    135 XP/min (minions about 110 XP/min, the rest kills and objectives). Keeping that income and
+    balancing.md's curve shape (growth = half the first step), the cap-50 curve is
+    `xpToNext(L) = 4 + 2·(L − 1)`, 2,548 XP to level 50, reached around minute 19. Kills are
+    re-priced on the same scale: a Legend kill is 150 + 5 × victim level (a level-L victim is worth
+    what a level-L/5 one was on the cap-10 curve; 400 XP at level 50). Mob XP is each mob's
+    `xpValue` (light minion 20, training dummy 0, O8). If your income figure differs, the curve
+    scales linearly: say the XP/min and I resize it. Still yours to sign off: `level-matches-xp`
+    runs every tick, not heavy (05 §16), because rules 2–4 read this tick's `xp-gained` events.
+    Also on the cap-10 scale: balancing.md's bosses' "expected Legend level" (4 and 7) need
+    rescaling to cap 50 (×5 would give 20 and 35); say if you want that.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -67,6 +97,11 @@ Reply inline (`Decision: …`).
       ADR 0017 (next item) before the generator changes. (4) From ADR 0017: which classes does a
       corridor get when it holds other than three camps?
   -     Accepted " keep depth-based weights but define the classes by position in the corridor" where the vertical line down the centre of the map defines the division. RNG determines the location of the camps on each side so both sides are different, but they must equate in terms of overall difficulty (1 light on left means 1 light on right; not necessarily in mirrored locations but the same amount of weighted camps on left team and right team's sides)
+  - 2026-10-30 clarification from [PR #30 round 2](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077)
+    (DEC-85, reviewer owns the decision-log entry): mirrored random camps, including corner
+    camps, are approved for this PR. Independent per-side placement is a next-sprint stretch
+    goal or post-MVP. This answers (1) and supersedes the asymmetric-placement timing above;
+    the remaining ADR and weight-class questions stay open.
 - [ ] **DEC-15 — accept ADR 0017.** `docs/decisions/0017-balanced-asymmetric-camp-placement.md`
       (draft) amends ADR 0009 for forest camps only: the seeded RNG places them per side with
       equal counts per weight class, and everything else stays mirrored. Accept, change or reject
@@ -80,20 +115,123 @@ Reply inline (`Decision: …`).
       starts the countdown while `menu` keeps building `MatchSetup`. Approve that text, or confirm
       that agents may apply it as delegated.
   -     Accept recommended option if it is cleaner long-term. For D, set to whichever is cleaner in the long-term.
+- [ ] **Minion system (PR #33 review) — two decisions still open.** (1) **The worst lane
+      (MS-9):** doc 18 §3.3 now scores your game doc's terms (structure damage not dealt,
+      structures lost, pushed back), as one `LaneAssessment` shared by the heavy horde and the
+      corner-camp reward wave, with a worked example. Sign off the terms, the weights and the tie-break (ties go to
+      the middle lane, so the first heavy horde goes down it), or name others. (2) **Horde size and cadence (your M7):** size from (a) `hordeSizes` in config only,
+      (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
+      spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
+      cadences (plan §3 stand-in). Details: doc 18 §10.
+- [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
+      (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
+      countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
+      after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
+      say each mob carries a `hordeId` back-pointer. The code keeps membership only in
+      `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
+      apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
+      to the store lookup.
+- [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
+      "never mutate state", yet a brain's `memory` and `rngState` change with each decision
+      (`MinionController`'s FSM state and timers, M2b). Should `decide` return
+      `{ commands, memory, rngState }` for `AiSystem` to write back (`Recommendation:`, keeps
+      controllers pure), or may a controller write its own brain?
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
       sprint is "this sprint": S1, which ends 2026-10-16, or S2? (2) Your bot-AI system: may its
       file live under `systems/`, or must it stay in `ai/`? (Today it is in `ai/`, because core
-      `AGENTS.md` forbids `systems/` importing `ai/`, which 02 §2 allows.) (3) Add the
-      `PROTOTYPE(<id>) TEMPORARY` marker convention to `AGENTS.md` so every future prototype uses
-      it? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
+      `AGENTS.md` forbids `systems/` importing `ai/`, which 02 §2 allows; audit A23-18.) (3) Add
+      the `PROTOTYPE(<id>) TEMPORARY` marker convention to `AGENTS.md` so every future prototype
+      uses it (audit A23-17)? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
       what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'` lists them. Agents: do not build on or
       extend marked code. The two departures you were asked to confirm, speed 5.4 m/s and mass
-      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`).
+      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`). **Agent note
+      (2026-10-17):** (1) is answered by your reply below and DEC-35: the escort goes together
+      with the real hordes, in minion plan phase M1, whose done-when is "no `PROTOTYPE(PROTO-01)`
+      marker remains in code". (2) and (3) are still open; (2) decides doc 18 §2's folder list.
   -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
 
+- [ ] **Combat — friendly fire (PR #34, `feat/combat-damage-pipeline`).** No reference doc says
+      whether allies can hurt each other. The combat pipeline ships `FriendlyFireStep` as the
+      default: no damage between entities on the same team (Legends never hurt allies; neutral
+      bosses and camps never hurt each other); environment damage and teamless targets (trees)
+      always pass. Confirm, or say which hits should go through. Removing it is one line in
+      `combat/defaultDamageSteps.ts`.
+- [ ] **Combat — better than the design, for sign-off (PR #34).** (1) 05 §9's fixed named
+      stages are a list of `DamageStep`s whose order is `combat/defaultDamageSteps.ts`, so a new
+      rule is one class and one line; (2) `defaultStrategyRegistry.ts` is a typed record per
+      behaviour instead of `registry.register()`, so a missing strategy does not compile;
+      (3) `DamagePipeline.apply` takes `GameState`, not `SystemContext`, so handlers and listeners
+      can call it. 02, 04, 05 and 17 already describe the built version; approve or say what to
+      change.
+- [ ] **Combat — `no-death-without-killer` checks a different hole than 15 §3 (PR #34).** The
+      15 §3 row checks that every `entity-died` carries a resolvable `DamageSource` (the type
+      already forces one). The built invariant checks that every `died` removal had an
+      `entity-died` with its killer this tick, which catches `Health` written around the damage
+      pipeline (the requirements' "dies without another entity or a defensive tower killing it").
+      Proposal: the 15 §3 row covers both, (a) now and (b) "the attacker resolves in the store"
+      with abilities. Approve, or say what to change.
+- [ ] **Status effects — numbers and rules to confirm (SCRUM-228, PR #35).** Modifiers now
+      multiply (`op: 'mul'`, 05 §8), per your review. (1) If you want additive stacking
+      instead, say so: it is one line in `StatusEffects.recompute`. (2) `stun` defaults to 1 s
+      (more-abilities §7 says 0.5–1 s per source); each ability will pass its own once abilities
+      land. (3) Blind spends a basic attack as a miss (`attack-missed`); ability damage still
+      lands. (4) Better than the design, for sign-off: the component caches its multiplier
+      table when its list changes (05 §8 recomputes per tick), and `StatusEffectApplier` is the
+      one way in (05 §3 has effects call `StatusEffects.apply`; 03 names `StatusEffectSystem` as
+      the `status-applied` emitter). (5) Not built yet: `polarity`, `controlClass` /
+      `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
+      slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
+      stat for the FR-029 aura. Confirm or correct.
+  - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
+    2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
+- [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
+      SamarjitBhogal asked (2026-10-25) for the minion plan to cover enemy bots of every
+      entity type. Proposed in doc 18 MS-28 and `docs/plan/minion-system-plan.md` (phases M6
+      to M8, coverage table §1.1): camps and checkpoint assist spawns (3.4), bosses (3.6),
+      A\* for Legends (3.2), and the Rover and bot ability use (3.7) move to the minion plan's
+      breakdown. Nothing is dropped and the work still ships in Phase 3's weeks. Sprints 3.5
+      and 3.8 stay in the Phase 3 plan, and turrets stay with the `Turret` (sprint 2.3). (1)
+      Sign off the move, or keep DEC-47's split. (2) Which team do checkpoint defenders fight
+      for: the zone's owner, the team being captured against, or neutral? (3) Does their leash
+      follow the capture zone (doc 18 §7.1)?
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) signed off, except bosses: the minion
+    system does not control bosses, so `BossController` stays in Phase 3 sprint 3.6 and the
+    plan has no M7; every other mob type may be driven by the minion system. (2) The team that
+    owns the checkpoint. Docs 18 MS-28 and §7.1, 07, 11 §4, the Phase 3 plan and the minion
+    plan updated (PR #43). Awaits the decisions log.
+- [ ] **Checkpoint defenders — leash (doc 18 §10, item 4).** Still open after the MS-28 answer.
+      Does a defender's leash follow the capture zone (its radius; `Recommendation:`), or is it a
+      radius of its own in the checkpoint table? And are the defenders of a point no team owns
+      yet neutral (`Recommendation:`)? Nothing is built on this until M6.
+- [ ] **Weapons — numbers and default weapons (SCRUM-183 / SCRUM-287, branch `feat/weapons`).**
+      The weapon slice is built (05 §10 Implementation status), but no doc has per-weapon numbers
+      (`balancing.md` only names `content/weapons/*.ts`). Placeholders shipped (2026-10-25, all
+      `TUNE`, Claudio's pick): Legends have no attack of their own; Warrior → `raptor-talons`,
+      Sentinel → `wuuthrad`, Magus → `magus-staff` (melee only), each with its class's
+      `balancing.md` basic attack. Confirm or correct. (1) Weapon numbers (damage, reach, interval): do the
+      `balancing.md` class numbers (Warrior 45 / 0.7 s, Sentinel 90 / 1.2 s, Magus 40 / 0.9 s)
+      become each class's default weapon, or do you set them per weapon? Reach has no source.
+      (2) Which weapon each Legend spawns with until loadouts exist (SCRUM-290): the unique ones are
+      Short blades (MVP-if-time), Barricades (post-MVP) and the Magus Staff (needs ranged).
+      (3) OK that the first slice is melee only? Ranged waits for projectiles (SCRUM-169);
+      `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
+      rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
+      (SCRUM-290).
+
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
+
+- [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
+      material detail from the map PR; retain all renderer-specific tests with that change.
+      Keep draw order inside SceneView, address renderer file length and the capture layer,
+      and measure Match.render p95 while the camera moves at 1080p, DPR 2 (target ≤ 8 ms).
+      Depends on the map PR landing; preserve the stable Match explorer signatures. See
+      [round-2 B3](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077).
+- [ ] **PR #22 input follow-up** — Owner: sholtzman, HUD/character-select branch. Arbitrate raw
+      left-click roof toggles against the attack binding after PR #30 merges.
+- [ ] **PR #22 toolbar follow-up** — Owner: sholtzman, HUD/character-select branch. Move map
+      toolbar state from game/useMatch into the bridge after PR #30 merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -285,6 +423,8 @@ Reply inline (`Decision: …`).
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-10-20 — Recorded the owner's 2026-10-16 approval in [PR #30 round-1 review](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5554590031): same-world roof cutaways supersede the separate cathedral scene; oval palaces, furnished side rooms, throne aisles and the cathedral north door are accepted. The dated amendments in architecture 06 and reference 05 preserve the earlier design and explain DEC-36 integration.
 
 - 2026-10-10 — **Your chat clarifications of 2026-10-10 (DEC-11) and the source of the new
   requirements** recorded in `docs/reference/game-design/13-owner-decisions-log.md` (appended to

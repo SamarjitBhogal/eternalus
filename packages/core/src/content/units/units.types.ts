@@ -1,3 +1,4 @@
+import type { ControllerId } from '../ai/ai.types';
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
 
 /**
@@ -14,6 +15,29 @@ export type MovementProfile = {
   readonly mass: number;
 };
 
+/**
+ * How a unit steers: one `MovementStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`
+ * (architecture 04 §4).
+ */
+export type MovementStrategyId = 'lane-follow';
+
+/** How an attack is carried out; one `AttackStrategy` per id in `entities/strategies/defaultStrategyRegistry.ts`. */
+export type AttackStrategyId = 'melee';
+
+/**
+ * A unit's basic attack (architecture 05 §10, `WeaponAttack`). All values must be positive.
+ * A mob's attack lives on its definition; a Legend has none and attacks with its weapon (`Legend`).
+ */
+export type UnitAttack = {
+  readonly strategy: AttackStrategyId;
+  /** Damage per hit, before damage steps. */
+  readonly damage: number;
+  /** Reach in metres, measured edge to edge between the two footprints. */
+  readonly reach: number;
+  /** Time between hits: seconds in content files, ticks once loaded. */
+  readonly interval: number;
+};
+
 /** What every unit definition (Legend or mob) has. Shared, immutable and keyed by `id`. */
 export type UnitDefinition = EntityDefinitionBase & {
   /** Full base health. */
@@ -23,6 +47,12 @@ export type UnitDefinition = EntityDefinitionBase & {
   /** Sight radius in world units. */
   readonly visionRadius: number;
   readonly movement: MovementProfile;
-  /** The id of the controller that drives this unit (architecture 11 §2); none for the player. */
-  readonly controller?: string;
+  /** The strategy that steers this unit each tick; none for a unit nothing steers. */
+  readonly movementStrategy?: MovementStrategyId;
+  /** The basic attack; a unit without one cannot attack (a training dummy). */
+  readonly attack?: UnitAttack;
+  /** The controller that drives this unit (architecture 11 §2); none for the player. */
+  readonly controller?: ControllerId;
+  /** The AI profile its controller reads (`content/ai/profiles/`); the controller id by default. */
+  readonly aiProfile?: string;
 };

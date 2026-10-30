@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-30
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -165,6 +165,60 @@ Clicking the cathedral opens its 1,800 × 2,200 interior: a circular rotunda wit
 capture court, pews and columns, and radially connected rooms (library, sacristy, chapels,
 vestry, reliquary, garden cloisters, altar). **Leave cathedral** returns outside. Capture rules,
 doorways and collision for the interior remain future work.
+
+### 2026-10-16 owner-approved amendment (PR #30)
+
+The following same-world cutaway design supersedes the separate-interior navigation above.
+The owner accepted it because it preserves a single world and supports DEC-36 Duel.
+
+Clicking the cathedral or either stronghold toggles its roof in the same world. Walls and
+entrances stay visible. The cathedral has a cross-shaped interior with chapels, stained glass,
+pews, candles and an open capture court. Each oval stronghold includes a throne hall and six
+furnished side rooms (council, library, kitchen, bedchamber, armory and dining). Its throne carpet
+leads to the middle-lane entrance; each lane has a stone passage through the perimeter.
+**Restore roofs & overview** restores roofs and shows the battlefield. Movement continues in
+the same simulation; building collision and occupancy-driven cutaways remain future work.
+
+The close player view uses fine slate courses, stone joints, textile weave, foliage/grass marks
+and water ripples. Road tracks follow the generated lanes and fade into their verges. Stronghold
+roof trims and flags use finer proportions; building art replaces the large main-view building
+marker while minimap markers remain. The overview keeps the broader landscape readable.
+
+The oval palace enclosure sits inside the generated wall ring, whose individual wall segments,
+gates and turrets remain authoritative and visible. Passages connect to the generated gates,
+with the throne aisle facing the middle gate. Roof toggles never remove minimap structure glyphs.
+The north and south cathedral doors share their geometry with the interior and click silhouette.
+
+For DEC-36, the furnished interior is currently presentation only. Duel must use generated
+wall and door features, with their snapshot state controlling closure, collision and pathing;
+decorative floors and cutaways cannot substitute for those gameplay structures.
+
+## Implementation status
+
+Each new match chooses a fresh seed. Off-path camps, trees, rocks, lakes and houses vary with
+that seed and are placed as west/east mirror pairs. Strongholds, cathedral and lane structures
+retain their anchors. Scenery placement bounds live in map content; scenery remains decorative
+until collision integration lands. Reusing a seed reproduces the layout.
+
+### 2026-10-30 — Structure and renderer integration amendment
+
+The [PR #30 round-2 review](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077)
+accepts mirrored random camps, including corner camps (DEC-85), while independent per-side
+placement is a next-sprint stretch goal or post-MVP. This supersedes the older placement rule.
+Physical scenery collision and walkable ruins now use explicit authored footprints; the full
+Structure-family, doors and navigation-grid updates are scheduled in Phase 2 sprints 2.1 and 2.4.
+Occupancy-driven cutaways arrive with that structure integration. The fine close-view material
+work in the earlier amendment is assigned to the separate renderer PR in INBOX; worn lane roads
+remain in the map PR. The HUD branch owns the input and toolbar integration.
+
+The King's death is the only victory condition, as explained in the
+[game-loop coordination comment](https://github.com/SamarjitBhogal/eternalus/pull/30#issuecomment-6516492969).
+The stronghold is the King's container and the host spawn location; destroying scenery does
+not award victory. Its throne-room anchor and bounds live in buildingGeometry content, in the
+middle-back of the hall, rotated toward the middle entrance with the rest of the palace.
+GameState.livingBuffTowerCount(team) counts living real structure entities, excluding decorative
+obstacle proxies, so the game-loop immunity step sees zero until real BuffTowers are installed.
+The coordinated Stronghold → Citadel rename stays on the later refactor, before 2026-11-20.
 
 ## Engineering notes
 

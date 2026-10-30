@@ -1,4 +1,12 @@
-import { createDefaultGameConfig, MapGenerator, SEVERITY, Simulation } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  MapGenerator,
+  MapPresentationBuilder,
+  MapObjectBuilder,
+  makeLogRecord,
+  SEVERITY,
+  Simulation,
+} from '@eternalus/core';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import { ConsoleSink } from '../data/logging/ConsoleSink';
@@ -18,9 +26,9 @@ import {
   FOLLOW_VIEW_HEIGHT,
   FOLLOW_VIEW_WIDTH,
   LOG_RING_CAPACITY,
-  PLACEHOLDER_MATCH_SEED,
   PLACEHOLDER_PLAYER,
 } from './Match.constants';
+import { createMatchSeed } from './createMatchSeed';
 import { CLICK_SLOP } from './useMatch.constants';
 
 /**
@@ -29,14 +37,14 @@ import { CLICK_SLOP } from './useMatch.constants';
  * mouse, the camera following
  * it and the minimap in its corner. Placeholder wiring until match setup (session E) passes the
  * player's choices and the settings screen passes the player's saved bindings.
- * Dragging pans the free view, the wheel zooms, a click on the cathedral steps inside, and
- * `overview` shows the whole battlefield (or leaves the cathedral).
+ * Dragging pans the free view, the wheel zooms, a click on a building toggles its roof, and
+ * `overview` shows the whole battlefield and restores roofs.
  */
 export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
-  readonly isInterior: boolean;
+  readonly hasOpenRoofs: boolean;
   readonly overview: () => void;
 } {
-  const [isInterior, setIsInterior] = useState(false);
+  const [hasOpenRoofs, setHasOpenRoofs] = useState(false);
   const overviewRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
@@ -46,7 +54,10 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
       return undefined;
     }
     const config = createDefaultGameConfig();
-    const map = new MapGenerator().generate(config, PLACEHOLDER_MATCH_SEED);
+    const seed = createMatchSeed();
+    const map = new MapGenerator().generate(config, seed);
+    const presentation = new MapPresentationBuilder().build(map);
+    const mapObjects = new MapObjectBuilder().build(map, presentation);
     // The match points the camera at the player's spawn, so its start point does not matter.
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
     // Warnings and worse reach the console; everything is kept for bug reports and the overlay.
@@ -57,6 +68,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
         { sink: new RingBufferSink(LOG_RING_CAPACITY), minSeverity: SEVERITY.TRACE },
       ],
     );
+    logger.log(makeLogRecord('INFO', 'client.match', 'Match seed', { attributes: { seed } }));
     const mapper = new InputMapper(PRESETS.wasd);
     const keyboard = new KeyboardDevice((code) => mapper.isBound(code));
     const mouse = new MouseDevice();
@@ -64,8 +76,9 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger }),
+        simulation: new Simulation({ config, seed, logger, map, mapObjects }),
         map,
+        presentation,
         tickRate: config.tickRate,
         scheduler: new RafFrameScheduler({
           requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),
@@ -122,7 +135,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     const pointerUp = (event: PointerEvent): void => {
       if (drag !== null && drag.distance < CLICK_SLOP) {
         const point = screenPoint(event);
-        if (match.enterAt(point.x, point.y)) setIsInterior(true);
+        if (match.toggleRoofAt(point.x, point.y)) setHasOpenRoofs(match.hasOpenRoofs);
       }
       drag = null;
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
@@ -136,7 +149,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     };
     overviewRef.current = (): void => {
       match.overview();
-      setIsInterior(false);
+      setHasOpenRoofs(false);
     };
 
     // No key-up arrives for keys held while the tab loses focus, so release them all (09 §2).
@@ -181,7 +194,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
   }, [canvasRef]);
 
   return {
-    isInterior,
+    hasOpenRoofs,
     overview: (): void => {
       overviewRef.current();
     },

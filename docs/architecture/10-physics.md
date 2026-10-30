@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-29
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -38,6 +38,13 @@ Sources: [research §1](../research/game-architecture-and-performance-research.m
 and [§4](../research/game-architecture-and-performance-research.md#4-spatial-partitioning-and-collision).
 
 ## 1. Scope and units
+
+**Implementation status (2026-10-27).** Map-enabled simulations resolve moving circles against
+authored polygon footprints after movement. `StaticCollisionIndex` provides a grid broad phase;
+`CollisionResolver` sweeps edges and vertices and slides along contacts. Building entrances are
+gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
+while retaining collision at their sides. Destroyed object IDs disable their static footprints.
+Unit-to-unit momentum, SAT and the remaining physics described below are still planned.
 
 - **2D top-down.** Positions are `Vec2` in world units; there is no vertical axis in the MVP.
   `Transform.height` exists as a scalar reserved for the Flying class, `Grasp` drops and
@@ -225,7 +232,8 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
 - `PathingSystem` computes **next tick's** `desiredVelocity` from the positions just integrated:
   flow-field follow (bilinear interpolation of the four surrounding field vectors × `maxSpeed`),
   separation from neighbours found through `SpatialHash` (1/r weighted, id-sorted), arrival near
-  the goal, combined by priority (wall avoidance, then separation, then flow) and truncated to
+  the goal, combined by priority (wall avoidance, then separation, then a horde member's
+  formation slot ([18](18-minion-system.md) §5), then flow) and truncated to
   `maxSpeed`. Legends (bots and click-to-move) use A* with an octile heuristic and string pulling
   on the same `WorldMap` grid; camp guards use seek/arrival inside their leash.
 - The one-tick latency between deciding and integrating is deliberate: it removes any ordering
@@ -269,6 +277,19 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   both directions plus 20 Legends; zero anomalies; hash/field buffers are never reallocated
   (counters flat); p95 tick time recorded for the `08` budget table.
 - **Regression**: every replay-found bug adds a fixture (seed + commands + expected hashes).
+
+## 12. Implementation status
+
+`physics/SpatialHash` (minion plan M1, M2a) is §5's counting-sort grid with `rebuild` and an
+exact, ascending `queryCircle`, over points only: no radii and no `queryRect` yet.
+`physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
+`MovementSystem`. Horde separation (18 §5.2) falls off linearly with distance, not as 1/r.
+
+Flow-field follow (§9, minion plan M4) is built for lane hordes: `LaneFollowMovementStrategy` takes
+the bilinear field direction instead of its slot while the next `blockedLookAhead` (content) of the
+straight line to the slot crosses an unwalkable cell. There is no `CollisionSystem` and no
+wall-avoidance term yet; until they arrive, the blocked corridor cells beside open ground point
+back out of it, so the field itself leads a unit pushed into a wall back to open ground.
 
 ## Related
 
