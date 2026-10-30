@@ -4,7 +4,7 @@ description: How Eternalus is delivered - phases, one-week sprints, task briefs,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-29
 tags: [process, sdlc, sprints, reviews]
 related:
   [
@@ -101,7 +101,7 @@ docs + frontmatter + PROGRESS updated, PR opened against the phase branch.
 
 `npm run check` = format → lint (zero warnings) → typecheck (`tsc -b`) → knip → tests with
 coverage thresholds → build → docs check. Git hooks run the quick subset; CI runs everything
-on three OSes; Claude Code hooks run per-file lint after edits and the quick gate before an
+on Linux and Windows; Claude Code hooks run per-file lint after edits and the quick gate before an
 agent stops. Details: `guardrails.md`.
 
 ## Related

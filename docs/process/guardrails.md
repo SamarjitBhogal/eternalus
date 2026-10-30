@@ -4,7 +4,7 @@ description: Every automated guardrail in the repository (TypeScript, ESLint, kn
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-29
 tags: [process, guardrails, ci, tooling]
 paths:
   [
@@ -28,8 +28,8 @@ related:
 
 # Guardrails
 
-Every rule that matters is enforced by **git hooks and CI**, which apply to every human and every
-AI tool on macOS, Linux and Windows. Everything else is policy, checked in review.
+Every rule that matters is enforced by **git hooks** (every OS) and **CI** (Linux and Windows), which apply to every
+human and every AI tool. Everything else is policy, checked in review.
 
 ## 1. Guardrail table
 
@@ -48,7 +48,7 @@ AI tool on macOS, Linux and Windows. Everything else is policy, checked in revie
 | Formatting                 | One style, LF line endings                                                                                                                         | Prettier, git                                      | `.prettierrc`, `.prettierignore`, `.gitattributes`                 | `[warn] src/x.ts` / `Code style issues found`                                                                      | `npm run format`                                                                     |
 | Coverage ratchet           | Minimum coverage per package                                                                                                                       | Vitest V8 coverage                                 | `packages/core/vitest.config.ts`, `apps/client/vitest.config.ts`   | `ERROR: Coverage for lines (78%) does not meet global threshold (80%)`                                             | Add tests. Never lower the threshold                                                 |
 | Pre-commit / pre-push      | `npm run check:quick` (no-JS check + typecheck + lint) on the whole project                                                                        | git hooks (`core.hooksPath`)                       | `.githooks/pre-commit`, `.githooks/pre-push`, `check:quick` script | `[pre-commit] BLOCKED: npm run check:quick failed.`                                                                | Run the named command and fix the errors                                             |
-| CI gate                    | `npm run check` on Linux, macOS and Windows, one named step per tool                                                                               | GitHub Actions                                     | `.github/workflows/ci.yml`                                         | Red step, e.g. "Lint (eslint, zero warnings)"                                                                      | Reproduce locally with the same npm script                                           |
+| CI gate                    | `npm run check` on Linux and Windows, one named step per tool                                                                                      | GitHub Actions                                     | `.github/workflows/ci.yml`                                         | Red step, e.g. "Lint (eslint, zero warnings)"                                                                      | Reproduce locally with the same npm script                                           |
 | Docs check                 | Frontmatter schema, relative links and anchors, generated index in `docs/README.md`                                                                | `scripts/docs/check-docs.mjs` (zero deps)          | `scripts/docs/check-docs.mjs`, `package.json` (`docs:check`)       | `error: docs/x.md: broken link "../y.md"`                                                                          | Fix the link/frontmatter; `npm run docs:index` regenerates the index                 |
 | Agent hooks (Claude Code)  | Per-file Prettier + ESLint after every edit; `check:quick` before an agent stops                                                                   | Claude Code hooks → `scripts/hooks/*.mjs`          | `.claude/settings.json`                                            | `[post-edit] ESLint failed for …` / `[stop-check] Checks failing`                                                  | Fix the finding; never bypass. Details: `docs/agents/tool-setup.md`                  |
 | Lockfile in sync           | `npm ci` fails if `package-lock.json` doesn't match `package.json`                                                                                 | npm (CI install step)                              | `.github/workflows/ci.yml`                                         | `npm ci can only install packages when your package.json and package-lock.json are in sync`                        | Run `npm install` and commit both files; never hand-edit the lockfile                |
@@ -110,8 +110,7 @@ These can't be configured from files in the repo. A repository admin should set 
 protection rule (or ruleset) for `main`:
 
 - Require a pull request before merging, with 1 approval.
-- Require the CI status checks to pass (`npm run check (ubuntu-latest)`, `(macos-latest)`,
-  `(windows-latest)`).
+- Require the CI status checks to pass (`npm run check (ubuntu-latest)`, `(windows-latest)`).
 - Block force pushes and deletions.
 - Require linear history; allow squash merge only.
 - Require the same CI checks on `phase/*`, since CodeRabbit can approve PRs into them.

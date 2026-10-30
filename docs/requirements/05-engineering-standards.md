@@ -4,7 +4,7 @@ description: Senior-engineering requirements ES-01 to ES-13 for Eternalus (SDLC,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-29
 tags: [requirements, engineering, testing, performance, security, persistence]
 paths: ['packages/**', 'apps/**', '.github/**', '.githooks/**']
 related:
@@ -141,7 +141,7 @@ it('same seed and commands produce the same state hash', () => {
 - **Requirement.** Every match is reproducible from `{ seed, contentVersion, coreVersion,
 commands }` (ES-04); every build is reproducible from the committed lockfile (`npm ci` fails on
   drift), exact versions (`save-exact`), the pinned Node version (`.nvmrc`, `engine-strict`) and
-  LF line endings; CI runs the identical `npm run check` on Linux, macOS and Windows; tests need no
+  LF line endings; CI runs the identical `npm run check` on Linux and Windows; tests need no
   network and no real time. A bug report is a seed plus a command log, not a description.
 
 ## Security
