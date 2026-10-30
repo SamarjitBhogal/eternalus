@@ -4,7 +4,7 @@ description: Branch model, naming, the stacked-phase procedure that lets work co
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-29
 tags: [process, git, branching, pull-requests]
 related:
   [
@@ -26,7 +26,7 @@ commit conventions themselves are in `CONTRIBUTING.md` §7; this doc is about br
 ## 1. Roles
 
 - `main` is owned by **SamarjitBhogal** (repository admin). It is protected: PR required, one
-  approval, green CI on three OSes, linear history, no force-push (`guardrails.md` §5).
+  approval, green CI on Linux and Windows, linear history, no force-push (`guardrails.md` §5).
 - **Sam Holtzman** is product owner and lead architect: owns the plan, the phase branches,
   the ADRs and the INBOX.
 - Every PR names its reviewer: **the feature owner picks whoever cares about the feature** when
@@ -129,7 +129,7 @@ git push -u origin feat/health-shield-bars
   still needs a teammate's approval.
 - A phase PR additionally includes: the phase exit checklist (§4 of the same file), the
   measured success metrics, and the changelog entry in `docs/changelog/`.
-- CI must be green on ubuntu, macos and windows. No `--no-verify`, ever.
+- CI must be green on ubuntu and windows. No `--no-verify`, ever.
 
 ## 6. Tags and releases
 

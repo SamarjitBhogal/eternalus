@@ -10,6 +10,7 @@ import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
+import { fnv1a } from '../utils/fnv1a';
 import { GameState } from './GameState';
 import { StateHasher } from './StateHasher';
 
@@ -158,5 +159,75 @@ describe('StateHasher', () => {
     change(scout);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  describe('hordes', () => {
+    const stateWithHorde = (): GameState => {
+      const { state } = stateWithSoldier();
+      state.hordes.add({
+        id: state.hordes.nextId(),
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: ['entity-1'],
+        progress: 0,
+      });
+      state.teams.light.unitsRequested = 1;
+      return state;
+    };
+
+    it('hashes a match without hordes from tick, phase, RNG state and entities only', () => {
+      const { state, soldier } = stateWithSoldier();
+      const legacy = [
+        state.tick,
+        state.phase,
+        state.rng.getState(),
+        [
+          [
+            soldier.id,
+            soldier.kind,
+            soldier.definitionId,
+            'light',
+            [3, 4, 0.5],
+            [100, 100],
+            [0, 0, 0],
+          ],
+        ],
+      ];
+      expect(hasher.hash(state)).toBe(fnv1a(JSON.stringify(legacy)));
+    });
+
+    it('changes once a horde exists', () => {
+      expect(hasher.hash(stateWithHorde())).not.toBe(hasher.hash(stateWithSoldier().state));
+    });
+
+    it.each<[string, (state: GameState) => void]>([
+      [
+        'horde progress',
+        (state) => {
+          state.hordes.setProgress('horde-1', 0.5);
+        },
+      ],
+      ['the member ids', (state) => state.hordes.removeMember('entity-1')],
+      ['issuedIds', (state) => state.hordes.nextId()],
+      [
+        'unitsRequested',
+        (state) => {
+          state.teams.dark.unitsRequested += 1;
+        },
+      ],
+      [
+        'unitsSuppressed',
+        (state) => {
+          state.teams.light.unitsSuppressed += 1;
+        },
+      ],
+    ])('changes when %s changes', (_, change) => {
+      const state = stateWithHorde();
+      const before = hasher.hash(state);
+      change(state);
+      expect(hasher.hash(state)).not.toBe(before);
+    });
   });
 });

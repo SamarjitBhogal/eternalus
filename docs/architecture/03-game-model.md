@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-22
+last-reviewed: 2026-10-29
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -423,7 +423,7 @@ each closed by the session or phase named:
   `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
-- `GameState` has no `world` or `recentCommands` yet; it has `hordes`, `teams` (the spawn
+- `GameState` has no `world` yet; it has `hordes`, `teams` (the spawn
   counters only), the generated `map` and its `routes` since minion plan M1 (18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
