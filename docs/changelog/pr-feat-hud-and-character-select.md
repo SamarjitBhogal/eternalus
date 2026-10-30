@@ -4,7 +4,7 @@ description: The record for the pull request of feat/hud-and-character-select (c
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [changelog, pull-request, ui, hud, character-select]
 related:
   [
@@ -870,7 +870,10 @@ decisions again."
 | Review | HC-T1 T-162 and T-163, the Harbinger id in two docs             | "approve both"                                                                                                                                         | applied (`3849c8b`)                                 |
 
 **HC-T1 after these answers:** T-155 to T-163 are applied (`--apply-b20` of the D2b generator,
-outside the repository; T-158 to T-161 had waited for the content rename, `6ce2141`). 7 rows are
+outside the repository; T-158 to T-161 had waited for the content rename, `6ce2141`). The
+critic's loop 2 (round B20a, 2026-10-30) added T-180, the last `flying` in 04 §1's `Legend` row,
+and restored the `[STATUS: needs-planning]` marker that T-155 had dropped; T-159 changed only 04
+§12's first line, and the worked example's table waits for the HC-Q18 (2) build. 7 rows are
 pending: T-10 and T-13 (held for the bot-roster build), T-12 and T-75 (redrafted to DEC-60, applied
 with that build; T-12's redraft still lets a timeout start a match with no Legend, which DEC-102
 replaces), T-23 (redrafted to DEC-62, for his approval), T-125 (SamarjitBhogal's) and T-152 (the UI

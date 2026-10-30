@@ -4,7 +4,7 @@ description: Specification of the follow-up pull request that adds data-selectab
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [plan, ui, hud, character-select, accessibility, motion, follow-up]
 related:
   - 'docs/reference/game-design/15-figma-frames-and-creative-decisions.md'
@@ -23,7 +23,9 @@ specifies one follow-up pull request: what each enhancement changes, where, when
 exact parameters, its accessibility limits, the data value that selects it and the tests that
 accept it. It decides nothing: the owner chooses which enhancements to build and which become the
 default (`INBOX.md` HC-S5). Until the owner chooses, every default stated here is the Figma
-original. **Answered 2026-10-29** (DEC-100): build all eleven, each on by default with the Figma original kept selectable and all off under reduced motion; his changes to UE-01, UE-07, UE-08 and UE-12 are in their rows.
+original. **Answered 2026-10-29** (DEC-100): build all eleven, each on by default with the Figma
+original kept selectable; their motion stops under reduced motion, and changes that carry
+information stay (§2 rule 3); his changes to UE-01, UE-07, UE-08 and UE-12 are in their rows.
 
 ## 1. Scope and status
 

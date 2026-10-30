@@ -2250,72 +2250,40 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 
 ### 2026-10-29 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's build-plan answers (batch 1 docs pass, round B20) — feat/hud-plan-b1 — sholtzman + Claude Code
 
-- What was done (docs, plus two code comments, on `6a3e437`; batch 1's code is `b57b919` the art-id
-  prefix check, `92cc1ff` the six titles, `6ce2141` `flying` to `harbinger`, `d4cbc70` Cinzel and
-  `6a3e437` its critic and ponytail fixes; this pass is `3849c8b` the applied rows, `4fca16b` two
-  comments, and the records commit with this entry). On 2026-10-29 the owner answered the build
-  plan's eleven questions (P1 to P11, in three dialogs) and the enhancement review page his P1
-  answer asked for (in chat). His words are verbatim in
-  `eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-10-29-plan.md`, with his
+- What was done (docs, plus code comments): `3849c8b` the applied rows, `4fca16b` two Nadirev
+  comments, `90442f6` the records; on 2026-10-30 the critic's loop 2 (approve, no blocker) and its
+  ponytail review were applied in place to this unmerged text, in one `docs(docs)` and one
+  `chore(client)` commit. On 2026-10-29 the owner answered the build plan's P1 to P11 and the
+  enhancement review page (verbatim in
+  `eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-10-29-plan.md`), with the
   instruction: "Answers must be documented in the code so I do not need to make these decisions
   again."
-  - Decisions log: a new batch, DEC-100 to DEC-108 (P1 the eleven enhancements; P2 the empty kit; P3
-    the bots per lane and the timeout popup; P4 View Details on V and Unison Ward; P5 the Coming
-    Soon void; P6 Cmd/Ctrl+Shift+F3; P7 the crash reports in `logs/errors/`; P9 and P10; P11 the
-    Wall tile), each with his words, every value he set and the recorder's readings marked; dated
-    notes appended to DEC-48, DEC-51, DEC-53, DEC-57, DEC-59 to DEC-62, DEC-65, DEC-66 and DEC-69
-    (no row text rewritten; a script checked that each changed row only gained its note). Numbering:
-    DEC-71 to DEC-84 are in use in the game-loop plan's worktree (`docs/game-loop-and-results-plan`,
-    not committed) and the review of the open pull requests reserves DEC-85 onward
-    (`eternalus-agent-work/pr-review-2026-10-29/`), so this batch starts at DEC-100, which was free
-    on all 94 local and remote refs, in every worktree and in the agents' folders.
-  - HC-T1, round B20: before any change the B19 generator reproduced every B19 output byte for byte
-    on `6a3e437`, and `git apply --check d2b.patch` printed nothing. `--apply-b20` then applied
-    T-155 to T-157 (P8, "Approve all three (Recommended)"), T-158 to T-161 (approved with HC-F2 for
-    the content rename) and T-162, T-163 (the review page, "approve both"); each applied file equals
-    round B19's patched copy byte for byte before the `last-reviewed` bump. 7 rows stay pending
-    (T-10, T-12, T-13, T-23, T-75, T-125, T-152); the inline table changes only in the 5 status
-    cells of T-155 to T-157, T-162 and T-163.
-  - Every edit to a sholtzman-owned doc this round:
-    - HC-T1 rows (`3849c8b`): architecture 04 T-158, T-159; 17 T-160; the phase 4 plan T-161;
-      reference 10 T-155; reference 11 T-156, T-157; reference 12 T-162; the naming suggestions
-      T-163; `last-reviewed` 2026-10-29 on each. Prettier re-padded the tables of references 10, 11
-      and 12 and 04 §1, whitespace only.
-    - The decisions log: the new batch and the eleven appended notes; Prettier re-padded the tables
-      of the 2026-10-17 and both 2026-10-28 batches, whitespace only; `last-reviewed` 2026-10-29.
-    - The UI enhancements plan: Purpose (a dated "Answered" sentence), §1 task line (HC-S5 answered,
-      T-152 still pending), §2 rule 1 ("empty by default" to "every id by default"), §3 intro (he
-      chose on by default), UE-01 (a larger pulse from 5 s, `Recommendation:` scale 1.12), UE-06
-      (its trigger: the locked view, HC-S5 (2) answered on 2026-10-28), UE-07 (0.25 is his 25 %, no
-      longer a recommendation), UE-08 (every 5 s, 0.2 Hz), UE-12 (more dramatic, a theme colour;
-      `Recommendation:` opacity 1, scale 1.25, the gold token), every "Switch and default" cell from
-      "default off" to "default on (DEC-100)"; `last-reviewed` 2026-10-29.
-    - The PR register: a new section "Owner answers of 2026-10-29" (P1 to P11 and the review page);
-      notes appended to ruling I-82, the roster audit's item P8 and its section's first paragraph
-      (P8 built in `b57b919`); `last-reviewed` 2026-10-29.
-    - `INBOX.md` (not under `docs/`): dated notes under HC-F1, HC-F2, HC-F6, HC-F8, HC-Q4, HC-Q5,
-      HC-Q7, HC-Q8, HC-Q16 (ticked), HC-Q18, HC-Q20 and HC-S1 to HC-S5; HC-T1's round B20 bullet and
-      regenerated table; a Done entry. HC-Q1 (1) (line 712 now, 681 before) still says
-      "Necromancer": it is the question as asked on 2026-10-17, whose answer note follows it, so it
-      is left as written (the title is now Heretic, DEC-58; the id stays `necromancer`).
-  - Code comments (`4fca16b`): `packages/core/src/content/legends/specs/catalyst.ts` and
-    `apps/client/src/ui/testStore.tsx` no longer call Nadirev unconfirmed; both cite DEC-58 and
-    INBOX HC-Q16.
-  - Stale text left for the build, because it is design text or code that changes with the
-    behaviour: architecture 13 §2's `character-select` row (a confirmed class goes on, a timeout
-    with none goes home) and §10's status note (the countdown's end with a class picked goes on to
-    `pre-launch`), reference 14 §5 ("Cancel-on-timeout"), HC-T1 T-12's pending redraft (a timeout
-    after a class still starts the match), `ui/strings.ts` (the `select-timeout` banner),
-    `game/session/states/CharacterSelectState.ts` (the timeout rule),
-    `bridge/selectors/selectStructureStrip.ts` (the Wall tile's health is the sum, so it shows
-    destroyed only when all are) and `game/input/keybindings.ts` (no V binding yet).
-  - Outside the repository: the D2b generator gains `B20` and `--apply-b20`; its README records the
-    round; backups of this round's inputs in `streams/docs/b20-backup/` (`SHA256SUMS` there).
-- Checks run, on `4fca16b` with all of this round's records except this entry in the working tree:
-  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 620 passed
-  (620)", statements 99.19 %; client "Tests 1363 passed (1363)", statements 96.48 %; the JavaScript
-  bundle 556.87 kB (gzip 174.14 kB); "✓ built"; "Checked 121 Markdown files under docs/."
-  "Documentation check passed." knip prints its one configuration hint, as before. The full log is
-  in `eternalus-agent-work/hud-charselect/build-1029/check-b1-docs.log`. After this entry:
-  `npm run docs:check` and Prettier on `PROGRESS.md` pass. Not run: the id resolver.
+  - Decisions log: DEC-100 to DEC-108 (numbering in the log's batch intro), and dated notes on
+    DEC-48, DEC-51, DEC-53, DEC-57, DEC-59 to DEC-62, DEC-65, DEC-66 and DEC-69.
+  - HC-T1: T-155 to T-163 applied; the critic's loop 2 (round B20a) added T-180 and restored the
+    marker T-155 had dropped; 7 rows pending (`INBOX.md` HC-T1).
+  - Every edit to a sholtzman-owned doc (detail in the commits; `last-reviewed` bumped on each but
+    this log):
+    - `docs/architecture/04-entity-architecture.md`: HC-T1 T-158, T-159 (first line only), T-180.
+    - `docs/architecture/17-extension-recipes.md`: T-160.
+    - `docs/plan/phase-4-legends-abilities-and-loadouts.md`: T-161.
+    - `docs/reference/game-design/10-art-and-lore.md`: T-155.
+    - `docs/reference/game-design/11-mvp-scope.md`: T-156, T-157.
+    - `docs/reference/game-design/12-open-questions.md`: T-162.
+    - `docs/reference/suggestions/naming.md`: T-163.
+    - `docs/reference/game-design/13-owner-decisions-log.md`: the new batch and the eleven notes.
+    - `docs/plan/ui-enhancements-plan.md`: DEC-100's values (UE-01, UE-06, UE-07, UE-08, UE-12,
+      every default on) and the answered owner question.
+    - `docs/changelog/pr-feat-hud-and-character-select.md`: the section "Owner answers of
+      2026-10-29"; notes on ruling I-82 and roster item P8.
+    - `docs/plan/PROGRESS.md`: this entry.
+    - `INBOX.md` (not under `docs/`): dated notes on the answered items, HC-T1's bullet and table, a
+      Done entry; HC-Q1 (1)'s "Necromancer" is the question as asked on 2026-10-17 and is left as
+      written.
+  - Code comments: Nadirev cites DEC-58 (`4fca16b`); `RETIRED_NAMES` cites DEC-49 and DEC-58, and
+    `--font-game` cites DEC-67 (the `chore(client)` commit).
+  - Stale text that changes with the build: what `INBOX.md` HC-F1, HC-F8 and HC-Q4 track, and also
+    13 §10's status note, reference 14 §5, `bridge/selectors/selectStructureStrip.ts` (the Wall
+    tile) and `game/input/keybindings.ts` (no V).
+- Checks run: `npm run check` EXIT=0, core 620/620, client 1363/1363; `npm run docs:check` passes.
 - Next step: merge into `feat/hud-and-character-select`; steps 6 and 7 of the build plan.

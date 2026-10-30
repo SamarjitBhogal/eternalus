@@ -4,7 +4,7 @@ description: The art theme and its references, the MVP art level, the Light and 
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [reference, game-design, art, lore, naming]
 related:
   - 'docs/reference/suggestions/naming.md'
@@ -23,13 +23,13 @@ fantasy, the MVP is low-poly or pixel art, and most names are still placeholders
 **Grand, dark fantasy**: the Remnant 2, Battle for Middle-earth, Elden Ring and Lords of the
 Fallen aesthetic (game doc).
 
-| Item                                                           | Status                                                                                                                                  |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Low-poly or pixel art in-game                                  | **MVP** (game doc "MVP decisions so far")                                                                                               |
-| High-quality character art on the selection screen             | **MVP** (DEC-51, 2026-10-28): the owner's Figma art for now, until a digital artist is employed for the project; yellow in the game doc |
-| Map-wide atmosphere change when the central boss spawns        | **MVP-if-time** with the boss (`04-objectives-capture-points-and-bosses.md`)                                                            |
-| Map starts green and grassy; grass and trees burn              | **MVP-if-time** (`05-map.md`)                                                                                                           |
-| Legends grow in size and stature as an Eternal; new animations | **MVP-if-time** with the boss                                                                                                           |
+| Item                                                           | Status                                                                                                                                                               |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Low-poly or pixel art in-game                                  | **MVP** (game doc "MVP decisions so far")                                                                                                                            |
+| High-quality character art on the selection screen             | **MVP** (DEC-51, 2026-10-28): the owner's Figma art for now, until a digital artist is employed for the project (`[STATUS: needs-planning]`, yellow in the game doc) |
+| Map-wide atmosphere change when the central boss spawns        | **MVP-if-time** with the boss (`04-objectives-capture-points-and-bosses.md`)                                                                                         |
+| Map starts green and grassy; grass and trees burn              | **MVP-if-time** (`05-map.md`)                                                                                                                                        |
+| Legends grow in size and stature as an Eternal; new animations | **MVP-if-time** with the boss                                                                                                                                        |
 
 Constraint from `AGENTS.md`: never add copyrighted assets the team has no licence for. The
 reference games are mood references only. Assets go through the `ResourceController` and an
