@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-17
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -26,10 +26,9 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 
 ## 1. Where AI sits
 
-- Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (02 §2, core `AGENTS.md`): `ai/` may
-  import only `state/`, `commands/`, `content/` types and `utils/`. Definition values, spatial
-  queries and flow fields reach a controller through `GameState` or injection, never through
-  imports (DIP); only `content/` types are imported.
+- Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (core `AGENTS.md`): `ai/` may
+  import only `state/`, `commands/` and `utils/`. Definitions, spatial queries and flow fields
+  reach a controller through `GameState`, never through imports (DIP).
 - One system, `AiSystem`, runs second in the `SystemPipeline`, right after `CommandApplySystem`.
   It asks each due controller for decisions and enqueues them in the `CommandQueue` for the next
   tick. Controllers never mutate state, never call systems and never compute paths.
@@ -316,26 +315,6 @@ Flying class, the `Vision` component for fog of war, `jungler`/`support` trees, 
 `MovementStrategy`. GOAP and HTN are not planned: a small fixed action vocabulary suits FSM, BT
 and utility better
 [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots).
-
-## 10. Implementation status
-
-Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
-work named:
-
-- `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
-  the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open
-  PROTO-01 question).
-- `EntityFactory` cannot reach the state, so a unit whose definition names a `controller` gets a
-  `ControllerBinding` component at spawn, and `AiSystem` creates its brain the first tick it sees
-  it.
-- The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
-  `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
-- The controller registry is empty until `MinionController` (M2b). How a controller writes its
-  memory and RNG state back is open (`INBOX.md`), since `decide` returns only commands.
-- A definition that names an unregistered controller stops `Simulation` at construction (shipped
-  content) or the first tick `AiSystem` sees the entity (injected content).
-- `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities
-  (M2c).
 
 ## Related
 

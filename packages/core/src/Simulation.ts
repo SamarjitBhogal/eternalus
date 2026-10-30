@@ -1,8 +1,3 @@
-import { AiSystem } from './ai/AiSystem';
-import {
-  createDefaultControllerRegistry,
-  type ControllerRegistry,
-} from './ai/defaultControllerRegistry';
 import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
@@ -12,23 +7,17 @@ import { validateGameConfig } from './config/validateGameConfig';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
-import { AI_CADENCE } from './content/ai/cadence';
-import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
-import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
-import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
 import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
-import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import type { SimulationOptions } from './Simulation.types';
-import { SpaceIndex } from './physics/SpaceIndex';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -63,14 +52,12 @@ export class Simulation {
     levelCurves,
     weapons,
   }: SimulationOptions) {
-    const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
-    this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
+    this.state = new GameState(validateGameConfig(config), seed, map ?? null);
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);
+    const units = content ?? loadDefaultContent(tickRate, curves, weaponSource);
     // One factory for commands and spawning, so entity ids come from one counter.
-    const controllers = createDefaultControllerRegistry();
-    const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
       units,
@@ -85,15 +72,7 @@ export class Simulation {
             new DefaultInvariantRunner(debug, logger, curves),
             this.state,
             { units, curves, xpSources: XP_SOURCES },
-            {
-              factory,
-              space,
-              decide: [
-                new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
-                  this.queue.enqueue(command);
-                }),
-              ],
-            },
+            { factory, definitions: units },
           )
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
@@ -143,17 +122,5 @@ export class Simulation {
   /** A 32-bit fingerprint of the current state; equal runs give equal hashes. */
   public hash(): number {
     return this.hasher.hash(this.state);
-  }
-
-  /** The shipped content, checked against the controllers before the match starts. */
-  private static defaultContent(
-    tickRate: number,
-    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'>,
-    controllers: ControllerRegistry,
-    weapons: WeaponSource,
-  ): DefinitionSource {
-    const catalogue = loadDefaultContent(tickRate, curves, weapons);
-    AiSystem.assertRegistered(catalogue.all(), controllers);
-    return catalogue;
   }
 }

@@ -19,7 +19,7 @@ export class EntityFactory {
    */
   public constructor(
     public readonly registry: EntityRegistry,
-    public readonly definitions: DefinitionSource,
+    private readonly definitions: DefinitionSource,
     private readonly ids: IdGenerator = new IdGenerator(),
     private readonly weapons: WeaponSource | null = null,
   ) {}

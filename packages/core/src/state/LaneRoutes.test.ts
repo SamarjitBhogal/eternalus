@@ -19,12 +19,6 @@ describe('LaneRoutes', () => {
     expect(routes.distanceAlong('lane-0', 'light', { x: 999, y: 20 })).toBe(160);
   });
 
-  it('finds the lane nearest a point, the lower index on a tie', () => {
-    expect(routes.nearestLane({ x: 90, y: 22 })?.id).toBe('lane-0');
-    expect(routes.nearestLane({ x: 90, y: 38 })?.id).toBe('lane-1');
-    expect(routes.nearestLane({ x: 90, y: 30 })?.id).toBe('lane-0');
-  });
-
   it('gives the point and walking direction at a distance, clamped to the lane', () => {
     const point = { x: 0, y: 0 };
     const forward = { x: 0, y: 0 };

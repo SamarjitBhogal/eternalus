@@ -10,7 +10,6 @@ import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
-import { SeededRandom } from '../utils/SeededRandom';
 import { fnv1a } from '../utils/fnv1a';
 import { GameState } from './GameState';
 import { StateHasher } from './StateHasher';
@@ -160,36 +159,6 @@ describe('StateHasher', () => {
     change(scout);
 
     expect(hasher.hash(state)).not.toBe(before);
-  });
-
-  it('covers every brain field and the deferred queue once a brain exists', () => {
-    const { state } = stateWithSoldier();
-    const without = hasher.hash(state);
-    const brain = {
-      controllerId: 'minion' as const,
-      profileId: 'minion',
-      memory: { fsm: 'marching' },
-      rngState: new SeededRandom(3).getState(),
-    };
-    state.ai.set('entity-1', brain);
-    const withBrain = hasher.hash(state);
-
-    state.ai.set('entity-1', { ...brain, memory: { fsm: 'engaging' } });
-    const otherMemory = hasher.hash(state);
-    state.ai.set('entity-1', { ...brain, rngState: new SeededRandom(4).getState() });
-    const otherRng = hasher.hash(state);
-    state.ai.set('entity-1', { ...brain, controllerId: 'guard' });
-    const otherController = hasher.hash(state);
-    state.ai.set('entity-1', { ...brain, profileId: 'other' });
-    const otherProfile = hasher.hash(state);
-    state.ai.set('entity-1', brain);
-    state.ai.defer(['entity-1']);
-    const deferred = hasher.hash(state);
-
-    expect(
-      new Set([without, withBrain, otherMemory, otherRng, otherController, otherProfile, deferred])
-        .size,
-    ).toBe(7);
   });
 
   describe('hordes', () => {

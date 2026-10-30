@@ -15,7 +15,6 @@ import { MemoryLogger } from '../diagnostics/MemoryLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
-import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
@@ -66,29 +65,22 @@ describe('DefaultSystemPipeline', () => {
     expect(logger.records).toEqual([]);
   });
 
-  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2', () => {
+  it('runs the horde systems in the order of architecture 10 §9 and 18 §3.2', () => {
     const logger = new MemoryLogger();
-    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
 
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
       state,
       PROGRESSION,
-      {
-        factory,
-        space,
-        decide: [{ name: 'ai', update: () => undefined }],
-      },
+      { factory, definitions: UNIT_DEFINITIONS },
     );
 
     expect(pipeline.names).toEqual([
-      'ai',
       'hordes',
       'status-effects',
       'movement',
-      'space',
       'pathing',
       'combat',
       'progression',

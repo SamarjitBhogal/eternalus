@@ -273,10 +273,11 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
 
 ## 12. Implementation status
 
-`physics/SpatialHash` (minion plan M1, M2a) is §5's counting-sort grid with `rebuild` and an
-exact, ascending `queryCircle`, over points only: no radii and no `queryRect` yet.
-`physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
-`MovementSystem`. Horde separation (18 §5.2) falls off linearly with distance, not as 1/r.
+`physics/SpatialHash` (minion plan M1) is a uniform grid with linked-list cells:
+`insert(index, x, y)` per tick and `collectNear(x, y, radius, out)`, which yields items in reverse
+insert order per cell (each cell is a LIFO list), not §5's `rebuild` / `queryCircle` with id-sorted results. It is deterministic
+(insert order follows store order). Horde separation (18 §5.2) falls off linearly with distance,
+not as 1/r. Both conform when `Perception` (minion plan M2) needs id-ordered queries.
 
 Flow-field follow (§9, minion plan M4) is built for lane hordes: `LaneFollowMovementStrategy` takes
 the bilinear field direction instead of its slot while the next `blockedLookAhead` (content) of the

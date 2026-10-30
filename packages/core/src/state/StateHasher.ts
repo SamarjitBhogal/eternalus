@@ -52,14 +52,6 @@ export class StateHasher {
       });
       parts.push(['hordes', ...hordes]);
     }
-    // Brains are appended only once one exists, for the same reason.
-    if (state.ai.size > 0 || state.ai.deferred.length > 0) {
-      const brains: unknown[] = [...state.ai.deferred];
-      state.ai.forEach((id, brain) => {
-        brains.push([id, brain.controllerId, brain.profileId, brain.memory, brain.rngState]);
-      });
-      parts.push(['ai', ...brains]);
-    }
     return fnv1a(JSON.stringify(parts));
   }
 
