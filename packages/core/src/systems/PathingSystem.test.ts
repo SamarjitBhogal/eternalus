@@ -10,6 +10,8 @@ import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { LaneFlowFields } from '../map/LaneFlowFields';
@@ -125,6 +127,58 @@ describe('PathingSystem', () => {
     index();
     system.update({ state, logger });
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+  });
+
+  it('chases a target across blocked ground toward the target, not along the lane field', () => {
+    const config = createDefaultGameConfig();
+    const grid = WorldMap.fromDefinition(
+      BLOCKED_LANE_MAP,
+      config.map.navCellSize,
+      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+    );
+    const fields = new LaneFlowFields(
+      grid,
+      BLOCKED_LANE_MAP,
+      config.map.flowFieldCorridorHalfWidth,
+    );
+    const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+    const state = new GameState(config, 1, BLOCKED_LANE_MAP, space);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    // Light marches +x; the minion is just past the rift (x 50..70) and its target is upstream,
+    // behind it, so the lane field points away from the target and the straight line is blocked.
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 75, y: 20 },
+    });
+    const enemy = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 45, y: 20 },
+    });
+    state.entities.add(minion);
+    state.entities.add(enemy);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [minion.id],
+      progress: 65,
+    });
+    state.entities.setAttackTarget(minion.id, enemy.id);
+    space.begin(state.entities.size);
+    state.entities.forEach((entity) => {
+      const { x, y } = entity.getComponent(Transform).position;
+      space.add(entity.id, x, y);
+    });
+    space.commit();
+
+    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, fields).update({
+      state,
+      logger,
+    });
+
+    expect(minion.getComponent(Movement).heading).toEqual({ x: -1, y: 0 });
   });
 
   it('does nothing without a map or index, without hordes or with an unknown formation', () => {

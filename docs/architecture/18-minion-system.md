@@ -331,8 +331,10 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
 - `PathingSystem` combines the strategy's target with the rest of 10 §9 by priority: **obstacle
   and wall avoidance**, then **separation from all neighbours** (through `SpatialHash`,
   [10 §5](10-physics.md#5-broad-phase-spatialhash), id-ordered), then the strategy's target, then
-  the lane flow field when the straight line is blocked (MS-19). A mob blocked by terrain leaves
-  its slot and returns to it once clear, because keeping the slot is never the top priority.
+  the lane flow field when the straight line to the slot is blocked (MS-19). An engaging mob does
+  not follow the lane field, which leads to the lane's end rather than to its target. A mob blocked
+  by terrain leaves its slot and returns to it once clear, because keeping the slot is never the
+  top priority.
 - Vectors only, no angles (ADR 0012). All distances and factors are content (`TUNE`). The
   strategy never queries the whole entity list; steering cost per mob is one bounded neighbour
   query.
@@ -422,8 +424,9 @@ without a new controller. Only the home changes, and it is data on the spawning 
   from its defenders.
 - Neither kind joins a horde (MS-25 covers lane minions only). A mob on a team counts against that
   team's unit cap (§3.4).
-- `GuardWithinLeashInvariant` measures every leashed mob from its own home, so it covers camp
-  mobs and defenders without change.
+- `GuardWithinLeashInvariant` (15 §3) is defined for tower guards, measured from the structure's
+  `GuardPlan.leashRadius`. Covering camp mobs and checkpoint defenders changes that definition and
+  its tests (M6); defenders stay uncovered until their leash radius is decided (§10, item 4).
 
 ## 8. Bot Legends: lane assignment (MS-20)
 
