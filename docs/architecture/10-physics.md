@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-29
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -73,7 +73,9 @@ export class Movement {
 }
 ```
 
-Integration per tick (`MovementSystem`, `dt = 1 / 30` s), in entity id order:
+While `state.match.isIdleHeld` is set (the countdown, 12 §2) `MovementSystem` treats every
+entity as `cannot-move`: the speed scale is 0 and no entity walks. Integration per tick
+(`MovementSystem`, `dt = 1 / 30` s), in entity id order:
 
 1. `dv = desiredVelocity − velocity`; clamp `|dv|` to `acceleration × dt` (acceleration-limited:
    a unit cannot change velocity faster than its stat allows, in any direction).

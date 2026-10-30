@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-30
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -367,6 +367,15 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   `recentEvents` ring buffer shows it in invariant reports.
 - **Docs:** the event table in 03 §4 (07 §11 for structure events).
 - **Skill:** `new-system` · [03 §4](03-game-model.md#4-gameevents-the-typed-channel).
+
+### R17a. Add a victory condition
+
+- **When:** a new way for a match to end (a verdict with a winner or a draw), not a timed event (a timeline entry, 12 §3).
+- **Files:** `core/match/conditions/<Name>Condition.ts` implementing `VictoryCondition`; its id in `VictoryConditionId` (`core/config/VictoryConditionId.types.ts`).
+- **Registry line:** one line in `core/match/defaultVictoryConditions.ts`. Check order is list order and the first verdict wins.
+- **Tests:** a co-located `<Name>Condition.test.ts`; a scenario if it needs the real systems.
+- **Docs:** the table in 12 §6.
+- **Skill:** `new-system` · [12 §6](12-game-story-and-match-director.md#6-victory-conditions-and-match-end).
 
 ### R18. Add an AI controller
 

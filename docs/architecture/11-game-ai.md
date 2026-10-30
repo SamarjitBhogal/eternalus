@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-30
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -277,7 +277,9 @@ no allocation in hot paths, scratch vectors reused. Heavy work (flow fields, A\*
 
 ## 7. Sim mode (MVP)
 
-`MatchConfig.humanLegendId: EntityId | null`. With `null`, every Legend gets `bot-legend` (or
+The human is the `MatchConfig.seat` (`{ definitionId, at }`; its team is `MatchConfig.playerTeam`);
+`state.match.humanLegendId: EntityId | null` is the Legend `Simulation` spawns for it when the match
+is built. With no seat, `humanLegendId` is `null` and every Legend gets `bot-legend` (or
 `rover`) and nobody reads input: the match plays itself. This is a first-class feature, not a
 debug hack. Soak tests ([15-diagnostics](./15-diagnostics-and-runtime-testing.md)) run sim mode
 headless in Node for thousands of ticks; balancing runs many seeds and compares `MatchResult`s;
