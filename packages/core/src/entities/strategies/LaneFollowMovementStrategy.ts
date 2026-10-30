@@ -16,7 +16,9 @@ import type { FlowQuery, MovementContext, MovementStrategy } from './MovementStr
  *
  * @remarks ponytail: no wall avoidance term yet (it arrives with `CollisionSystem`, 10 §8);
  * separation falls off linearly, not as 1/r (minion plan §3). A chase blocked by terrain holds
- * until target-aware routing (an A* path to the target) lets it go round.
+ * until target-aware routing (an A* path to the target) lets it go round. A mob on blocked ground
+ * for any reason walks straight through it to its target; narrow that to spawns, or let the
+ * collision resolver push units out, when `CollisionSystem` lands.
  */
 export class LaneFollowMovementStrategy implements MovementStrategy {
   /** @param profile - Distances and weights; the strategy holds no numbers of its own. */
@@ -69,11 +71,15 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
     // where arrival stops it, so ground beyond a reachable target never holds it out of attack
     // reach. A march keeps the full look-ahead, which keeps formations from edging into a wall.
     const probe = isChasing && !isBlocked ? Math.min(blockedLookAhead, gap) : blockedLookAhead;
-    if (this.isIntoBlocked(flow, x, y, out, probe)) {
+    const isPushedIntoWall = this.isIntoBlocked(flow, x, y, out, probe);
+    if (isPushedIntoWall) {
       out.x = ownX;
       out.y = ownY;
     }
-    if (length(out) < minSteer || this.isIntoBlocked(flow, x, y, out, probe)) {
+    if (
+      length(out) < minSteer ||
+      (isPushedIntoWall && this.isIntoBlocked(flow, x, y, out, probe))
+    ) {
       out.x = 0;
       out.y = 0;
     }
