@@ -207,20 +207,24 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
     expect(warnings).toEqual([]);
   });
 
-  it.each([3, 5])(
-    'brings every opening horde to its enemy end with no stuck mob: %i lanes',
-    (numLanes) => {
-      const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes } }), 1);
-      // The longest lane is about 1.5 km; light minions march it in under 500 s.
-      const { mobs, farthest, offGroundShare, warnings } = march(map, numLanes, 530 * 30);
-
-      expect(mobs).toBe(2 * numLanes * 16);
-      expect(farthest).toBeLessThan(15);
-      expect(offGroundShare).toBeLessThan(0.01);
-      expect(warnings).toEqual([]);
-    },
-    60_000,
-  );
+  // Commented out on 2026-10-30 at the owner's request (PR #39): this full 530 s match takes
+  // about 8 s locally but over 100 s on the GitHub runners under coverage, past the 60 s
+  // timeout. Restore it once it is made cheaper (fewer ticks or a non-coverage soak job).
+  // eslint-disable-next-line vitest/no-commented-out-tests -- too slow for CI under coverage (above)
+  // it.each([3, 5])(
+  //   'brings every opening horde to its enemy end with no stuck mob: %i lanes',
+  //   (numLanes) => {
+  //     const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes } }), 1);
+  //     // The longest lane is about 1.5 km; light minions march it in under 500 s.
+  //     const { mobs, farthest, offGroundShare, warnings } = march(map, numLanes, 530 * 30);
+  //
+  //     expect(mobs).toBe(2 * numLanes * 16);
+  //     expect(farthest).toBeLessThan(15);
+  //     expect(offGroundShare).toBeLessThan(0.01);
+  //     expect(warnings).toEqual([]);
+  //   },
+  //   60_000,
+  // );
 
   it('gives the same hash on the generated map for the same seed, tick for tick', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes: 5 } }), 1);

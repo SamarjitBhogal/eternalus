@@ -1761,3 +1761,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   690 passed (690)"; client "Tests 415 passed (415)"; "✓ built in 150ms"; "Documentation check
   passed."
 - Next step: merge into the enemy-AI plan (#43) and up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: at the owner's request, commented out `Simulation.hordes.test.ts` "brings every
+  opening horde to its enemy end with no stuck mob" (3 and 5 lanes). With M2a's brains and
+  perception the 530 s march takes about 8 s locally but 95–125 s on the GitHub runners under
+  coverage, past the 60 s timeout. A named `vitest/no-commented-out-tests` disable with a reason
+  sits above it. Restore it once the march is cheaper or runs in a separate non-coverage job.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 155ms"; "Documentation check
+  passed."
+- Next step: restore the march test (owner to choose: shorter march or soak job).
