@@ -116,13 +116,6 @@ export type Command =
       readonly at: Vec2;
       readonly count: number;
     }
-  | {
-      readonly type: 'dev-spawn-mobs'; // one horde (13 §4, 18 §3.5)
-      readonly team: PlayableTeam;
-      readonly definitionId: string;
-      readonly count: number;
-      readonly origin: SpawnOrigin; // a structure, `{ lane, t }` or a point
-    }
   | { readonly type: 'dev-remove-entity'; readonly entityId: EntityId }
   | {
       readonly type: 'dev-set-controller';
@@ -431,8 +424,7 @@ each closed by the session or phase named:
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
 - `GameState` has no `world` yet; it has `hordes`, `teams` (the spawn
-  counters only), the generated `map` and its `routes` since minion plan M1, and `ai`, `space`
-  and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
+  counters only), the generated `map` and its `routes` since minion plan M1 (18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),
