@@ -9,6 +9,7 @@ import { LEGEND_CLASSES } from '../../content/legends/legendCatalogue';
 import { Legend } from '../Legend';
 import { Unit } from '../Unit';
 import { Magus } from './Magus';
+import { loadWeapons } from '../../content/weapons/loadWeapons';
 
 describe('Magus', () => {
   it('is a concrete legend of kind "magus"', () => {
@@ -24,7 +25,7 @@ describe('Magus', () => {
     const definition = LEGEND_CLASSES.get('magus');
     const entity = new Magus('entity-1', 'magus');
 
-    entity.spawn({ definition, position: { x: 0, y: 0 }, team: 'light' });
+    entity.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: loadWeapons(30) });
 
     expect(entity.getComponent(Health).current).toBe(definition.baseHealth);
     expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);

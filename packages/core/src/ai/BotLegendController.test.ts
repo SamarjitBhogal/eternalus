@@ -7,6 +7,7 @@ import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { BOT_DIFFICULTIES } from '../content/ai/difficulties/botDifficulties';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { SpaceIndex } from '../physics/SpaceIndex';
@@ -26,7 +27,12 @@ const RNG = { seed: 1, words: [1, 2, 3, 4] as const };
 const setUp = (at = { x: 60, y: 20 }) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    loadDefaultContent(30),
+    undefined,
+    loadWeapons(30),
+  );
   const perception = new Perception(state);
   const add = (
     team: 'light' | 'dark',

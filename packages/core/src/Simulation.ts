@@ -27,9 +27,10 @@ import { loadDefaultContent } from './content/loadDefaultContent';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
+import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
-import type { DefinitionSource, Placement } from './entities/EntityFactory.types';
+import type { DefinitionSource, Placement, WeaponSource } from './entities/EntityFactory.types';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
@@ -69,18 +70,25 @@ export class Simulation {
     map,
     levelCurves,
     roster = [],
+    weapons,
   }: SimulationOptions) {
     const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
     this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
+    const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
+    const weaponSource = weapons ?? loadWeapons(tickRate);
     // One factory for commands and spawning, so entity ids come from one counter.
     const controllers = createDefaultControllerRegistry({
       minion: { aggro: AGGRO_RULES, formations: FORMATIONS, classOf: unitClassOf },
       botLegend: { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES },
     });
-    const units =
-      content ?? Simulation.defaultContent(this.state.config.tickRate, curves, controllers);
-    const factory = new EntityFactory(createDefaultEntityRegistry(), units);
+    const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      units,
+      undefined,
+      weaponSource,
+    );
     this.commandContext = { state: this.state, factory };
     Simulation.spawnRoster(this.state, factory, roster, controllers);
     this.systemContext = { state: this.state, logger };
@@ -237,8 +245,9 @@ export class Simulation {
     tickRate: number,
     curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'>,
     controllers: ControllerRegistry,
+    weapons: WeaponSource,
   ): DefinitionSource {
-    const catalogue = loadDefaultContent(tickRate, curves);
+    const catalogue = loadDefaultContent(tickRate, curves, weapons);
     AiSystem.assertRegistered(catalogue.all(), controllers);
     return catalogue;
   }
