@@ -20,6 +20,9 @@ Show with measurements how many rooms one server can hold while meeting the cour
 where the first bottleneck appears as players and rooms grow, and what we would do to keep the
 targets at scale.
 
+Day-by-day view: [timeline](timeline.html) (download it or open it locally; GitHub shows only
+the source).
+
 ## Targets and measurements
 
 | Brief asks for        | Target             | How it is measured                                                    |

@@ -2447,3 +2447,12 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 502ms"; "Documentation check
   passed."
 - Next step: team settles the due date, server owner, `ws` approval and host on Nov 2.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (performance timeline) — docs/performance-plan — claudiodh + Claude Code
+
+- What was done: added a [day-by-day timeline](performance-plan/timeline.html) of the performance
+  plan and linked it from the plan. Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 184ms"; "Documentation check
+  passed."
+- Next step: team settles the due date, server owner, `ws` approval and host on Nov 2.

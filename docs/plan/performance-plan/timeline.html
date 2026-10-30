@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eternalus Performance Plan</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=IBM+Plex+Sans:wght@400;500&display=swap"
+    />
+    <style>
+      /* Layout: one working-day Gantt grid, with the Nov 6 server decision marked as the turning point. */
+      :root {
+        --bg: #f3f5f9;
+        --surface: #ffffff;
+        --fg: #18202f;
+        --muted: #5a6476;
+        --line: #d7dce6;
+        --setup: #2f62c9;
+        --measure: #0f7f78;
+        --report: #7a4cc2;
+        --gate: #b4530a;
+        --on-bar: #ffffff;
+        --display: 'Sora', 'Segoe UI', sans-serif;
+        --body: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #111622;
+          --surface: #1a2130;
+          --fg: #e8ecf4;
+          --muted: #a2acbd;
+          --line: #333d50;
+          --setup: #6f9bf0;
+          --measure: #39bdb2;
+          --report: #b596ec;
+          --gate: #f0a35e;
+          --on-bar: #0d1320;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #111622;
+        --surface: #1a2130;
+        --fg: #e8ecf4;
+        --muted: #a2acbd;
+        --line: #333d50;
+        --setup: #6f9bf0;
+        --measure: #39bdb2;
+        --report: #b596ec;
+        --gate: #f0a35e;
+        --on-bar: #0d1320;
+        color-scheme: dark;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.5 var(--body);
+        padding-block: 32px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        display: grid;
+        gap: 24px;
+      }
+      h1 {
+        font: 700 clamp(1.6rem, 4vw, 2.2rem)/1.15 var(--display);
+        margin: 0 0 6px;
+        text-wrap: balance;
+      }
+      h2 {
+        font: 500 1.05rem/1.3 var(--display);
+        margin: 0 0 10px;
+      }
+      p {
+        margin: 0;
+        max-width: 65ch;
+      }
+      .sub {
+        color: var(--muted);
+      }
+      .scroll {
+        overflow-x: auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      .gantt {
+        display: grid;
+        grid-template-columns: 210px repeat(10, minmax(52px, 1fr));
+        min-width: 760px;
+        font-variant-numeric: tabular-nums;
+      }
+      .gantt > * {
+        border-bottom: 1px solid var(--line);
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+      }
+      .head {
+        font-size: 12px;
+        color: var(--muted);
+        justify-content: center;
+        text-align: center;
+        line-height: 1.2;
+      }
+      .week {
+        font: 500 12px var(--display);
+        justify-content: center;
+        color: var(--fg);
+        min-height: 30px;
+      }
+      .split {
+        border-left: 2px solid var(--line);
+      }
+      .task {
+        padding: 6px 12px;
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 1.25;
+        grid-column: 1;
+      }
+      .bar {
+        margin: 6px 3px;
+        min-height: 30px;
+        border-radius: 3px;
+        color: var(--on-bar);
+        font-size: 12px;
+        font-weight: 500;
+        justify-content: center;
+        text-align: center;
+        padding: 2px 6px;
+        line-height: 1.15;
+        border-bottom: 0;
+      }
+      .setup {
+        background: var(--setup);
+      }
+      .measure {
+        background: var(--measure);
+      }
+      .report {
+        background: var(--report);
+      }
+      .gate {
+        background: var(--gate);
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .legend span {
+        display: inline-flex;
+        gap: 7px;
+        align-items: center;
+      }
+      .legend i {
+        width: 13px;
+        height: 13px;
+        border-radius: 2px;
+        display: block;
+      }
+      .paths {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 24px;
+      }
+      .paths > div {
+        min-width: 0;
+      }
+      .targets {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      .targets td {
+        padding: 7px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .targets td:last-child {
+        text-align: right;
+        font-weight: 500;
+        white-space: nowrap;
+        padding-left: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Eternalus Performance Plan</h1>
+        <p class="sub">
+          Nov 2–13, 2026. Find how many rooms one server holds while meeting the course targets, and
+          where the first bottleneck appears.
+        </p>
+      </header>
+
+      <section aria-label="Plan timeline">
+        <div class="scroll">
+          <div class="gantt">
+            <div class="task" style="grid-row: 1/3"></div>
+            <div class="week" style="grid-column: 2/7">Week 1: be able to measure</div>
+            <div class="week split" style="grid-column: 7/12">Week 2: measure and explain</div>
+            <div class="head" style="grid-column: 2">Mon<br />Nov 2</div>
+            <div class="head">Tue<br />Nov 3</div>
+            <div class="head">Wed<br />Nov 4</div>
+            <div class="head">Thu<br />Nov 5</div>
+            <div class="head">Fri<br />Nov 6</div>
+            <div class="head split">Mon<br />Nov 9</div>
+            <div class="head">Tue<br />Nov 10</div>
+            <div class="head">Wed<br />Nov 11</div>
+            <div class="head">Thu<br />Nov 12</div>
+            <div class="head">Fri<br />Nov 13</div>
+
+            <div class="task" style="grid-row: 3">Agree format and metrics</div>
+            <div class="bar setup" style="grid-row: 3; grid-column: 2">Team</div>
+            <div class="task" style="grid-row: 4">Measure page load</div>
+            <div class="bar measure" style="grid-row: 4; grid-column: 2">5 loads</div>
+            <div class="task" style="grid-row: 5">Build load bots</div>
+            <div class="bar setup" style="grid-row: 5; grid-column: 3/6">
+              2 bots per room, each input timed
+            </div>
+            <div class="task" style="grid-row: 6">First numbers</div>
+            <div class="bar gate" style="grid-row: 6; grid-column: 6">1, 10 rooms</div>
+            <div class="task" style="grid-row: 7">Run every level</div>
+            <div class="bar measure" style="grid-row: 7; grid-column: 7/9">1 to 200 rooms</div>
+            <div class="task" style="grid-row: 8">One improvement, re-measure</div>
+            <div class="bar measure" style="grid-row: 8; grid-column: 9">Fix + rerun</div>
+            <div class="task" style="grid-row: 9">Write report</div>
+            <div class="bar report" style="grid-row: 9; grid-column: 10">1–2 pages</div>
+            <div class="task" style="grid-row: 10">Prepare demo</div>
+            <div class="bar report" style="grid-row: 10; grid-column: 11">Demo</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="legend">
+        <span><i class="setup"></i>Setup</span><span><i class="measure"></i>Measurement</span
+        ><span><i class="gate"></i>Nov 6 deliverable and server check</span
+        ><span><i class="report"></i>Delivery</span>
+      </div>
+
+      <div class="paths">
+        <section>
+          <h2>Targets</h2>
+          <table class="targets">
+            <tr>
+              <td>Page load</td>
+              <td>2–3 s</td>
+            </tr>
+            <tr>
+              <td>Critical actions</td>
+              <td>&lt; 1 s</td>
+            </tr>
+            <tr>
+              <td>Input to opponent seeing it</td>
+              <td>&lt; 150 ms</td>
+            </tr>
+            <tr>
+              <td>Load levels, 5 min and 3 runs each</td>
+              <td>1–200 rooms</td>
+            </tr>
+          </table>
+        </section>
+        <section>
+          <h2>If the server is not ready by Nov 6</h2>
+          <p>
+            Measure against a minimal host running the real core <code>Simulation</code> and say so
+            in the report. Those numbers do not count as Duel measurements and must be repeated once
+            the Duel server exists.
+          </p>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
