@@ -340,7 +340,8 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   [10 §5](10-physics.md#5-broad-phase-spatialhash), id-ordered), then the strategy's target, then
   the lane flow field when the straight line to the slot is blocked (MS-19). An engaging mob never
   follows the lane field, which leads to the lane's end rather than to its target: where the line to
-  its target is blocked it holds, keeping obstacle avoidance first. A mob blocked
+  its target is blocked it holds, keeping obstacle avoidance first. The final heading, separation
+  included, is checked the same way, so no push steers a mob onto unwalkable ground. A mob blocked
   by terrain leaves its slot and returns to it once clear, because keeping the slot is never the
   top priority.
 - Vectors only, no angles (ADR 0012). All distances and factors are content (`TUNE`). The

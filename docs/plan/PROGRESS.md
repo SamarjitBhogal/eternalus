@@ -2070,3 +2070,40 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   729 passed (729)"; client "Tests 415 passed (415)"; "✓ built in 150ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; merge after M2b.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #44. Separation was added after a held chaser's steering
+  was zeroed, so a neighbour behind it could push it onto unwalkable ground.
+  `LaneFollowMovementStrategy` now checks the final heading (separation included) over
+  `blockedLookAhead` and holds any mob it would take onto blocked ground. Regression test (a held
+  chaser with a neighbour one unit behind) fails on the old code. The routing test's stub now
+  blocks only the line toward the slot; its no-direction case now expects a hold, not a step onto
+  blocked ground. Doc 18 §5.2 updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  717 passed (717)"; client "Tests 415 passed (415)"; "✓ built in 177ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; merge into M5a (#45) and M3 (#46).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #44. The final-heading check always probed
+  `blockedLookAhead` ahead, so a chaser with a clear line to a target just in front of blocked
+  ground held outside attack reach. A chase with a clear line now probes only up to its target
+  (arrival stops it there); marches keep the full look-ahead, since a shorter probe let formation
+  members edge into the blocked lane's rift face and stall (the blocked-lane march test caught it).
+  Regression test (chaser at x 46, target at x 49, blocked from x 50) fails on the old code.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  718 passed (718)"; client "Tests 415 passed (415)"; "✓ built in 162ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m5a-modifiers — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (now with M2b, #44) into PR #45; only
+  `PROGRESS.md` conflicted (both sides kept in date order). This brings M2b's final-heading check,
+  which answers CodeRabbit's thread that separation could push a held chaser onto blocked ground.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  731 passed (731)"; client "Tests 415 passed (415)"; "✓ built in 156ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review.
