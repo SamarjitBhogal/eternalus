@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-29
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -26,11 +26,11 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 
 ## 1. Where AI sits
 
-- Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (core `AGENTS.md`): `ai/` may
-  import only `state/`, `commands/` and `utils/`. Spatial queries and flow fields reach a
-  controller through `GameState`; its content (aggro rules, formations, difficulties) comes
-  through its constructor, injected by `Simulation` when it fills the registry. Never through
-  imports (DIP).
+- Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (02 §2, core `AGENTS.md`): `ai/` may
+  import only `state/`, `commands/`, `content/` types and `utils/`. Spatial queries and flow fields
+  reach a controller through `GameState`; its content values (aggro rules, formations,
+  difficulties) come through its constructor, injected by `Simulation` when it fills the
+  registry. Never through value imports (DIP); only `content/` types are imported.
 - One system, `AiSystem`, runs second in the `SystemPipeline`, right after `CommandApplySystem`.
   It asks each due controller for decisions and enqueues them in the `CommandQueue` for the next
   tick. Controllers never mutate state, never call systems and never compute paths.
