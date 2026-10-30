@@ -9,7 +9,6 @@ import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { SpaceIndex } from '../physics/SpaceIndex';
-import type { DefinitionSource } from '../entities/EntityFactory.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { WorldMap } from '../map/WorldMap';
@@ -45,7 +44,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
    * @param state - The match; its config sets the tick rate and lane structure count statuses load
    *   with, and systems that listen to its events subscribe here.
    * @param progression - The content kills are priced and levels applied with, injected.
-   * @param hordes - The factory, definitions, neighbour index and AI the horde systems
+   * @param hordes - The factory (and its definitions), neighbour index and AI the horde systems
    *   (architecture 11, 18) need; without them nothing decides, marches, steers or spawns on lanes.
    */
   public constructor(
@@ -54,7 +53,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
     progression: ProgressionContent,
     hordes?: {
       readonly factory: EntityFactory;
-      readonly definitions: DefinitionSource;
       /** The index `state.space` exposes; `null` for a match without a map. */
       readonly space: SpaceIndex | null;
       /** The map's walkability grid the lane flow fields route over; `null` without a map. */
@@ -96,7 +94,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             new SpawnSystem(state, hordes.factory, {
-              definitions: hordes.definitions,
+              definitions: hordes.factory.definitions,
               openingWave: OPENING_WAVE,
               waves: SPAWN_WAVES,
               steering: HORDE_STEERING,

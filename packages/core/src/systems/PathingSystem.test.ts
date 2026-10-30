@@ -183,7 +183,7 @@ describe('PathingSystem', () => {
     const system = new PathingSystem(
       STRATEGIES,
       FORMATIONS,
-      HORDE_STEERING.separationRadius,
+      HORDE_STEERING.slotArrivalRadius,
       fields,
     );
     const state = new GameState(config, 1, TWO_LANE_MAP);

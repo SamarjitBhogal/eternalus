@@ -106,7 +106,6 @@ export class Simulation {
             { units, curves, xpSources: XP_SOURCES },
             {
               factory,
-              definitions: units,
               space,
               world,
               decide: [
