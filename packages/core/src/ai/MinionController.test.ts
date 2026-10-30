@@ -14,6 +14,9 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
 import { GameState } from '../state/GameState';
+import { Collider } from '../components/Collider';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { IdGenerator } from '../utils/IdGenerator';
 import { MinionController } from './MinionController';
 import { Perception } from './perception/Perception';
 
@@ -75,7 +78,32 @@ const setUp = () => {
       state.advanceTick();
     }
   };
-  return { state, add, decide, advance };
+  const structures = new EntityFactory(
+    createDefaultEntityRegistry(),
+    STRUCTURE_DEFINITIONS,
+    new IdGenerator(1000),
+  );
+  /** Adds a dark structure on lane-0, indexes the structures and puts `memberId` in a light horde. */
+  const objective = (definitionId: string, x: number, memberId: string, progress = 0) => {
+    const entity = structures.create(STRUCTURE_DEFINITIONS.get(definitionId).kind, definitionId, {
+      team: 'dark',
+      position: { x, y: 20 },
+      laneId: 'lane-0',
+    });
+    state.entities.add(entity);
+    state.indexStructures();
+    state.hordes.add({
+      id: state.hordes.nextId(),
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [memberId],
+      progress,
+    });
+    return entity;
+  };
+  return { state, add, decide, advance, objective };
 };
 
 const engagingOn = (targetId: string, overrides: Partial<Record<string, number>> = {}) => ({
@@ -216,6 +244,58 @@ describe('MinionController', () => {
       },
     });
     expect(decision.commands).toEqual([]);
+  });
+
+  it('attacks its horde’s next objective when its edge is in range and no unit outranks it', () => {
+    const { add, decide, objective } = setUp();
+    // The SpawnerTower's radius is 14, so a minion at 124 stands 2 from its edge.
+    const self = add('light', 124);
+    const tower = objective('spawner-tower', 140, self);
+
+    expect(decide(self).commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: tower.id },
+    ]);
+
+    const enemy = add('dark', 122);
+    expect(decide(self).commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: enemy },
+    ]);
+  });
+
+  it('attacks the objective from a rear rank once its horde has gathered at it', () => {
+    const { add, decide, objective } = setUp();
+    // 16 from the tower's edge, out of reach alone; the tower's front is 106 along lane-0.
+    const self = add('light', 110);
+    const tower = objective('spawner-tower', 140, self, 105);
+
+    expect(decide(self).commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: tower.id },
+    ]);
+  });
+
+  it('holds at a gate that is not breakable yet, and attacks it once it is', () => {
+    const { add, decide, objective } = setUp();
+    const self = add('light', 134);
+    const gate = objective('gate', 140, self);
+
+    expect(decide(self).commands).toEqual([]);
+
+    gate.getComponent(Collider).setUnbreakable(false);
+    expect(decide(self).commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: gate.id },
+    ]);
+  });
+
+  it('keeps hitting its objective past the aggro duration', () => {
+    const { add, decide, advance, objective } = setUp();
+    const self = add('light', 124);
+    const tower = objective('spawner-tower', 140, self);
+    advance(20);
+
+    const decision = decide(self, engagingOn(tower.id, { aggroUntilTick: 10, leashX: 124 }));
+
+    expect(decision.commands).toEqual([]);
+    expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: tower.id });
   });
 
   it('knows its aggro profiles', () => {

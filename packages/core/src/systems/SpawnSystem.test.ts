@@ -13,7 +13,9 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import type { GameEventMap } from '../state/GameEvents.types';
+import { Unit } from '../entities/Unit';
 import { SpawnSystem } from './SpawnSystem';
 import type { SpawnPlan } from './SpawnSystem.types';
 
@@ -39,6 +41,7 @@ const setUp = (overrides: DeepPartial<GameConfig> = {}) => {
     limits: overrides.limits ?? {},
   });
   const state = new GameState(config, 1, TWO_LANE_MAP);
+  spawnMapStructures(state);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
   const system = newSystem(state, factory);
   const spawned: GameEventMap['horde-spawned'][] = [];
@@ -130,7 +133,9 @@ describe('SpawnSystem', () => {
 
     runTo(0);
 
-    expect(state.entities.size).toBe(64);
+    expect(
+      state.entities.countOnTeam('light', Unit) + state.entities.countOnTeam('dark', Unit),
+    ).toBe(64);
     expect(orphans).toEqual([]);
   });
 
@@ -166,6 +171,7 @@ describe('SpawnSystem', () => {
       1,
       TWO_LANE_MAP,
     );
+    spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
     const towersOnly = Object.fromEntries(
       Object.entries(SPAWN_WAVES).filter(([kind]) => kind !== 'stronghold'),
@@ -196,8 +202,29 @@ describe('SpawnSystem', () => {
     ],
   ])('rejects a plan with %s when it is built', (_, plan, message) => {
     const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+    spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
 
     expect(() => newSystem(state, factory, plan)).toThrow(message);
+  });
+
+  it('stops a destroyed tower’s waves', () => {
+    const { state, runTo } = setUp({ match: { initialHordesPerTeam: 0 } });
+    state.entities.forEach((entity) => {
+      if (entity.kind === 'spawner-tower' && state.entities.teamOf(entity.id) === 'dark') {
+        entity.getComponent(Health).applyDamage(1e6);
+      }
+    });
+
+    runTo(60);
+
+    // Only the SpawnerTowers send light hordes once the opening wave is off.
+    const light: string[] = [];
+    state.hordes.forEach(({ team, weightClass }) => {
+      if (weightClass === 'light') {
+        light.push(team);
+      }
+    });
+    expect(light).toEqual(['light']);
   });
 });

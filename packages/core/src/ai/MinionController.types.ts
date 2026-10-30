@@ -1,3 +1,4 @@
+import type { LaneObjective } from '../state/LaneStructures.types';
 import type { Command } from '../commands/Command.types';
 import type { AggroRuleDefinition } from '../content/ai/ai.types';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
@@ -45,4 +46,6 @@ export type MinionSituation = {
   readonly position: Vec2;
   readonly rule: AggroRuleDefinition;
   readonly perception: Perception;
+  /** The horde's next objective while it is breakable (18 §6.2); `null` otherwise. */
+  readonly objective: LaneObjective | null;
 };

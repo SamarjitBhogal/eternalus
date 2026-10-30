@@ -2,6 +2,7 @@ import type { AiMemory } from '../state/AiState.types';
 import type { EntityId } from '../state/EntityStore.types';
 import { followerIndex, formationSlot } from '../state/formationSlot';
 import type { MutableVec2 } from '../utils/vec2.types';
+import { sqrt } from '../utils/deterministicMath';
 import { aggroRank } from './aggroRank';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 import { MINION_STATES } from './MinionController.constants';
@@ -21,7 +22,12 @@ import type {
  * formation slot, with a cooldown before it may acquire. The chase itself is `PathingSystem`'s and
  * the hits `CombatSystem`'s. Stateless: everything it remembers is in the brain it returns.
  *
- * @remarks ponytail: no lane objective until structure entities exist (minion plan M2c).
+ * The horde's next objective (18 §6.2) is a candidate too, ranked `lane-objective`, once it is
+ * breakable and either its edge is within `acquisitionRadius` or the horde has gathered at it (its
+ * anchor within `acquisitionRadius` of the objective's front), so the rear ranks and a Stronghold
+ * standing off the lane are reached too. A gate that is not breakable yet is never one, so the
+ * horde holds in front of it and fights what comes. Attacking the objective ignores the leash and
+ * the aggro timeout: a structure cannot drag a mob away.
  */
 export class MinionController implements Controller {
   public readonly id = 'minion';
@@ -59,7 +65,13 @@ export class MinionController implements Controller {
       x: state.space.positions[2 * index] ?? 0,
       y: state.space.positions[2 * index + 1] ?? 0,
     };
-    const situation = { state, id: entityId, team, position, rule, perception };
+    const horde = state.hordes.hordeOf(entityId);
+    const standing =
+      horde === undefined
+        ? null
+        : state.laneStructures.objectiveFor(horde.lane, horde.team, state.entities);
+    const objective = standing?.isBreakable === true ? standing : null;
+    const situation = { state, id: entityId, team, position, rule, perception, objective };
     const step = this.step(situation, memory);
     return { commands: step.commands, memory: step.memory, rngState: brain.rngState };
   }
@@ -103,11 +115,13 @@ export class MinionController implements Controller {
     const targetId = memory.targetId;
     const dx = position.x - memory.leashX;
     const dy = position.y - memory.leashY;
+    const isObjective = targetId !== null && targetId === situation.objective?.id;
     const isOver =
       targetId === null ||
       !state.entities.isAlive(targetId) ||
-      dx * dx + dy * dy > rule.leashRadius * rule.leashRadius ||
-      state.tick >= memory.aggroUntilTick;
+      (!isObjective &&
+        (dx * dx + dy * dy > rule.leashRadius * rule.leashRadius ||
+          state.tick >= memory.aggroUntilTick));
     if (isOver) {
       return {
         memory: { ...memory, fsm: 'returning', targetId: null },
@@ -133,9 +147,20 @@ export class MinionController implements Controller {
   private acquire(
     situation: MinionSituation,
   ): { readonly id: EntityId; readonly rank: number } | null {
-    const { state, team, position, rule, perception } = situation;
+    const { state, team, position, rule, perception, objective } = situation;
     const space = state.space;
     let best: { id: EntityId; rank: number; gap: number } | null = null;
+    if (objective !== null) {
+      const ox = objective.x - position.x;
+      const oy = objective.y - position.y;
+      const edge = sqrt(ox * ox + oy * oy) - objective.radius;
+      const rank = this.rankOf(situation, objective.id);
+      const progress = state.hordes.hordeOf(situation.id)?.progress ?? Number.NEGATIVE_INFINITY;
+      const isGathered = progress + rule.acquisitionRadius >= objective.frontProgress;
+      if ((edge <= rule.acquisitionRadius || isGathered) && rank !== Number.POSITIVE_INFINITY) {
+        best = { id: objective.id, rank, gap: Math.max(0, edge) ** 2 };
+      }
+    }
     const candidates = perception.unitsWithin(position, rule.acquisitionRadius, {
       hostileTo: team,
       aliveOnly: true,
@@ -158,12 +183,13 @@ export class MinionController implements Controller {
   }
 
   /** The candidate's place in the priority list; infinite when it matches no entry. */
-  private rankOf({ state, team, rule }: MinionSituation, candidate: EntityId): number {
+  private rankOf({ state, team, rule, objective }: MinionSituation, candidate: EntityId): number {
     const rank = aggroRank(candidate, {
       team,
       priority: rule.priority,
       entities: state.entities,
       classOf: this.content.classOf,
+      objectiveId: objective?.id ?? null,
     });
     return rank < 0 ? Number.POSITIVE_INFINITY : rank;
   }

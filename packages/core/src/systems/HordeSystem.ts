@@ -68,7 +68,7 @@ export class HordeSystem implements System {
       const hold =
         objective === null
           ? routes.length(horde.lane)
-          : objective.progress - objective.radius - this.steering.objectiveHoldGap;
+          : objective.frontProgress - this.steering.objectiveHoldGap;
       const next = Math.min(
         routes.length(horde.lane),
         horde.progress + slowest * this.steering.marchSpeedFactor,

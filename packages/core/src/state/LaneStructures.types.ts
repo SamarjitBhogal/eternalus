@@ -19,6 +19,11 @@ export type LaneStructureEntry = {
 export type LaneObjective = LaneStructureEntry & {
   /** Its distance along the lane from the attacking team's gate (the horde's `progress` scale). */
   readonly progress: number;
+  /**
+   * The lane point a horde gathers at to attack it: its near edge for a structure on the lane, the
+   * lane's end for the Stronghold, which stands off the lane inside its wall ring.
+   */
+  readonly frontProgress: number;
   /** False for a gate whose breakability rule has not passed: the horde holds in front of it. */
   readonly isBreakable: boolean;
 };

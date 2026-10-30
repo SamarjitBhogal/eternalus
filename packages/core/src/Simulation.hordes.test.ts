@@ -69,9 +69,15 @@ const run = (simulation: Simulation, ticks: number): void => {
   }
 };
 
+/** The two-lane map with only its Strongholds, so a march meets no tower before the lane's end. */
+const STRONGHOLDS_ONLY: MapDefinition = {
+  ...TWO_LANE_MAP,
+  features: TWO_LANE_MAP.features.filter(({ kind }) => kind === 'stronghold'),
+};
+
 describe('Simulation with lane hordes (architecture 18, M1)', () => {
   it('walks every opening horde down its lane to the enemy end, invariants clean', () => {
-    const { simulation, logger, config } = match(TWO_LANE_MAP, 1, true);
+    const { simulation, logger, config } = match(STRONGHOLDS_ONLY, 1, true);
     const spawned: string[] = [];
     simulation.on('horde-spawned', ({ team, lane }) => spawned.push(`${team} ${lane}`));
 
@@ -315,6 +321,23 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
 });
 
 describe('Simulation structures', () => {
+  it('holds a horde that cannot fight in front of the first enemy tower on its lane (18 §6.2)', () => {
+    const { simulation } = match(TWO_LANE_MAP, 1, true);
+
+    run(simulation, 60 * 30);
+
+    // Dark's lane-0 SpawnerTower stands at x 140 with radius 14: Light's lane-0 horde gathers
+    // in front of x 126, in ranks no deeper than 8.
+    const lightLane0 = simulation
+      .snapshot()
+      .entities.filter(({ family, team }) => family === 'mob' && team === 'light')
+      .filter(({ transform }) => (transform?.y ?? 0) < 30)
+      .map(({ transform }) => transform?.x ?? 0);
+    expect(lightLane0.length).toBeGreaterThan(0);
+    expect(Math.max(...lightLane0)).toBeLessThan(126);
+    expect(Math.min(...lightLane0)).toBeGreaterThan(126 - 15);
+  });
+
   it('builds every lane structure of the map before anything else spawns', () => {
     const { simulation } = match(TWO_LANE_MAP);
 

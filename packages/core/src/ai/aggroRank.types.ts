@@ -1,3 +1,4 @@
+import type { EntityId } from '../state/EntityStore.types';
 import type { AggroPriority, UnitClass } from '../content/ai/ai.types';
 import type { EntityStore } from '../state/EntityStore';
 import type { Team } from '../teams/teams.types';
@@ -12,4 +13,6 @@ export type AggroRankOptions = {
   readonly priority: readonly AggroPriority[];
   readonly entities: EntityStore;
   readonly classOf: UnitClassifier;
+  /** The horde's next objective (18 §6.2); it matches `lane-objective`. */
+  readonly objectiveId?: EntityId | null;
 };

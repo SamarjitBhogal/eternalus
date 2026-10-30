@@ -12,7 +12,7 @@ const MEANING: Readonly<
   'turret-attacking-ally-minion': { attacker: 'turret', victim: 'minion' },
   'closest-minion': { attacker: 'minion', victim: null },
   'closest-legend': { attacker: 'legend', victim: null },
-  // ponytail: structures are not entities yet; the lane objective joins in minion plan M2c.
+  // Matched by id instead: the candidate is the horde's next objective (18 §6.2).
   'lane-objective': null,
 };
 
@@ -23,8 +23,11 @@ const MEANING: Readonly<
  */
 export const aggroRank = (
   candidate: EntityId,
-  { team, priority, entities, classOf }: AggroRankOptions,
+  { team, priority, entities, classOf, objectiveId = null }: AggroRankOptions,
 ): number => {
+  if (candidate === objectiveId) {
+    return priority.indexOf('lane-objective');
+  }
   const kind = entities.get(candidate)?.kind;
   const attacker = kind === undefined ? null : classOf(kind);
   const victimId = entities.attackTargetOf(candidate);

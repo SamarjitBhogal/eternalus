@@ -1,7 +1,9 @@
 import { ContentValidationError } from '../content/ContentValidationError';
 import type { OpeningWaveDefinition } from '../content/structures/structures.types';
 import type { EntityFactory } from '../entities/EntityFactory';
+import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
+import { Transform } from '../components/Transform';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { HordeRequest } from '../state/HordeRequest.types';
@@ -11,29 +13,29 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
 import { PLAYABLE_TEAMS } from './SpawnSystem.constants';
-import type { SpawnPlan, TeamFeature } from './SpawnSystem.types';
+import type { SpawnPlan } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
 
 /**
  * Spawns the lane hordes on the DISC-10 schedule (architecture 18 §3): the Stronghold's opening
  * hordes at tick 0, then every spawning structure's waves from the end of the countdown, after the
  * developer menu's queued requests (`state.hordeRequests`, 18 §3.5). Each
- * horde spawns at the structure's map position and takes its own lane or the worst lane
+ * horde spawns at its structure's position and takes its own lane or the worst lane
  * (`assessLanes`). It is clipped to `limits.maxUnitsPerTeam`, with the team's `unitsRequested`
  * and `unitsSuppressed` counted (18 §3.4). Members and the horde record are created in one step,
  * then announced with `entity-spawned` and `horde-spawned` (18 §3.2), so no mob is ever without
  * its horde. The anchor starts at the lane point nearest the spawn point. Runs at the end of the
  * tick, before `DeathSystem`, so spawns land after this tick's movement.
  *
- * @remarks ponytail: spawns from the map's structure features, since structure entities arrive in
- * M2; the schedule is computed from the tick, so the system keeps no state of its own.
+ * The spawners are the structure entities standing at construction; a destroyed one stops. The
+ * schedule is computed from the tick, so the system keeps no schedule state of its own.
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
-  private readonly spawners: readonly TeamFeature[];
+  private readonly spawners: readonly Structure[];
 
   /**
-   * @param state - The match; its map's structure features are the spawn points.
+   * @param state - The match; its structure entities, already spawned, are the spawn points.
    * @param factory - Builds the minions.
    * @param plan - The waves, the opening wave, the definitions and the spawn layout.
    * @throws ContentValidationError when a wave this map can spawn names an unknown mob or a mob of
@@ -45,13 +47,18 @@ export class SpawnSystem implements System {
     private readonly plan: SpawnPlan,
   ) {
     // The Stronghold sends the opening wave even when it has no recurring waves.
-    this.spawners = (state.map?.features ?? [])
-      .filter(
-        (feature): feature is TeamFeature =>
-          feature.team !== 'neutral' &&
-          (feature.kind === 'stronghold' || plan.waves[feature.kind] !== undefined),
-      )
-      .sort((a, b) => compareById(a.id, b.id));
+    const spawners: Structure[] = [];
+    state.entities.forEach((entity) => {
+      const team = state.entities.teamOf(entity.id);
+      if (
+        entity instanceof Structure &&
+        (team === 'light' || team === 'dark') &&
+        (entity.kind === 'stronghold' || plan.waves[entity.kind] !== undefined)
+      ) {
+        spawners.push(entity);
+      }
+    });
+    this.spawners = spawners.sort((a, b) => compareById(a.id, b.id));
     this.validate();
   }
 
@@ -104,10 +111,19 @@ export class SpawnSystem implements System {
     const wave = (team: PlayableTeam, from: Vec2, lane: string, mob: OpeningWaveDefinition) => {
       due.push({ ...mob, team, lane, origin: from, count: match.hordeSizes[mob.weightClass] });
     };
+    const standing = this.spawners.flatMap((spawner) => {
+      const team = state.entities.teamOf(spawner.id);
+      const position = spawner.findComponent(Transform)?.position;
+      return state.entities.isAlive(spawner.id) &&
+        (team === 'light' || team === 'dark') &&
+        position !== undefined
+        ? [{ spawner, team, position }]
+        : [];
+    });
     if (state.tick === 0) {
       for (const team of PLAYABLE_TEAMS) {
-        const stronghold = this.spawners.find(
-          (feature) => feature.kind === 'stronghold' && feature.team === team,
+        const stronghold = standing.find(
+          (entry) => entry.spawner.kind === 'stronghold' && entry.team === team,
         );
         for (
           let index = 0;
@@ -122,17 +138,17 @@ export class SpawnSystem implements System {
       }
     }
     const sinceCountdown = state.tick - Math.round(match.countdownSeconds * tickRate);
-    for (const spawner of sinceCountdown < 0 ? [] : this.spawners) {
+    for (const { spawner, team, position } of sinceCountdown < 0 ? [] : standing) {
       for (const scheduled of this.plan.waves[spawner.kind] ?? []) {
         if (sinceCountdown % Math.max(1, Math.round(scheduled.everySeconds * tickRate)) !== 0) {
           continue;
         }
         const lane =
           scheduled.lane === 'own-lane'
-            ? spawner.laneId
-            : assessLanes(state, spawner.team, this.plan.weights);
+            ? (spawner.laneId ?? undefined)
+            : assessLanes(state, team, this.plan.weights);
         if (lane !== undefined) {
-          wave(spawner.team, spawner.position, lane, scheduled);
+          wave(team, position, lane, scheduled);
         }
       }
     }

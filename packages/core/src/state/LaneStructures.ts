@@ -34,10 +34,16 @@ export class LaneStructures {
     for (const lane of routes?.lanes ?? []) {
       for (const attacker of ['light', 'dark'] as const) {
         const defender = attacker === 'light' ? 'dark' : 'light';
-        const placed = (entry: LaneStructureEntry) => ({
-          ...entry,
-          progress: routes?.distanceAlong(lane.id, attacker, entry) ?? 0,
-        });
+        const end = routes?.length(lane.id) ?? 0;
+        const placed = (entry: LaneStructureEntry) => {
+          const progress =
+            entry.lane === null ? end : (routes?.distanceAlong(lane.id, attacker, entry) ?? 0);
+          return {
+            ...entry,
+            progress,
+            frontProgress: entry.lane === null ? end : progress - entry.radius,
+          };
+        };
         const order = all
           .filter((entry) => entry.team === defender && entry.lane === lane.id)
           .map(placed)
