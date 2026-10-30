@@ -2405,7 +2405,7 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: review and merge (M3 and M4 are merged).
 
-### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit, target memory) — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
 
 - What was done: CodeRabbit round on PR #47 (review of `da6734b`). When A\* finds no way,
   `BotLeaves.moveTo` now also clears `targetId` in the bot's memory: its `stop` clears the live
