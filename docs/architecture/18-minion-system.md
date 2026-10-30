@@ -70,10 +70,14 @@ lane minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes
 spawn counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`,
 `LaneFollowMovementStrategy` with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the
 one-step fulfilment; `Simulation` takes the map as an option. The PROTO-01 escort, its `AiSystem`
-and its `Brain` are deleted (DEC-35). Pull request M2a adds brains, the `Controller` contract and `AiSystem`, `state.space` with
-`Perception`, `HordeMembershipConsistentInvariant` and developer-menu horde spawns (§3.5).
-Fighting, guards, controllers and lane assignment (M2b onward) are not built, and the damage pipeline and structures do not
-exist yet. The pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
+and its `Brain` are deleted (DEC-35). Pull request M2a adds brains, the `Controller` contract and
+`AiSystem`, `state.space` with `Perception`, `HordeMembershipConsistentInvariant` and
+developer-menu horde spawns (§3.5). Phase M4's lane flow fields are built as well
+(`map/LaneFlowFields`, the Stronghold-to-gate ground included), and `LaneFollowMovementStrategy`
+follows them where the line to the slot is blocked (§5.2). Fighting, guards, controllers and lane
+assignment (M2b onward) are not built, and the damage pipeline and structures do not exist yet. The
+pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md)
+§2–§3.
 
 ## 1. Decisions
 

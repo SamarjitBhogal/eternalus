@@ -2,6 +2,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
@@ -10,6 +11,8 @@ import type { EntityFactory } from '../entities/EntityFactory';
 import type { SpaceIndex } from '../physics/SpaceIndex';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import { LaneFlowFields } from '../map/LaneFlowFields';
+import { WorldMap } from '../map/WorldMap';
 import type { GameState } from '../state/GameState';
 import { CombatSystem } from './CombatSystem';
 import { DeathSystem } from './DeathSystem';
@@ -63,6 +66,18 @@ export class DefaultSystemPipeline extends SystemPipeline {
     const statuses = new StatusEffectApplier(
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
     );
+    const flowFields =
+      hordes === undefined || state.map === null
+        ? null
+        : new LaneFlowFields(
+            WorldMap.fromDefinition(
+              state.map,
+              map.navCellSize,
+              (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+            ),
+            state.map,
+            map.flowFieldCorridorHalfWidth,
+          );
     super([
       ...(hordes === undefined
         ? []
@@ -73,9 +88,11 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
-            new PathingSystem(createDefaultStrategyRegistry().movement, {
-              [RANKS_FORMATION.id]: RANKS_FORMATION,
-            }),
+            new PathingSystem(
+              createDefaultStrategyRegistry().movement,
+              { [RANKS_FORMATION.id]: RANKS_FORMATION },
+              flowFields,
+            ),
           ]),
       new CombatSystem(damage),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.

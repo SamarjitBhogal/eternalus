@@ -1,6 +1,8 @@
 import { Movement } from '../components/Movement';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import type { FlowQuery, MovementContext } from '../entities/strategies/MovementStrategy.types';
+import type { LaneFlowFields } from '../map/LaneFlowFields';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { System, SystemContext } from './System.types';
 
@@ -27,14 +29,18 @@ export class PathingSystem implements System {
   /**
    * @param strategies - Every movement strategy by id; a mob's `Movement.strategyId` picks one.
    * @param formations - Every formation, by id.
+   * @param flowFields - The lane flow fields (06 §6), which this system also rebuilds within
+   *   `config.map.flowFieldCellBudget` each tick; without them mobs steer straight to their slots.
    */
   public constructor(
     private readonly strategies: StrategyRegistry['movement'],
     private readonly formations: Readonly<Record<string, FormationDefinition>>,
+    private readonly flowFields: LaneFlowFields | null = null,
   ) {}
 
-  /** Steers every horde member for the next tick. */
+  /** Rebuilds dirty flow fields, then steers every horde member for the next tick. */
   public update({ state }: SystemContext): void {
+    this.flowFields?.rebuildDirty(state.config.map.flowFieldCellBudget);
     const { routes, space } = state;
     if (routes === null || space === null || state.hordes.size === 0) {
       return;
@@ -42,7 +48,9 @@ export class PathingSystem implements System {
     if (this.found.length < space.count) {
       this.found = new Int32Array(Math.max(space.count, 2 * this.found.length));
     }
-    const context = {
+    // One context per tick; each horde sets its own lane's field, so nothing is built per horde.
+    const context: { flow: FlowQuery | null } & Omit<MovementContext, 'flow'> = {
+      flow: null,
       positions: space.positions,
       neighbours: space,
       found: this.found,
@@ -54,6 +62,7 @@ export class PathingSystem implements System {
       if (formation === undefined) {
         return;
       }
+      context.flow = this.flowFields?.field(horde.lane, horde.team) ?? null;
       routes.pose(horde.lane, horde.team, horde.progress, this.target, this.forward);
       const anchorX = this.target.x;
       const anchorY = this.target.y;
