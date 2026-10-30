@@ -76,11 +76,19 @@ export class EntityStore {
     this.sizeAtStart = this.entities.size;
   }
 
-  /** How many live instances of `entityClass` (e.g. `Unit`, `Legend`) fight for `team`. */
+  /**
+   * How many living instances of `entityClass` (e.g. `Unit`, `Legend`) fight for `team`. A unit
+   * killed this tick is still stored until `DeathSystem` removes it, but no longer counts, so the
+   * caps it frees can be filled in the same tick.
+   */
   public countOnTeam(team: Team, entityClass: EntityClass): number {
     let total = 0;
     this.entities.forEach((entity) => {
-      if (entity instanceof entityClass && entity.findComponent(TeamMembership)?.team === team) {
+      if (
+        entity instanceof entityClass &&
+        entity.findComponent(TeamMembership)?.team === team &&
+        entity.findComponent(Health)?.isDead !== true
+      ) {
         total += 1;
       }
     });
