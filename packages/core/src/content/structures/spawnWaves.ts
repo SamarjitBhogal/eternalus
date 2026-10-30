@@ -22,8 +22,8 @@ export const SPAWN_WAVES: Readonly<Record<string, readonly SpawnWaveDefinition[]
     { mobId: 'medium-minion', weightClass: 'medium', everySeconds: 120, lane: 'own-lane' }, // TUNE: DISC-10
   ],
   stronghold: [
-    // TUNE: DISC-10. Recommendation: the first heavy horde at the countdown's end like the towers'
-    // (12 §2); the owner may move it to 180 s later (INBOX).
+    // TUNE: DISC-10. The first heavy horde leaves at the countdown's end like the towers' (12 §2;
+    // owner decision 2026-10-29, INBOX).
     { mobId: 'heavy-minion', weightClass: 'heavy', everySeconds: 180, lane: 'worst-lane' },
   ],
 };

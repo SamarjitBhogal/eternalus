@@ -173,4 +173,53 @@ describe('EntityStore', () => {
     expect(store.isAlive('dummy')).toBe(false);
     expect(store.isAlive('nobody')).toBe(false);
   });
+
+  it("reads, sets and clears an entity's attack target", () => {
+    const store = storeWith('dummy');
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const attacker = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 0, y: 0 },
+    });
+    store.add(attacker);
+
+    expect(store.attackTargetOf(attacker.id)).toBeNull();
+    store.setAttackTarget(attacker.id, 'dummy');
+    expect(store.attackTargetOf(attacker.id)).toBe('dummy');
+    store.clearAttackTarget(attacker.id);
+    expect(store.attackTargetOf(attacker.id)).toBeNull();
+    store.clearAttackTarget('dummy');
+    expect(store.attackTargetOf('dummy')).toBeNull();
+    expect(store.attackTargetOf('nobody')).toBeNull();
+  });
+
+  it('reads health as a fraction and whether a target is in attack reach', () => {
+    const store = storeWith('dummy');
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 0, y: 0 },
+    });
+    const near = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 2, y: 0 },
+    });
+    const far = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 5, y: 0 },
+    });
+    store.add(minion);
+    store.add(near);
+    store.add(far);
+    const health = minion.getComponent(Health);
+    health.applyDamage(health.max / 4);
+
+    expect(store.healthFractionOf(minion.id)).toBe(0.75);
+    expect(store.healthFractionOf('dummy')).toBeUndefined();
+    // Edge to edge: 2 − 0.4 − 0.4 = 1.2 m, inside the 1.5 m reach; 4.2 m is not.
+    expect(store.isInReach(minion.id, near.id)).toBe(true);
+    expect(store.isInReach(minion.id, far.id)).toBe(false);
+    expect(store.isInReach('dummy', near.id)).toBe(false);
+    expect(store.isInReach(minion.id, 'nobody')).toBe(false);
+  });
 });

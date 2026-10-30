@@ -12,7 +12,15 @@ import { validateGameConfig } from './config/validateGameConfig';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
+import { RETREAT_STRUCTURES } from './content/ai/botLaner';
+import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
+import { RANKS_FORMATION } from './content/mobs/formations/ranks';
+import { assignLanes } from './state/assignLanes';
+import { formationSlot } from './state/formationSlot';
+import { unitClassOf } from './content/ai/unitClasses';
+import { FORMATIONS } from './content/mobs/formations/formations';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
@@ -22,12 +30,13 @@ import { XP_SOURCES } from './content/progression/xpSources';
 import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
-import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
+import type { DefinitionSource, Placement, WeaponSource } from './entities/EntityFactory.types';
+import { Unit } from './entities/Unit';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
-import type { SimulationOptions } from './Simulation.types';
+import type { RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
@@ -61,6 +70,7 @@ export class Simulation {
     content,
     map,
     levelCurves,
+    roster = [],
     weapons,
   }: SimulationOptions) {
     const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
@@ -69,7 +79,10 @@ export class Simulation {
     const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);
     // One factory for commands and spawning, so entity ids come from one counter.
-    const controllers = createDefaultControllerRegistry();
+    const controllers = createDefaultControllerRegistry({
+      minion: { aggro: AGGRO_RULES, formations: FORMATIONS, classOf: unitClassOf },
+      botLegend: { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES },
+    });
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
@@ -78,6 +91,7 @@ export class Simulation {
       weaponSource,
     );
     this.commandContext = { state: this.state, factory };
+    Simulation.spawnRoster(this.state, factory, roster, controllers);
     this.systemContext = { state: this.state, logger };
     this.pipeline =
       systems === undefined
@@ -143,6 +157,102 @@ export class Simulation {
   /** A 32-bit fingerprint of the current state; equal runs give equal hashes. */
   public hash(): number {
     return this.hasher.hash(this.state);
+  }
+
+  /**
+   * Spawns the bot Legends at the start of their lanes (architecture 18 §8, MS-20): each team's
+   * laners, in roster order, go to the lane with the fewest Legends, lowest index first, and
+   * stand in ranks behind their own end of it, with the lane in their brain's memory.
+   *
+   * @throws Error when there are bots but no map, a team's laners do not fit under
+   *   `legendsPerLane`, or a bot's controller or difficulty does not exist (checked before
+   *   anything spawns).
+   */
+  private static spawnRoster(
+    state: GameState,
+    factory: EntityFactory,
+    roster: readonly RosterSlot[],
+    controllers: ControllerRegistry,
+  ): void {
+    if (roster.length === 0) {
+      return;
+    }
+    const routes = state.routes;
+    if (routes === null) {
+      throw new Error('A roster needs a map: bot Legends play its lanes.');
+    }
+    const controllerOf = (slot: RosterSlot) => (slot.role === 'rover' ? 'rover' : 'bot-legend');
+    AiSystem.assertRegistered(
+      roster.map((slot, index) => ({
+        id: `roster slot ${String(index)}`,
+        controller: controllerOf(slot),
+        aiProfile: slot.difficulty,
+      })),
+      controllers,
+    );
+    const laneIds = routes.lanes.map(({ id }) => id);
+    const anchor = { x: 0, y: 0 };
+    const forward = { x: 0, y: 0 };
+    const at = { x: 0, y: 0 };
+    // Every lane is assigned before anything spawns, so a roster that does not fit spawns nothing.
+    const { legendsPerTeam } = state.config.match;
+    const { maxUnitsPerTeam } = state.config.limits;
+    const plans = (['light', 'dark'] as const).map((team) => {
+      const size = roster.filter((slot) => slot.team === team).length;
+      if (size > legendsPerTeam) {
+        throw new Error(
+          `The ${team} roster has ${String(size)} Legends; match.legendsPerTeam allows ${String(legendsPerTeam)}.`,
+        );
+      }
+      // Legends are Units, so the roster also fits under the Unit cap (as dev spawns do).
+      const units = state.entities.countOnTeam(team, Unit) + size;
+      if (units > maxUnitsPerTeam) {
+        throw new Error(
+          `The ${team} roster would make ${String(units)} Units; limits.maxUnitsPerTeam allows ${String(maxUnitsPerTeam)}.`,
+        );
+      }
+      const laners = roster.filter((slot) => slot.team === team && slot.role === 'laner');
+      return {
+        team,
+        laners,
+        lanes: assignLanes(laners.length, laneIds, state.config.match.legendsPerLane),
+      };
+    });
+    for (const { team, laners, lanes } of plans) {
+      const placed = new Map<string, number>();
+      laners.forEach((slot, index) => {
+        const lane = lanes[index] ?? '';
+        const follower = placed.get(lane) ?? 0;
+        placed.set(lane, follower + 1);
+        routes.pose(lane, team, 0, anchor, forward);
+        formationSlot(anchor, forward, follower, RANKS_FORMATION, at);
+        Simulation.spawnBot(state, factory, slot, {
+          position: { x: at.x, y: at.y },
+          team,
+          controller: {
+            controllerId: controllerOf(slot),
+            profileId: slot.difficulty,
+            memory: { lane },
+          },
+        });
+      });
+    }
+  }
+
+  /** Spawns one bot Legend of the roster and announces it. */
+  private static spawnBot(
+    state: GameState,
+    factory: EntityFactory,
+    slot: RosterSlot,
+    placement: Placement,
+  ): void {
+    const entity = factory.create(slot.definitionId, slot.definitionId, placement);
+    state.entities.add(entity);
+    state.events.emit('entity-spawned', {
+      entityId: entity.id,
+      kind: entity.kind,
+      team: slot.team,
+    });
   }
 
   /** The shipped content, checked against the controllers before the match starts. */

@@ -5,6 +5,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { AiCadence } from '../content/ai/ai.types';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { LIGHT_MINION } from '../content/mobs/lightMinion';
+import { TRAINING_DUMMY } from '../content/mobs/trainingDummy';
 import type { UnitDefinition } from '../content/units/units.types';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
@@ -32,9 +33,15 @@ const cadenceWith = (maxDecisionsPerTick: number): AiCadence => ({
 /** A controller that stops every entity it is asked about and records who asked. */
 const stopper = (asked: EntityId[]): Controller => ({
   id: 'minion',
-  decide: (_state, entityId) => {
+  hasProfile: (profileId) => profileId === 'lane-minion',
+  decide: ({ entityId, brain }) => {
     asked.push(entityId);
-    return [{ type: 'stop', actorId: entityId }];
+    const decisions = typeof brain.memory.decisions === 'number' ? brain.memory.decisions : 0;
+    return {
+      commands: [{ type: 'stop', actorId: entityId }],
+      memory: { decisions: decisions + 1 },
+      rngState: brain.rngState,
+    };
   },
 });
 
@@ -42,7 +49,7 @@ const setUp = (count: number, maxDecisionsPerTick = 100, seed = 1) => {
   const state = new GameState(createDefaultGameConfig(), seed);
   const definitions = new ContentCatalogue<UnitDefinition>([
     { ...LIGHT_MINION, id: 'bot-minion', controller: 'minion' },
-    LIGHT_MINION,
+    TRAINING_DUMMY,
   ]);
   const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
   const ids = Array.from({ length: count }, (_, index) => {
@@ -54,7 +61,7 @@ const setUp = (count: number, maxDecisionsPerTick = 100, seed = 1) => {
     return entity.id;
   });
   state.entities.add(
-    factory.create('light-mob', 'light-minion', { team: 'light', position: { x: 0, y: 0 } }),
+    factory.create('light-mob', 'training-dummy', { team: 'light', position: { x: 0, y: 0 } }),
   );
   const asked: EntityId[] = [];
   const queued: Command[] = [];
@@ -82,7 +89,7 @@ describe('AiSystem', () => {
     expect(state.ai.size).toBe(2);
     expect(state.ai.get(ids[0] ?? '')).toMatchObject({
       controllerId: 'minion',
-      profileId: 'minion',
+      profileId: 'lane-minion',
     });
     expect(state.ai.get(ids[0] ?? '')?.rngState).toEqual(
       other.state.ai.get(ids[0] ?? '')?.rngState,
@@ -137,6 +144,42 @@ describe('AiSystem', () => {
     expect(asked.slice(3, 3 + Math.min(3, deferred.length))).toEqual(deferred.slice(0, 3));
   });
 
+  it('starts a brain with the memory its spawn gave it', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      new ContentCatalogue<UnitDefinition>([TRAINING_DUMMY]),
+    );
+    const bot = factory.create('light-mob', 'training-dummy', {
+      team: 'light',
+      position: { x: 0, y: 0 },
+      controller: { controllerId: 'minion', profileId: 'lane-minion', memory: { lane: 'l0' } },
+    });
+    state.entities.add(bot);
+
+    const keeper: Controller = {
+      id: 'minion',
+      hasProfile: () => true,
+      decide: ({ brain }) => ({ commands: [], memory: brain.memory, rngState: brain.rngState }),
+    };
+    new AiSystem(state, { minion: keeper }, cadenceWith(10), () => undefined).update({ state });
+
+    expect(state.ai.get(bot.id)).toMatchObject({
+      profileId: 'lane-minion',
+      memory: { lane: 'l0' },
+    });
+  });
+
+  it('writes the memory a controller returns back to its brain', () => {
+    const { state, ids, step } = setUp(1);
+
+    for (let tick = 0; tick < 2 * EVERY; tick += 1) {
+      step();
+    }
+
+    expect(state.ai.get(ids[0] ?? '')?.memory).toEqual({ decisions: 2 });
+  });
+
   it('drops a removed entity’s brain on its next pass', () => {
     const { state, ids, step } = setUp(1);
     step();
@@ -167,12 +210,43 @@ describe('AiSystem', () => {
 
   it('checks the definitions against the registry before a match starts', () => {
     expect(() => {
-      AiSystem.assertRegistered([{ id: 'a' }, { id: 'b', controller: 'minion' }], {
-        minion: stopper([]),
-      });
+      AiSystem.assertRegistered(
+        [{ id: 'a' }, { id: 'b', controller: 'minion', aiProfile: 'lane-minion' }],
+        {
+          minion: stopper([]),
+        },
+      );
     }).not.toThrow();
     expect(() => {
       AiSystem.assertRegistered([{ id: 'g', controller: 'guard' }], {});
     }).toThrow('Definition "g" names controller "guard"');
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'p', controller: 'minion', aiProfile: 'lane-minion' }], {
+        minion: stopper([]),
+      });
+    }).not.toThrow();
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'p', controller: 'minion', aiProfile: 'typo' }], {
+        minion: stopper([]),
+      });
+    }).toThrow('Definition "p" names AI profile "typo"');
+  });
+
+  it('falls back to the controller id as the profile when a definition names none', () => {
+    const minion = (profiles: readonly string[]): Controller => ({
+      ...stopper([]),
+      hasProfile: (profileId) => profiles.includes(profileId),
+    });
+
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'm', controller: 'minion' }], {
+        minion: minion(['minion']),
+      });
+    }).not.toThrow();
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'm', controller: 'minion' }], {
+        minion: minion(['lane-minion']),
+      });
+    }).toThrow('Definition "m" names AI profile "minion"');
   });
 });

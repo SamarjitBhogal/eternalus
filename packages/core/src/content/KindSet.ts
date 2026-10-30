@@ -12,6 +12,11 @@ export class KindSet<Definition extends EntityDefinitionBase> {
     this.kinds = new Set(kinds);
   }
 
+  /** Whether `kind` is one of this family's kinds. */
+  public hasKind(kind: string): boolean {
+    return this.kinds.has(kind);
+  }
+
   /** Whether `definition` is a `Definition`, judged by its kind. */
   public has(definition: EntityDefinitionBase): definition is Definition {
     return this.kinds.has(definition.kind);
