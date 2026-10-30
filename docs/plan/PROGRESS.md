@@ -1950,3 +1950,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   715 passed (715)"; client "Tests 415 passed (415)"; "✓ built in 161ms"; "Documentation check
   passed."
 - Next step: merge into M5a (#45) and M3 (#46).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #44. Dropping the flow query while chasing also dropped
+  the blocked-line check, so a chase could steer into a rift. `PathingSystem` now always passes the
+  lane field and sets `MovementContext.isChasing`; `LaneFollowMovementStrategy` still detects a
+  blocked line, routes a march along the field and holds a chase. The rift test now expects the
+  chaser to hold; a strategy test covers blocked and clear chases. Doc 18 §5.2 updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  716 passed (716)"; client "Tests 415 passed (415)"; "✓ built in 169ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; merge into M5a (#45) and M3 (#46).

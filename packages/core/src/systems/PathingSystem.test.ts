@@ -129,7 +129,7 @@ describe('PathingSystem', () => {
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
-  it('chases a target across blocked ground toward the target, not along the lane field', () => {
+  it('holds a chase at blocked ground, neither following the lane field nor entering it', () => {
     const config = createDefaultGameConfig();
     const grid = WorldMap.fromDefinition(
       BLOCKED_LANE_MAP,
@@ -178,7 +178,7 @@ describe('PathingSystem', () => {
       logger,
     });
 
-    expect(minion.getComponent(Movement).heading).toEqual({ x: -1, y: 0 });
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
   it('does nothing without a map or index, without hordes or with an unknown formation', () => {
