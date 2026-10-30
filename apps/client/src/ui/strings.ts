@@ -11,6 +11,8 @@ import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 const REASON_BANNERS: Readonly<Record<string, string>> = {
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
+  // DEC-106: the build plan's message, kept by the owner ("menu + message").
+  'match-crashed': 'The match stopped because of an error.',
   'load-failed': 'Loading failed.',
 } satisfies Record<Exclude<SessionReason, 'select-timeout'>, string>;
 

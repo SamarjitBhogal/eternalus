@@ -48,6 +48,14 @@ export type PreparedWorld = {
   readonly interior: CathedralInterior | null;
 };
 
+/** A match whose game loop stopped because a tick or a frame threw (DEC-106). */
+export type MatchCrash = {
+  /** What the tick or the frame threw. */
+  readonly error: unknown;
+  /** The ticks the simulation had completed when it happened. */
+  readonly tick: number;
+};
+
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
   readonly simulation: Simulation;
@@ -62,6 +70,8 @@ export type MatchDeps = {
   readonly player: PlayerChoice;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
   readonly logger: Logger;
+  /** Called once when the game loop stops because a tick or a frame threw (DEC-106). */
+  readonly onCrash: (crash: MatchCrash) => void;
   /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */
   readonly bridge: {
     readonly bus: TypedEventBus<BridgeEventMap>;

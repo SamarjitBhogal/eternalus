@@ -1,5 +1,5 @@
-import { createDefaultGameConfig } from '@eternalus/core';
-import { describe, expect, it } from 'vitest';
+import { createDefaultGameConfig, Simulation } from '@eternalus/core';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
@@ -39,11 +39,15 @@ function setUp(canvas = new FakeViewportCanvas()) {
     },
     isExplorerShown: false,
   };
-  const request = (world: PreparedWorld = prepareMatchWorld(CONFIG, SEED)): MatchRequest => ({
+  const request = (
+    world: PreparedWorld = prepareMatchWorld(CONFIG, SEED),
+    onCrash: MatchRequest['onCrash'] = () => undefined,
+  ): MatchRequest => ({
     setup: { seed: SEED, playerTeam: 'dark', allies: [], enemies: [] },
     player: { legend: 'sentinel', team: 'dark' },
     world,
     captureKinds: ['capture-point', 'cathedral'],
+    onCrash,
   });
   /** Every listener on the window, the document and the canvas. */
   const listeners = (): number =>
@@ -70,6 +74,23 @@ describe('createBrowserMatch', () => {
     };
     expect(() => factory(request(withoutDark), viewport)).toThrow('has no dark stronghold');
     expect(listeners()).toBe(0);
+    expect(window.pendingFrames).toBe(0);
+  });
+
+  it("hands a crash of the match's loop to the request's onCrash, with no frame left (DEC-106)", () => {
+    const { window, factory, viewport, request } = setUp();
+    const onCrash = vi.fn<MatchRequest['onCrash']>();
+    const error = new Error('step failed');
+    factory(request(undefined, onCrash), viewport);
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+    vi.spyOn(Simulation.prototype, 'step').mockImplementation(() => {
+      throw error;
+    });
+
+    window.runFrame((2 * MS_PER_SECOND) / CONFIG.tickRate);
+
+    expect(onCrash.mock.calls).toEqual([[{ error, tick: 1 }]]);
     expect(window.pendingFrames).toBe(0);
   });
 

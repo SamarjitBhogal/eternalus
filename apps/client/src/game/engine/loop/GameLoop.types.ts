@@ -4,6 +4,11 @@ export interface LoopTarget {
   tick(): void;
   /** Draws the frame; `alpha` in [0, 1) is how far the frame is between the last two ticks. */
   render(alpha: number): void;
+  /**
+   * `tick` or `render` threw: the loop has stopped for good and calls this once with what was
+   * thrown (a crash ends the match, never a frozen loop; DEC-106).
+   */
+  crashed(error: unknown): void;
 }
 
 /** The loop's timing (architecture 08 §2, 03 §7). */

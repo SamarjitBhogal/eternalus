@@ -28,6 +28,7 @@ describe('MainMenuScreen', () => {
 
   it.each([
     ['match-failed', 'Match could not start.'],
+    ['match-crashed', 'The match stopped because of an error.'],
     ['load-failed', 'Loading failed.'],
   ] as const)('shows the failure banner for %s', (reason, banner) => {
     const html = renderWithStore(<MainMenuScreen />, { session: sessionAt('menu', { reason }) });

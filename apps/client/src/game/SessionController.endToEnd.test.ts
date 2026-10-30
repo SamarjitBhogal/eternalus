@@ -85,6 +85,7 @@ describe('SessionController with the real match, end to end', () => {
         input: new DeviceIntentSource([keyboard, mouse], mapper),
         player: request.player,
         logger: new NullLogger(),
+        onCrash: request.onCrash,
         bridge: {
           bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
@@ -154,6 +155,27 @@ describe('SessionController with the real match, end to end', () => {
     expect(player).toMatchObject({ kind: 'magus', team: state.matchSetup.playerTeam });
 
     session.intent({ kind: 'leave-match' });
+    expect(build?.scheduler.hasPendingFrame).toBe(false);
+    expect(session.listeners(build, canvas)).toBe(0);
+    expect(session.bus.listenerCount()).toBe(busBefore);
+  });
+
+  it('ends a match whose tick throws: the menu with match-crashed, 0 frames, 0 listeners (DEC-106)', async () => {
+    const session = realSession();
+    await session.toMatch();
+    const busBefore = session.bus.listenerCount();
+    const canvas = new FakeViewportCanvas();
+    session.controller.attachViewport(viewport(canvas));
+    const [build] = session.builds;
+    build?.scheduler.runFrames(2, MS_PER_SECOND / CONFIG.tickRate);
+    vi.spyOn(Simulation.prototype, 'step').mockImplementation(() => {
+      throw new Error('step failed');
+    });
+
+    build?.scheduler.advance(MS_PER_SECOND / CONFIG.tickRate);
+
+    expect(session.controller.phase).toBe('menu');
+    expect(session.store.getState().session.reason).toBe('match-crashed');
     expect(build?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(build, canvas)).toBe(0);
     expect(session.bus.listenerCount()).toBe(busBefore);

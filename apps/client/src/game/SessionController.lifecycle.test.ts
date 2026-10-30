@@ -206,6 +206,29 @@ describe('SessionController match lifetime', () => {
     expect(session.prepareWorld).toHaveBeenCalledTimes(2);
   });
 
+  it('returns to the menu with match-crashed and one FATAL record when the match crashes (DEC-106)', async () => {
+    const session = setUp();
+    await session.toMatch();
+    session.controller.attachViewport(viewport());
+    const seed = session.store.getState().matchSetup.seed;
+    const error = new Error('step failed');
+
+    session.createMatch.mock.calls[0]?.[0].onCrash({ error, tick: 42 });
+
+    expect(session.controller.phase).toBe('menu');
+    expect(session.store.getState().session.reason).toBe('match-crashed');
+    expect(session.handles[0]?.destroy).toHaveBeenCalledTimes(1);
+    expect(session.logger.records).toEqual([
+      expect.objectContaining({
+        severityText: 'FATAL',
+        scope: 'client.session',
+        body: 'The match stopped because of an error.',
+        tick: 42,
+        attributes: { error: 'Error: step failed', stack: error.stack ?? null, seed },
+      }),
+    ]);
+  });
+
   it('returns to the menu with match-failed and builds no match when the world fails', async () => {
     const session = setUp();
     session.prepareWorld.mockImplementationOnce(() => {
