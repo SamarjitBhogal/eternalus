@@ -83,4 +83,10 @@ export type AggroRuleDefinition = {
   readonly aggroCooldownTicks: number;
   /** A returning mob this close to its formation slot is marching again. */
   readonly reformDistance: number;
+  /**
+   * The ghosted first wave (11 §4.3, MVP-if-time): for this many ticks after the countdown, and
+   * during it, Legends match no priority entry, so the opening hordes meet before a Legend can bait
+   * them. 0 turns it off.
+   */
+  readonly ghostFirstWaveTicks: number;
 };

@@ -4,6 +4,7 @@ import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
+import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -128,6 +129,10 @@ export class StateHasher {
           status.expiresTick,
         ]),
       ]);
+    }
+    const veterancy = entity.findComponent(Veterancy);
+    if (veterancy !== undefined) {
+      fields.push(['veterancy', veterancy.kills, veterancy.level]);
     }
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {

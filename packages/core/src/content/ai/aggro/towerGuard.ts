@@ -18,5 +18,6 @@ export const TOWER_GUARD_AGGRO = {
   leashRadius: 8, // TUNE: balancing.md guard leash (the guard plan's is the one guards read)
   aggroDurationTicks: 69, // TUNE: as the lane minion (Dota 2.3 s)
   aggroCooldownTicks: 90, // TUNE: as the lane minion (Dota 3 s)
+  ghostFirstWaveTicks: 0, // guards never ghost
   reformDistance: 1, // TUNE: no reference value; a guard settles close to its post
 } as const satisfies AggroRuleDefinition;

@@ -15,7 +15,8 @@ import type {
  * rest it acquires the best-ranked enemy (priority, then distance, then id) and emits one
  * `attack-target`; engaging, it switches only to a strictly better-ranked enemy and ends with one
  * `stop` when the target dies, the mob leaves its leash or the aggro duration runs out; returning,
- * it rests again once home, with a cooldown before it may acquire. Attacking `objective` ignores
+ * it rests again once home, with a cooldown before it may acquire. During a ghosted first wave
+ * (`ghostFirstWaveTicks`, 11 §4.3) Legends are never candidates. Attacking `objective` ignores
  * the leash and the timeout, since a structure cannot drag a mob away. Controllers supply only
  * what differs (`LeashRules`). Pure.
  */
@@ -87,6 +88,17 @@ export class LeashBehaviour {
 
   /** The candidate's place in the priority list; infinite when it matches no entry. */
   public rankOf({ state, team, rule, objective }: LeashSituation, candidate: EntityId): number {
+    const { countdownSeconds } = state.config.match;
+    const ghostUntil = countdownSeconds * state.config.tickRate + rule.ghostFirstWaveTicks;
+    const kind = state.entities.get(candidate)?.kind;
+    if (
+      rule.ghostFirstWaveTicks > 0 &&
+      state.tick < ghostUntil &&
+      kind !== undefined &&
+      this.classOf(kind) === 'legend'
+    ) {
+      return Number.POSITIVE_INFINITY;
+    }
     const rank = aggroRank(candidate, {
       team,
       priority: rule.priority,
