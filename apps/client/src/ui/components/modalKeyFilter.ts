@@ -21,6 +21,36 @@ const PAGE_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Takes the default of mouse `button`'s coming release on `target` (its `mouseup`, then the
+ * `auxclick` that ends it), so a side button that closed a view cannot step the history after the
+ * view's own listeners are gone (DEC-112). The next press ends it too, in case the release came
+ * outside the page.
+ */
+function preventReleaseDefault(
+  target: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>,
+  button: number,
+): void {
+  const onRelease = (event: Event): void => {
+    if (!isButtonEvent(event) || event.button !== button) return;
+    event.preventDefault();
+    if (event.type === 'auxclick') stop();
+  };
+  const listeners = [
+    ['mouseup', onRelease],
+    ['auxclick', onRelease],
+    ['pointerdown', stop],
+  ] as const;
+  function stop(): void {
+    for (const [type, listener] of listeners) {
+      target.removeEventListener(type, listener, { capture: true });
+    }
+  }
+  for (const [type, listener] of listeners) {
+    target.addEventListener(type, listener, { capture: true });
+  }
+}
+
+/**
  * "Disables all keys except Escape" while a full-screen view is open (DEC-65, DEC-103):
  * **capture-phase** listeners on `target` stop every key press before any other listener of the
  * page runs (the bubble-phase `actionShortcut`s of the step underneath, its Back included).
@@ -29,9 +59,10 @@ const PAGE_KEYS: ReadonlySet<string> = new Set([
  * focus cannot leave the view. Browser chords keep their default (reload, devtools). A mouse button
  * bound to an action (the left one is, to `attack`) is stopped the same way: its `pointerdown`, and
  * the `auxclick` and `mouseup` of its release, whose default would step a side button through the
- * history. One bound to `pause-menu` closes on its press; closing removes these listeners, so that
- * press's release is no longer filtered. The `click` that follows a press is never stopped, so the
- * view's own buttons still work, and an unbound button passes untouched.
+ * history. One bound to `pause-menu` closes on its press, and that press's release still loses its
+ * default once the view has closed (`preventReleaseDefault`, DEC-112). The `click` that follows a
+ * press is never stopped, so the view's own buttons still work, and an unbound button passes
+ * untouched.
  * @returns Removes the listeners.
  */
 export function bindModalKeyFilter(
@@ -58,6 +89,7 @@ export function bindModalKeyFilter(
       event.preventDefault();
     } else if (matchesActionButton(bindings, 'pause-menu', event)) {
       event.preventDefault();
+      preventReleaseDefault(target, event.button);
       onClose();
     }
   };
