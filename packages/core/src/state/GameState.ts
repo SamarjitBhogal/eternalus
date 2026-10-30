@@ -34,11 +34,15 @@ export class GameState {
   public readonly hordes = new HordeStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
   public readonly hordeRequests: HordeRequest[] = [];
-  /** Each playable team's match counters. */
-  public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = {
+  private readonly teamCounters: Record<
+    PlayableTeam,
+    { -readonly [K in keyof TeamState]: number }
+  > = {
     light: { unitsRequested: 0, unitsSuppressed: 0 },
     dark: { unitsRequested: 0, unitsSuppressed: 0 },
   };
+  /** Each playable team's match counters; changed only through `recordSpawnRequest`. */
+  public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = this.teamCounters;
   /** The map's lanes as each team walks them; `null` for a match without a map. */
   public readonly routes: LaneRoutes | null;
   public readonly events: GameEvents;
@@ -115,6 +119,23 @@ export class GameState {
   /** Records a command applied this tick, for diagnostic reports. Called by `Simulation.step()`. */
   public recordCommand(command: RecordedCommand['command']): void {
     this.recent.push({ tick: this.currentTick, command });
+  }
+
+  /**
+   * Counts a horde request against `team`'s spawn counters (architecture 18 §3.4): `requested`
+   * members were asked for and `spawned` of them fit under the unit cap.
+   *
+   * @throws RangeError when `spawned` is not a whole number from 0 to `requested`.
+   */
+  public recordSpawnRequest(team: PlayableTeam, requested: number, spawned: number): void {
+    if (!Number.isInteger(spawned) || spawned < 0 || spawned > requested) {
+      throw new RangeError(
+        `Spawned ${String(spawned)} of ${String(requested)} requested members on ${team}.`,
+      );
+    }
+    const counters = this.teamCounters[team];
+    counters.unitsRequested += requested;
+    counters.unitsSuppressed += requested - spawned;
   }
 
   /** The most recently applied commands, oldest first. */

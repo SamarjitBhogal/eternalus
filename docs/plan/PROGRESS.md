@@ -1530,7 +1530,7 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   validates against CodeRabbit's `schema.v2.json`. `docs/process/git-workflow.md` §review
   rules notes it.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; "Documentation
-  check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 227ms".
+  check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 225ms".
 - Next step: the owner makes CI a required status check on `main` and `phase/*` (CodeRabbit
   cannot run `npm run check`), then confirms CodeRabbit reviews this branch's PR.
 
@@ -1600,3 +1600,81 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 182ms"; "Documentation
   check passed."
 - Next step: add the three CI checks as required on `main`.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: CI matrix drops `macos-latest` and keeps `ubuntu-latest` and `windows-latest`,
+  to save Actions minutes on the education plan. macOS behaves like Linux for the Node tooling,
+  and the git hooks plus the local `npm run check` still run on macOS machines. `guardrails.md`,
+  `git-workflow.md`, `sdlc.md`, the PR checklist, the harness doc, phase exit criteria and
+  NFR-019 / ES-07 updated to match (requirement change needs sholtzman sign-off on the PR).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 225ms"; "Documentation
+  check passed."
+- Next step: the repo admin removes the `npm run check (macos-latest)` required check from the
+  `main` protection and the "phase branches" ruleset.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit review on PR #50. Added ADR 0019 (proposed) because requirement
+  changes need an ADR plus product-owner acceptance (`docs/requirements/README.md`). NFR-019,
+  ES-07 and the `ci.yml` comment now say macOS developers run the full check locally; the git
+  hooks run only `check:quick` and are not full coverage.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 230ms"; "Documentation
+  check passed."
+- Next step: sholtzman accepts ADR 0019 on the PR (then flip its status to accepted); the admin
+  removes the macOS required check.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: ADR 0019 marked accepted by the repository admin (SamarjitBhogal); no separate
+  product-owner sign-off needed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 226ms"; "Documentation
+  check passed."
+- Next step: the admin removes the `npm run check (macos-latest)` required check, then PR #50
+  merges.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (CI drops macOS, ADR 0019) into PR #38 and
+  answered its CodeRabbit threads: `StateHasher.test.ts` pins the no-horde hash input and covers
+  horde progress, member ids, `issuedIds`, `unitsRequested` and `unitsSuppressed`; architecture 03
+  no longer says `GameState` lacks `recentCommands`; architecture 10 says `SpatialHash` cells
+  yield items in reverse insert order.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 222ms"; "Documentation check passed."
+- Next step: merge this into the stacked minion PRs (#39, #40 and up).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M1 (with `phase/2-sprint-2-work`) into PR #39 and answered
+  its CodeRabbit threads. `SpawnSystem` validates the opening and scheduled waves when it is built
+  (unknown mob, wrong weight class → `ContentValidationError`) and keeps the Stronghold as a
+  spawner even without recurring waves, so its opening hordes still spawn. The horde integration
+  test derives its minion count from the config; the plan's M4 blocker is M1; the core
+  `AGENTS.md` import table matches architecture 02 (`ai/` may import `content/` types).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  666 passed (666)"; client "Tests 415 passed (415)"; "✓ built in 175ms"; "Documentation check
+  passed."
+- Next step: merge this into the enemy-AI plan (#43) and M2b (#44).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit on PR #40 (which carries M1's commits): team spawn counters change
+  only through `GameState.recordSpawnRequest`, which rejects a spawned count outside
+  0..requested (architecture 03 §2); `TeamState` fields are readonly and `SpawnSystem` calls it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 236ms"; "Documentation check
+  passed."
+- Next step: merge into M2a (#39) and M4 (#40) and up the stack.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M2a (with M1's CodeRabbit fixes and `phase/2-sprint-2-work`)
+  into PR #43; kept this branch's M6/M8 plan rows and tags beside M2a's M4 blocker fix. Earlier
+  PROGRESS entries stay as written (historical records, owner's call).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  666 passed (666)"; client "Tests 415 passed (415)"; "✓ built in 227ms"; "Documentation check
+  passed."
+- Next step: merge into M2b (#44).

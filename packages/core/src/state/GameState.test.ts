@@ -138,4 +138,21 @@ describe('GameState', () => {
     state.advanceTick();
     expect(state.xpAwardsThisTick()).toEqual([]);
   });
+
+  it('counts spawn requests per team and rejects a spawned count outside 0..requested', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+
+    state.recordSpawnRequest('dark', 16, 10);
+    state.recordSpawnRequest('dark', 16, 16);
+
+    expect(state.teams.dark).toEqual({ unitsRequested: 32, unitsSuppressed: 6 });
+    expect(state.teams.light).toEqual({ unitsRequested: 0, unitsSuppressed: 0 });
+    expect(() => {
+      state.recordSpawnRequest('light', 4, 5);
+    }).toThrow(RangeError);
+    expect(() => {
+      state.recordSpawnRequest('light', 4, -1);
+    }).toThrow(RangeError);
+    expect(state.teams.light).toEqual({ unitsRequested: 0, unitsSuppressed: 0 });
+  });
 });
