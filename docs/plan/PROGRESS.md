@@ -2325,3 +2325,43 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Documentation check passed." (`check-b2-docs.log` there); `git apply --check` of the D2b patch
   prints nothing.
 - Next step: the critic gate on `feat/hud-plan-b2`, then merge into `feat/hud-and-character-select`.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batch 2's critic loop 1 (findings F1, V1 to V6 and the nits; docs pass, round B22) — feat/hud-plan-b2 — sholtzman + Claude Code
+
+- What was done: the architecture critic's loop 1 on batch 2 (`9620398..a37cd83`) and the visual
+  shoot. Code fixes (the coordinating session, in the same working tree): F1, the three Legend
+  mini portraits move from the `selection-primary` group to `selection`
+  (`data/resources/selectionLegendStripAssets.ts`; 49,506 / 118,376 B move between the group
+  budgets, OD-44), so the alternate layout's View Details shows them
+  (`coreCatalogue.assets.test.ts` now counts the minis as drawn by both layouts); V1, View
+  Details' filter
+  (`ui/components/modalKeyFilter.ts`) also stops mouse buttons bound to an action, and a
+  `pause-menu` button closes it; V2, `ClassDetailsScreen.test.tsx`; V4, the roster's random stream
+  is injected (`SessionControllerDeps.createRosterRng`, bound in `main.tsx`) and
+  `game/session/Rng.types.ts`' TSDoc corrected; V5, the comment in `LegendDetailsPanel.tsx`.
+  Rejected: V3 (a test of the V press that opens View Details needs a DOM test environment, a new
+  dependency only the owner approves; `INBOX.md` HC-Q23). This docs pass (round B22) records it:
+  - HC-T1 (the D2b generator outside the repository, round B22): T-12 redrafted without the
+    `cancel-match` trigger (V6); T-191 new (02 §6: the display loader also carries the bot roster,
+    the critic's nit; the wording is the owner's); nothing applied; 18 rows pending.
+  - Every edit to a sholtzman-owned doc (`last-reviewed` already 2026-10-30 on each but this log):
+    - `docs/architecture/13-game-interface.md`: §10's known-gaps bullet (V1, V2, V3).
+    - `docs/reference/game-design/15-figma-frames-and-creative-decisions.md`: dated notes in the
+      Why cells of CD-42 (V5: no rating bars is the recorder's reading, not DEC-103's) and CD-45
+      (the locked Legend's panel against DEC-60's "details of the class").
+    - `docs/changelog/pr-feat-hud-and-character-select.md`: the "Integration recipe" gains two
+      items for M3 (`botRoster.test.ts` restates `assignLanes`; `occupied` and the lane mix).
+    - `docs/plan/PROGRESS.md`: this entry.
+    - `INBOX.md` (not under `docs/`): HC-T1's bullet and table; notes under HC-C1 and HC-Q15; new
+      HC-B2 (better than the design: a view over a selection step, and its name) and HC-Q23; a Done
+      entry.
+  - V4: no current doc says the session's only random stream is `createRng` or `LcgRng`; the old
+    mentions are in dated records, which stay as written.
+- Checks run: `npm run check` EXIT=0 (core 116 files / 628 tests, client 236 files / 1440 tests,
+  build, "Documentation check passed."). Red proofs, each break turned its test red and was
+  restored byte-identical: F1 (minis spread back into `SELECTION_PRIMARY_ASSETS`), a mini's group
+  back to `selection-primary`, V1 (the button handler returns at once), V2 (no description; no
+  strip; always open), V4 (LOCK IN builds its own `SeededRandom`). This pass (docs only):
+  `npm run docs:check` "Documentation check passed."; Prettier clean on the touched files;
+  `git apply --check` of the D2b patch prints nothing.
+- Next step: the critic's loop 2 on the fixes, then merge into `feat/hud-and-character-select`.

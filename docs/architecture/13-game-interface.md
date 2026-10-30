@@ -655,11 +655,14 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   ability, proficiency or specialty, or of a Legend's abilities, so View Details' rows show a
   label and a name only, and several Legends have no lore paragraph yet (register CD-41). View
   Details' icons are the panels' renditions, smaller than frame 145:2's, until new renditions exist
-  (CD-40). While View Details is open its key filter (`ui/components/modalKeyFilter.ts`) stops key
-  presses only: a `pause-menu` bound to a mouse button is not filtered. The tests render in Node
-  with no DOM (§8), so View Details' open path (the V press that opens it, the focus it keeps and
-  gives back) runs in no test; the open and closed renders are tested, and the focus helper is
-  tested with the pause overlay.
+  (CD-40). While View Details is open its filter (`ui/components/modalKeyFilter.ts`) stops every
+  key press and every press of a mouse button bound to an action; a `pause-menu` key or button
+  closes the view, and a click still reaches the view's own buttons. The tests render in Node with
+  no DOM (§8), so View Details' open path (the V press or the prompt click that opens it, the focus
+  it keeps and gives back) runs in no test; a DOM test environment (jsdom or happy-dom) is a new
+  development dependency, which needs the owner's approval (`INBOX.md` HC-Q23). The open and
+  closed renders are tested (`ViewDetailsScreen`, and the class case in `ClassDetailsScreen`), and
+  the focus helper is tested with the pause overlay.
 - **Developer chrome and pause.** The developer flag is the `?dev=1` query only, because
   `settings.developer.menuEnabled` does not exist yet. The free camera, the overview, the explorer
   toolbar and the map legend need it (DEC-32; INBOX HC-F8). The cathedral click and a "Leave

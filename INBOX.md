@@ -473,6 +473,18 @@ Reply inline (`Decision: …`).
       enhancements plan (the in-game reduce-motion setting also removes View Details' own interim
       reading of it; the lock-in flare, whose card the locked view no longer has, surrounds the
       standing Legend, a recommendation). The table now holds 153 applied rows and 17 pending.
+    - Round B22 (2026-10-30, the architecture critic's loop 1 on batch 2): nothing applied; 18 rows
+      pending. T-12 is redrafted without the cancel trigger: no screen sends `cancel-match` (your
+      DEC-60 takes Esc off the class step, and after LOCK IN the session ignores every request from
+      the screen), so the `character-select` row of the session table in the game-interface
+      architecture (§2) no longer says "or `cancel-match` before LOCK IN"; this closes round B19's
+      flag above. New: T-191 in the code-structure architecture
+      (`docs/architecture/02-code-structure.md`, §6, "The public API rule"). Its list of what core
+      exports says that `loadDisplayContent()` returns "the Legend and Legend-spec display data,
+      validated through the content rules, and the map features' display names"; since batch 2 it
+      also returns the bot roster (the lane bots' classes and the enemy Rover's rule, DEC-61,
+      DEC-102), which is setup data rather than display data. The row adds it; the wording is yours.
+      The table now holds 153 applied rows and 18 pending.
 
   | #     | Where (doc §, line)                                                                                                                                                                                                                                          | Base design said                                                          | Branch says                                                                                                                                                    | Basis (DEC/DV/factual)                                                                                                                                                                                                   | Changes general design? y/n + why                                                                             | Status                                                                                                                                      |
   | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -489,7 +501,7 @@ Reply inline (`Decision: …`).
   | T-09  | 13 §2 table, `boot` row (`docs/architecture/13-game-interface.md:104`)                                                                                                                                                                                       | `loadDefaultContent()` into `contentSlice`                                | `loadDisplayContent()` into `contentSlice`                                                                                                                     | DV-30 (acceptable, HC-T1); DEC-49, ADR 0018 (accepted, DEC-56)                                                                                                                                                           | n                                                                                                             | applied 2026-10-28 (owner approved HC-B1, D3)                                                                                               |
   | T-10  | 13 §2 table, `menu` → `loading` row (`docs/architecture/13-game-interface.md:106`)                                                                                                                                                                           | builds `MatchSetup`                                                       | also builds the rosters there, by class; their Legends come at LOCK IN                                                                                         | DEC-34 (SD-2, delegated "whichever is cleaner"); DEC-61, DEC-102 (built in `4f1d2b5`, `4f6d69f`)                                                                                                                         | n: moves one step between two adjacent rows                                                                   | pending owner; redrafted with the bot-roster build (`4f6d69f`): `menu` builds the rosters by class, LOCK IN fills their Legends (DEC-61)    |
   | T-11  | 13 §2 table, `loading` row (`docs/architecture/13-game-interface.md:107`)                                                                                                                                                                                    | one `selection` group                                                     | the selection groups, chosen by layout and effects renderer                                                                                                    | DV-41, DV-46 (HC-B1); DEC-52, DEC-54                                                                                                                                                                                     | n                                                                                                             | applied 2026-10-28 (owner confirmed the selection asset groups, INBOX HC-Q7 (2))                                                            |
-  | T-12  | 13 §2 table, `character-select` row, trigger (`docs/architecture/13-game-interface.md:108`)                                                                                                                                                                  | confirm a class; timeout with no selection                                | the countdown always runs its 60 s; LOCK IN locks the pick, fills the bots, shows a locked view; ended after LOCK IN: on; before it: home with a popup; cancel | DEC-49 (the Legend step); DEC-60, DEC-61 (the owner's answers of 2026-10-28, INBOX HC-F1 and HC-Q9); DEC-102 (2026-10-29: no match without LOCK IN); built in `4f6d69f`, `0044828`                                       | n: the owner's decisions                                                                                      | pending owner; redrafted again to your timeout answer of 2026-10-29 (DEC-102); the flow is built (`4f6d69f`, `0044828`)                     |
+  | T-12  | 13 §2 table, `character-select` row, trigger (`docs/architecture/13-game-interface.md:108`)                                                                                                                                                                  | confirm a class; timeout with no selection                                | the countdown always runs its 60 s; LOCK IN locks the pick, fills the bots, shows a locked view; ended after LOCK IN: pre-launch; before it: home with a popup | DEC-49 (the Legend step); DEC-60, DEC-61 (the owner's answers of 2026-10-28, INBOX HC-F1 and HC-Q9); DEC-102 (2026-10-29: no match without LOCK IN); built in `4f6d69f`, `0044828`; no screen sends `cancel-match`       | n: the owner's decisions                                                                                      | pending owner; redrafted without the cancel trigger, which no screen sends (round B22); the DEC-102 flow is built (`4f6d69f`, `0044828`)    |
   | T-13  | 13 §2 table, `character-select` row, work (`docs/architecture/13-game-interface.md:108`)                                                                                                                                                                     | builds rosters, assigns the team, starts the countdown                    | records the two picks in `SessionController`; LOCK IN fills each bot's Legend and the enemy Rover's copy; the rosters' classes come from `menu`                | DEC-34 SD-2; DEC-49; DEC-60, DEC-61, DEC-102 (built in `4f6d69f`, `fb3b8cd`); DV-03 (acceptable, HC-T1; INBOX "Session D (DEC-34)")                                                                                      | n                                                                                                             | pending owner; redrafted with the bot-roster build (`4f6d69f`): LOCK IN fills the bots (DEC-61, DEC-102) and shows the locked view (DEC-60) |
   | T-14  | 13 §2 table, `match-loading` row, trigger (`docs/architecture/13-game-interface.md:109`)                                                                                                                                                                     | `match` group loaded                                                      | `match` group loaded and the world prepared                                                                                                                    | DEC-50                                                                                                                                                                                                                   | n                                                                                                             | applied 2026-10-28 (owner accepted ADR 0019, D4)                                                                                            |
   | T-15  | 13 §2 table, `match-loading` row, work (`docs/architecture/13-game-interface.md:109`)                                                                                                                                                                        | `createMatch(setup)` and `match.start()` here                             | only the world is prepared here                                                                                                                                | DEC-50 (owner)                                                                                                                                                                                                           | n: the owner's decision, which this section already sketched (`attachViewport`)                               | applied 2026-10-28 (owner accepted ADR 0019, D4)                                                                                            |
@@ -648,6 +660,7 @@ Reply inline (`Decision: …`).
   | T-188 | reference 09, default bindings table, new row after "Fury dash direction" (`docs/reference/game-design/09-controls.md:39`)                                                                                                                                   | (no row)                                                                  | View Details: V, `view-details`                                                                                                                                | DEC-103 (`d7b7b15`); 17 R21 (its docs step: the controls table)                                                                                                                                                          | n: one binding the owner chose                                                                                | pending owner; new 2026-10-30 (batch 2 docs pass): V View Details is built (`d7b7b15`)                                                      |
   | T-189 | UI enhancements plan §3.1, UE-03, What changes and Component(s) (`docs/plan/ui-enhancements-plan.md:107`)                                                                                                                                                    | the module rules of `GradientLayer` and `ParticlesLayer`                  | also removes View Details' interim reading of the setting (`data-reduce-motion` on its own root)                                                               | factual: `c7052fc`, `6064f10` (the code names UE-03 as its replacement)                                                                                                                                                  | n: the plan names one more file                                                                               | pending owner; new 2026-10-30 (batch 2 docs pass): View Details reads the setting until UE-03 (`6064f10`)                                   |
   | T-190 | UI enhancements plan §3.2, UE-06, What changes, Component(s) and Parameters (`docs/plan/ui-enhancements-plan.md:115`)                                                                                                                                        | a flare on the picked Legend card (`LegendSelectCard`): its glow          | a flare around the locked Legend in the locked view (`LockedSelectStep`), which has no card; `Recommendation:` a glow in the Legend's accent                   | DEC-60, DEC-100 (UE-06 plays on the locked view); factual: the locked view has no card (`fb3b8cd`)                                                                                                                       | n: the same flare on the view that replaced the card                                                          | pending owner; new 2026-10-30 (batch 2 docs pass): the locked view has no card (`fb3b8cd`)                                                  |
+  | T-191 | 02 §6, the planned public surface, `loadDisplayContent()` (`docs/architecture/02-code-structure.md:172`)                                                                                                                                                     | display data and the map features' display names                          | adds the bot roster, setup data the session builds the rosters from                                                                                            | factual: `loadDisplayContent()` and `contentSlice` carry the bot roster (`4f1d2b5`, `4f6d69f`); DEC-61, DEC-102; architecture critic, batch 2 loop 1 (nit)                                                               | n: one more content family through the same validated loader                                                  | pending owner; new 2026-10-30 (critic loop 1 on batch 2): the loader carries setup data too; the wording is yours                           |
 
 - [x] **HC-B1 — Better than the design, or new, for sign-off (`feat/hud-and-character-select`; asked
       after the pre-PR critic).** Reconciled on 2026-10-24 with the branch's deviation table (the DV
@@ -696,6 +709,21 @@ Reply inline (`Decision: …`).
     Legends are validated by both loaders). Where an item's text also carries another open item, its
     row waits in HC-T1: NF2's asset groups (T-31, HC-Q7 (2)), NF5's paragraph (T-90, HC-F7), DV-55
     and DV-56's scaling bullet (T-29, HC-Q14) and DV-93's HUD rows (T-23, HC-Q2).
+- [ ] **HC-B2 — Better than the design, for sign-off: a view that opens over a selection step
+      (`feat/hud-and-character-select`, batch 2; the architecture critic's loop 1, 2026-10-30).**
+      The game-interface architecture (`docs/architecture/13-game-interface.md`, §9, "Recipe: a
+      screen, a HUD element, an action") offers two kinds of screen: "a `MenuRoute` literal or a
+      `SessionPhase`". View Details (DEC-103) is neither: it opens over the class step or the
+      Legend step inside the one `character-select` phase. The branch builds it as a third
+      pattern, which the critic rates better than the design: the step keeps it open or closed in
+      its own state (`useViewDetails`); while it is open, one filter that runs before every other
+      listener of the page (`useModalKeyFilter`) stops every key and every bound mouse button, and
+      only a `pause-menu` key or button (Escape by default) closes it (DEC-65); and it stays
+      mounted and `inert` while closed, so it can shrink and fade out (DEC-65). The recipe table
+      has no row for it. Sign off the pattern, and name it: its files end in `Screen` today
+      (`ViewDetailsScreen`, `ClassDetailsScreen`); `Overlay` is the other choice (the pause menu is
+      `PauseOverlay`). Once you sign, a recipe row for it joins that table as an HC-T1 row, for your
+      approval of its text. **Recommendation:** none on the name; your call.
 - [ ] **HC-C1 — The differences from your Figma, for review (asked after the pre-PR critic).** Every
       place the build differs from your frames on purpose is registered in
       `docs/reference/game-design/15-figma-frames-and-creative-decisions.md` (DEC-53), so the visual
@@ -757,6 +785,13 @@ Reply inline (`Decision: …`).
     dated notes: View Details' key is V, and on the alternate layout it no longer chooses the class
     (DEC-109). Each place or size the agents chose is marked as a recommendation. Keep, change or
     reject them as the other rows; nothing new to answer unless you want a row changed.
+  - Notes, 2026-10-30 (the architecture critic's loop 1 on batch 2): two of those rows rest on the
+    recorder's reading of your words, now marked so in the register. CD-42, a Legend's View
+    Details, shows no rating bars: your DEC-103 says "no legends in the corner", which drops the
+    Legends strip only; the bars are left out because your frame "View Details Example" draws none
+    for a class (`Recommendation:`). CD-45, the locked view, shows the locked Legend's panel on the
+    left, where your DEC-60 says "the details of the class still shown on the left"
+    (`Recommendation:`). Keep, change or reject them with the other rows.
 - [ ] **HC-Q1 — The Legends (DEC-49), still open after your answer of 2026-10-17** (the answered
       part is in Done). (1) Do the game doc's Magus focuses carry over to the new Legends
       (reference 01's Necromancer "debuff focus", Druid's buffs, Mage's self focus), and what role
@@ -1046,6 +1081,12 @@ Reply inline (`Decision: …`).
     with: "Likely fine unless the lossy doesn't degrade the display a notable amount." Read: the
     lossless files stay; where a lossy file would not visibly degrade the display, it may replace
     one later (the load-on-demand work, HC-Q20, may look at sizes again).
+  - Changed 2026-10-30 (batch 2, `feat/hud-plan-b2`): the three Legend mini portraits of the
+    Legends strip moved from the selection-primary group to the selection group, because View
+    Details now shows them on the alternate layout too (DEC-109), which does not load
+    selection-primary. Selection now measures 4,105,368 / 2,023,392 and selection-primary 746,408 /
+    747,230; the primary layout's total is unchanged, and the alternate layout's grows by 49,506 /
+    118,376. The files are the same lossless ones (the coordinating session's decision OD-44).
 - [x] **HC-Q16 — One Legend's Dark name is derived, not stated (flag; DEC-49).** The Dark name in
       `packages/core/src/content/legends/specs/catalyst.ts` (its `legendName.dark`, marked
       `TODO(sam)`) was derived from your mirror rule (the Light name spelled backwards); you stated
@@ -1233,6 +1274,18 @@ Reply inline (`Decision: …`).
     whose names your rename replaces (DEC-58). Readings to check: "in-scope" as MVP scope; "Raptor
     claws" as the Raptor Talons; "wuuthraad" as Wuuthrad; the dual blades as the weapons reference's
     Short blades. The weapon panel's art is asked again in HC-F6.
+- [ ] **HC-Q23 — A DOM test environment: add it or not? (not urgent; the architecture critic's
+      loop 1 on batch 2, 2026-10-30).** The client's tests run in Node with no browser page (the
+      client rules, `apps/client/AGENTS.md`: "Tests run in Node (no DOM)"), so no test presses V or
+      clicks the "V View Details" prompt to open View Details, or checks the focus it keeps and
+      gives back; its open and closed renders are tested. Such a test needs a page for the test
+      runner, jsdom or happy-dom, which is a new development dependency, and only you approve
+      those (`AGENTS.md`: "No new dependencies without explicit human approval."). The
+      hardware-abstraction architecture (`docs/architecture/09-hardware-abstraction.md`, §9)
+      already plans one for the browser adapters' tests: "DOM-backed adapters run the suite under
+      a `jsdom`/`happy-dom` environment in Vitest (**Recommendation:** needs the team's dependency
+      approval)". Add one (which one), or keep the tests without a page? **Recommendation:** none;
+      your call.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
@@ -1555,6 +1608,13 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-10-30 — **The critic's check of batch 2 (loop 1 of 3)** (`feat/hud-plan-b2`): the code
+  fixes (the Legend portraits that View Details lacked on the alternate layout, a `pause-menu`
+  mouse button while View Details is open, the roster's random stream, a class details test) and
+  the docs: HC-T1 T-12 redrafted without `cancel-match` and T-191 new (18 pending); notes on
+  register rows CD-42 and CD-45 (HC-C1) and on HC-Q15's sizes; two items in the PR register's
+  "Integration recipe". New for you: HC-B2 (a view over a selection step, and its name) and HC-Q23
+  (a DOM test environment).
 - 2026-10-30 — **Your answer on the alternate class layout, and batch 2 of the build plan**
   (`feat/hud-plan-b2`): recorded as DEC-109 in `docs/reference/game-design/13-owner-decisions-log.md`,
   with notes on DEC-52 and DEC-109 and under HC-F1, HC-F7, HC-Q5, HC-Q9 and HC-C1. Built: the bot
