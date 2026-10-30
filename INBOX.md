@@ -180,6 +180,10 @@ Reply inline (`Decision: …`).
       `none`. `control-immune` refuses every `hard` status, so it also blocks `crushed`, which §7's
       kind calls hard control but its immunity list (stun, knockup, pulled, taunted) leaves out;
       and no `control-immune` follows `crushed`. Confirm or correct.
+      (7) Still open after (6): a `stun` refreshed before it runs out (`refresh` restarts its
+      timer) never expires, so `control-immune` never follows; a producer that reapplies every
+      second keeps a 2 s stun up forever. What guarantees the recovery window: a hard status
+      cannot be refreshed while active, a cap on total stun time, or something else?
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 - [ ] **Weapons — numbers and default weapons (SCRUM-183 / SCRUM-287, branch `feat/weapons`).**

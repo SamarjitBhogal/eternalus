@@ -1638,3 +1638,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."
 - Next step: Sam confirms INBOX item (6); then `slowed` with `independent` stacking (crushed's
   release), `controlResistance` and the DEC-42 wobble once its questions are answered.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/status-control-immune — claudiodh + Claude Code
+
+- What was done: PR #52 review round (CodeRabbit, Copilot). Documented in 05's Implementation
+  status that `control-immune` stops chains of separate stuns only: a stun refreshed before it
+  expires never expires, so a steady refresher still locks the target. The recovery rule is a new
+  INBOX question (status effects, point 7). `crushed` as `hard` stays the open point (6).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 667 passed (667)"; client "Tests 415 passed (415)"; "✓ built in 95ms"; "Documentation
+  check passed."
+- Next step: Sam answers points (6) and (7).
