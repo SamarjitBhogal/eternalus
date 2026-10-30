@@ -111,21 +111,26 @@ describe('MinionStrengthStep', () => {
     walk(100);
 
     // Its own losses never shift its point: still base stats at mid-lane.
-    state.teams.light.towersLostByLane['lane-0'] = 2;
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-0');
+    expect(hit()).toBeCloseTo(100);
+    // A loss on another lane changes nothing here.
+    for (let loss = 0; loss < 3; loss += 1) {
+      state.recordTowerLost('dark', 'lane-1');
+    }
     expect(hit()).toBeCloseTo(100);
     // One dark loss: the base-stat point moves to 0.6, so mid-lane is 1 + 0.5 · (1 − 0.5 / 0.6).
-    state.teams.dark.towersLostByLane['lane-0'] = 1;
+    state.recordTowerLost('dark', 'lane-0');
     expect(hit()).toBeCloseTo(100 * (1 + 0.5 * (1 - 0.5 / 0.6)));
     // Home strength does not change.
     walk(20);
     expect(hit()).toBeCloseTo(150);
     // Nine losses would pass the cap: the point stops at maxBasePoint (0.9).
-    state.teams.dark.towersLostByLane['lane-0'] = 9;
+    for (let loss = 1; loss < 9; loss += 1) {
+      state.recordTowerLost('dark', 'lane-0');
+    }
     walk(100);
     expect(hit()).toBeCloseTo(100 * (1 + 0.5 * (1 - 0.5 / 0.9)));
-    // A loss on another lane changes nothing here.
-    state.teams.dark.towersLostByLane = { 'lane-1': 3 };
-    expect(hit()).toBeCloseTo(100);
   });
 
   it('refuses a base-stat point outside the lane', () => {

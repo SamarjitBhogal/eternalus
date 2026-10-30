@@ -11,6 +11,7 @@ import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
 import { SeededRandom } from '../utils/SeededRandom';
+import { fnv1a } from '../utils/fnv1a';
 import { GameState } from './GameState';
 import { StateHasher } from './StateHasher';
 
@@ -185,16 +186,91 @@ describe('StateHasher', () => {
   });
 
   it('hashes lost towers once a lane has one, by team and lane', () => {
-    const { state } = stateWithSoldier();
-    const without = hasher.hash(state);
-    state.teams.light.towersLostByLane['lane-0'] = 1;
-    const one = hasher.hash(state);
-    state.teams.light.towersLostByLane['lane-0'] = 2;
-    const two = hasher.hash(state);
-    state.teams.light.towersLostByLane = {};
-    state.teams.dark.towersLostByLane['lane-0'] = 2;
-    const dark = hasher.hash(state);
+    const hashWith = (losses: readonly (readonly ['light' | 'dark', string])[]): number => {
+      const { state } = stateWithSoldier();
+      for (const [team, lane] of losses) {
+        state.recordTowerLost(team, lane);
+      }
+      return hasher.hash(state);
+    };
+    const without = hashWith([]);
+    const one = hashWith([['light', 'lane-0']]);
+    const two = hashWith([
+      ['light', 'lane-0'],
+      ['light', 'lane-0'],
+    ]);
+    const dark = hashWith([
+      ['dark', 'lane-0'],
+      ['dark', 'lane-0'],
+    ]);
 
     expect(new Set([without, one, two, dark]).size).toBe(4);
+  });
+
+  describe('hordes', () => {
+    const stateWithHorde = (): GameState => {
+      const { state } = stateWithSoldier();
+      state.hordes.add({
+        id: state.hordes.nextId(),
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: ['entity-1'],
+        progress: 0,
+      });
+      state.recordSpawnRequest('light', 1, 1);
+      return state;
+    };
+
+    it('hashes a match without hordes from tick, phase, RNG state and entities only', () => {
+      const { state, soldier } = stateWithSoldier();
+      const legacy = [
+        state.tick,
+        state.phase,
+        state.rng.getState(),
+        [
+          [
+            soldier.id,
+            soldier.kind,
+            soldier.definitionId,
+            'light',
+            [3, 4, 0.5],
+            [100, 100],
+            [0, 0, 0],
+          ],
+        ],
+      ];
+      expect(hasher.hash(state)).toBe(fnv1a(JSON.stringify(legacy)));
+    });
+
+    it('changes once a horde exists', () => {
+      expect(hasher.hash(stateWithHorde())).not.toBe(hasher.hash(stateWithSoldier().state));
+    });
+
+    it.each<[string, (state: GameState) => void]>([
+      [
+        'horde progress',
+        (state) => {
+          state.hordes.setProgress('horde-1', 0.5);
+        },
+      ],
+      ['the member ids', (state) => state.hordes.removeMember('entity-1')],
+      ['issuedIds', (state) => state.hordes.nextId()],
+    ])('changes when %s changes', (_, change) => {
+      const state = stateWithHorde();
+      const before = hasher.hash(state);
+      change(state);
+      expect(hasher.hash(state)).not.toBe(before);
+    });
+
+    it('tells apart spawn counters that differ only in unitsRequested or unitsSuppressed', () => {
+      const withRequest = (requested: number, spawned: number): number => {
+        const state = stateWithHorde();
+        state.recordSpawnRequest('dark', requested, spawned);
+        return hasher.hash(state);
+      };
+      expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
+    });
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
-import { formationSlot } from './formationSlot';
+import { followerIndex, formationSlot } from './formationSlot';
 
 const FORMATION = { id: 'test', ranksWidth: 2, slotSpacing: 2 };
 
@@ -26,5 +26,15 @@ describe('formationSlot', () => {
       x: 1,
       y: -2,
     });
+  });
+});
+
+describe('followerIndex', () => {
+  it('counts the members ahead in memberIds with the leader left out, and gives the leader −1', () => {
+    const members = ['a', 'b', 'c', 'd'];
+    expect(followerIndex(members, 'b', 'b')).toBe(-1);
+    expect(followerIndex(members, 'b', 'a')).toBe(0);
+    expect(followerIndex(members, 'b', 'c')).toBe(1);
+    expect(followerIndex(members, 'b', 'd')).toBe(2);
   });
 });

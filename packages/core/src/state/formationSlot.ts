@@ -32,3 +32,26 @@ export const formationSlot = (
   out.y = anchor.y - forward.y * back + forward.x * across;
   return out;
 };
+
+/**
+ * A member's `follower` index for `formationSlot`: its place in `memberIds` with the leader left
+ * out, or −1 for the leader (architecture 18 §5.1). Every member counts, whether or not it moves
+ * this tick, so one member's state never shifts another's slot.
+ */
+export const followerIndex = (
+  memberIds: readonly string[],
+  leaderId: string,
+  id: string,
+): number => {
+  if (id === leaderId) {
+    return -1;
+  }
+  let ahead = 0;
+  for (const member of memberIds) {
+    if (member === id) {
+      break;
+    }
+    ahead += member === leaderId ? 0 : 1;
+  }
+  return ahead;
+};

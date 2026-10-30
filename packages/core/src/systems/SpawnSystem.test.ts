@@ -13,14 +13,19 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { SpawnSystem } from './SpawnSystem';
+import type { SpawnPlan } from './SpawnSystem.types';
 
 const TICK_RATE = 30;
 
-const newSystem = (state: GameState, factory: EntityFactory) =>
+const newSystem = (
+  state: GameState,
+  factory: EntityFactory,
+  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>> = {},
+) =>
   new SpawnSystem(state, factory, {
     definitions: loadDefaultContent(TICK_RATE),
-    openingWave: OPENING_WAVE,
-    waves: SPAWN_WAVES,
+    openingWave: plan.openingWave ?? OPENING_WAVE,
+    waves: plan.waves ?? SPAWN_WAVES,
     steering: HORDE_STEERING,
     weights: LANE_ASSESSMENT_WEIGHTS,
     formationId: 'ranks',
@@ -140,5 +145,46 @@ describe('SpawnSystem', () => {
     system.update({ state, logger: new NullLogger() });
 
     expect(state.entities.size).toBe(0);
+  });
+
+  it('sends the opening hordes even when the Stronghold has no recurring waves', () => {
+    const state = new GameState(
+      createDefaultGameConfig({ match: { initialHordesPerTeam: 1 } }),
+      1,
+      TWO_LANE_MAP,
+    );
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
+    const towersOnly = Object.fromEntries(
+      Object.entries(SPAWN_WAVES).filter(([kind]) => kind !== 'stronghold'),
+    );
+    const system = newSystem(state, factory, { waves: towersOnly });
+
+    system.update({ state, logger: new NullLogger() });
+
+    expect(state.hordes.size).toBe(2);
+  });
+
+  it.each<[string, Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>>, RegExp]>([
+    [
+      'an unknown mob',
+      {
+        waves: {
+          'spawner-tower': [
+            { mobId: 'no-such-mob', weightClass: 'light', everySeconds: 60, lane: 'own-lane' },
+          ],
+        },
+      },
+      /unknown mob "no-such-mob"/,
+    ],
+    [
+      'a mob of another weight class',
+      { openingWave: { mobId: 'heavy-minion', weightClass: 'light' } },
+      /"heavy-minion" is light, but its kind is "heavy-mob"/,
+    ],
+  ])('rejects a plan with %s when it is built', (_, plan, message) => {
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
+
+    expect(() => newSystem(state, factory, plan)).toThrow(message);
   });
 });

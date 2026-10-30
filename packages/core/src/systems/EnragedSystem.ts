@@ -57,8 +57,7 @@ export class EnragedSystem implements System {
       }
     }
     for (const { team, lane } of this.lost) {
-      const byLane = state.teams[team].towersLostByLane;
-      byLane[lane] = (byLane[lane] ?? 0) + 1;
+      state.recordTowerLost(team, lane);
       state.hordes.forEach((horde) => {
         if (horde.team === team && horde.lane === lane) {
           this.enrage(state, horde.memberIds, 1);
