@@ -135,6 +135,8 @@ export type LegendSpecCard = {
   /** Signature, specialty, ultimate (58:271). */
   readonly details: readonly DetailRow[];
   readonly art: LegendSpecArt;
+  /** The HUD weapon art of this Legend's start weapon; `null` keeps the class kit's (DEC-114). */
+  readonly hudWeapon: ClassHudDisplay['weapon'];
 };
 
 /** Art of one class; `null` renders the placeholder. */

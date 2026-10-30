@@ -219,6 +219,9 @@ describe('buildDisplayCatalogue', () => {
     expect(() => build({ known: without('warrior-hud-emblem') })).toThrow(
       'asset "warrior-hud-emblem"',
     );
+    expect(() => build({ known: without('warrior-weapon-battle-axe') })).toThrow(
+      'asset "warrior-weapon-battle-axe"',
+    );
     expect(() => build({ known: without('selection-backdrop') })).toThrow('"selection-backdrop"');
   });
 

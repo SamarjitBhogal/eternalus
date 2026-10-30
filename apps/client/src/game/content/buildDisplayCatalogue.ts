@@ -124,6 +124,7 @@ function toSpecCard(
     ratings: spec.roleRatings,
     details: detailRows(spec.detailNames, shown.detailIcons),
     art: shown.art,
+    hudWeapon: shown.hudWeapon ?? null,
   };
 }
 
@@ -236,7 +237,10 @@ function classAssetIds(card: LegendClassCard): (AssetId | null)[] {
     art.model,
     ...Object.values(art.cardPlates),
     art.rowPlate,
-    ...card.specs.flatMap((spec) => Object.values(spec.art)),
+    ...card.specs.flatMap((spec) => [
+      ...Object.values(spec.art),
+      spec.hudWeapon?.iconAssetId ?? null,
+    ]),
     ...rows.map((row) => row.iconAssetId),
     card.hud?.emblemAssetId ?? null,
     card.hud?.weapon?.iconAssetId ?? null,

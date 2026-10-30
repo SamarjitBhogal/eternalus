@@ -56,11 +56,12 @@ export function classCardFixture(
 
 /**
  * The content and matchSetup slices with `legendClasses` loaded and `classId` picked (`null`: no
- * pick).
+ * pick), with `specId` as the picked Legend.
  */
 export function pickedClassState(
   legendClasses: readonly LegendClassCard[],
   classId: string | null,
+  specId: string | null = null,
 ): Pick<RootState, 'content' | 'matchSetup'> {
   return {
     content: contentSlice.reducer(
@@ -69,7 +70,7 @@ export function pickedClassState(
     ),
     matchSetup: matchSetupSlice.reducer(
       undefined,
-      matchSetupSlice.actions.select(classId === null ? null : { classId, specId: null }),
+      matchSetupSlice.actions.select(classId === null ? null : { classId, specId }),
     ),
   };
 }
@@ -88,6 +89,7 @@ export function specCardFixture(
     ratings: null,
     details: [],
     art: NO_SPEC_ART,
+    hudWeapon: null,
     ...overrides,
   };
 }

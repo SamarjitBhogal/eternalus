@@ -31,19 +31,30 @@ describe('HUD presentation', () => {
     expect(catalogue.legendClasses.find((card) => card.classId === 'harbinger')?.hud).toBeNull();
   });
 
-  it('shows every class an empty kit in a live match, and the Vanguard its helmet (DEC-101)', () => {
+  it('shows an empty kit in a live match except the art that fits the Legend (DEC-101, DEC-114)', () => {
     const available = catalogue.legendClasses.filter(isSelectableClass);
-    for (const card of available) {
-      expect(card.hud?.weapon).toBeNull();
-      expect(card.hud?.slots.map((slot) => [slot.displayName, slot.iconAssetId])).toEqual(
-        SLOT_ORDER.map(() => [null, null]),
-      );
-    }
-    expect(available.map((card) => [card.classId, card.hud?.emblemAssetId])).toEqual([
-      ['warrior', 'warrior-hud-emblem'],
-      ['sentinel', null],
-      ['magus', null],
+    expect(
+      available.map((card) => [
+        card.classId,
+        card.hud?.emblemAssetId,
+        card.hud?.weapon?.iconAssetId ?? null,
+        card.hud?.slots.flatMap((slot) =>
+          slot.iconAssetId === null ? [] : [[slot.slot, slot.iconAssetId]],
+        ),
+      ]),
+    ).toEqual([
+      ['warrior', 'warrior-hud-emblem', null, [['gadget-1', 'warrior-gadget-courage']]],
+      ['sentinel', null, null, []],
+      ['magus', null, 'magus-weapon-staff', []],
     ]);
+    for (const card of available) {
+      expect(card.hud?.slots.map((slot) => slot.displayName)).toEqual(SLOT_ORDER.map(() => null));
+    }
+    const specWeapons = available
+      .flatMap((card) => card.specs)
+      .filter((spec) => spec.hudWeapon !== null)
+      .map((spec) => [spec.specId, spec.hudWeapon?.iconAssetId]);
+    expect(specWeapons).toEqual([['juggernaut', 'warrior-weapon-battle-axe']]);
   });
 
   it('names only match-group assets', () => {
@@ -54,6 +65,7 @@ describe('HUD presentation', () => {
             card.hud.emblemAssetId,
             card.hud.weapon?.iconAssetId ?? null,
             ...card.hud.slots.map((slot) => slot.iconAssetId),
+            ...card.specs.map((spec) => spec.hudWeapon?.iconAssetId ?? null),
           ],
     );
     const { chrome } = HUD_PRESENTATION;
@@ -65,8 +77,8 @@ describe('HUD presentation', () => {
       chrome.allegianceFlagAssetId,
       ...Object.values(chrome.objectiveShieldAssetIds),
     ];
-    // The helmet, five structure icons and six chrome images (the kits are empty, DEC-101).
-    expect(ids).toHaveLength(12);
+    // The helmet, Courage, the staff, Wuuthrad (DEC-114), five structure icons, six chrome images.
+    expect(ids).toHaveLength(15);
     expect(ids.filter((id) => !MATCH_IDS.has(id))).toEqual([]);
   });
 
