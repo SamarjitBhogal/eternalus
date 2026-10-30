@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -533,7 +533,8 @@ follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. `polarity`, `contr
 same source, ids checked at load) are built: `stun` is followed by `control-immune` (0.5 s), and the
 applier refuses `hard` control on a `control-immune` target (SCRUM-228, `feat/status-control-immune`).
 `stun` and `crushed` are both followed by `control-immune`; re-applying an active stun restarts its
-timer by owner ruling (DEC-99), so `control-immune` follows only when it runs out.
+timer by owner ruling (DEC-99), so `control-immune` follows only when it runs out, and a producer
+that re-applies a stun before it ends can hold a target until it stops.
 Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
 runs before movement.

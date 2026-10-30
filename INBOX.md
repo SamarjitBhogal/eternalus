@@ -279,8 +279,8 @@ Reply inline (`Decision: …`).
       `none`. `control-immune` refuses every `hard` status, so it also blocks `crushed`, which §7's
       kind calls hard control but its immunity list (stun, knockup, pulled, taunted) leaves out;
       and no `control-immune` follows `crushed`. Confirm or correct.
-      Answered 2026-10-30 (DEC-99 (a)): `crushed` is hard control; `control-immune` blocks it and
-      follows it.
+      Answered 2026-10-30 (DEC-99 (a)): `crushed` is hard control; `control-immune` blocks it. It
+      also follows it (derived from more-abilities §7, not asked).
       (7) Still open after (6): a `stun` refreshed before it runs out (`refresh` restarts its
       timer) never expires, so `control-immune` never follows; a producer that reapplies every
       second keeps a 2 s stun up forever. What guarantees the recovery window: a hard status
