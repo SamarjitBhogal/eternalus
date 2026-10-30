@@ -2390,3 +2390,34 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   off the match seed.
 - Next step: merge `feat/hud-plan-b2` into `feat/hud-and-character-select` (no fast-forward, local);
   then the remaining build-plan steps.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4 of the build plan merged (steps 4, 10, 11, 12 partial, 13; DEC-110 to DEC-112, DEC-114; docs pass, round B24) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: lane 3b (merged in `dfab3f7`) built steps 4, 10 and 11: the Coming Soon void on the
+  locked card (`180601d`, DEC-104), the empty live HUD kit with the Vanguard's helmet only
+  (`80a9689`, DEC-101) and destroyed structures on the strip (`cf7efbe`, DEC-69, DEC-108). Lane 4
+  (merged in `373e426`) built step 12 in part and step 13: a crashed match ends and returns to the
+  menu with a message (`cca838d`, DEC-106) and the developer camera tools show or hide on
+  Cmd/Ctrl+Shift+F3 (`e84c8aa`, DEC-105). Lane 3a built DEC-110 to DEC-112 (`b1fe73e`, `8d33344`,
+  `1662eb8`, docs in `e0597fc`). DEC-114 (`1f5cb75`): the live HUD shows the art that fits the
+  picked Legend (the Vanguard's Courage gadget, the Magus staff, the Bulwark's Wuuthrad) and leaves
+  every other frame empty; red proofs 8/8 (`eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-dec114.txt`,
+  outside the repository).
+  - Docs (round B24): `13-owner-decisions-log.md` gets DEC-114 to DEC-116 (the owner's answers Q1
+    to Q3; no DEC-113 row, the number belongs to `docs/game-loop-and-results-plan`) and a dated
+    note on DEC-101; reference 15 gets dated notes on CD-05, CD-38 and OD-37; the PR register's
+    "Integration recipe" gets one item (a destroyed structure must stay published with health 0;
+    check against PR #55); `INBOX.md`: HC-T1's round B24 bullet and table (T-184 redrafted, T-192 to
+    T-208 new, 35 pending), status notes under HC-F2, HC-F6, HC-F8, HC-Q4 and HC-Q8, HC-Q24 to
+    HC-Q26 (answered) and HC-Q27 (accept the crash-report ADR), a Done entry.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-114 to DEC-116 rows; the DEC-101
+    note), reference 15 (three dated notes in Why cells and the OD-37 row), the PR register (one
+    dated paragraph), this entry. The design-text changes (17 new rows and T-184's redraft) are
+    pending rows in the D2b patch, not applied.
+- Checks run: the merged check before DEC-114 gave EXIT=0 (core 628/628, client 1475/1475;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-merged.log`, outside the repository).
+  The final check: to be filled by the orchestrator. This pass (docs only): `npm run docs:check`
+  and Prettier on the touched files, `git apply --check` of the D2b patch.
+- Next step: critic loop 1 (running), merge into `feat/hud-and-character-select`, the owner's
+  acceptance of ADR 0025, the step-12 report lane, steps 15 and 16; step 17 waits for PRs #55 to
+  #58.
