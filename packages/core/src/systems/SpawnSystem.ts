@@ -1,3 +1,4 @@
+import { ContentValidationError } from '../content/ContentValidationError';
 import type { OpeningWaveDefinition } from '../content/structures/structures.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Unit } from '../entities/Unit';
@@ -35,18 +36,50 @@ export class SpawnSystem implements System {
    * @param state - The match; its map's structure features are the spawn points.
    * @param factory - Builds the minions.
    * @param plan - The waves, the opening wave, the definitions and the spawn layout.
+   * @throws ContentValidationError when a wave this map can spawn names an unknown mob or a mob of
+   *   another weight class, so bad content fails when the match is built, not when the wave is due.
    */
   public constructor(
     state: GameState,
     private readonly factory: EntityFactory,
     private readonly plan: SpawnPlan,
   ) {
+    // The Stronghold sends the opening wave even when it has no recurring waves.
     this.spawners = (state.map?.features ?? [])
       .filter(
         (feature): feature is TeamFeature =>
-          feature.team !== 'neutral' && plan.waves[feature.kind] !== undefined,
+          feature.team !== 'neutral' &&
+          (feature.kind === 'stronghold' || plan.waves[feature.kind] !== undefined),
       )
       .sort((a, b) => compareById(a.id, b.id));
+    this.validate();
+  }
+
+  /**
+   * Rejects a plan whose waves name an unknown mob or a mob of another weight class. Only the
+   * waves this map's spawners can send are checked, so a match without hordes needs no minions.
+   */
+  private validate(): void {
+    const kinds = new Set(this.spawners.map(({ kind }) => kind));
+    const waves = [
+      ...(kinds.has('stronghold') ? [['opening', this.plan.openingWave] as const] : []),
+      ...[...kinds].flatMap((kind) =>
+        (this.plan.waves[kind] ?? []).map((wave) => [kind, wave] as const),
+      ),
+    ];
+    const { definitions } = this.plan;
+    const problems = waves.flatMap(([source, { mobId, weightClass }]) => {
+      if (!definitions.has(mobId)) {
+        return [`${source} wave names unknown mob "${mobId}"`];
+      }
+      const { kind } = definitions.get(mobId);
+      return kind === `${weightClass}-mob`
+        ? []
+        : [`${source} wave says "${mobId}" is ${weightClass}, but its kind is "${kind}"`];
+    });
+    if (problems.length > 0) {
+      throw new ContentValidationError(`Invalid spawn plan: ${problems.join('; ')}`);
+    }
   }
 
   /** Spawns the requested hordes in order, then every horde due this tick in spawner id order. */
@@ -111,9 +144,7 @@ export class SpawnSystem implements System {
     const { team, mobId, weightClass, lane, origin, count: requested } = request;
     const room = state.config.limits.maxUnitsPerTeam - state.entities.countOnTeam(team, Unit);
     const count = Math.min(requested, Math.max(0, room));
-    const counters = state.teams[team];
-    counters.unitsRequested += requested;
-    counters.unitsSuppressed += requested - count;
+    state.recordSpawnRequest(team, requested, count);
     if (count === 0) {
       return;
     }

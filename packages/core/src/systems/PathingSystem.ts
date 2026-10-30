@@ -14,7 +14,7 @@ import type { System, SystemContext } from './System.types';
  * slot, with neighbours from `state.space`. Runs after `SpaceSystem`, so it reads this tick's
  * positions. Allocates nothing per unit once its scratch has grown to the crowd.
  *
- * Slots are `formationSlot`'s (18 §5.1), counting followers in `memberIds` order.
+ * Slots are `formationSlot`'s (18 §5.1), counting every follower in `memberIds` order.
  *
  * @remarks ponytail: every formation is laid out as ranks; a slot function per shape arrives
  * with the second shape.
@@ -82,6 +82,11 @@ export class PathingSystem implements System {
       routes.pose(horde.lane, horde.team, horde.progress, this.anchor, this.forward);
       let follower = 0;
       for (const memberId of horde.memberIds) {
+        // Count every follower, moving or not, so a skipped member never shifts the slots behind
+        // it (`followerIndex`, 18 §5.1).
+        const isLeader = memberId === horde.leaderId;
+        const slot = isLeader ? -1 : follower;
+        follower += isLeader ? 0 : 1;
         const index = space.indexOf(memberId);
         const movement = state.entities.get(memberId)?.findComponent(Movement);
         const strategyId = movement?.strategyId;
@@ -89,9 +94,7 @@ export class PathingSystem implements System {
         if (index === undefined || movement === undefined || strategy === undefined) {
           continue;
         }
-        const isLeader = memberId === horde.leaderId;
-        formationSlot(this.anchor, this.forward, isLeader ? -1 : follower, formation, this.target);
-        follower += isLeader ? 0 : 1;
+        formationSlot(this.anchor, this.forward, slot, formation, this.target);
         context.arrivalRadius = this.chase(state, memberId) ?? this.slotArrivalRadius;
         movement.steer(strategy.desiredVelocity(index, context));
       }
