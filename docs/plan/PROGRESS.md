@@ -2438,3 +2438,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 159ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/renumber-dec-48 — sholtzman + Claude Code
+
+- What was done: PR #45 logged its DISC-24 tower-shift decision as DEC-48, but the HUD and
+  character-select branches have used DEC-48 since 2026-10-18 (class names are display names) and
+  cite it in about 36 files. The tower-shift row is now DEC-120, with a note under its batch that
+  maps the old number; its `INBOX.md` citation follows. The 2026-10-30 PR #45 entry above still
+  says DEC-48: past entries are not rewritten, and the note maps it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 258ms"; "Documentation check
+  passed."
+- Next step: none; the HUD branches keep DEC-48.
