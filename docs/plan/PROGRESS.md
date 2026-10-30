@@ -1551,3 +1551,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 236ms"; "Documentation check
   passed."
 - Next step: merge into M2a (#39) and M4 (#40) and up the stack.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: second CodeRabbit round (threads on #38, #40, #44, #45). `EntityStore.countOnTeam`
+  counts living units only, so a unit killed earlier in the tick no longer blocks a wave under the
+  cap before `DeathSystem` removes it (regression test fails on the old count). `StateHasher`
+  tests cover counters without any horde and change only `memberIds` (two-member horde).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  641 passed (641)"; client "Tests 415 passed (415)"; "✓ built in 319ms"; "Documentation check
+  passed."
+- Next step: merge up the stack again.

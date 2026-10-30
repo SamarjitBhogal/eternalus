@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { Health } from '../components/Health';
+
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
@@ -95,6 +97,21 @@ describe('SpawnSystem', () => {
     // Requested: 32 opening + 8 medium + 16 light + 4 heavy; kept out: 12 light and all 4 heavy.
     expect(state.teams.dark).toEqual({ unitsRequested: 60, unitsSuppressed: 16 });
     expect(spawned.every(({ memberIds }) => memberIds.length > 0)).toBe(true);
+  });
+
+  it('does not count a unit killed this tick, still in the store before DeathSystem, against the cap', () => {
+    // The opening hordes fill the cap of 32 exactly; one of them dies before the next wave is due.
+    const { state, spawned, runTo } = setUp({ limits: { maxUnitsPerTeam: 32 } });
+    runTo(2 * TICK_RATE - 1);
+    const fallen = spawned.find(({ team }) => team === 'dark')?.memberIds[0] ?? '';
+    state.entities.get(fallen)?.getComponent(Health).applyDamage(1e6);
+
+    runTo(2 * TICK_RATE);
+
+    expect(state.entities.get(fallen)).toBeDefined();
+    // The opening 32 all spawned; of the waves since, the fallen unit's slot took exactly one.
+    const { unitsRequested, unitsSuppressed } = state.teams.dark;
+    expect(unitsRequested - 32 - unitsSuppressed).toBe(1);
   });
 
   it('creates every member inside its horde record before announcing it', () => {
