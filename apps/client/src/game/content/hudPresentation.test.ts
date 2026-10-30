@@ -31,6 +31,21 @@ describe('HUD presentation', () => {
     expect(catalogue.legendClasses.find((card) => card.classId === 'harbinger')?.hud).toBeNull();
   });
 
+  it('shows every class an empty kit in a live match, and the Vanguard its helmet (DEC-101)', () => {
+    const available = catalogue.legendClasses.filter(isSelectableClass);
+    for (const card of available) {
+      expect(card.hud?.weapon).toBeNull();
+      expect(card.hud?.slots.map((slot) => [slot.displayName, slot.iconAssetId])).toEqual(
+        SLOT_ORDER.map(() => [null, null]),
+      );
+    }
+    expect(available.map((card) => [card.classId, card.hud?.emblemAssetId])).toEqual([
+      ['warrior', 'warrior-hud-emblem'],
+      ['sentinel', null],
+      ['magus', null],
+    ]);
+  });
+
   it('names only match-group assets', () => {
     const kitIds = catalogue.legendClasses.flatMap((card) =>
       card.hud === null
@@ -50,7 +65,8 @@ describe('HUD presentation', () => {
       chrome.allegianceFlagAssetId,
       ...Object.values(chrome.objectiveShieldAssetIds),
     ];
-    expect(ids.length).toBeGreaterThan(20);
+    // The helmet, five structure icons and six chrome images (the kits are empty, DEC-101).
+    expect(ids).toHaveLength(12);
     expect(ids.filter((id) => !MATCH_IDS.has(id))).toEqual([]);
   });
 
