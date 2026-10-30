@@ -279,10 +279,13 @@ Reply inline (`Decision: …`).
       `none`. `control-immune` refuses every `hard` status, so it also blocks `crushed`, which §7's
       kind calls hard control but its immunity list (stun, knockup, pulled, taunted) leaves out;
       and no `control-immune` follows `crushed`. Confirm or correct.
+      Answered 2026-10-30 (DEC-99 (a)): `crushed` is hard control; `control-immune` blocks it and
+      follows it.
       (7) Still open after (6): a `stun` refreshed before it runs out (`refresh` restarts its
       timer) never expires, so `control-immune` never follows; a producer that reapplies every
       second keeps a 2 s stun up forever. What guarantees the recovery window: a hard status
       cannot be refreshed while active, a cap on total stun time, or something else?
+      Answered 2026-10-30 (DEC-99 (b)): refresh stays; a re-applied stun restarts its timer.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
 - [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**

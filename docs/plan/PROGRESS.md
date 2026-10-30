@@ -2474,3 +2474,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 763 passed (763)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: Sam answers the open INBOX points for this PR; team review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/status-control-immune (review fixes) — Claude Code, for claudiodh, on Sam's request
+
+- What was done: review fixes F1/F2/N1/N2 and DEC-99 applied on Sam's request, on behalf of the
+  author. Merged `phase/2-sprint-2-work` (PROGRESS.md conflict: both sides kept, date-ordered).
+  `crushed` now has `onExpire` → `control-immune` (DEC-99 (a)); a re-applied stun keeps `refresh`
+  (DEC-99 (b)). New tests: stun and crushed each followed by `control-immune`; a `StateHasher`
+  determinism check. 05 §8, more-abilities §7 and INBOX points (6)/(7) updated.
+- Fail-first breaks, run: remove `crushed` `onExpire` → the crushed case red; remove `stun`
+  `onExpire` → the stun case red; hash ignores `control-immune` → the hash test red. Author's
+  tests, derived by reading, not run: remove the `onExpire` loop in `expire`; drop the
+  `controlClass === 'hard'` clause; `remove` calls the follow-ups; make `control-immune` permanent.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 793 passed (793)"; client "Tests 419 passed
+  (419)"; "✓ built in 276ms"; "Documentation check passed."
+- Next step: squash-merge: the branch has sync/revert commits.
