@@ -9,6 +9,7 @@ import { EntityFactory } from '../../entities/EntityFactory';
 import { GameState } from '../../state/GameState';
 import type { Team } from '../../teams/teams.types';
 import { AttackTargetHandler } from './AttackTargetHandler';
+import { loadWeapons } from '../../content/weapons/loadWeapons';
 
 const CONFIG = createDefaultGameConfig();
 
@@ -17,6 +18,8 @@ const setUp = () => {
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(CONFIG.tickRate),
+    undefined,
+    loadWeapons(CONFIG.tickRate),
   );
   const spawn = (kind: string, definitionId: string, team: Team) => {
     const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });

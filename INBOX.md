@@ -219,6 +219,20 @@ Reply inline (`Decision: …`).
       Does a defender's leash follow the capture zone (its radius; `Recommendation:`), or is it a
       radius of its own in the checkpoint table? And are the defenders of a point no team owns
       yet neutral (`Recommendation:`)? Nothing is built on this until M6.
+- [ ] **Weapons — numbers and default weapons (SCRUM-183 / SCRUM-287, branch `feat/weapons`).**
+      The weapon slice is built (05 §10 Implementation status), but no doc has per-weapon numbers
+      (`balancing.md` only names `content/weapons/*.ts`). Placeholders shipped (2026-10-25, all
+      `TUNE`, Claudio's pick): Legends have no attack of their own; Warrior → `raptor-talons`,
+      Sentinel → `wuuthrad`, Magus → `magus-staff` (melee only), each with its class's
+      `balancing.md` basic attack. Confirm or correct. (1) Weapon numbers (damage, reach, interval): do the
+      `balancing.md` class numbers (Warrior 45 / 0.7 s, Sentinel 90 / 1.2 s, Magus 40 / 0.9 s)
+      become each class's default weapon, or do you set them per weapon? Reach has no source.
+      (2) Which weapon each Legend spawns with until loadouts exist (SCRUM-290): the unique ones are
+      Short blades (MVP-if-time), Barricades (post-MVP) and the Magus Staff (needs ranged).
+      (3) OK that the first slice is melee only? Ranged waits for projectiles (SCRUM-169);
+      `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
+      rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
+      (SCRUM-290).
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

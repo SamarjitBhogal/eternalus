@@ -1,3 +1,4 @@
+import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
@@ -18,3 +19,14 @@ export type Placement = {
   readonly position: Vec2;
   readonly team?: Team;
 };
+
+/**
+ * Where a Legend finds the weapon its definition names (architecture 05 §10). A
+ * `ContentCatalogue<WeaponDefinition>` satisfies it.
+ */
+export interface WeaponSource {
+  /** Whether a weapon has the id `id`. */
+  has(id: string): boolean;
+  /** The weapon with the id `id`. */
+  get(id: string): WeaponDefinition;
+}
