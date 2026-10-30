@@ -14,6 +14,9 @@ export const HEAVY_MINION = {
   visionRadius: 10, // TUNE:
   xpValue: 120, // TUNE: balancing.md "XP sources" (heavy minion kill)
   movementStrategy: 'lane-follow',
+  controller: 'minion',
+  aiProfile: 'lane-minion',
+  attack: { strategy: 'melee', damage: 70, reach: 1.5, interval: 1.6 }, // TUNE: balancing.md heavy minion (70 / 1.6 s); reach unspecified
   movement: {
     maxSpeed: 2.8, // TUNE: m/s, balancing.md heavy minion
     acceleration: 14, // TUNE: m/s², top speed after 0.2 s

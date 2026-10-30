@@ -7,3 +7,21 @@ export type MobDefinition = UnitDefinition & {
   /** XP a Legend earns for killing this mob (04 §5). Required, so every mob states it. */
   readonly xpValue: number;
 };
+
+/**
+ * How lane minions grow from kills (game doc "Minion XP", MVP-if-time; balancing.md): a level per
+ * `killsPerLevel` mob kills up to `maxLevel`, each raising max health by `healthPerLevel` of base
+ * health and adding a stack of `statusId`; a minion with a level gives `aura.statusId` to the
+ * friendly minions within `aura.radius`, every `aura.everySeconds`.
+ */
+export type MinionVeterancyDefinition = {
+  readonly killsPerLevel: number;
+  readonly maxLevel: number;
+  readonly healthPerLevel: number;
+  readonly statusId: string;
+  readonly aura: {
+    readonly statusId: string;
+    readonly radius: number;
+    readonly everySeconds: number;
+  };
+};

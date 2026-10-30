@@ -83,11 +83,26 @@ and its `Brain` are deleted (DEC-35). Pull request M2a adds brains, the `Control
 `AiSystem`, `state.space` with `Perception`, `HordeMembershipConsistentInvariant` and
 developer-menu horde spawns (§3.5). Phase M4's lane flow fields are built as well
 (`map/LaneFlowFields`, the Stronghold-to-gate ground included), and `LaneFollowMovementStrategy`
-follows them where the line to the slot is blocked (§5.2). Fighting, guards, controllers and lane
-assignment (M2b onward) are not built. The damage pipeline (`combat/DamagePipeline`) is built;
-structures have only the `Structure` base class, with no Stronghold, tower or gate kind yet. The
-pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md)
-§2–§3.
+follows them where the line to its target is blocked (§5.2). Pull request M2b adds
+`MinionController` (§6.1) with the `lane-minion` aggro content and the shared ranking helper
+`ai/aggroRank`, minion attacks from `balancing.md`, `stop` clearing the attack target (MS-26), the
+chase in `PathingSystem` (§5.2) and the anchor holding while the leader engages (§4). Lane
+assignment (M3 onward) is not built. The damage pipeline (`combat/DamagePipeline`) is built. Pull request
+`feat/minion-structures` adds the Stronghold, tower and gate entities with breakability and
+`structure-destroyed` (07, Implementation status). Pull request M2c adds the lane objectives
+(`state/LaneStructures`, indexed from the structure entities once they spawn, in the same lane
+order as §6.2), the anchor holding at the next standing objective, gate holding, spawning from the
+structure entities, `assessLanes`' structure terms, and the guards: `content/structures/guardPlans.ts`,
+one post per guard in `state.guards` laid out and refilled by `SpawnSystem`, `GuardController`
+sharing `ai/LeashBehaviour` with `MinionController`, `LeashedChaseMovementStrategy` and
+`GuardWithinLeashInvariant`. Interim: a guard's leash is measured from its structure's edge; a
+horde gathered at its objective acquires it from every rank, and attacking the objective ignores
+the leash and the aggro timeout (both in `INBOX.md` for sign-off); the Stronghold, standing off the
+lane, is gathered at from the lane's end. Pull request M5b adds minion XP (`VeterancySystem`,
+`content/mobs/minionVeterancy.ts`, the `veteran` and `rallied` statuses) and the ghosted first wave
+(`AggroRuleDefinition.ghostFirstWaveTicks`, shipped at 0, so off); Tower Guardians wait for ranged
+attacks and the owner's numbers (`INBOX.md`). The pull requests and
+interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
 
@@ -306,15 +321,18 @@ default, `ranks`, is a block: the leader at the front centre, the other members 
   leader excluded): rank `floor(i / ranksWidth) + 1`, file `i % ranksWidth − (ranksWidth − 1) / 2`, so
   the block is centred on the lane. The offset is `−forward × rank × slotSpacing + right × file × slotSpacing`, where `forward` is
   the lane's direction at `progress` and `right` its perpendicular, as vectors (ADR 0012). When a
-  member dies the ranks close up on the next tick, with no bookkeeping.
+  member dies the ranks close up on the next tick, with no bookkeeping. The slot function lives in
+  `state/formationSlot.ts`, the one folder that `systems/` (`PathingSystem`) and `ai/`
+  (`MinionController`, which checks arrival at the slot) may both import.
 - **Another shape** (wedge, column) is a new formation entry and its slot function, not a change to
   `HordeSystem` or the strategy.
 
 ### 5.2 Lane following and steering
 
 `LaneFollowMovementStrategy` is a `MovementStrategy` (04 §4), chosen by the mob definition and
-called by `PathingSystem` (10 §9). It reads the mob's `Combat.targetId`, which only
-`attack-target` sets and `stop` clears:
+called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targetId`, which only
+`attack-target` sets and `stop` clears, and hands the strategy the target and an arrival radius
+(the attack reach), so the strategy never reads components:
 
 | Mob state (§6.1) | `Combat.targetId` | Steering target                                                                    |
 | ---------------- | ----------------- | ---------------------------------------------------------------------------------- |
@@ -325,8 +343,11 @@ called by `PathingSystem` (10 §9). It reads the mob's `Combat.targetId`, which 
 - `PathingSystem` combines the strategy's target with the rest of 10 §9 by priority: **obstacle
   and wall avoidance**, then **separation from all neighbours** (through `SpatialHash`,
   [10 §5](10-physics.md#5-broad-phase-spatialhash), id-ordered), then the strategy's target, then
-  the lane flow field when the straight line is blocked (MS-19). A mob blocked by terrain leaves
-  its slot and returns to it once clear, because keeping the slot is never the top priority.
+  the lane flow field when the straight line to the slot is blocked (MS-19). An engaging mob never
+  follows the lane field, which leads to the lane's end rather than to its target: where the line to
+  its target is blocked it holds, keeping obstacle avoidance first. A mob blocked
+  by terrain leaves its slot and returns to it once clear, because keeping the slot is never the
+  top priority.
 - Vectors only, no angles (ADR 0012). All distances and factors are content (`TUNE`). The
   strategy never queries the whole entity list; steering cost per mob is one bounded neighbour
   query.
@@ -386,7 +407,8 @@ and melee guards at the `Stronghold`, per the game doc) are Mobs owned by their 
   structure's `GuardPlan.leashRadius` (07 §6; game doc: guards "don't leave the tower's
   perimeter") and the idle state holds the guard's post near the structure.
 - Guards move with `LeashedChaseMovementStrategy` (04 §4; 10 §9's "seek/arrival inside their
-  leash"): chase `Combat.targetId` while it is set, otherwise return to the post.
+  leash"): chase the target `PathingSystem` hands it (from `Combat.targetId`, §5.2) while one is
+  set, otherwise return to the post.
 - `GuardWithinLeashInvariant` (15 §3) checks that no guard is farther than `leashRadius` plus a
   `TUNE` tolerance (the distance it can cover between two decisions) from its structure.
 - Spawning and respawning are the structure's `GuardPlan`, run by `SpawnSystem`, never controller

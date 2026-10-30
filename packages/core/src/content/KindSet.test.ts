@@ -12,4 +12,10 @@ describe('KindSet', () => {
     expect(LEGEND_KINDS.has(MOB_DEFINITIONS.get('light-minion'))).toBe(false);
     expect(MOB_KINDS.has(LEGEND_CLASSES.get('warrior'))).toBe(false);
   });
+
+  it('answers for a bare kind', () => {
+    expect(LEGEND_KINDS.hasKind('warrior')).toBe(true);
+    expect(MOB_KINDS.hasKind('heavy-mob')).toBe(true);
+    expect(MOB_KINDS.hasKind('warrior')).toBe(false);
+  });
 });

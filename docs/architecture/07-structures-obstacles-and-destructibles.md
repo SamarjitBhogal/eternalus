@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-30
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -354,9 +354,20 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
 `Health`, with these interim differences:
 
 - `Structure` and `Obstacle` use a circle `Collider` from `footprintRadius`; convex polygon
-  footprints arrive with the structures in Phase 2. No concrete structure kind or content exists yet.
+  footprints arrive with the structures in Phase 2. No concrete structure kind or content existed until the minion slice below.
 - `Health` keeps `current`/`max` for the base bar and adds `shields`, `total`, `addShield` and
   `removeShield`; bars stay in source id order.
+- **Minion slice (`feat/minion-structures`, 2026-10-30).** The lane structures exist as entities:
+  `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate`, with `content/structures/structureCatalogue.ts`
+  (base health from `balancing.md`) and their registry lines. `Simulation` builds one per map
+  feature with a structure definition, in feature id order, carrying the feature's lane
+  (`Structure.laneId`). `BreakabilityRule` (§3, without `all-of`) is evaluated by `StructureSystem`,
+  which also emits `structure-destroyed`; `BreakabilityStep` blocks damage to unbreakable targets.
+  The BuffTower total is `numLanes × buffTowersPerLane` from config. Not built yet: shield bars
+  from BuffTowers, the `all-of` rule, the §11 invariants (`BreakabilityMatchesRuleInvariant`,
+  `NoPassThroughUnbreakableInvariant`), the gate state machine, damage multipliers, walls,
+  turrets, camps and the Cathedral as entities, and clearing a destroyed structure's footprint from
+  `WorldMap`; the main view draws structures from the map layer (`StructureView` draws nothing).
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 

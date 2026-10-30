@@ -15,8 +15,10 @@ import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
 import type { MatchPhase, RecordedCommand, TeamState } from './GameState.types';
 import type { HordeRequest } from './HordeRequest.types';
+import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
 import { LaneRoutes } from './LaneRoutes';
+import { LaneStructures } from './LaneStructures';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
@@ -32,6 +34,8 @@ export class GameState {
   public readonly ai = new AiState();
   /** The lane hordes (architecture 18 §4). */
   public readonly hordes = new HordeStore();
+  /** Every structure's guard posts (architecture 18 §7). */
+  public readonly guards = new GuardStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<
@@ -48,6 +52,7 @@ export class GameState {
   public readonly events: GameEvents;
   /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
   public readonly phase: MatchPhase = 'countdown';
+  private structureIndex = LaneStructures.EMPTY;
   private currentTick = 0;
   private readonly recent = new RingBuffer<RecordedCommand>(RECENT_COMMAND_CAPACITY);
   private readonly announcedRemovals: RemovalRecord[] = [];
@@ -82,6 +87,16 @@ export class GameState {
     this.events.on('xp-gained', (award) => {
       this.xpAwards.push(award);
     });
+  }
+
+  /** The lane structures as they stood at match start (architecture 18 §6.2); empty until indexed. */
+  public get laneStructures(): LaneStructures {
+    return this.structureIndex;
+  }
+
+  /** Indexes the lane structures now in the store; call once, after the map's structures spawn. */
+  public indexStructures(): void {
+    this.structureIndex = LaneStructures.build(this.entities, this.routes);
   }
 
   /** Number of ticks completed. */
