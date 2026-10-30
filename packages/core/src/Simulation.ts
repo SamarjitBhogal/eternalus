@@ -194,7 +194,14 @@ export class Simulation {
     const forward = { x: 0, y: 0 };
     const at = { x: 0, y: 0 };
     // Every lane is assigned before anything spawns, so a roster that does not fit spawns nothing.
+    const { legendsPerTeam } = state.config.match;
     const plans = (['light', 'dark'] as const).map((team) => {
+      const size = roster.filter((slot) => slot.team === team).length;
+      if (size > legendsPerTeam) {
+        throw new Error(
+          `The ${team} roster has ${String(size)} Legends; match.legendsPerTeam allows ${String(legendsPerTeam)}.`,
+        );
+      }
       const laners = roster.filter((slot) => slot.team === team && slot.role === 'laner');
       return {
         team,
