@@ -28,7 +28,8 @@ ADRs > this log > the reference docs > the source transcriptions.
 | DEC-120 | **DISC-24's tower shift helps the team that destroyed the tower**: when a lane tower falls, the destroying team's base-stat point in that lane moves toward the enemy; the losing team's point stays put (no shared front, no comeback). | None: `architecture/05-abilities-weapons-and-loadouts.md` §9 already describes it |
 
 DEC-120 was logged as DEC-48 on 2026-10-30 and renumbered the same day: the HUD and
-character-select work has used DEC-48 since 2026-10-18.
+character-select work has used DEC-48 since 2026-10-18. Unmerged branches used numbers up to
+DEC-113 that day, so the new number leaves room above them.
 
 ## Batch 2026-10-16 (PR #33 review: the minion system design, sholtzman)
 
