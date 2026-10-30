@@ -1814,3 +1814,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   692 passed (692)"; client "Tests 415 passed (415)"; "✓ built in 234ms"; "Documentation check
   passed."
 - Next step: merge into M5a (#45) and M3 (#46).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m5a-modifiers — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M2b (M2a, M1 and `phase/2-sprint-2-work`) into PR #45. With
+  M1's readonly `TeamState`, `towersLostByLane` now changes only through
+  `GameState.recordTowerLost`, which `EnragedSystem` calls; tests use it instead of writing the
+  record. Earlier PROGRESS entries stay as written (owner's call).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  705 passed (705)"; client "Tests 415 passed (415)"; "✓ built in 268ms"; "Documentation check
+  passed."
+- Next step: none for M5a; M3 (#46) and M8 (#47) next.
