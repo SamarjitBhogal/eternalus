@@ -319,8 +319,9 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with the manifest's asset ids
   and the developer overrides, so no `game/content/` module reads `data/`; the shipped catalogue for
   tests is `game/content/__fixtures__/shippedCatalogue.ts`. `game/session/` gains
-  `selectionAssetGroups.ts` and `fillRosters.ts` (LOCK IN's roster fill, DEC-61) and loses
-  `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`,
+  `selectionAssetGroups.ts`, `fillRosters.ts` (LOCK IN's roster fill, DEC-61) and
+  `createRosterRng.ts` (its random stream, injected as `SessionControllerDeps.createRosterRng`) and
+  loses `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`,
   `game/MatchHost.ts`, `game/createBrowserMatch.ts` and `game/prepareMatchWorld.ts`;
   `game/useMatch.ts` is gone (DEC-50).
 - **Core.** `loadDisplayContent()` is exported from `@eternalus/core`: the Legend and Legend-spec

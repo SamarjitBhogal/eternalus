@@ -2365,3 +2365,28 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `npm run docs:check` "Documentation check passed."; Prettier clean on the touched files;
   `git apply --check` of the D2b patch prints nothing.
 - Next step: the critic's loop 2 on the fixes, then merge into `feat/hud-and-character-select`.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batch 2's critic loops 2 and 3 (round B23) — feat/hud-plan-b2 — sholtzman + Claude Code
+
+- What was done: the architecture critic's loop 2 on `a37cd83..b1bb032` approved (no blocker or
+  major; loop 1's findings resolved, V3's rejection acceptable); its minor finding and nits are
+  fixed in `e7f7cf4` and this round: the roster stream's name and fork move from
+  `SessionController.constants.ts` (the class no longer reads them) into
+  `game/session/createRosterRng.ts`, bound in `main.tsx` and the test deps, with its own test (the
+  same seed repeats; the stream is apart from the seed's own); the TSDoc of `modalKeyFilter.ts`,
+  `useModalKeyFilter.ts` and `ViewDetailsScreen.tsx` names the bound mouse buttons, and says that a
+  `pause-menu` button's release is no longer filtered once the view closes. Declined: View Details'
+  backdrop keeps the selection tokens `--selection-art-shade` and `--selection-drop-shadow` (its
+  own palette; the critic agreed); ponytail loop 2's hoisted `pause-menu` match (two different
+  questions, no line saved). Loop 3 on `b1bb032..e7f7cf4` approved with nits only.
+  - Every edit to a sholtzman-owned doc: `docs/architecture/02-code-structure.md` §12
+    "Implementation status" names `createRosterRng.ts` among the `game/session/` files (a status
+    note, not design text); `docs/plan/PROGRESS.md`: this entry.
+- Checks run: `npm run check` EXIT=0 on `e7f7cf4` plus this round (core 116 files / 628 tests,
+  client 237 files / 1442 tests, build, "Documentation check passed."). Red proofs, each break turned its test red and
+  was restored byte-identical: the button listeners left bound on unbind; the button listeners in
+  the bubble phase; a second control in the class View Details; LOCK IN building its own
+  `SeededRandom` (again, after the move); the roster stream without its fork; the roster stream
+  off the match seed.
+- Next step: merge `feat/hud-plan-b2` into `feat/hud-and-character-select` (no fast-forward, local);
+  then the remaining build-plan steps.
