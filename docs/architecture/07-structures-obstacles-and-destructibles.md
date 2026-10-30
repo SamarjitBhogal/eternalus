@@ -35,21 +35,6 @@ game doc are `TUNE` values that live in `content/`, never in systems.
 
 ## 1. The `Structure` family
 
-**Implementation status (2026-10-27).** Generated map objects currently reuse the `Obstacle`
-entity with a `MapObjectBody` component while the full structure family remains planned.
-`WorldObjectStore` retains health and destruction records after entity removal. Definitions live
-in `content/maps/mapObjectDefinitions.ts`; the owner approved temporary scenery health on
-2026-10-27. Terrain and the Cathedral remain indestructible. Destroying a main building also
-destroys its owned walls and furnishings through the damage pipeline. Ruins remain in snapshots
-and rendering but release their collision footprints.
-
-The full Structure family and navigation-grid integration replace this stand-in in Phase 2
-sprints 2.1 and 2.4. The game-loop integration uses `GameState.livingBuffTowerCount(team)`:
-only living `structure` / `buff-tower` entities with the owning team's membership count.
-Decorative obstacle proxies never grant King immunity. The King's victory and immunity damage
-step remain owned by the game-loop work. The hall's throne anchor and room bounds are content
-in `buildingGeometry.ts`; the hall rotates toward the middle entrance before ring scaling.
-
 `Structure` is the abstract child of `Entity` for static things with health. Subclasses exist only
 where lifecycle differs; everything tunable comes from a `StructureDefinition` (Type Object) keyed
 by kebab-case id, and behaviour that varies per kind is a component or a strategy chosen from data.
@@ -374,6 +359,21 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `removeShield`; bars stay in source id order.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
+
+**2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`
+entity with a `MapObjectBody` component while the full structure family remains planned.
+`WorldObjectStore` retains health and destruction records after entity removal. Definitions live
+in `content/maps/mapObjectDefinitions.ts`; the owner approved temporary scenery health on
+2026-10-27. Terrain and the Cathedral remain indestructible. Destroying a main building also
+destroys its owned walls and furnishings through the damage pipeline. Ruins remain in snapshots
+and rendering but release their collision footprints.
+
+The full Structure family and navigation-grid integration replace this stand-in in Phase 2
+sprints 2.1 and 2.4. The game-loop integration uses `GameState.livingBuffTowerCount(team)`:
+only living `structure` / `buff-tower` entities with the owning team's membership count.
+Decorative obstacle proxies never grant King immunity. The King's victory and immunity damage
+step remain owned by the game-loop work. The hall's throne anchor and room bounds are content
+in `buildingGeometry.ts`; the hall rotates toward the middle entrance before ring scaling.
 
 ## Related
 

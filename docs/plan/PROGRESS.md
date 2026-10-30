@@ -2810,3 +2810,25 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 159ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / Sprint 2 — feat/buildings-and-map-objects — Sam Holtzman + Claude Code (for Gurshaan)
+
+- What was done: on the product owner's request, before the presentation and on behalf of the
+  author, fixed the PR #30 round-2 blockers on a local branch (not pushed). B1: merged
+  `phase/2-sprint-2-work` (`9c58897`). Conflicts kept both sides: `useMatch.ts` passes the
+  branch's seed and `mapObjects` and the phase's bot roster; `Simulation.ts` builds the world
+  objects, then spawns the roster, and gives the pipeline both `world` and `collisions`;
+  `CombatSystem.ts` takes the phase's `EntityStore.isInReach`, which now also measures reach to
+  map-object footprints (the destruction scenario test fails without it); `Match.constants.ts`
+  keeps `PLACEHOLDER_BOT_CLASSES` and drops `PLACEHOLDER_MATCH_SEED`. B2: architecture 06's
+  undated status paragraph moved into its 2026-10-30 dated amendment; the dated status notes in
+  07 §1 and 10 §1 moved to the end of their "Implementation status" sections; 08 restored to the
+  phase text. B3 and B4 were already resolved at `796f77d` (checked). F12: reference 05's
+  branch-added notes name Phase 2 sprints 2.1 and 2.4 as the replacement. F19: `Match` TSDoc.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  825 passed (825)"; client "Tests 432 passed (432)"; "✓ built in 123ms"; "Documentation check
+  passed."
+- Next step: the author or Sam reviews and pushes the branch, retargets PR #30 to
+  `phase/2-sprint-2-work` and fills the PR description (B5). Not re-checked here: F7, F9, F10,
+  F14, F16, F17, F21–F25 (spot greps suggest `796f77d` addressed F7, F9, F10, F16 and F17), and
+  the collision and destruction work first added in `796f77d`, which no review has seen yet.

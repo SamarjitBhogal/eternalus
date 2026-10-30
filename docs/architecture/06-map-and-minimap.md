@@ -403,16 +403,6 @@ the design (DEC-14).
 
 ## 10. Implementation status
 
-Match startup chooses a fresh unsigned seed at the client boundary and passes it to both map
-generation and simulation. Off-path camps use seeded corridor slots; corner camps vary within
-their content-defined corner band. Fixed lane structures, strongholds and the cathedral retain
-their anchors. Scenery uses independent seeded streams for trees, boulders, houses and lakes,
-then reflects west-half polygons east with identical shape and material. Mountains remain a
-continuous border with seeded forms. Placement ranges live in scenery content. Decorative
-lakes may be omitted if no clear position is found. Authored physical placements are supplied
-to the simulation explicitly; terrain remains indestructible and destroyed scenery becomes walkable.
-Same config and seed reproduce gameplay geometry and presentation.
-
 The design points that differ from the 2026-09-30 sketch were signed off by the owner on
 2026-10-06 (DEC-14, [decisions log](../reference/game-design/13-owner-decisions-log.md)) and are
 part of §2–§6; why each one differs is recorded in
@@ -478,6 +468,16 @@ The owner accepted seeded, mirrored camps, including corner camps, in
 older determinism restriction above: seeds now vary off-path camps and scenery while lane
 structures and landmark anchors stay fixed. Independent per-side placement under ADR 0017
 becomes a next-sprint stretch goal or post-MVP; mirrored parity is the accepted interim.
+
+Match startup chooses a fresh unsigned seed at the client boundary and passes it to both map
+generation and simulation. Off-path camps use seeded corridor slots; corner camps vary within
+their content-defined corner band. Fixed lane structures, strongholds and the cathedral retain
+their anchors. Scenery uses independent seeded streams for trees, boulders, houses and lakes,
+then reflects west-half polygons east with identical shape and material. Mountains remain a
+continuous border with seeded forms. Placement ranges live in scenery content. Decorative
+lakes may be omitted if no clear position is found. Authored physical placements are supplied
+to the simulation explicitly; terrain remains indestructible and destroyed scenery becomes walkable.
+Same config and seed reproduce gameplay geometry and presentation.
 
 Builders explicitly tag selection footprints and mirrored pieces; neither is inferred from
 artwork IDs. Building membership and roof visibility retain the earlier amendment's contract.

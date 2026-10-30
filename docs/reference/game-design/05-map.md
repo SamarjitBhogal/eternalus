@@ -177,7 +177,8 @@ pews, candles and an open capture court. Each oval stronghold includes a throne 
 furnished side rooms (council, library, kitchen, bedchamber, armory and dining). Its throne carpet
 leads to the middle-lane entrance; each lane has a stone passage through the perimeter.
 **Restore roofs & overview** restores roofs and shows the battlefield. Movement continues in
-the same simulation; building collision and occupancy-driven cutaways remain future work.
+the same simulation; full building collision and occupancy-driven cutaways arrive with the
+Structure-family work in Phase 2 sprints 2.1 and 2.4 (see the 2026-10-30 amendment below).
 
 The close player view uses fine slate courses, stone joints, textile weave, foliage/grass marks
 and water ripples. Road tracks follow the generated lanes and fade into their verges. Stronghold
@@ -197,8 +198,10 @@ decorative floors and cutaways cannot substitute for those gameplay structures.
 
 Each new match chooses a fresh seed. Off-path camps, trees, rocks, lakes and houses vary with
 that seed and are placed as west/east mirror pairs. Strongholds, cathedral and lane structures
-retain their anchors. Scenery placement bounds live in map content; scenery remains decorative
-until collision integration lands. Reusing a seed reproduces the layout.
+retain their anchors. Scenery placement bounds live in map content; scenery with a physical
+footprint collides through `SimulationOptions.mapObjects`, and the full Structure-family and
+navigation-grid integration follows in Phase 2 sprints 2.1 and 2.4. Reusing a seed reproduces
+the layout.
 
 ### 2026-10-30 — Structure and renderer integration amendment
 

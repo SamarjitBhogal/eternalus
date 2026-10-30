@@ -39,13 +39,6 @@ and [§4](../research/game-architecture-and-performance-research.md#4-spatial-pa
 
 ## 1. Scope and units
 
-**Implementation status (2026-10-27).** Map-enabled simulations resolve moving circles against
-authored polygon footprints after movement. `StaticCollisionIndex` provides a grid broad phase;
-`CollisionResolver` sweeps edges and vertices and slides along contacts. Building entrances are
-gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
-while retaining collision at their sides. Destroyed object IDs disable their static footprints.
-Unit-to-unit momentum, SAT and the remaining physics described below are still planned.
-
 - **2D top-down.** Positions are `Vec2` in world units; there is no vertical axis in the MVP.
   `Transform.height` exists as a scalar reserved for the Flying class, `Grasp` drops and
   `Firestorm` altitude (**post-MVP**); the MVP never reads it.
@@ -293,6 +286,13 @@ the bilinear field direction instead of its slot while the next `blockedLookAhea
 straight line to the slot crosses an unwalkable cell. There is no `CollisionSystem` and no
 wall-avoidance term yet; until they arrive, the blocked corridor cells beside open ground point
 back out of it, so the field itself leads a unit pushed into a wall back to open ground.
+
+**2026-10-27 (PR #30, map objects).** Map-enabled simulations built with `mapObjects` now have a
+`CollisionSystem`: it resolves moving circles against authored polygon footprints after movement. `StaticCollisionIndex` provides a grid broad phase;
+`CollisionResolver` sweeps edges and vertices and slides along contacts. Building entrances are
+gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
+while retaining collision at their sides. Destroyed object IDs disable their static footprints.
+Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
 
 ## Related
 
