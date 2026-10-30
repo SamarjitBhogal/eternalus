@@ -194,10 +194,11 @@ describe('StateHasher', () => {
         weightClass: 'light',
         lane: 'lane-0',
         formationId: 'ranks',
-        memberIds: ['entity-1'],
+        // `entity-2` need not exist: the store takes member ids as given.
+        memberIds: ['entity-1', 'entity-2'],
         progress: 0,
       });
-      state.recordSpawnRequest('light', 1, 1);
+      state.recordSpawnRequest('light', 2, 2);
       return state;
     };
 
@@ -233,13 +234,24 @@ describe('StateHasher', () => {
           state.hordes.setProgress('horde-1', 0.5);
         },
       ],
-      ['the member ids', (state) => state.hordes.removeMember('entity-1')],
+      // Dropping the follower keeps the horde and its leader: only `memberIds` changes.
+      ['the member ids', (state) => state.hordes.removeMember('entity-2')],
       ['issuedIds', (state) => state.hordes.nextId()],
     ])('changes when %s changes', (_, change) => {
       const state = stateWithHorde();
       const before = hasher.hash(state);
       change(state);
       expect(hasher.hash(state)).not.toBe(before);
+    });
+
+    it('hashes the spawn counters even before any horde exists (a wave suppressed whole)', () => {
+      const withRequest = (requested: number, spawned: number): number => {
+        const { state } = stateWithSoldier();
+        state.recordSpawnRequest('dark', requested, spawned);
+        return hasher.hash(state);
+      };
+      const none = hasher.hash(stateWithSoldier().state);
+      expect(new Set([none, withRequest(2, 0), withRequest(3, 0), withRequest(3, 1)]).size).toBe(4);
     });
 
     it('tells apart spawn counters that differ only in unitsRequested or unitsSuppressed', () => {
