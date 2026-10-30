@@ -25,7 +25,7 @@ export type AttackStrategyId = 'melee';
 
 /**
  * A unit's basic attack (architecture 05 §10, `WeaponAttack`). All values must be positive.
- * ponytail: lives on the unit until weapons land; then `Combat` reads the equipped weapon's attacks.
+ * A mob's attack lives on its definition; a Legend has none and attacks with its weapon (`Legend`).
  */
 export type UnitAttack = {
   readonly strategy: AttackStrategyId;

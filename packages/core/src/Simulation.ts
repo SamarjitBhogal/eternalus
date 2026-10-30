@@ -10,6 +10,7 @@ import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
+import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
@@ -49,12 +50,20 @@ export class Simulation {
     content,
     map,
     levelCurves,
+    weapons,
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed, map ?? null);
+    const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
+    const weaponSource = weapons ?? loadWeapons(tickRate);
+    const units = content ?? loadDefaultContent(tickRate, curves, weaponSource);
     // One factory for commands and spawning, so entity ids come from one counter.
-    const units = content ?? loadDefaultContent(this.state.config.tickRate, curves);
-    const factory = new EntityFactory(createDefaultEntityRegistry(), units);
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      units,
+      undefined,
+      weaponSource,
+    );
     this.commandContext = { state: this.state, factory };
     this.systemContext = { state: this.state, logger };
     this.pipeline =

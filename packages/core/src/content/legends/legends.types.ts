@@ -43,4 +43,11 @@ export type LegendDefinition = UnitDefinition & {
   readonly defaultAction: DefaultActionId | null;
   /** Reference height in metres, for art and hit-box tuning (not used by physics). */
   readonly referenceHeight: number;
+  /**
+   * The one field of the design's `defaultLoadout: LoadoutTemplate` (04 §5) built so far: the weapon
+   * the Legend spawns with (05 §12 `primaryWeaponId`, MVP). A Legend's damage comes from it.
+   */
+  readonly defaultLoadout: { readonly primaryWeaponId: string };
+  /** A Legend attacks with its weapon, never an attack of its own (05 §10). */
+  readonly attack?: never;
 };
