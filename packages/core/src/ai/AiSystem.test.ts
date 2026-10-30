@@ -231,4 +231,22 @@ describe('AiSystem', () => {
       });
     }).toThrow('Definition "p" names AI profile "typo"');
   });
+
+  it('falls back to the controller id as the profile when a definition names none', () => {
+    const minion = (profiles: readonly string[]): Controller => ({
+      ...stopper([]),
+      hasProfile: (profileId) => profiles.includes(profileId),
+    });
+
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'm', controller: 'minion' }], {
+        minion: minion(['minion']),
+      });
+    }).not.toThrow();
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'm', controller: 'minion' }], {
+        minion: minion(['lane-minion']),
+      });
+    }).toThrow('Definition "m" names AI profile "minion"');
+  });
 });

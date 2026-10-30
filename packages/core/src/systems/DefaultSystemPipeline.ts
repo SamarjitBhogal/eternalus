@@ -3,6 +3,7 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { FORMATIONS } from '../content/mobs/formations/formations';
+import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
@@ -15,6 +16,7 @@ import type { WorldMap } from '../map/WorldMap';
 import type { GameState } from '../state/GameState';
 import { CombatSystem } from './CombatSystem';
 import { DeathSystem } from './DeathSystem';
+import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
 import { MovementSystem } from './MovementSystem';
@@ -30,7 +32,7 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, the neighbour index, steering, combat, progression (kill XP),
- * spawning, death, then invariants last. This is the one place a system is added, at its position
+ * spawning, enraging, death, then invariants last. This is the one place a system is added, at its position
  * in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
@@ -101,6 +103,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
             }),
+            new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       new DeathSystem(),
       new InvariantSystem(invariants),

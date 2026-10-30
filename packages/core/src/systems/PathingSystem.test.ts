@@ -129,7 +129,7 @@ describe('PathingSystem', () => {
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
-  it('chases a target across blocked ground toward the target, not along the lane field', () => {
+  it('holds a chase at blocked ground, neither following the lane field nor entering it', () => {
     const config = createDefaultGameConfig();
     const grid = WorldMap.fromDefinition(
       BLOCKED_LANE_MAP,
@@ -178,7 +178,7 @@ describe('PathingSystem', () => {
       logger,
     });
 
-    expect(minion.getComponent(Movement).heading).toEqual({ x: -1, y: 0 });
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
   describe('leaves every heading alone', () => {
@@ -218,6 +218,20 @@ describe('PathingSystem', () => {
     it('in a match without a map', () => {
       const { state, heading } = setUpMember('ranks', false);
       system.update({ state, logger });
+      expect(heading()).toEqual({ x: 0, y: 0 });
+    });
+
+    it('in a mapped match without a spatial index', () => {
+      const { state, heading } = setUpMember('ranks');
+      const unindexed = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+      state.entities.forEach((entity) => {
+        unindexed.entities.add(entity);
+      });
+      const horde = state.hordes.get('horde-1');
+      if (horde !== undefined) {
+        unindexed.hordes.add(horde);
+      }
+      system.update({ state: unindexed, logger });
       expect(heading()).toEqual({ x: 0, y: 0 });
     });
 

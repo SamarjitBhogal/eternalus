@@ -37,12 +37,15 @@ export class GameState {
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<
     PlayableTeam,
-    { -readonly [K in keyof TeamState]: number }
+    { unitsRequested: number; unitsSuppressed: number; towersLostByLane: Record<string, number> }
   > = {
-    light: { unitsRequested: 0, unitsSuppressed: 0 },
-    dark: { unitsRequested: 0, unitsSuppressed: 0 },
+    light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+    dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
   };
-  /** Each playable team's match counters; changed only through `recordSpawnRequest`. */
+  /**
+   * Each playable team's match counters; changed only through `recordSpawnRequest` and
+   * `recordTowerLost`.
+   */
   public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = this.teamCounters;
   /** The map's lanes as each team walks them; `null` for a match without a map. */
   public readonly routes: LaneRoutes | null;
@@ -144,6 +147,12 @@ export class GameState {
     const counters = this.teamCounters[team];
     counters.unitsRequested += requested;
     counters.unitsSuppressed += requested - spawned;
+  }
+
+  /** Counts one lane tower `team` lost on `lane` (architecture 18 MS-16). */
+  public recordTowerLost(team: PlayableTeam, lane: string): void {
+    const byLane = this.teamCounters[team].towersLostByLane;
+    byLane[lane] = (byLane[lane] ?? 0) + 1;
   }
 
   /** The most recently applied commands, oldest first. */

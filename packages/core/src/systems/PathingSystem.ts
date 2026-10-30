@@ -12,16 +12,16 @@ import type { System, SystemContext } from './System.types';
 /**
  * Sets next tick's heading of every horde member (architecture 10 §9, 18 §5): it lays each
  * horde's formation out around its anchor (a member with an attack target chases it instead,
- * stopping at attack reach, and ignores the lane flow field, which leads to the lane's end, not to
- * the target) and asks each mob's `MovementStrategy` how to reach its
+ * stopping at attack reach, and holding at blocked ground rather than following the lane flow
+ * field, which leads to the lane's end, not to the target) and asks each mob's `MovementStrategy` how to reach its
  * slot, with neighbours from `state.space`. Runs after `SpaceSystem`, so it reads this tick's
  * positions. Allocates nothing per unit once its scratch has grown to the crowd.
  *
  * Slots are `formationSlot`'s (18 §5.1), counting every follower in `memberIds` order.
  *
  * @remarks ponytail: every formation is laid out as ranks; a slot function per shape arrives
- * with the second shape. A chase heads straight for its target, so terrain between them can stall
- * it; target-aware routing (an A* path to the target) replaces that when chases need it.
+ * with the second shape. A chase blocked by terrain holds; target-aware routing (an A* path to the
+ * target) replaces that when chases need it.
  */
 export class PathingSystem implements System {
   public readonly name = 'pathing';
@@ -82,6 +82,7 @@ export class PathingSystem implements System {
       found: this.found,
       target: this.target,
       arrivalRadius: this.slotArrivalRadius,
+      isChasing: false,
       out: this.out,
     };
     state.hordes.forEach((horde) => {
@@ -89,7 +90,7 @@ export class PathingSystem implements System {
       if (formation === undefined) {
         return;
       }
-      const laneField = this.flowFields?.field(horde.lane, horde.team) ?? null;
+      context.flow = this.flowFields?.field(horde.lane, horde.team) ?? null;
       routes.pose(horde.lane, horde.team, horde.progress, this.anchor, this.forward);
       let follower = 0;
       for (const memberId of horde.memberIds) {
@@ -108,7 +109,7 @@ export class PathingSystem implements System {
         formationSlot(this.anchor, this.forward, slot, formation, this.target);
         const reach = this.chase(state, memberId);
         context.arrivalRadius = reach ?? this.slotArrivalRadius;
-        context.flow = reach === undefined ? laneField : null;
+        context.isChasing = reach !== undefined;
         movement.steer(strategy.desiredVelocity(index, context));
       }
     });

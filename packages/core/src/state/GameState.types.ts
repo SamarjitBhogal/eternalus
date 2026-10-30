@@ -20,6 +20,11 @@ export type RecordedCommand = {
 export type TeamState = {
   readonly unitsRequested: number;
   readonly unitsSuppressed: number;
+  /**
+   * Lane towers this team has lost on each lane (by `MapLane.id`; 18 MS-16): its minions carry one
+   * `enraged` stack per loss, and each loss moves the enemy's base-stat point toward it (DISC-24).
+   */
+  readonly towersLostByLane: Readonly<Record<string, number>>;
 };
 
 /** The match's spatial indexes, built by `Simulation` (none in most unit tests). */

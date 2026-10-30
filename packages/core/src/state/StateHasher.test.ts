@@ -192,6 +192,28 @@ describe('StateHasher', () => {
     ).toBe(7);
   });
 
+  it('hashes lost towers once a lane has one, by team and lane', () => {
+    const hashWith = (losses: readonly (readonly ['light' | 'dark', string])[]): number => {
+      const { state } = stateWithSoldier();
+      for (const [team, lane] of losses) {
+        state.recordTowerLost(team, lane);
+      }
+      return hasher.hash(state);
+    };
+    const without = hashWith([]);
+    const one = hashWith([['light', 'lane-0']]);
+    const two = hashWith([
+      ['light', 'lane-0'],
+      ['light', 'lane-0'],
+    ]);
+    const dark = hashWith([
+      ['dark', 'lane-0'],
+      ['dark', 'lane-0'],
+    ]);
+
+    expect(new Set([without, one, two, dark]).size).toBe(4);
+  });
+
   describe('hordes', () => {
     const stateWithHorde = (): GameState => {
       const { state } = stateWithSoldier();

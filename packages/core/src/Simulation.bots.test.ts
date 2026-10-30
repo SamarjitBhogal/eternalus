@@ -68,6 +68,21 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     expect(() => match(laners('dark', 7))).toThrow('7 bot laners do not fit');
     // Five laners fit on the lanes but not under a team cap of four.
     expect(() => match(laners('light', 5), true, 4)).toThrow('match.legendsPerTeam allows 4');
+    // Legends are Units: two laners do not fit under a Unit cap of one.
+    expect(
+      () =>
+        new Simulation({
+          config: createDefaultGameConfig({
+            match: { initialHordesPerTeam: 0 },
+            limits: { maxUnitsPerTeam: 1 },
+          }),
+          seed: 1,
+          logger: new MemoryLogger(),
+          debug: TEST_DEBUG_CONFIG,
+          map: TWO_LANE_MAP,
+          roster: laners('light', 2),
+        }),
+    ).toThrow('limits.maxUnitsPerTeam allows 1');
     expect(() =>
       match([{ team: 'light', definitionId: 'warrior', role: 'laner', difficulty: 'nightmare' }]),
     ).toThrow('AI profile "nightmare"');

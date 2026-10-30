@@ -178,6 +178,30 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
     line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
     judgement, which the owner may correct later, so they stay as built.
+- [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
+      `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
+      than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it
+      at 1.0 (never weaker than base). (1) Is the floor right, or should 0.75 stand? (2) DISC-24:
+      when a lane tower falls, "the base-stat distance extends further toward the enemy". By
+      how much per tower (a fraction of the lane, a fixed distance, or up to the fallen tower)?
+      (3) Better than the design, for sign-off: enraged lives in its own `EnragedSystem` (one
+      purpose, right after `SpawnSystem`), not in `SpawnSystem` as 03 §4's events table says; if
+      accepted, 03 §4's `structure-destroyed` and `horde-spawned` rows name it.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (3) accepted; 03 §4's rows name
+    `EnragedSystem` (PR #45). (2) Build the tower shift; the amount is the agent's judgement with
+    no reference: a tenth of the lane per tower (`MINION_STRENGTH.shiftPerTowerLost`, `TUNE`),
+    capped at 0.9 of the lane (`maxBasePoint`). (1) Not answered: the floor stays at 1.0, as
+    DISC-24's "addition on top of base stats" reads.
+- [x] **DISC-24 — which way the tower shift goes (question for the owner).** PR #45 builds
+      reading (a) as an interim that is easy to change (one function, `MinionStrengthStep`):
+      (a) the team that destroyed the tower gets its base-stat point moved toward the enemy; the
+      losing team's point stays put. (b) One shared front: as (a), and the losing team's point
+      also moves back toward its own home, so its minions drop to base stats sooner. (c) A
+      comeback: the losing team's strong zone grows instead. Which one? Nothing can destroy a
+      tower until M2c, so no live match uses it yet.
+  - Decision (SamarjitBhogal, chat, 2026-10-30): (a). The team that destroyed the tower gets its
+    base-stat point moved toward the enemy; the losing team's point stays put. Built in PR #45
+    (`MinionStrengthStep`); recorded as DEC-48 in the decisions log.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
