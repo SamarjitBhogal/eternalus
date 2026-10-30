@@ -1487,6 +1487,38 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: merge #38, then this PR.
 
+### 2026-10-25 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai (off feat/minion-m2a-brains-perception) — SamarjitBhogal + Claude Code
+
+- What was done: on SamarjitBhogal's request, the minion plan now plans for enemy bots of every
+  entity type. Doc 18 gets MS-28 (proposed; MS-3 marked superseded), camp mobs and checkpoint
+  defenders in its entity legend, a new §7.1 (both are leashed guards that reuse
+  `GuardController` with a camp or capture point as home), a test line, a "scheduled here,
+  designed elsewhere" note for bosses, the Rover, the bot tree and A\*, and open question 4. The
+  plan gets phases M6 (camps and checkpoint defenders), M7 (bosses) and M8 (Rover, A\*, bot
+  ability use), their PR rows, and a §1.1 coverage table listing every AI-driven entity with its
+  controller, design doc and build phase (turrets stay in Phase 2 sprint 2.3). Pointers in doc 11
+  §4, doc 07 §7 and the Phase 3 plan. Because DEC-47 (sholtzman) kept camps, checkpoint spawns,
+  A\* and the Rover in Phase 3, the change is marked proposed and an `INBOX.md` item asks for
+  sign-off and for the checkpoint defenders' team and leash.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: owner sign-off on the INBOX item; merge after #39 (this branch is cut from M2a).
+
+### 2026-10-25 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai (review fixes) — SamarjitBhogal + Claude Code
+
+- What was done: `/pr-review` on `13553b0..4f0feab` requested changes with four should-fixes,
+  all applied. (1) The new rows of doc 18's decision and entity tables and the plan's phase table
+  are now as wide as the existing columns, so Prettier no longer reflows the untouched rows (the
+  phases are renamed M6 Camps, M7 Bosses, M8 Rover, and the entity row "Zone defender"). (2)
+  `camp-cleared` is not in 03's event catalogue: §7.1 now says M6 adds it, with `SpawnSystem` as
+  the emitter only a `Recommendation:`. (3) Doc 07 §7 marks the defenders' `GuardController`
+  holding as proposed (MS-28). (4) M7 is also blocked by M3, since its done-when fights bot
+  Legends.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: draft PR to `phase/2-sprint-2-work`, merged after #39; the owner answers the MS-28
+  INBOX item.
+
 ### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields (merge of M1 and phase 2) — SamarjitBhogal + Claude Code
 
 - What was done: merged the updated `feat/minion-m1-marching` (`68a6e31`, which carries
@@ -1523,6 +1555,20 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   (416)"; "✓ built in 98ms"; "Documentation check passed."
 - Next step: Sam confirms the default weapons and numbers (INBOX); ranged attacks with
   projectiles (SCRUM-169, Aryan).
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai (MS-28 answered) — SamarjitBhogal + Claude Code
+
+- What was done: SamarjitBhogal answered the MS-28 item in chat. The minion system does not
+  control bosses; every other mob type may be driven by it. Doc 18 MS-28 is now an owner
+  decision that excludes bosses, and a "Not handled here: bosses" note replaces bosses in the
+  "scheduled here" note. The plan drops M7 (the numbering keeps M8 so branch and PR names stay
+  valid), and its §1.1 row for bosses points to Phase 3 sprint 3.6. Doc 11 §4 and the Phase 3
+  plan say `BossController` stays in sprint 3.6. Checkpoint defenders fight for the team that
+  owns the point (doc 18 §7.1, doc 07 §7). The defenders' leash, and the team of an unowned
+  point's defenders, are a new open INBOX item.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: the owner answers the leash item before M6.
 
 ### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review — SamarjitBhogal + Claude Code
 
@@ -1674,6 +1720,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: merge into M2a (#39) and M4 (#40) and up the stack.
 
+### 2026-10-29 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M2a (with M1's CodeRabbit fixes and `phase/2-sprint-2-work`)
+  into PR #43; kept this branch's M6/M8 plan rows and tags beside M2a's M4 blocker fix. Earlier
+  PROGRESS entries stay as written (historical records, owner's call).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  666 passed (666)"; client "Tests 415 passed (415)"; "✓ built in 227ms"; "Documentation check
+  passed."
+- Next step: merge into M2b (#44).
+
 ### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
 
 - What was done: merged the updated M1 (with `phase/2-sprint-2-work`, the M1 CodeRabbit fixes and
@@ -1773,3 +1829,25 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 155ms"; "Documentation check
   passed."
 - Next step: restore the march test (owner to choose: shorter march or soak job).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (now with M1, M2a and M4 merged, and the CI test
+  timeout fixes) into PR #43. Conflicts: doc 18's frontmatter (kept `camps` in `tags`, newest
+  `last-reviewed`) and `PROGRESS.md` (both sides' entries kept in date order).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 162ms"; "Documentation check
+  passed."
+- Next step: merge into M2b (#44) and up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PRs #43 and #47. Doc 18 §7.1 no longer says
+  `GuardWithinLeashInvariant` covers camp mobs and defenders unchanged (doc 15 defines it for tower
+  guards; extending it is M6 work, defenders wait on §10 item 4). The minion plan's M6 blockers add
+  the owner's answer on the defenders' leash and unowned-point team; its description and purpose
+  exclude turrets as well as bosses, matching the coverage table. Docs index regenerated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 159ms"; "Documentation check
+  passed."
+- Next step: merge up the stack.
