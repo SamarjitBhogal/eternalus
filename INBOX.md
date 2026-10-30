@@ -16,6 +16,17 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
+      blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
+      or ranged `AttackStrategy` exists until sprint 2.3) and numbers no reference gives ("higher
+      damage/health than minions"). Give their health and damage, or say to build them melee-only
+      on the guard plans. (2) **Minion XP as built:** a horde minion that kills any mob (guards
+      included) counts the kill; every 2 kills, up to level 3, +10% max health (healing by the
+      same) and +10% damage (`veteran`); a levelled minion gives +5% damage (`rallied`) to other
+      friendly horde minions within 4 m, refreshed every 0.5 s, never to itself. (3) **Ghosted
+      first wave** ships off (`ghostFirstWaveTicks: 0`, as 11 §4.3's sketch); League uses 18–28 s.
+      Turn it on, and with what value? Approve, or say what to change.
+
 - [ ] **Minion M2c (`feat/minion-m2c-objectives-guards`, overnight 2026-10-30) — four items for
       sign-off, all applied as below so the work could continue.** (1) **Better than the design:**
       a horde gathered at its objective (anchor within `acquisitionRadius` of the objective's

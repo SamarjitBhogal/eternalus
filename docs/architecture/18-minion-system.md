@@ -98,7 +98,10 @@ sharing `ai/LeashBehaviour` with `MinionController`, `LeashedChaseMovementStrate
 `GuardWithinLeashInvariant`. Interim: a guard's leash is measured from its structure's edge; a
 horde gathered at its objective acquires it from every rank, and attacking the objective ignores
 the leash and the aggro timeout (both in `INBOX.md` for sign-off); the Stronghold, standing off the
-lane, is gathered at from the lane's end. The pull requests and
+lane, is gathered at from the lane's end. Pull request M5b adds minion XP (`VeterancySystem`,
+`content/mobs/minionVeterancy.ts`, the `veteran` and `rallied` statuses) and the ghosted first wave
+(`AggroRuleDefinition.ghostFirstWaveTicks`, shipped at 0, so off); Tower Guardians wait for ranged
+attacks and the owner's numbers (`INBOX.md`). The pull requests and
 interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions

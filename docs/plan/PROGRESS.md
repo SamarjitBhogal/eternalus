@@ -2002,3 +2002,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   blockers. Ponytail: lean, no cuts. Final `npm run check` → `EXIT=0`: core "Tests 755 passed
   (755)", client "Tests 416 passed (416)", "✓ built in 172ms", "Documentation check passed."
 - Next step: M5b.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m5b-if-time — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M5b (MVP-if-time) on top of M2c. Minion XP: `Veterancy` component,
+  `VeterancySystem` (kills from `entity-died`, a level per 2 mob kills up to 3, +10% max health,
+  the `veteran` and `rallied` statuses, aura every 0.5 s within 4 m), content in
+  `content/mobs/minionVeterancy.ts`; `Veterancy` is hashed. Ghosted first wave:
+  `AggroRuleDefinition.ghostFirstWaveTicks` read by `LeashBehaviour.rankOf`, shipped at 0 (off).
+  Tower Guardians not built (ranged attacks and numbers missing; `INBOX.md`). Docs 11 and 18
+  updated.
+- Checks run: see the pre-PR gate line below.
+- Next step: M6.
