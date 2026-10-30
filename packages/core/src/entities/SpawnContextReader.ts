@@ -2,6 +2,7 @@ import type { ControllerSpawn } from './EntityFactory.types';
 import { CONTROLLER_IDS } from '../content/ai/controllerIds';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
+import type { WeaponSource } from './EntityFactory.types';
 import { SPAWNABLE_TEAMS } from './SpawnContextReader.constants';
 import type {
   DefinitionRef,
@@ -80,6 +81,20 @@ export class SpawnContextReader {
     }
     // Safe: memory is the plain data the spawner wrote (`Placement.controller` is typed).
     return { controllerId: id, profileId, memory: memory as ControllerSpawn['memory'] };
+  }
+
+  /** The weapon source the factory put in the context, or `null` when it has none. */
+  public weapons(context: unknown): WeaponSource | null {
+    const { weapons } = SpawnContextReader.fields(context);
+    return SpawnContextReader.isWeaponSource(weapons) ? weapons : null;
+  }
+
+  private static isWeaponSource(value: unknown): value is WeaponSource {
+    return (
+      SpawnContextReader.isObject(value) &&
+      typeof value.has === 'function' &&
+      typeof value.get === 'function'
+    );
   }
 
   private static fields(context: unknown): Readonly<Record<string, unknown>> {

@@ -6,6 +6,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { AGGRO_RULES } from '../content/ai/aggro/aggroRules';
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
@@ -28,7 +29,12 @@ const controller = new MinionController({
 const setUp = () => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
-  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    loadDefaultContent(30),
+    undefined,
+    loadWeapons(30),
+  );
   const perception = new Perception(state);
   const add = (
     team: 'light' | 'dark',

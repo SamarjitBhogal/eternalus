@@ -4,7 +4,7 @@ import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
-import type { DefinitionSource } from './entities/EntityFactory.types';
+import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { System } from './systems/System.types';
 import type { PlayableTeam } from './teams/teams.types';
 
@@ -31,6 +31,8 @@ export type SimulationOptions = {
    * (architecture 18 §8); a match without one has no bots. Needs `map`.
    */
   readonly roster?: readonly RosterSlot[];
+  /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
+  readonly weapons?: WeaponSource;
 };
 
 /** One bot Legend of a match roster (architecture 18 §8): who, for which team, in which role. */

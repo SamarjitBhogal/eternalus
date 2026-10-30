@@ -10,6 +10,7 @@ import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from '../content/ai/rover';
 import { LEGEND_KIND_IDS } from '../content/legends/legendKinds';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { SpaceIndex } from '../physics/SpaceIndex';
@@ -31,7 +32,12 @@ const controller = new RoverController({
 const setUp = (at = { x: 100, y: 30 }) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
-  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    loadDefaultContent(30),
+    undefined,
+    loadWeapons(30),
+  );
   const perception = new Perception(state);
   const add = (team: 'light' | 'dark', x: number, y: number, kind = 'warrior') => {
     const entity = factory.create(kind, kind === 'warrior' ? 'warrior' : 'light-minion', {

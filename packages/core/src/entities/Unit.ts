@@ -10,6 +10,7 @@ import { Vision } from '../components/Vision';
 import type { UnitDefinition } from '../content/units/units.types';
 import { Entity } from './Entity';
 import { SpawnContextReader } from './SpawnContextReader';
+import type { BasicAttack } from './Unit.types';
 
 /**
  * Abstract base for entities of the `unit` family. It installs the components every unit has
@@ -53,8 +54,9 @@ export abstract class Unit extends Entity {
     this.addComponent(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
     this.addComponent(new Vision(definition.visionRadius));
     this.addComponent(new StatusEffects());
-    if (definition.attack !== undefined) {
-      this.addComponent(new Combat(definition.attack));
+    const basic = this.basicAttack(context);
+    if (basic !== undefined) {
+      this.addComponent(new Combat(basic.attack, basic.weaponId));
     }
     if (controller !== undefined) {
       this.addComponent(
@@ -65,5 +67,14 @@ export abstract class Unit extends Entity {
         new ControllerBinding(definition.controller, definition.aiProfile ?? definition.controller),
       );
     }
+  }
+
+  /**
+   * The attack this unit's `Combat` uses, and the weapon it comes from: the definition's own attack
+   * by default (mobs). `Legend` overrides it to use its weapon (05 §10).
+   */
+  protected basicAttack(context: unknown): BasicAttack | undefined {
+    const { definition } = new SpawnContextReader(this).placed<UnitDefinition>(context);
+    return definition.attack && { attack: definition.attack, weaponId: null };
   }
 }
