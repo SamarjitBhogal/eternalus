@@ -204,6 +204,12 @@ to existing design text moved to D2b, the patch in `INBOX.md` HC-T1.
   HC-B1).
 - Rows the pre-PR critic named as new features or better than the design are merged into
   `INBOX.md` HC-B1 under its ids (BD1, BD2, NF1 to NF5).
+- DV-70, DV-71 and DV-81 (2026-10-30, batch 2 of the build plan, `feat/hud-plan-b2`): superseded.
+  DV-70: on the alternate layout View Details no longer commits the shown class; it opens the class
+  details screen, and a Select Class button commits (DEC-109, `f6b1b5c`). DV-71: View Details
+  answers its own `view-details` action (V), not `gadget-2` (DEC-103, `d7b7b15`); Back keeps
+  `pause-menu`. DV-81: the locked-in state exists: LOCK IN shows the locked view until the
+  countdown ends (DEC-60, `fb3b8cd`).
 
 ## ADR 0018's amendments, applied in this pull request
 
