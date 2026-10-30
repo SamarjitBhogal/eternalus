@@ -12,10 +12,15 @@ paths:
     'packages/core/src/ai/GuardController*',
     'packages/core/src/state/Horde*',
     'packages/core/src/state/LaneAssessment*',
+    'packages/core/src/state/LaneRoutes*',
     'packages/core/src/systems/HordeSystem*',
     'packages/core/src/systems/SpawnSystem*',
+    'packages/core/src/systems/PathingSystem*',
     'packages/core/src/entities/strategies/LaneFollowMovementStrategy*',
     'packages/core/src/content/mobs/**',
+    'packages/core/src/content/ai/hordeSteering*',
+    'packages/core/src/content/ai/laneAssessmentWeights*',
+    'packages/core/src/content/structures/spawnWaves*',
   ]
 related:
   - docs/plan/minion-system-plan.md
@@ -60,13 +65,14 @@ guards and are the lane objectives (§6.2), but doc 07 implements them. The mini
 level-up** (MVP, a `CaptureSystem` reward, 07 §7) and **Ascend** (MVP-if-time, a Legend-kill
 reward) belong to their reward systems, not to this doc.
 
-**Implementation status (2026-10-17).** Nothing in this doc is built. The prototype escort stands
-in: every code file carrying `PROTOTYPE(PROTO-01)` (`git grep -l 'PROTOTYPE(PROTO-01)' -- packages
-apps` lists them, among them `ai/FollowLeaderController.ts`, `ai/AiSystem.ts`, `components/Brain.ts`,
-`entities/Unit.ts`, the `state/EntityStore.ts` helpers, `systems/DefaultSystemPipeline.ts`,
-`Simulation.ts` and the client's `Match.ts`) is deleted or replaced by the real hordes (DEC-35). The
-damage pipeline, structures and `SpatialHash` do not exist yet. The phases, their blockers and the
-interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md).
+**Implementation status (2026-10-17).** Minion plan phase M1 (marching) is built: the three
+lane minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team
+spawn counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`,
+`LaneFollowMovementStrategy` with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the
+one-step fulfilment; `Simulation` takes the map as an option. The PROTO-01 escort, its `AiSystem`
+and its `Brain` are deleted (DEC-35). Fighting, guards, brains, controllers, developer-menu horde
+spawns and lane assignment (M2 onward) are not built, and the damage pipeline and structures do not
+exist yet. The interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2.
 
 ## 1. Decisions
 
@@ -175,7 +181,8 @@ The game doc defines the worst-off lane as the one with the "lowest structure da
 structures, pushed furthest back" (source game doc, Outer camps; reference 04 §"Outer camps"). This
 is one query, `assessLanes(state, team, weights)` in `state/LaneAssessment.ts`, a pure function
 over `GameState`; lane lengths and the per-lane structure lists come from `state.world` (03 §2),
-and the weights are a parameter, so it imports nothing beyond `state/`. It lives there so both of its consumers can reach it: `SpawnSystem`
+and the weights are a parameter, so it imports only `state/` and content types (which `state/`
+may import); a caller in `match/` types its weights by `assessLanes`' parameter. It lives there so both of its consumers can reach it: `SpawnSystem`
 (`systems/`, the Stronghold's scheduled heavy horde, DISC-10) and the corner-camp boss reward wave
 (`match/`, doc 12 §7), which 02 §2 allows to import only `state/`, `config/` and `utils/`; a `match/` caller receives its
 weights from the composition root (`Simulation`), never by importing `content/`.

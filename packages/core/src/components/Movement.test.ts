@@ -100,6 +100,10 @@ describe('Movement', () => {
 
     expect(movement.velocity).toBe(velocity);
   });
+  it('keeps the movement strategy its definition selects', () => {
+    expect(new Movement(STATS, 'lane-follow').strategyId).toBe('lane-follow');
+    expect(new Movement(STATS).strategyId).toBeUndefined();
+  });
 
   it('caps the speed by speedScale, and holds still at 0 without dropping the heading', () => {
     const movement = new Movement(STATS);
