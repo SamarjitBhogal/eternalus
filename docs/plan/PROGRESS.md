@@ -2438,3 +2438,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 159ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (fix, hordes leave the Stronghold) — phase/2-sprint-2-work — SamarjitBhogal + Claude Code
+
+- What was done: lane minions never left their base on the generated map. Hordes spawn at the
+  Stronghold's centre, inside its blocking footprint (40 m), and `LaneFollowMovementStrategy`
+  held any mob whose 6 m look-ahead hit blocked ground, so every one stood still. A mob on
+  unwalkable ground now skips the blocked-ground checks and walks straight to its slot
+  (`FlowQuery.isWalkableAt`, `FlowField`). Once out, mobs pressed against the footprint's edge
+  deadlocked: separation pushed each heading into the wall and all held. Where separation would
+  push a mob onto blocked ground it now keeps its own heading. Doc 18 §5.2 updated. Regression
+  tests (two strategy tests, one generated-map match test) fail on the old code.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  790 passed (790)"; client "Tests 419 passed (419)"; "✓ built in 169ms"; "Documentation check
+  passed."
+- Next step: human review; commit on a `fix/` branch when asked.

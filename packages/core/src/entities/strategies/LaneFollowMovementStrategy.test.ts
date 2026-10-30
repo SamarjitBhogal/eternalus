@@ -80,10 +80,12 @@ describe('LaneFollowMovementStrategy', () => {
         out.y = 1;
         return true;
       },
+      isWalkableAt: () => true,
     });
     const noField = {
       isLineClear: () => false,
       directionAt: () => false,
+      isWalkableAt: () => true,
     };
 
     const routed = { ...contextOf([[10, 10]], { x: 40, y: 10 }), flow: blockedAhead(false) };
@@ -105,6 +107,7 @@ describe('LaneFollowMovementStrategy', () => {
         out.y = 1;
         return true;
       },
+      isWalkableAt: () => true,
     };
     const clearAhead = { ...towardLane, isLineClear: () => true };
     const chase = { ...contextOf([[10, 10]], { x: 40, y: 10 }), isChasing: true };
@@ -119,6 +122,7 @@ describe('LaneFollowMovementStrategy', () => {
     const eastBlocked = {
       isLineClear: (fromX: number, _y: number, toX: number) => toX <= fromX,
       directionAt: () => false,
+      isWalkableAt: () => true,
     };
     const behind = {
       ...contextOf(
@@ -163,6 +167,7 @@ describe('LaneFollowMovementStrategy', () => {
         return span === 0 || fromX + ((toX - fromX) * reach) / span < 50;
       },
       directionAt: () => false,
+      isWalkableAt: () => true,
     };
     const chase = {
       ...contextOf([[46, 10]], { x: 49, y: 10 }),
@@ -172,5 +177,42 @@ describe('LaneFollowMovementStrategy', () => {
     };
 
     expect(strategy.desiredVelocity(0, chase)).toEqual({ x: 1, y: 0 });
+  });
+
+  it('walks a mob standing on blocked ground straight out, such as one spawned in its Stronghold', () => {
+    // Everything within x < 50 is blocked, so every probe from the mob at x 10 is blocked too.
+    const insideFootprint = {
+      isLineClear: () => false,
+      directionAt: () => false,
+      isWalkableAt: (x: number) => x >= 50,
+    };
+    const march = { ...contextOf([[10, 10]], { x: 60, y: 10 }), flow: insideFootprint };
+    const outside = { ...contextOf([[55, 10]], { x: 60, y: 10 }), flow: insideFootprint };
+
+    expect(strategy.desiredVelocity(0, march)).toEqual({ x: 1, y: 0 });
+    // Once out, the blocked-ground checks apply again.
+    expect(strategy.desiredVelocity(0, outside)).toEqual({ x: 0, y: 0 });
+  });
+
+  it('keeps its own heading where separation would push it onto blocked ground', () => {
+    // Ground north of y 10 is blocked. Heading east along the wall, a neighbour to the south
+    // pushes the mob north into it: it drops the push and keeps walking east, not standing still.
+    const northBlocked = {
+      isLineClear: (_x: number, fromY: number, _tx: number, toY: number) => toY >= fromY,
+      directionAt: () => false,
+      isWalkableAt: () => true,
+    };
+    const pressed = {
+      ...contextOf(
+        [
+          [10, 10],
+          [10, 10.5],
+        ],
+        { x: 40, y: 10 },
+      ),
+      flow: northBlocked,
+    };
+
+    expect(strategy.desiredVelocity(0, pressed)).toEqual({ x: 1, y: 0 });
   });
 });
