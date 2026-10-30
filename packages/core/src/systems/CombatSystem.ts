@@ -13,7 +13,9 @@ import type { System, SystemContext } from './System.types';
  * Lands the attacks of every unit with a target (architecture 05 §10): when the target is in reach
  * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A dead
  * or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
- * (`attackSpeed`). Getting into reach is the controller's job (moving), not this system's.
+ * (`attackSpeed`). While the match holds units idle (`state.match.isIdleHeld`, the countdown) no
+ * attack lands and targets are kept for after. Getting into reach is the controller's job
+ * (moving), not this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
@@ -29,6 +31,9 @@ export class CombatSystem implements System {
 
   /** Runs each attacker in store order. */
   public update({ state }: SystemContext): void {
+    if (state.match.isIdleHeld) {
+      return;
+    }
     state.entities.forEach((attacker) => {
       const combat = attacker.findComponent(Combat);
       if (combat?.targetId == null) {

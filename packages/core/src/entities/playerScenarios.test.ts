@@ -240,7 +240,8 @@ describe('Player scenarios', () => {
   describe('playing a match through the simulation', () => {
     const newMatch = (seed = 1): Simulation =>
       new Simulation({
-        config: createDefaultGameConfig(),
+        // No countdown: the countdown holds all movement (match/phases/CountdownPhase.test.ts).
+        config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
         seed,
         logger: new NullLogger(),
         debug: TEST_DEBUG_CONFIG,

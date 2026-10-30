@@ -62,6 +62,23 @@ describe('CombatSystem', () => {
     expect(dummy.getComponent(Health).current).toBe(dummy.getComponent(Health).max);
   });
 
+  it('lands no attack while the match holds units idle, and keeps the target for after', () => {
+    const { state, warrior, spawn, context, attack } = setUp();
+    const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');
+    const health = dummy.getComponent(Health);
+    const system = new CombatSystem(new DamagePipeline());
+    attack(dummy);
+    state.match.isIdleHeld = true;
+
+    system.update(context);
+    expect(health.current).toBe(health.max);
+    expect(warrior.getComponent(Combat).targetId).toBe(dummy.id);
+
+    state.match.isIdleHeld = false;
+    system.update(context);
+    expect(health.current).toBe(health.max - warrior.getComponent(Combat).attack.damage);
+  });
+
   it('drops a target once it is dead', () => {
     const { warrior, spawn, context, attack } = setUp();
     const dummy = spawn('light-mob', 'training-dummy', 1, 'dark');

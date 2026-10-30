@@ -178,7 +178,8 @@ describe('Simulation', () => {
 
   it('runs the default pipeline when no systems are given: move commands move units', () => {
     const sim = new Simulation({
-      config: createDefaultGameConfig(),
+      // No countdown: the countdown holds all movement (match/phases/CountdownPhase.test.ts).
+      config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
       seed: 1,
       logger: new NullLogger(),
       debug: TEST_DEBUG_CONFIG,
@@ -197,6 +198,17 @@ describe('Simulation', () => {
     sim.step();
 
     expect(sim.snapshot().entities[0]?.transform?.x).toBeGreaterThan(0);
+  });
+
+  it('lists no upcoming timeline marks when custom systems run, since no director fires them', () => {
+    const withDirector = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+    });
+
+    expect(simulation().snapshot().match.upcoming).toEqual([]);
+    expect(withDirector.snapshot().match.upcoming).not.toEqual([]);
   });
 
   it('builds entities from the content it is given', () => {

@@ -13,7 +13,8 @@ const ESCORT = 4;
 /** A Warrior and four light minions on its team; the Warrior walks east for `walkTicks`. */
 const run = (walkTicks: number, restTicks: number) => {
   const sim = new Simulation({
-    config: createDefaultGameConfig(),
+    // No countdown: the countdown holds all movement (match/phases/CountdownPhase.test.ts).
+    config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
     seed: 7,
     logger: new NullLogger(),
   });

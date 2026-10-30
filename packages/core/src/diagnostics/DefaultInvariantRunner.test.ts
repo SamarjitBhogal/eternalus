@@ -5,6 +5,7 @@ import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { TEST_DEBUG_CONFIG } from './InvariantRunner.constants';
 
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { GameState } from '../state/GameState';
 import { DefaultInvariantRunner } from './DefaultInvariantRunner';
 import { InvariantRunner } from './InvariantRunner';
@@ -16,6 +17,8 @@ describe('DefaultInvariantRunner', () => {
       TEST_DEBUG_CONFIG,
       new MemoryLogger(),
       loadLevelCurves(),
+      MATCH_PHASES,
+      TERMINAL_MATCH_PHASES,
     );
 
     expect(runner).toBeInstanceOf(InvariantRunner);

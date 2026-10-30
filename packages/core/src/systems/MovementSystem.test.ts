@@ -103,4 +103,21 @@ describe('MovementSystem', () => {
 
     expect(run()).toEqual(run());
   });
+  it('holds every entity while the match holds units idle, and lets the kept heading go after', () => {
+    const { context, dummy } = setUp();
+    const movement = dummy.getComponent(Movement);
+    const transform = dummy.getComponent(Transform);
+    movement.steer({ x: 1, y: 0 });
+    context.state.match.isIdleHeld = true;
+    const system = new MovementSystem();
+
+    system.update(context);
+    system.update(context);
+    expect(movement.speed).toBe(0);
+    expect(transform.position).toEqual({ x: 0, y: 0 });
+
+    context.state.match.isIdleHeld = false;
+    system.update(context);
+    expect(transform.position.x).toBeGreaterThan(0);
+  });
 });

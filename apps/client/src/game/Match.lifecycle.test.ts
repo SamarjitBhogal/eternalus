@@ -1,6 +1,7 @@
 import {
   createDefaultGameConfig,
   type InputIntent,
+  type Logger,
   MemoryLogger,
   NullLogger,
   Simulation,
@@ -17,6 +18,7 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.co
 import type { PlayerChoice, PreparedWorld } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
+import { seatedConfig } from './seatedConfig';
 
 const CONFIG = createDefaultGameConfig();
 const TICK_MS = MS_PER_SECOND / CONFIG.tickRate;
@@ -37,11 +39,19 @@ function deepFreeze<T>(value: T): T {
  * What a test match on `world` is built from. Its `match-clock` publishes go to `clocks`, `on`
  * watches its simulation subscriptions and `unsubscribes` counts the ones it dropped.
  */
-function matchDeps(world: PreparedWorld = prepareMatchWorld(CONFIG, 1)) {
+function matchDeps(
+  world: PreparedWorld = prepareMatchWorld(CONFIG, 1),
+  player: PlayerChoice = PLAYER,
+  simulationLogger: Logger = new NullLogger(),
+) {
   const bus = new TypedEventBus<BridgeEventMap>();
   const clocks: MatchClock[] = [];
   bus.on('match-clock', (clock) => clocks.push(clock));
-  const simulation = new Simulation({ config: CONFIG, seed: 1, logger: new NullLogger() });
+  const simulation = new Simulation({
+    config: seatedConfig(CONFIG, world.map, player),
+    seed: 1,
+    logger: simulationLogger,
+  });
   const unsubscribes = { count: 0 };
   const subscribe = simulation.on.bind(simulation);
   const on = vi.spyOn(simulation, 'on').mockImplementation((type, handler) => {
@@ -59,7 +69,7 @@ function matchDeps(world: PreparedWorld = prepareMatchWorld(CONFIG, 1)) {
     renderer: new RecordingRenderer(),
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: { read: () => STILL },
-    player: PLAYER,
+    player,
     logger: new NullLogger(),
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
   };
@@ -68,10 +78,17 @@ function matchDeps(world: PreparedWorld = prepareMatchWorld(CONFIG, 1)) {
 
 /** A match on `world`, sized to a 1280 × 720 canvas. */
 function build(world?: PreparedWorld) {
-  const { deps, clocks, unsubscribes } = matchDeps(world);
+  const { deps, clocks, unsubscribes, on } = matchDeps(world);
   const match = new Match(deps);
   match.resize(1280, 720, 1);
-  return { match, simulation: deps.simulation, scheduler: deps.scheduler, clocks, unsubscribes };
+  return {
+    match,
+    simulation: deps.simulation,
+    scheduler: deps.scheduler,
+    clocks,
+    unsubscribes,
+    on,
+  };
 }
 
 describe('Match lifecycle', () => {
@@ -90,26 +107,28 @@ describe('Match lifecycle', () => {
     expect(on).not.toHaveBeenCalled();
   });
 
-  it('logs ERROR client.match naming the class id and the reason when the player cannot spawn', () => {
+  it('logs ERROR core.match naming the class id and the reason when the seat cannot spawn, and has no player', () => {
     const logger = new MemoryLogger();
     const stale: PlayerChoice = { legend: 'stale-class', team: 'dark' };
-    const match = new Match({ ...matchDeps().deps, logger, player: stale });
+    const world = prepareMatchWorld(CONFIG, 1);
+    const { deps } = matchDeps(world, stale, logger);
+    const match = new Match(deps);
 
     match.tick();
 
     const errors = logger.records.filter((record) => record.severityText === 'ERROR');
     expect(errors.map(({ scope, attributes }) => [scope, attributes])).toEqual([
-      ['client.match', { classId: 'stale-class', reason: 'unknown-kind' }],
+      ['core.match', { definitionId: 'stale-class', reason: 'unknown-kind' }],
     ]);
     expect(errors[0]?.body).toContain('"stale-class"');
     expect(errors[0]?.body).toContain('unknown-kind');
     expect(match.playerEntityId).toBeNull();
   });
 
-  it('logs no error when the player spawns, nor for a rejected command that is not its spawn', () => {
+  it('logs no error when the seat spawns, nor for a rejected command that is not the seat', () => {
     const logger = new MemoryLogger();
-    const { deps } = matchDeps();
-    const match = new Match({ ...deps, logger });
+    const { deps } = matchDeps(undefined, PLAYER, logger);
+    const match = new Match(deps);
     deps.simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: 'stale-class',
@@ -199,7 +218,7 @@ describe('Match lifecycle', () => {
   });
 
   it('stops the loop and its subscriptions on destroy: 0 scheduled frames, 0 listeners', () => {
-    const { match, scheduler, simulation, unsubscribes } = build();
+    const { match, scheduler, simulation, unsubscribes, on } = build();
     match.start();
 
     match.destroy();
@@ -207,7 +226,8 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    // Both of its subscriptions: the player's spawn and its rejection.
-    expect(unsubscribes.count).toBe(2);
+    // The match subscribes to nothing (core spawns the player from the seat), so nothing to drop.
+    expect(on).not.toHaveBeenCalled();
+    expect(unsubscribes.count).toBe(0);
   });
 });

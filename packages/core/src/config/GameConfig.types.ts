@@ -1,3 +1,7 @@
+import type { PlayableTeam } from '../teams/teams.types';
+import type { Vec2 } from '../utils/geometry.types';
+import type { MatchTimelineEntry } from './MatchTimelineEntry.types';
+
 /**
  * The world part of `GameConfig`: counts and sizes that shape the generated map (ADR 0009).
  * Field names are a contract with `map/` (integration contract §2.2); never rename them.
@@ -29,7 +33,21 @@ export type MatchConfig = {
     readonly heavy: number;
   };
   readonly initialHordesPerTeam: number;
+  /** The planned match length, the denominator of every timeline fraction; not a cap (no max). */
   readonly plannedMatchSeconds: number;
+  /** The timed events of the match (architecture 12 §3), in tick order. */
+  readonly timeline: readonly MatchTimelineEntry[];
+  /**
+   * The team the match is played for (architecture 12 §4: chosen at match creation); in sim mode,
+   * the spectated team. A verdict for it enters `victory`, any other verdict `defeat`.
+   */
+  readonly playerTeam: PlayableTeam;
+  /**
+   * The human's seat (plan A19): the Legend the human plays, spawned for `playerTeam` at `at` when
+   * the match is built; `null` in sim mode (no human). `definitionId` is the Legend definition, named
+   * as in a roster slot. Until the map option gives core the map, `at` is the client's spawn point.
+   */
+  readonly seat: { readonly definitionId: string; readonly at: Vec2 } | null;
 };
 
 /** Per-team caps the developer menu and spawners must respect. */
@@ -50,7 +68,14 @@ export type GameConfig = {
   readonly limits: LimitsConfig;
 };
 
-/** `T` with every field optional at every depth: the overrides `createDefaultGameConfig` takes. */
+/**
+ * `T` with every field optional at every depth: the overrides `createDefaultGameConfig` takes. An
+ * array is replaced whole, never merged, so it keeps its element type.
+ */
 export type DeepPartial<T> = {
-  readonly [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
+  readonly [K in keyof T]?: T[K] extends readonly unknown[]
+    ? T[K]
+    : T[K] extends object
+      ? DeepPartial<T[K]>
+      : T[K];
 };

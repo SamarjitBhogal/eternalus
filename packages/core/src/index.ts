@@ -21,7 +21,15 @@ export type {
   MapConfig,
   MatchConfig,
 } from './config/GameConfig.types';
+export type { MatchPhase } from './config/matchPhases';
+export type {
+  MatchTimelineEntry,
+  TimelineAction,
+  TimelineActionKind,
+  TimelineMark,
+} from './config/MatchTimelineEntry.types';
 export { validateGameConfig } from './config/validateGameConfig';
+export type { VictoryConditionId } from './config/VictoryConditionId.types';
 export type {
   ClassDetailNames,
   LegendDefinition,
@@ -78,8 +86,9 @@ export type {
   GameEventType,
   Unsubscribe,
 } from './state/GameEvents.types';
-export type { MatchPhase } from './state/GameState.types';
-export type { EntitySnapshot, Snapshot } from './state/Snapshot.types';
+export type { MatchResult, Verdict } from './state/MatchResult.types';
+export type { ScheduledMark } from './state/MatchState.types';
+export type { EntitySnapshot, MatchSnapshot, Snapshot } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
 export type { PlayableTeam, Team } from './teams/teams.types';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';

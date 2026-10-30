@@ -15,10 +15,12 @@ import type { WorldRect } from './engine/render/Renderer.types';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
-import type { IntentSource } from './Match.types';
+import type { IntentSource, PlayerChoice } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
+import { seatedConfig } from './seatedConfig';
 
+const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 const SCREEN = { width: 1280, height: 720 };
 
 /** An intent source the test steers by hand. */
@@ -38,14 +40,18 @@ const setUp = () => {
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const match = new Match({
-    simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
+    simulation: new Simulation({
+      config: seatedConfig(config, world.map, PLAYER),
+      seed: 1,
+      logger: new NullLogger(),
+    }),
     world,
     tickRate: config.tickRate,
     scheduler: new FakeFrameScheduler(),
     renderer,
     camera,
     input,
-    player: { legend: 'warrior', team: 'light' },
+    player: PLAYER,
     logger: new NullLogger(),
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),

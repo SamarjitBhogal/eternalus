@@ -1,8 +1,9 @@
 import type { ShieldBar } from '../components/Health.types';
+import type { MatchPhase } from '../config/matchPhases';
 import type { Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { EntityId, RemovalCause } from './EntityStore.types';
-import type { MatchPhase } from './GameState.types';
+import type { MatchResult } from './MatchResult.types';
 
 /**
  * Who or what dealt damage (architecture 05 §9). Every hit names one, so every death has a killer.
@@ -76,6 +77,8 @@ export type GameEventMap = {
     readonly to: Team;
   };
   readonly 'phase-changed': { readonly from: MatchPhase; readonly to: MatchPhase };
+  /** Once per match, when a verdict ends it; `result` is the one stored in `state.match.result`. */
+  readonly 'match-ended': { readonly result: MatchResult };
   /** `slot` is an `AbilitySlot` (typed loosely: `state/` sits below `commands/`). */
   readonly 'ability-cast': {
     readonly casterId: EntityId;

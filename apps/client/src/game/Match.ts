@@ -1,11 +1,4 @@
-import {
-  type Command,
-  type EntityId,
-  makeLogRecord,
-  type MapDefinition,
-  type Snapshot,
-  type Vec2,
-} from '@eternalus/core';
+import { type EntityId, makeLogRecord, type Snapshot, type Vec2 } from '@eternalus/core';
 
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
@@ -19,6 +12,7 @@ import {
 import type { MatchDeps } from './Match.types';
 import { MatchBridge } from './MatchBridge';
 import { MatchCamera } from './MatchCamera';
+import { strongholdOf } from './seatedConfig';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { MapView } from './views/MapView';
@@ -31,8 +25,8 @@ import { SceneView } from './views/SceneView';
  * loop, the renderer, the camera, the player's intent and the views, and owns their lifetime.
  * Each tick turns the player's intent into commands, steps the simulation and keeps the last two
  * snapshots; each frame follows the player with the camera and draws the scene and the minimap
- * (inside the HUD ring). The player's Legend is spawned at its team's stronghold when the match is
- * created. Which part of the world is shown (the following camera, or the free view that
+ * (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's stronghold
+ * by core from the config's seat. Which part of the world is shown (the following camera, or the free view that
  * dragging, the overview and the cathedral interior switch to) is `MatchCamera`'s. The world
  * (map, scenery, interior) arrives prepared (06 §1); its `MatchBridge` publishes to the UI.
  */
@@ -47,21 +41,19 @@ export class Match implements LoopTarget {
 
   private readonly camera: MatchCamera;
 
-  private readonly stopListening: () => void;
-
   private readonly bridge: MatchBridge;
 
   private previous: Snapshot | null = null;
 
   private current: Snapshot;
 
-  private playerId: EntityId | null = null;
+  private readonly playerId: EntityId | null;
 
   private lastMove: Vec2 = { x: 0, y: 0 };
 
   /**
-   * Creates the match, queues the player's spawn (`spawnPlayer`) and points the camera at the
-   * spawn point.
+   * Creates the match, takes the player's Legend from the simulation's snapshot (core spawned it
+   * from the config's seat) and points the camera at the spawn point.
    *
    * @throws Error when the map has no stronghold for the player's team.
    */
@@ -69,7 +61,7 @@ export class Match implements LoopTarget {
     const { simulation, world, tickRate, scheduler, camera, player, logger, bridge } = deps;
     const { map, scenery, interior } = world;
     // Find the spawn point first: if the map has none, nothing has been subscribed yet.
-    const spawnPoint = Match.strongholdOf(map, player.team);
+    const spawnPoint = strongholdOf(map, player.team);
     this.entities = new EntityLayer(
       createDefaultViewRegistry((kind) => {
         logger.log(
@@ -106,14 +98,14 @@ export class Match implements LoopTarget {
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
     this.bridge = new MatchBridge({ ...bridge, tickRate, map });
-    this.stopListening = this.spawnPlayer(spawnPoint);
     // PROTOTYPE(PROTO-01) TEMPORARY: demo escort; delete with `spawnEscort`.
     Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
+    this.playerId = this.current.match.humanLegendId;
     camera.lookAt(spawnPoint);
   }
 
-  /** The id of the player's Legend, once it has spawned (after the first tick). */
+  /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
   public get playerEntityId(): EntityId | null {
     return this.playerId;
   }
@@ -224,50 +216,11 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Stops the loop and the event subscription. The renderer and camera are injected, so their
+   * Stops the loop. The renderer and camera are injected, so their
    * owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
     this.loop.destroy();
-    this.stopListening();
-  }
-
-  /**
-   * Queues the player's spawn at `at` and watches for it: the spawned Legend becomes
-   * `playerEntityId`; a rejected spawn logs ERROR `client.match` naming the class id and the
-   * reason (the match then runs with no player Legend). Returns the unsubscribe.
-   */
-  private spawnPlayer(at: Vec2): () => void {
-    const { simulation, player, logger } = this.deps;
-    const spawn: Command<'dev-spawn'> = {
-      type: 'dev-spawn',
-      kind: player.legend,
-      definitionId: player.legend,
-      team: player.team,
-      at,
-      count: 1,
-    };
-    const stopSpawned = simulation.on('entity-spawned', ({ entityId, kind, team }) => {
-      if (this.playerId === null && kind === player.legend && team === player.team) {
-        this.playerId = entityId;
-      }
-    });
-    const stopRejected = simulation.on('command-rejected', ({ command, reason }) => {
-      if (command !== spawn) return;
-      logger.log(
-        makeLogRecord(
-          'ERROR',
-          'client.match',
-          `The player's Legend "${player.legend}" did not spawn: ${reason}.`,
-          { attributes: { classId: player.legend, reason } },
-        ),
-      );
-    });
-    simulation.enqueueCommand(spawn);
-    return () => {
-      stopSpawned();
-      stopRejected();
-    };
   }
 
   private applyIntent(): void {
@@ -321,15 +274,5 @@ export class Match implements LoopTarget {
         count: 1,
       });
     }
-  }
-
-  private static strongholdOf(map: MapDefinition, team: MatchDeps['player']['team']): Vec2 {
-    const stronghold = map.features.find(
-      (feature) => feature.kind === 'stronghold' && feature.team === team,
-    );
-    if (stronghold === undefined) {
-      throw new Error(`Map "${map.id}" has no ${team} stronghold to spawn the player at.`);
-    }
-    return stronghold.position;
   }
 }

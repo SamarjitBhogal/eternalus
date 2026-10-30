@@ -15,8 +15,11 @@ import { DeviceIntentSource } from './DeviceIntentSource';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
+import type { PlayerChoice } from './Match.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
+import { seatedConfig } from './seatedConfig';
 
+const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 const IDENTITY: Projection = { screenToWorld: (point) => point };
 
 /** A device that always holds the same keys and counts its releases. */
@@ -85,17 +88,23 @@ describe('DeviceIntentSource', () => {
 
 describe('Player scenario: walking with the keyboard', () => {
   const startMatch = () => {
-    const config = createDefaultGameConfig();
+    // No countdown: core's countdown holds all movement, and this test walks from the start.
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
     const { target, input } = setUp();
+    const world = prepareMatchWorld(config, 1);
     const match = new Match({
-      simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
-      world: prepareMatchWorld(config, 1),
+      simulation: new Simulation({
+        config: seatedConfig(config, world.map, PLAYER),
+        seed: 1,
+        logger: new NullLogger(),
+      }),
+      world,
       tickRate: config.tickRate,
       scheduler: new FakeFrameScheduler(),
       renderer: new RecordingRenderer(),
       camera: new Camera({ x: 0, y: 0 }, 64, 36),
       input,
-      player: { legend: 'warrior', team: 'light' },
+      player: PLAYER,
       logger: new MemoryLogger(),
       bridge: {
         bus: new TypedEventBus<BridgeEventMap>(),

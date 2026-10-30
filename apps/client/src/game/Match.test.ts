@@ -17,12 +17,14 @@ import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, PROTOTYPE_ESCORT } from './Match.constants';
-import type { IntentSource } from './Match.types';
+import type { IntentSource, PlayerChoice } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
+import { seatedConfig } from './seatedConfig';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
+const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 
 /**
  * The centre of the HUD minimap ring on the tests' 1280 × 720 canvas (device pixels), from the
@@ -102,11 +104,12 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
 })();
 
 const setUp = (content?: Content) => {
-  const config = createDefaultGameConfig();
+  // No countdown: core's countdown holds all movement, and these tests walk from the start.
+  const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
   const world = prepareMatchWorld(config, SEED);
   const generated = world.map;
   const simulation = new Simulation({
-    config,
+    config: seatedConfig(config, world.map, PLAYER),
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined ? {} : { content }),
@@ -124,7 +127,7 @@ const setUp = (content?: Content) => {
     renderer,
     camera,
     input,
-    player: { legend: 'warrior', team: 'light' },
+    player: PLAYER,
     logger,
     // A bus nobody listens to, at the shipped cadence.
     bridge: {
@@ -145,11 +148,9 @@ const playerX = (match: Match): number =>
   Number.NaN;
 
 describe('Match', () => {
-  it("spawns the player's Warrior at the Light stronghold on the first tick", () => {
+  it("has the player's Warrior at the Light stronghold from construction, before any tick", () => {
     const { match, lightStronghold } = setUp();
-    expect(match.playerEntityId).toBeNull();
-
-    match.tick();
+    expect(match.playerEntityId).not.toBeNull();
 
     const player = match.snapshot.entities.find((entity) => entity.id === match.playerEntityId);
     expect(player).toMatchObject({ kind: 'warrior', family: 'legend', team: 'light' });

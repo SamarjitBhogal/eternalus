@@ -15,9 +15,9 @@ import type { GameState } from './GameState';
 /**
  * Fingerprints a match state as a 32-bit FNV-1a hash of a canonical serialisation
  * (architecture 03 §9): tick, phase and RNG state, then every entity in store order with its
- * component fields in a fixed order. It covers state the client never sees (velocity), so two
- * runs that diverge anywhere show it at the next hash. A new component with simulation state adds
- * its fields to `fieldsOf`.
+ * component fields in a fixed order, then the rest of the match state. It covers state the client
+ * never sees (velocity), so two runs that diverge anywhere show it at the next hash. A new
+ * component with simulation state adds its fields to `fieldsOf`.
  */
 export class StateHasher {
   /** The hash of `state` right now. */
@@ -26,7 +26,17 @@ export class StateHasher {
     state.entities.forEach((entity) => {
       entities.push(StateHasher.fieldsOf(entity));
     });
-    return fnv1a(JSON.stringify([state.tick, state.phase, state.rng.getState(), entities]));
+    const { match } = state;
+    const fields: unknown[] = [state.tick, match.phase, state.rng.getState(), entities];
+    // Appended only once a field leaves its initial value (0 or false), so a match no director
+    // runs hashes exactly as before (recorded replay checkpoints stay valid). One list feeds both
+    // the check and the hash, so a new field cannot be left out of the check. The schedule comes
+    // from the config, which a replay carries, so it is not hashed.
+    const matchFields = [match.phaseEnteredTick, match.timelineCursor, match.isIdleHeld];
+    if (matchFields.some((value) => value !== 0 && value !== false)) {
+      fields.push(['match', ...matchFields]);
+    }
+    return fnv1a(JSON.stringify(fields));
   }
 
   private static fieldsOf(entity: Entity): unknown[] {

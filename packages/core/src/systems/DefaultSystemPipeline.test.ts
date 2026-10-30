@@ -7,6 +7,7 @@ import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
@@ -20,16 +21,25 @@ import { SystemPipeline } from './SystemPipeline';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const PROGRESSION = { units: UNIT_DEFINITIONS, curves: loadLevelCurves(), xpSources: XP_SOURCES };
+/** A director that leaves the match as it is, for the tests about the other systems. */
+const IDLE_DIRECTOR = { update: () => undefined };
 
 describe('DefaultSystemPipeline', () => {
   it('moves, then removes the dead, then checks invariants, in that order', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
-    const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
+    const pipeline = new DefaultSystemPipeline({
+      invariants: new DefaultInvariantRunner(
+        TEST_DEBUG_CONFIG,
+        logger,
+        PROGRESSION.curves,
+        MATCH_PHASES,
+        TERMINAL_MATCH_PHASES,
+      ),
       state,
-      PROGRESSION,
-    );
+      progression: PROGRESSION,
+      director: IDLE_DIRECTOR,
+    });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const runner = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
@@ -59,11 +69,18 @@ describe('DefaultSystemPipeline', () => {
   it('lands attacks after movement and before death, so a unit killed this tick leaves this tick', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
-    const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
+    const pipeline = new DefaultSystemPipeline({
+      invariants: new DefaultInvariantRunner(
+        TEST_DEBUG_CONFIG,
+        logger,
+        PROGRESSION.curves,
+        MATCH_PHASES,
+        TERMINAL_MATCH_PHASES,
+      ),
       state,
-      PROGRESSION,
-    );
+      progression: PROGRESSION,
+      director: IDLE_DIRECTOR,
+    });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
@@ -88,11 +105,18 @@ describe('DefaultSystemPipeline', () => {
   it('pays a combat kill in the same tick, before the dead are removed', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
-    const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
+    const pipeline = new DefaultSystemPipeline({
+      invariants: new DefaultInvariantRunner(
+        TEST_DEBUG_CONFIG,
+        logger,
+        PROGRESSION.curves,
+        MATCH_PHASES,
+        TERMINAL_MATCH_PHASES,
+      ),
       state,
-      PROGRESSION,
-    );
+      progression: PROGRESSION,
+      director: IDLE_DIRECTOR,
+    });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
@@ -118,11 +142,18 @@ describe('DefaultSystemPipeline', () => {
   it('pays a killer that also died this tick, so progression runs before death', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
-    const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
+    const pipeline = new DefaultSystemPipeline({
+      invariants: new DefaultInvariantRunner(
+        TEST_DEBUG_CONFIG,
+        logger,
+        PROGRESSION.curves,
+        MATCH_PHASES,
+        TERMINAL_MATCH_PHASES,
+      ),
       state,
-      PROGRESSION,
-    );
+      progression: PROGRESSION,
+      director: IDLE_DIRECTOR,
+    });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
     const warrior = factory.create('warrior', 'warrior', {
       position: { x: 0, y: 0 },
@@ -157,5 +188,44 @@ describe('DefaultSystemPipeline', () => {
     ]);
     expect(state.entities.has(warrior.id)).toBe(false);
     expect(logger.records).toEqual([]);
+  });
+  it('runs the match director after death and before the invariants', () => {
+    const logger = new MemoryLogger();
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const victim = factory.create('light-mob', 'training-dummy', {
+      position: { x: 5, y: 5 },
+      team: 'dark',
+    });
+    state.entities.add(victim);
+    new DamagePipeline().apply(state, victim.id, 1000, {
+      attackerId: null,
+      kind: 'environment',
+      definitionId: 'test',
+    });
+    const seenByDirector: boolean[] = [];
+    const pipeline = new DefaultSystemPipeline({
+      invariants: new DefaultInvariantRunner(
+        TEST_DEBUG_CONFIG,
+        logger,
+        PROGRESSION.curves,
+        MATCH_PHASES,
+        TERMINAL_MATCH_PHASES,
+      ),
+      state,
+      progression: PROGRESSION,
+      director: {
+        update: (directed) => {
+          seenByDirector.push(directed.entities.has(victim.id));
+          // Not a forward move: the invariants, if they run after, throw on it this tick.
+          directed.setPhase('countdown');
+        },
+      },
+    });
+
+    expect(() => {
+      pipeline.run({ state, logger });
+    }).toThrow('phase-monotonic');
+    expect(seenByDirector).toEqual([false]);
   });
 });

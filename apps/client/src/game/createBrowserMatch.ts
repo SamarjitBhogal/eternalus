@@ -19,6 +19,7 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Matc
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
+import { seatedConfig } from './seatedConfig';
 import type { SettingsController } from './settings/SettingsController';
 import type { MatchFactory } from './SessionController.types';
 
@@ -59,6 +60,8 @@ function createMatchLogger(deps: BrowserMatchDeps): SinkLogger {
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
     const { window, gameConfig, settings } = deps;
+    // The seat needs the team's stronghold: a map without one fails here, before anything is built.
+    const config = seatedConfig(gameConfig, request.world.map, request.player);
     const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
@@ -73,7 +76,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config: gameConfig, seed: request.setup.seed, logger }),
+        simulation: new Simulation({ config, seed: request.setup.seed, logger }),
         world: request.world,
         tickRate: gameConfig.tickRate,
         scheduler: new RafFrameScheduler(window),

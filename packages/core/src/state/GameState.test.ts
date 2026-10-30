@@ -37,7 +37,7 @@ describe('GameState', () => {
   it('starts at tick 0 in the countdown and counts ticks', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     expect(state.tick).toBe(0);
-    expect(state.phase).toBe('countdown');
+    expect(state.match.phase).toBe('countdown');
     state.advanceTick();
     state.advanceTick();
     expect(state.tick).toBe(2);
@@ -62,7 +62,7 @@ describe('GameState', () => {
     state.advanceTick();
     expect(state.snapshot()).toEqual({
       tick: 1,
-      phase: 'countdown',
+      match: { phase: 'countdown', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
       entities: [
         {
           id: 'entity-1',
@@ -137,5 +137,61 @@ describe('GameState', () => {
     expect(state.xpAwardsThisTick()).toEqual([award]);
     state.advanceTick();
     expect(state.xpAwardsThisTick()).toEqual([]);
+  });
+  describe('match state', () => {
+    const SCHEDULE = [
+      { entryId: 'countdown-over', tick: 60 },
+      { entryId: 'mid-game', tick: 900 },
+    ];
+
+    it('starts in the countdown with nothing fired and nothing held', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, SCHEDULE);
+      expect(state.match).toEqual({
+        phase: 'countdown',
+        phaseEnteredTick: 0,
+        timelineCursor: 0,
+        schedule: SCHEDULE,
+        isIdleHeld: false,
+        playerTeam: 'light',
+        humanLegendId: null,
+        result: null,
+      });
+      expect(Object.isFrozen(state.match.schedule[0])).toBe(true);
+    });
+
+    it("takes the player team from the config's match section", () => {
+      const config = createDefaultGameConfig({ match: { playerTeam: 'dark' } });
+      expect(new GameState(config, 1).match.playerTeam).toBe('dark');
+    });
+
+    it('setPhase stamps the tick, emits phase-changed and records it for this tick only', () => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      state.advanceTick();
+      state.advanceTick();
+
+      state.setPhase('early-game');
+
+      expect(state.match.phase).toBe('early-game');
+      expect(state.match.phaseEnteredTick).toBe(2);
+      expect(state.events.recentEvents()).toEqual([
+        { tick: 2, type: 'phase-changed', payload: { from: 'countdown', to: 'early-game' } },
+      ]);
+      expect(state.phaseChangesThisTick()).toEqual([{ from: 'countdown', to: 'early-game' }]);
+      state.advanceTick();
+      expect(state.phaseChangesThisTick()).toEqual([]);
+    });
+
+    it('snapshots the phase and the unfired marks, from the timeline cursor on', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, SCHEDULE);
+      state.match.timelineCursor = 1;
+      state.setPhase('early-game');
+
+      expect(state.snapshot().match).toEqual({
+        phase: 'early-game',
+        phaseEnteredTick: 0,
+        upcoming: [{ entryId: 'mid-game', tick: 900 }],
+        humanLegendId: null,
+      });
+    });
   });
 });

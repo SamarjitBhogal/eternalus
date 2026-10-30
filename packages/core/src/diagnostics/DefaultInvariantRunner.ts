@@ -3,7 +3,9 @@ import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInva
 import { LevelMatchesXpInvariant } from './invariants/LevelMatchesXpInvariant';
 import { NoDeathWithoutKillerInvariant } from './invariants/NoDeathWithoutKillerInvariant';
 import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCauseInvariant';
+import { PhaseMonotonicInvariant } from './invariants/PhaseMonotonicInvariant';
 import { StatusStacksWithinMaxInvariant } from './invariants/StatusStacksWithinMaxInvariant';
+import type { MatchPhase } from '../config/matchPhases';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { LevelCurveDefinition } from '../content/progression/progression.types';
 import { InvariantRunner } from './InvariantRunner';
@@ -16,11 +18,16 @@ export class DefaultInvariantRunner extends InvariantRunner {
    * Creates a runner with every built-in invariant.
    *
    * @param curves - The level curves `level-matches-xp` checks against, injected.
+   * @param phaseOrder - The phase order `phase-monotonic` checks against (`MATCH_PHASES`), injected.
+   * @param terminalPhases - The phases `phase-monotonic` lets no move leave
+   *   (`TERMINAL_MATCH_PHASES`), injected.
    */
   public constructor(
     config: DebugConfig,
     logger: Logger,
     curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'get'>,
+    phaseOrder: readonly MatchPhase[],
+    terminalPhases: readonly MatchPhase[],
   ) {
     super(
       [
@@ -30,6 +37,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new FiniteTransformsInvariant(),
         new LevelMatchesXpInvariant(curves),
         new StatusStacksWithinMaxInvariant(),
+        new PhaseMonotonicInvariant(phaseOrder, terminalPhases),
       ],
       config,
       logger,

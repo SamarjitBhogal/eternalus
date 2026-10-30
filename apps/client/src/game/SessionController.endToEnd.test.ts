@@ -22,6 +22,7 @@ import { MatchHost } from './MatchHost';
 import type { MatchViewport } from './MatchViewport.types';
 import type { MatchFactory } from './SessionController.types';
 import { REVEAL_COUNTDOWN_MS } from './session/sessionTiming.constants';
+import { seatedConfig } from './seatedConfig';
 import { testSession } from './testSessionDeps';
 
 const CONFIG = createDefaultGameConfig();
@@ -56,7 +57,7 @@ describe('SessionController with the real match, end to end', () => {
       const document = new FakeBrowserTarget();
       const scheduler = new FakeFrameScheduler();
       const simulation = new Simulation({
-        config: CONFIG,
+        config: seatedConfig(CONFIG, request.world.map, request.player),
         seed: request.setup.seed,
         logger: new NullLogger(),
       });
@@ -172,14 +173,14 @@ describe('SessionController with the real match, end to end', () => {
 
     expect(first?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(first, firstCanvas)).toBe(0);
-    // Each simulation subscription (the player's spawn and its rejection) dropped exactly once.
-    expect(first?.unsubscribed).toEqual([1, 1]);
+    // The match makes no simulation subscription of its own (core spawns the player from the seat).
+    expect(first?.unsubscribed).toEqual([]);
     expect(session.bus.listenerCount()).toBe(busWithOne);
 
     session.intent({ kind: 'leave-match' });
     expect(second?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(second, secondCanvas)).toBe(0);
-    expect(second?.unsubscribed).toEqual([1, 1]);
+    expect(second?.unsubscribed).toEqual([]);
     expect(session.bus.listenerCount()).toBe(busBefore);
   });
 
@@ -187,18 +188,17 @@ describe('SessionController with the real match, end to end', () => {
     const selectable = shippedCatalogue().load().legendClasses.filter(isSelectableClass);
     expect(selectable.length).toBeGreaterThan(0);
     for (const { classId } of selectable) {
-      const simulation = new Simulation({ config: CONFIG, seed: 1, logger: new NullLogger() });
-      const kinds: string[] = [];
-      simulation.on('entity-spawned', ({ kind }) => kinds.push(kind));
-      simulation.enqueueCommand({
-        type: 'dev-spawn',
-        kind: classId,
-        definitionId: classId,
-        team: 'light',
-        at: { x: 10, y: 10 },
-        count: 1,
+      const simulation = new Simulation({
+        config: createDefaultGameConfig({
+          match: { seat: { definitionId: classId, at: { x: 10, y: 10 } } },
+        }),
+        seed: 1,
+        logger: new NullLogger(),
       });
-      simulation.step();
+      const { match, entities } = simulation.snapshot();
+      const kinds = entities
+        .filter((entity) => entity.id === match.humanLegendId)
+        .map((entity) => entity.kind);
       expect(kinds).toEqual([classId]);
     }
   });

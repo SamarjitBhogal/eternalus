@@ -7,13 +7,15 @@ import type { System, SystemContext } from './System.types';
  * Moves every entity that has `Movement` and `Transform`, in store order: one tick of
  * acceleration toward its heading (or of slowing down without one), then the velocity is added
  * to the position. Statuses scale the top speed (`moveSpeed`) or hold the entity in place
- * (`cannot-move`). Allocates nothing per entity (architecture 10 §2).
+ * (`cannot-move`); while the match holds units idle (`state.match.isIdleHeld`, the countdown)
+ * every entity is held the same way. Allocates nothing per entity (architecture 10 §2).
  */
 export class MovementSystem implements System {
   public readonly name = 'movement';
 
   /** Advances every moving entity by one tick. */
   public update({ state }: SystemContext): void {
+    const isHeld = state.match.isIdleHeld;
     state.entities.forEach((entity) => {
       const movement = entity.findComponent(Movement);
       const transform = entity.findComponent(Transform);
@@ -21,11 +23,9 @@ export class MovementSystem implements System {
       if (movement !== undefined && transform !== undefined) {
         const statuses = entity.findComponent(StatusEffects);
         const speedScale =
-          statuses === undefined
-            ? 1
-            : statuses.has('cannot-move')
-              ? 0
-              : statuses.multiplier('moveSpeed');
+          isHeld || statuses?.has('cannot-move') === true
+            ? 0
+            : (statuses?.multiplier('moveSpeed') ?? 1);
         movement.advance(speedScale);
         transform.moveBy(movement.velocity);
       }
