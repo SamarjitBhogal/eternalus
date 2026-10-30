@@ -1,7 +1,9 @@
 /**
  * A fixed set of reusable objects (Object Pool, research §6), so hot paths do not allocate. All
  * `capacity` objects are made up front. `reset` runs on `acquire` (the caller gets a clean
- * object) and on `release` (a pooled object keeps no references alive).
+ * object) and on `release` (a pooled object keeps no references alive). Event payloads are not
+ * pooled (DEC-94): `GameEvents.emit` keeps them in the recent-events buffer and handlers may keep
+ * them after `emit`.
  */
 export class ObjectPool<T extends object> {
   private readonly free: T[] = [];

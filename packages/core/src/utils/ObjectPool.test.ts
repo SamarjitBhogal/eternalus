@@ -41,13 +41,26 @@ describe('ObjectPool', () => {
   });
 
   it('reuses the same objects and allocates none after construction', () => {
-    const pool = hitPool(2);
+    let created = 0;
+    const pool = new ObjectPool<Hit>(
+      2,
+      () => {
+        created += 1;
+        return { amount: 0, target: null };
+      },
+      (hit) => {
+        hit.amount = 0;
+        hit.target = null;
+      },
+    );
+    expect(created).toBe(2);
     const first = pool.acquire();
     const second = pool.acquire();
     if (first === undefined || second === undefined) throw new Error('expected objects');
     pool.release(first);
     pool.release(second);
     const again = [pool.acquire(), pool.acquire()];
+    expect(created).toBe(2);
     // Identity, not shape: a freshly allocated look-alike must fail.
     expect(again.includes(first)).toBe(true);
     expect(again.includes(second)).toBe(true);
