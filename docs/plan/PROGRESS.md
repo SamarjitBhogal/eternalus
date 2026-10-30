@@ -2229,3 +2229,13 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   757 passed (757)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: CodeRabbit re-review; PR ready for review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m3-bot-laners — SamarjitBhogal + Claude Code
+
+- What was done: cleared CodeRabbit's failed "pr-review skill verdict" pre-merge check on PR #46.
+  `PathingSystem.test.ts` again covers a mapped match without a spatial index (dropped when the
+  no-op cases were split). `AiSystem.test.ts` covers `assertRegistered` falling back to the
+  controller id as the profile when a definition names none (pass and throw).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  759 passed (759)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: push, then CodeRabbit re-review and approval.

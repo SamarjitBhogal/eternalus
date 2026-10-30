@@ -224,6 +224,20 @@ describe('PathingSystem', () => {
       expect(heading()).toEqual({ x: 0, y: 0 });
     });
 
+    it('in a mapped match without a spatial index', () => {
+      const { state, heading } = setUpMember('ranks');
+      const unindexed = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+      state.entities.forEach((entity) => {
+        unindexed.entities.add(entity);
+      });
+      const horde = state.hordes.get('horde-1');
+      if (horde !== undefined) {
+        unindexed.hordes.add(horde);
+      }
+      system.update({ state: unindexed, logger });
+      expect(heading()).toEqual({ x: 0, y: 0 });
+    });
+
     it('for a unit outside any horde', () => {
       const { state, heading } = setUpMember('ranks');
       state.hordes.removeMember(state.hordes.get('horde-1')?.memberIds[0] ?? '');
