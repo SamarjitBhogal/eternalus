@@ -1599,3 +1599,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   yield items in reverse insert order.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 222ms"; "Documentation check passed."
 - Next step: merge this into the stacked minion PRs (#39, #40 and up).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M1 (with `phase/2-sprint-2-work`) into PR #39 and answered
+  its CodeRabbit threads. `SpawnSystem` validates the opening and scheduled waves when it is built
+  (unknown mob, wrong weight class → `ContentValidationError`) and keeps the Stronghold as a
+  spawner even without recurring waves, so its opening hordes still spawn. The horde integration
+  test derives its minion count from the config; the plan's M4 blocker is M1; the core
+  `AGENTS.md` import table matches architecture 02 (`ai/` may import `content/` types).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  666 passed (666)"; client "Tests 415 passed (415)"; "✓ built in 175ms"; "Documentation check
+  passed."
+- Next step: merge this into the enemy-AI plan (#43) and M2b (#44).
