@@ -1,10 +1,4 @@
-import {
-  createDefaultGameConfig,
-  type Logger,
-  makeLogRecord,
-  SeededRandom,
-  SEVERITY,
-} from '@eternalus/core';
+import { createDefaultGameConfig, type Logger, makeLogRecord, SEVERITY } from '@eternalus/core';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -33,7 +27,7 @@ import type { MatchViewport } from './game/MatchViewport.types';
 import { prepareMatchWorld } from './game/prepareMatchWorld';
 import { SettingsController } from './game/settings/SettingsController';
 import { SessionController } from './game/SessionController';
-import { ROSTER_RNG_STREAM } from './game/SessionController.constants';
+import { createRosterRng } from './game/session/createRosterRng';
 import { createDefaultSessionStates } from './game/session/defaultSessionStates';
 import { LcgRng } from './game/session/LcgRng';
 import { App } from './ui/App';
@@ -97,7 +91,7 @@ const session = new SessionController({
   playerName: PLACEHOLDER_PLAYER_NAME,
   seedSource: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
   createRng: (seed) => new LcgRng(seed),
-  createRosterRng: (seed) => new SeededRandom(seed).fork(ROSTER_RNG_STREAM),
+  createRosterRng,
   themeRoot: document.documentElement,
   prepareWorld: (seed) => prepareMatchWorld(gameConfig, seed),
   createMatch: createBrowserMatch({

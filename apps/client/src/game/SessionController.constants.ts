@@ -11,9 +11,3 @@ export const SESSION_TRANSITIONS: Readonly<Record<SessionPhase, readonly Session
   match: ['results', 'menu'],
   results: ['menu', 'loading'],
 };
-
-/**
- * The match seed's random stream the bots' Legends are drawn from at LOCK IN (`SeededRandom.fork`),
- * apart from the team draw's, so the two draws never correlate.
- */
-export const ROSTER_RNG_STREAM = 'roster';

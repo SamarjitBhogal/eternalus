@@ -29,8 +29,9 @@ const PAGE_KEYS: ReadonlySet<string> = new Set([
  * focus cannot leave the view. Browser chords keep their default (reload, devtools). A mouse button
  * bound to an action (the left one is, to `attack`) is stopped the same way: its `pointerdown`, and
  * the `auxclick` and `mouseup` of its release, whose default would step a side button through the
- * history. One bound to `pause-menu` closes; the `click` that follows a press is never stopped, so
- * the view's own buttons still work, and an unbound button passes untouched.
+ * history. One bound to `pause-menu` closes on its press; closing removes these listeners, so that
+ * press's release is no longer filtered. The `click` that follows a press is never stopped, so the
+ * view's own buttons still work, and an unbound button passes untouched.
  * @returns Removes the listeners.
  */
 export function bindModalKeyFilter(

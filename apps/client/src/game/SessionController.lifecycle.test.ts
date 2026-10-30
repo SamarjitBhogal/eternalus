@@ -1,4 +1,4 @@
-import { createDefaultGameConfig, SeededRandom } from '@eternalus/core';
+import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
@@ -6,13 +6,13 @@ import { FakeViewportCanvas } from './FakeViewportCanvas';
 import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { ROSTER_RNG_STREAM } from './SessionController.constants';
 import type {
   MatchFactory,
   RunningMatch,
   SessionContext,
   SessionControllerDeps,
 } from './SessionController.types';
+import { createRosterRng } from './session/createRosterRng';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { MatchState } from './session/states/MatchState';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
@@ -139,14 +139,14 @@ describe('SessionController match lifetime', () => {
   });
 
   it("draws the bots' Legends at LOCK IN from the injected roster stream of the match seed", async () => {
-    const createRosterRng = vi.fn((seed: number) => new SeededRandom(seed).fork(ROSTER_RNG_STREAM));
-    const session = setUp({ createRosterRng });
+    const rosterRng = vi.fn(createRosterRng);
+    const session = setUp({ createRosterRng: rosterRng });
     await session.toCharacterSelect();
-    expect(createRosterRng).not.toHaveBeenCalled();
+    expect(rosterRng).not.toHaveBeenCalled();
 
     await session.toMatchLoading();
 
-    expect(createRosterRng.mock.calls).toEqual([[session.store.getState().matchSetup.seed]]);
+    expect(rosterRng.mock.calls).toEqual([[session.store.getState().matchSetup.seed]]);
   });
 
   it('does nothing for a viewport attached outside the match', async () => {

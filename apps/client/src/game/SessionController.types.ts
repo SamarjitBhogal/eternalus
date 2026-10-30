@@ -141,8 +141,8 @@ export type SessionControllerDeps = {
   readonly createRng: (seed: number) => Rng;
   /**
    * The stream LOCK IN draws the bots' Legends from (`fillRosters`), apart from `createRng`'s team
-   * draw: `new SeededRandom(seed).fork(ROSTER_RNG_STREAM)`. Its own factory because core's
-   * `nextInt(min, max)` is not the `Rng` port's `nextInt(maxExclusive)`.
+   * draw: `session/createRosterRng.ts`. Its own factory because core's `nextInt(min, max)` is not
+   * the `Rng` port's `nextInt(maxExclusive)`.
    */
   readonly createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>;
   /**

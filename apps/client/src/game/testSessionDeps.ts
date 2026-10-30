@@ -1,4 +1,4 @@
-import { createDefaultGameConfig, MemoryLogger, SeededRandom } from '@eternalus/core';
+import { createDefaultGameConfig, MemoryLogger } from '@eternalus/core';
 
 import { connectBusToStore } from '../bridge/connectBusToStore';
 import type { AssetGroup, BridgeEventMap, SessionPhase, UiIntent } from '../bridge/events';
@@ -14,8 +14,8 @@ import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { SessionController } from './SessionController';
-import { ROSTER_RNG_STREAM } from './SessionController.constants';
 import type { SessionControllerDeps } from './SessionController.types';
+import { createRosterRng } from './session/createRosterRng';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { LcgRng } from './session/LcgRng';
 import { SELECTION_ASSET_GROUPS } from './session/selectionAssetGroups';
@@ -61,9 +61,10 @@ export function testResources(): {
 /**
  * A full `SessionControllerDeps` for tests (02 §8: real classes, fakes at the ports): a real
  * bus, a `FakeSessionClock`, the default states, `shippedCatalogue()`, core's match config, seeds
- * counting from 42, `LcgRng`, the real roster stream, a bare theme root, worlds from `prepareMatchWorld`, a match factory
- * returning an inert handle, a `MemoryLogger`, resources over an empty manifest (every load is
- * synchronous; pass `testResources()` for pending loads) and the shipped credits.
+ * counting from 42, `LcgRng`, the real roster stream, a bare theme root, worlds from
+ * `prepareMatchWorld`, a match factory returning an inert handle, a `MemoryLogger`, resources over
+ * an empty manifest (every load is synchronous; pass `testResources()` for pending loads) and the
+ * shipped credits.
  */
 export function testSessionDeps(
   overrides: Partial<SessionControllerDeps> = {},
@@ -79,7 +80,7 @@ export function testSessionDeps(
     playerName: 'Tester',
     seedSource: () => ++seed,
     createRng: (value) => new LcgRng(value),
-    createRosterRng: (value) => new SeededRandom(value).fork(ROSTER_RNG_STREAM),
+    createRosterRng,
     themeRoot: { dataset: {} },
     prepareWorld: (value) => prepareMatchWorld(config, value),
     createMatch: () => ({ destroy: () => undefined, setPaused: () => undefined }),
