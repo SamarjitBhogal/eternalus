@@ -1994,3 +1994,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   661 passed (661)"; client "Tests 415 passed (415)"; "✓ built in 229ms"; "Documentation check
   passed."
 - Next step: merge into M8 (#47) after M3.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M3 and M4 (with every lower minion PR and
+  `phase/2-sprint-2-work`) into PR #47, resolving the `GameState` `{ space }` constructor in the
+  merged tests, and answered its CodeRabbit threads. `SpatialHash.queryCircle` binary-searches
+  once per covered row instead of once per cell (same results; the Rover's 400 m sense query got
+  cheaper); doc 10's sketch marks `radii` and `queryRect` as planned; Sprint 3.2's A\* item no
+  longer claims camp chases (M6 owns them).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  765 passed (765)"; client "Tests 417 passed (417)"; "✓ built in 201ms"; "Documentation check
+  passed."
+- Next step: none; all minion PRs are merged up to date with `phase/2-sprint-2-work`.

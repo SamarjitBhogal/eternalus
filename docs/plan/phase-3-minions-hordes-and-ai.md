@@ -96,7 +96,7 @@ Owner: _ (map owner). Weeks 5–6. Follows
       no angles). Owner: _. Test: 48 mobs in a corridor never overlap by more than a tolerance
       after 300 ticks; ID-ordered neighbour lists keep the replay hash stable. Done when: the
       steering loop allocates nothing per unit.
-- [ ] **A\* for Legends and camp chases** (octile heuristic, string-pulling; used by bots only
+- [ ] **A\* for Legends** (octile heuristic, string-pulling; used by bots only
       — the human moves with WASD). Owner: _. Test: shortest path around a stamped footprint.
       Done when: A\* is a `PathQuery` (`state.paths`) the bot leaves call when the straight line
       is blocked (doc 11 §6; owner, 2026-10-27), since bots steer by `move` commands.

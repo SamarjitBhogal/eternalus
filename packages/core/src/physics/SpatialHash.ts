@@ -85,26 +85,25 @@ export class SpatialHash {
     const lastRow = this.row(y + radius);
     const reach = radius * radius;
     let found = 0;
+    // A row's covered cells are consecutive keys, so one binary search per row finds the run.
     for (let row = firstRow; row <= lastRow; row += 1) {
-      for (let column = firstColumn; column <= lastColumn; column += 1) {
-        const cell = row * this.columns + column;
-        const end = (cell + 1) * this.stride;
-        for (
-          let slot = this.firstSlot(cell * this.stride);
-          slot < this.count && (this.keys[slot] ?? end) < end && found < out.length;
-          slot += 1
-        ) {
-          const index = (this.keys[slot] ?? 0) - cell * this.stride;
-          const dx = (this.positions[2 * index] ?? 0) - x;
-          const dy = (this.positions[2 * index + 1] ?? 0) - y;
-          if (dx * dx + dy * dy <= reach) {
-            out[found] = index;
-            found += 1;
-          }
+      const end = (row * this.columns + lastColumn + 1) * this.stride;
+      for (
+        let slot = this.firstSlot((row * this.columns + firstColumn) * this.stride);
+        slot < this.count && (this.keys[slot] ?? end) < end && found < out.length;
+        slot += 1
+      ) {
+        const key = this.keys[slot] ?? 0;
+        const index = key % this.stride;
+        const dx = (this.positions[2 * index] ?? 0) - x;
+        const dy = (this.positions[2 * index + 1] ?? 0) - y;
+        if (dx * dx + dy * dy <= reach) {
+          out[found] = index;
+          found += 1;
         }
       }
     }
-    // Insertion sort in place: each cell is already ascending, so the merge is nearly sorted.
+    // Insertion sort in place: each cell's run is already ascending, so the result is nearly sorted.
     for (let at = 1; at < found; at += 1) {
       const value = out[at] ?? 0;
       let to = at - 1;

@@ -143,16 +143,16 @@ generator). `Zone`s have no collider.
 
 Uniform grid over the map, cell size = the largest unit diameter (from the radii above,
 TUNE) so a query touches only the 9 surrounding cells. Storage is dense typed arrays rebuilt every
-tick by sorting the points by `cell × count + index`; a query binary-searches each covered cell's
-run. No per-cell array is kept, so a rebuild costs what the points cost (O(n log n)), never the
+tick by sorting the points by `cell × count + index`; a query binary-searches each covered row's
+run of cells. No per-cell array is kept, so a rebuild costs what the points cost (O(n log n)), never the
 `cols × rows` of the world, which on a generated map is hundreds of thousands of cells. A rebuild
 allocates one sorted view; nothing else allocates after construction.
 
 ```ts
 export class SpatialHash {
-  rebuild(positions: Float64Array, radii: Float32Array, count: number): void; // O(n log n)
+  rebuild(positions: Float64Array, radii: Float32Array, count: number): void; // O(n log n); radii planned (§12)
   queryCircle(x: number, y: number, r: number, out: Int32Array): number; // count; id-sorted
-  queryRect(rect: Rect, out: Int32Array): number;
+  queryRect(rect: Rect, out: Int32Array): number; // planned (§12)
 }
 // Polygons of structures, obstacles and walls; rebuilt only when terrain changes.
 export class StaticColliderIndex {}
