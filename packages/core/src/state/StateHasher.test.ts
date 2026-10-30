@@ -173,7 +173,7 @@ describe('StateHasher', () => {
         memberIds: ['entity-1'],
         progress: 0,
       });
-      state.teams.light.unitsRequested = 1;
+      state.recordSpawnRequest('light', 1, 1);
       return state;
     };
 
@@ -211,23 +211,20 @@ describe('StateHasher', () => {
       ],
       ['the member ids', (state) => state.hordes.removeMember('entity-1')],
       ['issuedIds', (state) => state.hordes.nextId()],
-      [
-        'unitsRequested',
-        (state) => {
-          state.teams.dark.unitsRequested += 1;
-        },
-      ],
-      [
-        'unitsSuppressed',
-        (state) => {
-          state.teams.light.unitsSuppressed += 1;
-        },
-      ],
     ])('changes when %s changes', (_, change) => {
       const state = stateWithHorde();
       const before = hasher.hash(state);
       change(state);
       expect(hasher.hash(state)).not.toBe(before);
+    });
+
+    it('tells apart spawn counters that differ only in unitsRequested or unitsSuppressed', () => {
+      const withRequest = (requested: number, spawned: number): number => {
+        const state = stateWithHorde();
+        state.recordSpawnRequest('dark', requested, spawned);
+        return hasher.hash(state);
+      };
+      expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
     });
   });
 });

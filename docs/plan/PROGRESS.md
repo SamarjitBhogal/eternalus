@@ -1592,3 +1592,13 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   yield items in reverse insert order.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 222ms"; "Documentation check passed."
 - Next step: merge this into the stacked minion PRs (#39, #40 and up).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit on PR #40 (which carries M1's commits): team spawn counters change
+  only through `GameState.recordSpawnRequest`, which rejects a spawned count outside
+  0..requested (architecture 03 §2); `TeamState` fields are readonly and `SpawnSystem` calls it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 236ms"; "Documentation check
+  passed."
+- Next step: merge into M2a (#39) and M4 (#40) and up the stack.
