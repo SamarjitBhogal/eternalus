@@ -96,6 +96,11 @@
   --selection-tile-idle: rgb(255 255 255 / 40%);
   --selection-countdown: #ff1a00;
   --selection-countdown-glow: rgb(255 26 0 / 15%);
+  /* DEC-59: the lock cursor over a locked class card (LockGlyph's padlock, parchment on ink). */
+  --selection-cursor-locked:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='30' viewBox='-1 -1 18 22'%3E%3Cpath d='M 4 9 V 6 A 4 4 0 0 1 12 6 V 9' fill='none' stroke='%23131313' stroke-width='4'/%3E%3Cpath d='M 4 9 V 6 A 4 4 0 0 1 12 6 V 9' fill='none' stroke='%23f9e0c7' stroke-width='2'/%3E%3Crect x='1' y='9' width='14' height='11' rx='2' fill='%23f9e0c7' stroke='%23131313'/%3E%3C/svg%3E")
+      12 15,
+    not-allowed;
   --selection-detail-accent: rgb(255 26 0 / 40%);
   /* View Details (145:2): the row names (148:180 …) and dividers (145:84, 148:184). */
   --selection-detail-name: #00d9ff;

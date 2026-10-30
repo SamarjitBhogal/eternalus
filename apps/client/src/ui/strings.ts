@@ -165,6 +165,8 @@ export const STRINGS = {
     back: 'back',
     allyCount: (count: number): string => (count === 1 ? '1 Ally' : `${String(count)} Allies`),
     locked: 'Locked',
+    /** A locked class card's only text, in place of its name (DEC-59, DEC-104). */
+    comingSoon: 'Coming Soon...',
     missingName: '—',
     ratingAxes: {
       damage: 'Damage',
