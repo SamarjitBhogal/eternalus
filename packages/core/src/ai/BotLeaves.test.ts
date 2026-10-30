@@ -80,4 +80,14 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
     expect(leaves.moveTo(turn, { x: 80, y: 20 })).toBe('failure');
     expect(turn.commands).toEqual([{ type: 'stop', actorId: 'bot' }]);
   });
+
+  it('forgets the remembered target when the pathfinder finds no way, since the stop cleared it', () => {
+    const turn = { ...turnAt({ x: 40, y: 20 }, true, NO_WAY) };
+    turn.next = { ...turn.next, targetId: 'enemy' };
+
+    leaves.moveTo(turn, { x: 80, y: 20 });
+
+    expect(turn.next.targetId).toBeNull();
+    expect(turn.next.lane).toBe('lane-0');
+  });
 });

@@ -181,8 +181,8 @@ export class BotLeaves {
 
   /**
    * One `move` toward `destination`, through the A\* waypoint when the straight line is blocked,
-   * or a halt once within `arrivalDistance` of it. When the pathfinder finds no way, a `stop` and
-   * `failure`, so the bot does not lean on the obstruction and lower branches may run.
+   * or a halt once within `arrivalDistance` of it. When the pathfinder finds no way, a `stop`, a
+   * forgotten target and `failure`, so the bot does not lean on the obstruction and lower branches may run.
    */
   public moveTo(turn: BotTurn, destination: Vec2 | null): BtStatus {
     if (destination === null) {
@@ -193,7 +193,9 @@ export class BotLeaves {
       BotLeaves.gapSquared(turn.position, destination) <= arrivalDistance * arrivalDistance;
     const paths = turn.state.paths;
     if (!isThere && paths !== null && !paths.waypoint(turn.position, destination, this.step)) {
+      // `stop` clears the live attack target, so memory forgets it too and a later fight re-targets.
       turn.commands.push({ type: 'stop', actorId: turn.id });
+      turn.next = { ...turn.next, targetId: null };
       return 'failure';
     }
     const next = !isThere && paths !== null ? this.step : destination;

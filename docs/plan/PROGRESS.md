@@ -2404,3 +2404,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   786 passed (786)"; client "Tests 417 passed (417)"; "✓ built in 272ms"; "Documentation check
   passed."
 - Next step: review and merge (M3 and M4 are merged).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #47 (review of `da6734b`). When A\* finds no way,
+  `BotLeaves.moveTo` now also clears `targetId` in the bot's memory: its `stop` clears the live
+  attack target, and the stale memory made the next fight skip `attack-target`. The regression
+  test fails on the old code.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 417 passed (417)"; "✓ built in 252ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; review and merge.
