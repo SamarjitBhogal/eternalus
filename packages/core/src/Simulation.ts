@@ -31,6 +31,7 @@ import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { DefinitionSource, Placement, WeaponSource } from './entities/EntityFactory.types';
+import { Unit } from './entities/Unit';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
@@ -195,11 +196,19 @@ export class Simulation {
     const at = { x: 0, y: 0 };
     // Every lane is assigned before anything spawns, so a roster that does not fit spawns nothing.
     const { legendsPerTeam } = state.config.match;
+    const { maxUnitsPerTeam } = state.config.limits;
     const plans = (['light', 'dark'] as const).map((team) => {
       const size = roster.filter((slot) => slot.team === team).length;
       if (size > legendsPerTeam) {
         throw new Error(
           `The ${team} roster has ${String(size)} Legends; match.legendsPerTeam allows ${String(legendsPerTeam)}.`,
+        );
+      }
+      // Legends are Units, so the roster also fits under the Unit cap (as dev spawns do).
+      const units = state.entities.countOnTeam(team, Unit) + size;
+      if (units > maxUnitsPerTeam) {
+        throw new Error(
+          `The ${team} roster would make ${String(units)} Units; limits.maxUnitsPerTeam allows ${String(maxUnitsPerTeam)}.`,
         );
       }
       const laners = roster.filter((slot) => slot.team === team && slot.role === 'laner');

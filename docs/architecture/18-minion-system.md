@@ -18,6 +18,8 @@ paths:
     'packages/core/src/systems/HordeSystem*',
     'packages/core/src/systems/SpawnSystem*',
     'packages/core/src/systems/PathingSystem*',
+    'packages/core/src/systems/EnragedSystem*',
+    'packages/core/src/combat/MinionStrengthStep*',
     'packages/core/src/entities/strategies/LaneFollowMovementStrategy*',
     'packages/core/src/content/mobs/**',
     'packages/core/src/content/ai/hordeSteering*',
@@ -93,9 +95,14 @@ holding while the leader engages (§4). Pull request M3 adds the bot laners (§8
 their lane, in ranks), `assignLanes` for MS-20 (bots in roster order, up to `legendsPerLane`), a
 spawn's own controller and starting memory (`Placement.controller`, holding the lane) and
 `BotLegendController` playing doc 11 §4.2's laner tree. The Rover waits for its controller (M8).
-Lane objectives, gate holding and guards (M2c onward) wait for structure entities. The damage
-pipeline (`combat/DamagePipeline`) is built; structures have only the `Structure` base class, with
-no Stronghold, tower or gate kind yet. The pull requests and interim stand-ins are in the [minion
+Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
+(strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
+enemy for each lane tower the enemy has lost there) and `EnragedSystem`, its own system right after
+`SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the losses are
+kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads too). Lane
+objectives, gate holding and guards (M2c onward) wait for structure entities. The damage pipeline
+(`combat/DamagePipeline`) is built; structures have only the `Structure` base class, with no
+Stronghold, tower or gate kind yet. The pull requests and interim stand-ins are in the [minion
 system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
@@ -187,7 +194,7 @@ members are created through `EntityFactory`, the `Horde` record (§4) is inserte
 mob ever exists without its horde (MS-25).
 
 **Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `MovementSystem` →
-`PathingSystem` → `CollisionSystem` (10 §9) → … → `SpawnSystem` (schedule and fulfilment) → `DeathSystem`
+`PathingSystem` → `CollisionSystem` (10 §9) → … → `SpawnSystem` (schedule and fulfilment) → `EnragedSystem` (MS-16) → `DeathSystem`
 → `InvariantSystem` → `SnapshotSystem`. A horde spawned on tick N has its members and record when
 the invariants and the snapshot of tick N run, and its first decisions in tick N+1.
 
@@ -339,8 +346,10 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
 - `PathingSystem` combines the strategy's target with the rest of 10 §9 by priority: **obstacle
   and wall avoidance**, then **separation from all neighbours** (through `SpatialHash`,
   [10 §5](10-physics.md#5-broad-phase-spatialhash), id-ordered), then the strategy's target, then
-  the lane flow field when the straight line to the slot is blocked (MS-19). An engaging mob does
-  not follow the lane field, which leads to the lane's end rather than to its target. A mob blocked
+  the lane flow field when the straight line to the slot is blocked (MS-19). An engaging mob never
+  follows the lane field, which leads to the lane's end rather than to its target: where the line to
+  its target is blocked it holds, keeping obstacle avoidance first. The final heading, separation
+  included, is checked the same way, so no push steers a mob onto unwalkable ground. A mob blocked
   by terrain leaves its slot and returns to it once clear, because keeping the slot is never the
   top priority.
 - Vectors only, no angles (ADR 0012). All distances and factors are content (`TUNE`). The
