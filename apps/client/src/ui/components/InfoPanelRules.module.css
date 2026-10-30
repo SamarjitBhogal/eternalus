@@ -65,7 +65,8 @@
 
 /* 62:90 370 → 573 at row 413; 62:106 / 62:100 68 → 573 at rows 551 / 634; accents at x 65.
    56:43 333 → 474 at row 413; 56:59 / 56:53 60 → 474 at rows 551 / 634; accents at x 57.
-   Both: accents y 436 h 95, 562 h 63, 645 h 93. */
+   Both: accents y 436 h 95, 562 h 63, 645 h 93. The Legend layout keeps 56:43 and the first
+   divider and accent; its four rows (DEC-65) place the rest (below). */
 .rules[data-layout='class-alternate'] [data-rule='header-line'] {
   x: 305px;
   y: 285px;
@@ -77,10 +78,12 @@
   width: 505px;
 }
 
+/* Recommendation: 56:43 starts 11 px after the narrowed header box (InfoPanelDetails), still
+   ending at x 421. */
 .rules[data-layout='legend'] [data-rule='header-line'] {
-  x: 280px;
+  x: 185px;
   y: 285px;
-  width: 141px;
+  width: 236px;
 }
 
 .rules[data-layout='legend'] [data-rule^='divider'] {
@@ -88,11 +91,12 @@
   width: 414px;
 }
 
-.rules:not([data-layout='class']) [data-rule='divider-0'] {
+.rules[data-layout='class-alternate'] [data-rule='divider-0'],
+.rules[data-layout='legend'] [data-rule='divider-0'] {
   y: 423px;
 }
 
-.rules:not([data-layout='class']) [data-rule='divider-1'] {
+.rules[data-layout='class-alternate'] [data-rule='divider-1'] {
   y: 506px;
 }
 
@@ -104,17 +108,43 @@
   x: 4px;
 }
 
-.rules:not([data-layout='class']) [data-rule='accent-0'] {
+.rules[data-layout='class-alternate'] [data-rule='accent-0'],
+.rules[data-layout='legend'] [data-rule='accent-0'] {
   y: 308px;
   height: 95px;
 }
 
-.rules:not([data-layout='class']) [data-rule='accent-1'] {
+.rules[data-layout='class-alternate'] [data-rule='accent-1'] {
   y: 434px;
   height: 63px;
 }
 
-.rules:not([data-layout='class']) [data-rule='accent-2'] {
+.rules[data-layout='class-alternate'] [data-rule='accent-2'] {
   y: 517px;
   height: 93px;
+}
+
+/* DEC-65's three ability rows (InfoPanelDetails' 60 px bands at 427, 495 and 563): a 52 px accent
+   4 px into each band, a divider 4 px above each. Recommendation, like the rows. */
+.rules[data-layout='legend'] [data-rule='divider-1'] {
+  y: 491px;
+}
+
+.rules[data-layout='legend'] [data-rule='divider-2'] {
+  y: 559px;
+}
+
+.rules[data-layout='legend'] [data-rule='accent-1'] {
+  y: 431px;
+  height: 52px;
+}
+
+.rules[data-layout='legend'] [data-rule='accent-2'] {
+  y: 499px;
+  height: 52px;
+}
+
+.rules[data-layout='legend'] [data-rule='accent-3'] {
+  y: 567px;
+  height: 52px;
 }

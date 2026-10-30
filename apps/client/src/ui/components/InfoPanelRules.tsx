@@ -1,26 +1,37 @@
 import type { ReactElement } from 'react';
 
+import { INFO_PANEL_ROW_COUNT } from './InfoPanelDetails.constants';
 import type { InfoPanelLayout } from './InfoPanel.types';
 import styles from './InfoPanelRules.module.css';
 
-/** The rules of a panel (header line, three accents, two dividers): SVG rects, never snapped. */
-const RULES = [
-  { rule: 'header-line', className: styles.rule },
-  { rule: 'accent-0', className: styles.accent },
-  { rule: 'accent-1', className: styles.accent },
-  { rule: 'accent-2', className: styles.accent },
-  { rule: 'divider-0', className: styles.rule },
-  { rule: 'divider-1', className: styles.rule },
-] as const;
+/** A layout's rules: the header line, one accent per row, one divider between two rows. */
+function rulesOf(
+  layout: InfoPanelLayout,
+): readonly { readonly rule: string; readonly className: string | undefined }[] {
+  const rowCount = INFO_PANEL_ROW_COUNT[layout];
+  return [
+    { rule: 'header-line', className: styles.rule },
+    ...Array.from({ length: rowCount }, (_, row) => ({
+      rule: `accent-${String(row)}`,
+      className: styles.accent,
+    })),
+    ...Array.from({ length: rowCount - 1 }, (_, row) => ({
+      rule: `divider-${String(row)}`,
+      className: styles.rule,
+    })),
+  ];
+}
 
 /**
- * The rules of an `InfoPanelDetails` (72:751, 62:83, 56:36): the header line, three accents and
- * two dividers in one hidden svg at the enclosing panel's origin, each rect placed by `layout`.
+ * The rules of an `InfoPanelDetails` (72:751, 62:83, 56:36): the header line, an accent per row
+ * and a divider between rows (three rows on the class layouts, four on the Legend's, DEC-65) in
+ * one hidden svg at the enclosing panel's origin, each rect placed by `layout`. SVG rects, never
+ * snapped.
  */
 export function InfoPanelRules({ layout }: { readonly layout: InfoPanelLayout }): ReactElement {
   return (
     <svg className={styles.rules} data-layout={layout} aria-hidden="true" focusable="false">
-      {RULES.map(({ rule, className }) => (
+      {rulesOf(layout).map(({ rule, className }) => (
         <rect key={rule} className={className} data-rule={rule} />
       ))}
     </svg>

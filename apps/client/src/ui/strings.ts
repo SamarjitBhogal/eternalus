@@ -135,7 +135,8 @@ export const STRINGS = {
     selectClassHint: 'Choose a class first.',
     classDetailsHeader: 'Default ability / Weapon Proficiency / Specialty',
     classAlternateDetailsHeader: 'Signature / Proficiency / Specialty',
-    legendDetailsHeader: 'Signature / Specialty / Ultimate',
+    /** DEC-65: the Ultimate on top, then abilities 1 to 3. */
+    legendDetailsHeader: 'Ultimate / Abilities',
     legendsHeader: 'Legends',
     legendsPending: 'Legends to come',
     legendBreadcrumb: (classDisplayName: string): string =>

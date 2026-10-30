@@ -46,9 +46,11 @@
   --header-text-x: 5px;
 }
 
+/* Recommendation: 56:45's box narrowed from 265 to 170 px for the shorter "Ultimate / Abilities"
+   (DEC-65), its 5 px padding kept; the width is estimated from the 15 px Cinzel text, not drawn. */
 .details[data-layout='legend'] {
   --header-box-x: 4px;
-  --header-box-w: 265px;
+  --header-box-w: 170px;
   --header-text-x: 9px;
 }
 
@@ -172,31 +174,44 @@
   --name-y: 552px;
 }
 
-/* 58:271: aetheric-recall (123, 424) 92 × 118, unison ward (134, 567) 72 × 56, severed accord
-   (143, 668) 51 × 56; names 56:63 (243, 467), 56:57 (245, 578), 56:51 (245, 680). */
+/* 58:271 with DEC-65's four rows, "Ultimate / Abilities": the Ultimate on top in the larger row
+   (56:63's row band, 296–414; name at 56:63's (243, 467)), then abilities 1 to 3 in three 60 px
+   bands below divider-0 (427, 495, 563), clear of the rating bars at 766. Each icon box is its
+   detail-legend rendition's own size (I-45): the Ultimate the severed accord's 51 × 56 centred
+   where 56:62 was, the abilities the unison ward's 72 × 56. Recommendation: the four-row geometry
+   (the owner's "adjust sizing", DEC-65; no frame draws it). */
 .details[data-layout='legend'] [data-row='0'] {
-  --icon-x: 70px;
-  --icon-y: 296px;
-  --icon-w: 92px;
-  --icon-h: 118px;
+  --icon-x: 90px;
+  --icon-y: 327px;
+  --icon-w: 51px;
+  --icon-h: 56px;
   --name-x: 190px;
   --name-y: 339px;
 }
 
 .details[data-layout='legend'] [data-row='1'] {
-  --icon-x: 81px;
-  --icon-y: 439px;
+  --icon-x: 80px;
+  --icon-y: 429px;
   --icon-w: 72px;
   --icon-h: 56px;
   --name-x: 192px;
-  --name-y: 450px;
+  --name-y: 441px;
 }
 
 .details[data-layout='legend'] [data-row='2'] {
-  --icon-x: 90px;
-  --icon-y: 540px;
-  --icon-w: 51px;
+  --icon-x: 80px;
+  --icon-y: 497px;
+  --icon-w: 72px;
   --icon-h: 56px;
   --name-x: 192px;
-  --name-y: 552px;
+  --name-y: 509px;
+}
+
+.details[data-layout='legend'] [data-row='3'] {
+  --icon-x: 80px;
+  --icon-y: 565px;
+  --icon-w: 72px;
+  --icon-h: 56px;
+  --name-x: 192px;
+  --name-y: 577px;
 }

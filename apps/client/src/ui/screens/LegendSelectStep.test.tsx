@@ -90,6 +90,15 @@ describe('LegendSelectStep', () => {
       expect(html).toContain(`>${name}<`);
     }
     expect(html).not.toContain('Aetheric Recall');
+    // DEC-65: the header names the four rows, the Ultimate's first.
+    expect(html).toContain('>Ultimate / Abilities</h4>');
+    expect([...html.matchAll(/<li data-row="(\d)">/g)].map(([, row]) => row)).toEqual([
+      '0',
+      '1',
+      '2',
+      '3',
+    ]);
+    expect(html.indexOf('>Severed Accord<')).toBeLessThan(html.indexOf('>Unison Ward<'));
     expect([...html.matchAll(/aria-valuenow="(\d+)"/g)].map(([, now]) => now)).toEqual([
       '38',
       '84',
