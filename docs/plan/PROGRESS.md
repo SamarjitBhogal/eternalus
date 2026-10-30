@@ -2438,3 +2438,12 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 159ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (performance plan) — docs/performance-plan — claudiodh + Claude Code
+
+- What was done: added the two-week [performance plan](performance-plan/README.md) for the
+  course's Performance and Speed requirement (Nov 2–13). Docs only; Jira and code unchanged.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 502ms"; "Documentation check
+  passed."
+- Next step: team settles the due date, server owner, `ws` approval and host on Nov 2.
