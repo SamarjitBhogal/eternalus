@@ -1,4 +1,5 @@
 import type { EntityDefinitionBase } from '../EntityDefinition.types';
+import type { BreakabilityRule } from './breakability.types';
 
 /** The structure kinds (`04-entity-architecture.md`, family table). Their classes arrive in Phase 2. */
 export type StructureKind =
@@ -22,6 +23,8 @@ export type StructureDefinition = EntityDefinitionBase & {
   readonly baseHealth: number;
   /** Collider circle radius in world units (convex polygon footprints arrive in Phase 2). */
   readonly footprintRadius: number;
+  /** When it may take damage (07 §3). */
+  readonly breakability: BreakabilityRule;
 };
 
 /** Which lane a spawner's horde takes: the spawner's own lane, or the team's worst lane. */
@@ -42,3 +45,29 @@ export type SpawnWaveDefinition = {
 
 /** The Stronghold's opening hordes (architecture 18 §3.1): what they are made of. */
 export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightClass'>;
+
+/** One row of a guard plan: which guard, how many, and how a lost SpawnerTower shrinks it. */
+type GuardTableEntry = {
+  readonly mobId: string;
+  readonly count: number;
+  /**
+   * `count` guards of this row lost for good per destroyed team structure of kind `perLost`
+   * (DISC-21, 07 §8).
+   */
+  readonly shrink?: { readonly perLost: string; readonly count: number };
+};
+
+/**
+ * The guards a structure keeps (architecture 07 §6, 18 §7): spawned when the match starts, each
+ * respawned `respawnSeconds` after it dies while its structure stands.
+ */
+export type GuardPlanDefinition = {
+  readonly table: readonly GuardTableEntry[];
+  /** How far past the structure's edge a guard may chase ("don't leave the tower's perimeter"). */
+  readonly leashRadius: number;
+  readonly respawnSeconds: number;
+  /** Posts stand on a ring this far outside the structure's edge. */
+  readonly postGap: number;
+  /** How far past its leash a guard may be between two decisions (`GuardWithinLeashInvariant`). */
+  readonly leashTolerance: number;
+};

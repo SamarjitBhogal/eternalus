@@ -1519,6 +1519,54 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Next step: draft PR to `phase/2-sprint-2-work`, merged after #39; the owner answers the MS-28
   INBOX item.
 
+### 2026-10-25 — Minion system M2b (minion controller) — feat/minion-m2b-minion-controller (off docs/minion-plan-all-enemy-ai) — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **Contract:** `Controller.decide` takes one `DecisionInput` (state, id, brain, perception) and
+    returns `{ commands, memory, rngState }`; `AiSystem` writes the brain back (SamarjitBhogal's
+    answer to the M2a INBOX item, doc 11 §2 updated). `AiSystem` owns one `Perception`.
+  - **`MinionController`** (18 §6.1): `marching → engaging → returning → marching`, acquiring by
+    priority, then distance, then id; switching only to a strictly better rank; ending a chase on
+    death, leash or aggro duration with one `stop`; re-forming within `reformDistance` of its slot
+    with an aggro cooldown. Registered in `defaultControllerRegistry`, with its content injected
+    by `Simulation` (aggro rules, formations, kind classes through the new `KindSet.hasKind`).
+  - **Shared ranking helper** `ai/aggroRank` (MS-27) over 11 §4.3's priority list.
+  - **Content:** `content/ai/aggro/` (`lane-minion`: League/Dota numbers scaled by minion speed,
+    all `TUNE`); the three minions get `controller: 'minion'`, `aiProfile: 'lane-minion'` and
+    their `balancing.md` attacks (12 / 1.0 s, 28 / 1.2 s, 70 / 1.6 s; reach 1.5 m as the
+    Warrior's, `TUNE`).
+  - **Movement:** `PathingSystem` chases a member's attack target and stops at attack reach
+    (`MovementContext.arrivalRadius`); slots come from the new `state/formationSlot`, which the
+    controller also uses. `HordeSystem` holds the anchor while the leader has a target.
+  - **`stop`** clears the attack target too (MS-26), through `EntityStore.clearAttackTarget`;
+    `EntityStore.attackTargetOf` is new.
+  - **Tests:** every FSM transition, the ranking helper, chase and anchor hold, `stop`, and two
+    match scenarios: opposing opening hordes fight with kills on both sides and clean invariants,
+    and the same seed gives the same hash tick for tick. The M1 marching scenarios run with
+    minions that cannot fight.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 655 passed (655)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: the pre-PR gate, then M3 and M5a off this branch.
+
+### 2026-10-25 — Minion system M2b, pre-PR gate — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `7a87de1..35b4361`) approved with five
+  should-fixes, all applied: AI profiles are checked at `Simulation` construction
+  (`Controller.hasProfile`, `AiSystem.assertRegistered`); `aggroRank` takes an options object
+  (four-parameter limit); one `FORMATIONS` record feeds `PathingSystem` and the controller; doc
+  11 §1 and §8 show the new contract, and §10 records the profile and constructor-injection
+  stand-ins. Nits applied: shared ranking types in `aggroRank.types.ts`, the kind classifier as
+  content (`content/ai/unitClasses.ts`, with a turret stand-in row in the plan), no array
+  allocation while returning, TSDoc for `arrivalRadius`, the fight test derives its counts from
+  config. Two better-than-design items (the chase in `PathingSystem`, `state/formationSlot`),
+  constructor injection and the scaled aggro numbers are an `INBOX.md` item. Not changed:
+  `AiSystem` still creates its own `Perception` (accepted). Ponytail (lite): `FRESH_MINION_MEMORY`
+  deleted, `formationSlot` returns early for the leader.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 657 passed (657)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: draft PR; M3 (bot laners, roster option chosen by SamarjitBhogal) and M5a off this
+  branch.
+
 ### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields (merge of M1 and phase 2) — SamarjitBhogal + Claude Code
 
 - What was done: merged the updated `feat/minion-m1-marching` (`68a6e31`, which carries
@@ -1555,6 +1603,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   (416)"; "✓ built in 98ms"; "Documentation check passed."
 - Next step: Sam confirms the default weapons and numbers (INBOX); ranged attacks with
   projectiles (SCRUM-169, Aryan).
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller (owner sign-offs) — SamarjitBhogal + Claude Code
+
+- What was done: SamarjitBhogal accepted the M2b better-than-design items in chat. Doc 18 §5.2
+  now says `PathingSystem` reads `Combat.targetId` and hands the strategy a target and arrival
+  radius; §7's guard strategy follows; §5.1 names `state/formationSlot.ts` as the slot function's
+  home; doc 11 §1 says controllers get their content through their constructor from `Simulation`
+  (the §10 deviation line is gone). The INBOX item records the decision; the numbers stay as built
+  (design docs first, else the agent's judgement). Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 657 passed (657)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: none for M2b; merge after #43.
 
 ### 2026-10-27 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai (MS-28 answered) — SamarjitBhogal + Claude Code
 
@@ -1730,6 +1790,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: merge into M2b (#44).
 
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated enemy-AI plan (M2a, M1 and `phase/2-sprint-2-work`) into PR
+  #44, resolving its conflict, and answered its CodeRabbit threads. `followerIndex` in
+  `state/formationSlot.ts` is the one follower-index rule; `MinionController.isAtSlot` uses it, and
+  `PathingSystem` now counts every follower, so a member skipped this tick no longer shifts the
+  slots behind it (regression test fails on the old loop).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  692 passed (692)"; client "Tests 415 passed (415)"; "✓ built in 234ms"; "Documentation check
+  passed."
+- Next step: merge into M5a (#45) and M3 (#46).
+
 ### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
 
 - What was done: merged the updated M1 (with `phase/2-sprint-2-work`, the M1 CodeRabbit fixes and
@@ -1840,6 +1912,20 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: merge into M2b (#44) and up the stack.
 
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: merged the enemy-AI plan (#43, now with the merged M1, M2a and M4) into PR #44.
+  M2b and M4 were built in parallel, so the steering code was joined: `PathingSystem` keeps M2b's
+  chase, `arrivalRadius` and `formationSlot`, and gains M4's flow fields (fourth constructor
+  argument, rebuilt each tick, `context.flow`); `LaneFollowMovementStrategy` routes along the field
+  where the line to its target (slot or chased unit) is blocked and stops within `arrivalRadius`.
+  The M4 march tests now use the marching-only content, since M2b minions fight when hordes meet.
+  `packages/core/AGENTS.md` describes the `ai/` contract as returning a `Decision` (CodeRabbit).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  714 passed (714)"; client "Tests 415 passed (415)"; "✓ built in 173ms"; "Documentation check
+  passed."
+- Next step: merge into M5a (#45) and M3 (#46).
+
 ### 2026-10-30 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
 
 - What was done: CodeRabbit round on PRs #43 and #47. Doc 18 §7.1 no longer says
@@ -1851,3 +1937,68 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 159ms"; "Documentation check
   passed."
 - Next step: merge up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #44 (and the critic's follow-ups). A chasing minion no
+  longer follows the lane flow field, which leads to the lane's end, not to its target:
+  `PathingSystem` hands the strategy no field while a member has an attack target. Regression test
+  (upstream target across the blocked lane's rift) fails on the old code. Doc 18 §5.2 says so; a
+  `ponytail:` remark names the ceiling (terrain between chaser and target can stall it; A* to the
+  target replaces it). Merged the enemy-AI plan's latest doc fixes.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  715 passed (715)"; client "Tests 415 passed (415)"; "✓ built in 161ms"; "Documentation check
+  passed."
+- Next step: merge into M5a (#45) and M3 (#46).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #44. Dropping the flow query while chasing also dropped
+  the blocked-line check, so a chase could steer into a rift. `PathingSystem` now always passes the
+  lane field and sets `MovementContext.isChasing`; `LaneFollowMovementStrategy` still detects a
+  blocked line, routes a march along the field and holds a chase. The rift test now expects the
+  chaser to hold; a strategy test covers blocked and clear chases. Doc 18 §5.2 updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  716 passed (716)"; client "Tests 415 passed (415)"; "✓ built in 169ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; merge into M5a (#45) and M3 (#46).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-structures — SamarjitBhogal + Claude Code
+
+- What was done: the part of sprint 2.1 the minion plan's M2c needs (unowned, so built here as
+  plan row M2s). `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate` entities with
+  `content/structures/structureCatalogue.ts` (base health from `balancing.md`) and registry lines;
+  `Simulation` builds one per map structure feature, in feature id order, with its lane.
+  `BreakabilityRule` content, `StructureSystem` (emits `structure-destroyed` and
+  `structure-breakability-changed`, gates unbreakable until 2 of 3 BuffTowers are down) and
+  `BreakabilityStep` in the damage pipeline. The client registers an empty `StructureView` (the map
+  layer already draws buildings). Docs 03, 07, 18 and the minion plan updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  727 passed (727)"; client "Tests 416 passed (416)"; "✓ built in 160ms"; "Documentation check
+  passed." After the critic (blockers: the BuffTower count kept in the system, and
+  `Collider.isUnbreakable` not hashed; both fixed, total now from config) and ponytail (lean, no
+  cuts): core "Tests 728 passed (728)", client "Tests 416 passed (416)", `EXIT=0`.
+- Next step: M2c on top of this branch.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M2c on top of M2s. `state/LaneStructures` (the lane-order objective
+  index, built once the structures spawn); `HordeSystem` holds the anchor `objectiveHoldGap` in
+  front of the next standing objective; `MinionController` attacks the breakable objective as
+  `lane-objective` (gate holding until `structure-breakability-changed`); `assessLanes` scores
+  structure damage not dealt and structures lost; `SpawnSystem` spawns from the structure entities
+  (a destroyed tower stops) and runs the guard plans (`content/structures/guardPlans.ts`, posts in
+  `state.guards`, respawn after 120 s, DISC-21 shrink); `GuardController` on the shared
+  `ai/LeashBehaviour`; `LeashedChaseMovementStrategy`; guards steered by `PathingSystem`;
+  `GuardWithinLeashInvariant`. Light, medium and heavy guard content. Four sign-off items in
+  `INBOX.md`. Docs 18 and the minion plan updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  751 passed (751)"; client "Tests 416 passed (416)"; "✓ built in 184ms"; "Documentation check
+  passed."
+- Pre-PR gate: critic round 1 had one blocker (no test for `PathingSystem`'s guard steering), now
+  tested with a guard engage-and-return match too; should-fixes applied (`GuardRoster` split out
+  of `SpawnSystem` with its own tests, the DISC-21 shrink names its structure kind in content,
+  guards acquire inside their leash, INBOX items 5–8, a plan §3 row). Critic round 2: approve, no
+  blockers. Ponytail: lean, no cuts. Final `npm run check` → `EXIT=0`: core "Tests 755 passed
+  (755)", client "Tests 416 passed (416)", "✓ built in 172ms", "Documentation check passed."
+- Next step: M5b.

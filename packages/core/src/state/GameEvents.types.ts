@@ -60,6 +60,12 @@ export type GameEventMap = {
     readonly team: Team;
     readonly lane: string | null;
   };
+  /** A wall or gate turned breakable (or back); `lane` is its `MapLane.id`, `null` off the lanes. */
+  readonly 'structure-breakability-changed': {
+    readonly entityId: EntityId;
+    readonly isBreakable: boolean;
+    readonly lane: string | null;
+  };
   readonly 'shield-bars-changed': {
     readonly entityId: EntityId;
     readonly bars: readonly ShieldBar[];

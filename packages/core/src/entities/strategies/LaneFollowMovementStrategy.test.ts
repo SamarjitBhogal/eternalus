@@ -15,6 +15,8 @@ const contextOf = (points: readonly [number, number][], target: { x: number; y: 
     neighbours,
     found: new Int32Array(points.length),
     target,
+    arrivalRadius: HORDE_STEERING.slotArrivalRadius,
+    isChasing: false,
     out: { x: 0, y: 0 },
     flow: null,
   } satisfies MovementContext;
@@ -62,6 +64,13 @@ describe('LaneFollowMovementStrategy', () => {
     expect(strategy.desiredVelocity(0, context)).toEqual({ x: 0, y: 0 });
   });
 
+  it('stops at the context’s arrival radius, such as attack reach while chasing', () => {
+    const context = { ...contextOf([[0, 0]], { x: 2, y: 0 }), arrivalRadius: 2.5 };
+
+    expect(strategy.desiredVelocity(0, context)).toEqual({ x: 0, y: 0 });
+    expect(strategy.desiredVelocity(0, { ...context, arrivalRadius: 1 })).toEqual({ x: 1, y: 0 });
+  });
+
   it('follows the flow field while the line to the slot is blocked, and only then', () => {
     const blockedAhead = (isClear: boolean) => ({
       isLineClear: (_x: number, _y: number, _tx: number, _ty: number, maxDistance: number) =>
@@ -85,5 +94,22 @@ describe('LaneFollowMovementStrategy', () => {
     expect(strategy.desiredVelocity(0, clear)).toEqual({ x: 1, y: 0 });
     // Where the field has no direction the mob still heads for its slot.
     expect(strategy.desiredVelocity(0, unrouted)).toEqual({ x: 1, y: 0 });
+  });
+
+  it('holds a chase where the line to its target is blocked, and never follows the lane field', () => {
+    const towardLane = {
+      isLineClear: (_x: number, _y: number, _tx: number, _ty: number, maxDistance: number) =>
+        maxDistance !== HORDE_STEERING.blockedLookAhead,
+      directionAt: (_x: number, _y: number, out: { x: number; y: number }) => {
+        out.x = 0;
+        out.y = 1;
+        return true;
+      },
+    };
+    const clearAhead = { ...towardLane, isLineClear: () => true };
+    const chase = { ...contextOf([[10, 10]], { x: 40, y: 10 }), isChasing: true };
+
+    expect(strategy.desiredVelocity(0, { ...chase, flow: towardLane })).toEqual({ x: 0, y: 0 });
+    expect(strategy.desiredVelocity(0, { ...chase, flow: clearAhead })).toEqual({ x: 1, y: 0 });
   });
 });

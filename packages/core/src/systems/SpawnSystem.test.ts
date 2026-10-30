@@ -7,13 +7,16 @@ import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { GUARD_PLANS } from '../content/structures/guardPlans';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import type { GameEventMap } from '../state/GameEvents.types';
+import { Unit } from '../entities/Unit';
 import { SpawnSystem } from './SpawnSystem';
 import type { SpawnPlan } from './SpawnSystem.types';
 
@@ -22,7 +25,7 @@ const TICK_RATE = 30;
 const newSystem = (
   state: GameState,
   factory: EntityFactory,
-  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>> = {},
+  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves' | 'guards'>> = {},
 ) =>
   new SpawnSystem(state, factory, {
     definitions: loadDefaultContent(TICK_RATE),
@@ -31,6 +34,7 @@ const newSystem = (
     steering: HORDE_STEERING,
     weights: LANE_ASSESSMENT_WEIGHTS,
     formationId: 'ranks',
+    guards: plan.guards ?? {},
   });
 
 const setUp = (overrides: DeepPartial<GameConfig> = {}) => {
@@ -39,6 +43,7 @@ const setUp = (overrides: DeepPartial<GameConfig> = {}) => {
     limits: overrides.limits ?? {},
   });
   const state = new GameState(config, 1, TWO_LANE_MAP);
+  spawnMapStructures(state);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
   const system = newSystem(state, factory);
   const spawned: GameEventMap['horde-spawned'][] = [];
@@ -130,7 +135,9 @@ describe('SpawnSystem', () => {
 
     runTo(0);
 
-    expect(state.entities.size).toBe(64);
+    expect(
+      state.entities.countOnTeam('light', Unit) + state.entities.countOnTeam('dark', Unit),
+    ).toBe(64);
     expect(orphans).toEqual([]);
   });
 
@@ -166,6 +173,7 @@ describe('SpawnSystem', () => {
       1,
       TWO_LANE_MAP,
     );
+    spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
     const towersOnly = Object.fromEntries(
       Object.entries(SPAWN_WAVES).filter(([kind]) => kind !== 'stronghold'),
@@ -196,8 +204,65 @@ describe('SpawnSystem', () => {
     ],
   ])('rejects a plan with %s when it is built', (_, plan, message) => {
     const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+    spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
 
     expect(() => newSystem(state, factory, plan)).toThrow(message);
+  });
+
+  it('stops a destroyed tower’s waves', () => {
+    const { state, runTo } = setUp({ match: { initialHordesPerTeam: 0 } });
+    state.entities.forEach((entity) => {
+      if (entity.kind === 'spawner-tower' && state.entities.teamOf(entity.id) === 'dark') {
+        entity.getComponent(Health).applyDamage(1e6);
+      }
+    });
+
+    runTo(60);
+
+    // Only the SpawnerTowers send light hordes once the opening wave is off.
+    const light: string[] = [];
+    state.hordes.forEach(({ team, weightClass }) => {
+      if (weightClass === 'light') {
+        light.push(team);
+      }
+    });
+    expect(light).toEqual(['light']);
+  });
+
+  describe('guards (18 §7)', () => {
+    it('lays out and spawns the guard plans through its roster on the first tick', () => {
+      const config = createDefaultGameConfig({
+        match: { initialHordesPerTeam: 0, countdownSeconds: 6000 },
+      });
+      const state = new GameState(config, 1, TWO_LANE_MAP);
+      spawnMapStructures(state);
+      const factory = new EntityFactory(
+        createDefaultEntityRegistry(),
+        loadDefaultContent(TICK_RATE),
+      );
+      newSystem(state, factory, { guards: GUARD_PLANS }).update({
+        state,
+        logger: new NullLogger(),
+      });
+
+      const filled: (string | null)[] = [];
+      state.guards.forEach(({ guardId }) => filled.push(guardId));
+      expect(filled.length).toBeGreaterThan(0);
+      expect(filled.every((id) => id !== null)).toBe(true);
+    });
+
+    it('rejects a guard plan that names an unknown mob', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+      spawnMapStructures(state);
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      const guards = {
+        stronghold: { ...GUARD_PLANS.stronghold, table: [{ mobId: 'nope', count: 1 }] },
+      };
+
+      expect(() => newSystem(state, factory, { guards: guards as typeof GUARD_PLANS })).toThrow(
+        /stronghold guard plan names unknown mob "nope"/,
+      );
+    });
   });
 });

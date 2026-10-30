@@ -100,6 +100,20 @@ describe('StateHasher', () => {
     expect(hasher.hash(state)).not.toBe(before);
   });
 
+  it('changes when a collider turns unbreakable', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const wall = new Soldier('entity-1', 'soldier');
+    wall.spawn({});
+    const collider = new Collider({ kind: 'circle', radius: 1 }, 'structure', true);
+    wall.addComponent(collider);
+    state.entities.add(wall);
+    const before = hasher.hash(state);
+
+    collider.setUnbreakable(true);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
   it('differs between seeds', () => {
     expect(hasher.hash(stateWithSoldier(1).state)).not.toBe(hasher.hash(stateWithSoldier(2).state));
   });

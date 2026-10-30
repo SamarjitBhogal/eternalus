@@ -111,6 +111,16 @@ export class EntityStore {
     return true;
   }
 
+  /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */
+  public attackTargetOf(id: EntityId): EntityId | null {
+    return this.entities.get(id)?.findComponent(Combat)?.targetId ?? null;
+  }
+
+  /** Clears the entity's attack target; does nothing when it cannot attack or is unknown. */
+  public clearAttackTarget(id: EntityId): void {
+    this.entities.get(id)?.findComponent(Combat)?.setTarget(null);
+  }
+
   /** The entity's team, or `undefined` when it is unknown or has no team. */
   public teamOf(id: EntityId): Team | undefined {
     return this.entities.get(id)?.findComponent(TeamMembership)?.team;

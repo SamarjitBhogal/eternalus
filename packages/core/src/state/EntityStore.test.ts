@@ -173,4 +173,23 @@ describe('EntityStore', () => {
     expect(store.isAlive('dummy')).toBe(false);
     expect(store.isAlive('nobody')).toBe(false);
   });
+
+  it("reads, sets and clears an entity's attack target", () => {
+    const store = storeWith('dummy');
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const attacker = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 0, y: 0 },
+    });
+    store.add(attacker);
+
+    expect(store.attackTargetOf(attacker.id)).toBeNull();
+    store.setAttackTarget(attacker.id, 'dummy');
+    expect(store.attackTargetOf(attacker.id)).toBe('dummy');
+    store.clearAttackTarget(attacker.id);
+    expect(store.attackTargetOf(attacker.id)).toBeNull();
+    store.clearAttackTarget('dummy');
+    expect(store.attackTargetOf('dummy')).toBeNull();
+    expect(store.attackTargetOf('nobody')).toBeNull();
+  });
 });

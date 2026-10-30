@@ -21,6 +21,8 @@ export abstract class Structure extends Entity {
   /** Always `'structure'`. */
   public readonly family: EntityFamily = 'structure';
 
+  private lane: string | null = null;
+
   /**
    * @param id - Unique id of this entity instance.
    * @param definitionId - Content definition this entity was built from.
@@ -33,21 +35,31 @@ export abstract class Structure extends Entity {
     super(id, definitionId);
   }
 
+  /** The lane this structure stands on (`MapLane.id`), or `null` off the lanes. */
+  public get laneId(): string | null {
+    return this.lane;
+  }
+
   /**
    * Installs the structure components from a placed spawn context.
    *
    * @throws Error when the context is not a placed context for this structure's definition.
    */
   protected installComponents(context: unknown): void {
-    const { definition, position, team } = new SpawnContextReader(this).placed<StructureDefinition>(
-      context,
-    );
+    const reader = new SpawnContextReader(this);
+    const { definition, position, team } = reader.placed<StructureDefinition>(context);
+    this.lane = reader.laneId(context);
 
     this.addComponent(new Transform(position, definition.footprintRadius));
     this.addComponent(new Health(definition.baseHealth));
     this.addComponent(new TeamMembership(team));
-    this.addComponent(
-      new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'structure', true),
+    const collider = new Collider(
+      { kind: 'circle', radius: definition.footprintRadius },
+      'structure',
+      true,
     );
+    // Walls and gates start the match unbreakable; `StructureSystem` flips it when the rule passes.
+    collider.setUnbreakable(definition.breakability.kind !== 'always');
+    this.addComponent(collider);
   }
 }

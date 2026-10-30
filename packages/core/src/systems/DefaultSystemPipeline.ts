@@ -2,6 +2,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { FORMATIONS } from '../content/mobs/formations/formations';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -23,6 +24,9 @@ import { ProgressionSystem } from './ProgressionSystem';
 import type { ProgressionContent } from './ProgressionSystem.types';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
+import { StructureSystem } from './StructureSystem';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { GUARD_PLANS } from '../content/structures/guardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
@@ -30,8 +34,8 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, the neighbour index, steering, combat, progression (kill XP),
- * spawning, death, then invariants last. This is the one place a system is added, at its position
- * in the tick (architecture 02 §9).
+ * structure losses and breakability, spawning, death, then invariants last. This is the one
+ * place a system is added, at its position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
  * step applies to every hit and every status event comes from one place.
@@ -77,9 +81,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             map.flowFieldCorridorHalfWidth,
           );
     super([
-      ...(hordes === undefined
-        ? []
-        : [...hordes.decide, new HordeSystem(state, HORDE_STEERING.marchSpeedFactor)]),
+      ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
       ...(hordes === undefined
@@ -88,13 +90,15 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
-              { [RANKS_FORMATION.id]: RANKS_FORMATION },
+              FORMATIONS,
+              HORDE_STEERING.slotArrivalRadius,
               flowFields,
             ),
           ]),
       new CombatSystem(damage),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
+      new StructureSystem(STRUCTURE_DEFINITIONS),
       ...(hordes === undefined
         ? []
         : [
@@ -105,6 +109,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
+              guards: GUARD_PLANS,
             }),
           ]),
       new DeathSystem(),
