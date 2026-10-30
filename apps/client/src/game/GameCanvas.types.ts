@@ -23,7 +23,8 @@ export type GameCanvasProps = {
   /** `SessionController.attachViewport`; the returned function runs on unmount. */
   readonly attach: (viewport: MatchViewport) => () => void;
   /**
-   * Whether the developer explorer's chrome and gestures are on (`?dev=1`; DEC-32, INBOX HC-F8).
+   * Whether the developer explorer's chrome and gestures are on when a match starts (`?dev=1`;
+   * DEC-32, INBOX HC-F8); DEC-105's hotkey shows or hides them during the match.
    */
   readonly isExplorerShown: boolean;
   readonly labels: GameCanvasLabels;

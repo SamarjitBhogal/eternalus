@@ -24,6 +24,7 @@ const MAGUS_LEGEND = firstAvailableSpecId('magus');
 
 const CHROME = {
   onInteriorChanged: () => undefined,
+  onExplorerChanged: () => undefined,
   setLeaveInterior: () => undefined,
   setOverview: () => undefined,
 };

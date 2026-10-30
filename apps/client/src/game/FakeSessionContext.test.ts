@@ -13,6 +13,7 @@ const VIEWPORT: MatchViewport = {
   canvas: new FakeViewportCanvas(),
   chrome: {
     onInteriorChanged: () => undefined,
+    onExplorerChanged: () => undefined,
     setLeaveInterior: () => undefined,
     setOverview: () => undefined,
   },

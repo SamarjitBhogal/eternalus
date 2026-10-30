@@ -254,6 +254,7 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'view-details': 'View Details',
   'toggle-developer-menu': 'Developer menu',
   'toggle-perf-overlay': 'Performance overlay',
+  'toggle-developer-camera': 'Developer camera tools',
 };
 
 /** Names of `MouseEvent.button` 0–4 as a captured chord shows them. */

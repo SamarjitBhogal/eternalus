@@ -9,7 +9,12 @@ import { MatchState } from './MatchState';
 
 const VIEWPORT: MatchViewport = {
   canvas: new FakeViewportCanvas(),
-  chrome: { onInteriorChanged: vi.fn(), setLeaveInterior: vi.fn(), setOverview: vi.fn() },
+  chrome: {
+    onInteriorChanged: vi.fn(),
+    onExplorerChanged: vi.fn(),
+    setLeaveInterior: vi.fn(),
+    setOverview: vi.fn(),
+  },
   isExplorerShown: false,
 };
 

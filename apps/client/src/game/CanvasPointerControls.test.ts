@@ -7,15 +7,17 @@ import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 import type { ViewportChrome } from './MatchViewport.types';
 
-/** A chrome that records the interior flag and keeps the actions it is given. */
+/** A chrome that records the interior and explorer flags and keeps the actions it is given. */
 function recordingChrome() {
   const actions: { leave: (() => void) | null; overview: (() => void) | null } = {
     leave: null,
     overview: null,
   };
   const interior: boolean[] = [];
+  const explorer: boolean[] = [];
   const chrome: ViewportChrome = {
     onInteriorChanged: (isInside) => interior.push(isInside),
+    onExplorerChanged: (isShown) => explorer.push(isShown),
     setLeaveInterior: (run) => {
       actions.leave = run;
     },
@@ -23,7 +25,7 @@ function recordingChrome() {
       actions.overview = run;
     },
   };
-  return { chrome, actions, interior };
+  return { chrome, actions, interior, explorer };
 }
 
 /** A 640 × 360 CSS-pixel canvas with twice as many device pixels, under the controls. */
@@ -31,7 +33,7 @@ function setUp(isExplorerShown: boolean) {
   const canvas = new FakeViewportCanvas(640, 360);
   canvas.width = 1280;
   canvas.height = 720;
-  const { chrome, actions, interior } = recordingChrome();
+  const { chrome, actions, interior, explorer } = recordingChrome();
   const match = {
     lookAtMinimapPoint: vi.fn<(x: number, y: number) => boolean>(() => false),
     panBy: vi.fn(),
@@ -52,7 +54,7 @@ function setUp(isExplorerShown: boolean) {
     canvas.dispatchEvent(pointer('pointerdown', x, y));
     canvas.dispatchEvent(pointer('pointerup', x + dx, y));
   };
-  return { canvas, actions, interior, match, controls, pointer, click };
+  return { canvas, actions, interior, explorer, match, controls, pointer, click };
 }
 
 describe('CanvasPointerControls in normal play', () => {
@@ -149,6 +151,49 @@ describe('CanvasPointerControls with the developer explorer', () => {
   it('removes every listener and takes the chrome actions back on detach', () => {
     const { canvas, actions, controls } = setUp(true);
     expect(canvas.listenerCount()).toBe(5);
+    controls.detach();
+    expect(canvas.listenerCount()).toBe(0);
+    expect(actions).toEqual({ leave: null, overview: null });
+  });
+});
+
+describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () => {
+  it('shows the explorer in normal play: drag, wheel and overview work, the chrome is told', () => {
+    const { canvas, actions, explorer, match, controls, pointer } = setUp(false);
+
+    controls.toggleExplorer();
+
+    expect(explorer).toEqual([true]);
+    expect(canvas.listenerCount()).toBe(5);
+    canvas.dispatchEvent(pointer('pointerdown', 100, 50));
+    expect(canvas.hasPointerCapture(7)).toBe(true);
+    canvas.dispatchEvent(pointer('pointermove', 110, 45));
+    expect(match.panBy).toHaveBeenCalledWith(20, -10);
+    canvas.dispatchEvent(syntheticEvent('wheel', { deltaY: 100 }));
+    expect(match.zoomBy).toHaveBeenCalledTimes(1);
+    actions.overview?.();
+    expect(match.overview).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides it again: no drag, wheel or overview, the chrome is told', () => {
+    const { canvas, actions, explorer, match, controls, pointer } = setUp(true);
+
+    controls.toggleExplorer();
+
+    expect(explorer).toEqual([false]);
+    expect(canvas.listenerCount()).toBe(2);
+    expect(actions.overview).toBeNull();
+    canvas.dispatchEvent(pointer('pointerdown', 100, 50));
+    expect(canvas.hasPointerCapture(7)).toBe(false);
+    canvas.dispatchEvent(pointer('pointermove', 110, 45));
+    canvas.dispatchEvent(syntheticEvent('wheel', { deltaY: 100 }));
+    expect(match.panBy).not.toHaveBeenCalled();
+    expect(match.zoomBy).not.toHaveBeenCalled();
+  });
+
+  it('leaves 0 listeners on detach after a toggle', () => {
+    const { canvas, actions, controls } = setUp(false);
+    controls.toggleExplorer();
     controls.detach();
     expect(canvas.listenerCount()).toBe(0);
     expect(actions).toEqual({ leave: null, overview: null });

@@ -30,6 +30,7 @@ const viewport = (canvas: FakeViewportCanvas): MatchViewport => ({
   canvas,
   chrome: {
     onInteriorChanged: () => undefined,
+    onExplorerChanged: () => undefined,
     setLeaveInterior: () => undefined,
     setOverview: () => undefined,
   },
