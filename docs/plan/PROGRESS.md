@@ -2475,32 +2475,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: none; the HUD branches keep DEC-48.
 
-### 2026-10-30 — Phase 2 / sprint 2.2 (fix, hordes leave the Stronghold) — fix/horde-leave-stronghold — SamarjitBhogal + Claude Code
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/horde-leave-stronghold — SamarjitBhogal + Claude Code
 
-- What was done: lane minions never left their base on the generated map. Hordes spawn at the
-  Stronghold's centre, inside its blocking footprint (40 m), and `LaneFollowMovementStrategy`
-  held any mob whose 6 m look-ahead hit blocked ground, so every one stood still. A mob on
-  unwalkable ground now skips the blocked-ground checks and walks straight to its slot
-  (`FlowQuery.isWalkableAt`, `FlowField`). Once out, mobs pressed against the footprint's edge
-  deadlocked: separation pushed each heading into the wall and all held. Where separation would
-  push a mob onto blocked ground it now keeps its own heading. Doc 18 §5.2 updated. Regression
-  tests (two strategy tests, one generated-map match test) fail on the old code.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
-  790 passed (790)"; client "Tests 419 passed (419)"; "✓ built in 169ms"; "Documentation check
-  passed."
-- Critic (architecture-reviewer): PASS, no blockers; both changes rated better than the design
-  (INBOX item). Applied its fixes: a `FlowField.isWalkableAt` unit test, a second wall probe only
-  when the heading was reverted, and a `ponytail:` note that the walk-out is narrowed when
-  `CollisionSystem` lands. Ponytail review: lean already.
-- Next step: draft PR into `phase/2-sprint-2-work`; owner sign-off on the doc 18 §5.2 update.
-
-### 2026-10-30 — Phase 2 / sprint 2.2 (merge, sign-off) — fix/horde-leave-stronghold — SamarjitBhogal + Claude Code
-
-- What was done: merged `phase/2-sprint-2-work` (PRs #59, #60) into PR #61; only this file
-  conflicted, both sides kept. CodeRabbit's one finding asks for the product owner's sign-off on
-  the doc 18 §5.2 change. Under ADR 0018's amendment (DEC-96) only the owner's own review or
-  comment counts, so it stays open with the `INBOX.md` item; the thread is answered on the PR.
+- What was done: hordes spawn inside the Stronghold's blocking footprint, so the lane steering held
+  every minion; a mob on unwalkable ground now walks straight to its slot (`isWalkableAt`), and one
+  separation would push onto blocked ground keeps its own heading (crowds at a wall deadlocked).
+  Doc 18 §5.2 updated; regression tests fail on the old code. Critic PASS (both changes better
+  than the design; its fixes applied); ponytail: lean already. Merged the phase branch (#59, #60).
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   791 passed (791)"; client "Tests 419 passed (419)"; "✓ built in 172ms"; "Documentation check
   passed."
-- Next step: the product owner signs off (or not) on the PR; then mark ready for review.
+- Next step: the product owner signs off on the doc 18 §5.2 change on PR #61 (ADR 0018, DEC-96;
+  `INBOX.md` item); then mark it ready for review.
