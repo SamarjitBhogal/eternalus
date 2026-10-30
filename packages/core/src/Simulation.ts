@@ -13,6 +13,7 @@ import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
+import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
@@ -51,13 +52,16 @@ export class Simulation {
     debug = RELEASE_DEBUG_CONFIG,
     content,
     levelCurves,
+    weapons,
   }: SimulationOptions) {
     this.state = new GameState(validateGameConfig(config), seed);
+    const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
-    const units = content ?? loadDefaultContent(this.state.config.tickRate, curves);
+    const weaponSource = weapons ?? loadWeapons(tickRate);
+    const units = content ?? loadDefaultContent(tickRate, curves, weaponSource);
     this.commandContext = {
       state: this.state,
-      factory: new EntityFactory(createDefaultEntityRegistry(), units),
+      factory: new EntityFactory(createDefaultEntityRegistry(), units, undefined, weaponSource),
     };
     this.systemContext = { state: this.state, logger };
     // PROTOTYPE(PROTO-01) TEMPORARY: replace this hand-built controller list with

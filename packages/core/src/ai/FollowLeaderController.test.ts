@@ -8,6 +8,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { GameState } from '../state/GameState';
 import type { Vec2 } from '../utils/geometry.types';
 import { FollowLeaderController } from './FollowLeaderController';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 
 const PROFILE = {
   followDistance: 2,
@@ -19,7 +20,12 @@ const PROFILE = {
 
 const setup = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    loadDefaultContent(30),
+    undefined,
+    loadWeapons(30),
+  );
   const add = (kind: string, definitionId: string, position: Vec2, team: 'light' | 'dark') => {
     const entity = factory.create(kind, definitionId, { position, team });
     state.entities.add(entity);

@@ -3,7 +3,7 @@ import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
-import type { DefinitionSource } from './entities/EntityFactory.types';
+import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { System } from './systems/System.types';
 
 /** Everything a `Simulation` is built from (architecture 03 §6). Only the first three are required. */
@@ -22,4 +22,6 @@ export type SimulationOptions = {
   readonly content?: DefinitionSource;
   /** The level curves Legends level along; `loadLevelCurves()` when omitted. */
   readonly levelCurves?: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
+  /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
+  readonly weapons?: WeaponSource;
 };

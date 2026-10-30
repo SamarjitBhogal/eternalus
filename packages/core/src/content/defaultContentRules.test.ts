@@ -6,6 +6,7 @@ import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import { ContentValidator } from './validation/ContentValidator';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
+import { KnownWeaponRule } from './validation/KnownWeaponRule';
 import { LevelScalingRule } from './validation/LevelScalingRule';
 import { PositiveAetherRule } from './validation/PositiveAetherRule';
 import { PositiveStatsRule } from './validation/PositiveStatsRule';
@@ -20,6 +21,7 @@ describe('createDefaultContentRules', () => {
       PositiveAetherRule,
       KnownLevelCurveRule,
       LevelScalingRule,
+      KnownWeaponRule,
     ]);
   });
 
@@ -38,5 +40,18 @@ describe('createDefaultContentRules', () => {
       'Invalid content: Bad_Id: id must be kebab-case; ' +
         'Bad_Id: baseHealth must be a positive finite number',
     );
+  });
+
+  it('rejects a Legend whose default weapon is not among the given weapons', () => {
+    const validator = new ContentValidator(
+      createDefaultContentRules(undefined, { has: () => false }),
+    );
+    const armed = new ContentCatalogue([
+      { ...LEGEND_CLASSES.get('warrior'), defaultLoadout: { primaryWeaponId: 'test-talons' } },
+    ]);
+
+    expect(() => {
+      validator.validate(armed);
+    }).toThrow('warrior: defaultLoadout.primaryWeaponId "test-talons" names no weapon');
   });
 });
