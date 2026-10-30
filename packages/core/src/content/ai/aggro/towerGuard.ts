@@ -2,12 +2,11 @@ import type { AggroRuleDefinition } from '../ai.types';
 
 /**
  * The tower guard's aggro rules (architecture 18 §7, 11 §4.4): the lane minion's priority list
- * without the lane objective, and a radius that covers the guard's leash so it defends the whole
- * perimeter. Its leash is the structure's guard plan, so `leashRadius` here is unused by guards.
+ * without the lane objective, and a radius that stays inside the guard's leash, measured from its post. Its leash is the structure's guard plan, so `leashRadius` here is unused by guards.
  */
 export const TOWER_GUARD_AGGRO = {
   id: 'tower-guard',
-  acquisitionRadius: 8, // TUNE: balancing.md's 8 m guard leash, so a guard sees its perimeter
+  acquisitionRadius: 6, // TUNE: the 8 m leash less the 2 m post gap, so a guard acquires only what it may chase
   priority: [
     'legend-attacking-ally-legend',
     'minion-attacking-ally-legend',

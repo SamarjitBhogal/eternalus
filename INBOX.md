@@ -27,7 +27,15 @@ Reply inline (`Decision: …`).
       the lane's end the horde stays". (3) **Interpretation:** a guard's leash is measured from its
       structure's **edge** ("don't leave the tower's perimeter"); from the centre, an 8 m leash is
       inside a 14 m tower. (4) **Stand-in:** the Stronghold's "ranged" light guards fight in melee
-      until projectiles exist (sprint 2.3). Approve, or say what to change; doc 18 follows.
+      until projectiles exist (sprint 2.3). (5) **Better than the design:** the lane-order
+      structure list (18 §6.2 puts it in the `WorldMap` structures index) is `state/LaneStructures`,
+      built from the structure entities once they spawn, so `ai/` reads it through `state/` and it
+      carries each structure's starting health. (6) **Stronghold leash:** 07 §6 says Stronghold
+      guards "leash to the walls"; the code leashes them 8 m from the Stronghold's edge (about 60 m
+      inside the wall ring). Leash to the wall ring's radius instead? (7) **Guard XP:** a killed
+      guard pays its minion class's `xpValue`; no reference gives guards their own. (8) **DISC-21
+      timing:** a lost SpawnerTower drops two light Stronghold posts, but a guard already on one
+      stays until it dies. Approve, or say what to change; doc 18 follows.
 
 - [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR

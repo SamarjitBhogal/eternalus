@@ -105,15 +105,16 @@ M4 needs only `WorldMap`, so it can run beside M2.
 
 Each stand-in is removed by the phase named.
 
-| Stand-in                                                                                                                                                | Used in | Replaced by                                                           |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------- |
-| Nothing marks a lane flow field dirty: no event reports a gate or terrain change, so the time-sliced rebuild runs only when a test asks for it          | M4      | the gate and structure changes of doc 07 §10                          |
-| No wall-avoidance term: the flow field's blocked corridor cells point back to open ground instead, and nothing resolves collisions                      | M4      | `CollisionSystem` and the wall-avoidance term (10 §8–§9)              |
-| Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2) | M1      | the owner's answer, wherever it puts them                             |
-| No entity kind is a turret, so the aggro list's `turret-attacking-ally-minion` entry never matches                                                      | M2b     | turret entities (sprint 2.3)                                          |
-| The Stronghold's light guards fight in melee: no ranged attack exists until projectiles (sprint 2.3)                                                    | M2c     | the ranged attack strategy of sprint 2.3                              |
-| Horde separation falls off linearly with distance, not as 1/r (10 §12)                                                                                  | M1      | When playtests ask for it; the strategy is the one place to change    |
-| The snapshot carries no hordes or team counters                                                                                                         | M1      | When a view or the HUD reads them (`MinimapView`, the developer menu) |
+| Stand-in                                                                                                                                                 | Used in | Replaced by                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------- |
+| Nothing marks a lane flow field dirty: no event reports a gate or terrain change, so the time-sliced rebuild runs only when a test asks for it           | M4      | the gate and structure changes of doc 07 §10                          |
+| No wall-avoidance term: the flow field's blocked corridor cells point back to open ground instead, and nothing resolves collisions                       | M4      | `CollisionSystem` and the wall-avoidance term (10 §8–§9)              |
+| Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2)  | M1      | the owner's answer, wherever it puts them                             |
+| No entity kind is a turret, so the aggro list's `turret-attacking-ally-minion` entry never matches                                                       | M2b     | turret entities (sprint 2.3)                                          |
+| Guard plans are content keyed by structure kind and the posts live in `state.guards`, since no `Spawner` component exists (07 §6 puts `GuardPlan` on it) | M2c     | the `Spawner` component (Phase 2 sprint 2.7)                          |
+| The Stronghold's light guards fight in melee: no ranged attack exists until projectiles (sprint 2.3)                                                     | M2c     | the ranged attack strategy of sprint 2.3                              |
+| Horde separation falls off linearly with distance, not as 1/r (10 §12)                                                                                   | M1      | When playtests ask for it; the strategy is the one place to change    |
+| The snapshot carries no hordes or team counters                                                                                                          | M1      | When a view or the HUD reads them (`MinimapView`, the developer menu) |
 
 ## Related
 

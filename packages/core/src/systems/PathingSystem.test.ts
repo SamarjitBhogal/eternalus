@@ -230,4 +230,68 @@ describe('PathingSystem', () => {
     expect(isServingAfterOneTick).toBe(true);
     expect(field?.integration).not.toBe(serving);
   });
+
+  describe('guards (18 §7)', () => {
+    /** A light guard at (60, 20) posted at (60, 30), with no horde anywhere. */
+    const guarded = () => {
+      const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+      const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      const add = (team: 'light' | 'dark', x: number, y: number, definitionId: string) => {
+        const entity = factory.create('light-mob', definitionId, { team, position: { x, y } });
+        state.entities.add(entity);
+        return entity;
+      };
+      const guard = add('light', 60, 20, 'light-guard');
+      state.guards.add({
+        id: 'home:0',
+        homeId: 'home',
+        team: 'light',
+        mobId: 'light-guard',
+        row: 0,
+        indexInRow: 0,
+        postX: 60,
+        postY: 30,
+        homeX: 60,
+        homeY: 40,
+        homeRadius: 5,
+        leashRadius: 8,
+        leashTolerance: 2,
+        respawnTicks: 3600,
+      });
+      state.guards.fill(0, guard.id);
+      const step = () => {
+        space.begin(state.entities.size);
+        state.entities.forEach((entity) => {
+          const { x, y } = entity.getComponent(Transform).position;
+          space.add(entity.id, x, y);
+        });
+        space.commit();
+        new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+          state,
+          logger,
+        });
+      };
+      return { state, guard, add, step };
+    };
+
+    it('walks a guard with no target back to its post, with no horde in the match', () => {
+      const { state, guard, step } = guarded();
+      expect(state.hordes.size).toBe(0);
+
+      step();
+
+      expect(guard.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
+    });
+
+    it('chases the guard’s attack target instead of its post', () => {
+      const { state, guard, add, step } = guarded();
+      const enemy = add('dark', 70, 20, 'light-minion');
+      state.entities.setAttackTarget(guard.id, enemy.id);
+
+      step();
+
+      expect(guard.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+    });
+  });
 });

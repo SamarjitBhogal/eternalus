@@ -50,8 +50,8 @@ export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightC
 type GuardTableEntry = {
   readonly mobId: string;
   readonly count: number;
-  /** Guards of this row lost for good per destroyed SpawnerTower of the team (DISC-21, 07 §8). */
-  readonly lessPerLostSpawnerTower?: number;
+  /** `count` guards of this row lost for good per destroyed team structure of kind `perLost` (DISC-21, 07 §8). */
+  readonly shrink?: { readonly perLost: string; readonly count: number };
 };
 
 /**

@@ -36,8 +36,8 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, the neighbour index, steering, combat, progression (kill XP),
- * minion veterancy, structure losses and breakability, spawning, death, then invariants last. This is the one place a system is added, at its position
- * in the tick (architecture 02 §9).
+ * minion veterancy, structure losses and breakability, spawning, death, then invariants last.
+ * This is the one place a system is added, at its position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
  * step applies to every hit and every status event comes from one place.
