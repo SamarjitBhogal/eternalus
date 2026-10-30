@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { figmaHudState } from '../../bridge/__fixtures__/hudFixtures';
 import { assetsSlice } from '../../bridge/slices/assetsSlice';
 import { accessibleNames, renderWithStore } from '../testStore';
-import { FIGMA_MATCH_SETUP, withHudSetup } from './hudTestSupport';
+import { cssRule, FIGMA_MATCH_SETUP, withHudSetup } from './hudTestSupport';
 import { StructureStrip } from './StructureStrip';
 import styles from './StructureStrip.module.css';
 import css from './StructureStrip.module.css?raw';
@@ -78,6 +78,52 @@ describe('StructureStrip', () => {
     ]);
     const figma = renderWithStore(<StructureStrip side="allied" />, withHudSetup(figmaHudState()));
     expect(accessibleNames(figma, '[role=group]')[1]).toBe('Stronghold, 39%');
+  });
+
+  it('draws a destroyed tile with cracks over its icon and no health bar (DEC-69, DEC-108)', () => {
+    const { match } = figmaHudState();
+    const html = renderWithStore(<StructureStrip side="allied" />, {
+      ...withHudSetup(figmaHudState()),
+      match: {
+        ...match,
+        structures: match.structures.map((s) =>
+          s.structureId === 'light-wall-segment-0' ? { ...s, health: { current: 0, max: 46 } } : s,
+        ),
+      },
+    });
+    /** A tile's markup: from its opening tag to the next tile's (or the end). */
+    const tile = (id: string): string => {
+      const start = html.lastIndexOf(
+        '<div role="group"',
+        html.indexOf(`data-structure-id="${id}"`),
+      );
+      const end = html.indexOf('<div role="group"', start + 1);
+      return html.slice(start, end === -1 ? undefined : end);
+    };
+
+    expect(accessibleNames(html, '[role=group]').slice(1, 3)).toEqual([
+      'Stronghold, 39%',
+      'Wall, destroyed',
+    ]);
+    expect(tile('light-wall')).toContain('data-destroyed="true"');
+    expect(tile('light-wall')).toContain(
+      `<span class="${String(styles.cracks)}" aria-hidden="true">`,
+    );
+    expect(tile('light-wall')).not.toContain('role="meter"');
+    expect(tile('light-stronghold')).not.toContain('data-destroyed');
+    expect(tile('light-stronghold')).toContain('role="meter"');
+    expect(html.match(/role="meter"/g)).toHaveLength(7);
+  });
+
+  it('darkens a destroyed icon and draws its cracks lighter, in CSS (DEC-69)', () => {
+    expect(cssRule(css, ".tile[data-destroyed='true'] .icon")).toContain(
+      'background-color: color-mix(in srgb, var(--structure-ink) 50%, var(--hud-frame-backdrop))',
+    );
+    expect(cssRule(css, '.cracks::before,\n.cracks::after')).toContain(
+      'background: var(--hud-cream)',
+    );
+    expect(cssRule(css, '.cracks::before')).toContain('clip-path: polygon(');
+    expect(cssRule(css, '.cracks::after')).toContain('clip-path: polygon(');
   });
 
   it('draws no icon before its file has loaded', () => {

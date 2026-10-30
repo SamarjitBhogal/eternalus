@@ -143,7 +143,7 @@ describe('ClassSelectStep', () => {
       'Vanguard Assault 2 Allies',
       'Sentinel Tank 3 Allies',
       'Magus Ranged 2 Allies',
-      'Harbinger aerial Locked',
+      'Coming Soon...',
     ]);
     expect(html).toContain('>Magus</h3>');
     expect(html).toContain('>Aether  ·  Ranged Support</p>');
@@ -161,7 +161,7 @@ describe('ClassSelectStep', () => {
     expect(html).toContain('src="/assets/test/magus-sigil@player-tile.webp"');
   });
 
-  it('draws the Figma state from its plates: the row plate, four card plates, the Select Class chrome', () => {
+  it('draws the Figma state from its plates: the row plate, three card plates, the Select Class chrome; the locked card its void (DEC-104)', () => {
     const html = render('magus');
 
     expect(html).toContain('src="/assets/test/class-row-plate-magus.webp"');
@@ -172,7 +172,7 @@ describe('ClassSelectStep', () => {
       'plate',
       'plate',
       'plate',
-      'plate',
+      'cover',
     ]);
     expect(html).toContain(CHROME_IMG);
     expect(html).not.toMatch(/z-index/);
@@ -233,7 +233,7 @@ describe('ClassSelectStep', () => {
       'cover',
       'plate',
       'cover',
-      'plate',
+      'cover',
     ]);
     expect(html).toContain('>Vanguard</h3>');
     expect(html).toContain('>Templar<');

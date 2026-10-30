@@ -5,7 +5,10 @@ import type { LegendClassCard } from '../../bridge/catalogue.types';
 import type { RootState } from '../../bridge/store';
 import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassSelectCard } from './ClassSelectCard';
+import globalCss from '../../styles/global.css?raw';
+import lockStyles from '../components/LockGlyph.module.css';
 import cardCss from './ClassSelectCard.module.css?raw';
+import cardStyles from './ClassSelectCard.module.css';
 import { classSlot } from './classSelectLayout';
 
 const cardOf = (classId: string): LegendClassCard => {
@@ -170,14 +173,41 @@ describe('ClassSelectCard', () => {
     expect(rootTag(render('sentinel'))).not.toContain('data-previewed');
   });
 
-  it('shows a locked class with a lock and "Locked" instead of its ally count (CD-05)', () => {
+  it('shows a locked class as "Coming Soon..." over a void with a lock, never its art (DEC-104)', () => {
     const html = render('harbinger');
 
     expect(rootTag(html)).toContain('aria-disabled="true"');
     expect(rootTag(html)).toContain('tabindex="-1"');
-    expect(accessibleNames(html, '[role=radio]')).toEqual(['Harbinger aerial Locked']);
-    expect(html).toContain('<svg');
-    expect(html).not.toContain('Allies');
+    expect(rootTag(html)).toContain('data-art-mode="cover"');
+    expect(accessibleNames(html, '[role=radio]')).toEqual(['Coming Soon...']);
+    expect(html).toContain(`class="${String(cardStyles.name)} ${String(cardStyles.comingSoon)}"`);
+    expect(html).toContain(`class="${String(lockStyles.glyph)} ${String(cardStyles.voidLock)}"`);
+    expect(html).toContain('data-arch-art="missing"');
+    expect(html).not.toContain('harbinger-card');
+    for (const text of ['Harbinger', 'aerial', 'Locked', 'Allies']) {
+      expect(html).not.toContain(text);
+    }
+  });
+
+  it('draws the void purple at the frame and black inside, the text in the countdown red, a lock cursor (DEC-59, DEC-104)', () => {
+    const rule = (selector: string): string =>
+      new RegExp(`${selector.replace(/[.[\]()*+?^$|]/g, '\\$&')} \\{([^}]*)\\}`).exec(
+        cardCss,
+      )?.[1] ?? 'missing';
+    const voidFill = rule(".card[aria-disabled='true'] [data-arch-layer='art']::before");
+
+    expect(voidFill).toContain('clip-path: url(#sel-arch-clip)');
+    expect(voidFill).toMatch(
+      /var\(--selection-ink\) 55%,\s*var\(--team-dark-accent\) 90%,\s*var\(--class-harbinger-accent\) 100%/,
+    );
+    expect(voidFill).toContain('repeating-conic-gradient(');
+    expect(rule(".card[aria-disabled='true'] [data-arch-part='under']")).toContain('fill: none');
+    expect(rule('.comingSoon')).toContain('color: var(--selection-countdown)');
+    expect(rule(".card[aria-disabled='true']")).toContain('cursor: var(--selection-cursor-locked)');
+    expect(rule('.card .voidLock')).toContain('mask-composite: intersect');
+    expect(globalCss).toMatch(
+      /--selection-cursor-locked:\s*url\("data:image\/svg\+xml,[^"]+"\)\s+12 15,\s+not-allowed;/,
+    );
   });
 
   it('carries no colour literal in its markup', () => {

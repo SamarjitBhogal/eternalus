@@ -165,6 +165,8 @@ export const STRINGS = {
     back: 'back',
     allyCount: (count: number): string => (count === 1 ? '1 Ally' : `${String(count)} Allies`),
     locked: 'Locked',
+    /** A locked class card's only text, in place of its name (DEC-59, DEC-104). */
+    comingSoon: 'Coming Soon...',
     missingName: '—',
     ratingAxes: {
       damage: 'Damage',
@@ -197,6 +199,8 @@ export const STRINGS = {
     captureProgress: 'Capture progress',
     noData: '—',
     emptySlot: 'empty',
+    /** A structure tile's state once its structure is destroyed (DEC-69). */
+    destroyed: 'destroyed',
     ready: 'ready',
     notReady: 'not ready',
     /** Objective shield letters in lane order (65:620, 65:613, 65:617); past the end, `index + 1`. */

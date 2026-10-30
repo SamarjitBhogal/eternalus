@@ -7,7 +7,7 @@ import type {
   LockedClassPresentation,
   SpecPresentation,
 } from './CataloguePresentation.types';
-import { MAGUS_HUD, SENTINEL_HUD, WARRIOR_HUD } from './hudPresentation';
+import { EMPTY_HUD, WARRIOR_HUD } from './hudPresentation';
 
 /** Keyed by core class id. Plates are present on both renderers; `'css'` empties them (DEC-54). */
 export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
@@ -34,7 +34,7 @@ export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
       rowPlate: null,
     },
     detailIcons: {},
-    hud: SENTINEL_HUD,
+    hud: EMPTY_HUD,
     layoutOverrides: {},
   },
   magus: {
@@ -51,7 +51,7 @@ export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
       proficiency: 'magus-detail-staff',
       specialty: 'magus-detail-arcane-intellect',
     },
-    hud: MAGUS_HUD,
+    hud: EMPTY_HUD,
     layoutOverrides: {
       alternate: { detailIcons: { specialty: 'magus-detail-arcane-intellect-flame' } },
     },
