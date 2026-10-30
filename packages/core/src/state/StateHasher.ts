@@ -52,6 +52,15 @@ export class StateHasher {
       });
       parts.push(['hordes', ...hordes]);
     }
+    // Lost towers are appended only once a lane has one, for the same reason.
+    const lost = (['light', 'dark'] as const).flatMap((team) =>
+      Object.keys(state.teams[team].towersLostByLane)
+        .sort()
+        .map((lane) => [team, lane, state.teams[team].towersLostByLane[lane]]),
+    );
+    if (lost.length > 0) {
+      parts.push(['enraged', ...lost]);
+    }
     // Brains are appended only once one exists, for the same reason.
     if (state.ai.size > 0 || state.ai.deferred.length > 0) {
       const brains: unknown[] = [...state.ai.deferred];

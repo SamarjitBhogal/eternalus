@@ -1,13 +1,7 @@
 import type { PlayableTeam } from '../teams/teams.types';
 import { sqrt } from '../utils/deterministicMath';
 import type { MutableVec2 } from '../utils/vec2.types';
-import {
-  DIRECTION_XS,
-  DIRECTION_YS,
-  LINE_STEP_FRACTION,
-  NO_DIRECTION,
-  UNREACHED,
-} from './FlowField.constants';
+import { DIRECTION_XS, DIRECTION_YS, NO_DIRECTION, UNREACHED } from './FlowField.constants';
 import type { WorldMap } from './WorldMap';
 
 /**
@@ -144,20 +138,6 @@ export class FlowField {
     toY: number,
     maxDistance: number,
   ): boolean {
-    const dx = toX - fromX;
-    const dy = toY - fromY;
-    const span = sqrt(dx * dx + dy * dy);
-    const reach = Math.min(span, maxDistance);
-    const stride = this.grid.cellSize * LINE_STEP_FRACTION;
-    const steps = Math.ceil(reach / stride);
-    for (let step = 1; step <= steps; step += 1) {
-      const along = Math.min(step * stride, reach) / span;
-      const col = Math.floor((fromX + dx * along) / this.grid.cellSize);
-      const row = Math.floor((fromY + dy * along) / this.grid.cellSize);
-      if (!this.grid.isWalkable(col, row)) {
-        return false;
-      }
-    }
-    return true;
+    return this.grid.isLineClear(fromX, fromY, toX, toY, maxDistance);
   }
 }

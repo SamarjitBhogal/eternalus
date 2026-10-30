@@ -14,6 +14,9 @@ export const MEDIUM_MINION = {
   visionRadius: 10, // TUNE:
   xpValue: 45, // TUNE: balancing.md "XP sources" (medium minion kill)
   movementStrategy: 'lane-follow',
+  controller: 'minion',
+  aiProfile: 'lane-minion',
+  attack: { strategy: 'melee', damage: 28, reach: 1.5, interval: 1.2 }, // TUNE: balancing.md medium minion (28 / 1.2 s); reach unspecified
   movement: {
     maxSpeed: 3.2, // TUNE: m/s, balancing.md medium minion
     acceleration: 16, // TUNE: m/s², top speed after 0.2 s

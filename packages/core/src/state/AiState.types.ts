@@ -1,8 +1,8 @@
-import type { ControllerId } from '../content/ai/ai.types';
+import type { AiMemory, ControllerId } from '../content/ai/ai.types';
 import type { SeededRandomState } from '../utils/SeededRandom.types';
 
-/** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */
-type AiMemory = Readonly<Record<string, string | number | boolean | null>>;
+/** Re-exported for `state/` readers; it lives in content types because `components/` reads it. */
+export type { AiMemory };
 
 /**
  * Everything one entity's controller remembers (architecture 11 §2), as plain data in state, so

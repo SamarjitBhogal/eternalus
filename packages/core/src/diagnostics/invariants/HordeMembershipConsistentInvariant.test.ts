@@ -44,6 +44,21 @@ describe('HordeMembershipConsistentInvariant', () => {
     expect(invariant.check(state)).toEqual([]);
   });
 
+  it('reports one violation, with its id and entity, for a single dead member (injected)', () => {
+    const { state, memberIds } = setUp();
+    const dead = memberIds[2] ?? '';
+    state.entities.get(dead)?.getComponent(Health).applyDamage(1e6);
+
+    const violations = invariant.check(state);
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toMatchObject({
+      invariantId: 'horde-membership-consistent',
+      severity: 'error',
+      entityId: dead,
+    });
+  });
+
   it('flags a dead member, a member gone since an earlier tick and a wrong leader (injected)', () => {
     const { state, horde, memberIds } = setUp();
     const [first = '', second = '', third = ''] = memberIds;

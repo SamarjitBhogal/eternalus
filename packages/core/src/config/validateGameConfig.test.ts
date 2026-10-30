@@ -67,6 +67,8 @@ describe('validateGameConfig', () => {
     ['map.flowFieldCorridorHalfWidth', { map: { flowFieldCorridorHalfWidth: 0 } }],
     ['map.flowFieldCellBudget', { map: { flowFieldCellBudget: 0 } }],
     ['map.flowFieldCellBudget', { map: { flowFieldCellBudget: 12.5 } }],
+    ['map.pathMaxExpansions', { map: { pathMaxExpansions: 0 } }],
+    ['map.pathSnapCells', { map: { pathSnapCells: -1 } }],
     ['map.presetId', { map: { presetId: '' } }],
     ['match.legendsPerTeam', { match: { legendsPerTeam: 0 } }],
     ['match.legendsPerTeam', { limits: { maxLegendsPerTeam: 5 } }],

@@ -22,6 +22,7 @@ import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 import { Match } from './Match';
+import { placeholderRoster } from './placeholderRoster';
 import {
   FOLLOW_VIEW_HEIGHT,
   FOLLOW_VIEW_WIDTH,
@@ -76,7 +77,14 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config, seed, logger, map, mapObjects }),
+        simulation: new Simulation({
+          config,
+          seed,
+          logger,
+          map,
+          mapObjects,
+          roster: placeholderRoster(config.match.legendsPerTeam, PLACEHOLDER_PLAYER.team),
+        }),
         map,
         presentation,
         tickRate: config.tickRate,

@@ -13,8 +13,8 @@ import { HordeSystem } from './HordeSystem';
 const FACTOR = 0.5;
 const logger = new NullLogger();
 
-const setUp = () => {
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+const setUp = (map: typeof TWO_LANE_MAP | null = TWO_LANE_MAP) => {
+  const state = new GameState(createDefaultGameConfig(), 1, map);
   const system = new HordeSystem(state, FACTOR);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const addHorde = (members: readonly [string, string][], progress = 0) => {
@@ -90,12 +90,27 @@ describe('HordeSystem', () => {
     expect(state.hordes.get(hordeId)?.progress).toBe(160);
   });
 
-  it('does nothing without a map', () => {
-    const state = new GameState(createDefaultGameConfig(), 1);
-    const system = new HordeSystem(state, FACTOR);
+  it('holds the anchor while the leader has an attack target, and marches again after', () => {
+    const { state, system, addHorde } = setUp();
+    const { hordeId, memberIds } = addHorde([['light-mob', 'light-minion']], 10);
+    const [leader = ''] = memberIds;
+    const { memberIds: enemies } = addHorde([['light-mob', 'training-dummy']]);
+    state.entities.setAttackTarget(leader, enemies[0] ?? '');
 
-    expect(() => {
-      system.update({ state, logger });
-    }).not.toThrow();
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
+
+    state.entities.clearAttackTarget(leader);
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
+  });
+
+  it('leaves the anchor where it is without a map', () => {
+    const { state, system, addHorde } = setUp(null);
+    const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
+
+    system.update({ state, logger });
+
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
   });
 });

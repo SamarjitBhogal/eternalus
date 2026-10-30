@@ -6,6 +6,7 @@ import { compareById } from '../utils/compareById';
 import { fnv1a } from '../utils/fnv1a';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { ControllerRegistry } from './defaultControllerRegistry';
+import { Perception } from './perception/Perception';
 
 /**
  * Asks each due entity's controller what it does next and queues the answers for the next tick
@@ -17,12 +18,15 @@ import type { ControllerRegistry } from './defaultControllerRegistry';
  *   when the entity is removed (on this system's next pass, 03 §4).
  * - **Cadence.** An entity is due when `(tick + fnv1a(id)) % everyTicks[controller] === 0`, which
  *   spreads decisions across ticks (ids are strings, so their hash stands in for 11 §6's number).
+ * - **Memory.** A controller returns its brain's memory and RNG state with its commands; this
+ *   system writes them back (architecture 11 §2), so controllers never change state.
  * - **Budget.** Last tick's deferred entities go first, then the due ones in id order; past
  *   `maxDecisionsPerTick` the rest wait for the next tick, first in line.
  */
 export class AiSystem {
   public readonly name = 'ai';
   private readonly removed: EntityId[] = [];
+  private readonly perception: Perception;
 
   /**
    * @param state - The match whose removals this system listens to.
@@ -36,28 +40,43 @@ export class AiSystem {
     private readonly cadence: AiCadence,
     private readonly enqueue: (command: Command) => void,
   ) {
+    this.perception = new Perception(state);
     state.events.on('entity-removed', ({ entityId }) => {
       this.removed.push(entityId);
     });
   }
 
   /**
-   * Checks that every controller the definitions name is registered, so a content error stops
-   * the match at construction instead of mid-tick.
+   * Checks that every controller the definitions name is registered and has the AI profile they
+   * name (the controller id when they name none), so a content error stops the match at
+   * construction instead of mid-tick.
    *
-   * @throws Error naming the first definition whose controller has no implementation.
+   * @throws Error naming the first definition whose controller or profile does not exist.
    */
   public static assertRegistered(
-    definitions: readonly { readonly id: string; readonly controller?: ControllerId }[],
+    definitions: readonly {
+      readonly id: string;
+      readonly controller?: ControllerId;
+      readonly aiProfile?: string;
+    }[],
     controllers: ControllerRegistry,
   ): void {
-    const missing = definitions.find(
-      ({ controller }) => controller !== undefined && controllers[controller] === undefined,
-    );
-    if (missing !== undefined) {
-      throw new Error(
-        `Definition "${missing.id}" names controller "${String(missing.controller)}", which is not registered.`,
-      );
+    for (const { id, controller, aiProfile } of definitions) {
+      if (controller === undefined) {
+        continue;
+      }
+      const implementation = controllers[controller];
+      if (implementation === undefined) {
+        throw new Error(
+          `Definition "${id}" names controller "${controller}", which is not registered.`,
+        );
+      }
+      const profile = aiProfile ?? controller;
+      if (!implementation.hasProfile(profile)) {
+        throw new Error(
+          `Definition "${id}" names AI profile "${profile}", which controller "${controller}" does not have.`,
+        );
+      }
     }
   }
 
@@ -89,7 +108,7 @@ export class AiSystem {
         ai.set(id, {
           controllerId: binding.controllerId,
           profileId: binding.profileId,
-          memory: {},
+          memory: binding.initialMemory,
           rngState: new SeededRandom(fnv1a(`${String(state.seed)}:${id}`)).getState(),
         });
       }
@@ -110,9 +129,19 @@ export class AiSystem {
   }
 
   private decide(state: GameState, id: EntityId): void {
-    const controllerId = state.ai.get(id)?.controllerId;
-    const controller = controllerId === undefined ? undefined : this.controllers[controllerId];
-    for (const command of controller?.decide(state, id) ?? []) {
+    const brain = state.ai.get(id);
+    const controller = brain === undefined ? undefined : this.controllers[brain.controllerId];
+    if (brain === undefined || controller === undefined) {
+      return;
+    }
+    const { commands, memory, rngState } = controller.decide({
+      state,
+      entityId: id,
+      brain,
+      perception: this.perception,
+    });
+    state.ai.set(id, { ...brain, memory, rngState });
+    for (const command of commands) {
       this.enqueue(command);
     }
   }

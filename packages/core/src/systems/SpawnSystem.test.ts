@@ -100,7 +100,11 @@ describe('SpawnSystem', () => {
 
     expect(summary(spawned)).toContain('dark lane-0 4');
     // Requested: 32 opening + 8 medium + 16 light + 4 heavy; kept out: 12 light and all 4 heavy.
-    expect(state.teams.dark).toEqual({ unitsRequested: 60, unitsSuppressed: 16 });
+    expect(state.teams.dark).toEqual({
+      unitsRequested: 60,
+      unitsSuppressed: 16,
+      towersLostByLane: {},
+    });
     expect(spawned.every(({ memberIds }) => memberIds.length > 0)).toBe(true);
   });
 

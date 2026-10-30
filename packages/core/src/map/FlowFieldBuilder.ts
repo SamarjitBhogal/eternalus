@@ -8,6 +8,7 @@ import {
   STRAIGHT_COST,
   UNREACHED,
 } from './FlowField.constants';
+import { CellHeap } from './CellHeap';
 import type { FlowField } from './FlowField';
 import type { WorldMap } from './WorldMap';
 
@@ -29,10 +30,8 @@ import type { WorldMap } from './WorldMap';
 export class FlowFieldBuilder {
   private integration: Uint16Array;
   private direction: Int8Array;
-  /** A binary min-heap of cells, and each cell's position in it (-1 when not queued). */
-  private readonly heap: Int32Array;
-  private readonly heapSlot: Int32Array;
-  private heapSize = 0;
+  /** The cells waiting to settle, cheapest first. */
+  private readonly heap: CellHeap;
   private field: FlowField | null = null;
 
   /** @param grid - The grid every field this builder fills routes over. */
@@ -40,8 +39,7 @@ export class FlowFieldBuilder {
     const cells = grid.cols * grid.rows;
     this.integration = new Uint16Array(cells);
     this.direction = new Int8Array(cells);
-    this.heap = new Int32Array(cells);
-    this.heapSlot = new Int32Array(cells);
+    this.heap = new CellHeap(cells, (a, b) => this.isBefore(a, b));
   }
 
   /** Whether a fill is in progress. */
@@ -53,12 +51,11 @@ export class FlowFieldBuilder {
   public begin(field: FlowField): void {
     this.integration.fill(UNREACHED);
     this.direction.fill(NO_DIRECTION);
-    this.heapSlot.fill(-1);
-    this.heapSize = 0;
+    this.heap.clear();
     this.field = field;
     if (field.isOpen(field.goal)) {
       this.integration[field.goal] = 0;
-      this.push(field.goal);
+      this.heap.push(field.goal);
     }
   }
 
@@ -72,11 +69,11 @@ export class FlowFieldBuilder {
       return 0;
     }
     let settled = 0;
-    while (settled < budget && this.heapSize > 0) {
-      this.settle(field, this.pop());
+    while (settled < budget && this.heap.size > 0) {
+      this.settle(field, this.heap.pop());
       settled += 1;
     }
-    if (this.heapSize === 0) {
+    if (this.heap.size === 0) {
       const { integration, direction } = field;
       field.adopt(this.integration, this.direction);
       this.integration = integration;
@@ -105,12 +102,7 @@ export class FlowFieldBuilder {
       const reach = cost + (step < 4 ? STRAIGHT_COST : DIAGONAL_COST);
       if (next !== -1 && reach < (this.integration[next] ?? UNREACHED)) {
         this.integration[next] = reach;
-        const slot = this.heapSlot[next] ?? -1;
-        if (slot === -1) {
-          this.push(next);
-        } else {
-          this.siftUp(slot);
-        }
+        this.heap.push(next);
       }
     }
     this.pointWallsOut(field, cell, col, row);
@@ -173,65 +165,5 @@ export class FlowFieldBuilder {
     const costA = this.integration[a] ?? UNREACHED;
     const costB = this.integration[b] ?? UNREACHED;
     return costA < costB || (costA === costB && a < b);
-  }
-
-  private push(cell: number): void {
-    this.heap[this.heapSize] = cell;
-    this.heapSlot[cell] = this.heapSize;
-    this.heapSize += 1;
-    this.siftUp(this.heapSize - 1);
-  }
-
-  private pop(): number {
-    const top = this.heap[0] ?? -1;
-    this.heapSize -= 1;
-    this.heapSlot[top] = -1;
-    if (this.heapSize > 0) {
-      this.place(this.heap[this.heapSize] ?? -1, 0);
-      this.siftDown(0);
-    }
-    return top;
-  }
-
-  private siftUp(start: number): void {
-    let slot = start;
-    const cell = this.heap[slot] ?? -1;
-    while (slot > 0) {
-      const parent = (slot - 1) >> 1;
-      const above = this.heap[parent] ?? -1;
-      if (!this.isBefore(cell, above)) {
-        break;
-      }
-      this.place(above, slot);
-      slot = parent;
-    }
-    this.place(cell, slot);
-  }
-
-  private siftDown(start: number): void {
-    let slot = start;
-    const cell = this.heap[slot] ?? -1;
-    for (;;) {
-      const left = slot * 2 + 1;
-      if (left >= this.heapSize) {
-        break;
-      }
-      const right = left + 1;
-      const leftCell = this.heap[left] ?? -1;
-      const rightCell = this.heap[right] ?? -1;
-      const child = right < this.heapSize && this.isBefore(rightCell, leftCell) ? right : left;
-      const childCell = child === right ? rightCell : leftCell;
-      if (!this.isBefore(childCell, cell)) {
-        break;
-      }
-      this.place(childCell, slot);
-      slot = child;
-    }
-    this.place(cell, slot);
-  }
-
-  private place(cell: number, slot: number): void {
-    this.heap[slot] = cell;
-    this.heapSlot[cell] = slot;
   }
 }

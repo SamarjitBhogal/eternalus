@@ -58,6 +58,7 @@ export { MapPresentationBuilder } from './map/MapPresentationBuilder';
 export { MapGenerator } from './map/MapGenerator';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
+export type { RosterSlot } from './Simulation.types';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {
   GameEventHandler,

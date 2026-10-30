@@ -19,6 +19,8 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
     navCellSize: 5, // TUNE: was DEFAULT_MAP_LAYOUT.navCellSize on feat/map-generator
     flowFieldCorridorHalfWidth: 25, // TUNE: room to route a 4-wide formation around an obstacle
     flowFieldCellBudget: 2000, // TUNE: Recommendation (sprint 3.2): rebuild cost well under 1 ms
+    pathMaxExpansions: 6000, // TUNE: a cost cap for A* (10 §9), not a gameplay number
+    pathSnapCells: 12, // TUNE: covers a Stronghold footprint on 5 m cells
     presetId: 'map-1',
   },
   match: {
