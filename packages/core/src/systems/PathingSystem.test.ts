@@ -13,9 +13,9 @@ import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStr
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
-import { SpaceIndex } from '../physics/SpaceIndex';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { WorldMap } from '../map/WorldMap';
+import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
 import { PathingSystem } from './PathingSystem';
 
@@ -31,7 +31,7 @@ describe('PathingSystem', () => {
     'sends the leader to the anchor and each member to its rank and file behind it%s',
     (_, isFillerSkipped) => {
       const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-      const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+      const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
       const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
       const { slotSpacing, ranksWidth } = RANKS_FORMATION;
       // Light on lane-0 walks +x along y 20; the anchor is 40 m in, at (60, 20).
@@ -85,7 +85,7 @@ describe('PathingSystem', () => {
 
   it('chases a member’s attack target instead of its slot, and stops at attack reach', () => {
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
     const minion = factory.create('light-mob', 'light-minion', {
       team: 'light',
@@ -142,7 +142,7 @@ describe('PathingSystem', () => {
       config.map.flowFieldCorridorHalfWidth,
     );
     const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
-    const state = new GameState(config, 1, BLOCKED_LANE_MAP, space);
+    const state = new GameState(config, 1, BLOCKED_LANE_MAP, { space });
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
     // Light marches +x; the minion is just past the rift (x 50..70) and its target is upstream,
     // behind it, so the lane field points away from the target and the straight line is blocked.
@@ -184,12 +184,9 @@ describe('PathingSystem', () => {
   describe('leaves every heading alone', () => {
     const setUpMember = (formationId: string, isMapped = true) => {
       const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-      const state = new GameState(
-        createDefaultGameConfig(),
-        1,
-        isMapped ? TWO_LANE_MAP : null,
+      const state = new GameState(createDefaultGameConfig(), 1, isMapped ? TWO_LANE_MAP : null, {
         space,
-      );
+      });
       const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
       const minion = factory.create('light-mob', 'light-minion', {
         team: 'light',

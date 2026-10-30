@@ -151,6 +151,40 @@ Reply inline (`Decision: …`).
     agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
     out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
     Accepted; doc 18 §8 says roster order (PR #46).
+- [ ] **Minion M8 — the neighbour grid's layout (better than the design, for sign-off).** Doc
+      10 §5 stores `SpatialHash` as a counting sort over a per-cell `cellStart` array. On a
+      generated map that array has hundreds of thousands of cells, and clearing and summing it
+      every tick took about three quarters of the simulation's time (the 3- and 5-lane routing
+      scenarios ran 57–60 s under coverage against a 60 s limit). M8 sorts the points by cell
+      instead (cost by unit count; queries binary-search a cell's run, results unchanged, now
+      5–9 s). If accepted, 10 §5's storage paragraph changes, and with it two claims there: a
+      rebuild becomes O(n log n), not O(n), and allocates one view object per rebuild.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): accepted; doc 10 §5 describes the sorted
+    layout and its costs (PR #47). Awaits the decisions log.
+- [ ] **Minion M8 — Rover and cast numbers, A\* placement.** (1) No reference doc gives the
+      Rover's numbers; `content/ai/difficulties/rover.ts` and `content/ai/rover.ts` start them
+      as `TUNE` (retreat below 20%, engage within 16 m, hunt within 20 m when 0.2 of a health
+      bar ahead, sense the human within 400 m), and `normal`/`rover` cast with chance 0.3/0.6
+      at most every 3 s/2 s. The Rover weighs a lane's pressure against the human's lane 3 to 1
+      (`ROVER_TACTICS.laneWeights`), counting pressure from its team's calmest lane, so it
+      leaves the human for a lane pushed most of the way to its end. Confirm or give values.
+      (2) Better than the design, for sign-off: the Phase 3 plan wants A\* "as a second
+      `MovementStrategy`", but bots steer by `move`
+      commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
+      the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
+      shows the cost.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
+    line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
+    judgement, which the owner may correct later, so they stay as built.
+- [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
+      `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
+      corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
+      and the M4 blocked-lane routing test fails, because mobs have no wall-avoidance term yet.
+      Deferred by the owner (chat, 2026-10-30) to `CollisionSystem` (10 §8–§9), marked with a
+      `ponytail:` note on `isLineClear`. No unit collides with blocked ground today, so a bot
+      clipping a corner has no visible effect.
 - [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
       `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
       than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it

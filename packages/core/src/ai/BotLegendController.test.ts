@@ -17,8 +17,13 @@ import { GameState } from '../state/GameState';
 import { BotLegendController } from './BotLegendController';
 import { Perception } from './perception/Perception';
 
+/** The shipped difficulties, plus `normal` pinned to never and to always cast. */
 const controller = new BotLegendController({
-  difficulties: BOT_DIFFICULTIES,
+  difficulties: {
+    ...BOT_DIFFICULTIES,
+    'never-casts': { ...NORMAL_BOT, id: 'never-casts', abilityUseChance: 0 },
+    'always-casts': { ...NORMAL_BOT, id: 'always-casts', abilityUseChance: 1 },
+  },
   retreatTo: RETREAT_STRUCTURES,
 });
 const RNG = { seed: 1, words: [1, 2, 3, 4] as const };
@@ -26,7 +31,7 @@ const RNG = { seed: 1, words: [1, 2, 3, 4] as const };
 /** A light Warrior laner on lane-0 (from x 20 to x 180 along y 20) of the two-lane map. */
 const setUp = (at = { x: 60, y: 20 }) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
@@ -79,7 +84,12 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
       { type: 'stop', actorId: bot },
       { type: 'move', actorId: bot, direction: { x: -20, y: 0 } },
     ]);
-    expect(decision.memory).toEqual({ lane: 'lane-0', isRetreating: true, targetId: null });
+    expect(decision.memory).toEqual({
+      lane: 'lane-0',
+      isRetreating: true,
+      targetId: null,
+      nextCastTick: 0,
+    });
   });
 
   it('Survive: of two equally near allied retreat points it takes the lower id', () => {
@@ -117,7 +127,7 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     const near = add('dark', 64);
     state.entities.get(far)?.getComponent(Health).applyDamage(1);
 
-    const decision = decide();
+    const decision = decide({ lane: 'lane-0' }, 'never-casts');
     expect(decision.commands).toEqual([
       { type: 'attack-target', actorId: bot, targetId: near },
       { type: 'move', actorId: bot, direction: { x: 4, y: 0 } },
@@ -125,9 +135,31 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decision.memory).toMatchObject({ targetId: near });
 
     state.entities.get(near)?.getComponent(Transform).moveTo({ x: 61, y: 20 });
-    expect(decide({ lane: 'lane-0', targetId: near }).commands).toEqual([
+    expect(decide({ lane: 'lane-0', targetId: near }, 'never-casts').commands).toEqual([
       { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
     ]);
+  });
+
+  it('Fight: casts at its enemy when the roll comes up, then waits out the cast interval', () => {
+    const { state, bot, add, decide } = setUp();
+    const enemy = add('dark', 64);
+
+    const decision = decide({ lane: 'lane-0', targetId: enemy }, 'always-casts');
+    expect(decision.commands).toContainEqual({
+      type: 'cast-ability',
+      actorId: bot,
+      slot: 'ability-1',
+      aim: { point: { x: 64, y: 20 }, targetId: enemy },
+    });
+    expect(decision.memory).toMatchObject({
+      nextCastTick: state.tick + NORMAL_BOT.castIntervalTicks,
+    });
+    expect(decision.rngState).not.toEqual(RNG);
+    const waiting = decide(
+      { lane: 'lane-0', targetId: enemy, nextCastTick: state.tick + 1 },
+      'always-casts',
+    );
+    expect(waiting.commands.some(({ type }) => type === 'cast-ability')).toBe(false);
   });
 
   it('Push: walks with the most advanced allied horde on its lane', () => {

@@ -13,7 +13,7 @@ import { Perception } from './Perception';
 
 const setUp = () => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const add = (team: 'light' | 'dark', x: number, kind = 'light-mob', id = 'light-minion') => {
     const entity = factory.create(kind, id, { team, position: { x, y: 10 } });
