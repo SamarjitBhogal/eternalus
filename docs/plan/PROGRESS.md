@@ -2239,3 +2239,37 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   759 passed (759)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: push, then CodeRabbit re-review and approval.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/object-pool — claudiodh + Claude Code
+
+- What was done: SCRUM-427. `ObjectPool<T>` in `packages/core/src/utils/` (Object Pool, 04 §11,
+  research §6): `capacity` objects made up front, `reset` on `acquire` and on `release`,
+  `acquire()` returns `undefined` when empty, a double release throws. Test covers the phase 1
+  plan's "resets fields on acquire, nulls references on release". Not exported from `index.ts`
+  (the client does not need it). Pooled `GameEvents` payloads are not wired: they clash with the
+  recent-events ring buffer and with handlers that keep payloads; question added to `INBOX.md`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 616 passed (616)"; client "Tests 416 passed (416)"; "✓ built in 106ms"; "Documentation
+  check passed."
+- Next step: Sam answers the INBOX item; the first real user is projectiles (SCRUM-169).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/object-pool (review round) — claudiodh + Claude Code
+
+- What was done: PR #51 review round (CodeRabbit, Copilot). `ObjectPool.release` rejects an object
+  the pool did not make (it would grow past `capacity`), with a test; the reuse test checks
+  identity, not shape. INBOX pooling item notes that option (2) needs a deep or immutable
+  snapshot of nested payloads. The "resolve before merge" note stays with the owner.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 672 passed (672)"; client "Tests 415 passed (415)"; "✓ built in 96ms"; "Documentation
+  check passed."
+- Next step: Sam answers the INBOX pooling item.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/object-pool (sync) — claudiodh + Claude Code
+
+- What was done: PR #51 synced with `phase/2-sprint-2-work` at the author's explicit request. The
+  earlier revert was reverted first, so the base's commits stay in the branch. This picks up the
+  `LaneFlowFields` mirror test fix (`923f336`) that failed the Windows runner. The duplicate
+  `PROGRESS.md` heading now reads `(review round)`. No feature code changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 768 passed (768)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: Sam answers the open INBOX points for this PR; team review.
