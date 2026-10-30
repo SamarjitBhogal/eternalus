@@ -1635,3 +1635,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   663 passed (663)"; client "Tests 415 passed (415)"; "✓ built in 165ms"; "Documentation check
   passed."
 - Next step: merge into `phase/2-sprint-2-work` so the phase PR goes green.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — fix/phase-2-failing-tests — SamarjitBhogal + Claude Code
+
+- What was done: PR #53's Ubuntu job then timed out on `Simulation.hordes.test.ts` "gives the same
+  hash on the generated map for the same seed, tick for tick" (5.09 s; 1.5 s locally). Core's
+  `vitest.config.ts` now sets `testTimeout: 60_000`, so no whole-match simulation test fails on
+  runner speed alone. No test or assertion changed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  663 passed (663)"; client "Tests 415 passed (415)"; "✓ built in 174ms"; "Documentation check
+  passed."
+- Next step: merge into `phase/2-sprint-2-work`.
