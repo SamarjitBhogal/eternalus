@@ -17,7 +17,7 @@ related:
 
 # 0019. CI matrix runs Linux and Windows
 
-- Status: proposed (needs product-owner acceptance on the PR that adds it)
+- Status: accepted (decided by the repository admin, SamarjitBhogal, 2026-10-29; recorded on PR #50)
 - Date: 2026-10-29
 
 ## Context

@@ -1429,3 +1429,13 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."
 - Next step: sholtzman accepts ADR 0019 on the PR (then flip its status to accepted); the admin
   removes the macOS required check.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: ADR 0019 marked accepted by the repository admin (SamarjitBhogal); no separate
+  product-owner sign-off needed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 226ms"; "Documentation
+  check passed."
+- Next step: the admin removes the `npm run check (macos-latest)` required check, then PR #50
+  merges.
