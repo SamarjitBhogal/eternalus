@@ -14,6 +14,14 @@ import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
+import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
+import { ROVER_TACTICS } from './content/ai/rover';
+import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
+import type { MapDefinition } from './content/maps/maps.types';
+import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
+import type { GameConfig } from './config/GameConfig.types';
+import { AStarPathfinder } from './map/AStarPathfinder';
+import { WorldMap } from './map/WorldMap';
 import { RETREAT_STRUCTURES } from './content/ai/botLaner';
 import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
@@ -73,17 +81,15 @@ export class Simulation {
     roster = [],
     weapons,
   }: SimulationOptions) {
-    const space = map === undefined ? null : new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE);
-    this.state = new GameState(validateGameConfig(config), seed, map ?? null, space);
+    const valid = validateGameConfig(config);
+    const { space, world, paths } = Simulation.buildWorld(map, valid);
+    this.state = new GameState(valid, seed, map ?? null, { space, paths });
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);
-    // One factory for commands and spawning, so entity ids come from one counter.
-    const controllers = createDefaultControllerRegistry({
-      minion: { aggro: AGGRO_RULES, formations: FORMATIONS, classOf: unitClassOf },
-      botLegend: { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES },
-    });
+    const controllers = Simulation.createControllers();
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
+    // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
       units,
@@ -102,6 +108,7 @@ export class Simulation {
             {
               factory,
               space,
+              world,
               decide: [
                 new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
                   this.queue.enqueue(command);
@@ -160,9 +167,9 @@ export class Simulation {
   }
 
   /**
-   * Spawns the bot Legends at the start of their lanes (architecture 18 §8, MS-20): each team's
-   * laners, in roster order, go to the lane with the fewest Legends, lowest index first, and
-   * stand in ranks behind their own end of it, with the lane in their brain's memory.
+   * Spawns the bot Legends (architecture 18 §8, MS-20): each team's laners, in roster order, go
+   * to the lane with the fewest Legends, lowest index first, and stand in ranks behind their own
+   * end of it, with the lane in their brain's memory; Rovers start at their Stronghold.
    *
    * @throws Error when there are bots but no map, a team's laners do not fit under
    *   `legendsPerLane`, or a bot's controller or difficulty does not exist (checked before
@@ -237,6 +244,32 @@ export class Simulation {
         });
       });
     }
+    Simulation.spawnRovers(state, factory, roster);
+  }
+
+  /**
+   * Spawns the roster's Rovers at their team's Stronghold (11 §4.7): they take no lane (MS-20).
+   *
+   * @throws Error when a Rover's team has no Stronghold on the map.
+   */
+  private static spawnRovers(
+    state: GameState,
+    factory: EntityFactory,
+    roster: readonly RosterSlot[],
+  ): void {
+    for (const slot of roster.filter(({ role }) => role === 'rover')) {
+      const stronghold = state.map?.features.find(
+        ({ kind, team }) => kind === 'stronghold' && team === slot.team,
+      );
+      if (stronghold === undefined) {
+        throw new Error(`The map has no ${slot.team} Stronghold for the ${slot.team} Rover.`);
+      }
+      Simulation.spawnBot(state, factory, slot, {
+        position: { x: stronghold.position.x, y: stronghold.position.y },
+        team: slot.team,
+        controller: { controllerId: 'rover', profileId: slot.difficulty, memory: {} },
+      });
+    }
   }
 
   /** Spawns one bot Legend of the roster and announces it. */
@@ -246,12 +279,58 @@ export class Simulation {
     slot: RosterSlot,
     placement: Placement,
   ): void {
-    const entity = factory.create(slot.definitionId, slot.definitionId, placement);
+    const { kind } = factory.definitions.get(slot.definitionId);
+    const entity = factory.create(kind, slot.definitionId, placement);
     state.entities.add(entity);
     state.events.emit('entity-spawned', {
       entityId: entity.id,
       kind: entity.kind,
       team: slot.team,
+    });
+  }
+
+  /**
+   * The map's spatial pieces: the neighbour index, and one walkability grid shared by the lane
+   * flow fields and A\* for Legends. All `null` without a map.
+   */
+  private static buildWorld(
+    map: MapDefinition | undefined,
+    config: GameConfig,
+  ): {
+    readonly space: SpaceIndex | null;
+    readonly world: WorldMap | null;
+    readonly paths: AStarPathfinder | null;
+  } {
+    if (map === undefined) {
+      return { space: null, world: null, paths: null };
+    }
+    const world = WorldMap.fromDefinition(
+      map,
+      config.map.navCellSize,
+      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+    );
+    return {
+      space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
+      world,
+      paths: new AStarPathfinder(world, {
+        maxExpansions: config.map.pathMaxExpansions,
+        snapCells: config.map.pathSnapCells,
+      }),
+    };
+  }
+
+  /** Every controller, with the shipped content it reads (architecture 11 §2). */
+  private static createControllers(): ControllerRegistry {
+    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
+    return createDefaultControllerRegistry({
+      minion: { aggro: AGGRO_RULES, formations: FORMATIONS, classOf: unitClassOf },
+      botLegend: bots,
+      rover: {
+        ...bots,
+        tactics: ROVER_TACTICS,
+        legendKinds: LEGEND_KIND_IDS,
+        laneWeights: LANE_ASSESSMENT_WEIGHTS,
+      },
     });
   }
 

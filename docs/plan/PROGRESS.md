@@ -1593,6 +1593,31 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 676 passed (676)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: the pre-PR gate.
 
+### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields (merge of M1 and phase 2) — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated `feat/minion-m1-marching` (`68a6e31`, which carries
+  `origin/phase/2-sprint-2-work` at `230a330`) into PR #40's branch. 2 conflicts: this log (both
+  sides kept) and `DefaultSystemPipeline`, which keeps M1's merged signature and order and builds
+  the lane flow fields only when the horde wiring is passed and the match has a map, handing them
+  to `PathingSystem` as before.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 631 passed (631)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: merge #38 and #39, then resolve this PR's overlap with M2a (see the PR's merge order).
+
+### 2026-10-25 — Minion system M8 setup (merge of M4) — feat/minion-m8-rover-astar (off feat/minion-m3-bot-laners) — SamarjitBhogal + Claude Code
+
+- What was done: M8 needs M3 and M4, so this branch merges `feat/minion-m4-flow-fields`
+  (`9cb64a0`, PR #40) into M3. That resolves the overlap #40 records with M2a: the movement
+  context keeps M2b's `arrivalRadius` and gains M4's `flow`; `LaneFollowMovementStrategy` checks
+  arrival against the context, follows the field when the line to its target is blocked and uses
+  M2a's `queryCircle`; `PathingSystem` keeps M2a/M2b's shape (neighbours from `state.space`, the
+  shared slot function, the chase) and takes the flow fields as a fourth parameter, rebuilding
+  them within the cell budget. M4's routing scenarios run with minions that cannot fight.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 698 passed (698)"; client "Tests 416 passed (416)"; "Documentation check passed."
+  The generated-map hash scenario gets the 60 s timeout the other long M4 scenarios have.
+- Next step: M8 itself (Rover, A\* for Legends, bot ability use).
+
 ### 2026-10-25 — Minion system M3, pre-PR gate — feat/minion-m3-bot-laners — SamarjitBhogal + Claude Code
 
 - What was done: the critic (`architecture-reviewer`, `0b59134..1eec4f4`) requested changes with
@@ -1693,6 +1718,98 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   (416)"; "✓ built in 98ms"; "Documentation check passed."
 - Next step: Sam confirms the default weapons and numbers (INBOX); ranged attacks with
   projectiles (SCRUM-169, Aryan).
+
+### 2026-10-26 — Minion system M8 (Rover, A\* for Legends, bot casts) — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **A\* for Legends** (10 §9): `map/AStarPathfinder` (octile costs and heuristic, no corner
+    cutting, ties by cell index, string pulling, a cell budget from `content/ai/pathfinding.ts`)
+    behind the new `state/PathQuery` port (`state.paths`). `Simulation` builds one `WorldMap`
+    for it and the lane flow fields. The flow-field heap is now `map/CellHeap`, shared by both,
+    and line of sight is `WorldMap.isLineClear` (`FlowField` delegates).
+  - **Bot leaves:** `ai/BotLeaves` holds the conditions and actions both bot trees use;
+    `moveTo` heads for the A\* waypoint when the straight line is blocked.
+  - **Bot casts:** a fighting bot casts `ability-1` at its enemy when `abilityUseChance` comes
+    up on its brain's RNG stream, at most every `castIntervalTicks` (difficulty content).
+  - **`RoverController`** (11 §4.7): `Survive`, `Hunt`, `Fight`, `Mirror`, `Defend`; content
+    `content/ai/difficulties/rover.ts` and `content/ai/rover.ts`. Roster Rovers spawn at their
+    Stronghold with no lane; the client's placeholder roster adds the enemy Rover.
+  - **Tests:** the pathfinder (clear line, detour, determinism, no way), line of sight, the
+    heap, the Rover's branches (a driven Legend is not the human), bot routing and casting, and
+    match scenarios: a Rover spawns at its Stronghold, laners and a Rover play with no warnings
+    and the same hash twice.
+  - Stand-ins (plan §3) and INBOX (numbers; A\* as a query rather than a movement strategy).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 717 passed (717)"; client "Tests 417 passed (417)"; "Documentation check passed."
+- Next step: the pre-PR gate.
+
+### 2026-10-26 — Minion system M8, pre-PR gate — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `9f3842c..ab0dad2`) requested changes with
+  three blockers, all fixed. (1) A\* is shown taking the shorter side of an off-centre stamped
+  footprint, with the hand-computed optimal octile cost (`lastCost`), and going straight again
+  once the footprint is cleared. (2) The Rover's `Defend` could never run because `Mirror`
+  always came first: the two are now one utility pick over the lanes, `StructurePressure` (from
+  the new `laneScores`, counted from the calmest lane) against `HumanProximity` (the human's
+  lane), weighted in `content/ai/rover.ts`. (3) Tests show the Rover choosing the pushed lane
+  over the human's, the human's on a tie, and the worst lane with no human in sight.
+  Should-fixes: A\* snaps a blocked start or goal to the nearest open cell (a Rover inside its
+  Stronghold's footprint walks out); string pulling walks forward and stops at the first unseen
+  cell; `CellHeap.clear` resets only queued cells; the human search asks `Perception` for
+  Legends only and the stand-in names the rule it bends; `GameState` takes its indexes as one
+  object; `Simulation` builds the world and the controllers in helpers; A\*'s limits are
+  validated `GameConfig.map` values (`pathMaxExpansions`, `pathSnapCells`). Nits: the leaf test
+  uses a stub `PathQuery`; doc 18's status wording; import order; the INBOX item states that A\*
+  now costs inside the decision budget. Not changed: no path cache yet (a stand-in row);
+  `castIntervalTicks` stays in ticks, recorded in 11 §10. Ponytail (lite): lean already.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 724 passed (724)"; client "Tests 417 passed (417)"; "Documentation check passed." One
+  earlier run timed out M4's 5-lane routing scenario at its 60 s limit under coverage while the
+  machine was loaded; it takes about 10 s without coverage.
+- Next step: critic re-check, then the draft PR.
+
+### 2026-10-26 — Minion system M8, critic re-check — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: the re-check (`ab0dad2..1da6bbc`) confirmed the three blockers fixed and found
+  a new one: `npm run check` failed because M4's 3- and 5-lane routing scenarios took 57–60 s
+  under coverage against a 60 s limit. Timed at `9f3842c` (before M8) they were as slow, and a
+  profile put three quarters of the time in `SpaceSystem`: M2a's `SpatialHash.rebuild` cleared
+  and prefix-summed a per-cell array of hundreds of thousands of cells every tick. Root-cause
+  fix: `rebuild` sorts the points by cell and index and queries binary-search each cell's run,
+  so the cost follows the unit count (the scenarios now take 5–9 s under coverage), with a
+  regression test on a 10^6 × 10^6-cell world. This departs from 10 §5's counting-sort storage,
+  so it is a better-than-design item in INBOX and doc 10 §12. Should-fixes: doc 11 §10
+  describes the Rover's `Lane` pick; doc 03's config table lists the A\* fields; INBOX lists the
+  Rover's lane weights and the calmest-lane rule. Nits: `mostLaneScore` replaces the Rover's
+  copy of the score maximum; a full lane tie goes to the middle lane (tested);
+  `UtilityScorer.best` is generic over the option id; TSDoc fixes. Not changed: no cross-field
+  check of `pathSnapCells` against footprint sizes.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 726 passed (726)"; client "Tests 417 passed (417)"; "Documentation check passed."
+- Next step: critic re-check, then the draft PR.
+
+### 2026-10-26 — Minion system M8, critic round 3 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: the third critic pass (`1da6bbc..8b84fd3`) approved: the check is green (the
+  routing scenarios take 8–13 s under coverage) and the new `SpatialHash` is correct. Its nits
+  applied: `rebuild` throws a `RangeError` (tested) when cells × points would make the sort keys
+  inexact; the TSDoc and the INBOX sign-off item say a rebuild is O(n log n) with one view object
+  per rebuild, and that a NaN position is never found; an INBOX line is re-wrapped.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 727 passed (727)"; client "Tests 417 passed (417)"; "Documentation check passed."
+- Next step: the draft PR.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar (owner sign-offs) — SamarjitBhogal + Claude Code
+
+- What was done: SamarjitBhogal accepted both M8 better-than-design items in chat. Doc 10 §5
+  now describes the sorted `SpatialHash` layout (O(n log n) rebuild, one view per rebuild) and
+  §12 drops the deviation; doc 11 §6 says a bot's A\* is a `PathQuery` inside the decision
+  budget, and sprint 3.2's done-when and the minion plan's M8 row follow. The Rover and cast
+  numbers stay as built (design docs first, else the agent's judgement). INBOX records the
+  decisions. Docs only.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 727 passed (727)"; client "Tests 417 passed (417)"; "Documentation check passed."
+- Next step: merge the updated M3 branch in, so this PR carries the M2b and M3 answers too.
 
 ### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m3-bot-laners (owner answers) — SamarjitBhogal + Claude Code
 
@@ -1963,6 +2080,19 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: merge into M8 (#47) after M3.
 
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M3 and M4 (with every lower minion PR and
+  `phase/2-sprint-2-work`) into PR #47, resolving the `GameState` `{ space }` constructor in the
+  merged tests, and answered its CodeRabbit threads. `SpatialHash.queryCircle` binary-searches
+  once per covered row instead of once per cell (same results; the Rover's 400 m sense query got
+  cheaper); doc 10's sketch marks `radii` and `queryRect` as planned; Sprint 3.2's A\* item no
+  longer claims camp chases (M6 owns them).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  765 passed (765)"; client "Tests 417 passed (417)"; "✓ built in 201ms"; "Documentation check
+  passed."
+- Next step: none; all minion PRs are merged up to date with `phase/2-sprint-2-work`.
+
 ### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
 
 - What was done: second CodeRabbit round (threads on #38, #40, #44, #45). `EntityStore.countOnTeam`
@@ -2097,6 +2227,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   727 passed (727)"; client "Tests 415 passed (415)"; "✓ built in 157ms"; "Documentation check
   passed."
 - Next step: review and merge after M2b.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M3 (#46, with M2b's join of M4's flow fields) into PR #47. M8
+  had joined M4 and M2b itself, so its side was kept for `PathingSystem`, `MovementStrategy.types`,
+  `LaneFollowMovementStrategy` and the pipeline (the shared `world` grid); `laneMatch` takes
+  M2b's `isMarchingOnly` flag, so the march tests stay marching-only while the determinism test
+  fights. Doc 18's status note and `PROGRESS.md` keep both sides.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  765 passed (765)"; client "Tests 417 passed (417)"; "✓ built in 159ms"; "Documentation check
+  passed."
+- Next step: review and merge after M3.
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
 
@@ -2265,6 +2407,63 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 667 passed (667)"; client "Tests 415 passed (415)"; "✓ built in 95ms"; "Documentation
   check passed."
 - Next step: Sam answers points (6) and (7).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M3 (#46) into PR #47: M2b's chase fix (no lane field while
+  chasing), M3's roster cap and the enemy-AI plan's doc fixes, which also answer #47's CodeRabbit
+  thread (the plan's scope now excludes turrets as well as bosses). The plan table keeps M8's row
+  (`PathQuery`) and the new M6 blockers; the new chase test uses M8's `GameState` indexes object.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  766 passed (766)"; client "Tests 417 passed (417)"; "✓ built in 169ms"; "Documentation check
+  passed."
+- Next step: review and merge after M3.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (M3 #46, M5a #45) into PR #47. The movement
+  context keeps M8's `flow` and M2b's `isChasing`; the pipeline keeps M8's shared `world` plus
+  M5a's `EnragedSystem`; doc 11 takes the phase's `profileId` bullet; other docs keep both sides.
+  CodeRabbit round: `spawnBot` creates by the definition's `kind`, not its id; `moveTo` stops and
+  fails when A\* finds no way. Regression tests for both fail on the old code.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  786 passed (786)"; client "Tests 417 passed (417)"; "✓ built in 272ms"; "Documentation check
+  passed."
+- Next step: review and merge (M3 and M4 are merged).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit, target memory) — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #47 (review of `da6734b`). When A\* finds no way,
+  `BotLeaves.moveTo` now also clears `targetId` in the bot's memory: its `stop` clears the live
+  attack target, and the stale memory made the next fight skip `attack-target`. The regression
+  test fails on the old code.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 417 passed (417)"; "✓ built in 252ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit, line checks) — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's outside-diff finding on PR #47 (`WorldMap.isLineClear` sampling can
+  miss a clipped corner) is valid, but an exact cell walk made minions hold at rift corners and
+  failed the M4 blocked-lane routing test (no wall-avoidance term yet). Deferred by the owner to
+  `CollisionSystem`: a `ponytail:` note on `isLineClear` and an `INBOX.md` FYI item.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 417 passed (417)"; "✓ built in 163ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit, roster test) — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's "Pr-Review Skill Verdict" pre-merge check on PR #47 flagged
+  `placeholderRoster.test.ts` as loosened (checklists §2): M8 had narrowed it to the laners and
+  used `find` for the dark-player Rover. For both player teams it now asserts the full roster's
+  length (19), the laner checks and the exact non-laner list. CodeRabbit accepted the deferred
+  line-check finding.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 159ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; review and merge.
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/status-control-immune (sync) — claudiodh + Claude Code
 

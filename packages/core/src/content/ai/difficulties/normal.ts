@@ -11,4 +11,6 @@ export const NORMAL_BOT = {
   engageRadius: 12, // TUNE: no reference value; about half a Legend's 25 m vision
   arrivalDistance: 2, // TUNE: no reference value; one formation slot
   utilityWeights: { closeness: 1, weakness: 1 }, // TUNE: no reference value
+  abilityUseChance: 0.3, // TUNE: no reference value
+  castIntervalTicks: 90, // TUNE: no reference value; 3 s at 30 ticks a second
 } as const satisfies BotDifficultyDefinition;

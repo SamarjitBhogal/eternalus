@@ -66,4 +66,24 @@ describe('SpatialHash', () => {
     expect(() => new SpatialHash(0, 10, 1)).toThrow('width');
     expect(() => new SpatialHash(10, 10, Number.NaN)).toThrow('cellSize');
   });
+
+  it('costs what its points cost, not what the world costs: a vast world with three points', () => {
+    // 10^6 × 10^6 cells: a per-cell layout could not even be allocated.
+    const hash = new SpatialHash(1_000_000, 1_000_000, 1);
+    hash.rebuild(Float64Array.from([10, 10, 10.5, 10, 999_999, 999_999]), 3);
+    const out = new Int32Array(3);
+
+    expect(hash.queryCircle(10, 10, 1, out)).toBe(2);
+    expect([...out.subarray(0, 2)]).toEqual([0, 1]);
+    expect(hash.queryCircle(999_999, 999_999, 1, out)).toBe(1);
+    expect(out[0]).toBe(2);
+  });
+
+  it('refuses more points than its keys can hold exactly', () => {
+    const hash = new SpatialHash(1e9, 1e9, 1);
+
+    expect(() => {
+      hash.rebuild(new Float64Array(20_000), 10_000);
+    }).toThrow(RangeError);
+  });
 });
