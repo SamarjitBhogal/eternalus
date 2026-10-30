@@ -1277,6 +1277,46 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: merge into `feat/minion-m1-marching`.
 
+### 2026-10-17 — Minion system M4 (flow fields) — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **Fields:** `map/FlowField` (one lane and team: corridor mask, `Uint16Array` integration,
+    `Int8Array` direction, bilinear `directionAt`, `isLineClear`), `map/FlowFieldBuilder` (Dijkstra
+    flood fill from the lane's enemy end, octile costs, no corner cutting, an indexed heap, a cell
+    budget per call, its own buffers swapped in on completion) and `map/LaneFlowFields` (2 ×
+    `numLanes` fields, `markDirty(cells)`, `rebuildDirty(cellBudget)`). The corridor is the band
+    around the lane plus the ground inside the team's wall ring out to the gate (18 §3.2). Ties
+    break by a team preference order mirrored for Dark, so each lane's two fields are exact mirror
+    images; blocked corridor cells beside open ground point back to it (the wall-avoidance stand-in).
+  - **Steering:** `LaneFollowMovementStrategy` follows the field while the next `blockedLookAhead`
+    (new `HORDE_STEERING` content) of the line to its slot is blocked, through an optional
+    `MovementContext.flow` port; `PathingSystem` takes the fields (optional) and rebuilds dirty
+    ones each tick; `DefaultSystemPipeline` builds the `WorldMap` and the fields from the map.
+  - **Config:** `map.flowFieldCorridorHalfWidth` and `map.flowFieldCellBudget` (`TUNE`), validated;
+    the WANDER_SEED_7 replay fixture gains both fields (its hashes are unchanged).
+  - **Tests:** field counts, reach and downhill directions, mirror symmetry for 3 and 5 lanes; a
+    gate change re-routed within `ceil(cells / budget)` ticks with the old field serving; the
+    strategy's switch; hordes routed around a block; every opening horde reaches its enemy end for
+    3 and 5 lanes (under 1% of samples on unwalkable ground, about 8% without the fields); hash
+    stability on the 5-lane map.
+  - **Docs:** doc 18 status, 10 §12, 06 §10, 03 §10 table; plan §2 stand-ins (the polyline-only row
+    removed; no dirty trigger and no wall-avoidance term added).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 512 passed (512)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review; commit on the human's request; then the pre-PR gate (critic, ponytail).
+
+### 2026-10-17 — Minion system M4, pre-PR gate — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `62e8a61..4bf6e7b`) approved; its minor
+  findings are fixed: `PathingSystem` builds one movement context per tick and sets each horde's
+  `flow` on it (`MovementContext.flow` is now `FlowQuery | null`), the saddle fallback in
+  `FlowField.directionAt` computes its cell inline (no allocation on the hot path), and the
+  rebuild test asserts the exact queue size after a repeated `markDirty`. `ponytail:` notes now
+  name the whole-grid reset in `FlowFieldBuilder.begin`, the `UNREACHED` cost ceiling and the
+  wall-pointing stand-in. Not done: the optional DRY helper for the blocking rule.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 512 passed (512)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: draft PR to `phase/2-sprint-2-work`; merge after #33 and #38, then resolve the
+  overlap with M2a (#39).
+
 ### 2026-10-22 — Phase 2 / sprint 2.2 — feat/status-effects (DEC-40 to DEC-42) — Claudio + Claude Code
 
 - What: applied the owner's rulings on PR #35. DEC-42: `blind` has no hard miss (the
@@ -1388,6 +1428,17 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 609 passed (609)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: carry this merge into #39 (M2a) and #40 (M4).
+
+### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields (merge of M1 and phase 2) — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated `feat/minion-m1-marching` (`68a6e31`, which carries
+  `origin/phase/2-sprint-2-work` at `230a330`) into PR #40's branch. 2 conflicts: this log (both
+  sides kept) and `DefaultSystemPipeline`, which keeps M1's merged signature and order and builds
+  the lane flow fields only when the horde wiring is passed and the match has a map, handing them
+  to `PathingSystem` as before.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 631 passed (631)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: merge #38 and #39, then resolve this PR's overlap with M2a (see the PR's merge order).
 
 ### 2026-10-25 — Phase 2 / SCRUM-183 — feat/weapons (damage from weapons) — Claudio + Claude Code
 
@@ -1551,6 +1602,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 236ms"; "Documentation check
   passed."
 - Next step: merge into M2a (#39) and M4 (#40) and up the stack.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M1 (with `phase/2-sprint-2-work`, the M1 CodeRabbit fixes and
+  the `GameState.recordSpawnRequest` counter guard) into PR #40 and answered its CodeRabbit
+  threads. Spawn-wave validation landed in M2a (PR #39) and reaches M4 through the merge order.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  661 passed (661)"; client "Tests 415 passed (415)"; "✓ built in 229ms"; "Documentation check
+  passed."
+- Next step: merge into M8 (#47) after M3.
 
 ### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
 

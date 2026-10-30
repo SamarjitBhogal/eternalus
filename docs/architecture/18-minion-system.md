@@ -72,7 +72,9 @@ spawn counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`,
 one-step fulfilment; `Simulation` takes the map as an option. The PROTO-01 escort, its `AiSystem`
 and its `Brain` are deleted (DEC-35). Fighting, guards, brains, controllers, developer-menu horde
 spawns and lane assignment (M2 onward) are not built, and the damage pipeline and structures do not
-exist yet. The interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2.
+exist yet. Phase M4's lane flow fields are built as well (`map/LaneFlowFields`, the Stronghold-to-gate
+ground included), ahead of M2, and `LaneFollowMovementStrategy` follows them where the line to the
+slot is blocked (§5.2). The interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2.
 
 ## 1. Decisions
 

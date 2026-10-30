@@ -342,7 +342,7 @@ flow fields and the spawn schedule follow. Config is a plain object, validated o
 // the three planned MatchConfig fields
 export type GameConfig = {
   readonly tickRate: number;
-  readonly map: MapConfig; // 06 §2: counts, world size, nav cell size and preset; lane and rift layout is MapLayout content
+  readonly map: MapConfig; // 06 §2: counts, world size, nav cell size, flow-field sizes and preset; lane and rift layout is MapLayout content
   readonly match: MatchConfig;
   readonly limits: LimitsConfig;
 };
@@ -368,19 +368,20 @@ export type LimitsConfig = {
 The MVP defaults live in `config/defaultGameConfig.ts` (marked `TUNE` where provisional) and the
 requirement ceilings in `config/GameConfig.constants.ts`; this table records where each comes from.
 
-| Field                                     | Meaning                                                                | Source                                     |
-| ----------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
-| `tickRate`                                | the one supported rate                                                 | decided, D9                                |
-| `numLanes`                                | odd, so the Cathedral sits on the middle lane                          | requirements doc, MVP list; 06 §2          |
-| `spawnTowersPerLane`, `buffTowersPerLane` | per lane and team                                                      | requirements doc                           |
-| `campsPerSide`                            | placed between lanes                                                   | requirements doc                           |
-| `cornerCamps`                             | **MVP-if-time**; 0 disables                                            | game doc, Outer (Corner) Camps             |
-| `legendsPerTeam`, `legendsPerLane`        | the lane Legends plus the Rover                                        | game doc, Minions and lanes; contract §2.1 |
-| `maxLegendsPerTeam`, `maxUnitsPerTeam`    | caps the developer menu and spawners respect                           | requirements doc, developer menu           |
-| `countdownSeconds`                        | only the initial hordes spawn                                          | requirements doc                           |
-| `hordeSizes`, `initialHordesPerTeam`      | one initial horde per lane, from the stronghold                        | requirements doc                           |
-| `plannedMatchSeconds`                     | the target match length                                                | DEC-13 (pending)                           |
-| `capturePoints`, `timeline`               | one capture point per lane, the middle one the Cathedral; timed events | game doc, Capture zones; 12                |
+| Field                                               | Meaning                                                                      | Source                                     |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------ |
+| `tickRate`                                          | the one supported rate                                                       | decided, D9                                |
+| `numLanes`                                          | odd, so the Cathedral sits on the middle lane                                | requirements doc, MVP list; 06 §2          |
+| `spawnTowersPerLane`, `buffTowersPerLane`           | per lane and team                                                            | requirements doc                           |
+| `campsPerSide`                                      | placed between lanes                                                         | requirements doc                           |
+| `cornerCamps`                                       | **MVP-if-time**; 0 disables                                                  | game doc, Outer (Corner) Camps             |
+| `legendsPerTeam`, `legendsPerLane`                  | the lane Legends plus the Rover                                              | game doc, Minions and lanes; contract §2.1 |
+| `maxLegendsPerTeam`, `maxUnitsPerTeam`              | caps the developer menu and spawners respect                                 | requirements doc, developer menu           |
+| `countdownSeconds`                                  | only the initial hordes spawn                                                | requirements doc                           |
+| `hordeSizes`, `initialHordesPerTeam`                | one initial horde per lane, from the stronghold                              | requirements doc                           |
+| `plannedMatchSeconds`                               | the target match length                                                      | DEC-13 (pending)                           |
+| `flowFieldCorridorHalfWidth`, `flowFieldCellBudget` | a lane field's corridor reach; cells rebuilt per tick after a terrain change | 06 §6, 10 §9; Phase 3 sprint 3.2 (`TUNE`)  |
+| `capturePoints`, `timeline`                         | one capture point per lane, the middle one the Cathedral; timed events       | game doc, Capture zones; 12                |
 
 `validateGameConfig(config: unknown)` throws a `ConfigValidationError` naming the first offending
 field (`path`) and its `rule` (integration contract §2.2), and returns the config typed when every

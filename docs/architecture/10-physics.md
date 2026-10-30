@@ -279,6 +279,12 @@ insert order per cell (each cell is a LIFO list), not §5's `rebuild` / `queryCi
 (insert order follows store order). Horde separation (18 §5.2) falls off linearly with distance,
 not as 1/r. Both conform when `Perception` (minion plan M2) needs id-ordered queries.
 
+Flow-field follow (§9, minion plan M4) is built for lane hordes: `LaneFollowMovementStrategy` takes
+the bilinear field direction instead of its slot while the next `blockedLookAhead` (content) of the
+straight line to the slot crosses an unwalkable cell. There is no `CollisionSystem` and no
+wall-avoidance term yet; until they arrive, the blocked corridor cells beside open ground point
+back out of it, so the field itself leads a unit pushed into a wall back to open ground.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)
