@@ -27,7 +27,7 @@ export type ClassStepActions = {
   readonly cycle: (direction: 1 | -1) => void;
   /** Select Class (primary): one `select-class { classId }` for the pick, nothing without one. */
   readonly selectPicked: () => void;
-  /** View Details (alternate): one `select-class { classId }` for the shown class, if available. */
+  /** Select Class (alternate, DEC-109): one `select-class { classId }` for the shown class, if any. */
   readonly selectShown: () => void;
 };
 

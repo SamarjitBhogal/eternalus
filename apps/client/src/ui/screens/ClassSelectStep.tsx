@@ -1,7 +1,6 @@
 import { useId, type ReactElement } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
-import type { ClassPanel } from '../../bridge/selectors/selectClassPanel';
 import { selectAllyTiles } from '../../bridge/selectors/selectAllyTiles';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
@@ -11,34 +10,24 @@ import { InfoPanel } from '../components/InfoPanel';
 import { KeyPrompt } from '../components/KeyPrompt';
 import { STRINGS } from '../strings';
 import type { SelectionStepProps } from './characterSelect.types';
+import { ClassDetailsScreen } from './ClassDetailsScreen';
+import { classPanelText } from './classPanelText';
 import { ClassSelectCardRow } from './ClassSelectCardRow';
 import { ClassSelectLegendStrip } from './ClassSelectLegendStrip';
 import styles from './ClassSelectStep.module.css';
 import { useClassSelectStep } from './useClassSelectStep';
 import { useViewDetails } from './useViewDetails';
-import { ViewDetailsScreen } from './ViewDetailsScreen';
 
 const { characterSelect: text } = STRINGS;
-
-/** The shown class's title, role line, description and rows: the step's panel and View Details'. */
-const panelText = (panel: ClassPanel) =>
-  ({
-    title: panel.card.displayName,
-    subtitle: panel.card.tagline,
-    subtitleAccentToken: panel.card.accentToken,
-    description: panel.description,
-    rows: panel.details,
-  }) as const;
 
 /**
  * The class step of character select, primary layout (62:125): "Choose Your Class", the class
  * cards, the shown class's panel and Legends strip, Select Class and the allied roster. Picks are
  * local; only Select Class emits (`select-class { classId }`, HC-F1). V View Details (DEC-103)
- * opens the shown class's details full screen (`ViewDetailsScreen`): the same panel and Legends
- * strip in 145:2's places, each row labelled; the step is inert meanwhile. Reading and tab order:
- * the cards (one tab stop), then View Details, then Select Class. Paint order (Figma's layer
- * order, reference 15 §2): the card row is lifted above everything else by its own module; this
- * section creates no stacking context.
+ * opens the shown class's details full screen (`ClassDetailsScreen`); the step is inert
+ * meanwhile. Reading and tab order: the cards (one tab stop), then View Details, then Select
+ * Class. Paint order (Figma's layer order, reference 15 §2): the card row is lifted above
+ * everything else by its own module; this section creates no stacking context.
  */
 export function ClassSelectStep({ preferredClassId }: SelectionStepProps): ReactElement {
   const model = useClassSelectStep(preferredClassId);
@@ -77,7 +66,7 @@ export function ClassSelectStep({ preferredClassId }: SelectionStepProps): React
               id={panelId}
               layout="class"
               detailsHeader={text.classDetailsHeader}
-              {...panelText(panel)}
+              {...classPanelText(panel)}
             />
             <ClassSelectLegendStrip items={panel.legendStrip} />
             <KeyPrompt
@@ -106,15 +95,7 @@ export function ClassSelectStep({ preferredClassId }: SelectionStepProps): React
         )}
       </section>
       {panel !== undefined && (
-        <ViewDetailsScreen isOpen={details.isOpen} onClose={details.close}>
-          <InfoPanel
-            layout="class-details"
-            detailsHeader={null}
-            rowLabels={text.detailLabels}
-            {...panelText(panel)}
-          />
-          <ClassSelectLegendStrip items={panel.legendStrip} placement="view-details" />
-        </ViewDetailsScreen>
+        <ClassDetailsScreen panel={panel} isOpen={details.isOpen} onClose={details.close} />
       )}
     </>
   );

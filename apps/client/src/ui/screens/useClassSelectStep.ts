@@ -43,8 +43,8 @@ const toStepCard = (card: LegendClassCard): ClassStepCard => ({
 });
 
 /**
- * The class step's model for either layout. The pick is local until Select Class / View Details
- * (HC-F1): a hover or focus previews a class in the panel, arrows move the focus and pick where
+ * The class step's model for either layout. The pick is local until Select Class (HC-F1,
+ * DEC-109): a hover or focus previews a class in the panel, arrows move the focus and pick where
  * they land, nothing is emitted meanwhile. `preferredClassId` (Back) is picked again and
  * focused on mount. The row plate is decided here once, from the pick (CD-16).
  */
