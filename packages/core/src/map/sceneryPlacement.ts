@@ -1,5 +1,6 @@
 import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
 import type { SceneryLake } from './sceneryPlacement.types';
+import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { LAKES } from '../content/maps/map1Landforms';
 import { RANDOM_SCENERY_SETTINGS as S } from '../content/maps/map1Scenery';
 import { SeededRandom } from '../utils/SeededRandom';
@@ -28,7 +29,11 @@ export function placeSceneryLakes(map: MapDefinition): readonly SceneryLake[] {
         )
       )
         continue;
-      if (((point.x - 800) / (270 + lake.rx)) ** 2 + ((point.y - 450) / (210 + lake.ry)) ** 2 < 1)
+      if (
+        ((point.x - G.cathedral.x) / (G.cathedral.precinct.radiusX + lake.rx)) ** 2 +
+          ((point.y - G.cathedral.y) / (G.cathedral.precinct.radiusY + lake.ry)) ** 2 <
+        1
+      )
         continue;
       return [{ ...lake, ...point }];
     }
@@ -42,21 +47,17 @@ export function mirrorMovableScenery(
   width: number,
 ): readonly MapDecoration[] {
   return pieces.flatMap((piece) => {
-    const isMovable = ['tree-', 'lake-', 'village-', 'ground-fleck-', 'hill-', 'mountain-'].some(
-      (prefix) => piece.id.startsWith(prefix),
-    );
-    if (!isMovable || piece.id.startsWith('village-well-')) return [piece];
+    if (piece.isMirrored !== true) return [piece];
     const centre = piece.shape.reduce((sum, point) => sum + point.x, 0) / piece.shape.length;
     if (centre >= width / 2) return [];
     return [
       piece,
       {
         ...piece,
-        id: piece.id.startsWith('mountain-west-')
-          ? piece.id.replace('mountain-west-', 'mountain-east-')
-          : piece.id.startsWith('mountain-')
-            ? piece.id.replace(/(-[^-]+)$/, '-mirror$1')
-            : `${piece.id}-mirror`,
+        id: piece.mirrorId ?? `${piece.id}-mirror`,
+        ...(piece.object === undefined
+          ? {}
+          : { object: { ...piece.object, id: `${piece.object.id}-mirror` } }),
         shape: piece.shape.map((point) => ({ x: width - point.x, y: point.y })),
       },
     ];

@@ -1,4 +1,3 @@
-import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { placePalace } from './buildingPlacement';
 import type { MapDecoration, MapFeature, MapLayout } from '../content/maps/maps.types';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
@@ -9,7 +8,7 @@ export class MapStrongholdBuilder extends MapDecorationBuilder {
   /** Keeps the original home anchor inside a palace extending inward from the border. */
   public build(
     feature: MapFeature,
-    ring: MapLayout['wallRing'] = DEFAULT_MAP_LAYOUT.wallRing,
+    ring: Pick<MapLayout['wallRing'], 'radius' | 'thickness'>,
   ): readonly MapDecoration[] {
     this.buildingId = feature.id;
     this.layer = 'ground';
@@ -21,9 +20,24 @@ export class MapStrongholdBuilder extends MapDecorationBuilder {
     const id = feature.id;
     const roof = isWest ? P.palaceLightRoof : P.palaceDarkRoof;
     const accent = isWest ? P.light : P.dark;
-    this.ellipse(`${id}-stronghold-shadow`, x + 6, y + 7, rx, ry, P.shadow);
-    this.ellipse(`${id}-stronghold-wall`, x, y, rx, ry, P.palaceWall);
-    this.ellipse(`${id}-stronghold-court`, x, y, rx - 8, ry - 8, P.palaceCourt);
+    this.ellipse(
+      `${id}-stronghold-shadow`,
+      x + G.stronghold.shadowOffset.x,
+      y + G.stronghold.shadowOffset.y,
+      rx,
+      ry,
+      P.shadow,
+    );
+    // The segmented boundary supplies masonry and destructible gaps over this courtyard base.
+    this.ellipse(`${id}-stronghold-wall`, x, y, rx, ry, P.palaceCourt);
+    this.ellipse(
+      `${id}-stronghold-court`,
+      x,
+      y,
+      rx - G.stronghold.wallThickness,
+      ry - G.stronghold.wallThickness,
+      P.palaceCourt,
+    );
     this.visibility = 'roof';
     this.ellipse(`${id}-palace-foundation`, x, y, rx - 13, ry - 14, P.stone);
     this.ellipse(`${id}-palace-roof`, x, y - 4, rx - 20, ry - 24, roof);

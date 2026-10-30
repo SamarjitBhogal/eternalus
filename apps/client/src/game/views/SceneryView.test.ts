@@ -8,6 +8,23 @@ const MAP_1 = new MapGenerator().generate(createDefaultGameConfig(), 1);
 const PRESENTATION = new MapPresentationBuilder().build(MAP_1);
 
 describe('SceneryView roof cutaways', () => {
+  it('removes all owned artwork when an object is destroyed', () => {
+    const house = PRESENTATION.scenery.find((piece) => piece.object?.kind === 'house');
+    if (house?.object === undefined) throw new Error('Missing house');
+    const id = house.object.id;
+    const owned = PRESENTATION.scenery.filter((piece) => piece.object?.id === id);
+    const renderer = new RecordingRenderer();
+    const fill = vi.spyOn(renderer, 'fillPolygon');
+    new SceneryView(
+      PRESENTATION.scenery,
+      'detail',
+      new Set(),
+      undefined,
+      (objectId) => objectId === id,
+    ).draw(renderer);
+    for (const piece of owned) expect(fill).not.toHaveBeenCalledWith(piece.shape, piece.color);
+    expect(fill).toHaveBeenCalled();
+  });
   it('swaps only the selected building roof for its interior and restores it on a second click', () => {
     const renderer = new RecordingRenderer();
     const fill = vi.spyOn(renderer, 'fillPolygon');

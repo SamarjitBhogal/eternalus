@@ -4,7 +4,7 @@ import type { MapDecoration, MapFeature, MapLayout } from '../content/maps/maps.
 export const placePalace = (
   pieces: readonly MapDecoration[],
   feature: MapFeature,
-  ring: MapLayout['wallRing'],
+  ring: Pick<MapLayout['wallRing'], 'radius' | 'thickness'>,
   origin = feature.position,
 ): readonly MapDecoration[] => {
   const scale = (ring.radius - ring.thickness - G.stronghold.clearance) / G.stronghold.extent;

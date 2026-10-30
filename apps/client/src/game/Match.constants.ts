@@ -30,19 +30,5 @@ export const LOG_RING_CAPACITY = 512;
 /** Width over height of the drawing area before the first resize reports the real one. */
 export const DEFAULT_ASPECT = 16 / 9;
 
-/**
- * PROTOTYPE(PROTO-01) TEMPORARY: demo code. Delete with `Match.spawnEscort` when Phase 2's
- * `SpawnSystem` and Phase 3's lane hordes land.
- *
- * Prototype decision (2026-10-08, demo): minions that escort the player, spawned around the
- * player's spawn point until Phase 2's `SpawnSystem` and Phase 3's lane hordes replace them.
- */
-export const PROTOTYPE_ESCORT = {
-  definitionId: 'light-minion',
-  kind: 'light-mob',
-  count: 6, // TUNE:
-  spawnRadius: 2, // TUNE: metres from the player's spawn point
-} as const;
-
 /** Milliseconds in one second, to turn a tick rate into a tick length. */
 export const MS_PER_SECOND = 1000;

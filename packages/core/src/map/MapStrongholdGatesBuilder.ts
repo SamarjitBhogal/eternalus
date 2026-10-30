@@ -1,5 +1,6 @@
 import type { MapDecoration, MapFeature } from '../content/maps/maps.types';
 import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
+import { PALACE_PASSAGE_HALF_WIDTH } from './MapStrongholdGatesBuilder.constants';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 /** Connects palace corridors to generated gates, leaving the damageable ring visible. */
 export class MapStrongholdGatesBuilder extends MapDecorationBuilder {
@@ -13,8 +14,8 @@ export class MapStrongholdGatesBuilder extends MapDecorationBuilder {
       const dx = gate.position.x - feature.position.x;
       const dy = gate.position.y - feature.position.y;
       const length = Math.hypot(dx, dy);
-      const nx = (-dy / length) * 10;
-      const ny = (dx / length) * 10;
+      const nx = (-dy / length) * PALACE_PASSAGE_HALF_WIDTH;
+      const ny = (dx / length) * PALACE_PASSAGE_HALF_WIDTH;
       this.polygon(
         `${feature.id}-${gate.laneId ?? gate.id}-gate-bridge`,
         [

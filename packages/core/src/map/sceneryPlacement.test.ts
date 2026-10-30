@@ -2,8 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MapGenerator } from './MapGenerator';
 import { MapSceneryBuilder } from './MapSceneryBuilder';
+import { mirrorMovableScenery } from './sceneryPlacement';
 
 describe('seeded scenery placement', () => {
+  it('mirrors explicit metadata even when IDs give no hint, and leaves untagged IDs alone', () => {
+    const shape = [
+      { x: 1, y: 1 },
+      { x: 3, y: 1 },
+      { x: 2, y: 3 },
+    ];
+    const ordinary = { id: 'tree-misleading', shape, layer: 'detail', color: 'green' } as const;
+    const tagged = { ...ordinary, id: 'arbitrary', isMirrored: true } as const;
+    expect(mirrorMovableScenery([ordinary, tagged], 10)).toEqual([
+      ordinary,
+      tagged,
+      {
+        ...tagged,
+        id: 'arbitrary-mirror',
+        shape: shape.map((point) => ({ x: 10 - point.x, y: point.y })),
+      },
+    ]);
+  });
   const build = (seed: number) =>
     new MapSceneryBuilder(new MapGenerator().generate(createDefaultGameConfig(), seed)).build();
 

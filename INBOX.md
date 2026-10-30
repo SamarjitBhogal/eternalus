@@ -97,6 +97,11 @@ Reply inline (`Decision: …`).
       ADR 0017 (next item) before the generator changes. (4) From ADR 0017: which classes does a
       corridor get when it holds other than three camps?
   -     Accepted " keep depth-based weights but define the classes by position in the corridor" where the vertical line down the centre of the map defines the division. RNG determines the location of the camps on each side so both sides are different, but they must equate in terms of overall difficulty (1 light on left means 1 light on right; not necessarily in mirrored locations but the same amount of weighted camps on left team and right team's sides)
+  - 2026-10-30 clarification from [PR #30 round 2](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077)
+    (DEC-85, reviewer owns the decision-log entry): mirrored random camps, including corner
+    camps, are approved for this PR. Independent per-side placement is a next-sprint stretch
+    goal or post-MVP. This answers (1) and supersedes the asymmetric-placement timing above;
+    the remaining ADR and weight-class questions stay open.
 - [ ] **DEC-15 — accept ADR 0017.** `docs/decisions/0017-balanced-asymmetric-camp-placement.md`
       (draft) amends ADR 0009 for forest camps only: the seeded RNG places them per side with
       equal counts per weight class, and everything else stays mirrored. Accept, change or reject
@@ -117,7 +122,20 @@ Reply inline (`Decision: …`).
       the middle lane, so the first heavy horde goes down it), or name others. (2) **Horde size and cadence (your M7):** size from (a) `hordeSizes` in config only,
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
-      cadences (plan §2 stand-in). Details: doc 18 §10.
+      cadences (plan §3 stand-in). Details: doc 18 §10.
+- [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
+      (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
+      countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
+      after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
+      say each mob carries a `hordeId` back-pointer. The code keeps membership only in
+      `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
+      apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
+      to the store lookup.
+- [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
+      "never mutate state", yet a brain's `memory` and `rngState` change with each decision
+      (`MinionController`'s FSM state and timers, M2b). Should `decide` return
+      `{ commands, memory, rngState }` for `AiSystem` to write back (`Recommendation:`, keeps
+      controllers pure), or may a controller write its own brain?
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
@@ -168,8 +186,52 @@ Reply inline (`Decision: …`).
       stat for the FR-029 aura. Confirm or correct.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
+- [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
+      SamarjitBhogal asked (2026-10-25) for the minion plan to cover enemy bots of every
+      entity type. Proposed in doc 18 MS-28 and `docs/plan/minion-system-plan.md` (phases M6
+      to M8, coverage table §1.1): camps and checkpoint assist spawns (3.4), bosses (3.6),
+      A\* for Legends (3.2), and the Rover and bot ability use (3.7) move to the minion plan's
+      breakdown. Nothing is dropped and the work still ships in Phase 3's weeks. Sprints 3.5
+      and 3.8 stay in the Phase 3 plan, and turrets stay with the `Turret` (sprint 2.3). (1)
+      Sign off the move, or keep DEC-47's split. (2) Which team do checkpoint defenders fight
+      for: the zone's owner, the team being captured against, or neutral? (3) Does their leash
+      follow the capture zone (doc 18 §7.1)?
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) signed off, except bosses: the minion
+    system does not control bosses, so `BossController` stays in Phase 3 sprint 3.6 and the
+    plan has no M7; every other mob type may be driven by the minion system. (2) The team that
+    owns the checkpoint. Docs 18 MS-28 and §7.1, 07, 11 §4, the Phase 3 plan and the minion
+    plan updated (PR #43). Awaits the decisions log.
+- [ ] **Checkpoint defenders — leash (doc 18 §10, item 4).** Still open after the MS-28 answer.
+      Does a defender's leash follow the capture zone (its radius; `Recommendation:`), or is it a
+      radius of its own in the checkpoint table? And are the defenders of a point no team owns
+      yet neutral (`Recommendation:`)? Nothing is built on this until M6.
+- [ ] **Weapons — numbers and default weapons (SCRUM-183 / SCRUM-287, branch `feat/weapons`).**
+      The weapon slice is built (05 §10 Implementation status), but no doc has per-weapon numbers
+      (`balancing.md` only names `content/weapons/*.ts`). Placeholders shipped (2026-10-25, all
+      `TUNE`, Claudio's pick): Legends have no attack of their own; Warrior → `raptor-talons`,
+      Sentinel → `wuuthrad`, Magus → `magus-staff` (melee only), each with its class's
+      `balancing.md` basic attack. Confirm or correct. (1) Weapon numbers (damage, reach, interval): do the
+      `balancing.md` class numbers (Warrior 45 / 0.7 s, Sentinel 90 / 1.2 s, Magus 40 / 0.9 s)
+      become each class's default weapon, or do you set them per weapon? Reach has no source.
+      (2) Which weapon each Legend spawns with until loadouts exist (SCRUM-290): the unique ones are
+      Short blades (MVP-if-time), Barricades (post-MVP) and the Magus Staff (needs ranged).
+      (3) OK that the first slice is melee only? Ranged waits for projectiles (SCRUM-169);
+      `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
+      rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
+      (SCRUM-290).
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
+
+- [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
+      material detail from the map PR; retain all renderer-specific tests with that change.
+      Keep draw order inside SceneView, address renderer file length and the capture layer,
+      and measure Match.render p95 while the camera moves at 1080p, DPR 2 (target ≤ 8 ms).
+      Depends on the map PR landing; preserve the stable Match explorer signatures. See
+      [round-2 B3](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077).
+- [ ] **PR #22 input follow-up** — Owner: sholtzman, HUD/character-select branch. Arbitrate raw
+      left-click roof toggles against the attack binding after PR #30 merges.
+- [ ] **PR #22 toolbar follow-up** — Owner: sholtzman, HUD/character-select branch. Move map
+      toolbar state from game/useMatch into the bridge after PR #30 merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -362,6 +424,8 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-10-20 — Recorded the owner's 2026-10-16 approval in [PR #30 round-1 review](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5554590031): same-world roof cutaways supersede the separate cathedral scene; oval palaces, furnished side rooms, throne aisles and the cathedral north door are accepted. The dated amendments in architecture 06 and reference 05 preserve the earlier design and explain DEC-36 integration.
+
 - 2026-10-10 — **Your chat clarifications of 2026-10-10 (DEC-11) and the source of the new
   requirements** recorded in `docs/reference/game-design/13-owner-decisions-log.md` (appended to
   DEC-11, DEC-36 and DEC-37) and applied to reference 01, 06, 08, 11, `more-abilities.md` and
@@ -459,6 +523,3 @@ Reply inline (`Decision: …`).
   `docs/inbox-decisions-2026-10-03`.
 - 2026-09-30 — Phase 0 documentation + harness written on `docs/phase-0-foundation`
   (merged as PR #3; see `docs/changelog/2026-09-30-phase-0-foundation.md`).
-
-- 2026-10-20 — Recorded the owner's 2026-10-16 approval in [PR #30](https://github.com/SamarjitBhogal/eternalus/pull/30): same-world roof cutaways supersede the separate cathedral scene; oval palaces, furnished side rooms, throne aisles and the cathedral north door are accepted. The dated amendments in architecture 06 and reference 05 preserve the earlier design and explain DEC-36 integration.
-- 2026-10-20 — Follow-ups from PR #22 reiterated in PR #30: raw left-click roof toggles overlap attack input, and the map toolbar state still lives in game/useMatch instead of the bridge. Owner: client integration. Keep tracked until the input/bridge slice resolves them.

@@ -51,16 +51,6 @@ export class RecordingRenderer implements Renderer {
     this.calls.push({ op: 'fillPolygon', args });
   }
 
-  /** Expands a batch into its individual polygons so geometry assertions stay precise. */
-  public fillPolygons(...[shapes, color]: Parameters<Renderer['fillPolygons']>): void {
-    for (const shape of shapes) this.fillPolygon(shape, color);
-  }
-
-  /** Draws the layer directly so tests retain every geometry assertion. */
-  public drawCachedLayer(_key: object, _revision: number, draw: () => void): void {
-    draw();
-  }
-
   /** Records the call. */
   public strokePath(...args: Parameters<Renderer['strokePath']>): void {
     this.calls.push({ op: 'strokePath', args });

@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-29
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -29,8 +29,14 @@ performance budget is proved. The word is **horde**, not "hoard".
 **Minion work moved.** The [minion system plan](minion-system-plan.md) (design:
 [18-minion-system](../architecture/18-minion-system.md)) supersedes the minion items of sprints
 3.1–3.4 and 3.7; its §"Relation to Phase 3" lists exactly which. Read it before any sprint 3.1,
-3.2, 3.3, 3.4 or 3.7 task. A\* for Legends, forest camps, checkpoint assist spawns and the Rover
-stay here (DEC-47).
+3.2, 3.3, 3.4 or 3.7 task. DEC-47 kept A\* for Legends, forest camps, checkpoint assist spawns
+and the Rover here; MS-28 (below) moves them.
+
+**Amended by doc 18 MS-28 (owner, 2026-10-27).** The minion plan also takes over the breakdown of
+A\* for Legends (3.2), forest camps and checkpoint assist spawns (3.4), and the Rover and bot
+ability use (3.7), as its phases M6 and M8 (its §1.1 lists every AI-driven entity). Nothing is
+dropped and the work still ships in these weeks. Sprints 3.5, 3.6 (bosses: the minion system does
+not control them) and 3.8 stay here.
 
 - **Branch:** `phase/3-minions-hordes-and-ai` (stacked on `phase/2-…` until it merges).
 - **Weeks:** 6–7 (2026-11-09 → 2026-11-20). Week 6: sprints 3.1, 3.2, 3.3, 3.5; week 7:
@@ -238,7 +244,7 @@ invariant violations; identical hashes on replay.
    spawns at 60 s, a camp activating, the quarter-mark mini-boss, and the match ending when a
    Stronghold falls; then switch to sim mode and let bots finish a match.
 3. Architecture docs 11 and 12 match the code, or an ADR records the deviation.
-4. Phase PR approved (sholtzman + map owner), CI green on three OSes, merged by SamarjitBhogal.
+4. Phase PR approved (sholtzman + map owner), CI green on Linux and Windows, merged by SamarjitBhogal.
 5. The MVP-core line of the roadmap is now demoable end to end.
 
 ## Risks

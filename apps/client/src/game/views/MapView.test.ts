@@ -27,6 +27,28 @@ const drawMain = (): RecordingRenderer => {
 };
 
 describe('MapView', () => {
+  it('hides main-view building markers with roofs closed as well as open', () => {
+    const building = MAP.features.find((feature) => feature.kind === 'cathedral');
+    if (building === undefined) throw new Error('Missing building');
+    for (const roofs of [new Set<string>(), new Set([building.id])]) {
+      const renderer = new RecordingRenderer();
+      new MapView(MAP, [], roofs, undefined, [{ id: building.id, footprint: [] }]).draw(renderer);
+      const glyphs = renderer.calls.filter((call) => call.op === 'drawWorldGlyph');
+      expect(glyphs.some((call) => call.args[1] === building.position)).toBe(false);
+      expect(glyphs).toHaveLength(
+        MAP.features.filter((feature) => !footprintKinds.has(feature.kind)).length - 1,
+      );
+    }
+  });
+  it('removes destroyed feature markers from the minimap', () => {
+    const feature = MAP.features[0];
+    if (feature === undefined) throw new Error('Missing feature');
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [], new Set(), undefined, [], (id) => id === feature.id).drawMinimap(renderer);
+    expect(renderer.calls.filter((call) => call.op === 'drawGlyph')).toHaveLength(
+      MAP.features.length - 1,
+    );
+  });
   it('keeps capture data while hiding the covered marker in an open cutaway', () => {
     const cathedral = MAP.features.find((f) => f.kind === 'cathedral');
     expect(cathedral).toBeDefined();

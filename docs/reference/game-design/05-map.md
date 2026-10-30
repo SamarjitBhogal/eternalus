@@ -4,7 +4,7 @@ description: Map 1 as the game doc describes it, the rule that the map and minim
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-20
+last-reviewed: 2026-10-30
 tags: [reference, game-design, map, minimap, terrain]
 paths:
   [
@@ -199,6 +199,26 @@ Each new match chooses a fresh seed. Off-path camps, trees, rocks, lakes and hou
 that seed and are placed as west/east mirror pairs. Strongholds, cathedral and lane structures
 retain their anchors. Scenery placement bounds live in map content; scenery remains decorative
 until collision integration lands. Reusing a seed reproduces the layout.
+
+### 2026-10-30 — Structure and renderer integration amendment
+
+The [PR #30 round-2 review](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077)
+accepts mirrored random camps, including corner camps (DEC-85), while independent per-side
+placement is a next-sprint stretch goal or post-MVP. This supersedes the older placement rule.
+Physical scenery collision and walkable ruins now use explicit authored footprints; the full
+Structure-family, doors and navigation-grid updates are scheduled in Phase 2 sprints 2.1 and 2.4.
+Occupancy-driven cutaways arrive with that structure integration. The fine close-view material
+work in the earlier amendment is assigned to the separate renderer PR in INBOX; worn lane roads
+remain in the map PR. The HUD branch owns the input and toolbar integration.
+
+The King's death is the only victory condition, as explained in the
+[game-loop coordination comment](https://github.com/SamarjitBhogal/eternalus/pull/30#issuecomment-6516492969).
+The stronghold is the King's container and the host spawn location; destroying scenery does
+not award victory. Its throne-room anchor and bounds live in buildingGeometry content, in the
+middle-back of the hall, rotated toward the middle entrance with the rest of the palace.
+GameState.livingBuffTowerCount(team) counts living real structure entities, excluding decorative
+obstacle proxies, so the game-loop immunity step sees zero until real BuffTowers are installed.
+The coordinated Stronghold → Citadel rename stays on the later refactor, before 2026-11-20.
 
 ## Engineering notes
 

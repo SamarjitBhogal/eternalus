@@ -7,6 +7,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
 import { SeededRandom } from '../utils/SeededRandom';
 import { GameState } from './GameState';
+import { TestBuffTower } from './__fixtures__/TestBuffTower';
 
 class Soldier extends Entity {
   public readonly kind = 'soldier';
@@ -34,6 +35,22 @@ const spawned = (entity: Entity): Entity => {
 };
 
 describe('GameState', () => {
+  it('counts living BuffTower entities by team, excluding dead, removed and non-structure entities', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    expect(state.livingBuffTowerCount('light')).toBe(0);
+    const light = spawned(new TestBuffTower('light-tower', 'light'));
+    const dark = spawned(new TestBuffTower('dark-tower', 'dark'));
+    state.entities.add(light);
+    state.entities.add(dark);
+    state.entities.add(spawned(new Soldier('soldier', 'soldier')));
+    state.entities.add(spawned(new TestBuffTower('proxy', 'light', 'obstacle')));
+    expect(state.livingBuffTowerCount('light')).toBe(1);
+    expect(state.livingBuffTowerCount('dark')).toBe(1);
+    light.getComponent(Health).applyDamage(100);
+    expect(state.livingBuffTowerCount('light')).toBe(0);
+    state.entities.remove(dark.id, 'dev-removed');
+    expect(state.livingBuffTowerCount('dark')).toBe(0);
+  });
   it('starts at tick 0 in the countdown and counts ticks', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     expect(state.tick).toBe(0);
@@ -137,5 +154,22 @@ describe('GameState', () => {
     expect(state.xpAwardsThisTick()).toEqual([award]);
     state.advanceTick();
     expect(state.xpAwardsThisTick()).toEqual([]);
+  });
+
+  it('counts spawn requests per team and rejects a spawned count outside 0..requested', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+
+    state.recordSpawnRequest('dark', 16, 10);
+    state.recordSpawnRequest('dark', 16, 16);
+
+    expect(state.teams.dark).toEqual({ unitsRequested: 32, unitsSuppressed: 6 });
+    expect(state.teams.light).toEqual({ unitsRequested: 0, unitsSuppressed: 0 });
+    expect(() => {
+      state.recordSpawnRequest('light', 4, 5);
+    }).toThrow(RangeError);
+    expect(() => {
+      state.recordSpawnRequest('light', 4, -1);
+    }).toThrow(RangeError);
+    expect(state.teams.light).toEqual({ unitsRequested: 0, unitsSuppressed: 0 });
   });
 });

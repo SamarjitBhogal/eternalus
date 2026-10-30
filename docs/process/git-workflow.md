@@ -4,7 +4,7 @@ description: Branch model, naming, the stacked-phase procedure that lets work co
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-29
 tags: [process, git, branching, pull-requests]
 related:
   [
@@ -12,6 +12,7 @@ related:
     'docs/plan/README.md',
     'docs/agents/checklists.md',
     'docs/decisions/0015-agents-push-task-branches-and-open-prs.md',
+    'docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md',
   ]
 ---
 
@@ -25,7 +26,7 @@ commit conventions themselves are in `CONTRIBUTING.md` §7; this doc is about br
 ## 1. Roles
 
 - `main` is owned by **SamarjitBhogal** (repository admin). It is protected: PR required, one
-  approval, green CI on three OSes, linear history, no force-push (`guardrails.md` §5).
+  approval, green CI on Linux and Windows, linear history, no force-push (`guardrails.md` §5).
 - **Sam Holtzman** is product owner and lead architect: owns the plan, the phase branches,
   the ADRs and the INBOX.
 - Every PR names its reviewer: **the feature owner picks whoever cares about the feature** when
@@ -122,9 +123,13 @@ git push -u origin feat/health-shield-bars
 - No PR is opened before the pre-PR gate passes (`AGENTS.md` "Before opening a PR", ADR 0010).
   It comes after every other check, never instead of one.
 - Reviewers walk `docs/agents/checklists.md` §2 for AI-written code.
+- CodeRabbit reviews PRs as configured in `.coderabbit.yaml`, by the `pr-review` skill, and
+  approves or requests changes (ADR 0018). It cannot run `npm run check`, so CI stays a
+  required check. Its approval can merge a task PR into a phase branch; a phase PR into `main`
+  still needs a teammate's approval.
 - A phase PR additionally includes: the phase exit checklist (§4 of the same file), the
   measured success metrics, and the changelog entry in `docs/changelog/`.
-- CI must be green on ubuntu, macos and windows. No `--no-verify`, ever.
+- CI must be green on ubuntu and windows. No `--no-verify`, ever.
 
 ## 6. Tags and releases
 

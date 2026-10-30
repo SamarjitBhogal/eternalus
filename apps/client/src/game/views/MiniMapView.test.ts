@@ -3,7 +3,7 @@ import {
   type MapDefinition,
   type MapFeature,
   MapGenerator,
-  MapSceneryBuilder,
+  MapPresentationBuilder,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -30,7 +30,6 @@ const createMiniMap = (): MiniMapView => new MiniMapView(MAP, new MapView(MAP));
 const createFakeContext = (): DrawContext => ({
   beginPath: vi.fn(),
   closePath: vi.fn(),
-  drawImage: vi.fn(),
   ellipse: vi.fn(),
   fill: vi.fn(),
   fillRect: vi.fn(),
@@ -211,7 +210,7 @@ describe('MiniMapView with scenery', () => {
   });
 
   it('draws the cathedral architecture through the same scenery layer on the minimap', () => {
-    const scenery = new MapSceneryBuilder(MAP).build();
+    const scenery = new MapPresentationBuilder().build(MAP).scenery;
     const renderer = new RecordingRenderer();
     const scene = new SceneView([new MapView(MAP, scenery), new SceneryView(scenery, 'detail')]);
     new MiniMapView(MAP, scene).draw(renderer, 1000, 800, VIEW);

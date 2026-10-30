@@ -3,6 +3,14 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { MapGenerator } from './MapGenerator';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 import { isPointInPolygon } from '../utils/geometry';
+import type { Polygon } from '../utils/geometry.types';
+
+const boundsOf = (shape: Polygon) => ({
+  left: Math.min(...shape.map((point) => point.x)),
+  right: Math.max(...shape.map((point) => point.x)),
+  top: Math.min(...shape.map((point) => point.y)),
+  bottom: Math.max(...shape.map((point) => point.y)),
+});
 describe('MapPresentationBuilder', () => {
   it('keeps presentation separate from the generated contract and leaves shadows visible', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
@@ -39,7 +47,12 @@ describe('MapPresentationBuilder', () => {
         1,
       );
       const { scenery } = new MapPresentationBuilder().build(map);
-      const ring = map.features.filter((f) => ['gate', 'wall-segment', 'turret'].includes(f.kind));
+      const ring = map.features
+        .filter((f) => ['gate', 'wall-segment', 'turret'].includes(f.kind))
+        .map((feature) => ({
+          feature,
+          bounds: boundsOf([feature.position, ...(feature.footprint ?? [])]),
+        }));
       expect(
         scenery.every((piece) =>
           piece.shape.every(
@@ -54,11 +67,18 @@ describe('MapPresentationBuilder', () => {
         ),
       ).toBe(true);
       for (const piece of scenery.filter((p) => p.layer === 'detail')) {
+        const bounds = boundsOf(piece.shape);
+        // Disjoint bounds cannot contain any of the vertices checked below. Keep every
+        // piece assertion and exact polygon check, avoiding millions of irrelevant edge tests.
         const overlaps = ring.some(
-          (feature) =>
-            isPointInPolygon(feature.position, piece.shape) ||
-            (feature.footprint ?? []).some((point) => isPointInPolygon(point, piece.shape)) ||
-            piece.shape.some((point) => isPointInPolygon(point, feature.footprint ?? [])),
+          ({ feature, bounds: other }) =>
+            bounds.left <= other.right &&
+            bounds.right >= other.left &&
+            bounds.top <= other.bottom &&
+            bounds.bottom >= other.top &&
+            (isPointInPolygon(feature.position, piece.shape) ||
+              (feature.footprint ?? []).some((point) => isPointInPolygon(point, piece.shape)) ||
+              piece.shape.some((point) => isPointInPolygon(point, feature.footprint ?? []))),
         );
         expect({ id: piece.id, overlaps }).toEqual({ id: piece.id, overlaps: false });
       }

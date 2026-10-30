@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { useMatch } from './useMatch';
+import { SinkLogger } from '../data/logging/SinkLogger';
 const hooks = vi.hoisted(() => ({
   setState: vi.fn(),
   cleanup: undefined as (() => void) | undefined,
 }));
+vi.mock('./createMatchSeed', () => ({ createMatchSeed: () => 1 }));
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useState: (initial: boolean) => [initial, hooks.setState],
@@ -42,7 +44,14 @@ describe('useMatch roof toolbar', () => {
       setPointerCapture: vi.fn(),
       hasPointerCapture: () => false,
     });
+    const log = vi.spyOn(SinkLogger.prototype, 'log');
     useMatch({ current: canvas as unknown as HTMLCanvasElement });
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'client.match',
+        attributes: { seed: 1 },
+      }),
+    );
     const click = (): void => {
       canvas.dispatchEvent(
         Object.assign(new Event('pointerdown'), {

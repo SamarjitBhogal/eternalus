@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { MapGenerator } from './MapGenerator';
+import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
+import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { MapSceneryBuilder } from './MapSceneryBuilder';
 
 const generate = (): MapDefinition => new MapGenerator().generate(createDefaultGameConfig(), 1);
@@ -47,7 +49,14 @@ describe('MapSceneryBuilder', () => {
     for (const { id } of strongholds) {
       const court = scenery.find((piece) => piece.id === `${id}-stronghold-court`);
       expect(court?.layer).toBe('ground');
-      expect(xSpan(court?.shape ?? [])).toBeCloseTo(204 * (78 / 133));
+      expect(xSpan(court?.shape ?? [])).toBeCloseTo(
+        2 *
+          (G.stronghold.radiusX - G.stronghold.wallThickness) *
+          ((DEFAULT_MAP_LAYOUT.wallRing.radius -
+            DEFAULT_MAP_LAYOUT.wallRing.thickness -
+            G.stronghold.clearance) /
+            G.stronghold.extent),
+      );
     }
     const camps = map.features.filter((f) => f.kind === 'camp' || f.kind === 'corner-camp');
     expect(camps.length).toBeGreaterThan(0);

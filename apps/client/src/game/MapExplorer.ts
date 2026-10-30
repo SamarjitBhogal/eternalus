@@ -1,3 +1,4 @@
+import { isPointInPolygon } from '@eternalus/core';
 import type { MapDefinition, MapPresentation, Vec2 } from '@eternalus/core';
 
 import type { WorldRect } from './engine/render/Renderer.types';
@@ -69,7 +70,7 @@ export class MapExplorer {
   /** Toggles a building roof in place without changing the world or camera. */
   public toggleRoofAt(point: Vec2): boolean {
     const building = this.presentation.buildings.find((entry) =>
-      entry.footprint.some((shape) => this.contains(shape, point)),
+      entry.footprint.some((shape) => isPointInPolygon(point, shape)),
     );
     if (building === undefined) return false;
     if (this.roofs.has(building.id)) this.roofs.delete(building.id);
@@ -82,19 +83,5 @@ export class MapExplorer {
     this.roofs.clear();
     this.zoom = 1;
     this.center = { x: this.map.width / 2, y: this.map.height / 2 };
-  }
-
-  private contains(shape: readonly Vec2[], point: Vec2): boolean {
-    let isInside = false;
-    shape.forEach((a, index) => {
-      const b = shape[(index + shape.length - 1) % shape.length];
-      if (
-        b !== undefined &&
-        a.y > point.y !== b.y > point.y &&
-        point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
-      )
-        isInside = !isInside;
-    });
-    return isInside;
   }
 }

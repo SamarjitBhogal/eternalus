@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-30
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -34,6 +34,21 @@ flows into `WorldMap` and the minimap. Every code block is a sketch; the numbers
 game doc are `TUNE` values that live in `content/`, never in systems.
 
 ## 1. The `Structure` family
+
+**Implementation status (2026-10-27).** Generated map objects currently reuse the `Obstacle`
+entity with a `MapObjectBody` component while the full structure family remains planned.
+`WorldObjectStore` retains health and destruction records after entity removal. Definitions live
+in `content/maps/mapObjectDefinitions.ts`; the owner approved temporary scenery health on
+2026-10-27. Terrain and the Cathedral remain indestructible. Destroying a main building also
+destroys its owned walls and furnishings through the damage pipeline. Ruins remain in snapshots
+and rendering but release their collision footprints.
+
+The full Structure family and navigation-grid integration replace this stand-in in Phase 2
+sprints 2.1 and 2.4. The game-loop integration uses `GameState.livingBuffTowerCount(team)`:
+only living `structure` / `buff-tower` entities with the owning team's membership count.
+Decorative obstacle proxies never grant King immunity. The King's victory and immunity damage
+step remain owned by the game-loop work. The hall's throne anchor and room bounds are content
+in `buildingGeometry.ts`; the hall rotates toward the middle entrance before ring scaling.
 
 `Structure` is the abstract child of `Entity` for static things with health. Subclasses exist only
 where lifecycle differs; everything tunable comes from a `StructureDefinition` (Type Object) keyed
@@ -235,8 +250,8 @@ export class Capturable {
 ```
 
 `CaptureSystem`: if exactly one team has units inside and `lockedBy === null`, progress moves
-toward that team; crossing a checkpoint threshold spawns that checkpoint's defenders through a
-`Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
+toward that team; crossing a checkpoint threshold spawns that checkpoint's defenders (held by `GuardController` with the zone as home and fighting
+for the team that owns the point, [18](18-minion-system.md) MS-28, §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
 "Balrog-type" mob) and, when cleared, awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
 `StatusEffects` from content: ability/ultimate cooldown reduction and, after `levelUpAfterTicks`,

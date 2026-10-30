@@ -24,10 +24,37 @@ export class MapPalaceRoomsBuilder extends MapDecorationBuilder {
       const id = `${team}-palace-interior-${name}`;
       const left = x + dx;
       this.rect(`${id}-floor`, left, y, 42, height, color);
-      this.rect(`${id}-wall-north`, left, y, 42, 2, P.roomWall);
-      this.rect(`${id}-wall-south`, left, y + height - 2, 42, 2, P.roomWall);
-      this.rect(`${id}-wall-west`, left, y, 2, height, P.roomWall);
-      this.rect(`${id}-wall-east`, left + 40, y, 2, height, P.roomWall);
+      this.blockRect(`${id}-wall-north`, left, y, 42, 2, P.roomWall, 'wall');
+      this.blockRect(`${id}-wall-south`, left, y + height - 2, 42, 2, P.roomWall, 'wall');
+      const entranceX = dx < 0 ? left + 40 : left;
+      const closedX = dx < 0 ? left : left + 40;
+      this.blockRect(
+        `${id}-wall-${dx < 0 ? 'west' : 'east'}`,
+        closedX,
+        y,
+        2,
+        height,
+        P.roomWall,
+        'wall',
+      );
+      this.blockRect(
+        `${id}-wall-${dx < 0 ? 'east' : 'west'}`,
+        entranceX,
+        y,
+        2,
+        height / 2 - 4,
+        P.roomWall,
+        'wall',
+      );
+      this.blockRect(
+        `${id}-wall-door-lower`,
+        entranceX,
+        y + height / 2 + 4,
+        2,
+        height / 2 - 4,
+        P.roomWall,
+        'wall',
+      );
       this.rect(`${id}-doorway`, dx < 0 ? left + 40 : left, y + height / 2 - 4, 2, 8, color);
     }
     this.councilLibrary(x, team, accent);
@@ -37,12 +64,20 @@ export class MapPalaceRoomsBuilder extends MapDecorationBuilder {
   }
 
   private councilLibrary(x: number, team: PlayableTeam, accent: string): void {
-    this.ellipse(`${team}-palace-interior-council-table`, x - 52, 417, 12, 7, P.furnitureWood);
+    this.blockEllipse(`${team}-palace-interior-council-table`, x - 52, 417, 12, 7, P.furnitureWood);
     for (const dx of [-66, -40])
-      this.rect(`${team}-palace-interior-council-chair-${String(dx)}`, x + dx, 414, 4, 6, accent);
+      this.blockRect(
+        `${team}-palace-interior-council-chair-${String(dx)}`,
+        x + dx,
+        414,
+        4,
+        6,
+        accent,
+      );
     for (let i = 0; i < 3; i++) {
       const id = `${team}-palace-interior-library-shelf-${String(i)}`;
-      this.rect(id, x - 68 + i * 11, 440, 7, 20, P.furnitureWood);
+      this.beginObject(id, 'furniture');
+      this.blockRect(id, x - 68 + i * 11, 440, 7, 20, P.furnitureWood);
       for (let j = 0; j < 4; j++)
         this.rect(
           `${id}-book-${String(j)}`,
@@ -53,14 +88,17 @@ export class MapPalaceRoomsBuilder extends MapDecorationBuilder {
           j % 2 === 0 ? accent : P.bookGold,
         );
     }
+    this.endObject();
   }
 
   private kitchenBedroom(x: number, team: PlayableTeam, accent: string): void {
-    this.rect(`${team}-palace-interior-kitchen-hearth`, x - 68, 477, 12, 9, P.hearthStone);
+    this.beginObject(`${team}-palace-interior-kitchen-hearth`, 'furniture');
+    this.blockRect(`${team}-palace-interior-kitchen-hearth`, x - 68, 477, 12, 9, P.hearthStone);
     this.rect(`${team}-palace-interior-kitchen-fire`, x - 65, 480, 6, 3, P.hearthFire);
-    this.rect(`${team}-palace-interior-kitchen-counter`, x - 49, 477, 12, 20, P.furnitureWood);
+    this.endObject();
+    this.blockRect(`${team}-palace-interior-kitchen-counter`, x - 49, 477, 12, 20, P.furnitureWood);
     for (let i = 0; i < 3; i++)
-      this.ellipse(
+      this.blockEllipse(
         `${team}-palace-interior-kitchen-pot-${String(i)}`,
         x - 43,
         481 + i * 6,
@@ -68,15 +106,18 @@ export class MapPalaceRoomsBuilder extends MapDecorationBuilder {
         2,
         P.interiorWall,
       );
-    this.rect(`${team}-palace-interior-bedchamber-bed`, x + 40, 407, 15, 17, P.furnitureWood);
+    this.beginObject(`${team}-palace-interior-bedchamber-bed`, 'furniture');
+    this.blockRect(`${team}-palace-interior-bedchamber-bed`, x + 40, 407, 15, 17, P.furnitureWood);
     this.rect(`${team}-palace-interior-bedchamber-cover`, x + 41, 412, 13, 11, accent);
     this.rect(`${team}-palace-interior-bedchamber-pillow`, x + 42, 408, 11, 3, P.pillow);
-    this.rect(`${team}-palace-interior-bedchamber-chest`, x + 61, 413, 7, 9, P.furnitureWood);
+    this.endObject();
+    this.blockRect(`${team}-palace-interior-bedchamber-chest`, x + 61, 413, 7, 9, P.furnitureWood);
   }
 
   private armoryDining(x: number, team: PlayableTeam): void {
     for (let i = 0; i < 4; i++) {
-      this.rect(
+      this.beginObject(`${team}-palace-interior-armory-rack-${String(i)}`, 'furniture');
+      this.blockRect(
         `${team}-palace-interior-armory-rack-${String(i)}`,
         x + 38 + i * 7,
         440,
@@ -101,7 +142,8 @@ export class MapPalaceRoomsBuilder extends MapDecorationBuilder {
         P.carpetBorder,
       );
     }
-    this.rect(`${team}-palace-interior-dining-banquet`, x + 40, 479, 23, 15, P.furnitureWood);
+    this.beginObject(`${team}-palace-interior-dining-banquet`, 'furniture');
+    this.blockRect(`${team}-palace-interior-dining-banquet`, x + 40, 479, 23, 15, P.furnitureWood);
     for (let i = 0; i < 3; i++)
       this.ellipse(
         `${team}-palace-interior-dining-plate-${String(i)}`,

@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-20
+last-reviewed: 2026-10-30
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -277,24 +277,6 @@ The design keeps the move cheap:
   views, the loop or the renderer.
 - `SharedArrayBuffer` is not planned (needs cross-origin isolation headers); revisit only if
   snapshots exceed the ~10 KiB per message rule of thumb.
-
-## Implementation status
-
-The presentation renderer caches immutable polygon bounds and skips fills wholly outside the
-current drawing area. Bounds are reprojected for each render target so player view, overview
-and minimap share geometry safely. This avoids tracing the full battlefield at player zoom;
-it changes neither camera transforms nor simulation visibility. Close-view surface detail is
-owned by `MapSurfaceDetailView`, outside the generic engine, and drawn through the same port.
-Same-colour material marks are batched and cached as world-sized bitmaps. Static scenery is
-cached separately from live entities: the main view rebuilds on view or roof changes, while
-the minimap rebuilds on roof changes. Both rebuild after resizing. Renderers without
-`OffscreenCanvas` draw the same geometry directly.
-
-The 2026-10-20 PR #30 corrections keep cutaway presentation separate from MapDefinition via
-MapPresentationBuilder. Roof toggles preserve structure glyphs on the minimap; the toolbar
-reflects whether any roofs remain open after each toggle. This branch uses marker-based Legend
-rendering; the temporary sprite animation and image-loading implementation have been removed.
-The planned sprite/resource interfaces above remain future architecture.
 
 ## Related
 

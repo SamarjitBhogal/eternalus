@@ -11,9 +11,17 @@ export class CathedralExteriorBuilder extends MapDecorationBuilder {
     this.blob('cathedral-forecourt', 800, 485, 115, 110, P.cathedralForecourt, 'ground');
     this.rect('cathedral-shadow', 763, 351, 87, 223, P.cathedralShadow);
     this.visibility = 'roof';
-    this.rect('cathedral-nave', 755, 342, 90, 211, P.stone);
-    this.rect('cathedral-transept', 703, 420, 194, 65, P.stone);
-    this.blob('cathedral-apse', 800, 344, 44, 26, P.stone);
+    const { nave, transept, apse } = G.cathedral;
+    this.rect('cathedral-nave', nave.x, nave.y, nave.width, nave.height, P.stone);
+    this.rect(
+      'cathedral-transept',
+      transept.x,
+      transept.y,
+      transept.width,
+      transept.height,
+      P.stone,
+    );
+    this.blob('cathedral-apse', apse.x, apse.y, apse.radiusX, apse.radiusY, P.stone);
     this.blob('cathedral-apse-roof', 800, 344, 37, 20, P.cathedralRoof);
     this.rect('cathedral-nave-roof', 763, 349, 74, 193, P.cathedralRoof);
     this.rect('cathedral-cross-roof', 711, 427, 178, 49, P.cathedralCrossRoof);

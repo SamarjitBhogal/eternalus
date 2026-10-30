@@ -1,6 +1,6 @@
-import { Brain } from '../components/Brain';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
+import { ControllerBinding } from '../components/ControllerBinding';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { StatusEffects } from '../components/StatusEffects';
@@ -10,12 +10,13 @@ import { Vision } from '../components/Vision';
 import type { UnitDefinition } from '../content/units/units.types';
 import { Entity } from './Entity';
 import { SpawnContextReader } from './SpawnContextReader';
+import type { BasicAttack } from './Unit.types';
 
 /**
  * Abstract base for entities of the `unit` family. It installs the components every unit has
  * (architecture 04 §1): `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider`
- * on the unit layer, `Vision` and `StatusEffects`, from a definition, a position and a team; plus `Combat` when the
- * definition has an attack and a `Brain` when it names a controller.
+ * on the unit layer, `Vision` and `StatusEffects`, from a definition, a position and a team; plus
+ * `Combat` when the definition has an attack and a `ControllerBinding` when it names a controller.
  */
 export abstract class Unit extends Entity {
   /** Always `'unit'`. */
@@ -47,17 +48,28 @@ export abstract class Unit extends Entity {
 
     this.addComponent(new Transform(position, definition.footprintRadius));
     this.addComponent(new Health(definition.baseHealth));
-    this.addComponent(new Movement(definition.movement));
+    this.addComponent(new Movement(definition.movement, definition.movementStrategy));
     this.addComponent(new TeamMembership(team));
     this.addComponent(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
     this.addComponent(new Vision(definition.visionRadius));
     this.addComponent(new StatusEffects());
-    if (definition.attack !== undefined) {
-      this.addComponent(new Combat(definition.attack));
+    const basic = this.basicAttack(context);
+    if (basic !== undefined) {
+      this.addComponent(new Combat(basic.attack, basic.weaponId));
     }
-    // PROTOTYPE(PROTO-01) TEMPORARY: delete; `EntityFactory` attaches brains in state (11 §2).
     if (definition.controller !== undefined) {
-      this.addComponent(new Brain(definition.controller));
+      this.addComponent(
+        new ControllerBinding(definition.controller, definition.aiProfile ?? definition.controller),
+      );
     }
+  }
+
+  /**
+   * The attack this unit's `Combat` uses, and the weapon it comes from: the definition's own attack
+   * by default (mobs). `Legend` overrides it to use its weapon (05 §10).
+   */
+  protected basicAttack(context: unknown): BasicAttack | undefined {
+    const { definition } = new SpawnContextReader(this).placed<UnitDefinition>(context);
+    return definition.attack && { attack: definition.attack, weaponId: null };
   }
 }

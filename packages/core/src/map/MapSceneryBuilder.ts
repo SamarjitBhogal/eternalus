@@ -1,11 +1,12 @@
-import type { MapDecoration, MapDefinition, MapLayout } from '../content/maps/maps.types';
+import type { MapDecoration, MapDefinition } from '../content/maps/maps.types';
 import {
   MAP_PALETTE as P,
   SCENERY_SETTINGS as S,
   SKETCH_HEIGHT,
   SKETCH_WIDTH,
 } from '../content/maps/map1Scenery';
-import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
+import { strongholdRing } from './strongholdRing';
+import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { CAMP_KINDS, FORTIFIED_KINDS } from './MapSceneryBuilder.constants';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 import { MapFortificationBuilder } from './MapFortificationBuilder';
@@ -35,10 +36,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
   private readonly lakes: ReturnType<typeof placeSceneryLakes>;
 
   /** Creates a builder for one generated map. */
-  public constructor(
-    world: MapDefinition,
-    private readonly ringLayout: MapLayout['wallRing'] = DEFAULT_MAP_LAYOUT.wallRing,
-  ) {
+  public constructor(world: MapDefinition) {
     super();
     this.world = world;
     this.scaleX = world.width / SKETCH_WIDTH;
@@ -102,7 +100,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
       ...this.world.features
         .filter((f) => f.kind === 'stronghold')
         .flatMap((feature) => [
-          ...new MapStrongholdBuilder().build(feature, this.ringLayout),
+          ...new MapStrongholdBuilder().build(feature, strongholdRing(this.world, feature)),
           ...new MapStrongholdGatesBuilder().build(feature, this.world.features),
         ]),
     ];
@@ -113,7 +111,9 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
     this.pieces.push(
       ...new MapLandscapeBuilder(this.map, (point) => this.isClear(point), this.lakes).build(),
     );
+    this.isMirrored = true;
     this.forest();
+    this.isMirrored = undefined;
     this.pieces.push(...new MapMountainBuilder().build(this.map.seed));
     this.pieces.push(...new MapVillageBuilder(this.map).build());
     this.map.features.forEach((feature) => {
@@ -128,7 +128,12 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
 
   private isClear(point: Vec2): boolean {
     if (LAVA_RIVERS.some((path) => distanceToPath(point, path) < 46)) return false;
-    if (((point.x - 800) / 270) ** 2 + ((point.y - 450) / 210) ** 2 < 1) return false;
+    if (
+      ((point.x - G.cathedral.x) / G.cathedral.precinct.radiusX) ** 2 +
+        ((point.y - G.cathedral.y) / G.cathedral.precinct.radiusY) ** 2 <
+      1
+    )
+      return false;
     if (point.x < 280 || point.x > 1320) return false;
     if (
       this.lakes.some(
@@ -151,11 +156,14 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
         const n = rng.nextInt(0, 0xffffffff);
         const point = { x: x + (n % 17) - 8, y: y + ((n >>> 4) % 17) - 8 };
         if (!this.isClear(point) || n % 5 === 0) continue;
+        this.endObject();
         const id = `tree-${String(x)}-${String(y)}`;
         const size = 8 + (n % 10);
+        this.beginObject(id, n % 7 === 0 ? 'rock' : 'tree');
         if (n % 7 === 0) {
           this.blob(`${id}-boulder-shadow`, point.x + 3, point.y + 4, size, size * 0.65, P.shadow);
           this.blob(`${id}-boulder`, point.x, point.y, size, size * 0.65, P.stoneDark);
+          this.blockLastShape();
           this.blob(
             `${id}-boulder-light`,
             point.x - 2,
@@ -168,7 +176,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
         }
         if (n % 3 !== 0) {
           this.blob(`${id}-canopy-shadow`, point.x + 4, point.y + 6, size, size * 0.8, P.shadow);
-          this.rect(`${id}-trunk`, point.x - 1, point.y, 3, 10, P.bark);
+          this.blockRect(`${id}-trunk`, point.x - 1, point.y, 3, 10, P.bark);
           this.blob(
             `${id}-canopy`,
             point.x,
@@ -188,7 +196,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
           continue;
         }
         this.rect(`${id}-shadow`, point.x - 3, point.y + 3, size + 4, 5, P.shadow);
-        this.rect(`${id}-trunk`, point.x - 1, point.y, 3, 9, P.bark);
+        this.blockRect(`${id}-trunk`, point.x - 1, point.y, 3, 9, P.bark);
         this.polygon(
           id,
           [
@@ -212,10 +220,12 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
   }
 
   private camp(point: Vec2, id: string): void {
+    this.endObject();
     this.rect(`${id}-clearing`, point.x - 23, point.y - 18, 46, 36, P.road, 'ground');
     for (const side of [-1, 1]) {
       const x = point.x + side * 15;
-      this.polygon(
+      this.beginObject(`${id}-tent-${String(side)}`, 'camp');
+      this.blockPolygon(
         `${id}-tent-${String(side)}`,
         [
           { x, y: point.y - 12 },
@@ -234,8 +244,11 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
         P.bark,
       );
     }
-    this.rect(`${id}-fire-stone`, point.x - 4, point.y - 4, 8, 8, P.stoneDark);
+    this.endObject();
+    this.beginObject(`${id}-fire`, 'furniture');
+    this.blockRect(`${id}-fire-stone`, point.x - 4, point.y - 4, 8, 8, P.stoneDark);
     this.rect(`${id}-fire`, point.x - 2, point.y - 2, 4, 4, P.lavaLight);
-    this.rect(`${id}-supplies`, point.x - 7, point.y + 12, 7, 5, P.bark);
+    this.endObject();
+    this.blockRect(`${id}-supplies`, point.x - 7, point.y + 12, 7, 5, P.bark);
   }
 }

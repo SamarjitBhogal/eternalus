@@ -13,7 +13,6 @@ import {
 } from './MapView.constants';
 import type { WorldLayer } from './SceneView.types';
 import { SceneryView } from './SceneryView';
-import { MapSurfaceDetailView } from './MapSurfaceDetailView';
 import type { WorldRect } from '../engine/render/Renderer.types';
 
 /**
@@ -25,36 +24,25 @@ import type { WorldRect } from '../engine/render/Renderer.types';
 export class MapView implements WorldLayer {
   private readonly map: MapDefinition;
   private readonly groundScenery: SceneryView;
-  private readonly surface = new MapSurfaceDetailView();
-  private readonly meadow: MapDecoration;
 
   /** Creates a view for one map; `scenery` supplies its ground-layer decorations. */
   public constructor(
     map: MapDefinition,
     scenery: readonly MapDecoration[] = [],
     private readonly hiddenRoofs: ReadonlySet<string> = new Set(),
-    private readonly detailArea?: () => WorldRect,
+    detailArea?: () => WorldRect,
     private readonly buildings: readonly MapBuilding[] = [],
+    private readonly isDestroyed: (id: string) => boolean = () => false,
   ) {
     this.map = map;
-    this.meadow = {
-      id: 'surface-meadow',
-      color: GROUND_COLOR,
-      layer: 'ground',
-      shape: [
-        { x: 0, y: 0 },
-        { x: map.width, y: 0 },
-        { x: map.width, y: map.height },
-        { x: 0, y: map.height },
-      ],
-    };
-    this.groundScenery = new SceneryView(scenery, 'ground', hiddenRoofs, detailArea);
+    this.groundScenery = new SceneryView(scenery, 'ground', hiddenRoofs, detailArea, isDestroyed);
   }
 
   /** Draws the whole map for the main view. */
   public draw(renderer: Renderer): void {
     this.drawGround(renderer);
     for (const feature of this.map.features) {
+      if (this.isDestroyed(feature.id)) continue;
       if (this.hiddenRoofs.has(feature.id)) continue;
       if (this.buildings.some((building) => building.id === feature.id)) continue;
       const style = FEATURE_STYLES[feature.kind];
@@ -71,6 +59,7 @@ export class MapView implements WorldLayer {
   public drawMinimap(renderer: Renderer): void {
     this.drawGround(renderer, true);
     for (const feature of this.map.features) {
+      if (this.isDestroyed(feature.id)) continue;
       renderer.drawGlyph(feature.minimapGlyph, feature.position, MapView.minimapColor(feature));
     }
   }
@@ -105,7 +94,6 @@ export class MapView implements WorldLayer {
     );
     if (isMinimap) this.groundScenery.drawMinimap(renderer);
     else {
-      this.surface.draw(renderer, this.meadow, this.detailArea?.());
       this.groundScenery.draw(renderer);
     }
     for (const piece of this.map.terrain) {

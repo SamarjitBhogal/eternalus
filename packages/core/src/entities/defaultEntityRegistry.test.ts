@@ -13,6 +13,7 @@ import { createDefaultEntityRegistry } from './defaultEntityRegistry';
 import { Entity } from './Entity';
 import { EntityFactory } from './EntityFactory';
 import { Mob } from './Mob';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 
 const MAX_DEPTH_BELOW_ENTITY = 3;
 
@@ -40,7 +41,16 @@ describe('createDefaultEntityRegistry', () => {
   it('registers every shipped kind: Legends, mobs, obstacles and projectiles', () => {
     const registry = createDefaultEntityRegistry();
 
-    for (const kind of ['warrior', 'sentinel', 'magus', 'light-mob', 'obstacle', 'projectile']) {
+    for (const kind of [
+      'warrior',
+      'sentinel',
+      'magus',
+      'light-mob',
+      'medium-mob',
+      'heavy-mob',
+      'obstacle',
+      'projectile',
+    ]) {
       expect(registry.has(kind)).toBe(true);
     }
   });
@@ -58,7 +68,12 @@ describe('createDefaultEntityRegistry', () => {
   });
 
   it('spawns every unit definition with the unit components', () => {
-    const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      UNIT_DEFINITIONS,
+      undefined,
+      loadWeapons(createDefaultGameConfig().tickRate),
+    );
 
     for (const definition of UNIT_DEFINITIONS.all()) {
       const entity = factory.create(definition.kind, definition.id, PLACEMENT);

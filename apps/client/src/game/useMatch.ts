@@ -1,4 +1,12 @@
-import { createDefaultGameConfig, MapGenerator, SEVERITY, Simulation } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  MapGenerator,
+  MapPresentationBuilder,
+  MapObjectBuilder,
+  makeLogRecord,
+  SEVERITY,
+  Simulation,
+} from '@eternalus/core';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import { ConsoleSink } from '../data/logging/ConsoleSink';
@@ -48,6 +56,8 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     const config = createDefaultGameConfig();
     const seed = createMatchSeed();
     const map = new MapGenerator().generate(config, seed);
+    const presentation = new MapPresentationBuilder().build(map);
+    const mapObjects = new MapObjectBuilder().build(map, presentation);
     // The match points the camera at the player's spawn, so its start point does not matter.
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
     // Warnings and worse reach the console; everything is kept for bug reports and the overlay.
@@ -58,6 +68,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
         { sink: new RingBufferSink(LOG_RING_CAPACITY), minSeverity: SEVERITY.TRACE },
       ],
     );
+    logger.log(makeLogRecord('INFO', 'client.match', 'Match seed', { attributes: { seed } }));
     const mapper = new InputMapper(PRESETS.wasd);
     const keyboard = new KeyboardDevice((code) => mapper.isBound(code));
     const mouse = new MouseDevice();
@@ -65,8 +76,9 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config, seed, logger }),
+        simulation: new Simulation({ config, seed, logger, map, mapObjects }),
         map,
+        presentation,
         tickRate: config.tickRate,
         scheduler: new RafFrameScheduler({
           requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),

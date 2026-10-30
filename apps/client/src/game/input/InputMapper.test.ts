@@ -92,6 +92,12 @@ describe('InputMapper', () => {
     expect(mapper.isBound('KeyQ')).toBe(false);
   });
 
+  it('keeps basic attacks active while the attack binding is held', () => {
+    const mapper = new InputMapper(PRESETS.wasd);
+    expect(intentFor(mapper, snapshotWith([], [0])).isAttacking).toBe(true);
+    expect(intentFor(mapper, snapshotWith([])).isAttacking).toBeUndefined();
+  });
+
   it('follows a rebinding of W to ArrowUp with no code change', () => {
     const mapper = new InputMapper(PRESETS.wasd);
     const upArrow = { device: 'keyboard', code: 'ArrowUp', label: '↑' } as const;

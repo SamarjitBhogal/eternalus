@@ -22,21 +22,11 @@ import type { WorldLayer } from './SceneView.types';
 export class MiniMapView {
   private readonly map: MapDefinition;
   private readonly scene: WorldLayer;
-  private revision = 0;
 
   /** Creates a mini map that shows `scene` shrunk to fit the whole of `map`. */
-  public constructor(
-    map: MapDefinition,
-    scene: WorldLayer,
-    private readonly dynamic?: WorldLayer,
-  ) {
+  public constructor(map: MapDefinition, scene: WorldLayer) {
     this.map = map;
     this.scene = scene;
-  }
-
-  /** Refreshes cached scenery after a roof or other presentation change. */
-  public invalidate(): void {
-    this.revision++;
   }
 
   /** Works out where the mini map sits on a screen of the given size, in screen pixels. */
@@ -90,10 +80,7 @@ export class MiniMapView {
     const area = this.areaFor(screenWidth, screenHeight);
     renderer.fillScreenRect(area, MINI_MAP_BACKGROUND_COLOR);
     renderer.fitWorldInArea(this.map.width, this.map.height, area);
-    renderer.drawCachedLayer(this, this.revision, () => {
-      this.scene.drawMinimap(renderer);
-    });
-    this.dynamic?.drawMinimap(renderer);
+    this.scene.drawMinimap(renderer);
     const left = Math.max(0, view.x);
     const top = Math.max(0, view.y);
     const right = Math.min(this.map.width, view.x + view.width);

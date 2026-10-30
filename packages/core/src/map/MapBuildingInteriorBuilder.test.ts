@@ -3,6 +3,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { MapGenerator } from './MapGenerator';
+import type { Rect } from '../utils/geometry.types';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 const MAP_1 = new MapGenerator().generate(createDefaultGameConfig(), 1);
 const scale =
@@ -51,18 +52,21 @@ describe('MapBuildingInteriorBuilder', () => {
         for (const p of piece.shape) {
           const x = p.x;
           const y = p.y;
+          const insideRect = (rect: Rect) =>
+            x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+          const feature = MAP_1.features.find((entry) => entry.id === building.id);
+          if (feature === undefined) throw new Error('Missing building');
+          const { nave, transept, apse } = G.cathedral;
           const isInside =
-            building.id === 'cathedral-lane-1'
-              ? (x >= 755 && x <= 845 && y >= 342 && y <= 553) ||
-                (x >= 703 && x <= 897 && y >= 420 && y <= 485) ||
-                ((x - 800) / 44) ** 2 + ((y - 344) / 26) ** 2 <= 1.001 ||
-                (x >= 788 && x <= 812 && y >= 320 && y <= 332)
-              : ((x - (building.id === 'light-stronghold' ? 130 : 1470)) /
-                  (G.palace.floorRadiusX * scale)) **
-                  2 +
-                  ((y - 450) / (G.palace.floorRadiusY * scale)) ** 2 <=
+            feature.kind === 'cathedral'
+              ? insideRect(nave) ||
+                insideRect(transept) ||
+                ((x - apse.x) / apse.radiusX) ** 2 + ((y - apse.y) / apse.radiusY) ** 2 <= 1.001 ||
+                insideRect(G.northDoor)
+              : ((x - feature.position.x) / (G.palace.floorRadiusX * scale)) ** 2 +
+                  ((y - feature.position.y) / (G.palace.floorRadiusY * scale)) ** 2 <=
                 1.001;
-          expect(isInside).toBe(true);
+          expect(isInside, `${piece.id}: ${String(x)}, ${String(y)}`).toBe(true);
         }
     }
     for (const part of [

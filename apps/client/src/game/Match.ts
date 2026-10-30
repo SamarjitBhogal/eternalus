@@ -1,5 +1,7 @@
 import {
   MapPresentationBuilder,
+  MapObjectBuilder,
+  findMapObjectAt,
   type EntityId,
   makeLogRecord,
   type MapDefinition,
@@ -16,7 +18,6 @@ import {
   CAMERA_SMOOTHING,
   DEFAULT_ASPECT,
   MAX_TICKS_PER_FRAME,
-  PROTOTYPE_ESCORT,
   MS_PER_SECOND,
 } from './Match.constants';
 import type { MatchDeps } from './Match.types';
@@ -27,6 +28,7 @@ import { EntityLayer } from './views/EntityLayer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
+import { WorldObjectsView } from './views/WorldObjectsView';
 import { SceneView } from './views/SceneView';
 
 /**
@@ -41,10 +43,10 @@ export class Match implements LoopTarget {
   private readonly loop: GameLoop;
 
   private readonly entities: EntityLayer;
+  private readonly objectView: WorldObjectsView;
+  private readonly mapObjects: ReturnType<MapObjectBuilder['build']>;
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
-  private landscapeKey = '';
-  private landscapeRevision = 0;
 
   private readonly explorer: MapExplorer;
 
@@ -71,16 +73,13 @@ export class Match implements LoopTarget {
 
   /** Canvas CSS pixels → device pixels → the world point the camera shows there. */
   private readonly projection: Projection = {
-    screenToWorld: (point) =>
-      this.deps.camera.screenToWorld(
-        { x: point.x * this.pixelRatio, y: point.y * this.pixelRatio },
-        {
-          worldWidth: this.deps.map.width,
-          worldHeight: this.deps.map.height,
-          screenWidth: this.screenWidth,
-          screenHeight: this.screenHeight,
-        },
-      ),
+    screenToWorld: (point) => {
+      const view = this.currentView();
+      return {
+        x: view.x + ((point.x * this.pixelRatio) / this.screenWidth) * view.width,
+        y: view.y + ((point.y * this.pixelRatio) / this.screenHeight) * view.height,
+      };
+    },
   };
 
   /**
@@ -103,8 +102,12 @@ export class Match implements LoopTarget {
         );
       }),
     );
-    const presentation = new MapPresentationBuilder().build(map);
+    const presentation = deps.presentation ?? new MapPresentationBuilder().build(map);
     this.explorer = new MapExplorer(map, presentation);
+    this.mapObjects = new MapObjectBuilder().build(map, presentation);
+    this.objectView = new WorldObjectsView(this.mapObjects, this.explorer.hiddenRoofs, () =>
+      this.currentView(),
+    );
     const scenery = presentation.scenery;
     const landscape = new SceneView([
       new MapView(
@@ -113,10 +116,19 @@ export class Match implements LoopTarget {
         this.explorer.hiddenRoofs,
         () => this.currentView(),
         presentation.buildings,
+        this.objectView.isDestroyed,
       ),
-      new SceneryView(scenery, 'detail', this.explorer.hiddenRoofs, () => this.currentView()),
+      new SceneryView(
+        scenery,
+        'detail',
+        this.explorer.hiddenRoofs,
+        () => this.currentView(),
+        this.objectView.isDestroyed,
+      ),
+      this.objectView,
+      this.entities,
     ]);
-    this.world = { scene: landscape, miniMap: new MiniMapView(map, landscape, this.entities) };
+    this.world = { scene: landscape, miniMap: new MiniMapView(map, landscape) };
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
@@ -136,8 +148,6 @@ export class Match implements LoopTarget {
       at: spawnPoint,
       count: 1,
     });
-    // PROTOTYPE(PROTO-01) TEMPORARY: demo escort; delete with `spawnEscort`.
-    Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
     camera.lookAt(spawnPoint);
   }
@@ -190,21 +200,8 @@ export class Match implements LoopTarget {
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
-    const landscapeKey = [
-      view.x,
-      view.y,
-      view.width,
-      view.height,
-      ...this.explorer.hiddenRoofs,
-    ].join(':');
-    if (landscapeKey !== this.landscapeKey) {
-      this.landscapeKey = landscapeKey;
-      this.landscapeRevision += 1;
-    }
-    renderer.drawCachedLayer(scene, this.landscapeRevision, () => {
-      scene.draw(renderer);
-    });
-    this.entities.draw(renderer);
+    this.objectView.show(this.current.mapObjects ?? []);
+    scene.draw(renderer);
     miniMap.draw(renderer, this.screenWidth, this.screenHeight, view);
   }
 
@@ -266,14 +263,12 @@ export class Match implements LoopTarget {
       x: view.x + (screenX / this.screenWidth) * view.width,
       y: view.y + (screenY / this.screenHeight) * view.height,
     });
-    if (wasToggled) this.world.miniMap.invalidate();
     return wasToggled;
   }
 
   /** Shows the whole battlefield in the free view, restoring all building roofs. */
   public overview(): void {
     this.explorer.overview();
-    this.world.miniMap.invalidate();
     this.isExploring = true;
     this.isFollowing = false;
   }
@@ -291,7 +286,16 @@ export class Match implements LoopTarget {
     if (this.playerId === null) {
       return;
     }
-    const { move } = this.deps.input.read(this.projection);
+    const { move, isAttacking, aim } = this.deps.input.read(this.projection);
+    if (isAttacking === true && aim !== null) {
+      const targetId = findMapObjectAt(this.mapObjects, this.current.mapObjects ?? [], aim);
+      if (targetId !== null)
+        this.deps.simulation.enqueueCommand({
+          type: 'attack-target',
+          actorId: this.playerId,
+          targetId,
+        });
+    }
     const isMoving = move.x !== 0 || move.y !== 0;
     // Any movement brings the camera back to the player, including held keys.
     if (isMoving) {
@@ -330,34 +334,6 @@ export class Match implements LoopTarget {
       this.isExploring = true;
     }
     this.isFollowing = false;
-  }
-
-  /**
-   * PROTOTYPE(PROTO-01) TEMPORARY: demo code; `SpawnSystem` replaces it.
-   *
-   * Prototype (2026-10-08, demo): queues the escort minions in a ring around `center`, one spawn
-   * each so they start apart. Phase 2's `SpawnSystem` replaces this.
-   */
-  private static spawnEscort(
-    simulation: MatchDeps['simulation'],
-    team: MatchDeps['player']['team'],
-    center: Vec2,
-  ): void {
-    const { definitionId, kind, count, spawnRadius } = PROTOTYPE_ESCORT;
-    for (let index = 0; index < count; index += 1) {
-      const angle = (2 * Math.PI * index) / count;
-      simulation.enqueueCommand({
-        type: 'dev-spawn',
-        kind,
-        definitionId,
-        team,
-        at: {
-          x: center.x + spawnRadius * Math.cos(angle),
-          y: center.y + spawnRadius * Math.sin(angle),
-        },
-        count: 1,
-      });
-    }
   }
 
   private static strongholdOf(map: MapDefinition, team: MatchDeps['player']['team']): Vec2 {

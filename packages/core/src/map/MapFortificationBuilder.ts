@@ -11,7 +11,7 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     const south = isCapturePoint && !north;
     const size = isCapturePoint ? 88 : feature.kind === 'stronghold' ? 58 : 32;
     const stone = north ? P.snowLight : south ? P.basalt : P.stone;
-    const roof = north ? P.snowShadow : south ? '#763e32' : P.stoneDark;
+    const roof = north ? P.snowShadow : south ? P.volcanicRoof : P.stoneDark;
     const accent = feature.team === 'light' ? P.light : feature.team === 'dark' ? P.dark : P.gold;
     const { x, y } = feature.position;
     const left = x - size / 2;
@@ -19,13 +19,14 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     const wall = size / 10;
     const tower = size / 5;
     const id = feature.id;
+    this.beginObject(id, 'fort');
     this.rect(`${id}-fort-shadow`, left + 5, top + 6, size, size, P.shadow);
     this.rect(`${id}-fort-court`, left, top, size, size, south ? P.ash : P.road);
-    this.rect(`${id}-fort-wall-top`, left, top, size, wall, stone);
-    this.rect(`${id}-fort-wall-left`, left, top, wall, size, stone);
-    this.rect(`${id}-fort-wall-right`, left + size - wall, top, wall, size, stone);
-    this.rect(`${id}-fort-wall-bottom-left`, left, top + size - wall, size / 3, wall, stone);
-    this.rect(
+    this.blockRect(`${id}-fort-wall-top`, left, top, size, wall, stone);
+    this.blockRect(`${id}-fort-wall-left`, left, top, wall, size, stone);
+    this.blockRect(`${id}-fort-wall-right`, left + size - wall, top, wall, size, stone);
+    this.blockRect(`${id}-fort-wall-bottom-left`, left, top + size - wall, size / 3, wall, stone);
+    this.blockRect(
       `${id}-fort-wall-bottom-right`,
       x + size / 6,
       top + size - wall,
@@ -36,7 +37,7 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     for (const dx of [0, size - tower]) {
       for (const dy of [0, size - tower]) {
         const suffix = String(dx) + '-' + String(dy);
-        this.rect(`${id}-fort-tower-${suffix}`, left + dx, top + dy, tower, tower, stone);
+        this.blockRect(`${id}-fort-tower-${suffix}`, left + dx, top + dy, tower, tower, stone);
         this.rect(
           `${id}-fort-tower-roof-${suffix}`,
           left + dx + 3,
@@ -57,7 +58,7 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
         stone,
       );
     }
-    this.rect(`${id}-fort-keep`, x - size / 6, y - size / 5, size / 3, size / 2.5, stone);
+    this.blockRect(`${id}-fort-keep`, x - size / 6, y - size / 5, size / 3, size / 2.5, stone);
     this.rect(`${id}-fort-keep-roof`, x - size / 7, y - size / 6, size / 3.5, size / 3, roof);
     this.rect(`${id}-fort-banner`, x - 3, y - 3, 6, 6, accent);
     this.rect(`${id}-fort-gate`, x - size / 12, y + size / 3, size / 6, size / 6, P.shadow);
