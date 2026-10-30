@@ -1,4 +1,4 @@
-import type { MovementProfile } from '../content/units/units.types';
+import type { MovementProfile, MovementStrategyId } from '../content/units/units.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 
@@ -17,6 +17,9 @@ export class Movement {
 
   public readonly mass: number;
 
+  /** The strategy that steers this entity (architecture 04 §4), or `undefined` when none does. */
+  public readonly strategyId: MovementStrategyId | undefined;
+
   private currentSpeed = 0;
 
   private readonly currentVelocity: MutableVec2 = { x: 0, y: 0 };
@@ -27,8 +30,10 @@ export class Movement {
    * Creates a stopped movement component from a unit's movement profile.
    *
    * @param stats - The unit definition's movement profile; every value must be positive.
+   * @param strategyId - The definition's `movementStrategy`, resolved through the strategy
+   *   registry by `PathingSystem`.
    */
-  public constructor(stats: MovementProfile) {
+  public constructor(stats: MovementProfile, strategyId?: MovementStrategyId) {
     for (const [name, value] of Object.entries(stats)) {
       if (!(value > 0) || !Number.isFinite(value)) {
         throw new Error(`Movement ${name} must be a positive number, got ${String(value)}.`);
@@ -38,6 +43,7 @@ export class Movement {
     this.maxSpeed = stats.maxSpeed;
     this.acceleration = stats.acceleration;
     this.mass = stats.mass;
+    this.strategyId = strategyId;
   }
 
   /** Current speed, between 0 and `maxSpeed`. */

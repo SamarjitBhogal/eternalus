@@ -10,3 +10,12 @@ export type RecordedCommand = {
   readonly tick: number;
   readonly command: { readonly type: string };
 };
+
+/**
+ * One playable team's match counters (architecture 03 §2). `unitsSuppressed` counts the members
+ * the unit cap kept out of a horde (architecture 18 §3.4), `unitsRequested` every member asked for.
+ */
+export type TeamState = {
+  readonly unitsRequested: number;
+  readonly unitsSuppressed: number;
+};

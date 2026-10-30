@@ -1,4 +1,5 @@
 import type { GameConfig } from './config/GameConfig.types';
+import type { MapDefinition } from './content/maps/maps.types';
 import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
 import type { ContentCatalogue } from './content/ContentCatalogue';
@@ -20,6 +21,8 @@ export type SimulationOptions = {
   readonly debug?: DebugConfig;
   /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
+  /** The generated map; its lanes and structures drive the lane hordes (architecture 18). Without one, nothing spawns on lanes. */
+  readonly map?: MapDefinition;
   /** The level curves Legends level along; `loadLevelCurves()` when omitted. */
   readonly levelCurves?: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */

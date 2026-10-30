@@ -1,4 +1,3 @@
-import { Brain } from '../components/Brain';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
@@ -15,8 +14,10 @@ import type { BasicAttack } from './Unit.types';
 /**
  * Abstract base for entities of the `unit` family. It installs the components every unit has
  * (architecture 04 §1): `Transform`, `Health`, `Movement`, `TeamMembership`, a circle `Collider`
- * on the unit layer, `Vision` and `StatusEffects`, from a definition, a position and a team; plus `Combat` when the
- * definition has an attack and a `Brain` when it names a controller.
+    this.addComponent(new StatusEffects());
+    if (definition.attack !== undefined) {
+      this.addComponent(new Combat(definition.attack));
+    }
  */
 export abstract class Unit extends Entity {
   /** Always `'unit'`. */
@@ -48,7 +49,7 @@ export abstract class Unit extends Entity {
 
     this.addComponent(new Transform(position, definition.footprintRadius));
     this.addComponent(new Health(definition.baseHealth));
-    this.addComponent(new Movement(definition.movement));
+    this.addComponent(new Movement(definition.movement, definition.movementStrategy));
     this.addComponent(new TeamMembership(team));
     this.addComponent(new Collider({ kind: 'circle', radius: definition.footprintRadius }, 'unit'));
     this.addComponent(new Vision(definition.visionRadius));
@@ -56,10 +57,6 @@ export abstract class Unit extends Entity {
     const basic = this.basicAttack(context);
     if (basic !== undefined) {
       this.addComponent(new Combat(basic.attack, basic.weaponId));
-    }
-    // PROTOTYPE(PROTO-01) TEMPORARY: delete; `EntityFactory` attaches brains in state (11 §2).
-    if (definition.controller !== undefined) {
-      this.addComponent(new Brain(definition.controller));
     }
   }
 
