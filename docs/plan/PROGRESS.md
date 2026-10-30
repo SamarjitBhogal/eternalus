@@ -2010,3 +2010,40 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   727 passed (727)"; client "Tests 415 passed (415)"; "✓ built in 157ms"; "Documentation check
   passed."
 - Next step: review and merge after M2b.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PRs #43 and #47. Doc 18 §7.1 no longer says
+  `GuardWithinLeashInvariant` covers camp mobs and defenders unchanged (doc 15 defines it for tower
+  guards; extending it is M6 work, defenders wait on §10 item 4). The minion plan's M6 blockers add
+  the owner's answer on the defenders' leash and unowned-point team; its description and purpose
+  exclude turrets as well as bosses, matching the coverage table. Docs index regenerated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 159ms"; "Documentation check
+  passed."
+- Next step: merge up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #44 (and the critic's follow-ups). A chasing minion no
+  longer follows the lane flow field, which leads to the lane's end, not to its target:
+  `PathingSystem` hands the strategy no field while a member has an attack target. Regression test
+  (upstream target across the blocked lane's rift) fails on the old code. Doc 18 §5.2 says so; a
+  `ponytail:` remark names the ceiling (terrain between chaser and target can stall it; A* to the
+  target replaces it). Merged the enemy-AI plan's latest doc fixes.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  715 passed (715)"; client "Tests 415 passed (415)"; "✓ built in 161ms"; "Documentation check
+  passed."
+- Next step: merge into M5a (#45) and M3 (#46).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m5a-modifiers — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PR #45. Doc 11's implementation status now says why
+  `AiSystem` is first today and second once `CommandApplySystem` heads the pipeline (§1 keeps the
+  design order; `Simulation.step()` applies commands until then, doc 03). CodeRabbit's wording
+  ("after `CommandApplySystem`") was not used: that system does not exist yet. Merged M2b's chase
+  fix.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  728 passed (728)"; client "Tests 415 passed (415)"; "✓ built in 150ms"; "Documentation check
+  passed."
+- Next step: review and merge after M2b.
