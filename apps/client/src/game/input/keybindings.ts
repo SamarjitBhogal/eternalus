@@ -1,7 +1,26 @@
-import type { Binding, BindingPreset, InputAction, InputChord } from '../../bridge/Binding.types';
+import type {
+  Binding,
+  BindingPreset,
+  ChordModifier,
+  InputAction,
+  InputChord,
+} from '../../bridge/Binding.types';
 
 function key(code: string, label: string): InputChord {
   return { device: 'keyboard', code, label };
+}
+
+/** Whether the page runs on an Apple device, where Cmd (Meta) takes the place of Ctrl. */
+const IS_APPLE_PLATFORM = /Mac|iPhone|iPad/.test(globalThis.navigator.userAgent);
+
+/**
+ * `chords` with this platform's own modifier chords first: Cmd (Meta) chords on an Apple device,
+ * Ctrl chords elsewhere (DEC-118). The settings screen and the prompts show the first chord first.
+ */
+function platformChordsFirst(chords: readonly InputChord[]): readonly InputChord[] {
+  const own: ChordModifier = IS_APPLE_PLATFORM ? 'Meta' : 'Control';
+  const isOwn = (chord: InputChord): boolean => chord.modifiers?.includes(own) === true;
+  return [...chords].sort((a, b) => Number(isOwn(b)) - Number(isOwn(a)));
 }
 
 /**
@@ -34,11 +53,11 @@ export const DEFAULT_CHORDS: Readonly<Record<InputAction, readonly InputChord[]>
   'toggle-developer-menu': [key('F1', 'F1')],
   'toggle-perf-overlay': [key('F9', 'F9')],
   // DEC-105: Ctrl+Shift+F3 on Windows and Linux, Cmd+Shift+F3 on a Mac (Cmd+F3 is the Mac's Show
-  // Desktop). Recommendation: both chords on every platform, so no platform detection is needed.
-  'toggle-developer-camera': [
+  // Desktop). DEC-118: both chords on every platform, this platform's own chord listed first.
+  'toggle-developer-camera': platformChordsFirst([
     { device: 'keyboard', code: 'F3', label: 'Ctrl+Shift+F3', modifiers: ['Control', 'Shift'] },
     { device: 'keyboard', code: 'F3', label: 'Cmd+Shift+F3', modifiers: ['Meta', 'Shift'] },
-  ],
+  ]),
 };
 
 /** Every action, in the order the settings screen lists them. */

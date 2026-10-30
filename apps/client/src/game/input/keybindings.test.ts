@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { BindingResolver } from './BindingResolver';
 import { DEFAULT_CHORDS, INPUT_ACTIONS, PRESETS, withDefaults } from './keybindings';
@@ -29,10 +29,13 @@ describe('keybindings', () => {
   });
 
   it('shows the developer camera tools with Ctrl+Shift+F3 and Cmd+Shift+F3 by default (DEC-105)', () => {
-    expect(DEFAULT_CHORDS['toggle-developer-camera']).toEqual([
-      { device: 'keyboard', code: 'F3', label: 'Ctrl+Shift+F3', modifiers: ['Control', 'Shift'] },
-      { device: 'keyboard', code: 'F3', label: 'Cmd+Shift+F3', modifiers: ['Meta', 'Shift'] },
-    ]);
+    expect(DEFAULT_CHORDS['toggle-developer-camera']).toEqual(
+      expect.arrayContaining([
+        { device: 'keyboard', code: 'F3', label: 'Ctrl+Shift+F3', modifiers: ['Control', 'Shift'] },
+        { device: 'keyboard', code: 'F3', label: 'Cmd+Shift+F3', modifiers: ['Meta', 'Shift'] },
+      ]),
+    );
+    expect(DEFAULT_CHORDS['toggle-developer-camera']).toHaveLength(2);
   });
 
   it('moves with the arrow keys in the arrows preset and keeps the other defaults', () => {
@@ -55,5 +58,25 @@ describe('keybindings', () => {
     expect(bindings.find((binding) => binding.action === 'move-down')?.chords).toEqual(
       DEFAULT_CHORDS['move-down'],
     );
+  });
+});
+
+describe('the developer camera chords on each platform (DEC-118)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  it.each([
+    ['a Mac', 'Macintosh; Intel Mac OS X 10_15_7', ['Cmd+Shift+F3', 'Ctrl+Shift+F3']],
+    ['an iPad', 'iPad; CPU OS 17_0 like Mac OS X', ['Cmd+Shift+F3', 'Ctrl+Shift+F3']],
+    ['Windows', 'Windows NT 10.0; Win64; x64', ['Ctrl+Shift+F3', 'Cmd+Shift+F3']],
+    ['Linux', 'X11; Linux x86_64', ['Ctrl+Shift+F3', 'Cmd+Shift+F3']],
+  ])('lists the chord of %s first', async (_platform, system, labels) => {
+    vi.stubGlobal('navigator', { userAgent: `Mozilla/5.0 (${system})` });
+    vi.resetModules();
+    const { DEFAULT_CHORDS: chords } = await import('./keybindings');
+
+    expect(chords['toggle-developer-camera'].map((chord) => chord.label)).toEqual(labels);
   });
 });

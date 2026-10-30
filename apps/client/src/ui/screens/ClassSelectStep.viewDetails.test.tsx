@@ -66,6 +66,7 @@ describe('ClassSelectStep View Details, in a page', () => {
   it('opens on V with Esc Back focused, and Esc closes it and gives the focus back', () => {
     const container = mount();
     const card = container.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]');
+    expect(card).not.toBeNull();
     card?.focus();
     expect(dialog(container)?.dataset.open).toBe('false');
 
@@ -79,7 +80,6 @@ describe('ClassSelectStep View Details, in a page', () => {
 
     expect(dialog(container)?.dataset.open).toBe('false');
     expect(dialog(container)?.hasAttribute('inert')).toBe(true);
-    expect(card).not.toBeNull();
     expect(document.activeElement).toBe(card);
   });
 
@@ -88,12 +88,12 @@ describe('ClassSelectStep View Details, in a page', () => {
     const prompt = [...container.querySelectorAll('button')].find(
       (button) => button.textContent === 'V View Details',
     );
+    expect(prompt).toBeDefined();
 
     act(() => {
       prompt?.click();
     });
 
-    expect(prompt).toBeDefined();
     expect(dialog(container)?.dataset.open).toBe('true');
   });
 });

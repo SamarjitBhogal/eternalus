@@ -91,6 +91,8 @@ export class SessionController {
             attributes,
           }),
         );
+        // ponytail: a menu banner only (DEC-106 interim); build-plan step 12 replaces it with ADR
+        // 0025's report note popup and ErrorBoundary once the owner accepts that ADR.
         this.transition('menu', 'match-crashed');
       },
       loadAssets: (groups, onReady, onFailed) => this.loadAssets(groups, onReady, onFailed),
