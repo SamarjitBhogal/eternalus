@@ -8,6 +8,7 @@ export const HORDE_STEERING = {
   blockedLookAhead: 6, // TUNE: a little over one nav cell, so a wall a cell ahead is seen
   minSteer: 0.25, // TUNE:
   marchSpeedFactor: 0.9, // TUNE: under 1, so the ranks keep up with the anchor
+  objectiveHoldGap: 1, // TUNE: under the light minion's 1.5 m reach, so the leader can hit it
   spawnSpacing: 2, // TUNE: over the heavy minion's 1.6 m diameter
   spawnColumns: 4, // TUNE:
 } as const satisfies HordeSteeringProfile;

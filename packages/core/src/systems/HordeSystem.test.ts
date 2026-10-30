@@ -8,6 +8,8 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { IdGenerator } from '../utils/IdGenerator';
 import { HordeSystem } from './HordeSystem';
 
 const FACTOR = 0.5;
@@ -15,7 +17,7 @@ const logger = new NullLogger();
 
 const setUp = () => {
   const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
-  const system = new HordeSystem(state, FACTOR);
+  const system = new HordeSystem(state, { marchSpeedFactor: FACTOR, objectiveHoldGap: 1 });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const addHorde = (members: readonly [string, string][], progress = 0) => {
     const memberIds = members.map(([kind, definitionId]) => {
@@ -107,10 +109,37 @@ describe('HordeSystem', () => {
 
   it('does nothing without a map', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
-    const system = new HordeSystem(state, FACTOR);
+    const system = new HordeSystem(state, { marchSpeedFactor: FACTOR, objectiveHoldGap: 1 });
 
     expect(() => {
       system.update({ state, logger });
     }).not.toThrow();
+  });
+
+  it('holds the anchor in front of a standing objective and advances once it falls', () => {
+    const { state, system, addHorde } = setUp();
+    const structures = new EntityFactory(
+      createDefaultEntityRegistry(),
+      STRUCTURE_DEFINITIONS,
+      new IdGenerator(1000),
+    );
+    // The dark SpawnerTower on lane-0 stands 120 along it from the light gate; radius 14.
+    const tower = structures.create('spawner-tower', 'spawner-tower', {
+      team: 'dark',
+      position: { x: 140, y: 20 },
+      laneId: 'lane-0',
+    });
+    state.entities.add(tower);
+    state.indexStructures();
+    const { hordeId } = addHorde([['light-mob', 'light-minion']], 100);
+
+    for (let tick = 0; tick < 200; tick += 1) {
+      system.update({ state, logger });
+    }
+    expect(state.hordes.get(hordeId)?.progress).toBeCloseTo(120 - 14 - 1);
+
+    state.entities.remove(tower.id, 'died');
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(105);
   });
 });

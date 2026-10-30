@@ -87,6 +87,7 @@ export class Simulation {
       weaponSource,
     );
     Simulation.spawnStructures(this.state, factory);
+    this.state.indexStructures();
     this.commandContext = { state: this.state, factory };
     this.systemContext = { state: this.state, logger };
     this.pipeline =

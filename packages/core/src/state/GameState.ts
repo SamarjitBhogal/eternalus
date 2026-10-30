@@ -17,6 +17,7 @@ import type { MatchPhase, RecordedCommand, TeamState } from './GameState.types';
 import type { HordeRequest } from './HordeRequest.types';
 import { HordeStore } from './HordeStore';
 import { LaneRoutes } from './LaneRoutes';
+import { LaneStructures } from './LaneStructures';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
@@ -48,6 +49,7 @@ export class GameState {
   public readonly events: GameEvents;
   /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
   public readonly phase: MatchPhase = 'countdown';
+  private structureIndex = LaneStructures.EMPTY;
   private currentTick = 0;
   private readonly recent = new RingBuffer<RecordedCommand>(RECENT_COMMAND_CAPACITY);
   private readonly announcedRemovals: RemovalRecord[] = [];
@@ -82,6 +84,16 @@ export class GameState {
     this.events.on('xp-gained', (award) => {
       this.xpAwards.push(award);
     });
+  }
+
+  /** The lane structures as they stood at match start (architecture 18 §6.2); empty until indexed. */
+  public get laneStructures(): LaneStructures {
+    return this.structureIndex;
+  }
+
+  /** Indexes the lane structures now in the store; call once, after the map's structures spawn. */
+  public indexStructures(): void {
+    this.structureIndex = LaneStructures.build(this.entities, this.routes);
   }
 
   /** Number of ticks completed. */

@@ -30,6 +30,11 @@ export type HordeSteeringProfile = {
   readonly minSteer: number;
   /** The formation anchor advances at this fraction of the slowest member's top speed. */
   readonly marchSpeedFactor: number;
+  /**
+   * The anchor stops this far in front of the edge of the horde's next standing objective
+   * (architecture 18 §4, §6.2), so the front rank gathers within reach of it.
+   */
+  readonly objectiveHoldGap: number;
   /** Gap between members in the spawn grid; at least the largest minion's diameter. */
   readonly spawnSpacing: number;
   /** Members per row of the spawn grid. */

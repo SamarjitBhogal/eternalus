@@ -80,9 +80,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             map.flowFieldCorridorHalfWidth,
           );
     super([
-      ...(hordes === undefined
-        ? []
-        : [...hordes.decide, new HordeSystem(state, HORDE_STEERING.marchSpeedFactor)]),
+      ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
       ...(hordes === undefined
