@@ -202,6 +202,8 @@ Reply inline (`Decision: …`).
       them into the ring buffer, with a rule that handlers never keep a payload. Which one?
       Option (1) also means updating 02-coding-principles (Object Pool row) and the phase 1 plan
       item, which list event payloads as pooled; 04 §11 already names only projectiles.
+      Option (2) also needs a snapshot rule: payloads hold nested references (`DamageSource`,
+      `memberIds`, `bars`), so the ring buffer would need a deep or immutable copy, not a shallow one.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

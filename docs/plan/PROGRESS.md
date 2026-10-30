@@ -1636,3 +1636,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 616 passed (616)"; client "Tests 416 passed (416)"; "✓ built in 106ms"; "Documentation
   check passed."
 - Next step: Sam answers the INBOX item; the first real user is projectiles (SCRUM-169).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/object-pool — claudiodh + Claude Code
+
+- What was done: PR #51 review round (CodeRabbit, Copilot). `ObjectPool.release` rejects an object
+  the pool did not make (it would grow past `capacity`), with a test; the reuse test checks
+  identity, not shape. INBOX pooling item notes that option (2) needs a deep or immutable
+  snapshot of nested payloads. The "resolve before merge" note stays with the owner.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 672 passed (672)"; client "Tests 415 passed (415)"; "✓ built in 96ms"; "Documentation
+  check passed."
+- Next step: Sam answers the INBOX pooling item.

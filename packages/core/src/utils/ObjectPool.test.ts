@@ -47,7 +47,21 @@ describe('ObjectPool', () => {
     if (first === undefined || second === undefined) throw new Error('expected objects');
     pool.release(first);
     pool.release(second);
-    expect(new Set([pool.acquire(), pool.acquire()])).toEqual(new Set([first, second]));
+    const again = [pool.acquire(), pool.acquire()];
+    // Identity, not shape: a freshly allocated look-alike must fail.
+    expect(again.includes(first)).toBe(true);
+    expect(again.includes(second)).toBe(true);
+  });
+
+  it('rejects an object it did not make, without resetting it', () => {
+    const pool = hitPool(1);
+    const stranger: Hit = { amount: 7, target: null };
+
+    expect(() => {
+      pool.release(stranger);
+    }).toThrow('does not belong');
+    expect(stranger.amount).toBe(7);
+    expect(pool.available).toBe(1);
   });
 
   it('returns undefined when every object is in use', () => {

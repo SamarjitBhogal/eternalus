@@ -6,6 +6,7 @@
 export class ObjectPool<T extends object> {
   private readonly free: T[] = [];
   private readonly freeSet = new Set<T>();
+  private readonly owned = new Set<T>();
 
   /**
    * @param capacity - How many objects the pool holds; a whole number >= 1.
@@ -26,6 +27,7 @@ export class ObjectPool<T extends object> {
       const item = create();
       this.free.push(item);
       this.freeSet.add(item);
+      this.owned.add(item);
     }
   }
 
@@ -48,8 +50,14 @@ export class ObjectPool<T extends object> {
     return item;
   }
 
-  /** Resets `item` and returns it to the pool. Throws on an object that is already free. */
+  /**
+   * Resets `item` and returns it to the pool. Throws on an object this pool did not make (it would
+   * grow past `capacity`) and on one that is already free.
+   */
   public release(item: T): void {
+    if (!this.owned.has(item)) {
+      throw new Error('ObjectPool: object does not belong to this pool.');
+    }
     if (this.freeSet.has(item)) {
       throw new Error('ObjectPool: object released twice.');
     }
