@@ -9,6 +9,7 @@ import { EntityFactory } from '../../entities/EntityFactory';
 import { GameState } from '../../state/GameState';
 import type { CommandContext } from '../CommandHandler.types';
 import { StopHandler } from './StopHandler';
+import { loadWeapons } from '../../content/weapons/loadWeapons';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
@@ -23,7 +24,12 @@ class Rock extends Entity {
 
 const context = (): CommandContext => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    UNIT_DEFINITIONS,
+    undefined,
+    loadWeapons(createDefaultGameConfig().tickRate),
+  );
   state.entities.add(
     factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' }),
   );

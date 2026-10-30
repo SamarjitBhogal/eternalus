@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { EntityStore } from '../state/EntityStore';
@@ -13,7 +14,12 @@ const PRIORITY = LANE_MINION_AGGRO.priority;
 
 const setUp = () => {
   const entities = new EntityStore();
-  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    loadDefaultContent(30),
+    undefined,
+    loadWeapons(30),
+  );
   const add = (team: 'light' | 'dark', kind: string, id: string) => {
     const entity = factory.create(kind, id, { team, position: { x: 0, y: 0 } });
     entities.add(entity);

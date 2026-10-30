@@ -4,6 +4,7 @@ import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { MINION_STRENGTH } from '../content/mobs/minionModifiers';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
@@ -16,7 +17,12 @@ const CURVE = { ...MINION_STRENGTH, min: 0.75 };
 /** A light minion in a light horde on lane-0 (160 m from x 20 to x 180), and a Warrior. */
 const setUp = () => {
   const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    loadDefaultContent(30),
+    undefined,
+    loadWeapons(30),
+  );
   const minion = factory.create('light-mob', 'light-minion', {
     team: 'light',
     position: { x: 20, y: 20 },

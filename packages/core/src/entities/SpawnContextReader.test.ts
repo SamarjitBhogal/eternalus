@@ -58,4 +58,12 @@ describe('SpawnContextReader', () => {
       );
     }
   });
+
+  it('reads the weapon source only when it has has() and get()', () => {
+    const weapons = { has: () => false, get: () => undefined };
+
+    expect(reader.weapons({ weapons })).toBe(weapons);
+    expect(reader.weapons({})).toBeNull();
+    expect(reader.weapons({ weapons: { has: 'nope' } })).toBeNull();
+  });
 });

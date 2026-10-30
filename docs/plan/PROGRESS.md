@@ -354,61 +354,6 @@ The example below is fenced so it is not read as a real entry.
 - Next step: pre-PR gate, then the PR (after #14 and #17); input session F for WASD; owner:
   claudiodh.
 
-### 2026-10-08 — Phase 1 / sprint 1.5 — feat/player-input — claudiodh + Claude Code
-
-- What was done: WASD movement in the browser (SCRUM-158, SCRUM-217), stacked on
-  `feat/engine-loop-match`. `bridge/Binding.types.ts` (`INPUT_ACTIONS`, `InputChord`, `Binding`);
-  `game/input/keybindings.ts` with every default and the `wasd`/`arrows` presets;
-  `InputDevice` port and `KeyboardDevice`; `InputMapper` (bindings → actions → `InputIntent`);
-  `DeviceIntentSource` replaces `IdleIntentSource` in `useMatch`, with focus-loss release.
-  09 §11 records the interim differences; a player scenario walks the Warrior with W.
-- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
-  449 passed (449)", client "Tests 111 passed (111)", "✓ built", "Documentation check passed.").
-- Next step: core `PlayerController` for the `intent` command (INBOX, Sam's TODO); `MouseDevice`;
-  pre-PR gate; owner: claudiodh.
-
-### 2026-10-08 — Phase 1 / sprint 1.5 — feat/player-input (mouse) — claudiodh + Claude Code
-
-- What was done: `MouseDevice` (buttons bitmask with side buttons, pointer on the canvas, pointer
-  capture, `contextmenu`/`auxclick`/non-primary presses cancelled); the shared
-  `describeInputDevice` contract suite for both devices (09 §9); `InputMapper` matches mouse
-  chords by `chordKey` and aims through a `Projection` port that `Match` implements with its
-  camera; `useMatch` attaches the mouse to the canvas. 09 §11 and 08 §11 updated; the
-  `KeyboardDevice` / `MouseDevice` box is ticked.
-- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
-  449 passed (449)", client "Tests 127 passed (127)", "✓ built", "Documentation check passed.").
-- Next step: core `PlayerController` consumes `aim` and `triggered` (INBOX); pre-PR gate on the
-  mouse commits; owner: claudiodh.
-
-### 2026-10-08 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
-
-- What was done: the PR #14 review (Sam, 2026-10-08). Registry back to
-  `createDefaultEntityRegistry()` (DEC-21); content rules get the catalogue, are listed in
-  `content/defaultContentRules.ts` and run once from `loadDefaultContent()`, which also converts
-  speeds authored per second to per tick (DEC-22); `EntityFactory` resolves definitions by id,
-  checks their kind once and takes ids from `IdGenerator`, `dev-spawn` rejects
-  `unknown-definition`, and `Simulation` spawns a Warrior; `Unit` installs the unit components;
-  `StateHasher` hashes shields, colliders and vision; `ShieldBar` shared with `GameEvents`;
-  shields in creation order; `EntityDefinitionBase`; `deepFreeze` in `utils/`; ring lint, ADR
-  0013 and the AGENTS section removed (DEC-24). DEC-21…24 logged; proposals in `INBOX.md`.
-- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (see the PR).
-- Next step: Sam re-reviews #14; then merge it into #17, #18 and #19; owner: claudiodh.
-
-### 2026-10-08 — Phase 1 / sprint 1 session D — feat/session-shell-home — sholtzman + Claude Code
-
-- What was done: resolved PR #12's merge conflicts by merging `origin/phase/1-simulation-kernel-and-world`
-  (`b0e9dea`, after PRs #13 and #15) into `feat/session-shell-home`; merge commit, no rebase and no
-  force. Conflicts were docs only: this log (every entry from both sides kept verbatim, oldest
-  first; 12 base + 1 + 4 = 17 entries) and `docs/README.md` (regenerated with `npm run docs:index`;
-  the changelog table lists both `pr-feat-session-shell-home.md` and `pr-feat-sim-kernel.md`).
-  `INBOX.md` and the phase-1 plan auto-merged; no code changes were needed.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
-  typecheck and knip clean; core "Tests 295 passed (295)" (statements 98.78%, branches 91.48%);
-  client "Tests 197 passed (197)" (statements 90.13%, branches 88.23%); "✓ built in 94ms";
-  "Documentation check passed."
-- Next step: review and merge PR #12. Follow-up: core now exports `SeededRandom`, so the client's
-  `LcgRng` stand-in can be swapped at the `createRng` line in `main.tsx` (its own task).
-
 ### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
 
 - What was done: preserved all original map anchors and lanes; enlarged the preview to 12,800 ×
@@ -470,6 +415,61 @@ The example below is fenced so it is not read as a real entry.
   `PASS: final radial room entrances render and cathedral exit restores overview.`
 - Next step: map owner reviews the mountain field and circular interior. Capture rules and
   mountain collision remain future simulation work. Changes remain uncommitted.
+
+### 2026-10-08 — Phase 1 / sprint 1.5 — feat/player-input — claudiodh + Claude Code
+
+- What was done: WASD movement in the browser (SCRUM-158, SCRUM-217), stacked on
+  `feat/engine-loop-match`. `bridge/Binding.types.ts` (`INPUT_ACTIONS`, `InputChord`, `Binding`);
+  `game/input/keybindings.ts` with every default and the `wasd`/`arrows` presets;
+  `InputDevice` port and `KeyboardDevice`; `InputMapper` (bindings → actions → `InputIntent`);
+  `DeviceIntentSource` replaces `IdleIntentSource` in `useMatch`, with focus-loss release.
+  09 §11 records the interim differences; a player scenario walks the Warrior with W.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 111 passed (111)", "✓ built", "Documentation check passed.").
+- Next step: core `PlayerController` for the `intent` command (INBOX, Sam's TODO); `MouseDevice`;
+  pre-PR gate; owner: claudiodh.
+
+### 2026-10-08 — Phase 1 / sprint 1.5 — feat/player-input (mouse) — claudiodh + Claude Code
+
+- What was done: `MouseDevice` (buttons bitmask with side buttons, pointer on the canvas, pointer
+  capture, `contextmenu`/`auxclick`/non-primary presses cancelled); the shared
+  `describeInputDevice` contract suite for both devices (09 §9); `InputMapper` matches mouse
+  chords by `chordKey` and aims through a `Projection` port that `Match` implements with its
+  camera; `useMatch` attaches the mouse to the canvas. 09 §11 and 08 §11 updated; the
+  `KeyboardDevice` / `MouseDevice` box is ticked.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (core "Tests
+  449 passed (449)", client "Tests 127 passed (127)", "✓ built", "Documentation check passed.").
+- Next step: core `PlayerController` consumes `aim` and `triggered` (INBOX); pre-PR gate on the
+  mouse commits; owner: claudiodh.
+
+### 2026-10-08 — Phase 1 / sprint 1.2 — feat/entity-collider-and-concrete-kinds — claudiodh + Claude Code
+
+- What was done: the PR #14 review (Sam, 2026-10-08). Registry back to
+  `createDefaultEntityRegistry()` (DEC-21); content rules get the catalogue, are listed in
+  `content/defaultContentRules.ts` and run once from `loadDefaultContent()`, which also converts
+  speeds authored per second to per tick (DEC-22); `EntityFactory` resolves definitions by id,
+  checks their kind once and takes ids from `IdGenerator`, `dev-spawn` rejects
+  `unknown-definition`, and `Simulation` spawns a Warrior; `Unit` installs the unit components;
+  `StateHasher` hashes shields, colliders and vision; `ShieldBar` shared with `GameEvents`;
+  shields in creation order; `EntityDefinitionBase`; `deepFreeze` in `utils/`; ring lint, ADR
+  0013 and the AGENTS section removed (DEC-24). DEC-21…24 logged; proposals in `INBOX.md`.
+- Checks run (Node 22, `npm_config_engine_strict=false`): `npm run check` → exit 0 (see the PR).
+- Next step: Sam re-reviews #14; then merge it into #17, #18 and #19; owner: claudiodh.
+
+### 2026-10-08 — Phase 1 / sprint 1 session D — feat/session-shell-home — sholtzman + Claude Code
+
+- What was done: resolved PR #12's merge conflicts by merging `origin/phase/1-simulation-kernel-and-world`
+  (`b0e9dea`, after PRs #13 and #15) into `feat/session-shell-home`; merge commit, no rebase and no
+  force. Conflicts were docs only: this log (every entry from both sides kept verbatim, oldest
+  first; 12 base + 1 + 4 = 17 entries) and `docs/README.md` (regenerated with `npm run docs:index`;
+  the changelog table lists both `pr-feat-session-shell-home.md` and `pr-feat-sim-kernel.md`).
+  `INBOX.md` and the phase-1 plan auto-merged; no code changes were needed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; lint,
+  typecheck and knip clean; core "Tests 295 passed (295)" (statements 98.78%, branches 91.48%);
+  client "Tests 197 passed (197)" (statements 90.13%, branches 88.23%); "✓ built in 94ms";
+  "Documentation check passed."
+- Next step: review and merge PR #12. Follow-up: core now exports `SeededRandom`, so the client's
+  `LcgRng` stand-in can be swapped at the `createRng` line in `main.tsx` (its own task).
 
 ### 2026-10-08 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects (merge of phase/1) — SamarjitBhogal + Claude Code
 
@@ -828,6 +828,24 @@ The example below is fenced so it is not read as a real entry.
   The owner then answers the INBOX items and plan §9, and accepts or changes ADR 0016/0017
   and the re-cut.
 
+### 2026-10-10 — Phase 1 / S2 — feat/legend-aether — Claudio + Claude Code
+
+- What was done: added the `Aether` component (MP pool: `max`/`current`, `canAfford`, `spend`,
+  `restore`, `fraction`, `isEmpty`) in `packages/core/src/components/Aether.ts` with its test.
+  `Legend.installComponents` now installs `Aether(definition.baseAether)` on every Legend (mobs and
+  structures get none); `LegendDefinition` gains `baseAether`, with TUNE placeholders in the Warrior
+  (200), Sentinel (250) and Magus (500) content. `StateHasher` hashes aether, appended only when
+  present so non-legend entities hash unchanged. `Magus.test` asserts the pool; the `Match` test
+  fixture's warrior definition gains `baseAether`. Sub-classes were left out: they are post-MVP
+  (D11, `01-classes-and-subclasses.md`). Aether regen is a Phase 4 system, not added. Aether tuning
+  values raised for the owner in `INBOX.md`. Not checked in a browser.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 472 passed (472)"; client "Tests 416 passed (416)"; "✓ built in 105ms"; "Documentation
+  check passed."
+- Next step: pre-PR gate (critic + ponytail-review), then open the PR (rebased onto
+  `phase/2-sprint-2-work`); owner confirms the aether pool sizes; abilities and regen
+  that spend aether land in Phase 4.
+
 ### 2026-10-14 — Phase 2 sprint 2 / minion system design — docs/minion-system-design — SamarjitBhogal + Claude Code
 
 - What was done:
@@ -923,6 +941,35 @@ The example below is fenced so it is not read as a real entry.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: the critic re-checks; commit and push if it reports no blockers.
 
+### 2026-10-15 — Minion system M1 (marching) — feat/minion-m1-marching (stacked on docs/minion-system-design, uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done (minion plan M1; the human's choices: brains deferred to M2, spawn at the map's
+  tower and Stronghold positions, client wired):
+  - **Prototype escort deleted (DEC-35):** `FollowLeaderController`, `AiSystem`,
+    `Controller.types`, the `Brain` component, the follow-leader profile, the `EntityStore`
+    PROTO helpers, and `Match.spawnEscort` with `PROTOTYPE_ESCORT` in the client.
+  - **Content:** `light-minion` is now the real light lane minion (balancing.md anchors, no
+    controller). New `medium-minion` and `heavy-minion` (`TUNE` placeholders, MS-18), with
+    `MediumMob` and `HeavyMob` classes and registry lines. Also `content/ai/` (horde steering,
+    worst-lane weights) and `content/structures/spawnWaves.ts` (DISC-10).
+  - **State:** `HordeStore`, `LaneRoutes` and the map on `GameState`; hordes are in the state
+    hash, appended only once a horde has existed.
+  - **Systems:** `HordeSystem` (records, membership, leader promotion, dissolve, waypoint
+    progress), `SpatialHash` (`physics/`), `LaneFollowMovementStrategy` with `PathingSystem`,
+    `SpawnSystem` (opening hordes, tower and Stronghold waves, unit cap with the new
+    `spawn-suppressed` event), and `worstLane` (enemy pressure; the towers-lost term is 0 until
+    M2).
+  - **Config:** `GameConfig.match.fallbackWorstLane`, with validation.
+  - **API:** `SimulationOptions.map` (an API change); the client passes the map.
+  - **Design fix found by the scenario test:** a leader that reacted to separation was pushed
+    off its lane by its own followers and the horde never stopped. The leader now ignores
+    neighbours (doc 18 §5.1).
+  - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and
+    stand-ins; doc 03 gains the `spawn-suppressed` event.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 485 passed (485)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review, commit on the human's request, then the pre-PR gate; M2 waits on sprints
+  2.1 and 2.2.
+
 ### 2026-10-16 — Phase 2 / Sprint 1 audit — chore/sprint-1-audit (merge of phase/2 for PR #28) — sholtzman + Claude Code
 
 - What was done: merged `phase/2-sprint-2-work` (`d125cad`, PR #27 on top of #24 and #26) into
@@ -961,186 +1008,6 @@ The example below is fenced so it is not read as a real entry.
   "Documentation check passed."
 - Next step: the owner names a reviewer on the PR into `phase/2-sprint-2-work` and reviews the
   figure.
-
-### 2026-10-17 — Phase 2 sprint 2 / minion docs, PR #33 review — docs/minion-system-design — SamarjitBhogal + Claude Code
-
-- What was done (both reviews of PR #33 answered, in an interactive session with the author):
-  - Owner decisions from sholtzman's review logged as DEC-38 to DEC-42 (formation, advancing from
-    the spawn point, every lane mob spawns in a horde, dev spawns are hordes, Phase 3 scope kept)
-    and written into doc 18 (MS-23 to MS-25, §3.2, §3.5, §4, §5).
-  - The author's choices: the worst lane is one `LaneAssessment` in `state/` over the game doc's
-    terms, with a worked example (MS-9, still open for the owner's sign-off); `fallbackWorstLane`
-    is dropped (ties go to the middle lane). The goal seam and horde redirection move to
-    `backlog-post-mvp.md`; M4 is now flow fields only. `stop` clears the attack target (MS-26).
-    Controllers own target selection (MS-27; `AggroPriorityTargetingStrategy` leaves 04 §4).
-    Separation follows 10 §9, with the formation slot added to its priority list.
-  - Mechanical: the M-numbers moved from doc 18 to the plan (ADR 0011 rule 4); `legendsPerLane`
-    lane assignment without the Rover; `spawn-suppressed` is a `TeamState` counter; ids in string
-    order; one lane identifier (`MapLane.id`); `progress` in world units; lane objectives in the
-    `WorldMap` structures index; `GuardWithinLeashInvariant` in 15 §3; the PROTO-01 inventory and
-    a "no marker remains" done-when; the traceability table maps FR-037/FR-038 to doc 18; the
-    Phase 3 plan points to the minion plan and says `structure-destroyed`.
-  - Open questions listed in doc 18 §12 and `INBOX.md`: MS-9 weights, horde size and cadence
-    (M7, not picked), PROTO-01 part 2.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
-- Next step: the critic and ponytail gate on the updated branch; reply to the review comments;
-  commit and push when the human asks.
-
-### 2026-10-17 — Phase 2 sprint 2 / minion docs, pre-PR gate — docs/minion-system-design — SamarjitBhogal + Claude Code
-
-- What was done:
-  - Critic (`architecture-reviewer`) on `d125cad..aa36023`: one blocker (doc 18's pipeline order
-    contradicted 10 §9) and minor findings, all fixed: membership pruning timing and the horde
-    invariant accepting `removedThisTick`; sizes name FR-037/`hordeSizes`; the middle-lane
-    tie-break is an owner question; `lane-objective` ranks last in the 11 §4.3 list; the guard
-    leash is measured from the structure in 18 §7 and 15; import paths of `LaneAssessment`, the
-    strategy and `match/` callers; 03 §4 listeners, 07 §6 fulfilment and 12 §7 lane id updated;
-    interim text out of the doc 18 body; nits. Left open: naming the guard kinds (owner content).
-  - Ponytail cuts: doc 18's "Post-MVP extensions" and "Naming" sections and the boss wave's own
-    weights removed; open questions are now §10.
-  - Critic re-check: approve, no blockers.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
-- Next step: the owner answers doc 18 §10 (MS-9 sign-off, horde size and cadence, PROTO-01 part 2); then M1F.
-
-### 2026-10-17 — Phase 2 sprint 2 / merge of phase 2 — docs/minion-system-design — SamarjitBhogal + Claude Code
-
-- What was done: merged `origin/phase/2-sprint-2-work` (`8751fff`, PR #28's Sprint 1 audit) into
-  this branch. One conflict, in this log: both sides' entries kept, by date (the 2026-10-16 audit
-  merge entry sits between this branch's 2026-10-15 and 2026-10-17 entries). `INBOX.md`, the
-  decisions log and `docs/README.md` merged cleanly; the incoming DEC-32/DEC-33 do not clash with
-  this branch's DEC-38 to DEC-42.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
-- Next step: push the branch so PR #33 shows the merge.
-
-### 2026-10-15 — Minion system M1 (marching) — feat/minion-m1-marching (stacked on docs/minion-system-design, uncommitted) — SamarjitBhogal + Claude Code
-
-- What was done (minion plan M1; the human's choices: brains deferred to M2, spawn at the map's
-  tower and Stronghold positions, client wired):
-  - **Prototype escort deleted (DEC-35):** `FollowLeaderController`, `AiSystem`,
-    `Controller.types`, the `Brain` component, the follow-leader profile, the `EntityStore`
-    PROTO helpers, and `Match.spawnEscort` with `PROTOTYPE_ESCORT` in the client.
-  - **Content:** `light-minion` is now the real light lane minion (balancing.md anchors, no
-    controller). New `medium-minion` and `heavy-minion` (`TUNE` placeholders, MS-18), with
-    `MediumMob` and `HeavyMob` classes and registry lines. Also `content/ai/` (horde steering,
-    worst-lane weights) and `content/structures/spawnWaves.ts` (DISC-10).
-  - **State:** `HordeStore`, `LaneRoutes` and the map on `GameState`; hordes are in the state
-    hash, appended only once a horde has existed.
-  - **Systems:** `HordeSystem` (records, membership, leader promotion, dissolve, waypoint
-    progress), `SpatialHash` (`physics/`), `LaneFollowMovementStrategy` with `PathingSystem`,
-    `SpawnSystem` (opening hordes, tower and Stronghold waves, unit cap with the new
-    `spawn-suppressed` event), and `worstLane` (enemy pressure; the towers-lost term is 0 until
-    M2).
-  - **Config:** `GameConfig.match.fallbackWorstLane`, with validation.
-  - **API:** `SimulationOptions.map` (an API change); the client passes the map.
-  - **Design fix found by the scenario test:** a leader that reacted to separation was pushed
-    off its lane by its own followers and the horde never stopped. The leader now ignores
-    neighbours (doc 18 §5.1).
-  - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and
-    stand-ins; doc 03 gains the `spawn-suppressed` event.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 485 passed (485)"; client "Tests 415 passed (415)"; "Documentation check passed."
-- Next step: review, commit on the human's request, then the pre-PR gate; M2 waits on sprints
-  2.1 and 2.2.
-
-### 2026-10-17 — Minion system M1 refresh — feat/minion-m1-marching (merged docs/minion-system-design, uncommitted) — SamarjitBhogal + Claude Code
-
-- What was done: fast-forwarded this branch to `docs/minion-system-design` (the PR #33 review
-  rework), popped the M1 WIP stash (doc conflicts resolved in favour of the reviewed design) and
-  brought the code in line with the new doc 18:
-  - **Formation (DEC-38):** `content/mobs/formations/ranks.ts`; `PathingSystem` lays out the slots
-    around each horde's anchor and `LaneFollowMovementStrategy` steers every mob, leader included,
-    to its slot with separation from all neighbours (10 §9). The old leader-follow steering and
-    `followDistance` are gone.
-  - **Anchor (18 §4):** `progress` is world units from the horde's own gate; `HordeSystem` advances
-    it at `marchSpeedFactor` of the slowest member's speed and no longer creates records.
-  - **Spawning (DEC-39, DEC-40):** `SpawnSystem` creates members and record in one step, then emits
-    the events; the anchor starts at the lane point nearest the spawn point. The unit cap counts
-    into `GameState.teams` (`unitsRequested`, `unitsSuppressed`), hashed; the `spawn-suppressed`
-    event is removed.
-  - **Worst lane (18 §3.3):** `state/LaneAssessment.ts` (`assessLanes`) with the three terms
-    (structure terms constant until M2), ties to the middle lane; `systems/worstLane`,
-    `WORST_LANE_WEIGHTS` and `GameConfig.match.fallbackWorstLane` are removed.
-  - **Order and ids:** pipeline `hordes → movement → pathing → spawn → death → invariants`, pinned
-    by a test through the new `SystemPipeline.names`; horde members sort in string order.
-  - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and stand-ins.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 486 passed (486)"; client "Tests 415 passed (415)"; "Documentation check passed."
-- Next step: review; commit on the human's request; then the pre-PR gate.
-
-### 2026-10-17 — Minion system M1, pre-PR gate — feat/minion-m1-marching — SamarjitBhogal + Claude Code
-
-- What was done (critic on `e814637..508eea0`, the human's choices on four items):
-  - **Blocker fixed:** `LaneFollowMovementStrategy` implements the 04 §4 `MovementStrategy`
-    contract (`desiredVelocity(self, ctx): Vec2`, stateless, writes `ctx.out`), selected by the new
-    `UnitDefinition.movementStrategy` through `entities/strategies/defaultStrategyRegistry.ts`
-    (the shape PR #34 uses, `movement` as its key). `Movement.strategyId` carries the choice from
-    spawn. `SpatialHash.forEachNear` became `collectNear` into a caller buffer, and `entities/`
-    reaches it through a structural port, not an import of `physics/`.
-  - **Deferred removal (03 §4):** `HordeSystem` queues `entity-removed` / `team-changed` ids and
-    drops them at the start of its pass.
-  - **Minor fixes:** helpers and types out of class files (`utils/compareById`,
-    `HordeStore.types`, `LaneRoutes.types`, `SpawnSystem.types`/`.constants`, `PathingSystem.types`);
-    the opening wave is content (`OPENING_WAVE`) and spawns read the kind from the definition
-    through an injected `SpawnPlan`; a type guard instead of a team cast; `weightClass` in the
-    hash; a formation overlap scenario test; doc 18 paths and §3.3 wording, 04 §4 selector name,
-    03 and 10 implementation status, plan stand-ins (insert-ordered `SpatialHash`, linear
-    separation, no hordes in the snapshot); placeholder stats cite the plan instead of MS-18.
-  - **Ponytail:** `spawnHorde` takes the routes instead of checking them again.
-  - **INBOX:** the first heavy horde's start (60 s or 240 s), and the `hordeOf` store lookup
-    instead of a `hordeId` field, raised as better than the design.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 490 passed (490)"; client "Tests 415 passed (415)"; "Documentation check passed."
-- Next step: critic re-check, then open the M1 PR stacked on PR #33.
-
-### 2026-10-17 — Phase 2 sprint 2 / minion docs, DEC renumber — docs/minion-system-design — SamarjitBhogal + Claude Code
-
-- What was done: the owner rulings from the PR #33 review, logged earlier as DEC-38 to DEC-42,
-  are renumbered DEC-43 to DEC-47. DEC-38 (Legend skins), DEC-39 (the Phase 1 waiver) and DEC-40
-  to DEC-42 (PR #36's status rulings) were already taken. Changed in the decisions log, doc 18
-  (MS-23 to MS-25) and the Phase 3 plan; the earlier entries in this log keep the old numbers as
-  written.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
-- Next step: merge into `feat/minion-m1-marching`.
-
-### 2026-10-17 — Minion system M2a (brains and perception) — feat/minion-m2a-brains-perception (off feat/minion-m1-marching) — SamarjitBhogal + Claude Code
-
-- What was done:
-  - **PR split:** the rest of the minion work is cut into pull requests M2a, M4, M2b, M2c, M3,
-    M5a and M5b, with their blockers (minion plan §2; stand-ins are now §3).
-  - **DEC renumber:** the PR #33 owner rulings became DEC-43 to DEC-47 on PR #33 and were merged
-    into M1 (PR #38) before branching.
-  - **Neighbour index:** `SpatialHash` is now 10 §5's counting-sort grid with an exact, ascending
-    `queryCircle`; `physics/SpaceIndex` is `state.space` (the `SpaceQuery` port in `state/`),
-    rebuilt by the new `SpaceSystem` after `MovementSystem`; `PathingSystem` and the steering
-    strategy read it instead of their own grid.
-  - **Perception** (`ai/perception/`): `unitsWithin` and `nearest`, filtered by hostility, kind
-    and liveness through the re-added `EntityStore.teamOf` / `isAlive` (PR #34's signatures).
-  - **Brains and AI:** `content/ai/cadence.ts` (11 §6), the `ControllerId` union in content
-    types, a `ControllerBinding` component from `UnitDefinition.controller` / `aiProfile`,
-    `state.ai` (`AiState`: brains with their own RNG stream, the deferred queue; hashed), the
-    `Controller` contract, an empty controller registry, and `AiSystem` (stagger by id hash,
-    budget with deferral) composed first by `Simulation`.
-  - **`HordeMembershipConsistentInvariant`** (15 §3), against the store lookup.
-  - **`dev-spawn-mobs`** (13 §4, 18 §3.5, DEC-46): its handler resolves the origin (structure,
-    `{ lane, t }`, point) to a lane and queues a `HordeRequest` on `state.hordeRequests`;
-    `SpawnSystem` fulfils queued requests and scheduled waves through one shape, clipped to the cap.
-  - **Docs:** 03 §3 union and status, 10 §12, a new 11 §10 implementation status, 18 status, plan
-    §2 table and §3 stand-ins; INBOX question on how a controller writes its memory back.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 507 passed (507)"; client "Tests 415 passed (415)"; "Documentation check passed."
-- Next step: review; commit on the human's request; the pre-PR gate; M4 can start in parallel.
-
-### 2026-10-17 — Minion system M2a, pre-PR gate — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
-
-- What was done: the critic (`architecture-reviewer`, `62e8a61..d13bbfa`) approved with
-  should-fixes, all applied: `Perception` returns ids in string order and breaks `nearest` ties
-  toward the lower id (11 §3, §5), with a test across `entity-9` / `entity-10`; a `StateHasher`
-  test covers every brain field and the deferred queue, and an `AiSystem` determinism test
-  compares the ask order and the hash of two runs; `SpatialHash.queryCircle` sorts in place
-  (no allocation per query); the weight classes have one source (`state/Horde.constants.ts`);
-  an unregistered controller fails at `Simulation` construction for shipped content and at
-  attach time otherwise; nits (pipeline TSDoc, `PathingSystem.test` no longer imports
-  `SpaceSystem`, new `SpaceIndex` and `ControllerBinding` tests, the cadence test checks the
-  ticks actually used). Ponytail: the redundant `queryCircle` guard is gone and `nearest` walks
-  the query's indexes.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 514 passed (514)"; client "Tests 415 passed (415)"; "Documentation check passed."
-- Next step: open the draft PR to `phase/2-sprint-2-work`; M4 is in progress in its worktree.
 
 ### 2026-10-16 — Phase 2 / sprint 2.2 — feat/combat-damage-pipeline — Claudio + Claude Code
 
@@ -1257,41 +1124,6 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Ponytail-review: no cuts (`op: 'mul'` keeps the design's shape). Critic re-check: approve, no
   blockers. Next step: push, reply to the owner on #35 (merge order #34 → #35 → #31).
 
-### 2026-10-22 — Phase 2 / sprint 2.2 — feat/status-effects (DEC-40 to DEC-42) — Claudio + Claude Code
-
-- What: applied the owner's rulings on PR #35. DEC-42: `blind` has no hard miss (the
-  `attacks-miss` flag, the `CombatSystem` miss branch and the `attack-missed` event are gone;
-  blind is content with no flags until the aim wobble lands); `stun` defaults to 2 s (`TUNE`,
-  DEC-42). DEC-41: design text updated as asked: 05 §3 and §8 (the applier is the one way in, the
-  component recomputes on change; whether the applier's `remove` / `expire` are covered stays
-  open, as DEC-41 says), 03 §4 (`status-applied` emitted by `StatusEffectApplier`;
-  `attack-missed` row removed), 17 R9 (`reapply`, apply through the
-  applier). INBOX item marked `Decision:` (DEC-40 to DEC-42; the open DEC-42 questions are PR #36's
-  item). Follow-ups, not built: blind/stun aim wobble (seeded RNG), the client white vignette.
-- Checks run: `npm run check` → `EXIT=0`: core "Tests 534 passed (534)"; client "Tests 416 passed
-  (416)"; "✓ built in 100ms"; "Documentation check passed."
-- Critic: approve, two nits fixed (the applier's remove/expire kept out of the design text as
-  DEC-41's open question; a reflowed sentence). Ponytail-review: lean (the delta only deletes).
-  Next step: push and reply on #35; merge order stays #34 → #35 → #31.
-
-### 2026-10-10 — Phase 1 / S2 — feat/legend-aether — Claudio + Claude Code
-
-- What was done: added the `Aether` component (MP pool: `max`/`current`, `canAfford`, `spend`,
-  `restore`, `fraction`, `isEmpty`) in `packages/core/src/components/Aether.ts` with its test.
-  `Legend.installComponents` now installs `Aether(definition.baseAether)` on every Legend (mobs and
-  structures get none); `LegendDefinition` gains `baseAether`, with TUNE placeholders in the Warrior
-  (200), Sentinel (250) and Magus (500) content. `StateHasher` hashes aether, appended only when
-  present so non-legend entities hash unchanged. `Magus.test` asserts the pool; the `Match` test
-  fixture's warrior definition gains `baseAether`. Sub-classes were left out: they are post-MVP
-  (D11, `01-classes-and-subclasses.md`). Aether regen is a Phase 4 system, not added. Aether tuning
-  values raised for the owner in `INBOX.md`. Not checked in a browser.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
-  "Tests 472 passed (472)"; client "Tests 416 passed (416)"; "✓ built in 105ms"; "Documentation
-  check passed."
-- Next step: pre-PR gate (critic + ponytail-review), then open the PR (rebased onto
-  `phase/2-sprint-2-work`); owner confirms the aether pool sizes; abilities and regen
-  that spend aether land in Phase 4.
-
 ### 2026-10-16 — S2 / SCRUM-426 — feat/legend-aether (progression) — Claudio + Claude Code
 
 - What was done: `Progression` component (XP total, level along a content curve, cap) installed on
@@ -1312,6 +1144,198 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `Object.hasOwn`, 04 table row, 05 `paths`, damage-before-progression comment, INBOX lists the
   progression numbers). Ponytail-review after.
 - Next step: push to PR #31; shared/assist XP and potency scaling later.
+
+### 2026-10-16 — Phase 2 / sprint 2.2 — docs/status-effect-rulings — sholtzman + Claude Code
+
+- What was done: the owner's rulings on PR #35's status-effect questions, as a new 2026-10-16
+  batch of the decisions log:
+  - DEC-40: modifiers multiply, per stack and across statuses (05 §8 `op: 'mul'`).
+  - DEC-41: `StatusEffectApplier` and the cache recomputed on change are accepted as design;
+    whether the approval covers `09a48a6`'s wider applier is open.
+  - DEC-42: stun defaults to 2 s and wobbles aim. Blind's aim wobble makes basic attacks and
+    aimed projectiles veer off and usually miss (a miss is not guaranteed), with a white
+    vignette that fades over 2–3 s.
+  - DEC-38 and DEC-39 are taken elsewhere (skins; the Phase 1 waiver in PR #16). DEC-42's open
+    questions are a new `INBOX.md` item.
+  - Posted on PR #35: a strict-audit review (request changes, 22:55Z) and the rulings comment
+    (01:53Z). The rulings comment was posted without re-fetching the PR. The author's `09a48a6`
+    (reply at 23:32Z) had already applied review items 1 and 4, so the comment's instructions on
+    those are stale, and the guaranteed miss now lives in `CombatSystem`, not
+    `StatusModifierStep`. A correcting comment awaits the owner. The pre-PR critic found this.
+    The other fidelity and accuracy fixes it requested are applied to the rows above.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 91ms"; "Documentation
+  check passed."
+- Next step: PR #35 applies DEC-41's doc updates and DEC-42, and marks questions (1)–(4) of its
+  INBOX item `Decision:`; (5) stays open. The owner answers the DEC-42 item.
+
+### 2026-10-17 — Phase 2 sprint 2 / minion docs, PR #33 review — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done (both reviews of PR #33 answered, in an interactive session with the author):
+  - Owner decisions from sholtzman's review logged as DEC-38 to DEC-42 (formation, advancing from
+    the spawn point, every lane mob spawns in a horde, dev spawns are hordes, Phase 3 scope kept)
+    and written into doc 18 (MS-23 to MS-25, §3.2, §3.5, §4, §5).
+  - The author's choices: the worst lane is one `LaneAssessment` in `state/` over the game doc's
+    terms, with a worked example (MS-9, still open for the owner's sign-off); `fallbackWorstLane`
+    is dropped (ties go to the middle lane). The goal seam and horde redirection move to
+    `backlog-post-mvp.md`; M4 is now flow fields only. `stop` clears the attack target (MS-26).
+    Controllers own target selection (MS-27; `AggroPriorityTargetingStrategy` leaves 04 §4).
+    Separation follows 10 §9, with the formation slot added to its priority list.
+  - Mechanical: the M-numbers moved from doc 18 to the plan (ADR 0011 rule 4); `legendsPerLane`
+    lane assignment without the Rover; `spawn-suppressed` is a `TeamState` counter; ids in string
+    order; one lane identifier (`MapLane.id`); `progress` in world units; lane objectives in the
+    `WorldMap` structures index; `GuardWithinLeashInvariant` in 15 §3; the PROTO-01 inventory and
+    a "no marker remains" done-when; the traceability table maps FR-037/FR-038 to doc 18; the
+    Phase 3 plan points to the minion plan and says `structure-destroyed`.
+  - Open questions listed in doc 18 §12 and `INBOX.md`: MS-9 weights, horde size and cadence
+    (M7, not picked), PROTO-01 part 2.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: the critic and ponytail gate on the updated branch; reply to the review comments;
+  commit and push when the human asks.
+
+### 2026-10-17 — Phase 2 sprint 2 / minion docs, pre-PR gate — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done:
+  - Critic (`architecture-reviewer`) on `d125cad..aa36023`: one blocker (doc 18's pipeline order
+    contradicted 10 §9) and minor findings, all fixed: membership pruning timing and the horde
+    invariant accepting `removedThisTick`; sizes name FR-037/`hordeSizes`; the middle-lane
+    tie-break is an owner question; `lane-objective` ranks last in the 11 §4.3 list; the guard
+    leash is measured from the structure in 18 §7 and 15; import paths of `LaneAssessment`, the
+    strategy and `match/` callers; 03 §4 listeners, 07 §6 fulfilment and 12 §7 lane id updated;
+    interim text out of the doc 18 body; nits. Left open: naming the guard kinds (owner content).
+  - Ponytail cuts: doc 18's "Post-MVP extensions" and "Naming" sections and the boss wave's own
+    weights removed; open questions are now §10.
+  - Critic re-check: approve, no blockers.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: the owner answers doc 18 §10 (MS-9 sign-off, horde size and cadence, PROTO-01 part 2); then M1F.
+
+### 2026-10-17 — Phase 2 sprint 2 / merge of phase 2 — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done: merged `origin/phase/2-sprint-2-work` (`8751fff`, PR #28's Sprint 1 audit) into
+  this branch. One conflict, in this log: both sides' entries kept, by date (the 2026-10-16 audit
+  merge entry sits between this branch's 2026-10-15 and 2026-10-17 entries). `INBOX.md`, the
+  decisions log and `docs/README.md` merged cleanly; the incoming DEC-32/DEC-33 do not clash with
+  this branch's DEC-38 to DEC-42.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: push the branch so PR #33 shows the merge.
+
+### 2026-10-17 — Minion system M1 refresh — feat/minion-m1-marching (merged docs/minion-system-design, uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done: fast-forwarded this branch to `docs/minion-system-design` (the PR #33 review
+  rework), popped the M1 WIP stash (doc conflicts resolved in favour of the reviewed design) and
+  brought the code in line with the new doc 18:
+  - **Formation (DEC-38):** `content/mobs/formations/ranks.ts`; `PathingSystem` lays out the slots
+    around each horde's anchor and `LaneFollowMovementStrategy` steers every mob, leader included,
+    to its slot with separation from all neighbours (10 §9). The old leader-follow steering and
+    `followDistance` are gone.
+  - **Anchor (18 §4):** `progress` is world units from the horde's own gate; `HordeSystem` advances
+    it at `marchSpeedFactor` of the slowest member's speed and no longer creates records.
+  - **Spawning (DEC-39, DEC-40):** `SpawnSystem` creates members and record in one step, then emits
+    the events; the anchor starts at the lane point nearest the spawn point. The unit cap counts
+    into `GameState.teams` (`unitsRequested`, `unitsSuppressed`), hashed; the `spawn-suppressed`
+    event is removed.
+  - **Worst lane (18 §3.3):** `state/LaneAssessment.ts` (`assessLanes`) with the three terms
+    (structure terms constant until M2), ties to the middle lane; `systems/worstLane`,
+    `WORST_LANE_WEIGHTS` and `GameConfig.match.fallbackWorstLane` are removed.
+  - **Order and ids:** pipeline `hordes → movement → pathing → spawn → death → invariants`, pinned
+    by a test through the new `SystemPipeline.names`; horde members sort in string order.
+  - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and stand-ins.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 486 passed (486)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review; commit on the human's request; then the pre-PR gate.
+
+### 2026-10-17 — Minion system M1, pre-PR gate — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done (critic on `e814637..508eea0`, the human's choices on four items):
+  - **Blocker fixed:** `LaneFollowMovementStrategy` implements the 04 §4 `MovementStrategy`
+    contract (`desiredVelocity(self, ctx): Vec2`, stateless, writes `ctx.out`), selected by the new
+    `UnitDefinition.movementStrategy` through `entities/strategies/defaultStrategyRegistry.ts`
+    (the shape PR #34 uses, `movement` as its key). `Movement.strategyId` carries the choice from
+    spawn. `SpatialHash.forEachNear` became `collectNear` into a caller buffer, and `entities/`
+    reaches it through a structural port, not an import of `physics/`.
+  - **Deferred removal (03 §4):** `HordeSystem` queues `entity-removed` / `team-changed` ids and
+    drops them at the start of its pass.
+  - **Minor fixes:** helpers and types out of class files (`utils/compareById`,
+    `HordeStore.types`, `LaneRoutes.types`, `SpawnSystem.types`/`.constants`, `PathingSystem.types`);
+    the opening wave is content (`OPENING_WAVE`) and spawns read the kind from the definition
+    through an injected `SpawnPlan`; a type guard instead of a team cast; `weightClass` in the
+    hash; a formation overlap scenario test; doc 18 paths and §3.3 wording, 04 §4 selector name,
+    03 and 10 implementation status, plan stand-ins (insert-ordered `SpatialHash`, linear
+    separation, no hordes in the snapshot); placeholder stats cite the plan instead of MS-18.
+  - **Ponytail:** `spawnHorde` takes the routes instead of checking them again.
+  - **INBOX:** the first heavy horde's start (60 s or 240 s), and the `hordeOf` store lookup
+    instead of a `hordeId` field, raised as better than the design.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 490 passed (490)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: critic re-check, then open the M1 PR stacked on PR #33.
+
+### 2026-10-17 — Phase 2 sprint 2 / minion docs, DEC renumber — docs/minion-system-design — SamarjitBhogal + Claude Code
+
+- What was done: the owner rulings from the PR #33 review, logged earlier as DEC-38 to DEC-42,
+  are renumbered DEC-43 to DEC-47. DEC-38 (Legend skins), DEC-39 (the Phase 1 waiver) and DEC-40
+  to DEC-42 (PR #36's status rulings) were already taken. Changed in the decisions log, doc 18
+  (MS-23 to MS-25) and the Phase 3 plan; the earlier entries in this log keep the old numbers as
+  written.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
+- Next step: merge into `feat/minion-m1-marching`.
+
+### 2026-10-17 — Minion system M2a (brains and perception) — feat/minion-m2a-brains-perception (off feat/minion-m1-marching) — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **PR split:** the rest of the minion work is cut into pull requests M2a, M4, M2b, M2c, M3,
+    M5a and M5b, with their blockers (minion plan §2; stand-ins are now §3).
+  - **DEC renumber:** the PR #33 owner rulings became DEC-43 to DEC-47 on PR #33 and were merged
+    into M1 (PR #38) before branching.
+  - **Neighbour index:** `SpatialHash` is now 10 §5's counting-sort grid with an exact, ascending
+    `queryCircle`; `physics/SpaceIndex` is `state.space` (the `SpaceQuery` port in `state/`),
+    rebuilt by the new `SpaceSystem` after `MovementSystem`; `PathingSystem` and the steering
+    strategy read it instead of their own grid.
+  - **Perception** (`ai/perception/`): `unitsWithin` and `nearest`, filtered by hostility, kind
+    and liveness through the re-added `EntityStore.teamOf` / `isAlive` (PR #34's signatures).
+  - **Brains and AI:** `content/ai/cadence.ts` (11 §6), the `ControllerId` union in content
+    types, a `ControllerBinding` component from `UnitDefinition.controller` / `aiProfile`,
+    `state.ai` (`AiState`: brains with their own RNG stream, the deferred queue; hashed), the
+    `Controller` contract, an empty controller registry, and `AiSystem` (stagger by id hash,
+    budget with deferral) composed first by `Simulation`.
+  - **`HordeMembershipConsistentInvariant`** (15 §3), against the store lookup.
+  - **`dev-spawn-mobs`** (13 §4, 18 §3.5, DEC-46): its handler resolves the origin (structure,
+    `{ lane, t }`, point) to a lane and queues a `HordeRequest` on `state.hordeRequests`;
+    `SpawnSystem` fulfils queued requests and scheduled waves through one shape, clipped to the cap.
+  - **Docs:** 03 §3 union and status, 10 §12, a new 11 §10 implementation status, 18 status, plan
+    §2 table and §3 stand-ins; INBOX question on how a controller writes its memory back.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 507 passed (507)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review; commit on the human's request; the pre-PR gate; M4 can start in parallel.
+
+### 2026-10-17 — Minion system M2a, pre-PR gate — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `62e8a61..d13bbfa`) approved with
+  should-fixes, all applied: `Perception` returns ids in string order and breaks `nearest` ties
+  toward the lower id (11 §3, §5), with a test across `entity-9` / `entity-10`; a `StateHasher`
+  test covers every brain field and the deferred queue, and an `AiSystem` determinism test
+  compares the ask order and the hash of two runs; `SpatialHash.queryCircle` sorts in place
+  (no allocation per query); the weight classes have one source (`state/Horde.constants.ts`);
+  an unregistered controller fails at `Simulation` construction for shipped content and at
+  attach time otherwise; nits (pipeline TSDoc, `PathingSystem.test` no longer imports
+  `SpaceSystem`, new `SpaceIndex` and `ControllerBinding` tests, the cadence test checks the
+  ticks actually used). Ponytail: the redundant `queryCircle` guard is gone and `nearest` walks
+  the query's indexes.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 514 passed (514)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: open the draft PR to `phase/2-sprint-2-work`; M4 is in progress in its worktree.
+
+### 2026-10-22 — Phase 2 / sprint 2.2 — feat/status-effects (DEC-40 to DEC-42) — Claudio + Claude Code
+
+- What: applied the owner's rulings on PR #35. DEC-42: `blind` has no hard miss (the
+  `attacks-miss` flag, the `CombatSystem` miss branch and the `attack-missed` event are gone;
+  blind is content with no flags until the aim wobble lands); `stun` defaults to 2 s (`TUNE`,
+  DEC-42). DEC-41: design text updated as asked: 05 §3 and §8 (the applier is the one way in, the
+  component recomputes on change; whether the applier's `remove` / `expire` are covered stays
+  open, as DEC-41 says), 03 §4 (`status-applied` emitted by `StatusEffectApplier`;
+  `attack-missed` row removed), 17 R9 (`reapply`, apply through the
+  applier). INBOX item marked `Decision:` (DEC-40 to DEC-42; the open DEC-42 questions are PR #36's
+  item). Follow-ups, not built: blind/stun aim wobble (seeded RNG), the client white vignette.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 534 passed (534)"; client "Tests 416 passed
+  (416)"; "✓ built in 100ms"; "Documentation check passed."
+- Critic: approve, two nits fixed (the applier's remove/expire kept out of the design text as
+  DEC-41's open question; a reflowed sentence). Ponytail-review: lean (the delta only deletes).
+  Next step: push and reply on #35; merge order stays #34 → #35 → #31.
 
 ### 2026-10-22 — Phase 2 / SCRUM-426 — feat/legend-aether (owner review, PR #31) — Claudio + Claude Code
 
@@ -1353,29 +1377,31 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Next step: Sam re-reviews #31 after #34 and #35; Samarjit's medium/heavy minions need `xpValue`
   (45 / 120) whichever merges second.
 
-### 2026-10-16 — Phase 2 / sprint 2.2 — docs/status-effect-rulings — sholtzman + Claude Code
+### 2026-10-22 — Phase 4 (early, O7) / sprint 4.4 — feat/weapons — Claudio + Claude Code
 
-- What was done: the owner's rulings on PR #35's status-effect questions, as a new 2026-10-16
-  batch of the decisions log:
-  - DEC-40: modifiers multiply, per stack and across statuses (05 §8 `op: 'mul'`).
-  - DEC-41: `StatusEffectApplier` and the cache recomputed on change are accepted as design;
-    whether the approval covers `09a48a6`'s wider applier is open.
-  - DEC-42: stun defaults to 2 s and wobbles aim. Blind's aim wobble makes basic attacks and
-    aimed projectiles veer off and usually miss (a miss is not guaranteed), with a white
-    vignette that fades over 2–3 s.
-  - DEC-38 and DEC-39 are taken elsewhere (skins; the Phase 1 waiver in PR #16). DEC-42's open
-    questions are a new `INBOX.md` item.
-  - Posted on PR #35: a strict-audit review (request changes, 22:55Z) and the rulings comment
-    (01:53Z). The rulings comment was posted without re-fetching the PR. The author's `09a48a6`
-    (reply at 23:32Z) had already applied review items 1 and 4, so the comment's instructions on
-    those are stale, and the guaranteed miss now lives in `CombatSystem`, not
-    `StatusModifierStep`. A correcting comment awaits the owner. The pre-PR critic found this.
-    The other fidelity and accuracy fixes it requested are applied to the rows above.
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
-  "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "✓ built in 91ms"; "Documentation
-  check passed."
-- Next step: PR #35 applies DEC-41's doc updates and DEC-42, and marks questions (1)–(4) of its
-  INBOX item `Decision:`; (5) stays open. The owner answers the DEC-42 item.
+- What: first weapon slice (SCRUM-183 / SCRUM-287, 05 §10). `content/weapons/`
+  (`WeaponDefinition`, empty `WEAPONS` catalogue, `loadWeapons` with seconds→ticks via `TickRate`
+  and validation at load); `LegendDefinition.defaultLoadout.primaryWeaponId` +
+  `KnownWeaponRule`; `EntityFactory` and `Simulation({ weapons })` inject the weapon source;
+  `Legend.basicAttack` builds `Combat` from the weapon (`Combat.weaponId`); `MeleeAttackStrategy`
+  names the weapon in the `DamageSource` (mobs name their own definition). No weapon numbers
+  shipped: owner questions in INBOX. Answers Sam's Discord ask (dealer = entity + weapon; damage
+  changes with the weapon on the same class).
+- Tests shown red by breaking the code: interval conversion, no attacks, each non-positive
+  field, kebab id, `uniqueTo` outside `allowedClasses` (loader checks removed); unknown weapon
+  (`KnownWeaponRule` forced true); rule listing (rule unregistered); `Combat.weaponId` (default
+  changed); Legend equips / throws without a source (override bypassed); factory forwarding
+  (spread removed); `Simulation` wiring (weapon source not passed); weapon and mob source names
+  (`definitionId` reverted / replaced).
+- Gate: ponytail-review 1 cut (reuse `KEBAB_CASE`). Critic: request-changes, 1 blocker (a double
+  cast in `SpawnContextReader.weapons`) → replaced by a type guard; 1 should-fix (a weapon with no
+  attacks left a Legend without `Combat`) → `Legend` now throws; both red first. Nits kept: the
+  factory test's `as FactoryEntity` copies the existing pattern; `WeaponSource` / `loadWeapons`
+  stay off `src/index.ts` until the client needs them.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 557 passed (557)"; client "Tests 416 passed
+  (416)"; "✓ built in 94ms"; "Documentation check passed."
+- Next step: the owner's answers in INBOX (weapon numbers, default weapons), then the shipped
+  weapons; open the PR to `phase/2-sprint-2-work` once #34 and #35 are merged.
 
 ### 2026-10-24 — Phase 2 / sprint 2.2 — docs/status-effect-rulings (merge of phase 2) — sholtzman + Claude Code
 
@@ -1537,6 +1563,32 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 667 passed (667)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: draft PR.
 
+### 2026-10-25 — Phase 2 / SCRUM-183 — feat/weapons (damage from weapons) — Claudio + Claude Code
+
+- What: merged `origin/phase/2-sprint-2-work` (PRs #31, #34, #35, #36) by a plain merge (no
+  force); conflicts kept both sides (level curves and weapons injected side by side:
+  `loadDefaultContent(tickRate, curves, weapons)`, `createDefaultContentRules(curves, weapons)`,
+  `Simulation({ levelCurves, weapons })`). Then a Legend's damage comes from its weapon, not the
+  Legend: `LegendDefinition` drops `attack` (`attack?: never`) and requires
+  `defaultLoadout.primaryWeaponId`; `Legend.basicAttack` has no fallback; `KnownWeaponRule` flags a
+  Legend with no weapon. Shipped `raptor-talons` (Warrior), `wuuthrad` (Sentinel), `magus-staff`
+  (Magus, melee only until SCRUM-169) from the 05 §10 table, numbers = each class's `balancing.md`
+  basic attack, all `TUNE`; INBOX item updated. Tests that spawn Legends now pass a weapon source.
+- Gate: critic approve, no blockers. Should-fix done: the Wuuthrad note no longer says "no heavy
+  weapon is MVP" (07 rates spear / battle axe MVP; only Wuuthrad is MVP-if-time); the
+  `UnitAttack` comment says a mob's attack lives on its definition and a Legend's on its weapon.
+  The 05 §10 design sentence "Until weapons land, a unit's basic attack is
+  `UnitDefinition.attack`" is left as written (design docs are append-only); the Implementation
+  status covers it. Nits left: a raw `TypeError` for a Legend without `defaultLoadout` passed
+  through unvalidated `SimulationOptions.content` (types require it; a guard trips
+  `no-unnecessary-condition`); import order of the new `loadWeapons` imports. Ponytail-review: 3
+  cuts (one `newFactory()` helper in `playerScenarios`, `DefaultSystemPipeline` and `AiSystem`
+  tests, −73 lines).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 608 passed (608)"; client "Tests 416 passed
+  (416)"; "✓ built in 98ms"; "Documentation check passed."
+- Next step: Sam confirms the default weapons and numbers (INBOX); ranged attacks with
+  projectiles (SCRUM-169, Aryan).
+
 ### 2026-10-27 — Phase 2 / sprint 2.2 — feat/minion-m5a-modifiers (DISC-24 tower shift, sign-off) — SamarjitBhogal + Claude Code
 
 - What was done: on SamarjitBhogal's answers in chat. (1) DISC-24's shift is built: a team's
@@ -1590,3 +1642,85 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 633 passed (633)"; client "Tests 415 passed (415)"; "Documentation check passed."
 - Next step: the owner answers the leash item before M6.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review — SamarjitBhogal + Claude Code
+
+- What was done: added `.coderabbit.yaml` so CodeRabbit reviews every PR into `main` or a
+  `phase/*` branch (drafts included) by `.claude/skills/pr-review/SKILL.md`: the skill, the
+  checklists, `AGENTS.md` files, the code-structure doc and `CONTRIBUTING.md` are loaded as code
+  guidelines, a `**/*` path instruction maps the skill's severities, and a blocking
+  (`mode: error`) pre-merge check holds the skill's blocker list. `auto_approvals.enabled` lets
+  CodeRabbit request changes on blockers and approve once they are resolved. The config
+  validates against CodeRabbit's `schema.v2.json`. `docs/process/git-workflow.md` §review
+  rules notes it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; "Documentation
+  check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 227ms".
+- Next step: the owner makes CI a required status check on `main` and `phase/*` (CodeRabbit
+  cannot run `npm run check`), then confirms CodeRabbit reviews this branch's PR.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review (pre-PR gate) — SamarjitBhogal + Claude Code
+
+- What was done: pre-PR gate on the CodeRabbit config. The critic requested changes (2
+  blockers). Fixes: `allow_author_approval: false`; ADR 0018 (proposed) records the decision,
+  with a `guardrails.md` §1 row and a §5 note; the blocking check now fails only on the skill's
+  blockers (guardrail weakening, agent product decisions; approved dependencies pass) and the
+  rest are review findings; the path instruction adds the three-way classification;
+  `tool-setup.md` §7 documents CodeRabbit; architecture docs and `guardrails.md` are loaded as
+  guidelines. Ponytail cut 3 lines of defaults from `.coderabbit.yaml`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 182ms"; "Documentation
+  check passed." Critic second pass: approve; its should-fix items are applied
+  (`override_requested_reviewers_only: true`, accurate self-approval wording, CI on `phase/*` in
+  `guardrails.md` §5, ADR 0018 in `related:`).
+- Next step: the product owner accepts ADR 0018 and answers whether CodeRabbit's approval
+  counts toward the required approval; make CI a required check on `main` and `phase/*`.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review (CodeRabbit review of PR #48) — SamarjitBhogal + Claude Code
+
+- What was done: addressed CodeRabbit's two major comments on PR #48. Any actionable inline
+  comment makes CodeRabbit request changes, so the path instruction now posts only blockers that
+  way and `should-fix`/`nit` findings as nitpicks in the summary. CodeRabbit's approval counts
+  toward GitHub's required approvals, so `guardrails.md` §5 now asks for a Code Owner review
+  (`.github/CODEOWNERS` lists only people) and ADR 0018 says so. The minor comment
+  (`auto_pause_after_reviewed_commits: 0`) was declined and resolved: we should not demand too
+  many reviews from CodeRabbit.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 192ms"; "Documentation
+  check passed."
+- Next step: the owner turns on "Require review from Code Owners" and required CI on `main` and
+  `phase/*`, and accepts ADR 0018.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review — SamarjitBhogal + Claude Code
+
+- What was done: second round of CodeRabbit threads on PR #48. Team decision: CodeRabbit's
+  approval is enough for task PRs into `phase/*`; phase PRs into `main` keep a Code Owner
+  (teammate) approval. Recorded in ADR 0018, `guardrails.md` §5, `git-workflow.md` and
+  `sdlc.md` §4. Declined the PROGRESS heading nit: a note after the branch is an existing
+  convention in this log.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 186ms"; "Documentation
+  check passed."
+- Next step: the owner enables the "phase branches" ruleset (PR, 1 approval, required CI, Code
+  Owner review off), adds required CI on `main`, and accepts ADR 0018.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review — SamarjitBhogal + Claude Code
+
+- What was done: third round of CodeRabbit threads on PR #48. `.coderabbit.yaml` reads from the
+  PR branch, so `auto_approvals.overrides` now withholds CodeRabbit's approval on PRs that touch
+  review or guardrail config. ADR 0018 rewritten as accepted (team decision including the
+  product owner): context, numbered decision, options, consequences. The "phase branches"
+  ruleset is active (PR, 1 approval, Code Owner review off, the three CI checks required).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 191ms"; "Documentation
+  check passed."
+- Next step: add the three CI checks as required on `main`.
+
+### 2026-10-27 — Phase 2 / sprint 2.2 — chore/coderabbit-pr-review — SamarjitBhogal + Claude Code
+
+- What was done: fourth round of CodeRabbit threads on PR #48. The approval override now also
+  covers `.claude/skills/pr-review/**` and its `.agents/` mirror, so a PR that changes the
+  review procedure needs a teammate's approval. ADR 0018 says so.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 182ms"; "Documentation
+  check passed."
+- Next step: add the three CI checks as required on `main`.
