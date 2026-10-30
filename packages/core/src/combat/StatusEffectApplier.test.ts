@@ -11,6 +11,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { Entity } from '../entities/Entity';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
+import { StateHasher } from '../state/StateHasher';
 import { StatusEffectApplier } from './StatusEffectApplier';
 
 const CONFIG = createDefaultGameConfig();
@@ -86,23 +87,44 @@ describe('StatusEffectApplier', () => {
     expect(dummy.getComponent(StatusEffects).active).toHaveLength(0);
   });
 
-  it('follows a stun that runs out with control-immune, credited to the same source', () => {
-    const { state, dummy, events, applier } = setUp();
-    applier.apply(state, dummy.id, 'stun', 'entity-9');
-    const statuses = dummy.getComponent(StatusEffects);
-    const stunTicks = statuses.active[0]?.definition.durationTicks ?? 0;
+  it.each(['stun', 'crushed'])(
+    'follows %s that runs out with control-immune, credited to the same source',
+    (hardControlId) => {
+      const { state, dummy, events, applier } = setUp();
+      applier.apply(state, dummy.id, hardControlId, 'entity-9');
+      const statuses = dummy.getComponent(StatusEffects);
+      const ticks = statuses.active[0]?.definition.durationTicks ?? 0;
 
-    for (let tick = 0; tick < stunTicks; tick += 1) {
-      state.advanceTick();
-    }
-    applier.expire(state, dummy.id);
+      for (let tick = 0; tick < ticks; tick += 1) {
+        state.advanceTick();
+      }
+      applier.expire(state, dummy.id);
 
-    expect(statuses.has('cannot-move')).toBe(false);
-    expect(statuses.has('control-immune')).toBe(true);
-    expect(events.slice(-2)).toEqual([
-      ['expired', { entityId: dummy.id, statusId: 'stun', sourceId: 'entity-9' }],
-      ['applied', { entityId: dummy.id, statusId: 'control-immune', sourceId: 'entity-9' }],
-    ]);
+      expect(statuses.has('cannot-move')).toBe(false);
+      expect(statuses.has('control-immune')).toBe(true);
+      expect(events.slice(-2)).toEqual([
+        ['expired', { entityId: dummy.id, statusId: hardControlId, sourceId: 'entity-9' }],
+        ['applied', { entityId: dummy.id, statusId: 'control-immune', sourceId: 'entity-9' }],
+      ]);
+    },
+  );
+
+  it('hashes a hard status that expired into control-immune the same on every run', () => {
+    const runHash = (isStunned: boolean): number => {
+      const { state, dummy, applier } = setUp();
+      if (isStunned) {
+        applier.apply(state, dummy.id, 'stun', 'entity-9');
+      }
+      const sameTicks = CONFIG.tickRate * 2;
+      for (let tick = 0; tick < sameTicks; tick += 1) {
+        state.advanceTick();
+      }
+      applier.expire(state, dummy.id);
+      return new StateHasher().hash(state);
+    };
+
+    expect(runHash(true)).toBe(runHash(true));
+    expect(runHash(true)).not.toBe(runHash(false));
   });
 
   it('refuses hard control on a control-immune target, but not soft control', () => {

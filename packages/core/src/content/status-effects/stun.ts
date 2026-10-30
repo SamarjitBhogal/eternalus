@@ -3,7 +3,8 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 /**
  * Stunned: cannot move, attack or cast. TUNE: 2 s default (DEC-42); sources will set their own
  * duration once abilities land. Hard control, so `control-immune` follows it (more-abilities.md
- * section 7).
+ * section 7). Re-applying an active stun restarts its timer, and `control-immune` follows only
+ * when it runs out (DEC-99 (b)).
  */
 export const STUN = {
   id: 'stun',
