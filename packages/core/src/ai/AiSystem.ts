@@ -110,6 +110,11 @@ export class AiSystem {
   }
 
   private decide(state: GameState, id: EntityId): void {
+    // A deferred id can outlive its entity when a removal path emits no `entity-removed`.
+    if (!state.entities.has(id)) {
+      state.ai.delete(id);
+      return;
+    }
     const controllerId = state.ai.get(id)?.controllerId;
     const controller = controllerId === undefined ? undefined : this.controllers[controllerId];
     for (const command of controller?.decide(state, id) ?? []) {

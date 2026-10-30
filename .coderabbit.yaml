@@ -14,6 +14,8 @@ reviews:
       - enabled: false
         paths:
           - '.coderabbit.yaml'
+          - 'package.json'
+          - 'docs/agents/checklists.md'
           - '.github/**'
           - '.githooks/**'
           - '.claude/settings.json'

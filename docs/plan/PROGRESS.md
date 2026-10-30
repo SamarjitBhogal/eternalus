@@ -1851,3 +1851,17 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 159ms"; "Documentation check
   passed."
 - Next step: merge up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/phase-2-coderabbit — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit threads on the phase PR #32. `AiSystem` never asks a controller about
+  an entity that left the store without an `entity-removed` event (a deferred id) and drops its
+  brain; regression test fails on the old code. `.coderabbit.yaml` withholds auto-approval for
+  `package.json` and `docs/agents/checklists.md` too (tightening only). Already fixed: the mirror
+  test (#53). Left for the owner: whether a unit killed earlier in the combat pass may still
+  attack that tick, and where the commented-out generated-map march test runs (no `test:soak`
+  script exists). Not changed: the `PROGRESS.md` order is the owner's sort-by-date commit.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  689 passed (689)"; client "Tests 415 passed (415)"; "✓ built in 169ms"; "Documentation check
+  passed."
+- Next step: owner decisions on the two open items.

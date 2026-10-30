@@ -149,6 +149,18 @@ describe('AiSystem', () => {
     expect(state.ai.size).toBe(0);
   });
 
+  it('never asks for a deferred entity that left the store without an event, and drops it', () => {
+    const { state, asked, step } = setUp(40, 3);
+    step();
+    const gone = state.ai.deferred[0] ?? '';
+    state.entities.remove(gone, 'dev-removed');
+    step();
+
+    expect(gone).not.toBe('');
+    expect(asked).not.toContain(gone);
+    expect(state.ai.get(gone)).toBeUndefined();
+  });
+
   it('throws the first tick it sees an entity whose controller has no implementation', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const definitions = new ContentCatalogue<UnitDefinition>([
