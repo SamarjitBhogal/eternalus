@@ -16,6 +16,19 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion M2c (`feat/minion-m2c-objectives-guards`, overnight 2026-10-30) — four items for
+      sign-off, all applied as below so the work could continue.** (1) **Better than the design:**
+      a horde gathered at its objective (anchor within `acquisitionRadius` of the objective's
+      front) acquires it from every rank, not only the front rank in reach; and attacking a
+      structure ignores the leash and the aggro timeout (doc 18 §6.1 lists both as ways a chase
+      ends, but a minion stands still at a tower, so the timeout made it stop hitting every 2.3 s).
+      (2) **Design gap:** the Stronghold stands off the lane, 60 m inside its wall ring; a horde
+      gathers at the lane's end (the gate) and then charges it under (1). Doc 18 §4 says only "at
+      the lane's end the horde stays". (3) **Interpretation:** a guard's leash is measured from its
+      structure's **edge** ("don't leave the tower's perimeter"); from the centre, an 8 m leash is
+      inside a 14 m tower. (4) **Stand-in:** the Stronghold's "ranged" light guards fight in melee
+      until projectiles exist (sprint 2.3). Approve, or say what to change; doc 18 follows.
+
 - [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR
       #35). (1) Can a stunned unit still act while its aim wobbles, or does stun keep "cannot

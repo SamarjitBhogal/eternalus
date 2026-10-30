@@ -1,7 +1,7 @@
 import type { HordeSteeringProfile } from '../../content/ai/ai.types';
 import { sqrt } from '../../utils/deterministicMath';
 import type { Vec2 } from '../../utils/geometry.types';
-import { length } from '../../utils/vec2';
+import { addSeparation } from './addSeparation';
 import type { MovementContext, MovementStrategy } from './MovementStrategy.types';
 
 /**
@@ -22,8 +22,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
 
   /** Toward the target, or none once there, plus the separation push; below `minSteer` is none. */
   public desiredVelocity(self: number, context: MovementContext): Vec2 {
-    const { positions, target, out, found, arrivalRadius } = context;
-    const { separationRadius, separationWeight, minSteer } = this.profile;
+    const { positions, target, out, arrivalRadius } = context;
     const x = positions[2 * self] ?? 0;
     const y = positions[2 * self + 1] ?? 0;
     const dx = target.x - x;
@@ -43,24 +42,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
       out.x = isHeld ? 0 : dx / gap;
       out.y = isHeld ? 0 : dy / gap;
     }
-    const count = context.neighbours.queryCircle(x, y, separationRadius, found);
-    for (let at = 0; at < count; at += 1) {
-      const other = found[at] ?? self;
-      const awayX = x - (positions[2 * other] ?? x);
-      const awayY = y - (positions[2 * other + 1] ?? y);
-      const apart = sqrt(awayX * awayX + awayY * awayY);
-      if (other === self || apart === 0 || apart >= separationRadius) {
-        continue;
-      }
-      // Away from the neighbour: full weight at contact, nothing at the radius.
-      const strength = (separationWeight * (separationRadius - apart)) / separationRadius;
-      out.x += (awayX / apart) * strength;
-      out.y += (awayY / apart) * strength;
-    }
-    if (length(out) < minSteer) {
-      out.x = 0;
-      out.y = 0;
-    }
+    addSeparation(self, x, y, context, this.profile);
     return out;
   }
 }

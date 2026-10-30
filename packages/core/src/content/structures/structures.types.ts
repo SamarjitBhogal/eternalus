@@ -45,3 +45,26 @@ export type SpawnWaveDefinition = {
 
 /** The Stronghold's opening hordes (architecture 18 §3.1): what they are made of. */
 export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightClass'>;
+
+/** One row of a guard plan: which guard, how many, and how a lost SpawnerTower shrinks it. */
+type GuardTableEntry = {
+  readonly mobId: string;
+  readonly count: number;
+  /** Guards of this row lost for good per destroyed SpawnerTower of the team (DISC-21, 07 §8). */
+  readonly lessPerLostSpawnerTower?: number;
+};
+
+/**
+ * The guards a structure keeps (architecture 07 §6, 18 §7): spawned when the match starts, each
+ * respawned `respawnSeconds` after it dies while its structure stands.
+ */
+export type GuardPlanDefinition = {
+  readonly table: readonly GuardTableEntry[];
+  /** How far past the structure's edge a guard may chase ("don't leave the tower's perimeter"). */
+  readonly leashRadius: number;
+  readonly respawnSeconds: number;
+  /** Posts stand on a ring this far outside the structure's edge. */
+  readonly postGap: number;
+  /** How far past its leash a guard may be seen between two decisions (`GuardWithinLeashInvariant`). */
+  readonly leashTolerance: number;
+};

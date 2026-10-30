@@ -52,6 +52,14 @@ export class StateHasher {
       });
       parts.push(['hordes', ...hordes]);
     }
+    // Guard posts are appended only once one exists, for the same reason.
+    if (state.guards.size > 0) {
+      const posts: unknown[] = [];
+      state.guards.forEach(({ id, guardId, respawnAtTick }) => {
+        posts.push([id, guardId, respawnAtTick]);
+      });
+      parts.push(['guards', ...posts]);
+    }
     // Brains are appended only once one exists, for the same reason.
     if (state.ai.size > 0 || state.ai.deferred.length > 0) {
       const brains: unknown[] = [...state.ai.deferred];

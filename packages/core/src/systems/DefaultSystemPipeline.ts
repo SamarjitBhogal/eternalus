@@ -26,6 +26,7 @@ import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { GUARD_PLANS } from '../content/structures/guardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
@@ -108,6 +109,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
+              guards: GUARD_PLANS,
             }),
           ]),
       new DeathSystem(),

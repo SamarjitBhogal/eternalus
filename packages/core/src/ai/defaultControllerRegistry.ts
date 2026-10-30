@@ -1,5 +1,6 @@
 import type { ControllerId } from '../content/ai/ai.types';
 import type { Controller } from './Controller.types';
+import { GuardController } from './GuardController';
 import { MinionController } from './MinionController';
 import type { MinionControllerContent } from './MinionController.types';
 
@@ -17,4 +18,5 @@ export const createDefaultControllerRegistry = (
   content: MinionControllerContent,
 ): ControllerRegistry => ({
   minion: new MinionController(content),
+  guard: new GuardController(content),
 });

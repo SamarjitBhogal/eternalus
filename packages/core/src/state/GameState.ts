@@ -15,6 +15,7 @@ import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
 import type { MatchPhase, RecordedCommand, TeamState } from './GameState.types';
 import type { HordeRequest } from './HordeRequest.types';
+import { GuardStore } from './GuardStore';
 import { HordeStore } from './HordeStore';
 import { LaneRoutes } from './LaneRoutes';
 import { LaneStructures } from './LaneStructures';
@@ -33,6 +34,8 @@ export class GameState {
   public readonly ai = new AiState();
   /** The lane hordes (architecture 18 §4). */
   public readonly hordes = new HordeStore();
+  /** Every structure's guard posts (architecture 18 §7). */
+  public readonly guards = new GuardStore();
   /** Hordes asked for this tick (developer menu), fulfilled by `SpawnSystem` in order. */
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<

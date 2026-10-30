@@ -88,6 +88,13 @@ export class LaneStructures {
     return this.all.filter((entry) => entry.lane === lane && entry.team === team);
   }
 
+  /** How many of `team`'s structures of `kind` have fallen since match start. */
+  public lostCount(team: PlayableTeam, kind: string, entities: EntityStore): number {
+    return this.all.filter(
+      (entry) => entry.team === team && entry.kind === kind && !entities.isAlive(entry.id),
+    ).length;
+  }
+
   /**
    * The first enemy structure on `lane` in `attacker`'s marching order that still stands, or
    * `null` once the enemy Stronghold has fallen.

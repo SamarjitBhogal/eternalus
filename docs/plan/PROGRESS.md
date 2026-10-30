@@ -1979,3 +1979,20 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `Collider.isUnbreakable` not hashed; both fixed, total now from config) and ponytail (lean, no
   cuts): core "Tests 728 passed (728)", client "Tests 416 passed (416)", `EXIT=0`.
 - Next step: M2c on top of this branch.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M2c on top of M2s. `state/LaneStructures` (the lane-order objective
+  index, built once the structures spawn); `HordeSystem` holds the anchor `objectiveHoldGap` in
+  front of the next standing objective; `MinionController` attacks the breakable objective as
+  `lane-objective` (gate holding until `structure-breakability-changed`); `assessLanes` scores
+  structure damage not dealt and structures lost; `SpawnSystem` spawns from the structure entities
+  (a destroyed tower stops) and runs the guard plans (`content/structures/guardPlans.ts`, posts in
+  `state.guards`, respawn after 120 s, DISC-21 shrink); `GuardController` on the shared
+  `ai/LeashBehaviour`; `LeashedChaseMovementStrategy`; guards steered by `PathingSystem`;
+  `GuardWithinLeashInvariant`. Light, medium and heavy guard content. Four sign-off items in
+  `INBOX.md`. Docs 18 and the minion plan updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  751 passed (751)"; client "Tests 416 passed (416)"; "✓ built in 184ms"; "Documentation check
+  passed."
+- Next step: critic and ponytail, then M5b.

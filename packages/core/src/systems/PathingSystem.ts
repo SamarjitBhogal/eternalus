@@ -10,7 +10,7 @@ import type { MutableVec2 } from '../utils/vec2.types';
 import type { System, SystemContext } from './System.types';
 
 /**
- * Sets next tick's heading of every horde member (architecture 10 §9, 18 §5): it lays each
+ * Sets next tick's heading of every horde member and every guard (architecture 10 §9, 18 §5): it lays each
  * horde's formation out around its anchor (a member with an attack target chases it instead,
  * stopping at attack reach, and holding at blocked ground rather than following the lane flow
  * field, which leads to the lane's end, not to the target) and asks each mob's `MovementStrategy` how to reach its
@@ -68,7 +68,7 @@ export class PathingSystem implements System {
   public update({ state }: SystemContext): void {
     this.flowFields?.rebuildDirty(state.config.map.flowFieldCellBudget);
     const { routes, space } = state;
-    if (routes === null || space === null || state.hordes.size === 0) {
+    if (routes === null || space === null || (state.hordes.size === 0 && state.guards.size === 0)) {
       return;
     }
     if (this.found.length < space.count) {
@@ -112,6 +112,29 @@ export class PathingSystem implements System {
         context.isChasing = reach !== undefined;
         movement.steer(strategy.desiredVelocity(index, context));
       }
+    });
+    // Guards (18 §7): the unit they chase, or their post; never a lane field.
+    context.flow = null;
+    state.guards.forEach(({ guardId, postX, postY }) => {
+      const index = guardId === null ? undefined : space.indexOf(guardId);
+      const movement =
+        guardId === null ? undefined : state.entities.get(guardId)?.findComponent(Movement);
+      const strategyId = movement?.strategyId;
+      const strategy = strategyId === undefined ? undefined : this.strategies[strategyId];
+      if (
+        guardId === null ||
+        index === undefined ||
+        movement === undefined ||
+        strategy === undefined
+      ) {
+        return;
+      }
+      this.target.x = postX;
+      this.target.y = postY;
+      const reach = this.chase(state, guardId);
+      context.arrivalRadius = reach ?? this.slotArrivalRadius;
+      context.isChasing = reach !== undefined;
+      movement.steer(strategy.desiredVelocity(index, context));
     });
   }
 }

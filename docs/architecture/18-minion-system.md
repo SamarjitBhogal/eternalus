@@ -87,10 +87,18 @@ follows them where the line to its target is blocked (§5.2). Pull request M2b a
 `MinionController` (§6.1) with the `lane-minion` aggro content and the shared ranking helper
 `ai/aggroRank`, minion attacks from `balancing.md`, `stop` clearing the attack target (MS-26), the
 chase in `PathingSystem` (§5.2) and the anchor holding while the leader engages (§4). Lane
-objectives, gate holding and guards (M2c onward) wait for structure entities, and lane assignment
-(M3 onward) is not built. The damage pipeline (`combat/DamagePipeline`) is built. Pull request
+assignment (M3 onward) is not built. The damage pipeline (`combat/DamagePipeline`) is built. Pull request
 `feat/minion-structures` adds the Stronghold, tower and gate entities with breakability and
-`structure-destroyed` (07, Implementation status), which M2c builds on. The pull requests and
+`structure-destroyed` (07, Implementation status). Pull request M2c adds the lane objectives
+(`state/LaneStructures`, indexed from the structure entities once they spawn, in the same lane
+order as §6.2), the anchor holding at the next standing objective, gate holding, spawning from the
+structure entities, `assessLanes`' structure terms, and the guards: `content/structures/guardPlans.ts`,
+one post per guard in `state.guards` laid out and refilled by `SpawnSystem`, `GuardController`
+sharing `ai/LeashBehaviour` with `MinionController`, `LeashedChaseMovementStrategy` and
+`GuardWithinLeashInvariant`. Interim: a guard's leash is measured from its structure's edge; a
+horde gathered at its objective acquires it from every rank, and attacking the objective ignores
+the leash and the aggro timeout (both in `INBOX.md` for sign-off); the Stronghold, standing off the
+lane, is gathered at from the lane's end. The pull requests and
 interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions

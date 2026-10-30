@@ -69,6 +69,10 @@ const run = (simulation: Simulation, ticks: number): void => {
   }
 };
 
+/** A lane minion, not a tower guard (guards are mobs too, but in no horde). */
+const isMinion = ({ definitionId }: { readonly definitionId: string }): boolean =>
+  definitionId.endsWith('-minion');
+
 /** The two-lane map with only its Strongholds, so a march meets no tower before the lane's end. */
 const STRONGHOLDS_ONLY: MapDefinition = {
   ...TWO_LANE_MAP,
@@ -85,7 +89,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     run(simulation, 60 * 30);
 
     expect(spawned).toEqual(['light lane-0', 'light lane-1', 'dark lane-0', 'dark lane-1']);
-    const minions = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
+    const minions = simulation.snapshot().entities.filter(isMinion);
     expect(minions).toHaveLength(
       2 * config.match.initialHordesPerTeam * config.match.hordeSizes[OPENING_WAVE.weightClass],
     );
@@ -103,7 +107,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     const closest = (): number => {
       const minions = simulation
         .snapshot()
-        .entities.filter(({ family, team }) => family === 'mob' && team === 'light');
+        .entities.filter((entity) => isMinion(entity) && entity.team === 'light');
       let best = Number.POSITIVE_INFINITY;
       minions.forEach(({ transform: a }, index) => {
         for (const { transform: b } of minions.slice(index + 1)) {
@@ -134,6 +138,10 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     );
     simulation.step();
     const cap = createDefaultGameConfig().limits.maxUnitsPerTeam;
+    // The opening hordes and the tower guards already hold part of the cap.
+    const held = simulation
+      .snapshot()
+      .entities.filter(({ family, team }) => family === 'mob' && team === 'light').length;
 
     simulation.enqueueCommand({
       type: 'dev-spawn-mobs',
@@ -144,8 +152,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     });
     simulation.step();
 
-    // The two opening hordes hold 32 of the cap; the heavy horde gets the rest.
-    expect(spawned.slice(4)).toEqual([`light lane-1 ${String(cap - 32)}`]);
+    expect(spawned.slice(4)).toEqual([`light lane-1 ${String(cap - held)}`]);
   });
 
   it('gives the same hash for the same seed and map, tick for tick', () => {
@@ -165,7 +172,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
 
     simulation.step();
 
-    const minions = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
+    const minions = simulation.snapshot().entities.filter(isMinion);
     expect(minions).toHaveLength(
       2 * config.match.initialHordesPerTeam * config.match.hordeSizes.light,
     );
@@ -174,9 +181,8 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
   it('fights when opposing hordes meet: kills on both sides, invariants clean (M2b)', () => {
     const { simulation, logger } = match(TWO_LANE_MAP);
     const alive = (team: string) =>
-      simulation
-        .snapshot()
-        .entities.filter((entity) => entity.family === 'mob' && entity.team === team).length;
+      simulation.snapshot().entities.filter((entity) => isMinion(entity) && entity.team === team)
+        .length;
 
     run(simulation, 60 * 30);
 
@@ -248,8 +254,8 @@ const march = (map: MapDefinition, numLanes: number, ticks: number) => {
     if (tick % 10 !== 0) {
       continue;
     }
-    for (const { id, family, transform } of simulation.snapshot().entities) {
-      const cell = family === 'mob' && transform !== null ? grid.cellAt(transform) : null;
+    for (const { id, definitionId, transform } of simulation.snapshot().entities) {
+      const cell = isMinion({ definitionId }) && transform !== null ? grid.cellAt(transform) : null;
       if (cell === null) {
         continue;
       }
@@ -262,7 +268,7 @@ const march = (map: MapDefinition, numLanes: number, ticks: number) => {
       }
     }
   }
-  const mobs = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
+  const mobs = simulation.snapshot().entities.filter(isMinion);
   const farthest = Math.max(
     ...mobs.map(({ team, transform }) =>
       Math.min(
@@ -330,7 +336,7 @@ describe('Simulation structures', () => {
     // in front of x 126, in ranks no deeper than 8.
     const lightLane0 = simulation
       .snapshot()
-      .entities.filter(({ family, team }) => family === 'mob' && team === 'light')
+      .entities.filter((entity) => isMinion(entity) && entity.team === 'light')
       .filter(({ transform }) => (transform?.y ?? 0) < 30)
       .map(({ transform }) => transform?.x ?? 0);
     expect(lightLane0.length).toBeGreaterThan(0);

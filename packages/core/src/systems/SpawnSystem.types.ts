@@ -1,5 +1,6 @@
 import type { HordeSteeringProfile, LaneAssessmentWeights } from '../content/ai/ai.types';
 import type {
+  GuardPlanDefinition,
   OpeningWaveDefinition,
   SpawnWaveDefinition,
 } from '../content/structures/structures.types';
@@ -17,4 +18,6 @@ export type SpawnPlan = {
   readonly weights: LaneAssessmentWeights;
   /** The formation every horde marches in. */
   readonly formationId: string;
+  /** Each structure kind's guards (18 §7). */
+  readonly guards: Readonly<Record<string, GuardPlanDefinition>>;
 };
