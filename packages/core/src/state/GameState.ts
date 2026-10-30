@@ -13,11 +13,12 @@ import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
-import type { MatchPhase, RecordedCommand, TeamState } from './GameState.types';
+import type { GameStateIndexes, MatchPhase, RecordedCommand, TeamState } from './GameState.types';
 import type { HordeRequest } from './HordeRequest.types';
 import { HordeStore } from './HordeStore';
 import { LaneRoutes } from './LaneRoutes';
 import type { EntitySnapshot, Snapshot } from './Snapshot.types';
+import type { PathQuery } from './PathQuery.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
 /**
@@ -48,6 +49,12 @@ export class GameState {
   public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = this.teamCounters;
   /** The map's lanes as each team walks them; `null` for a match without a map. */
   public readonly routes: LaneRoutes | null;
+
+  /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
+  public readonly space: SpaceQuery | null;
+
+  /** A\* for Legends over the map's grid (architecture 10 §9); `null` without a map. */
+  public readonly paths: PathQuery | null;
   public readonly events: GameEvents;
   /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
   public readonly phase: MatchPhase = 'countdown';
@@ -70,9 +77,10 @@ export class GameState {
     public readonly seed: number,
     /** The generated map of the match, or `null` (most unit tests). */
     public readonly map: MapDefinition | null = null,
-    /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
-    public readonly space: SpaceQuery | null = null,
+    indexes: GameStateIndexes = {},
   ) {
+    this.space = indexes.space ?? null;
+    this.paths = indexes.paths ?? null;
     this.rng = new SeededRandom(seed);
     this.routes = map === null ? null : new LaneRoutes(map);
     this.events = new GameEvents(() => this.currentTick);

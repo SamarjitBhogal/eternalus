@@ -70,7 +70,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
           seed: PLACEHOLDER_MATCH_SEED,
           logger,
           map,
-          roster: placeholderRoster(config.match.legendsPerTeam),
+          roster: placeholderRoster(config.match.legendsPerTeam, PLACEHOLDER_PLAYER.team),
         }),
         map,
         tickRate: config.tickRate,

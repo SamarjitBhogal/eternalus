@@ -3,7 +3,6 @@ import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { FORMATIONS } from '../content/mobs/formations/formations';
-import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
@@ -13,7 +12,7 @@ import type { EntityFactory } from '../entities/EntityFactory';
 import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
-import { WorldMap } from '../map/WorldMap';
+import type { WorldMap } from '../map/WorldMap';
 import type { GameState } from '../state/GameState';
 import { CombatSystem } from './CombatSystem';
 import { DeathSystem } from './DeathSystem';
@@ -58,6 +57,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
       readonly factory: EntityFactory;
       /** The index `state.space` exposes; `null` for a match without a map. */
       readonly space: SpaceIndex | null;
+      /** The map's walkability grid the lane flow fields route over; `null` without a map. */
+      readonly world: WorldMap | null;
       /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
       readonly decide: readonly System[];
     },
@@ -68,17 +69,9 @@ export class DefaultSystemPipeline extends SystemPipeline {
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
     );
     const flowFields =
-      hordes === undefined || state.map === null
+      hordes?.world == null || state.map === null
         ? null
-        : new LaneFlowFields(
-            WorldMap.fromDefinition(
-              state.map,
-              map.navCellSize,
-              (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
-            ),
-            state.map,
-            map.flowFieldCorridorHalfWidth,
-          );
+        : new LaneFlowFields(hordes.world, state.map, map.flowFieldCorridorHalfWidth);
     super([
       ...(hordes === undefined
         ? []

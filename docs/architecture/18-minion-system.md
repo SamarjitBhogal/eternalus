@@ -94,7 +94,8 @@ holding while the leader engages (§4). Pull request M3 adds the bot laners (§8
 `SimulationOptions.roster` (the bot Legends, spawned when the match is built at their own end of
 their lane, in ranks), `assignLanes` for MS-20 (bots in roster order, up to `legendsPerLane`), a
 spawn's own controller and starting memory (`Placement.controller`, holding the lane) and
-`BotLegendController` playing doc 11 §4.2's laner tree. The Rover waits for its controller (M8).
+`BotLegendController` playing doc 11 §4.2's laner tree. The Rover waits for its controller (M8; doc
+11 §10).
 Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
 (strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
 enemy for each lane tower the enemy has lost there) and `EnragedSystem`, its own system right after

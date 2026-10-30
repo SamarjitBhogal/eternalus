@@ -14,7 +14,7 @@ import type { MovementContext, MovementStrategy } from './MovementStrategy.types
  * nothing.
  *
  * @remarks ponytail: no wall avoidance term yet (it arrives with `CollisionSystem`, 10 §8);
- * separation falls off linearly, not as 1/r (minion plan §2). A chase blocked by terrain holds
+ * separation falls off linearly, not as 1/r (minion plan §3). A chase blocked by terrain holds
  * until target-aware routing (an A* path to the target) lets it go round.
  */
 export class LaneFollowMovementStrategy implements MovementStrategy {

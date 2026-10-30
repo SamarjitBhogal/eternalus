@@ -1,5 +1,3 @@
-import type { EntityId } from '../../state/EntityStore.types';
-
 /**
  * Picks the best option by weighted considerations (architecture 11 §4.2): each option's score is
  * the sum of its considerations times their weights. Options come in id order and a tie keeps the
@@ -13,11 +11,11 @@ export class UtilityScorer<Consideration extends string> {
   public constructor(private readonly weights: Readonly<Record<Consideration, number>>) {}
 
   /** The best-scoring option, or `null` when there are none. */
-  public best(
-    options: readonly EntityId[],
-    rate: (option: EntityId) => Readonly<Record<Consideration, number>>,
-  ): EntityId | null {
-    let best: EntityId | null = null;
+  public best<Option extends string>(
+    options: readonly Option[],
+    rate: (option: Option) => Readonly<Record<Consideration, number>>,
+  ): Option | null {
+    let best: Option | null = null;
     let bestScore = Number.NEGATIVE_INFINITY;
     for (const option of options) {
       const scores = rate(option);
