@@ -327,6 +327,45 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
 });
 
 describe('Simulation structures', () => {
+  it('sends tower guards after an enemy that walks in, then back to their posts (18 §7)', () => {
+    const { simulation, logger } = match(STRONGHOLDS_ONLY);
+    simulation.step();
+    const guardsOf = (team: string) =>
+      simulation
+        .snapshot()
+        .entities.filter(
+          ({ definitionId, team: owner }) => definitionId.endsWith('-guard') && owner === team,
+        );
+    const posts = new Map(guardsOf('light').map(({ id, transform }) => [id, transform]));
+    // A dark minion appears just outside the light Stronghold's guard ring (radius 40, posts at 42).
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'light-mob',
+      definitionId: 'training-dummy',
+      team: 'dark',
+      at: { x: 10, y: 30 + 47 },
+      count: 1,
+    });
+    run(simulation, 30);
+    const moved = guardsOf('light').filter(({ id, transform }) => {
+      const post = posts.get(id);
+      return (
+        Math.hypot((transform?.x ?? 0) - (post?.x ?? 0), (transform?.y ?? 0) - (post?.y ?? 0)) > 1
+      );
+    });
+    expect(moved.length).toBeGreaterThan(0);
+
+    run(simulation, 30 * 30);
+
+    for (const { id, transform } of guardsOf('light')) {
+      const post = posts.get(id);
+      expect(
+        Math.hypot((transform?.x ?? 0) - (post?.x ?? 0), (transform?.y ?? 0) - (post?.y ?? 0)),
+      ).toBeLessThan(3);
+    }
+    expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
+  });
+
   it('holds a horde that cannot fight in front of the first enemy tower on its lane (18 §6.2)', () => {
     const { simulation } = match(TWO_LANE_MAP, 1, true);
 

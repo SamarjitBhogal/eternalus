@@ -29,7 +29,7 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
   },
   stronghold: {
     table: [
-      { mobId: 'light-guard', count: 6, lessPerLostSpawnerTower: 2 },
+      { mobId: 'light-guard', count: 6, shrink: { perLost: 'spawner-tower', count: 2 } },
       { mobId: 'heavy-guard', count: 2 },
     ],
     leashRadius: LEASH,

@@ -11,10 +11,9 @@ import { assessLanes } from '../state/LaneAssessment';
 import type { LaneRoutes } from '../state/LaneRoutes';
 import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
-import { cos, sin } from '../utils/deterministicMath';
-import type { GuardSlot } from '../state/GuardStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { PLAYABLE_TEAMS } from './SpawnSystem.constants';
+import { GuardRoster } from './GuardRoster';
 import type { SpawnPlan } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
 
@@ -32,15 +31,12 @@ import type { System, SystemContext } from './System.types';
  * The spawners are the structure entities standing at construction; a destroyed one stops. The
  * schedule is computed from the tick, so the system keeps no schedule state of its own.
  *
- * It also runs every structure's guard plan (18 §7, 07 §6): at construction it lays out one post
- * per guard on a ring around the structure (`state.guards`); each tick an empty post whose
- * respawn time has come is filled while its structure stands and the unit cap has room, and a
- * post whose guard died empties and waits `respawnSeconds`. A row with
- * `lessPerLostSpawnerTower` keeps fewer posts per lost SpawnerTower of its team (DISC-21).
+ * It also runs every structure's guard plan (18 §7, 07 §6) through its `GuardRoster`.
  */
 export class SpawnSystem implements System {
   public readonly name = 'spawn';
   private readonly spawners: readonly Structure[];
+  private readonly guards: GuardRoster;
 
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points.
@@ -68,91 +64,8 @@ export class SpawnSystem implements System {
     });
     this.spawners = spawners.sort((a, b) => compareById(a.id, b.id));
     this.validate();
-    this.layOutPosts(state);
-  }
-
-  /** One post per guard of every standing structure's plan, in structure id order. */
-  private layOutPosts(state: GameState): void {
-    const homes: Structure[] = [];
-    state.entities.forEach((entity) => {
-      if (entity instanceof Structure && this.plan.guards[entity.kind] !== undefined) {
-        homes.push(entity);
-      }
-    });
-    for (const home of homes.sort((a, b) => compareById(a.id, b.id))) {
-      const plan = this.plan.guards[home.kind];
-      const team = state.entities.teamOf(home.id);
-      const transform = home.findComponent(Transform);
-      if (plan === undefined || (team !== 'light' && team !== 'dark') || transform === undefined) {
-        continue;
-      }
-      const total = plan.table.reduce((sum, row) => sum + row.count, 0);
-      const ring = transform.radius + plan.postGap;
-      let post = 0;
-      plan.table.forEach((row, rowIndex) => {
-        for (let indexInRow = 0; indexInRow < row.count; indexInRow += 1, post += 1) {
-          const turn = (2 * Math.PI * post) / total;
-          state.guards.add({
-            id: `${home.id}:${String(post)}`,
-            homeId: home.id,
-            team,
-            mobId: row.mobId,
-            row: rowIndex,
-            indexInRow,
-            postX: transform.position.x + ring * cos(turn),
-            postY: transform.position.y + ring * sin(turn),
-            homeX: transform.position.x,
-            homeY: transform.position.y,
-            homeRadius: transform.radius,
-            leashRadius: plan.leashRadius,
-            leashTolerance: plan.leashTolerance,
-            respawnTicks: Math.round(plan.respawnSeconds * state.config.tickRate),
-          });
-        }
-      });
-    }
-  }
-
-  /** Empties the posts whose guard died; fills the posts whose respawn time has come. */
-  private updateGuards(state: GameState): void {
-    state.guards.forEach((slot, index) => {
-      if (slot.guardId !== null) {
-        if (!state.entities.isAlive(slot.guardId)) {
-          state.guards.vacate(index, state.tick + slot.respawnTicks);
-        }
-        return;
-      }
-      const room =
-        state.config.limits.maxUnitsPerTeam - state.entities.countOnTeam(slot.team, Unit);
-      if (
-        state.tick < slot.respawnAtTick ||
-        room <= 0 ||
-        !state.entities.isAlive(slot.homeId) ||
-        !this.isPostKept(state, slot)
-      ) {
-        return;
-      }
-      const { kind } = this.plan.definitions.get(slot.mobId);
-      const guard = this.factory.create(kind, slot.mobId, {
-        team: slot.team,
-        position: { x: slot.postX, y: slot.postY },
-      });
-      state.entities.add(guard);
-      state.guards.fill(index, guard.id);
-      state.events.emit('entity-spawned', { entityId: guard.id, kind, team: slot.team });
-    });
-  }
-
-  /** False for a post its row gave up for the team's lost SpawnerTowers (DISC-21). */
-  private isPostKept(state: GameState, slot: GuardSlot): boolean {
-    const home = state.entities.get(slot.homeId);
-    const row = home === undefined ? undefined : this.plan.guards[home.kind]?.table[slot.row];
-    const less = row?.lessPerLostSpawnerTower ?? 0;
-    if (row === undefined || less === 0) {
-      return true;
-    }
-    const lost = state.laneStructures.lostCount(slot.team, 'spawner-tower', state.entities);
-    return slot.indexInRow < row.count - less * lost;
+    this.guards = new GuardRoster(factory, plan.definitions, plan.guards);
+    this.guards.layOut(state);
   }
 
   /**
@@ -202,7 +115,7 @@ export class SpawnSystem implements System {
     for (const request of this.dueWaves(state, routes)) {
       this.spawnHorde(state, routes, request);
     }
-    this.updateGuards(state);
+    this.guards.update(state);
   }
 
   /** The scheduled hordes due this tick: the opening hordes at tick 0, then the DISC-10 waves. */
