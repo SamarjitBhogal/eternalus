@@ -36,8 +36,9 @@ import { SceneView } from './views/SceneView';
  * loop, the renderer, the camera, the player's intent and the views, and owns their lifetime.
  * Each tick turns the player's intent into commands, steps the simulation and keeps the last two
  * snapshots; each frame follows the player with the camera and draws the scene. The player's
- * Legend is spawned at its team's stronghold when the match is created. Dragging, the overview
- * and building roof cutaways stay in the world; dragging and overview switch to the free `MapExplorer` view until the player moves.
+ * Legend is spawned at its team's stronghold when the match is created. Building roof cutaways
+ * stay in the same world scene; dragging and the overview switch to the free `MapExplorer` view
+ * until the player moves.
  */
 export class Match implements LoopTarget {
   private readonly loop: GameLoop;
