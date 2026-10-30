@@ -144,9 +144,7 @@ export class SpawnSystem implements System {
     const { team, mobId, weightClass, lane, origin, count: requested } = request;
     const room = state.config.limits.maxUnitsPerTeam - state.entities.countOnTeam(team, Unit);
     const count = Math.min(requested, Math.max(0, room));
-    const counters = state.teams[team];
-    counters.unitsRequested += requested;
-    counters.unitsSuppressed += requested - count;
+    state.recordSpawnRequest(team, requested, count);
     if (count === 0) {
       return;
     }
