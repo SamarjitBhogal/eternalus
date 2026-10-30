@@ -1749,3 +1749,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   690 passed (690)"; client "Tests 415 passed (415)"; "✓ built in 149ms"; "Documentation check
   passed."
 - Next step: merge into the enemy-AI plan (#43) and up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
+
+- What was done: third CodeRabbit round on PR #39. Doc 18's implementation status no longer says
+  the damage pipeline is missing (`combat/DamagePipeline` is built; structures have only the
+  `Structure` base). `SpawnSystem` now reads definitions from the factory
+  (`EntityFactory.definitions` is public read-only) and `DefaultSystemPipeline` drops its separate
+  `definitions` option, so a horde request the dev-spawn handler accepted can always be spawned.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  690 passed (690)"; client "Tests 415 passed (415)"; "✓ built in 150ms"; "Documentation check
+  passed."
+- Next step: merge into the enemy-AI plan (#43) and up the stack.

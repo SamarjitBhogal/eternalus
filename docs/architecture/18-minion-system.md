@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards and the lanes of bo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-30
 tags: [architecture, minions, hordes, guards, spawning, ai, core]
 paths:
   [
@@ -65,7 +65,7 @@ guards and are the lane objectives (§6.2), but doc 07 implements them. The mini
 level-up** (MVP, a `CaptureSystem` reward, 07 §7) and **Ascend** (MVP-if-time, a Legend-kill
 reward) belong to their reward systems, not to this doc.
 
-**Implementation status (2026-10-17).** Minion plan phase M1 (marching) is built: the three
+**Implementation status (2026-10-30).** Minion plan phase M1 (marching) is built: the three
 lane minions (`content/mobs/`), the `ranks` formation, `HordeStore`, `LaneRoutes` and the team
 spawn counters on `GameState`, `assessLanes`, `HordeSystem`, `SpatialHash`,
 `LaneFollowMovementStrategy` with `PathingSystem`, and `SpawnSystem` with the DISC-10 waves and the
@@ -75,7 +75,8 @@ and its `Brain` are deleted (DEC-35). Pull request M2a adds brains, the `Control
 developer-menu horde spawns (§3.5). Phase M4's lane flow fields are built as well
 (`map/LaneFlowFields`, the Stronghold-to-gate ground included), and `LaneFollowMovementStrategy`
 follows them where the line to the slot is blocked (§5.2). Fighting, guards, controllers and lane
-assignment (M2b onward) are not built, and the damage pipeline and structures do not exist yet. The
+assignment (M2b onward) are not built. The damage pipeline (`combat/DamagePipeline`) is built;
+structures have only the `Structure` base class, with no Stronghold, tower or gate kind yet. The
 pull requests and interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md)
 §2–§3.
 
