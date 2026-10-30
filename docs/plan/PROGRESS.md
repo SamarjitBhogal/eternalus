@@ -2019,3 +2019,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   763 passed (763)"; client "Tests 416 passed (416)"; "✓ built in 153ms"; "Documentation check
   passed."
 - Next step: M6.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M6, forest camps. `Camp` structure and three forest-camp definitions;
+  light, medium and heavy camp mobs and the `camp-mob` aggro profile; camp groups as `group` guard
+  plans activated at the countdown's end (balancing.md compositions, 6 m leash, 120 s group
+  respawn); `GuardRoster` emits `camp-cleared` (new in doc 03's catalogue); guard plans are looked
+  up by structure definition id; posts may be neutral and skip the unit cap. Checkpoint defenders
+  not built: `CaptureSystem` is only on PR #49, which conflicts with the minion stack (INBOX).
+- Checks run: see the pre-PR gate line below.
+- Next step: critic and ponytail, then the PR.

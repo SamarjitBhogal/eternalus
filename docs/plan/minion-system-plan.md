@@ -113,6 +113,8 @@ Each stand-in is removed by the phase named.
 | No entity kind is a turret, so the aggro list's `turret-attacking-ally-minion` entry never matches                                                       | M2b     | turret entities (sprint 2.3)                                          |
 | Guard plans are content keyed by structure kind and the posts live in `state.guards`, since no `Spawner` component exists (07 §6 puts `GuardPlan` on it) | M2c     | the `Spawner` component (Phase 2 sprint 2.7)                          |
 | The Stronghold's light guards fight in melee: no ranged attack exists until projectiles (sprint 2.3)                                                     | M2c     | the ranged attack strategy of sprint 2.3                              |
+| Checkpoint defenders are not built: `CaptureSystem` (PR #49) is not on the phase branch, and its branch predates the minion work                         | M6      | M6's second half, once PR #49 lands                                   |
+| No camp reward: clearing a camp emits `camp-cleared`, but nothing pays the clearing Legends                                                              | M6      | `ProgressionSystem` listening to `camp-cleared`                       |
 | Horde separation falls off linearly with distance, not as 1/r (10 §12)                                                                                   | M1      | When playtests ask for it; the strategy is the one place to change    |
 | The snapshot carries no hordes or team counters                                                                                                          | M1      | When a view or the HUD reads them (`MinimapView`, the developer menu) |
 

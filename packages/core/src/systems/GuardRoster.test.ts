@@ -151,7 +151,12 @@ describe('GuardRoster', () => {
       const killCamp = (count: number) => {
         campMobs()
           .slice(0, count)
-          .forEach((id) => state.entities.get(id ?? '')?.getComponent(Health).applyDamage(1e6));
+          .forEach((id) =>
+            state.entities
+              .get(id ?? '')
+              ?.getComponent(Health)
+              .applyDamage(1e6),
+          );
       };
       return { state, step, campMobs, killCamp, cleared };
     };

@@ -333,7 +333,9 @@ describe('Simulation structures', () => {
     const logger = new MemoryLogger();
     const simulation = new Simulation({ config, seed: 1, logger, debug: TEST_DEBUG_CONFIG, map });
     const campMobs = () =>
-      simulation.snapshot().entities.filter(({ definitionId }) => definitionId.endsWith('-camp-mob'));
+      simulation
+        .snapshot()
+        .entities.filter(({ definitionId }) => definitionId.endsWith('-camp-mob'));
 
     run(simulation, config.tickRate);
     expect(campMobs()).toEqual([]);

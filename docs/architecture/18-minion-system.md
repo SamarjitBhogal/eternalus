@@ -101,7 +101,12 @@ the leash and the aggro timeout (both in `INBOX.md` for sign-off); the Stronghol
 lane, is gathered at from the lane's end. Pull request M5b adds minion XP (`VeterancySystem`,
 `content/mobs/minionVeterancy.ts`, the `veteran` and `rallied` statuses) and the ghosted first wave
 (`AggroRuleDefinition.ghostFirstWaveTicks`, shipped at 0, so off); Tower Guardians wait for ranged
-attacks and the owner's numbers (`INBOX.md`). The pull requests and
+attacks and the owner's numbers (`INBOX.md`). Pull request M6 adds the forest camps: a `Camp`
+structure per camp feature, the camp groups in `content/structures/guardPlans.ts` (a `group` plan
+activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
+emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
+checks every post. Checkpoint defenders wait for `CaptureSystem` (PR #49) to reach the phase
+branch. The pull requests and
 interim stand-ins are in the [minion system plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions

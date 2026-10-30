@@ -368,6 +368,8 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `NoPassThroughUnbreakableInvariant`), the gate state machine, damage multipliers, walls,
   turrets, camps and the Cathedral as entities, and clearing a destroyed structure's footprint from
   `WorldMap`; the main view draws structures from the map layer (`StructureView` draws nothing).
+  Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
+  features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 

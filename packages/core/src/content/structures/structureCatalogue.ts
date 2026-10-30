@@ -56,14 +56,12 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       footprintRadius: 3,
       breakability: AFTER_BUFF_TOWERS,
     },
-    ...(['light', 'medium', 'heavy'] as const).map(
-      (weight): StructureDefinition => ({
-        id: `forest-camp-${weight}`,
-        kind: 'camp',
-        displayName: `Forest Camp (${weight})`,
-        baseHealth: 1, // never damaged: a camp is only its group's home
-        footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
-        breakability: { kind: 'never' },
-      }),
-    ),
+    ...(['light', 'medium', 'heavy'] as const).map((weight): StructureDefinition => ({
+      id: `forest-camp-${weight}`,
+      kind: 'camp',
+      displayName: `Forest Camp (${weight})`,
+      baseHealth: 1, // never damaged: a camp is only its group's home
+      footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
+      breakability: { kind: 'never' },
+    })),
   ]);
