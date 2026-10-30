@@ -1531,3 +1531,13 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."
 - Next step: the admin removes the `npm run check (macos-latest)` required check, then PR #50
   merges.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (CI drops macOS, ADR 0019) into PR #38 and
+  answered its CodeRabbit threads: `StateHasher.test.ts` pins the no-horde hash input and covers
+  horde progress, member ids, `issuedIds`, `unitsRequested` and `unitsSuppressed`; architecture 03
+  no longer says `GameState` lacks `recentCommands`; architecture 10 says `SpatialHash` cells
+  yield items in reverse insert order.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 222ms"; "Documentation check passed."
+- Next step: merge this into the stacked minion PRs (#39, #40 and up).

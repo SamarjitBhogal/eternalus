@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-29
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -274,8 +274,8 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
 ## 12. Implementation status
 
 `physics/SpatialHash` (minion plan M1) is a uniform grid with linked-list cells:
-`insert(index, x, y)` per tick and `collectNear(x, y, radius, out)`, which yields items in insert
-order per cell, not §5's `rebuild` / `queryCircle` with id-sorted results. It is deterministic
+`insert(index, x, y)` per tick and `collectNear(x, y, radius, out)`, which yields items in reverse
+insert order per cell (each cell is a LIFO list), not §5's `rebuild` / `queryCircle` with id-sorted results. It is deterministic
 (insert order follows store order). Horde separation (18 §5.2) falls off linearly with distance,
 not as 1/r. Both conform when `Perception` (minion plan M2) needs id-ordered queries.
 
