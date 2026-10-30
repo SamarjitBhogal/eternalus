@@ -2107,3 +2107,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   731 passed (731)"; client "Tests 415 passed (415)"; "✓ built in 156ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m5a-modifiers — SamarjitBhogal + Claude Code
+
+- What was done: cleared CodeRabbit's failed pre-merge check on PR #45. `GameState.test.ts` uses
+  exact `toEqual` again (with `towersLostByLane: {}`) instead of `toMatchObject`. The owner chose
+  DISC-24 reading (a), so the tower shift helps the team that destroyed the tower: INBOX item
+  ticked, DEC-48 added to the decisions log, no code change. A comma fix in 11 §10. The two open
+  threads (lane field during chases, separation in a blocked chase) were already fixed by the M2b
+  merge, with tests.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  731 passed (731)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: CodeRabbit re-review and approval.

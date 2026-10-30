@@ -145,15 +145,27 @@ describe('GameState', () => {
     state.recordSpawnRequest('dark', 16, 10);
     state.recordSpawnRequest('dark', 16, 16);
 
-    expect(state.teams.dark).toMatchObject({ unitsRequested: 32, unitsSuppressed: 6 });
-    expect(state.teams.light).toMatchObject({ unitsRequested: 0, unitsSuppressed: 0 });
+    expect(state.teams.dark).toEqual({
+      unitsRequested: 32,
+      unitsSuppressed: 6,
+      towersLostByLane: {},
+    });
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
     expect(() => {
       state.recordSpawnRequest('light', 4, 5);
     }).toThrow(RangeError);
     expect(() => {
       state.recordSpawnRequest('light', 4, -1);
     }).toThrow(RangeError);
-    expect(state.teams.light).toMatchObject({ unitsRequested: 0, unitsSuppressed: 0 });
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
   });
 
   it('counts lost lane towers per team and lane', () => {

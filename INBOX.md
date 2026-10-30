@@ -148,13 +148,16 @@ Reply inline (`Decision: …`).
     no reference: a tenth of the lane per tower (`MINION_STRENGTH.shiftPerTowerLost`, `TUNE`),
     capped at 0.9 of the lane (`maxBasePoint`). (1) Not answered: the floor stays at 1.0, as
     DISC-24's "addition on top of base stats" reads.
-- [ ] **DISC-24 — which way the tower shift goes (question for the owner).** PR #45 builds
+- [x] **DISC-24 — which way the tower shift goes (question for the owner).** PR #45 builds
       reading (a) as an interim that is easy to change (one function, `MinionStrengthStep`):
       (a) the team that destroyed the tower gets its base-stat point moved toward the enemy; the
       losing team's point stays put. (b) One shared front: as (a), and the losing team's point
       also moves back toward its own home, so its minions drop to base stats sooner. (c) A
       comeback: the losing team's strong zone grows instead. Which one? Nothing can destroy a
       tower until M2c, so no live match uses it yet.
+  - Decision (SamarjitBhogal, chat, 2026-10-30): (a). The team that destroyed the tower gets its
+    base-stat point moved toward the enemy; the losing team's point stays put. Built in PR #45
+    (`MinionStrengthStep`); recorded as DEC-48 in the decisions log.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
