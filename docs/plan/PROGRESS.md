@@ -2415,3 +2415,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   787 passed (787)"; client "Tests 417 passed (417)"; "✓ built in 252ms"; "Documentation check
   passed."
 - Next step: CodeRabbit re-review; review and merge.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit, line checks) — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's outside-diff finding on PR #47 (`WorldMap.isLineClear` sampling can
+  miss a clipped corner) is valid, but an exact cell walk made minions hold at rift corners and
+  failed the M4 blocked-lane routing test (no wall-avoidance term yet). Deferred by the owner to
+  `CollisionSystem`: a `ponytail:` note on `isLineClear` and an `INBOX.md` FYI item.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 417 passed (417)"; "✓ built in 163ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; review and merge.

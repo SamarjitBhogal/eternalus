@@ -178,6 +178,13 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
     line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
     judgement, which the owner may correct later, so they stay as built.
+- [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
+      `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
+      corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
+      and the M4 blocked-lane routing test fails, because mobs have no wall-avoidance term yet.
+      Deferred by the owner (chat, 2026-10-30) to `CollisionSystem` (10 §8–§9), marked with a
+      `ponytail:` note on `isLineClear`. No unit collides with blocked ground today, so a bot
+      clipping a corner has no visible effect.
 - [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
       `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
       than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it

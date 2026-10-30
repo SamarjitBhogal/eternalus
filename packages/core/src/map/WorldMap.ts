@@ -62,6 +62,11 @@ export class WorldMap {
   /**
    * Whether the first `maxDistance` of the straight line from `(fromX, fromY)` to `(toX, toY)` is
    * walkable, sampled `LINE_STEP_FRACTION` of a cell apart (flow fields, A\* string pulling).
+   *
+   * @remarks ponytail: sampling can miss a line that clips a blocked cell's corner for less than a
+   * step. An exact cell walk (DDA) catches it, but mobs then hold at rift corners, since they have
+   * no wall-avoidance term to slide along them. Switch to the exact walk when `CollisionSystem`
+   * brings that term (10 §8–§9); until then no unit collides with blocked ground either.
    */
   public isLineClear(
     fromX: number,
