@@ -8,7 +8,7 @@ import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
-import type { DefinitionSource } from '../entities/EntityFactory.types';
+import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { WorldMap } from '../map/WorldMap';
@@ -21,14 +21,17 @@ import { MovementSystem } from './MovementSystem';
 import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
 import type { ProgressionContent } from './ProgressionSystem.types';
+import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
 import { StatusEffectSystem } from './StatusEffectSystem';
+import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
- * The tick's systems in their fixed order (architecture 10 §9, 18 §3.2): horde progress,
- * statuses, movement, steering, combat, progression (kill XP), spawning, death, then invariants
- * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
+ * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
+ * progress, statuses, movement, the neighbour index, steering, combat, progression (kill XP),
+ * spawning, death, then invariants last. This is the one place a system is added, at its position
+ * in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
  * step applies to every hit and every status event comes from one place.
@@ -41,8 +44,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
    * @param state - The match; its config sets the tick rate and lane structure count statuses load
    *   with, and systems that listen to its events subscribe here.
    * @param progression - The content kills are priced and levels applied with, injected.
-   * @param hordes - The factory and the definitions the horde systems (architecture 18) need;
-   *   without them nothing marches, steers or spawns on lanes.
+   * @param hordes - The factory (and its definitions), neighbour index and AI the horde systems
+   *   (architecture 11, 18) need; without them nothing decides, marches, steers or spawns on lanes.
    */
   public constructor(
     invariants: InvariantRunner,
@@ -50,7 +53,10 @@ export class DefaultSystemPipeline extends SystemPipeline {
     progression: ProgressionContent,
     hordes?: {
       readonly factory: EntityFactory;
-      readonly definitions: DefinitionSource;
+      /** The index `state.space` exposes; `null` for a match without a map. */
+      readonly space: SpaceIndex | null;
+      /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
+      readonly decide: readonly System[];
     },
   ) {
     const { tickRate, map } = state.config;
@@ -71,16 +77,18 @@ export class DefaultSystemPipeline extends SystemPipeline {
             map.flowFieldCorridorHalfWidth,
           );
     super([
-      ...(hordes === undefined ? [] : [new HordeSystem(state, HORDE_STEERING.marchSpeedFactor)]),
+      ...(hordes === undefined
+        ? []
+        : [...hordes.decide, new HordeSystem(state, HORDE_STEERING.marchSpeedFactor)]),
       new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
       ...(hordes === undefined
         ? []
         : [
+            ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
               { [RANKS_FORMATION.id]: RANKS_FORMATION },
-              HORDE_STEERING.separationRadius,
               flowFields,
             ),
           ]),
@@ -91,7 +99,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             new SpawnSystem(state, hordes.factory, {
-              definitions: hordes.definitions,
+              definitions: hordes.factory.definitions,
               openingWave: OPENING_WAVE,
               waves: SPAWN_WAVES,
               steering: HORDE_STEERING,

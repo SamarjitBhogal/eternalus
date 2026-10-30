@@ -1,4 +1,5 @@
 import { Combat } from '../components/Combat';
+import { ControllerBinding } from '../components/ControllerBinding';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { TeamMembership } from '../components/TeamMembership';
@@ -110,6 +111,16 @@ export class EntityStore {
     return true;
   }
 
+  /** The entity's team, or `undefined` when it is unknown or has no team. */
+  public teamOf(id: EntityId): Team | undefined {
+    return this.entities.get(id)?.findComponent(TeamMembership)?.team;
+  }
+
+  /** The controller that drives the entity and its AI profile, or `undefined` when none does. */
+  public controllerOf(id: EntityId): ControllerBinding | undefined {
+    return this.entities.get(id)?.findComponent(ControllerBinding);
+  }
+
   /** Whether the entity exists and has health left (`false` for anything without `Health`). */
   public isAlive(id: EntityId): boolean {
     return this.entities.get(id)?.findComponent(Health)?.isDead === false;
@@ -128,11 +139,6 @@ export class EntityStore {
     }
     combat.setTarget(targetId);
     return true;
-  }
-
-  /** The entity's team, or `undefined` when it is unknown or has no team. */
-  public teamOf(id: EntityId): Team | undefined {
-    return this.entities.get(id)?.findComponent(TeamMembership)?.team;
   }
 
   /** Visits every entity in insertion order. Entities removed during the walk are skipped. */

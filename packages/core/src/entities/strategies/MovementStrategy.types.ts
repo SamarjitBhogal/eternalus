@@ -2,12 +2,12 @@ import type { Vec2 } from '../../utils/geometry.types';
 import type { MutableVec2 } from '../../utils/vec2.types';
 
 /**
- * Finds the items near a point. `physics/SpatialHash` satisfies it; the port exists because
- * `entities/` may import only shapes from `physics/` (architecture 02 §2).
+ * Finds the units near a point. `state.space` satisfies it; the port keeps `entities/` free of
+ * `physics/` (architecture 02 §2).
  */
 type NeighbourQuery = {
-  /** Writes the indexes of the items near `(x, y)` into `out` and returns how many it wrote. */
-  collectNear(x: number, y: number, radius: number, out: Int32Array): number;
+  /** Writes the indexes within `radius` of `(x, y)` into `out`, ascending; returns the count. */
+  queryCircle(x: number, y: number, radius: number, out: Int32Array): number;
 };
 
 /**
@@ -26,9 +26,8 @@ export type FlowQuery = {
  * every buffer and refills them each tick; a strategy reads them and keeps nothing.
  */
 export type MovementContext = {
-  /** Every unit's position this tick, by index. */
-  readonly xs: Float64Array;
-  readonly ys: Float64Array;
+  /** Unit `i` is at `(positions[2i], positions[2i + 1])`. */
+  readonly positions: Float64Array;
   readonly neighbours: NeighbourQuery;
   /** Scratch for neighbour indexes, at least as long as the crowd. */
   readonly found: Int32Array;
