@@ -1815,3 +1815,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   692 passed (692)"; client "Tests 415 passed (415)"; "✓ built in 234ms"; "Documentation check
   passed."
 - Next step: merge into M5a (#45) and M3 (#46).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m3-bot-laners — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M2b into PR #46 and answered its CodeRabbit threads. Owner
+  decisions recorded in INBOX (M1 item): first heavy horde at the countdown's end; horde
+  membership only in `state.hordes`, so doc 18 §3.2, §4, §9 and 15's invariant drop `hordeId`.
+  Guard tests now assert outcomes (`HordeSystem` without a map, `PathingSystem` unknown formation,
+  no map, no horde) and the horde invariant test checks one violation's id and entity.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  718 passed (718)"; client "Tests 416 passed (416)"; "✓ built in 207ms"; "Documentation check
+  passed."
+- Next step: merge into M8 (#47).

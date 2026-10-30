@@ -125,28 +125,54 @@ describe('PathingSystem', () => {
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
-  it('does nothing without a map or index, without hordes or with an unknown formation', () => {
+  describe('leaves every heading alone', () => {
+    const setUpMember = (formationId: string, isMapped = true) => {
+      const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+      const state = new GameState(
+        createDefaultGameConfig(),
+        1,
+        isMapped ? TWO_LANE_MAP : null,
+        space,
+      );
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      const minion = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 30, y: 30 },
+      });
+      state.entities.add(minion);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId,
+        memberIds: [minion.id],
+        progress: 40,
+      });
+      space.begin(state.entities.size);
+      space.add(minion.id, 30, 30);
+      space.commit();
+      return { state, heading: () => minion.getComponent(Movement).heading };
+    };
     const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
-    const state = new GameState(
-      createDefaultGameConfig(),
-      1,
-      TWO_LANE_MAP,
-      new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2),
-    );
-    state.hordes.add({
-      id: 'horde-1',
-      team: 'light',
-      weightClass: 'light',
-      lane: 'lane-0',
-      formationId: 'wedge',
-      memberIds: ['entity-1'],
-      progress: 0,
+
+    it('for a horde whose formation is unknown', () => {
+      const { state, heading } = setUpMember('wedge');
+      system.update({ state, logger });
+      expect(heading()).toEqual({ x: 0, y: 0 });
     });
 
-    expect(() => {
-      system.update({ state: new GameState(createDefaultGameConfig(), 1), logger });
-      system.update({ state: new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP), logger });
+    it('in a match without a map', () => {
+      const { state, heading } = setUpMember('ranks', false);
       system.update({ state, logger });
-    }).not.toThrow();
+      expect(heading()).toEqual({ x: 0, y: 0 });
+    });
+
+    it('for a unit outside any horde', () => {
+      const { state, heading } = setUpMember('ranks');
+      state.hordes.removeMember(state.hordes.get('horde-1')?.memberIds[0] ?? '');
+      system.update({ state, logger });
+      expect(heading()).toEqual({ x: 0, y: 0 });
+    });
   });
 });
