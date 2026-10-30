@@ -141,7 +141,7 @@ it('same seed and commands produce the same state hash', () => {
 - **Requirement.** Every match is reproducible from `{ seed, contentVersion, coreVersion,
 commands }` (ES-04); every build is reproducible from the committed lockfile (`npm ci` fails on
   drift), exact versions (`save-exact`), the pinned Node version (`.nvmrc`, `engine-strict`) and
-  LF line endings; CI runs the identical `npm run check` on Linux and Windows; tests need no
+  LF line endings; CI runs the identical `npm run check` on Linux and Windows (macOS: local full check, ADR 0019); tests need no
   network and no real time. A bug report is a seed plus a command log, not a description.
 
 ## Security

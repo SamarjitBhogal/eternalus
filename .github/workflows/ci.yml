@@ -1,8 +1,9 @@
 # The steps below mirror `npm run check` one-to-one so a failure points at
 # exactly one tool. If you change the "check" script in package.json, change this file too.
 #
-# The job runs on Linux and Windows. macOS is left out to save CI minutes: it behaves like Linux
-# for this Node tooling, and the git hooks plus the local `npm run check` cover macOS developers.
+# The job runs on Linux and Windows. macOS is left out to save CI minutes (ADR 0019): it behaves
+# like Linux for this Node tooling, and macOS developers run the full `npm run check` locally
+# (the git hooks run only `check:quick`).
 name: CI
 
 on:
