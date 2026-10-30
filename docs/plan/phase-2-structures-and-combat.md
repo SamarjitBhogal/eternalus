@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-29
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -255,7 +255,7 @@ Owner: _ (each sprint adds its own; one person wires the soak). Week 5.
 3. Architecture doc 07 and reference doc 03 match the code, or an ADR records the deviation.
 4. Demo: a reviewer razes a SpawnerTower with debug damage, watches wall bars drop on the HUD
    and the minimap, opens a gate, fires a turret manually and captures a checkpoint.
-5. Phase PR approved (sholtzman + client lane lead), CI green on three OSes, merged by
+5. Phase PR approved (sholtzman + client lane lead), CI green on Linux and Windows, merged by
    SamarjitBhogal.
 
 ## Risks
