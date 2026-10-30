@@ -415,8 +415,9 @@ without a new controller. Only the home changes, and it is data on the spawning 
   from its defenders.
 - Neither kind joins a horde (MS-25 covers lane minions only). A mob on a team counts against that
   team's unit cap (§3.4).
-- `GuardWithinLeashInvariant` measures every leashed mob from its own home, so it covers camp
-  mobs and defenders without change.
+- `GuardWithinLeashInvariant` (15 §3) is defined for tower guards, measured from the structure's
+  `GuardPlan.leashRadius`. Covering camp mobs and checkpoint defenders changes that definition and
+  its tests (M6); defenders stay uncovered until their leash radius is decided (§10, item 4).
 
 ## 8. Bot Legends: lane assignment (MS-20)
 

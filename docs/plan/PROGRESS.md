@@ -1839,3 +1839,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 162ms"; "Documentation check
   passed."
 - Next step: merge into M2b (#44) and up the stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/minion-plan-all-enemy-ai — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit round on PRs #43 and #47. Doc 18 §7.1 no longer says
+  `GuardWithinLeashInvariant` covers camp mobs and defenders unchanged (doc 15 defines it for tower
+  guards; extending it is M6 work, defenders wait on §10 item 4). The minion plan's M6 blockers add
+  the owner's answer on the defenders' leash and unowned-point team; its description and purpose
+  exclude turrets as well as bosses, matching the coverage table. Docs index regenerated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  688 passed (688)"; client "Tests 415 passed (415)"; "✓ built in 159ms"; "Documentation check
+  passed."
+- Next step: merge up the stack.
