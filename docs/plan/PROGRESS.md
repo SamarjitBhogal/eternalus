@@ -2028,5 +2028,11 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   respawn); `GuardRoster` emits `camp-cleared` (new in doc 03's catalogue); guard plans are looked
   up by structure definition id; posts may be neutral and skip the unit cap. Checkpoint defenders
   not built: `CaptureSystem` is only on PR #49, which conflicts with the minion stack (INBOX).
-- Checks run: see the pre-PR gate line below.
-- Next step: critic and ponytail, then the PR.
+  INBOX notes record the two earlier minion items as applied by their `Recommendation:`s.
+- Pre-PR gate: critic round 1 had one blocker (no test of a neutral camp mob through
+  `GuardController`), now tested with a camp-post leash invariant case; doc 15's leash row covers
+  camp mobs; the one-way aggro between neutral and team units is an INBOX question. Ponytail: lean.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  768 passed (768)"; client "Tests 416 passed (416)"; "✓ built in 144ms"; "Documentation check
+  passed."
+- Next step: the owner's INBOX answers; checkpoint defenders once PR #49 lands.

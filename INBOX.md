@@ -26,8 +26,12 @@ Reply inline (`Decision: …`).
       light, medium 2 medium + 2 light, heavy 1 heavy + 2 medium (balancing.md); 6 m leash; the
       whole group respawns 120 s after its last mob dies, and `camp-cleared` fires then. A camp
       never stays gone. Camp mobs use the minion stats and `xpValue` of their class (no reference
-      gives them their own); the 50 XP clear bonus waits for `ProgressionSystem`. Approve, or say
-      what to change.
+      gives them their own); the 50 XP clear bonus waits for `ProgressionSystem`. (3) **One-way
+      aggro (needs your decision):** `Perception` never offers neutral units as targets, so lane
+      minions, guards and bots ignore camp mobs, while camp mobs attack light and dark units within
+      4 m of their posts. A horde passing a camp near its lane would take hits and not fight back.
+      Should lane minions fight camp mobs that attack them, or ignore camps entirely (then camp
+      mobs should not attack minions either)? Approve, or say what to change.
 
 - [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
       blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
@@ -164,6 +168,10 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §3 stand-in). Details: doc 18 §10.
+  - Agent note (overnight 2026-10-30, applied per your instruction to take the
+    `Recommendation:`s): (1) the three terms, one third each and the middle-lane tie-break are
+    built in full in M2c (#56), with the worked example as a test; (2) kept as built: sizes from
+    `hordeSizes`, cadence per spawner. Both still need your sign-off to close.
 - [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
@@ -172,6 +180,9 @@ Reply inline (`Decision: …`).
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
       to the store lookup.
+  - Agent note (overnight 2026-10-30, applied per your instruction): (1) the first heavy horde
+    leaves when the countdown ends (the `Recommendation:`), as built; (2) the store lookup stays,
+    doc text unchanged until you sign off.
 - [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
       "never mutate state", yet a brain's `memory` and `rngState` change with each decision
       (`MinionController`'s FSM state and timers, M2b). Should `decide` return

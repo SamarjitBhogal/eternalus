@@ -8,6 +8,7 @@ import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { BLOCKED_LANE_MAP } from './map/__fixtures__/blockedLaneMap';
 import { MapGenerator } from './map/MapGenerator';
+import { GUARD_PLANS } from './content/structures/guardPlans';
 import { OPENING_WAVE } from './content/structures/spawnWaves';
 import { WorldMap } from './map/WorldMap';
 import { Simulation } from './Simulation';
@@ -341,7 +342,12 @@ describe('Simulation structures', () => {
     expect(campMobs()).toEqual([]);
 
     run(simulation, 2);
-    expect(campMobs().length).toBeGreaterThanOrEqual(2 * config.map.campsPerSide * 3);
+    const smallestCamp = Math.min(
+      ...Object.entries(GUARD_PLANS)
+        .filter(([id]) => id.startsWith('forest-camp-'))
+        .map(([, { table }]) => table.reduce((sum, { count }) => sum + count, 0)),
+    );
+    expect(campMobs().length).toBeGreaterThanOrEqual(2 * config.map.campsPerSide * smallestCamp);
     expect(campMobs().every(({ team }) => team === 'neutral')).toBe(true);
     expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
   });

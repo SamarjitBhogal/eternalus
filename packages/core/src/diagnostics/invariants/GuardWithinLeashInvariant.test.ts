@@ -61,4 +61,38 @@ describe('GuardWithinLeashInvariant', () => {
       }),
     ]);
   });
+
+  it('covers a neutral camp mob too (18 §7.1)', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const mob = factory.create('light-mob', 'light-camp-mob', {
+      team: 'neutral',
+      position: { x: 10, y: 0 },
+    });
+    state.entities.add(mob);
+    state.guards.add({
+      id: 'camp:0',
+      homeId: 'camp',
+      team: 'neutral',
+      mobId: 'light-camp-mob',
+      row: 0,
+      indexInRow: 0,
+      postX: 3,
+      postY: 0,
+      homeX: 0,
+      homeY: 0,
+      homeRadius: 1,
+      leashRadius: 6,
+      leashTolerance: 2,
+      respawnTicks: 3600,
+    });
+    state.guards.fill(0, mob.id);
+
+    expect(invariant.check(state)).toEqual([
+      expect.objectContaining({
+        entityId: mob.id,
+        details: { homeId: 'camp', beyond: 9, allowed: 8 },
+      }),
+    ]);
+  });
 });

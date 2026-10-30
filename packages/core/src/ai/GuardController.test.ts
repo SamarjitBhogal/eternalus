@@ -155,4 +155,68 @@ describe('GuardController', () => {
       }),
     ).toThrow('names aggro profile "nope"');
   });
+
+  it('holds a neutral camp mob at its camp: it attacks either team and returns past its leash', () => {
+    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const add = (team: 'light' | 'dark' | 'neutral', x: number, definitionId: string) => {
+      const entity = factory.create('light-mob', definitionId, { team, position: { x, y: 20 } });
+      state.entities.add(entity);
+      return entity;
+    };
+    // A camp of radius 1 at (100, 20), post 3 out, leash 6 from its edge.
+    const mob = add('neutral', 103, 'light-camp-mob');
+    state.guards.add({
+      id: 'camp:0',
+      homeId: 'camp',
+      team: 'neutral',
+      mobId: 'light-camp-mob',
+      row: 0,
+      indexInRow: 0,
+      postX: 103,
+      postY: 20,
+      homeX: 100,
+      homeY: 20,
+      homeRadius: 1,
+      leashRadius: 6,
+      leashTolerance: 2,
+      respawnTicks: 3600,
+    });
+    state.guards.fill(0, mob.id);
+    const decide = (memory: AiMemory = {}) => {
+      space.begin(state.entities.size);
+      state.entities.forEach((entity) => {
+        const { x, y } = entity.getComponent(Transform).position;
+        space.add(entity.id, x, y);
+      });
+      space.commit();
+      return controller.decide({
+        state,
+        entityId: mob.id,
+        perception: new Perception(state),
+        brain: {
+          controllerId: 'guard',
+          profileId: 'camp-mob',
+          memory,
+          rngState: { seed: 1, words: [1, 2, 3, 4] as const },
+        },
+      });
+    };
+    const intruder = add('light', 106, 'light-minion');
+
+    expect(decide().commands).toEqual([
+      { type: 'attack-target', actorId: mob.id, targetId: intruder.id },
+    ]);
+
+    // Dragged 7.5 past the camp's edge, past its 6 m leash: it stops and returns.
+    mob.getComponent(Transform).moveBy({ x: 5.5, y: 0 });
+    const engaging = { fsm: 'engaging', targetId: intruder.id, aggroUntilTick: 1000 };
+    expect(decide(engaging)).toMatchObject({
+      commands: [{ type: 'stop', actorId: mob.id }],
+      memory: { fsm: 'returning' },
+    });
+    mob.getComponent(Transform).moveBy({ x: -5.5, y: 0 });
+    expect(decide({ fsm: 'returning' }).memory).toMatchObject({ fsm: 'holding' });
+  });
 });
