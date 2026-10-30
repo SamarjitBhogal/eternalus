@@ -136,20 +136,17 @@ export const TEST_CONTENT: DisplayCatalogue = {
           ratings: { damage: 152 / 395, support: 333 / 395, control: 201 / 395 },
           details: [
             {
-              slot: 'signature',
-              displayName: 'Aetheric Recall',
-              iconAssetId: 'magus-detail-aetheric-recall',
-            },
-            {
-              slot: 'specialty',
-              displayName: 'Unison Ward',
-              iconAssetId: 'oracle-detail-unison-ward',
-            },
-            {
               slot: 'ultimate',
               displayName: 'Severed Accord',
               iconAssetId: 'oracle-detail-severed-accord',
             },
+            {
+              slot: 'ability-1',
+              displayName: 'Unison Ward',
+              iconAssetId: 'oracle-detail-unison-ward',
+            },
+            { slot: 'ability-2', displayName: null, iconAssetId: null },
+            { slot: 'ability-3', displayName: null, iconAssetId: null },
           ],
           art: {
             card: 'oracle-card-art',

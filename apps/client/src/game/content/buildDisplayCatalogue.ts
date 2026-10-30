@@ -25,12 +25,18 @@ import type {
   HudPresentation,
 } from './CataloguePresentation.types';
 
-/** Panel order of the detail rows; a card lists the slots its core `detailNames` has. */
+/**
+ * Panel order of the detail rows; a card lists the slots its core `detailNames` has: a class its
+ * three, a Legend the ultimate on top, then abilities 1 to 3 (DEC-65).
+ */
 const DETAIL_SLOT_ORDER: readonly DetailSlot[] = [
   'signature',
   'proficiency',
   'specialty',
   'ultimate',
+  'ability-1',
+  'ability-2',
+  'ability-3',
 ];
 
 /** A locked card's detail rows: the class slots, unnamed and without icons (placeholder rows). */

@@ -25,8 +25,12 @@ export type ClassSelectLayout = 'primary' | 'alternate';
 type CardLook = 'idle' | 'picked';
 /** Figma-baked renders of a class card look (GLASS has no CSS equivalent); a missing look uses the live art. */
 type CardPlates = Readonly<Partial<Record<CardLook, AssetId>>>;
-/** What a detail row stands for; also the key of its icon box in the panel's CSS. */
-export type DetailSlot = 'signature' | 'proficiency' | 'specialty' | 'ultimate';
+/**
+ * What a detail row stands for: a class's default ability, weapon proficiency and specialty, or a
+ * Legend's ultimate and abilities 1 to 3 (DEC-65, "Ultimate / Abilities").
+ */
+export type DetailSlot =
+  'signature' | 'proficiency' | 'specialty' | 'ultimate' | 'ability-1' | 'ability-2' | 'ability-3';
 /** One icon-and-name row of a class or Legend detail list (72:757, 56:47). */
 export type DetailRow = {
   readonly slot: DetailSlot;

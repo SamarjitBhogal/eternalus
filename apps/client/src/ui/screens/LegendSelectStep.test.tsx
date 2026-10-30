@@ -85,9 +85,11 @@ describe('LegendSelectStep', () => {
     expect(html).toContain('>Elarion</h3>');
     expect(html).toContain('>Oracle  ·  Support</p>');
     expect(html).toContain('>A voice of the Unison.</p>');
-    for (const name of ['Aetheric Recall', 'Unison Ward', 'Severed Accord']) {
+    // DEC-65: no Aetheric Recall (the class's default ability) among a Legend's rows.
+    for (const name of ['Severed Accord', 'Unison Ward']) {
       expect(html).toContain(`>${name}<`);
     }
+    expect(html).not.toContain('Aetheric Recall');
     expect([...html.matchAll(/aria-valuenow="(\d+)"/g)].map(([, now]) => now)).toEqual([
       '38',
       '84',

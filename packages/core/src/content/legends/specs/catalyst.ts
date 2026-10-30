@@ -17,5 +17,5 @@ export const CATALYST = {
   roleLabel: null,
   description: null,
   roleRatings: null,
-  detailNames: { signature: null, specialty: null, ultimate: null },
+  detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
 } as const satisfies LegendSpecDefinition;
