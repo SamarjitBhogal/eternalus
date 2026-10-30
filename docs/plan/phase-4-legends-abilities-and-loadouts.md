@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-29
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -46,7 +46,7 @@ Owner: _ (sim lane A). Week 7. Follows [04-entity-architecture.md](../architectu
 
 - [ ] **`Legend` abstract** (3 abilities + ultimate, 2 artifact slots, `Loadout`,
       `Progression`, aether) + **`Warrior`, `Sentinel`, `Magus` concrete** with
-      `LegendDefinition` content; `[Flying]` reserved as a content id with no class. Owner: _.
+      `LegendDefinition` content; `harbinger` reserved as a content id with no class (DEC-59). Owner: _.
       Test: each class spawns with its components; the class chain depth is 3. Done when:
       renaming `Warrior` touches the class, its imports and one display name.
 - [ ] **Sizes and movement profiles** (`TUNE`, game doc "Entity Class Specifics": Warrior ≈
