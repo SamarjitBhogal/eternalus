@@ -941,6 +941,35 @@ The example below is fenced so it is not read as a real entry.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: the critic re-checks; commit and push if it reports no blockers.
 
+### 2026-10-15 — Minion system M1 (marching) — feat/minion-m1-marching (stacked on docs/minion-system-design, uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done (minion plan M1; the human's choices: brains deferred to M2, spawn at the map's
+  tower and Stronghold positions, client wired):
+  - **Prototype escort deleted (DEC-35):** `FollowLeaderController`, `AiSystem`,
+    `Controller.types`, the `Brain` component, the follow-leader profile, the `EntityStore`
+    PROTO helpers, and `Match.spawnEscort` with `PROTOTYPE_ESCORT` in the client.
+  - **Content:** `light-minion` is now the real light lane minion (balancing.md anchors, no
+    controller). New `medium-minion` and `heavy-minion` (`TUNE` placeholders, MS-18), with
+    `MediumMob` and `HeavyMob` classes and registry lines. Also `content/ai/` (horde steering,
+    worst-lane weights) and `content/structures/spawnWaves.ts` (DISC-10).
+  - **State:** `HordeStore`, `LaneRoutes` and the map on `GameState`; hordes are in the state
+    hash, appended only once a horde has existed.
+  - **Systems:** `HordeSystem` (records, membership, leader promotion, dissolve, waypoint
+    progress), `SpatialHash` (`physics/`), `LaneFollowMovementStrategy` with `PathingSystem`,
+    `SpawnSystem` (opening hordes, tower and Stronghold waves, unit cap with the new
+    `spawn-suppressed` event), and `worstLane` (enemy pressure; the towers-lost term is 0 until
+    M2).
+  - **Config:** `GameConfig.match.fallbackWorstLane`, with validation.
+  - **API:** `SimulationOptions.map` (an API change); the client passes the map.
+  - **Design fix found by the scenario test:** a leader that reacted to separation was pushed
+    off its lane by its own followers and the horde never stopped. The leader now ignores
+    neighbours (doc 18 §5.1).
+  - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and
+    stand-ins; doc 03 gains the `spawn-suppressed` event.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 485 passed (485)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review, commit on the human's request, then the pre-PR gate; M2 waits on sprints
+  2.1 and 2.2.
+
 ### 2026-10-16 — Phase 2 / Sprint 1 audit — chore/sprint-1-audit (merge of phase/2 for PR #28) — sholtzman + Claude Code
 
 - What was done: merged `phase/2-sprint-2-work` (`d125cad`, PR #27 on top of #24 and #26) into
@@ -1190,6 +1219,54 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: push the branch so PR #33 shows the merge.
 
+### 2026-10-17 — Minion system M1 refresh — feat/minion-m1-marching (merged docs/minion-system-design, uncommitted) — SamarjitBhogal + Claude Code
+
+- What was done: fast-forwarded this branch to `docs/minion-system-design` (the PR #33 review
+  rework), popped the M1 WIP stash (doc conflicts resolved in favour of the reviewed design) and
+  brought the code in line with the new doc 18:
+  - **Formation (DEC-38):** `content/mobs/formations/ranks.ts`; `PathingSystem` lays out the slots
+    around each horde's anchor and `LaneFollowMovementStrategy` steers every mob, leader included,
+    to its slot with separation from all neighbours (10 §9). The old leader-follow steering and
+    `followDistance` are gone.
+  - **Anchor (18 §4):** `progress` is world units from the horde's own gate; `HordeSystem` advances
+    it at `marchSpeedFactor` of the slowest member's speed and no longer creates records.
+  - **Spawning (DEC-39, DEC-40):** `SpawnSystem` creates members and record in one step, then emits
+    the events; the anchor starts at the lane point nearest the spawn point. The unit cap counts
+    into `GameState.teams` (`unitsRequested`, `unitsSuppressed`), hashed; the `spawn-suppressed`
+    event is removed.
+  - **Worst lane (18 §3.3):** `state/LaneAssessment.ts` (`assessLanes`) with the three terms
+    (structure terms constant until M2), ties to the middle lane; `systems/worstLane`,
+    `WORST_LANE_WEIGHTS` and `GameConfig.match.fallbackWorstLane` are removed.
+  - **Order and ids:** pipeline `hordes → movement → pathing → spawn → death → invariants`, pinned
+    by a test through the new `SystemPipeline.names`; horde members sort in string order.
+  - **Docs:** doc 18 implementation status; plan M1/M2 rows (brains moved to M2) and stand-ins.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 486 passed (486)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review; commit on the human's request; then the pre-PR gate.
+
+### 2026-10-17 — Minion system M1, pre-PR gate — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done (critic on `e814637..508eea0`, the human's choices on four items):
+  - **Blocker fixed:** `LaneFollowMovementStrategy` implements the 04 §4 `MovementStrategy`
+    contract (`desiredVelocity(self, ctx): Vec2`, stateless, writes `ctx.out`), selected by the new
+    `UnitDefinition.movementStrategy` through `entities/strategies/defaultStrategyRegistry.ts`
+    (the shape PR #34 uses, `movement` as its key). `Movement.strategyId` carries the choice from
+    spawn. `SpatialHash.forEachNear` became `collectNear` into a caller buffer, and `entities/`
+    reaches it through a structural port, not an import of `physics/`.
+  - **Deferred removal (03 §4):** `HordeSystem` queues `entity-removed` / `team-changed` ids and
+    drops them at the start of its pass.
+  - **Minor fixes:** helpers and types out of class files (`utils/compareById`,
+    `HordeStore.types`, `LaneRoutes.types`, `SpawnSystem.types`/`.constants`, `PathingSystem.types`);
+    the opening wave is content (`OPENING_WAVE`) and spawns read the kind from the definition
+    through an injected `SpawnPlan`; a type guard instead of a team cast; `weightClass` in the
+    hash; a formation overlap scenario test; doc 18 paths and §3.3 wording, 04 §4 selector name,
+    03 and 10 implementation status, plan stand-ins (insert-ordered `SpatialHash`, linear
+    separation, no hordes in the snapshot); placeholder stats cite the plan instead of MS-18.
+  - **Ponytail:** `spawnHorde` takes the routes instead of checking them again.
+  - **INBOX:** the first heavy horde's start (60 s or 240 s), and the `hordeOf` store lookup
+    instead of a `hordeId` field, raised as better than the design.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 490 passed (490)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: critic re-check, then open the M1 PR stacked on PR #33.
+
 ### 2026-10-17 — Phase 2 sprint 2 / minion docs, DEC renumber — docs/minion-system-design — SamarjitBhogal + Claude Code
 
 - What was done: the owner rulings from the PR #33 review, logged earlier as DEC-38 to DEC-42,
@@ -1199,6 +1276,46 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   written.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 466 passed (466)"; client "Tests 416 passed (416)"; "Documentation check passed."
 - Next step: merge into `feat/minion-m1-marching`.
+
+### 2026-10-17 — Minion system M4 (flow fields) — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
+
+- What was done:
+  - **Fields:** `map/FlowField` (one lane and team: corridor mask, `Uint16Array` integration,
+    `Int8Array` direction, bilinear `directionAt`, `isLineClear`), `map/FlowFieldBuilder` (Dijkstra
+    flood fill from the lane's enemy end, octile costs, no corner cutting, an indexed heap, a cell
+    budget per call, its own buffers swapped in on completion) and `map/LaneFlowFields` (2 ×
+    `numLanes` fields, `markDirty(cells)`, `rebuildDirty(cellBudget)`). The corridor is the band
+    around the lane plus the ground inside the team's wall ring out to the gate (18 §3.2). Ties
+    break by a team preference order mirrored for Dark, so each lane's two fields are exact mirror
+    images; blocked corridor cells beside open ground point back to it (the wall-avoidance stand-in).
+  - **Steering:** `LaneFollowMovementStrategy` follows the field while the next `blockedLookAhead`
+    (new `HORDE_STEERING` content) of the line to its slot is blocked, through an optional
+    `MovementContext.flow` port; `PathingSystem` takes the fields (optional) and rebuilds dirty
+    ones each tick; `DefaultSystemPipeline` builds the `WorldMap` and the fields from the map.
+  - **Config:** `map.flowFieldCorridorHalfWidth` and `map.flowFieldCellBudget` (`TUNE`), validated;
+    the WANDER_SEED_7 replay fixture gains both fields (its hashes are unchanged).
+  - **Tests:** field counts, reach and downhill directions, mirror symmetry for 3 and 5 lanes; a
+    gate change re-routed within `ceil(cells / budget)` ticks with the old field serving; the
+    strategy's switch; hordes routed around a block; every opening horde reaches its enemy end for
+    3 and 5 lanes (under 1% of samples on unwalkable ground, about 8% without the fields); hash
+    stability on the 5-lane map.
+  - **Docs:** doc 18 status, 10 §12, 06 §10, 03 §10 table; plan §2 stand-ins (the polyline-only row
+    removed; no dirty trigger and no wall-avoidance term added).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 512 passed (512)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: review; commit on the human's request; then the pre-PR gate (critic, ponytail).
+
+### 2026-10-17 — Minion system M4, pre-PR gate — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
+
+- What was done: the critic (`architecture-reviewer`, `62e8a61..4bf6e7b`) approved; its minor
+  findings are fixed: `PathingSystem` builds one movement context per tick and sets each horde's
+  `flow` on it (`MovementContext.flow` is now `FlowQuery | null`), the saddle fallback in
+  `FlowField.directionAt` computes its cell inline (no allocation on the hot path), and the
+  rebuild test asserts the exact queue size after a repeated `markDirty`. `ponytail:` notes now
+  name the whole-grid reset in `FlowFieldBuilder.begin`, the `UNREACHED` cost ceiling and the
+  wall-pointing stand-in. Not done: the optional DRY helper for the blocking rule.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 512 passed (512)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: draft PR to `phase/2-sprint-2-work`; merge after #33 and #38, then resolve the
+  overlap with M2a (#39).
 
 ### 2026-10-22 — Phase 2 / sprint 2.2 — feat/status-effects (DEC-40 to DEC-42) — Claudio + Claude Code
 
@@ -1297,6 +1414,32 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."
 - Next step: quick `/pr-review`, then merge PR #36 into `phase/2-sprint-2-work`.
 
+### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m1-marching (merge of phase 2) — SamarjitBhogal + Claude Code
+
+- What was done: merged `origin/phase/2-sprint-2-work` (`230a330`: PRs #31, #34, #35, #36) into
+  PR #38's branch. 12 conflicts. `defaultStrategyRegistry.ts` now holds both the `movement` and
+  `attack` keys (claudiodh's note on #38). `DefaultSystemPipeline` takes the phase branch's
+  required `state` and progression content, plus this branch's optional horde wiring; the order is
+  hordes → status effects → movement → pathing → combat → progression → spawn → death →
+  invariants, pinned by its test. The PROTO-01 pieces the phase branch still carried (the `decide`
+  hook, `Brain` on `Unit`, the escort test definition, `EntityStore.positionOf` / `isSteering` /
+  `controllerOf`) stay deleted; `isAlive`, `setAttackTarget` and `teamOf` stay for combat. The
+  medium and heavy minions get `xpValue` 45 and 120 (`balancing.md` "XP sources"), now required.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 609 passed (609)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: carry this merge into #39 (M2a) and #40 (M4).
+
+### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields (merge of M1 and phase 2) — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated `feat/minion-m1-marching` (`68a6e31`, which carries
+  `origin/phase/2-sprint-2-work` at `230a330`) into PR #40's branch. 2 conflicts: this log (both
+  sides kept) and `DefaultSystemPipeline`, which keeps M1's merged signature and order and builds
+  the lane flow fields only when the horde wiring is passed and the match has a map, handing them
+  to `PathingSystem` as before.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 631 passed (631)"; client "Tests 415 passed (415)"; "Documentation check passed."
+- Next step: merge #38 and #39, then resolve this PR's overlap with M2a (see the PR's merge order).
+
 ### 2026-10-25 — Phase 2 / SCRUM-183 — feat/weapons (damage from weapons) — Claudio + Claude Code
 
 - What: merged `origin/phase/2-sprint-2-work` (PRs #31, #34, #35, #36) by a plain merge (no
@@ -1334,7 +1477,7 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   validates against CodeRabbit's `schema.v2.json`. `docs/process/git-workflow.md` §review
   rules notes it.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; "Documentation
-  check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 227ms".
+  check passed."; core "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 225ms".
 - Next step: the owner makes CI a required status check on `main` and `phase/*` (CodeRabbit
   cannot run `npm run check`), then confirms CodeRabbit reviews this branch's PR.
 
@@ -1404,6 +1547,82 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 182ms"; "Documentation
   check passed."
 - Next step: add the three CI checks as required on `main`.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: CI matrix drops `macos-latest` and keeps `ubuntu-latest` and `windows-latest`,
+  to save Actions minutes on the education plan. macOS behaves like Linux for the Node tooling,
+  and the git hooks plus the local `npm run check` still run on macOS machines. `guardrails.md`,
+  `git-workflow.md`, `sdlc.md`, the PR checklist, the harness doc, phase exit criteria and
+  NFR-019 / ES-07 updated to match (requirement change needs sholtzman sign-off on the PR).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 225ms"; "Documentation
+  check passed."
+- Next step: the repo admin removes the `npm run check (macos-latest)` required check from the
+  `main` protection and the "phase branches" ruleset.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit review on PR #50. Added ADR 0019 (proposed) because requirement
+  changes need an ADR plus product-owner acceptance (`docs/requirements/README.md`). NFR-019,
+  ES-07 and the `ci.yml` comment now say macOS developers run the full check locally; the git
+  hooks run only `check:quick` and are not full coverage.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 230ms"; "Documentation
+  check passed."
+- Next step: sholtzman accepts ADR 0019 on the PR (then flip its status to accepted); the admin
+  removes the macOS required check.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
+
+- What was done: ADR 0019 marked accepted by the repository admin (SamarjitBhogal); no separate
+  product-owner sign-off needed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 608 passed (608)"; client "Tests 416 passed (416)"; "✓ built in 226ms"; "Documentation
+  check passed."
+- Next step: the admin removes the `npm run check (macos-latest)` required check, then PR #50
+  merges.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (CI drops macOS, ADR 0019) into PR #38 and
+  answered its CodeRabbit threads: `StateHasher.test.ts` pins the no-horde hash input and covers
+  horde progress, member ids, `issuedIds`, `unitsRequested` and `unitsSuppressed`; architecture 03
+  no longer says `GameState` lacks `recentCommands`; architecture 10 says `SpatialHash` cells
+  yield items in reverse insert order.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 222ms"; "Documentation check passed."
+- Next step: merge this into the stacked minion PRs (#39, #40 and up).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit on PR #40 (which carries M1's commits): team spawn counters change
+  only through `GameState.recordSpawnRequest`, which rejects a spawned count outside
+  0..requested (architecture 03 §2); `TeamState` fields are readonly and `SpawnSystem` calls it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  639 passed (639)"; client "Tests 415 passed (415)"; "✓ built in 236ms"; "Documentation check
+  passed."
+- Next step: merge into M2a (#39) and M4 (#40) and up the stack.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m4-flow-fields — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated M1 (with `phase/2-sprint-2-work`, the M1 CodeRabbit fixes and
+  the `GameState.recordSpawnRequest` counter guard) into PR #40 and answered its CodeRabbit
+  threads. Spawn-wave validation landed in M2a (PR #39) and reaches M4 through the merge order.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  661 passed (661)"; client "Tests 415 passed (415)"; "✓ built in 229ms"; "Documentation check
+  passed."
+- Next step: merge into M8 (#47) after M3.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m1-marching — SamarjitBhogal + Claude Code
+
+- What was done: second CodeRabbit round (threads on #38, #40, #44, #45). `EntityStore.countOnTeam`
+  counts living units only, so a unit killed earlier in the tick no longer blocks a wave under the
+  cap before `DeathSystem` removes it (regression test fails on the old count). `StateHasher`
+  tests cover counters without any horde and change only `memberIds` (two-member horde).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  641 passed (641)"; client "Tests 415 passed (415)"; "✓ built in 319ms"; "Documentation check
+  passed."
+- Next step: merge up the stack again.
 
 ### 2026-10-29 — Phase 2 / sprint 2.2 — feat/object-pool — claudiodh + Claude Code
 

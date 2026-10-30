@@ -41,7 +41,16 @@ describe('createDefaultEntityRegistry', () => {
   it('registers every shipped kind: Legends, mobs, obstacles and projectiles', () => {
     const registry = createDefaultEntityRegistry();
 
-    for (const kind of ['warrior', 'sentinel', 'magus', 'light-mob', 'obstacle', 'projectile']) {
+    for (const kind of [
+      'warrior',
+      'sentinel',
+      'magus',
+      'light-mob',
+      'medium-mob',
+      'heavy-mob',
+      'obstacle',
+      'projectile',
+    ]) {
       expect(registry.has(kind)).toBe(true);
     }
   });

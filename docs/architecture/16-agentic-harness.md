@@ -4,7 +4,7 @@ description: The coding-agent harness as it exists in the repository (instructio
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-29
 tags: [architecture, agents, harness, hooks, skills, verification]
 paths: ['.claude/**', '.agents/**', 'scripts/hooks/**', 'docs/agents/**']
 related:
@@ -57,7 +57,7 @@ flowchart LR
   G --> G2[pre-PR gate, ADR 0010: critic, ponytail, npm run check again]
   G2 --> H[PR into the phase branch]
   H --> I[pr-review or architecture-reviewer, then a human]
-  I --> J[CI on three OSes]
+  I --> J[CI on Linux and Windows]
 ```
 
 ## 2. The files, by path and purpose
@@ -87,7 +87,7 @@ flowchart LR
 | `docs/plan/PROGRESS.md`                                                        | The append-only session log (§7)                                                                                                                                                                   | memory  |
 | `docs/plan/phase-<n>-*.md`                                                     | The sprint checklists: the feature list with pass/fail (§7)                                                                                                                                        | memory  |
 | `.githooks/pre-commit`, `.githooks/pre-push`                                   | `npm run check:quick` for every human and every tool, hooks or not (`core.hooksPath`)                                                                                                              | sensor  |
-| `.github/workflows/ci.yml`                                                     | `npm run check` as named steps on Ubuntu, macOS and Windows (§8)                                                                                                                                   | sensor  |
+| `.github/workflows/ci.yml`                                                     | `npm run check` as named steps on Ubuntu and Windows (§8)                                                                                                                                          | sensor  |
 | `scripts/docs/check-docs.mjs`                                                  | Frontmatter, relative links and index validation behind `npm run docs:check`, inside `npm run check` and CI (§8)                                                                                   | sensor  |
 
 ## 3. Instruction files: one canonical `AGENTS.md`, thin pointers
@@ -251,7 +251,7 @@ cost: a failure lower down makes the higher rungs noise.
 | 5    | `npm run test:coverage`                               | Behaviour, determinism (seeded shuffle), contract suites; coverage thresholds that only go up                                                            | `npm run check`; the `test-writer` subagent                                           |
 | 6    | `npm run build`                                       | `tsc -b` emit plus the Vite build                                                                                                                        | `npm run check`                                                                       |
 | 7    | `npm run docs:check` (`scripts/docs/check-docs.mjs`)  | Frontmatter keys and values, `title` equals the H1, relative links resolve, the index in `docs/README.md` is in sync, `last-reviewed` older than 90 days | `npm run check` and a named CI step                                                   |
-| 8    | `.github/workflows/ci.yml`                            | The same steps as `npm run check`, one named step per tool, on Ubuntu, macOS and Windows; `npm ci` proves the lockfile                                   | Every push and PR; branch protection makes it binding                                 |
+| 8    | `.github/workflows/ci.yml`                            | The same steps as `npm run check`, one named step per tool, on Ubuntu and Windows; `npm ci` proves the lockfile                                          | Every push and PR; branch protection makes it binding                                 |
 
 `npm run check` (`format:check`, `lint`, `typecheck`, `knip`, `test:coverage`, `build`, and
 `docs:check`) is the definition of done, and the agent quotes its verbatim tail in

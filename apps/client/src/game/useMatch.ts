@@ -64,7 +64,7 @@ export function useMatch(canvasRef: RefObject<HTMLCanvasElement | null>): {
     let match: Match;
     try {
       match = new Match({
-        simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger }),
+        simulation: new Simulation({ config, seed: PLACEHOLDER_MATCH_SEED, logger, map }),
         map,
         tickRate: config.tickRate,
         scheduler: new RafFrameScheduler({

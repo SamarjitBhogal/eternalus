@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-29
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -270,6 +270,20 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   both directions plus 20 Legends; zero anomalies; hash/field buffers are never reallocated
   (counters flat); p95 tick time recorded for the `08` budget table.
 - **Regression**: every replay-found bug adds a fixture (seed + commands + expected hashes).
+
+## 12. Implementation status
+
+`physics/SpatialHash` (minion plan M1) is a uniform grid with linked-list cells:
+`insert(index, x, y)` per tick and `collectNear(x, y, radius, out)`, which yields items in reverse
+insert order per cell (each cell is a LIFO list), not §5's `rebuild` / `queryCircle` with id-sorted results. It is deterministic
+(insert order follows store order). Horde separation (18 §5.2) falls off linearly with distance,
+not as 1/r. Both conform when `Perception` (minion plan M2) needs id-ordered queries.
+
+Flow-field follow (§9, minion plan M4) is built for lane hordes: `LaneFollowMovementStrategy` takes
+the bilinear field direction instead of its slot while the next `blockedLookAhead` (content) of the
+straight line to the slot crosses an unwalkable cell. There is no `CollisionSystem` and no
+wall-avoidance term yet; until they arrive, the blocked corridor cells beside open ground point
+back out of it, so the field itself leads a unit pushed into a wall back to open ground.
 
 ## Related
 

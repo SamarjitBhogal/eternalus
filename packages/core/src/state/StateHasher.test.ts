@@ -10,6 +10,7 @@ import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
+import { fnv1a } from '../utils/fnv1a';
 import { GameState } from './GameState';
 import { StateHasher } from './StateHasher';
 
@@ -158,5 +159,84 @@ describe('StateHasher', () => {
     change(scout);
 
     expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  describe('hordes', () => {
+    const stateWithHorde = (): GameState => {
+      const { state } = stateWithSoldier();
+      state.hordes.add({
+        id: state.hordes.nextId(),
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        // `entity-2` need not exist: the store takes member ids as given.
+        memberIds: ['entity-1', 'entity-2'],
+        progress: 0,
+      });
+      state.recordSpawnRequest('light', 2, 2);
+      return state;
+    };
+
+    it('hashes a match without hordes from tick, phase, RNG state and entities only', () => {
+      const { state, soldier } = stateWithSoldier();
+      const legacy = [
+        state.tick,
+        state.phase,
+        state.rng.getState(),
+        [
+          [
+            soldier.id,
+            soldier.kind,
+            soldier.definitionId,
+            'light',
+            [3, 4, 0.5],
+            [100, 100],
+            [0, 0, 0],
+          ],
+        ],
+      ];
+      expect(hasher.hash(state)).toBe(fnv1a(JSON.stringify(legacy)));
+    });
+
+    it('changes once a horde exists', () => {
+      expect(hasher.hash(stateWithHorde())).not.toBe(hasher.hash(stateWithSoldier().state));
+    });
+
+    it.each<[string, (state: GameState) => void]>([
+      [
+        'horde progress',
+        (state) => {
+          state.hordes.setProgress('horde-1', 0.5);
+        },
+      ],
+      // Dropping the follower keeps the horde and its leader: only `memberIds` changes.
+      ['the member ids', (state) => state.hordes.removeMember('entity-2')],
+      ['issuedIds', (state) => state.hordes.nextId()],
+    ])('changes when %s changes', (_, change) => {
+      const state = stateWithHorde();
+      const before = hasher.hash(state);
+      change(state);
+      expect(hasher.hash(state)).not.toBe(before);
+    });
+
+    it('hashes the spawn counters even before any horde exists (a wave suppressed whole)', () => {
+      const withRequest = (requested: number, spawned: number): number => {
+        const { state } = stateWithSoldier();
+        state.recordSpawnRequest('dark', requested, spawned);
+        return hasher.hash(state);
+      };
+      const none = hasher.hash(stateWithSoldier().state);
+      expect(new Set([none, withRequest(2, 0), withRequest(3, 0), withRequest(3, 1)]).size).toBe(4);
+    });
+
+    it('tells apart spawn counters that differ only in unitsRequested or unitsSuppressed', () => {
+      const withRequest = (requested: number, spawned: number): number => {
+        const state = stateWithHorde();
+        state.recordSpawnRequest('dark', requested, spawned);
+        return hasher.hash(state);
+      };
+      expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
+    });
   });
 });
