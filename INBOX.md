@@ -118,7 +118,7 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §3 stand-in). Details: doc 18 §10.
-- [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
+- [x] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
       after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
@@ -126,6 +126,10 @@ Reply inline (`Decision: …`).
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
       to the store lookup.
+  - Decision (SamarjitBhogal, chat, 2026-10-29): (1) the first heavy horde leaves when the
+    countdown ends, like the towers' waves (the code's current schedule). (2) Signed off: horde
+    membership lives only in `state.hordes`; doc 18 §3.2, §4, §9 and 15's invariant updated in
+    `feat/minion-m3-bot-laners`.
 - [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
       "never mutate state", yet a brain's `memory` and `rngState` change with each decision
       (`MinionController`'s FSM state and timers, M2b). Should `decide` return

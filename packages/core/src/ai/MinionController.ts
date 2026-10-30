@@ -1,6 +1,6 @@
 import type { AiMemory } from '../state/AiState.types';
 import type { EntityId } from '../state/EntityStore.types';
-import { formationSlot } from '../state/formationSlot';
+import { followerIndex, formationSlot } from '../state/formationSlot';
 import type { MutableVec2 } from '../utils/vec2.types';
 import { aggroRank } from './aggroRank';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
@@ -176,15 +176,7 @@ export class MinionController implements Controller {
       return true;
     }
     state.routes.pose(horde.lane, horde.team, horde.progress, this.anchor, this.forward);
-    // Followers ahead of this member in `memberIds`, the leader left out (18 §5.1).
-    let ahead = 0;
-    for (const member of horde.memberIds) {
-      if (member === id) {
-        break;
-      }
-      ahead += member === horde.leaderId ? 0 : 1;
-    }
-    const follower = id === horde.leaderId ? -1 : ahead;
+    const follower = followerIndex(horde.memberIds, horde.leaderId, id);
     formationSlot(this.anchor, this.forward, follower, formation, this.slot);
     const dx = this.slot.x - position.x;
     const dy = this.slot.y - position.y;

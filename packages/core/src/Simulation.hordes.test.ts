@@ -9,6 +9,7 @@ import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { BLOCKED_LANE_MAP } from './map/__fixtures__/blockedLaneMap';
 import { MapGenerator } from './map/MapGenerator';
 import { WorldMap } from './map/WorldMap';
+import { OPENING_WAVE } from './content/structures/spawnWaves';
 import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import type { MapDefinition } from './content/maps/maps.types';
@@ -48,15 +49,18 @@ const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
  */
 const match = (map: MapDefinition, seed = 1, isMarchingOnly = false) => {
   const logger = new MemoryLogger();
+  const config = createDefaultGameConfig({
+    match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
+  });
   const simulation = new Simulation({
-    config: createDefaultGameConfig({ match: { initialHordesPerTeam: 2, countdownSeconds: 600 } }),
+    config,
     seed,
     logger,
     debug: TEST_DEBUG_CONFIG,
     map,
     ...(isMarchingOnly ? { content: MARCHING_ONLY } : {}),
   });
-  return { simulation, logger };
+  return { simulation, logger, config };
 };
 
 const run = (simulation: Simulation, ticks: number): void => {
@@ -67,7 +71,7 @@ const run = (simulation: Simulation, ticks: number): void => {
 
 describe('Simulation with lane hordes (architecture 18, M1)', () => {
   it('walks every opening horde down its lane to the enemy end, invariants clean', () => {
-    const { simulation, logger } = match(TWO_LANE_MAP, 1, true);
+    const { simulation, logger, config } = match(TWO_LANE_MAP, 1, true);
     const spawned: string[] = [];
     simulation.on('horde-spawned', ({ team, lane }) => spawned.push(`${team} ${lane}`));
 
@@ -76,7 +80,9 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
 
     expect(spawned).toEqual(['light lane-0', 'light lane-1', 'dark lane-0', 'dark lane-1']);
     const minions = simulation.snapshot().entities.filter(({ family }) => family === 'mob');
-    expect(minions).toHaveLength(64);
+    expect(minions).toHaveLength(
+      2 * config.match.initialHordesPerTeam * config.match.hordeSizes[OPENING_WAVE.weightClass],
+    );
     const near = (x: number) => (minion: (typeof minions)[number]) =>
       Math.abs((minion.transform?.x ?? 0) - x) < 15;
     expect(minions.filter(({ team }) => team === 'light').every(near(180))).toBe(true);

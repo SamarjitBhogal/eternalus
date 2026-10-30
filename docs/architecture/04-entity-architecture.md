@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-22
+last-reviewed: 2026-10-29
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [

@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-29
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -175,8 +175,8 @@ spawner's own lane, or §3.3 for the Stronghold's heavy horde), checks the cap (
 `nextWaveTick`. A suppressed batch is never queued, so the schedule does not drift.
 
 The request is fulfilled at the end of the tick (deferred spawns, 07 §6) in **one step**: the
-members are created through `EntityFactory` with `hordeId` already set, the `Horde` record (§4) is
-inserted into `state.hordes`, and only then are `entity-spawned` (per member) and
+members are created through `EntityFactory`, the `Horde` record (§4) is inserted into
+`state.hordes`, and only then are `entity-spawned` (per member) and
 `horde-spawned { hordeId, lane, team, memberIds }` emitted. No listener creates the record, so no
 mob ever exists without its horde (MS-25).
 
@@ -264,8 +264,10 @@ the point (ties by `MapLane.index`). `progress` starts at the lane point nearest
 
 ## 4. The `Horde` composite
 
-A horde is **not** an entity (04 §7, FR-037); it is a record in `state.hordes`, and each member mob
-carries the back-pointer `hordeId` that `HordeMembershipConsistentInvariant` (15) checks:
+A horde is **not** an entity (04 §7, FR-037); it is a record in `state.hordes`, which is the only
+record of membership: mobs carry no `hordeId`, `state.hordes.hordeOf(id)` finds a mob's horde, and
+the store refuses to file a mob under two hordes, so there is no back-pointer to drift
+(`HordeMembershipConsistentInvariant`, 15, checks the records):
 
 ```ts
 // packages/core/src/state/Horde.types.ts (sketch)
@@ -445,7 +447,7 @@ where it comes from.
 Per doc 11 §8, plus:
 
 - Spawn pipeline: a horde request yields its members and its record in the same tick, with
-  `hordeId` set before `entity-spawned`; developer-menu spawns form a horde for each origin kind.
+  the horde record in `state.hordes` before `entity-spawned`; developer-menu spawns form a horde for each origin kind.
 - `HordeSystem`: member removal on `entity-removed` and `team-changed`; leader promotion in string
   order; dissolve at zero; the anchor holds at a standing objective and while the leader engages;
   a tower-spawned horde advances from the tower, never back toward its own gate.
