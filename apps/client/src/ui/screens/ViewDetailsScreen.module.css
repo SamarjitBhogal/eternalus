@@ -55,7 +55,9 @@
 }
 
 /* The in-game reduce-motion setting: no motion, the same open and closed states. The OS setting
-   zeroes the motion tokens (styles/global.css). */
+   zeroes the motion tokens (styles/global.css). Interim: once UE-03 (ui-enhancements-plan, build
+   plan step 16) writes data-reduce-motion on <html> and zeroes the tokens under it, this rule and
+   the screen's own attribute go. */
 .screen[data-reduce-motion='true'],
 .screen[data-reduce-motion='true'] .backdrop,
 .screen[data-reduce-motion='true'] .content {

@@ -17,7 +17,8 @@ const { characterSelect: text } = STRINGS;
  * key is stopped), and Esc Back (148:203) takes the focus. It opens with a quick fade and grow and
  * closes by fading while it shrinks to 80 %; closed, it is invisible and inert. It stays mounted, so
  * CSS alone runs both ways; the motion stops under `prefers-reduced-motion` (the motion tokens) and
- * under the in-game reduce-motion setting (`data-reduce-motion`), and it still opens and closes.
+ * under the in-game reduce-motion setting (`data-reduce-motion`, an interim reading of the setting
+ * until UE-03 applies it to the whole page), and it still opens and closes.
  */
 export function ViewDetailsScreen({
   isOpen,
