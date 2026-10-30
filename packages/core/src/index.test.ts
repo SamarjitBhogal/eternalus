@@ -50,8 +50,8 @@ describe('@eternalus/core public API', () => {
       entities: [],
       hordes: [],
       teams: {
-        light: { unitsRequested: 0, unitsSuppressed: 0 },
-        dark: { unitsRequested: 0, unitsSuppressed: 0 },
+        light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+        dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
       },
     });
   });

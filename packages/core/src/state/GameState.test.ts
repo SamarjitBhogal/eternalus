@@ -85,8 +85,8 @@ describe('GameState', () => {
       ],
       hordes: [],
       teams: {
-        light: { unitsRequested: 0, unitsSuppressed: 0 },
-        dark: { unitsRequested: 0, unitsSuppressed: 0 },
+        light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+        dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
       },
     });
   });
@@ -108,6 +108,7 @@ describe('GameState', () => {
     state.hordes.removeMember('entity-1');
     state.hordes.setProgress('horde-1', 20);
     state.recordSpawnRequest('dark', 1, 1);
+    state.recordTowerLost('dark', 'lane-1');
 
     expect(snapshot.hordes).toEqual([
       {
@@ -122,8 +123,8 @@ describe('GameState', () => {
       },
     ]);
     expect(snapshot.teams).toEqual({
-      light: { unitsRequested: 0, unitsSuppressed: 0 },
-      dark: { unitsRequested: 3, unitsSuppressed: 1 },
+      light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      dark: { unitsRequested: 3, unitsSuppressed: 1, towersLostByLane: {} },
     });
   });
 
@@ -186,14 +187,37 @@ describe('GameState', () => {
     state.recordSpawnRequest('dark', 16, 10);
     state.recordSpawnRequest('dark', 16, 16);
 
-    expect(state.teams.dark).toEqual({ unitsRequested: 32, unitsSuppressed: 6 });
-    expect(state.teams.light).toEqual({ unitsRequested: 0, unitsSuppressed: 0 });
+    expect(state.teams.dark).toEqual({
+      unitsRequested: 32,
+      unitsSuppressed: 6,
+      towersLostByLane: {},
+    });
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
     expect(() => {
       state.recordSpawnRequest('light', 4, 5);
     }).toThrow(RangeError);
     expect(() => {
       state.recordSpawnRequest('light', 4, -1);
     }).toThrow(RangeError);
-    expect(state.teams.light).toEqual({ unitsRequested: 0, unitsSuppressed: 0 });
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
+  });
+
+  it('counts lost lane towers per team and lane', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-1');
+
+    expect(state.teams.light.towersLostByLane).toEqual({ 'lane-0': 2, 'lane-1': 1 });
+    expect(state.teams.dark.towersLostByLane).toEqual({});
   });
 });
