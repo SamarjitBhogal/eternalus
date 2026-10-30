@@ -287,8 +287,11 @@ Staggering: a brain is due when `(tick + entityId) % cadence === 0`, which sprea
 (`TUNE`; `Recommendation:` 96, since 288 mobs / 5 plus Legends and turrets is about 70) and stops
 when it is spent; the round-robin cursor lives in `state.ai.cursor`, so deferral is deterministic
 and the skipped brains go first next tick. A decision is atomic and cheap: radius-bounded queries,
-no allocation in hot paths, scratch vectors reused. Heavy work (flow fields, A\*) belongs to
-`PathingSystem`, which time-slices its rebuilds
+no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
+`move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
+blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
+path cache in the brain is the next step if profiling shows the cost). Other heavy work (flow
+fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
 ## 7. Sim mode (MVP)
@@ -347,11 +350,36 @@ work named:
   it.
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
-- The registry holds `MinionController` (M2b); the other controllers are absent until their
-  phases, so it is a partial map.
-- A brain's `profileId` names an `AggroRuleDefinition` (`content/ai/aggro/`) directly; the
-  `AiProfileDefinition` of §2, which would group aggro, cadence and difficulty, arrives when a
-  second controller needs a profile. `AiSystem.assertRegistered` checks each definition's profile at construction.
+- The registry holds `MinionController` (M2b) and `BotLegendController` (M3); the other
+  controllers are absent until their phases, so it is a partial map.
+- `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
+  (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
+  with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness
+  and weakness, picking the best score with an id tie-break (no weighted-random pick yet). A
+  `BotDifficultyDefinition` (`content/ai/difficulties/`) holds only the knobs the tree reads;
+  `reactionDelayTicks`, `aimErrorRadius` and `abilityUseChance` join with aiming and abilities.
+  A bot gets its controller from its spawn (`Placement.controller`), with its lane in the brain's
+  starting memory, rather than from its Legend definition.
+- `RoverController` (M8) plays §4.7 on the laner's leaves (`ai/BotLeaves`): `Survive`, `Hunt`
+  (the human within `huntRadius` while the Rover leads on health by `huntAdvantage`), `Fight`,
+  then `Lane`: one utility pick over the lanes between `StructurePressure` (the lane's
+  `laneScores` score, counted from the team's calmest lane) and `HumanProximity` (1 on the
+  human's lane), weighted by `ROVER_TACTICS.laneWeights`; on the human's lane it mirrors the
+  human, on another it defends with that lane's lead horde, and a full tie goes to the lane
+  nearest the middle. Until the match state names the human (12 §4), the human is the enemy
+  Legend no controller drives, sensed through `Perception` within the `senseRadius` of
+  `content/ai/rover.ts`. No `LaneAdvantage` push yet. Its numbers are `TUNE` (`INBOX.md`).
+- Bots cast `ability-1` at their enemy when `abilityUseChance` comes up on the brain's own RNG
+  stream, at most every `castIntervalTicks`; the cast handler refuses casts until abilities land
+  (Phase 4), with no controller change needed then.
+- A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
+  One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
+  each blocked decision.
+- A brain's `profileId` names the controller's own content directly: an `AggroRuleDefinition`
+  (`content/ai/aggro/`) for `MinionController`, a `BotDifficultyDefinition`
+  (`content/ai/difficulties/`) for `BotLegendController`. The `AiProfileDefinition` of §2, which
+  would group aggro, cadence and difficulty under one id, arrives when a controller needs more
+  than one of them. `AiSystem.assertRegistered` checks each definition's profile at construction.
 - A definition that names an unregistered controller stops `Simulation` at construction (shipped
   content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities

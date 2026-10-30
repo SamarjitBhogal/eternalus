@@ -108,7 +108,7 @@ export class AiSystem {
         ai.set(id, {
           controllerId: binding.controllerId,
           profileId: binding.profileId,
-          memory: {},
+          memory: binding.initialMemory,
           rngState: new SeededRandom(fnv1a(`${String(state.seed)}:${id}`)).getState(),
         });
       }

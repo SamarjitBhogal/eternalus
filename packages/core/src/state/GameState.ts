@@ -12,10 +12,11 @@ import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
-import type { MatchPhase, RecordedCommand, TeamState } from './GameState.types';
+import type { GameStateIndexes, MatchPhase, RecordedCommand, TeamState } from './GameState.types';
 import type { HordeRequest } from './HordeRequest.types';
 import { HordeStore } from './HordeStore';
 import type { MatchWorld } from './MatchWorld';
+import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
@@ -45,6 +46,11 @@ export class GameState {
    * `recordTowerLost`.
    */
   public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = this.teamCounters;
+  /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
+  public readonly space: SpaceQuery | null;
+
+  /** A\* for Legends over the map's grid (architecture 10 §9); `null` without a map. */
+  public readonly paths: PathQuery | null;
   public readonly events: GameEvents;
   /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
   public readonly phase: MatchPhase = 'countdown';
@@ -59,7 +65,8 @@ export class GameState {
    * @param config - A config that passed `validateGameConfig()`.
    * @param seed - The match seed (a whole number from 0 to 2^32 - 1).
    * @param world - The match's map at runtime; without one, nothing spawns on lanes.
-   * @param space - The neighbour index `SpaceSystem` refills each tick; `null` without a map.
+   * @param indexes - The neighbour index `SpaceSystem` refills each tick and A\* for Legends;
+   *   each `null` without a map.
    */
   public constructor(
     public readonly config: GameConfig,
@@ -67,9 +74,10 @@ export class GameState {
     public readonly seed: number,
     /** The map, its lane routes and its grid, or `null` (most unit tests). */
     public readonly world: MatchWorld | null = null,
-    /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
-    public readonly space: SpaceQuery | null = null,
+    indexes: GameStateIndexes = {},
   ) {
+    this.space = indexes.space ?? null;
+    this.paths = indexes.paths ?? null;
     this.rng = new SeededRandom(seed);
     this.events = new GameEvents(() => this.currentTick);
     this.events.on('entity-removed', (removal) => {

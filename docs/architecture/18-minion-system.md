@@ -13,6 +13,8 @@ paths:
     'packages/core/src/state/Horde*',
     'packages/core/src/state/LaneAssessment*',
     'packages/core/src/state/LaneRoutes*',
+    'packages/core/src/state/assignLanes*',
+    'packages/core/src/state/formationSlot*',
     'packages/core/src/systems/HordeSystem*',
     'packages/core/src/systems/SpawnSystem*',
     'packages/core/src/systems/PathingSystem*',
@@ -88,13 +90,18 @@ Stronghold-to-gate ground included), and `LaneFollowMovementStrategy` follows th
 its target is blocked (§5.2). Pull request M2b adds `MinionController` (§6.1) with the `lane-minion`
 aggro content and the shared ranking helper `ai/aggroRank`, minion attacks from `balancing.md`,
 `stop` clearing the attack target (MS-26), the chase in `PathingSystem` (§5.2) and the anchor
-holding while the leader engages (§4). Pull request M5a adds the MVP minion modifiers (MS-16):
-`MinionStrengthStep` in the damage steps (strength by distance, floored at base stats per DISC-24,
-its base-stat point moving toward the enemy for each lane tower the enemy has lost there) and
-`EnragedSystem`, its own system right after `SpawnSystem` (one `enraged` stack per lost SpawnerTower
-or BuffTower on the lane; the losses are kept per team and lane in `TeamState.towersLostByLane`,
-which the strength step reads too). Lane objectives, gate holding and guards (M2c onward) wait for
-structure entities, and lane assignment (M3 onward) is not built. The damage pipeline
+holding while the leader engages (§4). Pull request M3 adds the bot laners (§8):
+`SimulationOptions.roster` (the bot Legends, spawned when the match is built at their own end of
+their lane, in ranks), `assignLanes` for MS-20 (bots in roster order, up to `legendsPerLane`), a
+spawn's own controller and starting memory (`Placement.controller`, holding the lane) and
+`BotLegendController` playing doc 11 §4.2's laner tree. The Rover waits for its controller (M8; doc
+11 §10).
+Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
+(strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
+enemy for each lane tower the enemy has lost there) and `EnragedSystem`, its own system right after
+`SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the losses are
+kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads too). Lane
+objectives, gate holding and guards (M2c onward) wait for structure entities. The damage pipeline
 (`combat/DamagePipeline`) is built; structures have only the `Structure` base class, with no
 Stronghold, tower or gate kind yet. The pull requests and interim stand-ins are in the [minion
 system plan](../plan/minion-system-plan.md) §2–§3.
@@ -182,8 +189,8 @@ spawner's own lane, or §3.3 for the Stronghold's heavy horde), checks the cap (
 `nextWaveTick`. A suppressed batch is never queued, so the schedule does not drift.
 
 The request is fulfilled at the end of the tick (deferred spawns, 07 §6) in **one step**: the
-members are created through `EntityFactory` with `hordeId` already set, the `Horde` record (§4) is
-inserted into `state.hordes`, and only then are `entity-spawned` (per member) and
+members are created through `EntityFactory`, the `Horde` record (§4) is inserted into
+`state.hordes`, and only then are `entity-spawned` (per member) and
 `horde-spawned { hordeId, lane, team, memberIds }` emitted. No listener creates the record, so no
 mob ever exists without its horde (MS-25).
 
@@ -271,8 +278,10 @@ the point (ties by `MapLane.index`). `progress` starts at the lane point nearest
 
 ## 4. The `Horde` composite
 
-A horde is **not** an entity (04 §7, FR-037); it is a record in `state.hordes`, and each member mob
-carries the back-pointer `hordeId` that `HordeMembershipConsistentInvariant` (15) checks:
+A horde is **not** an entity (04 §7, FR-037); it is a record in `state.hordes`, which is the only
+record of membership: mobs carry no `hordeId`, `state.hordes.hordeOf(id)` finds a mob's horde, and
+the store refuses to file a mob under two hordes, so there is no back-pointer to drift
+(`HordeMembershipConsistentInvariant`, 15, checks the records):
 
 ```ts
 // packages/core/src/state/Horde.types.ts (sketch)
@@ -445,7 +454,9 @@ where it comes from.
 
 - At match setup each team's lanes are filled in `MapLane.index` order up to
   `GameConfig.match.legendsPerLane`. The human's Legend counts against the lane it starts on. Bot
-  laners are placed in id order into the lane with the fewest Legends, lowest index first.
+  laners are placed in roster order (the order match setup lists them; ids sort as strings, so
+  `entity-10` would come before `entity-9`) into the lane with the fewest Legends, lowest index
+  first.
 - The Rover (`RoverController`, 11 §4.7) takes no lane.
 - The lane is stored as the `MapLane.id` in the bot-Legend `AiMemory` (11 §2) and does not change
   during the match.
@@ -455,7 +466,7 @@ where it comes from.
 Per doc 11 §8, plus:
 
 - Spawn pipeline: a horde request yields its members and its record in the same tick, with
-  `hordeId` set before `entity-spawned`; developer-menu spawns form a horde for each origin kind.
+  the horde record in `state.hordes` before `entity-spawned`; developer-menu spawns form a horde for each origin kind.
 - `HordeSystem`: member removal on `entity-removed` and `team-changed`; leader promotion in string
   order; dissolve at zero; the anchor holds at a standing objective and while the leader engages;
   a tower-spawned horde advances from the tower, never back toward its own gate.

@@ -36,7 +36,7 @@ export class PathingSystem implements System {
    * @param formations - Every formation, by id.
    * @param slotArrivalRadius - A mob this close to its formation slot is there.
    * @param flowFields - The lane flow fields (06 §6), which this system also rebuilds within
-   *   `config.map.flowFieldCellBudget` each tick; without them mobs steer straight to their slots.
+   *   `config.map.flowFieldCellBudget` each tick; without them mobs steer straight to their targets.
    */
   public constructor(
     private readonly strategies: StrategyRegistry['movement'],

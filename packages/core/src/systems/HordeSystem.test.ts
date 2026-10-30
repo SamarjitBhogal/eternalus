@@ -14,8 +14,12 @@ import { HordeSystem } from './HordeSystem';
 const FACTOR = 0.5;
 const logger = new NullLogger();
 
-const setUp = () => {
-  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+const setUp = (map: typeof TWO_LANE_MAP | null = TWO_LANE_MAP) => {
+  const state = new GameState(
+    createDefaultGameConfig(),
+    1,
+    map === null ? null : matchWorldOf(map),
+  );
   const system = new HordeSystem(state, FACTOR);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const addHorde = (members: readonly [string, string][], progress = 0) => {
@@ -106,12 +110,12 @@ describe('HordeSystem', () => {
     expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
   });
 
-  it('does nothing without a map', () => {
-    const state = new GameState(createDefaultGameConfig(), 1);
-    const system = new HordeSystem(state, FACTOR);
+  it('leaves the anchor where it is without a map', () => {
+    const { state, system, addHorde } = setUp(null);
+    const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
 
-    expect(() => {
-      system.update({ state, logger });
-    }).not.toThrow();
+    system.update({ state, logger });
+
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
   });
 });

@@ -1,6 +1,7 @@
+import type { CONTROLLER_IDS } from './controllerIds';
+
 /** Which controller drives an entity (architecture 11 §2); kebab-case, never renamed once used. */
-export type ControllerId =
-  'player' | 'bot-legend' | 'minion' | 'guard' | 'turret' | 'boss' | 'rover';
+export type ControllerId = (typeof CONTROLLER_IDS)[number];
 
 /** How often each controller decides, and how many decisions a tick may hold (11 §6). */
 export type AiCadence = {
@@ -78,4 +79,44 @@ export type AggroRuleDefinition = {
   readonly aggroCooldownTicks: number;
   /** A returning mob this close to its formation slot is marching again. */
   readonly reformDistance: number;
+};
+
+/** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */
+export type AiMemory = Readonly<Record<string, string | number | boolean | null>>;
+
+/**
+ * How hard a bot Legend plays (architecture 11 §4.2): a `BotDifficultyDefinition` in
+ * `content/ai/difficulties/`, named by the bot's AI profile. Distances are metres.
+ */
+export type BotDifficultyDefinition = {
+  readonly id: string;
+  /** Below this fraction of its health the bot retreats (`Survive`). */
+  readonly retreatHealthFraction: number;
+  /** A retreating bot rejoins its lane at or above this fraction of its health. */
+  readonly rejoinHealthFraction: number;
+  /** Enemies this close make the bot fight (`Fight`). */
+  readonly engageRadius: number;
+  /** A bot this close to where it is going stops there. */
+  readonly arrivalDistance: number;
+  /** The `UtilityScorer`'s weight for each target consideration. */
+  readonly utilityWeights: Readonly<Record<'closeness' | 'weakness', number>>;
+  /** The chance, each time a cast is allowed, that a fighting bot casts an ability (0 to 1). */
+  readonly abilityUseChance: number;
+  /** At least this many ticks between two casts. */
+  readonly castIntervalTicks: number;
+};
+
+/** How the Rover hunts and mirrors the human (architecture 11 §4.7). Distances are metres. */
+export type RoverTactics = {
+  /** How far the Rover senses Legends for `HumanProximity` and mirroring. */
+  readonly senseRadius: number;
+  /** The human this close may be hunted. */
+  readonly huntRadius: number;
+  /** It hunts when its health fraction leads the human's by at least this much. */
+  readonly huntAdvantage: number;
+  /**
+   * How it weighs a lane (11 §4.7): `pressure` (`StructurePressure`: how badly its team is doing
+   * there, 0 to 1) against `human` (`HumanProximity`: 1 on the human's lane).
+   */
+  readonly laneWeights: Readonly<Record<'pressure' | 'human', number>>;
 };
