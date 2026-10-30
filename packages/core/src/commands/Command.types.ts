@@ -1,4 +1,4 @@
-import type { Team } from '../teams/teams.types';
+import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 
@@ -11,6 +11,12 @@ export type AbilitySlot =
   | 'gadget-1'
   | 'gadget-2'
   | 'default-action';
+
+/** Where a developer-menu horde appears (architecture 13 §4). */
+export type SpawnOrigin =
+  | { readonly kind: 'structure'; readonly structureId: string }
+  | { readonly kind: 'lane'; readonly lane: string; readonly t: number }
+  | { readonly kind: 'point'; readonly at: Vec2 };
 
 /** Where an ability is aimed: a world point and, for targeted abilities, the target. */
 export type Aim = { readonly point: Vec2; readonly targetId: EntityId | null };
@@ -48,6 +54,17 @@ type CommandPayloads = {
     readonly at: Vec2;
     readonly count: number;
   };
+  /**
+   * Developer menu: spawn `count` mobs of `definitionId` as one horde (architecture 13 §4,
+   * 18 §3.5), clipped to the unit cap. The origin picks the lane: a structure's own lane, a lane
+   * and a fraction `t` of it from the Light gate, or the lane nearest a point.
+   */
+  readonly 'dev-spawn-mobs': {
+    readonly team: PlayableTeam;
+    readonly definitionId: string;
+    readonly count: number;
+    readonly origin: SpawnOrigin;
+  };
   /** Developer menu: remove an entity (cause `dev-removed`). */
   readonly 'dev-remove-entity': { readonly entityId: EntityId };
   /** Developer menu: hand an entity to another controller (sim mode). */
@@ -72,6 +89,7 @@ export type CommandRejectReason =
   | 'unknown-definition'
   | 'invalid-count'
   | 'invalid-position'
+  | 'invalid-origin'
   | 'cap-exceeded'
   | 'invalid-direction'
   | 'not-movable'

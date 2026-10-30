@@ -1,5 +1,6 @@
 import { FiniteTransformsInvariant } from './invariants/FiniteTransformsInvariant';
 import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInvariant';
+import { HordeMembershipConsistentInvariant } from './invariants/HordeMembershipConsistentInvariant';
 import { LevelMatchesXpInvariant } from './invariants/LevelMatchesXpInvariant';
 import { NoDeathWithoutKillerInvariant } from './invariants/NoDeathWithoutKillerInvariant';
 import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCauseInvariant';
@@ -28,6 +29,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new NoDeathWithoutKillerInvariant(),
         new HealthWithinBoundsInvariant(),
         new FiniteTransformsInvariant(),
+        new HordeMembershipConsistentInvariant(),
         new LevelMatchesXpInvariant(curves),
         new StatusStacksWithinMaxInvariant(),
       ],
