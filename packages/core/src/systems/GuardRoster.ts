@@ -101,7 +101,7 @@ export class GuardRoster {
     });
   }
 
-  /** False for a post its row gave up for the team's lost SpawnerTowers (DISC-21). */
+  /** False for a post its row gave up for lost structures of `shrink.perLost` (DISC-21). */
   private isPostKept(state: GameState, slot: GuardSlot): boolean {
     const home = state.entities.get(slot.homeId);
     const row = home === undefined ? undefined : this.plans[home.kind]?.table[slot.row];

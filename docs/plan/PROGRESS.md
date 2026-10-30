@@ -1995,4 +1995,10 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   751 passed (751)"; client "Tests 416 passed (416)"; "✓ built in 184ms"; "Documentation check
   passed."
-- Next step: critic and ponytail, then M5b.
+- Pre-PR gate: critic round 1 had one blocker (no test for `PathingSystem`'s guard steering), now
+  tested with a guard engage-and-return match too; should-fixes applied (`GuardRoster` split out
+  of `SpawnSystem` with its own tests, the DISC-21 shrink names its structure kind in content,
+  guards acquire inside their leash, INBOX items 5–8, a plan §3 row). Critic round 2: approve, no
+  blockers. Ponytail: lean, no cuts. Final `npm run check` → `EXIT=0`: core "Tests 755 passed
+  (755)", client "Tests 416 passed (416)", "✓ built in 172ms", "Documentation check passed."
+- Next step: M5b.

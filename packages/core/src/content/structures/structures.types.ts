@@ -50,7 +50,10 @@ export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightC
 type GuardTableEntry = {
   readonly mobId: string;
   readonly count: number;
-  /** `count` guards of this row lost for good per destroyed team structure of kind `perLost` (DISC-21, 07 §8). */
+  /**
+   * `count` guards of this row lost for good per destroyed team structure of kind `perLost`
+   * (DISC-21, 07 §8).
+   */
   readonly shrink?: { readonly perLost: string; readonly count: number };
 };
 
@@ -65,6 +68,6 @@ export type GuardPlanDefinition = {
   readonly respawnSeconds: number;
   /** Posts stand on a ring this far outside the structure's edge. */
   readonly postGap: number;
-  /** How far past its leash a guard may be seen between two decisions (`GuardWithinLeashInvariant`). */
+  /** How far past its leash a guard may be between two decisions (`GuardWithinLeashInvariant`). */
   readonly leashTolerance: number;
 };
