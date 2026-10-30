@@ -290,6 +290,51 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
     expect(warnings).toEqual([]);
   });
 
+  it("walks hordes spawned at a tower's and the Stronghold's centre out of the footprint (MS-31)", () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes: 3 } }), 1);
+    const { config, simulation } = laneMatch(map, 3, true);
+    const grid = gridOf(map, config);
+    const light = (kind: string) =>
+      map.features.find((feature) => feature.kind === kind && feature.team === 'light');
+    const tower = light('spawner-tower');
+    const stronghold = light('stronghold');
+    if (tower === undefined || stronghold === undefined) {
+      throw new Error('the generated map has no light spawner tower or Stronghold');
+    }
+    const spawned: string[] = [];
+    simulation.on('horde-spawned', ({ memberIds }) => spawned.push(...memberIds));
+    simulation.step();
+    spawned.length = 0;
+    simulation.enqueueCommand({
+      type: 'dev-spawn-mobs',
+      team: 'light',
+      definitionId: 'light-minion',
+      count: 16,
+      origin: { kind: 'structure', structureId: tower.id },
+    });
+    simulation.enqueueCommand({
+      type: 'dev-spawn-mobs',
+      team: 'light',
+      definitionId: 'heavy-minion',
+      count: 4,
+      origin: { kind: 'point', at: stronghold.position },
+    });
+    const isOnGround = (id: string): boolean => {
+      const transform = simulation
+        .snapshot()
+        .entities.find((entity) => entity.id === id)?.transform;
+      const cell = transform === undefined || transform === null ? null : grid.cellAt(transform);
+      return cell !== null && grid.isWalkable(cell.col, cell.row);
+    };
+    simulation.step();
+    const atSpawn = spawned.filter(isOnGround);
+    run(simulation, 30 * 30);
+
+    expect(spawned).toHaveLength(20);
+    expect(atSpawn).toEqual([]);
+    expect(spawned.filter((id) => !isOnGround(id))).toEqual([]);
+  });
+
   // Commented out on 2026-10-30 at the owner's request (PR #39): this full 530 s match takes
   // about 8 s locally but over 100 s on the GitHub runners under coverage, past the 60 s
   // timeout. Restore it once it is made cheaper (fewer ticks or a non-coverage soak job).

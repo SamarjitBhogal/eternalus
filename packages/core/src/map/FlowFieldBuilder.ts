@@ -17,9 +17,11 @@ import type { WorldMap } from './WorldMap';
  * neighbours with octile costs and no corner cutting, ordered by cost then cell index. A cell's
  * direction is chosen when it settles, among the already settled neighbours it is exactly
  * downhill of, in its team's preference order, so the result never depends on the heap order.
- * Blocked corridor cells beside open ground point out of it (`pointWallsOut`). It works in its
- * own buffers and swaps them into the field when the fill completes, so the old field serves
- * until then. Allocation-free after construction.
+ * Every blocked corridor cell that open ground can be reached from then points out the shortest
+ * way: those beside open ground at it (`pointWallsOut`), each deeper one at a neighbour one cell
+ * nearer (`pointInnerWallsOut`), so a horde spawned at a structure's centre walks out (MS-31). It
+ * works in its own buffers and swaps them into the field when the fill completes, so the old field
+ * serves until then. Allocation-free after construction.
  *
  * @remarks ponytail: `begin` resets whole-grid buffers outside the cell budget (cheap at today's
  * ~58k cells; reset only the previous field's corridor cells if grids grow), and a cost that would
@@ -33,6 +35,11 @@ export class FlowFieldBuilder {
   private readonly heap: Int32Array;
   private readonly heapSlot: Int32Array;
   private heapSize = 0;
+  /** Blocked corridor cells in the order they are reached, and each one's steps from open ground. */
+  private readonly walls: Int32Array;
+  private readonly wallDepth: Uint16Array;
+  private wallCount = 0;
+  private wallHead = 0;
   private field: FlowField | null = null;
 
   /** @param grid - The grid every field this builder fills routes over. */
@@ -42,6 +49,8 @@ export class FlowFieldBuilder {
     this.direction = new Int8Array(cells);
     this.heap = new Int32Array(cells);
     this.heapSlot = new Int32Array(cells);
+    this.walls = new Int32Array(cells);
+    this.wallDepth = new Uint16Array(cells);
   }
 
   /** Whether a fill is in progress. */
@@ -55,6 +64,9 @@ export class FlowFieldBuilder {
     this.direction.fill(NO_DIRECTION);
     this.heapSlot.fill(-1);
     this.heapSize = 0;
+    this.wallDepth.fill(UNREACHED);
+    this.wallCount = 0;
+    this.wallHead = 0;
     this.field = field;
     if (field.isOpen(field.goal)) {
       this.integration[field.goal] = 0;
@@ -76,7 +88,13 @@ export class FlowFieldBuilder {
       this.settle(field, this.pop());
       settled += 1;
     }
-    if (this.heapSize === 0) {
+    // The open cells all settled, so every wall beside them is queued: lead the deeper ones out.
+    while (settled < budget && this.heapSize === 0 && this.wallHead < this.wallCount) {
+      this.pointInnerWallsOut(field, this.walls[this.wallHead] ?? -1);
+      this.wallHead += 1;
+      settled += 1;
+    }
+    if (this.heapSize === 0 && this.wallHead === this.wallCount) {
       const { integration, direction } = field;
       field.adopt(this.integration, this.direction);
       this.integration = integration;
@@ -120,10 +138,11 @@ export class FlowFieldBuilder {
    * Points each blocked corridor cell next to `cell` back at it, unless it already points at a
    * cheaper open cell, or an equally cheap one its team prefers. Cells settle cheapest first, so
    * a wall cell ends up leading to its cheapest open neighbour, and a unit pushed into a wall is
-   * led out and on (a stand-in for the wall-avoidance term of architecture 10 §9).
+   * led out and on. Each wall is queued, at depth 0, the first time it is pointed.
    *
-   * ponytail: a stand-in; the wall-avoidance term arrives with `CollisionSystem` (10 §8–§9), and
-   * walls then stop pointing anywhere.
+   * ponytail: also a stand-in for the wall-avoidance term of architecture 10 §9, which arrives
+   * with `CollisionSystem` (10 §8); walls keep pointing out after that, since hordes spawn inside
+   * their structure's footprint (MS-31).
    */
   private pointWallsOut(field: FlowField, cell: number, col: number, row: number): void {
     const { cols, rows } = this.grid;
@@ -149,10 +168,59 @@ export class FlowFieldBuilder {
         current !== NO_DIRECTION &&
         this.integration[target] === this.integration[cell] &&
         preference.indexOf(back) < preference.indexOf(current);
+      if (current === NO_DIRECTION) {
+        this.wallDepth[wall] = 0;
+        this.walls[this.wallCount] = wall;
+        this.wallCount += 1;
+      }
       if (current === NO_DIRECTION || isTie) {
         this.direction[wall] = back;
       }
     }
+  }
+
+  /**
+   * Leads the queued wall `wall` out, then queues its blocked corridor neighbours not yet reached,
+   * one cell deeper. The queue is first in, first out, so depths are the fewest steps (8-way) to
+   * open ground. A deeper wall points at the neighbour one step shallower its team prefers, which
+   * the depths alone decide, so the result never depends on the queue order (Light and Dark stay
+   * mirror images, 06 §2).
+   */
+  private pointInnerWallsOut(field: FlowField, wall: number): void {
+    const { cols } = this.grid;
+    const col = wall % cols;
+    const row = (wall - col) / cols;
+    const depth = this.wallDepth[wall] ?? 0;
+    if (depth > 0) {
+      for (const step of DIRECTION_PREFERENCE[field.team]) {
+        if (this.wallDepth[this.cellOf(col, row, step)] === depth - 1) {
+          this.direction[wall] = step;
+          break;
+        }
+      }
+    }
+    for (let step = 0; step < DIRECTION_COLS.length; step += 1) {
+      const next = this.cellOf(col, row, step);
+      const isNewWall =
+        next !== -1 &&
+        field.mask[next] === 1 &&
+        !field.isOpen(next) &&
+        this.wallDepth[next] === UNREACHED;
+      if (isNewWall) {
+        this.wallDepth[next] = depth + 1;
+        this.walls[this.wallCount] = next;
+        this.wallCount += 1;
+      }
+    }
+  }
+
+  /** The cell next to `(col, row)` in direction `step`, or -1 off the grid. */
+  private cellOf(col: number, row: number, step: number): number {
+    const nextCol = col + (DIRECTION_COLS[step] ?? 0);
+    const nextRow = row + (DIRECTION_ROWS[step] ?? 0);
+    const { cols, rows } = this.grid;
+    const isInside = nextCol >= 0 && nextRow >= 0 && nextCol < cols && nextRow < rows;
+    return isInside ? nextRow * cols + nextCol : -1;
   }
 
   /** The open neighbour of `(col, row)` in direction `step`, or -1; diagonals never cut a corner. */
