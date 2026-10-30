@@ -1623,3 +1623,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   641 passed (641)"; client "Tests 415 passed (415)"; "✓ built in 319ms"; "Documentation check
   passed."
 - Next step: merge up the stack again.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — fix/phase-2-failing-tests — SamarjitBhogal + Claude Code
+
+- What was done: CI on `phase/2-sprint-2-work` failed on Windows: `LaneFlowFields.test.ts`
+  "mirrors each lane's Light field onto its Dark field: 5 lanes" timed out (6.3 s > 5 s) under
+  coverage. It ran three `expect`s per grid cell; it now finds the first non-mirrored cell in a
+  plain loop and asserts there is none (2088 ms → 27 ms locally with coverage). Same check:
+  mask, integration and mirrored direction per cell; a no-flip mutation fails it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  663 passed (663)"; client "Tests 415 passed (415)"; "✓ built in 165ms"; "Documentation check
+  passed."
+- Next step: merge into `phase/2-sprint-2-work` so the phase PR goes green.
