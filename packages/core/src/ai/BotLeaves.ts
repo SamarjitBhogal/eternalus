@@ -181,7 +181,8 @@ export class BotLeaves {
 
   /**
    * One `move` toward `destination`, through the A\* waypoint when the straight line is blocked,
-   * or a halt once within `arrivalDistance` of it.
+   * or a halt once within `arrivalDistance` of it. When the pathfinder finds no way, a `stop` and
+   * `failure`, so the bot does not lean on the obstruction and lower branches may run.
    */
   public moveTo(turn: BotTurn, destination: Vec2 | null): BtStatus {
     if (destination === null) {
@@ -190,9 +191,12 @@ export class BotLeaves {
     const { arrivalDistance } = turn.difficulty;
     const isThere =
       BotLeaves.gapSquared(turn.position, destination) <= arrivalDistance * arrivalDistance;
-    const hasWay =
-      !isThere && turn.state.paths?.waypoint(turn.position, destination, this.step) === true;
-    const next = hasWay ? this.step : destination;
+    const paths = turn.state.paths;
+    if (!isThere && paths !== null && !paths.waypoint(turn.position, destination, this.step)) {
+      turn.commands.push({ type: 'stop', actorId: turn.id });
+      return 'failure';
+    }
+    const next = !isThere && paths !== null ? this.step : destination;
     turn.commands.push({
       type: 'move',
       actorId: turn.id,

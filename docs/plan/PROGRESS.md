@@ -2392,3 +2392,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   766 passed (766)"; client "Tests 417 passed (417)"; "✓ built in 169ms"; "Documentation check
   passed."
 - Next step: review and merge after M3.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m8-rover-astar — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/2-sprint-2-work` (M3 #46, M5a #45) into PR #47. The movement
+  context keeps M8's `flow` and M2b's `isChasing`; the pipeline keeps M8's shared `world` plus
+  M5a's `EnragedSystem`; doc 11 takes the phase's `profileId` bullet; other docs keep both sides.
+  CodeRabbit round: `spawnBot` creates by the definition's `kind`, not its id; `moveTo` stops and
+  fails when A\* finds no way. Regression tests for both fail on the old code.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  786 passed (786)"; client "Tests 417 passed (417)"; "✓ built in 272ms"; "Documentation check
+  passed."
+- Next step: review and merge (M3 and M4 are merged).

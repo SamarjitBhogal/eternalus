@@ -279,7 +279,8 @@ export class Simulation {
     slot: RosterSlot,
     placement: Placement,
   ): void {
-    const entity = factory.create(slot.definitionId, slot.definitionId, placement);
+    const { kind } = factory.definitions.get(slot.definitionId);
+    const entity = factory.create(kind, slot.definitionId, placement);
     state.entities.add(entity);
     state.events.emit('entity-spawned', {
       entityId: entity.id,

@@ -26,10 +26,17 @@ const STUB_PATHS: PathQuery = {
   },
 };
 
+/** A pathfinder stub that never finds a way. */
+const NO_WAY: PathQuery = { waypoint: () => false };
+
 /** A turn for a bot at `position` on the blocked-lane map, with or without pathfinding. */
-const turnAt = (position: { x: number; y: number }, withPaths: boolean): BotTurn => {
+const turnAt = (
+  position: { x: number; y: number },
+  withPaths: boolean,
+  paths: PathQuery = STUB_PATHS,
+): BotTurn => {
   const state = new GameState(createDefaultGameConfig(), 1, BLOCKED_LANE_MAP, {
-    paths: withPaths ? STUB_PATHS : null,
+    paths: withPaths ? paths : null,
   });
   const memory = { lane: 'lane-0', isRetreating: false, targetId: null, nextCastTick: 0 };
   return {
@@ -65,5 +72,12 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
 
     expect(clear.commands).toEqual([{ type: 'move', actorId: 'bot', direction: { x: 5, y: 0 } }]);
     expect(blind.commands).toEqual([{ type: 'move', actorId: 'bot', direction: { x: 40, y: 0 } }]);
+  });
+
+  it('stops and fails when the pathfinder finds no way, rather than leaning on the obstruction', () => {
+    const turn = turnAt({ x: 40, y: 20 }, true, NO_WAY);
+
+    expect(leaves.moveTo(turn, { x: 80, y: 20 })).toBe('failure');
+    expect(turn.commands).toEqual([{ type: 'stop', actorId: 'bot' }]);
   });
 });

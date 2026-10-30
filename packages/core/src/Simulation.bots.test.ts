@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { ContentCatalogue } from './content/ContentCatalogue';
+import { loadDefaultContent } from './content/loadDefaultContent';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
@@ -132,5 +134,25 @@ describe('Simulation with bot laners (minion plan M3)', () => {
 
     expect(runs[0]?.warnings).toEqual([]);
     expect(runs[0]?.hash).toBe(runs[1]?.hash);
+  });
+
+  it('spawns a roster Legend by its definition’s kind when the id differs from it', () => {
+    const defaults = loadDefaultContent(30);
+    const veteran = { ...defaults.get('warrior'), id: 'warrior-veteran' };
+    const simulation = new Simulation({
+      config: createDefaultGameConfig({
+        match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
+      }),
+      seed: 1,
+      logger: new MemoryLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      map: TWO_LANE_MAP,
+      content: new ContentCatalogue([...defaults.all(), veteran]),
+      roster: [
+        { team: 'light', definitionId: 'warrior-veteran', role: 'laner', difficulty: 'normal' },
+      ],
+    });
+
+    expect(lightBots(simulation)).toHaveLength(1);
   });
 });
