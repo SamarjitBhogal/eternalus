@@ -73,9 +73,9 @@ const summary = (hordes: readonly GameEventMap['horde-spawned'][]) =>
 
 /** The tick the countdown ends, when every wave clock starts (DEC-87). */
 const COUNTDOWN = Math.round(createDefaultGameConfig().match.countdownSeconds * TICK_RATE);
-/** The first light, medium and heavy waves: 120, 150 and 180 s after the countdown (DEC-87). */
-const LIGHT = COUNTDOWN + 120 * TICK_RATE;
-const MEDIUM = COUNTDOWN + 150 * TICK_RATE;
+/** The first light, heavy and medium waves: 165, 180 and 195 s after the countdown (DEC-87, DEC-93). */
+const LIGHT = COUNTDOWN + 165 * TICK_RATE;
+const MEDIUM = COUNTDOWN + 195 * TICK_RATE;
 const HEAVY = COUNTDOWN + 180 * TICK_RATE;
 
 describe('SpawnSystem', () => {
@@ -111,34 +111,32 @@ describe('SpawnSystem', () => {
     expect(progress).toEqual([0, 0, 0, 0]);
   });
 
-  it('starts every wave clock at the countdown end: first waves at 120, 150 and 180 s, then each interval', () => {
+  it('starts every wave clock at the countdown end: first waves at 165, 180 and 195 s, then each interval', () => {
     const { timeline, runTo } = setUp({}, { openingWave: NO_OPENING });
 
     runTo(LIGHT - 1);
     expect(timeline).toEqual([]);
 
     const at = (seconds: number) => String(COUNTDOWN + seconds * TICK_RATE);
-    runTo(COUNTDOWN + 270 * TICK_RATE);
-    // Lights every 60 s from 120 s, mediums every 60 s from 150 s, heavies every 90 s from 180 s.
+    runTo(COUNTDOWN + 285 * TICK_RATE);
+    // Lights every 60 s from 165 s, heavies every 90 s from 180 s, mediums every 60 s from 195 s.
     // Spawner id order within a tick: buff, spawner, then Stronghold, Dark before Light. The
     // heavy horde takes the worst lane: every lane ties at the start, so the middle (lane-1).
     expect(timeline).toEqual([
-      `${at(120)} dark lane-0 16`,
-      `${at(120)} light lane-0 16`,
-      `${at(150)} dark lane-1 8`,
-      `${at(150)} light lane-1 8`,
-      `${at(180)} dark lane-0 16`,
-      `${at(180)} light lane-0 16`,
+      `${at(165)} dark lane-0 16`,
+      `${at(165)} light lane-0 16`,
       `${at(180)} dark lane-1 4`,
       `${at(180)} light lane-1 4`,
-      `${at(210)} dark lane-1 8`,
-      `${at(210)} light lane-1 8`,
-      `${at(240)} dark lane-0 16`,
-      `${at(240)} light lane-0 16`,
-      `${at(270)} dark lane-1 8`,
-      `${at(270)} light lane-1 8`,
+      `${at(195)} dark lane-1 8`,
+      `${at(195)} light lane-1 8`,
+      `${at(225)} dark lane-0 16`,
+      `${at(225)} light lane-0 16`,
+      `${at(255)} dark lane-1 8`,
+      `${at(255)} light lane-1 8`,
       `${at(270)} dark lane-1 4`,
       `${at(270)} light lane-1 4`,
+      `${at(285)} dark lane-0 16`,
+      `${at(285)} light lane-0 16`,
     ]);
   });
 
@@ -147,7 +145,7 @@ describe('SpawnSystem', () => {
       { match: { countdownSeconds: 600 } },
       { openingWave: NO_OPENING },
     );
-    const firstLight = (600 + 120) * TICK_RATE;
+    const firstLight = (600 + 165) * TICK_RATE;
 
     runTo(firstLight - 1);
     expect(timeline).toEqual([]);
@@ -197,10 +195,10 @@ describe('SpawnSystem', () => {
     runTo(MEDIUM);
 
     expect(summary(spawned)).toContain('dark lane-0 12');
-    // Requested: 32 opening + 16 light, then 8 medium; kept out: 4, then all 8.
+    // Requested: 32 opening + 16 light, then 4 heavy and 8 medium; kept out: 4, then all 12.
     expect(state.teams.dark).toEqual({
-      unitsRequested: 56,
-      unitsSuppressed: 12,
+      unitsRequested: 60,
+      unitsSuppressed: 16,
       towersLostByLane: {},
     });
     expect(spawned.every(({ memberIds }) => memberIds.length > 0)).toBe(true);
@@ -239,7 +237,8 @@ describe('SpawnSystem', () => {
   it('starts each horde’s anchor at the lane point nearest its spawn point, never behind it', () => {
     const { state, runTo } = setUp({}, { openingWave: NO_OPENING });
 
-    runTo(HEAVY);
+    // The medium wave is the last of the three first waves.
+    runTo(MEDIUM);
 
     const anchors: string[] = [];
     state.hordes.forEach(({ team, lane, weightClass, progress }) => {

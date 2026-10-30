@@ -12,15 +12,16 @@ export const OPENING_WAVE = {
 
 /**
  * The horde waves of each spawning structure kind (DISC-10, architecture 18 §3.1), timed from the
- * countdown's end (DEC-87): lights first, so they reinforce the opening hordes; mediums 30 s after
- * each light wave; heavies down the worst lane. The opening hordes are separate (`OPENING_WAVE`).
+ * countdown's end (DEC-87, first times DEC-93): lights after the opening hordes reach the lane
+ * centre, so they reinforce them; mediums 30 s after each light wave; heavies down the worst lane.
+ * The opening hordes are separate (`OPENING_WAVE`).
  */
 export const SPAWN_WAVES: Readonly<Record<string, readonly SpawnWaveDefinition[]>> = {
   'spawner-tower': [
     {
       mobId: 'light-minion',
       weightClass: 'light',
-      firstAtSeconds: 120, // TUNE: DEC-87
+      firstAtSeconds: 165, // TUNE: DEC-93
       everySeconds: 60, // TUNE: DEC-87
       lane: 'own-lane',
     },
@@ -29,7 +30,7 @@ export const SPAWN_WAVES: Readonly<Record<string, readonly SpawnWaveDefinition[]
     {
       mobId: 'medium-minion',
       weightClass: 'medium',
-      firstAtSeconds: 150, // TUNE: DEC-87
+      firstAtSeconds: 195, // TUNE: DEC-93
       everySeconds: 60, // TUNE: DEC-87
       lane: 'own-lane',
     },
