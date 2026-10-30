@@ -81,9 +81,9 @@ export class SpawnSystem implements System {
       ),
     ];
     const { definitions } = this.plan;
-    const guardProblems = [...kinds].flatMap((kind) =>
-      (this.plan.guards[kind]?.table ?? []).flatMap(({ mobId }) =>
-        definitions.has(mobId) ? [] : [`${kind} guard plan names unknown mob "${mobId}"`],
+    const guardProblems = Object.entries(this.plan.guards).flatMap(([id, { table }]) =>
+      table.flatMap(({ mobId }) =>
+        definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
       ),
     );
     const problems = guardProblems.concat(

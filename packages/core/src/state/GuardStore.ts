@@ -14,9 +14,9 @@ export class GuardStore {
     return this.slots.length;
   }
 
-  /** Adds an empty post. */
-  public add(slot: Omit<GuardSlot, 'guardId' | 'respawnAtTick'>): void {
-    this.slots.push({ ...slot, guardId: null, respawnAtTick: 0 });
+  /** Adds an empty post, first filled at `firstTick` (0: the match's first tick). */
+  public add(slot: Omit<GuardSlot, 'guardId' | 'respawnAtTick'>, firstTick = 0): void {
+    this.slots.push({ ...slot, guardId: null, respawnAtTick: firstTick });
   }
 
   /** The post `guardId` holds, or `undefined` when it is no guard. */

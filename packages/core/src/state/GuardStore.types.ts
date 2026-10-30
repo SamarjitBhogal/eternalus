@@ -1,4 +1,4 @@
-import type { PlayableTeam } from '../teams/teams.types';
+import type { Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 
 /**
@@ -9,7 +9,8 @@ import type { EntityId } from './EntityStore.types';
 export type GuardSlot = {
   readonly id: string;
   readonly homeId: EntityId;
-  readonly team: PlayableTeam;
+  /** The home's team; `neutral` for a camp. */
+  readonly team: Team;
   readonly mobId: string;
   /** The guard plan row this post belongs to, and its place in that row. */
   readonly row: number;

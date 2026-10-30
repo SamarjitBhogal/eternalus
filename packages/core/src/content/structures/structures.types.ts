@@ -58,8 +58,8 @@ type GuardTableEntry = {
 };
 
 /**
- * The guards a structure keeps (architecture 07 §6, 18 §7): spawned when the match starts, each
- * respawned `respawnSeconds` after it dies while its structure stands.
+ * The guards a structure keeps (architecture 07 §6, 18 §7.1): tower guards, or a camp's group.
+ * Posts are filled while the structure stands.
  */
 export type GuardPlanDefinition = {
   readonly table: readonly GuardTableEntry[];
@@ -70,4 +70,12 @@ export type GuardPlanDefinition = {
   readonly postGap: number;
   /** How far past its leash a guard may be between two decisions (`GuardWithinLeashInvariant`). */
   readonly leashTolerance: number;
+  /** When the posts are first filled: the match's first tick, or when the countdown ends (camps). */
+  readonly activation: 'match-start' | 'countdown-end';
+  /**
+   * `each`: a guard comes back `respawnSeconds` after it dies (tower guards). `group`: the posts
+   * wait until every guard is dead, then all come back `respawnSeconds` later and the home is
+   * announced cleared (`camp-cleared`, camps).
+   */
+  readonly respawn: 'each' | 'group';
 };
