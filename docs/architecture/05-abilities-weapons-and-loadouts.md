@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-22
+last-reviewed: 2026-10-29
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -528,9 +528,11 @@ the applier. Readers: `MovementSystem` (`moveSpeed`, `cannot-move`), `CombatSyst
 (`cannot-attack`; `attackSpeed`, fixed when a hit lands), `StatusModifierStep` (`damageDealt`, `damageTaken`); `cannot-cast` waits for
 `AbilitySystem`. Whether the applier's `remove` / `expire` (and so `status-expired`) are covered by
 DEC-41 is still open. `blind` has no hard miss (DEC-42): its aim wobble and the client vignette are
-follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. Not built yet: `polarity`,
-`controlClass` and `control-immune` (so a producer that reapplies `stun` before `onExpire` exists
-can stun-lock), `onExpire`, `appliesTo` (the component is the gate), the `duration`,
+follow-ups. `StatusStacksWithinMaxInvariant` runs every tick. `polarity`, `controlClass` and
+`onExpire` (`apply-status` specs, run by the applier's `expire` on time-out only, credited to the
+same source, ids checked at load) are built: `stun` is followed by `control-immune` (0.5 s), and the
+applier refuses `hard` control on a `control-immune` target (SCRUM-228, `feat/status-control-immune`).
+Not built yet: `controlResistance` (bosses, Eternal), `appliesTo` (the component is the gate), the `duration`,
 `independent` and `permanent` modes, and a max-health stat (the FR-029 aura). `StatusEffectSystem`
 runs before movement.
 

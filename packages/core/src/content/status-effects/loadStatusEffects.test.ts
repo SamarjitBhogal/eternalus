@@ -29,11 +29,12 @@ describe('loadStatusEffects', () => {
         id: 'drip',
         periodic: { everySeconds: -1, effects: [{ kind: 'damage', amount: 0 }] },
       },
+      { ...STUN, id: 'daze', onExpire: [{ kind: 'apply-status', statusId: 'dizzy' }] },
     ] as const;
 
     expect(() => loadStatusEffects(30, 2, broken)).toThrow(ContentValidationError);
     expect(() => loadStatusEffects(30, 2, broken)).toThrow(
-      /"Bad_Id": id must be kebab-case[\s\S]*"Bad_Id": refresh needs maxStacks 1[\s\S]*"frozen": modifier values must be positive[\s\S]*"instant": durationSeconds must be positive[\s\S]*"drip": everySeconds must be positive[\s\S]*"drip": periodic amounts must be positive/,
+      /"Bad_Id": id must be kebab-case[\s\S]*"Bad_Id": refresh needs maxStacks 1[\s\S]*"frozen": modifier values must be positive[\s\S]*"instant": durationSeconds must be positive[\s\S]*"drip": everySeconds must be positive[\s\S]*"drip": periodic amounts must be positive[\s\S]*"daze": onExpire names unknown status "dizzy"/,
     );
   });
 });

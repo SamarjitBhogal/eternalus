@@ -1404,3 +1404,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 182ms"; "Documentation
   check passed."
 - Next step: add the three CI checks as required on `main`.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/status-control-immune — claudiodh + Claude Code
+
+- What was done: SCRUM-228 follow-up (05 §8, more-abilities §7). Status definitions gain
+  `polarity`, `controlClass` and `onExpire` (`apply-status` specs; unknown ids rejected at load).
+  New status `control-immune` (Unshaken, 0.5 s, `TUNE`). `StatusEffectApplier.expire` runs
+  `onExpire` on time-out only, credited to the same source, so `stun` is followed by
+  `control-immune`; `apply` refuses `hard` control on a `control-immune` target. 05's
+  Implementation status note and the INBOX status-effects item updated (crushed's class to
+  confirm).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 612 passed (612)"; client "Tests 416 passed (416)"; "✓ built in 101ms"; "Documentation
+  check passed."
+- Next step: Sam confirms INBOX item (6); then `slowed` with `independent` stacking (crushed's
+  release), `controlResistance` and the DEC-42 wobble once its questions are answered.

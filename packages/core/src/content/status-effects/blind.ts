@@ -8,10 +8,13 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const BLIND = {
   id: 'blind',
   displayName: 'Blinded',
+  polarity: 'debuff',
+  controlClass: 'soft',
   durationSeconds: 1.5,
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [],
   flags: [],
   periodic: null,
+  onExpire: [],
 } as const satisfies AuthoredStatusEffect;
