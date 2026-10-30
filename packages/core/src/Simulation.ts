@@ -12,7 +12,10 @@ import { validateGameConfig } from './config/validateGameConfig';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
+import { unitClassOf } from './content/ai/unitClasses';
+import { FORMATIONS } from './content/mobs/formations/formations';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
@@ -69,7 +72,11 @@ export class Simulation {
     const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);
     // One factory for commands and spawning, so entity ids come from one counter.
-    const controllers = createDefaultControllerRegistry();
+    const controllers = createDefaultControllerRegistry({
+      aggro: AGGRO_RULES,
+      formations: FORMATIONS,
+      classOf: unitClassOf,
+    });
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),

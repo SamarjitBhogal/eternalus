@@ -27,9 +27,10 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 ## 1. Where AI sits
 
 - Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (02 §2, core `AGENTS.md`): `ai/` may
-  import only `state/`, `commands/`, `content/` types and `utils/`. Definition values, spatial
-  queries and flow fields reach a controller through `GameState` or injection, never through
-  imports (DIP); only `content/` types are imported.
+  import only `state/`, `commands/`, `content/` and `teams/` types and `utils/`. Spatial queries and flow fields
+  reach a controller through `GameState`; its content values (aggro rules, formations,
+  difficulties) come through its constructor, injected by `Simulation` when it fills the
+  registry. Never through value imports (DIP); only `content/` types are imported.
 - One system, `AiSystem`, runs second in the `SystemPipeline`, right after `CommandApplySystem`.
   It asks each due controller for decisions and enqueues them in the `CommandQueue` for the next
   tick. Controllers never mutate state, never call systems and never compute paths.
@@ -42,8 +43,8 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 flowchart LR
   CQ[CommandQueue] --> CAS[CommandApplySystem]
   CAS --> AI[AiSystem]
-  AI -- "decide(state, entityId)" --> C[Controller]
-  C -- "Command[] for tick + 1" --> CQ
+  AI -- "decide({ state, entityId, brain, perception })" --> C[Controller]
+  C -- "commands for tick + 1, brain after" --> CQ
   AI --> REST[AbilitySystem, MovementSystem, ...]
 ```
 
@@ -54,18 +55,27 @@ flowchart LR
 export type ControllerId =
   'player' | 'bot-legend' | 'minion' | 'guard' | 'turret' | 'boss' | 'rover';
 
+export type DecisionInput = {
+  state: GameState;
+  entityId: EntityId;
+  brain: Brain;
+  perception: Perception;
+};
+export type Decision = { commands: readonly Command[]; memory: AiMemory; rngState: RngState };
+
 export interface Controller {
   /** Kebab-case id used by content definitions and by the ControllerRegistry. */
   readonly id: ControllerId;
-  /** Decide for one entity. Reads state only and returns commands for the next tick. */
-  decide(state: GameState, entityId: EntityId): readonly Command[];
+  /** Decide for one entity. Reads state only; returns next tick's commands and the brain after. */
+  decide(input: DecisionInput): Decision;
 }
 ```
 
 - Controllers are **stateless strategies**: one shared instance per `ControllerId` (Flyweight).
   Everything a controller remembers between decisions lives in `state.ai.brains` as plain data,
   so it is hashed by `StateHasher`, snapshotted and replayed like any other state ("state is the
-  single source of truth", rule 10).
+  single source of truth", rule 10). A controller never writes it: `decide` returns the memory and
+  RNG state after the decision and `AiSystem` writes them back, so controllers stay pure.
 
 ```ts
 // packages/core/src/state/AiState.types.ts (sketch)
@@ -295,7 +305,7 @@ switch is recorded in the replay like everything else.
 
 - Unit tests per controller with fake state: `ai/testing/buildTestState()` builds a minimal
   `GameState` with a handful of entities and a stub `Perception`; tests assert the returned
-  commands, e.g. `expect(minion.decide(state, mobId)).toEqual([{ type: 'attack-target', targetId }])`.
+  decision, e.g. `expect(minion.decide(input).commands).toEqual([{ type: 'attack-target', actorId, targetId }])`.
 - FSM transition tests are table-driven (`from`, event, expected `to`); BT tests cover each node
   class and the tree with stub conditions; considerations are pure functions of numbers.
 - Scenario tests in `ai/scenarios/*.test.ts` drive a real `Simulation` in sim mode: "a minion
@@ -335,8 +345,11 @@ work named:
   it.
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
-- The controller registry is empty until `MinionController` (M2b). How a controller writes its
-  memory and RNG state back is open (`INBOX.md`), since `decide` returns only commands.
+- The registry holds `MinionController` (M2b); the other controllers are absent until their
+  phases, so it is a partial map.
+- A brain's `profileId` names an `AggroRuleDefinition` (`content/ai/aggro/`) directly; the
+  `AiProfileDefinition` of §2, which would group aggro, cadence and difficulty, arrives when a
+  second controller needs a profile. `AiSystem.assertRegistered` checks each definition's profile at construction.
 - A definition that names an unregistered controller stops `Simulation` at construction (shipped
   content) or the first tick `AiSystem` sees the entity (injected content).
 - `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities

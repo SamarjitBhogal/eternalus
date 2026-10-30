@@ -131,6 +131,25 @@ Reply inline (`Decision: …`).
       (`MinionController`'s FSM state and timers, M2b). Should `decide` return
       `{ commands, memory, rngState }` for `AiSystem` to write back (`Recommendation:`, keeps
       controllers pure), or may a controller write its own brain?
+  - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
+    `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
+    (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
+- [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
+      Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
+      the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
+      components (18 §5.2 says the strategy reads `Combat.targetId`); if accepted, 18 §5.2 and
+      §7's guard strategy note change. (2) The formation slot function lives in
+      `state/formationSlot.ts`, the one folder both `systems/` and `ai/` may import. (3)
+      Controllers get their content (aggro rules, formations, kind classes) through their
+      constructor from `Simulation`, not through `GameState` (11 §1). Numbers to confirm: the
+      aggro radii scale League/Dota's 500 / 700 units by minion speed (5.4 m and 7.5 m), and
+      `reformDistance` is 2 m with no reference. Design note: 18 §6.1 ends every chase after
+      the aggro duration (69 ticks) followed by a 90-tick cooldown, minion against minion too,
+      which may give a fight, walk back, fight again rhythm; Dota applies it to hero aggro only.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1)–(3) accepted; doc 18 §5.1, §5.2 and §7
+    and doc 11 §1 updated (PR #44). Numbers: use the design docs, else the agent's judgement,
+    which the owner may correct later, so the aggro radii and `reformDistance` stay as built.
+    The design note on the chase rhythm stays open.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which

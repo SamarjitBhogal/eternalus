@@ -9,11 +9,12 @@ import type { System, SystemContext } from './System.types';
  * and drops them at the start of its next pass (03 §4), so a member removed late in a tick leaves
  * its record at the start of the next; the lowest remaining id in string order leads and an empty
  * horde dissolves with `horde-dissolved`. Each tick it advances every horde's formation anchor by `marchSpeedFactor`
- * of its slowest member's top speed, up to the lane's end. It never creates a horde: `SpawnSystem`
+ * of its slowest member's top speed, up to the lane's end, except while the leader has an attack
+ * target, when the anchor holds. It never creates a horde: `SpawnSystem`
  * adds members and record together (18 §3.2).
  *
- * @remarks ponytail: the anchor never holds; holding at a standing objective and while the
- * leader engages arrive with structures and combat (minion plan M2).
+ * @remarks ponytail: the anchor does not hold at a standing objective yet; that arrives with
+ * structure entities (minion plan M2c).
  */
 export class HordeSystem implements System {
   public readonly name = 'hordes';
@@ -48,6 +49,10 @@ export class HordeSystem implements System {
       return;
     }
     state.hordes.forEach((horde) => {
+      // The anchor holds while the leader fights (18 §4), so the ranks wait for it.
+      if (state.entities.attackTargetOf(horde.leaderId) !== null) {
+        return;
+      }
       let slowest = Number.POSITIVE_INFINITY;
       for (const id of horde.memberIds) {
         slowest = Math.min(
