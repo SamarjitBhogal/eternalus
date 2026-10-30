@@ -1738,3 +1738,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   666 passed (666)"; client "Tests 415 passed (415)"; "✓ built in 227ms"; "Documentation check
   passed."
 - Next step: merge into M2b (#44).
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
+
+- What was done: merged the updated enemy-AI plan (M2a, M1 and `phase/2-sprint-2-work`) into PR
+  #44, resolving its conflict, and answered its CodeRabbit threads. `followerIndex` in
+  `state/formationSlot.ts` is the one follower-index rule; `MinionController.isAtSlot` uses it, and
+  `PathingSystem` now counts every follower, so a member skipped this tick no longer shifts the
+  slots behind it (regression test fails on the old loop).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  692 passed (692)"; client "Tests 415 passed (415)"; "✓ built in 234ms"; "Documentation check
+  passed."
+- Next step: merge into M5a (#45) and M3 (#46).
