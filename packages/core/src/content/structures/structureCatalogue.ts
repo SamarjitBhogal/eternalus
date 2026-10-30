@@ -3,7 +3,13 @@ import { MAP_FEATURE_DEFINITIONS } from '../maps/mapFeatureDefinitions';
 import type { StructureDefinition } from './structures.types';
 
 /** The footprint the map generator stamps for `id`, so the collider and the nav grid agree. */
-const footprintOf = (id: string): number => MAP_FEATURE_DEFINITIONS[id]?.footprintRadius ?? 0;
+const footprintOf = (id: string): number => {
+  const definition = MAP_FEATURE_DEFINITIONS[id];
+  if (definition === undefined) {
+    throw new Error(`Structure "${id}" has no map feature definition to take its footprint from.`);
+  }
+  return definition.footprintRadius;
+};
 
 /**
  * Walls and gates: breakable once two of the defender's three BuffTowers are down (game doc,

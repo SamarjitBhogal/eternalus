@@ -2,6 +2,7 @@ import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import type { BreakabilityRule } from '../content/structures/breakability.types';
 import type { StructureDefinition } from '../content/structures/structures.types';
+import { BuffTower } from '../entities/structures/BuffTower';
 import { Structure } from '../entities/structures/Structure';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { GameState } from '../state/GameState';
@@ -10,15 +11,13 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Keeps the structures' lifecycle (architecture 07 §3, §8, §11): announces each structure that
- * died this tick with `structure-destroyed` (its kind, team and lane), counts each team's lost
- * BuffTowers, and re-evaluates every structure's `BreakabilityRule`, flipping
+ * died this tick with `structure-destroyed` (its kind, team and lane), and re-evaluates every structure's `BreakabilityRule`, flipping
  * `Collider.isUnbreakable` and emitting `structure-breakability-changed` when it changes. Runs
  * after every system that deals damage and before `DeathSystem`, so the dead are still in the
  * store when they are announced. Never calls another system: the effects of a loss are listeners.
  */
 export class StructureSystem implements System {
   public readonly name = 'structure';
-  private readonly buffTowersDown = new Map<Team, number>();
 
   /** @param definitions - Where each structure's definition, and so its rule, is looked up. */
   public constructor(
@@ -28,54 +27,47 @@ export class StructureSystem implements System {
   /** Announces this tick's destroyed structures, then updates breakability, in store order. */
   public update({ state }: SystemContext): void {
     const living: Structure[] = [];
+    const buffTowersAlive = new Map<Team, number>();
     state.entities.forEach((entity) => {
       if (!(entity instanceof Structure)) {
         return;
       }
-      if (entity.findComponent(Health)?.isDead !== true) {
-        living.push(entity);
+      const team = state.entities.teamOf(entity.id) ?? 'neutral';
+      if (entity.findComponent(Health)?.isDead === true) {
+        state.events.emit('structure-destroyed', {
+          entityId: entity.id,
+          kind: entity.kind,
+          team,
+          lane: entity.laneId,
+        });
         return;
       }
-      const team = state.entities.teamOf(entity.id) ?? 'neutral';
-      if (entity.kind === 'buff-tower') {
-        this.buffTowersDown.set(team, (this.buffTowersDown.get(team) ?? 0) + 1);
-      }
-      state.events.emit('structure-destroyed', {
-        entityId: entity.id,
-        kind: entity.kind,
-        team,
-        lane: entity.laneId,
-      });
-    });
-    const buffTowersAlive = new Map<Team, number>();
-    for (const structure of living) {
-      if (structure.kind === 'buff-tower') {
-        const team = state.entities.teamOf(structure.id) ?? 'neutral';
+      living.push(entity);
+      if (entity instanceof BuffTower) {
         buffTowersAlive.set(team, (buffTowersAlive.get(team) ?? 0) + 1);
       }
-    }
+    });
+    const { numLanes, buffTowersPerLane } = state.config.map;
+    const total = numLanes * buffTowersPerLane;
     for (const structure of living) {
-      this.updateBreakability(state, structure, buffTowersAlive);
+      const team = state.entities.teamOf(structure.id) ?? 'neutral';
+      const down = Math.max(0, total - (buffTowersAlive.get(team) ?? 0));
+      this.updateBreakability(state, structure, down, total);
     }
   }
 
   private updateBreakability(
     state: GameState,
     structure: Structure,
-    buffTowersAlive: ReadonlyMap<Team, number>,
+    down: number,
+    total: number,
   ): void {
     const collider = structure.findComponent(Collider);
     if (collider === undefined) {
       return;
     }
-    const definition = this.definitions.get(structure.definitionId);
-    const team = state.entities.teamOf(structure.id) ?? 'neutral';
-    const down = this.buffTowersDown.get(team) ?? 0;
-    const isBreakable = StructureSystem.passes(
-      definition.breakability,
-      down,
-      down + (buffTowersAlive.get(team) ?? 0),
-    );
+    const { breakability } = this.definitions.get(structure.definitionId);
+    const isBreakable = StructureSystem.passes(breakability, down, total);
     if (collider.isUnbreakable !== isBreakable) {
       return;
     }
@@ -87,7 +79,11 @@ export class StructureSystem implements System {
     });
   }
 
-  /** Whether `rule` lets the structure take damage with `down` of its team's `total` BuffTowers lost. */
+  /**
+   * Whether `rule` lets a structure take damage with `down` of its team's `total` BuffTowers lost
+   * (`total` from config: `numLanes × buffTowersPerLane`, 07 §3). Pure, so an invariant can
+   * re-evaluate it from scratch.
+   */
   public static passes(rule: BreakabilityRule, down: number, total: number): boolean {
     if (rule.kind === 'allied-buff-towers-down') {
       return down >= Math.ceil(rule.fraction * total);

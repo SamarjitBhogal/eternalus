@@ -1975,5 +1975,7 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   layer already draws buildings). Docs 03, 07, 18 and the minion plan updated.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   727 passed (727)"; client "Tests 416 passed (416)"; "✓ built in 160ms"; "Documentation check
-  passed."
+  passed." After the critic (blockers: the BuffTower count kept in the system, and
+  `Collider.isUnbreakable` not hashed; both fixed, total now from config) and ponytail (lean, no
+  cuts): core "Tests 728 passed (728)", client "Tests 416 passed (416)", `EXIT=0`.
 - Next step: M2c on top of this branch.
