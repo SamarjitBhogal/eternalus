@@ -2038,3 +2038,66 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   HC-B1, squash or merge commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
 - Correction (cc2-03; round B14's entry is not rewritten): `90f915a` and `c0ec551` in round B14's
   entry are pr-ui-hud-components-assets-04 and -05.
+
+### 2026-10-28 — Sprint 2/3 planning — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: wrote `docs/plan/game-loop-and-results-plan.md` (status draft, proposed) for
+  the owner's game loop, the 30 s win/lose screen and the stretch post-game screen. Five readers
+  mapped core, client, requirements, parallel PRs and architecture; one planner drafted; three
+  independent critics (architecture, correctness, ponytail) and a reviser ran three rounds
+  (39, 24 and 17 findings; 1 blocker and 15 majors in all, every finding applied or rejected
+  with a reason, log in `eternalus-agent-work/game-loop-plan/critic-log.md`). The orchestrator
+  checked the two round-3 majors (construction-time scoring rows, replayable human seat)
+  against `11-game-ai.md:280`, `GameConfig.types.ts:49` and `GameEvents.ts:12`. The plan
+  decides architectural choices A1–A19 and routes 11 product questions (GL-Q1–Q19, some IDs
+  retired) to the owner. No architecture doc, ADR or INBOX item was edited; `docs/README.md`
+  index regenerated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 619 passed (619)"; client "Tests 1360 passed (1360)"; "✓ built in 207ms";
+  "Documentation check passed."
+- Next step: the owner answers GL-Q1, Q2, Q3 and Q10 first (they block GL-3 and GL-0); GL-1
+  (director kernel) can start now on `feat/match-director`.
+
+### 2026-10-28 — Sprint 2/3 planning (GL-0) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: recorded the owner's answers to every GL-Q (chat, 2026-10-28). Plan §5c quotes
+  them and wins over older plan text; §1, §2, §4.3, §5a A3/A4, §6, §7 (GL-0 to GL-4, GL-7, new
+  GL-12 respawn, GL-13 names, GL-14 code rename) and §9 follow them. Decisions log batch
+  DEC-71 to DEC-82; ADR 0021 (draft, proposed: the sovereign is the win objective, a generic
+  `ObjectiveLostCondition`, no time limit, family `sovereign`); one INBOX item with the six
+  points left open (gem look, verdict lines, rename timing, bonus against Host units, code-name
+  veto, accept ADR 0021 and the §6 edits). GL-0 ran on this plan's branch, not on a separate
+  one. GL-1 (`feat/match-director`) started in its own worktree.
+- Checks run: `npm run docs:index`; `npm run docs:check`; Prettier on the changed docs.
+- Next step: GL-1's result and its critic; GL-2 after GL-1.
+
+### 2026-10-29 — Sprint 2/3 planning (GL-0 close-out) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: the owner accepted the six open points, ADR 0021 and the plan §6 edits ("all
+  accepted. continue"): DEC-83; ADR 0021 accepted (frontmatter `active`); ADR 0006 Status line
+  "amended by 0021"; the INBOX item moved to Done; plan §5c settled. The critic round over GL-0
+  and GL-1 (architecture reviewer, correctness and ponytail critics) led to these fixes here:
+  GL-Q12 quoted in full, and the team total and FR-007 points marked as defaults, not rulings;
+  "Capture points: Aryan" removed (the owner named no one); the "accepts that gap" reading of
+  GL-Q3 (a) marked as the plan's; ADR 0021 places BuffTower immunity in a 05 §9 `DamageStep`;
+  plan §6 gains a "Lands with" column and rows for 03, 04 §2, 05 §9, 10 §2, 12 §3/§8 and 15;
+  stale `spawn-kings`/`king-slain` and the old free-number note fixed. A new INBOX item holds
+  the five points the round raised (attacks during the countdown, team total, capture-points
+  owner, tower-wave start, four better-than-design items). Rejected: "the INBOX item never
+  existed" (it was uncommitted at INBOX.md:19; its text is kept verbatim in
+  `eternalus-agent-work/game-loop-plan/owner-answers-2026-10-28.md`).
+- Checks run: `npm run docs:index`; `npm run docs:check` → "Documentation check passed.";
+  Prettier on the changed docs → "All matched files use Prettier code style!".
+- Next step: GL-1's fixes and design-doc edits on `feat/match-director`; then GL-2.
+
+### 2026-10-30 — Sprint 2/3 planning (DEC-88) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What: logged DEC-88 in the owner decisions log (new batch 2026-10-30, above DEC-84's batch).
+  During the countdown every unit is idle and can only turn; nothing walks, dashes, is knocked
+  back, attacks or casts; spawns go on. It amends DEC-84 (1). The owner's words are quoted from
+  chat and from his spawn-timeline page notes; verbatim with the question:
+  `eternalus-agent-work/game-loop-plan/owner-answers-2026-10-28.md`, last section. The code and
+  the FR-003 / architecture 12 edits are on `feat/match-director`.
+- Checks run: Prettier on the decisions log → no change to other tables (diff stat +54 −1);
+  `npm run docs:check` → "Documentation check passed."
+- Next step: this branch (DEC-71 to DEC-84, DEC-88) merges before the GL branches.

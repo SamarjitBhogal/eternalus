@@ -1016,6 +1016,26 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-10-29 — **Game loop: the GL-1 critic points closed** (the item "GL — points from the
+  GL-1 critic round"), recorded as DEC-84 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. Your answer in chat: "A: Default
+  accepted. B: Yes to bothdefault accepted. C: Aryan built capture points in PR 49. … D: this
+  should be in PR 38; however, the citadel host groups should spawn in at the start of the game,
+  1 per lane, at the base of their lane. … E. Sign-off on all." Attacks and casts work during the
+  countdown; each team's table shows its total and FR-007's points stay; Aryan builds capture
+  points; the tower-wave start stays in the minion code, and the opening Hosts wait at the base of
+  their lanes until the countdown ends; the countdown is 10 s; the four better-than-design GL-1
+  changes are signed off, and the match-director doc follows in the GL-1 PR. You also said to tell
+  Samarjit and Gurshaan about the game-loop changes that touch their code.
+- 2026-10-29 — **Game loop: the open points closed; ADR 0021 accepted** (the item "GL — what the
+  game-loop answers left open"), recorded as DEC-83 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. Your answer in chat: "all accepted.
+  continue". Every default stands: the gem looks the same until it erupts (FR-112) for the MVP;
+  the three placeholder verdict lines; the Citadel/Acolyte/Host code rename after the minion stack
+  and the structure branch merge, before 2026-11-20; no bonus sovereign damage against Host units;
+  the code names `ObjectiveLostCondition`, `WinObjective`, `Sovereign` and `Monarch`. ADR 0021
+  (`docs/decisions/0021-sovereign-is-the-win-objective.md`) is accepted, and so are the plan §6
+  design-doc edits; each lands with the plan task that builds it.
 - 2026-10-25 — **Sub-classes are MVP: you accepted ADR 0018 as you corrected it** (HC-Q1 (5)),
   recorded as DEC-56 in `docs/reference/game-design/13-owner-decisions-log.md` with your words.
   You chose "Accept (Recommended)" on 2026-10-24, when the coordinating session put the pre-PR
