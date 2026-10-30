@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { loadDefaultContent } from '../content/loadDefaultContent';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
+import { EntityFactory } from '../entities/EntityFactory';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
 import { EntityStore } from './EntityStore';
@@ -150,5 +154,23 @@ describe('EntityStore', () => {
     expect(walker.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
     expect(store.steer('still', { x: 1, y: 0 })).toBe(false);
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
+  });
+
+  it("reads an entity's team and whether it is alive", () => {
+    const store = storeWith('dummy');
+    const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(
+      'light-mob',
+      'light-minion',
+      { team: 'dark', position: { x: 0, y: 0 } },
+    );
+    store.add(minion);
+
+    expect(store.teamOf(minion.id)).toBe('dark');
+    expect(store.isAlive(minion.id)).toBe(true);
+    minion.getComponent(Health).applyDamage(1e6);
+    expect(store.isAlive(minion.id)).toBe(false);
+    expect(store.teamOf('dummy')).toBeUndefined();
+    expect(store.isAlive('dummy')).toBe(false);
+    expect(store.isAlive('nobody')).toBe(false);
   });
 });
