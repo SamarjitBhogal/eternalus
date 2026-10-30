@@ -1404,3 +1404,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 182ms"; "Documentation
   check passed."
 - Next step: add the three CI checks as required on `main`.
+
+### 2026-10-29 — Phase 2 / sprint 2.2 — feat/object-pool — claudiodh + Claude Code
+
+- What was done: SCRUM-427. `ObjectPool<T>` in `packages/core/src/utils/` (Object Pool, 04 §11,
+  research §6): `capacity` objects made up front, `reset` on `acquire` and on `release`,
+  `acquire()` returns `undefined` when empty, a double release throws. Test covers the phase 1
+  plan's "resets fields on acquire, nulls references on release". Not exported from `index.ts`
+  (the client does not need it). Pooled `GameEvents` payloads are not wired: they clash with the
+  recent-events ring buffer and with handlers that keep payloads; question added to `INBOX.md`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 616 passed (616)"; client "Tests 416 passed (416)"; "✓ built in 106ms"; "Documentation
+  check passed."
+- Next step: Sam answers the INBOX item; the first real user is projectiles (SCRUM-169).
