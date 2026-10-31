@@ -4,7 +4,7 @@ description: The code-level requirements CP-01 to CP-16 (SOLID, DRY, KISS/YAGNI 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-30
 tags: [requirements, coding, solid, patterns]
 paths: ['packages/core/src/**', 'apps/client/src/**']
 related:
@@ -112,23 +112,23 @@ linked, not repeated. Code below is **illustrative TypeScript sketches** of the 
 Use the names below exactly (full designs in the architecture docs). A pattern is chosen because
 it removes a specific coupling, and the PR says which one.
 
-| Pattern                   | Used for                                                                                     | Use it when                                                          |
-| ------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Factory + Registry        | `EntityFactory` + `EntityRegistry` (kind → factory)                                          | Creation depends on a kind that grows over time                      |
-| Type Object               | Content definitions (`LegendDefinition`, `MobDefinition`, ...)                               | Many "breeds" share one class and differ in data                     |
-| Flyweight                 | Shared immutable definitions referenced by entities                                          | Per-kind data must not be copied per instance                        |
-| Command                   | Input and bots produce `Command`s; dev-menu actions too                                      | Anything that mutates state; needs replay/undo/logging               |
-| Observer                  | `GameEvents` in core, `TypedEventBus` in `bridge/`                                           | A producer must not know its consumers                               |
-| State                     | `MatchDirector` over `MatchPhase`; controller FSMs                                           | Behaviour depends on a small set of named modes with transitions     |
-| Strategy                  | `TargetingStrategy`, `AttackStrategy`, `MovementStrategy`, `PickUpStrategy`, `AbilityEffect` | Per-kind behaviour selected from data                                |
-| Facade                    | `Simulation`, `PersistenceController`, `ResourceController`                                  | A subsystem needs one narrow entry point                             |
-| Object Pool               | Projectiles, particles, high-frequency event payloads                                        | Hot-path allocation would cause GC pauses (AP-13)                    |
-| Template Method           | `Entity` lifecycle hooks (`onSpawn`, `onRemove`)                                             | A fixed skeleton with subclass-specific steps                        |
-| Composite                 | `Horde` (aggregate of Mob ids with lane, formation, leader)                                  | A group must be addressed as one unit                                |
-| Adapter                   | Every `engine/` device, storage adapters                                                     | A platform API must fit a port (AP-02)                               |
-| Builder                   | `MapBuilder` inside `MapGenerator`                                                           | Constructing a large, validated structure step by step               |
-| Repository + Unit of Work | `data/persistence` repositories, one transaction per use case                                | Persistence with consistency guarantees (ES-10)                      |
-| Dependency Injection      | Constructor injection from `Match`/`SessionController`                                       | Always; no Service Locator, no singletons except store and event bus |
+| Pattern                   | Used for                                                                                           | Use it when                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Factory + Registry        | `EntityFactory` + `EntityRegistry` (kind → factory)                                                | Creation depends on a kind that grows over time                      |
+| Type Object               | Content definitions (`LegendDefinition`, `MobDefinition`, ...)                                     | Many "breeds" share one class and differ in data                     |
+| Flyweight                 | Shared immutable definitions referenced by entities                                                | Per-kind data must not be copied per instance                        |
+| Command                   | Input and bots produce `Command`s; dev-menu actions too                                            | Anything that mutates state; needs replay/undo/logging               |
+| Observer                  | `GameEvents` in core, `TypedEventBus` in `bridge/`                                                 | A producer must not know its consumers                               |
+| State                     | `MatchDirector` over `MatchPhase`; controller FSMs                                                 | Behaviour depends on a small set of named modes with transitions     |
+| Strategy                  | `TargetingStrategy`, `AttackStrategy`, `MovementStrategy`, `PickUpStrategy`, `AbilityEffect`       | Per-kind behaviour selected from data                                |
+| Facade                    | `Simulation`, `PersistenceController`, `ResourceController`                                        | A subsystem needs one narrow entry point                             |
+| Object Pool               | Projectiles, particles; high-frequency event payloads only once profiling shows GC pauses (DEC-94) | Hot-path allocation would cause GC pauses (AP-13)                    |
+| Template Method           | `Entity` lifecycle hooks (`onSpawn`, `onRemove`)                                                   | A fixed skeleton with subclass-specific steps                        |
+| Composite                 | `Horde` (aggregate of Mob ids with lane, formation, leader)                                        | A group must be addressed as one unit                                |
+| Adapter                   | Every `engine/` device, storage adapters                                                           | A platform API must fit a port (AP-02)                               |
+| Builder                   | `MapBuilder` inside `MapGenerator`                                                                 | Constructing a large, validated structure step by step               |
+| Repository + Unit of Work | `data/persistence` repositories, one transaction per use case                                      | Persistence with consistency guarantees (ES-10)                      |
+| Dependency Injection      | Constructor injection from `Match`/`SessionController`                                             | Always; no Service Locator, no singletons except store and event bus |
 
 Do not add a pattern for its own sake: "use patterns wherever possible" means wherever a
 coupling would otherwise appear, and the review checklist asks which coupling each one removes.

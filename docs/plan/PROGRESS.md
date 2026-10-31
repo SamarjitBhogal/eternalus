@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-30
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -2487,3 +2487,26 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: the product owner signs off on the doc 18 §5.2 change on PR #61 (ADR 0018, DEC-96;
   `INBOX.md` item); then mark it ready for review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/pr-review-rulings — sholtzman + Claude Code
+
+- What was done: recorded the owner's 2026-10-30 rulings from the open-PR review in the decisions
+  log: DEC-85 (mirrored random camps, #30-A), DEC-86 (capture rules, #49), DEC-87 (spawn timeline),
+  DEC-89 (most-struggling lane), DEC-90 (Legend XP target), DEC-91 (horde event names, #38-E),
+  DEC-93 (tier-1 and tier-2 first waves at +165 s and +195 s, amending DEC-87). Requirements FR-005,
+  FR-031, FR-033, FR-037 and FR-049 now cite them; structures doc §7 states the capture rules;
+  INBOX DEC-15 question (1) closed by DEC-85; the XP-curve item notes that the resize waits for
+  bot laners (PR #46). DEC-88 and DEC-92 belong to the game-loop work.
+  Later the same day: DEC-94 (ObjectPool covers projectiles, not event payloads; PR #51) and
+  DEC-99 (`crushed` is hard control; a re-applied stun restarts its timer; PR #52). The coding
+  principles Object Pool row and the glossary's Object Pool entry cite DEC-94.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  731 passed (731)"; client "Tests 415 passed (415)"; "✓ built in 257ms"; "Documentation check
+  passed." Moved onto the phase head `9c58897` (PRs #46 and #47; `INBOX.md` and this log kept both
+  sides), then again `EXIT=0`: core "Tests 787 passed (787)"; client "Tests 419 passed (419)";
+  "✓ built in 117ms"; "Documentation check passed." Moved onto `f12d680` (PRs #60 and #61; this
+  log, `INBOX.md` and the decisions log kept both sides), then `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 791 passed (791)"; client "Tests 419 passed (419)"; "✓ built
+  in 118ms"; "Documentation check passed."
+- Next step: a PR into `phase/2-sprint-2-work`. Docs owned elsewhere still to align
+  (doc 18 §3.1/§3.3/§10, doc 07 §6 tower rows, doc 12 §2, FR-003) go to their sessions.
