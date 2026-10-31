@@ -44,11 +44,9 @@ function moveUpChords(settings: SettingsSliceState | undefined): unknown {
   return settings?.bindings.find((binding) => binding.action === 'move-up')?.chords;
 }
 
-function developerCameraLabels(
-  settings: { readonly bindings: readonly SavedBinding[] } | null | undefined,
-): unknown {
-  return settings?.bindings
-    .find((binding) => binding.action === 'toggle-developer-camera')
+function developerCameraLabels(bindings: readonly SavedBinding[] | null | undefined): unknown {
+  return bindings
+    ?.find((binding) => binding.action === 'toggle-developer-camera')
     ?.chords.map((chord) => chord.label);
 }
 
@@ -114,16 +112,17 @@ describe('SettingsController', () => {
   ])(
     'lists the developer camera chord of %s first, at start and after a reset (DEC-118)',
     async (_platform, isApplePlatform, labels) => {
-      const { bus, persistence, published } = await started(
+      const { bus, controller, persistence, published } = await started(
         new MemoryStorageAdapter(),
         isApplePlatform,
       );
 
       bus.emit('ui-intent', { kind: 'reset-bindings', action: null });
 
-      expect(developerCameraLabels(published[0])).toEqual(labels);
-      expect(developerCameraLabels(published.at(-1))).toEqual(labels);
-      expect(developerCameraLabels(await persistence.loadSettings())).toEqual(labels);
+      expect(developerCameraLabels(published[0]?.bindings)).toEqual(labels);
+      expect(developerCameraLabels(published.at(-1)?.bindings)).toEqual(labels);
+      expect(developerCameraLabels(controller.bindings)).toEqual(labels);
+      expect(developerCameraLabels((await persistence.loadSettings())?.bindings)).toEqual(labels);
     },
   );
 

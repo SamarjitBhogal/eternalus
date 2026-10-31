@@ -20,6 +20,7 @@ import { createCoreCatalogue } from './game/content/coreCatalogue';
 import { PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { createBrowserMatch } from './game/createBrowserMatch';
 import { readDeveloperFlags } from './game/developerFlags';
+import { isAppleUserAgent } from './game/isAppleUserAgent';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
 import { GameCanvas } from './game/GameCanvas';
 import { INPUT_ACTIONS } from './game/input/keybindings';
@@ -65,8 +66,7 @@ const settings = new SettingsController({
   bus: eventBus,
   persistence,
   logger,
-  // iOS and iPadOS user agents say "like Mac OS X" too.
-  isApplePlatform: window.navigator.userAgent.includes('Mac'),
+  isApplePlatform: isAppleUserAgent(window.navigator.userAgent),
 });
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
