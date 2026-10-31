@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-30
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -2488,6 +2488,29 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Next step: the product owner signs off on the doc 18 §5.2 change on PR #61 (ADR 0018, DEC-96;
   `INBOX.md` item); then mark it ready for review.
 
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/pr-review-rulings — sholtzman + Claude Code
+
+- What was done: recorded the owner's 2026-10-30 rulings from the open-PR review in the decisions
+  log: DEC-85 (mirrored random camps, #30-A), DEC-86 (capture rules, #49), DEC-87 (spawn timeline),
+  DEC-89 (most-struggling lane), DEC-90 (Legend XP target), DEC-91 (horde event names, #38-E),
+  DEC-93 (tier-1 and tier-2 first waves at +165 s and +195 s, amending DEC-87). Requirements FR-005,
+  FR-031, FR-033, FR-037 and FR-049 now cite them; structures doc §7 states the capture rules;
+  INBOX DEC-15 question (1) closed by DEC-85; the XP-curve item notes that the resize waits for
+  bot laners (PR #46). DEC-88 and DEC-92 belong to the game-loop work.
+  Later the same day: DEC-94 (ObjectPool covers projectiles, not event payloads; PR #51) and
+  DEC-99 (`crushed` is hard control; a re-applied stun restarts its timer; PR #52). The coding
+  principles Object Pool row and the glossary's Object Pool entry cite DEC-94.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  731 passed (731)"; client "Tests 415 passed (415)"; "✓ built in 257ms"; "Documentation check
+  passed." Moved onto the phase head `9c58897` (PRs #46 and #47; `INBOX.md` and this log kept both
+  sides), then again `EXIT=0`: core "Tests 787 passed (787)"; client "Tests 419 passed (419)";
+  "✓ built in 117ms"; "Documentation check passed." Moved onto `f12d680` (PRs #60 and #61; this
+  log, `INBOX.md` and the decisions log kept both sides), then `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 791 passed (791)"; client "Tests 419 passed (419)"; "✓ built
+  in 118ms"; "Documentation check passed."
+- Next step: a PR into `phase/2-sprint-2-work`. Docs owned elsewhere still to align
+  (doc 18 §3.1/§3.3/§10, doc 07 §6 tower rows, doc 12 §2, FR-003) go to their sessions.
+
 ### 2026-10-31 — Phase 2 / sprint 2.2 — fix/minion-m1-review — sholtzman + Claude Code
 
 - What was done: fixed the review findings on the merged PR #38 (minion M1) and the stalls they
@@ -2500,11 +2523,14 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   the store (MS-29). Separation falls off as 1/r (F7b). Merged the phase branch at `f12d680`
   (#61): MS-31 and MS-35 replace #61's walk-out and separation hold, and a chase on blocked ground
   follows the field out (DEC-126). Docs 02, 03, 06, 10 and 18, the minion plan and the phase 2
-  plan updated; the `INBOX.md` #61 item is decided and the MS-33 item added.
+  plan updated; the `INBOX.md` #61 item is decided and the MS-33 item added. Merged
+  `docs/pr-review-rulings` (PR #62) for the DEC-87 and DEC-93 rows; FR-005 now gives the DEC-127
+  first times.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   818 passed (818)"; client "Tests 419 passed (419)"; "✓ built in 108ms"; "Documentation check
-  passed."
+  passed." After merging PR #62, again `EXIT=0`: core "Tests 818 passed (818)"; client "Tests 419
+  passed (419)"; "✓ built in 107ms"; "Documentation check passed."
 - Soak (seed 1, 3 lanes, 900 s): skipped spawns 30.61 % light / 33.47 % dark without bots, 23.62 %
   / 43.22 % with bots; the < 5 % bar still fails until #56 gives hordes structures to attack.
-- Next step: pre-PR gate and the PR into `phase/2-sprint-2-work`; then rebase #55 and #56 onto
-  this fix and build the Legend-only chase limit (MS-34) on #56.
+- Next step: pre-PR gate and the PR into `phase/2-sprint-2-work`; then merge this fix into #55
+  and #56 and build the Legend-only chase limit (MS-34) on #56.
