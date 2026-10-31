@@ -16,9 +16,9 @@ import type { System, SystemContext } from './System.types';
 /**
  * Spawns the lane hordes (architecture 18 §3): after the developer menu's queued requests
  * (`state.hordeRequests`, 18 §3.5), the opening hordes at load-in (tick 0), one per lane from the
- * lane's base (DEC-84), then every spawning structure's DISC-10 waves: each wave's clock starts when
- * the countdown ends, its first horde goes out `firstAtSeconds` later and then one every interval
- * (DEC-87). Each wave horde spawns at the structure's map position and takes
+ * lane's base (DEC-84, DEC-87 (e)), then every spawning structure's DISC-10 waves: each wave's
+ * clock starts when the countdown ends, its first horde goes out `firstAtSeconds` later and then
+ * one every interval (DEC-87). Each wave horde spawns at the structure's map position and takes
  * its own lane or the worst lane (`assessLanes`). A horde is clipped to `limits.maxUnitsPerTeam`,
  * with the team's `unitsRequested` and `unitsSuppressed` counted (18 §3.4). Members and the horde
  * record are created in one step, then announced with `entity-spawned` and `horde-spawned`
@@ -120,7 +120,10 @@ export class SpawnSystem implements System {
     }
   }
 
-  /** At tick 0: one opening horde per lane for each team with the opening source (DEC-84). */
+  /**
+   * At tick 0: one opening horde per lane for each team with the opening source (DEC-84,
+   * DEC-87 (e)).
+   */
   private openingHordes(state: GameState, routes: LaneRoutes): HordeRequest[] {
     const { openingWave } = this.plan;
     return this.spawners
