@@ -44,8 +44,8 @@ const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
 );
 
 /**
- * A match on `map`: one opening horde per lane and team at tick 0, and the first wave 165 s after
- * the countdown (DEC-87, DEC-93), so a test that stops before then sees only the opening hordes;
+ * A match on `map`: one opening horde per lane and team at tick 0, and the first wave 180 s after
+ * the countdown (DEC-87, DEC-127), so a test that stops before then sees only the opening hordes;
  * with `isMarchingOnly`, minions never fight.
  */
 const match = (map: MapDefinition, seed = 1, isMarchingOnly = false) => {
@@ -177,7 +177,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
 
     run(simulation, 60 * 30);
 
-    // The two opening hordes of each team; the first wave is 165 s after the countdown (DEC-93).
+    // The two opening hordes of each team; the first wave is 180 s after the countdown (DEC-87).
     const opened = 2 * createDefaultGameConfig().match.hordeSizes.light;
     expect(alive('light')).toBeLessThan(opened);
     expect(alive('dark')).toBeLessThan(opened);
@@ -208,8 +208,8 @@ const gridOf = (map: MapDefinition, config: GameConfig): WorldMap =>
   );
 
 /**
- * A match with one opening horde per lane and team at tick 0 and the DISC-10 waves from 165 s
- * after the countdown (DEC-87, DEC-93); with `isMarchingOnly`, minions never fight, so every mob is still
+ * A match with one opening horde per lane and team at tick 0 and the DISC-10 waves from 180 s
+ * after the countdown (DEC-87, DEC-127); with `isMarchingOnly`, minions never fight, so every mob is still
  * alive at the end of a march.
  */
 const laneMatch = (map: MapDefinition, numLanes: number, isMarchingOnly = false) => {

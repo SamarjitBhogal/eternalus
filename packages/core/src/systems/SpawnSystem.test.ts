@@ -73,9 +73,9 @@ const summary = (hordes: readonly GameEventMap['horde-spawned'][]) =>
 
 /** The tick the countdown ends, when every wave clock starts (DEC-87). */
 const COUNTDOWN = Math.round(createDefaultGameConfig().match.countdownSeconds * TICK_RATE);
-/** The first light, heavy and medium waves: 165, 180 and 195 s after the countdown (DEC-87, DEC-93). */
-const LIGHT = COUNTDOWN + 165 * TICK_RATE;
-const MEDIUM = COUNTDOWN + 195 * TICK_RATE;
+/** The first heavy, light and medium waves: 180, 200 and 230 s after the countdown (DEC-87, DEC-127). */
+const LIGHT = COUNTDOWN + 200 * TICK_RATE;
+const MEDIUM = COUNTDOWN + 230 * TICK_RATE;
 const HEAVY = COUNTDOWN + 180 * TICK_RATE;
 
 describe('SpawnSystem', () => {
@@ -111,32 +111,32 @@ describe('SpawnSystem', () => {
     expect(progress).toEqual([0, 0, 0, 0]);
   });
 
-  it('starts every wave clock at the countdown end: first waves at 165, 180 and 195 s, then each interval', () => {
+  it('starts every wave clock at the countdown end: first waves at 180, 200 and 230 s, then each interval', () => {
     const { timeline, runTo } = setUp({}, { openingWave: NO_OPENING });
 
-    runTo(LIGHT - 1);
+    runTo(HEAVY - 1);
     expect(timeline).toEqual([]);
 
     const at = (seconds: number) => String(COUNTDOWN + seconds * TICK_RATE);
-    runTo(COUNTDOWN + 285 * TICK_RATE);
-    // Lights every 60 s from 165 s, heavies every 90 s from 180 s, mediums every 60 s from 195 s.
+    runTo(COUNTDOWN + 320 * TICK_RATE);
+    // Heavies every 90 s from 180 s, lights every 60 s from 200 s, mediums every 60 s from 230 s.
     // Spawner id order within a tick: buff, spawner, then Stronghold, Dark before Light. The
     // heavy horde takes the worst lane: every lane ties at the start, so the middle (lane-1).
     expect(timeline).toEqual([
-      `${at(165)} dark lane-0 16`,
-      `${at(165)} light lane-0 16`,
       `${at(180)} dark lane-1 4`,
       `${at(180)} light lane-1 4`,
-      `${at(195)} dark lane-1 8`,
-      `${at(195)} light lane-1 8`,
-      `${at(225)} dark lane-0 16`,
-      `${at(225)} light lane-0 16`,
-      `${at(255)} dark lane-1 8`,
-      `${at(255)} light lane-1 8`,
+      `${at(200)} dark lane-0 16`,
+      `${at(200)} light lane-0 16`,
+      `${at(230)} dark lane-1 8`,
+      `${at(230)} light lane-1 8`,
+      `${at(260)} dark lane-0 16`,
+      `${at(260)} light lane-0 16`,
       `${at(270)} dark lane-1 4`,
       `${at(270)} light lane-1 4`,
-      `${at(285)} dark lane-0 16`,
-      `${at(285)} light lane-0 16`,
+      `${at(290)} dark lane-1 8`,
+      `${at(290)} light lane-1 8`,
+      `${at(320)} dark lane-0 16`,
+      `${at(320)} light lane-0 16`,
     ]);
   });
 
@@ -145,15 +145,15 @@ describe('SpawnSystem', () => {
       { match: { countdownSeconds: 600 } },
       { openingWave: NO_OPENING },
     );
-    const firstLight = (600 + 165) * TICK_RATE;
+    const firstHeavy = (600 + 180) * TICK_RATE;
 
-    runTo(firstLight - 1);
+    runTo(firstHeavy - 1);
     expect(timeline).toEqual([]);
 
-    runTo(firstLight);
+    runTo(firstHeavy);
     expect(timeline).toEqual([
-      `${String(firstLight)} dark lane-0 16`,
-      `${String(firstLight)} light lane-0 16`,
+      `${String(firstHeavy)} dark lane-1 4`,
+      `${String(firstHeavy)} light lane-1 4`,
     ]);
   });
 
@@ -189,13 +189,14 @@ describe('SpawnSystem', () => {
   });
 
   it('spawns only the members that fit under the unit cap and counts the rest', () => {
-    // The two opening hordes (32) leave room for 12 of the first light wave; then none fits.
+    // The opening hordes (32) and the first heavy horde (4) leave room for 8 of the first light
+    // wave; then none fits.
     const { state, spawned, runTo } = setUp({ limits: { maxUnitsPerTeam: 44 } });
 
     runTo(MEDIUM);
 
-    expect(summary(spawned)).toContain('dark lane-0 12');
-    // Requested: 32 opening + 16 light, then 4 heavy and 8 medium; kept out: 4, then all 12.
+    expect(summary(spawned)).toContain('dark lane-0 8');
+    // Requested: 32 opening + 4 heavy, then 16 light and 8 medium; kept out: 8, then all 8.
     expect(state.teams.dark).toEqual({
       unitsRequested: 60,
       unitsSuppressed: 16,
