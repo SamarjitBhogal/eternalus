@@ -57,6 +57,7 @@ export type {
   MinimapGlyph,
   MinimapGlyphShape,
 } from './content/maps/maps.types';
+export type { VerdictLines, VerdictLineSet } from './content/narrative/verdictLines.types';
 export type { BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
 export type {
   DiagnosticEvent,

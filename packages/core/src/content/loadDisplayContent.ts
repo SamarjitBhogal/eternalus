@@ -14,7 +14,10 @@ import { LEGEND_SPECS } from './legends/specs/legendSpecCatalogue';
 import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
 import type { MapFeatureKind } from './maps/maps.types';
+import { VERDICT_LINES } from './narrative/verdictLines';
+import type { VerdictLines } from './narrative/verdictLines.types';
 import { PROFILE_DISPLAY_NAME } from './profile/profileDisplayName';
+import { SOVEREIGN_DISPLAY_NAMES } from './sovereigns/sovereignDisplayNames';
 import { BOT_ROSTER } from './teams/botRoster';
 import type { BotRosterDefinition } from './teams/botRoster.types';
 import { TEAM_DISPLAY_NAMES } from './teams/teamDisplayNames';
@@ -37,6 +40,10 @@ export type DisplayContent = {
   readonly profileDisplayName: string;
   /** Who the bots are: each team's lane bots and the enemy Rover's rule (DEC-61, DEC-102). */
   readonly botRoster: BotRosterDefinition;
+  /** The results screen's line under the verdict, per victory condition and side (12 §9). */
+  readonly verdictLines: VerdictLines;
+  /** Each team's sovereign display name ("Emperor" by default, DEC-74); fills a verdict line. */
+  readonly sovereignNames: Readonly<Record<PlayableTeam, string>>;
 };
 
 /** The catalogues `loadDisplayContent` validates and returns; each defaults to the shipped one. */
@@ -83,5 +90,7 @@ export const loadDisplayContent = ({
     teamNames: TEAM_DISPLAY_NAMES,
     profileDisplayName: PROFILE_DISPLAY_NAME,
     botRoster,
+    verdictLines: VERDICT_LINES,
+    sovereignNames: SOVEREIGN_DISPLAY_NAMES,
   };
 };
