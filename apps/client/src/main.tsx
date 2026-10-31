@@ -61,7 +61,13 @@ const persistence = new PersistenceController({
     logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
   },
 });
-const settings = new SettingsController({ bus: eventBus, persistence, logger });
+const settings = new SettingsController({
+  bus: eventBus,
+  persistence,
+  logger,
+  // iOS and iPadOS user agents say "like Mac OS X" too.
+  isApplePlatform: window.navigator.userAgent.includes('Mac'),
+});
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
   loaders: [
