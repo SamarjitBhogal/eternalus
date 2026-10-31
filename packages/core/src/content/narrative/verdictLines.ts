@@ -7,7 +7,9 @@ import type { VerdictLines } from './verdictLines.types';
  * player's own on a defeat or a draw.
  */
 export const VERDICT_LINES = {
-  // TUNE: the owner's accepted placeholders (DEC-83 (2)); he may rewrite them at any time.
+  // TUNE: the owner's accepted placeholders (DEC-83 (2)), kept as built (DEC-134 (1)); he may
+  // rewrite them at any time. The draw line names only the player's sovereign; GL-3 revisits it
+  // when each team's sovereign has its own name (DEC-74).
   'objective-lost': {
     victory: 'The enemy {name} has fallen.',
     defeat: 'Your {name} has fallen.',

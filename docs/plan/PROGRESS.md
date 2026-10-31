@@ -2831,3 +2831,28 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `npm run docs:check` pass.
 - Next step: merge `docs/game-loop-and-results-plan` first (DEC-122, 123, 129 to 132); merge this
   branch into `feat/results-flow`; GL-4's ponytail review.
+
+### 2026-10-30 — Game loop plan GL-4 into GL-5, DEC-129 and DEC-134 cited (Phase 3 sprint 3.5, pulled forward) — feat/results-flow — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`49c7117`) into this branch (`ed2b93f`; the only conflict was
+  this file, both sides kept). Cited the owner's answers at their values (rows on
+  `docs/game-loop-and-results-plan`):
+  - DEC-129: `match-ended`'s `durationSeconds` (`bridge/events.ts`, 13 §10 Bridge note); Play again
+    and Main menu stay on the win/lose screen until GL-10 (a `ponytail:` note in
+    `ResultsScreen.tsx`, 13 §10 Session note); `selectMatchDurationText` in 13 §3's
+    `ResultsScreen` row.
+  - DEC-134 (new, the owner's A1 and B1): the win/lose screen's wording stays as built
+    (`ui/strings.ts`; `content/narrative/verdictLines.ts`, whose draw line names only the player's
+    sovereign until GL-3); the 5 s run-on after the match ends does not stop for a pause
+    (`MatchState.scheduleResults`, and a `MatchState.test.ts` case that pins it).
+  - Owner docs edited (reported): 13 §3 (one citation in the `ResultsScreen` row, width kept), §10
+    (two status-note sentences).
+- Fail-first: the DEC-134 test went red when `setPaused(true)` dropped the pending move to
+  `results`; restore checked by `shasum` and `cmp`
+  (`eternalus-agent-work/game-loop-plan/gl5-dec134-break.md`).
+- Checks run: the merge, before these edits: `npm run check` EXIT=0, core "Tests 806 passed
+  (806)", client "Tests 1542 passed (1542)", "✓ built", "Documentation check passed."
+  (`gl45-merge-check-2026-10-30.log`). After these edits: `npm run check` EXIT=0, core "Tests 806
+  passed (806)", client "Tests 1543 passed (1543)", "✓ built", "Documentation check passed."
+  (`gl5-cite-check-2026-10-30.log`).
+- Next step: the pre-PR gate for GL-5 (architecture critic, then ponytail on GL-4 and GL-5).

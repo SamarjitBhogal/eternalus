@@ -137,7 +137,7 @@ show comes from content through the store (`contentSlice`, `matchSlice`), never 
 | `AboutScreen`                                                                                                   | `selectCredits` (generated from the manifest's `licence` and `source` fields)                                                                                                               | none                                                                                        | **MVP**                                                                           |
 | `CharacterSelectScreen` (the class step, then the Legend step, DEC-49; the class step's layout by data, DEC-52) | `contentSlice` (classes, Legends, layout), `matchSetupSlice` (team, allies, selection, countdown), `selectAllyTiles`, `assetsSlice` (art URLs)                                              | `select-class`, `clear-class-selection`, `confirm-selection`                                | **MVP** (DEC-49)                                                                  |
 | `MatchScreen`                                                                                                   | the open overlay and the bindings (`usePauseMenuKey`); renders the `viewport` prop (the only screen that does, so no `Match` exists outside `match`, DEC-50), the HUD and the pause overlay | `open-overlay`, `close-overlay`; `leave-match` (from the pause overlay), `forfeit`          | **MVP**                                                                           |
-| `ResultsScreen`                                                                                                 | `selectMatchVerdict`, `selectVerdictLine`, `selectMatchDurationText`, the results countdown (`matchSetupSlice`)                                                                             | `continue` (DEC-78), `navigate`, `start-match` (rematch)                                    | **MVP**                                                                           |
+| `ResultsScreen`                                                                                                 | `selectMatchVerdict`, `selectVerdictLine`, `selectMatchDurationText` (DEC-129), the results countdown (`matchSetupSlice`)                                                                   | `continue` (DEC-78), `navigate`, `start-match` (rematch)                                    | **MVP**                                                                           |
 
 | HUD element                | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                                                       | Status  |
 | -------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
@@ -602,7 +602,8 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   GL-5): `MatchBridge` publishes `match-ended` once, after the tick that ended the match; `Match`
   then calls the factory's `onEnded`, and `MatchState` moves on after `RESULTS_DELAY_MS`. `results`
   goes to `menu` when its countdown ends or on `continue`; the post-game screen (plan task GL-10,
-  stretch) is not built. `RESULTS_DELAY_MS` and `RESULTS_COUNTDOWN_MS` sit in
+  stretch) is not built; until it is, the win/lose screen keeps Play again and Main menu beside
+  Continue (DEC-129 (2)). `RESULTS_DELAY_MS` and `RESULTS_COUNTDOWN_MS` sit in
   `game/session/sessionTiming.constants.ts` until plan task GL-11 moves them to core content. In
   the browser nothing ends a match yet: the sovereign (plan task GL-3) is not built.
   `SessionController` takes no `persistence` yet (`main.tsx` opens it
@@ -610,8 +611,8 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `MemoryStorageAdapter` (§2).
 - **Bridge.** New events beyond §5's sketch: `structure-state`, `asset-urls` (each image's URL and,
   where the manifest declares one, its draw box), `credits` and `selection-locked` (the rosters LOCK
-  IN filled); `match-ended` also carries `durationSeconds` (the bridge knows the tick rate, the UI
-  does not), and the session countdowns live in `matchSetupSlice`; §5's `capture-state` is now
+  IN filled); `match-ended` also carries `durationSeconds` (DEC-129: the bridge knows the tick rate,
+  the UI does not), and the session countdowns live in `matchSetupSlice`; §5's `capture-state` is now
   published; `loading-progress` names seven asset groups ([14](14-persistence-and-resources.md)
   §14); `hud-state` is `{ player }` with no
   `spectatedLegendId` (no spectate producer yet). The display types live in

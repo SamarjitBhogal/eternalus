@@ -173,7 +173,7 @@ export type BridgeEventMap = {
   'match-clock': MatchClock;
   /**
    * The match ended, once per match (13 §5): core's result, and its length in match seconds (the
-   * bridge knows the tick rate, the UI does not).
+   * bridge knows the tick rate, the UI does not; DEC-129 (1)).
    */
   'match-ended': { readonly result: MatchResult; readonly durationSeconds: number };
   /** The human Legend for the HUD, every 6 ticks (13 §5); `null` before it spawns. */

@@ -57,7 +57,10 @@ export const STRINGS = {
   },
   loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
   profile: { history: 'Match history and achievements appear here.' },
-  /** The win/lose screen; its verdict line is core content (`selectVerdictLine`, DEC-83). */
+  /**
+   * The win/lose screen, wording kept as built (DEC-134 (1)); its verdict line is core content
+   * (`selectVerdictLine`, DEC-83).
+   */
   results: {
     /** The banner without a result (results follow `match-ended`, so only a bug shows it). */
     title: 'Match results',

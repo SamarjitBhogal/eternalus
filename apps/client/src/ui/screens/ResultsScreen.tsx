@@ -60,6 +60,8 @@ export function ResultsScreen(): ReactElement {
             >
               {STRINGS.results.continue}
             </Button>
+            {/* ponytail: Play again and Main menu stay here until the post-game screen (plan task
+                GL-10) exists, then move there as DEC-78 says (DEC-129 (2)). */}
             <Button
               onClick={() => {
                 emitIntent({ kind: 'start-match' });
