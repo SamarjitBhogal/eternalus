@@ -2651,3 +2651,17 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: core "Tests 883 passed (883)"; client "Tests 420 passed
   (420)"; "Documentation check passed."
 - Next step: the pre-PR gate, then push and reply on #56.
+
+### 2026-10-31 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — sholtzman + Claude Code
+
+- What was done: pre-PR gate for #56. Critic round 1 (`f2b264a..61b9a1b`): one blocker, fixed:
+  `cf93e2a` had split the 2026-10-30 M2c entry, which was already on the remote; it is restored
+  word for word (the merge entry above still says "split", as it was then). Also fixed: a stale
+  Rover remark and a literal 30 in a test. Rejected: the `topSpeed` multiplier gap
+  (`StatusEffects.test` covers the math). DEC-137: unit cap 144 → 300 (soak at 300: light 0 %,
+  dark 15.78 %, the rest from hordes holding at an unbreakable gate). INBOX: the docs that still
+  say 144 and `maxDecisionsPerTick`, and the gate hold. Critic round 2: PASS. Ponytail: no cuts.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 883 passed (883)"; client "Tests 420 passed (420)"; "✓ built in 111ms"; "Documentation
+  check passed."
+- Next step: push, the CodeRabbit replies and the summary comment on #56.

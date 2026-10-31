@@ -20,11 +20,15 @@ Reply inline (`Decision: …`).
       `MAX_UNITS_PER_TEAM = 300` (the default and the validator's ceiling). These docs still say
       144: requirements 06 (FR-043, FR-098, NFR-007), 01 (scale requirement), 05 (tick row) and
       the README scale row; DISC-17; `balancing.md` (unit cap paragraph, spawn table); game-design
-      00, 02 and 11; architecture 08 (targets) and 15 (soak scenario); plan README and phases 1, 2,
-      3 (sprint 3.8), 5 and 6. The source transcription keeps 144. Proposed: where a doc states the
-      cap, it names where the cap lives ("`limits.maxUnitsPerTeam`, DEC-137"). Open: do the tick
-      targets (p95 ≤ 8 ms "at 144 units per team + 20 Legends") move to 300 too? Approve, or say
-      what to change.
+      00, 02 and 11; architecture 08 (targets), 10 (soak, "288 minions"), 11 §6 ("288 mobs"),
+      13 (dev spawn), 15 (cap invariant, soak scenario); DISC-18 (288); plan README and phases 1, 2,
+      3 (sprints 3.2, 3.3, 3.8), 5 and 6. The source transcription keeps 144. Proposed: where a doc
+      states the cap, it names where the cap lives ("`limits.maxUnitsPerTeam`, DEC-137"). Open:
+      (1) do the tick targets (p95 ≤ 8 ms "at 144 units per team + 20 Legends") move to 300 too?
+      (2) `maxDecisionsPerTick` (96, `TUNE`, `content/ai/cadence.ts`) comes from 11 §6's "288 mobs
+      / 5". Up to 600 mobs at a minion cadence of 5 is up to about 120 brains due per tick, so
+      `AiSystem` would defer some each tick (estimate, not measured). Keep 96, or raise it? Approve,
+      or say what to change.
 
 - [ ] **Hordes pile up at a gate that is not breakable yet (PR #56 soak, 2026-10-31).** At cap
       300 the dark team still skips 15.78 % of horde spawns (light: 0 %). About 110 dark minions
