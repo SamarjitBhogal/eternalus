@@ -120,4 +120,62 @@ describe('GameState', () => {
 
     expect(state.entities.removedThisTick()).toEqual([]);
   });
+
+  it('keeps every xp award of the tick, whatever the ring buffer drops, and forgets them next tick', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const award = {
+      entityId: 'entity-1',
+      amount: 5,
+      victimId: 'entity-2',
+      victimTeam: 'dark',
+    } as const;
+    state.events.emit('xp-gained', award);
+    for (let i = 0; i < 600; i += 1) {
+      state.events.emit('tick-completed', { tick: 0 });
+    }
+
+    expect(state.xpAwardsThisTick()).toEqual([award]);
+    state.advanceTick();
+    expect(state.xpAwardsThisTick()).toEqual([]);
+  });
+
+  it('counts spawn requests per team and rejects a spawned count outside 0..requested', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+
+    state.recordSpawnRequest('dark', 16, 10);
+    state.recordSpawnRequest('dark', 16, 16);
+
+    expect(state.teams.dark).toEqual({
+      unitsRequested: 32,
+      unitsSuppressed: 6,
+      towersLostByLane: {},
+    });
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
+    expect(() => {
+      state.recordSpawnRequest('light', 4, 5);
+    }).toThrow(RangeError);
+    expect(() => {
+      state.recordSpawnRequest('light', 4, -1);
+    }).toThrow(RangeError);
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
+  });
+
+  it('counts lost lane towers per team and lane', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-1');
+
+    expect(state.teams.light.towersLostByLane).toEqual({ 'lane-0': 2, 'lane-1': 1 });
+    expect(state.teams.dark.towersLostByLane).toEqual({});
+  });
 });

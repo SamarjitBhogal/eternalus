@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { Brain } from '../components/Brain';
+import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { loadDefaultContent } from '../content/loadDefaultContent';
 import { TeamMembership } from '../components/TeamMembership';
-import { Transform } from '../components/Transform';
 import type { Team } from '../teams/teams.types';
+import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
+import { EntityFactory } from '../entities/EntityFactory';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
 import { EntityStore } from './EntityStore';
@@ -46,17 +48,6 @@ class Hero extends Legend {
 
   protected override installComponents(team: unknown): void {
     this.addComponent(new TeamMembership(team as Team));
-  }
-}
-
-class Escort extends Entity {
-  public readonly kind = 'escort';
-  public readonly family = 'test';
-
-  protected installComponents(): void {
-    this.addComponent(new Transform({ x: 2, y: 3 }, 0.5));
-    this.addComponent(new TeamMembership('dark'));
-    this.addComponent(new Brain('follow-leader'));
   }
 }
 
@@ -165,32 +156,70 @@ describe('EntityStore', () => {
     expect(store.steer('nobody', { x: 1, y: 0 })).toBe(false);
   });
 
-  it('reports whether an entity is steering', () => {
-    const store = storeWith('still');
-    const walker = new Walker('walker', 'walker-definition');
-    walker.spawn({});
-    store.add(walker);
+  it("reads an entity's team and whether it is alive", () => {
+    const store = storeWith('dummy');
+    const minion = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30)).create(
+      'light-mob',
+      'light-minion',
+      { team: 'dark', position: { x: 0, y: 0 } },
+    );
+    store.add(minion);
 
-    expect(store.isSteering('walker')).toBe(false);
-    store.steer('walker', { x: 1, y: 0 });
-    expect(store.isSteering('walker')).toBe(true);
-    expect(store.isSteering('still')).toBe(false);
-    expect(store.isSteering('nobody')).toBe(false);
+    expect(store.teamOf(minion.id)).toBe('dark');
+    expect(store.isAlive(minion.id)).toBe(true);
+    minion.getComponent(Health).applyDamage(1e6);
+    expect(store.isAlive(minion.id)).toBe(false);
+    expect(store.teamOf('dummy')).toBeUndefined();
+    expect(store.isAlive('dummy')).toBe(false);
+    expect(store.isAlive('nobody')).toBe(false);
   });
 
-  it('reads position, team and controller for ai/, and nothing for bare or unknown entities', () => {
-    const store = storeWith('bare');
-    const escort = new Escort('escort', 'escort-definition');
-    escort.spawn({});
-    store.add(escort);
+  it("reads, sets and clears an entity's attack target", () => {
+    const store = storeWith('dummy');
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const attacker = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 0, y: 0 },
+    });
+    store.add(attacker);
 
-    expect(store.positionOf('escort')).toEqual({ x: 2, y: 3 });
-    expect(store.teamOf('escort')).toBe('dark');
-    expect(store.controllerOf('escort')).toBe('follow-leader');
-    for (const id of ['bare', 'nobody']) {
-      expect(store.positionOf(id)).toBeUndefined();
-      expect(store.teamOf(id)).toBeUndefined();
-      expect(store.controllerOf(id)).toBeUndefined();
-    }
+    expect(store.attackTargetOf(attacker.id)).toBeNull();
+    store.setAttackTarget(attacker.id, 'dummy');
+    expect(store.attackTargetOf(attacker.id)).toBe('dummy');
+    store.clearAttackTarget(attacker.id);
+    expect(store.attackTargetOf(attacker.id)).toBeNull();
+    store.clearAttackTarget('dummy');
+    expect(store.attackTargetOf('dummy')).toBeNull();
+    expect(store.attackTargetOf('nobody')).toBeNull();
+  });
+
+  it('reads health as a fraction and whether a target is in attack reach', () => {
+    const store = storeWith('dummy');
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 0, y: 0 },
+    });
+    const near = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 2, y: 0 },
+    });
+    const far = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 5, y: 0 },
+    });
+    store.add(minion);
+    store.add(near);
+    store.add(far);
+    const health = minion.getComponent(Health);
+    health.applyDamage(health.max / 4);
+
+    expect(store.healthFractionOf(minion.id)).toBe(0.75);
+    expect(store.healthFractionOf('dummy')).toBeUndefined();
+    // Edge to edge: 2 − 0.4 − 0.4 = 1.2 m, inside the 1.5 m reach; 4.2 m is not.
+    expect(store.isInReach(minion.id, near.id)).toBe(true);
+    expect(store.isInReach(minion.id, far.id)).toBe(false);
+    expect(store.isInReach('dummy', near.id)).toBe(false);
+    expect(store.isInReach(minion.id, 'nobody')).toBe(false);
   });
 });

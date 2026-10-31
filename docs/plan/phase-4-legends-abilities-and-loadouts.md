@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-29
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -166,6 +166,10 @@ Owner: _ (sim lane). Week 8.
       cooldown; requires visiting a BuffTower or the Stronghold, `TUNE`). Owner: _. Test: only if
       implemented. Done when: documented either way.
 
+**Status (2026-10-16, PR #31, Claudio):** `Progression` + `ProgressionSystem` started early (S2,
+SCRUM-426): level curve and per-level health and aether from content, kill XP to the killer. Shared,
+assist, structure, checkpoint, camp and boss XP and potency scaling remain, so the box stays open.
+
 **Success metric:** a bot-vs-bot match ends with every Legend at a level consistent with its
 XP events (asserted by an invariant), and loadout validation rejects 100% of a fixture set of
 bad loadouts.
@@ -226,7 +230,7 @@ the next render, verified by a test and by a reviewer in the browser.
 3. Architecture doc 05 and reference docs 01, 06, 07 and 08 match the code, or an ADR records
    the deviation; every "(rename pending)" note is still visible in content display names.
 4. Phase PR approved (sholtzman + AI owner + product owner sign-off on abilities), CI green on
-   three OSes, merged by SamarjitBhogal.
+   Linux and Windows, merged by SamarjitBhogal.
 
 ## Risks
 

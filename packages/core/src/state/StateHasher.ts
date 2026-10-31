@@ -1,6 +1,10 @@
+import { Aether } from '../components/Aether';
 import { Collider } from '../components/Collider';
+import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { Progression } from '../components/Progression';
+import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
@@ -11,7 +15,7 @@ import type { GameState } from './GameState';
 /**
  * Fingerprints a match state as a 32-bit FNV-1a hash of a canonical serialisation
  * (architecture 03 §9): tick, phase and RNG state, then every entity in store order with its
- * component fields in a fixed order. It covers state the client never sees (velocity), so two
+ * component fields in a fixed order, then the hordes and spawn counters (architecture 18 §3.4, §4). It covers state the client never sees (velocity), so two
  * runs that diverge anywhere show it at the next hash. A new component with simulation state adds
  * its fields to `fieldsOf`.
  */
@@ -22,7 +26,50 @@ export class StateHasher {
     state.entities.forEach((entity) => {
       entities.push(StateHasher.fieldsOf(entity));
     });
-    return fnv1a(JSON.stringify([state.tick, state.phase, state.rng.getState(), entities]));
+    const parts: unknown[] = [state.tick, state.phase, state.rng.getState(), entities];
+    // Hordes and the spawn counters are appended only once a horde was asked for, so a match
+    // without hordes hashes exactly as before (recorded replay checkpoints stay valid).
+    const { light, dark } = state.teams;
+    if (state.hordes.issuedIds > 0 || light.unitsRequested > 0 || dark.unitsRequested > 0) {
+      const hordes: unknown[] = [
+        state.hordes.issuedIds,
+        light.unitsRequested,
+        light.unitsSuppressed,
+        dark.unitsRequested,
+        dark.unitsSuppressed,
+      ];
+      state.hordes.forEach((horde) => {
+        hordes.push([
+          horde.id,
+          horde.team,
+          horde.weightClass,
+          horde.lane,
+          horde.formationId,
+          horde.leaderId,
+          horde.progress,
+          ...horde.memberIds,
+        ]);
+      });
+      parts.push(['hordes', ...hordes]);
+    }
+    // Lost towers are appended only once a lane has one, for the same reason.
+    const lost = (['light', 'dark'] as const).flatMap((team) =>
+      Object.keys(state.teams[team].towersLostByLane)
+        .sort()
+        .map((lane) => [team, lane, state.teams[team].towersLostByLane[lane]]),
+    );
+    if (lost.length > 0) {
+      parts.push(['enraged', ...lost]);
+    }
+    // Brains are appended only once one exists, for the same reason.
+    if (state.ai.size > 0 || state.ai.deferred.length > 0) {
+      const brains: unknown[] = [...state.ai.deferred];
+      state.ai.forEach((id, brain) => {
+        brains.push([id, brain.controllerId, brain.profileId, brain.memory, brain.rngState]);
+      });
+      parts.push(['ai', ...brains]);
+    }
+    return fnv1a(JSON.stringify(parts));
   }
 
   private static fieldsOf(entity: Entity): unknown[] {
@@ -53,9 +100,34 @@ export class StateHasher {
     if (collider !== undefined) {
       fields.push(['collider', collider.isEnabled]);
     }
+    const combat = entity.findComponent(Combat);
+    if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
+      fields.push(['combat', combat.targetId, combat.readyAtTick]);
+    }
     const vision = entity.findComponent(Vision);
     if (vision !== undefined) {
       fields.push(['vision', vision.revealedUntilTick]);
+    }
+    const aether = entity.findComponent(Aether);
+    if (aether !== undefined) {
+      fields.push(['aether', aether.current, aether.max]);
+    }
+    const statuses = entity.findComponent(StatusEffects);
+    if (statuses !== undefined && statuses.active.length > 0) {
+      fields.push([
+        'statuses',
+        ...statuses.active.flatMap((status) => [
+          status.definition.id,
+          status.sourceId,
+          status.stacks,
+          status.periodAnchorTick,
+          status.expiresTick,
+        ]),
+      ]);
+    }
+    const progression = entity.findComponent(Progression);
+    if (progression !== undefined) {
+      fields.push(['progression', progression.xp, progression.level]);
     }
     return fields;
   }

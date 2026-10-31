@@ -9,6 +9,7 @@ import { EntityFactory } from '../../entities/EntityFactory';
 import { GameState } from '../../state/GameState';
 import type { CommandContext } from '../CommandHandler.types';
 import { StopHandler } from './StopHandler';
+import { loadWeapons } from '../../content/weapons/loadWeapons';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
@@ -23,7 +24,12 @@ class Rock extends Entity {
 
 const context = (): CommandContext => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    UNIT_DEFINITIONS,
+    undefined,
+    loadWeapons(createDefaultGameConfig().tickRate),
+  );
   state.entities.add(
     factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' }),
   );
@@ -41,6 +47,20 @@ describe('StopHandler', () => {
 
     expect(new StopHandler().handle({ type: 'stop', actorId: 'entity-1' }, ctx)).toBeNull();
     expect(movement?.heading).toEqual({ x: 0, y: 0 });
+  });
+
+  it('clears the attack target, so the unit stops hitting and chasing (MS-26)', () => {
+    const ctx = context();
+    const { entities } = ctx.state;
+    const minion = ctx.factory.create('light-mob', 'light-minion', {
+      position: { x: 1, y: 0 },
+      team: 'dark',
+    });
+    entities.add(minion);
+    entities.setAttackTarget('entity-1', minion.id);
+
+    expect(new StopHandler().handle({ type: 'stop', actorId: 'entity-1' }, ctx)).toBeNull();
+    expect(entities.attackTargetOf('entity-1')).toBeNull();
   });
 
   it('rejects an unknown actor and an actor that cannot move', () => {

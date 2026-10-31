@@ -1,0 +1,122 @@
+import type { CONTROLLER_IDS } from './controllerIds';
+
+/** Which controller drives an entity (architecture 11 §2); kebab-case, never renamed once used. */
+export type ControllerId = (typeof CONTROLLER_IDS)[number];
+
+/** How often each controller decides, and how many decisions a tick may hold (11 §6). */
+export type AiCadence = {
+  /** Ticks between two decisions of one entity, per controller. */
+  readonly everyTicks: Readonly<Record<ControllerId, number>>;
+  /** At most this many decisions per tick; the rest wait for the next tick, first in line. */
+  readonly maxDecisionsPerTick: number;
+};
+
+/**
+ * How a horde moves together (architecture 18 §4, §5). Distances are world units (metres); none
+ * changes with the tick rate.
+ */
+export type HordeSteeringProfile = {
+  /** A mob this close to its formation slot stops steering toward it. */
+  readonly slotArrivalRadius: number;
+  /** Neighbours closer than this push a mob away (architecture 10 §9). */
+  readonly separationRadius: number;
+  /**
+   * How far toward its slot a mob checks the ground; when that stretch crosses an unwalkable
+   * cell it follows the lane's flow field instead (architecture 18 §5.2).
+   */
+  readonly blockedLookAhead: number;
+  /** Push at contact, falling to 0 at `separationRadius`. */
+  readonly separationWeight: number;
+  /** A combined steer shorter than this counts as none, so a settled horde stands still. */
+  readonly minSteer: number;
+  /** The formation anchor advances at this fraction of the slowest member's top speed. */
+  readonly marchSpeedFactor: number;
+  /** Gap between members in the spawn grid; at least the largest minion's diameter. */
+  readonly spawnSpacing: number;
+  /** Members per row of the spawn grid. */
+  readonly spawnColumns: number;
+};
+
+/** The weights of the lane assessment (architecture 18 §3.3); each term runs from 0 to 1. */
+export type LaneAssessmentWeights = {
+  readonly damageNotDealt: number;
+  readonly structuresLost: number;
+  readonly pushedBack: number;
+};
+
+/** The classes the aggro priority list names (architecture 11 §4.3). */
+export type UnitClass = 'legend' | 'minion' | 'turret';
+
+/**
+ * One entry of a minion's target priority list (architecture 11 §4.3), best first. `x-attacking-
+ * ally-y` is an enemy of class `x` whose attack target is an ally of class `y`; `closest-x` is any
+ * enemy of class `x`; `lane-objective` is the horde's next standing enemy structure (18 §6.2).
+ */
+export type AggroPriority =
+  | 'legend-attacking-ally-legend'
+  | 'minion-attacking-ally-legend'
+  | 'minion-attacking-ally-minion'
+  | 'turret-attacking-ally-minion'
+  | 'closest-minion'
+  | 'closest-legend'
+  | 'lane-objective';
+
+/**
+ * How a minion picks and keeps targets (architecture 11 §4.3, 18 §6.1): an AI profile, named by a
+ * unit definition's `aiProfile`. Distances are metres, durations ticks.
+ */
+export type AggroRuleDefinition = {
+  readonly id: string;
+  /** Enemies this close may be acquired. */
+  readonly acquisitionRadius: number;
+  /** Best first; an enemy that matches no entry is never acquired. */
+  readonly priority: readonly AggroPriority[];
+  /** A chase ends when the mob is this far from where it left its formation. */
+  readonly leashRadius: number;
+  /** A chase ends this many ticks after it started on its current target. */
+  readonly aggroDurationTicks: number;
+  /** After re-forming, a mob waits this many ticks before it may acquire again. */
+  readonly aggroCooldownTicks: number;
+  /** A returning mob this close to its formation slot is marching again. */
+  readonly reformDistance: number;
+};
+
+/** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */
+export type AiMemory = Readonly<Record<string, string | number | boolean | null>>;
+
+/**
+ * How hard a bot Legend plays (architecture 11 §4.2): a `BotDifficultyDefinition` in
+ * `content/ai/difficulties/`, named by the bot's AI profile. Distances are metres.
+ */
+export type BotDifficultyDefinition = {
+  readonly id: string;
+  /** Below this fraction of its health the bot retreats (`Survive`). */
+  readonly retreatHealthFraction: number;
+  /** A retreating bot rejoins its lane at or above this fraction of its health. */
+  readonly rejoinHealthFraction: number;
+  /** Enemies this close make the bot fight (`Fight`). */
+  readonly engageRadius: number;
+  /** A bot this close to where it is going stops there. */
+  readonly arrivalDistance: number;
+  /** The `UtilityScorer`'s weight for each target consideration. */
+  readonly utilityWeights: Readonly<Record<'closeness' | 'weakness', number>>;
+  /** The chance, each time a cast is allowed, that a fighting bot casts an ability (0 to 1). */
+  readonly abilityUseChance: number;
+  /** At least this many ticks between two casts. */
+  readonly castIntervalTicks: number;
+};
+
+/** How the Rover hunts and mirrors the human (architecture 11 §4.7). Distances are metres. */
+export type RoverTactics = {
+  /** How far the Rover senses Legends for `HumanProximity` and mirroring. */
+  readonly senseRadius: number;
+  /** The human this close may be hunted. */
+  readonly huntRadius: number;
+  /** It hunts when its health fraction leads the human's by at least this much. */
+  readonly huntAdvantage: number;
+  /**
+   * How it weighs a lane (11 §4.7): `pressure` (`StructurePressure`: how badly its team is doing
+   * there, 0 to 1) against `human` (`HumanProximity`: 1 on the human's lane).
+   */
+  readonly laneWeights: Readonly<Record<'pressure' | 'human', number>>;
+};

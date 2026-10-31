@@ -75,6 +75,22 @@ const RULES: readonly Rule[] = [
   positive('map.worldWidth'),
   positive('map.worldHeight'),
   positive('map.navCellSize'),
+  positive('map.flowFieldCorridorHalfWidth'),
+  {
+    path: 'map.flowFieldCellBudget',
+    rule: 'must be a whole number >= 1',
+    isValid: (value) => isWhole(value, 1),
+  },
+  {
+    path: 'map.pathMaxExpansions',
+    rule: 'must be a whole number >= 1',
+    isValid: (value) => isWhole(value, 1),
+  },
+  {
+    path: 'map.pathSnapCells',
+    rule: 'must be a whole number >= 0',
+    isValid: (value) => isWhole(value, 0),
+  },
   {
     path: 'map.presetId',
     rule: 'must be a non-empty string when set',

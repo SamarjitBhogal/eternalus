@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-29
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -37,7 +37,7 @@ carried over unchanged.
 flowchart LR
   IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q[CommandQueue]
   Q -->|next tick| APPLY[CommandApplySystem]
-  APPLY --> SYS[SystemPipeline: AiSystem ... DeathSystem ... InvariantSystem]
+  APPLY --> SYS[SystemPipeline: AiSystem ... MovementSystem, CombatSystem, DeathSystem ... InvariantSystem]
   SYS -->|mutates| STATE[(GameState)]
   SYS -->|emits| EV[GameEvents]
   SYS --> SNAP[SnapshotSystem]
@@ -59,7 +59,7 @@ export class GameState {
   public readonly rng: SeededRandom; // the only source of randomness
   public readonly entities: EntityStore; // deterministic, creation-order iteration
   public readonly world: WorldMap; // grid, cost field, flow fields, structures index
-  public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs
+  public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs, spawn counters (18 §3.4)
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
@@ -96,7 +96,7 @@ command log is a complete replay and cheats are replayable too.
 // Sketch: packages/core/src/commands/Command.types.ts (fields per type in `CommandPayloads`)
 export type Command =
   | { readonly type: 'move'; readonly actorId: EntityId; readonly direction: Vec2 }
-  | { readonly type: 'stop'; readonly actorId: EntityId }
+  | { readonly type: 'stop'; readonly actorId: EntityId } // clears heading and attack target (18 §6.1)
   | { readonly type: 'attack-target'; readonly actorId: EntityId; readonly targetId: EntityId }
   | {
       readonly type: 'cast-ability';
@@ -115,6 +115,13 @@ export type Command =
       readonly team: Team;
       readonly at: Vec2;
       readonly count: number;
+    }
+  | {
+      readonly type: 'dev-spawn-mobs'; // one horde (13 §4, 18 §3.5)
+      readonly team: PlayableTeam;
+      readonly definitionId: string;
+      readonly count: number;
+      readonly origin: SpawnOrigin; // a structure, `{ lane, t }` or a point
     }
   | { readonly type: 'dev-remove-entity'; readonly entityId: EntityId }
   | {
@@ -162,18 +169,19 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 
 | Event                               | Payload                                                | Emitted by                        | Typical listeners                                                  |
 | ----------------------------------- | ------------------------------------------------------ | --------------------------------- | ------------------------------------------------------------------ |
-| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem` | `HordeSystem`, `SnapshotSystem`, views                             |
-| `entity-removed`                    | `{ entityId, cause: RemovalCause }`                    | `DeathSystem` only                | `HordeSystem`, `ProjectilePool`, invariants                        |
+| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem` | `SnapshotSystem`, views                                            |
+| `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                | `HordeSystem`, `ProjectilePool`, invariants                        |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                  | `ProgressionSystem` (assists), `AiSystem` (aggro)                  |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                   | `DeathSystem`, `ProgressionSystem`, `Scoring`                      |
-| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                 | `SpawnSystem` (enraged hordes), `StructureSystem` (walls, shields) |
+| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                 | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields) |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                 | HUD, views                                                         |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                   | HUD, `MinimapView`                                                 |
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                   | `Scoring`, `MatchDirector`, `StatusEffectSystem`                   |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchDirectorSystem`             | `SpawnSystem`, `Announcer`                                         |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                   | views (VFX), `Announcer`                                           |
-| `status-applied` / `status-expired` | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`              | views, HUD                                                         |
-| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`     | `HordeSystem`, `MinimapView`                                       |
+| `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)    | views, HUD                                                         |
+| `status-expired`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectSystem`              | views, HUD                                                         |
+| `horde-spawned` / `horde-dissolved` | `{ hordeId, lane, team, memberIds }`                   | `SpawnSystem` / `HordeSystem`     | `EnragedSystem`, `MinimapView`                                     |
 | `level-up`                          | `{ entityId, level }`                                  | `ProgressionSystem`               | `AbilitySystem` (scaling), HUD                                     |
 | `team-changed`                      | `{ entityId, from, to, cause }`                        | `Team` component                  | `HordeSystem`, views                                               |
 | `boss-summoned`                     | `{ entityId, kind }`                                   | `SpawnSystem` (timeline)          | `Announcer`, `AiSystem` (camps turn aggressive)                    |
@@ -341,7 +349,7 @@ flow fields and the spawn schedule follow. Config is a plain object, validated o
 // the three planned MatchConfig fields
 export type GameConfig = {
   readonly tickRate: number;
-  readonly map: MapConfig; // 06 §2: counts, world size, nav cell size and preset; lane and rift layout is MapLayout content
+  readonly map: MapConfig; // 06 §2: counts, world size, nav cell size, flow-field sizes and preset; lane and rift layout is MapLayout content
   readonly match: MatchConfig;
   readonly limits: LimitsConfig;
 };
@@ -367,19 +375,21 @@ export type LimitsConfig = {
 The MVP defaults live in `config/defaultGameConfig.ts` (marked `TUNE` where provisional) and the
 requirement ceilings in `config/GameConfig.constants.ts`; this table records where each comes from.
 
-| Field                                     | Meaning                                                                | Source                                     |
-| ----------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
-| `tickRate`                                | the one supported rate                                                 | decided, D9                                |
-| `numLanes`                                | odd, so the Cathedral sits on the middle lane                          | requirements doc, MVP list; 06 §2          |
-| `spawnTowersPerLane`, `buffTowersPerLane` | per lane and team                                                      | requirements doc                           |
-| `campsPerSide`                            | placed between lanes                                                   | requirements doc                           |
-| `cornerCamps`                             | **MVP-if-time**; 0 disables                                            | game doc, Outer (Corner) Camps             |
-| `legendsPerTeam`, `legendsPerLane`        | the lane Legends plus the Rover                                        | game doc, Minions and lanes; contract §2.1 |
-| `maxLegendsPerTeam`, `maxUnitsPerTeam`    | caps the developer menu and spawners respect                           | requirements doc, developer menu           |
-| `countdownSeconds`                        | only the initial hordes spawn                                          | requirements doc                           |
-| `hordeSizes`, `initialHordesPerTeam`      | one initial horde per lane, from the stronghold                        | requirements doc                           |
-| `plannedMatchSeconds`                     | the target match length                                                | DEC-13 (pending)                           |
-| `capturePoints`, `timeline`               | one capture point per lane, the middle one the Cathedral; timed events | game doc, Capture zones; 12                |
+| Field                                               | Meaning                                                                      | Source                                     |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------ |
+| `tickRate`                                          | the one supported rate                                                       | decided, D9                                |
+| `numLanes`                                          | odd, so the Cathedral sits on the middle lane                                | requirements doc, MVP list; 06 §2          |
+| `spawnTowersPerLane`, `buffTowersPerLane`           | per lane and team                                                            | requirements doc                           |
+| `campsPerSide`                                      | placed between lanes                                                         | requirements doc                           |
+| `cornerCamps`                                       | **MVP-if-time**; 0 disables                                                  | game doc, Outer (Corner) Camps             |
+| `legendsPerTeam`, `legendsPerLane`                  | the lane Legends plus the Rover                                              | game doc, Minions and lanes; contract §2.1 |
+| `maxLegendsPerTeam`, `maxUnitsPerTeam`              | caps the developer menu and spawners respect                                 | requirements doc, developer menu           |
+| `countdownSeconds`                                  | only the initial hordes spawn                                                | requirements doc                           |
+| `hordeSizes`, `initialHordesPerTeam`                | one initial horde per lane, from the stronghold                              | requirements doc                           |
+| `plannedMatchSeconds`                               | the target match length                                                      | DEC-13 (pending)                           |
+| `flowFieldCorridorHalfWidth`, `flowFieldCellBudget` | a lane field's corridor reach; cells rebuilt per tick after a terrain change | 06 §6, 10 §9; Phase 3 sprint 3.2 (`TUNE`)  |
+| `pathMaxExpansions`, `pathSnapCells`                | A\* for Legends: cells one search may settle; how far a blocked end snaps    | 10 §9, 11 §6 (`TUNE`)                      |
+| `capturePoints`, `timeline`                         | one capture point per lane, the middle one the Cathedral; timed events       | game doc, Capture zones; 12                |
 
 `validateGameConfig(config: unknown)` throws a `ConfigValidationError` naming the first offending
 field (`path`) and its `rule` (integration contract §2.2), and returns the config typed when every
@@ -421,7 +431,9 @@ each closed by the session or phase named:
   `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
-- `GameState` has no `world`, `teams`, `hordes` or `recentCommands` yet; `EntityFactory` keeps its
+- `GameState` has no `world` yet; it has `hordes`, `teams` (the spawn
+  counters only), the generated `map` and its `routes` since minion plan M1, and `ai`, `space`
+  and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),

@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-09
+last-reviewed: 2026-10-29
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -48,13 +48,13 @@ core/src/
   state/               GameState, EntityStore, GameEvents, Snapshot types, StateHasher
   commands/            Command union, CommandQueue, applyCommand() and its handler registry
   entities/            Entity root + families, EntityFactory, EntityRegistry, strategies, ProjectilePool
-  components/          Transform, Health, Movement, Combat, Abilities, Progression, Team, Collider, ...
+  components/          Transform, Health, Movement, Combat, Abilities, Progression, Team, Collider, StatusEffects (+ StatusEffectRuntime), ...
   systems/             System interface, one class per system, SystemPipeline, defaultSystemPipeline
   map/                 MapGenerator (+ MapBuilder), WorldMap, LaneGeometry, symmetry (types: content/maps)
   physics/             SpatialHash, Circle, ConvexPolygon, sat, sweptTests, Kinematics, CollisionResolver
   ai/                  Controller interface + controllers, Perception queries, aggro rules (data)
   abilities/           Ability, AbilityRuntime, effects/, restrictions/, AbilityRegistry
-  combat/              DamagePipeline, DamageSource, DeathResolver, StatusEffectRuntime
+  combat/              DamagePipeline, DamageSource, DeathResolver
   match/               MatchDirector, MatchPhase states, MatchTimeline, Scoring, VictoryConditions, MatchResult
   loadout/             Loadout model, validateLoadout(), autoBuildLoadout()
   diagnostics/         Invariant, InvariantRunner, invariants/, Logger port, DiagnosticEvent types, replay
@@ -66,16 +66,16 @@ core/src/
 | `teams/`        | The team vocabulary every layer shares                                                                    | nothing                                                                     | `teams.types.ts` (`PlayableTeam`, `Team`)                                                                                                                                                                              |
 | `config/`       | The world and match parameters, their defaults and validation                                             | `utils/`                                                                    | `GameConfig` (type), `validateGameConfig()`, `createDefaultGameConfig()`, `MatchTimelineEntry`                                                                                                                         |
 | `content/`      | Immutable definitions keyed by ID; `ContentCatalogue` resolves `extends` and validates cross-references   | `content/`, `utils/`, `teams/` and `config/` (types)                        | `ContentCatalogue`, `validateContent()`, `legends/`, `mobs/`, `bosses/`, `structures/`, `abilities/`, `weapons/`, `artifacts/`, `status-effects/`, `obstacles/`, `maps/`, `ai/profiles/`, `narrative/`, `progression/` |
-| `components/`   | State owned by entities plus the small invariants that guard it                                           | `utils/`, `content/` and `teams/` (types)                                   | `Transform`, `Health`, `Movement`, `Combat`, `Abilities`, `Progression`, `Team`, `Collider`, `StatusEffects`, `Carry`, `Loadout`, `Vision`, `Spawner`, `Capturable`                                                    |
+| `components/`   | State owned by entities plus the small invariants that guard it                                           | `utils/`, `content/` and `teams/` (types)                                   | `Transform`, `Health`, `Movement`, `Combat`, `Abilities`, `Progression`, `Team`, `Collider`, `StatusEffects` (+ `StatusEffectRuntime`), `Carry`, `Loadout`, `Vision`, `Spawner`, `Capturable`                          |
 | `physics/`      | Shapes, broad and narrow phase, sweeps, kinematics; no entity knowledge                                   | `utils/`, `components/` (types)                                             | `SpatialHash`, `Circle`, `ConvexPolygon`, `sat.ts`, `sweptTests.ts`, `Kinematics`, `CollisionResolver`                                                                                                                 |
 | `entities/`     | Identity and lifecycle: the family classes, factories, registries and strategy catalogues                 | `components/`, `content/`, `utils/`, `state/` (types), `physics/` (shapes)  | `Entity`, `Unit`, `Legend`, `Mob`, `Boss`, `Structure`, `Zone`, `Obstacle`, `Projectile`, `EntityFactory`, `EntityRegistry`, `StrategyRegistry`, `ProjectilePool`                                                      |
 | `state/`        | The aggregate root, the event channel, snapshot DTOs and hashing                                          | `utils/`, `config/` (types), `content/` (types), `components/`, `entities/` | `GameState`, `EntityStore`, `GameEvents`, `GameEventMap`, `Snapshot.types.ts`, `StateHasher`                                                                                                                           |
 | `commands/`     | Everything a player, bot or developer menu can ask for, and how it is applied                             | `state/`, `entities/`, `utils/`                                             | `Command.types.ts`, `CommandQueue`, `applyCommand.ts`, `CommandHandler.types.ts`, `handlers/*Handler.ts`, `defaultCommandHandlers.ts`                                                                                  |
 | `map/`          | Config + seed → `MapDefinition`; the runtime `WorldMap` with cost grid and flow fields                    | `config/`, `content/`, `teams/`, `utils/`, `physics/`                       | `MapGenerator`, `MapBuilder`, `WorldMap`, `LaneGeometry`, `symmetry.ts` (map types in `content/maps/maps.types.ts`)                                                                                                    |
-| `combat/`       | Damage resolution, death causes, status-effect maths                                                      | `components/`, `content/`, `state/`, `utils/`                               | `DamagePipeline`, `DamageSource.types.ts`, `DeathResolver`, `StatusEffectRuntime`                                                                                                                                      |
+| `combat/`       | Damage resolution, death causes, applying statuses                                                        | `components/`, `content/`, `state/`, `utils/`                               | `DamagePipeline`, `DamagePipeline.types.ts`, `DamageStep.types.ts`, `<Name>Step.ts`, `defaultDamageSteps.ts`, `DeathResolver`                                                                                          |
 | `abilities/`    | Ability behaviour built from effect and restriction strategies                                            | `combat/`, `components/`, `content/`, `state/`, `utils/`                    | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                                                      |
 | `loadout/`      | The loadout model and its validation against content                                                      | `content/`, `utils/`                                                        | `Loadout.types.ts`, `validateLoadout.ts`, `autoBuildLoadout.ts`                                                                                                                                                        |
-| `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                   | `state/` (read), `commands/`, `content/` (types), `utils/`                  | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                  |
+| `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                   | `state/` (read), `commands/`, `content/` and `teams/` (types), `utils/`     | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                  |
 | `match/`        | Phases, timeline, scoring, victory                                                                        | `state/`, `config/`, `utils/`                                               | `MatchDirector`, `MatchPhase.types.ts`, `MatchTimeline`, `Scoring`, `VictoryConditions`, `MatchResult.types.ts`                                                                                                        |
 | `diagnostics/`  | Invariants, the runner, the `Logger` port, diagnostic event types, the replay and property-test harnesses | `state/`, `utils/`; types of `commands/` and `config/` (DEC-20)             | `Invariant`, `InvariantRunner`, `invariants/*Invariant.ts`, `Logger.types.ts`, `DiagnosticEvent.types.ts`, `replay.ts`, `Replay.types.ts`, `randomCommands.ts`                                                         |
 | `systems/`      | Per-tick logic; one class per system; the ordered pipeline                                                | Everything below it except another system                                   | `System`, `SystemContext.types.ts`, `SystemPipeline`, `defaultSystemPipeline.ts`, `*System.ts`                                                                                                                         |
@@ -149,7 +149,7 @@ to it, named after it (`CONTRIBUTING.md` §3.1):
 ```
 components/
   Health.ts              # export class Health { ... }
-  Health.types.ts        # export type ShieldBar = { readonly sourceId: EntityId; current: number; max: number }
+  Health.types.ts        # export type ShieldBar = { readonly sourceId: string; current: number; max: number }
   Health.constants.ts    # export const MAX_SHIELD_BARS = 8;   (implementation detail, not tuning)
   Health.test.ts
 ```
@@ -203,6 +203,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | --------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------- |
 | `EntityRegistry`            | `core/src/entities/defaultEntityRegistry.ts`                                   | A concrete entity class for an `EntityKind`               |
 | `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                      | A movement, targeting, attack or pick-up strategy         |
+| Damage steps                | `core/src/combat/defaultDamageSteps.ts`                                        | A rule every hit runs through, at its position            |
 | `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                 | An `AbilityEffect` or `AbilityRestriction` class          |
 | `ControllerRegistry`        | `core/src/ai/defaultControllerRegistry.ts`                                     | A `Controller` for a `ControllerId`                       |
 | Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                               | A definition (legend, mob, ability, weapon, ...)          |
@@ -233,6 +234,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | Per-entity state                                | `core/components/<Name>.ts`                                                     | attach it in the family's `attachComponents()`                                           |
 | Per-tick behaviour                              | `core/systems/<Name>System.ts`                                                  | `defaultSystemPipeline.ts` line                                                          |
 | Behaviour that varies by kind                   | `core/entities/strategies/<Name><Family>Strategy.ts`                            | `defaultStrategyRegistry.ts` line, strategy id in content                                |
+| A rule that changes every hit (05 §9)           | `core/combat/<Name>Step.ts` (a `DamageStep`)                                    | `defaultDamageSteps.ts` line, at its position in the order                               |
 | An ability, effect, restriction                 | `core/content/abilities/<id>.ts`; `core/abilities/effects                       | restrictions/<Name>.ts`                                                                  | `defaultAbilityRegistry.ts` line for a new class |
 | A weapon, artifact, status effect               | `core/content/weapons                                                           | artifacts                                                                                | status-effects/<id>.ts`                          | catalogue line |
 | A command                                       | `core/commands/Command.types.ts` + `commands/handlers/<Name>Handler.ts`         | `defaultCommandHandlers.ts` line; a producer (`InputMapper`, controller, developer menu) |

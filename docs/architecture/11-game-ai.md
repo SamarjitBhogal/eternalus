@@ -1,10 +1,10 @@
 ---
 title: Game AI
-description: How every non-player entity decides what to do (the Controller contract, bot Legends, minions, guards, turrets, bosses, the Rover) and the determinism and cost rules controllers obey; read before adding, changing or tuning any bot behaviour.
+description: How every non-player entity decides what to do (the Controller contract, bot Legends, minions, guards, turrets, bosses, the Rover; minion and guard behaviour: see doc 18) and the determinism and cost rules controllers obey; read before adding, changing or tuning any bot behaviour.
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-30
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -12,6 +12,7 @@ related:
   - docs/architecture/10-physics.md
   - docs/architecture/12-game-story-and-match-director.md
   - docs/architecture/15-diagnostics-and-runtime-testing.md
+  - docs/architecture/18-minion-system.md
   - docs/research/game-architecture-and-performance-research.md
 ---
 
@@ -25,9 +26,11 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 
 ## 1. Where AI sits
 
-- Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (core `AGENTS.md`): `ai/` may
-  import only `state/`, `commands/` and `utils/`. Definitions, spatial queries and flow fields
-  reach a controller through `GameState`, never through imports (DIP).
+- Layer L2 (Domain), folder `packages/core/src/ai/`. Import rule (02 §2, core `AGENTS.md`): `ai/` may
+  import only `state/`, `commands/`, `content/` and `teams/` types and `utils/`. Spatial queries and flow fields
+  reach a controller through `GameState`; its content values (aggro rules, formations,
+  difficulties) come through its constructor, injected by `Simulation` when it fills the
+  registry. Never through value imports (DIP); only `content/` types are imported.
 - One system, `AiSystem`, runs second in the `SystemPipeline`, right after `CommandApplySystem`.
   It asks each due controller for decisions and enqueues them in the `CommandQueue` for the next
   tick. Controllers never mutate state, never call systems and never compute paths.
@@ -40,8 +43,8 @@ without touching the existing ones. No AI code exists yet; every snippet below i
 flowchart LR
   CQ[CommandQueue] --> CAS[CommandApplySystem]
   CAS --> AI[AiSystem]
-  AI -- "decide(state, entityId)" --> C[Controller]
-  C -- "Command[] for tick + 1" --> CQ
+  AI -- "decide({ state, entityId, brain, perception })" --> C[Controller]
+  C -- "commands for tick + 1, brain after" --> CQ
   AI --> REST[AbilitySystem, MovementSystem, ...]
 ```
 
@@ -52,18 +55,27 @@ flowchart LR
 export type ControllerId =
   'player' | 'bot-legend' | 'minion' | 'guard' | 'turret' | 'boss' | 'rover';
 
+export type DecisionInput = {
+  state: GameState;
+  entityId: EntityId;
+  brain: Brain;
+  perception: Perception;
+};
+export type Decision = { commands: readonly Command[]; memory: AiMemory; rngState: RngState };
+
 export interface Controller {
   /** Kebab-case id used by content definitions and by the ControllerRegistry. */
   readonly id: ControllerId;
-  /** Decide for one entity. Reads state only and returns commands for the next tick. */
-  decide(state: GameState, entityId: EntityId): readonly Command[];
+  /** Decide for one entity. Reads state only; returns next tick's commands and the brain after. */
+  decide(input: DecisionInput): Decision;
 }
 ```
 
 - Controllers are **stateless strategies**: one shared instance per `ControllerId` (Flyweight).
   Everything a controller remembers between decisions lives in `state.ai.brains` as plain data,
   so it is hashed by `StateHasher`, snapshotted and replayed like any other state ("state is the
-  single source of truth", rule 10).
+  single source of truth", rule 10). A controller never writes it: `decide` returns the memory and
+  RNG state after the decision and `AiSystem` writes them back, so controllers stay pure.
 
 ```ts
 // packages/core/src/state/AiState.types.ts (sketch)
@@ -113,6 +125,11 @@ results are id-sorted. Fog of war is **post-MVP**; `Vision` is its extension poi
 
 ## 4. Controllers
 
+The build order of every controller below except `PlayerController`, `TurretController` and
+`BossController` is the [minion system plan](../plan/minion-system-plan.md) §1.1 (MS-28 of doc 18);
+this section stays their design. Bosses are not controlled by the minion system: `BossController`
+is built in Phase 3 sprint 3.6.
+
 ### 4.1 PlayerController (MVP)
 
 The human's Legend has a brain too. The client's `InputMapper` turns device state into an
@@ -152,18 +169,8 @@ are additional trees selected by data, not new controllers.
 
 ### 4.3 MinionController (MVP)
 
-A finite state machine (State pattern) per Mob with memory
-`{ fsm, targetId, aggroUntilTick, cooldownUntilTick, leashAnchor, lastEvaluatedTick }`:
-
-- `marching`: follow the lane flow field for `(lane, team)`. The Mob's `MovementStrategy`
-  (`LaneFlowFollow`) handles vectors every tick; the controller only asserts `move-along-lane`.
-- acquire (at cadence, and again between attack windups as League does): candidates are
-  `perception.unitsWithin(pos, acquisitionRadius, { hostileTo: team })` plus structures; rank by
-  the profile's priority list, then distance, then id; switch only to a strictly higher priority.
-- `engaging`: `attack { targetId }` until the target dies, the Mob leaves `leashRadius` of
-  `leashAnchor`, or `aggroDurationTicks` elapse.
-- `returning`: `move-to leashAnchor`; back on the corridor → `marching`, with
-  `aggroCooldownTicks` before it may re-acquire.
+The minion state machine, lane movement and lane objectives are owned by
+[18-minion-system](18-minion-system.md) §6. This section keeps the aggro content it reads.
 
 Aggro rules are content (`AggroRuleDefinition` in `content/ai/aggro/`), seeded from published MOBA
 rules as `TUNE` starting points
@@ -186,6 +193,7 @@ export const laneMinionAggro = {
     'turret-attacking-ally-minion',
     'closest-minion',
     'closest-legend',
+    'lane-objective', // the horde's next standing structure (18 §6.2)
   ],
   reevaluateEveryTicks: 15, // TUNE
   leashRadius: 700, // TUNE
@@ -202,14 +210,7 @@ after a structure falls (game doc) are `CombatSystem`/`StatusEffectSystem` conte
 
 ### 4.4 GuardController (MVP)
 
-Tower guards (light guards at a `SpawnerTower`, "numerous" medium guards at a `BuffTower`, ranged
-and melee guards at the `Stronghold`, per the game doc) are Mobs owned by the structure's
-`Spawner` component. The FSM `holding → engaging → returning` reuses the minion's acquire, engage
-and return logic through a shared `LeashBehaviour` helper (DRY). The differences are data: the
-anchor is the home structure, `leashRadius` is the structure's `guardPerimeterRadius` (`TUNE`,
-game doc: guards "don't leave the tower's perimeter") and the idle behaviour is hold position.
-Respawn every 2 minutes (`TUNE`, game doc) is `Spawner` data consumed by `SpawnSystem`, not
-controller logic (SRP).
+Owned by [18-minion-system](18-minion-system.md) §7.
 
 ### 4.5 TurretController (MVP; manual control MVP-if-time)
 
@@ -286,8 +287,11 @@ Staggering: a brain is due when `(tick + entityId) % cadence === 0`, which sprea
 (`TUNE`; `Recommendation:` 96, since 288 mobs / 5 plus Legends and turrets is about 70) and stops
 when it is spent; the round-robin cursor lives in `state.ai.cursor`, so deferral is deterministic
 and the skipped brains go first next tick. A decision is atomic and cheap: radius-bounded queries,
-no allocation in hot paths, scratch vectors reused. Heavy work (flow fields, A\*) belongs to
-`PathingSystem`, which time-slices its rebuilds
+no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
+`move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
+blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
+path cache in the brain is the next step if profiling shows the cost). Other heavy work (flow
+fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
 ## 7. Sim mode (MVP)
@@ -304,7 +308,7 @@ switch is recorded in the replay like everything else.
 
 - Unit tests per controller with fake state: `ai/testing/buildTestState()` builds a minimal
   `GameState` with a handful of entities and a stub `Perception`; tests assert the returned
-  commands, e.g. `expect(minion.decide(state, mobId)).toEqual([{ type: 'attack-target', targetId }])`.
+  decision, e.g. `expect(minion.decide(input).commands).toEqual([{ type: 'attack-target', actorId, targetId }])`.
 - FSM transition tests are table-driven (`from`, event, expected `to`); BT tests cover each node
   class and the tree with stub conditions; considerations are pure functions of numbers.
 - Scenario tests in `ai/scenarios/*.test.ts` drive a real `Simulation` in sim mode: "a minion
@@ -330,6 +334,56 @@ Flying class, the `Vision` component for fog of war, `jungler`/`support` trees, 
 `MovementStrategy`. GOAP and HTN are not planned: a small fixed action vocabulary suits FSM, BT
 and utility better
 [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots).
+
+## 10. Implementation status
+
+Minion plan pull request M2a builds §1–§3, §5 and §6 with these differences, each closed by the
+work named:
+
+- `AiSystem` lives in `ai/` and fits the `System` contract by shape; `Simulation` puts it first in
+  the pipeline, because `systems/` may not import `ai/` (where it lives is the owner's open
+  PROTO-01 question). It is second, after `CommandApplySystem` (§1), once that system heads the
+  pipeline; until then, `Simulation.step()` applies the queued commands before it (03,
+  implementation status).
+- `EntityFactory` cannot reach the state, so a unit whose definition names a `controller` gets a
+  `ControllerBinding` component at spawn, and `AiSystem` creates its brain the first tick it sees
+  it.
+- The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
+  `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
+- The registry holds `MinionController` (M2b) and `BotLegendController` (M3); the other
+  controllers are absent until their phases, so it is a partial map.
+- `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
+  (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
+  with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness
+  and weakness, picking the best score with an id tie-break (no weighted-random pick yet). A
+  `BotDifficultyDefinition` (`content/ai/difficulties/`) holds only the knobs the tree reads;
+  `reactionDelayTicks`, `aimErrorRadius` and `abilityUseChance` join with aiming and abilities.
+  A bot gets its controller from its spawn (`Placement.controller`), with its lane in the brain's
+  starting memory, rather than from its Legend definition.
+- `RoverController` (M8) plays §4.7 on the laner's leaves (`ai/BotLeaves`): `Survive`, `Hunt`
+  (the human within `huntRadius` while the Rover leads on health by `huntAdvantage`), `Fight`,
+  then `Lane`: one utility pick over the lanes between `StructurePressure` (the lane's
+  `laneScores` score, counted from the team's calmest lane) and `HumanProximity` (1 on the
+  human's lane), weighted by `ROVER_TACTICS.laneWeights`; on the human's lane it mirrors the
+  human, on another it defends with that lane's lead horde, and a full tie goes to the lane
+  nearest the middle. Until the match state names the human (12 §4), the human is the enemy
+  Legend no controller drives, sensed through `Perception` within the `senseRadius` of
+  `content/ai/rover.ts`. No `LaneAdvantage` push yet. Its numbers are `TUNE` (`INBOX.md`).
+- Bots cast `ability-1` at their enemy when `abilityUseChance` comes up on the brain's own RNG
+  stream, at most every `castIntervalTicks`; the cast handler refuses casts until abilities land
+  (Phase 4), with no controller change needed then.
+- A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
+  One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
+  each blocked decision.
+- A brain's `profileId` names the controller's own content directly: an `AggroRuleDefinition`
+  (`content/ai/aggro/`) for `MinionController`, a `BotDifficultyDefinition`
+  (`content/ai/difficulties/`) for `BotLegendController`. The `AiProfileDefinition` of §2, which
+  would group aggro, cadence and difficulty under one id, arrives when a controller needs more
+  than one of them. `AiSystem.assertRegistered` checks each definition's profile at construction.
+- A definition that names an unregistered controller stops `Simulation` at construction (shipped
+  content) or the first tick `AiSystem` sees the entity (injected content).
+- `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities
+  (M2c).
 
 ## Related
 

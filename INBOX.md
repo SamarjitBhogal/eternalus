@@ -16,6 +16,17 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
+      `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR
+      #35). (1) Can a stunned unit still act while its aim wobbles, or does stun keep "cannot
+      move, attack, cast or interact"? (2) Do the per-source stuns in `balancing.md` (0.5–1 s)
+      stand, with 2 s only the default? (3) How large is the wobble ("slightly")? (4) Does
+      blind's white vignette replace more-abilities §7's −70% vision radius, or come on top of
+      it, and does its 2–3 s fade start when blind lands or when it ends?
+  - Your answer (chat, 2026-10-16): "2 seconds. blind makes aim slightly wobbly (like stun), but
+    also causes the screen to have a heavy white vignette that dissipates over 2-3 seconds. yes,
+    aimed projectiles miss too"; picks: "Stun default", "Wobble causes misses", "Yes, stun
+    wobbles too".
 - [ ] **DEC-36 / DEC-37 — accept ADR 0016 and answer the plan §9 questions.** The course
       instructor's two new requirements, Duel multiplayer (DEC-36) and a server for hundreds or
       thousands of concurrent players (DEC-37), are planned now; must be implemented by the end of
@@ -58,6 +69,25 @@ Reply inline (`Decision: …`).
       The balance anchors tied to the old length (boss levels at the two marks, the match-length
       metrics in `balancing.md`, the soak length) also need your numbers.
   -     Accept after scaling to planned match time = 30 mins
+- [ ] **Aether (MP) pool sizes per class.** The game doc gives no aether numbers. Branch
+      `feat/legend-aether` adds the `Aether` component (MP) to every Legend, with `baseAether` taken
+      from `suggestions/balancing.md` (level 1: Warrior 100, Sentinel 80, Magus 140; +10 per level,
+      `TUNE`). Confirm the pool sizes or give your own. (Regen rate is a Phase 4 concern, not set
+      yet.) The same branch adds Legend progression with balancing.md's other `Recommendation:`
+      values, also for you to confirm: level cap 10, `xpToNext = 100 + 50·(L−1)`, +8% base health
+      and +10 aether per level, Legend kill 150 + 25 × victim level, minion kill 20 / 45 / 120.
+  - Update after your PR #31 review (O1–O8): cap 50 (O6). **Income estimate to check:**
+    balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
+    135 XP/min (minions about 110 XP/min, the rest kills and objectives). Keeping that income and
+    balancing.md's curve shape (growth = half the first step), the cap-50 curve is
+    `xpToNext(L) = 4 + 2·(L − 1)`, 2,548 XP to level 50, reached around minute 19. Kills are
+    re-priced on the same scale: a Legend kill is 150 + 5 × victim level (a level-L victim is worth
+    what a level-L/5 one was on the cap-10 curve; 400 XP at level 50). Mob XP is each mob's
+    `xpValue` (light minion 20, training dummy 0, O8). If your income figure differs, the curve
+    scales linearly: say the XP/min and I resize it. Still yours to sign off: `level-matches-xp`
+    runs every tick, not heavy (05 §16), because rules 2–4 read this tick's `xp-gained` events.
+    Also on the cap-10 scale: balancing.md's bosses' "expected Legend level" (4 and 7) need
+    rescaling to cap 50 (×5 would give 20 and 35); say if you want that.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -80,18 +110,204 @@ Reply inline (`Decision: …`).
       starts the countdown while `menu` keeps building `MatchSetup`. Approve that text, or confirm
       that agents may apply it as delegated.
   -     Accept recommended option if it is cleaner long-term. For D, set to whichever is cleaner in the long-term.
+- [ ] **Minion system (PR #33 review) — two decisions still open.** (1) **The worst lane
+      (MS-9):** doc 18 §3.3 now scores your game doc's terms (structure damage not dealt,
+      structures lost, pushed back), as one `LaneAssessment` shared by the heavy horde and the
+      corner-camp reward wave, with a worked example. Sign off the terms, the weights and the tie-break (ties go to
+      the middle lane, so the first heavy horde goes down it), or name others. (2) **Horde size and cadence (your M7):** size from (a) `hordeSizes` in config only,
+      (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
+      spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
+      cadences (plan §3 stand-in). Details: doc 18 §10.
+- [x] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
+      (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
+      countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
+      after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
+      say each mob carries a `hordeId` back-pointer. The code keeps membership only in
+      `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
+      apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
+      to the store lookup.
+  - Decision (SamarjitBhogal, chat, 2026-10-29): (1) the first heavy horde leaves when the
+    countdown ends, like the towers' waves (the code's current schedule). (2) Signed off: horde
+    membership lives only in `state.hordes`; doc 18 §3.2, §4, §9 and 15's invariant updated in
+    `feat/minion-m3-bot-laners`.
+- [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
+      "never mutate state", yet a brain's `memory` and `rngState` change with each decision
+      (`MinionController`'s FSM state and timers, M2b). Should `decide` return
+      `{ commands, memory, rngState }` for `AiSystem` to write back (`Recommendation:`, keeps
+      controllers pure), or may a controller write its own brain?
+  - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
+    `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
+    (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
+- [ ] **Minion M3 — bot numbers and base healing.** (1) The bot difficulty knobs have no
+      reference values; `content/ai/difficulties/normal.ts` starts them as `TUNE`: retreat
+      below 30% health, rejoin at 80%, engage within 12 m, arrive within 2 m, closeness and
+      weakness weighted 1 each. Confirm or give values. (2) Doc 11 §4.2's `Survive` sends a bot
+      "back to base", and the Phase 3 plan expects it to "return to base to heal", but nothing
+      heals a Legend yet and no doc says how. Is there base healing (where, how fast)? (3)
+      Better than the design, for sign-off: bot laners take lanes in roster order, the order
+      match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
+      `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) numbers from the design docs, else the
+    agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
+    out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
+    Accepted; doc 18 §8 says roster order (PR #46).
+- [ ] **Minion M8 — the neighbour grid's layout (better than the design, for sign-off).** Doc
+      10 §5 stores `SpatialHash` as a counting sort over a per-cell `cellStart` array. On a
+      generated map that array has hundreds of thousands of cells, and clearing and summing it
+      every tick took about three quarters of the simulation's time (the 3- and 5-lane routing
+      scenarios ran 57–60 s under coverage against a 60 s limit). M8 sorts the points by cell
+      instead (cost by unit count; queries binary-search a cell's run, results unchanged, now
+      5–9 s). If accepted, 10 §5's storage paragraph changes, and with it two claims there: a
+      rebuild becomes O(n log n), not O(n), and allocates one view object per rebuild.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): accepted; doc 10 §5 describes the sorted
+    layout and its costs (PR #47). Awaits the decisions log.
+- [ ] **Minion M8 — Rover and cast numbers, A\* placement.** (1) No reference doc gives the
+      Rover's numbers; `content/ai/difficulties/rover.ts` and `content/ai/rover.ts` start them
+      as `TUNE` (retreat below 20%, engage within 16 m, hunt within 20 m when 0.2 of a health
+      bar ahead, sense the human within 400 m), and `normal`/`rover` cast with chance 0.3/0.6
+      at most every 3 s/2 s. The Rover weighs a lane's pressure against the human's lane 3 to 1
+      (`ROVER_TACTICS.laneWeights`), counting pressure from its team's calmest lane, so it
+      leaves the human for a lane pushed most of the way to its end. Confirm or give values.
+      (2) Better than the design, for sign-off: the Phase 3 plan wants A\* "as a second
+      `MovementStrategy`", but bots steer by `move`
+      commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
+      the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
+      shows the cost.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
+    line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
+    judgement, which the owner may correct later, so they stay as built.
+- [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
+      `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
+      corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
+      and the M4 blocked-lane routing test fails, because mobs have no wall-avoidance term yet.
+      Deferred by the owner (chat, 2026-10-30) to `CollisionSystem` (10 §8–§9), marked with a
+      `ponytail:` note on `isLineClear`. No unit collides with blocked ground today, so a bot
+      clipping a corner has no visible effect.
+- [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
+      `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
+      than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it
+      at 1.0 (never weaker than base). (1) Is the floor right, or should 0.75 stand? (2) DISC-24:
+      when a lane tower falls, "the base-stat distance extends further toward the enemy". By
+      how much per tower (a fraction of the lane, a fixed distance, or up to the fallen tower)?
+      (3) Better than the design, for sign-off: enraged lives in its own `EnragedSystem` (one
+      purpose, right after `SpawnSystem`), not in `SpawnSystem` as 03 §4's events table says; if
+      accepted, 03 §4's `structure-destroyed` and `horde-spawned` rows name it.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (3) accepted; 03 §4's rows name
+    `EnragedSystem` (PR #45). (2) Build the tower shift; the amount is the agent's judgement with
+    no reference: a tenth of the lane per tower (`MINION_STRENGTH.shiftPerTowerLost`, `TUNE`),
+    capped at 0.9 of the lane (`maxBasePoint`). (1) Not answered: the floor stays at 1.0, as
+    DISC-24's "addition on top of base stats" reads.
+- [x] **DISC-24 — which way the tower shift goes (question for the owner).** PR #45 builds
+      reading (a) as an interim that is easy to change (one function, `MinionStrengthStep`):
+      (a) the team that destroyed the tower gets its base-stat point moved toward the enemy; the
+      losing team's point stays put. (b) One shared front: as (a), and the losing team's point
+      also moves back toward its own home, so its minions drop to base stats sooner. (c) A
+      comeback: the losing team's strong zone grows instead. Which one? Nothing can destroy a
+      tower until M2c, so no live match uses it yet.
+  - Decision (SamarjitBhogal, chat, 2026-10-30): (a). The team that destroyed the tower gets its
+    base-stat point moved toward the enemy; the losing team's point stays put. Built in PR #45
+    (`MinionStrengthStep`); recorded as DEC-120 in the decisions log.
+- [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
+      Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
+      the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
+      components (18 §5.2 says the strategy reads `Combat.targetId`); if accepted, 18 §5.2 and
+      §7's guard strategy note change. (2) The formation slot function lives in
+      `state/formationSlot.ts`, the one folder both `systems/` and `ai/` may import. (3)
+      Controllers get their content (aggro rules, formations, kind classes) through their
+      constructor from `Simulation`, not through `GameState` (11 §1). Numbers to confirm: the
+      aggro radii scale League/Dota's 500 / 700 units by minion speed (5.4 m and 7.5 m), and
+      `reformDistance` is 2 m with no reference. Design note: 18 §6.1 ends every chase after
+      the aggro duration (69 ticks) followed by a 90-tick cooldown, minion against minion too,
+      which may give a fight, walk back, fight again rhythm; Dota applies it to hero aggro only.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1)–(3) accepted; doc 18 §5.1, §5.2 and §7
+    and doc 11 §1 updated (PR #44). Numbers: use the design docs, else the agent's judgement,
+    which the owner may correct later, so the aggro radii and `reformDistance` stay as built.
+    The design note on the chase rhythm stays open.
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
       sprint is "this sprint": S1, which ends 2026-10-16, or S2? (2) Your bot-AI system: may its
       file live under `systems/`, or must it stay in `ai/`? (Today it is in `ai/`, because core
-      `AGENTS.md` forbids `systems/` importing `ai/`, which 02 §2 allows.) (3) Add the
-      `PROTOTYPE(<id>) TEMPORARY` marker convention to `AGENTS.md` so every future prototype uses
-      it? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
+      `AGENTS.md` forbids `systems/` importing `ai/`, which 02 §2 allows; audit A23-18.) (3) Add
+      the `PROTOTYPE(<id>) TEMPORARY` marker convention to `AGENTS.md` so every future prototype
+      uses it (audit A23-17)? **Finding the code:** every prototype piece carries `PROTOTYPE(PROTO-01) TEMPORARY` and
       what replaces it; `git grep -n 'PROTOTYPE(PROTO-01)'` lists them. Agents: do not build on or
       extend marked code. The two departures you were asked to confirm, speed 5.4 m/s and mass
-      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`).
+      0.5, were answered by DEC-33 (demo-only; on `chore/sprint-1-audit`). **Agent note
+      (2026-10-17):** (1) is answered by your reply below and DEC-35: the escort goes together
+      with the real hordes, in minion plan phase M1, whose done-when is "no `PROTOTYPE(PROTO-01)`
+      marker remains in code". (2) and (3) are still open; (2) decides doc 18 §2's folder list.
   -     Escorts to be deleted this sprint in favour of real hoards. The ai system mentioned here is unrelated to CLAUDE.md and AGENTS.md, but is instead meant as a stand-in for the Bot AI that will power the actions of the bots, neutral camps, bosses, and mobs
+
+- [ ] **Combat — friendly fire (PR #34, `feat/combat-damage-pipeline`).** No reference doc says
+      whether allies can hurt each other. The combat pipeline ships `FriendlyFireStep` as the
+      default: no damage between entities on the same team (Legends never hurt allies; neutral
+      bosses and camps never hurt each other); environment damage and teamless targets (trees)
+      always pass. Confirm, or say which hits should go through. Removing it is one line in
+      `combat/defaultDamageSteps.ts`.
+- [ ] **Combat — better than the design, for sign-off (PR #34).** (1) 05 §9's fixed named
+      stages are a list of `DamageStep`s whose order is `combat/defaultDamageSteps.ts`, so a new
+      rule is one class and one line; (2) `defaultStrategyRegistry.ts` is a typed record per
+      behaviour instead of `registry.register()`, so a missing strategy does not compile;
+      (3) `DamagePipeline.apply` takes `GameState`, not `SystemContext`, so handlers and listeners
+      can call it. 02, 04, 05 and 17 already describe the built version; approve or say what to
+      change.
+- [ ] **Combat — `no-death-without-killer` checks a different hole than 15 §3 (PR #34).** The
+      15 §3 row checks that every `entity-died` carries a resolvable `DamageSource` (the type
+      already forces one). The built invariant checks that every `died` removal had an
+      `entity-died` with its killer this tick, which catches `Health` written around the damage
+      pipeline (the requirements' "dies without another entity or a defensive tower killing it").
+      Proposal: the 15 §3 row covers both, (a) now and (b) "the attacker resolves in the store"
+      with abilities. Approve, or say what to change.
+- [ ] **Status effects — numbers and rules to confirm (SCRUM-228, PR #35).** Modifiers now
+      multiply (`op: 'mul'`, 05 §8), per your review. (1) If you want additive stacking
+      instead, say so: it is one line in `StatusEffects.recompute`. (2) `stun` defaults to 1 s
+      (more-abilities §7 says 0.5–1 s per source); each ability will pass its own once abilities
+      land. (3) Blind spends a basic attack as a miss (`attack-missed`); ability damage still
+      lands. (4) Better than the design, for sign-off: the component caches its multiplier
+      table when its list changes (05 §8 recomputes per tick), and `StatusEffectApplier` is the
+      one way in (05 §3 has effects call `StatusEffects.apply`; 03 names `StatusEffectSystem` as
+      the `status-applied` emitter). (5) Not built yet: `polarity`, `controlClass` /
+      `control-immune` (stun-lock risk once a producer reapplies stun), `onExpire` (crushed →
+      slowed), bleed ignoring shields, concussion's aether cost, blind's vision cut, a max-health
+      stat for the FR-029 aura. Confirm or correct.
+  - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
+    2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
+- [ ] **MS-28 — plan every AI-driven enemy in the minion plan (changes DEC-47's split).**
+      SamarjitBhogal asked (2026-10-25) for the minion plan to cover enemy bots of every
+      entity type. Proposed in doc 18 MS-28 and `docs/plan/minion-system-plan.md` (phases M6
+      to M8, coverage table §1.1): camps and checkpoint assist spawns (3.4), bosses (3.6),
+      A\* for Legends (3.2), and the Rover and bot ability use (3.7) move to the minion plan's
+      breakdown. Nothing is dropped and the work still ships in Phase 3's weeks. Sprints 3.5
+      and 3.8 stay in the Phase 3 plan, and turrets stay with the `Turret` (sprint 2.3). (1)
+      Sign off the move, or keep DEC-47's split. (2) Which team do checkpoint defenders fight
+      for: the zone's owner, the team being captured against, or neutral? (3) Does their leash
+      follow the capture zone (doc 18 §7.1)?
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) signed off, except bosses: the minion
+    system does not control bosses, so `BossController` stays in Phase 3 sprint 3.6 and the
+    plan has no M7; every other mob type may be driven by the minion system. (2) The team that
+    owns the checkpoint. Docs 18 MS-28 and §7.1, 07, 11 §4, the Phase 3 plan and the minion
+    plan updated (PR #43). Awaits the decisions log.
+- [ ] **Checkpoint defenders — leash (doc 18 §10, item 4).** Still open after the MS-28 answer.
+      Does a defender's leash follow the capture zone (its radius; `Recommendation:`), or is it a
+      radius of its own in the checkpoint table? And are the defenders of a point no team owns
+      yet neutral (`Recommendation:`)? Nothing is built on this until M6.
+- [ ] **Weapons — numbers and default weapons (SCRUM-183 / SCRUM-287, branch `feat/weapons`).**
+      The weapon slice is built (05 §10 Implementation status), but no doc has per-weapon numbers
+      (`balancing.md` only names `content/weapons/*.ts`). Placeholders shipped (2026-10-25, all
+      `TUNE`, Claudio's pick): Legends have no attack of their own; Warrior → `raptor-talons`,
+      Sentinel → `wuuthrad`, Magus → `magus-staff` (melee only), each with its class's
+      `balancing.md` basic attack. Confirm or correct. (1) Weapon numbers (damage, reach, interval): do the
+      `balancing.md` class numbers (Warrior 45 / 0.7 s, Sentinel 90 / 1.2 s, Magus 40 / 0.9 s)
+      become each class's default weapon, or do you set them per weapon? Reach has no source.
+      (2) Which weapon each Legend spawns with until loadouts exist (SCRUM-290): the unique ones are
+      Short blades (MVP-if-time), Barricades (post-MVP) and the Magus Staff (needs ranged).
+      (3) OK that the first slice is melee only? Ranged waits for projectiles (SCRUM-169);
+      `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
+      rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
+      (SCRUM-290).
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
@@ -260,6 +476,13 @@ Reply inline (`Decision: …`).
       them on each `settings` bus event (`mapper.setBindings(s.bindings)`), and toggle the pause
       overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`), so the pause key is
       the player's binding.
+
+- [ ] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
+      sign off:** hordes spawn inside the Stronghold's blocking footprint (doc 18 §3.2), and §5.2's
+      "no heading onto unwalkable ground" then held every minion forever. The PR (1) lets a mob
+      standing on unwalkable ground walk straight out to its slot, and (2) when separation would
+      push a mob onto unwalkable ground, keeps its own heading instead of holding (crowds at a
+      wall deadlocked). Doc 18 §5.2 is updated in the same PR. Yes / no / change?
 
 ## Feedback
 

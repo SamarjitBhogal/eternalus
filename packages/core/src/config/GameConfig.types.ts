@@ -14,6 +14,14 @@ export type MapConfig = {
   readonly worldHeight: number;
   /** Side of one square cell of the walkability grid (`WorldMap`), in world units. */
   readonly navCellSize: number;
+  /** How far from a lane, in world units, its flow-field corridor reaches (architecture 06 §6). */
+  readonly flowFieldCorridorHalfWidth: number;
+  /** Most flow-field cells rebuilt per tick after a terrain change (time slicing, 06 §6). */
+  readonly flowFieldCellBudget: number;
+  /** Most grid cells one A\* search for a Legend may settle (10 §9, 11 §6 cost control). */
+  readonly pathMaxExpansions: number;
+  /** How many cells out A\* looks for open ground when a start or goal is blocked (10 §9). */
+  readonly pathSnapCells: number;
   /** An authored preset (rift and bounds polygons, lane curvature); omit for the default look. */
   readonly presetId?: string;
 };

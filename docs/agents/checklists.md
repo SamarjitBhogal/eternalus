@@ -4,7 +4,7 @@ description: The Definition of Done for agent tasks, the AI-PR review checklist,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-30
 tags: [agents, process, review, checklist]
 related:
   [
@@ -41,13 +41,14 @@ written with an agent (AI-PR review), check a design (architecture review) or cl
 
 ## 2. AI-PR review checklist (reviewer: human or `pr-review` skill / `architecture-reviewer`)
 
-- [ ] CI is green on all three OSes; `npm run check` reproduced locally.
+- [ ] CI is green on Linux and Windows; `npm run check` reproduced locally.
 - [ ] Every modified test was read: no removed or loosened assertions, no snapshots of wrong output.
 - [ ] New tests test behaviour, not lines.
 - [ ] No new `eslint-disable`, `@ts-expect-error`, `as` casts or `!` assertions without a convincing reason.
 - [ ] No new dependencies, or each one approved and justified in one line.
 - [ ] Guardrail configs untouched (`eslint.config.js`, tsconfigs, `vitest.config.ts`, hooks,
-      CI, `.claude/settings.json`), or changed through an ADR linked in the PR.
+      CI, `.claude/settings.json`), or changed through an ADR linked in the PR that the
+      product owner signed off (ADR 0018 says what counts as a sign-off).
 - [ ] Scope: no drive-by renames, reformatting or "cleanups".
 - [ ] Placement matches `docs/architecture/02-code-structure.md`; imports respect the layer rules.
 - [ ] No invented library APIs (checked against `node_modules` types).

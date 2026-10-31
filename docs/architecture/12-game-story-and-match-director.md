@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-17
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths: ['packages/core/src/match/**']
 related:
@@ -238,7 +238,7 @@ reward events; the owning systems do the work (rule 12).
 | Boss death                   | Reward (game doc)                                 | Event emitted → listener                                                                                                                                                                                                                                 | Status          |
 | ---------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
 | `mini-boss` (lane zone)      | large team XP; permanent team buff; zone unlocked | `xp-granted { team, amount }` → `ProgressionSystem`; `team-buff-granted { team, statusId }` → `StatusEffectSystem` (kept in `TeamState.buffs`, applied to present and future units); `CaptureSystem` clears `lockedBy` on its own `entity-died` listener | **MVP**         |
-| `mini-boss` (corner camp)    | team XP; a heavy wave down the worst lane         | `xp-granted`; `spawn-requested` from the Stronghold with a `laneIndex` chosen by `LaneAssessment` (content-weighted)                                                                                                                                     | **MVP-if-time** |
+| `mini-boss` (corner camp)    | team XP; a heavy wave down the worst lane         | `xp-granted`; `spawn-requested` from the Stronghold with a lane id (`MapLane.id`) chosen by `LaneAssessment` (content-weighted)                                                                                                                          | **MVP-if-time** |
 | `greater-boss` (the Eternal) | whole team XP; the final-hit Legend ascends       | `xp-granted`; `form-applied { entityId, formId }`                                                                                                                                                                                                        | **MVP-if-time** |
 
 The ascension is a **definition swap**, not a class (`mechanics-ideas.md` §1): `Loadout.formId`

@@ -4,7 +4,7 @@ description: Line-by-line explanation of the committed agent configuration (Clau
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-08
+last-reviewed: 2026-10-30
 tags: [agents, harness, tooling, claude-code, codex, gemini, copilot, cursor]
 paths:
   [
@@ -14,12 +14,15 @@ paths:
     'scripts/hooks/**',
     'GEMINI.md',
     '.github/copilot-instructions.md',
+    '.coderabbit.yaml',
+    'scripts/coderabbit/**',
   ]
 related:
   [
     'docs/agents/README.md',
     'docs/research/agentic-harness-research.md',
     'docs/decisions/0015-agents-push-task-branches-and-open-prs.md',
+    'docs/decisions/0018-coderabbit-runs-the-pr-review-skill.md',
   ]
 ---
 
@@ -142,6 +145,26 @@ node -e "const s=require('./.claude/settings.json');console.log(Object.keys(s.ho
 
 Expected: exit code 0 for the first and third commands; the second exits 2 only if
 `npm run check:quick` fails. If a hook prints nothing, check that Node 24 is active (`.nvmrc`).
+
+## 7. CodeRabbit
+
+`.coderabbit.yaml` makes CodeRabbit review ready PRs (drafts skipped) by the `pr-review` skill
+(ADR 0018). It loads the skill, the checklists, the architecture docs, `guardrails.md`,
+`CONTRIBUTING.md` and every `AGENTS.md` as code guidelines, adds a path instruction that maps the
+skill's severities and sends taste, design and architecture decisions to the product owner, and
+runs one blocking pre-merge check for the skill's blockers. It requests changes but never
+approves, so a person approves every PR. Authors cannot run `@coderabbitai approve` on their own
+PR or override the failing check. To verify it runs, open a PR and check for CodeRabbit's
+walkthrough and the "pr-review skill verdict" check, or comment `@coderabbitai configuration` to
+see the config it loaded.
+
+Learnings (rules it stores when someone corrects it in a PR thread) stay in this repo, and an
+admin approves or rejects each new one within the `approval_delay` in `.coderabbit.yaml`.
+`.github/workflows/coderabbit-learnings.yml` runs `scripts/coderabbit/collect-learnings.mjs` on
+its schedule: it copies each learning CodeRabbit announced on a PR into
+[`coderabbit-learnings.md`](coderabbit-learnings.md) and opens a docs PR for the product owner to
+review. Learnings CodeRabbit infers on its own skip both (ADR 0018, "Limits"). Run the script
+by hand (it needs a signed-in `gh`) to refresh the doc between runs.
 
 ## Related
 
