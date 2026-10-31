@@ -10,7 +10,8 @@ import type { FlowQuery, MovementContext, MovementStrategy } from './MovementStr
  * the unit it chases) until it is within the context's `arrivalRadius`, plus separation from every
  * neighbour (10 §9, MS-19). While the next `blockedLookAhead` of the straight line to the target
  * crosses unwalkable ground, a marching mob follows the lane's flow field instead; a chasing mob,
- * or a march the field cannot route, holds there. A final heading (separation included) that
+ * or a march the field cannot route, holds there. A chase standing on unwalkable ground (a member
+ * spawned inside its structure's footprint) follows the field out like a march (MS-31, DEC-126). A final heading (separation included) that
  * would take a mob onto unwalkable ground turns along the wall instead: the mob faces and walks
  * the open axis of its heading. A chase with no open axis holds; a march keeps its heading, and
  * the wall cells' field leads it back out (10 §9). Stateless: it reads the context's buffers,
@@ -39,8 +40,10 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
       !isThere && flow !== null && !flow.isLineClear(x, y, target.x, target.y, blockedLookAhead);
     // Where the straight line is blocked a march follows the lane flow field (MS-19); a chase
     // holds, since the lane field leads to the lane's end, not to the chased unit, and so does a
-    // march where the field has no direction.
-    const isRouted = isBlocked && !isChasing && flow.directionAt(x, y, out);
+    // march where the field has no direction. A chase on unwalkable ground, where no line is
+    // clear, follows the field out of it like a march (MS-31).
+    const isMarching = !isChasing || (flow !== null && !flow.isWalkableAt(x, y));
+    const isRouted = isBlocked && isMarching && flow.directionAt(x, y, out);
     const isHeld = isThere || (isBlocked && !isRouted);
     if (!isRouted) {
       out.x = isHeld ? 0 : dx / gap;
@@ -74,7 +77,7 @@ export class LaneFollowMovementStrategy implements MovementStrategy {
       steer >= minSteer &&
       !flow.isLineClear(x, y, x + (out.x / steer) * probe, y + (out.y / steer) * probe, probe);
     const isStopped =
-      steer < minSteer || (isIntoBlocked && !this.slide(flow, x, y, probe, out) && isChasing);
+      steer < minSteer || (isIntoBlocked && !this.slide(flow, x, y, probe, out) && !isMarching);
     if (isStopped) {
       out.x = 0;
       out.y = 0;

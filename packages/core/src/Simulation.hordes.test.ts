@@ -168,6 +168,42 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     },
   );
 
+  it('marches every opening horde out of its Stronghold on the generated map, none held', () => {
+    // Strongholds block walking and hordes spawn inside them; bot laners make the crowd realistic.
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const roster = (['light', 'dark'] as const).flatMap((team) =>
+      Array.from({ length: config.match.legendsPerTeam - 1 }, () => ({
+        team,
+        definitionId: 'warrior',
+        role: 'laner' as const,
+        difficulty: 'normal',
+      })),
+    );
+    const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map, roster });
+    const minionsAt = () =>
+      new Map(
+        simulation
+          .snapshot()
+          .entities.filter(({ family }) => family === 'mob')
+          .map(({ id, transform }) => [id, transform]),
+      );
+
+    // 40 s after the countdown: out of the Stronghold and on the way, before the first waves and
+    // any fight. Timed from the countdown's end, so a countdown that holds units still holds.
+    run(simulation, (config.match.countdownSeconds + 40) * config.tickRate);
+    const before = minionsAt();
+    run(simulation, config.tickRate);
+    const after = minionsAt();
+
+    expect(after.size).toBe(2 * config.map.numLanes * config.match.hordeSizes.light);
+    const held = [...after].filter(([id, to]) => {
+      const from = before.get(id);
+      return from == null || to == null || Math.hypot(to.x - from.x, to.y - from.y) < 1;
+    });
+    expect(held).toEqual([]);
+  });
+
   it('fights when opposing hordes meet: kills on both sides, invariants clean (M2b)', () => {
     const { simulation, logger } = match(TWO_LANE_MAP);
     const alive = (team: string) =>

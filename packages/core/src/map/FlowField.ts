@@ -140,4 +140,10 @@ export class FlowField {
   ): boolean {
     return this.grid.isLineClear(fromX, fromY, toX, toY, maxDistance);
   }
+
+  /** Whether the ground under `(x, y)` is walkable now; `false` outside the world. */
+  public isWalkableAt(x: number, y: number): boolean {
+    const { cellSize } = this.grid;
+    return this.grid.isWalkable(Math.floor(x / cellSize), Math.floor(y / cellSize));
+  }
 }
