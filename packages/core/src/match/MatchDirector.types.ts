@@ -3,6 +3,7 @@ import type { DebugConfig } from '../diagnostics/InvariantRunner.types';
 import type { Logger } from '../diagnostics/Logger.types';
 import type { MatchPhaseRegistry } from './MatchPhaseState.types';
 import type { MatchTimeline } from './MatchTimeline';
+import type { Scoring } from './Scoring';
 import type { TimelineActionRegistry } from './TimelineActionRegistry.types';
 import type { VictoryCondition } from './VictoryCondition.types';
 
@@ -22,4 +23,6 @@ export type MatchDirectorOptions = {
   readonly logger: Logger;
   /** The victory conditions in check order (`defaultVictoryConditions.ts`); the first verdict wins. */
   readonly conditions: readonly VictoryCondition[];
+  /** Folds the tick's buffered scoring events, after the phase update and before the verdict. */
+  readonly scoring: Pick<Scoring, 'fold'>;
 };

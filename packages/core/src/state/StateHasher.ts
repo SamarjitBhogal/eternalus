@@ -10,6 +10,7 @@ import { Transform } from '../components/Transform';
 import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
 import { fnv1a } from '../utils/fnv1a';
+import { createEmptyScoringState } from './emptyScoringState';
 import type { GameState } from './GameState';
 
 /**
@@ -36,8 +37,16 @@ export class StateHasher {
     if (matchFields.some((value) => value !== 0 && value !== false)) {
       fields.push(['match', ...matchFields]);
     }
+    // Scoring joins by the same rule, once it differs from the empty state: one serialisation
+    // feeds both the check and the hash, so a new scoring field cannot be left out of either.
+    const scoring = JSON.stringify(match.scoring);
+    if (scoring !== StateHasher.EMPTY_SCORING) {
+      fields.push(['scoring', scoring]);
+    }
     return fnv1a(JSON.stringify(fields));
   }
+
+  private static readonly EMPTY_SCORING = JSON.stringify(createEmptyScoringState());
 
   private static fieldsOf(entity: Entity): unknown[] {
     const transform = entity.findComponent(Transform);

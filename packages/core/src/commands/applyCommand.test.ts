@@ -63,6 +63,8 @@ describe('applyCommand', () => {
       durationTicks: 1,
       seed: 1,
       configHash: 0,
+      legends: [],
+      teams: { light: { score: 0 }, dark: { score: 0 } },
       finalHash: 0,
     };
     const rejected: unknown[] = [];

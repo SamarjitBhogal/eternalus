@@ -5,6 +5,7 @@ import { WinObjective } from '../../components/WinObjective';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../../config/matchPhases';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
+import { ASSIST_WINDOW_SECONDS, SCORING_WEIGHTS } from '../../content/match/scoring';
 import { loadLevelCurves } from '../../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../../content/progression/xpSources';
 import { DefaultInvariantRunner } from '../../diagnostics/DefaultInvariantRunner';
@@ -28,7 +29,8 @@ const MAX_TICKS = 30;
 /**
  * Builds the real per-tick systems and director (as `Simulation` does), with a light warrior
  * beside a dark training dummy that carries `WinObjective` and one hit point, the warrior told to
- * attack it. Steps until the match ends or `MAX_TICKS`.
+ * attack it. The warrior is announced with `entity-spawned`, as a spawn does, so it has a scoring
+ * row. Steps until the match ends or `MAX_TICKS`.
  */
 const playOut = () => {
   const logger = new MemoryLogger();
@@ -39,6 +41,7 @@ const playOut = () => {
     timeline,
     debug: TEST_DEBUG_CONFIG,
     logger,
+    scoring: { weights: SCORING_WEIGHTS, assistWindowSeconds: ASSIST_WINDOW_SECONDS },
   });
   const pipeline = new DefaultSystemPipeline({
     invariants: new DefaultInvariantRunner(
@@ -63,6 +66,7 @@ const playOut = () => {
   const health = objective.getComponent(Health);
   health.applyDamage(health.max - 1);
   state.entities.add(warrior);
+  state.events.emit('entity-spawned', { entityId: warrior.id, kind: 'warrior', team: 'light' });
   state.entities.add(objective);
   state.entities.setAttackTarget(warrior.id, objective.id);
 
@@ -96,6 +100,27 @@ describe('losing the last win objective (scenario)', () => {
       seed: 7,
     });
     expect(logger.records).toEqual([]);
+  });
+
+  it('counts the winning kill in the result: a light mob is a minion kill worth 1 (DEC-79)', () => {
+    const { state } = playOut();
+
+    expect(state.match.result?.legends).toEqual([
+      {
+        entityId: 'entity-1',
+        team: 'light',
+        classId: 'warrior',
+        controller: 'bot',
+        kills: 0,
+        deaths: 0,
+        assists: 0,
+        minionKills: 1,
+        neutralKills: 0,
+        structureDamage: 0,
+        score: 1,
+      },
+    ]);
+    expect(state.match.result?.teams).toEqual({ light: { score: 1 }, dark: { score: 0 } });
   });
 
   it('is deterministic: two runs give deep-equal results and equal hashes', () => {

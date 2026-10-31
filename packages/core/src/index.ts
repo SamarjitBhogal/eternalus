@@ -88,6 +88,7 @@ export type {
 } from './state/GameEvents.types';
 export type { MatchResult, Verdict } from './state/MatchResult.types';
 export type { ScheduledMark } from './state/MatchState.types';
+export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type { EntitySnapshot, MatchSnapshot, Snapshot } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
 export type { PlayableTeam, Team } from './teams/teams.types';

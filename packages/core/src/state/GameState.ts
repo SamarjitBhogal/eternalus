@@ -7,6 +7,7 @@ import type { Entity } from '../entities/Entity';
 import { deepFreeze } from '../utils/deepFreeze';
 import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
+import { createEmptyScoringState } from './emptyScoringState';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
@@ -56,6 +57,7 @@ export class GameState {
       isIdleHeld: false,
       playerTeam: config.match.playerTeam,
       humanLegendId: null,
+      scoring: createEmptyScoringState(),
       result: null,
     };
     this.events.on('entity-removed', (removal) => {

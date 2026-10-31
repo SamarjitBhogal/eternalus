@@ -8,6 +8,7 @@ import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers'
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
 import { validateGameConfig } from './config/validateGameConfig';
 import { FOLLOW_LEADER_PROFILE } from './content/ai/followLeaderProfile';
+import { ASSIST_WINDOW_SECONDS, SCORING_WEIGHTS } from './content/match/scoring';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import type { Logger } from './diagnostics/Logger.types';
@@ -72,7 +73,14 @@ export class Simulation {
     // PROTOTYPE(PROTO-01) TEMPORARY: replace this hand-built controller list with
     // `ai/defaultControllerRegistry.ts` (11 §2) and `FollowLeaderController` with `MinionController`.
     if (systems === undefined) {
-      const director = createDefaultMatchDirector({ state: this.state, timeline, debug, logger });
+      // Before the seat spawns (`seatHuman`), so `Scoring` hears its Legend's `entity-spawned`.
+      const director = createDefaultMatchDirector({
+        state: this.state,
+        timeline,
+        debug,
+        logger,
+        scoring: { weights: SCORING_WEIGHTS, assistWindowSeconds: ASSIST_WINDOW_SECONDS },
+      });
       this.pipeline = new DefaultSystemPipeline({
         invariants: new DefaultInvariantRunner(
           debug,

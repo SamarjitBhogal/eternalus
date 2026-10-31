@@ -2,6 +2,7 @@ import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
 import type { MatchResult } from './MatchResult.types';
+import type { ScoringState } from './ScoringState.types';
 
 /** One timeline entry's resolved tick, kept as plain data so the snapshot can list it (12 §3). */
 export type ScheduledMark = {
@@ -30,6 +31,8 @@ export type MatchState = {
   readonly playerTeam: PlayableTeam;
   /** The human's Legend; `null` in sim mode (11 §7), and when the seat's spawn failed. Set once by `Simulation` from `config.match.seat`. */
   humanLegendId: EntityId | null;
+  /** The Legends' counters and points, and the teams' totals; written by `Scoring` (12 §5). */
+  readonly scoring: ScoringState;
   /**
    * How the match ended; `null` until a verdict. Set once by the `MatchDirector`, which does
    * nothing after it. Not hashed: the terminal phase it comes with already is.

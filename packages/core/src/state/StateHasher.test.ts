@@ -188,6 +188,30 @@ describe('StateHasher', () => {
         state.match.isIdleHeld = true;
       },
     ],
+    [
+      'the scoring (a Legend row)',
+      (state) => {
+        state.match.scoring.legends.push({
+          entityId: 'entity-1',
+          team: 'light',
+          classId: 'warrior',
+          controller: 'bot',
+          kills: 0,
+          deaths: 0,
+          assists: 0,
+          minionKills: 0,
+          neutralKills: 0,
+          structureDamage: 0,
+          score: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (a team total)',
+      (state) => {
+        state.match.scoring.teams.dark.score = 4;
+      },
+    ],
   ])('changes when %s of the match changes', (_, change) => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const before = hasher.hash(state);

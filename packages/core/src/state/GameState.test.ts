@@ -144,7 +144,7 @@ describe('GameState', () => {
       { entryId: 'mid-game', tick: 900 },
     ];
 
-    it('starts in the countdown with nothing fired and nothing held', () => {
+    it('starts in the countdown with nothing fired, nothing held and nothing scored', () => {
       const state = new GameState(createDefaultGameConfig(), 1, SCHEDULE);
       expect(state.match).toEqual({
         phase: 'countdown',
@@ -154,6 +154,11 @@ describe('GameState', () => {
         isIdleHeld: false,
         playerTeam: 'light',
         humanLegendId: null,
+        scoring: {
+          legends: [],
+          teams: { light: { score: 0 }, dark: { score: 0 } },
+          recentHits: [],
+        },
         result: null,
       });
       expect(Object.isFrozen(state.match.schedule[0])).toBe(true);

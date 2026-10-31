@@ -36,9 +36,10 @@ export class MatchDirector {
 
   /**
    * Once per tick, in this fixed order: fire every due timeline entry (tick <= the current tick)
-   * from `state.match.timelineCursor` on, run the current phase's `update`, then check the victory
-   * conditions in order and end the match on the first verdict. Does nothing once the match has
-   * a result: the director is inert after the end.
+   * from `state.match.timelineCursor` on, run the current phase's `update`, fold the tick's
+   * scoring (so a kill on the ending tick is in the result), then check the victory conditions in
+   * order and end the match on the first verdict. Does nothing once the match has a result: the
+   * director is inert after the end.
    */
   public update(state: GameState): void {
     if (state.match.result !== null) {
@@ -47,6 +48,7 @@ export class MatchDirector {
     const context = this.contextFor(state);
     this.fireDueEntries(context);
     this.options.phases[state.match.phase].update(context);
+    this.options.scoring.fold(context);
     const verdict = this.firstVerdict(context);
     if (verdict !== null) {
       this.end(verdict, context);
@@ -75,10 +77,12 @@ export class MatchDirector {
    * - `durationTicks` is `state.tick + 1`: the ticks the match ran from tick 0, the countdown and
    *   the ending tick included, so it equals `Simulation.tick` right after the step that ended it.
    * - `configHash` is FNV-1a over the canonical config (keys sorted at every depth).
+   * - `legends` and `teams` are copies of `state.match.scoring`, this tick's fold included.
    */
   private end(verdict: Verdict, context: DirectorContext): void {
     const { state } = context;
     const { match } = state;
+    const { legends, teams } = match.scoring;
     const result: MatchResult = {
       winner: verdict.winner,
       condition: verdict.condition,
@@ -87,6 +91,8 @@ export class MatchDirector {
       durationTicks: state.tick + 1,
       seed: state.seed,
       configHash: fnv1a(canonicalJson(state.config)),
+      legends: legends.map((row) => ({ ...row })),
+      teams: { light: { ...teams.light }, dark: { ...teams.dark } },
       finalHash: this.hasher.hash(state),
     };
     match.result = result;

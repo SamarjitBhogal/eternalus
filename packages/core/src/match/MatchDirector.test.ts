@@ -8,6 +8,7 @@ import { MemoryLogger } from '../diagnostics/MemoryLogger';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
 import type { Verdict } from '../state/MatchResult.types';
+import type { LegendStats } from '../state/ScoringState.types';
 import { StateHasher } from '../state/StateHasher';
 import { createDefaultTimelineActions } from './defaultTimelineActions';
 import type { DirectorContext } from './DirectorContext.types';
@@ -15,6 +16,7 @@ import { MatchDirector } from './MatchDirector';
 import type { MatchPhaseRegistry, MatchPhaseState } from './MatchPhaseState.types';
 import { MatchTimeline } from './MatchTimeline';
 import type { ResolvedTimelineEntry } from './MatchTimeline.types';
+import type { Scoring } from './Scoring';
 import type { VictoryCondition } from './VictoryCondition.types';
 
 /** A phase double: records every call as `"<call> <phase>"`. */
@@ -76,7 +78,13 @@ const setUp = (
   {
     conditions = [],
     config = createDefaultGameConfig(),
-  }: { readonly conditions?: readonly VictoryCondition[]; readonly config?: GameConfig } = {},
+    scoring = () => ({ fold: () => undefined }),
+  }: {
+    readonly conditions?: readonly VictoryCondition[];
+    readonly config?: GameConfig;
+    /** Builds the scoring double from the phase log. */
+    readonly scoring?: (log: string[]) => Pick<Scoring, 'fold'>;
+  } = {},
 ) => {
   const log: string[] = [];
   const record = (phase: MatchPhase) => new RecordingPhase(phase, log);
@@ -100,6 +108,7 @@ const setUp = (
     debug: { throwOnViolation },
     logger,
     conditions,
+    scoring: scoring(log),
   });
   const changes: string[] = [];
   state.events.on('phase-changed', ({ from, to }) => {
@@ -276,11 +285,71 @@ describe('MatchDirector', () => {
         durationTicks: 13,
         seed: 1,
         configHash: expect.any(Number) as number,
+        legends: [],
+        teams: { light: { score: 0 }, dark: { score: 0 } },
         finalHash: condition.hashAtVerdict,
       });
       // Taken before the result is stored and the terminal phase entered: the hash moved since.
       expect(state.match.result?.finalHash).not.toBe(new StateHasher().hash(state));
       expect(state.match.result?.durationTicks).toBe(state.tick);
+    });
+
+    it('folds the scoring after the phase update and before it ends the match, once per tick', () => {
+      const { log, stepTo } = setUp(FAKE_TIMELINE, true, {
+        conditions: [new ScriptedCondition(LIGHT_WINS)],
+        scoring: (phaseLog) => ({
+          fold: () => {
+            phaseLog.push('fold');
+          },
+        }),
+      });
+
+      stepTo(12);
+
+      expect(log.filter((entry) => entry === 'fold')).toHaveLength(13);
+      expect(log.slice(-4)).toEqual([
+        'update early-game',
+        'fold',
+        'exit early-game',
+        'enter victory',
+      ]);
+    });
+
+    it("puts copies of the scoring rows and team totals in the result, the ending tick's fold included", () => {
+      const row: LegendStats = {
+        entityId: 'entity-1',
+        team: 'light',
+        classId: 'warrior',
+        controller: 'bot',
+        kills: 1,
+        deaths: 0,
+        assists: 0,
+        minionKills: 0,
+        neutralKills: 0,
+        structureDamage: 0,
+        score: 15,
+      };
+      const { state, stepTo } = setUp(FAKE_TIMELINE, true, {
+        conditions: [new ScriptedCondition(LIGHT_WINS)],
+        scoring: () => ({
+          fold: ({ state: folded }) => {
+            if (folded.tick === 12) {
+              folded.match.scoring.legends.push({ ...row });
+              folded.match.scoring.teams.light.score += row.score;
+            }
+          },
+        }),
+      });
+
+      stepTo(12);
+      const [kept] = state.match.scoring.legends;
+      if (kept !== undefined) {
+        kept.kills = 9;
+      }
+      state.match.scoring.teams.light.score = 99;
+
+      expect(state.match.result?.legends).toEqual([row]);
+      expect(state.match.result?.teams).toEqual({ light: { score: 15 }, dark: { score: 0 } });
     });
 
     it('marks a match with a human Legend as hadHuman', () => {
