@@ -1512,6 +1512,38 @@ Reply inline (`Decision: …`).
     actions (DEC-117). The tick path's snapshot has no modifiers, the explorer belongs to
     `MatchHost`'s pointer controls, and `Match`'s loop stops while paused. `clientActions` stays for
     the client edges of state `Match` owns.
+- [ ] **HC-Q30 — Crash popup: three texts and three behaviours the decisions do not give (the
+      critic's loop 1 of build step 12, 2026-10-30).** The crash popup is built from DEC-106 and
+      DEC-124. These six points have no owner words. The build uses the recommendation in each
+      item; each text is marked `Recommendation:` in `apps/client/src/ui/strings.ts`.
+  1. The text while the note saves. Recommendation: "Saving the note...".
+  2. The text after the note is saved. Recommendation: "The report was saved as <file>." (`<file>`
+     is the path under `logs/errors/`).
+  3. The text when the report is saved but its note is not (the note write failed). DEC-124 (c)'s
+     "The report could not be saved. Copy it and send it to the team." is for a report that was
+     not saved, so it is wrong here. Recommendation: "The report was saved, but the note was not.
+     Copy the note and send it to the team.", with the same "Copy report" button (it copies the
+     report's name and the note).
+  4. After "Save note and return to menu", the popup shows the saved text and the player clicks
+     "Return to menu" a second time. ADR 0025 ("Error reports through the local dev server",
+     build item 3) lists a saved state, so the build keeps it. Options: (A) keep the saved text
+     and the second click; (B) close the popup at once when the note is saved (one click, the
+     file name is not shown). Recommendation: A, because the file name tells the player what to
+     send to the team.
+  5. A screen crash during the pre-launch reveal. ADR 0025 says a screen crash outside a match
+     "reports and returns to the menu", but the session's list of allowed phase changes
+     (architecture "Game interface", `SessionController` section) has no move from pre-launch to
+     the menu, and "Interface and screen flow" says the reveal has no cancel. Today: the crash is
+     reported, the popup opens, the reveal runs on and the match starts. Options: (A) keep this;
+     (B) add the move from pre-launch to the menu for a crash only (a design change to that list)
+     and return to the menu with "The screen stopped because of an error.". Recommendation: B,
+     because it is what the accepted ADR says, and a match started from a broken screen state can
+     fail again.
+  6. A crash of the main menu's home screen itself. The error boundary keeps the empty screen
+     after the popup closes (the same screen would crash again: no loop), so the player must
+     reload the page. Options: (A) keep this; (B) add a "Reload" button to the empty screen (new
+     text). Recommendation: A for now: a home screen that crashes on render crashes again after a
+     reload.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).

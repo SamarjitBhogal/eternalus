@@ -2575,3 +2575,36 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   mangled in a build); the saving and saved texts are recommendations, not owner words.
 - Next step: the pre-PR gate (critic and ponytail, at most three loops) on `f9fbaf8..HEAD`, then
   a `--no-ff` merge into `feat/hud-and-character-select`; then build-plan step 15 (load on demand).
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, build-plan step 12's critic loop 1 (six minor items, four nits, ponytail cuts) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: the critic (architecture-reviewer on `f9fbaf8..c228b73`) found no blockers, six
+  minor items and four nits; the ponytail review found five cuts. Fixed in `dce7b0c`:
+  - The report's stack text and the FATAL record keep React's component stack.
+  - The popup's title comes from what crashed (`cause`: match or screen), not the session reason,
+    so a crash in the pre-launch reveal says "The screen stopped because of an error.".
+  - A crash number keys the dialog, so a second crash starts with an empty note.
+  - A saved report whose note write failed has its own copy text (`isReportSaved`), not DEC-124
+    (c)'s "could not be saved".
+  - A happy-dom test with the real `App` and `GameCanvas` shows the report comes before the
+    viewport detach.
+  - The tick is read through `RunningMatch.currentTick()`, in a try/catch, not by building the
+    evidence.
+  - `SessionCrashes` owns the crash wiring; `SessionController.ts` is 310 lines.
+  - `ErrorBoundary.types.ts`; the plugin tests are split in two files with shared fixtures.
+  - A test links each silent-report rule's body to its log site.
+  - `reportedErrorOf` moves to `data/logging/`; `logWindowErrors` reuses it; one `errorText`
+    const.
+  - Not done, with reasons: `ErrorReporter.withNote`'s non-JSON branch stays (it keeps `addNote`
+    from rejecting; cutting it deletes a test); `logTail.slice(-LOG_TAIL_RECORDS)` stays (the one
+    place the report's limit applies to both evidence sources); DEC-115 and DEC-116's "Where"
+    cells stay as written (historical rows; their dated notes record the acceptance).
+  - `INBOX.md`: HC-Q30 asks the owner for the popup's three texts with no owner words (saving,
+    saved, note not saved) and three behaviours (the second click after a saved note, a crash in
+    the pre-launch reveal, a crash of the home screen); `strings.ts` cites it.
+- Red proofs: 27 breaks, every break RED in its own test file, baseline and restore green
+  (`eternalus-agent-work/hud-charselect/build-1030/s12-loop1-redproofs.txt`).
+- Checks run: `npm run check` EXIT 0 on `dce7b0c`'s tree. Core 118 files, 634 tests; client 255
+  files, 1672 tests; client coverage 96.92 / 93.85 / 95.35 / 97.36; "Documentation check passed."
+- Next step: critic loop 2 on `c228b73..HEAD`, then the `--no-ff` merge into
+  `feat/hud-and-character-select`.

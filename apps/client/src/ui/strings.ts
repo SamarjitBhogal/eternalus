@@ -64,7 +64,8 @@ export const STRINGS = {
     // Recommendation: for a saved report whose note write failed (owner question HC-Q30).
     noteNotSavedMessage:
       'The report was saved, but the note was not. Copy the note and send it to the team.',
-    // Recommendation: the recorder's words for the two states DEC-106 does not word.
+    // Recommendation: the recorder's words for the two states DEC-106 does not word (owner
+    // question HC-Q30).
     saving: 'Saving the note...',
     saved: (file: string): string => `The report was saved as ${file}.`,
     reportLabel: 'Report text',
