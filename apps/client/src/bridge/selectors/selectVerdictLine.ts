@@ -1,4 +1,4 @@
-import type { MatchVerdict, PlayableTeam } from '../domain.types';
+import type { PlayableTeam } from '../domain.types';
 import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { matchSlice } from '../slices/matchSlice';
@@ -9,13 +9,6 @@ import { selectMatchVerdict } from './selectMatchVerdict';
 const NAME_PLACEHOLDER = '{name}';
 
 const ENEMY_TEAM: Readonly<Record<PlayableTeam, PlayableTeam>> = { light: 'dark', dark: 'light' };
-
-/** Whose sovereign fell, seen from the player's team: the enemy's on a victory, its own otherwise. */
-const FALLEN_TEAM: Readonly<Record<MatchVerdict, (team: PlayableTeam) => PlayableTeam>> = {
-  victory: (team) => ENEMY_TEAM[team],
-  defeat: (team) => team,
-  draw: (team) => team,
-};
 
 /**
  * The line under the verdict (12 §9: `verdictLines[condition]`, the player's side of it), with
@@ -31,6 +24,8 @@ export function selectVerdictLine(
   if (verdict === null || result === null || team === null) return null;
   const line = contentSlice.selectors.selectVerdictLines(state)[result.condition]?.[verdict];
   if (line === undefined) return null;
-  const name = contentSlice.selectors.selectSovereignNames(state)[FALLEN_TEAM[verdict](team)];
+  // Whose sovereign fell: the enemy's on a victory, the player's own otherwise.
+  const fallenTeam = verdict === 'victory' ? ENEMY_TEAM[team] : team;
+  const name = contentSlice.selectors.selectSovereignNames(state)[fallenTeam];
   return line.replaceAll(NAME_PLACEHOLDER, name);
 }

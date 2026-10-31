@@ -38,33 +38,31 @@ export class MatchBridge {
     });
   }
 
-  /** Whether `match-ended` has been published: from the end of the tick that ended the match. */
-  public get hasEnded(): boolean {
-    return this.wasEndPublished;
-  }
-
   /** Publishes both rosters, the clock and the HUD once, before the first tick. */
   public publishAll(snapshot: Snapshot, playerId: EntityId | null): void {
     this.publishRosters();
     this.publishFast(snapshot, playerId);
   }
 
-  /** After each tick: the clock and the HUD on the fast cadence, the rosters on the slow one. */
-  public afterTick(snapshot: Snapshot, playerId: EntityId | null): void {
+  /**
+   * After each tick: the clock and the HUD on the fast cadence, the rosters on the slow one.
+   * Returns `true` only after the tick that ended the match, the once it publishes `match-ended`.
+   */
+  public afterTick(snapshot: Snapshot, playerId: EntityId | null): boolean {
     if (snapshot.tick % this.deps.publishEveryTicks === 0) {
       this.publishFast(snapshot, playerId);
     }
     if (snapshot.tick % ROSTER_PUBLISH_EVERY_TICKS === 0) {
       this.publishRosters();
     }
-    if (this.result !== null && !this.wasEndPublished) {
-      this.wasEndPublished = true;
-      const { result } = this;
-      this.deps.bus.emit('match-ended', {
-        result,
-        durationSeconds: result.durationTicks / this.deps.tickRate,
-      });
-    }
+    if (this.result === null || this.wasEndPublished) return false;
+    this.wasEndPublished = true;
+    const { result } = this;
+    this.deps.bus.emit('match-ended', {
+      result,
+      durationSeconds: result.durationTicks / this.deps.tickRate,
+    });
+    return true;
   }
 
   /** Stops listening for the match's end; a later `match-ended` is never latched. */

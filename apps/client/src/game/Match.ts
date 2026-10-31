@@ -49,8 +49,6 @@ export class Match implements LoopTarget {
 
   private readonly playerId: EntityId | null;
 
-  private wasEndReported = false;
-
   private lastMove: Vec2 = { x: 0, y: 0 };
 
   /**
@@ -160,9 +158,7 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    this.bridge.afterTick(this.current, this.playerId);
-    if (this.bridge.hasEnded && !this.wasEndReported) {
-      this.wasEndReported = true;
+    if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.onEnded();
     }
   }

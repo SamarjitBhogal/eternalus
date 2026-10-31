@@ -190,19 +190,17 @@ describe('MatchBridge', () => {
   it("publishes match-ended once, after the ending tick's other events, with its length", () => {
     const { bridge, order, endings, simulation } = setUp();
     const result = matchResultFixture({ durationTicks: 3600 });
-    bridge.afterTick(snapshotAt(5), null);
-    expect(bridge.hasEnded).toBe(false);
+    expect(bridge.afterTick(snapshotAt(5), null)).toBe(false);
 
     simulation.handler?.({ result });
     expect(endings).toEqual([]);
-    bridge.afterTick(snapshotAt(6), null);
-    bridge.afterTick(snapshotAt(7), null);
+    expect(bridge.afterTick(snapshotAt(6), null)).toBe(true);
+    expect(bridge.afterTick(snapshotAt(7), null)).toBe(false);
     simulation.handler?.({ result });
-    bridge.afterTick(snapshotAt(8), null);
+    expect(bridge.afterTick(snapshotAt(8), null)).toBe(false);
 
     expect(endings).toEqual([{ result, durationSeconds: 120 }]);
     expect(order.slice(-3)).toEqual(['match-clock', 'hud-state', 'match-ended']);
-    expect(bridge.hasEnded).toBe(true);
   });
 
   it('stops listening for the end on destroy', () => {
