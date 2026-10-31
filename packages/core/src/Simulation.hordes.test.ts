@@ -168,8 +168,9 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     },
   );
 
-  it('marches every opening horde out of its Stronghold on the generated map, none held', () => {
-    // Strongholds block walking and hordes spawn inside them; bot laners make the crowd realistic.
+  it('marches every opening horde up its lane on the generated map, none held', () => {
+    // The opening hordes start at their lane's base by the Stronghold (MS-30); bot laners make the
+    // crowd realistic.
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const roster = (['light', 'dark'] as const).flatMap((team) =>
@@ -189,7 +190,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
           .map(({ id, transform }) => [id, transform]),
       );
 
-    // 40 s after the countdown: out of the Stronghold and on the way, before the first waves and
+    // 40 s after the countdown: on the way up the lane, before the first waves and
     // any fight. Timed from the countdown's end, so a countdown that holds units still holds.
     run(simulation, (config.match.countdownSeconds + 40) * config.tickRate);
     const before = minionsAt();

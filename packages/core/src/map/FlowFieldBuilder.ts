@@ -137,19 +137,11 @@ export class FlowFieldBuilder {
    * their structure's footprint (MS-31).
    */
   private pointWallsOut(field: FlowField, cell: number, col: number, row: number): void {
-    const { cols, rows } = this.grid;
+    const { cols } = this.grid;
     const preference: readonly number[] = DIRECTION_PREFERENCE[field.team];
     for (let step = 0; step < DIRECTION_COLS.length; step += 1) {
-      const wallCol = col + (DIRECTION_COLS[step] ?? 0);
-      const wallRow = row + (DIRECTION_ROWS[step] ?? 0);
-      const wall = wallRow * cols + wallCol;
-      const isWall =
-        wallCol >= 0 &&
-        wallRow >= 0 &&
-        wallCol < cols &&
-        wallRow < rows &&
-        field.mask[wall] === 1 &&
-        !field.isOpen(wall);
+      const wall = this.cellOf(col, row, step);
+      const isWall = wall !== -1 && field.mask[wall] === 1 && !field.isOpen(wall);
       if (!isWall) {
         continue;
       }

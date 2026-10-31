@@ -356,9 +356,10 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
 - `PathingSystem` combines the strategy's target with the rest of 10 §9 by priority: **obstacle
   and wall avoidance**, then **separation from all neighbours** (through `SpatialHash`,
   [10 §5](10-physics.md#5-broad-phase-spatialhash), id-ordered), then the strategy's target, then
-  the lane flow field when the straight line to the slot is blocked (MS-19). An engaging mob never
-  follows the lane field, which leads to the lane's end rather than to its target: where the line to
-  its target is blocked it holds, keeping obstacle avoidance first. The final heading, separation
+  the lane flow field when the straight line to the slot is blocked (MS-19); a march the field
+  cannot route there holds. An engaging mob on walkable ground never follows the lane field,
+  which leads to the lane's end rather than to its target: where the line to its target is
+  blocked it holds, keeping obstacle avoidance first. The final heading, separation
   included, is checked the same way, so no push steers a mob onto unwalkable ground: a heading
   that would turns along the wall, and the mob faces the slide direction and walks that way,
   never sideways; a march never stalls at a wall, and a chase that cannot turn holds (MS-35). A

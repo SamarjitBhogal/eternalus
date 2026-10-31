@@ -427,7 +427,8 @@ each closed by the session or phase named:
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
 - `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
-  `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
+  `tick`, `phase`, `entities`, `hordes` and `teams` (the spawn counters, since minion plan M1),
+  and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
