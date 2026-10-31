@@ -339,8 +339,11 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   can be picked, `isSelectable`, which gates LOCK IN; the client adds only art, accents and icons),
   the locked cards in `content/legends/locked/`, the team names in
   `content/teams/teamDisplayNames.ts`, the bot roster in `content/teams/botRoster.ts` (checked by
-  `content/validation/BotRosterClassRule.ts`) and the profile screen's name in
-  `content/profile/profileDisplayName.ts`.
+  `content/validation/BotRosterClassRule.ts`), the profile screen's name in
+  `content/profile/profileDisplayName.ts`, the results screen's verdict lines in
+  `content/narrative/verdictLines.ts` and each team's sovereign display name in
+  `content/sovereigns/sovereignDisplayNames.ts` (game-loop plan GL-5); core exports the types
+  `VerdictLines` and `VerdictLineSet`.
 
 ## Related
 

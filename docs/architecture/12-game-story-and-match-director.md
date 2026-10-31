@@ -436,7 +436,13 @@ that Legend left the store; no projectile deals damage yet. `LegendStats` has `k
 that fills them, and points for structures, captures and holds wait for the owner's values
 (FR-007).
 
-Not built yet: `atmosphere` in `MatchState`; an entity that carries `WinObjective` (the
+The verdict lines (§9, GL-5) are built: `content/narrative/verdictLines.ts` holds the
+`objective-lost` lines (the owner's placeholders, DEC-83), with `{name}` for the fallen side's
+sovereign, whose display name per team is in `content/sovereigns/sovereignDisplayNames.ts`
+(DEC-74); `loadDisplayContent()` returns both, and the client's results screen shows the line.
+`forfeit` and `aborted` have no lines yet (no condition produces them).
+
+Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity that carries `WinObjective` (the
 sovereign); `MatchResult.timeline` and `achievements` (with their producers); the other §5
 counters and `TeamStats` fields; a condition for `forfeit` or `aborted` (the ids exist); the
 timeline actions other than `enter-phase`; `dev-set-phase`; the announcer; the other invariants of §12.

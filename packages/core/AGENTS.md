@@ -20,7 +20,7 @@ are the **planned** layout; create them as code is added.
 | Folder          | Holds                                                               | May import                                                            |
 | --------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | `config/`       | `GameConfig`, defaults, validation, `MATCH_PHASES`, timeline types  | `utils/`, `teams/` (types)                                            |
-| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs   | `content/`, `utils/` and `teams/` (types)                             |
+| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs   | `content/`, `utils/`, `teams/` and `config/` (types)                  |
 | `teams/`        | `PlayableTeam` and `Team`, shared by every layer                    | nothing                                                               |
 | `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers | `content/`, `teams/`, `utils/`                                        |
 | `utils/`        | Generic helpers: vector math, `SeededRandom`, constants             | `utils/` only                                                         |

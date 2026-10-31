@@ -2736,3 +2736,45 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   repository), run with this entry in place.
 - Next step: merge into `feat/hud-and-character-select`; the owner's answers to HC-Q27 (ADR 0025)
   and HC-B4 before the PR.
+
+### 2026-10-30 — Game loop plan GL-5 (Phase 3 sprint 3.5, pulled forward) / client end flow and the MVP results screen — feat/results-flow — sholtzman + Claude Code
+
+- What: built GL-5 of the game loop and results plan (§4.5 client path steps 1 to 6, "Win/lose for
+  the viewer", "Results screen (MVP)", A8, A9, A18, §8 as far as it covers the win/lose screen;
+  DEC-78, DEC-83 (2), DEC-92, DEC-74). Uncommitted, on `feat/results-flow` at `d8a803b` (GL-4 with
+  the HUD branch merged in).
+  - Core: `content/narrative/verdictLines.ts` (+ `.types.ts`: `VerdictLines`, `VerdictLineSet`),
+    the `objective-lost` lines only (DEC-83 placeholders, `TUNE`), `{name}` for the fallen side's
+    sovereign; `content/sovereigns/sovereignDisplayNames.ts` ("Emperor" per team, DEC-74), the one
+    place the sovereign's display name lives, for GL-3's `monarch` to reuse. `loadDisplayContent()`
+    returns both; `index.ts` exports the two types (API change for the PR).
+  - Bridge: `match-ended { result, durationSeconds }`, the `continue` intent, `CountdownKind` with
+    `results`; `matchSlice` keeps core's `MatchResult` and the length; `matchSetupSlice.resultsMs`;
+    `connectBusToStore` keeps each countdown by a kind table; selectors `selectMatchVerdict`,
+    `selectVerdictLine`, `selectMatchDurationText` (sharing `matchTimeText` with the match clock);
+    the catalogue carries `verdictLines` and `sovereignNames`.
+  - Game: `MatchBridge` latches core's `match-ended` and publishes it once from `afterTick`, and
+    drops its listener on `destroy`; `Match.tick` calls `onEnded` once after that tick (the
+    `RunningMatch` observer, passed through `MatchRequest` and `SessionContext.createMatch` beside
+    `onCrash`); `MatchState` moves to `results` `RESULTS_DELAY_MS` (5 s, DEC-92) later on the
+    session clock, never for a replaced match, and drops the timer when the match stops;
+    `ResultsState` releases `match`, loads `selection` and runs `RESULTS_COUNTDOWN_MS` (30 s,
+    DEC-78) to `menu`, `continue` skips it, and every exit releases `selection`. Both timings sit
+    in `sessionTiming.constants.ts` with `ponytail:` notes until GL-11.
+  - UI: `ResultsScreen` on the selection artboard: the verdict as the banner title, the countdown
+    (`Countdown` gains a `label` prop), the verdict line, the length, then Continue (focused), Play
+    again and Main menu; `ResultsScreen.module.css` (tokens only). `ResultsScreen.intents.test.tsx`
+    clicks each button in a page (DEC-111).
+  - Docs (owner docs, every edit reported): 13 §2 (`match` row trigger and work, `results` row,
+    the session-time paragraph), §3 (`ResultsScreen` row), §5 (the `countdown` line in the
+    sketch), §10 (Session and Bridge notes); 12 §13 (status of the verdict lines); 02 §12 (Core
+    status); `packages/core/AGENTS.md` (`content/` may import `config/` types, plan §6 A2 row).
+- Fail-first breaks: each new or changed test was seen red under a deliberate break, then the file
+  was restored (`cmp`): 53 breaks, 87 test results, all red, all restores identical,
+  `eternalus-agent-work/game-loop-plan/gl5-breaks.md` (script `gl5-breaks.py` beside it).
+- Checks run: `npm run check` → `EXIT=0` (`gl5-check-2026-10-30.log`): core "Tests 806 passed
+  (806)", statements 99.29 % (unchanged); client "Tests 1542 passed (1542)", statements 96.53 %
+  (was 96.51); "✓ built"; "Documentation check passed."
+- Next step: the pre-PR gate for GL-5 (architecture critic, then ponytail); owner sign-off on the
+  items beyond the plan (the `durationSeconds` field, Play again and Main menu kept on the win/lose
+  screen until GL-10); GL-3 (the sovereign) so a browser match can end; GL-11 moves both timings.
