@@ -1,9 +1,14 @@
 import { Combat } from '../components/Combat';
+import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
-import type { FlowQuery, MovementContext } from '../entities/strategies/MovementStrategy.types';
+import type {
+  FlowQuery,
+  MovementContext,
+  MovementStrategy,
+} from '../entities/strategies/MovementStrategy.types';
 import type { LaneFlowFields } from '../map/LaneFlowFields';
 import { formationSlot } from '../state/formationSlot';
 import type { MutableVec2 } from '../utils/vec2.types';
@@ -64,6 +69,31 @@ export class PathingSystem implements System {
     return self.radius + other.radius + combat.attack.reach;
   }
 
+  /**
+   * Steers a mob that spawned inside its structure straight to its exit (DEC-133): no ground
+   * check holds it, since it starts on blocked ground. Returns `true`, steering nothing, once it
+   * is there.
+   */
+  private steerOut(
+    { exit }: Deploying,
+    index: number,
+    strategy: MovementStrategy,
+    context: { flow: FlowQuery | null } & Omit<MovementContext, 'flow'>,
+  ): boolean {
+    const dx = exit.x - (context.positions[2 * index] ?? exit.x);
+    const dy = exit.y - (context.positions[2 * index + 1] ?? exit.y);
+    if (dx * dx + dy * dy <= this.slotArrivalRadius * this.slotArrivalRadius) {
+      return true;
+    }
+    this.target.x = exit.x;
+    this.target.y = exit.y;
+    context.arrivalRadius = this.slotArrivalRadius;
+    context.isChasing = false;
+    // The strategy writes the heading into `this.out`, which the caller hands to the mob.
+    strategy.desiredVelocity(index, context);
+    return false;
+  }
+
   /** Rebuilds dirty flow fields, then steers every horde member for the next tick. */
   public update({ state }: SystemContext): void {
     this.flowFields?.rebuildDirty(state.config.map.flowFieldCellBudget);
@@ -101,11 +131,24 @@ export class PathingSystem implements System {
         const slot = isLeader ? -1 : follower;
         follower += isLeader ? 0 : 1;
         const index = space.indexOf(memberId);
-        const movement = state.entities.get(memberId)?.findComponent(Movement);
+        const entity = state.entities.get(memberId);
+        const movement = entity?.findComponent(Movement);
         const strategyId = movement?.strategyId;
         const strategy = strategyId === undefined ? undefined : this.strategies[strategyId];
         if (index === undefined || movement === undefined || strategy === undefined) {
           continue;
+        }
+        const deploying = entity?.findComponent(Deploying);
+        if (deploying !== undefined) {
+          const flow = context.flow;
+          context.flow = null;
+          const isOut = this.steerOut(deploying, index, strategy, context);
+          context.flow = flow;
+          if (!isOut) {
+            movement.steer(this.out);
+            continue;
+          }
+          entity?.removeComponent(Deploying);
         }
         formationSlot(this.anchor, this.forward, slot, formation, this.target);
         const reach = this.chase(state, memberId);

@@ -1,4 +1,5 @@
 import { Collider } from '../components/Collider';
+import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import type { MapDefinition } from '../content/maps/maps.types';
@@ -44,7 +45,9 @@ export class CollisionSystem implements System {
         !entity.hasComponent(Movement) ||
         transform === undefined ||
         collider?.isEnabled !== true ||
-        collider.isStatic
+        collider.isStatic ||
+        // A mob walking out of the structure it spawned inside passes its walls (DEC-133).
+        entity.hasComponent(Deploying)
       )
         return;
       const from = transform.previousPosition;

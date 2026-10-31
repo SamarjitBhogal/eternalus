@@ -35,6 +35,11 @@ export type HordeSteeringProfile = {
   readonly spawnSpacing: number;
   /** Members per row of the spawn grid. */
   readonly spawnColumns: number;
+  /**
+   * How far past the first walkable ground on its way out a horde spawned inside a structure
+   * walks before its brain engages (DEC-133).
+   */
+  readonly deployClearance: number;
 };
 
 /** The weights of the lane assessment (architecture 18 §3.3); each term runs from 0 to 1. */

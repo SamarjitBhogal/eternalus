@@ -1,5 +1,6 @@
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
+import { Deploying } from '../components/Deploying';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
@@ -175,6 +176,14 @@ export class EntityStore {
   /** The controller that drives the entity and its AI profile, or `undefined` when none does. */
   public controllerOf(id: EntityId): ControllerBinding | undefined {
     return this.entities.get(id)?.findComponent(ControllerBinding);
+  }
+
+  /**
+   * Whether the entity is walking out of the structure it spawned inside (`Deploying`, DEC-133).
+   * Lets `ai/` keep a deploying mob's brain off without importing `components/`.
+   */
+  public isDeploying(id: EntityId): boolean {
+    return this.entities.get(id)?.hasComponent(Deploying) === true;
   }
 
   /** Whether the entity exists and has health left (`false` for anything without `Health`). */

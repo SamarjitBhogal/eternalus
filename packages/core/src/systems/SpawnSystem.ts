@@ -1,5 +1,8 @@
+import { Deploying } from '../components/Deploying';
+import { Transform } from '../components/Transform';
 import { ContentValidationError } from '../content/ContentValidationError';
 import type { OpeningWaveDefinition } from '../content/structures/structures.types';
+import type { Entity } from '../entities/Entity';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Unit } from '../entities/Unit';
 import type { EntityId } from '../state/EntityStore.types';
@@ -7,6 +10,7 @@ import type { GameState } from '../state/GameState';
 import type { HordeRequest } from '../state/HordeRequest.types';
 import { assessLanes } from '../state/LaneAssessment';
 import type { LaneRoutes } from '../state/LaneRoutes';
+import type { MatchWorld } from '../state/MatchWorld';
 import type { PlayableTeam } from '../teams/teams.types';
 import { compareById } from '../utils/compareById';
 import type { Vec2 } from '../utils/geometry.types';
@@ -185,7 +189,7 @@ export class SpawnSystem implements System {
     const { spawnSpacing, spawnColumns } = this.plan.steering;
     const columns = Math.min(count, spawnColumns);
     const rows = Math.ceil(count / columns);
-    const memberIds: EntityId[] = [];
+    const members: Entity[] = [];
     for (let member = 0; member < count; member += 1) {
       const position = {
         x: origin.x + ((member % columns) - (columns - 1) / 2) * spawnSpacing,
@@ -193,8 +197,12 @@ export class SpawnSystem implements System {
       };
       const entity = this.factory.create(kind, mobId, { team, position });
       state.entities.add(entity);
-      memberIds.push(entity.id);
+      members.push(entity);
     }
+    if (state.world !== null) {
+      this.deploy(state.world, request, members);
+    }
+    const memberIds: EntityId[] = members.map(({ id }) => id);
     const horde = state.hordes.add({
       id: state.hordes.nextId(),
       team,
@@ -212,6 +220,48 @@ export class SpawnSystem implements System {
       lane,
       team,
       memberIds: horde.memberIds,
+    });
+  }
+
+  /**
+   * Sends a horde that spawned on blocked ground, inside its structure, out through the
+   * structure's up-lane doorway before its brain engages (DEC-133): each member gets a `Deploying`
+   * exit along the lane's march axis, `deployClearance` past the first walkable ground, the
+   * rearmost member included. A horde with no walkable ground along that axis keeps its brain.
+   *
+   * @remarks ponytail: the march direction snaps to its larger axis, since forts are axis-aligned
+   * with their lane gates facing up-lane; a rotated fort needs its doorway's own direction.
+   */
+  private deploy(world: MatchWorld, request: HordeRequest, members: readonly Entity[]): void {
+    const { grid, routes, definition } = world;
+    const { origin, lane, team } = request;
+    const isOpen = (x: number, y: number): boolean =>
+      grid.isWalkable(Math.floor(x / grid.cellSize), Math.floor(y / grid.cellSize));
+    if (isOpen(origin.x, origin.y)) {
+      return;
+    }
+    const forward = { x: 0, y: 0 };
+    routes.pose(lane, team, routes.distanceAlong(lane, team, origin), { x: 0, y: 0 }, forward);
+    const isAlongX = Math.abs(forward.x) >= Math.abs(forward.y);
+    const ax = isAlongX ? Math.sign(forward.x) : 0;
+    const ay = isAlongX ? 0 : Math.sign(forward.y);
+    const limit = Math.max(definition.width, definition.height);
+    let open = grid.cellSize;
+    while (open <= limit && !isOpen(origin.x + ax * open, origin.y + ay * open)) {
+      open += grid.cellSize;
+    }
+    if (open > limit) {
+      return;
+    }
+    const positions = members.map((member) => member.getComponent(Transform).position);
+    const behind = Math.max(
+      0,
+      ...positions.map(({ x, y }) => (origin.x - x) * ax + (origin.y - y) * ay),
+    );
+    const reach = open + behind + this.plan.steering.deployClearance;
+    members.forEach((member, at) => {
+      const { x, y } = positions[at] ?? origin;
+      member.addComponent(new Deploying({ x: x + ax * reach, y: y + ay * reach }));
     });
   }
 }

@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
+import type { MapObject } from './content/maps/mapObjects.types';
+import type { MapDefinition, MapFeature } from './content/maps/maps.types';
+import { SPAWN_WAVES } from './content/structures/spawnWaves';
 import { NullLogger } from './diagnostics/NullLogger';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
+import { LaneRoutes } from './state/LaneRoutes';
+import type { PlayableTeam } from './teams/teams.types';
+import { isPointInPolygon } from './utils/geometry';
+import type { Vec2 } from './utils/geometry.types';
 
 /** Both teams' bots as the client composes them: laners plus a Rover that starts in its palace. */
 const roster = (legendsPerTeam: number): RosterSlot[] =>
@@ -20,6 +27,41 @@ const roster = (legendsPerTeam: number): RosterSlot[] =>
     })),
     { team, definitionId: 'warrior', role: 'rover' as const, difficulty: 'rover' },
   ]);
+
+/** A team's lane tower: a SpawnerTower or BuffTower on its own lane. */
+type LaneTower = MapFeature & {
+  readonly kind: 'spawner-tower' | 'buff-tower';
+  readonly team: PlayableTeam;
+  readonly laneId: string;
+};
+
+const laneTowers = (map: MapDefinition): LaneTower[] =>
+  map.features.filter(
+    (feature): feature is LaneTower =>
+      (feature.kind === 'spawner-tower' || feature.kind === 'buff-tower') &&
+      feature.team !== 'neutral' &&
+      feature.laneId !== undefined,
+  );
+
+/** A tower's walls, as the box around its collider polygons: its hollow core and doorways. */
+const wallBox = (mapObjects: readonly MapObject[], id: string) => {
+  const points = mapObjects.find((object) => object.id === id)?.footprints.flat() ?? [];
+  const xs = points.map(({ x }) => x);
+  const ys = points.map(({ y }) => y);
+  return {
+    left: Math.min(...xs),
+    right: Math.max(...xs),
+    top: Math.min(...ys),
+    bottom: Math.max(...ys),
+  };
+};
+
+/** The unit direction the tower's team marches its lane at the tower. */
+const marchDirection = (routes: LaneRoutes, { laneId, team, position }: LaneTower): Vec2 => {
+  const forward = { x: 0, y: 0 };
+  routes.pose(laneId, team, routes.distanceAlong(laneId, team, position), { x: 0, y: 0 }, forward);
+  return forward;
+};
 
 describe('Simulation with a roster and map objects (as the client builds a match)', () => {
   it.each([1, 2])(
@@ -58,6 +100,93 @@ describe('Simulation with a roster and map objects (as the client builds a match
       expect(stillHome).toEqual([]);
     },
   );
+
+  it.each([1, 2])(
+    'walks every tower horde out of its tower and on up its lane within 10 seconds (DEC-133, seed %i)',
+    (seed) => {
+      const config = createDefaultGameConfig();
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+        roster: roster(config.match.legendsPerTeam),
+      });
+      const routes = new LaneRoutes(map);
+      const towers = laneTowers(map);
+      // The opening hordes leave at tick 0; every horde after it is one tower's.
+      simulation.step();
+      const sent: { readonly tower: LaneTower; readonly memberIds: readonly string[] }[] = [];
+      simulation.on('horde-spawned', ({ memberIds }) => {
+        const tower = towers[sent.length];
+        if (tower !== undefined) sent.push({ tower, memberIds });
+      });
+      for (const tower of towers) {
+        const [wave] = SPAWN_WAVES[tower.kind] ?? [];
+        simulation.enqueueCommand({
+          type: 'dev-spawn-mobs',
+          team: tower.team,
+          definitionId: wave?.mobId ?? '',
+          count: config.match.hordeSizes[wave?.weightClass ?? 'light'],
+          origin: { kind: 'structure', structureId: tower.id },
+        });
+      }
+      for (let tick = 0; tick < 10 * config.tickRate; tick += 1) {
+        simulation.step();
+      }
+
+      const at = new Map(
+        simulation.snapshot().entities.map(({ id, transform }) => [id, transform]),
+      );
+      const notOut = sent.flatMap(({ tower, memberIds }) => {
+        const { left, right, top, bottom } = wallBox(mapObjects, tower.id);
+        const forward = marchDirection(routes, tower);
+        return memberIds.flatMap((id) => {
+          const { x, y } = at.get(id) ?? tower.position;
+          const isInside = x > left && x < right && y > top && y < bottom;
+          const ahead = (x - tower.position.x) * forward.x + (y - tower.position.y) * forward.y;
+          return isInside || ahead <= 0
+            ? [`${id} of ${tower.id} at ${x.toFixed(0)},${y.toFixed(0)}`]
+            : [];
+        });
+      });
+      expect(sent).toHaveLength(towers.length);
+      expect(notOut).toEqual([]);
+    },
+  );
+
+  it('opens every tower toward where its hordes march: a doorway in its up-lane wall (DEC-133)', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const routes = new LaneRoutes(map);
+    const towers = laneTowers(map);
+
+    // The line from the tower's centre to its up-lane wall, snapped to the fort's axes, from past
+    // the keep to past the outer wall, crosses no wall.
+    const walled = towers.filter((tower) => {
+      const { left, right } = wallBox(mapObjects, tower.id);
+      const forward = marchDirection(routes, tower);
+      const isAlongX = Math.abs(forward.x) >= Math.abs(forward.y);
+      const ax = isAlongX ? Math.sign(forward.x) : 0;
+      const ay = isAlongX ? 0 : Math.sign(forward.y);
+      const half = (right - left) / 2;
+      const footprints = mapObjects.find(({ id }) => id === tower.id)?.footprints ?? [];
+      return Array.from({ length: 21 }, (_, step) => half * (0.6 + step * 0.03)).some((along) =>
+        footprints.some((footprint) =>
+          isPointInPolygon(
+            { x: tower.position.x + ax * along, y: tower.position.y + ay * along },
+            footprint,
+          ),
+        ),
+      );
+    });
+    expect(towers).toHaveLength(4 * config.map.numLanes);
+    expect(walled.map(({ id }) => id)).toEqual([]);
+  });
 
   it('lets only the other side attack what a side built; scenery takes attacks from both (DEC-121 (a))', () => {
     const config = createDefaultGameConfig();

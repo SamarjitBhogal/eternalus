@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -97,6 +98,19 @@ describe('EntityStore', () => {
     expect(removed.retiredWith).toBe('dev-removed');
     expect(store.has('entity-1')).toBe(false);
     expect(idsOf(store)).toEqual(['entity-2']);
+  });
+
+  it('reports an entity as deploying only while it has the Deploying component', () => {
+    const store = storeWith('entity-1');
+    const entity = store.get('entity-1');
+    expect(store.isDeploying('entity-1')).toBe(false);
+
+    entity?.addComponent(new Deploying({ x: 5, y: 5 }));
+    expect(store.isDeploying('entity-1')).toBe(true);
+
+    entity?.removeComponent(Deploying);
+    expect(store.isDeploying('entity-1')).toBe(false);
+    expect(store.isDeploying('entity-9')).toBe(false);
   });
 
   it('refuses to remove an unknown id', () => {

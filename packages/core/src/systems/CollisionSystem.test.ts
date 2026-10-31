@@ -8,6 +8,7 @@ import { loadWeapons } from '../content/weapons/loadWeapons';
 import { EntityFactory } from '../entities/EntityFactory';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { NullLogger } from '../diagnostics/NullLogger';
+import { Deploying } from '../components/Deploying';
 import { Transform } from '../components/Transform';
 import type { MapDefinition, MapPresentation } from '../content/maps/maps.types';
 
@@ -62,5 +63,37 @@ describe('CollisionSystem', () => {
     transform.moveBy({ x: -100, y: 0 });
     collision.update({ state, logger: new NullLogger() });
     expect(transform.position.x).toBe(0.5);
+  });
+
+  it('lets a deploying mover cross a wall that stops the same mover otherwise', () => {
+    const config = createDefaultGameConfig();
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      loadDefaultContent(config.tickRate),
+      undefined,
+      loadWeapons(config.tickRate),
+    );
+    const collision = new CollisionSystem(
+      EMPTY_MAP,
+      new MapObjectBuilder().build(EMPTY_MAP, HOUSE_PRESENTATION),
+    );
+    const walk = (isDeploying: boolean): number => {
+      const state = new GameState(config, 1);
+      const unit = factory.create('warrior', 'warrior', {
+        team: 'light',
+        position: { x: 1, y: 5 },
+      });
+      if (isDeploying) {
+        unit.addComponent(new Deploying({ x: 20, y: 5 }));
+      }
+      state.entities.add(unit);
+      const transform = unit.getComponent(Transform);
+      transform.moveBy({ x: 20, y: 0 });
+      collision.update({ state, logger: new NullLogger() });
+      return transform.position.x;
+    };
+
+    expect(walk(false)).toBeCloseTo(4.5);
+    expect(walk(true)).toBeCloseTo(21);
   });
 });
