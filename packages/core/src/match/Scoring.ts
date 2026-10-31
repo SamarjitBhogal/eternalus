@@ -20,7 +20,7 @@ import type { PendingChange, ScoringOptions } from './Scoring.types';
  * - Kills: only a Legend attacker (one with a row) earns a kill. A hit names its attacker (05 §9),
  *   so a projectile's hit counts for the Legend that fired it, even after that Legend died.
  * - Own side: a hit on or a kill of a unit on the attacker's own team (itself included) counts for
- *   nothing, as for XP (O5, 05 §18). The victim's death still counts.
+ *   nothing, as for XP (DEC-130; O5, 05 §18). The victim's death still counts.
  * - Assists: Legend victims only. Every other Legend that hit the victim inside the window earns
  *   one, also when a non-Legend landed the last hit.
  * - Mobs: points by weight class. Bosses, the sovereign and every other family give no points.

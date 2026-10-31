@@ -4,9 +4,9 @@ import type { ScoringWeights } from './scoring.types';
  * The owner's point model (DEC-79, architecture 12 §5). Bosses and the sovereign give no personal
  * points, so they have no line.
  *
- * ponytail: points for structures, captures and holds (FR-007) are not here: the owner has given
- * no values (DEC-79, DEC-84 (2)) and those entities are not built. Each joins as a new line here,
- * a listener in `match/Scoring.ts` and, for team-only points, a field in `TeamStats`.
+ * ponytail: points for structures, captures and holds (FR-007; the owner's values: DEC-131) are not
+ * here, because those entities are not built. Each joins as a new line here (`TUNE`), a listener
+ * in `match/Scoring.ts` and, for team-only points, a field in `TeamStats`.
  */
 export const SCORING_WEIGHTS = {
   legendKill: 15, // TUNE: DEC-79
