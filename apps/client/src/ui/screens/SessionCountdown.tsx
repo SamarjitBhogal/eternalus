@@ -1,15 +1,20 @@
 import type { ReactElement } from 'react';
 
 import { useAppSelector } from '../../bridge/hooks';
-import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
+import type { RootState } from '../../bridge/store';
 import { Countdown } from '../components/Countdown';
-import { STRINGS } from '../strings';
+
+type SessionCountdownProps = {
+  /** The countdown's whole seconds left (a `matchSetupSlice` selector). */
+  readonly seconds: (state: RootState) => number;
+  readonly label: string;
+};
 
 /**
- * The character-select session's countdown: the only reader of the 1 Hz value, so the steps
- * never re-render on it.
+ * A session countdown (character select, the win/lose screen): the only reader of the 1 Hz
+ * value, so the screen around it never re-renders on it.
  */
-export function SessionCountdown(): ReactElement {
-  const seconds = useAppSelector(matchSetupSlice.selectors.selectCountdownSeconds);
-  return <Countdown remainingSeconds={seconds} label={STRINGS.characterSelect.countdownLabel} />;
+export function SessionCountdown({ seconds, label }: SessionCountdownProps): ReactElement {
+  const remainingSeconds = useAppSelector(seconds);
+  return <Countdown remainingSeconds={remainingSeconds} label={label} />;
 }

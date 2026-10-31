@@ -8,8 +8,6 @@ import { selectMatchVerdict } from './selectMatchVerdict';
 /** The placeholder a verdict line names the fallen sovereign with (core `verdictLines.ts`). */
 const NAME_PLACEHOLDER = '{name}';
 
-const ENEMY_TEAM: Readonly<Record<PlayableTeam, PlayableTeam>> = { light: 'dark', dark: 'light' };
-
 /**
  * The line under the verdict (12 §9: `verdictLines[condition]`, the player's side of it), with
  * `{name}` filled in from content: the fallen team's sovereign name (DEC-74). `null` before
@@ -25,7 +23,8 @@ export function selectVerdictLine(
   const line = contentSlice.selectors.selectVerdictLines(state)[result.condition]?.[verdict];
   if (line === undefined) return null;
   // Whose sovereign fell: the enemy's on a victory, the player's own otherwise.
-  const fallenTeam = verdict === 'victory' ? ENEMY_TEAM[team] : team;
+  const enemyTeam: PlayableTeam = team === 'light' ? 'dark' : 'light';
+  const fallenTeam = verdict === 'victory' ? enemyTeam : team;
   const name = contentSlice.selectors.selectSovereignNames(state)[fallenTeam];
   return line.replaceAll(NAME_PLACEHOLDER, name);
 }

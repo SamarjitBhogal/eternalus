@@ -6,11 +6,29 @@ import { accessibleNames, renderWithStore } from '../testStore';
 import { SessionCountdown } from './SessionCountdown';
 
 const render = (countdownMs: number): string =>
-  renderWithStore(<SessionCountdown />, {
-    matchSetup: { ...matchSetupSlice.getInitialState(), countdownMs },
-  });
+  renderWithStore(
+    <SessionCountdown
+      seconds={matchSetupSlice.selectors.selectCountdownSeconds}
+      label={STRINGS.characterSelect.countdownLabel}
+    />,
+    { matchSetup: { ...matchSetupSlice.getInitialState(), countdownMs } },
+  );
 
 describe('SessionCountdown', () => {
+  it('reads the countdown its selector names, under its label (the win/lose screen)', () => {
+    const html = renderWithStore(
+      <SessionCountdown
+        seconds={matchSetupSlice.selectors.selectResultsSeconds}
+        label={STRINGS.results.countdownLabel}
+      />,
+      {
+        matchSetup: { ...matchSetupSlice.getInitialState(), countdownMs: 42_000, resultsMs: 7_000 },
+      },
+    );
+    expect(html).toMatch(/role="timer"[^>]*>7</);
+    expect(accessibleNames(html, '[role=timer]')).toEqual([STRINGS.results.countdownLabel]);
+  });
+
   it("shows the session's countdown in whole seconds, rounded up", () => {
     expect(render(42_000)).toMatch(/^<p [^>]*role="timer"[^>]*>42<\/p>$/);
     expect(render(9_001)).toMatch(/role="timer"[^>]*>10</);

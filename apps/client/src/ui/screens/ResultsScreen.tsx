@@ -8,7 +8,6 @@ import { selectVerdictLine } from '../../bridge/selectors/selectVerdictLine';
 import { contentSlice } from '../../bridge/slices/contentSlice';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { Button } from '../components/Button';
-import { Countdown } from '../components/Countdown';
 import { ScreenFrame } from '../components/ScreenFrame';
 import { SelectionBanner } from '../components/SelectionBanner';
 import { SelectionDefs } from '../components/SelectionDefs';
@@ -16,6 +15,7 @@ import { SelectionStage, type VignetteEdge } from '../components/SelectionStage'
 import { TeamBadge } from '../components/TeamBadge';
 import { STRINGS } from '../strings';
 import styles from './ResultsScreen.module.css';
+import { SessionCountdown } from './SessionCountdown';
 
 /** Both edges darkened, as on the class step (62:125): the banner sits on the top one. */
 const VIGNETTES: readonly VignetteEdge[] = ['top', 'bottom'];
@@ -29,7 +29,6 @@ export function ResultsScreen(): ReactElement {
   const verdict = useAppSelector(selectMatchVerdict);
   const line = useAppSelector(selectVerdictLine);
   const duration = useAppSelector(selectMatchDurationText);
-  const seconds = useAppSelector(matchSetupSlice.selectors.selectResultsSeconds);
   const team = useAppSelector(matchSetupSlice.selectors.selectPlayerTeam);
   const bannerAssetId = useAppSelector(contentSlice.selectors.selectSelectionBannerAssetId);
   const status = verdict === null ? STRINGS.results.noResult : line;
@@ -41,7 +40,10 @@ export function ResultsScreen(): ReactElement {
           title={verdict === null ? STRINGS.results.title : STRINGS.results.verdicts[verdict]}
           bannerAssetId={bannerAssetId}
         />
-        <Countdown remainingSeconds={seconds} label={STRINGS.results.countdownLabel} />
+        <SessionCountdown
+          seconds={matchSetupSlice.selectors.selectResultsSeconds}
+          label={STRINGS.results.countdownLabel}
+        />
         <div className={styles.summary}>
           {status !== null && (
             <p className={styles.line} role="status">
