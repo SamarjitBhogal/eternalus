@@ -2474,3 +2474,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 258ms"; "Documentation check
   passed."
 - Next step: none; the HUD branches keep DEC-48.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/horde-leave-stronghold — SamarjitBhogal + Claude Code
+
+- What was done: hordes spawn inside the Stronghold's blocking footprint, so the lane steering held
+  every minion; a mob on unwalkable ground now walks straight to its slot (`isWalkableAt`), and one
+  separation would push onto blocked ground keeps its own heading (crowds at a wall deadlocked).
+  Doc 18 §5.2 updated; regression tests fail on the old code. Critic PASS (both changes better
+  than the design; its fixes applied); ponytail: lean already. Merged the phase branch (#59, #60).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  791 passed (791)"; client "Tests 419 passed (419)"; "✓ built in 172ms"; "Documentation check
+  passed."
+- Next step: the product owner signs off on the doc 18 §5.2 change on PR #61 (ADR 0018, DEC-96;
+  `INBOX.md` item); then mark it ready for review.
