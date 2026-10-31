@@ -1,4 +1,5 @@
 import { Collider } from '../../components/Collider';
+import { Deploying } from '../../components/Deploying';
 import { Movement } from '../../components/Movement';
 import { Transform } from '../../components/Transform';
 import type { GameState } from '../../state/GameState';
@@ -17,7 +18,9 @@ export class NoMapObjectOverlapInvariant implements Invariant {
       if (
         !entity.hasComponent(Movement) ||
         transform === undefined ||
-        entity.findComponent(Collider)?.isEnabled !== true
+        entity.findComponent(Collider)?.isEnabled !== true ||
+        // A mob walking out of the structure it spawned inside passes its walls (DEC-133).
+        entity.hasComponent(Deploying)
       )
         return;
       const objectId = state.worldObjects?.blockingAt(transform.position, transform.radius);

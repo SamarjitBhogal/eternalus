@@ -224,10 +224,9 @@ export class SpawnSystem implements System {
   }
 
   /**
-   * Sends a horde that spawned on blocked ground, inside its structure, out through the
-   * structure's up-lane doorway before its brain engages (DEC-133): each member gets a `Deploying`
-   * exit along the lane's march axis, `deployClearance` past the first walkable ground, the
-   * rearmost member included. A horde with no walkable ground along that axis keeps its brain.
+   * Gives each member of a horde spawned on blocked ground a `Deploying` exit straight along the
+   * lane's march axis, out through its structure's up-lane doorway (DEC-133). A horde with no
+   * walkable ground along that axis keeps its brain.
    *
    * @remarks ponytail: the march direction snaps to its larger axis, since forts are axis-aligned
    * with their lane gates facing up-lane; a rotated fort needs its doorway's own direction.
@@ -235,9 +234,7 @@ export class SpawnSystem implements System {
   private deploy(world: MatchWorld, request: HordeRequest, members: readonly Entity[]): void {
     const { grid, routes, definition } = world;
     const { origin, lane, team } = request;
-    const isOpen = (x: number, y: number): boolean =>
-      grid.isWalkable(Math.floor(x / grid.cellSize), Math.floor(y / grid.cellSize));
-    if (isOpen(origin.x, origin.y)) {
+    if (grid.isWalkableAt(origin.x, origin.y)) {
       return;
     }
     const forward = { x: 0, y: 0 };
@@ -247,21 +244,21 @@ export class SpawnSystem implements System {
     const ay = isAlongX ? 0 : Math.sign(forward.y);
     const limit = Math.max(definition.width, definition.height);
     let open = grid.cellSize;
-    while (open <= limit && !isOpen(origin.x + ax * open, origin.y + ay * open)) {
+    while (open <= limit && !grid.isWalkableAt(origin.x + ax * open, origin.y + ay * open)) {
       open += grid.cellSize;
     }
     if (open > limit) {
       return;
     }
-    const positions = members.map((member) => member.getComponent(Transform).position);
+    const positionOf = (member: Entity): Vec2 => member.getComponent(Transform).position;
     const behind = Math.max(
       0,
-      ...positions.map(({ x, y }) => (origin.x - x) * ax + (origin.y - y) * ay),
+      ...members.map(positionOf).map(({ x, y }) => (origin.x - x) * ax + (origin.y - y) * ay),
     );
     const reach = open + behind + this.plan.steering.deployClearance;
-    members.forEach((member, at) => {
-      const { x, y } = positions[at] ?? origin;
+    for (const member of members) {
+      const { x, y } = positionOf(member);
       member.addComponent(new Deploying({ x: x + ax * reach, y: y + ay * reach }));
-    });
+    }
   }
 }

@@ -213,11 +213,11 @@ describe('PathingSystem', () => {
       const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
       const state = new GameState(config, 1, matchWorldOf(BLOCKED_LANE_MAP), { space });
       const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
-      // Upstream of the rift (x 50..70); its exit is past it, so the straight line is blocked,
-      // while its slot (the anchor, 15 m in) lies behind it.
+      // In the rift (x 50..70), as inside its structure; its exit is past it, while its slot
+      // (the anchor, 15 m in) lies behind it.
       const minion = factory.create('light-mob', 'light-minion', {
         team: 'light',
-        position: { x: 45, y: 20 },
+        position: { x: 55, y: 20 },
       });
       minion.addComponent(new Deploying({ x: 75, y: 20 }));
       state.entities.add(minion);
@@ -274,6 +274,72 @@ describe('PathingSystem', () => {
 
       expect(leader.hasComponent(Deploying)).toBe(false);
       expect(leader.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+    });
+
+    it('drops Deploying short of its exit once its body stands on walkable ground, so a unit on the exit cannot hold it', () => {
+      const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+        space,
+      });
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      // Open ground, 1 m short of its exit, where another unit stands.
+      const mob = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 49, y: 20 },
+      });
+      mob.addComponent(new Deploying({ x: 50, y: 20 }));
+      state.entities.add(mob);
+      state.entities.add(
+        factory.create('light-mob', 'light-minion', { team: 'light', position: { x: 50, y: 20 } }),
+      );
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [mob.id],
+        progress: 40,
+      });
+      indexAll(space, state);
+
+      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+        state,
+        logger,
+      });
+
+      expect(mob.hasComponent(Deploying)).toBe(false);
+    });
+
+    it('drops Deploying at its exit even where its body still touches blocked ground', () => {
+      const config = createDefaultGameConfig();
+      const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+      const state = new GameState(config, 1, matchWorldOf(BLOCKED_LANE_MAP), { space });
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      const mob = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 60, y: 20 },
+      });
+      mob.addComponent(new Deploying({ x: 60, y: 20 }));
+      state.entities.add(mob);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [mob.id],
+        progress: 10,
+      });
+      indexAll(space, state);
+
+      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+        state,
+        logger,
+      });
+
+      expect(state.world?.grid.isWalkableAt(60, 20)).toBe(false);
+      expect(mob.hasComponent(Deploying)).toBe(false);
     });
   });
 

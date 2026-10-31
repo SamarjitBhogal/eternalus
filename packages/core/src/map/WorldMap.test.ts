@@ -132,6 +132,14 @@ describe('WorldMap', () => {
     expect(grid.isWalkable(10, 0)).toBe(false);
   });
 
+  it('answers walkability at a world position by the cell under it, and no outside the grid', () => {
+    const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
+
+    expect(grid.isWalkableAt(45, 5)).toBe(false);
+    expect(grid.isWalkableAt(39.9, 5)).toBe(true);
+    expect(grid.isWalkableAt(-0.1, 5)).toBe(false);
+  });
+
   it('stamping a footprint blocks exactly its cells; clearing restores them', () => {
     const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
     const before = Uint8Array.from(grid.walkable);

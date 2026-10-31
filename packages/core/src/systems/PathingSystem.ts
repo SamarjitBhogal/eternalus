@@ -10,6 +10,7 @@ import type {
   MovementStrategy,
 } from '../entities/strategies/MovementStrategy.types';
 import type { LaneFlowFields } from '../map/LaneFlowFields';
+import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { System, SystemContext } from './System.types';
@@ -70,27 +71,42 @@ export class PathingSystem implements System {
   }
 
   /**
-   * Steers a mob that spawned inside its structure straight to its exit (DEC-133): no ground
-   * check holds it, since it starts on blocked ground. Returns `true`, steering nothing, once it
-   * is there.
+   * Steers a mob that spawned inside its structure straight to its exit (DEC-133), with no lane
+   * field and no ground check, since it starts on blocked ground. Returns `true`, steering
+   * nothing, once its body stands wholly on walkable ground or it is at its exit, whichever is
+   * first, so neither a unit on the exit nor blocked ground past the opening holds it.
+   *
+   * @remarks ponytail: the body test checks its bounding box's corners, exact while a body is no
+   * wider than a nav cell; test every cell under the box when bodies grow past that.
    */
   private steerOut(
     { exit }: Deploying,
+    { position: { x, y }, radius }: Transform,
+    grid: WorldMap | undefined,
     index: number,
     strategy: MovementStrategy,
     context: { flow: FlowQuery | null } & Omit<MovementContext, 'flow'>,
   ): boolean {
-    const dx = exit.x - (context.positions[2 * index] ?? exit.x);
-    const dy = exit.y - (context.positions[2 * index + 1] ?? exit.y);
-    if (dx * dx + dy * dy <= this.slotArrivalRadius * this.slotArrivalRadius) {
+    const isClear =
+      grid !== undefined &&
+      grid.isWalkableAt(x - radius, y - radius) &&
+      grid.isWalkableAt(x + radius, y - radius) &&
+      grid.isWalkableAt(x - radius, y + radius) &&
+      grid.isWalkableAt(x + radius, y + radius);
+    const dx = exit.x - x;
+    const dy = exit.y - y;
+    if (isClear || dx * dx + dy * dy <= this.slotArrivalRadius * this.slotArrivalRadius) {
       return true;
     }
     this.target.x = exit.x;
     this.target.y = exit.y;
     context.arrivalRadius = this.slotArrivalRadius;
     context.isChasing = false;
+    const { flow } = context;
+    context.flow = null;
     // The strategy writes the heading into `this.out`, which the caller hands to the mob.
     strategy.desiredVelocity(index, context);
+    context.flow = flow;
     return false;
   }
 
@@ -98,6 +114,7 @@ export class PathingSystem implements System {
   public update({ state }: SystemContext): void {
     this.flowFields?.rebuildDirty(state.config.map.flowFieldCellBudget);
     const routes = state.world?.routes;
+    const grid = state.world?.grid;
     const { space } = state;
     if (routes === undefined || space === null || state.hordes.size === 0) {
       return;
@@ -135,20 +152,22 @@ export class PathingSystem implements System {
         const movement = entity?.findComponent(Movement);
         const strategyId = movement?.strategyId;
         const strategy = strategyId === undefined ? undefined : this.strategies[strategyId];
-        if (index === undefined || movement === undefined || strategy === undefined) {
+        if (
+          entity === undefined ||
+          index === undefined ||
+          movement === undefined ||
+          strategy === undefined
+        ) {
           continue;
         }
-        const deploying = entity?.findComponent(Deploying);
+        const deploying = entity.findComponent(Deploying);
         if (deploying !== undefined) {
-          const flow = context.flow;
-          context.flow = null;
-          const isOut = this.steerOut(deploying, index, strategy, context);
-          context.flow = flow;
-          if (!isOut) {
+          const body = entity.getComponent(Transform);
+          if (!this.steerOut(deploying, body, grid, index, strategy, context)) {
             movement.steer(this.out);
             continue;
           }
-          entity?.removeComponent(Deploying);
+          entity.removeComponent(Deploying);
         }
         formationSlot(this.anchor, this.forward, slot, formation, this.target);
         const reach = this.chase(state, memberId);

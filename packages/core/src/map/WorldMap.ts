@@ -59,6 +59,11 @@ export class WorldMap {
     return isOnGrid && this.walkable[row * this.cols + col] === 1;
   }
 
+  /** Whether the cell under the world position `(x, y)` can be walked on; outside the grid, no. */
+  public isWalkableAt(x: number, y: number): boolean {
+    return this.isWalkable(Math.floor(x / this.cellSize), Math.floor(y / this.cellSize));
+  }
+
   /**
    * Whether the first `maxDistance` of the straight line from `(fromX, fromY)` to `(toX, toY)` is
    * walkable, sampled `LINE_STEP_FRACTION` of a cell apart (flow fields, A\* string pulling).

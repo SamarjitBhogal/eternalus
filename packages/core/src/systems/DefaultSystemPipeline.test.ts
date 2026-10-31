@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 
@@ -14,6 +14,7 @@ import { DefaultInvariantRunner } from '../diagnostics/DefaultInvariantRunner';
 import { MemoryLogger } from '../diagnostics/MemoryLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import { LaneFlowFields } from '../map/LaneFlowFields';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
@@ -229,48 +230,60 @@ describe('DefaultSystemPipeline', () => {
     minimapGlyph: { shape: 'square', size: 2, colourRole: 'team' },
     footprint,
   };
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   it.each([
-    { name: 'a house', kind: 'house' as const, features: [] },
+    { name: 'a house', kind: 'house' as const, features: [], hasLanes: true },
     // The grid stamps a wall segment twice: as its map feature and as its object (07 §10).
     {
       name: 'a wall segment its map feature also blocks',
       kind: 'wall' as const,
       features: [wallFeature],
+      hasLanes: true,
     },
-  ])('reopens the pathing cells of $name once it is destroyed (07 §10)', ({ kind, features }) => {
-    const map = { ...TWO_LANE_MAP, features };
-    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(map, 5));
-    const house: MapObject = { id: kind, kind, isBlocking: true, footprints: [footprint] };
-    const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
-    const factory = new EntityFactory(createDefaultEntityRegistry(), {
-      has: (id) => objects.has(id) || UNIT_DEFINITIONS.has(id),
-      get: (id) => objects.get(id) ?? UNIT_DEFINITIONS.get(id),
-    });
-    state.worldObjects = new WorldObjectStore(
-      [house],
-      factory,
-      state.entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
-    const world = state.world?.grid;
-    for (const footprint of house.footprints) world?.stampFootprint(footprint);
-    const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, new MemoryLogger(), PROGRESSION.curves),
-      state,
-      PROGRESSION,
-      { factory, space: null, decide: [] },
-    );
-    const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
-    expect(world?.isWalkable(9, 5)).toBe(false);
+    // Without the horde systems there are no lane fields, but the grid still reopens.
+    { name: 'a house, with no lane fields', kind: 'house' as const, features: [], hasLanes: false },
+  ])(
+    'reopens the pathing cells and lane fields of $name once it is destroyed (07 §10)',
+    ({ kind, features, hasLanes }) => {
+      const markDirty = vi.spyOn(LaneFlowFields.prototype, 'markDirty');
+      const map = { ...TWO_LANE_MAP, features };
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(map, 5));
+      const house: MapObject = { id: kind, kind, isBlocking: true, footprints: [footprint] };
+      const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
+      const factory = new EntityFactory(createDefaultEntityRegistry(), {
+        has: (id) => objects.has(id) || UNIT_DEFINITIONS.has(id),
+        get: (id) => objects.get(id) ?? UNIT_DEFINITIONS.get(id),
+      });
+      state.worldObjects = new WorldObjectStore(
+        [house],
+        factory,
+        state.entities,
+        MAP_OBJECT_DEFINITIONS,
+      );
+      const world = state.world?.grid;
+      for (const footprint of house.footprints) world?.stampFootprint(footprint);
+      const pipeline = new DefaultSystemPipeline(
+        new DefaultInvariantRunner(TEST_DEBUG_CONFIG, new MemoryLogger(), PROGRESSION.curves),
+        state,
+        PROGRESSION,
+        hasLanes ? { factory, space: null, decide: [] } : undefined,
+      );
+      const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
+      expect(world?.isWalkable(9, 5)).toBe(false);
 
-    new DamagePipeline().apply(state, entityId, 1_000_000, {
-      attackerId: 'nobody',
-      kind: 'weapon',
-      definitionId: 'warrior',
-    });
-    pipeline.run({ state, logger: new MemoryLogger() });
+      new DamagePipeline().apply(state, entityId, 1_000_000, {
+        attackerId: 'nobody',
+        kind: 'weapon',
+        definitionId: 'warrior',
+      });
+      pipeline.run({ state, logger: new MemoryLogger() });
 
-    expect(state.entities.has(entityId)).toBe(false);
-    expect(world?.isWalkable(9, 5)).toBe(true);
-  });
+      expect(state.entities.has(entityId)).toBe(false);
+      expect(world?.isWalkable(9, 5)).toBe(true);
+      const reopened = markDirty.mock.calls.flatMap(([cells]) => cells);
+      expect(reopened.includes(5 * (world?.cols ?? 0) + 9)).toBe(hasLanes);
+    },
+  );
 });

@@ -6,12 +6,13 @@ import { GameState } from '../../state/GameState';
 import { WorldObjectStore } from '../../state/WorldObjectStore';
 import { EntityFactory } from '../../entities/EntityFactory';
 import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistry';
+import { Deploying } from '../../components/Deploying';
 import { Transform } from '../../components/Transform';
 import { Health } from '../../components/Health';
 import { MAP_OBJECT_DEFINITIONS } from '../../content/maps/mapObjectDefinitions';
 import { loadWeapons } from '../../content/weapons/loadWeapons';
 describe('NoMapObjectOverlapInvariant', () => {
-  it('flags deliberately placing a unit inside a wall, and clears after destruction', () => {
+  it('flags deliberately placing a unit inside a wall, unless it is deploying, and clears after destruction', () => {
     const config = createDefaultGameConfig();
     const state = new GameState(config, 1);
     const units = loadDefaultContent(config.tickRate);
@@ -54,6 +55,11 @@ describe('NoMapObjectOverlapInvariant', () => {
       entityId: unit.id,
       details: { objectId: 'wall' },
     });
+    // A mob walking out of the structure it spawned inside passes its walls (DEC-133).
+    unit.addComponent(new Deploying({ x: 10, y: 5 }));
+    expect(invariant.check(state)).toEqual([]);
+    unit.removeComponent(Deploying);
+    expect(invariant.check(state)).toHaveLength(1);
     const wall = state.worldObjects.snapshot()[0]?.entityId ?? '';
     state.entities.get(wall)?.getComponent(Health).applyDamage(2000);
     state.worldObjects.removed(wall);

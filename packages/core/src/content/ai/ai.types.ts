@@ -36,8 +36,9 @@ export type HordeSteeringProfile = {
   /** Members per row of the spawn grid. */
   readonly spawnColumns: number;
   /**
-   * How far past the first walkable ground on its way out a horde spawned inside a structure
-   * walks before its brain engages (DEC-133).
+   * How far past the first walkable ground along its way out a deploying horde's rearmost
+   * member's exit lies (DEC-133). A mob stops deploying there, or sooner, once its body stands
+   * on walkable ground.
    */
   readonly deployClearance: number;
 };

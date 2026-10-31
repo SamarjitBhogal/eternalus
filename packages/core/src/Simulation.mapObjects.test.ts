@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from './components/Deploying';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -102,7 +103,8 @@ describe('Simulation with a roster and map objects (as the client builds a match
     },
   );
 
-  it.each([1, 2])(
+  // Seed 10 sets a buff tower's march direction diagonal beside a lake (critic round 3, M-A).
+  it.each([1, 2, 10])(
     'walks every tower horde out of its tower and on up its lane within 10 seconds (DEC-133, seed %i)',
     (seed) => {
       const config = createDefaultGameConfig();
@@ -139,6 +141,10 @@ describe('Simulation with a roster and map objects (as the client builds a match
         simulation.step();
       }
 
+      const { entities, world } = (simulation as unknown as { readonly state: GameState }).state;
+      const stillDeploying = sent.flatMap(({ memberIds }) =>
+        memberIds.filter((id) => entities.get(id)?.hasComponent(Deploying) === true),
+      );
       const at = new Map(
         simulation.snapshot().entities.map(({ id, transform }) => [id, transform]),
       );
@@ -149,12 +155,13 @@ describe('Simulation with a roster and map objects (as the client builds a match
           const { x, y } = at.get(id) ?? tower.position;
           const isInside = x > left && x < right && y > top && y < bottom;
           const ahead = (x - tower.position.x) * forward.x + (y - tower.position.y) * forward.y;
-          return isInside || ahead <= 0
+          return isInside || ahead <= 0 || world?.grid.isWalkableAt(x, y) !== true
             ? [`${id} of ${tower.id} at ${x.toFixed(0)},${y.toFixed(0)}`]
             : [];
         });
       });
       expect(sent).toHaveLength(towers.length);
+      expect(stillDeploying).toEqual([]);
       expect(notOut).toEqual([]);
     },
   );
