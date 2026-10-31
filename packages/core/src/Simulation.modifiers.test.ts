@@ -31,8 +31,11 @@ const ambush = () => {
     count: 1,
   });
   const minionHits: number[] = [];
-  simulation.on('damage-applied', ({ amount, absorbed, source }) => {
-    if (source.definitionId === LIGHT_MINION.id) {
+  simulation.on('damage-applied', ({ targetId, amount, absorbed, source }) => {
+    // The killing blow is cut to the target's last health, so it says nothing about strength.
+    const isKillingBlow = () =>
+      simulation.snapshot().entities.find(({ id }) => id === targetId)?.health?.current === 0;
+    if (source.definitionId === LIGHT_MINION.id && !isKillingBlow()) {
       minionHits.push(amount + absorbed);
     }
   });

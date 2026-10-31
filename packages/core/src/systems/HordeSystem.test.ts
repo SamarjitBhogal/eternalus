@@ -110,6 +110,28 @@ describe('HordeSystem', () => {
     expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
   });
 
+  it('holds the anchor while any member fights, not only the leader (MS-33)', () => {
+    const { state, system, addHorde } = setUp();
+    const { hordeId, memberIds } = addHorde(
+      [
+        ['light-mob', 'light-minion'],
+        ['light-mob', 'light-minion'],
+      ],
+      10,
+    );
+    const [leader = '', follower = ''] = memberIds;
+    expect(state.hordes.get(hordeId)?.leaderId).toBe(leader);
+    const { memberIds: enemies } = addHorde([['light-mob', 'training-dummy']]);
+    state.entities.setAttackTarget(follower, enemies[0] ?? '');
+
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
+
+    state.entities.clearAttackTarget(follower);
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
+  });
+
   it('leaves the anchor where it is without a map', () => {
     const { state, system, addHorde } = setUp(null);
     const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
