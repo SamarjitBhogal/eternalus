@@ -2567,3 +2567,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: M2c (#56) merges this; its end-to-end test kills a tower and checks the lane's
   `enraged` stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit) — feat/minion-structures — sholtzman + Claude Code
+
+- What was done: CodeRabbit's two findings on PR #55. `AiSystem.update` now also throws when an
+  entity's AI profile is one its controller does not have (injected content skips
+  `assertRegistered`); the regression test fails on the old code. A destroyed SpawnerTower or
+  BuffTower still spawning waves is M2c's work (#56 builds it): the minion plan's stand-in row now
+  says so, and its enraged row says only the human's Legend can destroy a structure until M2c.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  831 passed (831)"; client "Tests 420 passed (420)"; "✓ built in 106ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; M2c (#56) merges this.

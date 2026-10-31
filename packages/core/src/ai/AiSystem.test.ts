@@ -208,6 +208,23 @@ describe('AiSystem', () => {
     }).toThrow('not registered');
   });
 
+  it('throws the first tick it sees an entity whose AI profile its controller does not have', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const definitions = new ContentCatalogue<UnitDefinition>([
+      { ...LIGHT_MINION, controller: 'minion', aiProfile: 'no-such-profile' },
+    ]);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
+    state.entities.add(
+      factory.create('light-mob', 'light-minion', { team: 'light', position: { x: 0, y: 0 } }),
+    );
+    const system = new AiSystem(state, { minion: stopper([]) }, cadenceWith(10), () => undefined);
+
+    expect(() => {
+      system.update({ state });
+    }).toThrow('AI profile "no-such-profile"');
+    expect(state.ai.size).toBe(0);
+  });
+
   it('checks the definitions against the registry before a match starts', () => {
     expect(() => {
       AiSystem.assertRegistered(

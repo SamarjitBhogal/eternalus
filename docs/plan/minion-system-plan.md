@@ -107,7 +107,7 @@ Each stand-in is removed by the phase named.
 
 | Stand-in                                                                                                                                                | Used in | Replaced by                                              |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------- |
-| Spawners are the map's structure features (position, team, lane), since structure entities do not exist yet                                             | M1      | M2: the structure entities                               |
+| Spawners are the map's structure features (position, team, lane), so a destroyed SpawnerTower or BuffTower keeps its waves                              | M1      | M2c (#56): the structure entities spawn                  |
 | `LaneAssessment` scores only `pushedBack`; damage-not-dealt is 1 and structures-lost 0 on every lane, because no structure has health or can fall       | M1      | M2: all three terms                                      |
 | Nothing marks a lane flow field dirty: no event reports a gate or terrain change, so the time-sliced rebuild runs only when a test asks for it          | M4      | the gate and structure changes of doc 07 §10             |
 | No wall-avoidance term or collision resolution: a heading into a wall turns along its open grid axis (18 §5.2), and the field leads a unit out (10 §9)  | M4      | `CollisionSystem` and the wall-avoidance term (10 §8–§9) |
@@ -123,7 +123,7 @@ Each stand-in is removed by the phase named.
 | The Rover's `StructurePressure` reads the lane scores (enemy hordes pushed past the midpoint), not structure health                                     | M8      | M2c: structure entities                                  |
 | Bots cast `ability-1` and the cast is refused (`not-supported`); a bot runs A\* again on each blocked decision                                          | M8      | Phase 4 abilities; a path cache in the brain             |
 | Minion strength measures lane progress along the lane polyline, not the flow-field distance `balancing.md` suggests                                     | M5a     | M4 merged in: the lane's field                           |
-| Nothing emits `structure-destroyed`, so no lane is enraged in a live match, and DISC-24's base point never moves                                        | M5a     | M2c, with enraged's scenario test                        |
+| Only the human's Legend can destroy a structure, so no scenario test shows a lost tower enraging its lane and moving DISC-24's point                    | M5a     | M2c, with enraged's scenario test                        |
 | The formation anchor does not hold at a standing objective (it holds while any member engages, MS-33)                                                   | M1–M2b  | M2c: objectives                                          |
 
 ## Related
