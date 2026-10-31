@@ -2557,26 +2557,25 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
 
-- What was done: minion plan M2c on top of M2s, as its §2 row lists: the lane objectives
-  (`state/LaneStructures`), the anchor holding at the next standing objective, gate holding,
-  spawning from the structure entities (a destroyed tower stops), `assessLanes`' structure terms
-  and the guards (`content/structures/guardPlans.ts`, `GuardController` on `ai/LeashBehaviour`,
-  `LeashedChaseMovementStrategy`, `GuardWithinLeashInvariant`). Sign-off items in `INBOX.md`;
-  docs 18 and the minion plan updated.
+- What was done: minion plan M2c on top of M2s. `state/LaneStructures` (the lane-order objective
+  index, built once the structures spawn); `HordeSystem` holds the anchor `objectiveHoldGap` in
+  front of the next standing objective; `MinionController` attacks the breakable objective as
+  `lane-objective` (gate holding until `structure-breakability-changed`); `assessLanes` scores
+  structure damage not dealt and structures lost; `SpawnSystem` spawns from the structure entities
+  (a destroyed tower stops) and runs the guard plans (`content/structures/guardPlans.ts`, posts in
+  `state.guards`, respawn after 120 s, DISC-21 shrink); `GuardController` on the shared
+  `ai/LeashBehaviour`; `LeashedChaseMovementStrategy`; guards steered by `PathingSystem`;
+  `GuardWithinLeashInvariant`. Light, medium and heavy guard content. Four sign-off items in
+  `INBOX.md`. Docs 18 and the minion plan updated.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   751 passed (751)"; client "Tests 416 passed (416)"; "✓ built in 184ms"; "Documentation check
   passed."
-- Next step: the pre-PR gate (next entry).
-
-### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
-
-- What was done: pre-PR gate for M2c. Critic round 1: one blocker (no test for `PathingSystem`'s
-  guard steering), now tested with a guard engage-and-return match too; should-fixes applied
-  (`GuardRoster` split out of `SpawnSystem`, the DISC-21 shrink's structure kind in content,
+- Pre-PR gate: critic round 1 had one blocker (no test for `PathingSystem`'s guard steering), now
+  tested with a guard engage-and-return match too; should-fixes applied (`GuardRoster` split out
+  of `SpawnSystem` with its own tests, the DISC-21 shrink names its structure kind in content,
   guards acquire inside their leash, INBOX items 5–8, a plan §3 row). Critic round 2: approve, no
-  blockers. Ponytail: lean, no cuts.
-- Checks run: final `npm run check` → `EXIT=0`: core "Tests 755 passed (755)", client "Tests 416
-  passed (416)", "✓ built in 172ms", "Documentation check passed."
+  blockers. Ponytail: lean, no cuts. Final `npm run check` → `EXIT=0`: core "Tests 755 passed
+  (755)", client "Tests 416 passed (416)", "✓ built in 172ms", "Documentation check passed."
 - Next step: M5b.
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — fix/struggling-lane-signals (on PR #56) — Claude Code for sholtzman
