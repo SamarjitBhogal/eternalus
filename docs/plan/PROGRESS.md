@@ -2511,7 +2511,7 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Next step: a PR into `phase/2-sprint-2-work`. Docs owned elsewhere still to align
   (doc 18 §3.1/§3.3/§10, doc 07 §6 tower rows, doc 12 §2, FR-003) go to their sessions.
 
-### 2026-10-31 — Phase 2 / sprint 2.2 — fix/minion-m1-review — sholtzman + Claude Code
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/minion-m1-review — sholtzman + Claude Code
 
 - What was done: fixed the review findings on the merged PR #38 (minion M1) and the stalls they
   hid. Wave hordes spawned inside their structure's footprint never moved; the lane field now
@@ -2522,14 +2522,17 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   +230 s (DEC-127). `GameState.world` is a `MatchWorld` (F7d). Horde membership lives only in
   the store (MS-29). Separation falls off as 1/r (F7b). Merged the phase branch at `f12d680`
   (#61): MS-31 and MS-35 replace #61's walk-out and separation hold, and a chase on blocked ground
-  follows the field out (DEC-126). Docs 02, 03, 06, 10 and 18, the minion plan and the phase 2
-  plan updated; the `INBOX.md` #61 item is decided and the MS-33 item added. Merged
-  `docs/pr-review-rulings` (PR #62) for the DEC-87 and DEC-93 rows; FR-005 now gives the DEC-127
-  first times.
+  follows the field out (DEC-126). Docs 02, 03, 04, 06, 10, 12 and 18, the minion plan and the
+  phase 2 plan updated, and a status note under doc 07 §6; DEC-128 records Call 2 (MS-32). Ponytail
+  cut: `FlowFieldBuilder.pointWallsOut` uses `cellOf`. The `INBOX.md` #61 item is decided and the
+  MS-33 item added. Merged `docs/pr-review-rulings` (PR #62) for the DEC-87 and DEC-93 rows; FR-005
+  now gives the DEC-127 first times.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   818 passed (818)"; client "Tests 419 passed (419)"; "✓ built in 108ms"; "Documentation check
   passed." After merging PR #62, again `EXIT=0`: core "Tests 818 passed (818)"; client "Tests 419
-  passed (419)"; "✓ built in 107ms"; "Documentation check passed."
+  passed (419)"; "✓ built in 107ms"; "Documentation check passed." Critic round 2: approve, no
+  blockers; after its fixes, `EXIT=0`: core "Tests 818 passed (818)"; client "Tests 419 passed
+  (419)"; "✓ built in 116ms"; "Documentation check passed."
 - Soak (seed 1, 3 lanes, 900 s): skipped spawns 30.61 % light / 33.47 % dark without bots, 23.62 %
   / 43.22 % with bots; the < 5 % bar still fails until #56 gives hordes structures to attack.
 - Next step: pre-PR gate and the PR into `phase/2-sprint-2-work`; then merge this fix into #55

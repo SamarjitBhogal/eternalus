@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-31
+last-reviewed: 2026-10-30
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -112,7 +112,7 @@ Made in the minion design sessions of 2026-10-14 and 2026-10-15 and in the owner
 of 2026-10-16. MS-5, MS-6, MS-14, MS-17, MS-18, MS-21 and MS-22 were withdrawn in that review
 (formation replaced the loose flock; the goal seam and redirection moved to the post-MVP backlog;
 the build split moved to the plan). MS-29 to MS-35 come from the owner's review of PR #38
-(2026-10-29 to 2026-10-31); MS-34, the chase limit, is recorded with its build in M2c.
+(2026-10-29 to 2026-10-30); MS-34, the chase limit, is recorded with its build in M2c.
 
 | #     | Decision                                                                                                                                                                    | Where      |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
@@ -140,7 +140,7 @@ the build split moved to the plan). MS-29 to MS-35 come from the owner's review 
 | MS-29 | **Owner, #38-A.** Horde membership lives only in `state.hordes`: a mob carries no `hordeId`, and the invariant checks the store's records.                                  | §4         |
 | MS-30 | **Owner, DEC-84, DEC-87, DEC-127.** One opening horde per lane spawns at the lane's base at load-in; every scheduled wave is timed from the countdown's end.                | §3.1, §3.2 |
 | MS-31 | **Owner, Call 4 B.** A horde spawns at its structure's centre; the lane field leads every reachable blocked corridor cell out the shortest way (10 §9).                     | §3.2, §5.2 |
-| MS-32 | **Owner, Call 2.** Conversion swaps a mob's brain: a converted mob leaves its horde, joins none, and fights on its own.                                                     | §4, §6.1   |
+| MS-32 | **Owner, Call 2 (DEC-128).** Conversion swaps a mob's brain: a converted mob leaves its horde, joins none, and fights on its own.                                           | §4, §6.1   |
 | MS-33 | **Owner, Call 5.** The formation anchor holds while any member fights, not only the leader, so the horde fights as one.                                                     | §4         |
 | MS-35 | **Owner, 2026-10-30.** A mob that would slide along a wall faces the slide direction and walks that way; a march never stalls at a wall.                                    | §5.2       |
 
@@ -180,8 +180,9 @@ flowchart LR
 
 `Spawner` is a component on the spawning structure; its data shape is doc
 [07 §6](07-structures-obstacles-and-destructibles.md#6-spawners). The schedule is the owner's
-DISC-10 (decisions log): SpawnerTower light hordes, BuffTower medium hordes, Stronghold heavy
-hordes down the worst lane. The opening hordes are the `countdown` row of doc
+DISC-10 as amended by DEC-87 and DEC-127 (decisions log): SpawnerTower light hordes, BuffTower
+medium hordes, Stronghold heavy hordes down the worst lane. The opening hordes are the `countdown`
+row of doc
 [12 §2](12-game-story-and-match-director.md#2-matchphase-and-the-state-pattern): one per lane
 (`map.numLanes`) at load-in, and every scheduled wave is timed from the countdown's end (MS-30).
 Horde sizes per weight class are `GameConfig.match.hordeSizes` (FR-037) and cadences are spawner

@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-31
+last-reviewed: 2026-10-30
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths: ['packages/core/src/match/**']
 related:

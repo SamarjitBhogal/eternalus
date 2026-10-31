@@ -214,6 +214,16 @@ batch is fulfilled in one step together with its horde record ([18](18-minion-sy
 | `Camp` (corner) | a `MiniBoss` + support every 5 min after its death (TUNE); crystal is `never` breakable | boss guards                               | MVP-if-time |
 | `Cathedral`     | the gem summons the `GreaterBoss` mid-match via `MatchTimeline`                         | none                                      | phase 3     |
 
+**Implementation status (2026-10-30, #38 fix).** The wave timings in the sketch and table above
+predate the owner's spawn timeline, DEC-87 as amended by DEC-127 (FR-005), which the code follows.
+Each wave's clock starts when the countdown ends, with no countdown offset. The SpawnerTower sends
+light hordes, the BuffTower medium hordes and the Stronghold heavy hordes down the team's
+most-struggling lane (DEC-89). The opening hordes are one light horde per lane from the lane's
+base at load-in (DEC-87 (e), [18](18-minion-system.md) MS-30), not 3 hordes from the Stronghold.
+The values live in `content/structures/spawnWaves.ts`; a wave there carries `firstAtSeconds` and
+`everySeconds` in place of `afterTick` and `everyTicks`. The design text above is the owner's to
+update.
+
 Guards use `GuardController` with `leashRadius` ("don't leave the tower's perimeter") and respawn
 after `respawnTicks` (TUNE: 2 minutes = 3600 ticks). Horde sizes are
 `GameConfig.match.hordeSizes` (FR-037) and cadences are spawner data (DISC-10); the owner may move

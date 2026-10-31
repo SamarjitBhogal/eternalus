@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-31
+last-reviewed: 2026-10-30
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:

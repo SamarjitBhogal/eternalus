@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-31
+last-reviewed: 2026-10-30
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -427,7 +427,7 @@ each closed by the session or phase named:
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
 - `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
-  `tick`, `phase`, `entities`, `hordes` and `teams` (the spawn counters, since minion plan M1),
+  `tick`, `phase`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
   and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).

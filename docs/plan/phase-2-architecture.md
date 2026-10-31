@@ -4,7 +4,7 @@ description: A layered diagram in the style of Sommerville's Figure 4.6 of the w
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-31
+last-reviewed: 2026-10-30
 tags: [plan, phase-2, architecture, diagram, layers]
 related:
   [

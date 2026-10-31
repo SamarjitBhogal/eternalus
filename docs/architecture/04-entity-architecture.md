@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-31
+last-reviewed: 2026-10-30
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -202,12 +202,12 @@ export type LegendDefinition = EntityDefinitionBase & {
 };
 ```
 
-| Definition            | Distinctive fields                                                                                                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MobDefinition`       | `weightClass`, `stats`, `movement`, `targeting`, `attack`, `aggro` (acquisition range, leash ticks, aggro cooldown, priority order, as data), `xpValue`, `strengthByDistance` curve id        |
-| `BossDefinition`      | `stats`, `moves: BossMoveDefinition[]` (FSM states with ability ids and transition rules), `zoneRestriction`, `rewards` (team XP, permanent buff id, final-hit item, MVP-if-time)             |
-| `StructureDefinition` | `footprint` (convex polygon), `baseHealth`, `shieldPerBuffTower` (`TUNE` 1.25 spawner / 1.5 buff / 2.0 wall, game doc), `breakableWhen` rule id, `spawnTable?`, `aura?`, `turret?`, `guards?` |
-| `ObstacleDefinition`  | `kind` (tree, rock, bridge-segment), `breakable`, `health?`, `weight` (which `PickUpStrategy` may lift it), `blocksPathing`, `fallDamage?` (MVP-if-time)                                      |
+| Definition            | Distinctive fields                                                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MobDefinition`       | `weightClass`, `stats`, `movementStrategy`, `movementProfile`, `targeting`, `attack`, `aggro` (acquisition range, leash ticks, aggro cooldown, priority order, as data), `xpValue`, `strengthByDistance` curve id |
+| `BossDefinition`      | `stats`, `moves: BossMoveDefinition[]` (FSM states with ability ids and transition rules), `zoneRestriction`, `rewards` (team XP, permanent buff id, final-hit item, MVP-if-time)                                 |
+| `StructureDefinition` | `footprint` (convex polygon), `baseHealth`, `shieldPerBuffTower` (`TUNE` 1.25 spawner / 1.5 buff / 2.0 wall, game doc), `breakableWhen` rule id, `spawnTable?`, `aura?`, `turret?`, `guards?`                     |
+| `ObstacleDefinition`  | `kind` (tree, rock, bridge-segment), `breakable`, `health?`, `weight` (which `PickUpStrategy` may lift it), `blocksPathing`, `fallDamage?` (MVP-if-time)                                                          |
 
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).
