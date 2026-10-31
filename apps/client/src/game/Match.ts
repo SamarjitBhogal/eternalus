@@ -61,6 +61,9 @@ export class Match implements LoopTarget {
 
   private lastMove: Vec2 = { x: 0, y: 0 };
 
+  /** The map object the held attack button last targeted; `null` once released or stopped. */
+  private attackTargetId: EntityId | null = null;
+
   private isFollowing = true;
 
   /** Whether the free `MapExplorer` view is on screen instead of the camera's. */
@@ -288,15 +291,19 @@ export class Match implements LoopTarget {
       return;
     }
     const { move, isAttacking, aim } = this.deps.input.read(this.projection);
-    if (isAttacking === true && aim !== null) {
-      const targetId = findMapObjectAt(this.mapObjects, this.current.mapObjects ?? [], aim);
-      if (targetId !== null)
-        this.deps.simulation.enqueueCommand({
-          type: 'attack-target',
-          actorId: this.playerId,
-          targetId,
-        });
+    const targetId =
+      isAttacking === true && aim !== null
+        ? findMapObjectAt(this.mapObjects, this.current.mapObjects ?? [], aim)
+        : null;
+    // Holding the button on one target queues one command, not one per tick.
+    if (targetId !== null && targetId !== this.attackTargetId) {
+      this.deps.simulation.enqueueCommand({
+        type: 'attack-target',
+        actorId: this.playerId,
+        targetId,
+      });
     }
+    this.attackTargetId = targetId;
     const isMoving = move.x !== 0 || move.y !== 0;
     // Any movement brings the camera back to the player, including held keys.
     if (isMoving) {
@@ -311,6 +318,10 @@ export class Match implements LoopTarget {
         ? { type: 'move', actorId: this.playerId, direction: move }
         : { type: 'stop', actorId: this.playerId },
     );
+    if (!isMoving) {
+      // `stop` also drops the attack target, so a button still held queues it again next tick.
+      this.attackTargetId = null;
+    }
     this.lastMove = move;
   }
 

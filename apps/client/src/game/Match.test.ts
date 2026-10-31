@@ -27,11 +27,15 @@ const SEED = 1;
 class ScriptedIntent implements IntentSource {
   public move: Vec2 = { x: 0, y: 0 };
 
+  public isAttacking = false;
+
+  public aim: Vec2 | null = null;
+
   public projection: Projection | null = null;
 
   public read(projection: Projection): InputIntent {
     this.projection = projection;
-    return { move: this.move, aim: null, triggered: [] };
+    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
   }
 }
 
@@ -170,6 +174,31 @@ describe('Match', () => {
     expect(fills()).not.toContainEqual(house.shape);
     match.destroy();
   });
+  it('queues one attack per target while the attack button is held, and again after a release', () => {
+    const { match, simulation, input, map } = setUp(undefined, undefined, true, true);
+    const house = new MapObjectBuilder()
+      .build(map, new MapPresentationBuilder().build(map))
+      .find((object) => object.kind === 'house');
+    const corner = house?.footprints[0]?.[0];
+    const opposite = house?.footprints[0]?.[2];
+    if (corner === undefined || opposite === undefined) throw new Error('Missing house');
+    match.tick();
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const attacks = () =>
+      enqueue.mock.calls.filter(([command]) => command.type === 'attack-target').length;
+    input.isAttacking = true;
+    input.aim = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
+
+    for (let tick = 0; tick < 5; tick += 1) match.tick();
+    expect(attacks()).toBe(1);
+    input.isAttacking = false;
+    match.tick();
+    input.isAttacking = true;
+    match.tick();
+    expect(attacks()).toBe(2);
+    match.destroy();
+  });
+
   it('reports closed roofs after the same building is toggled twice', () => {
     const { match } = setUp();
     // The following camera initially centres on the light stronghold.
