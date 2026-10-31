@@ -324,6 +324,16 @@ Reply inline (`Decision: …`).
       today only when it is clicked; no plan item has the roof open while a unit is inside it.
       The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure
       family and walls/gates. Which sprint gets occupancy-driven cutaways, or are they post-MVP?
+- [ ] **PR #30 — tick order in the design text (DEC-121 (c))** (owner: sholtzman). The code runs
+      `MovementSystem` → `CollisionSystem` → `SpaceSystem` → `PathingSystem`, pinned by a test;
+      architecture 10 §8/§9 and 18 §3.2 still put collision after pathing. Edit and apply Draft 1
+      and the first §3.2 part of Draft 2 in the PR #30 review work folder
+      (`pr30-g1-round3/design-drafts.md`).
+- [ ] **PR #30 — tower-horde deploy in the design text (DEC-133)** (owner: sholtzman; doc 18
+      owner SamarjitBhogal). A horde that spawns inside a tower walks straight out with no brain
+      and stops deploying once its body stands wholly on walkable ground, or at its exit;
+      architecture 18 §3.2/§5.2 still say the lane field leads it out. Edit and apply the rest of
+      Draft 2 in the same file.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

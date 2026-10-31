@@ -2915,10 +2915,11 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - What was done: fixed PR #30's review findings for the author, at the product owner's request:
   merged the phase branch and #63; H1 objects stamp the `WorldMap`, a destroyed one (and its
   feature) reopens; S1 walk out of a footprint; DEC-121 (a) side teams; G1 map centre opened;
-  DEC-133 tower hordes walk out before their brain engages; DEC-121 (c) collision right after
-  movement, pinned. Each new test failed under a break first. Residual seed-2 "stall" = fight tail,
-  0 under a strict metric.
+  DEC-133 tower hordes walk out before their brain engages, until wholly on walkable ground or at
+  the exit; DEC-121 (c) collision right after movement, pinned. Three critic rounds, every finding
+  fixed; each new test failed under a break first. Residual seed-2 "stall" = fight tail, 0 under a
+  strict metric.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
-  880 passed (880)"; client "Tests 433 passed (433)"; "Documentation check passed."
-- Next step: critic round 3, then push to PR #30 (merges after #63); Sam signs off DEC-121 (c) (doc
-  10 §8/§9) and the DEC-133 row; author: S3, S5, S6, N2.
+  887 passed (887)"; client "Tests 433 passed (433)"; "Documentation check passed."
+- Next step: push to PR #30 (merges after #63); Sam applies the design-text drafts for DEC-121 (c)
+  and DEC-133 (INBOX); author: S3, S5, S6, N2.
