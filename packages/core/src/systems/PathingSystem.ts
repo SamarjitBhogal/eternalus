@@ -17,10 +17,10 @@ import type { System, SystemContext } from './System.types';
  * slot, with neighbours from `state.space`. Runs after `SpaceSystem`, so it reads this tick's
  * positions. Allocates nothing per unit once its scratch has grown to the crowd.
  *
- * Slots are `formationSlot`'s (18 §5.1), counting every follower in `memberIds` order.
+ * Slots are `formationSlot`'s (18 §5.1), by each formation's shape, counting every follower in
+ * `memberIds` order.
  *
- * @remarks ponytail: every formation is laid out as ranks; a slot function per shape arrives
- * with the second shape. A chase blocked by terrain holds; target-aware routing (an A* path to the
+ * @remarks ponytail: a chase blocked by terrain holds; target-aware routing (an A* path to the
  * target) replaces that when chases need it.
  */
 export class PathingSystem implements System {
@@ -67,8 +67,9 @@ export class PathingSystem implements System {
   /** Rebuilds dirty flow fields, then steers every horde member for the next tick. */
   public update({ state }: SystemContext): void {
     this.flowFields?.rebuildDirty(state.config.map.flowFieldCellBudget);
-    const { routes, space } = state;
-    if (routes === null || space === null || state.hordes.size === 0) {
+    const routes = state.world?.routes;
+    const { space } = state;
+    if (routes === undefined || space === null || state.hordes.size === 0) {
       return;
     }
     if (this.found.length < space.count) {

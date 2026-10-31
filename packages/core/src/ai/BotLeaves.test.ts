@@ -6,6 +6,7 @@ import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import type { PathQuery } from '../state/PathQuery.types';
 import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { BotTurn } from './BotLegendController.types';
 import { BotLeaves } from './BotLeaves';
@@ -35,7 +36,7 @@ const turnAt = (
   withPaths: boolean,
   paths: PathQuery = STUB_PATHS,
 ): BotTurn => {
-  const state = new GameState(createDefaultGameConfig(), 1, BLOCKED_LANE_MAP, {
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
     paths: withPaths ? paths : null,
   });
   const memory = { lane: 'lane-0', isRetreating: false, targetId: null, nextCastTick: 0 };

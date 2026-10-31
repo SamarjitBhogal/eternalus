@@ -12,7 +12,6 @@ import type { EntityFactory } from '../entities/EntityFactory';
 import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
-import type { WorldMap } from '../map/WorldMap';
 import type { GameState } from '../state/GameState';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
@@ -58,8 +57,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
       readonly factory: EntityFactory;
       /** The index `state.space` exposes; `null` for a match without a map. */
       readonly space: SpaceIndex | null;
-      /** The map's walkability grid the lane flow fields route over; `null` without a map. */
-      readonly world: WorldMap | null;
       /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
       readonly decide: readonly System[];
       readonly collisions?: readonly System[];
@@ -71,10 +68,14 @@ export class DefaultSystemPipeline extends SystemPipeline {
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
     );
     const flowFields =
-      hordes?.world == null || state.map === null
+      hordes === undefined || state.world === null
         ? null
-        : new LaneFlowFields(hordes.world, state.map, map.flowFieldCorridorHalfWidth);
-    const world = hordes?.world ?? null;
+        : new LaneFlowFields(
+            state.world.grid,
+            state.world.definition,
+            map.flowFieldCorridorHalfWidth,
+          );
+    const world = state.world?.grid ?? null;
     if (world !== null && state.worldObjects !== undefined) {
       // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
       state.events.on('entity-removed', ({ entityId }) => {

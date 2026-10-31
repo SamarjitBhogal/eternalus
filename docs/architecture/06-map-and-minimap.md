@@ -251,7 +251,9 @@ configured lane fails validation naming the lane and the terrain instead of draw
 ## 6. `WorldMap` runtime
 
 `WorldMap` is the mutable per-match view of the map that systems read. It is built once from the
-`MapDefinition` and updated only through events (never by views or the client):
+`MapDefinition` and updated only through events (never by views or the client). `GameState.world`
+is a `MatchWorld` that holds the definition, its lane routes and this grid (03 §2), so `state/`
+imports `map/` types (02 §2):
 
 ```ts
 // packages/core/src/map/WorldMap.ts (sketch)

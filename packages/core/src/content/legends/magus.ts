@@ -21,7 +21,7 @@ export const MAGUS = {
   referenceHeight: 3, // TUNE: ~10 ft (Hades)
   footprintRadius: 0.75, // DEC-06
   visionRadius: 25, // TUNE:
-  movement: {
+  movementProfile: {
     maxSpeed: 4.5, // TUNE: m/s
     acceleration: 22.5, // TUNE: m/s², top speed after 0.2 s (6 ticks)
     mass: 2, // TUNE:

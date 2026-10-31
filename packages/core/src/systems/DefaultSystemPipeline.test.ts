@@ -17,12 +17,12 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
-import { WorldMap } from '../map/WorldMap';
 import { WorldObjectStore } from '../state/WorldObjectStore';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
@@ -73,7 +73,9 @@ describe('DefaultSystemPipeline', () => {
   it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2', () => {
     const logger = new MemoryLogger();
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+      space,
+    });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
 
     const pipeline = new DefaultSystemPipeline(
@@ -83,7 +85,6 @@ describe('DefaultSystemPipeline', () => {
       {
         factory,
         space,
-        world: null,
         decide: [{ name: 'ai', update: () => undefined }],
       },
     );
@@ -209,7 +210,7 @@ describe('DefaultSystemPipeline', () => {
 
   it('reopens the pathing cells of a blocking map object once it is destroyed (07 §10)', () => {
     const map = { ...TWO_LANE_MAP, features: [] };
-    const state = new GameState(createDefaultGameConfig(), 1, map);
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(map, 5));
     const house: MapObject = {
       id: 'house',
       kind: 'house',
@@ -234,16 +235,16 @@ describe('DefaultSystemPipeline', () => {
       state.entities,
       MAP_OBJECT_DEFINITIONS,
     );
-    const world = WorldMap.fromDefinition(map, 5, () => false);
-    for (const footprint of house.footprints) world.stampFootprint(footprint);
+    const world = state.world?.grid;
+    for (const footprint of house.footprints) world?.stampFootprint(footprint);
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, new MemoryLogger(), PROGRESSION.curves),
       state,
       PROGRESSION,
-      { factory, space: null, world, decide: [] },
+      { factory, space: null, decide: [] },
     );
     const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
-    expect(world.isWalkable(9, 5)).toBe(false);
+    expect(world?.isWalkable(9, 5)).toBe(false);
 
     new DamagePipeline().apply(state, entityId, 1000, {
       attackerId: 'nobody',
@@ -253,6 +254,6 @@ describe('DefaultSystemPipeline', () => {
     pipeline.run({ state, logger: new MemoryLogger() });
 
     expect(state.entities.has(entityId)).toBe(false);
-    expect(world.isWalkable(9, 5)).toBe(true);
+    expect(world?.isWalkable(9, 5)).toBe(true);
   });
 });

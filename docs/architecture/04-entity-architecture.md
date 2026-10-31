@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -165,7 +165,7 @@ A strategy is a stateless, shared object selected by a definition field and reso
 | ------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
 | `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks); minions and guards rank targets in their controllers ([18](18-minion-system.md) §6.1)                                                         | `definition.targeting`                                          |
 | `AttackStrategy`    | `attack(attacker, targetId, attack, ctx): void`    | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                                                                                                       | `weapon.attack`                                                 |
-| `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `LaneFollowMovementStrategy` (hordes, flow-field target; [18-minion-system](18-minion-system.md) §5), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps, tower guards), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movementStrategy` (`movement` is the speed profile) |
+| `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `LaneFollowMovementStrategy` (hordes, flow-field target; [18-minion-system](18-minion-system.md) §5), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps, tower guards), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movementStrategy` (speed profile `movementProfile`) |
 | `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                                                                                                      | `definition.pickUp`                                             |
 
 Strategies use the seeded `Rng` from the context and vectors only (no angles), so they stay
@@ -202,12 +202,12 @@ export type LegendDefinition = EntityDefinitionBase & {
 };
 ```
 
-| Definition            | Distinctive fields                                                                                                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MobDefinition`       | `weightClass`, `stats`, `movement`, `targeting`, `attack`, `aggro` (acquisition range, leash ticks, aggro cooldown, priority order, as data), `xpValue`, `strengthByDistance` curve id        |
-| `BossDefinition`      | `stats`, `moves: BossMoveDefinition[]` (FSM states with ability ids and transition rules), `zoneRestriction`, `rewards` (team XP, permanent buff id, final-hit item, MVP-if-time)             |
-| `StructureDefinition` | `footprint` (convex polygon), `baseHealth`, `shieldPerBuffTower` (`TUNE` 1.25 spawner / 1.5 buff / 2.0 wall, game doc), `breakableWhen` rule id, `spawnTable?`, `aura?`, `turret?`, `guards?` |
-| `ObstacleDefinition`  | `kind` (tree, rock, bridge-segment), `breakable`, `health?`, `weight` (which `PickUpStrategy` may lift it), `blocksPathing`, `fallDamage?` (MVP-if-time)                                      |
+| Definition            | Distinctive fields                                                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MobDefinition`       | `weightClass`, `stats`, `movementStrategy`, `movementProfile`, `targeting`, `attack`, `aggro` (acquisition range, leash ticks, aggro cooldown, priority order, as data), `xpValue`, `strengthByDistance` curve id |
+| `BossDefinition`      | `stats`, `moves: BossMoveDefinition[]` (FSM states with ability ids and transition rules), `zoneRestriction`, `rewards` (team XP, permanent buff id, final-hit item, MVP-if-time)                                 |
+| `StructureDefinition` | `footprint` (convex polygon), `baseHealth`, `shieldPerBuffTower` (`TUNE` 1.25 spawner / 1.5 buff / 2.0 wall, game doc), `breakableWhen` rule id, `spawnTable?`, `aura?`, `turret?`, `guards?`                     |
+| `ObstacleDefinition`  | `kind` (tree, rock, bridge-segment), `breakable`, `health?`, `weight` (which `PickUpStrategy` may lift it), `blocksPathing`, `fallDamage?` (MVP-if-time)                                                          |
 
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).

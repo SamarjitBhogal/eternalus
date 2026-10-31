@@ -28,17 +28,26 @@ export type StructureDefinition = EntityDefinitionBase & {
 type SpawnLaneRule = 'own-lane' | 'worst-lane';
 
 /**
- * One repeating horde wave of a spawning structure (DISC-10, architecture 18 §3.1). The first
- * wave goes out when the countdown (`GameConfig.match.countdownSeconds`) ends, then one every
- * `everySeconds`; the horde size comes from `GameConfig.match.hordeSizes`.
+ * One repeating horde wave of a spawning structure (DISC-10, architecture 18 §3.1). Its clock
+ * starts when the countdown ends: the first wave goes out `firstAtSeconds` later, then one every
+ * `everySeconds` (DEC-87); the horde size comes from `GameConfig.match.hordeSizes`.
  */
 export type SpawnWaveDefinition = {
   /** The mob definition the horde is made of. */
   readonly mobId: string;
   readonly weightClass: 'light' | 'medium' | 'heavy';
+  /** Seconds from the countdown's end to the first wave. */
+  readonly firstAtSeconds: number;
   readonly everySeconds: number;
   readonly lane: SpawnLaneRule;
 };
 
-/** The Stronghold's opening hordes (architecture 18 §3.1): what they are made of. */
-export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightClass'>;
+/**
+ * The opening hordes (architecture 18 §3.1, DEC-84): at load-in (tick 0, before the countdown) the
+ * `source` structure of each team sends one horde of this mob down every lane, from the lane's
+ * base at the team's gate.
+ */
+export type OpeningWaveDefinition = Pick<SpawnWaveDefinition, 'mobId' | 'weightClass'> & {
+  /** The structure kind that sends them: a team without one sends no opening hordes. */
+  readonly source: StructureKind;
+};

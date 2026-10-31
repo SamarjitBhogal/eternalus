@@ -26,7 +26,7 @@ describe('Warrior', () => {
     entity.spawn({ definition, position: { x: 0, y: 0 }, team: 'light', weapons: loadWeapons(30) });
 
     expect(entity.getComponent(Health).current).toBe(definition.baseHealth);
-    expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
+    expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movementProfile.maxSpeed);
     expect(entity.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
   });
 });

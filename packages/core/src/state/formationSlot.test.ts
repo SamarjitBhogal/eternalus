@@ -1,11 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
-import { followerIndex, formationSlot } from './formationSlot';
+import { FORMATION_SLOTS, followerIndex, formationSlot } from './formationSlot';
 
-const FORMATION = { id: 'test', ranksWidth: 2, slotSpacing: 2 };
+const FORMATION = { id: 'test', shape: 'ranks', ranksWidth: 2, slotSpacing: 2 } as const;
 
 describe('formationSlot', () => {
+  it("lays a member out with its formation's shape's slot function", () => {
+    const ranks = vi.spyOn(FORMATION_SLOTS, 'ranks');
+    const out = { x: 0, y: 0 };
+
+    formationSlot({ x: 5, y: 1 }, { x: 1, y: 0 }, 3, FORMATION, out);
+
+    expect(ranks).toHaveBeenCalledWith({ x: 5, y: 1 }, { x: 1, y: 0 }, 3, FORMATION, out);
+  });
+
   it('puts the leader on the anchor', () => {
     expect(
       formationSlot({ x: 5, y: 1 }, { x: 1, y: 0 }, -1, RANKS_FORMATION, { x: 0, y: 0 }),
