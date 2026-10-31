@@ -96,9 +96,10 @@ Owner: _ (map owner). Weeks 5–6. Follows
       no angles). Owner: _. Test: 48 mobs in a corridor never overlap by more than a tolerance
       after 300 ticks; ID-ordered neighbour lists keep the replay hash stable. Done when: the
       steering loop allocates nothing per unit.
-- [ ] **A\* for Legends and camp chases** (octile heuristic, string-pulling; used by bots only
+- [ ] **A\* for Legends** (octile heuristic, string-pulling; used by bots only
       — the human moves with WASD). Owner: _. Test: shortest path around a stamped footprint.
-      Done when: A\* is a second `MovementStrategy`, selected by definition.
+      Done when: A\* is a `PathQuery` (`state.paths`) the bot leaves call when the straight line
+      is blocked (doc 11 §6; owner, 2026-10-27), since bots steer by `move` commands.
 
 **Success metric:** pathing plus steering for 288 mobs costs ≤ 2.5 ms per tick p95 in
 `npm run bench` (`Recommendation:` budget split from the 8 ms tick), and a terrain change is
@@ -194,7 +195,7 @@ Owner: _ (AI owner). Week 7. Depends on 3.3.
       later, ability choice; ticked at 5 Hz with `entityId % 6` stagger, per
       [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots)).
       Owner: _. Test: a laner pushes its lane, retreats below a health threshold and returns to
-      base to heal; 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
+      base (healing there is outside the minion system for now; owner, 2026-10-27); 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
       `Command`s only.
 - [ ] **`RoverController`** (the "hard bot": reacts to structure health across lanes, mirrors
       or targets the human player). Owner: _. Test: the Rover moves to the lane with the lowest

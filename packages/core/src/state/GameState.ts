@@ -2,7 +2,6 @@ import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { GameConfig } from '../config/GameConfig.types';
-import type { MapDefinition } from '../content/maps/maps.types';
 import type { Entity } from '../entities/Entity';
 import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
@@ -13,15 +12,16 @@ import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
-import type { MatchPhase, RecordedCommand, TeamState } from './GameState.types';
+import type { GameStateIndexes, MatchPhase, RecordedCommand, TeamState } from './GameState.types';
 import type { HordeRequest } from './HordeRequest.types';
 import { HordeStore } from './HordeStore';
-import { LaneRoutes } from './LaneRoutes';
-import type { EntitySnapshot, Snapshot } from './Snapshot.types';
+import type { MatchWorld } from './MatchWorld';
+import type { PathQuery } from './PathQuery.types';
+import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
 /**
- * The aggregate root of one match: config, the seeded RNG, the map, the entities, the hordes, the
+ * The aggregate root of one match: config, the seeded RNG, the world, the entities, the hordes, the
  * team counters, the event channel and the tick. Changed only inside `Simulation.step()`.
  */
 export class GameState {
@@ -36,15 +36,21 @@ export class GameState {
   public readonly hordeRequests: HordeRequest[] = [];
   private readonly teamCounters: Record<
     PlayableTeam,
-    { -readonly [K in keyof TeamState]: number }
+    { unitsRequested: number; unitsSuppressed: number; towersLostByLane: Record<string, number> }
   > = {
-    light: { unitsRequested: 0, unitsSuppressed: 0 },
-    dark: { unitsRequested: 0, unitsSuppressed: 0 },
+    light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+    dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
   };
-  /** Each playable team's match counters; changed only through `recordSpawnRequest`. */
+  /**
+   * Each playable team's match counters; changed only through `recordSpawnRequest` and
+   * `recordTowerLost`.
+   */
   public readonly teams: Readonly<Record<PlayableTeam, TeamState>> = this.teamCounters;
-  /** The map's lanes as each team walks them; `null` for a match without a map. */
-  public readonly routes: LaneRoutes | null;
+  /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
+  public readonly space: SpaceQuery | null;
+
+  /** A\* for Legends over the map's grid (architecture 10 §9); `null` without a map. */
+  public readonly paths: PathQuery | null;
   public readonly events: GameEvents;
   /** Always `countdown` until the MatchDirector (phase 4) drives the timeline. */
   public readonly phase: MatchPhase = 'countdown';
@@ -58,20 +64,21 @@ export class GameState {
   /**
    * @param config - A config that passed `validateGameConfig()`.
    * @param seed - The match seed (a whole number from 0 to 2^32 - 1).
-   * @param map - The generated map; without one, nothing spawns on lanes.
-   * @param space - The neighbour index `SpaceSystem` refills each tick; `null` without a map.
+   * @param world - The match's map at runtime; without one, nothing spawns on lanes.
+   * @param indexes - The neighbour index `SpaceSystem` refills each tick and A\* for Legends;
+   *   each `null` without a map.
    */
   public constructor(
     public readonly config: GameConfig,
     /** The match seed, kept for diagnostic reports (seed + tick reproduce the moment). */
     public readonly seed: number,
-    /** The generated map of the match, or `null` (most unit tests). */
-    public readonly map: MapDefinition | null = null,
-    /** Every unit's position at the last rebuild, for neighbour queries (architecture 11 §3). */
-    public readonly space: SpaceQuery | null = null,
+    /** The map, its lane routes and its grid, or `null` (most unit tests). */
+    public readonly world: MatchWorld | null = null,
+    indexes: GameStateIndexes = {},
   ) {
+    this.space = indexes.space ?? null;
+    this.paths = indexes.paths ?? null;
     this.rng = new SeededRandom(seed);
-    this.routes = map === null ? null : new LaneRoutes(map);
     this.events = new GameEvents(() => this.currentTick);
     this.events.on('entity-removed', (removal) => {
       this.announcedRemovals.push({ entityId: removal.entityId, cause: removal.cause });
@@ -138,6 +145,12 @@ export class GameState {
     counters.unitsSuppressed += requested - spawned;
   }
 
+  /** Counts one lane tower `team` lost on `lane` (architecture 18 MS-16). */
+  public recordTowerLost(team: PlayableTeam, lane: string): void {
+    const byLane = this.teamCounters[team].towersLostByLane;
+    byLane[lane] = (byLane[lane] ?? 0) + 1;
+  }
+
   /** The most recently applied commands, oldest first. */
   public recentCommands(): readonly RecordedCommand[] {
     return this.recent.toArray();
@@ -149,7 +162,21 @@ export class GameState {
     this.entities.forEach((entity) => {
       entities.push(GameState.snapshotOf(entity));
     });
-    return { tick: this.currentTick, phase: this.phase, entities };
+    const hordes: HordeSnapshot[] = [];
+    this.hordes.forEach((horde) => {
+      hordes.push({ ...horde });
+    });
+    const { light, dark } = this.teamCounters;
+    return {
+      tick: this.currentTick,
+      phase: this.phase,
+      entities,
+      hordes,
+      teams: {
+        light: { ...light, towersLostByLane: { ...light.towersLostByLane } },
+        dark: { ...dark, towersLostByLane: { ...dark.towersLostByLane } },
+      },
+    };
   }
 
   private static snapshotOf(entity: Entity): EntitySnapshot {

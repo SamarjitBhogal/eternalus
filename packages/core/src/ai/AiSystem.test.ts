@@ -144,6 +144,32 @@ describe('AiSystem', () => {
     expect(asked.slice(3, 3 + Math.min(3, deferred.length))).toEqual(deferred.slice(0, 3));
   });
 
+  it('starts a brain with the memory its spawn gave it', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      new ContentCatalogue<UnitDefinition>([TRAINING_DUMMY]),
+    );
+    const bot = factory.create('light-mob', 'training-dummy', {
+      team: 'light',
+      position: { x: 0, y: 0 },
+      controller: { controllerId: 'minion', profileId: 'lane-minion', memory: { lane: 'l0' } },
+    });
+    state.entities.add(bot);
+
+    const keeper: Controller = {
+      id: 'minion',
+      hasProfile: () => true,
+      decide: ({ brain }) => ({ commands: [], memory: brain.memory, rngState: brain.rngState }),
+    };
+    new AiSystem(state, { minion: keeper }, cadenceWith(10), () => undefined).update({ state });
+
+    expect(state.ai.get(bot.id)).toMatchObject({
+      profileId: 'lane-minion',
+      memory: { lane: 'l0' },
+    });
+  });
+
   it('writes the memory a controller returns back to its brain', () => {
     const { state, ids, step } = setUp(1);
 
@@ -204,5 +230,23 @@ describe('AiSystem', () => {
         minion: stopper([]),
       });
     }).toThrow('Definition "p" names AI profile "typo"');
+  });
+
+  it('falls back to the controller id as the profile when a definition names none', () => {
+    const minion = (profiles: readonly string[]): Controller => ({
+      ...stopper([]),
+      hasProfile: (profileId) => profiles.includes(profileId),
+    });
+
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'm', controller: 'minion' }], {
+        minion: minion(['minion']),
+      });
+    }).not.toThrow();
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'm', controller: 'minion' }], {
+        minion: minion(['lane-minion']),
+      });
+    }).toThrow('Definition "m" names AI profile "minion"');
   });
 });

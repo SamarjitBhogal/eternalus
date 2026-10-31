@@ -22,6 +22,23 @@ const contextOf = (points: readonly [number, number][], target: { x: number; y: 
   } satisfies MovementContext;
 };
 
+const NORTH_EAST = { x: 0.6, y: -0.8 };
+
+/** A lane field leading along `direction` everywhere, with a wall wherever `isBlocked` says. */
+const fieldWithWall = (
+  direction: { x: number; y: number },
+  isBlocked: (fromX: number, fromY: number, toX: number, toY: number) => boolean,
+) => ({
+  isLineClear: (fromX: number, fromY: number, toX: number, toY: number) =>
+    !isBlocked(fromX, fromY, toX, toY),
+  directionAt: (_x: number, _y: number, out: { x: number; y: number }) => {
+    out.x = direction.x;
+    out.y = direction.y;
+    return true;
+  },
+  isWalkableAt: () => true,
+});
+
 const strategy = new LaneFollowMovementStrategy(HORDE_STEERING);
 
 describe('LaneFollowMovementStrategy', () => {
@@ -51,6 +68,25 @@ describe('LaneFollowMovementStrategy', () => {
     expect(steer.y).toBe(0);
   });
 
+  it('weights the push 1/r, shifted to reach 0 at the separation radius (10 §9)', () => {
+    const { separationRadius: radius, separationWeight: weight } = HORDE_STEERING;
+    const pushAt = (apart: number) =>
+      strategy.desiredVelocity(
+        0,
+        contextOf(
+          [
+            [10, 10],
+            [10 + apart, 10],
+          ],
+          { x: 10, y: 10 },
+        ),
+      ).x;
+
+    // weight × (radius / apart − 1): the weight at half the radius, three times it at a quarter.
+    expect(pushAt(radius / 2)).toBeCloseTo(-weight);
+    expect(pushAt(radius / 4)).toBeCloseTo(-3 * weight);
+  });
+
   it('drops a steer shorter than minSteer, so a settled horde stands still', () => {
     // Just inside the separation radius: a push far below minSteer.
     const context = contextOf(
@@ -72,18 +108,20 @@ describe('LaneFollowMovementStrategy', () => {
   });
 
   it('follows the flow field while the line to the slot is blocked, and only then', () => {
+    // Blocked only eastward (toward the slot at +x); the field's own direction (+y) is open.
     const blockedAhead = (isClear: boolean) => ({
-      isLineClear: (_x: number, _y: number, _tx: number, _ty: number, maxDistance: number) =>
-        isClear || maxDistance !== HORDE_STEERING.blockedLookAhead,
+      isLineClear: (fromX: number, _y: number, toX: number) => isClear || toX <= fromX,
       directionAt: (_x: number, _y: number, out: { x: number; y: number }) => {
         out.x = 0;
         out.y = 1;
         return true;
       },
+      isWalkableAt: () => true,
     });
     const noField = {
       isLineClear: () => false,
       directionAt: () => false,
+      isWalkableAt: () => true,
     };
 
     const routed = { ...contextOf([[10, 10]], { x: 40, y: 10 }), flow: blockedAhead(false) };
@@ -92,8 +130,8 @@ describe('LaneFollowMovementStrategy', () => {
 
     expect(strategy.desiredVelocity(0, routed)).toEqual({ x: 0, y: 1 });
     expect(strategy.desiredVelocity(0, clear)).toEqual({ x: 1, y: 0 });
-    // Where the field has no direction the mob still heads for its slot.
-    expect(strategy.desiredVelocity(0, unrouted)).toEqual({ x: 1, y: 0 });
+    // Where the field has no direction the blocked mob holds rather than walk onto blocked ground.
+    expect(strategy.desiredVelocity(0, unrouted)).toEqual({ x: 0, y: 0 });
   });
 
   it('holds a chase where the line to its target is blocked, and never follows the lane field', () => {
@@ -105,11 +143,164 @@ describe('LaneFollowMovementStrategy', () => {
         out.y = 1;
         return true;
       },
+      isWalkableAt: () => true,
     };
     const clearAhead = { ...towardLane, isLineClear: () => true };
     const chase = { ...contextOf([[10, 10]], { x: 40, y: 10 }), isChasing: true };
 
     expect(strategy.desiredVelocity(0, { ...chase, flow: towardLane })).toEqual({ x: 0, y: 0 });
     expect(strategy.desiredVelocity(0, { ...chase, flow: clearAhead })).toEqual({ x: 1, y: 0 });
+  });
+
+  it('never lets separation push a held mob onto blocked ground', () => {
+    // Blocked eastward only. The chaser at (10, 10) holds; a neighbour one unit behind it pushes it
+    // east, onto the blocked ground, so it must still hold. Pushed west, onto open ground, it moves.
+    const eastBlocked = {
+      isLineClear: (fromX: number, _y: number, toX: number) => toX <= fromX,
+      directionAt: () => false,
+      isWalkableAt: () => true,
+    };
+    const behind = {
+      ...contextOf(
+        [
+          [10, 10],
+          [9, 10],
+        ],
+        { x: 40, y: 10 },
+      ),
+      isChasing: true,
+      flow: eastBlocked,
+    };
+    const ahead = {
+      ...contextOf(
+        [
+          [10, 10],
+          [11, 10],
+        ],
+        { x: 40, y: 10 },
+      ),
+      isChasing: true,
+      flow: eastBlocked,
+    };
+
+    expect(strategy.desiredVelocity(0, behind)).toEqual({ x: 0, y: 0 });
+    expect(strategy.desiredVelocity(0, ahead).x).toBeLessThan(0);
+  });
+
+  it('turns a heading that meets a wall along it, larger open axis first, chase or march', () => {
+    // The field leads north-east from (10, 10) and the slot is out of sight, so the march is routed.
+    const eastWall = fieldWithWall(NORTH_EAST, (fromX, _fromY, toX) => toX > fromX + 1);
+    const northWall = fieldWithWall(NORTH_EAST, (_fromX, fromY, _toX, toY) => toY < fromY - 1);
+    // Only the corner ahead is blocked, so both axes are open and the larger one wins.
+    const corner = fieldWithWall(
+      NORTH_EAST,
+      (fromX, fromY, toX, toY) => toX > fromX + 1 && toY < fromY - 1,
+    );
+    const march = contextOf([[10, 10]], { x: 40, y: -20 });
+    // A chase north with a clear line, until a neighbour just west of it pushes the heading east,
+    // into the wall: it turns back north, along the wall, rather than hold.
+    const chase = {
+      ...contextOf(
+        [
+          [10, 10],
+          [9.3, 10],
+        ],
+        { x: 10, y: 4 },
+      ),
+      isChasing: true,
+      arrivalRadius: 1,
+      flow: eastWall,
+    };
+
+    expect(strategy.desiredVelocity(0, { ...march, flow: eastWall })).toEqual({ x: 0, y: -0.8 });
+    expect(strategy.desiredVelocity(0, { ...march, flow: northWall })).toEqual({ x: 0.6, y: 0 });
+    expect(strategy.desiredVelocity(0, { ...march, flow: corner })).toEqual({ x: 0, y: -0.8 });
+    expect(strategy.desiredVelocity(0, chase)).toEqual({ x: 0, y: -1 });
+  });
+
+  it('keeps a march going where no axis is open, or the open one is under minSteer', () => {
+    // Holding the march would strand it there for good; the wall cells' field leads it back out
+    // (architecture 10 §9). East of a steep heading is open, but too weak to turn to.
+    const steep = { x: 0.2, y: -0.98 };
+    const march = contextOf([[10, 10]], { x: 40, y: -20 });
+    const walled = { ...march, flow: fieldWithWall(NORTH_EAST, () => true) };
+    const northWall = {
+      ...march,
+      flow: fieldWithWall(steep, (_fromX, fromY, _toX, toY) => toY < fromY - 1),
+    };
+
+    expect(strategy.desiredVelocity(0, walled)).toEqual(NORTH_EAST);
+    expect(strategy.desiredVelocity(0, northWall)).toEqual(steep);
+  });
+
+  it('closes on a target in front of blocked ground, checking no farther than the target', () => {
+    // Ground from x 50 on is blocked. The chaser at x 46 has a clear line to its target at x 49,
+    // outside attack reach, so it must keep closing even though x 50 is within the look-ahead.
+    const blockedFrom50 = {
+      isLineClear: (
+        fromX: number,
+        fromY: number,
+        toX: number,
+        toY: number,
+        maxDistance: number,
+      ) => {
+        const span = Math.hypot(toX - fromX, toY - fromY);
+        const reach = Math.min(span, maxDistance);
+        return span === 0 || fromX + ((toX - fromX) * reach) / span < 50;
+      },
+      directionAt: () => false,
+      isWalkableAt: () => true,
+    };
+    const chase = {
+      ...contextOf([[46, 10]], { x: 49, y: 10 }),
+      isChasing: true,
+      arrivalRadius: 2.3,
+      flow: blockedFrom50,
+    };
+
+    expect(strategy.desiredVelocity(0, chase)).toEqual({ x: 1, y: 0 });
+  });
+
+  it('leads a march or a chase on blocked ground out along the field, such as one spawned in a footprint (MS-31)', () => {
+    // Ground west of x 50 is blocked, so no line from the mob at x 10 is clear. The field there
+    // leads north-east, out of the footprint (10 §9); the target is due east.
+    const insideFootprint = {
+      ...fieldWithWall(NORTH_EAST, () => true),
+      isWalkableAt: (x: number) => x >= 50,
+    };
+    const march = { ...contextOf([[10, 10]], { x: 60, y: 10 }), flow: insideFootprint };
+    const chase = { ...march, isChasing: true };
+    const outside = {
+      ...contextOf([[55, 10]], { x: 60, y: 10 }),
+      isChasing: true,
+      flow: insideFootprint,
+    };
+
+    expect(strategy.desiredVelocity(0, march)).toEqual(NORTH_EAST);
+    expect(strategy.desiredVelocity(0, chase)).toEqual(NORTH_EAST);
+    // Once out, a chase whose line is blocked holds again.
+    expect(strategy.desiredVelocity(0, outside)).toEqual({ x: 0, y: 0 });
+  });
+
+  it('keeps its own heading where separation would push it onto blocked ground', () => {
+    // Ground north of y 10 is blocked. Heading east along the wall, a neighbour to the south
+    // pushes the mob north into it: it drops the push and keeps walking east, not standing still.
+    const northBlocked = {
+      isLineClear: (_x: number, fromY: number, _tx: number, toY: number) => toY >= fromY,
+      directionAt: () => false,
+      isWalkableAt: () => true,
+    };
+    const pressed = {
+      ...contextOf(
+        [
+          [10, 10],
+          [10, 10.5],
+        ],
+        { x: 40, y: 10 },
+      ),
+      flow: northBlocked,
+    };
+
+    expect(strategy.desiredVelocity(0, pressed)).toEqual({ x: 1, y: 0 });
   });
 });

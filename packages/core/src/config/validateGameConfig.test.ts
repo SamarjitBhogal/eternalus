@@ -67,6 +67,8 @@ describe('validateGameConfig', () => {
     ['map.flowFieldCorridorHalfWidth', { map: { flowFieldCorridorHalfWidth: 0 } }],
     ['map.flowFieldCellBudget', { map: { flowFieldCellBudget: 0 } }],
     ['map.flowFieldCellBudget', { map: { flowFieldCellBudget: 12.5 } }],
+    ['map.pathMaxExpansions', { map: { pathMaxExpansions: 0 } }],
+    ['map.pathSnapCells', { map: { pathSnapCells: -1 } }],
     ['map.presetId', { map: { presetId: '' } }],
     ['match.legendsPerTeam', { match: { legendsPerTeam: 0 } }],
     ['match.legendsPerTeam', { limits: { maxLegendsPerTeam: 5 } }],
@@ -75,10 +77,9 @@ describe('validateGameConfig', () => {
     ['match.hordeSizes.light', { match: { hordeSizes: { light: -16 } } }],
     ['match.hordeSizes.medium', { match: { hordeSizes: { medium: 0.5 } } }],
     ['match.hordeSizes.heavy', { match: { hordeSizes: { heavy: Number.NaN } } }],
-    ['match.initialHordesPerTeam', { match: { initialHordesPerTeam: -3 } }],
     ['match.plannedMatchSeconds', { match: { plannedMatchSeconds: 0 } }],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 47 } }],
-    ['limits.maxUnitsPerTeam', { match: { initialHordesPerTeam: 10 } }],
+    ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 49 } } }],
   ])('rejects a bad %s', (path, overrides) => {
     expect(failurePath(overrides)).toBe(path);
   });

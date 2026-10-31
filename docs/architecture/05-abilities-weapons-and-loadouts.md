@@ -571,7 +571,9 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `BreakabilityStep` (first: an unbreakable wall or gate rejects the hit before any multiplier,
 which gives the same result as §9's late check; 07 §3), `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`) and `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8) and `MinionStrengthStep`
+(the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;

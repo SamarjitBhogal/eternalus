@@ -5,8 +5,9 @@ import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
 import { GameState } from './GameState';
+import { matchWorldOf } from './__fixtures__/matchWorld';
 import type { PlayableTeam } from '../teams/teams.types';
-import { assessLanes } from './LaneAssessment';
+import { assessLanes, laneScores } from './LaneAssessment';
 
 /** `count` straight lanes of length 100, `lane-0` … `lane-{count - 1}`. */
 const mapWithLanes = (count: number): MapDefinition => ({
@@ -22,7 +23,7 @@ const mapWithLanes = (count: number): MapDefinition => ({
 });
 
 const stateWith = (lanes: number, hordes: readonly [string, PlayableTeam, number][]) => {
-  const state = new GameState(createDefaultGameConfig(), 1, mapWithLanes(lanes));
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(mapWithLanes(lanes)));
   hordes.forEach(([lane, team, progress], index) => {
     state.hordes.add({
       id: `horde-${String(index)}`,
@@ -74,5 +75,24 @@ describe('assessLanes', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
 
     expect(assessLanes(state, 'light', LANE_ASSESSMENT_WEIGHTS)).toBeUndefined();
+  });
+});
+
+describe('laneScores', () => {
+  it('scores every lane in index order, higher the deeper enemy hordes have pushed', () => {
+    const [first, second, third] = laneScores(
+      stateWith(3, [['lane-0', 'dark', 80]]),
+      'light',
+      LANE_ASSESSMENT_WEIGHTS,
+    );
+    const calm = LANE_ASSESSMENT_WEIGHTS.damageNotDealt;
+
+    expect([first?.id, second?.id, third?.id]).toEqual(['lane-0', 'lane-1', 'lane-2']);
+    // 80 m down a 100 m lane is 60 % of the way from the midpoint to Light's end.
+    expect(first?.score).toBeCloseTo(calm + LANE_ASSESSMENT_WEIGHTS.pushedBack * 0.6);
+    expect(second?.score).toBeCloseTo(calm);
+    expect(
+      laneScores(new GameState(createDefaultGameConfig(), 1), 'light', LANE_ASSESSMENT_WEIGHTS),
+    ).toEqual([]);
   });
 });

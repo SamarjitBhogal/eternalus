@@ -18,6 +18,10 @@ export type MapConfig = {
   readonly flowFieldCorridorHalfWidth: number;
   /** Most flow-field cells rebuilt per tick after a terrain change (time slicing, 06 §6). */
   readonly flowFieldCellBudget: number;
+  /** Most grid cells one A\* search for a Legend may settle (10 §9, 11 §6 cost control). */
+  readonly pathMaxExpansions: number;
+  /** How many cells out A\* looks for open ground when a start or goal is blocked (10 §9). */
+  readonly pathSnapCells: number;
   /** An authored preset (rift and bounds polygons, lane curvature); omit for the default look. */
   readonly presetId?: string;
 };
@@ -32,7 +36,6 @@ export type MatchConfig = {
     readonly medium: number;
     readonly heavy: number;
   };
-  readonly initialHordesPerTeam: number;
   readonly plannedMatchSeconds: number;
 };
 

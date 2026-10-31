@@ -5,7 +5,7 @@ import type { LegendKind } from './legends.types';
 
 /** Seconds of constant acceleration from a standstill to top speed (content is per second). */
 const secondsToTopSpeed = (kind: LegendKind): number => {
-  const { maxSpeed, acceleration } = LEGEND_CLASSES.get(kind).movement;
+  const { maxSpeed, acceleration } = LEGEND_CLASSES.get(kind).movementProfile;
   return maxSpeed / acceleration;
 };
 
@@ -39,8 +39,8 @@ describe('LEGEND_CLASSES', () => {
 
     expect(warrior.baseHealth).toBeLessThan(magus.baseHealth);
     expect(magus.baseHealth).toBeLessThan(sentinel.baseHealth);
-    expect(warrior.movement.mass).toBeLessThan(magus.movement.mass);
-    expect(magus.movement.mass).toBeLessThan(sentinel.movement.mass);
+    expect(warrior.movementProfile.mass).toBeLessThan(magus.movementProfile.mass);
+    expect(magus.movementProfile.mass).toBeLessThan(sentinel.movementProfile.mass);
   });
 
   it('gives the Sentinel the highest top speed but a run-up of about a minute', () => {
@@ -48,8 +48,8 @@ describe('LEGEND_CLASSES', () => {
     const sentinel = LEGEND_CLASSES.get('sentinel');
     const magus = LEGEND_CLASSES.get('magus');
 
-    expect(sentinel.movement.maxSpeed).toBeGreaterThan(warrior.movement.maxSpeed);
-    expect(sentinel.movement.maxSpeed).toBeGreaterThan(magus.movement.maxSpeed);
+    expect(sentinel.movementProfile.maxSpeed).toBeGreaterThan(warrior.movementProfile.maxSpeed);
+    expect(sentinel.movementProfile.maxSpeed).toBeGreaterThan(magus.movementProfile.maxSpeed);
     expect(secondsToTopSpeed('sentinel')).toBeGreaterThanOrEqual(30);
     expect(secondsToTopSpeed('sentinel')).toBeLessThanOrEqual(60);
   });

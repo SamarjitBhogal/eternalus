@@ -88,6 +88,10 @@ Reply inline (`Decision: …`).
     runs every tick, not heavy (05 §16), because rules 2–4 read this tick's `xp-gained` events.
     Also on the cap-10 scale: balancing.md's bosses' "expected Legend level" (4 and 7) need
     rescaling to cap 50 (×5 would give 20 and 35); say if you want that.
+  - **Update 2026-10-30 (DEC-90):** the target is level 50 at about 20 minutes for an active
+    Legend, with the XP to the next level rising each level. Your choice of 2026-10-30: the resize
+    waits for bot laners (PR #46). Measure the real XP per minute once bots fight in lanes, then
+    size `content/progression/levelCurves.ts` to DEC-90.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -97,6 +101,10 @@ Reply inline (`Decision: …`).
       ADR 0017 (next item) before the generator changes. (4) From ADR 0017: which classes does a
       corridor get when it holds other than three camps?
   -     Accepted " keep depth-based weights but define the classes by position in the corridor" where the vertical line down the centre of the map defines the division. RNG determines the location of the camps on each side so both sides are different, but they must equate in terms of overall difficulty (1 light on left means 1 light on right; not necessarily in mirrored locations but the same amount of weighted camps on left team and right team's sides)
+  - **Question (1) closed 2026-10-30 by DEC-85** (decisions log, PR #30 review, #30-A): for the
+    MVP, forest and corner camps take seeded random positions, and the two sides stay mirrored.
+    The per-side placement of ADR 0017 is a next-sprint stretch goal or post-MVP, so questions
+    (2)–(4) and the ADR 0017 item below wait for it.
 - [ ] **DEC-15 — accept ADR 0017.** `docs/decisions/0017-balanced-asymmetric-camp-placement.md`
       (draft) amends ADR 0009 for forest camps only: the seeded RNG places them per side with
       equal counts per weight class, and everything else stays mirrored. Accept, change or reject
@@ -118,14 +126,22 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §3 stand-in). Details: doc 18 §10.
-- [ ] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
+  - **(1) terms and weights answered 2026-10-30 by DEC-89** (decisions log): your three signals
+    (own towers damaged, enemy pushed furthest, allies hurt or killed), equal `TUNE` weights.
+    The tie-break is still open.
+- [x] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
-      after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
+      after it (240 s)? **Answered 2026-10-30 by DEC-87:** it leaves 180 s after the countdown
+      ends, then every 90 s. (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
       say each mob carries a `hordeId` back-pointer. The code keeps membership only in
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
       to the store lookup.
+  - Decision (SamarjitBhogal, chat, 2026-10-29): (1) the first heavy horde leaves when the
+    countdown ends, like the towers' waves (the code's current schedule). (2) Signed off: horde
+    membership lives only in `state.hordes`; doc 18 §3.2, §4, §9 and 15's invariant updated in
+    `feat/minion-m3-bot-laners`.
 - [ ] **Minion M2a — controller memory (architecture 11 §2).** Controllers are stateless and
       "never mutate state", yet a brain's `memory` and `rngState` change with each decision
       (`MinionController`'s FSM state and timers, M2b). Should `decide` return
@@ -134,6 +150,77 @@ Reply inline (`Decision: …`).
   - Decision (SamarjitBhogal, chat, 2026-10-25): `decide` returns
     `{ commands, memory, rngState }` and `AiSystem` writes the brain back. Built in M2b
     (`feat/minion-m2b-minion-controller`); doc 11 §2 updated. Awaits the decisions log.
+- [ ] **Minion M3 — bot numbers and base healing.** (1) The bot difficulty knobs have no
+      reference values; `content/ai/difficulties/normal.ts` starts them as `TUNE`: retreat
+      below 30% health, rejoin at 80%, engage within 12 m, arrive within 2 m, closeness and
+      weakness weighted 1 each. Confirm or give values. (2) Doc 11 §4.2's `Survive` sends a bot
+      "back to base", and the Phase 3 plan expects it to "return to base to heal", but nothing
+      heals a Legend yet and no doc says how. Is there base healing (where, how fast)? (3)
+      Better than the design, for sign-off: bot laners take lanes in roster order, the order
+      match setup lists them, rather than 18 §8's "id order" (ids sort as strings, so
+      `entity-10` comes before `entity-9`); if accepted, 18 §8 says roster order.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (1) numbers from the design docs, else the
+    agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
+    out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
+    Accepted; doc 18 §8 says roster order (PR #46).
+- [ ] **Minion M8 — the neighbour grid's layout (better than the design, for sign-off).** Doc
+      10 §5 stores `SpatialHash` as a counting sort over a per-cell `cellStart` array. On a
+      generated map that array has hundreds of thousands of cells, and clearing and summing it
+      every tick took about three quarters of the simulation's time (the 3- and 5-lane routing
+      scenarios ran 57–60 s under coverage against a 60 s limit). M8 sorts the points by cell
+      instead (cost by unit count; queries binary-search a cell's run, results unchanged, now
+      5–9 s). If accepted, 10 §5's storage paragraph changes, and with it two claims there: a
+      rebuild becomes O(n log n), not O(n), and allocates one view object per rebuild.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): accepted; doc 10 §5 describes the sorted
+    layout and its costs (PR #47). Awaits the decisions log.
+- [ ] **Minion M8 — Rover and cast numbers, A\* placement.** (1) No reference doc gives the
+      Rover's numbers; `content/ai/difficulties/rover.ts` and `content/ai/rover.ts` start them
+      as `TUNE` (retreat below 20%, engage within 16 m, hunt within 20 m when 0.2 of a health
+      bar ahead, sense the human within 400 m), and `normal`/`rover` cast with chance 0.3/0.6
+      at most every 3 s/2 s. The Rover weighs a lane's pressure against the human's lane 3 to 1
+      (`ROVER_TACTICS.laneWeights`), counting pressure from its team's calmest lane, so it
+      leaves the human for a lane pushed most of the way to its end. Confirm or give values.
+      (2) Better than the design, for sign-off: the Phase 3 plan wants A\* "as a second
+      `MovementStrategy`", but bots steer by `move`
+      commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
+      the AI decision budget, not in `PathingSystem` as 11 §6 puts heavy work: each blocked
+      decision searches again (capped by `GameConfig.map.pathMaxExpansions`). If accepted,
+      sprint 3.2's line changes, and a path cache in the brain is the next step if profiling
+      shows the cost.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (2) accepted; doc 11 §6 and sprint 3.2's
+    line say A\* is a `PathQuery` (PR #47). (1) Numbers from the design docs, else the agent's
+    judgement, which the owner may correct later, so they stay as built.
+- [ ] **Minion M8 — exact line checks wait for wall avoidance (FYI, CodeRabbit on PR #47).**
+      `WorldMap.isLineClear` samples a quarter cell apart, so a line can clip a blocked cell's
+      corner unseen. An exact cell walk (DDA) catches it, but then minions hold at rift corners
+      and the M4 blocked-lane routing test fails, because mobs have no wall-avoidance term yet.
+      Deferred by the owner (chat, 2026-10-30) to `CollisionSystem` (10 §8–§9), marked with a
+      `ponytail:` note on `isLineClear`. No unit collides with blocked ground today, so a bot
+      clipping a corner has no visible effect.
+- [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
+      `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
+      than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it
+      at 1.0 (never weaker than base). (1) Is the floor right, or should 0.75 stand? (2) DISC-24:
+      when a lane tower falls, "the base-stat distance extends further toward the enemy". By
+      how much per tower (a fraction of the lane, a fixed distance, or up to the fallen tower)?
+      (3) Better than the design, for sign-off: enraged lives in its own `EnragedSystem` (one
+      purpose, right after `SpawnSystem`), not in `SpawnSystem` as 03 §4's events table says; if
+      accepted, 03 §4's `structure-destroyed` and `horde-spawned` rows name it.
+  - Decision (SamarjitBhogal, chat, 2026-10-27): (3) accepted; 03 §4's rows name
+    `EnragedSystem` (PR #45). (2) Build the tower shift; the amount is the agent's judgement with
+    no reference: a tenth of the lane per tower (`MINION_STRENGTH.shiftPerTowerLost`, `TUNE`),
+    capped at 0.9 of the lane (`maxBasePoint`). (1) Not answered: the floor stays at 1.0, as
+    DISC-24's "addition on top of base stats" reads.
+- [x] **DISC-24 — which way the tower shift goes (question for the owner).** PR #45 builds
+      reading (a) as an interim that is easy to change (one function, `MinionStrengthStep`):
+      (a) the team that destroyed the tower gets its base-stat point moved toward the enemy; the
+      losing team's point stays put. (b) One shared front: as (a), and the losing team's point
+      also moves back toward its own home, so its minions drop to base stats sooner. (c) A
+      comeback: the losing team's strong zone grows instead. Which one? Nothing can destroy a
+      tower until M2c, so no live match uses it yet.
+  - Decision (SamarjitBhogal, chat, 2026-10-30): (a). The team that destroyed the tower gets its
+    base-stat point moved toward the enemy; the losing team's point stays put. Built in PR #45
+    (`MinionStrengthStep`); recorded as DEC-120 in the decisions log.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
@@ -401,6 +488,24 @@ Reply inline (`Decision: …`).
       them on each `settings` bus event (`mapper.setBindings(s.bindings)`), and toggle the pause
       overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`), so the pause key is
       the player's binding.
+
+- [x] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
+      sign off:** hordes spawn inside the Stronghold's blocking footprint (doc 18 §3.2), and §5.2's
+      "no heading onto unwalkable ground" then held every minion forever. The PR (1) lets a mob
+      standing on unwalkable ground walk straight out to its slot, and (2) when separation would
+      push a mob onto unwalkable ground, keeps its own heading instead of holding (crowds at a
+      wall deadlocked). Doc 18 §5.2 is updated in the same PR. Yes / no / change?
+  - Decision (sholtzman, chat, 2026-10-30): accepted as an interim fix on the phase branch
+    (DEC-126). The #38 fix (`fix/minion-m1-review`) replaces (1) with the flow field that leads
+    out of every blocked corridor cell (MS-31) and (2) with the turn at a wall (MS-35); doc 18
+    §5.2 and doc 10 §9 and §12 say so.
+- [x] **#38 fix → Sam (2026-10-30), better than the design:** doc 18 §4 holds a horde's anchor
+      only while its leader fights, so the anchor marched on while other members fought. The fix
+      holds it while any member has an attack target; in the 900 s soak (seed 1) skipped spawns
+      fell from 66 % to 33 %.
+  - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
+    working"; the critic ruled this rule better than the design. Built as MS-33 on
+    `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
 
 ## Feedback
 

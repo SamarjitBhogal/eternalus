@@ -15,7 +15,7 @@ describe('PositiveStatsRule', () => {
       ...WARRIOR,
       baseHealth: 0,
       footprintRadius: -1,
-      movement: { maxSpeed: Number.POSITIVE_INFINITY, acceleration: Number.NaN, mass: 1 },
+      movementProfile: { maxSpeed: Number.POSITIVE_INFINITY, acceleration: Number.NaN, mass: 1 },
     };
 
     expect(new PositiveStatsRule().check(broken)).toEqual([

@@ -1,3 +1,5 @@
+import type { ControllerSpawn } from './EntityFactory.types';
+import { CONTROLLER_IDS } from '../content/ai/controllerIds';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
 import type { WeaponSource } from './EntityFactory.types';
@@ -57,7 +59,28 @@ export class SpawnContextReader {
       );
     }
 
-    return { ...positioned, team };
+    const controller = this.controllerOf(SpawnContextReader.fields(context).controller);
+    return controller === undefined ? { ...positioned, team } : { ...positioned, team, controller };
+  }
+
+  /**
+   * The context's `Placement.controller`, or `undefined` when it gives none.
+   *
+   * @throws Error when it gives one that is not a known controller with a profile and a memory.
+   */
+  private controllerOf(candidate: unknown): ControllerSpawn | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+    const { controllerId, profileId, memory } = SpawnContextReader.fields(candidate);
+    const id = CONTROLLER_IDS.find((known) => known === controllerId);
+    if (id === undefined || typeof profileId !== 'string' || !SpawnContextReader.isObject(memory)) {
+      throw new Error(
+        `Entity "${this.entity.id}" was given a spawn controller that is not a known controller with a profile and a memory.`,
+      );
+    }
+    // Safe: memory is the plain data the spawner wrote (`Placement.controller` is typed).
+    return { controllerId: id, profileId, memory: memory as ControllerSpawn['memory'] };
   }
 
   /** The lane the context places the entity on (a lane structure's `MapLane.id`), or `null`. */
