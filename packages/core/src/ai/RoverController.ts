@@ -100,7 +100,8 @@ export class RoverController implements Controller {
     const { state } = turn;
     const human = this.humanNear(turn, this.content.tactics.senseRadius);
     const humanAt = human === null ? undefined : BotLeaves.positionOf(state, human);
-    const humanLane = humanAt === undefined ? undefined : state.routes?.nearestLane(humanAt)?.id;
+    const humanLane =
+      humanAt === undefined ? undefined : state.world?.routes.nearestLane(humanAt)?.id;
     const scores = laneScores(state, turn.team, this.content.laneWeights);
     // Pressure counts from the calmest lane, so what every lane shares does not dilute it.
     const calmest = Math.min(...scores.map(({ score }) => score));

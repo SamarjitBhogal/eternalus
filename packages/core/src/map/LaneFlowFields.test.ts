@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
+import { SPAWN_WAVES } from '../content/structures/spawnWaves';
 import { regularPolygon } from '../utils/geometry';
 import {
   DIRECTION_COLS,
@@ -37,6 +38,20 @@ const stepCost = (step: number): number => (step < 4 ? 10 : 14);
 const nextCell = (grid: WorldMap, field: FlowField, cell: number): number => {
   const step = field.direction[cell] ?? NO_DIRECTION;
   return cell + (DIRECTION_ROWS[step] ?? 0) * grid.cols + (DIRECTION_COLS[step] ?? 0);
+};
+
+/** How many steps `cell`'s directions take to reach open ground, or -1 when they never do. */
+const stepsOut = (grid: WorldMap, field: FlowField, start: number): number => {
+  let cell = start;
+  let steps = 0;
+  while (!field.isOpen(cell)) {
+    if ((field.direction[cell] ?? NO_DIRECTION) === NO_DIRECTION || steps > grid.cols) {
+      return -1;
+    }
+    cell = nextCell(grid, field, cell);
+    steps += 1;
+  }
+  return steps;
 };
 
 /** Every open corridor cell that cannot reach the goal through open cells (8-way, no corner cuts). */
@@ -80,6 +95,47 @@ describe('LaneFlowFields', () => {
           expect((field.integration[next] ?? UNREACHED) + stepCost(step)).toBe(cost);
         }
       }
+    },
+  );
+
+  it.each([
+    [3, THREE],
+    [5, FIVE],
+  ])(
+    'leads every spawning structure out of its footprint, and every blocked cell it points at out too (MS-31): %i lanes',
+    (_, { grid, map, fields }) => {
+      // Every wave spawns at its structure's centre, a blocked cell of each corridor of its team
+      // that holds it (towers on their lane, the Stronghold inside every lane's home disc).
+      const stuck: string[] = [];
+      let centres = 0;
+      for (const { id, kind, team, position } of map.features) {
+        const at = grid.cellAt(position);
+        if (team === 'neutral' || SPAWN_WAVES[kind] === undefined || at === null) {
+          continue;
+        }
+        const cell = at.row * grid.cols + at.col;
+        for (const field of fields.fields.filter((each) => each.team === team)) {
+          if (field.mask[cell] !== 1) {
+            continue;
+          }
+          centres += grid.walkable[cell] === 0 ? 1 : 0;
+          if (stepsOut(grid, field, cell) < 1) {
+            stuck.push(`${id} in ${field.laneId}`);
+          }
+        }
+      }
+      const loops = fields.fields.flatMap((field) =>
+        Array.from(field.mask.keys()).filter(
+          (cell) =>
+            !field.isOpen(cell) &&
+            (field.direction[cell] ?? NO_DIRECTION) !== NO_DIRECTION &&
+            stepsOut(grid, field, cell) === -1,
+        ),
+      );
+
+      expect(centres).toBeGreaterThan(0);
+      expect(stuck).toEqual([]);
+      expect(loops).toEqual([]);
     },
   );
 

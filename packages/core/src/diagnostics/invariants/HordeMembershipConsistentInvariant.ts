@@ -1,3 +1,4 @@
+import { ControllerBinding } from '../../components/ControllerBinding';
 import type { GameState } from '../../state/GameState';
 import type { Horde } from '../../state/Horde.types';
 import { compareById } from '../../utils/compareById';
@@ -5,11 +6,12 @@ import type { Invariant, Violation } from '../Invariant.types';
 
 /**
  * `horde-membership-consistent` (architecture 15 §3, 18 §4): every horde has members; each member
- * is a living mob the store files under that horde, or one removed this tick (`HordeSystem` drops
- * it on its next pass); and the leader is the lowest member id in string order.
+ * is listed once and is a living mob the store files under that horde, or one removed this tick
+ * (`HordeSystem` drops it on its next pass); the leader is the lowest member id in string order;
+ * and every living mob with the `minion` brain is in a horde (MS-25).
  *
  * @remarks Membership lives only in `state.hordes` (`hordeOf`), not in a `hordeId` field on each
- * mob, so "points back" is the store's own lookup (INBOX: raised as better than the design).
+ * mob, so "points back" is the store's own lookup (MS-29).
  */
 export class HordeMembershipConsistentInvariant implements Invariant {
   public readonly id = 'horde-membership-consistent';
@@ -18,7 +20,10 @@ export class HordeMembershipConsistentInvariant implements Invariant {
 
   public readonly cadence = 'periodic';
 
-  /** Flags empty hordes, stray or dead members and a leader that is not the lowest id. */
+  /**
+   * Flags empty hordes, repeated, stray or dead members, a leader that is not the lowest id, and
+   * lane minions in no horde.
+   */
   public check(state: GameState): readonly Violation[] {
     const removed = new Set(state.entities.removedThisTick().map(({ entityId }) => entityId));
     const violations: Violation[] = [];
@@ -33,7 +38,13 @@ export class HordeMembershipConsistentInvariant implements Invariant {
           this.violation(horde, horde.leaderId, `is led by a member other than "${lowest}"`),
         );
       }
+      const listed = new Set<string>();
       for (const id of horde.memberIds) {
+        if (listed.has(id)) {
+          violations.push(this.violation(horde, id, `lists "${id}" twice`));
+          continue;
+        }
+        listed.add(id);
         const entity = state.entities.get(id);
         const isLivingMob = entity?.family === 'mob' && state.entities.isAlive(id);
         if (!removed.has(id) && !isLivingMob) {
@@ -45,16 +56,26 @@ export class HordeMembershipConsistentInvariant implements Invariant {
         }
       }
     });
+    state.entities.forEach((entity) => {
+      const { id } = entity;
+      if (
+        entity.findComponent(ControllerBinding)?.controllerId === 'minion' &&
+        state.entities.isAlive(id) &&
+        state.hordes.hordeOf(id) === undefined
+      ) {
+        violations.push(this.violation(null, id, `Mob "${id}" is a lane minion in no horde`));
+      }
+    });
     return violations;
   }
 
-  private violation(horde: Horde, entityId: string | null, problem: string): Violation {
+  private violation(horde: Horde | null, entityId: string | null, problem: string): Violation {
     return {
       invariantId: this.id,
       severity: this.severity,
-      message: `Horde "${horde.id}" ${problem}.`,
+      message: horde === null ? `${problem}.` : `Horde "${horde.id}" ${problem}.`,
       entityId,
-      details: { hordeId: horde.id },
+      details: horde === null ? {} : { hordeId: horde.id },
     };
   }
 }

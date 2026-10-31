@@ -41,12 +41,12 @@ export class MinionStrengthStep implements DamageStep {
   private strengthOf(id: EntityId, state: GameState): number {
     const horde = state.hordes.hordeOf(id);
     const position = state.entities.get(id)?.findComponent(Transform)?.position;
-    if (horde === undefined || position === undefined || state.routes === null) {
+    const routes = state.world?.routes;
+    if (horde === undefined || position === undefined || routes === undefined) {
       return 1;
     }
-    const length = state.routes.length(horde.lane);
-    const t =
-      length > 0 ? state.routes.distanceAlong(horde.lane, horde.team, position) / length : 0;
+    const length = routes.length(horde.lane);
+    const t = length > 0 ? routes.distanceAlong(horde.lane, horde.team, position) / length : 0;
     const { k, min, max, basePoint, shiftPerTowerLost, maxBasePoint } = this.curve;
     const enemy = horde.team === 'light' ? 'dark' : 'light';
     const lost = state.teams[enemy].towersLostByLane[horde.lane] ?? 0;

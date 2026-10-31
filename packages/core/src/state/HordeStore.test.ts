@@ -43,13 +43,17 @@ describe('HordeStore', () => {
     expect(store.removeMember('entity-3')).toBeUndefined();
   });
 
-  it('rejects a taken id, an empty horde and a member already in a horde', () => {
+  it('rejects a taken id, an empty horde, a member already in a horde and a member listed twice', () => {
     const store = new HordeStore();
     store.add(horde('horde-1', ['entity-1']));
 
     expect(() => store.add(horde('horde-1', ['entity-2']))).toThrow('already in the store');
     expect(() => store.add(horde('horde-2', []))).toThrow('at least one member');
     expect(() => store.add(horde('horde-3', ['entity-1']))).toThrow('already in a horde');
+    expect(() => store.add(horde('horde-4', ['entity-5', 'entity-2', 'entity-5']))).toThrow(
+      'Entity "entity-5" is listed twice in horde "horde-4".',
+    );
+    expect(store.size).toBe(1);
   });
 
   it('sets progress and visits hordes in creation order', () => {

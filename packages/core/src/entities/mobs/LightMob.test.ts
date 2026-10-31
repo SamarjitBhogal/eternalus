@@ -26,7 +26,7 @@ describe('LightMob', () => {
     dummy.spawn({ definition, position: { x: 0, y: 0 }, team: 'neutral' });
 
     expect(dummy.getComponent(Health).current).toBe(definition.baseHealth);
-    expect(dummy.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
+    expect(dummy.getComponent(Movement).maxSpeed).toBe(definition.movementProfile.maxSpeed);
     expect(dummy.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
     expect(dummy.getComponent(Vision).radius).toBe(definition.visionRadius);
   });

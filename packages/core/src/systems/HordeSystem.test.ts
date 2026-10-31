@@ -8,13 +8,18 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { HordeSystem } from './HordeSystem';
 
 const FACTOR = 0.5;
 const logger = new NullLogger();
 
 const setUp = (map: typeof TWO_LANE_MAP | null = TWO_LANE_MAP) => {
-  const state = new GameState(createDefaultGameConfig(), 1, map);
+  const state = new GameState(
+    createDefaultGameConfig(),
+    1,
+    map === null ? null : matchWorldOf(map),
+  );
   const system = new HordeSystem(state, FACTOR);
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const addHorde = (members: readonly [string, string][], progress = 0) => {
@@ -101,6 +106,28 @@ describe('HordeSystem', () => {
     expect(state.hordes.get(hordeId)?.progress).toBe(10);
 
     state.entities.clearAttackTarget(leader);
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
+  });
+
+  it('holds the anchor while any member fights, not only the leader (MS-33)', () => {
+    const { state, system, addHorde } = setUp();
+    const { hordeId, memberIds } = addHorde(
+      [
+        ['light-mob', 'light-minion'],
+        ['light-mob', 'light-minion'],
+      ],
+      10,
+    );
+    const [leader = '', follower = ''] = memberIds;
+    expect(state.hordes.get(hordeId)?.leaderId).toBe(leader);
+    const { memberIds: enemies } = addHorde([['light-mob', 'training-dummy']]);
+    state.entities.setAttackTarget(follower, enemies[0] ?? '');
+
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
+
+    state.entities.clearAttackTarget(follower);
     system.update({ state, logger });
     expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
   });

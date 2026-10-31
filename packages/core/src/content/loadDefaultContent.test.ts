@@ -17,16 +17,17 @@ describe('loadDefaultContent', () => {
   });
 
   it('converts speeds from per second to per tick: the Warrior runs 6 m/s', () => {
-    const warrior = loadDefaultContent(TICK_RATE).get('warrior').movement;
+    const warrior = loadDefaultContent(TICK_RATE).get('warrior').movementProfile;
 
     expect(warrior.maxSpeed).toBeCloseTo(6 / TICK_RATE);
     expect(warrior.acceleration).toBeCloseTo(45 / TICK_RATE ** 2);
-    expect(warrior.mass).toBe(LEGEND_CLASSES.get('warrior').movement.mass);
+    expect(warrior.mass).toBe(LEGEND_CLASSES.get('warrior').movementProfile.mass);
   });
 
   it('keeps the time to top speed whatever the tick rate (50 s for the Sentinel)', () => {
     for (const tickRate of [30, 60]) {
-      const { maxSpeed, acceleration } = loadDefaultContent(tickRate).get('sentinel').movement;
+      const { maxSpeed, acceleration } =
+        loadDefaultContent(tickRate).get('sentinel').movementProfile;
 
       expect(maxSpeed / acceleration / tickRate).toBeCloseTo(50);
     }
@@ -37,9 +38,9 @@ describe('loadDefaultContent', () => {
 
     for (const definition of content.all()) {
       expect(Object.isFrozen(definition)).toBe(true);
-      expect(Object.isFrozen(definition.movement)).toBe(true);
+      expect(Object.isFrozen(definition.movementProfile)).toBe(true);
     }
-    expect(LEGEND_CLASSES.get('warrior').movement.maxSpeed).toBe(6);
+    expect(LEGEND_CLASSES.get('warrior').movementProfile.maxSpeed).toBe(6);
   });
 
   it('throws UnknownDefinitionError for a dangling definition id', () => {

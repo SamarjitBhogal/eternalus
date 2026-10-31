@@ -14,6 +14,7 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
 import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { BotLegendController } from './BotLegendController';
 import { Perception } from './perception/Perception';
 
@@ -31,7 +32,7 @@ const RNG = { seed: 1, words: [1, 2, 3, 4] as const };
 /** A light Warrior laner on lane-0 (from x 20 to x 180 along y 20) of the two-lane map. */
 const setUp = (at = { x: 60, y: 20 }) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(30),

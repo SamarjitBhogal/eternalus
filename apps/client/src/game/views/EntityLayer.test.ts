@@ -22,6 +22,11 @@ const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({
   tick,
   phase: 'countdown',
   entities,
+  hordes: [],
+  teams: {
+    light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+    dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+  },
 });
 
 /** A view that records what it was asked to draw. */
