@@ -56,7 +56,13 @@ export type {
   DiagnosticEventName,
 } from './diagnostics/DiagnosticEvent.types';
 export { SEVERITY } from './diagnostics/Logger.constants';
-export type { LogAttributes, Logger, LogRecord, SeverityText } from './diagnostics/Logger.types';
+export type {
+  LogAttributes,
+  LogContext,
+  Logger,
+  LogRecord,
+  SeverityText,
+} from './diagnostics/Logger.types';
 export { makeLogRecord } from './diagnostics/makeLogRecord';
 export { MemoryLogger } from './diagnostics/MemoryLogger';
 export { NullLogger } from './diagnostics/NullLogger';

@@ -9,7 +9,11 @@ import { validateGameConfig } from './config/validateGameConfig';
 import { FOLLOW_LEADER_PROFILE } from './content/ai/followLeaderProfile';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
+import type { LogContext } from './diagnostics/Logger.types';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { recentContext } from './diagnostics/recentContext';
+import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
+import type { Replay } from './diagnostics/Replay.types';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
@@ -37,6 +41,10 @@ export class Simulation {
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
   private readonly hasher = new StateHasher();
+  /** Every command enqueued through `enqueueCommand`, with its tick (ADR 0025 §4). Not hashed. */
+  private readonly commandLog: Replay['commands'][number][] = [];
+  /** `hash()` at tick 0 and every `REPLAY_CHECKPOINT_EVERY` ticks, ascending. Not hashed. */
+  private readonly checkpoints: Replay['checkpoints'][number][] = [];
 
   /**
    * Creates a match from its options (architecture 03 §6).
@@ -83,6 +91,7 @@ export class Simulation {
         }),
       );
     });
+    this.recordCheckpoint();
   }
 
   /** Number of ticks completed. */
@@ -90,14 +99,21 @@ export class Simulation {
     return this.state.tick;
   }
 
-  /** Queues `command`; it is applied at the start of the next `step()`. */
+  /**
+   * Queues `command`; it is applied at the start of the next `step()`. It also enters the replay's
+   * command log. Bot commands bypass this method, so they stay out of the log: a replay
+   * regenerates them from the seed. Call it between steps: the log stamps the completed ticks, so a
+   * command enqueued during a step (from an event handler) would replay one step early.
+   */
   public enqueueCommand(command: Command): void {
+    this.commandLog.push({ tick: this.tick, command });
     this.queue.enqueue(command);
   }
 
   /**
    * Advances exactly one tick: records and applies the queued commands in order, runs the systems
-   * in order, counts the tick and emits `tick-completed`.
+   * in order, counts the tick, records a replay checkpoint every `REPLAY_CHECKPOINT_EVERY` ticks
+   * and emits `tick-completed`.
    */
   public step(): void {
     for (const command of this.queue.drain()) {
@@ -106,6 +122,9 @@ export class Simulation {
     }
     this.pipeline.run(this.systemContext);
     this.state.advanceTick();
+    if (this.state.tick % REPLAY_CHECKPOINT_EVERY === 0) {
+      this.recordCheckpoint();
+    }
     this.state.events.emit('tick-completed', { tick: this.state.tick });
   }
 
@@ -122,5 +141,28 @@ export class Simulation {
   /** A 32-bit fingerprint of the current state; equal runs give equal hashes. */
   public hash(): number {
     return this.hasher.hash(this.state);
+  }
+
+  /**
+   * The match so far as a `Replay` (architecture 03 §6, ADR 0025 §4): the seed, the config, a copy
+   * of the command log and the checkpoints recorded so far. Plain data. It does not hash now:
+   * after a throw inside `step()` the state holds half a tick, and that hash cannot be reproduced.
+   */
+  public exportReplay(): Replay {
+    return {
+      seed: this.state.seed,
+      config: this.state.config,
+      commands: [...this.commandLog],
+      checkpoints: [...this.checkpoints],
+    };
+  }
+
+  /** The last applied commands (players' and bots') and the last events, oldest first (15 §5). */
+  public recentContext(): LogContext {
+    return recentContext(this.state);
+  }
+
+  private recordCheckpoint(): void {
+    this.checkpoints.push({ tick: this.state.tick, hash: this.hash() });
   }
 }
