@@ -2542,3 +2542,36 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   after the writer part.
 - Next step: build-plan step 12 (ADR 0025 §8) in this lane: core (the external command log, the
   replay checkpoints, `exportReplay()`, `recentContext()`), then the writer, then the popup.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, build-plan step 12 (ADR 0025 §8 items 1 to 3: replay export, error-report writer, crash popup) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: three code commits on top of `f9fbaf8`.
+  - `531cd90` (core): `Simulation.enqueueCommand` logs external commands; checkpoints at tick 0
+    and every `REPLAY_CHECKPOINT_EVERY` ticks; `exportReplay()`; `recentContext()` in
+    `diagnostics/recentContext.ts`, shared with `InvariantRunner`; `LogContext` exported.
+  - `6db5713` (writer): the dev-server plugin `apps/client/errorReportsPlugin.ts`; under
+    `src/data/logging/` the `ErrorReport` types and constants, the `ReportWriter` port with its
+    contract test, the dev-server and memory writers, `ErrorReporter` (the crash path, notes, and
+    ADR §6's silent reports), `logWindowErrors.ts`; the match evidence chain; the `main.tsx`
+    wiring; `logs/` in `.gitignore`.
+  - `226e2c6` (popup): `ErrorBoundary` (the one class component, DEC-115) around the current
+    screen in `App`; `CrashReportNotice` with DEC-106's words and DEC-124 (b) and (c) (asking,
+    saving, saved, copy); `CrashReportFlow` and `handleScreenCrash` in `src/game/session/`; the
+    reporter is a `SessionController` dependency; a loop crash and a screen crash in a match both
+    report before the session leaves `match`; outside a match the session returns to the menu
+    with `'screen-crashed'`. The `'match-crashed'` banner and the DEC-106 interim are removed.
+- Red proofs (scripts and outputs in `eternalus-agent-work/hud-charselect/build-1030/`, outside
+  the repository): core 10 breaks, writer 56, popup 54; every break RED, baseline and restore
+  green, production files restored byte for byte.
+- Checks run: `npm run check` EXIT 0 on `226e2c6`'s tree. Core 118 files, 634 tests; client 252
+  files, 1657 tests; client coverage (lines, branches, functions, statements) 96.79 / 93.59 /
+  95.23 / 97.23; "Documentation check passed." (122 files).
+- Gaps reported to the owner, not changed: ADR 0025 does not define `reportCrash`'s input or a
+  failed note write (the writer returns copy mode); the plugin's answer `file` uses
+  `ERROR_REPORTS_FOLDER`, not its `dir` option; `ErrorReport.constants.ts` is in the app and the
+  node tsconfig projects; `SESSION_TRANSITIONS` has no move to `menu` from `menu` or
+  `pre-launch` (a menu crash goes back to `home`; a `pre-launch` crash keeps the popup and the
+  reveal runs on); the source is `screen:<registry id>`, not the component name (names are
+  mangled in a build); the saving and saved texts are recommendations, not owner words.
+- Next step: the pre-PR gate (critic and ponytail, at most three loops) on `f9fbaf8..HEAD`, then
+  a `--no-ff` merge into `feat/hud-and-character-select`; then build-plan step 15 (load on demand).
