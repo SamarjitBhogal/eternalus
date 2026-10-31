@@ -112,7 +112,9 @@ R14 "new view" and R16 "new command".
   (`extends: 'light-mob'`); a new weight class with its own lifecycle is a class.
 - **Files:** `core/content/mobs/<id>.ts` (`MobDefinition`: `weightClass`, stats, `aggro` as
   data, `controller`) + `mobCatalogue.ts` line; a new weight class adds a `GameConfig.match.hordeSizes`
-  key (validated) and, only if lifecycle differs, `core/entities/mobs/<Name>.ts` + `.test.ts`.
+  key (validated) and a `minionKill` value in `core/content/match/scoring.ts` (keyed by `MobKind`,
+  so it fails to compile without one) and, only if lifecycle differs,
+  `core/entities/mobs/<Name>.ts` + `.test.ts`.
 - **Registry line:** none for a flavour; `defaultEntityRegistry.ts` for a class.
 - **Tests:** content validation; a `SpawnSystem` scenario spawns a horde of it at the configured
   size; a `MinionController` scenario (attacks within N ticks); determinism.
