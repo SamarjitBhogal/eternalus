@@ -121,7 +121,6 @@ Each stand-in is removed by the phase named.
 | The Rover finds the human (the enemy Legend no controller drives) with a map-wide Legend query, past 11 §3's radii                                       | M8      | the match state's `humanLegendId` (12 §4)                |
 | Bots cast `ability-1` and the cast is refused (`not-supported`); a bot runs A\* again on each blocked decision                                           | M8      | Phase 4 abilities; a path cache in the brain             |
 | Minion strength measures lane progress along the lane polyline, not the flow-field distance `balancing.md` suggests                                      | M5a     | M4 merged in: the lane's field                           |
-| Only the human's Legend can destroy a structure, so no scenario test shows a lost tower enraging its lane and moving DISC-24's point                     | M5a     | M2c, with enraged's scenario test                        |
 
 ## Related
 
