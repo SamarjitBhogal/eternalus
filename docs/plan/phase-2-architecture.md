@@ -4,7 +4,7 @@ description: A layered diagram in the style of Sommerville's Figure 4.6 of the w
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-31
 tags: [plan, phase-2, architecture, diagram, layers]
 related:
   [
@@ -191,7 +191,7 @@ sub-band order hides:
   - Core `AGENTS.md` forbids `systems/` → `ai/` and `ai/` → `content/` types.
   - The invariants need `diagnostics/` → `components/`.
   - `commands/` → `components/` is forbidden.
-  - `GameState.world` needs `state/` → `map/`.
+  - `GameState.world` needs `state/` → `map/`: allowed for types since the #38 fix (F7d, 02 §2).
 
 ## Not shown (later phases / proposed)
 
