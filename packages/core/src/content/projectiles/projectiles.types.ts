@@ -7,5 +7,5 @@ export type ProjectileDefinition = EntityDefinitionBase & {
   readonly kind: 'projectile';
   /** Collider circle radius in world units. */
   readonly footprintRadius: number;
-  readonly movement: MovementProfile;
+  readonly movementProfile: MovementProfile;
 };

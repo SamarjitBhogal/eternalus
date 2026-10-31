@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-30
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -2487,3 +2487,95 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: the product owner signs off on the doc 18 §5.2 change on PR #61 (ADR 0018, DEC-96;
   `INBOX.md` item); then mark it ready for review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/pr-review-rulings — sholtzman + Claude Code
+
+- What was done: recorded the owner's 2026-10-30 rulings from the open-PR review in the decisions
+  log: DEC-85 (mirrored random camps, #30-A), DEC-86 (capture rules, #49), DEC-87 (spawn timeline),
+  DEC-89 (most-struggling lane), DEC-90 (Legend XP target), DEC-91 (horde event names, #38-E),
+  DEC-93 (tier-1 and tier-2 first waves at +165 s and +195 s, amending DEC-87). Requirements FR-005,
+  FR-031, FR-033, FR-037 and FR-049 now cite them; structures doc §7 states the capture rules;
+  INBOX DEC-15 question (1) closed by DEC-85; the XP-curve item notes that the resize waits for
+  bot laners (PR #46). DEC-88 and DEC-92 belong to the game-loop work.
+  Later the same day: DEC-94 (ObjectPool covers projectiles, not event payloads; PR #51) and
+  DEC-99 (`crushed` is hard control; a re-applied stun restarts its timer; PR #52). The coding
+  principles Object Pool row and the glossary's Object Pool entry cite DEC-94.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  731 passed (731)"; client "Tests 415 passed (415)"; "✓ built in 257ms"; "Documentation check
+  passed." Moved onto the phase head `9c58897` (PRs #46 and #47; `INBOX.md` and this log kept both
+  sides), then again `EXIT=0`: core "Tests 787 passed (787)"; client "Tests 419 passed (419)";
+  "✓ built in 117ms"; "Documentation check passed." Moved onto `f12d680` (PRs #60 and #61; this
+  log, `INBOX.md` and the decisions log kept both sides), then `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 791 passed (791)"; client "Tests 419 passed (419)"; "✓ built
+  in 118ms"; "Documentation check passed."
+- Next step: a PR into `phase/2-sprint-2-work`. Docs owned elsewhere still to align
+  (doc 18 §3.1/§3.3/§10, doc 07 §6 tower rows, doc 12 §2, FR-003) go to their sessions.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/minion-m1-review — sholtzman + Claude Code
+
+- What was done: fixed the review findings on the merged PR #38 (minion M1) and the stalls they
+  hid. Wave hordes spawned inside their structure's footprint never moved; the lane field now
+  leads every reachable blocked corridor cell out (MS-31, Call 4 B). A mob that would slide along
+  a wall faces the slide direction and walks that way (MS-35). The anchor holds while any member
+  fights (MS-33). One opening horde per lane at load-in, every wave timed from the countdown's
+  end (MS-30; `match.initialHordesPerTeam` removed). First tier-1 and tier-2 waves at +200 s and
+  +230 s (DEC-127). `GameState.world` is a `MatchWorld` (F7d). Horde membership lives only in
+  the store (MS-29). Separation falls off as 1/r (F7b). Merged the phase branch at `f12d680`
+  (#61): MS-31 and MS-35 replace #61's walk-out and separation hold, and a chase on blocked ground
+  follows the field out (DEC-126). Docs 02, 03, 04, 06, 10, 12 and 18, the minion plan and the
+  phase 2 plan updated, and a status note under doc 07 §6; DEC-128 records Call 2 (MS-32). Ponytail
+  cut: `FlowFieldBuilder.pointWallsOut` uses `cellOf`. The `INBOX.md` #61 item is decided and the
+  MS-33 item added. Merged `docs/pr-review-rulings` (PR #62) for the DEC-87 and DEC-93 rows; FR-005
+  now gives the DEC-127 first times.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  818 passed (818)"; client "Tests 419 passed (419)"; "✓ built in 108ms"; "Documentation check
+  passed." After merging PR #62, again `EXIT=0`: core "Tests 818 passed (818)"; client "Tests 419
+  passed (419)"; "✓ built in 107ms"; "Documentation check passed." Critic round 2: approve, no
+  blockers; after its fixes, `EXIT=0`: core "Tests 818 passed (818)"; client "Tests 419 passed
+  (419)"; "✓ built in 116ms"; "Documentation check passed."
+- Soak (seed 1, 3 lanes, 900 s): skipped spawns 30.61 % light / 33.47 % dark without bots, 23.62 %
+  / 43.22 % with bots; the < 5 % bar still fails until #56 gives hordes structures to attack.
+- Next step: pre-PR gate and the PR into `phase/2-sprint-2-work`; then merge this fix into #55
+  and #56 and build the Legend-only chase limit (MS-34) on #56.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-structures — SamarjitBhogal + Claude Code
+
+- What was done: the part of sprint 2.1 the minion plan's M2c needs (unowned, so built here as
+  plan row M2s). `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate` entities with
+  `content/structures/structureCatalogue.ts` (base health from `balancing.md`) and registry lines;
+  `Simulation` builds one per map structure feature, in feature id order, with its lane.
+  `BreakabilityRule` content, `StructureSystem` (emits `structure-destroyed` and
+  `structure-breakability-changed`, gates unbreakable until 2 of 3 BuffTowers are down) and
+  `BreakabilityStep` in the damage pipeline. The client registers an empty `StructureView` (the map
+  layer already draws buildings). Docs 03, 07, 18 and the minion plan updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  727 passed (727)"; client "Tests 416 passed (416)"; "✓ built in 160ms"; "Documentation check
+  passed." After the critic (blockers: the BuffTower count kept in the system, and
+  `Collider.isUnbreakable` not hashed; both fixed, total now from config) and ponytail (lean, no
+  cuts): core "Tests 728 passed (728)", client "Tests 416 passed (416)", `EXIT=0`.
+- Next step: M2c on top of this branch.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-structures — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-m1-review` (PR #63, with the phase head `f12d680` and PR #62)
+  into PR #55. `Simulation`, the damage steps, `Placement`, `SpawnContextReader` and the pipeline
+  keep both sides; `spawnStructures` reads `state.world` (F7d replaced `state.map`). Docs 03, 05,
+  18 and this log keep both sides. `EnragedSystem` loses its "nothing emits `structure-destroyed`
+  yet" remark: `StructureSystem` emits it now.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  830 passed (830)"; client "Tests 420 passed (420)"; "✓ built in 101ms"; "Documentation check
+  passed."
+- Next step: M2c (#56) merges this; its end-to-end test kills a tower and checks the lane's
+  `enraged` stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit) — feat/minion-structures — sholtzman + Claude Code
+
+- What was done: CodeRabbit's two findings on PR #55. `AiSystem.update` now also throws when an
+  entity's AI profile is one its controller does not have (injected content skips
+  `assertRegistered`); the regression test fails on the old code. A destroyed SpawnerTower or
+  BuffTower still spawning waves is M2c's work (#56 builds it): the minion plan's stand-in row now
+  says so, and its enraged row says only the human's Legend can destroy a structure until M2c.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  831 passed (831)"; client "Tests 420 passed (420)"; "✓ built in 106ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; M2c (#56) merges this.

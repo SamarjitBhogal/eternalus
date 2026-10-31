@@ -6,6 +6,7 @@ import { createDefaultEntityRegistry } from '../../entities/defaultEntityRegistr
 import { EntityFactory } from '../../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import { GameState } from '../../state/GameState';
+import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import type { Command, SpawnOrigin } from '../Command.types';
 import { DevSpawnMobsHandler } from './DevSpawnMobsHandler';
 
@@ -15,7 +16,7 @@ const handler = new DevSpawnMobsHandler();
 const spawn = (
   origin: SpawnOrigin,
   overrides: Partial<Command<'dev-spawn-mobs'>> = {},
-  state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP),
+  state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP)),
 ) => {
   const reason = handler.handle(
     {

@@ -98,7 +98,12 @@ export class StateHasher {
     }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
-      fields.push(['collider', collider.isEnabled]);
+      // Only an unbreakable collider adds a field, so states without walls hash as before.
+      fields.push(
+        collider.isUnbreakable
+          ? ['collider', collider.isEnabled, 'unbreakable']
+          : ['collider', collider.isEnabled],
+      );
     }
     const combat = entity.findComponent(Combat);
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {

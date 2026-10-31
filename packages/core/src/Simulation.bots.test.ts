@@ -25,7 +25,7 @@ const match = (
 ) =>
   new Simulation({
     config: createDefaultGameConfig({
-      match: { initialHordesPerTeam: 2, countdownSeconds: 600, legendsPerTeam },
+      match: { countdownSeconds: 600, legendsPerTeam },
     }),
     seed: 1,
     logger: new MemoryLogger(),
@@ -75,7 +75,7 @@ describe('Simulation with bot laners (minion plan M3)', () => {
       () =>
         new Simulation({
           config: createDefaultGameConfig({
-            match: { initialHordesPerTeam: 0 },
+            match: { hordeSizes: { light: 0 } },
             limits: { maxUnitsPerTeam: 1 },
           }),
           seed: 1,
@@ -115,7 +115,7 @@ describe('Simulation with bot laners (minion plan M3)', () => {
       const logger = new MemoryLogger();
       const simulation = new Simulation({
         config: createDefaultGameConfig({
-          match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
+          match: { countdownSeconds: 600 },
         }),
         seed: 1,
         logger,
@@ -141,7 +141,7 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     const veteran = { ...defaults.get('warrior'), id: 'warrior-veteran' };
     const simulation = new Simulation({
       config: createDefaultGameConfig({
-        match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
+        match: { countdownSeconds: 600 },
       }),
       seed: 1,
       logger: new MemoryLogger(),

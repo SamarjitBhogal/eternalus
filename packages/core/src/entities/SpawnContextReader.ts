@@ -83,6 +83,12 @@ export class SpawnContextReader {
     return { controllerId: id, profileId, memory: memory as ControllerSpawn['memory'] };
   }
 
+  /** The lane the context places the entity on (a lane structure's `MapLane.id`), or `null`. */
+  public laneId(context: unknown): string | null {
+    const { laneId } = SpawnContextReader.fields(context);
+    return typeof laneId === 'string' ? laneId : null;
+  }
+
   /** The weapon source the factory put in the context, or `null` when it has none. */
   public weapons(context: unknown): WeaponSource | null {
     const { weapons } = SpawnContextReader.fields(context);

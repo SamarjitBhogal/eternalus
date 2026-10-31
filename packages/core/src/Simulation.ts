@@ -18,10 +18,8 @@ import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
 import type { MapDefinition } from './content/maps/maps.types';
-import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import type { GameConfig } from './config/GameConfig.types';
 import { AStarPathfinder } from './map/AStarPathfinder';
-import { WorldMap } from './map/WorldMap';
 import { RETREAT_STRUCTURES } from './content/ai/botLaner';
 import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
@@ -32,6 +30,9 @@ import { FORMATIONS } from './content/mobs/formations/formations';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
+import { compareById } from './utils/compareById';
+import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
@@ -42,10 +43,12 @@ import type { DefinitionSource, Placement, WeaponSource } from './entities/Entit
 import { Unit } from './entities/Unit';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
+import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import type { RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
+import { WorldMap } from './map/WorldMap';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -81,9 +84,9 @@ export class Simulation {
     roster = [],
     weapons,
   }: SimulationOptions) {
-    const valid = validateGameConfig(config);
-    const { space, world, paths } = Simulation.buildWorld(map, valid);
-    this.state = new GameState(valid, seed, map ?? null, { space, paths });
+    const validConfig = validateGameConfig(config);
+    const { space, world, paths } = Simulation.buildWorld(map, validConfig);
+    this.state = new GameState(validConfig, seed, world, { space, paths });
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);
@@ -92,10 +95,11 @@ export class Simulation {
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
-      units,
+      Simulation.withStructures(units),
       undefined,
       weaponSource,
     );
+    Simulation.spawnStructures(this.state, factory);
     this.commandContext = { state: this.state, factory };
     Simulation.spawnRoster(this.state, factory, roster, controllers);
     this.systemContext = { state: this.state, logger };
@@ -108,7 +112,6 @@ export class Simulation {
             {
               factory,
               space,
-              world,
               decide: [
                 new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
                   this.queue.enqueue(command);
@@ -166,6 +169,32 @@ export class Simulation {
     return this.hasher.hash(this.state);
   }
 
+  /** `units` plus the structure definitions, so one factory builds both (architecture 04 §6). */
+  private static withStructures(units: DefinitionSource): DefinitionSource {
+    return {
+      has: (id) => units.has(id) || STRUCTURE_DEFINITIONS.has(id),
+      get: (id) => (units.has(id) ? units.get(id) : STRUCTURE_DEFINITIONS.get(id)),
+    };
+  }
+
+  /**
+   * Builds the map's structures, in feature id order, before anything else spawns (architecture
+   * 07 §1): every feature whose definition is a structure becomes that structure, with its team
+   * and lane. Features without a structure definition (walls, turrets, camps) stay map data.
+   */
+  private static spawnStructures(state: GameState, factory: EntityFactory): void {
+    const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
+      compareById(a.id, b.id),
+    );
+    for (const { definitionId, position, team, laneId } of features) {
+      if (STRUCTURE_DEFINITIONS.has(definitionId)) {
+        const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
+        const placement = { position, team, ...(laneId !== undefined && { laneId }) };
+        state.entities.add(factory.create(kind, definitionId, placement));
+      }
+    }
+  }
+
   /**
    * Spawns the bot Legends (architecture 18 §8, MS-20): each team's laners, in roster order, go
    * to the lane with the fewest Legends, lowest index first, and stand in ranks behind their own
@@ -184,7 +213,7 @@ export class Simulation {
     if (roster.length === 0) {
       return;
     }
-    const routes = state.routes;
+    const routes = state.world?.routes ?? null;
     if (routes === null) {
       throw new Error('A roster needs a map: bot Legends play its lanes.');
     }
@@ -258,7 +287,7 @@ export class Simulation {
     roster: readonly RosterSlot[],
   ): void {
     for (const slot of roster.filter(({ role }) => role === 'rover')) {
-      const stronghold = state.map?.features.find(
+      const stronghold = state.world?.definition.features.find(
         ({ kind, team }) => kind === 'stronghold' && team === slot.team,
       );
       if (stronghold === undefined) {
@@ -290,29 +319,29 @@ export class Simulation {
   }
 
   /**
-   * The map's spatial pieces: the neighbour index, and one walkability grid shared by the lane
-   * flow fields and A\* for Legends. All `null` without a map.
+   * The map's spatial pieces: the match world (its one walkability grid shared by the lane flow
+   * fields and A\* for Legends), the neighbour index and A\*. All `null` without a map.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
     config: GameConfig,
   ): {
     readonly space: SpaceIndex | null;
-    readonly world: WorldMap | null;
+    readonly world: MatchWorld | null;
     readonly paths: AStarPathfinder | null;
   } {
     if (map === undefined) {
       return { space: null, world: null, paths: null };
     }
-    const world = WorldMap.fromDefinition(
+    const grid = WorldMap.fromDefinition(
       map,
       config.map.navCellSize,
       (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
     );
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
-      world,
-      paths: new AStarPathfinder(world, {
+      world: new MatchWorld(map, grid),
+      paths: new AStarPathfinder(grid, {
         maxExpansions: config.map.pathMaxExpansions,
         snapCells: config.map.pathSnapCells,
       }),

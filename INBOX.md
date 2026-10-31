@@ -88,6 +88,10 @@ Reply inline (`Decision: …`).
     runs every tick, not heavy (05 §16), because rules 2–4 read this tick's `xp-gained` events.
     Also on the cap-10 scale: balancing.md's bosses' "expected Legend level" (4 and 7) need
     rescaling to cap 50 (×5 would give 20 and 35); say if you want that.
+  - **Update 2026-10-30 (DEC-90):** the target is level 50 at about 20 minutes for an active
+    Legend, with the XP to the next level rising each level. Your choice of 2026-10-30: the resize
+    waits for bot laners (PR #46). Measure the real XP per minute once bots fight in lanes, then
+    size `content/progression/levelCurves.ts` to DEC-90.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -97,6 +101,10 @@ Reply inline (`Decision: …`).
       ADR 0017 (next item) before the generator changes. (4) From ADR 0017: which classes does a
       corridor get when it holds other than three camps?
   -     Accepted " keep depth-based weights but define the classes by position in the corridor" where the vertical line down the centre of the map defines the division. RNG determines the location of the camps on each side so both sides are different, but they must equate in terms of overall difficulty (1 light on left means 1 light on right; not necessarily in mirrored locations but the same amount of weighted camps on left team and right team's sides)
+  - **Question (1) closed 2026-10-30 by DEC-85** (decisions log, PR #30 review, #30-A): for the
+    MVP, forest and corner camps take seeded random positions, and the two sides stay mirrored.
+    The per-side placement of ADR 0017 is a next-sprint stretch goal or post-MVP, so questions
+    (2)–(4) and the ADR 0017 item below wait for it.
 - [ ] **DEC-15 — accept ADR 0017.** `docs/decisions/0017-balanced-asymmetric-camp-placement.md`
       (draft) amends ADR 0009 for forest camps only: the seeded RNG places them per side with
       equal counts per weight class, and everything else stays mirrored. Accept, change or reject
@@ -118,10 +126,14 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §3 stand-in). Details: doc 18 §10.
+  - **(1) terms and weights answered 2026-10-30 by DEC-89** (decisions log): your three signals
+    (own towers damaged, enemy pushed furthest, allies hurt or killed), equal `TUNE` weights.
+    The tie-break is still open.
 - [x] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
-      after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
+      after it (240 s)? **Answered 2026-10-30 by DEC-87:** it leaves 180 s after the countdown
+      ends, then every 90 s. (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
       say each mob carries a `hordeId` back-pointer. The code keeps membership only in
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
@@ -477,12 +489,23 @@ Reply inline (`Decision: …`).
       overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`), so the pause key is
       the player's binding.
 
-- [ ] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
+- [x] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
       sign off:** hordes spawn inside the Stronghold's blocking footprint (doc 18 §3.2), and §5.2's
       "no heading onto unwalkable ground" then held every minion forever. The PR (1) lets a mob
       standing on unwalkable ground walk straight out to its slot, and (2) when separation would
       push a mob onto unwalkable ground, keeps its own heading instead of holding (crowds at a
       wall deadlocked). Doc 18 §5.2 is updated in the same PR. Yes / no / change?
+  - Decision (sholtzman, chat, 2026-10-30): accepted as an interim fix on the phase branch
+    (DEC-126). The #38 fix (`fix/minion-m1-review`) replaces (1) with the flow field that leads
+    out of every blocked corridor cell (MS-31) and (2) with the turn at a wall (MS-35); doc 18
+    §5.2 and doc 10 §9 and §12 say so.
+- [x] **#38 fix → Sam (2026-10-30), better than the design:** doc 18 §4 holds a horde's anchor
+      only while its leader fights, so the anchor marched on while other members fought. The fix
+      holds it while any member has an attack target; in the 900 s soak (seed 1) skipped spawns
+      fell from 66 % to 33 %.
+  - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
+    working"; the critic ruled this rule better than the design. Built as MS-33 on
+    `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
 
 ## Feedback
 

@@ -12,7 +12,6 @@ import type { EntityFactory } from '../entities/EntityFactory';
 import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
-import type { WorldMap } from '../map/WorldMap';
 import type { GameState } from '../state/GameState';
 import { CombatSystem } from './CombatSystem';
 import { DeathSystem } from './DeathSystem';
@@ -25,6 +24,8 @@ import { ProgressionSystem } from './ProgressionSystem';
 import type { ProgressionContent } from './ProgressionSystem.types';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
+import { StructureSystem } from './StructureSystem';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
@@ -32,8 +33,8 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, the neighbour index, steering, combat, progression (kill XP),
- * spawning, enraging, death, then invariants last. This is the one place a system is added, at its position
- * in the tick (architecture 02 §9).
+ * structure losses and breakability, spawning, enraging, death, then invariants last. This is the
+ * one place a system is added, at its position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
  * step applies to every hit and every status event comes from one place.
@@ -57,8 +58,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
       readonly factory: EntityFactory;
       /** The index `state.space` exposes; `null` for a match without a map. */
       readonly space: SpaceIndex | null;
-      /** The map's walkability grid the lane flow fields route over; `null` without a map. */
-      readonly world: WorldMap | null;
       /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
       readonly decide: readonly System[];
     },
@@ -69,9 +68,13 @@ export class DefaultSystemPipeline extends SystemPipeline {
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
     );
     const flowFields =
-      hordes?.world == null || state.map === null
+      hordes === undefined || state.world === null
         ? null
-        : new LaneFlowFields(hordes.world, state.map, map.flowFieldCorridorHalfWidth);
+        : new LaneFlowFields(
+            state.world.grid,
+            state.world.definition,
+            map.flowFieldCorridorHalfWidth,
+          );
     super([
       ...(hordes === undefined
         ? []
@@ -92,6 +95,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new CombatSystem(damage),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
+      new StructureSystem(STRUCTURE_DEFINITIONS),
       ...(hordes === undefined
         ? []
         : [

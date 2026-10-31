@@ -17,6 +17,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
 import { loadWeapons } from '../content/weapons/loadWeapons';
@@ -69,7 +70,9 @@ describe('DefaultSystemPipeline', () => {
   it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2', () => {
     const logger = new MemoryLogger();
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, { space });
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+      space,
+    });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
 
     const pipeline = new DefaultSystemPipeline(
@@ -79,7 +82,6 @@ describe('DefaultSystemPipeline', () => {
       {
         factory,
         space,
-        world: null,
         decide: [{ name: 'ai', update: () => undefined }],
       },
     );
@@ -93,6 +95,7 @@ describe('DefaultSystemPipeline', () => {
       'pathing',
       'combat',
       'progression',
+      'structure',
       'spawn',
       'enraged',
       'death',

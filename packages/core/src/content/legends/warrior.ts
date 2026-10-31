@@ -21,7 +21,7 @@ export const WARRIOR = {
   referenceHeight: 2.1, // TUNE: ~7 ft (Master Chief)
   footprintRadius: 0.5, // DEC-06
   visionRadius: 25, // TUNE:
-  movement: {
+  movementProfile: {
     maxSpeed: 6, // TUNE: m/s
     acceleration: 45, // TUNE: m/s², top speed after about 0.13 s (4 ticks)
     mass: 1, // TUNE:

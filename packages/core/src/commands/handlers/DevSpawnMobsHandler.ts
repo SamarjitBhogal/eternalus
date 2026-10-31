@@ -40,12 +40,12 @@ export class DevSpawnMobsHandler implements CommandHandler<'dev-spawn-mobs'> {
     state: GameState,
     origin: SpawnOrigin,
   ): { readonly lane: string; readonly origin: Vec2 } | null {
-    const { map, routes } = state;
-    if (map === null || routes === null) {
+    if (state.world === null) {
       return null;
     }
+    const { definition, routes } = state.world;
     if (origin.kind === 'structure') {
-      const feature = map.features.find(({ id }) => id === origin.structureId);
+      const feature = definition.features.find(({ id }) => id === origin.structureId);
       return feature?.laneId === undefined
         ? null
         : { lane: feature.laneId, origin: feature.position };

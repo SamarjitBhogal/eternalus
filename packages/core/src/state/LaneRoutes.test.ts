@@ -38,4 +38,11 @@ describe('LaneRoutes', () => {
     routes.pose('lane-1', 'light', 500, point, forward);
     expect(point).toEqual({ x: 180, y: 40 });
   });
+
+  it('starts each team’s route at its own gate end of the lane', () => {
+    expect(routes.start('lane-0', 'light')).toEqual({ x: 20, y: 20 });
+    expect(routes.start('lane-0', 'dark')).toEqual({ x: 180, y: 20 });
+    expect(routes.start('lane-1', 'light')).toEqual({ x: 20, y: 40 });
+    expect(() => routes.start('lane-9', 'light')).toThrow('no lane "lane-9"');
+  });
 });
