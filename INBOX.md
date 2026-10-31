@@ -16,6 +16,15 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Enraged minions run faster than `maxSpeed` (PR #56, 2026-10-31) — doc wording to
+      approve.** `balancing.md` gives `enraged` +10% move speed per stack, but docs 04 §3
+      (`Movement` row: `speed <= maxSpeed`), 10 §2 step 4 ("clamp to `maxSpeed`") and 15 §3
+      (`finite-transforms`: `|velocity| <= maxSpeed`) bound every unit by its content `maxSpeed`.
+      The first tower lost in play (M2c) enraged its lane and the invariant stopped the match.
+      Applied: `Movement.topSpeed` is the cap the last tick allowed (`maxSpeed` times the statuses'
+      `moveSpeed`), and the invariant checks against it. Proposed wording for the three docs:
+      "`maxSpeed` scaled by statuses (`Movement.topSpeed`)". Approve, or say what to change.
+
 - [ ] **Minion M2c (`feat/minion-m2c-objectives-guards`, overnight 2026-10-30) — eight items for
       sign-off, all applied as below so the work could continue.** (1) **Better than the design:**
       a horde gathered at its objective (anchor within `acquisitionRadius` of the objective's
