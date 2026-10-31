@@ -4,6 +4,8 @@ import type { LockedClassDefinition } from './legends/locked/lockedClasses.types
 import type { LegendSpecDefinition } from './legends/specs/legendSpecs.types';
 import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
 import type { LevelCurveDefinition } from './progression/progression.types';
+import type { BotRosterDefinition } from './teams/botRoster.types';
+import { BotRosterClassRule } from './validation/BotRosterClassRule';
 import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
@@ -44,4 +46,16 @@ export const createLegendSpecRules = (
 /** Every shipped locked-class rule. A new locked-class rule is one line here. */
 export const createLockedClassRules = (): readonly ContentRule<LockedClassDefinition>[] => [
   new KebabCaseIdRule(),
+];
+
+/**
+ * Every shipped bot-roster rule. A new bot-roster rule is one line here.
+ *
+ * @param legends - The loaded Legend classes every laner must name.
+ */
+export const createBotRosterRules = (
+  legends: ContentCatalogue<LegendDefinition>,
+): readonly ContentRule<BotRosterDefinition>[] => [
+  new KebabCaseIdRule(),
+  new BotRosterClassRule(legends),
 ];

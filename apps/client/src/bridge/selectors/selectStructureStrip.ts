@@ -18,6 +18,11 @@ export type HudStructureTile = {
   readonly iconAssetId: AssetId;
   /** Health 0..1 (summed over an aggregated group); `null` while any member's health is unknown. */
   readonly healthFraction: number | null;
+  /**
+   * The tile shows destroyed (DEC-69): its structure is at zero health, or, for an aggregated
+   * group (the one Wall), any one member is: a single destroyed wall segment or gate (DEC-108).
+   */
+  readonly isDestroyed: boolean;
 };
 
 /** The team each strip shows, seen from the player. */
@@ -25,6 +30,10 @@ const SIDE_TEAM: Readonly<Record<HudSide, Readonly<Record<PlayableTeam, Playable
   allied: { light: 'light', dark: 'dark' },
   enemy: { light: 'dark', dark: 'light' },
 };
+
+/** A structure at zero health is destroyed (DEC-69); unknown health is not. */
+const isDestroyed = ({ health }: StructureStatus): boolean =>
+  health !== null && health.current <= 0;
 
 /** Sort key of a lane: lane order, structures without a lane last. */
 const laneRank = (laneIndex: number | null): number => laneIndex ?? Number.POSITIVE_INFINITY;
@@ -72,6 +81,7 @@ function tilesOf(
     displayName: kind.displayName,
     iconAssetId: kind.iconAssetId,
     healthFraction: healthFractionOf(members),
+    isDestroyed: members.some(isDestroyed),
   }));
 }
 

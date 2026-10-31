@@ -3,9 +3,14 @@ import { describe, expect, it } from 'vitest';
 import type { ClassSelection } from '../events';
 import { matchSetupSlice } from './matchSetupSlice';
 
-const { select, setCountdown } = matchSetupSlice.actions;
-const { selectSelection, selectCountdownSeconds, selectPlayerTeam, selectAllies } =
-  matchSetupSlice.selectors;
+const { lockIn, reset, select, setCountdown } = matchSetupSlice.actions;
+const {
+  selectSelection,
+  selectCountdownSeconds,
+  selectPlayerTeam,
+  selectAllies,
+  selectIsLockedIn,
+} = matchSetupSlice.selectors;
 
 describe('matchSetupSlice', () => {
   it('stores a pick as given and clears it on null', () => {
@@ -30,5 +35,26 @@ describe('matchSetupSlice', () => {
     const state = { matchSetup: matchSetupSlice.getInitialState() };
     expect(selectPlayerTeam(state)).toBeNull();
     expect(selectAllies(state)).toEqual([]);
+    expect(selectIsLockedIn(state)).toBe(false);
+  });
+
+  it('locks in with the filled rosters, until a reset (DEC-60)', () => {
+    const allies = [
+      {
+        legendId: 'light-1',
+        displayName: 'Ada',
+        classId: 'magus',
+        specId: 'oracle',
+        isBot: false,
+        isPlayer: true,
+        isRover: true,
+        team: 'light',
+      },
+    ] as const;
+    let matchSetup = matchSetupSlice.reducer(undefined, lockIn({ allies, enemies: [] }));
+    expect(selectIsLockedIn({ matchSetup })).toBe(true);
+    expect(selectAllies({ matchSetup })).toEqual(allies);
+    matchSetup = matchSetupSlice.reducer(matchSetup, reset());
+    expect(selectIsLockedIn({ matchSetup })).toBe(false);
   });
 });

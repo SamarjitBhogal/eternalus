@@ -26,8 +26,13 @@ export type InputAction =
   | 'camera-zoom-out'
   | 'toggle-minimap'
   | 'pause-menu'
+  | 'view-details'
   | 'toggle-developer-menu'
-  | 'toggle-perf-overlay';
+  | 'toggle-perf-overlay'
+  | 'toggle-developer-camera';
+
+/** A modifier key a keyboard chord needs held, named as `KeyboardEvent.getModifierState` names it. */
+export type ChordModifier = 'Alt' | 'Control' | 'Meta' | 'Shift';
 
 /**
  * One physical input that triggers an action. Two chords are the same input when their `device`
@@ -44,6 +49,11 @@ export type InputChord = {
   readonly code: string;
   /** The text a prompt shows: the key seen at bind time (`'W'`, `'↑'`) or a button name. */
   readonly label: string;
+  /**
+   * Keyboard only: the modifier keys held with `code` (13 §6.1), as in DEC-105's Cmd+Shift+F3.
+   * None, or empty, for a plain key.
+   */
+  readonly modifiers?: readonly ChordModifier[];
 };
 
 /**

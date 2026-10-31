@@ -5,8 +5,4 @@
  * swap is a one-line `export type { … } from '@eternalus/core'`.
  */
 
-export type { PlayableTeam, Team } from '@eternalus/core';
-
-// TODO(sam): re-export LegendClassId from @eternalus/core when session C merges.
-/** Content id of a Legend class (`'warrior'`, `'sentinel'`, `'magus'`); never a closed union here. */
-export type LegendClassId = string;
+export type { LegendClassId, PlayableTeam, Team } from '@eternalus/core';

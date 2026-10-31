@@ -7,6 +7,7 @@ import type { PlayableTeam } from '../../bridge/domain.types';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
 import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import glowStyles from '../components/GlowButton.module.css';
+import detailsStyles from '../components/InfoPanelDetails.module.css';
 import { chromePlateFor } from '../components/useGlowButtonChrome';
 import {
   accessibleNames,
@@ -23,6 +24,16 @@ import stepCss from './LegendSelectStep.module.css?raw';
 const ESC: readonly Binding[] = [
   { action: 'pause-menu', chords: [{ device: 'keyboard', code: 'Escape', label: 'Esc' }] },
 ];
+/** Esc and View Details' default key, V (game/input/keybindings.ts, DEC-103). */
+const ESC_AND_V: readonly Binding[] = [
+  ...ESC,
+  { action: 'view-details', chords: [{ device: 'keyboard', code: 'KeyV', label: 'V' }] },
+];
+
+/** The step's own markup, before the View Details screen it renders after its section. */
+const stepPart = (html: string): string => html.slice(0, html.indexOf('role="dialog"'));
+/** The View Details screen's markup. */
+const detailsPart = (html: string): string => html.slice(html.indexOf('role="dialog"'));
 
 /** `content` with every class and Legend passed through `edit`. */
 const withClasses = (
@@ -45,7 +56,7 @@ function render(
   {
     team = 'light',
     content = TEST_CONTENT,
-    bindings = ESC,
+    bindings = ESC_AND_V,
     assets = loadedAssetsFor(content),
   }: {
     readonly team?: PlayableTeam;
@@ -85,9 +96,20 @@ describe('LegendSelectStep', () => {
     expect(html).toContain('>Elarion</h3>');
     expect(html).toContain('>Oracle  ·  Support</p>');
     expect(html).toContain('>A voice of the Unison.</p>');
-    for (const name of ['Aetheric Recall', 'Unison Ward', 'Severed Accord']) {
+    // DEC-65: no Aetheric Recall (the class's default ability) among a Legend's rows.
+    for (const name of ['Severed Accord', 'Unison Ward']) {
       expect(html).toContain(`>${name}<`);
     }
+    expect(html).not.toContain('Aetheric Recall');
+    // DEC-65: the header names the four rows, the Ultimate's first.
+    expect(html).toContain('>Ultimate / Abilities</h4>');
+    expect([...stepPart(html).matchAll(/<li data-row="(\d)">/g)].map(([, row]) => row)).toEqual([
+      '0',
+      '1',
+      '2',
+      '3',
+    ]);
+    expect(html.indexOf('>Severed Accord<')).toBeLessThan(html.indexOf('>Unison Ward<'));
     expect([...html.matchAll(/aria-valuenow="(\d+)"/g)].map(([, now]) => now)).toEqual([
       '38',
       '84',
@@ -96,7 +118,7 @@ describe('LegendSelectStep', () => {
     expect(accessibleNames(html, '[role=radio]')).toEqual([
       'Catalyst Veridan',
       'Oracle Elarion',
-      'Necromancer Avedrin',
+      'Heretic Avedrin',
     ]);
     expect(html).toMatch(/data-spec-id="oracle"[^>]*data-look="picked"/);
     expect(html).toMatch(/aria-checked="true"[^>]*data-spec-id="oracle"/);
@@ -109,16 +131,16 @@ describe('LegendSelectStep', () => {
     expect(accessibleNames(html, '[role=radio]')).toEqual([
       'Catalyst Nadirev',
       'Oracle Noirale',
-      'Necromancer Nirdeva',
+      'Heretic Nirdeva',
     ]);
   });
 
   it('titles an unnamed Legend by its sub-class alone, card and panel (CD-13)', () => {
     const html = render({ classId: 'warrior', specId: 'knight' });
 
-    expect(accessibleNames(html, '[role=radio]')).toEqual(['Centurion']);
-    expect(html).toContain('>Centurion</h3>');
-    expect(html).toContain('Legionnaire &gt; Choose Your Legend');
+    expect(accessibleNames(html, '[role=radio]')).toEqual(['Templar']);
+    expect(html).toContain('>Templar</h3>');
+    expect(html).toContain('Vanguard &gt; Choose Your Legend');
   });
 
   it('shows unrated Legends as "No data yet" images, never meters (I-87)', () => {
@@ -148,7 +170,11 @@ describe('LegendSelectStep', () => {
   it('enables LOCK IN once a Legend is picked; Back shows the bound key, rebinding included', () => {
     const html = render(FIGMA_STATE);
 
-    expect(accessibleNames(html, 'button').slice(-2)).toEqual(['lock in', 'Esc back']);
+    expect(accessibleNames(html, 'button').slice(-3)).toEqual([
+      'lock in',
+      'Esc back',
+      'V View Details',
+    ]);
     expect(html).not.toMatch(/aria-disabled="true"[^>]*>(?:<[^>]+>)*lock in/);
     const rebound = render(FIGMA_STATE, {
       bindings: [
@@ -159,6 +185,29 @@ describe('LegendSelectStep', () => {
       ],
     });
     expect(rebound).toMatch(/<kbd[^>]*>Backspace<\/kbd>/);
+  });
+
+  // DEC-103: "for the view details on a specific legend, do a similar thing but with 4 abilities,
+  // no legends in the corner, the legend name and subclass title on the left with their
+  // description"; Unison Ward is ability 1.
+  it('lays the shown Legend out again in View Details: four labelled rows, no ratings', () => {
+    const details = detailsPart(render(FIGMA_STATE));
+    const texts = (className: string | undefined): (string | undefined)[] =>
+      [...details.matchAll(new RegExp(`class="${String(className)}">([^<]+)<`, 'g'))].map(
+        ([, text]) => text,
+      );
+
+    expect(details).toMatch(
+      /^role="dialog" aria-modal="true" aria-label="View Details" data-open="false"/,
+    );
+    expect(details).toContain('data-layout="legend-details"');
+    expect(details).toContain('>Elarion</h3>');
+    expect(details).toContain('>Oracle  ·  Support</p>');
+    expect(details).toContain('>A voice of the Unison.</p>');
+    expect(texts(detailsStyles.label)).toEqual(['Ultimate', 'Ability 1', 'Ability 2', 'Ability 3']);
+    expect(texts(detailsStyles.name)).toEqual(['Severed Accord', 'Unison Ward', '—', '—']);
+    expect(details).not.toContain('role="meter"');
+    expect(details).not.toContain('>Legends<');
   });
 
   it('reads cards, then LOCK IN, then Back, and names every control and meter', () => {
@@ -243,7 +292,7 @@ describe('LegendSelectStep row plate (T-LEG-9, I-69, §5.15)', () => {
 
   it.each([
     ['catalyst', { classId: 'magus', specId: 'catalyst' }],
-    ['a Legionnaire Legend', { classId: 'warrior', specId: 'knight' }],
+    ['a Vanguard Legend', { classId: 'warrior', specId: 'knight' }],
   ])('with %s picked draws no plate, the live halo and the live LOCK IN chrome', (_, pick) => {
     const html = render(pick);
 

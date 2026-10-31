@@ -32,6 +32,7 @@ export { validateGameConfig } from './config/validateGameConfig';
 export type { VictoryConditionId } from './config/VictoryConditionId.types';
 export type {
   ClassDetailNames,
+  LegendClassId,
   LegendDefinition,
   LegendKind,
 } from './content/legends/legends.types';
@@ -56,6 +57,7 @@ export type {
   MinimapGlyph,
   MinimapGlyphShape,
 } from './content/maps/maps.types';
+export type { BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
 export type {
   DiagnosticEvent,
   DiagnosticEventMap,

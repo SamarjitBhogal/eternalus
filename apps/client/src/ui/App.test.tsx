@@ -20,6 +20,18 @@ describe('App', () => {
     expect(html).toContain(STRINGS.menu.startMatch);
   });
 
+  it('shows the select-timeout popup over every menu route, and in no other phase (DEC-102)', () => {
+    const title = STRINGS.selectTimeoutPopup.title;
+    const at = (session: ReturnType<typeof sessionAt>) => renderWithStore(<App />, { session });
+    for (const menuRoute of ['home', 'settings'] as const) {
+      const html = at(sessionAt('menu', { menuRoute, reason: 'select-timeout' }));
+      expect(html).toContain(title);
+      expect(html.indexOf(title)).toBeGreaterThan(html.indexOf('<main'));
+    }
+    expect(at(sessionAt('menu'))).not.toContain(title);
+    expect(at(sessionAt('loading', { reason: 'select-timeout' }))).not.toContain(title);
+  });
+
   it.each([
     ['loadouts', STRINGS.loadouts.title],
     ['profile', 'Chronicle'],

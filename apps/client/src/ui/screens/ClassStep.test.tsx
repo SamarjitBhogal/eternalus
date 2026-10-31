@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ClassSelectLayout } from '../../bridge/catalogue.types';
+import promptStyles from '../components/KeyPrompt.module.css';
 import { accessibleNames, autofocusedClassIds, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassStep } from './ClassStep';
 
@@ -14,7 +15,9 @@ describe('ClassStep', () => {
     const html = render('primary', null);
 
     expect(accessibleNames(html, '[role=radiogroup]')).toEqual(['Choose Your Class']);
-    expect(html).not.toContain('View Details');
+    // DEC-103: the V prompt of View Details, not the alternate layout's 62:84 prompt.
+    expect(html).toContain(String(promptStyles.classViewDetails));
+    expect(html).not.toContain(String(promptStyles.viewDetails));
   });
 
   it('draws the alternate layout (O5, 62:70) for the alternate catalogue, and no card row', () => {

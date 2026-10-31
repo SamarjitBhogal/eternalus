@@ -85,6 +85,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         input,
         player: request.player,
         logger,
+        onCrash: request.onCrash,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

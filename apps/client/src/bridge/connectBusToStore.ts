@@ -43,6 +43,7 @@ export function connectBusToStore(
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
     }),
     bus.on('class-selection', (selection) => dispatch(setup.select(selection))),
+    bus.on('selection-locked', (rosters) => dispatch(setup.lockIn(rosters))),
     bus.on('countdown', ({ kind, remainingMs }) =>
       dispatch(kind === 'select' ? setup.setCountdown(remainingMs) : setup.setReveal(remainingMs)),
     ),

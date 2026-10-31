@@ -129,6 +129,7 @@ const setUp = (content?: Content) => {
     input,
     player: PLAYER,
     logger,
+    onCrash: () => undefined,
     // A bus nobody listens to, at the shipped cadence.
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),

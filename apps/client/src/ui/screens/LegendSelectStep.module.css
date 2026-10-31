@@ -37,14 +37,3 @@
   font-kerning: normal;
   font-variant-ligatures: normal;
 }
-
-/* 58:323 Stat Bars (73, 766): three rows on a 48 px pitch (766, 814, 862). */
-.ratings {
-  position: absolute;
-  left: 73px;
-  top: 766px;
-  display: grid;
-  grid-auto-rows: 48px;
-  width: 401px;
-  pointer-events: none;
-}

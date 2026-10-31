@@ -6,7 +6,7 @@ import { TEST_HUD_CATALOGUE } from '../__fixtures__/hudFixtures';
 import { contentSlice } from './contentSlice';
 
 const CATALOGUE: DisplayCatalogue = {
-  legendClasses: [classCardFixture({ classId: 'warrior', displayName: 'Legionnaire' })],
+  legendClasses: [classCardFixture({ classId: 'warrior', displayName: 'Vanguard' })],
   backgroundSets: [
     { id: 'menu', team: 'neutral', layers: [] },
     { id: 'light-a', team: 'light', layers: [] },
@@ -21,6 +21,7 @@ const CATALOGUE: DisplayCatalogue = {
   contrastMode: 'figma',
   hud: TEST_HUD_CATALOGUE,
   teamNames: { light: 'Lux', dark: 'Umbra' },
+  botRoster: { id: 'test', laners: ['warrior'], enemyRover: 'mirror-player' },
 };
 
 const {

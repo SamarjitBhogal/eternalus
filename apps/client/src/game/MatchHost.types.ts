@@ -39,7 +39,8 @@ export type MatchHostDeps = {
   readonly input: { releaseAll(): void };
   /** The `settings` event's bindings reach the mapper (13 §6.3, A24-1). */
   readonly bus: TypedEventBus<BridgeEventMap>;
-  readonly mapper: Pick<InputMapper, 'setBindings'>;
+  /** Also matches the one-shot actions' chords (DEC-117) against the current bindings. */
+  readonly mapper: Pick<InputMapper, 'setBindings' | 'isActionKey'>;
   /** Adapters destroyed after the match (renderer, camera): the host is their owner. */
   readonly adapters: readonly { destroy(): void }[];
 };

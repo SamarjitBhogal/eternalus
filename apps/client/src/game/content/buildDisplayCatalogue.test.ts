@@ -34,28 +34,28 @@ const classCard = (cards: readonly LegendClassCard[], classId: string): LegendCl
   if (card === undefined) throw new Error(`no class ${classId}`);
   return card;
 };
-const CORE_FLYING = CONTENT.lockedClasses.find((locked) => locked.id === 'flying');
-if (CORE_FLYING === undefined) throw new Error('content has no flying locked class');
+const CORE_HARBINGER = CONTENT.lockedClasses.find((locked) => locked.id === 'harbinger');
+if (CORE_HARBINGER === undefined) throw new Error('content has no harbinger locked class');
 /** The locked fourth card as the screens show it: core's name, blurb and role label (DEC-48). */
-const FLYING_CARD: LegendClassCard = {
-  classId: 'flying',
-  displayName: CORE_FLYING.displayName,
-  blurb: CORE_FLYING.roleBlurb,
+const HARBINGER_CARD: LegendClassCard = {
+  classId: 'harbinger',
+  displayName: CORE_HARBINGER.displayName,
+  blurb: CORE_HARBINGER.roleBlurb,
   status: 'locked',
-  roleLabel: CORE_FLYING.roleLabel,
+  roleLabel: CORE_HARBINGER.roleLabel,
   tagline: null,
   description: null,
-  accentToken: '--class-flying-accent',
+  accentToken: '--class-harbinger-accent',
   details: [
     { slot: 'signature', displayName: null, iconAssetId: null },
     { slot: 'proficiency', displayName: null, iconAssetId: null },
     { slot: 'specialty', displayName: null, iconAssetId: null },
   ],
   art: {
-    card: 'flying-card-art',
-    sigil: 'flying-sigil',
+    card: 'harbinger-card-art',
+    sigil: 'harbinger-sigil',
     model: null,
-    cardPlates: { idle: 'flying-card-plate-idle' },
+    cardPlates: { idle: 'harbinger-card-plate-idle' },
     rowPlate: null,
   },
   specs: [],
@@ -105,20 +105,18 @@ describe('buildDisplayCatalogue', () => {
     ]);
     expect(magus.layoutOverrides.alternate?.details?.[2]?.displayName).toBe('Arcane Intellect');
     expect(magus.layoutOverrides.alternate?.description).toMatch(/^The masters of Aether/);
-    // The Legend whose detail rows core names; presentation gives them icons.
-    const detailed = CONTENT.specs.find((spec) => spec.detailNames.specialty !== null);
+    // The Legend whose detail rows core names; presentation gives them icons. Ultimate on top,
+    // then abilities 1 to 3, no Aetheric Recall (DEC-65); Unison Ward is ability 1 (DEC-103).
+    const detailed = CONTENT.specs.find((spec) => spec.detailNames.ultimate !== null);
     expect(magus.specs.find((spec) => spec.specId === detailed?.id)?.details).toEqual([
-      {
-        slot: 'signature',
-        displayName: 'Aetheric Recall',
-        iconAssetId: 'magus-detail-aetheric-recall',
-      },
-      { slot: 'specialty', displayName: 'Unison Ward', iconAssetId: 'oracle-detail-unison-ward' },
       {
         slot: 'ultimate',
         displayName: 'Severed Accord',
         iconAssetId: 'oracle-detail-severed-accord',
       },
+      { slot: 'ability-1', displayName: 'Unison Ward', iconAssetId: 'oracle-detail-unison-ward' },
+      { slot: 'ability-2', displayName: null, iconAssetId: null },
+      { slot: 'ability-3', displayName: null, iconAssetId: null },
     ]);
     expect(classCard(build().legendClasses, 'warrior').details).toEqual([
       { slot: 'signature', displayName: null, iconAssetId: null },
@@ -218,8 +216,11 @@ describe('buildDisplayCatalogue', () => {
     expect(() => build({ known: without('magus-sigil') })).toThrow(
       'asset "magus-sigil" is not in the asset manifest',
     );
-    expect(() => build({ known: without('icon-placeholder-meteor') })).toThrow(
-      'asset "icon-placeholder-meteor"',
+    expect(() => build({ known: without('warrior-hud-emblem') })).toThrow(
+      'asset "warrior-hud-emblem"',
+    );
+    expect(() => build({ known: without('warrior-weapon-battle-axe') })).toThrow(
+      'asset "warrior-weapon-battle-axe"',
     );
     expect(() => build({ known: without('selection-backdrop') })).toThrow('"selection-backdrop"');
   });
@@ -230,9 +231,9 @@ describe('buildDisplayCatalogue', () => {
       'warrior',
       'sentinel',
       'magus',
-      'flying',
+      'harbinger',
     ]);
-    expect(catalogue.legendClasses.at(-1)).toEqual(FLYING_CARD);
+    expect(catalogue.legendClasses.at(-1)).toEqual(HARBINGER_CARD);
     expect(classCard(catalogue.legendClasses, 'magus').specs.map((spec) => spec.specId)).toEqual(
       CONTENT.specs
         .filter((spec) => spec.classId === 'magus')
@@ -243,13 +244,13 @@ describe('buildDisplayCatalogue', () => {
 
   it('names a locked card from core and draws it from presentation', () => {
     const skyborn = {
-      id: 'flying',
+      id: 'harbinger',
       displayName: 'Skyborn',
       roleBlurb: 'Rides the wind.',
       roleLabel: 'aloft',
     };
     expect(build({ content: { lockedClasses: [skyborn] } }).legendClasses.at(-1)).toEqual({
-      ...FLYING_CARD,
+      ...HARBINGER_CARD,
       displayName: 'Skyborn',
       blurb: 'Rides the wind.',
       roleLabel: 'aloft',
@@ -272,6 +273,11 @@ describe('buildDisplayCatalogue', () => {
     const teamNames = { light: 'Lux', dark: 'Umbra' };
     expect(build({ content: { teamNames } }).teamNames).toBe(teamNames);
     expect(build().teamNames).toEqual(CONTENT.teamNames);
+  });
+
+  it('carries the core bot roster (DEC-61, DEC-102)', () => {
+    const botRoster = { id: 'test', laners: ['magus'], enemyRover: 'mirror-player' } as const;
+    expect(build({ content: { botRoster } }).botRoster).toBe(botRoster);
   });
 
   it("maps core's isSelectable to the Legend status: true is available, false is locked", () => {

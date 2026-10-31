@@ -75,7 +75,7 @@ export type StructureStatus = {
   readonly team: PlayableTeam;
   /** The lane's `index`; `null` for structures without a lane (stronghold ring). */
   readonly laneIndex: number | null;
-  /** `null` until structures are simulated (Phase 2). */
+  /** `null` until structures are simulated (Phase 2); `current` 0 is destroyed (DEC-69). */
   readonly health: { readonly current: number; readonly max: number } | null;
 };
 

@@ -20,6 +20,7 @@ import { createCoreCatalogue } from './game/content/coreCatalogue';
 import { PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { createBrowserMatch } from './game/createBrowserMatch';
 import { readDeveloperFlags } from './game/developerFlags';
+import { isAppleUserAgent } from './game/isAppleUserAgent';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
 import { GameCanvas } from './game/GameCanvas';
 import { INPUT_ACTIONS } from './game/input/keybindings';
@@ -27,6 +28,7 @@ import type { MatchViewport } from './game/MatchViewport.types';
 import { prepareMatchWorld } from './game/prepareMatchWorld';
 import { SettingsController } from './game/settings/SettingsController';
 import { SessionController } from './game/SessionController';
+import { createRosterRng } from './game/session/createRosterRng';
 import { createDefaultSessionStates } from './game/session/defaultSessionStates';
 import { LcgRng } from './game/session/LcgRng';
 import { App } from './ui/App';
@@ -60,7 +62,12 @@ const persistence = new PersistenceController({
     logger.log(makeLogRecord('WARN', 'client.persistence', body, { attributes }));
   },
 });
-const settings = new SettingsController({ bus: eventBus, persistence, logger });
+const settings = new SettingsController({
+  bus: eventBus,
+  persistence,
+  logger,
+  isApplePlatform: isAppleUserAgent(window.navigator.userAgent),
+});
 const resources = new ResourceController({
   manifest: ASSET_MANIFEST,
   loaders: [
@@ -90,6 +97,7 @@ const session = new SessionController({
   playerName: PLACEHOLDER_PLAYER_NAME,
   seedSource: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
   createRng: (seed) => new LcgRng(seed),
+  createRosterRng,
   themeRoot: document.documentElement,
   prepareWorld: (seed) => prepareMatchWorld(gameConfig, seed),
   createMatch: createBrowserMatch({

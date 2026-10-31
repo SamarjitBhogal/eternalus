@@ -1,3 +1,4 @@
+import type { InputAction } from '../bridge/Binding.types';
 import { CanvasPointerControls } from './CanvasPointerControls';
 import type { MatchHostDeps } from './MatchHost.types';
 import type { RunningMatch } from './SessionController.types';
@@ -5,8 +6,10 @@ import type { RunningMatch } from './SessionController.types';
 /**
  * Hosts one match in the page: sizes the canvas to its device pixels, attaches the keyboard to
  * the window and the mouse and pointer controls to the canvas, follows the player's bindings,
- * releases held input on focus loss, a hidden tab or pause, and tears all of it down again,
- * leaving 0 listeners and 0 frames (13 §2). It owns the match and the adapters it is given.
+ * releases held input on focus loss, a hidden tab or pause, runs the client-only one-shot actions
+ * on their key press (DEC-117; the developer explorer's hotkey, DEC-105, every build), and tears
+ * all of it down again, leaving 0 listeners and 0 frames (13 §2). It owns the match and the
+ * adapters it is given.
  */
 export class MatchHost implements RunningMatch {
   private readonly pointer: CanvasPointerControls;
@@ -14,6 +17,19 @@ export class MatchHost implements RunningMatch {
   private stopSettings = (): void => undefined;
 
   private isDestroyed = false;
+
+  /**
+   * The client-only one-shot actions and what each does: matched on a key press with exactly its
+   * chord's modifiers, never held, and read while paused too (DEC-117). A new one is one entry.
+   */
+  private readonly oneShotActions: readonly (readonly [InputAction, () => void])[] = [
+    [
+      'toggle-developer-camera',
+      () => {
+        this.pointer.toggleExplorer();
+      },
+    ],
+  ];
 
   /** Creates the host; nothing listens until `start()`. */
   public constructor(private readonly deps: MatchHostDeps) {
@@ -30,6 +46,7 @@ export class MatchHost implements RunningMatch {
       this.resize();
       window.addEventListener('resize', this.resize);
       window.addEventListener('blur', this.releaseInput);
+      window.addEventListener('keydown', this.runOneShotAction);
       document.addEventListener('visibilitychange', this.releaseInputWhenHidden);
       keyboard.attach(window);
       mouse.attach(viewport.canvas);
@@ -64,6 +81,7 @@ export class MatchHost implements RunningMatch {
     const { match, window, document, keyboard, mouse, adapters } = this.deps;
     window.removeEventListener('resize', this.resize);
     window.removeEventListener('blur', this.releaseInput);
+    window.removeEventListener('keydown', this.runOneShotAction);
     document.removeEventListener('visibilitychange', this.releaseInputWhenHidden);
     keyboard.detach();
     mouse.detach();
@@ -88,6 +106,16 @@ export class MatchHost implements RunningMatch {
   private readonly releaseInput = (): void => {
     this.deps.input.releaseAll();
     this.pointer.cancelDrag();
+  };
+
+  /** A press (not a repeat) of a one-shot action's chord runs that action (DEC-117). */
+  private readonly runOneShotAction = (event: Event): void => {
+    const key = event as KeyboardEvent;
+    if (key.repeat) return;
+    const entry = this.oneShotActions.find(([action]) => this.deps.mapper.isActionKey(action, key));
+    if (entry === undefined) return;
+    key.preventDefault();
+    entry[1]();
   };
 
   private readonly releaseInputWhenHidden = (): void => {

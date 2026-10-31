@@ -19,7 +19,7 @@ const tile = (overrides: Partial<AllyTileView>): AllyTileView => ({
   displayName: 'Ally 3',
   isPlayer: false,
   classId: 'warrior',
-  classDisplayName: 'Legionnaire',
+  classDisplayName: 'Vanguard',
   specId: null,
   state: 'class',
   imageAssetId: 'warrior-sigil',
@@ -57,11 +57,11 @@ const BOT_NECROMANCER = tile({
   accentToken: '--legend-necromancer-accent',
 });
 
-/** A bot on the locked flying class (TEST_CONTENT names it Harbinger). */
-const FLYING_BOT: RosterEntry = {
+/** A bot on the locked harbinger class (TEST_CONTENT names it Harbinger). */
+const HARBINGER_BOT: RosterEntry = {
   legendId: 'ally-3',
   displayName: 'Ally 3',
-  classId: 'flying',
+  classId: 'harbinger',
   specId: null,
   isBot: true,
   isPlayer: false,
@@ -69,10 +69,10 @@ const FLYING_BOT: RosterEntry = {
   team: 'light',
 };
 
-/** Server-renders the tiles `selectAllyTiles` builds for `FLYING_BOT` over `legendClasses`. */
+/** Server-renders the tiles `selectAllyTiles` builds for `HARBINGER_BOT` over `legendClasses`. */
 const renderSelected = (legendClasses: readonly LegendClassCard[]): string => {
   const store = createAppStore({ content: { ...TEST_CONTENT, legendClasses } });
-  store.dispatch(matchSetupSlice.actions.setRosters({ allies: [FLYING_BOT], enemies: [] }));
+  store.dispatch(matchSetupSlice.actions.setRosters({ allies: [HARBINGER_BOT], enemies: [] }));
   return renderWithStore(
     <>
       {selectAllyTiles(store.getState()).map((view) => (
@@ -142,7 +142,7 @@ describe('AllyTile', () => {
 
     expect(html).toContain('data-look="idle"');
     expect(html).toContain('src="/assets/test/warrior-sigil@ally-tile.webp"');
-    expect(html).toContain('>Ally 3, Legionnaire</span>');
+    expect(html).toContain('>Ally 3, Vanguard</span>');
     expect(imageClassOf(html)).toBe(`${String(styles.image)} ${String(styles.sigil)}`);
     expect(html).not.toContain('--tile-accent');
   });

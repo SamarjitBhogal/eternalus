@@ -73,7 +73,7 @@ R14 "new view" and R16 "new command".
 
 ### R1. Add a Legend class
 
-- **When:** a playable class whose behaviour no existing class has (`flying`, **post-MVP**,
+- **When:** a playable class whose behaviour no existing class has (`harbinger`, **post-MVP**,
   needs an altitude layer). Numbers, abilities or a skin alone: R2 or plain content.
   `Entity → Unit → Legend → <Name>` is the last allowed level (04 §9).
 - **Files:** `core/content/legends/<id>.ts` (`LegendDefinition` with `kind`, stats, ability
@@ -584,7 +584,19 @@ HC-T1); R1's word for the locked class's id changes with that id's content renam
   gameplay, R2's other part, is MVP scope, and the phase that builds it is open (ADR 0018;
   `INBOX.md` HC-Q17).
 - **A screen or HUD element** (R19, R20, [13](13-game-interface.md) §9): a layout variant of one
-  of the owner's frames is one content value and one registry entry (DEC-52, DEC-53).
+  of the owner's frames is one content value and one registry entry (DEC-52, DEC-53). A step of
+  the character-select screen (the locked view, DEC-60) is one entry of `SELECTION_STEPS` in
+  `CharacterSelectScreen`; View Details (DEC-103) is a component over a step (`ViewDetailsScreen`),
+  neither a `MenuRoute` nor a `SessionPhase`.
+- **A keybinding action** (R21): `view-details` (V, DEC-103) is one `InputAction` member in
+  `bridge/Binding.types.ts`, one `DEFAULT_CHORDS` entry (`INPUT_ACTIONS` is derived from its keys)
+  and one `ACTION_LABELS` entry in `ui/strings.ts`. It has no `clientActions` case, because only
+  the selection steps' prompts read it, in `ui/` ([13](13-game-interface.md) §6.2). R21's docs
+  step, the controls table of the controls reference, waits for the owner (`INBOX.md` HC-T1 T-188).
+- **The bot roster**: the lane bots' classes and the enemy Rover's rule are core content
+  (`content/teams/botRoster.ts`, DEC-61, DEC-102), validated by `BotRosterClassRule` through
+  `loadDisplayContent()`. A new Rover rule is one `EnemyRoverRule` member and one entry in
+  `ENEMY_ROVER_RULES` (`game/session/fillRosters.ts`).
 - **Display names** (R26): the class display names, including the reserved flying class shown as
   a locked card (DEC-48), the team names and the profile screen's display name are core content:
   each class file's `displayName` in `packages/core/src/content/legends/`, a

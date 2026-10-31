@@ -55,5 +55,7 @@ Package-specific rules. The root `AGENTS.md` still applies.
 
 - Each test sits next to its source file (`Foo.tsx` + `Foo.test.tsx`). Tests run in Node (no
   DOM): render components with `react-dom/server` (see `GameCanvas.test.tsx`), and drive the
-  planned game loop with a fake frame scheduler.
+  planned game loop with a fake frame scheduler. A test that needs a page (real key events, the
+  focus) opts in on its first line with `// @vitest-environment happy-dom` (DEC-111; see
+  `ClassSelectStep.viewDetails.test.tsx`); keep every other test in Node.
 - Coverage thresholds live in `vitest.config.ts` and only go up.

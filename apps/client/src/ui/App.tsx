@@ -12,6 +12,7 @@ import { MatchScreen } from './screens/MatchScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import type { ScreenProps } from './screens/screen.types';
+import { SelectTimeoutNotice } from './screens/SelectTimeoutNotice';
 import { SettingsScreen } from './screens/SettingsScreen';
 
 /** Session phase → screen: the one place a screen is registered (architecture 02 §9). */
@@ -34,10 +35,23 @@ const MENU_SCREENS: Readonly<Record<MenuRoute, ComponentType<ScreenProps>>> = {
   about: AboutScreen,
 };
 
-/** Shows the screen for the current session phase and menu route. */
+/**
+ * Shows the screen for the current session phase and menu route. Through the `menu` phase it also
+ * mounts the select-timeout popup (DEC-102), above every menu route so a dismissal holds across
+ * them.
+ */
 export function App({ viewport }: { readonly viewport?: ReactNode }): ReactElement {
   const phase = useAppSelector(sessionSlice.selectors.selectSessionPhase);
   const route = useAppSelector(sessionSlice.selectors.selectMenuRoute);
-  const Screen = phase === 'menu' ? MENU_SCREENS[route] : PHASE_SCREENS[phase];
-  return <Screen viewport={viewport} />;
+  if (phase !== 'menu') {
+    const Screen = PHASE_SCREENS[phase];
+    return <Screen viewport={viewport} />;
+  }
+  const Screen = MENU_SCREENS[route];
+  return (
+    <>
+      <Screen viewport={viewport} />
+      <SelectTimeoutNotice />
+    </>
+  );
 }

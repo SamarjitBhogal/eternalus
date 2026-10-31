@@ -1,4 +1,4 @@
-import type { Logger, MapFeatureKind } from '@eternalus/core';
+import type { Logger, MapFeatureKind, SeededRandom } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -15,7 +15,7 @@ import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { ResourceController } from '../data/resources/ResourceController';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
-import type { PlayerChoice, PreparedWorld } from './Match.types';
+import type { MatchCrash, PlayerChoice, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import type { Rng } from './session/Rng.types';
 
@@ -28,6 +28,8 @@ export type MatchRequest = {
   readonly world: PreparedWorld;
   /** Map-feature kinds the HUD lists as capture points: `catalogue.hud.objectiveKinds` (one list). */
   readonly captureKinds: readonly MapFeatureKind[];
+  /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
+  readonly onCrash: (crash: MatchCrash) => void;
 };
 
 /** A match that is running in `match`; only `MatchState` holds one. */
@@ -73,19 +75,31 @@ export interface SessionContext {
   /** Records the pick, or clears it with `null`, and publishes `class-selection`. */
   recordSelection(selection: ClassSelection | null): void;
   /**
+   * LOCK IN (DEC-61): fills both rosters from the setup and the pick (`fillRosters`) and publishes
+   * them as `selection-locked`. The setup itself stays as built, for a rematch.
+   * @throws Without a setup or a pick.
+   */
+  lockIn(): void;
+  /**
    * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`).
    * @throws Without a setup, or when generation fails.
    */
   prepareWorld(): void;
   /**
-   * Builds and starts the match on `viewport` from the setup, the selection and the world.
+   * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
+   * selection and the world; `onCrash` is called if its game loop later stops on a throw.
    * @throws When one of them is missing or the factory fails.
    */
-  createMatch(viewport: MatchViewport): RunningMatch;
+  createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch;
   /** Drops the prepared world (the match is over). */
   dropWorld(): void;
   /** Logs why the match could not start and returns to `menu` with reason `'match-failed'` (13 §2). */
   abortMatch(error: unknown): void;
+  /**
+   * A running match crashed: logs FATAL `client.session` with the error, its stack, the seed and
+   * the tick, then returns to `menu` with reason `'match-crashed'` (DEC-106; 13 §2 `match` row).
+   */
+  endCrashedMatch(crash: MatchCrash): void;
   /**
    * Loads `groups` in order: `loading-progress` while loading, then `ready` and `asset-urls` per
    * group, then `onReady` once. Synchronous when nothing is left to load. An unexpected rejection
@@ -132,6 +146,12 @@ export type SessionControllerDeps = {
   readonly seedSource: () => number;
   /** The match's random stream from its seed. */
   readonly createRng: (seed: number) => Rng;
+  /**
+   * The stream LOCK IN draws the bots' Legends from (`fillRosters`), apart from `createRng`'s team
+   * draw: `session/createRosterRng.ts`. Its own factory because core's `nextInt(min, max)` is not
+   * the `Rng` port's `nextInt(maxExclusive)`.
+   */
+  readonly createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>;
   /**
    * Receives `data-team="light|dark"` while a match setup exists and `data-contrast` (the
    * catalogue's colour set, DEC-55) while the session runs (`<html>` in the app).

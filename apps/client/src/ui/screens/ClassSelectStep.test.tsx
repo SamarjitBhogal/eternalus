@@ -2,15 +2,29 @@ import { describe, expect, it } from 'vitest';
 
 import { loadedAssetsFor } from '../../bridge/__fixtures__/assetFixtures';
 import { classCardFixture } from '../../bridge/__fixtures__/catalogueFixtures';
+import type { Binding } from '../../bridge/Binding.types';
 import type { DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import type { RosterEntry } from '../../bridge/events';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
+import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import glowStyles from '../components/GlowButton.module.css';
 import infoPanelStyles from '../components/InfoPanel.module.css';
 import detailsStyles from '../components/InfoPanelDetails.module.css';
+import promptStyles from '../components/KeyPrompt.module.css';
 import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassSelectStep } from './ClassSelectStep';
+import stripStyles from './ClassSelectLegendStrip.module.css';
+
+/** View Details' default key (game/input/keybindings.ts, DEC-103). */
+const VIEW_DETAILS_ON_V: readonly Binding[] = [
+  { action: 'view-details', chords: [{ device: 'keyboard', code: 'KeyV', label: 'V' }] },
+];
+
+/** The step's own markup, before the View Details screen it renders after its section. */
+const stepPart = (html: string): string => html.slice(0, html.indexOf('role="dialog"'));
+/** The View Details screen's markup. */
+const detailsPart = (html: string): string => html.slice(html.indexOf('role="dialog"'));
 
 const ally = (
   legendId: string,
@@ -34,11 +48,11 @@ const ALLIES_62_125: readonly RosterEntry[] = [
   ally('ally-2', 'warrior', { specId: 'knight' }),
   ally('ally-3', 'sentinel'),
   ally('ally-4', 'sentinel'),
-  ally('ally-5', 'flying'),
+  ally('ally-5', 'harbinger'),
   ally('ally-6', 'warrior'),
   ally('ally-7', 'magus', { specId: 'necromancer' }),
   ally('ally-8', 'sentinel'),
-  ally('ally-9', 'flying'),
+  ally('ally-9', 'harbinger'),
   ally('ally-10', 'magus', { specId: 'catalyst' }),
 ];
 
@@ -83,6 +97,7 @@ function render(
   return renderWithStore(<ClassSelectStep preferredClassId={preferredClassId} />, {
     content,
     assets: loadedAssetsFor(content),
+    settings: { ...settingsSlice.getInitialState(), bindings: VIEW_DETAILS_ON_V },
     matchSetup: {
       ...matchSetupSlice.getInitialState(),
       playerTeam: team,
@@ -110,7 +125,7 @@ describe('ClassSelectStep', () => {
       'warrior',
       'sentinel',
       'magus',
-      'flying',
+      'harbinger',
     ]);
     expect(tags.map((tag) => attributeOf(tag, 'data-look'))).toEqual([
       'idle',
@@ -125,10 +140,10 @@ describe('ClassSelectStep', () => {
       'false',
     ]);
     expect(accessibleNames(html, '[role=radio]')).toEqual([
-      'Legionnaire Assault 2 Allies',
+      'Vanguard Assault 2 Allies',
       'Sentinel Tank 3 Allies',
       'Magus Ranged 2 Allies',
-      'Harbinger aerial Locked',
+      'Coming Soon...',
     ]);
     expect(html).toContain('>Magus</h3>');
     expect(html).toContain('>Aether  ·  Ranged Support</p>');
@@ -146,7 +161,7 @@ describe('ClassSelectStep', () => {
     expect(html).toContain('src="/assets/test/magus-sigil@player-tile.webp"');
   });
 
-  it('draws the Figma state from its plates: the row plate, four card plates, the Select Class chrome', () => {
+  it('draws the Figma state from its plates: the row plate, three card plates, the Select Class chrome; the locked card its void (DEC-104)', () => {
     const html = render('magus');
 
     expect(html).toContain('src="/assets/test/class-row-plate-magus.webp"');
@@ -157,7 +172,7 @@ describe('ClassSelectStep', () => {
       'plate',
       'plate',
       'plate',
-      'plate',
+      'cover',
     ]);
     expect(html).toContain(CHROME_IMG);
     expect(html).not.toMatch(/z-index/);
@@ -187,7 +202,7 @@ describe('ClassSelectStep', () => {
       false,
       false,
     ]);
-    expect(html).toContain('>Legionnaire</h3>');
+    expect(html).toContain('>Vanguard</h3>');
     expect(html).toMatch(/aria-disabled="true"[^>]*>(?:(?!<\/button>).)*Select Class/);
     expect(html).toContain(`id="${String(hintId)}"`);
     expect(html).toContain('Choose a class first.');
@@ -218,10 +233,10 @@ describe('ClassSelectStep', () => {
       'cover',
       'plate',
       'cover',
-      'plate',
+      'cover',
     ]);
-    expect(html).toContain('>Legionnaire</h3>');
-    expect(html).toContain('>Centurion<');
+    expect(html).toContain('>Vanguard</h3>');
+    expect(html).toContain('>Templar<');
     expect(html).toContain(CHROME_IMG);
   });
 
@@ -257,7 +272,7 @@ describe('ClassSelectStep', () => {
   it('draws the designed placeholders for a class with no art, copy, details or Legends (CD-13)', () => {
     const content: DisplayCatalogue = {
       ...TEST_CONTENT,
-      legendClasses: [classCardFixture({ classId: 'warrior', displayName: 'Legionnaire' })],
+      legendClasses: [classCardFixture({ classId: 'warrior', displayName: 'Vanguard' })],
     };
     const html = render('warrior', { content });
     const subtitle = `class="${String(infoPanelStyles.subtitle)}"`;
@@ -269,15 +284,48 @@ describe('ClassSelectStep', () => {
     expect(radioTags(html).map((tag) => attributeOf(tag, 'data-art-mode'))).toEqual(['cover']);
     expect(html).toContain('data-arch-art="missing"');
     expect(html).not.toMatch(/<img[^>]*(card-art|card-plate|row-plate)/);
-    expect(html).toContain('>Legionnaire</h3>');
+    expect(html).toContain('>Vanguard</h3>');
     expect(html).not.toContain(subtitle);
     expect(html).not.toContain(description);
-    expect(html.match(/>—</g)).toHaveLength(3);
+    expect(stepPart(html).match(/>—</g)).toHaveLength(3);
     expect(
-      html.match(new RegExp(`class="${String(detailsStyles.placeholder)}"`, 'g')),
+      stepPart(html).match(new RegExp(`class="${String(detailsStyles.placeholder)}"`, 'g')),
     ).toHaveLength(3);
     expect(html).toContain('>Legends to come</p>');
     expect(html).not.toContain('data-slot=');
+  });
+
+  // DEC-103: V opens View Details. Recommendation: the prompt sits bottom left (P4's default).
+  it('offers V View Details bottom left, its screen closed and inert until opened', () => {
+    const html = render('magus');
+
+    expect(stepPart(html)).toContain(
+      `class="${String(promptStyles.prompt)} ${String(promptStyles.keyLine)} ${String(promptStyles.classViewDetails)}"`,
+    );
+    expect(accessibleNames(stepPart(html), 'button')).toContain('V View Details');
+    expect(stepPart(html)).not.toMatch(/<section[^>]*inert/);
+    expect(detailsPart(html)).toMatch(
+      /^role="dialog" aria-modal="true" aria-label="View Details" data-open="false" data-reduce-motion="false" inert=""/,
+    );
+  });
+
+  // DEC-103: "most items carry over from the previous screen, just new placement and added
+  // words": the class panel in 145:2's left column, its rows labelled as 145:2 draws them, the
+  // Legends strip carried over, and no details header.
+  it('lays the shown class out again in View Details: rows labelled, the Legends strip moved', () => {
+    const details = detailsPart(render('magus'));
+    const labels = [
+      ...details.matchAll(new RegExp(`class="${String(detailsStyles.label)}">([^<]+)<`, 'g')),
+    ].map(([, label]) => label);
+
+    expect(details).toContain('data-layout="class-details"');
+    expect(details).toContain('>Magus</h3>');
+    expect(labels).toEqual(['Default ability', 'Weapon Proficiency', 'Specialty']);
+    expect(details).toContain('>Aetheric Recall<');
+    expect(details).not.toContain(`class="${String(detailsStyles.headerText)}"`);
+    expect(details).toContain(
+      `<div class="${String(stripStyles.strip)}" data-placement="view-details">`,
+    );
   });
 
   it('carries no colour literal in its markup', () => {

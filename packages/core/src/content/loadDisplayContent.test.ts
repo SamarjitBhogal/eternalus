@@ -4,7 +4,7 @@ import { ContentCatalogue } from './ContentCatalogue';
 import { ContentValidationError } from './ContentValidationError';
 import { LEGEND_CLASSES } from './legends/legendCatalogue';
 import type { LegendDefinition } from './legends/legends.types';
-import { FLYING } from './legends/locked/flying';
+import { HARBINGER } from './legends/locked/harbinger';
 import type { LockedClassDefinition } from './legends/locked/lockedClasses.types';
 import { MAGUS } from './legends/magus';
 import { SENTINEL } from './legends/sentinel';
@@ -14,11 +14,12 @@ import { ORACLE } from './legends/specs/oracle';
 import { WARRIOR } from './legends/warrior';
 import { loadDisplayContent } from './loadDisplayContent';
 import { MAP_FEATURE_DEFINITIONS } from './maps/mapFeatureDefinitions';
+import { BOT_ROSTER } from './teams/botRoster';
 
-/** The shipped Legends plus one whose class is the reserved, unplayable `flying`. */
-const SPECS_WITH_FLYING = new ContentCatalogue<LegendSpecDefinition>([
+/** The shipped Legends plus one whose class is the reserved, unplayable `harbinger`. */
+const SPECS_WITH_HARBINGER = new ContentCatalogue<LegendSpecDefinition>([
   ...LEGEND_SPECS.all(),
-  { ...ORACLE, id: 'skywatcher', classId: 'flying' },
+  { ...ORACLE, id: 'skywatcher', classId: 'harbinger' },
 ]);
 
 /** The map-feature kinds the HUD names (the Figma's layer names, pending HC-Q4). */
@@ -43,7 +44,7 @@ describe('loadDisplayContent', () => {
 
   it('returns the locked classes the selection screen shows after the playable ones', () => {
     // The card's values are pinned once, in lockedClassCatalogue.test.ts.
-    expect(loadDisplayContent().lockedClasses).toEqual([FLYING]);
+    expect(loadDisplayContent().lockedClasses).toEqual([HARBINGER]);
   });
 
   it('names the HUD map-feature kinds and leaves every other feature unnamed', () => {
@@ -71,9 +72,9 @@ describe('loadDisplayContent', () => {
   });
 
   it('rejects a Legend whose class is not a loaded Legend class', () => {
-    expect(() => loadDisplayContent({ specs: SPECS_WITH_FLYING })).toThrow(
+    expect(() => loadDisplayContent({ specs: SPECS_WITH_HARBINGER })).toThrow(
       new ContentValidationError(
-        'Invalid content: skywatcher: classId "flying" is not a Legend class',
+        'Invalid content: skywatcher: classId "harbinger" is not a Legend class',
       ),
     );
   });
@@ -85,7 +86,7 @@ describe('loadDisplayContent', () => {
       { ...MAGUS, baseAether: 0 },
     ]);
 
-    expect(() => loadDisplayContent({ legends, specs: SPECS_WITH_FLYING })).toThrow(
+    expect(() => loadDisplayContent({ legends, specs: SPECS_WITH_HARBINGER })).toThrow(
       new ContentValidationError(
         'Invalid content: magus: baseAether must be a positive finite number',
       ),
@@ -94,11 +95,11 @@ describe('loadDisplayContent', () => {
 
   it('rejects a locked class whose id is not kebab-case', () => {
     const lockedClasses = new ContentCatalogue<LockedClassDefinition>([
-      { ...FLYING, id: 'Flying' },
+      { ...HARBINGER, id: 'Harbinger' },
     ]);
 
     expect(() => loadDisplayContent({ lockedClasses })).toThrow(
-      new ContentValidationError('Invalid content: Flying: id must be kebab-case'),
+      new ContentValidationError('Invalid content: Harbinger: id must be kebab-case'),
     );
   });
 
@@ -108,5 +109,19 @@ describe('loadDisplayContent', () => {
 
   it('names the profile screen', () => {
     expect(loadDisplayContent().profileDisplayName).toBe('Chronicle');
+  });
+
+  it('returns the shipped bot roster (DEC-61, DEC-102)', () => {
+    expect(loadDisplayContent().botRoster).toBe(BOT_ROSTER);
+  });
+
+  it('rejects a bot roster that gives a bot the locked harbinger (DEC-48)', () => {
+    const botRoster = { ...BOT_ROSTER, laners: [...BOT_ROSTER.laners.slice(1), 'harbinger'] };
+
+    expect(() => loadDisplayContent({ botRoster })).toThrow(
+      new ContentValidationError(
+        'Invalid content: standard: laner class "harbinger" is not a playable Legend class',
+      ),
+    );
   });
 });

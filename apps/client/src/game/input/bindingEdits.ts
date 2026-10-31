@@ -1,6 +1,7 @@
 import type {
   Binding,
   BindingConflictPolicy,
+  ChordModifier,
   InputAction,
   InputChord,
 } from '../../bridge/Binding.types';
@@ -50,4 +51,21 @@ export function resetBindings(bindings: readonly Binding[], action: InputAction 
           chords: binding.chords.filter((held) => !restored.has(chordKey(held))),
         },
   );
+}
+
+/**
+ * Lists the platform's own modifier chords first in every action: Cmd (Meta) chords on an Apple
+ * device, Ctrl chords elsewhere (DEC-118). The settings screen and the prompts show the first
+ * chord first. The order of the actions and of the other chords stays.
+ */
+export function ownPlatformChordsFirst(
+  bindings: readonly Binding[],
+  isApplePlatform: boolean,
+): Binding[] {
+  const own: ChordModifier = isApplePlatform ? 'Meta' : 'Control';
+  const isOwn = (chord: InputChord): boolean => chord.modifiers?.includes(own) === true;
+  return bindings.map((binding) => ({
+    action: binding.action,
+    chords: binding.chords.toSorted((a, b) => Number(isOwn(b)) - Number(isOwn(a))),
+  }));
 }

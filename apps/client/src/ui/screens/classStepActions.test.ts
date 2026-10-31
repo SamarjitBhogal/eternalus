@@ -1,9 +1,7 @@
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
-import type { Binding } from '../../bridge/Binding.types';
 import { eventBus } from '../../bridge/eventBus';
 import type { UiIntent } from '../../bridge/events';
-import { bindActionShortcut } from '../components/actionShortcut';
 import { classStepActions } from './classStepActions';
 import type { ClassStepCard, ClassStepLocal } from './classStepState';
 
@@ -11,7 +9,7 @@ const CARDS: readonly ClassStepCard[] = [
   { classId: 'warrior', isAvailable: true },
   { classId: 'sentinel', isAvailable: true },
   { classId: 'magus', isAvailable: true },
-  { classId: 'flying', isAvailable: false },
+  { classId: 'harbinger', isAvailable: false },
 ];
 
 const NOTHING: ClassStepLocal = { pickedClassId: null, previewClassId: null };
@@ -26,20 +24,6 @@ function harness(initial: ClassStepLocal = NOTHING) {
   return { actions, state: () => state };
 }
 
-/** A cancelable keydown carrying the fields `bindActionShortcut` reads (Node has no KeyboardEvent). */
-const keydown = (code: string): Event =>
-  Object.assign(new Event('keydown', { cancelable: true }), {
-    code,
-    repeat: false,
-    ctrlKey: false,
-    metaKey: false,
-    altKey: false,
-  });
-
-const VIEW_DETAILS_ON_C: readonly Binding[] = [
-  { action: 'gadget-2', chords: [{ device: 'keyboard', code: 'KeyC', label: 'C' }] },
-];
-
 describe('classStepActions', () => {
   const seen: UiIntent[] = [];
   const stop = eventBus.on('ui-intent', (intent) => seen.push(intent));
@@ -51,7 +35,7 @@ describe('classStepActions', () => {
   it('picks on click locally and emits nothing; a locked card stays unpicked', () => {
     const step = harness();
     step.actions().pick('magus');
-    step.actions().pick('flying');
+    step.actions().pick('harbinger');
 
     expect(step.state().pickedClassId).toBe('magus');
     expect(seen).toEqual([]);
@@ -73,9 +57,9 @@ describe('classStepActions', () => {
 
   it('previews without picking or emitting', () => {
     const step = harness();
-    step.actions().preview('flying');
+    step.actions().preview('harbinger');
 
-    expect(step.state()).toEqual({ pickedClassId: null, previewClassId: 'flying' });
+    expect(step.state()).toEqual({ pickedClassId: null, previewClassId: 'harbinger' });
     expect(seen).toEqual([]);
   });
 
@@ -98,26 +82,10 @@ describe('classStepActions', () => {
     expect(seen).toEqual([]);
   });
 
-  it('View Details emits one select-class for the shown class, on click and on its bound key', () => {
+  it('Select Class (alternate) emits one select-class for the shown class (DEC-109)', () => {
     const step = harness();
     step.actions().cycle(1);
     step.actions().selectShown();
-    expect(seen).toEqual([{ kind: 'select-class', classId: 'sentinel' }]);
-
-    seen.length = 0;
-    const target = new EventTarget();
-    const unbind = bindActionShortcut(
-      target,
-      () => VIEW_DETAILS_ON_C,
-      'gadget-2',
-      () => {
-        step.actions().selectShown();
-      },
-    );
-    target.dispatchEvent(keydown('KeyC'));
-    target.dispatchEvent(keydown('KeyX'));
-    unbind();
-
     expect(seen).toEqual([{ kind: 'select-class', classId: 'sentinel' }]);
   });
 });
