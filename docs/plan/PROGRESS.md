@@ -2485,3 +2485,27 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   repository), run with this entry in place.
 - Next step: critic loop 3 (the last) on this round, merge into `feat/hud-and-character-select`;
   the owner's answers to HC-Q27 (ADR 0025) and HC-B4 before the PR.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 3 (items T1, T2, D2, D3) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: the critic's loop 3 (the last of three) closed all five loop-2 items and found no
+  blocker. Fixes:
+  - T1: loop 2 deleted the four user-agent tests and left the platform check untested in
+    `main.tsx`. Correction to the previous entry ("The `main.tsx` line has no unit test"): the check
+    is now `isAppleUserAgent` in `apps/client/src/game/isAppleUserAgent.ts` (beside
+    `developerFlags.ts`, same pattern), tested for a Mac, an iPad, an iPhone, Windows and Linux;
+    `main.tsx` passes it `window.navigator.userAgent`.
+  - T2: the Apple row of `SettingsController.test.ts` also checks `controller.bindings`, so the
+    order the controller keeps (and the next rebind swap reads) is pinned.
+  - D2: DEC-118's last cell names `bindingEdits.ts` for `ownPlatformChordsFirst`. D3: one ADR 0025
+    line rewrapped.
+  - Red proofs 4/4 in `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop3.txt`
+    (outside the repository; script `redproof_loop3.py` beside it). No critic loop 4 (the owner's
+    limit is three); these fixes have red proofs and a full check, not a critic read.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-118's last cell), ADR 0025 (one
+    line rewrapped), `INBOX.md` (a Done entry), this entry. No design text changed.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1490/1490, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop3-fixes.log`, outside the
+  repository), run with this entry in place.
+- Next step: merge into `feat/hud-and-character-select`; the owner's answers to HC-Q27 (ADR 0025)
+  and HC-B4 before the PR.

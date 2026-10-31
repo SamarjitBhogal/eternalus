@@ -1770,6 +1770,10 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-10-30 — **The critic's check of batches 3 and 4 (loop 3, the last)** (`feat/hud-plan-b3a`):
+  the test of which user agents count as Apple devices is back (`game/isAppleUserAgent.ts`), a
+  test pins the order the controller keeps, and two doc nits. Nothing new to decide; HC-Q27 and
+  HC-B4 are still open.
 - 2026-10-30 — **The critic's check of batches 3 and 4 (loop 2)** (`feat/hud-plan-b3a`): the
   platform read for the developer camera chords moved out of `game/input/` into `main.tsx`, and
   `SettingsController` lists the platform's own chord first (DEC-118 and HC-Q28 have dated notes;

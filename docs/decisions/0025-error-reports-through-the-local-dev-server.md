@@ -91,9 +91,10 @@ the network. The `Host` header names `localhost`, `127.0.0.1` or `[::1]`, with a
 This stops DNS rebinding: a page from another site that points its own name at `127.0.0.1` sends
 a loopback peer and a matching `Origin`, but its own name as `Host`. An `Origin` header, when
 sent, equals `http://` plus the `Host` header (403), so a page from another site cannot write.
-The content type is JSON (415). The body fits the limit (413). It parses as JSON (400). Its shape is an object with `schemaVersion` 1, `kind` `'crash'`
-or `'error'` and a string `error.message` (400). The server reads nothing else from the body and
-never takes a path from it. It writes `JSON.stringify(report, null, 2)` plus its own `receivedAt`.
+The content type is JSON (415). The body fits the limit (413). It parses as JSON (400). Its
+shape is an object with `schemaVersion` 1, `kind` `'crash'` or `'error'` and a string
+`error.message` (400). The server reads nothing else from the body and never takes a path from
+it. It writes `JSON.stringify(report, null, 2)` plus its own `receivedAt`.
 
 **File name.** The server picks it: `<receivedAt>-<kind>-<id8>.json`, for example
 `2026-10-30T22-41-07-123Z-crash-3f9a1c2e.json`. `receivedAt` is the server's UTC ISO time with
