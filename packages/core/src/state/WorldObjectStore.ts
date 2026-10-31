@@ -1,12 +1,13 @@
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { TeamMembership } from '../components/TeamMembership';
 import type { MapObject, MapObjectKind, MapObjectSnapshot } from '../content/maps/mapObjects.types';
 import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { EntityStore } from './EntityStore';
 import type { WorldObjectRecord } from './WorldObjectStore.types';
 import type { Vec2 } from '../utils/geometry.types';
-import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../physics/circlePolygon';
+import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
 
 /** Owns placed-object identity and persistent destroyed state after DeathSystem retires entities. */
 export class WorldObjectStore {
@@ -34,6 +35,8 @@ export class WorldObjectStore {
       );
       const entity = factory.create('obstacle', definition.id, { position });
       entity.addComponent(new MapObjectBody(object));
+      // Stand-in for the Structure family's Team (07 §1, sprint 2.1): own-side attacks are refused.
+      if (object.team !== undefined) entity.addComponent(new TeamMembership(object.team));
       entities.add(entity);
       this.entityObjects.set(entity.id, object);
       this.records.push({ object, entityId: entity.id, health: entity.getComponent(Health) });

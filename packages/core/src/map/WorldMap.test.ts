@@ -171,6 +171,30 @@ describe('WorldMap', () => {
     expect(grid.isWalkable(0, 3)).toBe(true);
   });
 
+  it('leaves the cells wholly inside an opening walkable, for a stamp and its clear', () => {
+    const open: MapDefinition = { ...SMALL_MAP, terrain: [] };
+    const grid = WorldMap.fromDefinition(open, 10, isBlocking);
+    // A lava band across the map with a bridge deck from x 30 to 60 over it.
+    const lava = [
+      { x: 0, y: 20 },
+      { x: 100, y: 20 },
+      { x: 100, y: 30 },
+      { x: 0, y: 30 },
+    ];
+    const deck = [
+      { x: 30, y: 15 },
+      { x: 60, y: 15 },
+      { x: 60, y: 35 },
+      { x: 30, y: 35 },
+    ];
+    grid.stampFootprint(lava, [deck]);
+
+    expect([3, 4, 5].map((col) => grid.isWalkable(col, 2))).toEqual([true, true, true]);
+    expect([2, 6].map((col) => grid.isWalkable(col, 2))).toEqual([false, false]);
+    grid.clearFootprint(lava, [deck]);
+    expect(grid.isWalkable(2, 2)).toBe(true);
+  });
+
   it('never makes terrain walkable by clearing a footprint over it', () => {
     const grid = WorldMap.fromDefinition(SMALL_MAP, 10, isBlocking);
     const overRift = [

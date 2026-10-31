@@ -137,19 +137,21 @@ export class EntityStore {
     }
     const object = target?.findComponent(MapObjectBody);
     if (object !== undefined) {
-      return object.object.footprints.some(
-        (shape) =>
-          isPointInPolygon(from.position, shape) ||
-          Math.min(
-            distanceToPath(from.position, shape),
-            distanceToSegment(
-              from.position,
-              shape.at(-1) ?? from.position,
-              shape[0] ?? from.position,
-            ),
-          ) <=
-            from.radius + combat.attack.reach,
-      );
+      const reach = from.radius + combat.attack.reach;
+      return object.object.footprints.some((shape) => {
+        const first = shape[0];
+        const last = shape.at(-1);
+        // A shape without corners is never in reach (`MapObjectBuilder` rejects one anyway).
+        return (
+          first !== undefined &&
+          last !== undefined &&
+          (isPointInPolygon(from.position, shape) ||
+            Math.min(
+              distanceToPath(from.position, shape),
+              distanceToSegment(from.position, last, first),
+            ) <= reach)
+        );
+      });
     }
     const gap = length(sub(to.position, from.position));
     return gap - from.radius - to.radius <= combat.attack.reach;

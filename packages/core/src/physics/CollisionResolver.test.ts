@@ -46,4 +46,16 @@ describe('CollisionResolver', () => {
     expect(end.y).toBeCloseTo(4.5);
     expect(resolver.move({ x: 0, y: 0 }, { x: 0, y: 0 }, 0.5)).toEqual({ x: 0, y: 0 });
   });
+
+  it('lets a mover that starts inside a footprint walk out, but never deeper in', () => {
+    const resolver = new CollisionResolver(
+      new StaticCollisionIndex([{ id: 'tower', polygon: rect(0, 0, 10, 10) }]),
+    );
+    expect(resolver.move({ x: 5, y: 5 }, { x: 20, y: 0 }, 0.5)).toEqual({ x: 25, y: 5 });
+    const grazing = { x: -0.3, y: 5 };
+    expect(resolver.move(grazing, { x: 5, y: 0 }, 0.5)).toEqual(grazing);
+    const slid = resolver.move(grazing, { x: 1, y: 3 }, 0.5);
+    expect(slid.x).toBeCloseTo(-0.3);
+    expect(slid.y).toBeCloseTo(8);
+  });
 });

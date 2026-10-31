@@ -1,15 +1,19 @@
 import type { ObstacleDefinition } from '../obstacles/obstacles.types';
 import type { MapObjectKind } from './mapObjects.types';
 
-/** Owner-approved provisional scenery HP (2026-10-27); structure HP follows balancing.md. */
+/**
+ * Health of each map-object kind; `null` is indestructible. Scenery HP is the owner ruling
+ * DEC-121 (b): "100HP for this sprint. will be tuned in the future." Structure HP follows
+ * balancing.md.
+ */
 export const MAP_OBJECT_HEALTH = {
-  tree: 100,
-  rock: 100,
-  house: 100,
-  furniture: 100,
-  camp: 100,
+  tree: 100, // TUNE: DEC-121 (b), this sprint only
+  rock: 100, // TUNE: DEC-121 (b), this sprint only
+  house: 100, // TUNE: DEC-121 (b), this sprint only
+  furniture: 100, // TUNE: DEC-121 (b), this sprint only
+  camp: 100, // TUNE: DEC-121 (b), this sprint only
   wall: 2000,
-  fort: 100,
+  fort: 100, // TUNE: DEC-121 (b), this sprint only
   terrain: null,
   stronghold: 10000,
   cathedral: null,

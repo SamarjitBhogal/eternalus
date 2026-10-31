@@ -20,6 +20,10 @@ import { GameState } from '../state/GameState';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
 import { loadWeapons } from '../content/weapons/loadWeapons';
+import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import type { MapObject } from '../content/maps/mapObjects.types';
+import { WorldMap } from '../map/WorldMap';
+import { WorldObjectStore } from '../state/WorldObjectStore';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const newFactory = (): EntityFactory =>
@@ -201,5 +205,54 @@ describe('DefaultSystemPipeline', () => {
     ]);
     expect(state.entities.has(warrior.id)).toBe(false);
     expect(logger.records).toEqual([]);
+  });
+
+  it('reopens the pathing cells of a blocking map object once it is destroyed (07 §10)', () => {
+    const map = { ...TWO_LANE_MAP, features: [] };
+    const state = new GameState(createDefaultGameConfig(), 1, map);
+    const house: MapObject = {
+      id: 'house',
+      kind: 'house',
+      isBlocking: true,
+      footprints: [
+        [
+          { x: 40, y: 20 },
+          { x: 50, y: 20 },
+          { x: 50, y: 30 },
+          { x: 40, y: 30 },
+        ],
+      ],
+    };
+    const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
+    const factory = new EntityFactory(createDefaultEntityRegistry(), {
+      has: (id) => objects.has(id) || UNIT_DEFINITIONS.has(id),
+      get: (id) => objects.get(id) ?? UNIT_DEFINITIONS.get(id),
+    });
+    state.worldObjects = new WorldObjectStore(
+      [house],
+      factory,
+      state.entities,
+      MAP_OBJECT_DEFINITIONS,
+    );
+    const world = WorldMap.fromDefinition(map, 5, () => false);
+    for (const footprint of house.footprints) world.stampFootprint(footprint);
+    const pipeline = new DefaultSystemPipeline(
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, new MemoryLogger(), PROGRESSION.curves),
+      state,
+      PROGRESSION,
+      { factory, space: null, world, decide: [] },
+    );
+    const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
+    expect(world.isWalkable(9, 5)).toBe(false);
+
+    new DamagePipeline().apply(state, entityId, 1000, {
+      attackerId: 'nobody',
+      kind: 'weapon',
+      definitionId: 'warrior',
+    });
+    pipeline.run({ state, logger: new MemoryLogger() });
+
+    expect(state.entities.has(entityId)).toBe(false);
+    expect(world.isWalkable(9, 5)).toBe(true);
   });
 });

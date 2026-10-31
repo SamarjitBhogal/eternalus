@@ -35,4 +35,37 @@ describe('MapObjectBuilder', () => {
     );
     expect(objects.some((o) => o.id.includes('shadow'))).toBe(false);
   });
+  it('gives what a side built its team and leaves scenery teamless (DEC-121 (a))', () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
+    const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const teamOf = (id: string) => objects.find((o) => o.id === id)?.team;
+    expect(teamOf('dark-stronghold')).toBe('dark');
+    expect(teamOf('dark-palace-interior-throne')).toBe('dark');
+    expect(teamOf('light-turret-0')).toBe('light');
+    expect(teamOf('light-spawner-tower-lane-0-0')).toBe('light');
+    expect(teamOf('cathedral-lane-1')).toBeUndefined();
+    expect(teamOf('capture-point-lane-0')).toBeUndefined();
+    expect(objects.filter((o) => o.kind === 'tree').every((o) => o.team === undefined)).toBe(true);
+  });
+  it('refuses a footprint with fewer than 3 points', () => {
+    const map = { ...new MapGenerator().generate(createDefaultGameConfig(), 1), features: [] };
+    const presentation = {
+      buildings: [],
+      scenery: [
+        {
+          id: 'sliver',
+          shape: [
+            { x: 1, y: 1 },
+            { x: 2, y: 2 },
+          ],
+          layer: 'detail' as const,
+          color: 'stone',
+          object: { id: 'sliver', kind: 'rock' as const, isFootprint: true },
+        },
+      ],
+    };
+    expect(() => new MapObjectBuilder().build(map, presentation)).toThrow(
+      'Map object sliver has a footprint with fewer than 3 points.',
+    );
+  });
 });

@@ -74,6 +74,16 @@ export class DefaultSystemPipeline extends SystemPipeline {
       hordes?.world == null || state.map === null
         ? null
         : new LaneFlowFields(hordes.world, state.map, map.flowFieldCorridorHalfWidth);
+    const world = hordes?.world ?? null;
+    if (world !== null && state.worldObjects !== undefined) {
+      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
+      state.events.on('entity-removed', ({ entityId }) => {
+        const object = state.worldObjects?.objectFor(entityId);
+        for (const footprint of object?.isBlocking === true ? object.footprints : []) {
+          flowFields?.markDirty(world.clearFootprint(footprint, object?.passages));
+        }
+      });
+    }
     super([
       ...(hordes === undefined
         ? []

@@ -18,6 +18,7 @@ import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
 import type { MapDefinition } from './content/maps/maps.types';
+import type { MapObject } from './content/maps/mapObjects.types';
 import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import type { GameConfig } from './config/GameConfig.types';
 import { AStarPathfinder } from './map/AStarPathfinder';
@@ -86,7 +87,7 @@ export class Simulation {
     weapons,
   }: SimulationOptions) {
     const valid = validateGameConfig(config);
-    const { space, world, paths } = Simulation.buildWorld(map, valid);
+    const { space, world, paths } = Simulation.buildWorld(map, valid, mapObjects);
     this.state = new GameState(valid, seed, map ?? null, { space, paths });
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
@@ -319,11 +320,16 @@ export class Simulation {
 
   /**
    * The map's spatial pieces: the neighbour index, and one walkability grid shared by the lane
-   * flow fields and A\* for Legends. All `null` without a map.
+   * flow fields and A\* for Legends. All `null` without a map. With `mapObjects`, the grid also
+   * blocks what the collision system blocks (06 §6): every blocking object's footprints, minus its
+   * passages. A feature whose object is walkable (a Stronghold's floor, whose walls and furniture
+   * are objects of their own) is not stamped; other blocking features keep their stamp, which
+   * also fills a tower's hollow core so no path ends in a pocket the walls close off.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
     config: GameConfig,
+    mapObjects: readonly MapObject[] = [],
   ): {
     readonly space: SpaceIndex | null;
     readonly world: WorldMap | null;
@@ -332,11 +338,19 @@ export class Simulation {
     if (map === undefined) {
       return { space: null, world: null, paths: null };
     }
+    const walkable = new Set(
+      mapObjects.filter(({ isBlocking }) => !isBlocking).map(({ id }) => id),
+    );
     const world = WorldMap.fromDefinition(
-      map,
+      { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
       config.map.navCellSize,
       (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
     );
+    for (const object of mapObjects.filter(({ isBlocking }) => isBlocking)) {
+      for (const footprint of object.footprints) {
+        world.stampFootprint(footprint, object.passages);
+      }
+    }
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
       world,

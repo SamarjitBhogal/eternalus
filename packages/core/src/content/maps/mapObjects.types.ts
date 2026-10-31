@@ -1,3 +1,4 @@
+import type { PlayableTeam } from '../../teams/teams.types';
 import type { Polygon } from '../../utils/geometry.types';
 
 /** Physical map-object categories; material marks and floors are not objects. */
@@ -33,6 +34,12 @@ export type MapObject = {
   readonly buildingId?: string;
   readonly isInterior?: true;
   readonly passages?: readonly Polygon[];
+  /**
+   * The side that built it: its Stronghold and everything of that palace, its gates, wall
+   * segments, turrets and lane towers. Only the other side may break it (DEC-121 (a)). Absent on
+   * scenery (trees, rocks, houses, camps, forts), which anyone may break.
+   */
+  readonly team?: PlayableTeam;
 };
 
 /** Mutable object state projected from the simulation; geometry stays in the map definition. */
