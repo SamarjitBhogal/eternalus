@@ -477,12 +477,23 @@ Reply inline (`Decision: …`).
       overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`), so the pause key is
       the player's binding.
 
-- [ ] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
+- [x] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
       sign off:** hordes spawn inside the Stronghold's blocking footprint (doc 18 §3.2), and §5.2's
       "no heading onto unwalkable ground" then held every minion forever. The PR (1) lets a mob
       standing on unwalkable ground walk straight out to its slot, and (2) when separation would
       push a mob onto unwalkable ground, keeps its own heading instead of holding (crowds at a
       wall deadlocked). Doc 18 §5.2 is updated in the same PR. Yes / no / change?
+  - Decision (sholtzman, chat, 2026-10-30): accepted as an interim fix on the phase branch
+    (DEC-126). The #38 fix (`fix/minion-m1-review`) replaces (1) with the flow field that leads
+    out of every blocked corridor cell (MS-31) and (2) with the turn at a wall (MS-35); doc 18
+    §5.2 and doc 10 §9 and §12 say so.
+- [x] **#38 fix → Sam (2026-10-30), better than the design:** doc 18 §4 holds a horde's anchor
+      only while its leader fights, so the anchor marched on while other members fought. The fix
+      holds it while any member has an attack target; in the 900 s soak (seed 1) skipped spawns
+      fell from 66 % to 33 %.
+  - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
+    working"; the critic ruled this rule better than the design. Built as MS-33 on
+    `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
 
 ## Feedback
 

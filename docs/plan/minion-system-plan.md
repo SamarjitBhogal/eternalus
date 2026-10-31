@@ -4,7 +4,7 @@ description: The build plan for the minion system of architecture doc 18 and eve
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-30
+last-reviewed: 2026-10-31
 tags: [plan, minions, hordes, guards, camps, bots, spawning, ai]
 related:
   - docs/architecture/18-minion-system.md
@@ -109,7 +109,7 @@ Each stand-in is removed by the phase named.
 | Spawners are the map's structure features (position, team, lane), since structure entities do not exist yet                                             | M1      | M2: the structure entities                                            |
 | `LaneAssessment` scores only `pushedBack`; damage-not-dealt is 1 and structures-lost 0 on every lane, because no structure has health or can fall       | M1      | M2: all three terms                                                   |
 | Nothing marks a lane flow field dirty: no event reports a gate or terrain change, so the time-sliced rebuild runs only when a test asks for it          | M4      | the gate and structure changes of doc 07 §10                          |
-| No wall-avoidance term: the flow field's blocked corridor cells point back to open ground instead, and nothing resolves collisions                      | M4      | `CollisionSystem` and the wall-avoidance term (10 §8–§9)              |
+| No wall-avoidance term or collision resolution: a heading into a wall turns along its open grid axis (18 §5.2), and the field leads a unit out (10 §9)  | M4      | `CollisionSystem` and the wall-avoidance term (10 §8–§9)              |
 | Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2) | M1      | the owner's answer, wherever it puts them                             |
 | Minions have no lane objective: the aggro list's `lane-objective` entry never matches, and minions attack only units                                    | M2b     | M2c: structure entities                                               |
 | No entity kind is a turret, so the aggro list's `turret-attacking-ally-minion` entry never matches                                                      | M2b     | turret entities (sprint 2.3)                                          |
@@ -123,8 +123,7 @@ Each stand-in is removed by the phase named.
 | Bots cast `ability-1` and the cast is refused (`not-supported`); a bot runs A\* again on each blocked decision                                          | M8      | Phase 4 abilities; a path cache in the brain                          |
 | Minion strength measures lane progress along the lane polyline, not the flow-field distance `balancing.md` suggests                                     | M5a     | M4 merged in: the lane's field                                        |
 | Nothing emits `structure-destroyed`, so no lane is enraged in a live match, and DISC-24's base point never moves                                        | M5a     | M2c, with enraged's scenario test                                     |
-| The formation anchor does not hold at a standing objective (it holds while the leader engages)                                                          | M1–M2b  | M2c: objectives                                                       |
-| Horde separation falls off linearly with distance, not as 1/r (10 §12)                                                                                  | M1      | When playtests ask for it; the strategy is the one place to change    |
+| The formation anchor does not hold at a standing objective (it holds while any member engages, MS-33)                                                   | M1–M2b  | M2c: objectives                                                       |
 | The snapshot carries no hordes or team counters                                                                                                         | M1      | When a view or the HUD reads them (`MinimapView`, the developer menu) |
 
 ## Related
