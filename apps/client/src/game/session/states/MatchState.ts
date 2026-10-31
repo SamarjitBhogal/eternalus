@@ -80,7 +80,10 @@ export class MatchState implements SessionState {
     }
   }
 
-  /** Moves to `results` `RESULTS_DELAY_MS` after the match ended (DEC-92). */
+  /**
+   * Moves to `results` `RESULTS_DELAY_MS` after the match ended (DEC-92). An open overlay does
+   * not stop this timer: the match is over (DEC-134 (2)).
+   */
   private scheduleResults(context: SessionContext): void {
     this.cancelResults = context.clock.schedule(() => {
       context.transition('results');

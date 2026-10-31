@@ -93,6 +93,17 @@ describe('MatchState', () => {
     expect(context.calls.transition).toEqual([['results']]);
   });
 
+  it('moves to results on time while an overlay is open: the match is over (DEC-134)', () => {
+    const { context, state } = setUp();
+    state.attachViewport(VIEWPORT, context);
+    context.calls.createMatch[0]?.[2]();
+    state.handleIntent({ kind: 'open-overlay', overlay: 'pause' }, context);
+
+    context.clock.advance(RESULTS_DELAY_MS);
+
+    expect(context.calls.transition).toEqual([['results']]);
+  });
+
   it('never moves to results for the end of a replaced match', () => {
     const { context, state } = setUp();
     state.attachViewport(VIEWPORT, context);
