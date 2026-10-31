@@ -210,20 +210,25 @@ does nothing, so replay tails hash the same on every run.
 and into team points. Counters per Legend (`LegendStats`) mirror the `LegendScoreDtoV1` fields in
 `suggestions/mechanics-ideas.md` §8: `kills`, `deaths`, `assists`, `minionKills`, `damageDealt`,
 `damageTaken`, `healing`, `structureDamage`, `structuresDestroyed`, `checkpointsWon`, `revives`,
-`ultimatesCast`, `finalLevel`, `score`. Per team (`TeamStats`): `score`, `structuresDestroyed`,
-`capturesHeldTicks`, `bossKills`.
+`ultimatesCast`, `finalLevel`, `score`, plus `neutralKills` (DEC-79). Per team (`TeamStats`):
+`score`, `structuresDestroyed`, `capturesHeldTicks`, `bossKills`. A team's `score` is the sum of
+its Legends' scores plus its team-only points.
 
-| Event                                                   | Counter change                                                                                                                                                                           |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `entity-died` (victim Legend / Mob)                     | killer `kills++` or `minionKills++`, victim `deaths++`; every Legend with damage on the victim within `assistWindowTicks` (`TUNE` 10 s) `assists++`                                      |
-| `damage-applied`                                        | source Legend `damageDealt`, target Legend `damageTaken`, structure targets `structureDamage`; a bounded per-victim ring of recent damagers feeds assists and the checkpoint damage bias |
-| `structure-destroyed`                                   | team `structuresDestroyed++`; Legends above `shareThreshold` of its damage `structuresDestroyed++`                                                                                       |
-| `checkpoint-cleared`, `capture-point-owner-changed`     | present Legends `checkpointsWon++`; the owning team starts or stops accruing `capturesHeldTicks` each tick                                                                               |
-| `entity-revived`, `ability-cast` (ultimate), `level-up` | `revives++`, `ultimatesCast++`, `finalLevel`                                                                                                                                             |
+| Event                                                   | Counter change                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entity-died` (victim Legend / Mob)                     | Legend killer `kills++` (Legend victim), or `minionKills++` / `neutralKills++` (Host / neutral mob), victim `deaths++`; only a Legend earns a kill (a projectile's hit counts for its owner), and a non-Legend last hit gives none; for a Legend victim only, every other Legend with damage on it within `assistWindowTicks` (`ASSIST_WINDOW_SECONDS`, DEC-79) `assists++`, whoever landed the last hit |
+| `damage-applied`                                        | source Legend `damageDealt`, target Legend `damageTaken`, structure targets `structureDamage` (shield damage included, DEC-123); a bounded per-victim ring of recent damagers feeds assists and the checkpoint damage bias                                                                                                                                                                               |
+| `structure-destroyed`                                   | team `structuresDestroyed++`; Legends above `shareThreshold` of its damage `structuresDestroyed++`                                                                                                                                                                                                                                                                                                       |
+| `checkpoint-cleared`, `capture-point-owner-changed`     | present Legends `checkpointsWon++`; the owning team starts or stops accruing `capturesHeldTicks` each tick                                                                                                                                                                                                                                                                                               |
+| `entity-revived`, `ability-cast` (ultimate), `level-up` | `revives++`, `ultimatesCast++`, `finalLevel`                                                                                                                                                                                                                                                                                                                                                             |
 
-Points are content, not code: `content/match/scoring.ts` holds `SCORING_WEIGHTS` (`TUNE`,
-**Recommendation** from the reference doc and `balancing.md`: kill 1, structure 5, capture 3 per
-checkpoint, hold 1 per minute). Listeners only append to a per-tick buffer; `fold(ctx)` applies it
+Points are content, not code: `content/match/scoring.ts` holds `SCORING_WEIGHTS` (`TUNE`, the
+owner's values, DEC-79): a Legend kill, an assist, a death (no points: the owner's request of
+2026-10-27, game-loop plan §4.4) and a mob kill by weight class, keyed by `MobKind` so a new class fails to compile until it has a value. Bosses and the
+sovereign give no personal points. A hit on or a kill of a unit on the attacker's own team, itself
+included, counts for nothing, as for XP (O5, `05` §18). The assist window sits beside the weights. Points for
+structures, captures and holds (FR-007, DEC-84 (2)) join `SCORING_WEIGHTS` when the owner gives
+their values. Listeners only append to a per-tick buffer; `fold(ctx)` applies it
 inside the director's pass ("listeners defer state changes to their own system's pass", `03` §4),
 and `ScoringState` sits in `state.match` so it is hashed. Achievements (**MVP-if-time**) are pure
 predicates over these counters evaluated at match end (`evaluateAchievements`,
@@ -401,9 +406,9 @@ Victory and the result (GL-2, core) are built: the `VictoryCondition` contract
 `phase-monotonic` flags it). `MatchResult` and `Verdict` live in `state/MatchResult.types.ts` and
 `VictoryConditionId` in `config/VictoryConditionId.types.ts`. `MatchConfig.playerTeam` is built.
 `MatchState` has `phase`, `phaseEnteredTick`, `timelineCursor`, `schedule`, `isIdleHeld`,
-`playerTeam`, `humanLegendId` and `result`. `MatchResult` has `winner`, `condition`,
-`playerTeam`, `hadHuman`, `durationTicks`, `seed`, `configHash` and `finalHash`; `legends` and
-`teams` come with scoring (§5), `timeline` and `achievements` with the work that fills them.
+`playerTeam`, `humanLegendId`, `scoring` and `result`. `MatchResult` has `winner`, `condition`,
+`playerTeam`, `hadHuman`, `durationTicks`, `seed`, `configHash`, `legends`, `teams` and
+`finalHash`; `timeline` and `achievements` come with the work that fills them.
 `match/defaultMatchDirector.ts` builds the director `Simulation` uses. Once `state.match.result` is set,
 `applyCommand` refuses every command with `command-rejected` reason `match-ended` (FR-002); the
 systems keep stepping.
@@ -415,10 +420,26 @@ is `playerTeam`). When the match is built, `Simulation` spawns the seat's Legend
 logs ERROR `core.match` and leaves it `null`. Until the map option gives core the map, `at` is the
 client's spawn point.
 
-Not built yet: `atmosphere` and `scoring` in `MatchState`; an entity that carries `WinObjective` (the
-sovereign); `MatchResult.legends` and `teams` (with `Scoring`), `timeline` and `achievements`
-(with their producers); a condition for `forfeit` or `aborted` (the ids exist); the timeline
-actions other than `enter-phase`; `dev-set-phase`; the announcer; the other invariants of §12.
+Scoring (GL-4) is built: `match/Scoring.ts`, `state/ScoringState.types.ts` (`LegendStats`,
+`TeamStats`, `ScoringState`), `content/match/scoring.ts` (`SCORING_WEIGHTS`,
+`ASSIST_WINDOW_SECONDS`) and `MobKind` in `content/mobs/mobs.types.ts`. `Simulation` passes the
+content values into `createDefaultMatchDirector` and builds the director, and with it `Scoring`,
+before the seat spawns, so the seat's Legend has a row from the fold of tick 0. The director folds after the phase update
+and before the victory check, and `end()` copies the rows and team totals into `MatchResult`.
+`ScoringState` joins the state hash once it differs from the empty state (DEC-113 (8)), so the
+golden replay is unchanged. A row is registered from `entity-spawned`. The assist ring keeps one
+entry per Legend and victim pair (at most the square of the Legend count) and drops a victim's entries at its
+death. A Legend's kill is credited by its row, so a hit that names a Legend still counts after
+that Legend left the store; no projectile deals damage yet. `LegendStats` has `kills`, `deaths`,
+`assists`, `minionKills`, `neutralKills`, `structureDamage` and `score`, and `TeamStats` has
+`score`; the other §5 counters, `structure-destroyed` and the capture events join with the work
+that fills them, and points for structures, captures and holds wait for the owner's values
+(FR-007).
+
+Not built yet: `atmosphere` in `MatchState`; an entity that carries `WinObjective` (the
+sovereign); `MatchResult.timeline` and `achievements` (with their producers); the other §5
+counters and `TeamStats` fields; a condition for `forfeit` or `aborted` (the ids exist); the
+timeline actions other than `enter-phase`; `dev-set-phase`; the announcer; the other invariants of §12.
 
 ## Related
 

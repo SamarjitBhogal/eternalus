@@ -2412,3 +2412,65 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   the two deferred items above; then the pre-PR gate. Before the PR the
   `docs/game-loop-and-results-plan` branch (DEC-71 to DEC-88) merges first and this branch is
   rebased on the phase branch.
+
+### 2026-10-30 — Game loop plan GL-4 (Phase 3 sprint 3.5, pulled forward) / match scoring — feat/match-scoring — sholtzman + Claude Code
+
+- What: built GL-4 of the game loop and results plan (§4.4, §4.5, A5, A6; DEC-79, DEC-84 (2),
+  DEC-113 (8) and (10)). Uncommitted, on `feat/match-scoring` from `feat/match-director` at
+  `2aa9651`.
+  - Core: `match/Scoring.ts` (+ `Scoring.types.ts`), `state/ScoringState.types.ts`
+    (`LegendStats`, `TeamStats`, `ScoringState`), `state/emptyScoringState.ts`,
+    `content/match/scoring.ts` (`SCORING_WEIGHTS`: Legend kill 15 and assist 7, both `TUNE`;
+    death 0; mobs by kind 1, 4, 12; `ASSIST_WINDOW_SECONDS` 30, `TUNE`) and `scoring.types.ts`,
+    `MobKind` in `content/mobs/mobs.types.ts`. `Simulation` passes the content values into
+    `createDefaultMatchDirector`, which builds `Scoring` before the seat spawns, so the seat's
+    Legend has a row from the fold of tick 0. The director folds after the phase update and before
+    the victory check, so a kill on the ending tick counts; `end()` copies the rows and team totals
+    into `MatchResult.legends` and `teams`. `ScoringState` sits in `state.match` and joins the
+    state hash once it differs from the empty state, so the golden replay
+    (`wanderSeed7.replay.ts`) is unchanged and was not re-recorded. `index.ts` exports the
+    `LegendStats` and `TeamStats` types (API change for the PR).
+  - Rules: only a Legend (a row) earns a kill, and a hit names its attacker, so a hit still counts
+    after its Legend left the store; a non-Legend last hit gives no kill and the assists still
+    count; assists are for Legend victims only, inside the window (its last tick included), and
+    never for the killer; Host mobs count as `minionKills`, neutral mobs as `neutralKills`, both
+    by kind; bosses, the sovereign and other families give nothing; `structureDamage` counts the
+    health a Legend takes off structures, with no points; a team's score is the sum of its
+    Legends' scores; nothing is buffered once the match has a result. Points for structures,
+    captures and holds (FR-007) wait for the owner's values (`ponytail:` note in
+    `content/match/scoring.ts`).
+  - Docs (owner docs, every edit reported): 12 §5 (the accepted §6 row: weights, assist rule and
+    window, FR-007 points pending, `neutralKills`, team total) and §13; 03 §2 (`TeamState` comment
+    drops `score`) and §4 (`Scoring` listens to `entity-spawned` and `damage-applied`); 02 §2
+    (`state/` and `content/` rows).
+- Fail-first breaks: each new test was seen red under a deliberate break, then the file was
+  restored (`cmp`): 27 breaks, 36 test results, `eternalus-agent-work/game-loop-plan/gl4-breaks.md`
+  (script `gl4-breaks.py` beside it).
+- Checks run: `npm run check` → `EXIT=0` (`gl4-check-2026-10-30.log`): core "Tests 792 passed
+  (792)", statements 99.29 % (was 99.26); client "Tests 1365 passed (1365)", statements 96.38 %;
+  "✓ built" (the build line); "Documentation check passed."
+- Next step: the pre-PR gate for GL-1, GL-2 and GL-4 (architecture critic, then ponytail), GL-5
+  (the client end flow reads `MatchResult.legends` and `teams`), and GL-3 (the King) after M1.
+  Owner points still open: structure, capture and hold points (FR-007).
+- Critic loop (session c2172931, 2026-10-30, two rounds; triage in
+  `eternalus-agent-work/game-loop-plan/critic-log.md`):
+  - Round 1 correctness: FAIL on one major. Self-kills, self-assists and ally kills scored (no
+    team check). Fixed: `Scoring` compares teams as `ProgressionSystem` does (O5, 05 §18), on
+    hits, Legend kills and mob kills; self-damage is still blocked by `FriendlyFireStep`, so the
+    self-kill test announces the events. Owner call on `structureDamage`: shield damage included
+    (DEC-123). Fixed: the `death: 0` citation (the owner's request of 2026-10-27, not DEC-79), a
+    `recentHits` check, the assist-ring bound wording in 12 §13. Rejected: a throw for an unknown
+    mob kind (the type guard is the narrowing; `xpFor` does the same) and no kill for a neutral
+    Legend (it is an enemy Legend).
+  - Round 1 ponytail (`ponytail-gl4-round-1.md`): 2 cuts rejected (a merged filter loop is no
+    shorter; `PendingChange` stays in `Scoring.types.ts` by CONTRIBUTING §3.1); 12 §5 now names
+    `ASSIST_WINDOW_SECONDS` instead of copying 30 s.
+  - Round 2: correctness PASS (one DEC-123 wording fix, two TSDoc nits fixed); ponytail PASS,
+    0 findings (`ponytail-gl4-round-2.md`).
+  - Owner rulings: DEC-122 (`LegendStats` holds only filled counters; plan §4.4 cites it) and
+    DEC-123, on `docs/game-loop-and-results-plan`, uncommitted.
+  - Fail-first: 3 new tests red before the fix; breaks B1-B5 each red, file restored (`cmp`):
+    `gl4-breaks.md`, section "Critic round 1 fixes".
+- Checks after the fixes: `npm run check` → `EXIT=0` (`gl4-r2-check-2026-10-30.log`): core
+  "Tests 795 passed (795)", statements 99.29 %; client "Tests 1365 passed (1365)", statements
+  96.38 %; "✓ built in 251ms"; "Documentation check passed." Only this entry changed after it.
