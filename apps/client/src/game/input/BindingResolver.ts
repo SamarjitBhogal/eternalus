@@ -25,8 +25,10 @@ export class BindingResolver {
     this.actionsByChord = index;
   }
 
-  /** The actions `chord` triggers, in binding order; empty when it is unbound. */
-  public actionsFor(chord: Pick<InputChord, 'device' | 'code'>): readonly InputAction[] {
+  /** The actions `chord` (with its modifiers, if any) triggers, in binding order; empty when unbound. */
+  public actionsFor(
+    chord: Pick<InputChord, 'device' | 'code' | 'modifiers'>,
+  ): readonly InputAction[] {
     return this.actionsByChord.get(chordKey(chord)) ?? [];
   }
 

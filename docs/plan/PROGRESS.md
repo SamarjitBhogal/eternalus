@@ -2390,3 +2390,122 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   off the match seed.
 - Next step: merge `feat/hud-plan-b2` into `feat/hud-and-character-select` (no fast-forward, local);
   then the remaining build-plan steps.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4 of the build plan merged (steps 4, 10, 11, 12 partial, 13; DEC-110 to DEC-112, DEC-114; docs pass, round B24) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: lane 3b (merged in `dfab3f7`) built steps 4, 10 and 11: the Coming Soon void on the
+  locked card (`180601d`, DEC-104), the empty live HUD kit with the Vanguard's helmet only
+  (`80a9689`, DEC-101) and destroyed structures on the strip (`cf7efbe`, DEC-69, DEC-108). Lane 4
+  (merged in `373e426`) built step 12 in part and step 13: a crashed match ends and returns to the
+  menu with a message (`cca838d`, DEC-106) and the developer camera tools show or hide on
+  Cmd/Ctrl+Shift+F3 (`e84c8aa`, DEC-105). Lane 3a built DEC-110 to DEC-112 (`b1fe73e`, `8d33344`,
+  `1662eb8`, docs in `e0597fc`). DEC-114 (`1f5cb75`): the live HUD shows the art that fits the
+  picked Legend (the Vanguard's Courage gadget, the Magus staff, the Bulwark's Wuuthrad) and leaves
+  every other frame empty; red proofs 8/8 (`eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-dec114.txt`,
+  outside the repository).
+  - Docs (round B24): `13-owner-decisions-log.md` gets DEC-114 to DEC-116 (the owner's answers Q1
+    to Q3; no DEC-113 row, the number belongs to `docs/game-loop-and-results-plan`) and a dated
+    note on DEC-101; reference 15 gets dated notes on CD-05, CD-38 and OD-37; the PR register's
+    "Integration recipe" gets one item (a destroyed structure must stay published with health 0;
+    check against PR #55); `INBOX.md`: HC-T1's round B24 bullet and table (T-184 redrafted, T-192 to
+    T-208 new, 35 pending), status notes under HC-F2, HC-F6, HC-F8, HC-Q4 and HC-Q8, HC-Q24 to
+    HC-Q26 (answered) and HC-Q27 (accept the crash-report ADR), a Done entry.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-114 to DEC-116 rows; the DEC-101
+    note), reference 15 (three dated notes in Why cells and the OD-37 row), the PR register (one
+    dated paragraph), this entry. The design-text changes (17 new rows and T-184's redraft) are
+    pending rows in the D2b patch, not applied.
+- Checks run: the merged check before DEC-114 gave EXIT=0 (core 628/628, client 1475/1475;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-merged.log`, outside the repository).
+  The final check: to be filled by the orchestrator. This pass (docs only): `npm run docs:check`
+  and Prettier on the touched files, `git apply --check` of the D2b patch.
+- Next step: critic loop 1 (running), merge into `feat/hud-and-character-select`, the owner's
+  acceptance of ADR 0025, the step-12 report lane, steps 15 and 16; step 17 waits for PRs #55 to
+  #58.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 1 (items m1, m2, n1, n3, A2, B1, M2; DEC-117, DEC-118; docs pass, round B25) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: code fixes from the critic's loop 1 (the orchestrator's, uncommitted when this docs
+  pass ran): `MatchHost` runs a client-only one-shot action from a table of action to handler
+  (`runOneShotAction`, one entry: `toggle-developer-camera`; m1, DEC-117); the two default chords of
+  `toggle-developer-camera` are ordered by platform at load, Cmd first on an Apple device (n1,
+  DEC-118); a test ties the stored chord modifiers (`CHORD_MODIFIERS`) to the bridge's
+  `ChordModifier` type (m2); the test order nit (n3); a `ponytail:` comment on `endCrashedMatch`
+  (A2: the menu banner is DEC-106's interim; build-plan step 12 replaces it with ADR 0025's report
+  popup and `ErrorBoundary`). Red proofs 8/8 in
+  `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop1.txt` (outside the repository).
+  - Docs (round B25): `13-owner-decisions-log.md` gets a fourth batch of 2026-10-30 with DEC-117 and
+    DEC-118 (the owner's answers B1, m1 and n1; DEC-119 stays unused) and dated notes on DEC-57,
+    DEC-62 and DEC-105; reference 15 gets CD-47 (a destroyed structure's look, DEC-69, `cf7efbe`);
+    status notes in architecture 13 §10, architecture 06 §10 and architecture 14 §14 (the chord
+    `modifiers` field added inside schema version 1); `INBOX.md`: HC-T1's round B25 bullet and table
+    (T-196 redrafted, T-209 to T-212 new, 39 pending), HC-B3, HC-Q28 and HC-Q29 (answered), a Done
+    entry.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-117 and DEC-118 rows; dated notes on
+    DEC-57, DEC-62 and DEC-105), reference 15 (the CD-47 row), architecture 13 §10, 06 §10 and 14 §14
+    (one dated status note each), this entry. The design-text changes (T-196's redraft and four new
+    rows) are pending rows in the D2b patch, not applied.
+  - The orchestrator, after the docs pass: the 14 §14 note words the optional field as a reading
+    for the owner, not an interim, and `INBOX.md` gains HC-B4 (better than the design: an optional
+    field that old saves lack needs no new save version; open). ADR 0025's draft is checked against
+    the installed Vite 8.3.1 and React 19.3 types (one fix: `componentStack` may be null) and added
+    as `docs/decisions/0025-error-reports-through-the-local-dev-server.md` (proposed); HC-Q27 names
+    it.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1482/1482, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop1-fixes.log`, outside the
+  repository). The previous entry's final check, run on `3588904`: EXIT=0 (core 628/628, client
+  1477/1477; `b34-check-3588904.log` in the same folder). This docs pass also ran `npm run
+docs:check`, Prettier on the touched files and `git apply --check` of the D2b patch.
+- Next step: critic loop 2, merge into `feat/hud-and-character-select`, the owner's acceptance of
+  ADR 0025, the step-12 report lane.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 2 (items V1, D1, N1 to N3) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: the critic's loop 2 found no blocker; every loop-1 item is closed. Fixes:
+  - V1 and N1: `game/input/keybindings.ts` is plain data again (no platform read; the developer
+    camera chords in literal order, Ctrl first). `main.tsx` reads the platform (a user agent that
+    contains "Mac") and injects it as `isApplePlatform` into `SettingsController`, which lists the
+    platform's own chord first each time it publishes the settings and saves what it published
+    (`ownPlatformChordsFirst` in `game/input/bindingEdits.ts`). DEC-118's behaviour is unchanged.
+    Red proofs 6/6 in `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop2.txt`
+    (outside the repository; script `redproof_loop2.py` beside it). The `main.tsx` line has no unit
+    test (composition root); the type makes the flag required.
+  - D1: ADR 0025 (proposed) no longer says the plugin's middleware runs before Vite's own; the
+    plugin depends on no Vite middleware order or check, refuses a `Host` other than `localhost`,
+    `127.0.0.1` or `[::1]` (DNS rebinding), and its Watch line names `server.allowedHosts: true`
+    and `server.https`. The critic's Vite source lines were not re-read: the installed Vite chunk
+    files are not readable in this session; the `allowedHosts` warning was read in Vite's types.
+  - N2: `last-reviewed` bumped in architecture 06 and 14 (13 was already current). N3: the loop-1
+    Done entry in `INBOX.md` names HC-B4.
+  - Every edit to a sholtzman-owned doc: the decisions log (a dated note on DEC-118 and one more
+    path in its last cell), ADR 0025 (§1, §2, §8 item 2, Watch), architecture 13 §10 (the status
+    note names `SettingsController`), 06 and 14 (`last-reviewed` only), `INBOX.md` (a dated note
+    under HC-Q28, the loop-1 Done entry, a new Done entry), this entry. No design text changed.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1485/1485, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop2-fixes.log`, outside the
+  repository), run with this entry in place.
+- Next step: critic loop 3 (the last) on this round, merge into `feat/hud-and-character-select`;
+  the owner's answers to HC-Q27 (ADR 0025) and HC-B4 before the PR.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 3 (items T1, T2, D2, D3) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: the critic's loop 3 (the last of three) closed all five loop-2 items and found no
+  blocker. Fixes:
+  - T1: loop 2 deleted the four user-agent tests and left the platform check untested in
+    `main.tsx`. Correction to the previous entry ("The `main.tsx` line has no unit test"): the check
+    is now `isAppleUserAgent` in `apps/client/src/game/isAppleUserAgent.ts` (beside
+    `developerFlags.ts`, same pattern), tested for a Mac, an iPad, an iPhone, Windows and Linux;
+    `main.tsx` passes it `window.navigator.userAgent`.
+  - T2: the Apple row of `SettingsController.test.ts` also checks `controller.bindings`, so the
+    order the controller keeps (and the next rebind swap reads) is pinned.
+  - D2: DEC-118's last cell names `bindingEdits.ts` for `ownPlatformChordsFirst`. D3: one ADR 0025
+    line rewrapped.
+  - Red proofs 4/4 in `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop3.txt`
+    (outside the repository; script `redproof_loop3.py` beside it). No critic loop 4 (the owner's
+    limit is three); these fixes have red proofs and a full check, not a critic read.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-118's last cell), ADR 0025 (one
+    line rewrapped), `INBOX.md` (a Done entry), this entry. No design text changed.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1490/1490, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop3-fixes.log`, outside the
+  repository), run with this entry in place.
+- Next step: merge into `feat/hud-and-character-select`; the owner's answers to HC-Q27 (ADR 0025)
+  and HC-B4 before the PR.

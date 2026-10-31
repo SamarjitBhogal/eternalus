@@ -176,3 +176,48 @@ describe('bindModalKeyFilter', () => {
     expect(calls).toEqual(['pause-menu']);
   });
 });
+
+/**
+ * The filter alone, removed by its own close as React removes it: the class step, where no Back
+ * shortcut beneath takes the default of the closing button's release.
+ */
+function setUpClosing(): EventTarget {
+  const target = new EventTarget();
+  const unbind = bindModalKeyFilter(
+    target,
+    () => MOUSE_BOUND,
+    () => {
+      unbind();
+    },
+  );
+  return target;
+}
+
+// DEC-112: a side button that closed the view must not step the history back.
+describe('bindModalKeyFilter, after a mouse-bound close', () => {
+  it('takes the default of that button’s release, up to its auxclick', () => {
+    const target = setUpClosing();
+    const events = [
+      click('pointerdown', 3),
+      click('mouseup', 4),
+      click('mouseup', 3),
+      click('auxclick', 3),
+      click('mouseup', 3),
+    ];
+
+    for (const event of events) target.dispatchEvent(event);
+
+    expect(events.map((event) => event.defaultPrevented)).toEqual([true, false, true, true, false]);
+  });
+
+  it('stops at the next press when the release came outside the page', () => {
+    const target = setUpClosing();
+    target.dispatchEvent(click('pointerdown', 3));
+    target.dispatchEvent(click('pointerdown', 0));
+    const release = click('mouseup', 3);
+
+    target.dispatchEvent(release);
+
+    expect(release.defaultPrevented).toBe(false);
+  });
+});

@@ -9,7 +9,7 @@ import type {
   SessionPhase,
   SessionReason,
 } from '../bridge/events';
-import type { PreparedWorld } from './Match.types';
+import type { MatchCrash, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { SESSION_TRANSITIONS } from './SessionController.constants';
 import type {
@@ -74,13 +74,26 @@ export class SessionController {
         if (this.setup === null) throw new Error('No match setup to prepare a world for');
         this.world = deps.prepareWorld(this.setup.seed);
       },
-      createMatch: (viewport) => this.createMatch(viewport),
+      createMatch: (viewport, onCrash) => this.createMatch(viewport, onCrash),
       dropWorld: () => {
         this.world = null;
       },
       abortMatch: (error) => {
         this.logError('The match could not start.', { error: String(error) });
         this.transition('menu', 'match-failed');
+      },
+      endCrashedMatch: ({ error, tick }) => {
+        const stack = error instanceof Error ? (error.stack ?? null) : null;
+        const attributes = { error: String(error), stack, seed: this.setup?.seed ?? null };
+        this.deps.logger.log(
+          makeLogRecord('FATAL', 'client.session', 'The match stopped because of an error.', {
+            tick,
+            attributes,
+          }),
+        );
+        // ponytail: a menu banner only (DEC-106 interim); build-plan step 12 replaces it with ADR
+        // 0025's report note popup and ErrorBoundary once the owner accepts that ADR.
+        this.transition('menu', 'match-crashed');
       },
       loadAssets: (groups, onReady, onFailed) => this.loadAssets(groups, onReady, onFailed),
       releaseAssets: (group) => {
@@ -194,7 +207,7 @@ export class SessionController {
     this.deps.bus.emit('selection-locked', this.rosters);
   }
 
-  private createMatch(viewport: MatchViewport): RunningMatch {
+  private createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch {
     const { setup, selection, rosters, world } = this;
     if (setup === null || selection === null || rosters === null || world === null) {
       throw new Error('A match needs a setup, a locked-in selection and a prepared world');
@@ -205,6 +218,7 @@ export class SessionController {
         world,
         player: { legend: selection.classId, team: setup.playerTeam },
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
+        onCrash,
       },
       viewport,
     );

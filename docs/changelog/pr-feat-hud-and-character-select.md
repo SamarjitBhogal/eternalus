@@ -632,6 +632,17 @@ round from the emptiest lane, so with a human laner the roster's order can put t
 class in one lane. M3 passes no `occupied` today; whoever wires a human laner adds a test for the
 mix, and the owner decides whether DEC-102's mix holds in that mode.
 
+**Added 2026-10-30** (batches 3 and 4, `feat/hud-plan-b3a`): one more item, for the sync with the
+phase branch. The structures architecture (`docs/architecture/07-structures-obstacles-and-destructibles.md`,
+§10 and §11) ends a destroyed structure with `structure-destroyed` and `entity-removed { cause:
+RemovalCause }`, so a destroyed structure can leave the world and every snapshot built from it. The
+HUD's destroyed tile (DEC-69, DEC-108; commit `cf7efbe`) reads `health.current` at 0
+(`selectStructureStrip`'s `isDestroyed`), so it needs the destroyed structure published with
+`health.current` 0, not dropped. Live matches publish no structure health yet, so nothing shows the
+look today. When pull request #55 merges, check which snapshot it publishes for a destroyed
+structure; if it drops the structure, the publisher keeps it with health 0 (or the strip reads the
+`structure-destroyed` event), and the owner is not asked: DEC-69 already fixes the look.
+
 ### The repairs and their review
 
 Recorded in round B14. The code repairs merged into the task branch on 2026-10-27: lane A as

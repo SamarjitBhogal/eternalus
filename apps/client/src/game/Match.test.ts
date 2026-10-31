@@ -126,6 +126,7 @@ const setUp = (content?: Content) => {
     input,
     player: { legend: 'warrior', team: 'light' },
     logger,
+    onCrash: () => undefined,
     // A bus nobody listens to, at the shipped cadence.
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),

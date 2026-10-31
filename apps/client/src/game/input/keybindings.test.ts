@@ -28,6 +28,13 @@ describe('keybindings', () => {
     ]);
   });
 
+  it('shows the developer camera tools with Ctrl+Shift+F3 and Cmd+Shift+F3 by default (DEC-105)', () => {
+    expect(DEFAULT_CHORDS['toggle-developer-camera']).toEqual([
+      { device: 'keyboard', code: 'F3', label: 'Ctrl+Shift+F3', modifiers: ['Control', 'Shift'] },
+      { device: 'keyboard', code: 'F3', label: 'Cmd+Shift+F3', modifiers: ['Meta', 'Shift'] },
+    ]);
+  });
+
   it('moves with the arrow keys in the arrows preset and keeps the other defaults', () => {
     const arrows = new Map(PRESETS.arrows.map((binding) => [binding.action, binding.chords]));
 

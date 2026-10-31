@@ -176,6 +176,14 @@ export class Match implements LoopTarget {
   }
 
   /**
+   * The game loop stopped because a tick or a frame threw: hands the error and the tick to the
+   * match's owner (`onCrash`), which ends the match (DEC-106).
+   */
+  public crashed(error: unknown): void {
+    this.deps.onCrash({ error, tick: this.deps.simulation.tick });
+  }
+
+  /**
    * Moves the camera to the world point under a minimap click and stops following the player
    * until the player moves again.
    *

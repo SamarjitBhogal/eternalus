@@ -7,7 +7,7 @@ import type {
   LockedClassPresentation,
   SpecPresentation,
 } from './CataloguePresentation.types';
-import { MAGUS_HUD, SENTINEL_HUD, WARRIOR_HUD } from './hudPresentation';
+import { EMPTY_HUD, MAGUS_HUD, WARRIOR_HUD, WUUTHRAD_HUD_WEAPON } from './hudPresentation';
 
 /** Keyed by core class id. Plates are present on both renderers; `'css'` empties them (DEC-54). */
 export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
@@ -34,7 +34,7 @@ export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
       rowPlate: null,
     },
     detailIcons: {},
-    hud: SENTINEL_HUD,
+    hud: EMPTY_HUD,
     layoutOverrides: {},
   },
   magus: {
@@ -104,7 +104,7 @@ export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
   knight: WARRIOR_LEGEND,
   paladin: WARRIOR_LEGEND,
   colossus: SENTINEL_LEGEND,
-  juggernaut: SENTINEL_LEGEND,
+  juggernaut: { ...SENTINEL_LEGEND, hudWeapon: WUUTHRAD_HUD_WEAPON },
   catalyst: {
     accentToken: '--legend-catalyst-accent',
     art: {

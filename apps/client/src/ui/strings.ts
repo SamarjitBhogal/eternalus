@@ -11,6 +11,8 @@ import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 const REASON_BANNERS: Readonly<Record<string, string>> = {
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
+  // DEC-106: the build plan's message, kept by the owner ("menu + message").
+  'match-crashed': 'The match stopped because of an error.',
   'load-failed': 'Loading failed.',
 } satisfies Record<Exclude<SessionReason, 'select-timeout'>, string>;
 
@@ -165,6 +167,8 @@ export const STRINGS = {
     back: 'back',
     allyCount: (count: number): string => (count === 1 ? '1 Ally' : `${String(count)} Allies`),
     locked: 'Locked',
+    /** A locked class card's only text, in place of its name (DEC-59, DEC-104). */
+    comingSoon: 'Coming Soon...',
     missingName: '—',
     ratingAxes: {
       damage: 'Damage',
@@ -197,6 +201,8 @@ export const STRINGS = {
     captureProgress: 'Capture progress',
     noData: '—',
     emptySlot: 'empty',
+    /** A structure tile's state once its structure is destroyed (DEC-69). */
+    destroyed: 'destroyed',
     ready: 'ready',
     notReady: 'not ready',
     /** Objective shield letters in lane order (65:620, 65:613, 65:617); past the end, `index + 1`. */
@@ -252,6 +258,7 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'view-details': 'View Details',
   'toggle-developer-menu': 'Developer menu',
   'toggle-perf-overlay': 'Performance overlay',
+  'toggle-developer-camera': 'Developer camera tools',
 };
 
 /** Names of `MouseEvent.button` 0–4 as a captured chord shows them. */

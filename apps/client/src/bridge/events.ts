@@ -73,8 +73,12 @@ export type RosterEntry = {
   readonly team: PlayableTeam;
 };
 
-/** Why a phase was entered (audit AS-13: a union, so a typo cannot silently drop a banner). */
-export type SessionReason = 'select-timeout' | 'cancelled' | 'match-failed' | 'load-failed';
+/**
+ * Why a phase was entered (audit AS-13: a union, so a typo cannot silently drop a banner);
+ * `match-crashed`: the running match's game loop stopped on a throw (DEC-106).
+ */
+export type SessionReason =
+  'select-timeout' | 'cancelled' | 'match-failed' | 'match-crashed' | 'load-failed';
 
 /**
  * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the

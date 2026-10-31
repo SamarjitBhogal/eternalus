@@ -662,7 +662,10 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   it keeps and gives back) runs in no test; a DOM test environment (jsdom or happy-dom) is a new
   development dependency, which needs the owner's approval (`INBOX.md` HC-Q23). The open and
   closed renders are tested (`ViewDetailsScreen`, and the class case in `ClassDetailsScreen`), and
-  the focus helper is tested with the pause overlay.
+  the focus helper is tested with the pause overlay. **Appended 2026-10-30:** the owner approved a
+  page for such tests (DEC-111); `ClassSelectStep.viewDetails.test.tsx` runs in happy-dom and
+  covers the V press, the prompt click, the focus on Esc Back and its return on close. A side
+  button that closes the view no longer steps the browser's history (DEC-112).
 - **Developer chrome and pause.** The developer flag is the `?dev=1` query only, because
   `settings.developer.menuEnabled` does not exist yet. The free camera, the overview, the explorer
   toolbar and the map legend need it (DEC-32; INBOX HC-F8). The cathedral click and a "Leave
@@ -671,6 +674,17 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   `ui/hud` control and a `leave-interior` intent). The pause key is read by the UI hook
   `usePauseMenuKey`, because a paused loop cannot read it, and `MatchState` pauses the match
   while an overlay is open (single player only; INBOX HC-Q8).
+- **Developer hotkey, one-shot actions and the crash banner (2026-10-30).** The developer camera
+  hotkey is built: `toggle-developer-camera` (Cmd+Shift+F3 and Ctrl+Shift+F3, both bound on every
+  platform, the player's own first, as `SettingsController` publishes them; DEC-105, DEC-118)
+  shows or hides the free camera, the overview, the explorer toolbar and the map legend in any
+  build, so the "Developer chrome and pause" bullet above is out of date on the developer flag. It
+  is a one-shot press: `MatchHost` matches it on the key press with exactly the chord's modifiers
+  and runs it from a table of action to handler, today one entry (DEC-117). `clientActions` is
+  still not built. A loop crash is interim: the session ends the match and the
+  menu shows a banner for `match-crashed` (DEC-106); ADR 0025's report popup and `ErrorBoundary`
+  replace it in build-plan step 12 (DEC-115, DEC-116). The design wording for these is pending in
+  `INBOX.md` HC-T1 (T-196, T-202, T-209 to T-212).
 
 ## Related
 

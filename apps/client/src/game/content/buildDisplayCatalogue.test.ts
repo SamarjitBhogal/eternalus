@@ -216,8 +216,11 @@ describe('buildDisplayCatalogue', () => {
     expect(() => build({ known: without('magus-sigil') })).toThrow(
       'asset "magus-sigil" is not in the asset manifest',
     );
-    expect(() => build({ known: without('icon-placeholder-meteor') })).toThrow(
-      'asset "icon-placeholder-meteor"',
+    expect(() => build({ known: without('warrior-hud-emblem') })).toThrow(
+      'asset "warrior-hud-emblem"',
+    );
+    expect(() => build({ known: without('warrior-weapon-battle-axe') })).toThrow(
+      'asset "warrior-weapon-battle-axe"',
     );
     expect(() => build({ known: without('selection-backdrop') })).toThrow('"selection-backdrop"');
   });
