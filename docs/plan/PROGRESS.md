@@ -2778,3 +2778,31 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: the pre-PR gate for GL-5 (architecture critic, then ponytail); owner sign-off on the
   items beyond the plan (the `durationSeconds` field, Play again and Main menu kept on the win/lose
   screen until GL-10); GL-3 (the sovereign) so a browser match can end; GL-11 moves both timings.
+
+### 2026-10-30 — Game loop plan GL-5 critic round 1 (Phase 3 sprint 3.5, pulled forward) — feat/results-flow — sholtzman + Claude Code
+
+- What: the critic loop on GL-5 (`d8a803b..3495c3b`). Correctness critic: PASS (2 minor, 3 nits,
+  14 mutation probes all red). Ponytail critic: PASS (4 nits, 0 cuts). Applied:
+  - `MatchBridge.afterTick` returns `true` only on the tick that publishes `match-ended`, and
+    `Match.tick` calls `onEnded` on it; the `hasEnded` getter and `Match.wasEndReported` are gone
+    (one end flag, not two).
+  - `selectVerdictLine` picks the fallen team with one comparison instead of a table of three
+    functions.
+  - `sovereignDisplayNames.ts` is a `ponytail:` stand-in for the per-team display name on the
+    `monarch` definition (plan §4.3); GL-3 moves the names there. This corrects the GL-5 entry
+    above, which called it "the one place the sovereign's display name lives, for GL-3's `monarch`
+    to reuse".
+  - Owner docs (reported): 13 §2 `results` row says a failed `selection` load shows the screen
+    without its art; 13 §10 drops the stale sentence "Nothing catches an exception thrown by
+    `Simulation.step()`…" (a loop crash ends the match since DEC-106, as the same section's
+    2026-10-30 note says).
+  - Rejected: inlining `ResultsState.finish` (the one place GL-10 changes); the claim that GL-11
+    moves only `RESULTS_COUNTDOWN_MS` (GL-11's acceptance: "`sessionTiming.constants.ts` holds no
+    timing this plan added", which includes `RESULTS_DELAY_MS`).
+- Fail-first breaks: 3 breaks, all red, restores checked by `shasum`
+  (`eternalus-agent-work/game-loop-plan/gl5-r1-fix-breaks.md`).
+- Checks run: `npm run check` → `EXIT=0` (`gl5-r1-check-2026-10-30.log`): core "Tests 806 passed
+  (806)", statements 99.29 %; client "Tests 1542 passed (1542)", statements 96.53 %; "✓ built";
+  "Documentation check passed."
+- Next step: the owner signed off the GL-5 items beyond the plan (DEC-129, logged on
+  `docs/game-loop-and-results-plan`); cite it at the values, then the pre-PR gate for GL-5.
