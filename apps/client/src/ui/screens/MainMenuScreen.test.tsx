@@ -28,13 +28,20 @@ describe('MainMenuScreen', () => {
 
   it.each([
     ['match-failed', 'Match could not start.'],
-    ['match-crashed', 'The match stopped because of an error.'],
     ['load-failed', 'Loading failed.'],
   ] as const)('shows the failure banner for %s', (reason, banner) => {
     const html = renderWithStore(<MainMenuScreen />, { session: sessionAt('menu', { reason }) });
     expect(STRINGS.reasonBanners[reason]).toBe(banner);
     expect(html).toContain(`<p role="status"`);
     expect(html).toContain(banner);
+  });
+
+  it('shows no banner for a crash: the crash popup says it (DEC-106, DEC-124)', () => {
+    for (const reason of ['match-crashed', 'screen-crashed']) {
+      expect(
+        renderWithStore(<MainMenuScreen />, { session: sessionAt('menu', { reason }) }),
+      ).not.toContain('role="status"');
+    }
   });
 
   it('shows no banner without a reason or for a reason with no message', () => {

@@ -9,7 +9,7 @@ import type {
   SessionPhase,
   SessionReason,
 } from '../bridge/events';
-import type { MatchEvidence } from '../data/logging/ErrorReport.types';
+import type { MatchEvidence, ReportedError } from '../data/logging/ErrorReport.types';
 import type { MatchCrash, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { SESSION_TRANSITIONS } from './SessionController.constants';
@@ -20,8 +20,12 @@ import type {
   SessionState,
 } from './SessionController.types';
 import { buildMatchSetup } from './session/buildMatchSetup';
+import { CrashReportFlow } from './session/CrashReportFlow';
 import { fillRosters } from './session/fillRosters';
+import { handleScreenCrash } from './session/handleScreenCrash';
+import type { ScreenCrashIntent } from './session/handleScreenCrash.types';
 import { IllegalSessionTransition } from './session/IllegalSessionTransition';
+import { reportedErrorOf } from './session/reportedErrorOf';
 
 /**
  * Owns the session phase machine (architecture 13 §2): boot → menu → loading → character-select
@@ -41,9 +45,11 @@ export class SessionController {
   private readonly publishedGroups = new Set<AssetGroup>();
   private stopListening = (): void => undefined;
   private readonly context: SessionContext;
+  private readonly crashReports: CrashReportFlow;
 
   /** Loads the content catalogue; nothing runs until `start()`. */
   public constructor(private readonly deps: SessionControllerDeps) {
+    this.crashReports = new CrashReportFlow(deps);
     this.context = {
       bus: deps.bus,
       clock: deps.clock,
@@ -84,17 +90,7 @@ export class SessionController {
         this.transition('menu', 'match-failed');
       },
       endCrashedMatch: ({ error, tick }) => {
-        const stack = error instanceof Error ? (error.stack ?? null) : null;
-        const attributes = { error: String(error), stack, seed: this.setup?.seed ?? null };
-        this.deps.logger.log(
-          makeLogRecord('FATAL', 'client.session', 'The match stopped because of an error.', {
-            tick,
-            attributes,
-          }),
-        );
-        // ponytail: a menu banner only (DEC-106 interim); build-plan step 12 replaces it with ADR
-        // 0025's report note popup and ErrorBoundary once the owner accepts that ADR.
-        this.transition('menu', 'match-crashed');
+        this.crashMatch(reportedErrorOf(error, 'game-loop'), String(error), tick);
       },
       loadAssets: (groups, onReady, onFailed) => this.loadAssets(groups, onReady, onFailed),
       releaseAssets: (group) => {
@@ -115,6 +111,8 @@ export class SessionController {
     if (this.current !== null) throw new Error('SessionController is already started');
     this.deps.themeRoot.dataset.contrast = this.context.catalogue.contrastMode;
     this.stopListening = this.deps.bus.on('ui-intent', (intent) => {
+      if (intent.kind === 'report-screen-crash') this.screenCrashed(intent);
+      this.crashReports.handleIntent(intent);
       this.current?.handleIntent?.(intent, this.context);
     });
     this.enter('boot', null);
@@ -144,6 +142,34 @@ export class SessionController {
     const state = this.current;
     if (state?.attachViewport === undefined) return () => undefined;
     return state.attachViewport(viewport, this.context);
+  }
+
+  private screenCrashed(intent: ScreenCrashIntent): void {
+    const phase = this.current?.phase;
+    if (phase === undefined) return;
+    handleScreenCrash(intent, {
+      bus: this.deps.bus,
+      phase,
+      seed: this.setup?.seed ?? null,
+      matchTick: this.matchEvidence()?.match.tick ?? null,
+      crashMatch: (error, text, tick) => {
+        this.crashMatch(error, text, tick);
+      },
+      report: (error, context) => {
+        this.crashReports.crashed(error, context);
+      },
+      canReturnToMenu: () => SESSION_TRANSITIONS[phase].includes('menu'),
+      transitionToMenu: (reason) => {
+        this.transition('menu', reason);
+      },
+    });
+  }
+
+  /** Reports a crash while the match still runs, then returns to the menu (`'match-crashed'`). */
+  private crashMatch(error: ReportedError, errorText: string, tick: number | null): void {
+    const body = 'The match stopped because of an error.';
+    this.crashReports.crashed(error, { body, errorText, tick, seed: this.setup?.seed ?? null });
+    this.transition('menu', 'match-crashed');
   }
 
   private transition(to: SessionPhase, reason: SessionReason | null): void {

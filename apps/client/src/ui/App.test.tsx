@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SESSION_PHASES } from '../bridge/events';
+import { SESSION_PHASES, type SessionPhase } from '../bridge/events';
 import { matchSetupSlice } from '../bridge/slices/matchSetupSlice';
 import { App } from './App';
 import { STRINGS } from './strings';
@@ -30,6 +30,23 @@ describe('App', () => {
     }
     expect(at(sessionAt('menu'))).not.toContain(title);
     expect(at(sessionAt('loading', { reason: 'select-timeout' }))).not.toContain(title);
+  });
+
+  it('shows the crash popup, outside the screen, in every phase once a report is open', () => {
+    const title = STRINGS.crashReportPopup.matchMessage;
+    const withReport = (phase: SessionPhase) =>
+      renderWithStore(<App />, {
+        session: {
+          ...sessionAt(phase, { reason: 'match-crashed' }),
+          crashReport: { stage: 'asking', noteLimit: 2000 },
+        },
+      });
+    for (const phase of SESSION_PHASES) {
+      const html = withReport(phase);
+      expect(html).toContain(title);
+      expect(html.indexOf(title)).toBeGreaterThan(html.indexOf('<main'));
+    }
+    expect(renderWithStore(<App />, { session: sessionAt('menu') })).not.toContain(title);
   });
 
   it.each([

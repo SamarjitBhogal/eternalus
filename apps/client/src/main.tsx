@@ -146,6 +146,7 @@ const session = new SessionController({
   logger,
   resources,
   credits: describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES),
+  reporter,
 });
 session.start();
 

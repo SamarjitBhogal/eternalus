@@ -12,6 +12,7 @@ import type {
   UiIntent,
 } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import type { ErrorReporter } from '../data/logging/ErrorReporter';
 import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { ResourceController } from '../data/resources/ResourceController';
 import type { CatalogueSource } from './content/CatalogueSource.types';
@@ -103,7 +104,9 @@ export interface SessionContext {
   abortMatch(error: unknown): void;
   /**
    * A running match crashed: logs FATAL `client.session` with the error, its stack, the seed and
-   * the tick, then returns to `menu` with reason `'match-crashed'` (DEC-106; 13 §2 `match` row).
+   * the tick, reports the crash with its match evidence (source `'game-loop'`), opens the crash
+   * popup, then returns to `menu` with reason `'match-crashed'` (DEC-106, ADR 0025; 13 §2 `match`
+   * row).
    */
   endCrashedMatch(crash: MatchCrash): void;
   /**
@@ -181,4 +184,6 @@ export type SessionControllerDeps = {
   >;
   /** The licence blocks of every bundled asset (`describeCredits` over the manifest). */
   readonly credits: readonly CreditEntry[];
+  /** Where a crash is reported and its note saved (ADR 0025 §3; the page's `ErrorReporter`). */
+  readonly reporter: Pick<ErrorReporter, 'reportCrash' | 'addNote'>;
 };

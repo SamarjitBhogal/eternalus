@@ -4,17 +4,19 @@ import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 
 /**
- * Banner text per `session.reason`: every `SessionReason` but `select-timeout` has one (a missing
- * reason is a compile error); `select-timeout` shows `selectTimeoutPopup` instead (DEC-102). The
- * store holds the reason as a string, so an unknown one shows no banner.
+ * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
+ * reason is a compile error); `select-timeout` shows `selectTimeoutPopup` instead (DEC-102), and
+ * `match-crashed` and `screen-crashed` show `crashReportPopup` (DEC-106, DEC-124). The store holds
+ * the reason as a string, so an unknown one shows no banner.
  */
 const REASON_BANNERS: Readonly<Record<string, string>> = {
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
-  // DEC-106: the build plan's message, kept by the owner ("menu + message").
-  'match-crashed': 'The match stopped because of an error.',
   'load-failed': 'Loading failed.',
-} satisfies Record<Exclude<SessionReason, 'select-timeout'>, string>;
+} satisfies Record<
+  Exclude<SessionReason, 'select-timeout' | 'match-crashed' | 'screen-crashed'>,
+  string
+>;
 
 /** A value not known yet, e.g. before the first publish (CD-13, DEC-17). */
 const NO_DATA_YET = 'No data yet';
@@ -42,6 +44,27 @@ export const STRINGS = {
     // Recommendation: the review page's preview of the one close control, not the owner's words
     // (DEC-102).
     close: 'Continue',
+  },
+  /**
+   * The crash popup over the menu after a crash (DEC-106, ADR 0025 §5): it replaces the old
+   * `match-crashed` banner and opens for `match-crashed` and `screen-crashed`.
+   */
+  crashReportPopup: {
+    // DEC-106: the build plan's message, kept by the owner.
+    matchMessage: 'The match stopped because of an error.',
+    // DEC-124 (b): the owner's text for a screen crash outside a match.
+    screenMessage: 'The screen stopped because of an error.',
+    // DEC-106: the review page's note prompt and buttons, unchanged by the owner.
+    notePrompt: 'What were you doing when it happened? (optional)',
+    saveNote: 'Save note and return to menu',
+    returnToMenu: 'Return to menu',
+    // DEC-124 (c): the owner's text and the button for a report that could not be saved.
+    copyMessage: 'The report could not be saved. Copy it and send it to the team.',
+    copyReport: 'Copy report',
+    // Recommendation: the recorder's words for the two states DEC-106 does not word.
+    saving: 'Saving the note...',
+    saved: (file: string): string => `The report was saved as ${file}.`,
+    reportLabel: 'Report text',
   },
   comingSoon: 'Coming in sprint 2.',
   about: {

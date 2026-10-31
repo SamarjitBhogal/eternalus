@@ -43,7 +43,20 @@ describe('connectBusToStore', () => {
       reason: 'select-timeout',
       menuRoute: 'about',
       overlay: 'pause',
+      crashReport: null,
     });
+  });
+
+  it('copies the crash popup state into the session slice, and closes it with null', () => {
+    const { bus, store } = connected();
+    bus.emit('crash-report', { stage: 'saved', file: 'logs/errors/a.json', noteLimit: 5 });
+    expect(store.getState().session.crashReport).toEqual({
+      stage: 'saved',
+      file: 'logs/errors/a.json',
+      noteLimit: 5,
+    });
+    bus.emit('crash-report', null);
+    expect(store.getState().session.crashReport).toBeNull();
   });
 
   it('copies content and loading progress', () => {

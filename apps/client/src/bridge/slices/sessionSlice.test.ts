@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { sessionSlice } from './sessionSlice';
 
-const { phaseChanged, routeChanged, overlayChanged } = sessionSlice.actions;
-const { selectMenuRoute, selectSessionPhase, selectSessionReason } = sessionSlice.selectors;
+const { phaseChanged, routeChanged, overlayChanged, crashReportChanged } = sessionSlice.actions;
+const { selectCrashReport, selectMenuRoute, selectSessionPhase, selectSessionReason } =
+  sessionSlice.selectors;
 
 describe('sessionSlice', () => {
   it('starts at boot on the home route with no overlay', () => {
@@ -12,6 +13,7 @@ describe('sessionSlice', () => {
       reason: null,
       menuRoute: 'home',
       overlay: null,
+      crashReport: null,
     });
   });
 
@@ -27,5 +29,15 @@ describe('sessionSlice', () => {
     expect(selectSessionReason(root)).toBe('select-timeout');
     expect(selectMenuRoute(root)).toBe('profile');
     expect(session.overlay).toBe('pause');
+  });
+
+  it('keeps the crash popup state it is given until null closes it', () => {
+    const copy = { stage: 'copy', copyText: '{}', noteLimit: 9 } as const;
+    const opened = sessionSlice.reducer(undefined, crashReportChanged(copy));
+
+    expect(selectCrashReport({ session: opened })).toEqual(copy);
+    expect(
+      selectCrashReport({ session: sessionSlice.reducer(opened, crashReportChanged(null)) }),
+    ).toBeNull();
   });
 });
