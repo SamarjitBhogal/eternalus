@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BridgeEventMap } from '../bridge/events';
 import { isSelectableClass } from '../bridge/selectionRules';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
 import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { Camera } from './engine/Camera';
@@ -104,6 +105,7 @@ describe('SessionController with the real match, end to end', () => {
         bus,
         mapper,
         adapters: [renderer, camera],
+        evidence: fakeMatchEvidence,
       });
       host.start();
       builds.push({ match, scheduler, window, document, unsubscribed });

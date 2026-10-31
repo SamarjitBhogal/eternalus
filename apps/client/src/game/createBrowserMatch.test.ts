@@ -1,9 +1,10 @@
-import { createDefaultGameConfig, Simulation } from '@eternalus/core';
+import { createDefaultGameConfig, type LogRecord, Simulation } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import type { LogSink } from '../data/logging/LogSink.types';
 import { createBrowserMatch } from './createBrowserMatch';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
@@ -12,12 +13,12 @@ import { MS_PER_SECOND } from './Match.constants';
 import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import type { MatchRequest } from './SessionController.types';
+import type { MatchRequest, RunningMatch } from './SessionController.types';
 
 const CONFIG = createDefaultGameConfig();
 const SEED = 3;
 
-function setUp(canvas = new FakeViewportCanvas()) {
+function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
   const bus = new TypedEventBus<BridgeEventMap>();
@@ -28,7 +29,7 @@ function setUp(canvas = new FakeViewportCanvas()) {
     bus,
     settings: { bindings: null },
     clock: new FakeSessionClock(),
-    sinks: [],
+    sinks,
   });
   const viewport: MatchViewport = {
     canvas,
@@ -113,5 +114,46 @@ describe('createBrowserMatch', () => {
     expect(listeners()).toBe(0);
     expect(window.pendingFrames).toBe(0);
     expect(bus.listenerCount()).toBe(busBefore + 1);
+  });
+
+  it("gives the simulation's replay and history and the match's TRACE ring as evidence (ADR 0025 §3)", () => {
+    let running: RunningMatch | null = null;
+    const atPageSink: { record: LogRecord; lastInRing: LogRecord | undefined }[] = [];
+    const pageSink: LogSink = {
+      write: (record) => {
+        atPageSink.push({ record, lastInRing: running?.evidence().logTail.at(-1) });
+      },
+    };
+    const { window, factory, viewport, request } = setUp(undefined, [pageSink]);
+    // A class with no definition: the spawn is rejected (INFO core.commands, ERROR client.match).
+    const stale: MatchRequest = { ...request(), player: { legend: 'stale-class', team: 'dark' } };
+
+    running = factory(stale, viewport);
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+    const { match, logTail } = running.evidence();
+
+    expect(match.seed).toBe(SEED);
+    expect(match.tick).toBe(1);
+    expect(match.replay.seed).toBe(SEED);
+    // The player's spawn and the prototype escort's, all before tick 1; there are no bots.
+    expect(
+      match.replay.commands.map(({ tick, command }) => [
+        tick,
+        command.type === 'dev-spawn' ? command.kind : command.type,
+      ]),
+    ).toContainEqual([0, 'stale-class']);
+    expect(match.recentCommands.map(({ command }) => command)).toEqual(
+      match.replay.commands.map(({ command }) => command),
+    );
+    expect(match.replay.checkpoints.map(({ tick }) => tick)).toEqual([0]);
+    expect(match.recentEvents.length).toBeGreaterThan(0);
+    expect(logTail.map(({ severityText, scope }) => [severityText, scope])).toEqual([
+      ['INFO', 'core.commands'],
+      ['ERROR', 'client.match'],
+    ]);
+    // Only WARN and worse reach the page's sinks, after the ring already holds the record.
+    expect(atPageSink.map(({ record }) => record)).toEqual([logTail[1]]);
+    expect(atPageSink[0]?.lastInRing).toBe(atPageSink[0]?.record);
   });
 });

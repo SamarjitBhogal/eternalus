@@ -12,6 +12,7 @@ import type {
   UiIntent,
 } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { ResourceController } from '../data/resources/ResourceController';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
@@ -41,6 +42,11 @@ export interface RunningMatch {
    * (13 §7; INBOX HC-Q8).
    */
   setPaused(isPaused: boolean): void;
+  /**
+   * What an error report needs from this match (ADR 0025 §3): its seed, tick, recent commands and
+   * events, replay so far and log records. Only reads; works after a crash too.
+   */
+  evidence(): MatchEvidence;
 }
 
 /**
@@ -128,6 +134,8 @@ export interface SessionState {
    * `match` state implements it; in every other phase an attach does nothing.
    */
   attachViewport?(viewport: MatchViewport, context: SessionContext): () => void;
+  /** The running match's `evidence()`, or `null`; only the `match` state implements it. */
+  matchEvidence?(): MatchEvidence | null;
 }
 
 /** The part of core's `MatchConfig` the session needs. */

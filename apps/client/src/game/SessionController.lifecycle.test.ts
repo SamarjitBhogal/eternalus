@@ -1,6 +1,7 @@
 import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
 import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import type { PreparedWorld } from './Match.types';
@@ -53,9 +54,13 @@ function setUp(overrides: Partial<SessionControllerDeps> = {}) {
     worlds.push(world);
     return world;
   });
-  const handles: { destroy: ReturnType<typeof vi.fn>; setPaused: ReturnType<typeof vi.fn> }[] = [];
+  const handles: {
+    destroy: ReturnType<typeof vi.fn>;
+    setPaused: ReturnType<typeof vi.fn>;
+    evidence: ReturnType<typeof vi.fn<typeof fakeMatchEvidence>>;
+  }[] = [];
   const createMatch = vi.fn<MatchFactory>((): RunningMatch => {
-    const handle = { destroy: vi.fn(), setPaused: vi.fn() };
+    const handle = { destroy: vi.fn(), setPaused: vi.fn(), evidence: vi.fn(fakeMatchEvidence) };
     handles.push(handle);
     return handle;
   });
@@ -173,6 +178,23 @@ describe('SessionController match lifetime', () => {
     expect(session.handles[1]?.destroy).not.toHaveBeenCalled();
     session.intent({ kind: 'leave-match' });
     expect(session.handles[1]?.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives the running match's evidence, and null outside a match (ADR 0025 §3)", async () => {
+    const session = setUp();
+    expect(session.controller.matchEvidence()).toBeNull();
+    await session.toMatch();
+    expect(session.controller.matchEvidence()).toBeNull();
+
+    session.controller.attachViewport(viewport());
+    const evidence = session.controller.matchEvidence();
+    session.intent({ kind: 'leave-match' });
+
+    expect(session.handles[0]?.evidence.mock.results).toEqual([
+      { type: 'return', value: evidence },
+    ]);
+    expect(evidence).toEqual(fakeMatchEvidence());
+    expect(session.controller.matchEvidence()).toBeNull();
   });
 
   it('never ends a newer match on a stale detach', async () => {

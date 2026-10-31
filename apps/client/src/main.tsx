@@ -7,6 +7,12 @@ import { connectBusToStore } from './bridge/connectBusToStore';
 import { eventBus } from './bridge/eventBus';
 import { store } from './bridge/store';
 import { ConsoleSink } from './data/logging/ConsoleSink';
+import { DevServerReportWriter } from './data/logging/DevServerReportWriter';
+import type { MatchEvidence } from './data/logging/ErrorReport.types';
+import { ErrorReporter } from './data/logging/ErrorReporter';
+import { LOG_TAIL_RECORDS } from './data/logging/ErrorReporter.constants';
+import { logWindowErrors } from './data/logging/logWindowErrors';
+import { RingBufferSink } from './data/logging/RingBufferSink';
 import { SinkLogger } from './data/logging/SinkLogger';
 import { MemoryStorageAdapter } from './data/persistence/MemoryStorageAdapter';
 import { PersistenceController } from './data/persistence/PersistenceController';
@@ -45,10 +51,38 @@ if (rootElement === null) {
 const gameConfig = createDefaultGameConfig();
 const sessionClock = new PerformanceSessionClock();
 const consoleSink = new ConsoleSink();
+// Error reports (ADR 0025 §3, §6): the page's last records outside a match, then the reporter,
+// which sees WARN and worse from the page and every match. The page ring comes before the
+// reporter, so a report holds the record that made it.
+const pageLog = new RingBufferSink(LOG_TAIL_RECORDS);
+const reporter = new ErrorReporter({
+  writer: new DevServerReportWriter({
+    fetch: (url, init) => window.fetch(url, init),
+    schedule: (callback, delayMs) => sessionClock.schedule(callback, delayMs),
+  }),
+  now: () => Date.now(),
+  environment: {
+    gameVersion: __GAME_VERSION__,
+    commit: __GAME_COMMIT__,
+    contentVersion: null,
+    userAgent: window.navigator.userAgent,
+  },
+  pageLogTail: (count) => pageLog.tail(count),
+  // `session` is built below; the reporter asks only when a record arrives, and a throw here
+  // makes a report without the match.
+  matchEvidence: (): MatchEvidence | null => session.matchEvidence(),
+  fallback: consoleSink,
+});
+const pageSinks = [consoleSink, pageLog, reporter];
 const logger: Logger = new SinkLogger(
   () => sessionClock.now(),
-  [{ sink: consoleSink, minSeverity: SEVERITY.WARN }],
+  [
+    { sink: consoleSink, minSeverity: SEVERITY.WARN },
+    { sink: pageLog, minSeverity: SEVERITY.TRACE },
+    { sink: reporter, minSeverity: SEVERITY.WARN },
+  ],
 );
+logWindowErrors(window, logger);
 // The developer flag of 13 §4 (query form, 13 §10), read once: explorer chrome and display
 // overrides.
 const developer = readDeveloperFlags(window.location.search);
@@ -107,7 +141,7 @@ const session = new SessionController({
     bus: eventBus,
     settings,
     clock: sessionClock,
-    sinks: [consoleSink],
+    sinks: pageSinks,
   }),
   logger,
   resources,

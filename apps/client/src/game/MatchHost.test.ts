@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
 import { MouseDevice } from './engine/input/MouseDevice';
@@ -46,6 +47,7 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
   const adapters = ['renderer', 'camera'].map((name) => ({
     destroy: vi.fn(() => log.push(`${name}.destroy`)),
   }));
+  const evidence = fakeMatchEvidence();
   const chrome = {
     onInteriorChanged: vi.fn(),
     onExplorerChanged: vi.fn(),
@@ -63,11 +65,13 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     bus,
     mapper,
     adapters,
+    evidence: () => evidence,
   });
   const listeners = (): number =>
     window.listenerCount() + document.listenerCount() + canvas.listenerCount();
   return {
     host,
+    evidence,
     window,
     document,
     canvas,
@@ -192,5 +196,15 @@ describe('MatchHost', () => {
     }).toThrow('start failed');
     expect(listeners()).toBe(0);
     expect(log).toEqual(['match.start', 'match.destroy', 'renderer.destroy', 'camera.destroy']);
+  });
+
+  it("answers evidence() with its match's evidence, also once destroyed (ADR 0025 §3)", () => {
+    const { host, evidence } = setUp();
+    host.start();
+    expect(host.evidence()).toBe(evidence);
+
+    host.destroy();
+
+    expect(host.evidence()).toBe(evidence);
   });
 });

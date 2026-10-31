@@ -1,4 +1,5 @@
 import type { SessionPhase, UiIntent } from '../../../bridge/events';
+import type { MatchEvidence } from '../../../data/logging/ErrorReport.types';
 import type { MatchViewport } from '../../MatchViewport.types';
 import type { RunningMatch, SessionContext, SessionState } from '../../SessionController.types';
 import { SELECTION_ASSET_GROUPS } from '../selectionAssetGroups';
@@ -47,6 +48,11 @@ export class MatchState implements SessionState {
       // A stale detach (StrictMode, a replaced viewport) never ends a newer match.
       if (this.running === match) this.stop();
     };
+  }
+
+  /** The running match's evidence (ADR 0025 §3), or `null` before a viewport attaches. */
+  public matchEvidence(): MatchEvidence | null {
+    return this.running?.evidence() ?? null;
   }
 
   /** Destroys the match, drops the world and closes any open overlay. */

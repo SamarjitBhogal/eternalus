@@ -12,6 +12,7 @@ import { FakeAssetLoader } from '../data/resources/loaders/FakeAssetLoader';
 import { ResourceController } from '../data/resources/ResourceController';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
+import { FakeRunningMatch } from './FakeRunningMatch';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { SessionController } from './SessionController';
 import type { SessionControllerDeps } from './SessionController.types';
@@ -83,7 +84,7 @@ export function testSessionDeps(
     createRosterRng,
     themeRoot: { dataset: {} },
     prepareWorld: (value) => prepareMatchWorld(config, value),
-    createMatch: () => ({ destroy: () => undefined, setPaused: () => undefined }),
+    createMatch: () => new FakeRunningMatch(),
     logger: new MemoryLogger(),
     resources: new ResourceController({
       manifest: { version: 'test', assets: [] },

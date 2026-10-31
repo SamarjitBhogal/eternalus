@@ -1,4 +1,5 @@
 import type { InputAction } from '../bridge/Binding.types';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import { CanvasPointerControls } from './CanvasPointerControls';
 import type { MatchHostDeps } from './MatchHost.types';
 import type { RunningMatch } from './SessionController.types';
@@ -70,6 +71,11 @@ export class MatchHost implements RunningMatch {
     if (isPaused) {
       this.releaseInput();
     }
+  }
+
+  /** What an error report needs from the match (ADR 0025 §3), as `createBrowserMatch` reads it. */
+  public evidence(): MatchEvidence {
+    return this.deps.evidence();
   }
 
   /** Removes every listener, detaches the devices, destroys the match, then its adapters. Safe twice. */

@@ -9,6 +9,7 @@ import type {
   SessionPhase,
   SessionReason,
 } from '../bridge/events';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { MatchCrash, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { SESSION_TRANSITIONS } from './SessionController.constants';
@@ -128,6 +129,11 @@ export class SessionController {
     this.current = null;
     this.stopListening();
     delete this.deps.themeRoot.dataset.contrast;
+  }
+
+  /** The running match's evidence for an error report, or `null` outside a match (ADR 0025 §3). */
+  public matchEvidence(): MatchEvidence | null {
+    return this.current?.matchEvidence?.() ?? null;
   }
 
   /**

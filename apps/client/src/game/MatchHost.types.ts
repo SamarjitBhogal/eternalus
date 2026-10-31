@@ -1,5 +1,6 @@
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { InputDevice } from './engine/input/InputDevice.types';
 import type { InputMapper } from './input/InputMapper';
 import type { Match } from './Match';
@@ -43,4 +44,6 @@ export type MatchHostDeps = {
   readonly mapper: Pick<InputMapper, 'setBindings' | 'isActionKey'>;
   /** Adapters destroyed after the match (renderer, camera): the host is their owner. */
   readonly adapters: readonly { destroy(): void }[];
+  /** The match's evidence for an error report (`createBrowserMatch` reads the simulation). */
+  readonly evidence: () => MatchEvidence;
 };
