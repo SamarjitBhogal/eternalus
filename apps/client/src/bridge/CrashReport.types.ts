@@ -5,7 +5,7 @@
  * report (it could not be saved) or, when `isReportSaved`, only the note (the report is saved, the
  * note write failed). `noteLimit` is the longest note the writer takes, in characters; the session
  * sets it, so `ui/` never imports `data/`. `cause` says what stopped (the match or a screen), and
- * `crashNumber` counts the crashes of this page load, so the popup starts clean for each one.
+ * `crashNumber` changes with each crash of this page load, so the popup starts clean for each one.
  */
 export type CrashReportState = {
   readonly noteLimit: number;

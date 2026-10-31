@@ -6,11 +6,9 @@ import { SESSION_TRANSITIONS } from '../SessionController.constants';
 import { CrashReportFlow } from './CrashReportFlow';
 import type { CrashReportFlowDeps } from './CrashReportFlow.types';
 import { handleScreenCrash } from './handleScreenCrash';
+import { MATCH_CRASH_BODY } from './SessionCrashes.constants';
 import type { MatchCrashContext, ScreenCrashIntent } from './handleScreenCrash.types';
 import type { CrashSession } from './SessionCrashes.types';
-
-/** The FATAL message of a crash while a match runs (DEC-106). */
-const MATCH_CRASH_BODY = 'The match stopped because of an error.';
 
 /**
  * What the session does about crashes (DEC-106, DEC-124; ADR 0025 §3, §5): a game-loop crash and a
@@ -47,7 +45,7 @@ export class SessionCrashes {
    * Reports a crash while the match still runs, then returns to the menu (`'match-crashed'`): the
    * report reads the match's evidence in this call, and leaving drops the match.
    */
-  public crashMatch(error: ReportedError, context: MatchCrashContext): void {
+  private crashMatch(error: ReportedError, context: MatchCrashContext): void {
     this.flow.crashed(error, {
       ...context,
       body: MATCH_CRASH_BODY,

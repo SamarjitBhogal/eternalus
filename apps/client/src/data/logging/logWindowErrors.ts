@@ -8,10 +8,7 @@ const WINDOW_SCOPE = 'client.window';
 /** What the listeners need of the page's `window`. */
 type ErrorEventTarget = Pick<EventTarget, 'addEventListener' | 'removeEventListener'>;
 
-const messageOf = (thrown: unknown): string => reportedErrorOf(thrown, WINDOW_SCOPE).message;
-
-function logThrow(logger: Logger, body: string, thrown: unknown): void {
-  const { stack } = reportedErrorOf(thrown, WINDOW_SCOPE);
+function logThrow(logger: Logger, body: string, stack: string | null): void {
   logger.log(makeLogRecord('ERROR', WINDOW_SCOPE, body, { attributes: { stack } }));
 }
 
@@ -25,13 +22,14 @@ function logThrow(logger: Logger, body: string, thrown: unknown): void {
 export function logWindowErrors(target: ErrorEventTarget, logger: Logger): () => void {
   const onError = (event: Event): void => {
     const thrown = 'error' in event ? event.error : undefined;
-    const message =
-      thrown instanceof Error || !('message' in event) ? messageOf(thrown) : String(event.message);
-    logThrow(logger, `Uncaught error: ${message}`, thrown);
+    const { message, stack } = reportedErrorOf(thrown, WINDOW_SCOPE);
+    const text = thrown instanceof Error || !('message' in event) ? message : String(event.message);
+    logThrow(logger, `Uncaught error: ${text}`, stack);
   };
   const onRejection = (event: Event): void => {
     const reason = 'reason' in event ? event.reason : undefined;
-    logThrow(logger, `Unhandled rejection: ${messageOf(reason)}`, reason);
+    const { message, stack } = reportedErrorOf(reason, WINDOW_SCOPE);
+    logThrow(logger, `Unhandled rejection: ${message}`, stack);
   };
   target.addEventListener('error', onError);
   target.addEventListener('unhandledrejection', onRejection);
