@@ -251,7 +251,8 @@ export type VictoryConditionId = 'objective-lost' | 'forfeit' | 'aborted';
   buffered record keeps the victim's family, kind and team, read in the listener.
 - Columns the owner asked for: `kills` (Legend victims), `deaths`, `assists` (Legend victims
   only), `minionKills`, `score`. The other 12 §5 counters stay in the type for the Details tab and
-  are filled by later work.
+  are filled by later work. DEC-122 amends this: a counter joins the type with the work that fills
+  it, not before.
 - Points live in content, keyed so that a new weight class is a compile error:
 
 ```ts

@@ -21,6 +21,20 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-10-30 (game-loop plan, the GL-4 counters and structure damage)
+
+The owner's answers, in chat on 2026-10-30, to the GL-4 report's question A (which of 12 §5's
+per-Legend counters GL-4 keeps) and to the GL-4 correctness critic's finding 2 (what the structure
+damage column counts). Verbatim with the questions as put:
+`eternalus-agent-work/game-loop-plan/owner-answers-2026-10-28.md`, last two sections. DEC-117 to
+DEC-119 stay with the HUD lane, which numbers in that gap; DEC-120 and DEC-121 are taken, so these
+are DEC-122 and DEC-123.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Docs changed                                                                                                               |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| DEC-122 | **The per-Legend stats hold only the counters that built work fills.** GL-4's `LegendStats` holds `kills`, `deaths`, `assists`, `minionKills`, `neutralKills`, `structureDamage` and `score`. Each later task adds its counter (for example `finalLevel`) with the code that fills it, so the results never show a false zero. This applies the rule of DEC-113 (10) to the counters and amends the game-loop plan §4.4 ("The other 12 §5 counters stay in the type"). Owner, asked to keep only the filled counters or add all now as 0: "A1: filled counters only (Recommended)". | Built in `feat/match-scoring` (`state/ScoringState.types.ts`); the game-loop plan §4.4 cites it                            |
+| DEC-123 | **The structure damage column counts all damage a Legend deals to an enemy structure, shield bars included.** A hit that a BuffTower's shield bar absorbs counts as structure damage, as a hit on a Legend that only its shield takes already counts toward an assist. Owner, asked to count health and shield or health only: "Health + shield (Recommended)".                                                                                                                                                                                                                     | Built in `feat/match-scoring` (`match/Scoring.ts`, `state/ScoringState.types.ts`); architecture 12 §5 `damage-applied` row |
+
 ## Batch 2026-10-30 (game-loop plan, the GL-1 and GL-2 doc sign-off)
 
 The owner's answer, in chat on 2026-10-30, to the pre-PR architecture review's major finding
