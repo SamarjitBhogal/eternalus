@@ -16,6 +16,25 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Unit cap 300 (DEC-137, PR #56, 2026-10-31) — doc wording to approve.** The code has
+      `MAX_UNITS_PER_TEAM = 300` (the default and the validator's ceiling). These docs still say
+      144: requirements 06 (FR-043, FR-098, NFR-007), 01 (scale requirement), 05 (tick row) and
+      the README scale row; DISC-17; `balancing.md` (unit cap paragraph, spawn table); game-design
+      00, 02 and 11; architecture 08 (targets) and 15 (soak scenario); plan README and phases 1, 2,
+      3 (sprint 3.8), 5 and 6. The source transcription keeps 144. Proposed: where a doc states the
+      cap, it names where the cap lives ("`limits.maxUnitsPerTeam`, DEC-137"). Open: do the tick
+      targets (p95 ≤ 8 ms "at 144 units per team + 20 Legends") move to 300 too? Approve, or say
+      what to change.
+
+- [ ] **Hordes pile up at a gate that is not breakable yet (PR #56 soak, 2026-10-31).** At cap
+      300 the dark team still skips 15.78 % of horde spawns (light: 0 %). About 110 dark minions
+      wait at light's lane-1 gate (full health): MS-12 makes a horde hold at a gate until two of
+      the defender's three buff towers fall (07 §3). Waiting minions do not die, so each new wave
+      adds to the pile until the cap stops spawns. `balancing.md`'s 5 % bar assumes minions die
+      within about 2 minutes. Options: (a) accept it, and the bar applies only while no horde
+      holds at a gate; (b) a lane's spawns pause while its hordes hold at a gate; (c) the gate's
+      fire defence (07 §4, MVP-if-time) thins the pile. Or say what to do.
+
 - [ ] **Enraged minions run faster than `maxSpeed` (PR #56, 2026-10-31) — doc wording to
       approve.** `balancing.md` gives `enraged` +10% move speed per stack, but docs 04 §3
       (`Movement` row: `speed <= maxSpeed`), 10 §2 step 4 ("clamp to `maxSpeed`") and 15 §3

@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-10-31
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,16 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-10-31 (#56 soak: the unit cap, sholtzman)
+
+The owner's answers, given on 2026-10-31 on PR #56 (minion M2c,
+`feat/minion-m2c-objectives-guards`), after its soak failed the 5 % bar of `balancing.md`.
+DEC-136 is taken by another branch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Where                                                                                                                                                        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-137 | **The unit cap is 300 per team (was 144).** The #56 soak (bots on, seed 1, 3 lanes, 900 s) skipped 36.37 % (light) and 54.24 % (dark) of horde spawns at 144; tower guards held 36 to 38 of each team's cap (doc 18 §7 counts them). The owner first chose "raise `maxUnitsPerTeam` above 144", then, shown the soak at 144 to 300 (light 0 % from 264 up; dark still 15.78 % at 300; mean tick 0.62 ms, worst 5.17 ms on a developer Mac), the option "300 (Recommended)", which read: "Light 0%, dark 16%. NFR-007 already names 300 as the engineered soak. Today the validator refuses anything above 144, so that soak cannot run; 300 also fixes that. Dark's gate-hold leftover goes to INBOX and the #56 comment." One constant is both the default and the validator's ceiling. Dark's leftover skips come from hordes holding at a gate that is not breakable yet (MS-12, 07 §3), not from the cap. | `MAX_UNITS_PER_TEAM` in `packages/core/src/config/GameConfig.constants.ts`; the docs that still say 144 and the gate hold: two `INBOX.md` items (2026-10-31) |
 
 ## Batch 2026-10-30 (M2c: the chase limit, sholtzman)
 
