@@ -2474,3 +2474,28 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks after the fixes: `npm run check` → `EXIT=0` (`gl4-r2-check-2026-10-30.log`): core
   "Tests 795 passed (795)", statements 99.29 %; client "Tests 1365 passed (1365)", statements
   96.38 %; "✓ built in 251ms"; "Documentation check passed." Only this entry changed after it.
+
+### 2026-10-30 — Game loop plan GL-4 pre-PR review round 1 (Phase 3 sprint 3.5, pulled forward) — feat/match-scoring — sholtzman + Claude Code
+
+- What: the pre-PR architecture review of GL-4 (`2aa9651..80d0a5d`): approve, 0 blockers, 5 minor,
+  4 nits (`eternalus-agent-work/game-loop-plan/arch-review-gl4-round-1.md`). Owner answers, logged
+  on `docs/game-loop-and-results-plan`: DEC-130 (own-side hits and kills score nothing, as O5),
+  DEC-131 (FR-007 points, structure 5, capture 3 per checkpoint, hold 1 per minute, not built),
+  DEC-132 (a design critic chose the as-built per-pair list of recent damagers over the design's
+  per-victim ring: the ring can drop a valid assist and keeps hits from an earlier life; neither
+  serves the checkpoint damage bias, which 05 §13 gives to `ProgressionSystem`). Applied:
+  - Citations: `Scoring.ts` and 12 §5 cite DEC-130; `content/match/scoring.ts`'s `ponytail:`
+    note and 12 §5 cite DEC-131; the 12 §5 `damage-applied` row describes the per-pair list
+    (DEC-132) and drops "and the checkpoint damage bias"; the status note says "assist store".
+  - 17 R3 (add a mob type): a new weight class also adds a `minionKill` value in
+    `core/content/match/scoring.ts`. `packages/core/AGENTS.md`: `match/` holds `Scoring`.
+  - Correction to the GL-4 entry above (entries are not rewritten): the work there was committed
+    (`3af30f3`, `80d0a5d`), not "Uncommitted"; and per DEC-123 `structureDamage` counts health and
+    shield damage, not only "the health a Legend takes off structures".
+  - Not changed: the legend/mob branch in `Scoring` (a handler map when a third family scores);
+    the `Pick<Scoring, 'fold'>` port (the doubles work).
+  - Owner docs edited (reported): 12 §5 and §13, 17 R3.
+- Checks run: comment and doc edits only; the pre-commit hook (typecheck, lint) and
+  `npm run docs:check` pass.
+- Next step: merge `docs/game-loop-and-results-plan` first (DEC-122, 123, 129 to 132); merge this
+  branch into `feat/results-flow`; GL-4's ponytail review.

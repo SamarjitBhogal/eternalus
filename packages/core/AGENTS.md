@@ -13,7 +13,7 @@ Package-specific rules. The root `AGENTS.md` still applies.
 ## Folders
 
 **Today** core contains the simulation kernel (`config/`, `utils/`, `state/`, `commands/`,
-`diagnostics/`, `systems/` with the pipeline only, `match/` (director kernel), `Simulation.ts`), the first `components/` and
+`diagnostics/`, `systems/` with the pipeline only, `match/` (director kernel, scoring), `Simulation.ts`), the first `components/` and
 `entities/`, `teams/`, and the generated map (`map/`, `content/maps/`). The other folders below
 are the **planned** layout; create them as code is added.
 
@@ -29,7 +29,7 @@ are the **planned** layout; create them as code is added.
 | `commands/`     | `Command` union, `CommandQueue`, `applyCommand` + handler registry  | `state/`, `entities/`, `utils/`                                       |
 | `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher`  | lower layers                                                          |
 | `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams   | `state/`, `utils/`, types of `commands/` and `config/`                |
-| `match/`        | `MatchDirector`, `MatchTimeline`, phase classes, timeline actions   | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types |
+| `match/`        | `MatchDirector`, `Scoring`, `MatchTimeline` and its actions, phases | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types |
 | `systems/`      | Per-tick logic implementing `System`. Never import another system.  | everything except `ai/`                                               |
 | `ai/`           | Bot controllers. They only return `Command`s.                       | `state/`, `commands/`, `utils/`                                       |
 | `Simulation.ts` | Composes everything; the only thing the client drives               | everything                                                            |
