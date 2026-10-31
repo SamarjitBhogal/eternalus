@@ -213,7 +213,7 @@ Reply inline (`Decision: …`).
       tower until M2c, so no live match uses it yet.
   - Decision (SamarjitBhogal, chat, 2026-10-30): (a). The team that destroyed the tower gets its
     base-stat point moved toward the enemy; the losing team's point stays put. Built in PR #45
-    (`MinionStrengthStep`); recorded as DEC-48 in the decisions log.
+    (`MinionStrengthStep`); recorded as DEC-120 in the decisions log.
 - [ ] **Minion M2b — sign-offs and numbers (PR for `feat/minion-m2b-minion-controller`).**
       Better than the design, for sign-off: (1) `PathingSystem` reads the attack target and hands
       the strategy a target and an arrival radius, so `LaneFollowMovementStrategy` never reads
@@ -496,6 +496,13 @@ Reply inline (`Decision: …`).
       them on each `settings` bus event (`mapper.setBindings(s.bindings)`), and toggle the pause
       overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`), so the pause key is
       the player's binding.
+
+- [ ] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
+      sign off:** hordes spawn inside the Stronghold's blocking footprint (doc 18 §3.2), and §5.2's
+      "no heading onto unwalkable ground" then held every minion forever. The PR (1) lets a mob
+      standing on unwalkable ground walk straight out to its slot, and (2) when separation would
+      push a mob onto unwalkable ground, keeps its own heading instead of holding (crowds at a
+      wall deadlocked). Doc 18 §5.2 is updated in the same PR. Yes / no / change?
 
 ## Feedback
 

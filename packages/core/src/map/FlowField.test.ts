@@ -48,4 +48,13 @@ describe('FlowField', () => {
     // Leaving the grid counts as blocked.
     expect(field.isLineClear(110, 20, 140, 20, 50)).toBe(false);
   });
+
+  it('says whether the ground under a point is walkable, and not off the grid', () => {
+    const field = fieldOf();
+
+    expect(field.isWalkableAt(90, 20)).toBe(true);
+    expect(field.isWalkableAt(60, 20)).toBe(false);
+    expect(field.isWalkableAt(-1, 20)).toBe(false);
+    expect(field.isWalkableAt(10_000, 20)).toBe(false);
+  });
 });

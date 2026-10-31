@@ -350,7 +350,11 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   the lane flow field when the straight line to the slot is blocked (MS-19). An engaging mob never
   follows the lane field, which leads to the lane's end rather than to its target: where the line to
   its target is blocked it holds, keeping obstacle avoidance first. The final heading, separation
-  included, is checked the same way, so no push steers a mob onto unwalkable ground. A mob blocked
+  included, is checked the same way, so no push steers a mob onto unwalkable ground: where
+  separation would, the mob keeps its own heading (so a crowd against a wall never pushes itself
+  to a standstill), and holds only when that heading is blocked too. A mob standing on unwalkable
+  ground, such as a horde member spawned inside its structure's footprint (§3.2), skips these
+  checks and walks straight to its slot until it is out. A mob blocked
   by terrain leaves its slot and returns to it once clear, because keeping the slot is never the
   top priority.
 - Vectors only, no angles (ADR 0012). All distances and factors are content (`TUNE`). The

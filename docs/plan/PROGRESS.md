@@ -2811,6 +2811,55 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: CodeRabbit re-review; review and merge.
 
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/coderabbit-review — sholtzman + Claude Code
+
+- What was done: applied the product owner's rulings on the review of the merged PR #48 (DEC-95
+  to DEC-98, with the owner's follow-up picks on the critic's questions). ADR 0018 gained a dated
+  amendment: player-facing and architecture decisions go to the product owner as blockers
+  (visibility, not a veto); CodeRabbit blocks but never approves; nobody's text is a sign-off for
+  someone else (the owner's own description counts on the owner's own PRs); drafts are not
+  reviewed; learnings stay in this repo, wait 7 days for an admin, and
+  are logged for the product owner. `.coderabbit.yaml` follows it (validated against
+  `schema.v2.json`). The SDLC, git workflow, guardrails and tool-setup docs say "humans approve"
+  again. New `scripts/coderabbit/collect-learnings.mjs` (zero dependencies, `gh api`) writes
+  `docs/agents/coderabbit-learnings.md`; its 7 tests each failed on a deliberate break. The
+  workflow that runs it every 2 days (`.github/workflows/coderabbit-learnings.yml`) and the
+  `workflow_dispatch:` line in `ci.yml` were added by the product owner: agents may not edit
+  workflows.
+- Checks run (with the workflow files in, after merging the phase tip `9c58897`; only
+  `PROGRESS.md` and the decisions log conflicted, both sides kept): `npm run check` → `EXIT=0`:
+  "All matched files use Prettier code style!"; core "Tests 787 passed (787)"; client "Tests 419
+  passed (419)"; "✓ built in 112ms"; "Documentation check passed." Pre-PR gate: architecture critic PASS after 2 rounds;
+  ponytail review "Lean already".
+- Next step: the repo admin turns on Code Owner review on `phase/**` and `main`, only then allows
+  Actions to create and approve PRs, and deletes the stored "no human approval" learning in the
+  CodeRabbit app.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/renumber-dec-48 — sholtzman + Claude Code
+
+- What was done: PR #45 logged its DISC-24 tower-shift decision as DEC-48, but the HUD and
+  character-select branches have used DEC-48 since 2026-10-18 (class names are display names) and
+  cite it in about 36 files. The tower-shift row is now DEC-120, with a note under its batch that
+  maps the old number; its `INBOX.md` citation follows. The 2026-10-30 PR #45 entry above still
+  says DEC-48: past entries are not rewritten, and the note maps it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  787 passed (787)"; client "Tests 419 passed (419)"; "✓ built in 258ms"; "Documentation check
+  passed."
+- Next step: none; the HUD branches keep DEC-48.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/horde-leave-stronghold — SamarjitBhogal + Claude Code
+
+- What was done: hordes spawn inside the Stronghold's blocking footprint, so the lane steering held
+  every minion; a mob on unwalkable ground now walks straight to its slot (`isWalkableAt`), and one
+  separation would push onto blocked ground keeps its own heading (crowds at a wall deadlocked).
+  Doc 18 §5.2 updated; regression tests fail on the old code. Critic PASS (both changes better
+  than the design; its fixes applied); ponytail: lean already. Merged the phase branch (#59, #60).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  791 passed (791)"; client "Tests 419 passed (419)"; "✓ built in 172ms"; "Documentation check
+  passed."
+- Next step: the product owner signs off on the doc 18 §5.2 change on PR #61 (ADR 0018, DEC-96;
+  `INBOX.md` item); then mark it ready for review.
+
 ### 2026-10-30 — Phase 2 / Sprint 2 — feat/buildings-and-map-objects — Sam Holtzman + Claude Code (for Gurshaan)
 
 - What was done: on the product owner's request, before the presentation and on behalf of the
