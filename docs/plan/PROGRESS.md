@@ -2509,3 +2509,36 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   repository), run with this entry in place.
 - Next step: merge into `feat/hud-and-character-select`; the owner's answers to HC-Q27 (ADR 0025)
   and HC-B4 before the PR.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, record ADR 0025's acceptance (DEC-124) and HC-B4 (DEC-125) (docs pass, round B26) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: the owner accepted ADR 0025 ("sure. accept both. continue"), answered its three
+  open questions as recommended in one dialog, and took option 1 of HC-B4. His words are kept
+  verbatim in `eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-10-30-adr0025-hcb4.md`
+  (outside the repository).
+  - Docs (round B26): `13-owner-decisions-log.md` gets a fifth batch of 2026-10-30 with DEC-124
+    (ADR 0025 accepted: (a) the silent-error list of its §6 as written; (b) a screen crash outside
+    a match uses a new reason `'screen-crashed'`, "The screen stopped because of an error.", and the
+    same note popup; (c) the copy-mode text and a "Copy report" button) and DEC-125 (a record's
+    `schemaVersion` is bumped only for a field old saves cannot satisfy), and dated notes on
+    DEC-115 and DEC-116. ADR 0025 is accepted (`status: active`, its description and Status line);
+    each open question carries its answer, and the two pointers to them (§5 Q2, §6 Q1) carry the
+    answer in brackets. Architecture 14 §14's status note records DEC-125. `INBOX.md`: HC-Q27 and
+    HC-B4 answered and ticked; dated notes under HC-Q8, HC-Q25 and HC-Q26; HC-T1's round B26 bullet
+    and table (T-202, T-203 and T-207 redrafted, T-208's status changed, T-213 to T-226 new, 53
+    pending); a Done entry.
+  - The orchestrator: the citation comment for DEC-125 in
+    `apps/client/src/data/persistence/dto/SettingsDto.ts`.
+  - Every edit to a sholtzman-owned doc: the decisions log (the fifth batch's DEC-124 and DEC-125
+    rows; dated notes on DEC-115 and DEC-116), ADR 0025 (frontmatter `description` and `status`,
+    the Status line, the pointers to Q2 in §5 and to Q1 in §6, one answer under each open
+    question), architecture 14 §14 (one dated note), `INBOX.md`, this entry; `docs/README.md`'s
+    index line for ADR 0025 is regenerated from the new description. The design-text changes (14
+    new rows and three redrafts) are pending rows in the D2b patch, not applied.
+- Checks run: `npm run docs:check` "Documentation check passed." (122 files); Prettier clean on
+  the seven touched files; `git apply --check` of the D2b patch printed nothing; the pre-commit
+  `npm run check:quick` passed. The full `npm run check` was not run on this commit: the writer
+  part of step 12 was being built in the same worktree, uncommitted; the lane's full check runs
+  after the writer part.
+- Next step: build-plan step 12 (ADR 0025 §8) in this lane: core (the external command log, the
+  replay checkpoints, `exportReplay()`, `recentContext()`), then the writer, then the popup.

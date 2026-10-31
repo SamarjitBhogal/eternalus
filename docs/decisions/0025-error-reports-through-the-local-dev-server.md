@@ -1,8 +1,8 @@
 ---
 title: 0025. Error reports through the local dev server
-description: Proposed record of the owner's decisions DEC-106, DEC-115 and DEC-116 - every crash and error becomes one JSON report in logs/errors/, written by a small Vite plugin that runs only in the dev and preview servers, through one replaceable ReportWriter behind the client's logging with a copy fallback, fed by a core replay export and recent-history read, plus one class ErrorBoundary as the only exception to "function components only"; read this before changing the crash path, the logging sinks, the Vite config or the ErrorBoundary.
+description: Record of the owner's decisions DEC-106, DEC-115 and DEC-116, accepted 2026-10-30 (DEC-124) - every crash and error becomes one JSON report in logs/errors/, written by a small Vite plugin that runs only in the dev and preview servers, through one replaceable ReportWriter behind the client's logging with a copy fallback, fed by a core replay export and recent-history read, plus one class ErrorBoundary as the only exception to "function components only"; read this before changing the crash path, the logging sinks, the Vite config or the ErrorBoundary.
 audience: [humans, agents]
-status: draft
+status: active
 owner: sholtzman
 last-reviewed: 2026-10-30
 tags: [adr, diagnostics, crash-reports, logging, vite, error-boundary, replays]
@@ -19,8 +19,8 @@ related:
 
 # 0025. Error reports through the local dev server
 
-- Status: proposed (drafted 2026-10-30 for DEC-106, DEC-115 and DEC-116; nothing is built until
-  the product owner accepts it, `INBOX.md` HC-Q27)
+- Status: accepted (the product owner's decision in chat, 2026-10-30, DEC-124; drafted
+  2026-10-30 for DEC-106, DEC-115 and DEC-116)
 - Date: 2026-10-30
 
 ## Context
@@ -180,8 +180,10 @@ componentStack }` (plain strings; `ui/` never imports `game/` or `data/`). React
   async code reach neither; §6 covers them with `window` listeners.
 - **Handling.** `SessionController` takes `report-screen-crash`. In `match` it follows
   `endCrashedMatch` (destroy, FATAL, report with source `screen:<Name>`, menu, `'match-crashed'`).
-  In other phases it reports and returns to the menu (message: open question Q2). A second crash
-  of the same screen keeps the same key, so the boundary stays on its fallback: no loop.
+  In other phases it reports and returns to the menu (message: open question Q2 [answered
+  2026-10-30, DEC-124 (b): a new reason `'screen-crashed'`, "The screen stopped because of an
+  error.", and the same note popup]). A second crash of the same screen keeps the same key, so the
+  boundary stays on its fallback: no loop.
 
 ### 6. Silent errors
 
@@ -198,7 +200,8 @@ componentStack }` (plain strings; `ui/` never imports `game/` or `data/`). React
 Not reported: INFO `core.commands` (rejected commands), WARN `client.views` (a kind drawn with the
 default view). Dedupe: one report per scope, event name and body per page load; at most 20 silent
 reports per page load (`TUNE`). An invariant that breaks every tick makes one report, not 30 a
-second. **Open question Q1 for the owner.**
+second. **Open question Q1 for the owner.** [Answered 2026-10-30, DEC-124 (a): this table as
+written.]
 
 ### 7. Alternatives considered (all rejected)
 
@@ -263,7 +266,12 @@ popup); 15 §4, §5 and §13 (reporter, writer, reports); 02 §3 (`data/logging/
 ## Open questions for the owner
 
 1. **Q1, silent errors:** is the §6 table the right set? `Recommendation:` yes, as written.
+   - Answered 2026-10-30 (DEC-124 (a)): "The draft's list (Recommended)": the §6 table as written.
 2. **Q2, a screen crash outside a match:** which menu message? `Recommendation:` a new reason
    `'screen-crashed'` with "The screen stopped because of an error.", and the same note popup.
+   - Answered 2026-10-30 (DEC-124 (b)): "Screen wording (Recommended)": the new reason
+     `'screen-crashed'`, that text and the same note popup.
 3. **Q3, copy mode text:** `Recommendation:` "The report could not be saved. Copy it and send it to
    the team." with a "Copy report" button beside DEC-106's two buttons.
+   - Answered 2026-10-30 (DEC-124 (c)): "Draft wording (Recommended)": that text and the "Copy
+     report" button.

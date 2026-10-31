@@ -539,7 +539,10 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
   keeps the recipe as written, the settings record moves to version 2 with a pass-through upgrade.
   `CHORD_MODIFIERS` in `dto/SettingsDto.ts` lists the allowed names, and a test in
   `settingsState.test.ts` ties that list to the bridge's `ChordModifier` type, so the two cannot
-  drift apart.
+  drift apart. **Appended 2026-10-30:** the owner adopted that reading (DEC-125, `INBOX.md`
+  HC-B4), so it is now the rule: an optional field that old saves lack needs no `schemaVersion`
+  bump, and the settings record stays at version 1. The wording of §13's recipe row waits for him
+  in `INBOX.md` HC-T1 (T-226).
 
 Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
 DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the
