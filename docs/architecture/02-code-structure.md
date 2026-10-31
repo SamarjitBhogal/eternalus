@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-10-31
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -342,7 +342,8 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   `content/validation/BotRosterClassRule.ts`), the profile screen's name in
   `content/profile/profileDisplayName.ts`, the results screen's verdict lines in
   `content/narrative/verdictLines.ts` and each team's sovereign display name in
-  `content/sovereigns/sovereignDisplayNames.ts` (game-loop plan GL-5); core exports the types
+  `content/sovereigns/sovereignDisplayNames.ts` (game-loop plan GL-5; a stand-in until GL-3 puts
+  the name on the `monarch` definition, plan §4.3); core exports the types
   `VerdictLines` and `VerdictLineSet`.
 
 ## Related

@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-10-31
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -439,7 +439,7 @@ that fills them, and points for structures, captures and holds wait for the owne
 The verdict lines (§9, GL-5) are built: `content/narrative/verdictLines.ts` holds the
 `objective-lost` lines (the owner's placeholders, DEC-83), with `{name}` for the fallen side's
 sovereign, whose display name per team is in `content/sovereigns/sovereignDisplayNames.ts`
-(DEC-74); `loadDisplayContent()` returns both, and the client's results screen shows the line.
+(DEC-74; a stand-in until GL-3 puts the name on the `monarch` definition, plan §4.3); `loadDisplayContent()` returns both, and the client's results screen shows the line.
 `forfeit` and `aborted` have no lines yet (no condition produces them).
 
 Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity that carries `WinObjective` (the

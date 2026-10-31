@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-31
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -296,6 +296,10 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   ([06](06-map-and-minimap.md) §10), not into a separate `'minimap'` layer.
 - `Match.ts` has 335 lines (`wc -l` at `fcc7c85`), over the ~300-line guideline; a camera or
   explorer collaborator is the split if it grows.
+
+Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the factory's `onEnded` once, after
+the tick on which `MatchBridge` publishes `match-ended`; the loop keeps running (DEC-92) until
+`MatchState` leaves the phase ([13](13-game-interface.md) §2).
 
 ## Related
 

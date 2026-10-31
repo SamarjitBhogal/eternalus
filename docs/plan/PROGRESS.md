@@ -2856,3 +2856,31 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   passed (806)", client "Tests 1543 passed (1543)", "✓ built", "Documentation check passed."
   (`gl5-cite-check-2026-10-30.log`).
 - Next step: the pre-PR gate for GL-5 (architecture critic, then ponytail on GL-4 and GL-5).
+
+### 2026-10-31 — Game loop plan GL-5 pre-PR gate round 1 (Phase 3 sprint 3.5, pulled forward) — feat/results-flow — sholtzman + Claude Code
+
+- What: the pre-PR gate's architecture critic on GL-5 (`d8a803b..5badcf0`) and the ponytail review
+  of GL-4 (`2aa9651..49c7117`) and GL-5.
+  - Architecture critic: approve; 0 blocker, 0 major, 1 minor, 6 nits, 12 acceptable
+    (`eternalus-agent-work/game-loop-plan/arch-review-gl5-round-1.md`). Fixed: V1 (17 R17a: a new
+    condition adds its verdict lines, and a no-winner end that is not a draw first makes
+    `selectMatchVerdict` tell the two apart); V2 (02 §12 and 12 §13: the sovereign-name file is a
+    stand-in until GL-3); V3 (the `bridge/domain.types.ts` header allows bridge-only types such as
+    `MatchVerdict`); V4 (`SessionCountdown` takes its selector and label, and the win/lose screen
+    uses it, so the screen no longer re-renders each second); V6 (08 §11: `Match.tick` calls
+    `onEnded`). V5, a correction to the first GL-5 entry above, which says "Uncommitted": that code
+    was committed in `2ec78de` and `0732400`. Not changed: V7 (13 §5's sketch; 13 §10 lists
+    `durationSeconds` with the other additions to the sketch and cites DEC-129).
+  - Ponytail: PASS, 4 low-confidence cuts
+    (`eternalus-agent-work/game-loop-plan/ponytail-prepr-gl4-gl5.md`). Applied: `selectVerdictLine`
+    flips the team inline, as `buildMatchSetup` does. Rejected: dropping `LegendStats.controller`
+    and `classId` (12 §5 names them); inlining `ResultsState.finish` (rejected in critic round 1:
+    the one place GL-10 changes).
+  - Owner docs edited (reported): 17 R17a, 02 §12, 12 §13, 08 §11; `last-reviewed` 2026-10-31 on
+    each.
+- Fail-first: two breaks of `SessionCountdown` (selector ignored; label ignored), both red, restore
+  checked by `shasum` (`eternalus-agent-work/game-loop-plan/gl5-prepr-r1-breaks.md`).
+- Checks run: `npm run check` EXIT=0, core "Tests 806 passed (806)", client "Tests 1544 passed
+  (1544)", "✓ built", "Documentation check passed." (`gl5-prepr-r1-check-2026-10-31.log`).
+- Next step: the GL PRs wait for the HUD PR (owner, 2026-10-30), then open in the order docs, HUD,
+  match-director, match-scoring, results-flow.
