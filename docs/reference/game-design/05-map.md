@@ -177,8 +177,8 @@ pews, candles and an open capture court. Each oval stronghold includes a throne 
 furnished side rooms (council, library, kitchen, bedchamber, armory and dining). Its throne carpet
 leads to the middle-lane entrance; each lane has a stone passage through the perimeter.
 **Restore roofs & overview** restores roofs and shows the battlefield. Movement continues in
-the same simulation; full building collision and occupancy-driven cutaways arrive with the
-Structure-family work in Phase 2 sprints 2.1 and 2.4 (see the 2026-10-30 amendment below).
+the same simulation; building footprints collide and block pathing now, and occupancy-driven
+cutaways are not yet scheduled (see the 2026-10-30 amendment below).
 
 The close player view uses fine slate courses, stone joints, textile weave, foliage/grass marks
 and water ripples. Road tracks follow the generated lanes and fade into their verges. Stronghold
@@ -199,18 +199,19 @@ decorative floors and cutaways cannot substitute for those gameplay structures.
 Each new match chooses a fresh seed. Off-path camps, trees, rocks, lakes and houses vary with
 that seed and are placed as west/east mirror pairs. Strongholds, cathedral and lane structures
 retain their anchors. Scenery placement bounds live in map content; scenery with a physical
-footprint collides through `SimulationOptions.mapObjects`, and the full Structure-family and
-navigation-grid integration follows in Phase 2 sprints 2.1 and 2.4. Reusing a seed reproduces
-the layout.
+footprint collides through `SimulationOptions.mapObjects` and blocks the pathing grid until it
+is destroyed. The Structure family follows in Phase 2 sprint 2.1, walls and gates in sprint 2.4
+and the `terrain-changed` grid event in sprint 2.5. Reusing a seed reproduces the layout.
 
 ### 2026-10-30 — Structure and renderer integration amendment
 
 The [PR #30 round-2 review](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077)
 accepts mirrored random camps, including corner camps (DEC-85), while independent per-side
 placement is a next-sprint stretch goal or post-MVP. This supersedes the older placement rule.
-Physical scenery collision and walkable ruins now use explicit authored footprints; the full
-Structure-family, doors and navigation-grid updates are scheduled in Phase 2 sprints 2.1 and 2.4.
-Occupancy-driven cutaways arrive with that structure integration. The fine close-view material
+Physical scenery collision and walkable ruins now use explicit authored footprints, which also
+block the pathing grid until destroyed. The Structure family is scheduled in Phase 2 sprint 2.1,
+walls and gates in sprint 2.4 and the `terrain-changed` grid event in sprint 2.5.
+Occupancy-driven cutaways are not yet scheduled (INBOX). The fine close-view material
 work in the earlier amendment is assigned to the separate renderer PR in INBOX; worn lane roads
 remain in the map PR. The HUD branch owns the input and toolbar integration.
 

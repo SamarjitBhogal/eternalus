@@ -2832,3 +2832,38 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `phase/2-sprint-2-work` and fills the PR description (B5). Not re-checked here: F7, F9, F10,
   F14, F16, F17, F21–F25 (spot greps suggest `796f77d` addressed F7, F9, F10, F16 and F17), and
   the collision and destruction work first added in `796f77d`, which no review has seen yet.
+
+### 2026-10-30 — Phase 2 / Sprint 2 (PR #30 round 2) — feat/buildings-and-map-objects — Sam Holtzman + Claude Code (for Gurshaan)
+
+- What was done: second fix round on the local branch (not pushed). H1: with `mapObjects`,
+  `Simulation` stamps every blocking footprint into the `WorldMap` (minus bridge passages, a new
+  optional `openings` argument of `stampFootprint`/`clearFootprint`) and no longer stamps a
+  feature whose object is walkable (the Stronghold floor); a destroyed blocking object reopens its
+  cells and marks the lane fields dirty (`DefaultSystemPipeline`, on `entity-removed`). The dark
+  Rover no longer stays at (1495.6, 492.2) in its palace. S1: `CollisionResolver` lets a mover
+  that starts inside a footprint leave it and stops only moves that go deeper. B1 (DEC-121 (a)):
+  `MapObjectBuilder` gives each object of a side's feature, or built inside its palace, that
+  side's team (`MapObject.team`); `WorldObjectStore` adds `TeamMembership`, so
+  `AttackTargetHandler` rejects own-side targets. S7: `Match` queues `attack-target` only when
+  the held target changes (and again after a release or a `stop`). S2: scenery HP cites DEC-121
+  (b) with `// TUNE:`. S4: `circlePolygon` and `CONTACT_EPSILON` moved to `utils/`. L1:
+  `MapObjectBuilder` rejects footprints under 3 points; `isInReach` no longer fails open. D1:
+  schedule citations in reference 05 and architecture 06/07 corrected; cutaways have an INBOX item.
+- Tests that failed first (break → result): stamping off → "every bot Legend leaves its
+  Stronghold wall ring" red on seeds 1 and 2 (dark Rover at 1495.58, 492.22); clear listener off →
+  "reopens the pathing cells" red; openings ignored → WorldMap openings test red; resolver
+  start-inside branch off → expected `{ x: 9.4999999 }` to equal `{ x: 25 }`; no
+  `TeamMembership` → B1 test got no rejections; team assignment off → builder test red; old
+  `isInReach` defaults and no builder check → both L1 tests red; per-tick queue → 5 attacks, not 1.
+- Probes: seed 1, 120 s, with roster and map objects: before H1 the dark Rover stayed 50 from its
+  Stronghold; after H1 every Legend is at least 119 away at 20 s (seeds 1, 2, 7, 12345). A\* cost
+  rose from 1,458 ms (0 failed searches) to 19,047 ms (3,135 failed) because the stamped grid
+  has no path across the map centre (see Next step). S1: 144 units overlap tower footprints from
+  tick 2100 with or without the fix (hordes do not march yet); after 90 ticks of `move` south,
+  12 with the fix, 144 without.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 835 passed (835)"; client "Tests 433
+  passed (433)"; "Documentation check passed."
+- Next step: the map centre is closed. On seed 1 the collider finds no west-to-east path across
+  lane 2 (the capture-point fort's full-height side walls span the whole rift gap, y 775–825) and
+  only slivers on lane 0; the grid's 5-unit cells close lanes 0 and 1 too.
+  The author or Sam decides the geometry fix. Open for the author: S3, S5, S6, N2.

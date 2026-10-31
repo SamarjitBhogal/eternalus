@@ -488,9 +488,15 @@ the actual generated wall-segment footprints, including custom layouts. The obso
 
 Physical object polygons are assembled by `MapObjectBuilder` and injected through
 `SimulationOptions.mapObjects`, separately from the map used by headless horde scenarios.
-Health and destruction snapshots drive art and ruins; cutaways remain cosmetic. The full
-Structure-family and navigation-grid integration replace obstacle-backed scenery in Phase 2
-sprints 2.1 and 2.4. Duel door closure and occupancy-driven cutaways use those structure snapshots.
+Health and destruction snapshots drive art and ruins; cutaways remain cosmetic. With
+`mapObjects`, `Simulation` also stamps every blocking footprint into the `WorldMap` (minus bridge
+passages) instead of the Stronghold feature's footprint, whose floor is walkable; a destroyed
+object reopens its cells and marks the lane fields over them dirty. Conservative stamping
+(DEC-14) closes palace room doors narrower than two cells in the grid; the collider still lets
+units through them. The `terrain-changed` event follows in Phase 2 sprint 2.5, the Structure
+family replaces obstacle-backed scenery in sprint 2.1 and walls and gates follow in sprint 2.4.
+Duel door closure uses those structure snapshots; occupancy-driven cutaways are not yet
+scheduled (INBOX).
 Renderer caching and close-view material detail belong to the separate renderer follow-up in
 INBOX, with camera-moving p95 measurements. The map keeps its seeded scenery and worn roads.
 The HUD branch owns attack/roof input arbitration and bridge-backed toolbar state.

@@ -313,6 +313,10 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+- [ ] **PR #30 — schedule occupancy-driven cutaways** (owner: Gurshaan). A building's roof opens
+      today only when it is clicked; no plan item has the roof open while a unit is inside it.
+      The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure
+      family and walls/gates. Which sprint gets occupancy-driven cutaways, or are they post-MVP?
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
