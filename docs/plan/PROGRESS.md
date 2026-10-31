@@ -2608,3 +2608,32 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   files, 1672 tests; client coverage 96.92 / 93.85 / 95.35 / 97.36; "Documentation check passed."
 - Next step: critic loop 2 on `c228b73..HEAD`, then the `--no-ff` merge into
   `feat/hud-and-character-select`.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, build-plan step 12's critic loop 2 (one minor item, five nits) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: the critic (on `c228b73..4ad6d72`) found no blockers, one minor item and five
+  nits, and found that the three items loop 1 declined have reasons that hold. The ponytail review
+  found four cuts.
+  - `INBOX.md` HC-Q30 (the minor item): item 5 is built as option A until the owner answers, not
+    as the recommended B; its "Today" now says the popup stays open over the starting match and
+    its two buttons only close it.
+  - Code (the commit after `4ad6d72`): `MATCH_CRASH_BODY` in `SessionCrashes.constants.ts`;
+    `crashMatch` private; `crashNumber`'s TSDoc; `logWindowErrors` reads the message and the stack
+    once per event; `ErrorReporter.test.ts` (335 lines) split into the silent path (195) and
+    `ErrorReporter.crash.test.ts` (106), with the shared setup in
+    `__fixtures__/errorReporterSetUp.ts`. The test count is 33 before and after (the file at
+    `4ad6d72` was run beside the split files).
+  - Not done, with reasons: no `SessionCrashes.test.ts`, because `SessionCrashes` is
+    `SessionController`'s crash wiring moved out for the file length, and
+    `SessionController.crash.test.ts` tests and red-proofs it through the session's public API; a
+    sibling test would repeat those tests. Ponytail: the try/catch around the tick read stays (a
+    crash path must not throw into `componentDidCatch`, `currentTick` is a port method, and a test
+    holds it); `componentStack` stays a string that is `''` when React gives none (ADR 0025 §5).
+  - For the PR: `GameCanvas.crash.test.tsx` imports `ui/App` from `game/` (test only, as
+    `main.tsx` composes them; precedent `SettingsScreen.rebind.test.tsx`), and it holds the
+    client's first `vi.mock`; `LogContext` is a new export of `@eternalus/core`.
+- Checks run: no new behaviour, so no red proofs (refactors and moved tests; the existing tests
+  cover them). `npm run check` EXIT 0: core 118 files, 634 tests; client 256 files, 1672 tests;
+  client coverage 96.93 / 93.85 / 95.37 / 97.37; "Documentation check passed."
+- Next step: critic loop 3 (the last) on this loop's diff, then the `--no-ff` merge into
+  `feat/hud-and-character-select`.

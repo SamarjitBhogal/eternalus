@@ -1514,8 +1514,10 @@ Reply inline (`Decision: …`).
     the client edges of state `Match` owns.
 - [ ] **HC-Q30 — Crash popup: three texts and three behaviours the decisions do not give (the
       critic's loop 1 of build step 12, 2026-10-30).** The crash popup is built from DEC-106 and
-      DEC-124. These six points have no owner words. The build uses the recommendation in each
-      item; each text is marked `Recommendation:` in `apps/client/src/ui/strings.ts`.
+      DEC-124. These six points have no owner words. The build uses the recommendation in items 1
+      to 4 and 6; item 5 is built as option A until you answer, because B changes the session's
+      list of allowed phase changes. Each text is marked `Recommendation:` in
+      `apps/client/src/ui/strings.ts`.
   1. The text while the note saves. Recommendation: "Saving the note...".
   2. The text after the note is saved. Recommendation: "The report was saved as <file>." (`<file>`
      is the path under `logs/errors/`).
@@ -1533,8 +1535,10 @@ Reply inline (`Decision: …`).
   5. A screen crash during the pre-launch reveal. ADR 0025 says a screen crash outside a match
      "reports and returns to the menu", but the session's list of allowed phase changes
      (architecture "Game interface", `SessionController` section) has no move from pre-launch to
-     the menu, and "Interface and screen flow" says the reveal has no cancel. Today: the crash is
-     reported, the popup opens, the reveal runs on and the match starts. Options: (A) keep this;
+     the menu, and "Interface and screen flow" says the reveal has no cancel. Today (option A):
+     the crash is reported, the popup opens, the reveal runs on and the match starts with the
+     popup still open over it. Neither "Return to menu" nor "Save note and return to menu" goes to
+     the menu there: each only closes the popup. Options: (A) keep this;
      (B) add the move from pre-launch to the menu for a crash only (a design change to that list)
      and return to the menu with "The screen stopped because of an error.". Recommendation: B,
      because it is what the accepted ADR says, and a match started from a broken screen state can
