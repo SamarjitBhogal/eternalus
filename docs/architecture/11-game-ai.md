@@ -350,8 +350,9 @@ work named:
   it.
 - The stagger hashes the string id (`(tick + fnv1a(id)) % cadence`); a budget-deferred queue in
   `state.ai` replaces the round-robin cursor, with the same order (deferred first, then id order).
-- The registry holds `MinionController` (M2b) and `BotLegendController` (M3); the other
-  controllers are absent until their phases, so it is a partial map.
+- The registry holds `MinionController` (M2b), `GuardController` (M2c), `BotLegendController`
+  (M3) and `RoverController` (M8); the other controllers are absent until their phases, so it is
+  a partial map.
 - `BotLegendController` (M3) plays the `laner` tree of §4.2 with the nodes it needs
   (`ai/bt/`: `Sequence`, `ActiveSelector`, `Condition`, `Action`; `Selector` and `Cooldown` join
   with their first use) and a `UtilityScorer` (`ai/utility/`) over two considerations, closeness
@@ -382,8 +383,8 @@ work named:
   than one of them. `AiSystem.assertRegistered` checks each definition's profile at construction.
 - A definition that names an unregistered controller stops `Simulation` at construction (shipped
   content) or the first tick `AiSystem` sees the entity (injected content).
-- `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for structure entities
-  (M2c).
+- `Perception` has `unitsWithin` and `nearest`; `structuresWithin` waits for a controller that
+  needs it (M2c reads lane objectives from `state.laneStructures`).
 
 ## Related
 

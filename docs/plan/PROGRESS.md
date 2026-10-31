@@ -2557,25 +2557,26 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
 
-- What was done: minion plan M2c on top of M2s. `state/LaneStructures` (the lane-order objective
-  index, built once the structures spawn); `HordeSystem` holds the anchor `objectiveHoldGap` in
-  front of the next standing objective; `MinionController` attacks the breakable objective as
-  `lane-objective` (gate holding until `structure-breakability-changed`); `assessLanes` scores
-  structure damage not dealt and structures lost; `SpawnSystem` spawns from the structure entities
-  (a destroyed tower stops) and runs the guard plans (`content/structures/guardPlans.ts`, posts in
-  `state.guards`, respawn after 120 s, DISC-21 shrink); `GuardController` on the shared
-  `ai/LeashBehaviour`; `LeashedChaseMovementStrategy`; guards steered by `PathingSystem`;
-  `GuardWithinLeashInvariant`. Light, medium and heavy guard content. Four sign-off items in
-  `INBOX.md`. Docs 18 and the minion plan updated.
+- What was done: minion plan M2c on top of M2s, as its §2 row lists: the lane objectives
+  (`state/LaneStructures`), the anchor holding at the next standing objective, gate holding,
+  spawning from the structure entities (a destroyed tower stops), `assessLanes`' structure terms
+  and the guards (`content/structures/guardPlans.ts`, `GuardController` on `ai/LeashBehaviour`,
+  `LeashedChaseMovementStrategy`, `GuardWithinLeashInvariant`). Sign-off items in `INBOX.md`;
+  docs 18 and the minion plan updated.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   751 passed (751)"; client "Tests 416 passed (416)"; "✓ built in 184ms"; "Documentation check
   passed."
-- Pre-PR gate: critic round 1 had one blocker (no test for `PathingSystem`'s guard steering), now
-  tested with a guard engage-and-return match too; should-fixes applied (`GuardRoster` split out
-  of `SpawnSystem` with its own tests, the DISC-21 shrink names its structure kind in content,
+- Next step: the pre-PR gate (next entry).
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: pre-PR gate for M2c. Critic round 1: one blocker (no test for `PathingSystem`'s
+  guard steering), now tested with a guard engage-and-return match too; should-fixes applied
+  (`GuardRoster` split out of `SpawnSystem`, the DISC-21 shrink's structure kind in content,
   guards acquire inside their leash, INBOX items 5–8, a plan §3 row). Critic round 2: approve, no
-  blockers. Ponytail: lean, no cuts. Final `npm run check` → `EXIT=0`: core "Tests 755 passed
-  (755)", client "Tests 416 passed (416)", "✓ built in 172ms", "Documentation check passed."
+  blockers. Ponytail: lean, no cuts.
+- Checks run: final `npm run check` → `EXIT=0`: core "Tests 755 passed (755)", client "Tests 416
+  passed (416)", "✓ built in 172ms", "Documentation check passed."
 - Next step: M5b.
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — fix/struggling-lane-signals (on PR #56) — Claude Code for sholtzman
@@ -2624,19 +2625,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: CodeRabbit re-review; M2c (#56) merges this.
 
-### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards (merge of PR #55) — sholtzman + Claude Code
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — sholtzman + Claude Code
 
-- What was done: merged `feat/minion-structures` (PR #55 at `3ba4e79`, with PR #63 and the phase
-  head) into M2c, on top of `fix/struggling-lane-signals` (DEC-89). `GameState` takes
-  `MatchWorld`; `SpawnSystem` keeps #55's precomputed schedule and opening wave with M2c's
-  structure spawners, guard roster and DEC-89 tally clear; `laneScores` carries DEC-89's terms;
-  separation is #55's 1/r law. Tests: lane-minion filters exclude guards, two `SpawnSystem` tests
-  run to the DEC-87/DEC-127 first waves (both seen red against a deliberate break). The Rover's
-  lane `pressure` weight goes 3 → 4.5: DEC-89 dropped the constant damage-not-dealt term, which
-  shrank pressure by 2/3, and 4.5 keeps its rule (a lane pushed most of the way outweighs the
-  human; INBOX item updated). Doc 18 and the minion plan keep both sides; plan §3 drops the rows
-  M2c replaces, the Rover's structure-pressure row included.
+- What was done: merged PR #55 (`3ba4e79`, with PR #63) into M2c over DEC-89; the merge commit
+  lists each side kept. Lane-minion test filters skip guards; two `SpawnSystem` tests run to the
+  DEC-87/DEC-127 first waves. Rover lane `pressure` 3 → 4.5, since DEC-89 dropped the constant
+  damage-not-dealt term, so a lane pushed most of the way still outweighs the human (INBOX
+  updated). CodeRabbit on #56: doc 11 §10 registry and `structuresWithin` notes, INBOX "eight
+  items", direct `LaneStructures` tests, `StructureSystem`'s in-sync guard, the M2c entry above
+  split into two three-bullet entries. Every new or retimed test seen red against a break.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
-  "Tests 872 passed (872)"; client "Tests 420 passed (420)"; "✓ built in 268ms"; "Documentation
-  check passed."
-- Next step: #56's CodeRabbit items, MS-34, the tower-to-enraged scenario test, the pre-PR gate.
+  "Tests 872 passed (872)"; client "Tests 420 passed (420)"; "Documentation check passed."
+- Next step: MS-34, the tower-to-enraged scenario test, the pre-PR gate.

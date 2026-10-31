@@ -16,7 +16,7 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Minion M2c (`feat/minion-m2c-objectives-guards`, overnight 2026-10-30) — four items for
+- [ ] **Minion M2c (`feat/minion-m2c-objectives-guards`, overnight 2026-10-30) — eight items for
       sign-off, all applied as below so the work could continue.** (1) **Better than the design:**
       a horde gathered at its objective (anchor within `acquisitionRadius` of the objective's
       front) acquires it from every rank, not only the front rank in reach; and attacking a
