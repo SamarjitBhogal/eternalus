@@ -60,6 +60,7 @@ export { MapGenerator } from './map/MapGenerator';
 export { MapSceneryBuilder } from './map/MapSceneryBuilder';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
+export type { RosterSlot } from './Simulation.types';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {
   GameEventHandler,

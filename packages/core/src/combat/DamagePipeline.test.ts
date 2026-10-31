@@ -7,6 +7,7 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
 import { DamagePipeline } from './DamagePipeline';
 import type { DamageSource } from '../state/GameEvents.types';
@@ -14,7 +15,11 @@ import type { DamageSource } from '../state/GameEvents.types';
 const SOURCE: DamageSource = { attackerId: 'entity-9', kind: 'weapon', definitionId: 'sword' };
 
 const setUp = (map: MapDefinition | null = null): GameState => {
-  const state = new GameState(createDefaultGameConfig(), 1, map);
+  const state = new GameState(
+    createDefaultGameConfig(),
+    1,
+    map === null ? null : matchWorldOf(map),
+  );
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(createDefaultGameConfig().tickRate),

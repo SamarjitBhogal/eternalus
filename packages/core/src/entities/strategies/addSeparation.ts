@@ -5,7 +5,7 @@ import type { MovementContext } from './MovementStrategy.types';
 
 /**
  * Adds the separation push from every neighbour within `separationRadius` to `context.out` (10 §9,
- * MS-19): full weight at contact, nothing at the radius. Zeroes a result shorter than `minSteer`,
+ * MS-19): weighted 1/r, shifted to reach 0 at the radius. Zeroes a result shorter than `minSteer`,
  * so a settled crowd stands still. Shared by the movement strategies; allocates nothing.
  */
 export const addSeparation = (
@@ -26,8 +26,8 @@ export const addSeparation = (
     if (other === self || apart === 0 || apart >= separationRadius) {
       continue;
     }
-    // Away from the neighbour: full weight at contact, nothing at the radius.
-    const strength = (separationWeight * (separationRadius - apart)) / separationRadius;
+    // Away from the neighbour, weighted 1/r (10 §9) and shifted to reach 0 at the radius.
+    const strength = (separationWeight * (separationRadius - apart)) / apart;
     out.x += (awayX / apart) * strength;
     out.y += (awayY / apart) * strength;
   }

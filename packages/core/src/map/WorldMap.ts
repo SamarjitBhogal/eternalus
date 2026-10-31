@@ -1,13 +1,14 @@
 import type { MapDefinition } from '../content/maps/maps.types';
 import { doesPolygonOverlapRect } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
-import { CELL_EDGE_SLACK } from './WorldMap.constants';
+import { sqrt } from '../utils/deterministicMath';
+import { CELL_EDGE_SLACK, LINE_STEP_FRACTION } from './WorldMap.constants';
 import type { BlockingRule } from './WorldMap.types';
 
 /**
  * The per-match walkability grid derived from a `MapDefinition`. Every cell touched by rift or
  * out-of-bounds terrain or by the footprint of a blocking feature is unwalkable. Footprints can be stamped and cleared
- * later (a wall falls, a tree is felled) without touching the definition. No pathing yet.
+ * later (a wall falls, a tree is felled) without touching the definition.
  */
 export class WorldMap {
   /** Side of one square cell in world units. */
@@ -56,6 +57,39 @@ export class WorldMap {
   public isWalkable(col: number, row: number): boolean {
     const isOnGrid = col >= 0 && row >= 0 && col < this.cols && row < this.rows;
     return isOnGrid && this.walkable[row * this.cols + col] === 1;
+  }
+
+  /**
+   * Whether the first `maxDistance` of the straight line from `(fromX, fromY)` to `(toX, toY)` is
+   * walkable, sampled `LINE_STEP_FRACTION` of a cell apart (flow fields, A\* string pulling).
+   *
+   * @remarks ponytail: sampling can miss a line that clips a blocked cell's corner for less than a
+   * step. An exact cell walk (DDA) catches it, but mobs then hold at rift corners, since they have
+   * no wall-avoidance term to slide along them. Switch to the exact walk when `CollisionSystem`
+   * brings that term (10 §8–§9); until then no unit collides with blocked ground either.
+   */
+  public isLineClear(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    maxDistance = Number.POSITIVE_INFINITY,
+  ): boolean {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const span = sqrt(dx * dx + dy * dy);
+    const reach = Math.min(span, maxDistance);
+    const stride = this.cellSize * LINE_STEP_FRACTION;
+    const steps = Math.ceil(reach / stride);
+    for (let step = 1; step <= steps; step += 1) {
+      const along = Math.min(step * stride, reach) / span;
+      const col = Math.floor((fromX + dx * along) / this.cellSize);
+      const row = Math.floor((fromY + dy * along) / this.cellSize);
+      if (!this.isWalkable(col, row)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /** The cell under a world position, or `null` outside the world. */

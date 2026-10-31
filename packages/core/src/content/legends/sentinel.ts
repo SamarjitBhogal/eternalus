@@ -21,7 +21,7 @@ export const SENTINEL = {
   referenceHeight: 4.6, // TUNE: ~15 ft (an elephant)
   footprintRadius: 1.25, // DEC-06
   visionRadius: 25, // TUNE:
-  movement: {
+  movementProfile: {
     maxSpeed: 9, // TUNE: m/s
     acceleration: 0.18, // TUNE: m/s², top speed after 50 s
     mass: 6, // TUNE:

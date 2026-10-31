@@ -20,6 +20,8 @@ export const WANDER_SEED_7: Replay = {
       navCellSize: 5,
       flowFieldCorridorHalfWidth: 25,
       flowFieldCellBudget: 2000,
+      pathMaxExpansions: 6000,
+      pathSnapCells: 12,
       presetId: 'map-1',
     },
     match: {
@@ -31,7 +33,6 @@ export const WANDER_SEED_7: Replay = {
         medium: 8,
         heavy: 4,
       },
-      initialHordesPerTeam: 3,
       plannedMatchSeconds: 1200,
     },
     limits: {

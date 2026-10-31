@@ -15,7 +15,9 @@ export const spawnMapStructures = (state: GameState): void => {
     STRUCTURE_DEFINITIONS,
     new IdGenerator(1000),
   );
-  const features = [...(state.map?.features ?? [])].sort((a, b) => compareById(a.id, b.id));
+  const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
+    compareById(a.id, b.id),
+  );
   for (const { definitionId, position, team, laneId } of features) {
     if (STRUCTURE_DEFINITIONS.has(definitionId)) {
       const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);

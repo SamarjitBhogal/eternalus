@@ -81,7 +81,7 @@ describe('createDefaultEntityRegistry', () => {
       expect(entity.kind).toBe(definition.kind);
       expect(entity.getComponent(Transform).position).toEqual({ x: 10, y: 20 });
       expect(entity.getComponent(Health).current).toBe(definition.baseHealth);
-      expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
+      expect(entity.getComponent(Movement).maxSpeed).toBe(definition.movementProfile.maxSpeed);
       expect(entity.getComponent(TeamMembership).team).toBe('light');
       expect(entity.getComponent(Collider).shape.radius).toBe(definition.footprintRadius);
     }

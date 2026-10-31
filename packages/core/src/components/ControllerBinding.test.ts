@@ -24,6 +24,7 @@ describe('ControllerBinding', () => {
     expect(make('bot').getComponent(ControllerBinding)).toEqual({
       controllerId: 'minion',
       profileId: 'minion',
+      initialMemory: {},
     });
     expect(make('tuned').getComponent(ControllerBinding).profileId).toBe('lane-minion');
   });

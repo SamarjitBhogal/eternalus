@@ -17,6 +17,7 @@ import { GameState } from '../state/GameState';
 import { Collider } from '../components/Collider';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { IdGenerator } from '../utils/IdGenerator';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { MinionController } from './MinionController';
 import { Perception } from './perception/Perception';
 
@@ -31,7 +32,7 @@ const controller = new MinionController({
 
 const setUp = () => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(30),

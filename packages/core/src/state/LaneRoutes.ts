@@ -98,6 +98,17 @@ export class LaneRoutes {
     forward.y = span === 0 ? 0 : (b.y - a.y) / span;
   }
 
+  /**
+   * The base of lane `laneId` for `team`: where its route starts, at the team's own gate.
+   *
+   * @throws Error when the map has no such lane.
+   */
+  public start(laneId: string, team: PlayableTeam): Vec2 {
+    const point = { x: 0, y: 0 };
+    this.pose(laneId, team, 0, point, { x: 0, y: 0 });
+    return point;
+  }
+
   /** The lane whose path passes closest to `point`; ties go to the lower index. */
   public nearestLane(point: Vec2): MapLane | undefined {
     let nearest: MapLane | undefined;

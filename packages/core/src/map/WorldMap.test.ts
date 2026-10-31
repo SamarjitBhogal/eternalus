@@ -7,6 +7,7 @@ import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import type { Vec2 } from '../utils/geometry.types';
 import { MapGenerator } from './MapGenerator';
 import type { MapConfig } from './MapGenerator.types';
+import { BLOCKED_LANE_MAP } from './__fixtures__/blockedLaneMap';
 import { WorldMap } from './WorldMap';
 
 const isBlocking = (definitionId: string): boolean =>
@@ -238,5 +239,14 @@ describe('WorldMap', () => {
 
       expect(reached.has(cellIndex(grid, { x: map.width / 2, y: map.height / 2 }))).toBe(false);
     }
+  });
+
+  it('checks a straight line for blocked cells, up to a distance', () => {
+    const map = WorldMap.fromDefinition(BLOCKED_LANE_MAP, 2, () => false);
+
+    expect(map.isLineClear(10, 20, 45, 20)).toBe(true);
+    expect(map.isLineClear(10, 20, 100, 20)).toBe(false);
+    expect(map.isLineClear(10, 20, 100, 20, 30)).toBe(true);
+    expect(map.isLineClear(10, 5, 100, 5)).toBe(true);
   });
 });

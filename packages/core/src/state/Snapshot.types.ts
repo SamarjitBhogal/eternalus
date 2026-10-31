@@ -1,6 +1,7 @@
-import type { Team } from '../teams/teams.types';
+import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
-import type { MatchPhase } from './GameState.types';
+import type { MatchPhase, TeamState } from './GameState.types';
+import type { Horde } from './Horde.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
@@ -16,6 +17,12 @@ export type EntitySnapshot = {
   readonly health: { readonly current: number; readonly max: number } | null;
 };
 
+/** A lane horde as the client sees it (architecture 18 §4): the store's plain fields, copied. */
+export type HordeSnapshot = Horde;
+
+/** One playable team's match counters as the client sees them (architecture 18 §3.4). */
+type TeamSnapshot = TeamState;
+
 /**
  * The state of a match after one tick, as plain data: objects, arrays, numbers, strings and
  * `null` only, so it survives `structuredClone` and `postMessage` unchanged (D8). The client keeps
@@ -26,4 +33,7 @@ export type Snapshot = {
   readonly phase: MatchPhase;
   /** In the store's insertion order. */
   readonly entities: readonly EntitySnapshot[];
+  /** In creation order. */
+  readonly hordes: readonly HordeSnapshot[];
+  readonly teams: Readonly<Record<PlayableTeam, TeamSnapshot>>;
 };

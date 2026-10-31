@@ -6,6 +6,7 @@ import type { ContentCatalogue } from './content/ContentCatalogue';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import type { System } from './systems/System.types';
+import type { PlayableTeam } from './teams/teams.types';
 
 /** Everything a `Simulation` is built from (architecture 03 §6). Only the first three are required. */
 export type SimulationOptions = {
@@ -25,6 +26,22 @@ export type SimulationOptions = {
   readonly map?: MapDefinition;
   /** The level curves Legends level along; `loadLevelCurves()` when omitted. */
   readonly levelCurves?: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;
+  /**
+   * The bot Legends, spawned when the match is built at the start of their lane on their side
+   * (architecture 18 §8); a match without one has no bots. Needs `map`.
+   */
+  readonly roster?: readonly RosterSlot[];
   /** Where Legends find their weapons by id; `loadWeapons(config.tickRate)` when omitted. */
   readonly weapons?: WeaponSource;
+};
+
+/** One bot Legend of a match roster (architecture 18 §8): who, for which team, in which role. */
+export type RosterSlot = {
+  readonly team: PlayableTeam;
+  /** The Legend definition (its class). */
+  readonly definitionId: string;
+  /** A `laner` gets a lane at setup; the `rover` takes none (MS-20). */
+  readonly role: 'laner' | 'rover';
+  /** The bot's difficulty (`content/ai/difficulties/`). */
+  readonly difficulty: string;
 };
