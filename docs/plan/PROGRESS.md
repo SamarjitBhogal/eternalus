@@ -2639,3 +2639,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
   "Tests 880 passed (880)"; client "Tests 420 passed (420)"; "Documentation check passed."
 - Next step: the tower-to-enraged scenario test, the test-file splits, the pre-PR gate.
+
+### 2026-10-31 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — sholtzman + Claude Code
+
+- What was done: the tower-to-enraged scenario test (`Simulation.modifiers.test`) showed that
+  `finite-transforms` stopped the match once an enraged minion ran at 1.1 × `maxSpeed`.
+  `Movement.topSpeed` now holds the cap the statuses allowed, and the invariant checks against it
+  (INBOX: approve the doc 04/10/15 wording). The minion plan drops its "only the human's Legend"
+  row. Four long test files split by concern (#63's promise). Soak (seed 1, 3 lanes, bots, 900 s):
+  skipped light 36.37 %, dark 54.24 % (#63: 23.62 %, 43.22 %); tower guards hold 36–38 of the
+  144-unit cap. Not tuned (the prompt says report, do not change numbers).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 883 passed (883)"; client "Tests 420 passed
+  (420)"; "Documentation check passed."
+- Next step: the pre-PR gate, then push and reply on #56.
