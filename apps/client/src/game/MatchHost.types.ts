@@ -46,4 +46,6 @@ export type MatchHostDeps = {
   readonly adapters: readonly { destroy(): void }[];
   /** The match's evidence for an error report (`createBrowserMatch` reads the simulation). */
   readonly evidence: () => MatchEvidence;
+  /** The simulation's tick, without building the evidence. */
+  readonly currentTick: () => number;
 };

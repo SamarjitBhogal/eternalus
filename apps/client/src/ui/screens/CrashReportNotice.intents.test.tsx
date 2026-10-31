@@ -45,21 +45,30 @@ function mount(report: CrashReportState) {
   });
   const button = (name: string): HTMLButtonElement | undefined =>
     [...container.querySelectorAll('button')].find((element) => element.textContent === name);
-  return { container, button };
+  return { container, button, store };
+}
+
+/** Types `value` into the note field the way a keystroke does. */
+function type(field: HTMLTextAreaElement | null, value: string): void {
+  act(() => {
+    // React tracks a field's value through its own setter, so the test types through the
+    // prototype's, as a keystroke does.
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- called with `this` set below.
+    const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+    setValue?.call(field, value);
+    field?.dispatchEvent(new Event('input', { bubbles: true }));
+  });
 }
 
 describe('CrashReportNotice intents', () => {
   it('sends the typed note with "Save note and return to menu"', () => {
-    const { container, button } = mount({ stage: 'asking', noteLimit: 2000 });
-    const field = container.querySelector('textarea');
-    act(() => {
-      // React tracks a field's value through its own setter, so the test types through the
-      // prototype's, as a keystroke does.
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- called with `this` set below.
-      const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-      setValue?.call(field, 'I pressed R');
-      field?.dispatchEvent(new Event('input', { bubbles: true }));
+    const { container, button } = mount({
+      stage: 'asking',
+      noteLimit: 2000,
+      cause: 'match',
+      crashNumber: 1,
     });
+    type(container.querySelector('textarea'), 'I pressed R');
 
     act(() => {
       button(text.saveNote)?.click();
@@ -69,7 +78,7 @@ describe('CrashReportNotice intents', () => {
   });
 
   it('sends dismiss-crash-report with "Return to menu"', () => {
-    const { button } = mount({ stage: 'asking', noteLimit: 2000 });
+    const { button } = mount({ stage: 'asking', noteLimit: 2000, cause: 'match', crashNumber: 1 });
 
     act(() => {
       button(text.returnToMenu)?.click();
@@ -81,7 +90,14 @@ describe('CrashReportNotice intents', () => {
   it('copies the report text with "Copy report"', () => {
     const writeText = vi.fn(() => Promise.resolve());
     vi.stubGlobal('navigator', { clipboard: { writeText } });
-    const { button } = mount({ stage: 'copy', copyText: 'REPORT', noteLimit: 10 });
+    const { button } = mount({
+      stage: 'copy',
+      copyText: 'REPORT',
+      isReportSaved: false,
+      noteLimit: 10,
+      cause: 'match',
+      crashNumber: 1,
+    });
 
     act(() => {
       button(text.copyReport)?.click();
@@ -94,7 +110,14 @@ describe('CrashReportNotice intents', () => {
 
   it('survives a page with no clipboard', async () => {
     vi.stubGlobal('navigator', {});
-    const { button } = mount({ stage: 'copy', copyText: 'REPORT', noteLimit: 10 });
+    const { button } = mount({
+      stage: 'copy',
+      copyText: 'REPORT',
+      isReportSaved: false,
+      noteLimit: 10,
+      cause: 'match',
+      crashNumber: 1,
+    });
 
     await act(async () => {
       button(text.copyReport)?.click();
@@ -106,7 +129,7 @@ describe('CrashReportNotice intents', () => {
   });
 
   it('opens as a modal dialog and closes it again when the report closes', () => {
-    const { container } = mount({ stage: 'asking', noteLimit: 10 });
+    const { container } = mount({ stage: 'asking', noteLimit: 10, cause: 'match', crashNumber: 1 });
     const dialog = container.querySelector('dialog');
 
     expect(dialog?.open).toBe(true);
@@ -115,5 +138,21 @@ describe('CrashReportNotice intents', () => {
     });
     root = undefined;
     expect(dialog?.open).toBe(false);
+  });
+
+  it('starts the note field empty for a second crash, and keeps the note while one crash saves', () => {
+    const asking = { stage: 'asking', noteLimit: 2000, cause: 'match', crashNumber: 1 } as const;
+    const { container, store } = mount(asking);
+    type(container.querySelector('textarea'), 'first crash note');
+    act(() => {
+      store.dispatch(sessionSlice.actions.crashReportChanged({ ...asking, stage: 'saving' }));
+    });
+    expect(container.querySelector('textarea')?.value).toBe('first crash note');
+
+    act(() => {
+      store.dispatch(sessionSlice.actions.crashReportChanged({ ...asking, crashNumber: 2 }));
+    });
+
+    expect(container.querySelector('textarea')?.value).toBe('');
   });
 });

@@ -49,12 +49,15 @@ describe('connectBusToStore', () => {
 
   it('copies the crash popup state into the session slice, and closes it with null', () => {
     const { bus, store } = connected();
-    bus.emit('crash-report', { stage: 'saved', file: 'logs/errors/a.json', noteLimit: 5 });
-    expect(store.getState().session.crashReport).toEqual({
+    const saved = {
       stage: 'saved',
       file: 'logs/errors/a.json',
       noteLimit: 5,
-    });
+      cause: 'match',
+      crashNumber: 1,
+    } as const;
+    bus.emit('crash-report', saved);
+    expect(store.getState().session.crashReport).toEqual(saved);
     bus.emit('crash-report', null);
     expect(store.getState().session.crashReport).toBeNull();
   });

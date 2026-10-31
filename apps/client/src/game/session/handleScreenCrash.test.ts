@@ -43,9 +43,8 @@ describe('handleScreenCrash', () => {
     handleScreenCrash({ ...INTENT, screen: 'match' }, value);
 
     expect(calls.crashMatch).toHaveBeenCalledWith(
-      { message: 'boom', stack: null, source: 'screen:match' },
-      'match: boom',
-      90,
+      { message: 'boom', stack: 'Component stack:in X', source: 'screen:match' },
+      { errorText: 'match: boom', tick: 90, componentStack: 'in X' },
     );
     expect(calls.report).not.toHaveBeenCalled();
     expect(calls.transitionToMenu).not.toHaveBeenCalled();
@@ -57,18 +56,29 @@ describe('handleScreenCrash', () => {
     handleScreenCrash({ ...INTENT, stack: 'at x' }, value);
 
     expect(calls.report).toHaveBeenCalledWith(
-      { message: 'boom', stack: 'at x', source: 'screen:menu.settings' },
+      { message: 'boom', stack: 'at x\n\nComponent stack:in X', source: 'screen:menu.settings' },
       {
         body: 'The screen stopped because of an error.',
         errorText: 'menu.settings: boom',
         tick: null,
         seed: 5,
+        cause: 'screen',
+        componentStack: 'in X',
       },
     );
     expect(calls.transitionToMenu).toHaveBeenCalledWith('screen-crashed');
     expect(calls.report.mock.invocationCallOrder[0]).toBeLessThan(
       calls.transitionToMenu.mock.invocationCallOrder[0] ?? 0,
     );
+  });
+
+  it('puts the component stack after the stack, alone when there is no stack, and leaves it out when empty', () => {
+    const { value, calls } = host('loading', true);
+
+    handleScreenCrash({ ...INTENT, stack: 'at x', componentStack: '' }, value);
+    handleScreenCrash({ ...INTENT, stack: '', componentStack: '' }, value);
+
+    expect(calls.report.mock.calls.map(([error]) => error.stack)).toEqual(['at x', null]);
   });
 
   it('shows the reason again and goes back home when the crash was in the menu', () => {

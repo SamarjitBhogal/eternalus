@@ -33,4 +33,10 @@ describe('FakeRunningMatch', () => {
     expect(new FakeRunningMatch(evidence).evidence()).toBe(evidence);
     expect(new FakeRunningMatch().evidence().match.seed).toBe(fakeMatchEvidence().match.seed);
   });
+
+  it('answers currentTick() with the tick of its evidence', () => {
+    expect(new FakeRunningMatch(fakeMatchEvidence(99)).currentTick()).toBe(
+      fakeMatchEvidence(99).match.tick,
+    );
+  });
 });

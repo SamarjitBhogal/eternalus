@@ -61,6 +61,9 @@ export const STRINGS = {
     // DEC-124 (c): the owner's text and the button for a report that could not be saved.
     copyMessage: 'The report could not be saved. Copy it and send it to the team.',
     copyReport: 'Copy report',
+    // Recommendation: for a saved report whose note write failed (owner question HC-Q30).
+    noteNotSavedMessage:
+      'The report was saved, but the note was not. Copy the note and send it to the team.',
     // Recommendation: the recorder's words for the two states DEC-106 does not word.
     saving: 'Saving the note...',
     saved: (file: string): string => `The report was saved as ${file}.`,

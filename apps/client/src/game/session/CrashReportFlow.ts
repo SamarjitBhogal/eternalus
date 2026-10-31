@@ -1,6 +1,6 @@
 import { makeLogRecord } from '@eternalus/core';
 
-import type { CrashReportState } from '../../bridge/CrashReport.types';
+import type { CrashReportStage, CrashReportState } from '../../bridge/CrashReport.types';
 import type { UiIntent } from '../../bridge/events';
 import { MAX_NOTE_CHARS } from '../../data/logging/ErrorReport.constants';
 import type { ReportedError } from '../../data/logging/ErrorReport.types';
@@ -17,6 +17,8 @@ import type { CrashContext, CrashReportFlowDeps } from './CrashReportFlow.types'
  */
 export class CrashReportFlow {
   private current = 0;
+  private cause: CrashReportState['cause'] = 'match';
+  private isReportSaved = false;
   private published: CrashReportState | null = null;
   private outcome: Promise<ReportOutcome> | null = null;
 
@@ -27,24 +29,34 @@ export class CrashReportFlow {
    * Logs the crash, reports it and opens the popup. Call it BEFORE the session leaves the `match`
    * phase: the report reads the running match's evidence in this call, and leaving drops the match.
    */
-  public crashed(error: ReportedError, { body, errorText, tick, seed }: CrashContext): void {
+  public crashed(
+    error: ReportedError,
+    { body, errorText, tick, seed, cause, componentStack }: CrashContext,
+  ): void {
     this.deps.logger.log(
       makeLogRecord('FATAL', 'client.session', body, {
         ...(tick === null ? {} : { tick }),
-        attributes: { error: errorText, stack: error.stack, seed },
+        attributes: {
+          error: errorText,
+          stack: error.stack,
+          seed,
+          ...(componentStack === '' ? {} : { componentStack }),
+        },
       }),
     );
     const crash = ++this.current;
+    this.cause = cause;
+    this.isReportSaved = false;
     const outcome = this.deps.reporter.reportCrash(error);
     this.outcome = outcome;
-    this.publish({ stage: 'asking', noteLimit: MAX_NOTE_CHARS });
+    this.publish({ stage: 'asking' });
     void outcome.then((result) => {
       if (
         crash === this.current &&
         this.published?.stage === 'asking' &&
         result.status === 'copy'
       ) {
-        this.publish(CrashReportFlow.stateOf(result));
+        this.publish(this.stateOf(result));
       }
     });
   }
@@ -64,21 +76,28 @@ export class CrashReportFlow {
     const { outcome } = this;
     if (outcome === null || this.published === null || this.published.stage === 'saving') return;
     const crash = this.current;
-    this.publish({ stage: 'saving', noteLimit: MAX_NOTE_CHARS });
-    const result = await this.deps.reporter.addNote(await outcome, note.slice(0, MAX_NOTE_CHARS));
+    this.publish({ stage: 'saving' });
+    const prior = await outcome;
+    const result = await this.deps.reporter.addNote(prior, note.slice(0, MAX_NOTE_CHARS));
     if (crash !== this.current) return;
+    // A copy after a saved report means only the note write failed (V4).
+    if (prior.status === 'saved') this.isReportSaved = true;
     this.outcome = Promise.resolve(result);
-    this.publish(CrashReportFlow.stateOf(result));
+    this.publish(this.stateOf(result));
   }
 
-  private publish(state: CrashReportState | null): void {
-    this.published = state;
-    this.deps.bus.emit('crash-report', state);
+  /** Publishes the stage with the fields every state of the current crash carries. */
+  private publish(stage: CrashReportStage | null): void {
+    this.published =
+      stage === null
+        ? null
+        : { ...stage, noteLimit: MAX_NOTE_CHARS, cause: this.cause, crashNumber: this.current };
+    this.deps.bus.emit('crash-report', this.published);
   }
 
-  private static stateOf(outcome: ReportOutcome): CrashReportState {
+  private stateOf(outcome: ReportOutcome): CrashReportStage {
     return outcome.status === 'saved'
-      ? { stage: 'saved', file: outcome.file, noteLimit: MAX_NOTE_CHARS }
-      : { stage: 'copy', copyText: outcome.text, noteLimit: MAX_NOTE_CHARS };
+      ? { stage: 'saved', file: outcome.file }
+      : { stage: 'copy', copyText: outcome.text, isReportSaved: this.isReportSaved };
   }
 }

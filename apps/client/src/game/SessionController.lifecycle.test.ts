@@ -58,9 +58,15 @@ function setUp(overrides: Partial<SessionControllerDeps> = {}) {
     destroy: ReturnType<typeof vi.fn>;
     setPaused: ReturnType<typeof vi.fn>;
     evidence: ReturnType<typeof vi.fn<typeof fakeMatchEvidence>>;
+    currentTick: ReturnType<typeof vi.fn>;
   }[] = [];
   const createMatch = vi.fn<MatchFactory>((): RunningMatch => {
-    const handle = { destroy: vi.fn(), setPaused: vi.fn(), evidence: vi.fn(fakeMatchEvidence) };
+    const handle = {
+      destroy: vi.fn(),
+      setPaused: vi.fn(),
+      evidence: vi.fn(fakeMatchEvidence),
+      currentTick: vi.fn(() => 0),
+    };
     handles.push(handle);
     return handle;
   });

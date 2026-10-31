@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { MatchCrash } from './Match.types';
 import { MemoryReportWriter } from '../data/logging/MemoryReportWriter';
@@ -60,8 +60,33 @@ function setUp(writer = new MemoryReportWriter()) {
       isExplorerShown: false,
     });
   };
+  const toPreLaunch = async (): Promise<void> => {
+    await toCharacterSelect();
+    session.intent({
+      kind: 'select-class',
+      classId: 'magus',
+      specId: firstAvailableSpecId('magus'),
+    });
+    session.intent({ kind: 'confirm-selection' });
+    session.clock.advance(SELECT_COUNTDOWN_MS);
+  };
   const popup = () => session.store.getState().session.crashReport;
-  return { ...session, writer, matches, crashes, toCharacterSelect, toMatch, popup };
+  const firstMatch = (): FakeRunningMatch => {
+    const [match] = matches;
+    if (match === undefined) throw new Error('no match was built');
+    return match;
+  };
+  return {
+    ...session,
+    writer,
+    matches,
+    firstMatch,
+    crashes,
+    toCharacterSelect,
+    toPreLaunch,
+    toMatch,
+    popup,
+  };
 }
 
 describe('SessionController crash reports', () => {
@@ -90,6 +115,8 @@ describe('SessionController crash reports', () => {
     const session = setUp();
     await session.toMatch();
 
+    const evidence = vi.spyOn(session.firstMatch(), 'evidence');
+
     session.intent(SCREEN_CRASH);
     await flushMicrotasks();
 
@@ -98,13 +125,38 @@ describe('SessionController crash reports', () => {
     expect(session.matches[0]?.destroyCount).toBe(1);
     expect(session.writer.saved).toHaveLength(1);
     expect(session.writer.saved[0]).toMatchObject({
-      error: { message: 'render failed', stack: 'at Screen', source: 'screen:match' },
+      error: {
+        message: 'render failed',
+        stack: 'at Screen\n\nComponent stack:in Screen',
+        source: 'screen:match',
+      },
       match: { seed: 7, tick: 90 },
     });
-    expect(session.popup()?.stage).toBe('asking');
-    expect(session.logger.records).toEqual([
-      expect.objectContaining({ severityText: 'FATAL', scope: 'client.session', tick: 90 }),
-    ]);
+    expect(session.popup()).toMatchObject({ stage: 'asking', cause: 'match' });
+    expect(session.logger.records).toHaveLength(1);
+    expect(session.logger.records[0]).toMatchObject({
+      severityText: 'FATAL',
+      scope: 'client.session',
+      tick: 90,
+      attributes: { componentStack: 'in Screen' },
+    });
+    // Only the report builds the evidence; reading the tick does not (N1).
+    expect(evidence).toHaveBeenCalledTimes(1);
+  });
+
+  it('still reports a screen crash in a match when the tick cannot be read, with tick null', async () => {
+    const session = setUp();
+    await session.toMatch();
+    vi.spyOn(session.firstMatch(), 'currentTick').mockImplementation(() => {
+      throw new Error('tick unreadable');
+    });
+
+    session.intent(SCREEN_CRASH);
+    await flushMicrotasks();
+
+    expect(session.controller.phase).toBe('menu');
+    expect(session.writer.saved).toHaveLength(1);
+    expect(session.logger.records[0]?.tick).toBeNull();
   });
 
   it('returns to the menu with screen-crashed when a screen outside a match crashed', async () => {
@@ -122,13 +174,29 @@ describe('SessionController crash reports', () => {
       error: { source: 'screen:character-select' },
       match: null,
     });
-    expect(session.popup()?.stage).toBe('asking');
+    expect(session.popup()).toMatchObject({ stage: 'asking', cause: 'screen' });
     expect(session.logger.records[0]).toMatchObject({
       severityText: 'FATAL',
       body: 'The screen stopped because of an error.',
       tick: null,
-      attributes: { error: 'character-select: render failed', stack: 'at Screen', seed },
+      attributes: {
+        error: 'character-select: render failed',
+        stack: 'at Screen\n\nComponent stack:in Screen',
+        componentStack: 'in Screen',
+        seed,
+      },
     });
+  });
+
+  it('titles a screen crash in pre-launch from its cause, though the session reason is stale', async () => {
+    const session = setUp();
+    await session.toPreLaunch();
+
+    session.intent({ ...SCREEN_CRASH, screen: 'pre-launch' });
+
+    expect(session.controller.phase).toBe('pre-launch');
+    expect(session.store.getState().session.reason).not.toBe('screen-crashed');
+    expect(session.popup()).toMatchObject({ stage: 'asking', cause: 'screen' });
   });
 
   it('shows screen-crashed again and goes back home when a menu screen crashed', async () => {

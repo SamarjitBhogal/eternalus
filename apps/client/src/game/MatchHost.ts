@@ -78,6 +78,11 @@ export class MatchHost implements RunningMatch {
     return this.deps.evidence();
   }
 
+  /** Ticks the simulation has completed. */
+  public currentTick(): number {
+    return this.deps.currentTick();
+  }
+
   /** Removes every listener, detaches the devices, destroys the match, then its adapters. Safe twice. */
   public destroy(): void {
     if (this.isDestroyed) {

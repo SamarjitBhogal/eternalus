@@ -1,16 +1,17 @@
 import { type Logger, makeLogRecord } from '@eternalus/core';
 
+import { reportedErrorOf } from './reportedErrorOf';
+
 /** The scope of uncaught throws (ADR 0025 §6). */
 const WINDOW_SCOPE = 'client.window';
 
 /** What the listeners need of the page's `window`. */
 type ErrorEventTarget = Pick<EventTarget, 'addEventListener' | 'removeEventListener'>;
 
-const messageOf = (thrown: unknown): string =>
-  thrown instanceof Error ? thrown.message : String(thrown);
+const messageOf = (thrown: unknown): string => reportedErrorOf(thrown, WINDOW_SCOPE).message;
 
 function logThrow(logger: Logger, body: string, thrown: unknown): void {
-  const stack = thrown instanceof Error ? (thrown.stack ?? null) : null;
+  const { stack } = reportedErrorOf(thrown, WINDOW_SCOPE);
   logger.log(makeLogRecord('ERROR', WINDOW_SCOPE, body, { attributes: { stack } }));
 }
 

@@ -106,6 +106,7 @@ describe('SessionController with the real match, end to end', () => {
         bus,
         mapper,
         adapters: [renderer, camera],
+        currentTick: () => simulation.tick,
         // What `createBrowserMatch` reads (`readEvidence`), without its log ring.
         evidence: () => ({
           match: {

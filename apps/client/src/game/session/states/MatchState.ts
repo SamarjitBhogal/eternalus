@@ -55,6 +55,11 @@ export class MatchState implements SessionState {
     return this.running?.evidence() ?? null;
   }
 
+  /** The running match's tick (no evidence built), or `null` before a viewport attaches. */
+  public matchTick(): number | null {
+    return this.running?.currentTick() ?? null;
+  }
+
   /** Destroys the match, drops the world and closes any open overlay. */
   public exit(context: SessionContext): void {
     this.stop();

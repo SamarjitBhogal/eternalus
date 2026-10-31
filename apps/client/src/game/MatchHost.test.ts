@@ -66,6 +66,7 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     mapper,
     adapters,
     evidence: () => evidence,
+    currentTick: () => 17,
   });
   const listeners = (): number =>
     window.listenerCount() + document.listenerCount() + canvas.listenerCount();
@@ -196,6 +197,12 @@ describe('MatchHost', () => {
     }).toThrow('start failed');
     expect(listeners()).toBe(0);
     expect(log).toEqual(['match.start', 'match.destroy', 'renderer.destroy', 'camera.destroy']);
+  });
+
+  it('answers currentTick() with the simulation tick', () => {
+    const { host } = setUp();
+
+    expect(host.currentTick()).toBe(17);
   });
 
   it("answers evidence() with its match's evidence, also once destroyed (ADR 0025 §3)", () => {

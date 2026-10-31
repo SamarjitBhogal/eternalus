@@ -29,6 +29,11 @@ export class FakeRunningMatch implements RunningMatch {
     this.pauses.push(isPaused);
   }
 
+  /** The tick of the evidence it was built with. */
+  public currentTick(): number {
+    return this.matchEvidence.match.tick;
+  }
+
   /** The evidence it was built with. */
   public evidence(): MatchEvidence {
     return this.matchEvidence;

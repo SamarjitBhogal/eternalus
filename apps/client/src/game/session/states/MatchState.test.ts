@@ -120,4 +120,15 @@ describe('MatchState', () => {
     detach();
     expect(state.matchEvidence()).toBeNull();
   });
+
+  it("gives the running match's tick, and null without a match", () => {
+    const { context, handles, state } = setUp();
+    expect(state.matchTick()).toBeNull();
+
+    const detach = state.attachViewport(VIEWPORT, context);
+    expect(state.matchTick()).toBe(handles[0]?.currentTick());
+
+    detach();
+    expect(state.matchTick()).toBeNull();
+  });
 });

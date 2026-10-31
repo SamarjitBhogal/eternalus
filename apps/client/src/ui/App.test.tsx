@@ -38,7 +38,7 @@ describe('App', () => {
       renderWithStore(<App />, {
         session: {
           ...sessionAt(phase, { reason: 'match-crashed' }),
-          crashReport: { stage: 'asking', noteLimit: 2000 },
+          crashReport: { stage: 'asking', noteLimit: 2000, cause: 'match', crashNumber: 1 },
         },
       });
     for (const phase of SESSION_PHASES) {

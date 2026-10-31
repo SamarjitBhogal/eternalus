@@ -1,4 +1,4 @@
-import type { ReportedError } from '../../data/logging/ErrorReport.types';
+import type { ReportedError } from './ErrorReport.types';
 
 /** What a thrown value says, for a report: its message and stack, or the value as text. */
 export function reportedErrorOf(error: unknown, source: string): ReportedError {

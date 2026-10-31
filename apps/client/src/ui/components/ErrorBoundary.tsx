@@ -1,14 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 import { emitIntent } from '../../bridge/eventBus';
-
-type ErrorBoundaryProps = {
-  /** Which screen this guards, e.g. `match` or `menu.settings`; it goes into the report's source. */
-  readonly screen: string;
-  readonly children: ReactNode;
-};
-
-type ErrorBoundaryState = { readonly hasCrashed: boolean };
+import type { ErrorBoundaryProps, ErrorBoundaryState } from './ErrorBoundary.types';
 
 /**
  * The one class component in the codebase (DEC-115; ADR 0025 §5): React offers error boundaries
@@ -16,8 +9,9 @@ type ErrorBoundaryState = { readonly hasCrashed: boolean };
  * an empty screen and emits one `report-screen-crash` intent with plain strings, so `ui/` never
  * imports `game/` or `data/`. The session reports the crash and returns to the menu. A boundary
  * that has crashed keeps its fallback, which never renders the screen again, so it cannot report
- * twice or loop; `App` keys it by screen, so it resets when the screen changes. A throw from the game loop, an event handler or async code is
- * not seen here (the game loop's `onCrash` and the `window` listeners take those).
+ * twice or loop; `App` keys it by screen, so it resets when the screen changes. A throw from the
+ * game loop, an event handler or async code is not seen here (the game loop's `onCrash` and the
+ * `window` listeners take those).
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public override state: ErrorBoundaryState = { hasCrashed: false };

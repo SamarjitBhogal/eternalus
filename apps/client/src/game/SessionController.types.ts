@@ -48,6 +48,8 @@ export interface RunningMatch {
    * events, replay so far and log records. Only reads; works after a crash too.
    */
   evidence(): MatchEvidence;
+  /** Ticks the simulation has completed; a cheap read, unlike `evidence()`, which copies the log. */
+  currentTick(): number;
 }
 
 /**
@@ -139,6 +141,8 @@ export interface SessionState {
   attachViewport?(viewport: MatchViewport, context: SessionContext): () => void;
   /** The running match's `evidence()`, or `null`; only the `match` state implements it. */
   matchEvidence?(): MatchEvidence | null;
+  /** The running match's `currentTick()`, or `null`; only the `match` state implements it. */
+  matchTick?(): number | null;
 }
 
 /** The part of core's `MatchConfig` the session needs. */

@@ -22,26 +22,21 @@ async function copyToClipboard(value: string): Promise<void> {
 
 /**
  * The popup over the menu after a crash (DEC-106, DEC-124; ADR 0025 §5): a modal `<dialog>` with
- * what stopped (the match or a screen, from the session reason), the optional note and two
+ * what stopped (the match or a screen, from the report's `cause`), the optional note and two
  * buttons, "Save note and return to menu" and "Return to menu". While the note saves the buttons
  * are off; once saved it says where. When the report could not be saved it adds the report as
- * text and a "Copy report" button (DEC-124 (c)). `App` mounts it outside the `ErrorBoundary`; the
- * session opens and closes it through `crash-report`, and Escape dismisses it.
+ * text and a "Copy report" button (DEC-124 (c)); when only the note could not be saved it says so
+ * and offers the note text to copy. `App` mounts it outside the `ErrorBoundary`; the session opens
+ * and closes it through `crash-report`, and Escape dismisses it.
  */
 export function CrashReportNotice(): ReactElement | null {
   const report = useAppSelector(sessionSlice.selectors.selectCrashReport);
-  const reason = useAppSelector(sessionSlice.selectors.selectSessionReason);
-  return report === null ? null : <CrashReportDialog report={report} reason={reason} />;
+  // The key is the crash number: a second crash while the popup is open starts a new dialog.
+  return report === null ? null : <CrashReportDialog key={report.crashNumber} report={report} />;
 }
 
-/** The open popup; it exists only while a report is open, so the note starts empty each time. */
-function CrashReportDialog({
-  report,
-  reason,
-}: {
-  readonly report: CrashReportState;
-  readonly reason: string | null;
-}): ReactElement {
+/** The open popup; one per crash, so the note starts empty for each one. */
+function CrashReportDialog({ report }: { readonly report: CrashReportState }): ReactElement {
   const [note, setNote] = useState('');
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -67,12 +62,14 @@ function CrashReportDialog({
       onCancel={dismissOnCancel(dismiss)}
     >
       <h2 id={titleId} className={styles.title}>
-        {reason === 'screen-crashed' ? text.screenMessage : text.matchMessage}
+        {report.cause === 'screen' ? text.screenMessage : text.matchMessage}
       </h2>
       {report.stage === 'saved' && <p className={styles.text}>{text.saved(report.file)}</p>}
       {report.stage === 'copy' && (
         <div className={styles.field}>
-          <p className={styles.text}>{text.copyMessage}</p>
+          <p className={styles.text}>
+            {report.isReportSaved ? text.noteNotSavedMessage : text.copyMessage}
+          </p>
           <textarea
             readOnly
             className={styles.report}

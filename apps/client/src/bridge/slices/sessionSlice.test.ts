@@ -32,7 +32,14 @@ describe('sessionSlice', () => {
   });
 
   it('keeps the crash popup state it is given until null closes it', () => {
-    const copy = { stage: 'copy', copyText: '{}', noteLimit: 9 } as const;
+    const copy = {
+      stage: 'copy',
+      copyText: '{}',
+      isReportSaved: false,
+      noteLimit: 9,
+      cause: 'screen',
+      crashNumber: 2,
+    } as const;
     const opened = sessionSlice.reducer(undefined, crashReportChanged(copy));
 
     expect(selectCrashReport({ session: opened })).toEqual(copy);

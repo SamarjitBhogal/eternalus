@@ -12,7 +12,14 @@ import { flushMicrotasks, testReporter } from '../testSessionDeps';
 import { CrashReportFlow } from './CrashReportFlow';
 
 const ERROR: ReportedError = { message: 'boom', stack: 'at x', source: 'game-loop' };
-const CONTEXT = { body: 'The match stopped.', errorText: 'Error: boom', tick: 42, seed: 7 };
+const CONTEXT = {
+  body: 'The match stopped.',
+  errorText: 'Error: boom',
+  tick: 42,
+  seed: 7,
+  cause: 'match',
+  componentStack: '',
+} as const;
 
 /** A writer that cannot save (`'first'`: only its first report), or cannot save a note. */
 class FailingWriter extends MemoryReportWriter implements ReportWriter {
@@ -51,7 +58,9 @@ describe('CrashReportFlow', () => {
 
     flow.crashed(ERROR, CONTEXT);
 
-    expect(states).toEqual([{ stage: 'asking', noteLimit: MAX_NOTE_CHARS }]);
+    expect(states).toEqual([
+      { stage: 'asking', noteLimit: MAX_NOTE_CHARS, cause: 'match', crashNumber: 1 },
+    ]);
     expect(logger.records).toEqual([
       expect.objectContaining({
         severityText: 'FATAL',
@@ -86,8 +95,44 @@ describe('CrashReportFlow', () => {
       stage: 'saved',
       file: 'memory/memory-1.json',
       noteLimit: MAX_NOTE_CHARS,
+      cause: 'match',
+      crashNumber: 1,
     });
     expect(writer.saved[0]?.note).toBe('I pressed R');
+  });
+
+  it('puts the component stack of a screen crash into the FATAL record, and leaves it out when empty', () => {
+    const { flow, logger } = setUp();
+
+    flow.crashed(ERROR, { ...CONTEXT, componentStack: '\n    at Screen' });
+    flow.crashed(ERROR, CONTEXT);
+
+    expect(logger.records[0]?.attributes).toEqual({
+      error: 'Error: boom',
+      stack: 'at x',
+      seed: 7,
+      componentStack: '\n    at Screen',
+    });
+    expect(logger.records[1]?.attributes).not.toHaveProperty('componentStack');
+  });
+
+  it('carries the cause and a new crash number in every state of a crash', async () => {
+    const { flow, states } = setUp();
+
+    flow.crashed(ERROR, { ...CONTEXT, cause: 'screen' });
+    flow.handleIntent({ kind: 'save-crash-note', note: 'n' });
+    await flushMicrotasks();
+    flow.crashed(ERROR, CONTEXT);
+
+    const labels = states.map((state) =>
+      state === null ? null : [state.cause, state.crashNumber],
+    );
+    expect(labels).toEqual([
+      ['screen', 1],
+      ['screen', 1],
+      ['screen', 1],
+      ['match', 2],
+    ]);
   });
 
   it('cuts a note to the writer’s limit', async () => {
@@ -108,6 +153,7 @@ describe('CrashReportFlow', () => {
 
     const last = states.at(-1);
     expect(last?.stage).toBe('copy');
+    expect(last?.stage === 'copy' && last.isReportSaved).toBe(false);
     expect(JSON.parse(last?.stage === 'copy' ? last.copyText : '{}')).toMatchObject({
       error: ERROR,
       note: null,
@@ -138,11 +184,25 @@ describe('CrashReportFlow', () => {
 
     const last = states.at(-1);
     expect(last?.stage).toBe('copy');
+    expect(last?.stage === 'copy' && last.isReportSaved).toBe(true);
     expect(JSON.parse(last?.stage === 'copy' ? last.copyText : '{}')).toEqual({
       id: 'memory-1',
       file: 'memory/memory-1.json',
       note: 'help',
     });
+  });
+
+  it('still says the report is saved after a second note when only the note write fails', async () => {
+    const { flow, states } = setUp(new FailingWriter({ note: true }));
+    flow.crashed(ERROR, CONTEXT);
+    flow.handleIntent({ kind: 'save-crash-note', note: 'one' });
+    await flushMicrotasks();
+
+    flow.handleIntent({ kind: 'save-crash-note', note: 'two' });
+    await flushMicrotasks();
+
+    const last = states.at(-1);
+    expect(last?.stage === 'copy' && last.isReportSaved).toBe(true);
   });
 
   it('ignores a second note while the first is saving', async () => {

@@ -126,6 +126,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       mapper,
       adapters: [renderer, camera],
       evidence: () => readEvidence(simulation, ring),
+      currentTick: () => simulation.tick,
     });
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();

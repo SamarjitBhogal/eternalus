@@ -135,6 +135,7 @@ describe('createBrowserMatch', () => {
 
     expect(match.seed).toBe(SEED);
     expect(match.tick).toBe(1);
+    expect(running.currentTick()).toBe(1);
     expect(match.replay.seed).toBe(SEED);
     // The player's spawn and the prototype escort's, all before tick 1; there are no bots.
     expect(

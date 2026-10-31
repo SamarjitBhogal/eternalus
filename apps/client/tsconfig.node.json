@@ -16,7 +16,9 @@
     "vitest.config.ts",
     "errorReportsPlugin.ts",
     "errorReportsPlugin.constants.ts",
+    "errorReportsPlugin.fixtures.ts",
     "errorReportsPlugin.test.ts",
+    "errorReportsPlugin.notes.test.ts",
     "src/data/logging/ErrorReport.constants.ts"
   ]
 }
