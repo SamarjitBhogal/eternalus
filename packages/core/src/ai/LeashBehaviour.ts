@@ -14,7 +14,8 @@ import type {
  * The acquire, engage and return logic every leashed mob shares (architecture 18 §6.1, §7): from
  * rest it acquires the best-ranked enemy (priority, then distance, then id) and emits one
  * `attack-target`; engaging, it switches only to a strictly better-ranked enemy and ends with one
- * `stop` when the target dies, the mob leaves its leash or the aggro duration runs out; returning,
+ * `stop` when the target dies, the mob leaves its leash or, chasing a Legend, the aggro duration
+ * runs out (MS-34: any other unit is fought until one dies or the leash breaks); returning,
  * it rests again once home, with a cooldown before it may acquire. Attacking `objective` ignores
  * the leash and the timeout, since a structure cannot drag a mob away. Controllers supply only
  * what differs (`LeashRules`). Pure.
@@ -106,11 +107,14 @@ export class LeashBehaviour {
     const { state, id, rule } = situation;
     const targetId = memory.targetId;
     const isObjective = targetId !== null && targetId === situation.objective?.id;
+    const kind = targetId === null ? undefined : state.entities.get(targetId)?.kind;
+    const isLegend = kind !== undefined && this.classOf(kind) === 'legend';
     const isOver =
       targetId === null ||
       !state.entities.isAlive(targetId) ||
       (!isObjective &&
-        (rules.isOutsideLeash(situation, memory) || state.tick >= memory.aggroUntilTick));
+        (rules.isOutsideLeash(situation, memory) ||
+          (isLegend && state.tick >= memory.aggroUntilTick)));
     if (isOver) {
       return {
         memory: { ...memory, fsm: 'returning', targetId: null },

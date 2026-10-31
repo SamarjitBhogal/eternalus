@@ -103,6 +103,19 @@ describe('GuardController', () => {
     });
   });
 
+  it('engaging: keeps a minion target past the aggro duration (MS-34)', () => {
+    const { state, add, decide } = setUp();
+    const enemy = add('dark', 64);
+    while (state.tick < 20) {
+      state.advanceTick();
+    }
+
+    expect(decide({ fsm: 'engaging', targetId: enemy, aggroUntilTick: 10 })).toMatchObject({
+      commands: [],
+      memory: { fsm: 'engaging', targetId: enemy },
+    });
+  });
+
   it('returning: holds again at its post, with a cooldown before it acquires', () => {
     const { state, add, decide, moveGuardTo } = setUp();
     moveGuardTo(63);

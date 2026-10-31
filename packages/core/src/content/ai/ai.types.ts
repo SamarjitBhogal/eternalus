@@ -78,7 +78,7 @@ export type AggroRuleDefinition = {
   readonly priority: readonly AggroPriority[];
   /** A chase ends when the mob is this far from where it left its formation. */
   readonly leashRadius: number;
-  /** A chase ends this many ticks after it started on its current target. */
+  /** A chase of a Legend ends this many ticks after it started on it (MS-34, DEC-134). */
   readonly aggroDurationTicks: number;
   /** After re-forming, a mob waits this many ticks before it may acquire again. */
   readonly aggroCooldownTicks: number;

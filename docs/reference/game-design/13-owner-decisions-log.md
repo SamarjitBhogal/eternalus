@@ -21,6 +21,16 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-10-30 (M2c: the chase limit, sholtzman)
+
+The owner's answer, given on 2026-10-30 while fixing the review findings of PR #38, built on
+PR #56 (minion M2c, `feat/minion-m2c-objectives-guards`). DEC-129 to DEC-133 are taken by other
+branches.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Where                                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| DEC-134 | **Only a Legend escapes a chase by time (MS-34).** Doc 18 §6.1 ended every chase after the aggro duration, minion against minion too, which could give a fight, walk back, fight again rhythm (Dota applies the duration to hero aggro only). The owner chose the option "Yes, Legend-only limit", which read: "Minions fight other minions until one dies or the leash breaks. A Legend still escapes after 2.3 s. Guards share this logic in #56, so they change the same way unless you say otherwise." The aggro duration ends only a chase of a Legend; minions and guards keep any other unit target until it dies or the leash breaks. | `architecture/18-minion-system.md` MS-34, §6.1; the rule lives in `ai/LeashBehaviour.ts`; `INBOX.md` (the M2b item) |
+
 ## Batch 2026-10-30 (#38 fix: first waves after the anchor rule; PR #61 sign-off; converted mobs, sholtzman)
 
 The owner's answers, given on 2026-10-30, while fixing the review findings of the
