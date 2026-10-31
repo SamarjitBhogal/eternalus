@@ -174,7 +174,7 @@ describe('Match', () => {
     expect(fills()).not.toContainEqual(house.shape);
     match.destroy();
   });
-  it('queues one attack per target while the attack button is held, and again after a release', () => {
+  it('queues one attack per target while the attack button is held, and again after a release or a stop', () => {
     const { match, simulation, input, map } = setUp(undefined, undefined, true, true);
     const house = new MapObjectBuilder()
       .build(map, new MapPresentationBuilder().build(map))
@@ -196,6 +196,13 @@ describe('Match', () => {
     input.isAttacking = true;
     match.tick();
     expect(attacks()).toBe(2);
+    // `stop` also drops the attack target, so the held button queues it once more after one.
+    input.move = { x: 1, y: 0 };
+    match.tick();
+    input.move = { x: 0, y: 0 };
+    match.tick();
+    match.tick();
+    expect(attacks()).toBe(3);
     match.destroy();
   });
 

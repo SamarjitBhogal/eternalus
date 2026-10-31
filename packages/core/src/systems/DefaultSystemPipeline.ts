@@ -2,6 +2,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
@@ -31,7 +32,8 @@ import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, statuses, movement, the neighbour index, steering, combat, progression (kill XP),
+ * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
+ * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
  * spawning, enraging, death, then invariants last. This is the one place a system is added, at its position
  * in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
@@ -76,13 +78,23 @@ export class DefaultSystemPipeline extends SystemPipeline {
             map.flowFieldCorridorHalfWidth,
           );
     const world = state.world?.grid ?? null;
+    const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {
       // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
       state.events.on('entity-removed', ({ entityId }) => {
         const object = state.worldObjects?.objectFor(entityId);
-        for (const footprint of object?.isBlocking === true ? object.footprints : []) {
-          flowFields?.markDirty(world.clearFootprint(footprint, object?.passages));
-        }
+        if (object?.isBlocking !== true) return;
+        const cells = object.footprints.flatMap((footprint) =>
+          world.clearFootprint(footprint, object.passages),
+        );
+        // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
+        // object (a wall segment, turret or rock shares its feature's id), so clear that stamp too.
+        const backing = features.find(
+          ({ id, definitionId }) =>
+            id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
+        )?.footprint;
+        if (backing !== undefined) cells.push(...world.clearFootprint(backing));
+        flowFields?.markDirty(cells);
       });
     }
     super([

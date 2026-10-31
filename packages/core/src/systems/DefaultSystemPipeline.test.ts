@@ -23,6 +23,7 @@ import { SystemPipeline } from './SystemPipeline';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
+import type { MapFeature } from '../content/maps/maps.types';
 import { WorldObjectStore } from '../state/WorldObjectStore';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
@@ -70,13 +71,14 @@ describe('DefaultSystemPipeline', () => {
     expect(logger.records).toEqual([]);
   });
 
-  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2', () => {
+  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c))', () => {
     const logger = new MemoryLogger();
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
       space,
     });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
+    state.worldObjects = new WorldObjectStore([], factory, state.entities, MAP_OBJECT_DEFINITIONS);
 
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
@@ -86,17 +88,21 @@ describe('DefaultSystemPipeline', () => {
         factory,
         space,
         decide: [{ name: 'ai', update: () => undefined }],
+        collisions: [{ name: 'collision', update: () => undefined }],
       },
     );
 
+    // Collision resolves positions before the index, steering, combat and next tick's AI read them.
     expect(pipeline.names).toEqual([
       'ai',
       'hordes',
       'status-effects',
       'movement',
+      'collision',
       'space',
       'pathing',
       'combat',
+      'map-destruction',
       'progression',
       'spawn',
       'enraged',
@@ -208,22 +214,33 @@ describe('DefaultSystemPipeline', () => {
     expect(logger.records).toEqual([]);
   });
 
-  it('reopens the pathing cells of a blocking map object once it is destroyed (07 §10)', () => {
-    const map = { ...TWO_LANE_MAP, features: [] };
+  const footprint = [
+    { x: 40, y: 20 },
+    { x: 50, y: 20 },
+    { x: 50, y: 30 },
+    { x: 40, y: 30 },
+  ];
+  const wallFeature: MapFeature = {
+    id: 'wall',
+    kind: 'wall-segment',
+    team: 'light',
+    definitionId: 'wall-segment',
+    position: { x: 45, y: 25 },
+    minimapGlyph: { shape: 'square', size: 2, colourRole: 'team' },
+    footprint,
+  };
+  it.each([
+    { name: 'a house', kind: 'house' as const, features: [] },
+    // The grid stamps a wall segment twice: as its map feature and as its object (07 §10).
+    {
+      name: 'a wall segment its map feature also blocks',
+      kind: 'wall' as const,
+      features: [wallFeature],
+    },
+  ])('reopens the pathing cells of $name once it is destroyed (07 §10)', ({ kind, features }) => {
+    const map = { ...TWO_LANE_MAP, features };
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(map, 5));
-    const house: MapObject = {
-      id: 'house',
-      kind: 'house',
-      isBlocking: true,
-      footprints: [
-        [
-          { x: 40, y: 20 },
-          { x: 50, y: 20 },
-          { x: 50, y: 30 },
-          { x: 40, y: 30 },
-        ],
-      ],
-    };
+    const house: MapObject = { id: kind, kind, isBlocking: true, footprints: [footprint] };
     const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
     const factory = new EntityFactory(createDefaultEntityRegistry(), {
       has: (id) => objects.has(id) || UNIT_DEFINITIONS.has(id),
@@ -246,7 +263,7 @@ describe('DefaultSystemPipeline', () => {
     const entityId = state.worldObjects.snapshot()[0]?.entityId ?? '';
     expect(world?.isWalkable(9, 5)).toBe(false);
 
-    new DamagePipeline().apply(state, entityId, 1000, {
+    new DamagePipeline().apply(state, entityId, 1_000_000, {
       attackerId: 'nobody',
       kind: 'weapon',
       definitionId: 'warrior',

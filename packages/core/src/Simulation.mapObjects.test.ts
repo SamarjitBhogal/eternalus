@@ -11,6 +11,7 @@ import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
+import type { GameState } from './state/GameState';
 import { LaneRoutes } from './state/LaneRoutes';
 import type { PlayableTeam } from './teams/teams.types';
 import { isPointInPolygon } from './utils/geometry';
@@ -157,6 +158,40 @@ describe('Simulation with a roster and map objects (as the client builds a match
       expect(notOut).toEqual([]);
     },
   );
+
+  it('blocks the walking grid under a blocking map object no map feature stands under (07 §10)', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const path = map.lanes[0]?.path ?? [];
+    const at = path[Math.floor(path.length / 2)] ?? { x: 0, y: 0 };
+    const house: MapObject = {
+      id: 'house',
+      kind: 'house',
+      isBlocking: true,
+      footprints: [
+        [-1, 1, 1, -1].map((dx, corner) => ({
+          x: at.x + 5 * dx,
+          y: at.y + 5 * (corner < 2 ? -1 : 1),
+        })),
+      ],
+    };
+    const isWalkableAt = (mapObjects: readonly MapObject[]): boolean => {
+      const simulation = new Simulation({
+        config,
+        seed: 1,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+      });
+      // The grid is internal and no snapshot carries it, so this reads it directly.
+      const grid = (simulation as unknown as { readonly state: GameState }).state.world?.grid;
+      const cell = grid?.cellAt(at) ?? null;
+      return cell !== null && grid?.isWalkable(cell.col, cell.row) === true;
+    };
+
+    expect(isWalkableAt([])).toBe(true);
+    expect(isWalkableAt([house])).toBe(false);
+  });
 
   it('opens every tower toward where its hordes march: a doorway in its up-lane wall (DEC-133)', () => {
     const config = createDefaultGameConfig();

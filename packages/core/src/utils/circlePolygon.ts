@@ -40,9 +40,7 @@ export const circlePenetration = (
     }
   });
   const away =
-    gap === 0 || gap === Number.POSITIVE_INFINITY
-      ? { x: 0, y: 0 }
-      : { x: (point.x - nearest.x) / gap, y: (point.y - nearest.y) / gap };
+    gap === 0 ? { x: 0, y: 0 } : { x: (point.x - nearest.x) / gap, y: (point.y - nearest.y) / gap };
   return isPointInPolygon(point, shape)
     ? { depth: radius + gap, normal: { x: -away.x, y: -away.y } }
     : { depth: radius - gap, normal: away };

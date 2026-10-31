@@ -80,6 +80,10 @@ export class CollisionResolver {
    * there): `null` when the move does not take it deeper, so it can always walk out; otherwise a
    * contact at once whose normal leads out, so the slide keeps only the part of the move that does
    * not go deeper. `undefined` when the start does not overlap, for the ordinary sweep.
+   *
+   * @remarks ponytail: a move that ends no deeper skips the sweep, so one longer than the wall is
+   * thick can cross it. Walking never moves that far in a tick; dashes (10 §7) need the exit leg
+   * swept as well.
    */
   private static startsInside(
     start: Vec2,
