@@ -74,7 +74,7 @@ export class SessionController {
         if (this.setup === null) throw new Error('No match setup to prepare a world for');
         this.world = deps.prepareWorld(this.setup.seed);
       },
-      createMatch: (viewport, onCrash) => this.createMatch(viewport, onCrash),
+      createMatch: (viewport, onCrash, onEnded) => this.createMatch(viewport, onCrash, onEnded),
       dropWorld: () => {
         this.world = null;
       },
@@ -207,7 +207,11 @@ export class SessionController {
     this.deps.bus.emit('selection-locked', this.rosters);
   }
 
-  private createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch {
+  private createMatch(
+    viewport: MatchViewport,
+    onCrash: (crash: MatchCrash) => void,
+    onEnded: () => void,
+  ): RunningMatch {
     const { setup, selection, rosters, world } = this;
     if (setup === null || selection === null || rosters === null || world === null) {
       throw new Error('A match needs a setup, a locked-in selection and a prepared world');
@@ -219,6 +223,7 @@ export class SessionController {
         player: { legend: selection.classId, team: setup.playerTeam },
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
         onCrash,
+        onEnded,
       },
       viewport,
     );

@@ -72,6 +72,11 @@ export type MatchDeps = {
   readonly logger: Logger;
   /** Called once when the game loop stops because a tick or a frame threw (DEC-106). */
   readonly onCrash: (crash: MatchCrash) => void;
+  /**
+   * Called once, after the tick whose step ended the match, once `match-ended` is published (game-
+   * loop plan §4.5, A8); the match keeps running until its owner destroys it (DEC-92).
+   */
+  readonly onEnded: () => void;
   /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */
   readonly bridge: {
     readonly bus: TypedEventBus<BridgeEventMap>;

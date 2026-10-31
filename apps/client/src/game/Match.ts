@@ -49,6 +49,8 @@ export class Match implements LoopTarget {
 
   private readonly playerId: EntityId | null;
 
+  private wasEndReported = false;
+
   private lastMove: Vec2 = { x: 0, y: 0 };
 
   /**
@@ -97,7 +99,12 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.bridge = new MatchBridge({ ...bridge, tickRate, map });
+    this.bridge = new MatchBridge({
+      ...bridge,
+      tickRate,
+      map,
+      onMatchEnded: (handler) => simulation.on('match-ended', handler),
+    });
     // PROTOTYPE(PROTO-01) TEMPORARY: demo escort; delete with `spawnEscort`.
     Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
@@ -144,13 +151,20 @@ export class Match implements LoopTarget {
     this.deps.renderer.resize(screenWidth, screenHeight, pixelRatio);
   }
 
-  /** One tick: the player's intent becomes commands, then the simulation steps. */
+  /**
+   * One tick: the player's intent becomes commands, then the simulation steps and the bridge
+   * publishes. After the tick that ended the match, tells the owner once (`onEnded`).
+   */
   public tick(): void {
     this.applyIntent();
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
     this.bridge.afterTick(this.current, this.playerId);
+    if (this.bridge.hasEnded && !this.wasEndReported) {
+      this.wasEndReported = true;
+      this.deps.onEnded();
+    }
   }
 
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
@@ -224,11 +238,12 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Stops the loop. The renderer and camera are injected, so their
+   * Stops the loop and the bridge's listener. The renderer and camera are injected, so their
    * owner (`MatchHost`) destroys them.
    */
   public destroy(): void {
     this.loop.destroy();
+    this.bridge.destroy();
   }
 
   private applyIntent(): void {

@@ -54,6 +54,7 @@ const setUp = () => {
     player: PLAYER,
     logger: new NullLogger(),
     onCrash: () => undefined,
+    onEnded: () => undefined,
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),
       publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

@@ -8,6 +8,7 @@ import {
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
 import type { BridgeEventMap, MatchClock } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { Camera } from './engine/Camera';
@@ -72,6 +73,7 @@ function matchDeps(
     player,
     logger: new NullLogger(),
     onCrash: vi.fn<MatchDeps['onCrash']>(),
+    onEnded: vi.fn<MatchDeps['onEnded']>(),
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
   };
   return { deps, clocks, on, unsubscribes };
@@ -162,6 +164,39 @@ describe('Match lifecycle', () => {
     expect(deps.scheduler.hasPendingFrame).toBe(false);
   });
 
+  it('tells its owner once, after the tick whose step ended the match, and runs on (DEC-92)', () => {
+    const { deps, on } = matchDeps();
+    const match = new Match(deps);
+    const ended = on.mock.calls.find(([type]) => type === 'match-ended')?.[1];
+    match.start();
+    deps.scheduler.advance(0);
+    deps.scheduler.advance(TICK_MS);
+    expect(deps.onEnded).not.toHaveBeenCalled();
+
+    // Core emits `match-ended` inside the step; the bridge publishes it after that tick.
+    ended?.({ result: matchResultFixture() });
+    expect(deps.onEnded).not.toHaveBeenCalled();
+    deps.scheduler.runFrames(3, TICK_MS);
+
+    expect(deps.onEnded).toHaveBeenCalledTimes(1);
+    expect(deps.simulation.tick).toBe(4);
+    expect(deps.scheduler.hasPendingFrame).toBe(true);
+  });
+
+  it('never tells its owner once destroyed, even when the end came on its last tick', () => {
+    const { deps, on } = matchDeps();
+    const match = new Match(deps);
+    const ended = on.mock.calls.find(([type]) => type === 'match-ended')?.[1];
+    match.start();
+    deps.scheduler.advance(0);
+
+    ended?.({ result: matchResultFixture() });
+    match.destroy();
+    deps.scheduler.runFrames(3, TICK_MS);
+
+    expect(deps.onEnded).not.toHaveBeenCalled();
+  });
+
   it('runs whole ticks from the loop: 100 ms of frames is 3 ticks', () => {
     const { match, simulation, scheduler } = build();
     match.start();
@@ -244,8 +279,8 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    // The match subscribes to nothing (core spawns the player from the seat), so nothing to drop.
-    expect(on).not.toHaveBeenCalled();
-    expect(unsubscribes.count).toBe(0);
+    // Its one subscription, the bridge's `match-ended` (core spawns the player from the seat).
+    expect(on.mock.calls.map(([type]) => type)).toEqual(['match-ended']);
+    expect(unsubscribes.count).toBe(1);
   });
 });

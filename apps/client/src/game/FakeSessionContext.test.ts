@@ -20,6 +20,7 @@ const VIEWPORT: MatchViewport = {
   isExplorerShown: false,
 };
 const ON_CRASH = (): void => undefined;
+const ON_ENDED = (): void => undefined;
 
 describe('FakeSessionContext', () => {
   it('carries a real bus and clock, the shipped catalogue and the shipped credits', () => {
@@ -133,16 +134,16 @@ describe('FakeSessionContext', () => {
   it('builds a new FakeRunningMatch per createMatch and keeps each in order', () => {
     const context = new FakeSessionContext();
 
-    const first = context.createMatch(VIEWPORT, ON_CRASH);
-    const second = context.createMatch(VIEWPORT, ON_CRASH);
+    const first = context.createMatch(VIEWPORT, ON_CRASH, ON_ENDED);
+    const second = context.createMatch(VIEWPORT, ON_CRASH, ON_ENDED);
 
     expect(first).toBeInstanceOf(FakeRunningMatch);
     expect(second).not.toBe(first);
     expect(context.matches).toEqual([first, second]);
     expect(context.matches[1]).toBe(second);
     expect(context.calls.createMatch).toEqual([
-      [VIEWPORT, ON_CRASH],
-      [VIEWPORT, ON_CRASH],
+      [VIEWPORT, ON_CRASH, ON_ENDED],
+      [VIEWPORT, ON_CRASH, ON_ENDED],
     ]);
   });
 
@@ -153,7 +154,7 @@ describe('FakeSessionContext', () => {
     context.createMatchError = matchError;
     context.prepareWorldError = worldError;
 
-    expect(() => context.createMatch(VIEWPORT, ON_CRASH)).toThrow(matchError);
+    expect(() => context.createMatch(VIEWPORT, ON_CRASH, ON_ENDED)).toThrow(matchError);
     expect(() => {
       context.prepareWorld();
     }).toThrow(worldError);

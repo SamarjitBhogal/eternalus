@@ -1,4 +1,10 @@
-import type { EntityId, MapDefinition, MapFeatureKind, Snapshot } from '@eternalus/core';
+import type {
+  EntityId,
+  MapDefinition,
+  MapFeatureKind,
+  MatchResult,
+  Snapshot,
+} from '@eternalus/core';
 
 import type { CapturePointStatus, PlayerHudSnapshot, StructureStatus } from '../bridge/hud.types';
 import { ROSTER_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
@@ -10,18 +16,31 @@ import type { MatchBridgeDeps } from './MatchBridge.types';
  * - `match-clock` and `hud-state` (the player's health; every other value `null`) every
  *   `publishEveryTicks`;
  * - the team structures and the capture points from the map's features (health `null`, owner
- *   `neutral`) every `ROSTER_PUBLISH_EVERY_TICKS`.
+ *   `neutral`) every `ROSTER_PUBLISH_EVERY_TICKS`;
+ * - `match-ended` once, after the tick whose step ended the match: the result is latched inside
+ *   the simulation's event and published from `afterTick`, never mid-step.
  * `publishAll` sends everything once, before the first tick. The rosters are built once, so each
  * re-send carries the same arrays and the store sees no change.
  */
 export class MatchBridge {
   private readonly structures: readonly StructureStatus[];
   private readonly capturePoints: readonly CapturePointStatus[];
+  private readonly stopListening: () => void;
+  private result: MatchResult | null = null;
+  private wasEndPublished = false;
 
-  /** Builds the two rosters from the map; publishes nothing yet. */
+  /** Builds the two rosters from the map and listens for the match's end; publishes nothing yet. */
   public constructor(private readonly deps: MatchBridgeDeps) {
     this.structures = MatchBridge.structuresOf(deps.map);
     this.capturePoints = MatchBridge.capturePointsOf(deps.map, deps.captureKinds);
+    this.stopListening = deps.onMatchEnded(({ result }) => {
+      this.result = result;
+    });
+  }
+
+  /** Whether `match-ended` has been published: from the end of the tick that ended the match. */
+  public get hasEnded(): boolean {
+    return this.wasEndPublished;
   }
 
   /** Publishes both rosters, the clock and the HUD once, before the first tick. */
@@ -38,6 +57,19 @@ export class MatchBridge {
     if (snapshot.tick % ROSTER_PUBLISH_EVERY_TICKS === 0) {
       this.publishRosters();
     }
+    if (this.result !== null && !this.wasEndPublished) {
+      this.wasEndPublished = true;
+      const { result } = this;
+      this.deps.bus.emit('match-ended', {
+        result,
+        durationSeconds: result.durationTicks / this.deps.tickRate,
+      });
+    }
+  }
+
+  /** Stops listening for the match's end; a later `match-ended` is never latched. */
+  public destroy(): void {
+    this.stopListening();
   }
 
   private publishFast(snapshot: Snapshot, playerId: EntityId | null): void {

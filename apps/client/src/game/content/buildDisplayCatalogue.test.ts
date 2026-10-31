@@ -275,6 +275,16 @@ describe('buildDisplayCatalogue', () => {
     expect(build().teamNames).toEqual(CONTENT.teamNames);
   });
 
+  it('carries the core verdict lines and sovereign names', () => {
+    const verdictLines = {
+      'objective-lost': { victory: 'Won.', defeat: 'Lost.', draw: 'Even.' },
+    } as const;
+    const sovereignNames = { light: 'Queen', dark: 'Tyrant' };
+    const built = build({ content: { verdictLines, sovereignNames } });
+    expect(built.verdictLines).toBe(verdictLines);
+    expect(built.sovereignNames).toBe(sovereignNames);
+  });
+
   it('carries the core bot roster (DEC-61, DEC-102)', () => {
     const botRoster = { id: 'test', laners: ['magus'], enemyRover: 'mirror-player' } as const;
     expect(build({ content: { botRoster } }).botRoster).toBe(botRoster);

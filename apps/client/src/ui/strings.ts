@@ -1,5 +1,6 @@
 import type { InputAction } from '../bridge/Binding.types';
 import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
+import type { MatchVerdict } from '../bridge/domain.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 
@@ -56,13 +57,21 @@ export const STRINGS = {
   },
   loadouts: { title: 'Loadouts', classesTitle: 'Classes' },
   profile: { history: 'Match history and achievements appear here.' },
+  /** The win/lose screen; its verdict line is core content (`selectVerdictLine`, DEC-83). */
   results: {
+    /** The banner without a result (results follow `match-ended`, so only a bug shows it). */
     title: 'Match results',
-    // TODO(sam): verdict lines are core content (content/narrative/, selectVerdictLine) once it exists.
     noResult: 'No result recorded.',
-    draw: 'Draw.',
-    /** The winning team's name is content (`contentSlice.selectors.selectTeamNames`). */
-    winner: (teamName: string): string => `${teamName} wins.`,
+    /** The banner per verdict: the owner's "VICTORY or DEFEAT" (2026-10-27); a draw (DEC-77). */
+    verdicts: { victory: 'VICTORY', defeat: 'DEFEAT', draw: 'DRAW' } satisfies Record<
+      MatchVerdict,
+      string
+    >,
+    /** The ended match's length, `mm:ss` (`selectMatchDurationText`). */
+    duration: (time: string): string => `Match length ${time}`,
+    countdownLabel: 'Time left before the main menu',
+    // DEC-78: "A Continue control skips the wait."
+    continue: 'Continue',
     playAgain: 'Play again',
     mainMenu: 'Main menu',
   },

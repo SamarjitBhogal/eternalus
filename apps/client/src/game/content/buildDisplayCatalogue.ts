@@ -308,6 +308,8 @@ export function buildDisplayCatalogue(inputs: {
     hud: hudCatalogue(content.mapFeatures, presentation.hud),
     teamNames: content.teamNames,
     botRoster: content.botRoster,
+    verdictLines: content.verdictLines,
+    sovereignNames: content.sovereignNames,
   };
   checkNoLeftoverPresentation(content, presentation);
   const unknown = catalogueAssetIds(full).find((id) => !knownAssetIds.has(id));

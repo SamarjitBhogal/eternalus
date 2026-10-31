@@ -209,6 +209,14 @@ export const TEST_CONTENT: DisplayCatalogue = {
   hud: TEST_HUD_CATALOGUE,
   teamNames: { light: 'Light', dark: 'Dark' },
   botRoster: { id: 'test', laners: ['warrior', 'sentinel', 'magus'], enemyRover: 'mirror-player' },
+  verdictLines: {
+    'objective-lost': {
+      victory: 'The enemy {name} has fallen.',
+      defeat: 'Your {name} has fallen.',
+      draw: 'Both {name}s fell in the same moment.',
+    },
+  },
+  sovereignNames: { light: 'Emperor', dark: 'Emperor' },
 };
 
 /** Session slice state at `phase`, optionally on a menu route with a reason. */

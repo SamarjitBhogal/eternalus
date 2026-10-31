@@ -30,6 +30,11 @@ export type MatchRequest = {
   readonly captureKinds: readonly MapFeatureKind[];
   /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
   readonly onCrash: (crash: MatchCrash) => void;
+  /**
+   * Called once, after the tick that ended the match (`match-ended`; the `RunningMatch` observer,
+   * game-loop plan A8); the match runs on until the session destroys it (DEC-92).
+   */
+  readonly onEnded: () => void;
 };
 
 /** A match that is running in `match`; only `MatchState` holds one. */
@@ -87,10 +92,15 @@ export interface SessionContext {
   prepareWorld(): void;
   /**
    * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
-   * selection and the world; `onCrash` is called if its game loop later stops on a throw.
+   * selection and the world; `onCrash` is called if its game loop later stops on a throw, `onEnded`
+   * once after the tick that ended the match.
    * @throws When one of them is missing or the factory fails.
    */
-  createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch;
+  createMatch(
+    viewport: MatchViewport,
+    onCrash: (crash: MatchCrash) => void,
+    onEnded: () => void,
+  ): RunningMatch;
   /** Drops the prepared world (the match is over). */
   dropWorld(): void;
   /** Logs why the match could not start and returns to `menu` with reason `'match-failed'` (13 §2). */

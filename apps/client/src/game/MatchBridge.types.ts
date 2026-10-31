@@ -1,4 +1,4 @@
-import type { MapDefinition, MapFeatureKind } from '@eternalus/core';
+import type { GameEventHandler, MapDefinition, MapFeatureKind, Unsubscribe } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
@@ -14,4 +14,6 @@ export type MatchBridgeDeps = {
   readonly map: MapDefinition;
   /** Map-feature kinds the HUD lists as capture points (`catalogue.hud.objectiveKinds`, one list). */
   readonly captureKinds: readonly MapFeatureKind[];
+  /** Subscribes to the simulation's `match-ended` (`Simulation.on`, 13 §5). */
+  readonly onMatchEnded: (handler: GameEventHandler<'match-ended'>) => Unsubscribe;
 };

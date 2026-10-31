@@ -1,11 +1,13 @@
 import {
   createDefaultGameConfig,
   type EntitySnapshot,
+  type GameEventHandler,
   type MapFeatureKind,
   type Snapshot,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { MatchBridge } from './MatchBridge';
@@ -54,14 +56,27 @@ function setUp(numLanes = createDefaultGameConfig().map.numLanes) {
     order.push('capture-state');
     captures.push(event);
   });
+  const endings: BridgeEventMap['match-ended'][] = [];
+  bus.on('match-ended', (event) => {
+    order.push('match-ended');
+    endings.push(event);
+  });
+  /** The simulation side of `match-ended`: the handler the bridge gave, `null` once dropped. */
+  const simulation: { handler: GameEventHandler<'match-ended'> | null } = { handler: null };
   const bridge = new MatchBridge({
     bus,
     publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
     tickRate: defaults.tickRate,
     map,
     captureKinds: CAPTURE_KINDS,
+    onMatchEnded: (handler) => {
+      simulation.handler = handler;
+      return () => {
+        simulation.handler = null;
+      };
+    },
   });
-  return { map, bridge, order, clocks, huds, structures, captures };
+  return { map, bridge, order, clocks, huds, structures, captures, endings, simulation };
 }
 
 describe('MatchBridge', () => {
@@ -170,5 +185,30 @@ describe('MatchBridge', () => {
     const [firstPoints, secondPoints] = captures;
     expect(second?.structures).toBe(first?.structures);
     expect(secondPoints?.points).toBe(firstPoints?.points);
+  });
+
+  it("publishes match-ended once, after the ending tick's other events, with its length", () => {
+    const { bridge, order, endings, simulation } = setUp();
+    const result = matchResultFixture({ durationTicks: 3600 });
+    bridge.afterTick(snapshotAt(5), null);
+    expect(bridge.hasEnded).toBe(false);
+
+    simulation.handler?.({ result });
+    expect(endings).toEqual([]);
+    bridge.afterTick(snapshotAt(6), null);
+    bridge.afterTick(snapshotAt(7), null);
+    simulation.handler?.({ result });
+    bridge.afterTick(snapshotAt(8), null);
+
+    expect(endings).toEqual([{ result, durationSeconds: 120 }]);
+    expect(order.slice(-3)).toEqual(['match-clock', 'hud-state', 'match-ended']);
+    expect(bridge.hasEnded).toBe(true);
+  });
+
+  it('stops listening for the end on destroy', () => {
+    const { bridge, simulation } = setUp();
+    expect(simulation.handler).not.toBeNull();
+    bridge.destroy();
+    expect(simulation.handler).toBeNull();
   });
 });

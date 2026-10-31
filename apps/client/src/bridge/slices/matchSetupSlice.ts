@@ -14,6 +14,8 @@ type MatchSetupSliceState = {
   readonly countdownMs: number;
   /** Remaining pre-launch reveal time (session time, ms). */
   readonly revealMs: number;
+  /** Remaining time on the win/lose screen (session time, ms; DEC-78). */
+  readonly resultsMs: number;
   /** LOCK IN was pressed: the pick holds and the locked view shows until the countdown ends (DEC-60). */
   readonly isLockedIn: boolean;
 };
@@ -29,6 +31,7 @@ const initialState: MatchSetupSliceState = {
   enemies: [],
   countdownMs: 0,
   revealMs: 0,
+  resultsMs: 0,
   isLockedIn: false,
 };
 
@@ -69,6 +72,9 @@ export const matchSetupSlice = createSlice({
     setReveal(state, action: PayloadAction<number>) {
       state.revealMs = action.payload;
     },
+    setResultsCountdown(state, action: PayloadAction<number>) {
+      state.resultsMs = action.payload;
+    },
     /** LOCK IN: the filled rosters replace the draft's, and the pick is locked (DEC-60, DEC-61). */
     lockIn(state, action: PayloadAction<FilledRosters>) {
       state.allies = [...action.payload.allies];
@@ -84,5 +90,7 @@ export const matchSetupSlice = createSlice({
     selectIsLockedIn: (state) => state.isLockedIn,
     /** Whole seconds left, rounded up, as the countdown shows them (42000 → 42, 41001 → 42). */
     selectCountdownSeconds: (state) => Math.ceil(state.countdownMs / MS_PER_SECOND),
+    /** The win/lose screen's whole seconds left, rounded up as `selectCountdownSeconds`. */
+    selectResultsSeconds: (state) => Math.ceil(state.resultsMs / MS_PER_SECOND),
   },
 });

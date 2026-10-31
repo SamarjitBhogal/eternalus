@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { ClassSelection } from '../events';
 import { matchSetupSlice } from './matchSetupSlice';
 
-const { lockIn, reset, select, setCountdown } = matchSetupSlice.actions;
+const { lockIn, reset, select, setCountdown, setResultsCountdown } = matchSetupSlice.actions;
 const {
   selectSelection,
   selectCountdownSeconds,
+  selectResultsSeconds,
   selectPlayerTeam,
   selectAllies,
   selectIsLockedIn,
@@ -29,6 +30,18 @@ describe('matchSetupSlice', () => {
     expect(seconds(42_000)).toBe(42);
     expect(seconds(41_001)).toBe(42);
     expect(seconds(0)).toBe(0);
+  });
+
+  it("shows the win/lose screen's countdown in whole seconds, rounded up, apart from select's", () => {
+    let matchSetup = matchSetupSlice.reducer(undefined, setCountdown(5_000));
+    const seconds = (remainingMs: number) => {
+      matchSetup = matchSetupSlice.reducer(matchSetup, setResultsCountdown(remainingMs));
+      return selectResultsSeconds({ matchSetup });
+    };
+    expect(seconds(30_000)).toBe(30);
+    expect(seconds(29_001)).toBe(30);
+    expect(seconds(0)).toBe(0);
+    expect(selectCountdownSeconds({ matchSetup })).toBe(5);
   });
 
   it('has no team and no allies before a setup', () => {

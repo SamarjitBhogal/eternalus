@@ -1,6 +1,7 @@
 import { createDefaultGameConfig, Simulation } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
 import type { BridgeEventMap } from '../bridge/events';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
@@ -43,12 +44,14 @@ function setUp(canvas = new FakeViewportCanvas()) {
   const request = (
     world: PreparedWorld = prepareMatchWorld(CONFIG, SEED),
     onCrash: MatchRequest['onCrash'] = () => undefined,
+    onEnded: MatchRequest['onEnded'] = () => undefined,
   ): MatchRequest => ({
     setup: { seed: SEED, playerTeam: 'dark', allies: [], enemies: [] },
     player: { legend: 'sentinel', team: 'dark' },
     world,
     captureKinds: ['capture-point', 'cathedral'],
     onCrash,
+    onEnded,
   });
   /** Every listener on the window, the document and the canvas. */
   const listeners = (): number =>
@@ -93,6 +96,22 @@ describe('createBrowserMatch', () => {
 
     expect(onCrash.mock.calls).toEqual([[{ error, tick: 1 }]]);
     expect(window.pendingFrames).toBe(0);
+  });
+
+  it("tells the request's onEnded once, after the tick that ended the match", () => {
+    const { window, factory, viewport, request } = setUp();
+    const onEnded = vi.fn<MatchRequest['onEnded']>();
+    const on = vi.spyOn(Simulation.prototype, 'on');
+    factory(request(undefined, undefined, onEnded), viewport);
+    const ended = on.mock.calls.find(([type]) => type === 'match-ended')?.[1];
+    window.runFrame(0);
+
+    ended?.({ result: matchResultFixture() });
+    expect(onEnded).not.toHaveBeenCalled();
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+    window.runFrame((2 * MS_PER_SECOND) / CONFIG.tickRate);
+
+    expect(onEnded).toHaveBeenCalledTimes(1);
   });
 
   it("runs the requested Legend on the browser's frames and leaves nothing behind on destroy", () => {

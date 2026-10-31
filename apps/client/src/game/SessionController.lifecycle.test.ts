@@ -1,6 +1,9 @@
 import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
+import { selectMatchVerdict } from '../bridge/selectors/selectMatchVerdict';
+import { selectVerdictLine } from '../bridge/selectors/selectVerdictLine';
 import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import type { PreparedWorld } from './Match.types';
@@ -15,7 +18,12 @@ import type {
 import { createRosterRng } from './session/createRosterRng';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { MatchState } from './session/states/MatchState';
-import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
+import {
+  RESULTS_COUNTDOWN_MS,
+  RESULTS_DELAY_MS,
+  REVEAL_COUNTDOWN_MS,
+  SELECT_COUNTDOWN_MS,
+} from './session/sessionTiming.constants';
 import { testSession } from './testSessionDeps';
 
 const CONFIG = createDefaultGameConfig();
@@ -228,6 +236,37 @@ describe('SessionController match lifetime', () => {
         attributes: { error: 'Error: step failed', stack: error.stack ?? null, seed },
       }),
     ]);
+  });
+
+  it('shows a finished match on the win/lose screen 5 s after its end, then the menu 30 s later', async () => {
+    const session = setUp();
+    await session.toMatch();
+    session.controller.attachViewport(viewport());
+    const team = session.store.getState().matchSetup.playerTeam ?? 'light';
+    // What the real match publishes from its bridge when core ends the match.
+    session.bus.emit('match-ended', {
+      result: matchResultFixture({ winner: team, playerTeam: team }),
+      durationSeconds: 120,
+    });
+
+    session.createMatch.mock.calls[0]?.[0].onEnded();
+    session.clock.advance(RESULTS_DELAY_MS - 1);
+    expect(session.controller.phase).toBe('match');
+    expect(session.handles[0]?.destroy).not.toHaveBeenCalled();
+    session.clock.advance(1);
+
+    expect(session.controller.phase).toBe('results');
+    expect(session.handles[0]?.destroy).toHaveBeenCalledTimes(1);
+    const atResults = session.store.getState();
+    expect(selectMatchVerdict(atResults)).toBe('victory');
+    // The shipped verdict line, the sovereign named from shipped content (DEC-83, DEC-74).
+    expect(selectVerdictLine(atResults)).toBe('The enemy Emperor has fallen.');
+    expect(atResults.matchSetup.resultsMs).toBe(RESULTS_COUNTDOWN_MS);
+    session.clock.advance(RESULTS_COUNTDOWN_MS - 1);
+    expect(session.controller.phase).toBe('results');
+    session.clock.advance(1);
+    expect(session.controller.phase).toBe('menu');
+    expect(session.store.getState().match.result).toBeNull();
   });
 
   it('returns to the menu with match-failed and builds no match when the world fails', async () => {

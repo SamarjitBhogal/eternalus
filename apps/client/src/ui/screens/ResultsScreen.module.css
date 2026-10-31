@@ -1,0 +1,39 @@
+/* The win/lose screen on the selection artboard (game-loop plan §8): the verdict is the banner's
+   title and the countdown sits where character select has it; this block is centred below them.
+   Not in the owner's Figma; the owner checks a live preview. */
+.summary {
+  position: absolute;
+  left: 460px;
+  top: 360px;
+  width: 1000px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  text-align: center;
+}
+
+/* Cinzel Regular 36, parchment (the team badge's colour). */
+.line {
+  margin: 0;
+  color: var(--selection-parchment);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(36px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-36) * 1px);
+}
+
+/* Cinzel Regular 24, white. */
+.duration {
+  margin: 0;
+  color: var(--selection-text);
+  font-family: var(--font-game);
+  font-weight: 400;
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-24) * 1px);
+}
+
+.actions {
+  display: flex;
+  gap: 24px;
+}

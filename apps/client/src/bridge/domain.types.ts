@@ -6,3 +6,9 @@
  */
 
 export type { LegendClassId, PlayableTeam, Team } from '@eternalus/core';
+
+/**
+ * How the match ended for the player's team (game-loop plan §4.5): its winner, the other team, or
+ * no winner. Compared with the team, never read from core's phase, so it holds for two humans.
+ */
+export type MatchVerdict = 'victory' | 'defeat' | 'draw';
