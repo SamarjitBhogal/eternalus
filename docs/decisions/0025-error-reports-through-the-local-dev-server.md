@@ -65,8 +65,10 @@ DEC-106 replaces with the menu. ES-08: the browser is the trust boundary.
   join `tsconfig.node.json` and the Vitest `include`. No new folder.
 - The plugin uses the hooks `configureServer` (`vite`) and `configurePreviewServer`
   (`vite preview`). Both exist in the installed Vite 8.3.1 (`ServerHook` gets a `ViteDevServer`,
-  `PreviewServerHook` a `PreviewServer`). It adds one middleware to `server.middlewares` directly,
-  so it runs before Vite's own. `vite build` never calls these hooks: `dist/` has no endpoint.
+  `PreviewServerHook` a `PreviewServer`). It adds one middleware to `server.middlewares` in the
+  hook. It does not depend on the order of Vite's own middlewares, nor on Vite's request checks
+  (`cors` and the `allowedHosts` host check): it makes every check it needs itself (§2).
+  `vite build` never calls these hooks: `dist/` has no endpoint.
 - Why this is not "a server" in the `AGENTS.md` sense: the game still runs with no server. The
   page needs no endpoint to play; without it, reports fall back to copy (§3). The plugin is dev
   tooling, like HMR. It holds no game state, no game rule and no player data. The rule's line
@@ -85,9 +87,11 @@ DEC-106 replaces with the menu. ES-08: the browser is the trust boundary.
 
 Checks at the trust boundary, in this order: the method is `POST` (405). The peer address is
 loopback (`127.0.0.1`, `::1`, `::ffff:127.0.0.1`) (403), so `vite --host` does not open it to
-the network. An `Origin` header, when sent, equals `http://` plus the `Host` header (403), so a
-page from another site cannot write. The content type is JSON (415). The body fits the limit
-(413). It parses as JSON (400). Its shape is an object with `schemaVersion` 1, `kind` `'crash'`
+the network. The `Host` header names `localhost`, `127.0.0.1` or `[::1]`, with any port (403).
+This stops DNS rebinding: a page from another site that points its own name at `127.0.0.1` sends
+a loopback peer and a matching `Origin`, but its own name as `Host`. An `Origin` header, when
+sent, equals `http://` plus the `Host` header (403), so a page from another site cannot write.
+The content type is JSON (415). The body fits the limit (413). It parses as JSON (400). Its shape is an object with `schemaVersion` 1, `kind` `'crash'`
 or `'error'` and a string `error.message` (400). The server reads nothing else from the body and
 never takes a path from it. It writes `JSON.stringify(report, null, 2)` plus its own `receivedAt`.
 
@@ -220,10 +224,10 @@ Every test fails first on a recorded break (memory rule "tests must fail first")
 2. **Writer.** Plugin, `ErrorReport`, `ReportWriter` and its contract, both adapters,
    `ErrorReporter`, `RunningMatch.evidence()`, `main.tsx` wiring, `.gitignore` `logs/`. Tests:
    plugin with fake requests and a temporary folder: `201`, file name pattern, content plus
-   `receivedAt`, every refusal code, the size limit stops reading, a `../` id is refused, the note
-   rewrite; the writer with a fake `fetch`: saved, `404`, rejection and timeout give `copy`; the
-   reporter: each rule row in and out, dedupe, the cap, no self-report, a crash reported once;
-   `vite.config.test.ts`: the plugin is present.
+   `receivedAt`, every refusal code, a foreign `Host` is refused, the size limit stops reading, a
+   `../` id is refused, the note rewrite; the writer with a fake `fetch`: saved, `404`, rejection
+   and timeout give `copy`; the reporter: each rule row in and out, dedupe, the cap, no
+   self-report, a crash reported once; `vite.config.test.ts`: the plugin is present.
 3. **Popup.** `ErrorBoundary`, `crash-report` bridge event and session state, the popup that
    replaces the `'match-crashed'` banner (DEC-106 text and buttons), intents `save-crash-note` and
    `dismiss-crash-report`. Tests: popup states rendered on the server (asking, saving, saved,
@@ -250,7 +254,10 @@ popup); 15 §4, §5 and §13 (reporter, writer, reports); 02 §3 (`data/logging/
   report may hold the note, names and the browser string; it stays local and out of git. The
   command log grows for the whole match (a few MB at worst, `[Inferred]`). The replay is valid
   only for the default content, `levelCurves` and systems, which the browser match uses today.
-  Served by another static server, every report falls back to copy.
+  Served by another static server, every report falls back to copy. `server.allowedHosts: true`
+  turns Vite's own host check off (Vite's types warn of DNS rebinding); the plugin's `Host` check
+  (§2) still holds, so never remove it. With `server.https`, the `Origin` check (`http://` only)
+  refuses every report, and the page falls back to copy until that check learns `https://`.
 
 ## Open questions for the owner
 

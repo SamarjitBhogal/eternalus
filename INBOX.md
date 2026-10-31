@@ -1436,6 +1436,9 @@ Reply inline (`Decision: …`).
       platform.
   - Answered 2026-10-30 (in chat): "C: both, Mac chord first on Mac" (DEC-118). Built: the order is
     set once, when `keybindings.ts` loads (Apple devices: Cmd first; elsewhere: Ctrl first).
+  - Note 2026-10-30 (the critic's loop 2, V1): the order is now set by `SettingsController` each
+    time it publishes the settings, from a platform flag that `main.tsx` reads and injects. The
+    answer and the order are unchanged.
 - [x] **HC-Q29 — Where is the developer camera hotkey handled? (the critic's loop 1, 2026-10-30).**
       The build reads it in a raw window key listener in `MatchHost`; the game-interface
       architecture (§6.2) sends client-only actions through `Match`'s `clientActions`. The options
@@ -1767,13 +1770,20 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-10-30 — **The critic's check of batches 3 and 4 (loop 2)** (`feat/hud-plan-b3a`): the
+  platform read for the developer camera chords moved out of `game/input/` into `main.tsx`, and
+  `SettingsController` lists the platform's own chord first (DEC-118 and HC-Q28 have dated notes;
+  the decision is unchanged). ADR 0025 (proposed, HC-Q27) gains a `Host` check against DNS
+  rebinding and no longer says its middleware runs before Vite's own. Nothing new to decide; HC-Q27
+  and HC-B4 are still open.
 - 2026-10-30 — **The critic's check of batches 3 and 4 (loop 1)** (`feat/hud-plan-b3a`): the code
   fixes (the one-shot table in `MatchHost`, the order of the two developer camera chords, a test
   that ties the stored chord modifiers to `ChordModifier`, a comment on the interim crash banner)
   and the docs: DEC-117 and DEC-118 in `docs/reference/game-design/13-owner-decisions-log.md`, with
   notes on DEC-57, DEC-62 and DEC-105; HC-B3, HC-Q28 and HC-Q29 are answered and ticked; HC-T1
   T-196 redrafted and T-209 to T-212 new (39 pending); status notes in architecture 13 §10, 06 §10
-  and 14 §14; register row CD-47 (the destroyed structure look, DEC-69). Nothing new to decide.
+  and 14 §14; register row CD-47 (the destroyed structure look, DEC-69). New to decide: HC-B4 (the
+  saved chord modifiers and the settings `schemaVersion`).
 - 2026-10-30 — **Your answers Q1 to Q3 to the pickup session, and batches 3 and 4 of the build
   plan** (`feat/hud-plan-b3a`): recorded as DEC-114 to DEC-116 in
   `docs/reference/game-design/13-owner-decisions-log.md` (DEC-113 is the game-loop plan's), with a

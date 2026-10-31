@@ -2457,3 +2457,31 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 docs:check`, Prettier on the touched files and `git apply --check` of the D2b patch.
 - Next step: critic loop 2, merge into `feat/hud-and-character-select`, the owner's acceptance of
   ADR 0025, the step-12 report lane.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 2 (items V1, D1, N1 to N3) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: the critic's loop 2 found no blocker; every loop-1 item is closed. Fixes:
+  - V1 and N1: `game/input/keybindings.ts` is plain data again (no platform read; the developer
+    camera chords in literal order, Ctrl first). `main.tsx` reads the platform (a user agent that
+    contains "Mac") and injects it as `isApplePlatform` into `SettingsController`, which lists the
+    platform's own chord first each time it publishes the settings and saves what it published
+    (`ownPlatformChordsFirst` in `game/input/bindingEdits.ts`). DEC-118's behaviour is unchanged.
+    Red proofs 6/6 in `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop2.txt`
+    (outside the repository; script `redproof_loop2.py` beside it). The `main.tsx` line has no unit
+    test (composition root); the type makes the flag required.
+  - D1: ADR 0025 (proposed) no longer says the plugin's middleware runs before Vite's own; the
+    plugin depends on no Vite middleware order or check, refuses a `Host` other than `localhost`,
+    `127.0.0.1` or `[::1]` (DNS rebinding), and its Watch line names `server.allowedHosts: true`
+    and `server.https`. The critic's Vite source lines were not re-read: the installed Vite chunk
+    files are not readable in this session; the `allowedHosts` warning was read in Vite's types.
+  - N2: `last-reviewed` bumped in architecture 06 and 14 (13 was already current). N3: the loop-1
+    Done entry in `INBOX.md` names HC-B4.
+  - Every edit to a sholtzman-owned doc: the decisions log (a dated note on DEC-118 and one more
+    path in its last cell), ADR 0025 (§1, §2, §8 item 2, Watch), architecture 13 §10 (the status
+    note names `SettingsController`), 06 and 14 (`last-reviewed` only), `INBOX.md` (a dated note
+    under HC-Q28, the loop-1 Done entry, a new Done entry), this entry. No design text changed.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1485/1485, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop2-fixes.log`, outside the
+  repository), run with this entry in place.
+- Next step: critic loop 3 (the last) on this round, merge into `feat/hud-and-character-select`;
+  the owner's answers to HC-Q27 (ADR 0025) and HC-B4 before the PR.
