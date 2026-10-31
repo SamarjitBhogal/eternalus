@@ -17,7 +17,7 @@ describe('MapBuildingInteriorBuilder', () => {
     const map = { ...MAP_1, ...presentation };
     expect(
       map.scenery.filter((piece) => piece.id.startsWith('cathedral-interior-wall-')),
-    ).toHaveLength(14);
+    ).toHaveLength(16);
     for (const detail of [
       'window-',
       'candle-',

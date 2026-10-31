@@ -180,8 +180,10 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
       ['west-arm-south', 703, 482, 52, 3],
       ['east-arm-north', 845, 420, 52, 3],
       ['east-arm-south', 845, 482, 52, 3],
-      ['west-arm-end', 703, 420, 3, 65],
-      ['east-arm-end', 894, 420, 3, 65],
+      ['west-arm-end', 703, 420, 3, 17.5],
+      ['west-arm-end-lower', 703, 467.5, 3, 17.5],
+      ['east-arm-end', 894, 420, 3, 17.5],
+      ['east-arm-end-lower', 894, 467.5, 3, 17.5],
       ['south-west', 755, 550, 30, 3],
       ['south-east', 815, 550, 30, 3],
     ] as const)
@@ -220,31 +222,33 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
   }
 
   private chapelDetails(stone: string): void {
+    // Lane 1 runs through both chapels: a 20-wide door in line with the arm-end gap, benches in the
+    // south part, so the lane keeps two clear nav cells (DEC-121 (d)).
     for (const x of [712, 856]) {
       this.blockRect(
         `cathedral-interior-chapel-partition-${String(x)}`,
         x + (x < 800 ? 31 : 0),
         428,
         1,
-        23,
+        17,
         stone,
         'wall',
       );
       this.blockRect(
         `cathedral-interior-chapel-partition-lower-${String(x)}`,
         x + (x < 800 ? 31 : 0),
-        460,
+        465,
         1,
-        17,
+        12,
         stone,
         'wall',
       );
       this.rect(
         `cathedral-interior-chapel-door-${String(x)}`,
         x + (x < 800 ? 31 : 0),
-        451,
+        445,
         1,
-        9,
+        20,
         P.chapelFloor,
       );
       this.rect(
@@ -259,7 +263,7 @@ export class MapBuildingInteriorBuilder extends MapDecorationBuilder {
         this.blockRect(
           `cathedral-interior-chapel-bench-${String(x)}-${String(i)}`,
           x + 5,
-          450 + i * 8,
+          469 + i * 4,
           22,
           3,
           P.pewWood,

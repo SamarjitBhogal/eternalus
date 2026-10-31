@@ -9,7 +9,7 @@ import { StaticCollisionIndex } from '../physics/StaticCollisionIndex';
 import { MapBuildingInteriorBuilder } from './MapBuildingInteriorBuilder';
 
 describe('MapPalaceWallsBuilder', () => {
-  it('keeps both Cathedral entrances open while its side walls remain solid', () => {
+  it('keeps both Cathedral entrances and the lane gaps in its arm ends open, the rest of the side walls solid (DEC-121 (d))', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
     const cathedral = map.features.find((feature) => feature.kind === 'cathedral');
     if (cathedral === undefined) throw new Error('Missing Cathedral');
@@ -21,7 +21,9 @@ describe('MapPalaceWallsBuilder', () => {
     );
     expect(resolver.move({ x: 800, y: 310 }, { x: 0, y: 25 }, 0.5).y).toBe(335);
     expect(resolver.move({ x: 800, y: 560 }, { x: 0, y: -20 }, 0.5).y).toBe(540);
-    expect(resolver.move({ x: 695, y: 450 }, { x: 20, y: 0 }, 0.5).x).toBeLessThan(703);
+    expect(resolver.move({ x: 695, y: 450 }, { x: 20, y: 0 }, 0.5).x).toBe(715);
+    expect(resolver.move({ x: 695, y: 430 }, { x: 20, y: 0 }, 0.5).x).toBeLessThan(703);
+    expect(resolver.move({ x: 695, y: 475 }, { x: 20, y: 0 }, 0.5).x).toBeLessThan(703);
   });
   it('blocks the oval perimeter while preserving every generated lane entrance for both teams', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig(), 1);

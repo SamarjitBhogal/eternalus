@@ -141,26 +141,27 @@ export class MapLandscapeBuilder extends MapDecorationBuilder {
   }
 
   private bridges(): void {
-    for (const [i, x, y] of [
-      [0, 800, 741],
-      [1, 815, 860],
-      [2, 656, 788],
-      [3, 950, 790],
+    // Bridges 2 and 3 carry lane 2 west-east over a north-south stream, so they are turned a
+    // quarter: deck across the stream, rails along the lane (DEC-121 (d)).
+    for (const [i, x, y, isTurned] of [
+      [0, 800, 741, false],
+      [1, 815, 860, false],
+      [2, 656, 788, true],
+      [3, 950, 790, true],
     ] as const) {
-      this.rect(`lava-bridge-${String(i)}-shadow`, x - 19, y - 22, 42, 49, P.shadow);
-      this.rect(`lava-bridge-${String(i)}-deck`, x - 16, y - 24, 32, 48, P.stone);
+      const at = (dx: number, dy: number, w: number, h: number) =>
+        isTurned ? ([x + dy, y + dx, h, w] as const) : ([x + dx, y + dy, w, h] as const);
+      this.rect(`lava-bridge-${String(i)}-shadow`, ...at(-19, -22, 42, 49), P.shadow);
+      this.rect(`lava-bridge-${String(i)}-deck`, ...at(-16, -24, 32, 48), P.stone);
       this.markPassage();
       for (let plank = 0; plank < 8; plank++)
         this.rect(
           `lava-bridge-${String(i)}-joint-${String(plank)}`,
-          x - 13,
-          y - 21 + plank * 6,
-          26,
-          1,
+          ...at(-13, -21 + plank * 6, 26, 1),
           P.stoneDark,
         );
-      this.blockRect(`lava-bridge-${String(i)}-west-rail`, x - 17, y - 25, 4, 50, P.bridgeRail);
-      this.blockRect(`lava-bridge-${String(i)}-east-rail`, x + 13, y - 25, 4, 50, P.bridgeRail);
+      this.blockRect(`lava-bridge-${String(i)}-west-rail`, ...at(-17, -25, 4, 50), P.bridgeRail);
+      this.blockRect(`lava-bridge-${String(i)}-east-rail`, ...at(13, -25, 4, 50), P.bridgeRail);
     }
   }
 

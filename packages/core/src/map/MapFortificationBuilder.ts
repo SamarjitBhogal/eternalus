@@ -23,8 +23,14 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     this.rect(`${id}-fort-shadow`, left + 5, top + 6, size, size, P.shadow);
     this.rect(`${id}-fort-court`, left, top, size, size, south ? P.ash : P.road);
     this.blockRect(`${id}-fort-wall-top`, left, top, size, wall, stone);
-    this.blockRect(`${id}-fort-wall-left`, left, top, wall, size, stone);
-    this.blockRect(`${id}-fort-wall-right`, left + size - wall, top, wall, size, stone);
+    // Lane gates west and east, as wide as the south gate, so the lane runs through (DEC-121 (d)).
+    for (const [side, wallX] of [
+      ['left', left],
+      ['right', left + size - wall],
+    ] as const) {
+      this.blockRect(`${id}-fort-wall-${side}`, wallX, top, wall, size / 3, stone);
+      this.blockRect(`${id}-fort-wall-${side}-lower`, wallX, y + size / 6, wall, size / 3, stone);
+    }
     this.blockRect(`${id}-fort-wall-bottom-left`, left, top + size - wall, size / 3, wall, stone);
     this.blockRect(
       `${id}-fort-wall-bottom-right`,

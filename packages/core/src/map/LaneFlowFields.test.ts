@@ -14,6 +14,8 @@ import {
 import type { FlowField } from './FlowField';
 import { LaneFlowFields } from './LaneFlowFields';
 import { MapGenerator } from './MapGenerator';
+import { MapObjectBuilder } from './MapObjectBuilder';
+import { MapPresentationBuilder } from './MapPresentationBuilder';
 import { WorldMap } from './WorldMap';
 
 const isBlocking = (definitionId: string): boolean =>
@@ -204,6 +206,45 @@ describe('LaneFlowFields', () => {
     expect(ticks).toBeLessThanOrEqual(Math.ceil(field.cellCount / budget));
     expect(fields.rebuildDirty(0)).toBe(0);
   });
+
+  it.each([1, 2])(
+    'reaches every walkable lane point from both ends with the map objects stamped (seed %i, DEC-121 (d))',
+    (seed) => {
+      const config = createDefaultGameConfig();
+      const map = new MapGenerator().generate(config, seed);
+      const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      // The grid as Simulation.buildWorld makes it: walkable objects unstamped, blocking ones stamped.
+      const walkable = new Set(objects.filter((object) => !object.isBlocking).map(({ id }) => id));
+      const grid = WorldMap.fromDefinition(
+        { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
+        config.map.navCellSize,
+        isBlocking,
+      );
+      for (const object of objects.filter((candidate) => candidate.isBlocking)) {
+        for (const footprint of object.footprints) {
+          grid.stampFootprint(footprint, object.passages);
+        }
+      }
+      const fields = new LaneFlowFields(grid, map, config.map.flowFieldCorridorHalfWidth);
+
+      const stranded = map.lanes.flatMap((lane) =>
+        lane.path.flatMap((point) => {
+          const at = grid.cellAt(point);
+          if (at === null || !grid.isWalkable(at.col, at.row)) {
+            return [];
+          }
+          const cell = at.row * grid.cols + at.col;
+          return (['light', 'dark'] as const)
+            .filter((team) => fields.field(lane.id, team)?.integration[cell] === UNREACHED)
+            .map(
+              (team) =>
+                `${lane.id} ${team} ${String(Math.round(point.x))},${String(Math.round(point.y))}`,
+            );
+        }),
+      );
+      expect(stranded).toEqual([]);
+    },
+  );
 
   it('leaves a field unreached when its goal is blocked, and stays idle with nothing dirty', () => {
     const map: MapDefinition = {
