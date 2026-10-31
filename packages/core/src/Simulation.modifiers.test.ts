@@ -23,8 +23,9 @@ type LaneEvent = {
  */
 const siege = () => {
   const logger = new MemoryLogger();
+  const config = createDefaultGameConfig();
   const simulation = new Simulation({
-    config: createDefaultGameConfig(),
+    config,
     seed: 1,
     logger,
     debug: TEST_DEBUG_CONFIG,
@@ -52,7 +53,7 @@ const siege = () => {
     spawned.push({ tick: simulation.tick, team, lane, memberIds });
   });
   const stepUntil = (isDone: () => boolean, seconds: number) => {
-    while (!isDone() && simulation.tick < seconds * 30) {
+    while (!isDone() && simulation.tick < seconds * config.tickRate) {
       simulation.step();
     }
   };
