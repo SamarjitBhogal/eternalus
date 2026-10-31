@@ -151,7 +151,7 @@ the build split moved to the plan). MS-29 to MS-35 come from the owner's review 
 | MS-31 | **Owner, Call 4 B.** A horde spawns at its structure's centre; the lane field leads every reachable blocked corridor cell out the shortest way (10 §9).                                                                                           | §3.2, §5.2 |
 | MS-32 | **Owner, Call 2 (DEC-128).** Conversion swaps a mob's brain: a converted mob leaves its horde, joins none, and fights on its own.                                                                                                                 | §4, §6.1   |
 | MS-33 | **Owner, Call 5.** The formation anchor holds while any member fights, not only the leader, so the horde fights as one.                                                                                                                           | §4         |
-| MS-34 | **Owner, DEC-134.** The aggro duration ends only a chase of a Legend; minions and guards keep any other unit target until it dies or the leash breaks.                                                                                            | §6.1, §7   |
+| MS-34 | **Owner, DEC-135.** The aggro duration ends only a chase of a Legend; minions and guards keep any other unit target until it dies or the leash breaks.                                                                                            | §6.1, §7   |
 | MS-35 | **Owner, 2026-10-30.** A mob that would slide along a wall faces the slide direction and walks that way; a march never stalls at a wall.                                                                                                          | §5.2       |
 
 ## 2. Where it sits

@@ -261,7 +261,7 @@ Reply inline (`Decision: …`).
     The design note on the chase rhythm stays open.
   - Decision (sholtzman, chat, 2026-10-30): the chase rhythm: "Yes, Legend-only limit". Only a
     Legend escapes a chase by time; minions and guards keep any other unit target until it dies
-    or the leash breaks (MS-34, DEC-134; built in PR #56).
+    or the leash breaks (MS-34, DEC-135; built in PR #56).
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
