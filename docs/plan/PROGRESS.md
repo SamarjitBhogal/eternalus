@@ -2554,3 +2554,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `Collider.isUnbreakable` not hashed; both fixed, total now from config) and ponytail (lean, no
   cuts): core "Tests 728 passed (728)", client "Tests 416 passed (416)", `EXIT=0`.
 - Next step: M2c on top of this branch.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-structures — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-m1-review` (PR #63, with the phase head `f12d680` and PR #62)
+  into PR #55. `Simulation`, the damage steps, `Placement`, `SpawnContextReader` and the pipeline
+  keep both sides; `spawnStructures` reads `state.world` (F7d replaced `state.map`). Docs 03, 05,
+  18 and this log keep both sides. `EnragedSystem` loses its "nothing emits `structure-destroyed`
+  yet" remark: `StructureSystem` emits it now.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  830 passed (830)"; client "Tests 420 passed (420)"; "✓ built in 101ms"; "Documentation check
+  passed."
+- Next step: M2c (#56) merges this; its end-to-end test kills a tower and checks the lane's
+  `enraged` stack.
