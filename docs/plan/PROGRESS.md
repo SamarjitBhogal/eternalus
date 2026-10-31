@@ -2101,3 +2101,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Checks run: Prettier on the decisions log → no change to other tables (diff stat +54 −1);
   `npm run docs:check` → "Documentation check passed."
 - Next step: this branch (DEC-71 to DEC-84, DEC-88) merges before the GL branches.
+
+### 2026-10-31 — Sprint 2/3 planning (GL-3 prep: the spawn request) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What: INBOX item GL-Q22 (Samarjit agrees the sovereign's `spawn-requested` shape before GL-3
+  starts). The owner chose to post the ask on PR #56 (posted, issue comment 6549022784, against
+  #56 `f2b264a` and #63 `03cd1a7`) and approved fixing the structures doc (07) §6 to match the
+  match director doc (12) §2: logged as DEC-136, which also covers 07 §11's event list. Plan §6's
+  GL-3 spawn row now names 07 §6 and §11. The draft:
+  `eternalus-agent-work/game-loop-plan/gl3-spawn-request-draft.md`; verbatim answers:
+  `owner-answers-2026-10-28.md`, last section.
+- Checks run: `git grep spawn-requested` over `packages` on ten refs → no match (the plan's §4.3
+  already says M1 has no such path); Prettier on the changed docs; `npm run docs:check`.
+- Next step: record Samarjit's answer in GL-Q22; GL-3 starts after M1 (#63) merges.

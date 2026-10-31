@@ -21,6 +21,17 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-10-31 (game-loop plan, GL-3: who emits `spawn-requested`)
+
+The owner's answer, in chat on 2026-10-31, while the GL-3 spawn request went to Samarjit (INBOX
+GL-Q22). Verbatim with the question as put:
+`eternalus-agent-work/game-loop-plan/owner-answers-2026-10-28.md`, last section. DEC-135 is taken
+(MS-34, PR #56), so this is DEC-136.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Where it lands                                                                                      |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| DEC-136 | **The structures doc (07) follows the match director doc (12) on `spawn-requested`: timeline actions emit it and `SpawnSystem` fulfils it.** 07 §6 says "`SpawnSystem` walks every `Spawner` in id order and emits `spawn-requested` events that `EntityFactory` fulfils", and 07 §11 lists `spawn-requested` among the structure events; 12 §2 has the director emit it and `SpawnSystem` fulfil it. This edit was not among the plan §6 edits accepted on 2026-10-29 (DEC-83). The request's shape is Samarjit's to agree (GL-Q22). Owner: "Yes, match 12 (Recommended)". | GL-3: `docs/architecture/07-structures-obstacles-and-destructibles.md` §6 and §11; plan §6 GL-3 row |
+
 ## Batch 2026-10-30 (game-loop plan, GL-5 win/lose wording and pause during the run-on)
 
 The owner's answers, in chat on 2026-10-30, to the two GL-5 questions left open by the critic's

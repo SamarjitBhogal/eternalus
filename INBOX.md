@@ -822,6 +822,26 @@ Reply inline (`Decision: …`).
       stat for the FR-029 aura. Confirm or correct.
   - Decision: DEC-40 to DEC-42 (`docs/reference/game-design/13-owner-decisions-log.md`,
     2026-10-16, PR #36). DEC-42's open questions are their own item (PR #36).
+- [ ] **GL-Q22 — The sovereign's spawn request: Samarjit agrees its shape before GL-3 starts
+      (asked 2026-10-31; blocks GL-3; game-loop plan §4.3).** GL-3 spawns each team's sovereign
+      through `SpawnSystem`, which Samarjit owns with the minion system doc (18). No branch has
+      the `spawn-requested` event yet: today `SpawnSystem` takes requests only from the
+      `state.hordeRequests` queue (doc 18 §3.2, "queues one **horde request**"). The draft
+      (`eternalus-agent-work/game-loop-plan/gl3-spawn-request-draft.md`) adds one event,
+      `spawn-requested { team, definitionId, position }`. The `spawn-sovereigns` timeline action
+      emits it on tick 0, once per Citadel. `SpawnSystem` keeps the request and, in its next pass,
+      builds one unit through `EntityFactory`, counts it against the unit cap and announces it
+      with `entity-spawned`, so the sovereigns exist from tick 1. No horde record, no reply event.
+      (1) Post the draft's comment on PR #56 (Samarjit's M2c, which rewrites `SpawnSystem`'s
+      spawn points), or say where. (2) The agent records Samarjit's answer here and lands it in
+      doc 18 §3.2 with GL-3. (3) Your structures doc (07) §6 says "`SpawnSystem` walks every
+      `Spawner` in id order and emits `spawn-requested` events that `EntityFactory` fulfils",
+      but your match director doc (12) §2 says the director emits it and `SpawnSystem` fulfils
+      it. Approve that GL-3 changes the 07 sentence to match 12 (it is not in the edits you
+      accepted on 2026-10-29). **Recommendation:** post as drafted; approve (3).
+  - Decision (2026-10-31): (1) "C1: INBOX + post on #56 (Recommended)": the comment goes on PR
+    #56. (3) "Yes, match 12 (Recommended)": DEC-136, which also covers 07 §11's event list.
+    **Open:** Samarjit's answer on #56. Tick this item when it is recorded here.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
