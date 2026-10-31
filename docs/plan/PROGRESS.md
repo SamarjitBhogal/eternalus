@@ -2633,7 +2633,9 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   damage-not-dealt term, so a lane pushed most of the way still outweighs the human (INBOX
   updated). CodeRabbit on #56: doc 11 §10 registry and `structuresWithin` notes, INBOX "eight
   items", direct `LaneStructures` tests, `StructureSystem`'s in-sync guard, the M2c entry above
-  split into two three-bullet entries. Every new or retimed test seen red against a break.
+  split into two three-bullet entries. MS-34 (DEC-135): only a Legend escapes a chase by time;
+  `MARCHING_ONLY` now disarms tower guards too, since a guard chases a non-fighting minion to its
+  death. Every new or retimed test seen red against a break.
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
-  "Tests 872 passed (872)"; client "Tests 420 passed (420)"; "Documentation check passed."
-- Next step: MS-34, the tower-to-enraged scenario test, the pre-PR gate.
+  "Tests 880 passed (880)"; client "Tests 420 passed (420)"; "Documentation check passed."
+- Next step: the tower-to-enraged scenario test, the test-file splits, the pre-PR gate.

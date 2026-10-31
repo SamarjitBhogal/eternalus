@@ -17,12 +17,15 @@ import { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
 import type { UnitDefinition } from './content/units/units.types';
 
-/** The shipped content with every minion's controller and attack taken away, so hordes only march. */
+/**
+ * The shipped content with every minion's and tower guard's controller and attack taken away, so
+ * hordes only march and nothing fights them (a guard chases a minion to its death, MS-34).
+ */
 const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
   loadDefaultContent(30)
     .all()
     .map((definition) => {
-      if (definition.controller !== 'minion') {
+      if (definition.controller !== 'minion' && definition.controller !== 'guard') {
         return definition;
       }
       const { id, kind, displayName, baseHealth, footprintRadius, visionRadius, movementProfile } =
