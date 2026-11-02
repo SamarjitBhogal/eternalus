@@ -18,6 +18,7 @@ describe('@eternalus/core public API', () => {
       'Simulation',
       'StateHasher',
       'createDefaultGameConfig',
+      'findBuildingAt',
       'findMapObjectAt',
       'isPointInPolygon',
       'loadDisplayContent',

@@ -1,3 +1,4 @@
+import { BOT_DIFFICULTIES } from './ai/difficulties/botDifficulties';
 import type { ContentCatalogue } from './ContentCatalogue';
 import type { LegendDefinition } from './legends/legends.types';
 import type { LockedClassDefinition } from './legends/locked/lockedClasses.types';
@@ -6,6 +7,7 @@ import { LEVEL_CURVE_CATALOGUE } from './progression/levelCurveCatalogue';
 import type { LevelCurveDefinition } from './progression/progression.types';
 import type { BotRosterDefinition } from './teams/botRoster.types';
 import { BotRosterClassRule } from './validation/BotRosterClassRule';
+import { BotRosterDifficultyRule } from './validation/BotRosterDifficultyRule';
 import type { ContentRule, UnitDefinitionRule } from './validation/ContentValidator.types';
 import { KebabCaseIdRule } from './validation/KebabCaseIdRule';
 import { KnownLevelCurveRule } from './validation/KnownLevelCurveRule';
@@ -58,10 +60,13 @@ export const createLockedClassRules = (): readonly ContentRule<LockedClassDefini
  * Every shipped bot-roster rule. A new bot-roster rule is one line here.
  *
  * @param legends - The loaded Legend classes every laner must name.
+ * @param difficulties - The loaded bot difficulties each role must name (DEC-149).
  */
 export const createBotRosterRules = (
   legends: ContentCatalogue<LegendDefinition>,
+  difficulties: Readonly<Record<string, unknown>> = BOT_DIFFICULTIES,
 ): readonly ContentRule<BotRosterDefinition>[] => [
   new KebabCaseIdRule(),
   new BotRosterClassRule(legends),
+  new BotRosterDifficultyRule(difficulties),
 ];

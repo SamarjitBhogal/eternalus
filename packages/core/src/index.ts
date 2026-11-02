@@ -113,4 +113,5 @@ export type { MapBuilding, MapPresentation } from './content/maps/maps.types';
 
 export { MapObjectBuilder } from './map/MapObjectBuilder';
 export type { MapObject, MapObjectKind, MapObjectSnapshot } from './content/maps/mapObjects.types';
+export { findBuildingAt } from './map/findBuildingAt';
 export { findMapObjectAt } from './map/findMapObjectAt';

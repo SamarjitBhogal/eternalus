@@ -18,4 +18,10 @@ export type BotRosterDefinition = {
    */
   readonly laners: readonly LegendClassId[];
   readonly enemyRover: EnemyRoverRule;
+  /**
+   * The bot difficulty id (core `content/ai/difficulties/`) each role plays: lane bots `laner`,
+   * the enemy Rover `rover` (architecture 11 §4.7, 18 §8; DEC-149). Ids, never renamed; checked
+   * against the loaded difficulties at content load.
+   */
+  readonly difficulties: { readonly laner: string; readonly rover: string };
 };
