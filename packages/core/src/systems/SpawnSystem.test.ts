@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
 
@@ -18,6 +19,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { StateHasher } from '../state/StateHasher';
 import { SpawnSystem } from './SpawnSystem';
+import type { Vec2 } from '../utils/geometry.types';
 import type { SpawnPlan } from './SpawnSystem.types';
 
 const TICK_RATE = 30;
@@ -260,6 +262,82 @@ describe('SpawnSystem', () => {
     system.update({ state, logger: new NullLogger() });
 
     expect(state.entities.size).toBe(0);
+  });
+
+  it('walks a horde spawned inside its structure out along its march axis; one on open ground keeps its brain (DEC-133)', () => {
+    // The lane-0 SpawnerTowers (x 60 and x 140, y 20) block a 16 m square; the BuffTowers nothing.
+    const map = {
+      ...TWO_LANE_MAP,
+      features: TWO_LANE_MAP.features.map((feature) => {
+        const { x, y } = feature.position;
+        return feature.kind === 'spawner-tower'
+          ? {
+              ...feature,
+              footprint: [
+                { x: x - 8, y: y - 8 },
+                { x: x + 8, y: y - 8 },
+                { x: x + 8, y: y + 8 },
+                { x: x - 8, y: y + 8 },
+              ],
+            }
+          : feature;
+      }),
+    };
+    const world = matchWorldOf(map);
+    const state = new GameState(createDefaultGameConfig(), 1, world);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
+    const system = newSystem(state, factory, { openingWave: NO_OPENING });
+    for (const id of ['spawner-light-0', 'spawner-dark-0', 'buff-light-1']) {
+      const feature = map.features.find((candidate) => candidate.id === id);
+      if (feature?.laneId === undefined || feature.team === 'neutral') {
+        throw new Error(`fixture lacks ${id}`);
+      }
+      const { team, laneId: lane, position: origin } = feature;
+      state.hordeRequests.push({
+        team,
+        mobId: 'light-minion',
+        weightClass: 'light',
+        count: 16,
+        lane,
+        origin,
+      });
+    }
+
+    system.update({ state, logger: new NullLogger() });
+
+    const { grid } = world;
+    const isOpen = ({ x, y }: { x: number; y: number }) =>
+      grid.isWalkable(Math.floor(x / grid.cellSize), Math.floor(y / grid.cellSize));
+    const walks: Record<string, { readonly from: Transform['position']; readonly to?: Vec2 }[]> =
+      {};
+    state.hordes.forEach(({ team, lane, memberIds }) => {
+      walks[`${team} ${lane}`] = memberIds.map((id) => {
+        const entity = state.entities.get(id);
+        const exit = entity?.findComponent(Deploying)?.exit;
+        const from = { ...(entity?.getComponent(Transform).position ?? { x: 0, y: 0 }) };
+        return exit === undefined ? { from } : { from, to: exit };
+      });
+    });
+    const clearance = HORDE_STEERING.deployClearance;
+    const light = walks['light lane-0'] ?? [];
+    const dark = walks['dark lane-0'] ?? [];
+    expect(light).toHaveLength(16);
+    expect(dark).toHaveLength(16);
+    // Light marches east, Dark west: each member walks straight along x, in formation, past the
+    // square plus the clearance, onto open ground.
+    for (const [walk, sign, clear] of [
+      [light, 1, (x: number) => x >= 68 + clearance],
+      [dark, -1, (x: number) => x <= 132 - clearance],
+    ] as const) {
+      const steps = walk.map(({ from, to }) => ((to?.x ?? from.x) - from.x) * sign);
+      expect(new Set(steps).size).toBe(1);
+      expect(steps[0]).toBeGreaterThan(0);
+      for (const { from, to } of walk) {
+        expect(to?.y).toBe(from.y);
+        expect(clear(to?.x ?? from.x) && isOpen(to ?? from)).toBe(true);
+      }
+    }
+    expect(walks['light lane-1']?.map(({ to }) => to)).toEqual(Array(16).fill(undefined));
   });
 
   it('sends the opening hordes even when the Stronghold has no recurring waves', () => {

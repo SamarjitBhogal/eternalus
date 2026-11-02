@@ -1,14 +1,16 @@
+import { MAP_PALETTE as P } from '../content/maps/map1Scenery';
 import type { MapDecoration } from '../content/maps/maps.types';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 /** Builds overlapping, individually shaped mountain masses around the battlefield. */
 export class MapMountainBuilder extends MapDecorationBuilder {
   /** Returns varied peaks, foothills and rocky slopes without changing collision. */
-  public build(): readonly MapDecoration[] {
+  public build(seed = 0): readonly MapDecoration[] {
+    this.isMirrored = true;
     for (let x = 0; x <= 1640;) {
-      const n = this.variation(x, 17);
+      const n = this.variation(x + seed, 17);
       const width = 42 + (n % 44);
       this.mountain(`mountain-north-${String(x)}`, x, 32, width, 25 + ((n >>> 4) % 34), n);
-      const south = this.variation(x, 881);
+      const south = this.variation(x + seed, 881);
       this.mountain(
         `mountain-south-${String(x)}`,
         x + 11,
@@ -20,8 +22,16 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       x += width * 1.15;
     }
     for (let y = 0; y <= 940;) {
-      const n = this.variation(19, y);
-      this.mountain(`mountain-west-${String(y)}`, 8, y, 22 + (n % 8), 35 + ((n >>> 5) % 35), n);
+      const n = this.variation(19 + seed, y);
+      this.mountain(
+        `mountain-west-${String(y)}`,
+        8,
+        y,
+        22 + (n % 8),
+        35 + ((n >>> 5) % 35),
+        n,
+        `mountain-east-${String(y)}`,
+      );
       this.mountain(
         `mountain-east-${String(y)}`,
         1595,
@@ -34,7 +44,7 @@ export class MapMountainBuilder extends MapDecorationBuilder {
     }
     for (let y = 38; y < 310; y += 48) {
       for (let x = 38; x < 235 - y * 0.35; x += 55) {
-        const n = this.variation(x, y);
+        const n = this.variation(x + seed, y);
         for (const [corner, px, py] of [
           ['nw', x, y],
           ['ne', 1600 - x, y + 9],
@@ -61,7 +71,14 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       [4, 530, 555, 26],
       [5, 1075, 560, 31],
     ] as const)
-      this.mountain(`hill-${String(i)}`, x, y, size, size * 0.7, i * 47);
+      this.mountain(
+        `hill-${String(i)}`,
+        x + (this.variation(seed, i) % 21) - 10,
+        y + (this.variation(i, seed) % 21) - 10,
+        size,
+        size * 0.7,
+        this.variation(seed, i),
+      );
     return this.pieces.map((piece) => ({
       ...piece,
       shape: piece.shape.map((p) => ({
@@ -70,12 +87,22 @@ export class MapMountainBuilder extends MapDecorationBuilder {
       })),
     }));
   }
-  private mountain(id: string, x: number, y: number, rx: number, ry: number, n: number): void {
+  private mountain(
+    id: string,
+    x: number,
+    y: number,
+    rx: number,
+    ry: number,
+    n: number,
+    mirrorId = `${id}-mirror`,
+  ): void {
+    const start = this.pieces.length;
     const point = (dx: number, dy: number) => ({ x: x + dx * rx, y: y + dy * ry });
     const peak = point(-0.35 + (n % 7) * 0.08, -0.85);
     const shoulder = point(0.38, -0.25 - (n % 3) * 0.1);
-    this.blob(`${id}-foot`, x, y + ry * 0.2, rx * 1.12, ry * 0.77, 'rgba(35,45,36,0.35)');
-    this.polygon(
+    this.beginObject(id, 'terrain');
+    this.blob(`${id}-foot`, x, y + ry * 0.2, rx * 1.12, ry * 0.77, P.mountainFoot);
+    this.blockPolygon(
       `${id}-mass`,
       [
         point(-1, 0.55),
@@ -88,38 +115,43 @@ export class MapMountainBuilder extends MapDecorationBuilder {
         point(0.35, 0.75),
         point(-0.45, 0.7),
       ],
-      n % 3 === 0 ? '#545e55' : '#48554d',
+      n % 3 === 0 ? P.mountainMassLight : P.mountainMass,
     );
     this.polygon(
       `${id}-sun-face`,
       [point(-1, 0.55), point(-0.55, -0.4), peak, point(-0.1, 0.1), point(-0.32, 0.66)],
-      '#859081',
+      P.mountainSunFace,
     );
     this.polygon(
       `${id}-middle-face`,
       [peak, shoulder, point(0.36, 0.48), point(-0.1, 0.1)],
-      '#677568',
+      P.mountainMiddleFace,
     );
     this.polygon(
       `${id}-shadow-face`,
       [shoulder, point(0.81, -0.05), point(1, 0.55), point(0.35, 0.75), point(0.36, 0.48)],
-      '#37473e',
+      P.mountainShadowFace,
     );
     this.polygon(
       `${id}-broken-ridge`,
       [peak, point(-0.1, 0.1), point(-0.32, 0.66), point(-0.19, 0.25), point(-0.26, -0.14)],
-      '#a0a591',
+      P.mountainRidge,
     );
     if (ry > 45)
       this.polygon(
         `${id}-snow`,
         [peak, point(-0.36, -0.43), point(-0.16, -0.51), point(0.05, -0.38), point(0.17, -0.5)],
-        '#c3c9ba',
+        P.mountainSnow,
       );
     this.polygon(
       `${id}-scree`,
       [point(-0.64, 0.35), point(-0.32, 0.1), point(-0.42, 0.52), point(-0.76, 0.63)],
-      '#747f6d',
+      P.mountainScree,
     );
+    for (let i = start; i < this.pieces.length; i++) {
+      const piece = this.pieces[i];
+      if (piece !== undefined)
+        this.pieces[i] = { ...piece, mirrorId: mirrorId + piece.id.slice(id.length) };
+    }
   }
 }

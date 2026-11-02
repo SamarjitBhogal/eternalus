@@ -69,6 +69,7 @@ export class StateHasher {
       });
       parts.push(['ai', ...brains]);
     }
+    if (state.worldObjects !== undefined) parts.push(state.worldObjects.snapshot());
     return fnv1a(JSON.stringify(parts));
   }
 

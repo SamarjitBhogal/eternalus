@@ -1,6 +1,6 @@
 import type { MapDefinition } from '../content/maps/maps.types';
-import { doesPolygonOverlapRect } from '../utils/geometry';
-import type { Polygon, Vec2 } from '../utils/geometry.types';
+import { doesPolygonOverlapRect, isPointInPolygon } from '../utils/geometry';
+import type { Polygon, Rect, Vec2 } from '../utils/geometry.types';
 import { sqrt } from '../utils/deterministicMath';
 import { CELL_EDGE_SLACK, LINE_STEP_FRACTION } from './WorldMap.constants';
 import type { BlockingRule } from './WorldMap.types';
@@ -59,6 +59,11 @@ export class WorldMap {
     return isOnGrid && this.walkable[row * this.cols + col] === 1;
   }
 
+  /** Whether the cell under the world position `(x, y)` can be walked on; outside the grid, no. */
+  public isWalkableAt(x: number, y: number): boolean {
+    return this.isWalkable(Math.floor(x / this.cellSize), Math.floor(y / this.cellSize));
+  }
+
   /**
    * Whether the first `maxDistance` of the straight line from `(fromX, fromY)` to `(toX, toY)` is
    * walkable, sampled `LINE_STEP_FRACTION` of a cell apart (flow fields, A\* string pulling).
@@ -99,17 +104,20 @@ export class WorldMap {
     return col >= 0 && row >= 0 && col < this.cols && row < this.rows ? { col, row } : null;
   }
 
-  /** Blocks every cell `footprint` covers any part of. Returns the cells that changed. */
-  public stampFootprint(footprint: Polygon): readonly number[] {
-    return this.cellsInside(footprint).filter((cell) => {
+  /**
+   * Blocks every cell `footprint` covers any part of, except cells wholly inside one of
+   * `openings` (a bridge deck over a lava river). Returns the cells that changed.
+   */
+  public stampFootprint(footprint: Polygon, openings: readonly Polygon[] = []): readonly number[] {
+    return this.cellsInside(footprint, openings).filter((cell) => {
       this.stamps[cell] = (this.stamps[cell] ?? 0) + 1;
       return this.refresh(cell);
     });
   }
 
-  /** Undoes one `stampFootprint` of the same polygon. Returns the cells that changed. */
-  public clearFootprint(footprint: Polygon): readonly number[] {
-    return this.cellsInside(footprint).filter((cell) => {
+  /** Undoes one `stampFootprint` of the same polygon and openings. Returns the cells that changed. */
+  public clearFootprint(footprint: Polygon, openings: readonly Polygon[] = []): readonly number[] {
+    return this.cellsInside(footprint, openings).filter((cell) => {
       this.stamps[cell] = Math.max((this.stamps[cell] ?? 0) - 1, 0);
       return this.refresh(cell);
     });
@@ -127,7 +135,7 @@ export class WorldMap {
    * Indices of every cell the polygon covers any part of (conservative), so a wall thinner than
    * a cell still blocks every cell it passes through and leaves no gap to slip through.
    */
-  private cellsInside(polygon: Polygon): number[] {
+  private cellsInside(polygon: Polygon, openings: readonly Polygon[] = []): number[] {
     const xs = polygon.map((point) => point.x);
     const ys = polygon.map((point) => point.y);
     const firstCol = Math.max(Math.floor(Math.min(...xs) / this.cellSize), 0);
@@ -144,11 +152,22 @@ export class WorldMap {
           width: this.cellSize * (1 - 2 * CELL_EDGE_SLACK),
           height: this.cellSize * (1 - 2 * CELL_EDGE_SLACK),
         };
-        if (doesPolygonOverlapRect(polygon, cell)) {
+        if (doesPolygonOverlapRect(polygon, cell) && !WorldMap.isInsideAny(cell, openings)) {
           cells.push(row * this.cols + col);
         }
       }
     }
     return cells;
+  }
+
+  /** Whether every corner of `cell` lies inside one of `openings` (convex openings only). */
+  private static isInsideAny(cell: Rect, openings: readonly Polygon[]): boolean {
+    const corners = [
+      { x: cell.x, y: cell.y },
+      { x: cell.x + cell.width, y: cell.y },
+      { x: cell.x + cell.width, y: cell.y + cell.height },
+      { x: cell.x, y: cell.y + cell.height },
+    ];
+    return openings.some((opening) => corners.every((corner) => isPointInPolygon(corner, opening)));
   }
 }

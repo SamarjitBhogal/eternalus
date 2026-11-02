@@ -20,11 +20,31 @@ import type { PathQuery } from './PathQuery.types';
 import type { EntitySnapshot, HordeSnapshot, Snapshot } from './Snapshot.types';
 import type { SpaceQuery } from './SpaceQuery.types';
 
+import type { WorldObjectStore } from './WorldObjectStore';
+import { MapObjectBody } from '../components/MapObjectBody';
+
 /**
  * The aggregate root of one match: config, the seeded RNG, the world, the entities, the hordes, the
  * team counters, the event channel and the tick. Changed only inside `Simulation.step()`.
  */
 export class GameState {
+  /** Present only for simulations created with an authored map. */
+  public worldObjects: WorldObjectStore | undefined;
+
+  /** Living real BuffTower entities protecting this team's King; decorative proxies never count. */
+  public livingBuffTowerCount(team: PlayableTeam): number {
+    let count = 0;
+    this.entities.forEach((entity) => {
+      if (
+        entity.family === 'structure' &&
+        entity.kind === 'buff-tower' &&
+        entity.findComponent(TeamMembership)?.team === team &&
+        entity.findComponent(Health)?.isDead === false
+      )
+        count++;
+    });
+    return count;
+  }
   /** The only source of randomness in the match. */
   public readonly rng: SeededRandom;
   public readonly entities = new EntityStore();
@@ -176,6 +196,7 @@ export class GameState {
         light: { ...light, towersLostByLane: { ...light.towersLostByLane } },
         dark: { ...dark, towersLostByLane: { ...dark.towersLostByLane } },
       },
+      ...(this.worldObjects === undefined ? {} : { mapObjects: this.worldObjects.snapshot() }),
     };
   }
 
@@ -187,6 +208,9 @@ export class GameState {
       kind: entity.kind,
       family: entity.family,
       definitionId: entity.definitionId,
+      ...(entity.findComponent(MapObjectBody) === undefined
+        ? {}
+        : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined

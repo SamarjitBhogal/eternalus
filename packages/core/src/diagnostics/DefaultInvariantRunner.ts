@@ -3,6 +3,7 @@ import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInva
 import { HordeMembershipConsistentInvariant } from './invariants/HordeMembershipConsistentInvariant';
 import { LevelMatchesXpInvariant } from './invariants/LevelMatchesXpInvariant';
 import { NoDeathWithoutKillerInvariant } from './invariants/NoDeathWithoutKillerInvariant';
+import { NoMapObjectOverlapInvariant } from './invariants/NoMapObjectOverlapInvariant';
 import { NoRemovalWithoutCauseInvariant } from './invariants/NoRemovalWithoutCauseInvariant';
 import { StatusStacksWithinMaxInvariant } from './invariants/StatusStacksWithinMaxInvariant';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
@@ -27,6 +28,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
       [
         new NoRemovalWithoutCauseInvariant(),
         new NoDeathWithoutKillerInvariant(),
+        new NoMapObjectOverlapInvariant(),
         new HealthWithinBoundsInvariant(),
         new FiniteTransformsInvariant(),
         new HordeMembershipConsistentInvariant(),

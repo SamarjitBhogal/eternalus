@@ -320,8 +320,33 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+- [ ] **PR #30 — schedule occupancy-driven cutaways** (owner: Gurshaan). A building's roof opens
+      today only when it is clicked; no plan item has the roof open while a unit is inside it.
+      The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure
+      family and walls/gates. Which sprint gets occupancy-driven cutaways, or are they post-MVP?
+- [ ] **PR #30 — tick order in the design text (DEC-121 (c))** (owner: sholtzman). The code runs
+      `MovementSystem` → `CollisionSystem` → `SpaceSystem` → `PathingSystem`, pinned by a test;
+      architecture 10 §8/§9 and 18 §3.2 still put collision after pathing. Edit and apply Draft 1
+      and the first §3.2 part of Draft 2 in the PR #30 review work folder
+      (`pr30-g1-round3/design-drafts.md`).
+- [ ] **PR #30 — tower-horde deploy in the design text (DEC-133)** (owner: sholtzman; doc 18
+      owner SamarjitBhogal). A horde that spawns inside a tower walks straight out with no brain
+      and stops deploying once its body stands wholly on walkable ground, or at its exit;
+      architecture 18 §3.2/§5.2 still say the lane field leads it out. Edit and apply the rest of
+      Draft 2 in the same file.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
+
+- [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
+      material detail from the map PR; retain all renderer-specific tests with that change.
+      Keep draw order inside SceneView, address renderer file length and the capture layer,
+      and measure Match.render p95 while the camera moves at 1080p, DPR 2 (target ≤ 8 ms).
+      Depends on the map PR landing; preserve the stable Match explorer signatures. See
+      [round-2 B3](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077).
+- [ ] **PR #22 input follow-up** — Owner: sholtzman, HUD/character-select branch. Arbitrate raw
+      left-click roof toggles against the attack binding after PR #30 merges.
+- [ ] **PR #22 toolbar follow-up** — Owner: sholtzman, HUD/character-select branch. Move map
+      toolbar state from game/useMatch into the bridge after PR #30 merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -531,6 +556,8 @@ Reply inline (`Decision: …`).
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-10-20 — Recorded the owner's 2026-10-16 approval in [PR #30 round-1 review](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5554590031): same-world roof cutaways supersede the separate cathedral scene; oval palaces, furnished side rooms, throne aisles and the cathedral north door are accepted. The dated amendments in architecture 06 and reference 05 preserve the earlier design and explain DEC-36 integration.
 
 - 2026-10-10 — **Your chat clarifications of 2026-10-10 (DEC-11) and the source of the new
   requirements** recorded in `docs/reference/game-design/13-owner-decisions-log.md` (appended to

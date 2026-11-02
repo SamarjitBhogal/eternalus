@@ -18,6 +18,7 @@ import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
 import type { MapDefinition } from './content/maps/maps.types';
+import type { MapObject } from './content/maps/mapObjects.types';
 import type { GameConfig } from './config/GameConfig.types';
 import { AStarPathfinder } from './map/AStarPathfinder';
 import { RETREAT_STRUCTURES } from './content/ai/botLaner';
@@ -50,6 +51,9 @@ import { WorldMap } from './map/WorldMap';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
+import { WorldObjectStore } from './state/WorldObjectStore';
+import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
+import { CollisionSystem } from './systems/CollisionSystem';
 
 /**
  * The deterministic simulation of one match, and the only thing the client drives
@@ -78,26 +82,47 @@ export class Simulation {
     debug = RELEASE_DEBUG_CONFIG,
     content,
     map,
+    mapObjects,
     levelCurves,
     roster = [],
     weapons,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
-    const { space, world, paths } = Simulation.buildWorld(map, validConfig);
+    const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     this.state = new GameState(validConfig, seed, world, { space, paths });
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);
     const controllers = Simulation.createControllers();
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
+    const objectsById = new Map(
+      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+    );
+    const definitions = {
+      has: (id: string): boolean => objectsById.has(id) || units.has(id),
+      get: (id: string) => objectsById.get(id) ?? units.get(id),
+    };
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
-      units,
+      definitions,
       undefined,
       weaponSource,
     );
     this.commandContext = { state: this.state, factory };
+    if (mapObjects !== undefined && map === undefined)
+      throw new Error('Map objects require a generated map');
+    if (mapObjects !== undefined) {
+      this.state.worldObjects = new WorldObjectStore(
+        mapObjects,
+        this.commandContext.factory,
+        this.state.entities,
+        MAP_OBJECT_DEFINITIONS,
+      );
+      this.state.events.on('entity-removed', ({ entityId }) =>
+        this.state.worldObjects?.removed(entityId),
+      );
+    }
     Simulation.spawnRoster(this.state, factory, roster, controllers);
     this.systemContext = { state: this.state, logger };
     this.pipeline =
@@ -109,6 +134,10 @@ export class Simulation {
             {
               factory,
               space,
+              collisions:
+                map === undefined || mapObjects === undefined
+                  ? []
+                  : [new CollisionSystem(map, mapObjects)],
               decide: [
                 new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
                   this.queue.enqueue(command);
@@ -291,11 +320,17 @@ export class Simulation {
 
   /**
    * The map's spatial pieces: the match world (its one walkability grid shared by the lane flow
-   * fields and A\* for Legends), the neighbour index and A\*. All `null` without a map.
+   * fields and A\* for Legends), the neighbour index and A\*. All `null` without a map. With
+   * `mapObjects`, the grid also blocks what the collision system blocks (06 §6): every blocking
+   * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
+   * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
+   * features keep their stamp, which also fills a tower's hollow core so no path ends in a pocket
+   * the walls close off.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
     config: GameConfig,
+    mapObjects: readonly MapObject[] = [],
   ): {
     readonly space: SpaceIndex | null;
     readonly world: MatchWorld | null;
@@ -304,11 +339,19 @@ export class Simulation {
     if (map === undefined) {
       return { space: null, world: null, paths: null };
     }
+    const walkable = new Set(
+      mapObjects.filter(({ isBlocking }) => !isBlocking).map(({ id }) => id),
+    );
     const grid = WorldMap.fromDefinition(
-      map,
+      { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
       config.map.navCellSize,
       (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
     );
+    for (const object of mapObjects.filter(({ isBlocking }) => isBlocking)) {
+      for (const footprint of object.footprints) {
+        grid.stampFootprint(footprint, object.passages);
+      }
+    }
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
       world: new MatchWorld(map, grid),
