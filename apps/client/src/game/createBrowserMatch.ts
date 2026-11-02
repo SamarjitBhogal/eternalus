@@ -1,4 +1,4 @@
-import { type GameConfig, SEVERITY, Simulation } from '@eternalus/core';
+import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
@@ -20,6 +20,7 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Matc
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
+import { botRosterSlots } from './session/botRosterSlots';
 import type { SettingsController } from './settings/SettingsController';
 import type { MatchFactory } from './SessionController.types';
 
@@ -67,8 +68,9 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
 /**
  * The browser match factory `main.tsx` binds (13 §10; 13 §2's injected `createMatch`). Each call
  * builds the adapters (renderer, camera, devices, mapper, logger, frame scheduler), a fresh
- * `Simulation(setup.seed)`, the `Match` on `request.world` and its `MatchHost`, then starts the
- * host, which owns everything from then on.
+ * `Simulation(setup.seed)` on `request.world`'s map and map objects with the setup's bots as its
+ * roster, the `Match` on the same world and its `MatchHost`, then starts the host, which owns
+ * everything from then on. The match log records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
@@ -83,6 +85,8 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
     const ring = new RingBufferSink(LOG_RING_CAPACITY);
     const logger = createMatchLogger(deps, ring);
+    const { seed } = request.setup;
+    logger.log(makeLogRecord('INFO', 'client.match', 'Match seed', { attributes: { seed } }));
     const mapper = new InputMapper(settings.bindings ?? PRESETS.wasd);
     const keyboard = new KeyboardDevice((code) => mapper.isBound(code));
     const mouse = new MouseDevice();
@@ -90,7 +94,14 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     let simulation: Simulation;
     let match: Match;
     try {
-      simulation = new Simulation({ config: gameConfig, seed: request.setup.seed, logger });
+      simulation = new Simulation({
+        config: gameConfig,
+        seed,
+        logger,
+        map: request.world.map,
+        mapObjects: request.world.mapObjects,
+        roster: botRosterSlots(request.setup),
+      });
       match = new Match({
         simulation,
         world: request.world,

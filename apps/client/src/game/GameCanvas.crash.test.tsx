@@ -27,12 +27,11 @@ vi.mock('../ui/screens/MatchScreen', () => ({
 
 const LABELS: GameCanvasLabels = {
   canvas: 'Battlefield',
-  leaveCathedral: 'Leave cathedral',
   explorer: {
     canvas: 'Explore',
-    worldHint: 'World',
-    interiorHint: 'Interior',
+    hint: 'Hint',
     overview: 'Overview',
+    restoreRoofs: 'Restore roofs',
     legend: { stronghold: (teamName) => `${teamName} stronghold`, camps: 'Camps' },
   },
 };

@@ -5,11 +5,11 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
 /**
  * The match canvas's pointer gestures. Always: a main-button click on the minimap moves the
- * camera there, a short click on the cathedral steps inside (DEC-32), and the chrome's Leave
- * cathedral action steps out (DEC-32, CD-22). With the developer explorer only (on at the start
- * with `?dev=1`, then shown or hidden by DEC-105's hotkey; demo-only by DEC-32, INBOX HC-F8):
- * drag to pan, the wheel to zoom, and the toolbar's world overview. Positions arrive in CSS pixels
- * and reach the match in device pixels.
+ * camera there, and a short click on a building cuts its roof away or puts it back. With the
+ * developer explorer only (on at the start with `?dev=1`, then shown or hidden by DEC-105's
+ * hotkey; demo-only by DEC-32, INBOX HC-F8): drag to pan, the wheel to zoom, and the toolbar's
+ * world overview, which also puts every roof back. Positions arrive in CSS pixels and reach the
+ * match in device pixels.
  */
 export class CanvasPointerControls {
   private press: { x: number; y: number; distance: number } | null = null;
@@ -21,28 +21,22 @@ export class CanvasPointerControls {
     this.isExplorerShown = deps.viewport.isExplorerShown;
   }
 
-  /** Listens for clicks and gives the chrome its actions; with the explorer, drags and the wheel too. */
+  /** Listens for clicks; with the explorer, drags and the wheel too, and gives the chrome its overview. */
   public attach(): void {
-    const { match, viewport } = this.deps;
-    const { canvas, chrome } = viewport;
+    const { canvas } = this.deps.viewport;
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointerup', this.onPointerUp);
-    chrome.setLeaveInterior(() => {
-      match.leaveInterior();
-      chrome.onInteriorChanged(false);
-    });
     if (this.isExplorerShown) {
       this.attachExplorer();
     }
   }
 
-  /** Removes every listener and takes the chrome's actions back. */
+  /** Removes every listener and takes the chrome's action back. */
   public detach(): void {
-    const { canvas, chrome } = this.deps.viewport;
+    const { canvas } = this.deps.viewport;
     canvas.removeEventListener('pointerdown', this.onPointerDown);
     canvas.removeEventListener('pointerup', this.onPointerUp);
     this.detachExplorer();
-    chrome.setLeaveInterior(null);
     this.press = null;
   }
 
@@ -73,7 +67,7 @@ export class CanvasPointerControls {
     canvas.addEventListener('wheel', this.onWheel, { passive: false });
     chrome.setOverview(() => {
       match.overview();
-      chrome.onInteriorChanged(false);
+      chrome.onRoofsChanged(false);
     });
   }
 
@@ -133,8 +127,9 @@ export class CanvasPointerControls {
     const distance =
       press.distance + Math.hypot(pointer.clientX - press.x, pointer.clientY - press.y);
     const point = this.devicePoint(pointer);
-    if (distance < CLICK_SLOP && this.deps.match.enterAt(point.x, point.y)) {
-      chrome.onInteriorChanged(true);
+    const { match } = this.deps;
+    if (distance < CLICK_SLOP && match.toggleRoofAt(point.x, point.y)) {
+      chrome.onRoofsChanged(match.hasOpenRoofs);
     }
   };
 

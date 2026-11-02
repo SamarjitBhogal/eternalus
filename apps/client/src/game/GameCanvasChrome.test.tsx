@@ -1,20 +1,17 @@
-import { isValidElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import type { GameCanvasLabels } from './GameCanvas.types';
 import { GameCanvasChrome } from './GameCanvasChrome';
-import css from './GameCanvasChrome.module.css?raw';
 
 /** The labels `main.tsx` passes (`STRINGS.viewport`; `game/` never imports `ui/`). */
 const LABELS: GameCanvasLabels = {
   canvas: 'Battlefield',
-  leaveCathedral: 'Leave cathedral',
   explorer: {
-    canvas: 'Drag to explore, scroll to zoom, click the cathedral to enter',
-    worldHint: 'Drag to explore · Scroll to zoom · Click cathedral to enter',
-    interiorHint: 'Drag to explore · Scroll to zoom · Explore the sanctuary',
+    canvas: 'Drag to explore, scroll to zoom, click a building to toggle its roof',
+    hint: 'Drag to explore · Scroll to zoom · Click a building to toggle its roof',
     overview: 'World overview',
+    restoreRoofs: 'Restore roofs & overview',
     legend: { stronghold: (teamName) => `${teamName} stronghold`, camps: 'Neutral camps' },
   },
 };
@@ -23,80 +20,41 @@ const TEAM_NAMES = { light: 'Lux', dark: 'Umbra' };
 
 /**
  * Renders what `GameCanvas` draws over the canvas for a chrome state its hook can only reach in a
- * browser (inside the interior once the match reports it).
+ * browser (a roof cut away once the match reports it).
  */
 function renderChrome(options: {
   readonly isExplorerShown: boolean;
-  readonly isInterior: boolean;
+  readonly hasOpenRoofs: boolean;
 }): string {
   return renderToStaticMarkup(
     <GameCanvasChrome
       isExplorerShown={options.isExplorerShown}
-      isInterior={options.isInterior}
+      hasOpenRoofs={options.hasOpenRoofs}
       labels={LABELS}
       teamNames={TEAM_NAMES}
       onOverview={() => undefined}
-      onLeaveInterior={() => undefined}
     />,
   );
 }
 
 describe('GameCanvasChrome', () => {
-  it('offers Leave cathedral inside the interior in normal play, outside the toolbar', () => {
-    const html = renderChrome({ isExplorerShown: false, isInterior: true });
-    expect(html).toMatch(
-      /^<button type="button" class="[^"]*leaveInterior[^"]*">Leave cathedral<\/button>$/,
-    );
-    expect(html).not.toContain('toolbar');
+  it('draws nothing in normal play, even with a roof cut away', () => {
+    expect(renderChrome({ isExplorerShown: false, hasOpenRoofs: true })).toBe('');
   });
 
-  it('keeps the developer toolbar inside the interior, with its interior hint and no Leave control', () => {
-    const html = renderChrome({ isExplorerShown: true, isInterior: true });
-    expect(html).toContain('Explore the sanctuary');
-    expect(html).toContain('World overview');
-    expect(html).not.toContain('Leave cathedral');
+  it('offers to restore the roofs in the developer toolbar while a roof is cut away', () => {
+    const html = renderChrome({ isExplorerShown: true, hasOpenRoofs: true });
+    expect(html).toContain('Click a building to toggle its roof');
+    expect(html).toContain('Restore roofs &amp; overview');
+    expect(renderChrome({ isExplorerShown: true, hasOpenRoofs: false })).toContain(
+      'World overview',
+    );
   });
 
   it('names each stronghold in the developer legend after the content team names', () => {
-    const html = renderChrome({ isExplorerShown: true, isInterior: false });
+    const html = renderChrome({ isExplorerShown: true, hasOpenRoofs: false });
     expect(html).toContain('Lux stronghold');
     expect(html).toContain('Umbra stronghold');
     expect(html).not.toContain('Light stronghold');
-  });
-
-  it('runs the leave action, never the overview, when Leave cathedral is clicked', () => {
-    const actions: string[] = [];
-    // The chrome holds no state, so calling it returns the element a render would draw.
-    const control = GameCanvasChrome({
-      isExplorerShown: false,
-      isInterior: true,
-      labels: LABELS,
-      teamNames: TEAM_NAMES,
-      onOverview: () => {
-        actions.push('overview');
-      },
-      onLeaveInterior: () => {
-        actions.push('leave-interior');
-      },
-    });
-    if (!isValidElement<{ readonly children?: unknown; readonly onClick?: () => void }>(control)) {
-      throw new Error('the chrome drew no Leave cathedral control');
-    }
-
-    control.props.onClick?.();
-
-    expect({ type: control.type, label: control.props.children }).toEqual({
-      type: 'button',
-      label: 'Leave cathedral',
-    });
-    expect(actions).toEqual(['leave-interior']);
-  });
-
-  it('styles the Leave control from tokens only, in its own sheet (I-75)', () => {
-    const rule = /\.leaveInterior \{[^}]*\}/.exec(css)?.[0] ?? '';
-    expect(rule).not.toBe('');
-    expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(/);
-    expect(rule).toContain('var(--font-game)');
-    expect(rule).toContain('var(--text-min)');
   });
 });

@@ -52,9 +52,8 @@ function setUp(writer = new MemoryReportWriter()) {
     controller.attachViewport({
       canvas: new FakeViewportCanvas(),
       chrome: {
-        onInteriorChanged: () => undefined,
+        onRoofsChanged: () => undefined,
         onExplorerChanged: () => undefined,
-        setLeaveInterior: () => undefined,
         setOverview: () => undefined,
       },
       isExplorerShown: false,

@@ -74,24 +74,3 @@
     gap: 8px;
   }
 }
-/*
- * Interim normal-play control (CD-22): leaves the cathedral interior, at the toolbar's
- * place, only while inside. Tokens only; its upgrade path is a ui/hud control (13 §9 recipe).
- */
-.leaveInterior {
-  position: absolute;
-  top: 24px;
-  left: 32px;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--text-muted);
-  border-radius: var(--radius-sm);
-  background: var(--surface-scrim);
-  color: var(--text-primary);
-  font-family: var(--font-game);
-  font-size: max(16px, var(--text-min));
-  cursor: pointer;
-}
-.leaveInterior:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}

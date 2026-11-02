@@ -30,9 +30,8 @@ const CONFIG = createDefaultGameConfig();
 const viewport = (canvas: FakeViewportCanvas): MatchViewport => ({
   canvas,
   chrome: {
-    onInteriorChanged: () => undefined,
+    onRoofsChanged: () => undefined,
     onExplorerChanged: () => undefined,
-    setLeaveInterior: () => undefined,
     setOverview: () => undefined,
   },
   isExplorerShown: false,

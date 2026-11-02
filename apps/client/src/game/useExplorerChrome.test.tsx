@@ -17,8 +17,8 @@ function renderHook(isExplorerShownAtStart = false): ReturnType<typeof useExplor
 }
 
 describe('useExplorerChrome', () => {
-  it('starts outside the cathedral', () => {
-    expect(renderHook().isInterior).toBe(false);
+  it('starts with every roof on', () => {
+    expect(renderHook().hasOpenRoofs).toBe(false);
   });
 
   it('starts with the developer explorer as the viewport starts it (?dev=1; DEC-105)', () => {
@@ -34,16 +34,6 @@ describe('useExplorerChrome', () => {
     overview();
     chrome.setOverview(null);
     overview();
-    expect(run).toHaveBeenCalledTimes(1);
-  });
-
-  it('runs the leave action the match gave it, and nothing once it is taken back', () => {
-    const { chrome, leaveInterior } = renderHook();
-    const run = vi.fn();
-    chrome.setLeaveInterior(run);
-    leaveInterior();
-    chrome.setLeaveInterior(null);
-    leaveInterior();
     expect(run).toHaveBeenCalledTimes(1);
   });
 });

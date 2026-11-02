@@ -36,9 +36,9 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     lookAtMinimapPoint: vi.fn(() => false),
     panBy: vi.fn(),
     zoomBy: vi.fn(),
-    enterAt: vi.fn(() => false),
+    toggleRoofAt: vi.fn(() => false),
+    hasOpenRoofs: false,
     overview: vi.fn(),
-    leaveInterior: vi.fn(),
   };
   const input = { releaseAll: vi.fn() };
   // The real key lookup over the default bindings, so DEC-105's hotkey is the shipped chord.
@@ -49,9 +49,8 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
   }));
   const evidence = fakeMatchEvidence();
   const chrome = {
-    onInteriorChanged: vi.fn(),
+    onRoofsChanged: vi.fn(),
     onExplorerChanged: vi.fn(),
-    setLeaveInterior: vi.fn(),
     setOverview: vi.fn(),
   };
   const host = new MatchHost({

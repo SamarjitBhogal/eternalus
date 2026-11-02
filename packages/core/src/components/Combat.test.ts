@@ -30,4 +30,11 @@ describe('Combat', () => {
     combat.beginAttack(0, 100);
     expect(combat.readyAtTick).toBe(1);
   });
+
+  it('names the equipped weapon, or null for a natural attack', () => {
+    const attack = { strategy: 'melee', damage: 10, reach: 1, interval: 5 } as const;
+
+    expect(new Combat(attack, 'test-talons').weaponId).toBe('test-talons');
+    expect(new Combat(attack).weaponId).toBeNull();
+  });
 });

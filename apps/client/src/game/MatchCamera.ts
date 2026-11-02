@@ -1,4 +1,4 @@
-import type { CathedralInterior, MapDefinition } from '@eternalus/core';
+import type { MapDefinition, MapPresentation } from '@eternalus/core';
 
 import type { Camera } from './engine/Camera';
 import type { ScreenPoint } from './engine/input/InputDevice.types';
@@ -9,10 +9,11 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 import { CAMERA_SMOOTHING, DEFAULT_ASPECT } from './MatchCamera.constants';
 
 /**
- * Decides which part of which world a match shows: the following `Camera`, or the free
- * `MapExplorer` view that dragging, the overview and the cathedral interior switch to until the
- * player moves. It holds the drawing size, so it is also the match's `Projection` from canvas
- * points to the world (architecture 08 §5). `Match` owns one and draws whatever it shows.
+ * Decides which part of the world a match shows: the following `Camera`, or the free
+ * `MapExplorer` view that dragging and the overview switch to until the player moves. Through its
+ * explorer it also holds which building roofs are cut away (`hiddenRoofs`, read by the views). It
+ * holds the drawing size, so it is also the match's `Projection` from canvas points to the world
+ * on screen (architecture 08 §5). `Match` owns one and draws whatever it shows.
  */
 export class MatchCamera implements Projection {
   private readonly explorer: MapExplorer;
@@ -29,20 +30,20 @@ export class MatchCamera implements Projection {
   private pixelRatio = 1;
 
   /**
-   * Starts following with `camera` on the battlefield `map`; `interior` is the cathedral's
-   * explorable inside, or `null` when the map has none.
+   * Starts following with `camera` on the battlefield `map`; `presentation.buildings` are the
+   * footprints whose roofs a click cuts away.
    */
   public constructor(
     private readonly camera: Camera,
     private readonly map: MapDefinition,
-    interior: CathedralInterior | null,
+    presentation: MapPresentation,
   ) {
-    this.explorer = new MapExplorer(map, interior);
+    this.explorer = new MapExplorer(map, presentation);
   }
 
-  /** Whether the view is inside the cathedral. */
-  public get isInterior(): boolean {
-    return this.explorer.isInterior;
+  /** The ids of the buildings whose roofs are cut away; a live set the views read each frame. */
+  public get hiddenRoofs(): ReadonlySet<string> {
+    return this.explorer.hiddenRoofs;
   }
 
   /** The drawing area's width in device pixels (0 before the first resize). */
@@ -62,17 +63,9 @@ export class MatchCamera implements Projection {
     this.pixelRatio = pixelRatio;
   }
 
-  /** The world point the following camera shows under a canvas point (CSS pixels). */
+  /** The world point on screen (the free view's or the camera's) under a canvas point (CSS pixels). */
   public screenToWorld(point: ScreenPoint): WorldPoint {
-    return this.camera.screenToWorld(
-      { x: point.x * this.pixelRatio, y: point.y * this.pixelRatio },
-      {
-        worldWidth: this.map.width,
-        worldHeight: this.map.height,
-        screenWidth: this.drawWidth,
-        screenHeight: this.drawHeight,
-      },
-    );
+    return this.deviceToWorld(point.x * this.pixelRatio, point.y * this.pixelRatio);
   }
 
   /** Eases the camera towards `target` (the player) while it is following. */
@@ -82,15 +75,10 @@ export class MatchCamera implements Projection {
     }
   }
 
-  /**
-   * The player is moving: the camera follows again, even after a key held since before a click,
-   * except inside the cathedral, which the player leaves with the leave button.
-   */
+  /** The player is moving: the camera follows again, even after a key held since before a click. */
   public playerMoved(): void {
-    if (!this.explorer.isInterior) {
-      this.isFollowing = true;
-      this.isExploring = false;
-    }
+    this.isFollowing = true;
+    this.isExploring = false;
   }
 
   /** The part of the world on screen: the free view's or the camera's. */
@@ -135,40 +123,34 @@ export class MatchCamera implements Projection {
   }
 
   /**
-   * Enters the cathedral when the screen point (device pixels) is on it.
+   * Cuts away the roof of the building under the screen point (device pixels), or puts it back;
+   * the view does not move.
    *
-   * @returns Whether the view moved inside.
+   * @returns Whether the point was on a building.
    */
-  public enterAt(screenX: number, screenY: number): boolean {
-    const view = this.visibleArea();
-    const isEntered = this.explorer.enterAt({
-      x: view.x + (screenX / this.drawWidth) * view.width,
-      y: view.y + (screenY / this.drawHeight) * view.height,
-    });
-    if (isEntered) {
-      this.isExploring = true;
-      this.isFollowing = false;
-    }
-    return isEntered;
+  public toggleRoofAt(screenX: number, screenY: number): boolean {
+    return this.explorer.toggleRoofAt(this.deviceToWorld(screenX, screenY));
   }
 
-  /** Shows the whole battlefield in the free view, leaving the cathedral if inside. */
+  /** Shows the whole battlefield in the free view and puts every roof back. */
   public overview(): void {
     this.explorer.overview();
     this.isExploring = true;
     this.isFollowing = false;
   }
 
-  /** Leaves the cathedral interior and returns to following the player (DEC-32; CD-22). */
-  public leaveInterior(): void {
-    this.explorer.overview();
-    this.isExploring = false;
-    this.isFollowing = true;
-  }
-
   /** The drawing area's width over its height, until the first resize a default. */
   private get aspect(): number {
     return this.drawHeight > 0 ? this.drawWidth / this.drawHeight : DEFAULT_ASPECT;
+  }
+
+  /** The world point on screen under a point in device pixels. */
+  private deviceToWorld(screenX: number, screenY: number): WorldPoint {
+    const view = this.visibleArea();
+    return {
+      x: view.x + (screenX / this.drawWidth) * view.width,
+      y: view.y + (screenY / this.drawHeight) * view.height,
+    };
   }
 
   /** Switches to the free view, starting from what the camera shows so nothing jumps. */

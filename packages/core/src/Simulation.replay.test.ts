@@ -8,6 +8,7 @@ import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
 import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
 import type { Replay } from './diagnostics/Replay.types';
+import { MapGenerator } from './map/MapGenerator';
 import { Simulation } from './Simulation';
 import type { Snapshot } from './state/Snapshot.types';
 import type { Vec2 } from './utils/geometry.types';
@@ -23,9 +24,19 @@ const SQUARE: readonly Vec2[] = [
   { x: 0, y: -1 },
 ];
 
-/** The default pipeline, bots included, with every invariant checked every tick. */
+/**
+ * The default pipeline, bots included, with every invariant checked every tick, on the map the
+ * seed generates, with one bot Legend (a Dark Sentinel laner) whose controller issues commands.
+ */
 const createMatch = (config: GameConfig, seed: number): Simulation =>
-  new Simulation({ config, seed, logger: new NullLogger(), debug: TEST_DEBUG_CONFIG });
+  new Simulation({
+    config,
+    seed,
+    logger: new NullLogger(),
+    debug: TEST_DEBUG_CONFIG,
+    map: new MapGenerator().generate(config, seed),
+    roster: [{ team: 'dark', definitionId: 'sentinel', role: 'laner', difficulty: 'normal' }],
+  });
 
 const spawn = (kind: string, definitionId: string, at: Vec2): Command => ({
   type: 'dev-spawn',
@@ -37,11 +48,11 @@ const spawn = (kind: string, definitionId: string, at: Vec2): Command => ({
 });
 
 const warriorOf = (snapshot: Snapshot): string | undefined =>
-  snapshot.entities.find((entity) => entity.family === 'legend')?.id;
+  snapshot.entities.find((entity) => entity.kind === 'warrior')?.id;
 
 /**
  * The player: a Warrior and its minion escort at tick 0, then the Warrior walks a square, turning
- * every `TURN_EVERY` ticks. The escort's `follow-leader` bots answer with their own commands.
+ * every `TURN_EVERY` ticks. The bot Legend issues its own commands meanwhile.
  */
 const playerCommands = (tick: number, snapshot: Snapshot): readonly Command[] => {
   if (tick === 0) {

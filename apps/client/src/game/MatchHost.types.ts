@@ -24,9 +24,9 @@ export type MatchHostDeps = {
     | 'lookAtMinimapPoint'
     | 'panBy'
     | 'zoomBy'
-    | 'enterAt'
+    | 'toggleRoofAt'
+    | 'hasOpenRoofs'
     | 'overview'
-    | 'leaveInterior'
   >;
   /** The canvas, its chrome and the developer flag, as `GameCanvas` attached them. */
   readonly viewport: MatchViewport;

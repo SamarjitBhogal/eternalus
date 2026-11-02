@@ -1,7 +1,7 @@
 import { createDefaultGameConfig, type LogRecord, Simulation } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { BridgeEventMap } from '../bridge/events';
+import type { BridgeEventMap, RosterEntry } from '../bridge/events';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
@@ -34,9 +34,8 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
   const viewport: MatchViewport = {
     canvas,
     chrome: {
-      onInteriorChanged: () => undefined,
+      onRoofsChanged: () => undefined,
       onExplorerChanged: () => undefined,
-      setLeaveInterior: () => undefined,
       setOverview: () => undefined,
     },
     isExplorerShown: false,
@@ -137,7 +136,7 @@ describe('createBrowserMatch', () => {
     expect(match.tick).toBe(1);
     expect(running.currentTick()).toBe(1);
     expect(match.replay.seed).toBe(SEED);
-    // The player's spawn and the prototype escort's, all before tick 1; there are no bots.
+    // The player's spawn, before tick 1; the setup has no bots.
     expect(
       match.replay.commands.map(({ tick, command }) => [
         tick,
@@ -149,12 +148,48 @@ describe('createBrowserMatch', () => {
     );
     expect(match.replay.checkpoints.map(({ tick }) => tick)).toEqual([0]);
     expect(match.recentEvents.length).toBeGreaterThan(0);
+    // The match seed first, then the rejected spawn.
     expect(logTail.map(({ severityText, scope }) => [severityText, scope])).toEqual([
+      ['INFO', 'client.match'],
       ['INFO', 'core.commands'],
       ['ERROR', 'client.match'],
     ]);
+    expect(logTail[0]?.attributes).toEqual({ seed: SEED });
     // Only WARN and worse reach the page's sinks, after the ring already holds the record.
-    expect(atPageSink.map(({ record }) => record)).toEqual([logTail[1]]);
+    expect(atPageSink.map(({ record }) => record)).toEqual([logTail[2]]);
     expect(atPageSink[0]?.lastInRing).toBe(atPageSink[0]?.record);
+  });
+
+  it("plays on the world's map with the setup's bots as the simulation's roster (18 §8)", () => {
+    const { factory, viewport, request } = setUp();
+    const bot = (index: number, classId: 'magus' | 'warrior'): RosterEntry => ({
+      legendId: `light-${String(index + 1)}`,
+      displayName: `Bot ${String(index + 1)}`,
+      classId,
+      specId: null,
+      isBot: true,
+      isPlayer: false,
+      isRover: index === 0,
+      team: 'light',
+    });
+    const base = request();
+    const withBots: MatchRequest = {
+      ...base,
+      setup: { ...base.setup, enemies: [bot(0, 'magus'), bot(1, 'warrior')] },
+    };
+
+    const running = factory(withBots, viewport);
+    const spawned = running
+      .evidence()
+      .match.recentEvents.flatMap((event) =>
+        event.type === 'entity-spawned' ? [[event.payload.kind, event.payload.team]] : [],
+      );
+
+    // Core spawns the lane bots first, then the Rovers at their Stronghold.
+    expect(spawned).toEqual([
+      ['warrior', 'light'],
+      ['magus', 'light'],
+    ]);
+    running.destroy();
   });
 });

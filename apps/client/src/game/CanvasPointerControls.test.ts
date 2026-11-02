@@ -7,25 +7,19 @@ import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 import type { ViewportChrome } from './MatchViewport.types';
 
-/** A chrome that records the interior and explorer flags and keeps the actions it is given. */
+/** A chrome that records the roof and explorer flags and keeps the action it is given. */
 function recordingChrome() {
-  const actions: { leave: (() => void) | null; overview: (() => void) | null } = {
-    leave: null,
-    overview: null,
-  };
-  const interior: boolean[] = [];
+  const actions: { overview: (() => void) | null } = { overview: null };
+  const roofs: boolean[] = [];
   const explorer: boolean[] = [];
   const chrome: ViewportChrome = {
-    onInteriorChanged: (isInside) => interior.push(isInside),
+    onRoofsChanged: (hasOpenRoofs) => roofs.push(hasOpenRoofs),
     onExplorerChanged: (isShown) => explorer.push(isShown),
-    setLeaveInterior: (run) => {
-      actions.leave = run;
-    },
     setOverview: (run) => {
       actions.overview = run;
     },
   };
-  return { chrome, actions, interior, explorer };
+  return { chrome, actions, roofs, explorer };
 }
 
 /** A 640 × 360 CSS-pixel canvas with twice as many device pixels, under the controls. */
@@ -33,14 +27,18 @@ function setUp(isExplorerShown: boolean) {
   const canvas = new FakeViewportCanvas(640, 360);
   canvas.width = 1280;
   canvas.height = 720;
-  const { chrome, actions, interior, explorer } = recordingChrome();
+  const { chrome, actions, roofs, explorer } = recordingChrome();
+  // Every click lands on the same building: the first cuts its roof away, the next puts it back.
   const match = {
     lookAtMinimapPoint: vi.fn<(x: number, y: number) => boolean>(() => false),
     panBy: vi.fn(),
     zoomBy: vi.fn(),
-    enterAt: vi.fn<(x: number, y: number) => boolean>(() => true),
+    hasOpenRoofs: false,
+    toggleRoofAt: vi.fn<(x: number, y: number) => boolean>(() => {
+      match.hasOpenRoofs = !match.hasOpenRoofs;
+      return true;
+    }),
     overview: vi.fn(),
-    leaveInterior: vi.fn(),
   };
   const controls = new CanvasPointerControls({
     match,
@@ -54,7 +52,7 @@ function setUp(isExplorerShown: boolean) {
     canvas.dispatchEvent(pointer('pointerdown', x, y));
     canvas.dispatchEvent(pointer('pointerup', x + dx, y));
   };
-  return { canvas, actions, interior, explorer, match, controls, pointer, click };
+  return { canvas, actions, roofs, explorer, match, controls, pointer, click };
 }
 
 describe('CanvasPointerControls in normal play', () => {
@@ -74,26 +72,20 @@ describe('CanvasPointerControls in normal play', () => {
     expect(match.panBy).not.toHaveBeenCalled();
   });
 
-  it('enters the cathedral on a short click on it and reports the interior', () => {
-    const { interior, match, click } = setUp(false);
+  it('toggles the roof under a short click and reports whether a roof is still open', () => {
+    const { roofs, match, click } = setUp(false);
     click(100, 50);
-    expect(match.enterAt).toHaveBeenCalledWith(200, 100);
-    expect(interior).toEqual([true]);
+    expect(match.toggleRoofAt).toHaveBeenCalledWith(200, 100);
+    click(100, 50);
+    expect(roofs).toEqual([true, false]);
   });
 
-  it('neither enters nor pans after a press that moved past the click slop', () => {
-    const { interior, match, click } = setUp(false);
+  it('neither toggles a roof nor pans after a press that moved past the click slop', () => {
+    const { roofs, match, click } = setUp(false);
     click(100, 50, CLICK_SLOP);
-    expect(match.enterAt).not.toHaveBeenCalled();
+    expect(match.toggleRoofAt).not.toHaveBeenCalled();
     expect(match.panBy).not.toHaveBeenCalled();
-    expect(interior).toEqual([]);
-  });
-
-  it('leaves the cathedral through the chrome action', () => {
-    const { actions, interior, match } = setUp(false);
-    actions.leave?.();
-    expect(match.leaveInterior).toHaveBeenCalledTimes(1);
-    expect(interior).toEqual([false]);
+    expect(roofs).toEqual([]);
   });
 
   it('ignores every button but the main one', () => {
@@ -101,7 +93,7 @@ describe('CanvasPointerControls in normal play', () => {
     canvas.dispatchEvent(pointer('pointerdown', 100, 50, 2));
     canvas.dispatchEvent(pointer('pointerup', 100, 50, 2));
     expect(match.lookAtMinimapPoint).not.toHaveBeenCalled();
-    expect(match.enterAt).not.toHaveBeenCalled();
+    expect(match.toggleRoofAt).not.toHaveBeenCalled();
   });
 });
 
@@ -114,13 +106,13 @@ describe('CanvasPointerControls with the developer explorer', () => {
     expect(match.panBy).toHaveBeenCalledWith(20, -10);
     canvas.dispatchEvent(pointer('pointerup', 110, 45));
     expect(canvas.hasPointerCapture(7)).toBe(false);
-    expect(match.enterAt).not.toHaveBeenCalled();
+    expect(match.toggleRoofAt).not.toHaveBeenCalled();
   });
 
-  it('still enters the cathedral on a short click', () => {
-    const { interior, click } = setUp(true);
+  it('still toggles a roof on a short click', () => {
+    const { roofs, click } = setUp(true);
     click(100, 50, 1);
-    expect(interior).toEqual([true]);
+    expect(roofs).toEqual([true]);
   });
 
   it('zooms on the wheel and keeps the page from scrolling', () => {
@@ -131,11 +123,11 @@ describe('CanvasPointerControls with the developer explorer', () => {
     expect(match.zoomBy).toHaveBeenCalledWith(Math.exp(-100 * EXPLORER_SETTINGS.wheelSensitivity));
   });
 
-  it('shows the world overview through the chrome action', () => {
-    const { actions, interior, match } = setUp(true);
+  it('shows the world overview through the chrome action and reports every roof on', () => {
+    const { actions, roofs, match } = setUp(true);
     actions.overview?.();
     expect(match.overview).toHaveBeenCalledTimes(1);
-    expect(interior).toEqual([false]);
+    expect(roofs).toEqual([false]);
   });
 
   it('forgets a drag on cancel', () => {
@@ -145,7 +137,7 @@ describe('CanvasPointerControls with the developer explorer', () => {
     canvas.dispatchEvent(pointer('pointermove', 150, 50));
     canvas.dispatchEvent(pointer('pointerup', 100, 50));
     expect(match.panBy).not.toHaveBeenCalled();
-    expect(match.enterAt).not.toHaveBeenCalled();
+    expect(match.toggleRoofAt).not.toHaveBeenCalled();
   });
 
   it('removes every listener and takes the chrome actions back on detach', () => {
@@ -153,7 +145,7 @@ describe('CanvasPointerControls with the developer explorer', () => {
     expect(canvas.listenerCount()).toBe(5);
     controls.detach();
     expect(canvas.listenerCount()).toBe(0);
-    expect(actions).toEqual({ leave: null, overview: null });
+    expect(actions).toEqual({ overview: null });
   });
 });
 
@@ -196,6 +188,6 @@ describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () =>
     controls.toggleExplorer();
     controls.detach();
     expect(canvas.listenerCount()).toBe(0);
-    expect(actions).toEqual({ leave: null, overview: null });
+    expect(actions).toEqual({ overview: null });
   });
 });

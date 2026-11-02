@@ -24,9 +24,8 @@ const CONFIG = createDefaultGameConfig();
 const MAGUS_LEGEND = firstAvailableSpecId('magus');
 
 const CHROME = {
-  onInteriorChanged: () => undefined,
+  onRoofsChanged: () => undefined,
   onExplorerChanged: () => undefined,
-  setLeaveInterior: () => undefined,
   setOverview: () => undefined,
 };
 

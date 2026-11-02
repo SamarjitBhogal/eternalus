@@ -1,6 +1,7 @@
 import {
   type Command,
   type EntityId,
+  findMapObjectAt,
   makeLogRecord,
   type MapDefinition,
   type Snapshot,
@@ -9,11 +10,11 @@ import {
 
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
+import type { WorldRect } from './engine/render/Renderer.types';
 import {
   BACKGROUND_COLOR,
   HUD_MINIMAP_RING,
   MAX_TICKS_PER_FRAME,
-  PROTOTYPE_ESCORT,
   MS_PER_SECOND,
 } from './Match.constants';
 import type { MatchDeps } from './Match.types';
@@ -25,6 +26,7 @@ import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
 import { SceneView } from './views/SceneView';
+import { WorldObjectsView } from './views/WorldObjectsView';
 
 /**
  * The composition root of one match (architecture 08 §7): it wires the simulation, the game
@@ -33,17 +35,19 @@ import { SceneView } from './views/SceneView';
  * snapshots; each frame follows the player with the camera and draws the scene and the minimap
  * (inside the HUD ring). The player's Legend is spawned at its team's stronghold when the match is
  * created. Which part of the world is shown (the following camera, or the free view that
- * dragging, the overview and the cathedral interior switch to) is `MatchCamera`'s. The world
- * (map, scenery, interior) arrives prepared (06 §1); its `MatchBridge` publishes to the UI.
+ * dragging and the overview switch to) and which building roofs are cut away are `MatchCamera`'s;
+ * buildings stay in the same world scene, their interiors drawn in place under the roof. The world
+ * (map, presentation, map objects) arrives prepared (06 §1); its `MatchBridge` publishes to the UI.
  */
 export class Match implements LoopTarget {
   private readonly loop: GameLoop;
 
   private readonly entities: EntityLayer;
 
-  private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
+  /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
+  private readonly objects: WorldObjectsView;
 
-  private readonly interior: { readonly scene: SceneView; readonly miniMap: MiniMapView } | null;
+  private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
   private readonly camera: MatchCamera;
 
@@ -59,6 +63,9 @@ export class Match implements LoopTarget {
 
   private lastMove: Vec2 = { x: 0, y: 0 };
 
+  /** The map object the held attack button last targeted; `null` once released or stopped. */
+  private attackTargetId: EntityId | null = null;
+
   /**
    * Creates the match, queues the player's spawn (`spawnPlayer`) and points the camera at the
    * spawn point.
@@ -67,7 +74,7 @@ export class Match implements LoopTarget {
    */
   public constructor(private readonly deps: MatchDeps) {
     const { simulation, world, tickRate, scheduler, camera, player, logger, bridge } = deps;
-    const { map, scenery, interior } = world;
+    const { map, presentation, mapObjects } = world;
     // Find the spawn point first: if the map has none, nothing has been subscribed yet.
     const spawnPoint = Match.strongholdOf(map, player.team);
     this.entities = new EntityLayer(
@@ -81,25 +88,19 @@ export class Match implements LoopTarget {
         );
       }),
     );
+    this.camera = new MatchCamera(camera, map, presentation);
+    const { hiddenRoofs } = this.camera;
+    const shown = (): WorldRect => this.camera.visibleArea();
+    this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
+    const { isDestroyed } = this.objects;
+    const { scenery, buildings } = presentation;
     const scene = new SceneView([
-      new MapView(map, scenery),
-      new SceneryView(scenery, 'detail'),
+      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
+      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
+      this.objects,
       this.entities,
     ]);
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING) };
-    this.camera = new MatchCamera(camera, map, interior);
-    if (interior === null) {
-      this.interior = null;
-    } else {
-      const inside = new SceneView([
-        new MapView(interior.map, interior.scenery),
-        new SceneryView(interior.scenery, 'detail'),
-      ]);
-      this.interior = {
-        scene: inside,
-        miniMap: new MiniMapView(interior.map, inside, HUD_MINIMAP_RING),
-      };
-    }
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
@@ -107,8 +108,6 @@ export class Match implements LoopTarget {
     });
     this.bridge = new MatchBridge({ ...bridge, tickRate, map });
     this.stopListening = this.spawnPlayer(spawnPoint);
-    // PROTOTYPE(PROTO-01) TEMPORARY: demo escort; delete with `spawnEscort`.
-    Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
     camera.lookAt(spawnPoint);
   }
@@ -118,9 +117,9 @@ export class Match implements LoopTarget {
     return this.playerId;
   }
 
-  /** Whether the view is inside the cathedral. */
-  public get isInterior(): boolean {
-    return this.camera.isInterior;
+  /** Whether any building roof is cut away. */
+  public get hasOpenRoofs(): boolean {
+    return this.camera.hiddenRoofs.size > 0;
   }
 
   /** The latest snapshot. */
@@ -167,10 +166,11 @@ export class Match implements LoopTarget {
     const player = this.current.entities.find((entity) => entity.id === this.playerId);
     this.camera.follow(player?.transform ?? null);
     const view = this.camera.visibleArea();
-    const { scene, miniMap } = this.views;
+    const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
+    this.objects.show(this.current.mapObjects ?? []);
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight, view);
   }
@@ -191,7 +191,7 @@ export class Match implements LoopTarget {
    */
   public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
     const { screenWidth, screenHeight } = this.camera;
-    const target = this.views.miniMap.worldPointAt(screenX, screenY, screenWidth, screenHeight);
+    const target = this.world.miniMap.worldPointAt(screenX, screenY, screenWidth, screenHeight);
     if (target === null) {
       return false;
     }
@@ -210,25 +210,17 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Enters the cathedral when the screen point (device pixels) is on it.
+   * Cuts away the roof of the building under the screen point (device pixels), or puts it back.
    *
-   * @returns Whether the view moved inside.
+   * @returns Whether the point was on a building.
    */
-  public enterAt(screenX: number, screenY: number): boolean {
-    return this.camera.enterAt(screenX, screenY);
+  public toggleRoofAt(screenX: number, screenY: number): boolean {
+    return this.camera.toggleRoofAt(screenX, screenY);
   }
 
-  /** Shows the whole battlefield in the free view, leaving the cathedral if inside. */
+  /** Shows the whole battlefield in the free view and puts every roof back. */
   public overview(): void {
     this.camera.overview();
-  }
-
-  /**
-   * Leaves the cathedral interior and returns the camera to following the player (DEC-32 keeps the
-   * interior in normal play; CD-22).
-   */
-  public leaveInterior(): void {
-    this.camera.leaveInterior();
   }
 
   /**
@@ -282,7 +274,8 @@ export class Match implements LoopTarget {
     if (this.playerId === null) {
       return;
     }
-    const { move } = this.deps.input.read(this.camera);
+    const { move, isAttacking, aim } = this.deps.input.read(this.camera);
+    this.applyAttack(this.playerId, isAttacking === true ? aim : null);
     const isMoving = move.x !== 0 || move.y !== 0;
     if (isMoving) {
       this.camera.playerMoved();
@@ -295,40 +288,26 @@ export class Match implements LoopTarget {
         ? { type: 'move', actorId: this.playerId, direction: move }
         : { type: 'stop', actorId: this.playerId },
     );
+    if (!isMoving) {
+      // `stop` also drops the attack target, so a button still held queues it again next tick.
+      this.attackTargetId = null;
+    }
     this.lastMove = move;
   }
 
-  /** The scene and minimap on screen: the cathedral's inside it, the battlefield's otherwise. */
-  private get views(): { readonly scene: SceneView; readonly miniMap: MiniMapView } {
-    return this.camera.isInterior && this.interior !== null ? this.interior : this.world;
-  }
-
   /**
-   * PROTOTYPE(PROTO-01) TEMPORARY: demo code; `SpawnSystem` replaces it.
-   *
-   * Prototype (2026-10-08, demo): queues the escort minions in a ring around `center`, one spawn
-   * each so they start apart. Phase 2's `SpawnSystem` replaces this.
+   * Queues `attack-target` on the map object under `aim` (the held attack button's world point,
+   * or `null`); holding the button on one target queues one command, not one per tick.
    */
-  private static spawnEscort(
-    simulation: MatchDeps['simulation'],
-    team: MatchDeps['player']['team'],
-    center: Vec2,
-  ): void {
-    const { definitionId, kind, count, spawnRadius } = PROTOTYPE_ESCORT;
-    for (let index = 0; index < count; index += 1) {
-      const angle = (2 * Math.PI * index) / count;
-      simulation.enqueueCommand({
-        type: 'dev-spawn',
-        kind,
-        definitionId,
-        team,
-        at: {
-          x: center.x + spawnRadius * Math.cos(angle),
-          y: center.y + spawnRadius * Math.sin(angle),
-        },
-        count: 1,
-      });
+  private applyAttack(actorId: EntityId, aim: Vec2 | null): void {
+    const targetId =
+      aim === null
+        ? null
+        : findMapObjectAt(this.deps.world.mapObjects, this.current.mapObjects ?? [], aim);
+    if (targetId !== null && targetId !== this.attackTargetId) {
+      this.deps.simulation.enqueueCommand({ type: 'attack-target', actorId, targetId });
     }
+    this.attackTargetId = targetId;
   }
 
   private static strongholdOf(map: MapDefinition, team: MatchDeps['player']['team']): Vec2 {

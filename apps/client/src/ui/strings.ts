@@ -143,12 +143,11 @@ export const STRINGS = {
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
   viewport: {
     canvas: 'Battlefield',
-    leaveCathedral: 'Leave cathedral',
     explorer: {
-      canvas: 'Drag to explore, scroll to zoom, click the cathedral to enter',
-      worldHint: 'Drag to explore · Scroll to zoom · Click cathedral to enter',
-      interiorHint: 'Drag to explore · Scroll to zoom · Explore the sanctuary',
+      canvas: 'Drag to explore, scroll to zoom, click a building to toggle its roof',
+      hint: 'Drag to explore · Scroll to zoom · Click a building to toggle its roof',
       overview: 'World overview',
+      restoreRoofs: 'Restore roofs & overview',
       /** Team names are content (`DisplayCatalogue.teamNames`, passed by `main.tsx`). */
       legend: {
         stronghold: (teamName: string): string => `${teamName} stronghold`,

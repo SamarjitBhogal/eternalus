@@ -8,10 +8,10 @@ import { useExplorerChrome } from './useExplorerChrome';
 /**
  * The match viewport (13 §1): owns the canvas and hands it to the session when it mounts
  * (`attach` → `SessionController.attachViewport`, which builds the match), and the returned
- * detach when it unmounts. In normal play only a "Leave cathedral" control is drawn, while inside
- * the interior (an interim, CD-22); the developer explorer's toolbar and legend show only while
- * the explorer is on (`isExplorerShown` at the start, `?dev=1`; then DEC-105's hotkey; DEC-32,
- * INBOX HC-F8). `GameCanvasChrome` draws both from this hook's state.
+ * detach when it unmounts. In normal play nothing is drawn over the canvas; the developer
+ * explorer's toolbar and legend show only while the explorer is on (`isExplorerShown` at the
+ * start, `?dev=1`; then DEC-105's hotkey; DEC-32, INBOX HC-F8). `GameCanvasChrome` draws them from
+ * this hook's state.
  */
 export function GameCanvas({
   attach,
@@ -21,7 +21,7 @@ export function GameCanvas({
 }: GameCanvasProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const explorer = useExplorerChrome(isExplorerShown);
-  const { chrome, isInterior, overview, leaveInterior } = explorer;
+  const { chrome, hasOpenRoofs, overview } = explorer;
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas === null) return undefined;
@@ -38,11 +38,10 @@ export function GameCanvas({
       />
       <GameCanvasChrome
         isExplorerShown={explorer.isExplorerShown}
-        isInterior={isInterior}
+        hasOpenRoofs={hasOpenRoofs}
         labels={labels}
         teamNames={teamNames}
         onOverview={overview}
-        onLeaveInterior={leaveInterior}
       />
     </div>
   );

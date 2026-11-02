@@ -570,7 +570,9 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`) and `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8) and `MinionStrengthStep`
+(the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;
@@ -637,6 +639,24 @@ by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks 
 | Lightbringer (`lightbringer`)               | sword      | melee magical + physical; heavy (cooldown): stun, concussion, blind; parry: blind, stun | —         | MVP-if-time             |
 | Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
 | Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
+
+**Implementation status (SCRUM-183 / SCRUM-287, first slice).** `content/weapons/` holds
+`WeaponDefinition` (`id`, `displayName`, `weaponClass`, `attacks`, `allowedClasses`, `uniqueTo`;
+`attacks` are `UnitAttack`s, seconds authored and ticks once loaded) and `weaponCatalogue.ts`;
+`loadWeapons` converts and validates at load. A Legend's damage comes from its weapon, never from
+the Legend: `LegendDefinition` has no `attack` and must name its weapon with
+`defaultLoadout.primaryWeaponId`, the one field of the design's `LoadoutTemplate` built so far;
+`KnownWeaponRule` checks every Legend names one and that it resolves. The shipped catalogue is the
+three default weapons from the table above, with each class's `balancing.md` basic attack as
+`TUNE` numbers until the owner sets weapon numbers and default weapons (`INBOX.md`): Warrior
+`raptor-talons`, Sentinel `wuuthrad` (no MVP spear or battle axe is named yet; Wuuthrad is MVP-if-time), Magus `magus-staff` (melee only). `EntityFactory` passes the
+injected weapon source in the spawn context, `Legend` builds `Combat` from the weapon's first attack
+and `Combat.weaponId` names it, so the `DamageSource` is the entity plus its weapon; mobs keep
+their own `attack` and name their own definition (04 §5). Not built yet: ranged attacks and flex
+(projectiles, sprint 2.3), `onHit`, `heavyAttack`, `parry`, `grants` (ability framework, 4.2),
+`damageType`, `damageClass`, `damageMultipliers`, `sprite`, the `AttackStrategy` contract's
+`weapon` argument, and `allowedClasses` / `uniqueTo` enforcement in a loadout (`WeaponAllowedRule`,
+SCRUM-290).
 
 ## 11. Artifacts (gadgets Z and C)
 
