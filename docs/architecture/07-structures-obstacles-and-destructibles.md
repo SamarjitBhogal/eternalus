@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-30
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -227,15 +227,35 @@ the middle one.
 
 ```ts
 export class Capturable {
-  ownerTeam: Team; // 'neutral' at match start
-  progress: number; // -1..1, negative = dark, positive = light (TUNE rate per unit inside)
+  ownerTeam: Team; // the last locking state: 'neutral' at match start
+  progress: number; // -1..1, negative = dark, positive = light; ±1 = fully captured
   checkpoint: 0 | 1 | 2 | 3;
   lockedBy: EntityId | null; // a living MiniBoss locks the zone
 }
 ```
 
-`CaptureSystem`: if exactly one team has units inside and `lockedBy === null`, progress moves
-toward that team; crossing a checkpoint threshold spawns that checkpoint's defenders (held by `GuardController` with the zone as home and fighting
+`CaptureSystem` applies the owner's capture rules (DEC-86) while `lockedBy === null`:
+
+- **Who counts.** Every `Unit` inside the zone counts for its team: Legends, minions and
+  neutral-team units. Structures and projectiles never count.
+- **Weighted majority.** A side's presence is the sum of its units' weights, and a Legend weighs
+  more than any other unit. The side with the highest presence moves `progress` toward itself, at
+  a rate that grows with its margin over the next side, up to a cap. When the two highest
+  presences are equal, `progress` does not change.
+- **Locking states.** Neutral, fully light and fully dark. `ownerTeam` holds the last one. A zone
+  stays in its locking state until a capture changes it, so an owned zone with nobody inside
+  stays owned.
+- **Taking an owned zone.** The owner's progress drains to 0 before the taker's fills, and the
+  zone stays the owner's until the capture completes.
+- **Neutral re-take.** Neutral units with the majority drain the owner's progress to 0, and the
+  zone becomes neutral again.
+- **Revert.** With no counted unit inside, an unfinished capture slowly moves back to the last
+  locking state.
+
+The weights, the rate cap and the revert rate are `TUNE` values in
+`GameConfig.match.capturePoints`; the zone radius is in the zone's `content/zones/` definition.
+
+Crossing a checkpoint threshold spawns that checkpoint's defenders (held by `GuardController` with the zone as home and fighting
 for the team that owns the point, [18](18-minion-system.md) MS-28, §7.1) through a `Spawner` table (1: medium assist mobs; 2: heavy plus light assist mobs; 3: one massive
 "Balrog-type" mob) and, when cleared, awards XP shared among nearby allies biased toward the top
 damage dealer (`ProgressionSystem` listens to `checkpoint-cleared`). Holding a zone applies
