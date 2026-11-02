@@ -112,6 +112,7 @@ Reply inline (`Decision: …`).
   -     Accept recommended option if it is cleaner long-term. For D, set to whichever is cleaner in the long-term.
   - On `feat/hud-and-character-select`, SD-2's text for the 13 §2 `menu` and `character-select`
     rows is rows T-10 and T-13 of HC-T1, not applied until you approve it. SD-1 is not touched.
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [ ] **Minion system (PR #33 review) — two decisions still open.** (1) **The worst lane
       (MS-9):** doc 18 §3.3 now scores your game doc's terms (structure damage not dealt,
       structures lost, pushed back), as one `LaneAssessment` shared by the heavy horde and the
@@ -181,6 +182,7 @@ Reply inline (`Decision: …`).
     and shows the locked view, and a countdown that ends before LOCK IN sends you home with the
     "Failed to Choose Legend" popup. HC-T1 T-10, T-12 and T-13 are redrafted to the built flow and
     wait for your approval. Still open: which Legend each bot gets (above).
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [ ] **HC-F2 — Harbinger is a locked card, with the content id `flying` (default applied, with
       one correction).** The fourth card shows "Harbinger" (DEC-48) as locked: `aria-disabled`, a
       lock glyph and the word "Locked" (never colour alone), no hover emphasis, refused by the
@@ -338,7 +340,7 @@ Reply inline (`Decision: …`).
       13 §2 did not say. Nothing to answer unless you prefer to keep it loaded.
   - Answered 2026-10-28 (the non-blocking decision page, in chat): "Keep". HC-T1 row T-16 is applied
     with your HC-Q8 answer.
-- [ ] **HC-T1 — Approve the text of the design-doc edits (`feat/hud-and-character-select`; asked
+- [x] **HC-T1 — Approve the text of the design-doc edits (`feat/hud-and-character-select`; asked
       after the pre-PR critic).** **Your answers of 2026-10-28** (the PR register's section "Owner
       answers of 2026-10-28" lists them as D1 to D8): you approved group (i) ("Approve all 54", D1),
       so its 54 rows are applied (`b1121f5`). You approved HC-B1 (D3) and accepted ADR 0019 (D4), so
@@ -587,6 +589,7 @@ Reply inline (`Decision: …`).
       that named these rows as pending got a dated append (13 §10, 14 §14, 17 §12 and the UI
       enhancements plan §1), and each touched doc has `last-reviewed: 2026-11-02`. The table now
       holds 205 applied rows and 1 pending (T-199).
+    - Answered 2026-11-02 (DEC-142): 52 rows applied in da57c29; T-199 changed (DEC-143), redrafted with the phase merge.
 
   | #     | Where (doc §, line)                                                                                                                                                                                                                                          | Base design said                                                                                                                                               | Branch says                                                                                                                                                                                                                      | Basis (DEC/DV/factual)                                                                                                                                                                                                   | Changes general design? y/n + why                                                                             | Status                                                                                                                                                                                                       |
   | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -846,6 +849,7 @@ Reply inline (`Decision: …`).
     Legends are validated by both loaders). Where an item's text also carries another open item, its
     row waits in HC-T1: NF2's asset groups (T-31, HC-Q7 (2)), NF5's paragraph (T-90, HC-F7), DV-55
     and DV-56's scaling bullet (T-29, HC-Q14) and DV-93's HUD rows (T-23, HC-Q2).
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [x] **HC-B2 — Better than the design, for sign-off: a view that opens over a selection step
       (`feat/hud-and-character-select`, batch 2; the architecture critic's loop 1, 2026-10-30).**
       The game-interface architecture (`docs/architecture/13-game-interface.md`, §9, "Recipe: a
@@ -875,6 +879,7 @@ Reply inline (`Decision: …`).
   - Answered 2026-10-30 (in chat): "Adopt it (Recommended)" (DEC-117). The wording for §6.1, §6.2
     and §9 of that architecture and for the extension recipes' R21 is pending in HC-T1 (T-196, T-209
     to T-212).
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [x] **HC-B4 — Better than the design, for sign-off: an optional field that old saves lack needs
       no new save version (`feat/hud-plan-b3a`; the architecture critic's loop 1, item m2,
       2026-10-30).** The persistence architecture
@@ -892,6 +897,7 @@ Reply inline (`Decision: …`).
     old saves cannot satisfy (required, renamed or retyped) bumps `schemaVersion` with an upgrade
     step; an optional field they simply lack needs no bump. The settings record stays at version
     1, and `dto/SettingsDto.ts` cites DEC-125. The recipe row's wording waits in HC-T1 (T-226).
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [ ] **HC-C1 — The differences from your Figma, for review (asked after the pre-PR critic).** Every
       place the build differs from your frames on purpose is registered in
       `docs/reference/game-design/15-figma-frames-and-creative-decisions.md` (DEC-53), so the visual
@@ -1007,6 +1013,7 @@ Reply inline (`Decision: …`).
     rules for your approval. **Open:** (2) what the ultimate's Low, Mid and Max tiers and its three
     pips mean; (4) the final choice for the clock; the HUD's link to the capture and health code
     when it lands.
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [ ] **HC-Q3 — Which abilities your Figma's icons and names are (OQ-68).** The HUD shows a
       Legionnaire with Meteor (a Sentinel ultimate in the docs), Atom, LinkBreak and Aperture
       (Phosphor placeholders), a battle axe and the gadgets "Courage" and "Sword". The class screens
@@ -1490,6 +1497,7 @@ Reply inline (`Decision: …`).
   - Note 2026-10-30: you accepted the ADR (DEC-124). The line in `apps/client/AGENTS.md` and the
     same exception in `CONTRIBUTING.md` and the game-interface architecture wait for your wording
     in HC-T1 (T-208, T-214, T-215); the `ErrorBoundary` comes with build-plan step 12.
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [x] **HC-Q26 — Who writes `logs/errors/`? (the pickup session, 2026-10-30).** A browser page
       cannot write a file (DEC-106).
   - Answered 2026-10-30 (in chat, the session's question): "Dev-server endpoint + ADR
@@ -1514,6 +1522,7 @@ Reply inline (`Decision: …`).
     report" button. Build-plan step 12 (core, writer, popup) is now being built in
     `feat/hud-plan-b5`; the design text the ADR amends waits in HC-T1 (T-203, T-207, T-208, T-213
     to T-225).
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [x] **HC-Q28 — Which developer camera chord does each operating system get? (the critic's loop
       1, 2026-10-30).** DEC-105 says Cmd+Shift+F3 on a Mac and Ctrl+Shift+F3 on Windows and Linux.
       The build binds both chords on every platform, and the Settings screen listed Ctrl first even
@@ -1533,7 +1542,7 @@ Reply inline (`Decision: …`).
     actions (DEC-117). The tick path's snapshot has no modifiers, the explorer belongs to
     `MatchHost`'s pointer controls, and `Match`'s loop stops while paused. `clientActions` stays for
     the client edges of state `Match` owns.
-- [ ] **HC-Q30 — Crash popup: three texts and three behaviours the decisions do not give (the
+- [x] **HC-Q30 — Crash popup: three texts and three behaviours the decisions do not give (the
       critic's loop 1 of build step 12, 2026-10-30).** The crash popup is built from DEC-106 and
       DEC-124. These six points have no owner words. The build uses the recommendation in items 1
       to 4 and 6; item 5 is built as option A until you answer, because B changes the session's
@@ -1569,6 +1578,7 @@ Reply inline (`Decision: …`).
      reload the page. Options: (A) keep this; (B) add a "Reload" button to the empty screen (new
      text). Recommendation: A for now: a home screen that crashes on render crashes again after a
      reload.
+  - Answered 2026-11-02 (DEC-140, DEC-141); built in 62652b0. Items 1 to 3: your texts "Saving the note and report..." and "The report was saved, but the note was not. Copy the note and send it to the team via the shared Discord channel.", and the saved text approved as built; items 4 and 6: option A; item 5: option B, so a screen crash during the reveal returns to the menu (DEC-141).
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
@@ -1631,6 +1641,7 @@ Reply inline (`Decision: …`).
     gold, red, and bronze often." Recorded as DEC-100; `docs/plan/ui-enhancements-plan.md` now has
     your values for UE-01, UE-07, UE-08 and UE-12, and every enhancement on by default. **Waits for
     the build**, and HC-T1 T-152 for your approval.
+  - 2026-11-02: the rows were applied (DEC-142, da57c29).
 - [ ] **HC-U1 — For Sprint 3: your functional UI/UX improvements to the HUD and character select
       (not urgent; you supply the list; OD-39).** On 2026-10-25 you judged the visuals good enough
       for the MVP and said your functional UI/UX improvements can wait for Sprint 3 (HC-C1). Send
@@ -1891,6 +1902,11 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-11-02 — **Your answers on the crash popup (HC-Q30) and the doc-edit rows (HC-T1)**
+  (`feat/hud-plan-b5`): recorded as DEC-138 to DEC-143 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. Code: `62652b0` (your texts, and the move
+  from pre-launch to the menu for a crash). Docs: 52 rows applied in `da57c29`; T-199 changed
+  (DEC-143) and is redrafted with the phase merge. HC-Q30 and HC-T1 are ticked.
 - 2026-10-30 — **Your acceptance of the crash-report ADR and your HC-B4 answer**
   (`feat/hud-plan-b5`): recorded as DEC-124 (ADR 0025 accepted, its three open questions answered
   as recommended) and DEC-125 (an optional field that old saves lack needs no new save version) in

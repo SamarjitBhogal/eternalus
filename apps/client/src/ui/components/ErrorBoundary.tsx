@@ -36,6 +36,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   /** The screen, or nothing after a crash. */
   public override render(): ReactNode {
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 6): the empty screen stays, with no Reload button.
     return this.state.hasCrashed ? null : this.props.children;
   }
 }

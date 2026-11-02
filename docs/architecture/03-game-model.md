@@ -409,12 +409,10 @@ a view never needs anything from the entity beyond its `definitionId`.
 The simulation kernel (sprint 1.1, PR #13) implements §2–§10 as written, with these interim gaps,
 each closed by the session or phase named:
 
-- `Simulation` takes `(config, seed, logger, systems = [])` (Sprint 1 brief); it becomes
-  `SimulationOptions` when content and `debug` arrive (four parameters at most, CONTRIBUTING §4).
-  `exportReplay()` and `recentContext()` exist (ADR 0025 §4: a log of the external commands and
-  replay checkpoints, both outside the hashed state); no `dispose()` yet. Its `EntityFactory` has
-  an empty registry until session C passes `createDefaultEntityRegistry()` (marked `TODO` in
-  `Simulation.ts`).
+- `Simulation` takes one `SimulationOptions` object (`config`, `seed`, `logger`, optional
+  `systems`, `debug`, `content` and `levelCurves`; CONTRIBUTING §4). Its `EntityFactory` uses
+  `createDefaultEntityRegistry()`. `exportReplay()` and `recentContext()` exist (ADR 0025 §4: a log of the external commands and
+  replay checkpoints, both outside the hashed state); no `dispose()` yet.
 - `move`, `stop`, `attack-target`, `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.

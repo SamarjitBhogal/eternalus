@@ -121,6 +121,7 @@ function CrashReportDialog({ report }: { readonly report: CrashReportState }): R
             {text.copyReport}
           </Button>
         )}
+        {/* DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 4): a saved note shows the file, then a second click leaves. */}
         <Button autoFocus={report.stage === 'saved'} onClick={dismiss}>
           {text.returnToMenu}
         </Button>

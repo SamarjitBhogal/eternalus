@@ -38,7 +38,9 @@ After everything in the Definition of done, never instead of it, and in this ord
    commit**, not your reasoning. Each difference between code and design is a **violation**
    (rework, re-run the critic until no blockers), **acceptable** (forced by a binding contract or
    an allowed interim stand-in; note it in the PR) or **better than the design** (tell the human
-   in chat and add it to `INBOX.md`; once signed off, update the design docs in the same PR).
+   in chat and add it to `INBOX.md`; once signed off, update the design docs in the same PR). The critic also judges whether each
+   decision in the code and the docs is the right one, and whether a more SOLID, OOP-conforming
+   or DRY design exists; such a finding is a better-than-design item (DEC-139).
 2. **Ponytail.** `/ponytail-review` on the branch diff, then apply the accepted cuts with
    `/ponytail`. Architecture and ADRs outrank ponytail (see "Ponytail" below); tests are never
    deleted or weakened.
