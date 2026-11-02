@@ -52,7 +52,7 @@ describe('CrashReportNotice', () => {
   it('turns the note field and the save button off while saving, and says so', () => {
     const html = render({ stage: 'saving', noteLimit: 10, cause: 'match', crashNumber: 1 });
 
-    expect(html).toMatch(/<p role="status"[^>]*>Saving the note\.\.\.<\/p>/);
+    expect(html).toMatch(/<p role="status"[^>]*>Saving the note and report\.\.\.<\/p>/);
     expect(html).toMatch(/<textarea[^>]*disabled=""/);
     expect(html).toMatch(new RegExp(`<button[^>]*disabled=""[^>]*>${text.saveNote}<`));
     expect(html).toMatch(new RegExp(`<button(?![^>]*disabled)[^>]*>${text.returnToMenu}<`));
