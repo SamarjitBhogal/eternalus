@@ -321,8 +321,11 @@ component with simulation state adds its fields in `StateHasher`. `Simulation.ha
 enough to call every N ticks in tests and on demand from the developer menu.
 
 ```ts
-// Sketch: packages/core/src/diagnostics/Replay.types.ts
-// What the match was built with: the optional fields of `SimulationOptions` that shape the world.
+// Sketch: `ReplayOf<S>` and `ReplayTargetFactoryOf<S>` are generic, in
+// packages/core/src/diagnostics/Replay.types.ts; the concrete types below are in
+// packages/core/src/Simulation.types.ts.
+// What the match was built with: the required `seed` and `config` and the optional `map`,
+// `mapObjects` and `roster` of `SimulationOptions`.
 export type ReplaySetup = Pick<
   SimulationOptions,
   'seed' | 'config' | 'map' | 'mapObjects' | 'roster'
@@ -425,9 +428,10 @@ The simulation kernel (sprint 1.1, PR #13) implements §2–§10 as written, wit
 each closed by the session or phase named:
 
 - `Simulation` takes one `SimulationOptions` object (`SimulationOptions` in
-  `packages/core/src/Simulation.types.ts` lists its fields; CONTRIBUTING §4). Its `EntityFactory` uses
-  `createDefaultEntityRegistry()`. `exportReplay()` and `recentContext()` exist (ADR 0025 §4: a log of the external commands and
-  replay checkpoints, both outside the hashed state); no `dispose()` yet.
+  `packages/core/src/Simulation.types.ts` lists its fields; CONTRIBUTING §4). Its `EntityFactory`
+  uses `createDefaultEntityRegistry()`. `exportReplay()` and `recentContext()` exist (ADR 0025 §4:
+  a log of the external commands and replay checkpoints, both outside the hashed state); no
+  `dispose()` yet.
 - `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
   `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,

@@ -277,8 +277,8 @@ A replay is its setup (seed, `GameConfig` and, when the match had them, the map,
 and the bot roster) + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
 Recording captures every command that enters through `Simulation.enqueueCommand` and a
-`StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is part of the
-setup, and the bots' own commands are regenerated from it. `StateHasher` is FNV-1a 32-bit (offset basis `0x811c9dc5`, prime
+`StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is
+part of the setup, and the bots' own commands are regenerated from it. `StateHasher` is FNV-1a 32-bit (offset basis `0x811c9dc5`, prime
 `0x01000193`, `Math.imul`) over its own canonical serialisation: tick, phase, RNG state, then every
 entity in store order with its component fields ([03](03-game-model.md) §9).
 
@@ -291,18 +291,24 @@ export interface ReplayTarget {
   hash(): number;
   snapshot(): Snapshot;
 } // the slice of Simulation a replay drives
-export type ReplayTargetFactory = (setup: ReplaySetup) => ReplayTarget; // e.g. (setup) => new Simulation({ ...setup, logger, systems })
+// generic: ReplayOf<S> = S + commands + checkpoints; ReplaySetup, Replay and ReplayTargetFactory
+// are its Simulation instances (Simulation.types.ts)
+export type ReplayTargetFactoryOf<S> = (setup: S) => ReplayTarget; // e.g. (setup) => new Simulation({ ...setup, logger, systems })
 export type ReplayOutcome = {
   readonly ok: boolean;
   readonly firstDivergence: { tick: number; expected: number; actual: number } | null;
   readonly finalHash: number;
   readonly violations: readonly Violation[]; // with the InvariantRunner
 };
-export function recordReplay(
-  plan: { config; seed; ticks; checkpointEvery; commandsFor(tick, snapshot): readonly Command[] },
-  createTarget: ReplayTargetFactory,
-): Replay;
-export function runReplay(replay: Replay, createTarget: ReplayTargetFactory): ReplayOutcome; // stops at the first divergence; refuses mismatched versions
+export function recordReplay<S extends object>(
+  setup: S,
+  plan: { ticks; checkpointEvery; commandsFor(tick, snapshot): readonly Command[] },
+  createTarget: ReplayTargetFactoryOf<S>,
+): ReplayOf<S>;
+export function runReplay<S extends object>(
+  replay: ReplayOf<S>,
+  createTarget: ReplayTargetFactoryOf<S>,
+): ReplayOutcome; // stops at the first divergence; refuses mismatched versions
 
 // next to the fixture, in the test that owns it
 it('still reproduces the committed wander-seed-7 fixture', () => {

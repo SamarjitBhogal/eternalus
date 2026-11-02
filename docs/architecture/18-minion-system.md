@@ -480,7 +480,8 @@ where it comes from.
 - The bot difficulty each role plays (lane bots `normal`, the Rover `rover`) is the bot roster's
   `difficulties` field in core `content/teams/botRoster.ts`, checked against the loaded bot
   difficulties at content load by `content/validation/BotRosterDifficultyRule.ts` (DEC-149).
-  `game/session/botRosterSlots.ts` reads it; the client holds no difficulty data.
+  `game/session/botRosterSlots.ts` takes it per bot role from the session's injected catalogue; the
+  client's `contentSlice` default holds empty placeholders only.
 - The lane is stored as the `MapLane.id` in the bot-Legend `AiMemory` (11 §2) and does not change
   during the match.
 

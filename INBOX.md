@@ -460,6 +460,7 @@ Reply inline (`Decision: …`).
     `CathedralInterior`). The phase-2 plan's task "HUD leave-interior control"
     (`docs/plan/phase-2-structures-and-combat.md`, marked superseded) stays open and waits for the
     owner to drop it.
+  - 2026-11-02, later: the owner dropped that task (DEC-148).
 - [x] **HC-F9 — When the selection art is freed (default applied).** The character-select art (the
       selection asset groups) is released when the match starts and loaded again for a rematch;
       13 §2 did not say. Nothing to answer unless you prefer to keep it loaded.
@@ -1742,6 +1743,19 @@ Reply inline (`Decision: …`).
     `MatchState.humanLegendId`), which reaches the phase branch after the HUD PR. Until then a test
     pins the interim adoption (`Match.lifecycle.test.ts`, "adopts its own spawn, never a roster bot
     of the same class and team"; `99563b4`).
+- [x] **HC-Q33 — Critic loop 2 of the HUD PR: replay size, three code tidies and the explorer's
+      left button (2026-11-02).** (1) A crash report's replay holds the whole generated map and
+      map objects (about 0.5 MB; cap 16 MB): keep that, or keep only the roster and generate the
+      world again from the seed? Recommendation: keep it. (2) Three tidies the critics found:
+      `PlayerCommands` only turns input into commands and `Match` tells the camera; one shared
+      "is this entity dead" check; one bot-role type for the roster slot and the roster's
+      difficulties. (3) With the developer explorer shown, the left button never attacks: keep
+      that, or let a plain click on the world attack?
+  - Answered 2026-11-02 (chat): (1) "Keep map inline (Recommended)" (DEC-152; choose again when
+    the Phase 5 saved-replays store is designed); (2) "Camera out of commands, One 'dead' check,
+    One bot-role type" (DEC-151, built on `feat/hud-plan-b6`); (3) "Allow attack": "A plain click
+    on the world attacks even with the explorer shown; only drags and roof clicks are claimed."
+    (DEC-150, built on `feat/hud-plan-b6`).
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
@@ -2141,6 +2155,10 @@ Reply inline (`Decision: …`).
 
 ## Done
 
+- 2026-11-02 — **Your answers on the HUD PR's critic loop 2 (HC-Q33)** (`feat/hud-plan-b6`):
+  recorded as DEC-150 (a plain click on the world attacks with the explorer shown), DEC-151 (three
+  code tidies, built) and DEC-152 (a crash report's replay keeps the map inline) in
+  `docs/reference/game-design/13-owner-decisions-log.md`. HC-Q33 is ticked.
 - 2026-11-02 — **Your answers on the HUD PR's critic loop 1 (HC-Q31, HC-Q32)**
   (`feat/hud-plan-b6`): recorded as DEC-147 (the minimap toggle stays as a player option, sprint
   5.4), DEC-148 (the leave-interior task is dropped) and DEC-149 (six better-than-design items

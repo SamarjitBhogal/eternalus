@@ -115,11 +115,12 @@ export class SessionController {
 | `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                                                                                                                                                                                                                                | releases the `match` asset group                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 **The screen-crash exit is not a table edge (DEC-149; DEC-141).** A screen that throws
-(`report-screen-crash`) leaves every phase except `menu` through one method,
+(`report-screen-crash`) leaves every phase except `menu` and `match` through one method,
 `SessionController.crashToMenu(reason)`, which runs the phase's exit hook and enters `menu` with
-`reason: 'screen-crashed'`, the crash popup open over it. It sits outside the table, so no intent
-can use it, and `pre-launch` has no `menu` edge: the reveal has no cancel (DEC-141), and only a
-crash ends it early. A crash in `menu` itself shows `screen-crashed` again and goes back to
+`reason: 'screen-crashed'`, the crash popup open over it. In `match`, `handleScreenCrash` calls
+`crashMatch`, which enters `menu` with `reason: 'match-crashed'` (§10). Both sit outside the
+table, so no intent can use them, and `pre-launch` has no `menu` edge: the reveal has no cancel
+(DEC-141), and only a crash ends it early. A crash in `menu` itself shows `screen-crashed` again and goes back to
 `home`; the table has no `menu` → `menu` move.
 
 The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The

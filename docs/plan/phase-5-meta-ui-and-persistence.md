@@ -222,6 +222,9 @@ and 3.8 (sim mode), Phase 2 sprint 2.7 (spawn origins), Phase 1 sprint 1.5 (`Dev
       Test: a finished sim-mode match writes one history row, one replay and the profile update
       atomically; the stored replay reproduces the final `StateHasher` hash in the core replay
       harness. Done when: the results screen is a pure view of the DTO; one replay format exists.
+  - 2026-11-02 (DEC-152): today a crash report's replay holds the generated map and map objects
+    inline. When this store is designed, choose again whether a stored replay holds the world or
+    generates it again from config and seed (which needs the versions guard).
 - [ ] **`DeveloperMenu` complete** (enabled by `?dev=1` or a persisted settings toggle, opened
       in-game by a rebindable `dev-menu-toggle` action: add/remove Legends with class and team
       pickers (≤ 10 per team); spawn mobs from origin points, i.e. Stronghold gates, tower slots
