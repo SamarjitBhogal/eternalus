@@ -347,6 +347,13 @@ Reply inline (`Decision: …`).
       left-click roof toggles against the attack binding after PR #30 merges.
 - [ ] **PR #22 toolbar follow-up** — Owner: sholtzman, HUD/character-select branch. Move map
       toolbar state from game/useMatch into the bridge after PR #30 merges.
+- [ ] **PR #64 density follow-up** — Owner: sholtzman, HUD/character-select branch, after PR #64
+      merges. Show each team's density % (its share of `CaptureSnapshot.presence`) in
+      `ObjectiveTracker` while the player's Legend stands in a zone (DEC-145 (c), owner answer A).
+      The HUD branch's snapshot fixtures also need the new fields: `EntitySnapshot.area` and
+      `CaptureSnapshot.presence`. Whichever of PR #64 and the HUD PR lands second makes
+      `ZoneArea.contains` and the HUD PR's `findBuildingAt` (its DEC-149 (6)) share one
+      point-in-footprint test.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

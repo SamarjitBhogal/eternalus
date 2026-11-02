@@ -2942,3 +2942,22 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed." After merging the phase branch again (#62, #63, #30; `spawnZones` reads
   `GameState.world`): `EXIT=0`, core "Tests 921 passed (921)", client "Tests 438 passed (438)".
 - Next step: critic and ponytail (pre-PR gate) in a Claude Code session; architecture re-review.
+
+### 2026-11-02 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64) — sholtzman + Claude Code
+
+- What was done: fixed PR #64's review findings for its author, at the product owner's request
+  (DEC-145, DEC-146). A capture zone now covers its building's floor (`map/zoneArea.ts`,
+  `components/ZoneArea.ts`): the fort court for an outer point, the whole Cathedral floor; a unit
+  counts when its centre is on that floor. `checkpoint-reached` fires once per side until the
+  zone changes owner, only for the side the progress leans toward. Each side's weighted presence
+  is published (`CaptureSnapshot.presence`) and drawn as a split bar under the progress bar; the
+  HUD density numbers are an INBOX item for the HUD branch. `EntitySnapshot.area`, StateHasher
+  covers the reached marks. Critic round 1 (request-changes): the fort zone now ends at the walls'
+  inner faces, a step that crosses 0 announces every checkpoint it passes, and doc fixes; ponytail
+  cut `ZoneArea`'s bounding box. Every new test failed under a deliberate break first (A to H).
+- Checks run: `npm run check` → `exit 0` before the critic (core "Tests 937 passed (937)") and
+  after critic round 2 (approve) and the ponytail cut: "All matched files use Prettier code
+  style!"; core "Tests 938 passed (938)"; client "Tests 440 passed (440)"; "✓ built in 116ms";
+  "Documentation check passed."
+- Next step: push to `feat/capture-points-v2` (PR #64); HUD branch: density % in
+  `ObjectiveTracker` (INBOX).
