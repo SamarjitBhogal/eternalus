@@ -240,6 +240,14 @@ export class Match implements LoopTarget {
    */
   public overview(): void {
     this.camera.overview();
+    this.restoreRoofs();
+  }
+
+  /**
+   * Puts back every roof the developer cut away (the player's building stays open), so developer
+   * roofs do not stay open in normal play once the explorer is hidden (DEC-143).
+   */
+  public restoreRoofs(): void {
     this.roofs.restore();
   }
 

@@ -5,7 +5,13 @@ import type { MatchViewport } from './MatchViewport.types';
 export type CanvasPointerControlsDeps = {
   readonly match: Pick<
     Match,
-    'lookAtMinimapPoint' | 'panBy' | 'zoomBy' | 'toggleRoofAt' | 'hasOpenRoofs' | 'overview'
+    | 'lookAtMinimapPoint'
+    | 'panBy'
+    | 'zoomBy'
+    | 'toggleRoofAt'
+    | 'hasOpenRoofs'
+    | 'overview'
+    | 'restoreRoofs'
   >;
   /**
    * The canvas, its chrome, and whether the developer explorer is on (`?dev=1`; DEC-32, INBOX

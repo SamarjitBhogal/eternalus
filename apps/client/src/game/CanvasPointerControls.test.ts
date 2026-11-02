@@ -39,6 +39,7 @@ function setUp(isExplorerShown: boolean) {
       return true;
     }),
     overview: vi.fn(),
+    restoreRoofs: vi.fn(),
   };
   const controls = new CanvasPointerControls({
     match,
@@ -169,6 +170,7 @@ describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () =>
     expect(match.toggleRoofAt).toHaveBeenCalledWith(600, 100);
     actions.overview?.();
     expect(match.overview).toHaveBeenCalledTimes(1);
+    expect(match.restoreRoofs).not.toHaveBeenCalled();
   });
 
   it('hides it again: no drag, wheel, overview or roof click, the chrome is told', () => {
@@ -187,6 +189,17 @@ describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () =>
     expect(match.zoomBy).not.toHaveBeenCalled();
     click(100, 50);
     expect(match.toggleRoofAt).not.toHaveBeenCalled();
+  });
+
+  it('puts back the roofs the developer opened when it hides them (DEC-143)', () => {
+    const { roofs, match, controls, click } = setUp(true);
+    click(100, 50);
+    expect(roofs).toEqual([true]);
+
+    controls.toggleExplorer();
+
+    expect(match.restoreRoofs).toHaveBeenCalledTimes(1);
+    expect(roofs).toEqual([true, false]);
   });
 
   it('leaves 0 listeners on detach after a toggle', () => {

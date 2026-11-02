@@ -43,16 +43,20 @@ export class CanvasPointerControls {
 
   /**
    * Shows the developer explorer (its drag, wheel and overview) or hides it, and tells the chrome
-   * (DEC-105's hotkey). Call it only while attached.
+   * (DEC-105's hotkey). Hiding it also puts back the roofs the developer cut away, so developer
+   * state does not leak into normal play (DEC-143). Call it only while attached.
    */
   public toggleExplorer(): void {
     this.isExplorerShown = !this.isExplorerShown;
+    const { chrome } = this.deps.viewport;
     if (this.isExplorerShown) {
       this.attachExplorer();
     } else {
       this.detachExplorer();
+      this.deps.match.restoreRoofs();
+      chrome.onRoofsChanged(false);
     }
-    this.deps.viewport.chrome.onExplorerChanged(this.isExplorerShown);
+    chrome.onExplorerChanged(this.isExplorerShown);
   }
 
   /** Forgets a press or drag in progress (focus lost, pointer cancelled). */
