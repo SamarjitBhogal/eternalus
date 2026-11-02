@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-30
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -58,7 +58,7 @@ export class GameState {
   public readonly config: GameConfig;
   public readonly rng: SeededRandom; // the only source of randomness
   public readonly entities: EntityStore; // deterministic, creation-order iteration
-  public readonly world: WorldMap; // grid, cost field, flow fields, structures index
+  public readonly world: MatchWorld | null; // definition, lane routes, WorldMap (grid, cost field, flow fields), structures index; null without a map
   public readonly teams: Readonly<Record<Team, TeamState>>; // score, structures alive, buffs, spawn counters (18 §3.4)
   public readonly hordes: HordeRegistry; // Horde aggregates (not entities)
   public readonly events: GameEvents;
@@ -359,7 +359,6 @@ export type MatchConfig = {
   readonly legendsPerLane: number;
   readonly countdownSeconds: number;
   readonly hordeSizes: { readonly light: number; readonly medium: number; readonly heavy: number };
-  readonly initialHordesPerTeam: number;
   readonly plannedMatchSeconds: number;
   readonly hordeSpawnIntervalSeconds: number;
   readonly capturePoints: CapturePointConfig;
@@ -385,7 +384,7 @@ requirement ceilings in `config/GameConfig.constants.ts`; this table records whe
 | `legendsPerTeam`, `legendsPerLane`                  | the lane Legends plus the Rover                                              | game doc, Minions and lanes; contract §2.1 |
 | `maxLegendsPerTeam`, `maxUnitsPerTeam`              | caps the developer menu and spawners respect                                 | requirements doc, developer menu           |
 | `countdownSeconds`                                  | only the initial hordes spawn                                                | requirements doc                           |
-| `hordeSizes`, `initialHordesPerTeam`                | one initial horde per lane, from the stronghold                              | requirements doc                           |
+| `hordeSizes`                                        | per weight class; the opening hordes are one per lane (`map.numLanes`)       | requirements doc; DEC-84                   |
 | `plannedMatchSeconds`                               | the target match length                                                      | DEC-13 (pending)                           |
 | `flowFieldCorridorHalfWidth`, `flowFieldCellBudget` | a lane field's corridor reach; cells rebuilt per tick after a terrain change | 06 §6, 10 §9; Phase 3 sprint 3.2 (`TUNE`)  |
 | `pathMaxExpansions`, `pathSnapCells`                | A\* for Legends: cells one search may settle; how far a blocked end snaps    | 10 §9, 11 §6 (`TUNE`)                      |
@@ -396,7 +395,7 @@ field (`path`) and its `rule` (integration contract §2.2), and returns the conf
 rule holds; `Simulation` validates in its constructor, so it never starts on a bad config. The rules
 live in `config/validateGameConfig.ts`, cross-field rules after the fields they read: whole numbers
 where counts are meant, `tickRate` the supported rate, caps within the requirement ceilings,
-`maxUnitsPerTeam >= initialHordesPerTeam * hordeSizes.light`, the map rules of 06 §2; timeline
+`maxUnitsPerTeam >= map.numLanes * hordeSizes.light`, the map rules of 06 §2; timeline
 entries ordered is a `Recommendation:`, and `campsPerSide` need not divide by the corridors
 (DEC-14). Time fields are authored in seconds and converted to ticks once at construction, so
 systems only ever see ticks. `Match` builds the config from `createDefaultGameConfig()` plus
@@ -428,12 +427,14 @@ each closed by the session or phase named:
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /
   `entity-removed` themselves until `SpawnSystem` / `DeathSystem` exist (session C).
 - `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
-  `tick`, `phase` and `entities`, and `EntitySnapshot` its identity, `team`, `transform`
+  `tick`, `phase`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
+  and `EntitySnapshot` its identity, `team`, `transform`
   (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
-- `GameState` has no `world` yet; it has `hordes`, `teams` (the spawn
-  counters only), the generated `map` and its `routes` since minion plan M1, and `ai`, `space`
-  and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
+- `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
+  `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
+  fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
+  only) since minion plan M1, and `ai`, `space` and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
   `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),

@@ -23,3 +23,12 @@ export type SpawnPlan = {
 
 /** A map structure that belongs to a playable team. */
 export type TeamFeature = MapFeature & { readonly team: PlayableTeam };
+
+/** One spawner's repeating wave, with its times converted to ticks once (architecture 03 §10). */
+export type ScheduledWave = {
+  readonly spawner: TeamFeature;
+  readonly wave: SpawnWaveDefinition;
+  /** The tick of the first wave: the countdown's end plus `firstAtSeconds`. */
+  readonly firstTick: number;
+  readonly everyTicks: number;
+};

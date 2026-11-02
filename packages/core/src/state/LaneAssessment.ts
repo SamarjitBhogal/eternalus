@@ -16,8 +16,8 @@ export const laneScores = (
   team: PlayableTeam,
   weights: LaneAssessmentWeights,
 ): readonly { readonly id: string; readonly index: number; readonly score: number }[] => {
-  const routes = state.routes;
-  if (routes === null) {
+  const routes = state.world?.routes;
+  if (routes === undefined) {
     return [];
   }
   return routes.lanes.map((lane) => {

@@ -83,6 +83,48 @@ describe('GameState', () => {
           health: null,
         },
       ],
+      hordes: [],
+      teams: {
+        light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+        dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      },
+    });
+  });
+
+  it('snapshots the hordes and team counters as copies the store no longer changes', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'dark',
+      weightClass: 'medium',
+      lane: 'lane-1',
+      formationId: 'ranks',
+      memberIds: ['entity-2', 'entity-1'],
+      progress: 12,
+    });
+    state.recordSpawnRequest('dark', 3, 2);
+
+    const snapshot = state.snapshot();
+    state.hordes.removeMember('entity-1');
+    state.hordes.setProgress('horde-1', 20);
+    state.recordSpawnRequest('dark', 1, 1);
+    state.recordTowerLost('dark', 'lane-1');
+
+    expect(snapshot.hordes).toEqual([
+      {
+        id: 'horde-1',
+        team: 'dark',
+        weightClass: 'medium',
+        lane: 'lane-1',
+        formationId: 'ranks',
+        memberIds: ['entity-1', 'entity-2'],
+        leaderId: 'entity-1',
+        progress: 12,
+      },
+    ]);
+    expect(snapshot.teams).toEqual({
+      light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      dark: { unitsRequested: 3, unitsSuppressed: 1, towersLostByLane: {} },
     });
   });
 

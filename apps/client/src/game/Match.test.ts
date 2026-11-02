@@ -40,8 +40,8 @@ type Content = NonNullable<ConstructorParameters<typeof Simulation>[0]['content'
  * A rock (kind `obstacle`, which has no view of its own) plus the player's Legend, with speeds already per tick as the simulation sees them.
  */
 const CONTENT_WITH_A_ROCK: Content = (() => {
-  const movement = { maxSpeed: 0.2, acceleration: 0.05, mass: 1 };
-  const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movement };
+  const movementProfile = { maxSpeed: 0.2, acceleration: 0.05, mass: 1 };
+  const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movementProfile };
   const definitions = [
     {
       id: 'warrior',

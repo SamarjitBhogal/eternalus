@@ -17,7 +17,7 @@ export const MEDIUM_MINION = {
   controller: 'minion',
   aiProfile: 'lane-minion',
   attack: { strategy: 'melee', damage: 28, reach: 1.5, interval: 1.2 }, // TUNE: balancing.md medium minion (28 / 1.2 s); reach unspecified
-  movement: {
+  movementProfile: {
     maxSpeed: 3.2, // TUNE: m/s, balancing.md medium minion
     acceleration: 16, // TUNE: m/s², top speed after 0.2 s
     mass: 1.125, // TUNE: balancing.md's 90 on this repo's scale (Warrior mass 1 for its 80)
