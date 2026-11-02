@@ -29,6 +29,8 @@ export type PlayerChoice = {
 
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
+  /** Reuses the exact authored placements supplied to the simulation. */
+  readonly presentation?: import('@eternalus/core').MapPresentation;
   readonly simulation: Simulation;
   /** The generated map the simulation plays on. */
   readonly map: MapDefinition;

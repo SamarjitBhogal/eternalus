@@ -17,6 +17,12 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
     worldWidth: 1600, // TUNE: traced from the team sketch
     worldHeight: 900, // TUNE: traced from the team sketch
     navCellSize: 5, // TUNE: was DEFAULT_MAP_LAYOUT.navCellSize on feat/map-generator
+    // TUNE: room to route a 4-wide formation around an obstacle; 30 clears a tower fort on a
+    // diagonal lane (DEC-121 (d)).
+    flowFieldCorridorHalfWidth: 30,
+    flowFieldCellBudget: 2000, // TUNE: Recommendation (sprint 3.2): rebuild cost well under 1 ms
+    pathMaxExpansions: 6000, // TUNE: a cost cap for A* (10 §9), not a gameplay number
+    pathSnapCells: 12, // TUNE: covers a Stronghold footprint on 5 m cells
     presetId: 'map-1',
   },
   match: {
@@ -24,7 +30,6 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
     legendsPerLane: 3,
     countdownSeconds: 60,
     hordeSizes: { light: 16, medium: 8, heavy: 4 },
-    initialHordesPerTeam: 3,
     plannedMatchSeconds: 1200, // TUNE: DEC-13 pending
   },
   limits: {

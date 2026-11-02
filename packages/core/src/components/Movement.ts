@@ -1,4 +1,4 @@
-import type { MovementProfile } from '../content/units/units.types';
+import type { MovementProfile, MovementStrategyId } from '../content/units/units.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 
@@ -17,6 +17,9 @@ export class Movement {
 
   public readonly mass: number;
 
+  /** The strategy that steers this entity (architecture 04 §4), or `undefined` when none does. */
+  public readonly strategyId: MovementStrategyId | undefined;
+
   private currentSpeed = 0;
 
   private readonly currentVelocity: MutableVec2 = { x: 0, y: 0 };
@@ -27,8 +30,10 @@ export class Movement {
    * Creates a stopped movement component from a unit's movement profile.
    *
    * @param stats - The unit definition's movement profile; every value must be positive.
+   * @param strategyId - The definition's `movementStrategy`, resolved through the strategy
+   *   registry by `PathingSystem`.
    */
-  public constructor(stats: MovementProfile) {
+  public constructor(stats: MovementProfile, strategyId?: MovementStrategyId) {
     for (const [name, value] of Object.entries(stats)) {
       if (!(value > 0) || !Number.isFinite(value)) {
         throw new Error(`Movement ${name} must be a positive number, got ${String(value)}.`);
@@ -38,6 +43,7 @@ export class Movement {
     this.maxSpeed = stats.maxSpeed;
     this.acceleration = stats.acceleration;
     this.mass = stats.mass;
+    this.strategyId = strategyId;
   }
 
   /** Current speed, between 0 and `maxSpeed`. */
@@ -75,15 +81,18 @@ export class Movement {
 
   /**
    * One tick of movement: speeds up along the heading, or slows down by one tick of
-   * acceleration when there is no heading.
+   * acceleration when there is no heading. The heading is kept, so movement resumes on its own.
+   *
+   * @param speedScale - Multiplies `maxSpeed` for this tick (statuses: 0.7 slowed, 0 stunned).
    */
-  public advance(): void {
+  public advance(speedScale = 1): void {
+    const cap = this.maxSpeed * speedScale;
     if (this.currentHeading.x !== 0 || this.currentHeading.y !== 0) {
-      this.accelerateToward(this.currentHeading);
+      this.accelerateToward(this.currentHeading, cap);
       return;
     }
 
-    const slower = Math.max(0, this.currentSpeed - this.acceleration);
+    const slower = Math.min(cap, Math.max(0, this.currentSpeed - this.acceleration));
     const factor = this.currentSpeed === 0 ? 0 : slower / this.currentSpeed;
     this.currentSpeed = slower;
     this.currentVelocity.x *= factor;
@@ -91,10 +100,10 @@ export class Movement {
   }
 
   /**
-   * Speeds up by one tick of acceleration and points the velocity along `direction`.
-   * A zero direction stops the unit.
+   * Speeds up by one tick of acceleration, up to `cap`, and points the velocity along
+   * `direction`. A zero direction stops the unit.
    */
-  public accelerateToward(direction: Vec2): void {
+  public accelerateToward(direction: Vec2, cap = this.maxSpeed): void {
     const length = Math.hypot(direction.x, direction.y);
 
     if (length === 0) {
@@ -102,7 +111,7 @@ export class Movement {
       return;
     }
 
-    this.currentSpeed = Math.min(this.maxSpeed, this.currentSpeed + this.acceleration);
+    this.currentSpeed = Math.min(cap, this.currentSpeed + this.acceleration);
     const scale = this.currentSpeed / length;
     this.currentVelocity.x = direction.x * scale;
     this.currentVelocity.y = direction.y * scale;

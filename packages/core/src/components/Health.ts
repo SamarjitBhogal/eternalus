@@ -8,6 +8,8 @@ import type { DamageBreakdown, MutableShieldBar, ShieldBar } from './Health.type
 export class Health {
   private currentValue: number;
 
+  private maxValue: number;
+
   private readonly shieldBars: MutableShieldBar[] = [];
 
   /**
@@ -15,9 +17,15 @@ export class Health {
    *
    * @param max - Full health (the base bar, without shields); must be positive.
    */
-  public constructor(public readonly max: number) {
+  public constructor(max: number) {
     Health.checkPositive(max, 'max');
+    this.maxValue = max;
     this.currentValue = max;
+  }
+
+  /** Full health now: the starting bar plus every `raiseMax` (level-ups). */
+  public get max(): number {
+    return this.maxValue;
   }
 
   /** Health left on the base bar, between 0 and `max`. Shield bars are in `shields`. */
@@ -56,6 +64,15 @@ export class Health {
     const toBase = Math.min(remaining, this.currentValue);
     this.currentValue -= toBase;
     return { toShields, toBase, overflow: remaining - toBase };
+  }
+
+  /**
+   * Raises full health by `amount` (finite, ≥ 0). Only the cap: whoever raises it decides whether to
+   * heal too (a level-up heals a living Legend by the raise, O3/O4).
+   */
+  public raiseMax(amount: number): void {
+    Health.checkAmount(amount, 'max raise');
+    this.maxValue += amount;
   }
 
   /** Restores up to `amount` health (never above `max`) and returns how much. */

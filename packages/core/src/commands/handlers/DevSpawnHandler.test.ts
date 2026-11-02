@@ -58,18 +58,23 @@ const contextWithDummy = (
   registry.register('grunt', Grunt);
   registry.register('hero', Hero);
   return {
-    // One Legend and no initial hordes, so the small caps below are valid configs.
+    // One Legend, one lane and one-mob light hordes, so the small caps below are valid configs.
     state: new GameState(
       validateGameConfig(
-        createDefaultGameConfig({ limits, match: { legendsPerTeam: 1, initialHordesPerTeam: 0 } }),
+        createDefaultGameConfig({
+          limits,
+          map: { numLanes: 1, campsPerSide: 0 },
+          match: { legendsPerTeam: 1, hordeSizes: { light: 1 } },
+        }),
       ),
       1,
     ),
     factory: new EntityFactory(
       registry,
-      new ContentCatalogue(
-        ['dummy', 'grunt', 'hero'].map((kind) => ({ id: kind, kind, displayName: kind })),
-      ),
+      new ContentCatalogue([
+        ...['dummy', 'grunt', 'hero'].map((kind) => ({ id: kind, kind, displayName: kind })),
+        { id: 'lane-grunt', kind: 'grunt', displayName: 'lane grunt', controller: 'minion' },
+      ]),
     ),
   };
 };
@@ -111,6 +116,8 @@ describe('DevSpawnHandler', () => {
     ['invalid-count', { count: 1.5 }],
     ['invalid-position', { at: { x: Number.NaN, y: 0 } }],
     ['invalid-position', { at: { x: 0, y: Infinity } }],
+    // A lane minion only spawns in a horde, through `dev-spawn-mobs` (MS-25).
+    ['horde-only', { kind: 'grunt', definitionId: 'lane-grunt' }],
   ])('rejects with %s and spawns nothing', (reason, overrides) => {
     const context = contextWithDummy();
     expect(new DevSpawnHandler().handle(spawn(overrides), context)).toBe(reason);

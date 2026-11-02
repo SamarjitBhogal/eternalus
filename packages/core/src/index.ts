@@ -54,12 +54,11 @@ export type {
   ReplayTarget,
   ReplayTargetFactory,
 } from './diagnostics/Replay.types';
-export { CathedralInteriorBuilder } from './map/CathedralInteriorBuilder';
-export type { CathedralInterior } from './map/CathedralInteriorBuilder.types';
+export { MapPresentationBuilder } from './map/MapPresentationBuilder';
 export { MapGenerator } from './map/MapGenerator';
-export { MapSceneryBuilder } from './map/MapSceneryBuilder';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
+export type { RosterSlot } from './Simulation.types';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {
   GameEventHandler,
@@ -71,6 +70,7 @@ export type { MatchPhase } from './state/GameState.types';
 export type { EntitySnapshot, Snapshot } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
 export type { PlayableTeam, Team } from './teams/teams.types';
+export { isPointInPolygon } from './utils/geometry';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';
 export { SeededRandom } from './utils/SeededRandom';
 export type { SeededRandomState } from './utils/SeededRandom.types';
@@ -88,3 +88,9 @@ export type TeamId = PlayableTeam;
  * @deprecated Use `Team`. Kept for one release for code written against `feat/map`.
  */
 export type FeatureOwner = Team;
+
+export type { MapBuilding, MapPresentation } from './content/maps/maps.types';
+
+export { MapObjectBuilder } from './map/MapObjectBuilder';
+export type { MapObject, MapObjectKind, MapObjectSnapshot } from './content/maps/mapObjects.types';
+export { findMapObjectAt } from './map/findMapObjectAt';

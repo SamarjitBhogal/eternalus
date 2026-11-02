@@ -1,7 +1,7 @@
 import { IdGenerator } from '../utils/IdGenerator';
 import { Entity } from './Entity';
 import { ENTITY_ID_PREFIX } from './EntityFactory.constants';
-import type { DefinitionSource, Placement } from './EntityFactory.types';
+import type { DefinitionSource, Placement, WeaponSource } from './EntityFactory.types';
 import type { EntityRegistry } from './EntityRegistry';
 
 /**
@@ -15,11 +15,13 @@ export class EntityFactory {
    * @param registry - Where entity kinds are looked up.
    * @param definitions - Where definitions are looked up by id.
    * @param ids - Where entity ids come from; a new counter per factory by default.
+   * @param weapons - Where Legends find their weapons; passed in every spawn context when given.
    */
   public constructor(
     public readonly registry: EntityRegistry,
-    private readonly definitions: DefinitionSource,
+    public readonly definitions: DefinitionSource,
     private readonly ids: IdGenerator = new IdGenerator(),
+    private readonly weapons: WeaponSource | null = null,
   ) {}
 
   /** Whether `kind` is registered and `definitionId` names a definition that `kind` builds. */
@@ -67,7 +69,7 @@ export class EntityFactory {
       );
     }
 
-    entity.spawn({ ...placement, definition });
+    entity.spawn({ ...placement, definition, ...(this.weapons && { weapons: this.weapons }) });
     return entity;
   }
 }

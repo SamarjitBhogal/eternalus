@@ -4,7 +4,7 @@ description: The Eternalus MVP roadmap; read this to know which phase we are in,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-29
 tags: [plan, roadmap, sprints, metrics]
 related:
   [
@@ -195,7 +195,7 @@ walkthrough; record them in [PROGRESS.md](PROGRESS.md).
 | 5     | client lane (persistence owner + UI owner) | sholtzman                                       | sim lane lead                | SamarjitBhogal   |
 | 6     | everyone                                   | sholtzman                                       | SamarjitBhogal               | SamarjitBhogal   |
 
-Every phase PR needs one human approval plus green CI on three OSes; an agent-written
+Every phase PR needs one human approval plus green CI on Linux and Windows; an agent-written
 `architecture-reviewer` pass is advisory ([running-agents.md](../agents/running-agents.md)).
 `Recommendation:` name a deputy maintainer for `main` so a single absence cannot block a merge.
 

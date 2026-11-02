@@ -47,6 +47,11 @@ export abstract class Entity {
     this.components.set(component.constructor as ComponentType, component);
   }
 
+  /** Detaches the component of class `type`, if any. */
+  public removeComponent(type: ComponentType): void {
+    this.components.delete(type);
+  }
+
   /** Returns the component of class `type`; a missing component is a bug and throws. */
   public getComponent<T extends object>(type: ComponentType<T>): T {
     const component = this.findComponent(type);
