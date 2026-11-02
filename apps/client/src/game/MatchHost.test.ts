@@ -39,7 +39,8 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     toggleRoofAt: vi.fn(() => false),
     hasOpenRoofs: false,
     overview: vi.fn(),
-    restoreRoofs: vi.fn(),
+    leaveExplorer: vi.fn(),
+    setPointerClaimed: vi.fn(),
   };
   const input = { releaseAll: vi.fn() };
   // The real key lookup over the default bindings, so DEC-105's hotkey is the shipped chord.

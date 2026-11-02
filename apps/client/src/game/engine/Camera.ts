@@ -1,4 +1,4 @@
-import { MAX_ZOOM, MIN_ZOOM } from './Camera.constants';
+import { BASE_ZOOM, MAX_ZOOM, MIN_ZOOM } from './Camera.constants';
 import type { Viewport } from './Camera.types';
 import type { WorldPoint, WorldRect } from './render/Renderer.types';
 
@@ -12,7 +12,7 @@ export class Camera {
   private center: WorldPoint;
   private readonly baseWidth: number;
   private readonly baseHeight: number;
-  private zoomLevel = 1;
+  private zoomLevel = BASE_ZOOM;
 
   /**
    * Creates a camera looking at `center`, showing `visibleWidth` world units across and

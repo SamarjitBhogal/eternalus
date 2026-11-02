@@ -9,8 +9,10 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
  * start with `?dev=1`, then shown or hidden by DEC-105's hotkey; demo-only by DEC-32, INBOX
  * HC-F8): drag to pan, the wheel to zoom, a short click on a building to cut its roof away or put
  * it back, and the toolbar's world overview, which also puts those roofs back. In normal play a
- * roof opens only while the player's Legend is inside (DEC-143). Positions arrive in CSS pixels
- * and reach the match in device pixels.
+ * roof opens only while the player's Legend is inside (DEC-143). A press these gestures own (a
+ * minimap click, or any press with the explorer) is claimed until its release, so the attack
+ * button does not also act on it (06 §10). Positions arrive in CSS pixels and reach the match in
+ * device pixels.
  */
 export class CanvasPointerControls {
   private press: { x: number; y: number; distance: number } | null = null;
@@ -22,7 +24,10 @@ export class CanvasPointerControls {
     this.isExplorerShown = deps.viewport.isExplorerShown;
   }
 
-  /** Listens for clicks; with the explorer, drags and the wheel too, and gives the chrome its overview. */
+  /**
+   * Listens for clicks; with the explorer, drags and the wheel too, and gives the chrome its
+   * overview.
+   */
   public attach(): void {
     const { canvas } = this.deps.viewport;
     canvas.addEventListener('pointerdown', this.onPointerDown);
@@ -43,8 +48,9 @@ export class CanvasPointerControls {
 
   /**
    * Shows the developer explorer (its drag, wheel and overview) or hides it, and tells the chrome
-   * (DEC-105's hotkey). Hiding it also puts back the roofs the developer cut away, so developer
-   * state does not leak into normal play (DEC-143). Call it only while attached.
+   * (DEC-105's hotkey). Hiding it also puts back the roofs the developer cut away and returns to
+   * the following camera, so developer state does not stay in normal play (DEC-143). Call it only
+   * while attached.
    */
   public toggleExplorer(): void {
     this.isExplorerShown = !this.isExplorerShown;
@@ -53,7 +59,7 @@ export class CanvasPointerControls {
       this.attachExplorer();
     } else {
       this.detachExplorer();
-      this.deps.match.restoreRoofs();
+      this.deps.match.leaveExplorer();
       chrome.onRoofsChanged(false);
     }
     chrome.onExplorerChanged(this.isExplorerShown);
@@ -62,6 +68,7 @@ export class CanvasPointerControls {
   /** Forgets a press or drag in progress (focus lost, pointer cancelled). */
   public readonly cancelDrag = (): void => {
     this.press = null;
+    this.deps.match.setPointerClaimed(false);
   };
 
   private attachExplorer(): void {
@@ -90,11 +97,14 @@ export class CanvasPointerControls {
       return;
     }
     const point = this.devicePoint(pointer);
-    if (this.deps.match.lookAtMinimapPoint(point.x, point.y)) {
+    const { match } = this.deps;
+    if (match.lookAtMinimapPoint(point.x, point.y)) {
+      match.setPointerClaimed(true);
       return;
     }
     this.press = { x: pointer.clientX, y: pointer.clientY, distance: 0 };
     if (this.isExplorerShown) {
+      match.setPointerClaimed(true);
       this.deps.viewport.canvas.setPointerCapture(pointer.pointerId);
     }
   };
@@ -122,6 +132,7 @@ export class CanvasPointerControls {
     const pointer = event as PointerEvent;
     const { press } = this;
     this.press = null;
+    this.deps.match.setPointerClaimed(false);
     const { canvas, chrome } = this.deps.viewport;
     if (canvas.hasPointerCapture(pointer.pointerId)) {
       canvas.releasePointerCapture(pointer.pointerId);

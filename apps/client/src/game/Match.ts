@@ -71,6 +71,9 @@ export class Match implements LoopTarget {
   /** The map object the held attack button last targeted; `null` once released or stopped. */
   private attackTargetId: EntityId | null = null;
 
+  /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */
+  private isPointerClaimed = false;
+
   /**
    * Creates the match, queues the player's spawn (`spawnPlayer`) and points the camera at the
    * spawn point.
@@ -240,15 +243,26 @@ export class Match implements LoopTarget {
    */
   public overview(): void {
     this.camera.overview();
-    this.restoreRoofs();
+    this.roofs.restore();
   }
 
   /**
-   * Puts back every roof the developer cut away (the player's building stays open), so developer
-   * roofs do not stay open in normal play once the explorer is hidden (DEC-143).
+   * The developer explorer was hidden: puts back the roofs the developer cut away (the player's
+   * building stays open) and returns to the following camera at its base zoom, so developer state
+   * does not stay in normal play (DEC-143).
    */
-  public restoreRoofs(): void {
+  public leaveExplorer(): void {
     this.roofs.restore();
+    this.camera.leaveExplorer();
+  }
+
+  /**
+   * Whether the canvas gestures own the main button's press (a minimap click, or any press while
+   * the developer explorer is shown). While they do, the held button is no attack: one press is
+   * one action (06 §10, attack and roof input arbitration).
+   */
+  public setPointerClaimed(isClaimed: boolean): void {
+    this.isPointerClaimed = isClaimed;
   }
 
   /**
@@ -303,7 +317,7 @@ export class Match implements LoopTarget {
       return;
     }
     const { move, isAttacking, aim } = this.deps.input.read(this.camera);
-    this.applyAttack(this.playerId, isAttacking === true ? aim : null);
+    this.applyAttack(this.playerId, isAttacking === true && !this.isPointerClaimed ? aim : null);
     const isMoving = move.x !== 0 || move.y !== 0;
     if (isMoving) {
       this.camera.playerMoved();

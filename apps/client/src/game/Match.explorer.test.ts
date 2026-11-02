@@ -114,6 +114,20 @@ describe('Match free view', () => {
     expect(camera.zoom).toBe(2);
   });
 
+  it('leaves the explorer with every developer roof back and the following camera at base zoom', () => {
+    const { match, camera, shown, cathedral, toScreen } = setUp();
+    match.zoomBy(2);
+    match.overview();
+    const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, shown());
+    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+
+    match.leaveExplorer();
+
+    expect(match.hasOpenRoofs).toBe(false);
+    expect(camera.zoom).toBe(1);
+    expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
+  });
+
   it('toggles the cathedral roof in the same world and restores it on overview', () => {
     const { match, input, renderer, shown, cathedral, toScreen } = setUp();
     match.overview();

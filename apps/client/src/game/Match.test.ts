@@ -209,6 +209,30 @@ describe('Match', () => {
     match.destroy();
   });
 
+  it('queues no attack while the canvas gestures own the press (a minimap click or the explorer)', () => {
+    const { match, simulation, input, world } = setUp(undefined, true, true);
+    const house = world.mapObjects.find((object) => object.kind === 'house');
+    const corner = house?.footprints[0]?.[0];
+    const opposite = house?.footprints[0]?.[2];
+    if (corner === undefined || opposite === undefined) throw new Error('Missing house');
+    match.tick();
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const attacks = () =>
+      enqueue.mock.calls.filter(([command]) => command.type === 'attack-target').length;
+    input.isAttacking = true;
+    input.aim = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
+
+    match.setPointerClaimed(true);
+    match.tick();
+    match.tick();
+    expect(attacks()).toBe(0);
+    match.setPointerClaimed(false);
+    match.tick();
+
+    expect(attacks()).toBe(1);
+    match.destroy();
+  });
+
   it('reports closed roofs after the same building is toggled twice', () => {
     const { match } = setUp();
     // The following camera initially centres on the light stronghold.

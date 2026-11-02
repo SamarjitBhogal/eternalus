@@ -1,6 +1,7 @@
 import type { MapDefinition } from '@eternalus/core';
 
 import type { Camera } from './engine/Camera';
+import { BASE_ZOOM } from './engine/Camera.constants';
 import type { ScreenPoint } from './engine/input/InputDevice.types';
 import type { Projection } from './engine/input/Projection.types';
 import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
@@ -53,7 +54,10 @@ export class MatchCamera implements Projection {
     this.pixelRatio = pixelRatio;
   }
 
-  /** The world point on screen (the free view's or the camera's) under a canvas point (CSS pixels). */
+  /**
+   * The world point on screen (the free view's or the camera's) under a canvas point (CSS
+   * pixels).
+   */
   public screenToWorld(point: ScreenPoint): WorldPoint {
     return this.worldAt(point.x * this.pixelRatio, point.y * this.pixelRatio);
   }
@@ -78,6 +82,15 @@ export class MatchCamera implements Projection {
   public playerMoved(): void {
     this.isFollowing = true;
     this.isExploring = false;
+  }
+
+  /**
+   * The developer explorer was hidden: back to the following camera at its base zoom, so no
+   * developer view stays in normal play (DEC-143).
+   */
+  public leaveExplorer(): void {
+    this.playerMoved();
+    this.camera.zoomTo(BASE_ZOOM);
   }
 
   /** The part of the world on screen: the free view's or the camera's. */

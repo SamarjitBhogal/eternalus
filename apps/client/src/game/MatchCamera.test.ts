@@ -51,6 +51,20 @@ describe('MatchCamera', () => {
     expect(view.visibleArea()).not.toEqual(jumped);
   });
 
+  it('leaves the explorer for the following camera at its base zoom', () => {
+    const { camera, view } = setUp();
+    const following = view.visibleArea();
+    view.zoomBy(2);
+    view.overview();
+
+    view.leaveExplorer();
+
+    expect(camera.zoom).toBe(1);
+    expect(view.visibleArea()).toEqual(following);
+    view.follow({ x: 900, y: 400 });
+    expect(view.visibleArea()).not.toEqual(following);
+  });
+
   it('zooms the free view in on a minimap jump while exploring', () => {
     const { view } = setUp();
     view.overview();

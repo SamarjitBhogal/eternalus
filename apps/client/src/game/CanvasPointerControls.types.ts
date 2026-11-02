@@ -11,7 +11,8 @@ export type CanvasPointerControlsDeps = {
     | 'toggleRoofAt'
     | 'hasOpenRoofs'
     | 'overview'
-    | 'restoreRoofs'
+    | 'leaveExplorer'
+    | 'setPointerClaimed'
   >;
   /**
    * The canvas, its chrome, and whether the developer explorer is on (`?dev=1`; DEC-32, INBOX

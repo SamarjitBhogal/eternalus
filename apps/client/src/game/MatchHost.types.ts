@@ -27,7 +27,8 @@ export type MatchHostDeps = {
     | 'toggleRoofAt'
     | 'hasOpenRoofs'
     | 'overview'
-    | 'restoreRoofs'
+    | 'leaveExplorer'
+    | 'setPointerClaimed'
   >;
   /** The canvas, its chrome and the developer flag, as `GameCanvas` attached them. */
   readonly viewport: MatchViewport;

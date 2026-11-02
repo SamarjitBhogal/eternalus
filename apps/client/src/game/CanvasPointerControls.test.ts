@@ -39,7 +39,8 @@ function setUp(isExplorerShown: boolean) {
       return true;
     }),
     overview: vi.fn(),
-    restoreRoofs: vi.fn(),
+    leaveExplorer: vi.fn(),
+    setPointerClaimed: vi.fn(),
   };
   const controls = new CanvasPointerControls({
     match,
@@ -71,6 +72,23 @@ describe('CanvasPointerControls in normal play', () => {
     canvas.dispatchEvent(pointer('pointerdown', 600, 40));
     expect(match.lookAtMinimapPoint).toHaveBeenCalledWith(1200, 80);
     expect(match.panBy).not.toHaveBeenCalled();
+  });
+
+  it('claims a minimap press until its release, so the attack button does not act on it', () => {
+    const { canvas, match, pointer } = setUp(false);
+    match.lookAtMinimapPoint.mockReturnValue(true);
+
+    canvas.dispatchEvent(pointer('pointerdown', 600, 40));
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(true);
+    canvas.dispatchEvent(pointer('pointerup', 600, 40));
+
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(false);
+  });
+
+  it('leaves a press off the minimap to the attack button', () => {
+    const { match, click } = setUp(false);
+    click(100, 50);
+    expect(match.setPointerClaimed).not.toHaveBeenCalledWith(true);
   });
 
   it('never toggles a roof on a click: roofs open only when the Legend enters (DEC-143)', () => {
@@ -107,6 +125,19 @@ describe('CanvasPointerControls with the developer explorer', () => {
     expect(match.toggleRoofAt).toHaveBeenCalledWith(200, 100);
     click(100, 50);
     expect(roofs).toEqual([true, false]);
+  });
+
+  it('claims every press until its release or a cancel, so a drag or roof click is no attack', () => {
+    const { canvas, match, pointer, controls } = setUp(true);
+
+    canvas.dispatchEvent(pointer('pointerdown', 100, 50));
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(true);
+    canvas.dispatchEvent(pointer('pointerup', 100, 50));
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(false);
+    canvas.dispatchEvent(pointer('pointerdown', 100, 50));
+    controls.cancelDrag();
+
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(false);
   });
 
   it('neither toggles a roof nor pans after a press that moved past the click slop', () => {
@@ -170,7 +201,7 @@ describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () =>
     expect(match.toggleRoofAt).toHaveBeenCalledWith(600, 100);
     actions.overview?.();
     expect(match.overview).toHaveBeenCalledTimes(1);
-    expect(match.restoreRoofs).not.toHaveBeenCalled();
+    expect(match.leaveExplorer).not.toHaveBeenCalled();
   });
 
   it('hides it again: no drag, wheel, overview or roof click, the chrome is told', () => {
@@ -191,14 +222,14 @@ describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () =>
     expect(match.toggleRoofAt).not.toHaveBeenCalled();
   });
 
-  it('puts back the roofs the developer opened when it hides them (DEC-143)', () => {
+  it('puts back the roofs the developer opened and the following camera when it hides (DEC-143)', () => {
     const { roofs, match, controls, click } = setUp(true);
     click(100, 50);
     expect(roofs).toEqual([true]);
 
     controls.toggleExplorer();
 
-    expect(match.restoreRoofs).toHaveBeenCalledTimes(1);
+    expect(match.leaveExplorer).toHaveBeenCalledTimes(1);
     expect(roofs).toEqual([true, false]);
   });
 
