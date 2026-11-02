@@ -1738,6 +1738,10 @@ Reply inline (`Decision: …`).
     the player's Legend id is already designed and scheduled in the game-loop plan (A19), "Game-loop
     lane" (DEC-149). Six items are built on `feat/hud-plan-b6`; the Legend id stays with the
     game-loop lane.
+  - 2026-11-02, later: A19 is already built on `feat/match-director` (`2aa9651`: `Match` reads
+    `MatchState.humanLegendId`), which reaches the phase branch after the HUD PR. Until then a test
+    pins the interim adoption (`Match.lifecycle.test.ts`, "adopts its own spawn, never a roster bot
+    of the same class and team"; `99563b4`).
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
