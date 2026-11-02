@@ -8,6 +8,7 @@ import {
   type Vec2,
 } from '@eternalus/core';
 
+import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
 import type { WorldRect } from './engine/render/Renderer.types';
@@ -35,9 +36,11 @@ import { WorldObjectsView } from './views/WorldObjectsView';
  * snapshots; each frame follows the player with the camera and draws the scene and the minimap
  * (inside the HUD ring). The player's Legend is spawned at its team's stronghold when the match is
  * created. Which part of the world is shown (the following camera, or the free view that
- * dragging and the overview switch to) and which building roofs are cut away are `MatchCamera`'s;
- * buildings stay in the same world scene, their interiors drawn in place under the roof. The world
- * (map, presentation, map objects) arrives prepared (06 §1); its `MatchBridge` publishes to the UI.
+ * dragging and the overview switch to) is `MatchCamera`'s. Buildings stay in the same world scene:
+ * `BuildingRoofs` cuts away the roof of the building the player's Legend stands in (DEC-143) and
+ * those the developer explorer opens, and the views draw those interiors in place. The minimap is
+ * player HUD, drawn every frame whatever the developer flag (DEC-143). The world (map,
+ * presentation, map objects) arrives prepared (06 §1); its `MatchBridge` publishes to the UI.
  */
 export class Match implements LoopTarget {
   private readonly loop: GameLoop;
@@ -50,6 +53,8 @@ export class Match implements LoopTarget {
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
   private readonly camera: MatchCamera;
+
+  private readonly roofs: BuildingRoofs;
 
   private readonly stopListening: () => void;
 
@@ -88,12 +93,13 @@ export class Match implements LoopTarget {
         );
       }),
     );
-    this.camera = new MatchCamera(camera, map, presentation);
-    const { hiddenRoofs } = this.camera;
+    this.camera = new MatchCamera(camera, map);
+    const { scenery, buildings } = presentation;
+    this.roofs = new BuildingRoofs(buildings);
+    const { hidden: hiddenRoofs } = this.roofs;
     const shown = (): WorldRect => this.camera.visibleArea();
     this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
     const { isDestroyed } = this.objects;
-    const { scenery, buildings } = presentation;
     const scene = new SceneView([
       new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
       new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
@@ -117,9 +123,12 @@ export class Match implements LoopTarget {
     return this.playerId;
   }
 
-  /** Whether any building roof is cut away. */
+  /**
+   * Whether the developer explorer opened any roof (the toolbar then offers to restore them); the
+   * roof of the player's building does not count.
+   */
   public get hasOpenRoofs(): boolean {
-    return this.camera.hiddenRoofs.size > 0;
+    return this.roofs.hasOpened;
   }
 
   /** The latest snapshot. */
@@ -151,12 +160,18 @@ export class Match implements LoopTarget {
     this.deps.renderer.resize(screenWidth, screenHeight, pixelRatio);
   }
 
-  /** One tick: the player's intent becomes commands, then the simulation steps. */
+  /**
+   * One tick: the player's intent becomes commands, the simulation steps, and the roof of the
+   * building the player's Legend now stands in opens (a dead Legend leaves the snapshot, so its
+   * roof closes; DEC-143).
+   */
   public tick(): void {
     this.applyIntent();
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
+    const player = this.current.entities.find((entity) => entity.id === this.playerId);
+    this.roofs.playerAt(player?.transform ?? null);
     this.bridge.afterTick(this.current, this.playerId);
   }
 
@@ -210,17 +225,22 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Cuts away the roof of the building under the screen point (device pixels), or puts it back.
+   * The developer explorer's click: cuts away the roof of the building under the screen point
+   * (device pixels), or puts back one it cut away. The view does not move.
    *
    * @returns Whether the point was on a building.
    */
   public toggleRoofAt(screenX: number, screenY: number): boolean {
-    return this.camera.toggleRoofAt(screenX, screenY);
+    return this.roofs.toggleAt(this.camera.worldAt(screenX, screenY));
   }
 
-  /** Shows the whole battlefield in the free view and puts every roof back. */
+  /**
+   * Shows the whole battlefield in the free view and puts back every roof the developer cut away
+   * (the player's building stays open).
+   */
   public overview(): void {
     this.camera.overview();
+    this.roofs.restore();
   }
 
   /**

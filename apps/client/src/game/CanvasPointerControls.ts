@@ -5,11 +5,12 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
 /**
  * The match canvas's pointer gestures. Always: a main-button click on the minimap moves the
- * camera there, and a short click on a building cuts its roof away or puts it back. With the
- * developer explorer only (on at the start with `?dev=1`, then shown or hidden by DEC-105's
- * hotkey; demo-only by DEC-32, INBOX HC-F8): drag to pan, the wheel to zoom, and the toolbar's
- * world overview, which also puts every roof back. Positions arrive in CSS pixels and reach the
- * match in device pixels.
+ * camera there (the minimap is player HUD, DEC-143). With the developer explorer only (on at the
+ * start with `?dev=1`, then shown or hidden by DEC-105's hotkey; demo-only by DEC-32, INBOX
+ * HC-F8): drag to pan, the wheel to zoom, a short click on a building to cut its roof away or put
+ * it back, and the toolbar's world overview, which also puts those roofs back. In normal play a
+ * roof opens only while the player's Legend is inside (DEC-143). Positions arrive in CSS pixels
+ * and reach the match in device pixels.
  */
 export class CanvasPointerControls {
   private press: { x: number; y: number; distance: number } | null = null;
@@ -128,7 +129,7 @@ export class CanvasPointerControls {
       press.distance + Math.hypot(pointer.clientX - press.x, pointer.clientY - press.y);
     const point = this.devicePoint(pointer);
     const { match } = this.deps;
-    if (distance < CLICK_SLOP && match.toggleRoofAt(point.x, point.y)) {
+    if (this.isExplorerShown && distance < CLICK_SLOP && match.toggleRoofAt(point.x, point.y)) {
       chrome.onRoofsChanged(match.hasOpenRoofs);
     }
   };

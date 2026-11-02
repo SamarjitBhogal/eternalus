@@ -4303,3 +4303,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   887 passed (887)"; client "Tests 433 passed (433)"; "Documentation check passed."
 - Next step: push to PR #30 (merges after #63); Sam applies the design-text drafts for DEC-121 (c)
   and DEC-133 (INBOX); author: S3, S5, S6, N2.
+
+### 2026-11-02 — Phase 2 / Track B (S1 carry-over) / HUD and character select, merge of the phase branch and T-199 (DEC-143) — feat/hud-plan-b6 — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/2-sprint-2-work` (`e2c3e1e`; every phase PR since `230a330`,
+  #42 to #63 and #30) as `54716be`: #30's buildings ported into `MatchCamera`, `Match` and
+  `prepareMatchWorld`; the simulation gets the map, the map objects and the setup's bots; the old
+  interior model and "Leave cathedral" deleted. Then DEC-143 (T-199): `game/BuildingRoofs.ts` owns
+  roof cutaways (the player's building opens, closes on leaving or death; developer clicks add to
+  it), the roof click is developer-only, the minimap has a test that it draws with the explorer
+  hidden or shown. Docs: 06 §10 (T-199 row, notes), 13 §10, 02 §12, reference 05 and 15 (CD-22)
+  dated notes, the phase 2 plan's leave-interior task. Red proofs in
+  `eternalus-agent-work/hud-charselect/build-1102/w4-redproof.md`.
+- Checks run: `npm run check` EXIT 0 on the merge and again on T-199 (core "Tests 936 passed
+  (936)", client "Tests 1694 passed (1694)", "Documentation check passed.").
+- Next step: the critic and ponytail gate on `feat/hud-plan-b6`; the owner drops the phase 2
+  leave-interior task and answers T-199 (HC-T1).

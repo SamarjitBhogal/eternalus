@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ViewportChrome } from './MatchViewport.types';
 
 /**
- * The viewport chrome's state for `GameCanvas`: whether a building roof is cut away, whether the
+ * The viewport chrome's state for `GameCanvas`: whether the developer cut a roof away, whether the
  * developer explorer is shown (`isExplorerShownAtStart`, then as DEC-105's hotkey toggles it in
  * the running match), and the overview action the running match hands it. `chrome` keeps one
  * identity, so the attach effect re-runs only when StrictMode re-runs it.

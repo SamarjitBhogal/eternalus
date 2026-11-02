@@ -6,8 +6,8 @@ import type { GameCanvasLabels, GameCanvasProps } from './GameCanvas.types';
 /**
  * What `GameCanvas` draws over its canvas, from the chrome state `useExplorerChrome` holds: with
  * `isExplorerShown` (`?dev=1`; DEC-32, INBOX HC-F8) the developer toolbar and legend, nothing in
- * normal play. The toolbar's button shows the world overview, and while a building roof is cut
- * away (`hasOpenRoofs`) says that it also puts every roof back. The legend names each team's
+ * normal play (DEC-143). The toolbar's button shows the world overview, and while the developer
+ * has cut a roof away (`hasOpenRoofs`) says that it also puts those roofs back. The legend names each team's
  * stronghold from `teamNames` (content). It holds no state, so its test renders every state on the
  * server. Its rules are its own sheet, `GameCanvasChrome.module.css` (the developer chrome's look
  * is unchanged, OD-14).

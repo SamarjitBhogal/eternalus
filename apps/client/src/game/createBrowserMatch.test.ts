@@ -192,4 +192,25 @@ describe('createBrowserMatch', () => {
     ]);
     running.destroy();
   });
+
+  it('draws the minimap every frame, with the developer explorer hidden or shown (DEC-143)', () => {
+    for (const isExplorerShown of [false, true]) {
+      // The minimap is the only drawing that clips (to the HUD ring, `clipToEllipse`).
+      let clips = 0;
+      const canvas = new FakeViewportCanvas(1280, 720, {
+        ...FakeViewportCanvas.silentContext(),
+        clip: () => {
+          clips += 1;
+        },
+      });
+      const { window, factory, viewport, request } = setUp(canvas);
+      const running = factory(request(), { ...viewport, isExplorerShown });
+
+      window.runFrame(0);
+      window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+
+      expect({ isExplorerShown, clips }).toEqual({ isExplorerShown, clips: 2 });
+      running.destroy();
+    }
+  });
 });

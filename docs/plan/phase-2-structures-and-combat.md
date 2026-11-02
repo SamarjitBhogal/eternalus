@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-02
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -222,6 +222,11 @@ Owner: _ (client lane). Weeks 4–5.
       recipe). Owner: _. Test: the control renders only while the camera is inside and dispatches
       `leave-interior`; `Match` returns to the following camera on the intent. Done when: `game/`
       renders no normal-play control.
+      **Superseded 2026-11-02 (DEC-143):** the separate interior is gone (#30's same-world
+      buildings), and a building's roof opens while the player's Legend stands inside it, so
+      there is no interior state to leave and no control to build; `game/` renders no
+      normal-play control. Left open for the owner to drop
+      ([06](../architecture/06-map-and-minimap.md) §10).
 
 **Success metric:** every structure and obstacle kind renders on the map and minimap with 0
 kind-specific code outside `ViewRegistry` entries.

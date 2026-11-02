@@ -23,12 +23,15 @@ export type ViewportCanvas = EventTarget &
   };
 
 /**
- * How the match's pointer controls talk back to `GameCanvas`'s chrome: whether a building roof is
- * cut away, the developer explorer's overview and whether the explorer is shown (`?dev=1` at the
- * start, then DEC-105's hotkey; DEC-32, INBOX HC-F8).
+ * How the match's pointer controls talk back to `GameCanvas`'s chrome: whether the developer
+ * explorer cut a building roof away, its overview and whether the explorer is shown (`?dev=1` at
+ * the start, then DEC-105's hotkey; DEC-32, INBOX HC-F8).
  */
 export type ViewportChrome = {
-  /** A roof click or the overview left some roof cut away (`true`) or every roof on (`false`). */
+  /**
+   * A developer roof click or the overview left some roof the developer opened (`true`) or none
+   * (`false`); the roof of the player's building does not count (DEC-143).
+   */
   readonly onRoofsChanged: (hasOpenRoofs: boolean) => void;
   /** DEC-105's hotkey showed (`true`) or hid (`false`) the developer explorer. */
   readonly onExplorerChanged: (isShown: boolean) => void;

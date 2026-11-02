@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -668,10 +668,13 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   button that closes the view no longer steps the browser's history (DEC-112).
 - **Developer chrome and pause.** The developer flag is the `?dev=1` query only, because
   `settings.developer.menuEnabled` does not exist yet. The free camera, the overview, the explorer
-  toolbar and the map legend need it (DEC-32; INBOX HC-F8). The cathedral click and a "Leave
-  cathedral" button stay in normal play; the button is an interim control in
-  `game/GameCanvasChrome.tsx` (register CD-22) until the HUD gains an interior state (then a
-  `ui/hud` control and a `leave-interior` intent). The pause key is read by the UI hook
+  toolbar and the map legend need it (DEC-32; INBOX HC-F8), and so does the click that cuts a
+  building's roof away with its "Restore roofs & overview" button (DEC-143). Normal play draws
+  nothing over the canvas: a building's roof opens while the player's Legend stands inside it,
+  and the minimap is player HUD, drawn whatever the flag (DEC-143; [06](06-map-and-minimap.md)
+  §10). The interim "Leave cathedral" control (register CD-22) is gone with the separate
+  interior, so no `leave-interior` intent is planned (corrected 2026-11-02). The pause key is
+  read by the UI hook
   `usePauseMenuKey`, because a paused loop cannot read it, and `MatchState` pauses the match
   while an overlay is open (single player only; INBOX HC-Q8).
 - **Developer hotkey, one-shot actions and the crash banner (2026-10-30).** The developer camera

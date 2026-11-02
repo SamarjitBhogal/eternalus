@@ -1,4 +1,4 @@
-import { createDefaultGameConfig, MapGenerator, MapPresentationBuilder } from '@eternalus/core';
+import { createDefaultGameConfig, MapGenerator } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { Camera } from './engine/Camera';
@@ -7,14 +7,11 @@ import { MatchCamera } from './MatchCamera';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
 const MAP = new MapGenerator().generate(createDefaultGameConfig(), 1);
-const PRESENTATION = new MapPresentationBuilder().build(MAP);
-/** A point inside the lane cathedral's footprint on seed 1's map (`MapExplorer.test.ts`). */
-const IN_CATHEDRAL = { x: 800, y: 450 };
 
 /** A match camera on a 1280 × 720 canvas whose following camera looks at `(500, 300)`. */
 const setUp = (pixelRatio = 1) => {
   const camera = new Camera({ x: 500, y: 300 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
-  const view = new MatchCamera(camera, MAP, PRESENTATION);
+  const view = new MatchCamera(camera, MAP);
   view.resize(1280, 720, pixelRatio);
   return { camera, view };
 };
@@ -75,20 +72,14 @@ describe('MatchCamera', () => {
     expect(corner.y).toBeCloseTo(area.y + area.height);
   });
 
-  it('cuts away the roof of the building under a click without moving the view', () => {
-    const { view } = setUp();
+  it('finds the world point under a device-pixel point in the view on screen', () => {
+    const { view } = setUp(2);
     view.overview();
-    const overview = view.visibleArea();
-    const onCathedral = {
-      x: ((IN_CATHEDRAL.x - overview.x) / overview.width) * 1280,
-      y: ((IN_CATHEDRAL.y - overview.y) / overview.height) * 720,
-    };
+    const area = view.visibleArea();
 
-    expect(view.toggleRoofAt(0, 0)).toBe(false);
-    expect(view.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect([...view.hiddenRoofs]).toEqual(['cathedral-lane-1']);
-    expect(view.visibleArea()).toEqual(overview);
-    view.overview();
-    expect(view.hiddenRoofs.size).toBe(0);
+    const centre = view.worldAt(640, 360);
+
+    expect(centre.x).toBeCloseTo(area.x + area.width / 2);
+    expect(centre.y).toBeCloseTo(area.y + area.height / 2);
   });
 });

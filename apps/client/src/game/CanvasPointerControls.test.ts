@@ -72,19 +72,10 @@ describe('CanvasPointerControls in normal play', () => {
     expect(match.panBy).not.toHaveBeenCalled();
   });
 
-  it('toggles the roof under a short click and reports whether a roof is still open', () => {
+  it('never toggles a roof on a click: roofs open only when the Legend enters (DEC-143)', () => {
     const { roofs, match, click } = setUp(false);
     click(100, 50);
-    expect(match.toggleRoofAt).toHaveBeenCalledWith(200, 100);
-    click(100, 50);
-    expect(roofs).toEqual([true, false]);
-  });
-
-  it('neither toggles a roof nor pans after a press that moved past the click slop', () => {
-    const { roofs, match, click } = setUp(false);
-    click(100, 50, CLICK_SLOP);
     expect(match.toggleRoofAt).not.toHaveBeenCalled();
-    expect(match.panBy).not.toHaveBeenCalled();
     expect(roofs).toEqual([]);
   });
 
@@ -109,10 +100,20 @@ describe('CanvasPointerControls with the developer explorer', () => {
     expect(match.toggleRoofAt).not.toHaveBeenCalled();
   });
 
-  it('still toggles a roof on a short click', () => {
-    const { roofs, click } = setUp(true);
-    click(100, 50, 1);
-    expect(roofs).toEqual([true]);
+  it('toggles the roof under a short click and reports whether a roof is still open', () => {
+    const { roofs, match, click } = setUp(true);
+    click(100, 50);
+    expect(match.toggleRoofAt).toHaveBeenCalledWith(200, 100);
+    click(100, 50);
+    expect(roofs).toEqual([true, false]);
+  });
+
+  it('neither toggles a roof nor pans after a press that moved past the click slop', () => {
+    const { roofs, match, canvas, pointer } = setUp(true);
+    canvas.dispatchEvent(pointer('pointerdown', 100, 50));
+    canvas.dispatchEvent(pointer('pointerup', 100 + CLICK_SLOP, 50));
+    expect(match.toggleRoofAt).not.toHaveBeenCalled();
+    expect(roofs).toEqual([]);
   });
 
   it('zooms on the wheel and keeps the page from scrolling', () => {
@@ -150,8 +151,8 @@ describe('CanvasPointerControls with the developer explorer', () => {
 });
 
 describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () => {
-  it('shows the explorer in normal play: drag, wheel and overview work, the chrome is told', () => {
-    const { canvas, actions, explorer, match, controls, pointer } = setUp(false);
+  it('shows the explorer in normal play: drag, wheel, roof click and overview work, the chrome is told', () => {
+    const { canvas, actions, explorer, match, controls, pointer, click } = setUp(false);
 
     controls.toggleExplorer();
 
@@ -163,12 +164,15 @@ describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () =>
     expect(match.panBy).toHaveBeenCalledWith(20, -10);
     canvas.dispatchEvent(syntheticEvent('wheel', { deltaY: 100 }));
     expect(match.zoomBy).toHaveBeenCalledTimes(1);
+    canvas.dispatchEvent(pointer('pointerup', 110, 45));
+    click(300, 50);
+    expect(match.toggleRoofAt).toHaveBeenCalledWith(600, 100);
     actions.overview?.();
     expect(match.overview).toHaveBeenCalledTimes(1);
   });
 
-  it('hides it again: no drag, wheel or overview, the chrome is told', () => {
-    const { canvas, actions, explorer, match, controls, pointer } = setUp(true);
+  it('hides it again: no drag, wheel, overview or roof click, the chrome is told', () => {
+    const { canvas, actions, explorer, match, controls, pointer, click } = setUp(true);
 
     controls.toggleExplorer();
 
@@ -181,6 +185,8 @@ describe('CanvasPointerControls on the developer camera hotkey (DEC-105)', () =>
     canvas.dispatchEvent(syntheticEvent('wheel', { deltaY: 100 }));
     expect(match.panBy).not.toHaveBeenCalled();
     expect(match.zoomBy).not.toHaveBeenCalled();
+    click(100, 50);
+    expect(match.toggleRoofAt).not.toHaveBeenCalled();
   });
 
   it('leaves 0 listeners on detach after a toggle', () => {
