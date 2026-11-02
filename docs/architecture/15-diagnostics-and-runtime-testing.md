@@ -273,11 +273,12 @@ headless bench (`npm run bench`, plan Phase 1) injects a `Profiler` backed by `p
 
 ## 7. Replay-hash regression tests
 
-A replay is seed + `GameConfig` + versions + the externally enqueued commands + checkpoint
+A replay is its setup (seed, `GameConfig` and, when the match had them, the map, the map objects
+and the bot roster) + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
 Recording captures every command that enters through `Simulation.enqueueCommand` and a
-`StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); bots are
-regenerated from the seed. `StateHasher` is FNV-1a 32-bit (offset basis `0x811c9dc5`, prime
+`StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is part of the
+setup, and the bots' own commands are regenerated from it. `StateHasher` is FNV-1a 32-bit (offset basis `0x811c9dc5`, prime
 `0x01000193`, `Math.imul`) over its own canonical serialisation: tick, phase, RNG state, then every
 entity in store order with its component fields ([03](03-game-model.md) §9).
 
@@ -290,7 +291,7 @@ export interface ReplayTarget {
   hash(): number;
   snapshot(): Snapshot;
 } // the slice of Simulation a replay drives
-export type ReplayTargetFactory = (config: GameConfig, seed: number) => ReplayTarget; // e.g. (config, seed) => new Simulation(config, seed, logger, systems)
+export type ReplayTargetFactory = (setup: ReplaySetup) => ReplayTarget; // e.g. (setup) => new Simulation({ ...setup, logger, systems })
 export type ReplayOutcome = {
   readonly ok: boolean;
   readonly firstDivergence: { tick: number; expected: number; actual: number } | null;

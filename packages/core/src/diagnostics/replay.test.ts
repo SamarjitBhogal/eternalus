@@ -55,8 +55,8 @@ class WanderSystem implements System {
   }
 }
 
-const createTarget: ReplayTargetFactory = (config, seed) =>
-  new Simulation({ config, seed, logger: new NullLogger(), systems: [new WanderSystem()] });
+const createTarget: ReplayTargetFactory = (setup) =>
+  new Simulation({ ...setup, logger: new NullLogger(), systems: [new WanderSystem()] });
 
 const recordRandomMatch = (seed: number, ticks: number, commandEvery: number): Replay => {
   const commandRng = new SeededRandom(seed).fork('commands');
@@ -86,8 +86,8 @@ describe('replay', () => {
         expect(second).toEqual(first);
         expect(first.checkpoints).toHaveLength(31);
         let replayed: ReplayTarget | undefined;
-        const outcome = runReplay(first, (config, matchSeed) => {
-          replayed = createTarget(config, matchSeed);
+        const outcome = runReplay(first, (setup) => {
+          replayed = createTarget(setup);
           return replayed;
         });
         expect(outcome.firstDivergence).toBeNull();

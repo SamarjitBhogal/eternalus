@@ -70,6 +70,7 @@ export { runReplay } from './diagnostics/replay';
 export type {
   Replay,
   ReplayOutcome,
+  ReplaySetup,
   ReplayTarget,
   ReplayTargetFactory,
 } from './diagnostics/Replay.types';

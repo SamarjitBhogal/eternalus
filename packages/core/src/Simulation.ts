@@ -15,7 +15,7 @@ import type { LogContext } from './diagnostics/Logger.types';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
 import { recentContext } from './diagnostics/recentContext';
 import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
-import type { Replay } from './diagnostics/Replay.types';
+import type { Replay, ReplaySetup } from './diagnostics/Replay.types';
 import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
@@ -76,6 +76,8 @@ export class Simulation {
   private readonly commandLog: Replay['commands'][number][] = [];
   /** `hash()` at tick 0 and every `REPLAY_CHECKPOINT_EVERY` ticks, ascending. Not hashed. */
   private readonly checkpoints: Replay['checkpoints'][number][] = [];
+  /** What the match was built with, copied into every exported replay. */
+  private readonly setup: ReplaySetup;
 
   /**
    * Creates a match from its options (architecture 03 §6).
@@ -96,6 +98,13 @@ export class Simulation {
     weapons,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
+    this.setup = {
+      seed,
+      config: validConfig,
+      ...(map === undefined ? {} : { map }),
+      ...(mapObjects === undefined ? {} : { mapObjects }),
+      ...(roster.length === 0 ? {} : { roster }),
+    };
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     this.state = new GameState(validConfig, seed, world, { space, paths });
     const { tickRate } = this.state.config;
@@ -215,14 +224,14 @@ export class Simulation {
   }
 
   /**
-   * The match so far as a `Replay` (architecture 03 §6, ADR 0025 §4): the seed, the config, a copy
-   * of the command log and the checkpoints recorded so far. Plain data. It does not hash now:
-   * after a throw inside `step()` the state holds half a tick, and that hash cannot be reproduced.
+   * The match so far as a `Replay` (architecture 03 §6, ADR 0025 §4): what it was built with (seed,
+   * config, and the map, map objects and roster when it had them), a copy of the command log and
+   * the checkpoints recorded so far. Plain data. It does not hash now: after a throw inside
+   * `step()` the state holds half a tick, and that hash cannot be reproduced.
    */
   public exportReplay(): Replay {
     return {
-      seed: this.state.seed,
-      config: this.state.config,
+      ...this.setup,
       commands: [...this.commandLog],
       checkpoints: [...this.checkpoints],
     };
