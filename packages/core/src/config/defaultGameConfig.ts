@@ -30,6 +30,13 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
     hordeSizes: { light: 16, medium: 8, heavy: 4 },
     initialHordesPerTeam: 3,
     plannedMatchSeconds: 1200, // TUNE: DEC-13 pending
+    capturePoints: {
+      checkpoints: 3, // game doc: three checkpoints per capture point
+      captureSeconds: 12, // TUNE: placeholder (PR #49 review)
+      revertSeconds: 20, // TUNE: placeholder (PR #49 review)
+      maxMargin: 3, // TUNE: placeholder (PR #49 review)
+      weights: { legend: 10, unit: 1 }, // TUNE: DEC-86
+    },
   },
   limits: {
     maxLegendsPerTeam: MAX_LEGENDS_PER_TEAM,
@@ -51,6 +58,14 @@ export const createDefaultGameConfig = (overrides: DeepPartial<GameConfig> = {})
       ...match,
       ...overrides.match,
       hordeSizes: Object.freeze({ ...match.hordeSizes, ...overrides.match?.hordeSizes }),
+      capturePoints: Object.freeze({
+        ...match.capturePoints,
+        ...overrides.match?.capturePoints,
+        weights: Object.freeze({
+          ...match.capturePoints.weights,
+          ...overrides.match?.capturePoints?.weights,
+        }),
+      }),
     }),
     limits: Object.freeze({ ...limits, ...overrides.limits }),
   });

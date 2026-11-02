@@ -2487,3 +2487,21 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: the product owner signs off on the doc 18 §5.2 change on PR #61 (ADR 0018, DEC-96;
   `INBOX.md` item); then mark it ready for review.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/capture-points — Aryan Walanj + Claude
+
+- What was done: reworked PR #49 on `phase/2-sprint-2-work` per the architecture review. Capture
+  points are `CapturePoint` zones (`entities/zones/`) with a `Capturable` component and content in
+  `content/zones/`, spawned by `Simulation` from the map's `capture-point` and `cathedral`
+  features. `CaptureSystem` runs after `DeathSystem` with the DEC-86 rules: weighted majority
+  (Legend 10, other units 1; structures, projectiles and zones never count), ties pause, rate
+  grows with the margin up to `maxMargin`, enemies drain through 0 first, neutral units retake to
+  neutral, unfinished captures revert to the last locking state. Tuning in
+  `GameConfig.match.capturePoints` (validated, `TUNE`). `EntitySnapshot.capture`, `StateHasher`
+  fields and `CaptureProgressBoundsInvariant`. Client `CapturePointView` (shared team colours,
+  checkpoint count from the snapshot). The old `capture/` folder, `capturePointsFromMap` and
+  `SimulationOptions.capturePoints` are gone. Merged the phase branch (#59–#61).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  825 passed (825)"; client "Tests 424 passed (424)"; "✓ built in 1.10s"; "Documentation check
+  passed."
+- Next step: critic and ponytail (pre-PR gate) in a Claude Code session; architecture re-review.

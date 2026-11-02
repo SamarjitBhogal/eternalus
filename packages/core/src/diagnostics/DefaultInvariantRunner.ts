@@ -1,3 +1,4 @@
+import { CaptureProgressBoundsInvariant } from './invariants/CaptureProgressBoundsInvariant';
 import { FiniteTransformsInvariant } from './invariants/FiniteTransformsInvariant';
 import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInvariant';
 import { HordeMembershipConsistentInvariant } from './invariants/HordeMembershipConsistentInvariant';
@@ -32,6 +33,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new HordeMembershipConsistentInvariant(),
         new LevelMatchesXpInvariant(curves),
         new StatusStacksWithinMaxInvariant(),
+        new CaptureProgressBoundsInvariant(),
       ],
       config,
       logger,

@@ -7,7 +7,7 @@ import { SpawnContextReader } from './SpawnContextReader';
 
 /**
  * Abstract base for areas that can be held but not hit, such as capture points. Installs
- * `Transform` and `TeamMembership` and no `Collider`. Capture rules arrive in Phase 3.
+ * `Transform` and `TeamMembership` and no `Collider`; a concrete zone adds its own components.
  */
 export abstract class Zone extends Entity {
   /** The content kind of this class; one of `ZoneKind`. */

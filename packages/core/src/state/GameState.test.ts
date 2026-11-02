@@ -72,6 +72,7 @@ describe('GameState', () => {
           team: 'light',
           transform: { x: 3, y: 4, radius: 0.5 },
           health: { current: 100, max: 100 },
+          capture: null,
         },
         {
           id: 'entity-2',
@@ -81,6 +82,7 @@ describe('GameState', () => {
           team: null,
           transform: null,
           health: null,
+          capture: null,
         },
       ],
     });

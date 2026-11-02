@@ -16,6 +16,7 @@ const unit = (id: string, x: number, y: number): EntitySnapshot => ({
   team: 'dark',
   transform: { x, y, radius: 0.4 },
   health: null,
+  capture: null,
 });
 
 const snapshot = (tick: number, entities: EntitySnapshot[]): Snapshot => ({

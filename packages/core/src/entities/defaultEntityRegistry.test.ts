@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -9,6 +10,7 @@ import { ContentCatalogue } from '../content/ContentCatalogue';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import type { UnitDefinition } from '../content/units/units.types';
+import { ZONE_DEFINITIONS } from '../content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './defaultEntityRegistry';
 import { Entity } from './Entity';
 import { EntityFactory } from './EntityFactory';
@@ -38,7 +40,7 @@ const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 const PLACEMENT = { position: { x: 10, y: 20 }, team: 'light' } as const;
 
 describe('createDefaultEntityRegistry', () => {
-  it('registers every shipped kind: Legends, mobs, obstacles and projectiles', () => {
+  it('registers every shipped kind: Legends, mobs, obstacles, projectiles and capture points', () => {
     const registry = createDefaultEntityRegistry();
 
     for (const kind of [
@@ -50,6 +52,7 @@ describe('createDefaultEntityRegistry', () => {
       'heavy-mob',
       'obstacle',
       'projectile',
+      'capture-point',
     ]) {
       expect(registry.has(kind)).toBe(true);
     }
@@ -99,6 +102,22 @@ describe('createDefaultEntityRegistry', () => {
       const entityClass = registry.get(definition.kind) ?? {};
 
       expect(depthBelowEntity(entityClass)).toBeLessThanOrEqual(MAX_DEPTH_BELOW_ENTITY);
+    }
+  });
+
+  it('builds every zone definition as a capture point at most 2 levels below Entity', () => {
+    const registry = createDefaultEntityRegistry();
+    const factory = new EntityFactory(registry, ZONE_DEFINITIONS);
+
+    for (const definition of ZONE_DEFINITIONS.all()) {
+      const entity = factory.create(definition.kind, definition.id, {
+        position: { x: 10, y: 20 },
+        team: 'neutral',
+      });
+
+      expect(entity.hasComponent(Capturable)).toBe(true);
+      expect(entity.getComponent(Transform).radius).toBe(definition.radius);
+      expect(depthBelowEntity(registry.get(definition.kind) ?? {})).toBe(2);
     }
   });
 

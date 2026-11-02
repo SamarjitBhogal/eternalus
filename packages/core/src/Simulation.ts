@@ -36,6 +36,7 @@ import type { LevelCurveDefinition } from './content/progression/progression.typ
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
 import { loadWeapons } from './content/weapons/loadWeapons';
+import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import type { DefinitionSource, Placement, WeaponSource } from './entities/EntityFactory.types';
@@ -47,6 +48,7 @@ import { StateHasher } from './state/StateHasher';
 import type { RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
+import { IdGenerator } from './utils/IdGenerator';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
 
@@ -89,15 +91,13 @@ export class Simulation {
     const weaponSource = weapons ?? loadWeapons(tickRate);
     const controllers = Simulation.createControllers();
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
-    // One factory for commands and spawning, so entity ids come from one counter.
-    const factory = new EntityFactory(
-      createDefaultEntityRegistry(),
-      units,
-      undefined,
-      weaponSource,
-    );
+    const registry = createDefaultEntityRegistry();
+    // Units and zones come from different catalogues but share one id counter.
+    const ids = new IdGenerator();
+    const factory = new EntityFactory(registry, units, ids, weaponSource);
     this.commandContext = { state: this.state, factory };
     Simulation.spawnRoster(this.state, factory, roster, controllers);
+    Simulation.spawnZones(this.state, new EntityFactory(registry, ZONE_DEFINITIONS, ids));
     this.systemContext = { state: this.state, logger };
     this.pipeline =
       systems === undefined
@@ -269,6 +269,27 @@ export class Simulation {
         team: slot.team,
         controller: { controllerId: 'rover', profileId: slot.difficulty, memory: {} },
       });
+    }
+  }
+
+  /**
+   * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
+   * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7). They
+   * come from the map alone, so a replay (seed, config and commands) rebuilds them.
+   */
+  private static spawnZones(state: GameState, factory: EntityFactory): void {
+    for (const feature of state.map?.features ?? []) {
+      const definitionId = ZONE_PLACEMENTS[feature.kind];
+      if (definitionId === undefined) {
+        continue;
+      }
+      const { kind } = factory.definitions.get(definitionId);
+      const entity = factory.create(kind, definitionId, {
+        position: feature.position,
+        team: feature.team,
+      });
+      state.entities.add(entity);
+      state.events.emit('entity-spawned', { entityId: entity.id, kind, team: feature.team });
     }
   }
 

@@ -35,6 +35,13 @@ export const WANDER_SEED_7: Replay = {
       },
       initialHordesPerTeam: 3,
       plannedMatchSeconds: 1200,
+      capturePoints: {
+        checkpoints: 3,
+        captureSeconds: 12,
+        revertSeconds: 20,
+        maxMargin: 3,
+        weights: { legend: 10, unit: 1 },
+      },
     },
     limits: {
       maxLegendsPerTeam: 10,

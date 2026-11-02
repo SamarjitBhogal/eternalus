@@ -1,3 +1,4 @@
+import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -163,15 +164,17 @@ export class GameState {
   /** The current state as a structured-clone-safe snapshot. */
   public snapshot(): Snapshot {
     const entities: EntitySnapshot[] = [];
+    const { checkpoints } = this.config.match.capturePoints;
     this.entities.forEach((entity) => {
-      entities.push(GameState.snapshotOf(entity));
+      entities.push(GameState.snapshotOf(entity, checkpoints));
     });
     return { tick: this.currentTick, phase: this.phase, entities };
   }
 
-  private static snapshotOf(entity: Entity): EntitySnapshot {
+  private static snapshotOf(entity: Entity, checkpoints: number): EntitySnapshot {
     const transform = entity.findComponent(Transform);
     const health = entity.findComponent(Health);
+    const capture = entity.findComponent(Capturable);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -183,6 +186,16 @@ export class GameState {
           ? null
           : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
       health: health === undefined ? null : { current: health.current, max: health.max },
+      capture:
+        capture === undefined
+          ? null
+          : {
+              owner: capture.owner,
+              progress: capture.progress,
+              checkpoint: capture.checkpoint,
+              checkpoints,
+              lockedBy: capture.lockedBy,
+            },
     };
   }
 }

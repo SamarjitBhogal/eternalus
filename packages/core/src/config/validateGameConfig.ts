@@ -114,6 +114,16 @@ const RULES: readonly Rule[] = [
   count('match.initialHordesPerTeam'),
   positive('match.plannedMatchSeconds'),
   {
+    path: 'match.capturePoints.checkpoints',
+    rule: 'must be a whole number >= 1',
+    isValid: (value) => isWhole(value, 1),
+  },
+  positive('match.capturePoints.captureSeconds'),
+  positive('match.capturePoints.revertSeconds'),
+  positive('match.capturePoints.maxMargin'),
+  positive('match.capturePoints.weights.legend'),
+  positive('match.capturePoints.weights.unit'),
+  {
     path: 'limits.maxUnitsPerTeam',
     rule: 'must fit the initial hordes (match.initialHordesPerTeam * match.hordeSizes.light)',
     isValid: (value, config) =>

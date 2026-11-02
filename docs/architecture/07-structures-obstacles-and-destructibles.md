@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-10-30
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -359,6 +359,19 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `removeShield`; bars stay in source id order.
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
+
+Capture points (PR #49, DEC-86 rules) ship as `CapturePoint` zones with a `Capturable` component,
+one per `capture-point` and `cathedral` map feature (`content/zones/`), moved by `CaptureSystem`
+with the weights and rates of `GameConfig.match.capturePoints`. Interim differences:
+
+- `progress` runs from -1 (Dark) to +1 (Light) and `checkpoint` from 0 to the configured count,
+  as the §7 sketch has it; the 15 §3 row for `capture-progress-bounds` still reads `0..1` and
+  `{1, 2, 3}`.
+- The zone's `TeamMembership` stays neutral; the owner lives in `Capturable.owner` only.
+- `lockedBy` is always `null`: the mini-boss lock arrives in Phase 3 sprint 3.6.
+- Scheduled later, through the two capture events: holding buffs (Phase 3 sprint 3.3), score
+  (sprint 3.5), checkpoint defender spawns (Phase 3) and checkpoint XP (Phase 4). The minimap glyph
+  does not follow the owner yet (the minimap entity markers, SCRUM-151).
 
 ## Related
 

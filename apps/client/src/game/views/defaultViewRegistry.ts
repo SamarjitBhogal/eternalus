@@ -1,3 +1,4 @@
+import { CapturePointView } from './CapturePointView';
 import { DefaultEntityView } from './DefaultEntityView';
 import { LegendView } from './LegendView';
 import { MobView } from './MobView';
@@ -13,5 +14,6 @@ export const createDefaultViewRegistry = (onUnknownKind?: (kind: string) => void
   const registry = new ViewRegistry(new DefaultEntityView(), onUnknownKind);
   registry.registerFamily('legend', new LegendView());
   registry.registerFamily('mob', new MobView());
+  registry.registerKind('capture-point', new CapturePointView());
   return registry;
 };

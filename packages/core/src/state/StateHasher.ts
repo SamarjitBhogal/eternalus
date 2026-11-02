@@ -1,4 +1,5 @@
 import { Aether } from '../components/Aether';
+import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
@@ -123,6 +124,16 @@ export class StateHasher {
           status.periodAnchorTick,
           status.expiresTick,
         ]),
+      ]);
+    }
+    const capture = entity.findComponent(Capturable);
+    if (capture !== undefined) {
+      fields.push([
+        'capture',
+        capture.owner,
+        capture.progress,
+        capture.checkpoint,
+        capture.lockedBy,
       ]);
     }
     const progression = entity.findComponent(Progression);

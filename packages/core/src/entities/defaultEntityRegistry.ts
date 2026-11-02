@@ -7,6 +7,7 @@ import { LightMob } from './mobs/LightMob';
 import { MediumMob } from './mobs/MediumMob';
 import { Obstacle } from './Obstacle';
 import { Projectile } from './Projectile';
+import { CapturePoint } from './zones/CapturePoint';
 
 /**
  * The registry of every shipped entity kind (architecture 04 §6). The ONLY file that names
@@ -22,5 +23,6 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('heavy-mob', HeavyMob);
   registry.register('obstacle', Obstacle);
   registry.register('projectile', Projectile);
+  registry.register('capture-point', CapturePoint);
   return registry;
 };
