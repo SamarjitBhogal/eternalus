@@ -19,11 +19,20 @@ export const MOB_OUTLINE_COLOR = '#1b1b1b';
 /** How much wider than the mob its outline is. */
 export const MOB_OUTLINE_SCALE = 1.35;
 
-/** Height of a capture point's progress bar, as a fraction of the zone's radius. */
-export const CAPTURE_BAR_HEIGHT_RATIO = 0.15;
+/** Width of a capture point's outline, in screen pixels. */
+export const CAPTURE_OUTLINE_WIDTH = 2;
 
-/** Gap between a capture point and its progress bar, as a fraction of the zone's radius. */
-export const CAPTURE_BAR_GAP_RATIO = 0.1;
+/** Width of a capture point's bars, in world units (the old radius-35 ring's width). */
+export const CAPTURE_BAR_WIDTH = 70;
+
+/** Height of a capture point's progress bar, in world units. */
+export const CAPTURE_BAR_HEIGHT = 5;
+
+/** Height of the presence bar under the progress bar (each side's share), in world units. */
+export const CAPTURE_PRESENCE_BAR_HEIGHT = 2;
+
+/** Gap between the top of a capture point's area and its bars, in world units. */
+export const CAPTURE_BAR_GAP = 4;
 
 /** Colour behind a capture point's progress bar. */
 export const CAPTURE_BAR_BACKGROUND_COLOR = '#1b1b1b';

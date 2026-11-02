@@ -89,6 +89,7 @@ describe('GameState', () => {
           team: 'light',
           transform: { x: 3, y: 4, radius: 0.5 },
           health: { current: 100, max: 100 },
+          area: null,
           capture: null,
         },
         {
@@ -99,6 +100,7 @@ describe('GameState', () => {
           team: null,
           transform: null,
           health: null,
+          area: null,
           capture: null,
         },
       ],

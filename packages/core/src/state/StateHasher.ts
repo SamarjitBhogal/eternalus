@@ -135,6 +135,10 @@ export class StateHasher {
         capture.progress,
         capture.checkpoint,
         capture.lockedBy,
+        // The reached checkpoints decide which `checkpoint-reached` events still fire (DEC-145).
+        capture.reachedBy('light'),
+        capture.reachedBy('dark'),
+        capture.reachedBy('neutral'),
       ]);
     }
     const progression = entity.findComponent(Progression);

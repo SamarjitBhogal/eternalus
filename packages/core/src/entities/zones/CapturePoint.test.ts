@@ -8,13 +8,20 @@ import { CATHEDRAL_CAPTURE_POINT } from '../../content/zones/cathedralCapturePoi
 import { CapturePoint } from './CapturePoint';
 
 describe('CapturePoint', () => {
-  it('is a zone with a neutral Capturable, its radius and no collider', () => {
+  it("is a zone with a neutral Capturable, its area's reach as radius and no collider", () => {
     const point = new CapturePoint('entity-1', CATHEDRAL_CAPTURE_POINT.id);
 
     point.spawn({
       definition: CATHEDRAL_CAPTURE_POINT,
       position: { x: 800, y: 450 },
       team: 'neutral',
+      area: [
+        [
+          { x: 765, y: 450 },
+          { x: 835, y: 450 },
+          { x: 800, y: 485 },
+        ],
+      ],
     });
 
     expect(point.kind).toBe('capture-point');

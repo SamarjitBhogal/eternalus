@@ -10,7 +10,18 @@ import { CaptureProgressBoundsInvariant } from './CaptureProgressBoundsInvariant
 const stateWithPoint = () => {
   const state = new GameState(createDefaultGameConfig(), 1);
   const point = new CapturePoint('entity-1', CAPTURE_POINT.id);
-  point.spawn({ definition: CAPTURE_POINT, position: { x: 10, y: 10 }, team: 'neutral' });
+  point.spawn({
+    definition: CAPTURE_POINT,
+    position: { x: 10, y: 10 },
+    team: 'neutral',
+    area: [
+      [
+        { x: 0, y: 0 },
+        { x: 20, y: 0 },
+        { x: 10, y: 20 },
+      ],
+    ],
+  });
   state.entities.add(point);
   return { state, zone: point.getComponent(Capturable) };
 };

@@ -123,6 +123,13 @@ const RULES: readonly Rule[] = [
   positive('match.capturePoints.weights.legend'),
   positive('match.capturePoints.weights.unit'),
   {
+    path: 'match.capturePoints.weights.legend',
+    rule: 'must be more than match.capturePoints.weights.unit (a Legend outweighs any other unit, 07 §7)',
+    // Safe: both weights passed their own rules above.
+    isValid: (value, config) =>
+      (value as number) > (valueAt(config, 'match.capturePoints.weights.unit') as number),
+  },
+  {
     path: 'limits.maxUnitsPerTeam',
     rule: 'must fit the opening hordes, one per lane (map.numLanes * match.hordeSizes.light)',
     isValid: (value, config) =>

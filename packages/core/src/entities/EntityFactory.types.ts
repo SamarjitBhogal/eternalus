@@ -2,7 +2,7 @@ import type { AiMemory, ControllerId } from '../content/ai/ai.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import type { Team } from '../teams/teams.types';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 
 /**
  * Where the factory finds the definition named by a `definitionId`. A `ContentCatalogue`
@@ -32,6 +32,8 @@ export type Placement = {
   readonly team?: Team;
   /** A controller for this entity alone, in place of its definition's (a bot Legend). */
   readonly controller?: ControllerSpawn;
+  /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
+  readonly area?: readonly Polygon[];
 };
 
 /**

@@ -311,10 +311,21 @@ describe('StateHasher', () => {
     );
   });
 
-  it('hashes a capture point: owner, progress and checkpoint each change the hash', () => {
+  it('hashes a capture point: owner, progress, checkpoint and reached marks each change the hash', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const point = new CapturePoint('entity-1', CAPTURE_POINT.id);
-    point.spawn({ definition: CAPTURE_POINT, position: { x: 5, y: 5 }, team: 'neutral' });
+    point.spawn({
+      definition: CAPTURE_POINT,
+      position: { x: 5, y: 5 },
+      team: 'neutral',
+      area: [
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 5, y: 10 },
+        ],
+      ],
+    });
     state.entities.add(point);
     const zone = point.getComponent(Capturable);
     const untouched = hasher.hash(state);
@@ -323,9 +334,11 @@ describe('StateHasher', () => {
     const progressed = hasher.hash(state);
     zone.setProgress(0.5, 2);
     const checkpoint = hasher.hash(state);
+    zone.markReached('light', 2);
+    const reached = hasher.hash(state);
     zone.setOwner('light');
     const owned = hasher.hash(state);
 
-    expect(new Set([untouched, progressed, checkpoint, owned]).size).toBe(4);
+    expect(new Set([untouched, progressed, checkpoint, reached, owned]).size).toBe(5);
   });
 });

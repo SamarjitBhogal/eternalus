@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Capturable } from '../components/Capturable';
+import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -34,6 +35,16 @@ const PER_TICK = 1 / (RULES.captureSeconds * TICK_RATE);
 const REVERT_PER_TICK = 1 / (RULES.revertSeconds * TICK_RATE);
 const CENTER = { x: 800, y: 450 };
 const OUTSIDE = { x: 0, y: 0 };
+/** Half the side of the test zone: a 70 x 70 square floor around `CENTER`. */
+const HALF = 35;
+const AREA = [
+  [
+    { x: CENTER.x - HALF, y: CENTER.y - HALF },
+    { x: CENTER.x + HALF, y: CENTER.y - HALF },
+    { x: CENTER.x + HALF, y: CENTER.y + HALF },
+    { x: CENTER.x - HALF, y: CENTER.y + HALF },
+  ],
+];
 const logger = new NullLogger();
 
 /** Stands in for a structure: on a team, with a position, but not a `Unit`. */
@@ -71,7 +82,12 @@ const setUp = (rules: CapturePointsConfig = RULES) => {
     loadWeapons(TICK_RATE),
   );
   const point = new CapturePoint('zone-1', CATHEDRAL_CAPTURE_POINT.id);
-  point.spawn({ definition: CATHEDRAL_CAPTURE_POINT, position: CENTER, team: 'neutral' });
+  point.spawn({
+    definition: CATHEDRAL_CAPTURE_POINT,
+    position: CENTER,
+    team: 'neutral',
+    area: AREA,
+  });
   state.entities.add(point);
   const zone = point.getComponent(Capturable);
   const system = new CaptureSystem(rules, TICK_RATE);
@@ -81,6 +97,10 @@ const setUp = (rules: CapturePointsConfig = RULES) => {
   });
   state.events.on('capture-point-owner-changed', (payload) => {
     events.push({ type: 'capture-point-owner-changed', payload });
+  });
+  const reached: GameEventMap['checkpoint-reached'][] = [];
+  state.events.on('checkpoint-reached', (payload) => {
+    reached.push(payload);
   });
 
   const add = (definitionId: string, team: Team, at = CENTER): Entity => {
@@ -102,7 +122,7 @@ const setUp = (rules: CapturePointsConfig = RULES) => {
       system.update({ state, logger });
     }
   };
-  return { state, zone, events, legend, minions, leave, run };
+  return { state, zone, events, reached, legend, minions, leave, run };
 };
 
 describe('CaptureSystem', () => {
@@ -160,6 +180,99 @@ describe('CaptureSystem', () => {
       'capture-point-owner-changed',
     ]);
     expect(events.at(-1)?.payload).toEqual({ pointId: 'zone-1', from: 'light', to: 'dark' });
+  });
+
+  it('announces checkpoint-reached 1 to 3 in order for the capturing side, never on a drain or a revert', () => {
+    const { zone, reached, legend, minions, leave, run } = setUp();
+    const light = legend('light');
+    run(120);
+    leave(light);
+    const dark = legend('dark');
+    // 240 ticks at margin 3: Light's 3, 2, 1 drain away (no event), then Dark reaches 1, 2, 3.
+    run(240);
+    leave(dark);
+    const drainer = minions('light', 1);
+    // 180 ticks at margin 1 drain Dark's zone to -0.5 (checkpoint 1).
+    run(180);
+    leave(...drainer);
+    // Nobody inside: it reverts to Dark's -1 and passes checkpoints 2 and 3 on its own.
+    run(300);
+
+    expect(zone.progress).toBe(-1);
+    expect(reached).toEqual(
+      [
+        ['light', 1],
+        ['light', 2],
+        ['light', 3],
+        ['dark', 1],
+        ['dark', 2],
+        ['dark', 3],
+      ].map(([team, checkpoint]) => ({ pointId: 'zone-1', team, checkpoint })),
+    );
+  });
+
+  it('reaches each checkpoint once per side until the zone changes owner (DEC-145 (g))', () => {
+    const { zone, reached, legend, leave, run } = setUp();
+    const seen = () => reached.map(({ team, checkpoint }) => `${team} ${String(checkpoint)}`);
+    // A Legend moves the progress 1/120 a tick (margin capped at 3).
+    const firstLight = legend('light');
+    run(80);
+    expect(seen()).toEqual(['light 1', 'light 2']);
+    leave(firstLight);
+    run(400);
+    expect(zone.progress).toBe(0);
+    // Light pushes again from neutral: 1 and 2 were reached already, so only 3 fires.
+    const light = legend('light');
+    run(120);
+    expect(zone.owner).toBe('light');
+    expect(seen()).toEqual(['light 1', 'light 2', 'light 3']);
+    leave(light);
+    // Dark, 200 ticks: +1 drains to -2/3, Dark's checkpoint 2.
+    const dark = legend('dark');
+    run(200);
+    expect(seen().slice(3)).toEqual(['dark 1', 'dark 2']);
+    leave(dark);
+    // The owner pushes its own zone back to -1/3: an owner reaches nothing.
+    const owner = legend('light');
+    run(40);
+    expect(zone.checkpoint).toBe(1);
+    leave(owner);
+    // Dark again: past 2 (reached) to 3, and the capture completes.
+    legend('dark');
+    run(80);
+
+    expect(zone.owner).toBe('dark');
+    expect(seen()).toEqual(['light 1', 'light 2', 'light 3', 'dark 1', 'dark 2', 'dark 3']);
+  });
+
+  it('announces every checkpoint one step passes, also a step that crosses 0 from the other side', () => {
+    // A fast tuning the validator accepts: 9 ticks at margin 1, so a lone Legend steps 10/9.
+    const { zone, reached, legend, minions, leave, run } = setUp({
+      ...RULES,
+      captureSeconds: 0.3,
+      maxMargin: 10,
+    });
+    const seen = () => reached.map(({ team, checkpoint }) => `${team} ${String(checkpoint)}`);
+    const dark = minions('dark', 1);
+    run(4);
+    expect(zone.progress).toBeCloseTo(-4 / 9, 9);
+    leave(...dark);
+    legend('light');
+    run(1);
+    // -4/9 + 10/9 = +2/3: one step leaves Dark's checkpoint 1 and passes Light's 1 and 2.
+    expect(zone.progress).toBeCloseTo(2 / 3, 9);
+    expect(seen()).toEqual(['dark 1', 'light 1', 'light 2']);
+  });
+
+  it("publishes each side's summed weight inside as the zone's presence, every tick", () => {
+    const { zone, legend, minions, leave, run } = setUp();
+    const inside = [legend('light'), ...minions('dark', 2), ...minions('neutral', 1)];
+
+    run(1);
+    expect(zone.presence).toEqual({ light: 10, dark: 2, neutral: 1 });
+    leave(...inside);
+    run(1);
+    expect(zone.presence).toEqual({ light: 0, dark: 0, neutral: 0 });
   });
 
   it('pauses on a tie between the two heaviest sides', () => {
@@ -260,6 +373,16 @@ describe('CaptureSystem', () => {
     expect(zone.owner).toBe('light');
   });
 
+  it('never counts a dead Legend still in the store (respawn keeps them)', () => {
+    const { zone, legend, run } = setUp();
+    const dead = legend('dark').getComponent(Health);
+    dead.applyDamage(dead.total);
+
+    run(120);
+
+    expect(zone.progress).toBe(0);
+  });
+
   it('never counts a structure standing in the zone', () => {
     const { state, zone, run } = setUp();
     const tower = new Tower('tower-1', 'tower');
@@ -284,13 +407,13 @@ describe('CaptureSystem', () => {
     expect(zone.owner).toBe('neutral');
   });
 
-  it('counts a unit whose centre is on the edge and not one just outside', () => {
+  it("counts a unit whose centre is just inside the area's corner and not one just outside", () => {
     const { zone, run, state } = setUp();
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
-    const radius = CATHEDRAL_CAPTURE_POINT.radius;
+    // The corner is 49.5 from the centre: outside any circle of the old radius 35.
     for (const at of [
-      { x: CENTER.x + radius, y: CENTER.y },
-      { x: CENTER.x, y: CENTER.y - radius - 0.01 },
+      { x: CENTER.x + HALF - 0.01, y: CENTER.y + HALF - 0.01 },
+      { x: CENTER.x, y: CENTER.y - HALF - 0.01 },
     ]) {
       state.entities.add(
         factory.create('light-mob', 'light-minion', { position: at, team: 'dark' }),

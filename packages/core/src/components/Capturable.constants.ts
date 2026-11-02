@@ -6,3 +6,10 @@ export const LOCKING_PROGRESS: Readonly<Record<Team, number>> = {
   dark: -1,
   neutral: 0,
 };
+
+/** Zero for every side: an empty zone's presence, and no checkpoint reached yet. */
+export const ZERO_PER_SIDE: Readonly<Record<Team, number>> = Object.freeze({
+  light: 0,
+  dark: 0,
+  neutral: 0,
+});

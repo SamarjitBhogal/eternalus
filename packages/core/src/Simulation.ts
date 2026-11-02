@@ -49,6 +49,7 @@ import { StateHasher } from './state/StateHasher';
 import type { RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
 import { WorldMap } from './map/WorldMap';
+import { zoneAreaOf } from './map/zoneArea';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import { IdGenerator } from './utils/IdGenerator';
 import type { SystemContext } from './systems/System.types';
@@ -304,11 +305,16 @@ export class Simulation {
 
   /**
    * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
-   * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7). They
-   * come from the map alone, so a replay (seed, config and commands) rebuilds them.
+   * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7), each
+   * covering its building's floor (DEC-145 (a)). They come from the map alone, so a replay (seed,
+   * config and commands) rebuilds them.
    */
   private static spawnZones(state: GameState, factory: EntityFactory): void {
-    for (const feature of state.world?.definition.features ?? []) {
+    const map = state.world?.definition;
+    if (map === undefined) {
+      return;
+    }
+    for (const feature of map.features) {
       const definitionId = ZONE_PLACEMENTS[feature.kind];
       if (definitionId === undefined) {
         continue;
@@ -317,6 +323,7 @@ export class Simulation {
       const entity = factory.create(kind, definitionId, {
         position: feature.position,
         team: feature.team,
+        area: zoneAreaOf(map, feature),
       });
       state.entities.add(entity);
       state.events.emit('entity-spawned', { entityId: entity.id, kind, team: feature.team });

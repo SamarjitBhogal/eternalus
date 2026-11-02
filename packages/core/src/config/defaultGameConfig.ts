@@ -33,9 +33,9 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
     plannedMatchSeconds: 1200, // TUNE: DEC-13 pending
     capturePoints: {
       checkpoints: 3, // game doc: three checkpoints per capture point
-      captureSeconds: 12, // TUNE: placeholder (PR #49 review)
-      revertSeconds: 20, // TUNE: placeholder (PR #49 review)
-      maxMargin: 3, // TUNE: placeholder (PR #49 review)
+      captureSeconds: 12, // TUNE: placeholder (DEC-146)
+      revertSeconds: 20, // TUNE: placeholder (DEC-146)
+      maxMargin: 3, // TUNE: placeholder (DEC-146)
       weights: { legend: 10, unit: 1 }, // TUNE: DEC-86
     },
   },

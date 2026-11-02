@@ -36,6 +36,28 @@ describe('Capturable', () => {
     expect(zone.lockingProgress).toBe(1);
   });
 
+  it('keeps the presence it is given, empty at first', () => {
+    const zone = new Capturable();
+    expect(zone.presence).toEqual({ light: 0, dark: 0, neutral: 0 });
+
+    zone.setPresence({ light: 3, dark: 1, neutral: 0 });
+    expect(zone.presence).toEqual({ light: 3, dark: 1, neutral: 0 });
+  });
+
+  it("keeps each side's highest reached checkpoint until the owner changes (DEC-145 (g))", () => {
+    const zone = new Capturable();
+
+    zone.markReached('light', 2);
+    zone.markReached('light', 1);
+    zone.markReached('dark', 1);
+    expect([zone.reachedBy('light'), zone.reachedBy('dark'), zone.reachedBy('neutral')]).toEqual([
+      2, 1, 0,
+    ]);
+
+    zone.setOwner('light');
+    expect([zone.reachedBy('light'), zone.reachedBy('dark')]).toEqual([0, 0]);
+  });
+
   it('maps every team to its locking progress', () => {
     expect(Capturable.lockingProgressOf('light')).toBe(1);
     expect(Capturable.lockingProgressOf('dark')).toBe(-1);

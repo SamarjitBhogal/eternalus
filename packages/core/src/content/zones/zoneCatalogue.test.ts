@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { MAP_FEATURE_DEFINITIONS } from '../maps/mapFeatureDefinitions';
 import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './zoneCatalogue';
 
 describe('ZONE_DEFINITIONS', () => {
@@ -7,12 +8,17 @@ describe('ZONE_DEFINITIONS', () => {
     expect(ZONE_DEFINITIONS.ids).toEqual(['capture-point', 'cathedral-capture-point']);
     for (const zone of ZONE_DEFINITIONS.all()) {
       expect(zone.kind).toBe('capture-point');
-      expect(zone.radius).toBeGreaterThan(0);
+      // No size: a zone covers its building's floor, tested in `map/zoneArea.test.ts` (DEC-145).
+      expect(zone).not.toHaveProperty('radius');
     }
   });
 
-  it('gives the Cathedral the capture court radius of its interior (PR #30)', () => {
-    expect(ZONE_DEFINITIONS.get('cathedral-capture-point').radius).toBe(35);
+  it('shows each zone on the minimap with the glyph of the map feature that places it', () => {
+    for (const [featureKind, zoneId] of Object.entries(ZONE_PLACEMENTS)) {
+      expect(ZONE_DEFINITIONS.get(zoneId).minimapGlyph).toEqual(
+        MAP_FEATURE_DEFINITIONS[featureKind]?.minimapGlyph,
+      );
+    }
   });
 
   it('places a known zone for every capture-point and Cathedral feature, and nothing else', () => {

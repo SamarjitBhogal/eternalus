@@ -1,5 +1,5 @@
 import type { Team } from '../teams/teams.types';
-import { LOCKING_PROGRESS } from './Capturable.constants';
+import { LOCKING_PROGRESS, ZERO_PER_SIDE } from './Capturable.constants';
 
 /**
  * A zone's capture state (architecture 07 §7, DEC-86). `progress` runs from -1 (fully Dark) through
@@ -11,6 +11,8 @@ export class Capturable {
   private ownerValue: Team = 'neutral';
   private progressValue = 0;
   private checkpointValue = 0;
+  private presenceValue: Readonly<Record<Team, number>> = ZERO_PER_SIDE;
+  private reachedValue: Record<Team, number> = { ...ZERO_PER_SIDE };
 
   /** The living mini-boss that blocks capture, or `null` (set in Phase 3 sprint 3.6). */
   public readonly lockedBy: string | null = null;
@@ -28,6 +30,22 @@ export class Capturable {
   /** Checkpoints the current capture has passed, from 0 to the configured count. */
   public get checkpoint(): number {
     return this.checkpointValue;
+  }
+
+  /**
+   * Each side's summed unit weight inside the zone this tick (DEC-145 (c)): the density the
+   * client shows as each side's share.
+   */
+  public get presence(): Readonly<Record<Team, number>> {
+    return this.presenceValue;
+  }
+
+  /**
+   * The highest checkpoint `team`'s pushes have reached since the zone last changed owner: a
+   * checkpoint is reached once per side per owner (DEC-145 (g)).
+   */
+  public reachedBy(team: Team): number {
+    return this.reachedValue[team];
   }
 
   /** The side the progress leans toward: Light above 0, Dark below 0, otherwise neutral. */
@@ -54,10 +72,27 @@ export class Capturable {
     this.checkpointValue = checkpoint;
   }
 
-  /** Hands the zone to `owner` (a capture reached its locking state); returns the previous owner. */
+  /**
+   * Sets each side's summed weight inside the zone this tick. The object is kept and handed to
+   * snapshots as it is, so the caller passes a new one each tick and never mutates it.
+   */
+  public setPresence(presence: Readonly<Record<Team, number>>): void {
+    this.presenceValue = presence;
+  }
+
+  /** Records that `team`'s push reached `checkpoint`; a lower checkpoint changes nothing. */
+  public markReached(team: Team, checkpoint: number): void {
+    this.reachedValue[team] = Math.max(this.reachedValue[team], checkpoint);
+  }
+
+  /**
+   * Hands the zone to `owner` (a capture reached its locking state) and clears every side's
+   * reached checkpoints; returns the previous owner.
+   */
   public setOwner(owner: Team): Team {
     const previous = this.ownerValue;
     this.ownerValue = owner;
+    this.reachedValue = { ...ZERO_PER_SIDE };
     return previous;
   }
 }

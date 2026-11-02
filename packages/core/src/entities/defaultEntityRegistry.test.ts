@@ -113,10 +113,17 @@ describe('createDefaultEntityRegistry', () => {
       const entity = factory.create(definition.kind, definition.id, {
         position: { x: 10, y: 20 },
         team: 'neutral',
+        area: [
+          [
+            { x: 0, y: 20 },
+            { x: 20, y: 20 },
+            { x: 10, y: 30 },
+          ],
+        ],
       });
 
       expect(entity.hasComponent(Capturable)).toBe(true);
-      expect(entity.getComponent(Transform).radius).toBe(definition.radius);
+      expect(entity.getComponent(Transform).radius).toBe(10);
       expect(depthBelowEntity(registry.get(definition.kind) ?? {})).toBe(2);
     }
   });

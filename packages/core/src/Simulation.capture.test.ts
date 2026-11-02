@@ -4,6 +4,9 @@ import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { MapGenerator } from './map/MapGenerator';
+import { MapObjectBuilder } from './map/MapObjectBuilder';
+import { MapPresentationBuilder } from './map/MapPresentationBuilder';
+import { zoneAreaOf } from './map/zoneArea';
 import { Simulation } from './Simulation';
 import type { EntitySnapshot } from './state/Snapshot.types';
 
@@ -23,7 +26,7 @@ const zonesOf = (simulation: Simulation): EntitySnapshot[] =>
   simulation.snapshot().entities.filter(({ kind }) => kind === 'capture-point');
 
 describe('Simulation capture points', () => {
-  it('spawns one neutral capture point per capture-point and Cathedral feature of the map', () => {
+  it('spawns one neutral capture point per capture-point and Cathedral feature, over its floor', () => {
     const features = MAP.features.filter(
       ({ kind }) => kind === 'capture-point' || kind === 'cathedral',
     );
@@ -31,20 +34,68 @@ describe('Simulation capture points', () => {
 
     expect(features).toHaveLength(CONFIG.map.numLanes);
     expect(
-      zones.map(({ definitionId, transform, team, capture }) => ({
+      zones.map(({ definitionId, transform, team, area, capture }) => ({
         definitionId,
         at: transform && { x: transform.x, y: transform.y },
         team,
+        area,
         capture,
       })),
     ).toEqual(
-      features.map(({ kind, position }) => ({
-        definitionId: kind === 'cathedral' ? 'cathedral-capture-point' : 'capture-point',
-        at: position,
+      features.map((feature) => ({
+        definitionId: feature.kind === 'cathedral' ? 'cathedral-capture-point' : 'capture-point',
+        at: feature.position,
         team: 'neutral',
-        capture: { owner: 'neutral', progress: 0, checkpoint: 0, checkpoints: 3, lockedBy: null },
+        area: zoneAreaOf(MAP, feature),
+        capture: {
+          owner: 'neutral',
+          progress: 0,
+          checkpoint: 0,
+          checkpoints: 3,
+          lockedBy: null,
+          presence: { light: 0, dark: 0, neutral: 0 },
+        },
       })),
     );
+  });
+
+  it('counts a Legend anywhere on its building floor, with map objects on as the game ships (DEC-145)', () => {
+    const objects = new MapObjectBuilder().build(MAP, new MapPresentationBuilder().build(MAP));
+    const simulation = new Simulation({
+      config: CONFIG,
+      seed: 1,
+      logger: new MemoryLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      map: MAP,
+      mapObjects: objects,
+    });
+    const cathedral = MAP.features.find(({ kind }) => kind === 'cathedral')?.position;
+    const fort = MAP.features.find(({ kind }) => kind === 'capture-point')?.position;
+    // The map is sketch-sized (scale 1). Both spots are off the old radius-35 circle: the west
+    // chapel 84 from the Cathedral's centre, a court corner 36 from the fort's, clear of its keep.
+    const spots = [
+      { team: 'dark', at: { x: (cathedral?.x ?? 0) - 84, y: (cathedral?.y ?? 0) + 5 } },
+      { team: 'light', at: { x: (fort?.x ?? 0) + 24, y: (fort?.y ?? 0) + 27 } },
+    ] as const;
+    for (const { team, at } of spots) {
+      simulation.enqueueCommand({
+        type: 'dev-spawn',
+        kind: 'warrior',
+        definitionId: 'warrior',
+        team,
+        at,
+        count: 1,
+      });
+    }
+    for (let tick = 0; tick < 125; tick += 1) {
+      simulation.step();
+    }
+
+    const ownerAt = (point: { x: number; y: number } | undefined) =>
+      zonesOf(simulation).find(
+        ({ transform }) => transform?.x === point?.x && transform?.y === point?.y,
+      )?.capture?.owner;
+    expect([ownerAt(cathedral), ownerAt(fort)]).toEqual(['dark', 'light']);
   });
 
   it('has no capture points without a map', () => {

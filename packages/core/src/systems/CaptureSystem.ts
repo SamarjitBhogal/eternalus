@@ -1,10 +1,13 @@
 import { Capturable } from '../components/Capturable';
+import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { ZoneArea } from '../components/ZoneArea';
 import type { CapturePointsConfig } from '../config/GameConfig.types';
 import { Legend } from '../entities/Legend';
 import { Unit } from '../entities/Unit';
 import type { GameState } from '../state/GameState';
+import type { Team } from '../teams/teams.types';
 import { TickRate } from '../utils/TickRate';
 import { CAPTURE_SIDES, PROGRESS_EPSILON } from './CaptureSystem.constants';
 import type { CaptureMove, CaptureZone, SideWeights } from './CaptureSystem.types';
@@ -12,16 +15,20 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Moves every capture point's progress (architecture 07 §7, DEC-86). Each tick it sums, per zone,
- * the weight of the units inside (Legends weigh more than other units; structures, projectiles and
- * zones never count). The heaviest side moves the progress toward its locking state (+1 Light,
+ * the weight of the units whose centre is on the zone's area (DEC-145 (a); Legends weigh more than
+ * other units; structures, projectiles and zones never count) and keeps those sums as the zone's
+ * presence (DEC-145 (c)). The heaviest side moves the progress toward its locking state (+1 Light,
  * -1 Dark, 0 neutral), faster the larger its margin over the next side, up to `maxMargin`; a tie
  * at the top pauses it. Taking an enemy zone drains the owner's progress through 0 first, and the
  * zone stays the owner's until the capture completes. With nobody inside, an unfinished capture
  * falls back to the owner's locking state, so an owned zone stays owned.
  *
- * Emits `capture-progress` when a zone passes a checkpoint (either way), then
- * `capture-point-owner-changed` when a capture completes. Runs after `DeathSystem`, so only units
- * alive at the end of the tick count.
+ * Emits `capture-progress` when a zone passes a checkpoint (either way), `checkpoint-reached`
+ * when a side's push on a zone it does not own passes one for the first time since the zone last
+ * changed owner (FR-031, DEC-145 (b), (g)), then `capture-point-owner-changed` when a capture
+ * completes.
+ * Only living units count: it runs after `DeathSystem`, and a dead Legend the store keeps for its
+ * respawn is skipped.
  */
 export class CaptureSystem implements System {
   public readonly name = 'capture';
@@ -47,10 +54,10 @@ export class CaptureSystem implements System {
     const units: Unit[] = [];
     state.entities.forEach((entity) => {
       const capturable = entity.findComponent(Capturable);
-      const transform = entity.findComponent(Transform);
-      if (capturable !== undefined && transform !== undefined) {
-        zones.push({ entity, capturable, center: transform.position, radius: transform.radius });
-      } else if (entity instanceof Unit) {
+      const area = entity.findComponent(ZoneArea);
+      if (capturable !== undefined && area !== undefined) {
+        zones.push({ entity, capturable, area });
+      } else if (entity instanceof Unit && entity.findComponent(Health)?.isDead !== true) {
         units.push(entity);
       }
     });
@@ -59,19 +66,16 @@ export class CaptureSystem implements System {
     }
   }
 
-  /** The summed weight of each side's units whose centre is inside `zone`. */
+  /** The summed weight of each side's units whose centre is on `zone`'s area. */
   private weightsInside(zone: CaptureZone, units: readonly Unit[]): SideWeights {
     const weights: SideWeights = { light: 0, dark: 0, neutral: 0 };
-    const radiusSquared = zone.radius * zone.radius;
     for (const unit of units) {
       const position = unit.findComponent(Transform)?.position;
       const team = unit.findComponent(TeamMembership)?.team;
       if (position === undefined || team === undefined) {
         continue;
       }
-      const dx = position.x - zone.center.x;
-      const dy = position.y - zone.center.y;
-      if (dx * dx + dy * dy <= radiusSquared) {
+      if (zone.area.contains(position)) {
         weights[team] +=
           unit instanceof Legend ? this.rules.weights.legend : this.rules.weights.unit;
       }
@@ -82,6 +86,7 @@ export class CaptureSystem implements System {
   /** Moves one zone and emits its events. */
   private advance(state: GameState, zone: CaptureZone, weights: SideWeights): void {
     const { capturable } = zone;
+    capturable.setPresence(weights);
     const move = this.moveFor(capturable, weights);
     if (move === null) {
       return;
@@ -102,15 +107,43 @@ export class CaptureSystem implements System {
         checkpoint,
       });
     }
+    const { leader } = move;
+    if (leader !== null) {
+      this.reachCheckpoints(state, zone, leader);
+    }
     // A capture completes when its leader brings the zone to that leader's locking state.
-    if (move.leader !== null && progress === move.target && move.leader !== capturable.owner) {
-      const from = capturable.setOwner(move.leader);
+    if (leader !== null && progress === move.target && leader !== capturable.owner) {
+      const from = capturable.setOwner(leader);
       state.events.emit('capture-point-owner-changed', {
         pointId: zone.entity.id,
         from,
-        to: move.leader,
+        to: leader,
       });
     }
+  }
+
+  /**
+   * Announces the checkpoints `leader`'s push passed this tick. Only a push on a zone the leader
+   * does not own, with the progress on the leader's side, counts: a drain lowers the other side's
+   * checkpoint, a revert has no side, and an owner refilling its own zone reaches nothing. Each
+   * side reaches a checkpoint once until the zone changes owner (DEC-145 (g)).
+   */
+  private reachCheckpoints(
+    state: GameState,
+    { entity, capturable }: CaptureZone,
+    leader: Team,
+  ): void {
+    if (leader === capturable.owner || leader !== capturable.progressTeam) {
+      return;
+    }
+    for (let passed = capturable.reachedBy(leader) + 1; passed <= capturable.checkpoint; passed++) {
+      state.events.emit('checkpoint-reached', {
+        pointId: entity.id,
+        team: leader,
+        checkpoint: passed,
+      });
+    }
+    capturable.markReached(leader, capturable.checkpoint);
   }
 
   /** Where the zone heads this tick, or `null` when the top two sides tie (it pauses). */

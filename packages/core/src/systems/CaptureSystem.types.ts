@@ -1,7 +1,7 @@
 import type { Capturable } from '../components/Capturable';
+import type { ZoneArea } from '../components/ZoneArea';
 import type { Entity } from '../entities/Entity';
 import type { Team } from '../teams/teams.types';
-import type { Vec2 } from '../utils/geometry.types';
 
 /** The summed weight of the units of each side inside one zone this tick. */
 export type SideWeights = Record<Team, number>;
@@ -10,8 +10,7 @@ export type SideWeights = Record<Team, number>;
 export type CaptureZone = {
   readonly entity: Entity;
   readonly capturable: Capturable;
-  readonly center: Vec2;
-  readonly radius: number;
+  readonly area: ZoneArea;
 };
 
 /** Where a zone's progress heads this tick and how far it may move. */

@@ -91,6 +91,10 @@ describe('validateGameConfig', () => {
       'match.capturePoints.weights.unit',
       { match: { capturePoints: { weights: { unit: Number.NaN } } } },
     ],
+    [
+      'match.capturePoints.weights.legend',
+      { match: { capturePoints: { weights: { legend: 1, unit: 1 } } } },
+    ],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 47 } }],
     ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 49 } } }],
   ])('rejects a bad %s', (path, overrides) => {

@@ -2,6 +2,7 @@ import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { ZoneArea } from '../components/ZoneArea';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { Entity } from '../entities/Entity';
 import type { PlayableTeam } from '../teams/teams.types';
@@ -220,6 +221,7 @@ export class GameState {
           ? null
           : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
       health: health === undefined ? null : { current: health.current, max: health.max },
+      area: entity.findComponent(ZoneArea)?.polygons ?? null,
       capture:
         capture === undefined
           ? null
@@ -229,6 +231,7 @@ export class GameState {
               checkpoint: capture.checkpoint,
               checkpoints,
               lockedBy: capture.lockedBy,
+              presence: capture.presence,
             },
     };
   }
