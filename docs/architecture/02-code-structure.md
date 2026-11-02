@@ -96,6 +96,7 @@ client/src/
   bridge/                     store.ts, eventBus.ts, events.ts, Binding.types.ts, chordKey.ts, catalogue.types.ts, hud.types.ts, selectionRules.ts, legendNames.ts, minimapRing.ts, slices/*, selectors/*
   data/persistence/           PersistenceController, repositories/*, StorageAdapter, adapters, schema/, dto/*
   data/resources/             ResourceController, AssetManifest (+ one file per asset group), loaders/ (AssetLoader port + adapters), AssetCache
+  data/logging/               SinkLogger, ConsoleSink, RingBufferSink, ErrorReporter, ReportWriter (port + adapters), ErrorReport.types.ts
   ui/screens/                 BootScreen, MainMenuScreen, LoadoutScreen, ProfileScreen, SettingsScreen, ...
   ui/hud/                     HealthBar, AetherBar, AbilityBar, MinimapPanel, MatchClock, Scoreboard, ...
   ui/components/              reusable presentational components, e.g. <KeyGlyph action="..."/>
@@ -117,8 +118,13 @@ client/src/
 | `bridge/`                                    | The one store and the one event bus; display-ready slices                                                                                               | core `import type`, `bridge/`                                                                 | `store.ts`, `eventBus.ts`, `events.ts`, `Binding.types.ts`, `chordKey.ts`, `catalogue.types.ts`, `hud.types.ts`, `selectionRules.ts`, `legendNames.ts`, `minimapRing.ts` (shared HUD layout geometry), `slices/matchSlice.ts`, `slices/sessionSlice.ts`, `slices/settingsSlice.ts`, `selectors/*` |
 | `data/persistence/`                          | One facade over IndexedDB; repositories; DTOs; migrations                                                                                               | core `import type`, `data/`                                                                   | `PersistenceController`, `StorageAdapter` (port), `IndexedDbStorageAdapter`, `MemoryStorageAdapter`, `repositories/*Repository.ts`, `schema/migrations.ts`, `dto/*`                                                                                                                               |
 | `data/resources/`                            | One facade over asset loading and caching                                                                                                               | Browser APIs, `data/`                                                                         | `ResourceController`, `AssetManifest`, `loaders/AssetLoader.ts` (port) and `AssetLoader.contract.ts`, `loaders/UiImageLoader.ts`, `loaders/FontLoader.ts`, `loaders/ImageLoader.ts`, `loaders/AudioLoader.ts`, `loaders/JsonLoader.ts`, `AssetCache`                                              |
+| `data/logging/`                              | The client's logging: the sinks behind core's `Logger` port and the error reports (ADR 0025)                                                            | core, Browser APIs, `data/`                                                                   | `SinkLogger`, `LogSink.types.ts`, `ConsoleSink`, `RingBufferSink`, `ErrorReporter`, `ErrorReport.types.ts`, `ReportWriter.types.ts` (port) and `ReportWriter.contract.ts`, `DevServerReportWriter`, `MemoryReportWriter`                                                                          |
 | `ui/screens/`, `ui/hud/`, `ui/components/`   | React; reads selectors, dispatches UI intents to the bus                                                                                                | `bridge/`, `ui/`, `styles/`                                                                   | `App.tsx`, `*Screen.tsx`, HUD pieces, `KeyGlyph.tsx`                                                                                                                                                                                                                                              |
 | `styles/`                                    | Design tokens and reset                                                                                                                                 | none                                                                                          | `global.css`                                                                                                                                                                                                                                                                                      |
+
+Beside `src/`, `apps/client/errorReportsPlugin.ts` (with its `.constants.ts` and `.test.ts`) is
+the Vite plugin that `vite.config.ts` adds: an endpoint in the dev and preview servers only,
+never in `vite build`, that writes the error reports to `logs/errors/` (ADR 0025 §1, §2).
 
 ## 4. Naming
 
@@ -169,7 +175,8 @@ called out in the PR. Planned surface: `Simulation` and `SimulationOptions`; the
 `createDefaultGameConfig`; `ContentCatalogue` and `loadDefaultContent()` (read-only definitions for
 the loadout screen); `loadDisplayContent()` (the Legend and Legend-spec display data, validated
 through the content rules, and the map features' display names, for the selection screens and the
-HUD; DEC-49, ADR 0018); `Loadout`, `validateLoadout`, `autoBuildLoadout`; `PlayerController` and
+HUD, and the bot roster, setup data the session builds the rosters from; DEC-49, DEC-61, DEC-102,
+ADR 0018); `Loadout`, `validateLoadout`, `autoBuildLoadout`; `PlayerController` and
 `InputIntent`; the `Logger` and `LogRecord` types; `DiagnosticEvent`; `Replay` and `runReplay`;
 `MapGenerator`, the `MapDefinition` types, `PlayableTeam` and `Team`
 ([integration contract](../agents/prompts/2026-10-03-ultracode-sessions.md) §2.2); the ID types.

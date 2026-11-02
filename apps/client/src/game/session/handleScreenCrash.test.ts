@@ -91,8 +91,18 @@ describe('handleScreenCrash', () => {
     expect(events).toEqual(['phase menu screen-crashed', 'route home']);
   });
 
+  it('reports first, then returns to the menu from the pre-launch reveal (DEC-141)', () => {
+    const { value, calls, events } = host('pre-launch', true);
+
+    handleScreenCrash({ ...INTENT, screen: 'pre-launch' }, value);
+
+    expect(calls.report).toHaveBeenCalledTimes(1);
+    expect(calls.transitionToMenu).toHaveBeenCalledWith('screen-crashed');
+    expect(events).toEqual([]);
+  });
+
   it('only reports in a phase with no move to the menu', () => {
-    const { value, calls, events } = host('pre-launch', false);
+    const { value, calls, events } = host('boot', false);
 
     handleScreenCrash(INTENT, value);
 

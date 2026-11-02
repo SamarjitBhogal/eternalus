@@ -187,15 +187,28 @@ describe('SessionController crash reports', () => {
     });
   });
 
-  it('titles a screen crash in pre-launch from its cause, though the session reason is stale', async () => {
+  it('returns to the menu with screen-crashed when the pre-launch reveal crashed (DEC-141)', async () => {
     const session = setUp();
     await session.toPreLaunch();
 
     session.intent({ ...SCREEN_CRASH, screen: 'pre-launch' });
 
-    expect(session.controller.phase).toBe('pre-launch');
-    expect(session.store.getState().session.reason).not.toBe('screen-crashed');
+    expect(session.controller.phase).toBe('menu');
+    expect(session.store.getState().session.reason).toBe('screen-crashed');
     expect(session.popup()).toMatchObject({ stage: 'asking', cause: 'screen' });
+  });
+
+  it('gives the reveal no way out except a crash: no player intent leaves pre-launch', async () => {
+    const session = setUp();
+    await session.toPreLaunch();
+
+    session.intent({ kind: 'start-match' });
+    session.intent({ kind: 'cancel-match' });
+    session.intent({ kind: 'leave-match' });
+    session.intent({ kind: 'navigate', route: 'home' });
+    session.intent({ kind: 'confirm-selection' });
+
+    expect(session.controller.phase).toBe('pre-launch');
   });
 
   it('shows screen-crashed again and goes back home when a menu screen crashed', async () => {

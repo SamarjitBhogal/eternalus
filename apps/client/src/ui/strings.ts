@@ -61,12 +61,13 @@ export const STRINGS = {
     // DEC-124 (c): the owner's text and the button for a report that could not be saved.
     copyMessage: 'The report could not be saved. Copy it and send it to the team.',
     copyReport: 'Copy report',
-    // Recommendation: for a saved report whose note write failed (owner question HC-Q30).
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 3): the owner's text for a saved report whose
+    // note write failed.
     noteNotSavedMessage:
-      'The report was saved, but the note was not. Copy the note and send it to the team.',
-    // Recommendation: the recorder's words for the two states DEC-106 does not word (owner
-    // question HC-Q30).
-    saving: 'Saving the note...',
+      'The report was saved, but the note was not. Copy the note and send it to the team via the shared Discord channel.',
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 1): the owner's text while the note is written.
+    saving: 'Saving the note and report...',
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 2): approved as built.
     saved: (file: string): string => `The report was saved as ${file}.`,
     reportLabel: 'Report text',
   },

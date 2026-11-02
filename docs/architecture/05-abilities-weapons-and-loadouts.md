@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-02
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -941,7 +941,9 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   (core's `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`,
   published as `content-catalogue`), joined with the player's selection by `selectHudKit`; there
   is no `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids
-  until ability content exists (INBOX HC-Q3). The `xp` and `xpToNext` comments in §15 record the
+  until ability content exists (INBOX HC-Q3); a live match shows only the art that fits the picked
+  Legend (its class's emblem and gadget, its start weapon) and leaves every other frame empty
+  (DEC-101, DEC-114). The `xp` and `xpToNext` comments in §15 record the
   owner's reading of the XP ring (2026-10-18).
 
 ## Related

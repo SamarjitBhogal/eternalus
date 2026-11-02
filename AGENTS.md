@@ -6,8 +6,9 @@ source of agent instructions. Tool-specific files (`CLAUDE.md`, `GEMINI.md`,
 `packages/core/AGENTS.md` and `apps/client/AGENTS.md`; read the one nearest to the files you edit.
 
 Eternalus is a browser-only 2D game: TypeScript monorepo, custom Canvas 2D engine, React UI,
-single player vs. AI bots, no server. **The architecture below is the target design:**
-`docs/plan/` tracks how much of it is built. Follow the design when adding code.
+single player vs. AI bots, no game server (the dev and preview servers take error reports,
+ADR 0025). **The architecture below is the target design:** `docs/plan/` tracks how much of it
+is built. Follow the design when adding code.
 
 ## Read first (in this order)
 
@@ -37,7 +38,9 @@ After everything in the Definition of done, never instead of it, and in this ord
    commit**, not your reasoning. Each difference between code and design is a **violation**
    (rework, re-run the critic until no blockers), **acceptable** (forced by a binding contract or
    an allowed interim stand-in; note it in the PR) or **better than the design** (tell the human
-   in chat and add it to `INBOX.md`; once signed off, update the design docs in the same PR).
+   in chat and add it to `INBOX.md`; once signed off, update the design docs in the same PR). The critic also judges whether each
+   decision in the code and the docs is the right one, and whether a more SOLID, OOP-conforming
+   or DRY design exists; such a finding is a better-than-design item (DEC-139).
 2. **Ponytail.** `/ponytail-review` on the branch diff, then apply the accepted cuts with
    `/ponytail`. Architecture and ADRs outrank ponytail (see "Ponytail" below); tests are never
    deleted or weakened.

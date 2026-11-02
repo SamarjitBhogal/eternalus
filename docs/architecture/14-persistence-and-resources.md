@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -501,11 +501,11 @@ export class ResourceController {
 
 ## 13. Recipes
 
-| I am adding…                  | Files                                                                                                                                                                       | Plus                                                                                                          |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts`                                        | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures     |
-| A field or a settings group   | bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; or one `group` literal with its `value` DTO and default                                                    | a fixture at the old version in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
-| An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter` | nothing else (views ask by id); one line in `main.tsx`                                                        |
+| I am adding…                  | Files                                                                                                                                                                                                                                                                               | Plus                                                                                                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts`                                                                                                                                                | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures                                                       |
+| A field or a settings group   | a field old saves cannot satisfy (required, renamed or retyped): bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; an optional field they simply lack: no bump, the validator accepts its absence (DEC-125); or one `group` literal with its `value` DTO and default | a fixture at the old version (or, for an optional field, one saved without it) in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
+| An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                                                                                                         | nothing else (views ask by id); one line in `main.tsx`                                                                                                          |
 
 ## 14. Implementation status
 
@@ -542,7 +542,8 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
   drift apart. **Appended 2026-10-30:** the owner adopted that reading (DEC-125, `INBOX.md`
   HC-B4), so it is now the rule: an optional field that old saves lack needs no `schemaVersion`
   bump, and the settings record stays at version 1. The wording of §13's recipe row waits for him
-  in `INBOX.md` HC-T1 (T-226).
+  in `INBOX.md` HC-T1 (T-226). **Appended 2026-11-02:** he approved it (HC-T1, DEC-142); §13's row
+  "A field or a settings group" now says the rule.
 
 Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
 DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the

@@ -78,6 +78,9 @@ describe('STRINGS.crashReportPopup', () => {
       saveNote: 'Save note and return to menu',
       returnToMenu: 'Return to menu',
       copyMessage: 'The report could not be saved. Copy it and send it to the team.',
+      saving: 'Saving the note and report...',
+      noteNotSavedMessage:
+        'The report was saved, but the note was not. Copy the note and send it to the team via the shared Discord channel.',
       copyReport: 'Copy report',
     });
     expect(popup.saved('logs/errors/a.json')).toBe('The report was saved as logs/errors/a.json.');

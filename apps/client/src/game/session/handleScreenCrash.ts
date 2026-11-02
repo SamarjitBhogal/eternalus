@@ -6,8 +6,8 @@ const SCREEN_CRASH_BODY = 'The screen stopped because of an error.';
 /**
  * What the session does when `ErrorBoundary` caught a screen (ADR 0025 §5). In `match` it ends the
  * match as a loop crash does, with source `screen:<name>`. Elsewhere it reports the crash and
- * returns to the menu with `'screen-crashed'`. A phase with no move to the menu stays: `menu`
- * shows the reason again and goes back to `home`; `pre-launch` keeps only the popup. React's
+ * returns to the menu with `'screen-crashed'`, `pre-launch` too (DEC-141: the one way out of the
+ * reveal). `menu` has no move to itself: it shows the reason again and goes back to `home`. React's
  * component stack, often the only clue in a built page, goes after the stack in the report.
  */
 export function handleScreenCrash(intent: ScreenCrashIntent, host: ScreenCrashHost): void {

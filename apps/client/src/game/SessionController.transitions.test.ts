@@ -16,6 +16,7 @@ const LEGAL: readonly (readonly [SessionPhase, SessionPhase])[] = [
   ['character-select', 'pre-launch'],
   ['character-select', 'menu'],
   ['pre-launch', 'match-loading'],
+  ['pre-launch', 'menu'],
   ['match-loading', 'match'],
   ['match-loading', 'menu'],
   ['match', 'results'],
