@@ -78,7 +78,7 @@ describe('SessionController transition table', () => {
   }
 
   for (const from of SESSION_PHASES.filter((phase) => phase !== 'menu')) {
-    it(`a screen crash in ${from} ends in menu, outside the intent table (DEC-149)`, () => {
+    it(`crashToMenu leaves ${from} for menu, outside the intent table (DEC-149)`, () => {
       const { context, controller, phases } = withFakeStates();
       for (const step of pathTo(from)) context.transition(step);
 

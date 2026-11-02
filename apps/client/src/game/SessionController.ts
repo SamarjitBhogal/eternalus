@@ -19,6 +19,7 @@ import type {
   SessionControllerDeps,
   SessionState,
 } from './SessionController.types';
+import { botRosterSlots } from './session/botRosterSlots';
 import { buildMatchSetup } from './session/buildMatchSetup';
 import { fillRosters } from './session/fillRosters';
 import { IllegalSessionTransition } from './session/IllegalSessionTransition';
@@ -148,7 +149,8 @@ export class SessionController {
 
   /**
    * The screen-crash exit (DEC-149; DEC-141 for `pre-launch`): leaves any phase but `menu` for
-   * `menu` with `reason`, outside `SESSION_TRANSITIONS`, so no intent can use it. Runs the phase's
+   * `menu` with `reason`, outside `SESSION_TRANSITIONS`, so no intent can use it. `match` crashes
+   * through `crashMatch`, not this method. Runs the phase's
    * exit hook as every move does. Only the screen-crash path calls it.
    */
   public crashToMenu(reason: SessionReason): void {
@@ -237,6 +239,7 @@ export class SessionController {
         world,
         player: { legend: selection.classId, team: setup.playerTeam },
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
+        roster: botRosterSlots({ ...rosters }, this.context.catalogue.botRoster.difficulties),
         onCrash,
       },
       viewport,

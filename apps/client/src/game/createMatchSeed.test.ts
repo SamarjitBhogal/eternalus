@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createMatchSeed } from './createMatchSeed';
 
@@ -27,10 +27,18 @@ describe('createMatchSeed', () => {
   });
 
   it('draws from the browser crypto by default', () => {
-    const seed = createMatchSeed();
+    const getRandomValues = vi.spyOn(crypto, 'getRandomValues').mockImplementation(((
+      values: Uint32Array,
+    ) => {
+      values[0] = 123_456_789;
+      return values;
+    }) as typeof crypto.getRandomValues);
 
-    expect(Number.isInteger(seed)).toBe(true);
-    expect(seed).toBeGreaterThanOrEqual(0);
-    expect(seed).toBeLessThanOrEqual(4_294_967_295);
+    try {
+      expect(createMatchSeed()).toBe(123_456_789);
+      expect(getRandomValues).toHaveBeenCalledOnce();
+    } finally {
+      getRandomValues.mockRestore();
+    }
   });
 });

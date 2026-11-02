@@ -98,13 +98,14 @@ export class CanvasPointerControls {
     }
     const point = this.devicePoint(pointer);
     const { match } = this.deps;
-    if (match.lookAtMinimapPoint(point.x, point.y)) {
-      match.setPointerClaimed(true);
+    // The claim comes from this press alone, so a press whose release never arrived leaves none.
+    const isOnMinimap = match.lookAtMinimapPoint(point.x, point.y);
+    match.setPointerClaimed(isOnMinimap || this.isExplorerShown);
+    if (isOnMinimap) {
       return;
     }
     this.press = { x: pointer.clientX, y: pointer.clientY, distance: 0 };
     if (this.isExplorerShown) {
-      match.setPointerClaimed(true);
       this.deps.viewport.canvas.setPointerCapture(pointer.pointerId);
     }
   };

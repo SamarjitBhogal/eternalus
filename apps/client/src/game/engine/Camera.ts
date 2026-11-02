@@ -82,6 +82,7 @@ export class Camera {
     };
   }
 
+  // ponytail: no production caller since 54716be; delete it with its round-trip test at the phase-exit /ponytail-debt pass.
   /** The world position under a screen position (device pixels), for clicks. */
   public screenToWorld(point: WorldPoint, viewport: Viewport): WorldPoint {
     const view = this.visibleArea(viewport.worldWidth, viewport.worldHeight);

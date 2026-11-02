@@ -5,7 +5,9 @@ import type { BridgeEventMap, RosterEntry } from '../bridge/events';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import type { LogSink } from '../data/logging/LogSink.types';
+import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { createBrowserMatch } from './createBrowserMatch';
+import { botRosterSlots } from './session/botRosterSlots';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
@@ -48,6 +50,7 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     player: { legend: 'sentinel', team: 'dark' },
     world,
     captureKinds: ['capture-point', 'cathedral'],
+    roster: [],
     onCrash,
   });
   /** Every listener on the window, the document and the canvas. */
@@ -173,9 +176,14 @@ describe('createBrowserMatch', () => {
       team: 'light',
     });
     const base = request();
+    const enemies = [bot(0, 'magus'), bot(1, 'warrior')];
     const withBots: MatchRequest = {
       ...base,
-      setup: { ...base.setup, enemies: [bot(0, 'magus'), bot(1, 'warrior')] },
+      setup: { ...base.setup, enemies },
+      roster: botRosterSlots(
+        { allies: [], enemies },
+        shippedCatalogue().load().botRoster.difficulties,
+      ),
     };
 
     const running = factory(withBots, viewport);

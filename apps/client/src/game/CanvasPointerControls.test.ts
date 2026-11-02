@@ -85,6 +85,18 @@ describe('CanvasPointerControls in normal play', () => {
     expect(match.setPointerClaimed).toHaveBeenLastCalledWith(false);
   });
 
+  it('lets a press on the world attack after a minimap press that ended in a cancel', () => {
+    const { canvas, match, pointer } = setUp(false);
+    match.lookAtMinimapPoint.mockReturnValueOnce(true);
+    canvas.dispatchEvent(pointer('pointerdown', 600, 40));
+    // Normal play does not listen for `pointercancel`: no release reaches the controls.
+    canvas.dispatchEvent(pointer('pointercancel', 600, 40));
+
+    canvas.dispatchEvent(pointer('pointerdown', 100, 50));
+
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(false);
+  });
+
   it('leaves a press off the minimap to the attack button', () => {
     const { match, click } = setUp(false);
     click(100, 50);

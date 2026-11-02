@@ -1,4 +1,4 @@
-import type { Logger, MapFeatureKind, SeededRandom } from '@eternalus/core';
+import type { Logger, MapFeatureKind, RosterSlot, SeededRandom } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -30,6 +30,8 @@ export type MatchRequest = {
   readonly world: PreparedWorld;
   /** Map-feature kinds the HUD lists as capture points: `catalogue.hud.objectiveKinds` (one list). */
   readonly captureKinds: readonly MapFeatureKind[];
+  /** The setup's bots as the simulation's roster: `botRosterSlots` over the catalogue's difficulties. */
+  readonly roster: readonly RosterSlot[];
   /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
   readonly onCrash: (crash: MatchCrash) => void;
 };

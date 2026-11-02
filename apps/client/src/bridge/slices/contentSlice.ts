@@ -19,7 +19,7 @@ const initialState: DisplayCatalogue = {
     id: '',
     laners: [],
     enemyRover: 'mirror-player',
-    difficulties: { laner: 'normal', rover: 'rover' },
+    difficulties: { laner: '', rover: '' },
   },
 };
 

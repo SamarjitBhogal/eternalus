@@ -20,7 +20,6 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Matc
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
-import { botRosterSlots } from './session/botRosterSlots';
 import type { SettingsController } from './settings/SettingsController';
 import type { MatchFactory } from './SessionController.types';
 
@@ -100,7 +99,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         logger,
         map: request.world.map,
         mapObjects: request.world.mapObjects,
-        roster: botRosterSlots(request.setup),
+        roster: request.roster,
       });
       match = new Match({
         simulation,

@@ -47,7 +47,7 @@ function buildBrowserMatch(): { simulation: Simulation; spawn: Command } {
     logger: new NullLogger(),
     map: world.map,
     mapObjects: world.mapObjects,
-    roster: botRosterSlots(setup),
+    roster: botRosterSlots(setup, catalogue.botRoster.difficulties),
   });
   const at = world.map.features.find(
     (feature) => feature.kind === 'stronghold' && feature.team === draft.playerTeam,
