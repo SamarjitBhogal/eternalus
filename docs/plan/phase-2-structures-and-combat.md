@@ -215,7 +215,7 @@ Owner: _ (client lane). Weeks 4–5.
 - [ ] **HUD `HealthBar` for the selected structure and `Announcer` events** (tower razed, point
       captured) via the bridge. Owner: _. Test: bridge events reach the store throttled. Done
       when: `ui/` still imports only `bridge/`.
-- [ ] **HUD leave-interior control** (replaces the interim "Leave cathedral" button in
+- [x] **HUD leave-interior control** (replaces the interim "Leave cathedral" button in
       `game/GameCanvasChrome.tsx`, register CD-22: the bridge publishes whether the camera is
       inside the cathedral interior, a `ui/hud/` control shows only then, styled from tokens, and
       emits a `leave-interior` `UiIntent` that `Match` handles, per the architecture 13 §9
@@ -225,7 +225,7 @@ Owner: _ (client lane). Weeks 4–5.
       **Superseded 2026-11-02 (DEC-143):** the separate interior is gone (#30's same-world
       buildings), and a building's roof opens while the player's Legend stands inside it, so
       there is no interior state to leave and no control to build; `game/` renders no
-      normal-play control. Left open for the owner to drop
+      normal-play control. Dropped by the owner on 2026-11-02 (DEC-148)
       ([06](../architecture/06-map-and-minimap.md) §10).
 
 **Success metric:** every structure and obstacle kind renders on the map and minimap with 0

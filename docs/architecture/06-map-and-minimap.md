@@ -452,25 +452,31 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   be shown in the new stylized HUD. the dev options may not always be shown (such as free view,
   etc), but the minimap is not a dev item and is part of the HUD for players. building roofs
   should automatically disappear when players enter said buildings, not require players to hide
-  them." Built: `Match` draws the minimap every frame and never reads the developer flag. Roof
+  them." Built: `Match` draws the minimap every frame and never reads the developer flag. The
+  player's own minimap setting, on by default, may hide it once Phase 5, sprint 5.4 builds it
+  (DEC-147). Roof
   state has one owner, `BuildingRoofs` (`game/`), which `Match` builds from
   `MapPresentation.buildings` and whose live `hidden` set `MapView`, `SceneryView` and
   `WorldObjectsView` read, as #30 built them. After each tick `Match` passes it the player's
-  Legend's position, or none once the Legend is gone from the snapshot (dead), and it opens the
-  roof whose footprint holds that point, by the same polygon test as the roof click. The roof
-  click and its restore are the developer explorer's only (`CanvasPointerControls`), so they
-  never close the player's roof, and the player walking out never closes a roof the developer
-  opened. Hiding the explorer puts the developer's roofs back and returns to the
-  following camera at its base zoom (`Match.leaveExplorer`), so developer state does not stay in
-  normal play. A press the canvas gestures own (a minimap click, or any press with the explorer)
-  is claimed until its release (`Match.setPointerClaimed`), so the attack button does not also act
-  on it: this is the attack and roof input arbitration the 2026-10-30 amendment gives this branch. View state only: the simulation and its
-  determinism are untouched. This builds the "occupancy-driven cutaways" the 2026-10-30
+  Legend's position, or none once the Legend is dead (no health left, or gone from the snapshot;
+  DEC-149), and it opens the roof whose footprint holds that point, by the same polygon test as
+  the roof click. The roof click and its restore are the developer explorer's only
+  (`CanvasPointerControls`), so they never close the player's roof, and the player walking out
+  never closes a roof the developer opened. Hiding the explorer puts the developer's roofs back
+  and returns to the following camera at its base zoom (`Match.leaveExplorer`), so developer
+  state does not stay in normal play. A press the canvas gestures own (a minimap click, or any
+  press with the explorer) is claimed until its release (`Match.setPointerClaimed`), so the attack
+  button does not also act on it: this is the attack and roof input arbitration the 2026-10-30
+  amendment gives this branch. View state only: the simulation and its determinism are untouched.
+  This builds the "occupancy-driven cutaways" the 2026-10-30
   amendment below calls not yet scheduled; the "Free view and interior" row's Today cell says
   this since 2026-11-02 (T-199). This bullet supersedes two sentences of the 2026-10-20
   amendment: "only a selected roof is hidden while its furnished interior is shown" and
   "MapExplorer owns its private roof set, exposes a read-only view, toggles by polygon hit
   testing and clears on overview". `BuildingRoofs` owns the roof state now.
+- **Building at a point (2026-11-02, DEC-149).** Core's `findBuildingAt` (`map/findBuildingAt.ts`)
+  is the one "which building's interior holds this point" test over `MapBuilding` footprints:
+  `BuildingRoofs` uses it, and capture zones are meant to reuse it.
 
 ### 2026-10-20 — PR #30 review corrections and accepted cutaway design
 

@@ -4,7 +4,7 @@ description: Sprint checklists for the persistence layer (IndexedDB behind Persi
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-02
 tags: [plan, phase-5, persistence, resources, ui, settings, keybindings, developer-menu]
 paths: ['apps/client/src/data/**', 'apps/client/src/ui/**', 'apps/client/src/game/input/**']
 related:
@@ -198,6 +198,13 @@ Owner: _ (UI owner + one client-lane reviewer). Week 9. Depends on 5.1, Phase 1 
       gains; reduced motion; storage status: persisted flag and `estimate()`; export/import
       buttons from 5.1). Owner: _. Test: a slider change reaches a fake `AudioOutput`; the storage
       panel shows the fake estimate. Done when: each settings group is one DTO with a migration path.
+- [ ] **Minimap visibility setting and its M key** (DEC-147; `INBOX.md` HC-Q19, HC-Q31: the
+      `minimapVisible` setting of architecture 13 §3, on by default, saved with the settings; the
+      Settings screen's existing "Toggle minimap" row; the `toggle-minimap` action (M) shows or
+      hides the minimap in a match; the developer flag never hides it, DEC-143). Owner: _. Test:
+      a new profile shows the minimap; M hides it and shows it again; the choice survives a
+      reload; a hidden minimap takes no click. Done when: M has a handler and the setting is part
+      of the settings DTO.
 
 **Success metric:** the W → Up Arrow and Z → mouse side button scenarios pass as automated tests
 and a reviewer reproduces each in the browser in under 30 s; 100% of prompts render from bindings.

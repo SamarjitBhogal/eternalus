@@ -340,7 +340,8 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
   can be picked, `isSelectable`, which gates LOCK IN; the client adds only art, accents and icons),
   the locked cards in `content/legends/locked/`, the team names in
   `content/teams/teamDisplayNames.ts`, the bot roster in `content/teams/botRoster.ts` (checked by
-  `content/validation/BotRosterClassRule.ts`) and the profile screen's name in
+  `content/validation/BotRosterClassRule.ts` and `BotRosterDifficultyRule.ts`) and the
+  profile screen's name in
   `content/profile/profileDisplayName.ts`.
 - **Merge of the phase branch and roofs (2026-11-02).** With the phase branch's buildings (#30),
   `game/prepareMatchWorld.ts` builds the map's presentation and map objects once, and
