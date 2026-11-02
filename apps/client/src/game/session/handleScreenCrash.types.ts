@@ -21,7 +21,6 @@ export type ScreenCrashHost = {
   crashMatch(error: ReportedError, context: MatchCrashContext): void;
   /** Reports a crash and opens the popup. */
   report(error: ReportedError, context: CrashContext): void;
-  /** Moves to `menu`, if the phase machine has that move from `phase`. */
-  canReturnToMenu(): boolean;
-  transitionToMenu(reason: SessionReason): void;
+  /** The crash exit to `menu` from any phase but `menu` (DEC-149); not an intent transition. */
+  crashToMenu(reason: SessionReason): void;
 };

@@ -13,7 +13,7 @@ function recordingChrome() {
   const roofs: boolean[] = [];
   const explorer: boolean[] = [];
   const chrome: ViewportChrome = {
-    onRoofsChanged: (hasOpenRoofs) => roofs.push(hasOpenRoofs),
+    onDeveloperRoofsChanged: (hasDeveloperRoofs) => roofs.push(hasDeveloperRoofs),
     onExplorerChanged: (isShown) => explorer.push(isShown),
     setOverview: (run) => {
       actions.overview = run;
@@ -33,9 +33,9 @@ function setUp(isExplorerShown: boolean) {
     lookAtMinimapPoint: vi.fn<(x: number, y: number) => boolean>(() => false),
     panBy: vi.fn(),
     zoomBy: vi.fn(),
-    hasOpenRoofs: false,
+    hasDeveloperRoofs: false,
     toggleRoofAt: vi.fn<(x: number, y: number) => boolean>(() => {
-      match.hasOpenRoofs = !match.hasOpenRoofs;
+      match.hasDeveloperRoofs = !match.hasDeveloperRoofs;
       return true;
     }),
     overview: vi.fn(),

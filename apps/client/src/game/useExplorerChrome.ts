@@ -10,16 +10,16 @@ import type { ViewportChrome } from './MatchViewport.types';
  */
 export function useExplorerChrome(isExplorerShownAtStart: boolean): {
   readonly chrome: ViewportChrome;
-  readonly hasOpenRoofs: boolean;
+  readonly hasDeveloperRoofs: boolean;
   readonly isExplorerShown: boolean;
   readonly overview: () => void;
 } {
-  const [hasOpenRoofs, setHasOpenRoofs] = useState(false);
+  const [hasDeveloperRoofs, setHasDeveloperRoofs] = useState(false);
   const [isExplorerShown, setIsExplorerShown] = useState(isExplorerShownAtStart);
   const overviewRef = useRef<(() => void) | null>(null);
   const chrome = useMemo<ViewportChrome>(
     () => ({
-      onRoofsChanged: setHasOpenRoofs,
+      onDeveloperRoofsChanged: setHasDeveloperRoofs,
       onExplorerChanged: setIsExplorerShown,
       setOverview: (run) => {
         overviewRef.current = run;
@@ -30,5 +30,5 @@ export function useExplorerChrome(isExplorerShownAtStart: boolean): {
   const overview = useCallback(() => {
     overviewRef.current?.();
   }, []);
-  return { chrome, hasOpenRoofs, isExplorerShown, overview };
+  return { chrome, hasDeveloperRoofs, isExplorerShown, overview };
 }

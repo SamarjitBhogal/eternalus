@@ -276,7 +276,12 @@ describe('buildDisplayCatalogue', () => {
   });
 
   it('carries the core bot roster (DEC-61, DEC-102)', () => {
-    const botRoster = { id: 'test', laners: ['magus'], enemyRover: 'mirror-player' } as const;
+    const botRoster = {
+      id: 'test',
+      laners: ['magus'],
+      enemyRover: 'mirror-player',
+      difficulties: { laner: 'normal', rover: 'rover' },
+    } as const;
     expect(build({ content: { botRoster } }).botRoster).toBe(botRoster);
   });
 

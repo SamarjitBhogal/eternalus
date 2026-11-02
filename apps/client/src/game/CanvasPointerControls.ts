@@ -60,7 +60,7 @@ export class CanvasPointerControls {
     } else {
       this.detachExplorer();
       this.deps.match.leaveExplorer();
-      chrome.onRoofsChanged(false);
+      chrome.onDeveloperRoofsChanged(false);
     }
     chrome.onExplorerChanged(this.isExplorerShown);
   }
@@ -79,7 +79,7 @@ export class CanvasPointerControls {
     canvas.addEventListener('wheel', this.onWheel, { passive: false });
     chrome.setOverview(() => {
       match.overview();
-      chrome.onRoofsChanged(false);
+      chrome.onDeveloperRoofsChanged(false);
     });
   }
 
@@ -145,7 +145,7 @@ export class CanvasPointerControls {
     const point = this.devicePoint(pointer);
     const { match } = this.deps;
     if (this.isExplorerShown && distance < CLICK_SLOP && match.toggleRoofAt(point.x, point.y)) {
-      chrome.onRoofsChanged(match.hasOpenRoofs);
+      chrome.onDeveloperRoofsChanged(match.hasDeveloperRoofs);
     }
   };
 

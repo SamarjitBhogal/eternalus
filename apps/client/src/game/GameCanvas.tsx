@@ -21,7 +21,7 @@ export function GameCanvas({
 }: GameCanvasProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const explorer = useExplorerChrome(isExplorerShown);
-  const { chrome, hasOpenRoofs, overview } = explorer;
+  const { chrome, hasDeveloperRoofs, overview } = explorer;
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas === null) return undefined;
@@ -38,7 +38,7 @@ export function GameCanvas({
       />
       <GameCanvasChrome
         isExplorerShown={explorer.isExplorerShown}
-        hasOpenRoofs={hasOpenRoofs}
+        hasDeveloperRoofs={hasDeveloperRoofs}
         labels={labels}
         teamNames={teamNames}
         onOverview={overview}

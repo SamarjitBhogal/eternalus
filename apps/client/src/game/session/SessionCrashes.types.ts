@@ -10,4 +10,6 @@ export type CrashSession = {
   matchTick(): number | null;
   /** Moves to `to`; throws on a pair not in `SESSION_TRANSITIONS`. */
   transition(to: SessionPhase, reason: SessionReason): void;
+  /** The screen-crash exit to `menu` from any phase but `menu` (DEC-149); not an intent edge. */
+  crashToMenu(reason: SessionReason): void;
 };

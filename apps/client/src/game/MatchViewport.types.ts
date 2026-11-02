@@ -32,7 +32,7 @@ export type ViewportChrome = {
    * A developer roof click or the overview left some roof the developer opened (`true`) or none
    * (`false`); the roof of the player's building does not count (DEC-143).
    */
-  readonly onRoofsChanged: (hasOpenRoofs: boolean) => void;
+  readonly onDeveloperRoofsChanged: (hasDeveloperRoofs: boolean) => void;
   /** DEC-105's hotkey showed (`true`) or hid (`false`) the developer explorer. */
   readonly onExplorerChanged: (isShown: boolean) => void;
   /** Gives the developer toolbar's overview button its action; `null` when the match ends. */

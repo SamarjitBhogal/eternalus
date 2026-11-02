@@ -51,6 +51,7 @@ export class SessionController {
       seed: () => this.setup?.seed ?? null,
       matchTick: () => this.current?.matchTick?.() ?? null,
       transition: this.transition.bind(this),
+      crashToMenu: this.crashToMenu.bind(this),
     });
     this.context = {
       bus: deps.bus,
@@ -143,6 +144,19 @@ export class SessionController {
     const state = this.current;
     if (state?.attachViewport === undefined) return () => undefined;
     return state.attachViewport(viewport, this.context);
+  }
+
+  /**
+   * The screen-crash exit (DEC-149; DEC-141 for `pre-launch`): leaves any phase but `menu` for
+   * `menu` with `reason`, outside `SESSION_TRANSITIONS`, so no intent can use it. Runs the phase's
+   * exit hook as every move does. Only the screen-crash path calls it.
+   */
+  public crashToMenu(reason: SessionReason): void {
+    const from = this.current;
+    if (from === null) throw new Error("Session is not running; cannot enter 'menu'");
+    if (from.phase === 'menu') throw new IllegalSessionTransition('menu', 'menu');
+    from.exit?.(this.context);
+    this.enter('menu', reason);
   }
 
   private transition(to: SessionPhase, reason: SessionReason | null): void {

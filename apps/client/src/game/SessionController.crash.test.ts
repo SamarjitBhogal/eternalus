@@ -52,7 +52,7 @@ function setUp(writer = new MemoryReportWriter()) {
     controller.attachViewport({
       canvas: new FakeViewportCanvas(),
       chrome: {
-        onRoofsChanged: () => undefined,
+        onDeveloperRoofsChanged: () => undefined,
         onExplorerChanged: () => undefined,
         setOverview: () => undefined,
       },

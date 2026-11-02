@@ -2,7 +2,6 @@ import type { UiIntent } from '../../bridge/events';
 import type { ReportedError } from '../../data/logging/ErrorReport.types';
 import { reportedErrorOf } from '../../data/logging/reportedErrorOf';
 import type { MatchCrash } from '../Match.types';
-import { SESSION_TRANSITIONS } from '../SessionController.constants';
 import { CrashReportFlow } from './CrashReportFlow';
 import type { CrashReportFlowDeps } from './CrashReportFlow.types';
 import { handleScreenCrash } from './handleScreenCrash';
@@ -70,9 +69,8 @@ export class SessionCrashes {
       report: (error, context) => {
         this.flow.crashed(error, context);
       },
-      canReturnToMenu: () => SESSION_TRANSITIONS[phase].includes('menu'),
-      transitionToMenu: (reason) => {
-        session.transition('menu', reason);
+      crashToMenu: (reason) => {
+        session.crashToMenu(reason);
       },
     });
   }

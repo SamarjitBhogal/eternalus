@@ -76,7 +76,12 @@ describe('connectBusToStore', () => {
       contrastMode: 'minimums',
       hud: TEST_HUD_CATALOGUE,
       teamNames: { light: 'Lux', dark: 'Umbra' },
-      botRoster: { id: 'test', laners: ['warrior'], enemyRover: 'mirror-player' },
+      botRoster: {
+        id: 'test',
+        laners: ['warrior'],
+        enemyRover: 'mirror-player',
+        difficulties: { laner: 'normal', rover: 'rover' },
+      },
     };
     bus.emit('content-catalogue', catalogue);
     bus.emit('loading-progress', {

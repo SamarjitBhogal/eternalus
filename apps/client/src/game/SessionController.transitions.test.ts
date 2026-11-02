@@ -16,7 +16,6 @@ const LEGAL: readonly (readonly [SessionPhase, SessionPhase])[] = [
   ['character-select', 'pre-launch'],
   ['character-select', 'menu'],
   ['pre-launch', 'match-loading'],
-  ['pre-launch', 'menu'],
   ['match-loading', 'match'],
   ['match-loading', 'menu'],
   ['match', 'results'],
@@ -77,6 +76,27 @@ describe('SessionController transition table', () => {
       expect(controller.phase).toBe(from);
     });
   }
+
+  for (const from of SESSION_PHASES.filter((phase) => phase !== 'menu')) {
+    it(`a screen crash in ${from} ends in menu, outside the intent table (DEC-149)`, () => {
+      const { context, controller, phases } = withFakeStates();
+      for (const step of pathTo(from)) context.transition(step);
+
+      controller.crashToMenu('screen-crashed');
+
+      expect(controller.phase).toBe('menu');
+      expect(phases.at(-1)).toBe('menu');
+    });
+  }
+
+  it('has no crash exit from menu: the menu handles its own crash', () => {
+    const { context, controller } = withFakeStates();
+    context.transition('menu');
+
+    expect(() => {
+      controller.crashToMenu('screen-crashed');
+    }).toThrow(new IllegalSessionTransition('menu', 'menu'));
+  });
 
   it('cannot repeat a match setup that was never made', () => {
     const { context } = withFakeStates();

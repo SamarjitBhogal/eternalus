@@ -18,7 +18,7 @@ function renderHook(isExplorerShownAtStart = false): ReturnType<typeof useExplor
 
 describe('useExplorerChrome', () => {
   it('starts with every roof on', () => {
-    expect(renderHook().hasOpenRoofs).toBe(false);
+    expect(renderHook().hasDeveloperRoofs).toBe(false);
   });
 
   it('starts with the developer explorer as the viewport starts it (?dev=1; DEC-105)', () => {

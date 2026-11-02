@@ -37,7 +37,7 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     panBy: vi.fn(),
     zoomBy: vi.fn(),
     toggleRoofAt: vi.fn(() => false),
-    hasOpenRoofs: false,
+    hasDeveloperRoofs: false,
     overview: vi.fn(),
     leaveExplorer: vi.fn(),
     setPointerClaimed: vi.fn(),
@@ -51,7 +51,7 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
   }));
   const evidence = fakeMatchEvidence();
   const chrome = {
-    onRoofsChanged: vi.fn(),
+    onDeveloperRoofsChanged: vi.fn(),
     onExplorerChanged: vi.fn(),
     setOverview: vi.fn(),
   };

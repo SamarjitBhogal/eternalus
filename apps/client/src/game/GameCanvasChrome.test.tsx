@@ -24,12 +24,12 @@ const TEAM_NAMES = { light: 'Lux', dark: 'Umbra' };
  */
 function renderChrome(options: {
   readonly isExplorerShown: boolean;
-  readonly hasOpenRoofs: boolean;
+  readonly hasDeveloperRoofs: boolean;
 }): string {
   return renderToStaticMarkup(
     <GameCanvasChrome
       isExplorerShown={options.isExplorerShown}
-      hasOpenRoofs={options.hasOpenRoofs}
+      hasDeveloperRoofs={options.hasDeveloperRoofs}
       labels={LABELS}
       teamNames={TEAM_NAMES}
       onOverview={() => undefined}
@@ -39,20 +39,20 @@ function renderChrome(options: {
 
 describe('GameCanvasChrome', () => {
   it('draws nothing in normal play, even with a roof cut away', () => {
-    expect(renderChrome({ isExplorerShown: false, hasOpenRoofs: true })).toBe('');
+    expect(renderChrome({ isExplorerShown: false, hasDeveloperRoofs: true })).toBe('');
   });
 
   it('offers to restore the roofs in the developer toolbar while a roof is cut away', () => {
-    const html = renderChrome({ isExplorerShown: true, hasOpenRoofs: true });
+    const html = renderChrome({ isExplorerShown: true, hasDeveloperRoofs: true });
     expect(html).toContain('Click a building to toggle its roof');
     expect(html).toContain('Restore roofs &amp; overview');
-    expect(renderChrome({ isExplorerShown: true, hasOpenRoofs: false })).toContain(
+    expect(renderChrome({ isExplorerShown: true, hasDeveloperRoofs: false })).toContain(
       'World overview',
     );
   });
 
   it('names each stronghold in the developer legend after the content team names', () => {
-    const html = renderChrome({ isExplorerShown: true, hasOpenRoofs: false });
+    const html = renderChrome({ isExplorerShown: true, hasDeveloperRoofs: false });
     expect(html).toContain('Lux stronghold');
     expect(html).toContain('Umbra stronghold');
     expect(html).not.toContain('Light stronghold');

@@ -34,7 +34,7 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
   const viewport: MatchViewport = {
     canvas,
     chrome: {
-      onRoofsChanged: () => undefined,
+      onDeveloperRoofsChanged: () => undefined,
       onExplorerChanged: () => undefined,
       setOverview: () => undefined,
     },
@@ -190,6 +190,18 @@ describe('createBrowserMatch', () => {
       ['warrior', 'light'],
       ['magus', 'light'],
     ]);
+    running.destroy();
+  });
+
+  it("builds the simulation on the world's map objects, which its replay records", () => {
+    const { factory, viewport, request } = setUp();
+    const world = prepareMatchWorld(CONFIG, SEED);
+
+    const running = factory(request(world), viewport);
+    const { replay } = running.evidence().match;
+
+    expect(world.mapObjects.length).toBeGreaterThan(0);
+    expect(replay.mapObjects).toEqual(world.mapObjects);
     running.destroy();
   });
 

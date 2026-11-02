@@ -123,7 +123,7 @@ describe('Match free view', () => {
 
     match.leaveExplorer();
 
-    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
     expect(camera.zoom).toBe(1);
     expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
   });
@@ -136,7 +136,7 @@ describe('Match free view', () => {
     expect(match.toggleRoofAt(0, 0)).toBe(false);
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, view);
     expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.hasOpenRoofs).toBe(true);
+    expect(match.hasDeveloperRoofs).toBe(true);
     const inside = shown();
     expect(inside).toEqual(view);
     expect(
@@ -147,9 +147,9 @@ describe('Match free view', () => {
     input.move = { x: 1, y: 0 };
     match.tick();
     expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
-    expect(match.hasOpenRoofs).toBe(true);
+    expect(match.hasDeveloperRoofs).toBe(true);
 
     match.overview();
-    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
   });
 });

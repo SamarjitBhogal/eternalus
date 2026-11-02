@@ -13,7 +13,7 @@ const INTENT: ScreenCrashIntent = {
   componentStack: 'in X',
 };
 
-function host(phase: SessionPhase, canReturnToMenu: boolean) {
+function host(phase: SessionPhase) {
   const bus = new TypedEventBus<BridgeEventMap>();
   const events: string[] = [];
   bus.on('session-phase', ({ phase: next, reason }) =>
@@ -23,14 +23,13 @@ function host(phase: SessionPhase, canReturnToMenu: boolean) {
   const calls = {
     crashMatch: vi.fn<ScreenCrashHost['crashMatch']>(),
     report: vi.fn<ScreenCrashHost['report']>(),
-    transitionToMenu: vi.fn<ScreenCrashHost['transitionToMenu']>(),
+    crashToMenu: vi.fn<ScreenCrashHost['crashToMenu']>(),
   };
   const value: ScreenCrashHost = {
     bus,
     phase,
     seed: 5,
     matchTick: 90,
-    canReturnToMenu: () => canReturnToMenu,
     ...calls,
   };
   return { value, calls, events };
@@ -38,7 +37,7 @@ function host(phase: SessionPhase, canReturnToMenu: boolean) {
 
 describe('handleScreenCrash', () => {
   it('ends a running match as a loop crash does, with source screen:<name> and the tick', () => {
-    const { value, calls } = host('match', true);
+    const { value, calls } = host('match');
 
     handleScreenCrash({ ...INTENT, screen: 'match' }, value);
 
@@ -47,11 +46,11 @@ describe('handleScreenCrash', () => {
       { errorText: 'match: boom', tick: 90, componentStack: 'in X' },
     );
     expect(calls.report).not.toHaveBeenCalled();
-    expect(calls.transitionToMenu).not.toHaveBeenCalled();
+    expect(calls.crashToMenu).not.toHaveBeenCalled();
   });
 
   it('reports first, then returns to the menu with screen-crashed outside a match', () => {
-    const { value, calls } = host('loading', true);
+    const { value, calls } = host('loading');
 
     handleScreenCrash({ ...INTENT, stack: 'at x' }, value);
 
@@ -66,14 +65,14 @@ describe('handleScreenCrash', () => {
         componentStack: 'in X',
       },
     );
-    expect(calls.transitionToMenu).toHaveBeenCalledWith('screen-crashed');
+    expect(calls.crashToMenu).toHaveBeenCalledWith('screen-crashed');
     expect(calls.report.mock.invocationCallOrder[0]).toBeLessThan(
-      calls.transitionToMenu.mock.invocationCallOrder[0] ?? 0,
+      calls.crashToMenu.mock.invocationCallOrder[0] ?? 0,
     );
   });
 
   it('puts the component stack after the stack, alone when there is no stack, and leaves it out when empty', () => {
-    const { value, calls } = host('loading', true);
+    const { value, calls } = host('loading');
 
     handleScreenCrash({ ...INTENT, stack: 'at x', componentStack: '' }, value);
     handleScreenCrash({ ...INTENT, stack: '', componentStack: '' }, value);
@@ -82,32 +81,22 @@ describe('handleScreenCrash', () => {
   });
 
   it('shows the reason again and goes back home when the crash was in the menu', () => {
-    const { value, calls, events } = host('menu', false);
+    const { value, calls, events } = host('menu');
 
     handleScreenCrash(INTENT, value);
 
     expect(calls.report).toHaveBeenCalledTimes(1);
-    expect(calls.transitionToMenu).not.toHaveBeenCalled();
+    expect(calls.crashToMenu).not.toHaveBeenCalled();
     expect(events).toEqual(['phase menu screen-crashed', 'route home']);
   });
 
   it('reports first, then returns to the menu from the pre-launch reveal (DEC-141)', () => {
-    const { value, calls, events } = host('pre-launch', true);
+    const { value, calls, events } = host('pre-launch');
 
     handleScreenCrash({ ...INTENT, screen: 'pre-launch' }, value);
 
     expect(calls.report).toHaveBeenCalledTimes(1);
-    expect(calls.transitionToMenu).toHaveBeenCalledWith('screen-crashed');
-    expect(events).toEqual([]);
-  });
-
-  it('only reports in a phase with no move to the menu', () => {
-    const { value, calls, events } = host('boot', false);
-
-    handleScreenCrash(INTENT, value);
-
-    expect(calls.report).toHaveBeenCalledTimes(1);
-    expect(calls.transitionToMenu).not.toHaveBeenCalled();
+    expect(calls.crashToMenu).toHaveBeenCalledWith('screen-crashed');
     expect(events).toEqual([]);
   });
 });

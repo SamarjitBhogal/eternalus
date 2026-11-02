@@ -12,7 +12,7 @@ import type { MatchViewport } from './MatchViewport.types';
 const VIEWPORT: MatchViewport = {
   canvas: new FakeViewportCanvas(),
   chrome: {
-    onRoofsChanged: () => undefined,
+    onDeveloperRoofsChanged: () => undefined,
     onExplorerChanged: () => undefined,
     setOverview: () => undefined,
   },

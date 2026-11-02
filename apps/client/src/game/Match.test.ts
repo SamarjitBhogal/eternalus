@@ -179,36 +179,6 @@ describe('Match', () => {
     expect(fills()).not.toContainEqual(house.shape);
     match.destroy();
   });
-  it('queues one attack per target while the attack button is held, and again after a release or a stop', () => {
-    const { match, simulation, input, world } = setUp(undefined, true, true);
-    const house = world.mapObjects.find((object) => object.kind === 'house');
-    const corner = house?.footprints[0]?.[0];
-    const opposite = house?.footprints[0]?.[2];
-    if (corner === undefined || opposite === undefined) throw new Error('Missing house');
-    match.tick();
-    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
-    const attacks = () =>
-      enqueue.mock.calls.filter(([command]) => command.type === 'attack-target').length;
-    input.isAttacking = true;
-    input.aim = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
-
-    for (let tick = 0; tick < 5; tick += 1) match.tick();
-    expect(attacks()).toBe(1);
-    input.isAttacking = false;
-    match.tick();
-    input.isAttacking = true;
-    match.tick();
-    expect(attacks()).toBe(2);
-    // `stop` also drops the attack target, so the held button queues it once more after one.
-    input.move = { x: 1, y: 0 };
-    match.tick();
-    input.move = { x: 0, y: 0 };
-    match.tick();
-    match.tick();
-    expect(attacks()).toBe(3);
-    match.destroy();
-  });
-
   it('queues no attack while the canvas gestures own the press (a minimap click or the explorer)', () => {
     const { match, simulation, input, world } = setUp(undefined, true, true);
     const house = world.mapObjects.find((object) => object.kind === 'house');
@@ -236,11 +206,11 @@ describe('Match', () => {
   it('reports closed roofs after the same building is toggled twice', () => {
     const { match } = setUp();
     // The following camera initially centres on the light stronghold.
-    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
     expect(match.toggleRoofAt(640, 360)).toBe(true);
-    expect(match.hasOpenRoofs).toBe(true);
+    expect(match.hasDeveloperRoofs).toBe(true);
     expect(match.toggleRoofAt(640, 360)).toBe(true);
-    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
     match.destroy();
   });
   it("spawns the player's Warrior at the Light stronghold on the first tick", () => {

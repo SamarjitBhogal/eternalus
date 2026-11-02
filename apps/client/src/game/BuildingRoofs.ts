@@ -1,4 +1,4 @@
-import { isPointInPolygon } from '@eternalus/core';
+import { findBuildingAt } from '@eternalus/core';
 import type { MapBuilding, Vec2 } from '@eternalus/core';
 
 /**
@@ -39,7 +39,8 @@ export class BuildingRoofs {
    * roof of the building under `position` opens, the roof it left closes.
    */
   public playerAt(position: Vec2 | null): void {
-    const occupied = position === null ? null : (this.buildingAt(position)?.id ?? null);
+    const occupied =
+      position === null ? null : (findBuildingAt(this.buildings, position)?.id ?? null);
     if (occupied !== this.occupied) {
       this.occupied = occupied;
       this.refresh();
@@ -53,7 +54,7 @@ export class BuildingRoofs {
    * @returns Whether `point` was on a building.
    */
   public toggleAt(point: Vec2): boolean {
-    const building = this.buildingAt(point);
+    const building = findBuildingAt(this.buildings, point);
     if (building === undefined) return false;
     if (this.opened.has(building.id)) this.opened.delete(building.id);
     else this.opened.add(building.id);
@@ -65,13 +66,6 @@ export class BuildingRoofs {
   public restore(): void {
     this.opened.clear();
     this.refresh();
-  }
-
-  /** The building whose footprint holds `point`, by polygon hit test. */
-  private buildingAt(point: Vec2): MapBuilding | undefined {
-    return this.buildings.find((building) =>
-      building.footprint.some((shape) => isPointInPolygon(point, shape)),
-    );
   }
 
   private refresh(): void {

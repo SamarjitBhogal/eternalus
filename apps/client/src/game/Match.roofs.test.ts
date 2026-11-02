@@ -7,7 +7,7 @@ import {
   Simulation,
   type Vec2,
 } from '@eternalus/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
@@ -106,7 +106,7 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);
     const cathedral = roofsDrawn('cathedral-lane-1');
     expect(cathedral.drawn).toBe(cathedral.of);
-    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
   });
 
   it('puts the roof back when the Legend walks out of the building', () => {
@@ -142,18 +142,48 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     expect(roof.drawn).toBe(roof.of);
   });
 
+  it('puts the roof back when the Legend is at 0 health but still in the snapshot', () => {
+    const { match, simulation, roofsDrawn, footprintOf, playerPosition } = setUp();
+    match.tick();
+    expect(roofsDrawn('light-stronghold').drawn).toBe(0);
+    const entityId = match.playerEntityId;
+    if (entityId === null) throw new Error('the player did not spawn');
+    // Respawn (FR-051) keeps a dead Legend in the store; stand in with its health at 0 (DEC-149).
+    const snapshot = simulation.snapshot.bind(simulation);
+    vi.spyOn(simulation, 'snapshot').mockImplementation(() => {
+      const real = snapshot();
+      return {
+        ...real,
+        entities: real.entities.map((entity) =>
+          entity.id === entityId && entity.health !== null
+            ? { ...entity, health: { ...entity.health, current: 0 } }
+            : entity,
+        ),
+      };
+    });
+
+    match.tick();
+
+    expect(match.snapshot.entities.find(({ id }) => id === entityId)?.health?.current).toBe(0);
+    const at = playerPosition();
+    const footprint = footprintOf('light-stronghold');
+    expect(at !== null && footprint.some((shape) => isPointInPolygon(at, shape))).toBe(true);
+    const roof = roofsDrawn('light-stronghold');
+    expect(roof.drawn).toBe(roof.of);
+  });
+
   it("combines with the developer's roofs: the overview restores those, not the Legend's", () => {
     const { match, roofsDrawn, toScreen, cathedral: centre } = setUp();
     match.tick();
     match.overview();
     const onCathedral = toScreen(centre ?? { x: -1, y: -1 });
     expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.hasOpenRoofs).toBe(true);
+    expect(match.hasDeveloperRoofs).toBe(true);
     expect(roofsDrawn('cathedral-lane-1').drawn).toBe(0);
 
     match.overview();
 
-    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
     const cathedral = roofsDrawn('cathedral-lane-1');
     expect(cathedral.drawn).toBe(cathedral.of);
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);

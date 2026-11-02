@@ -21,7 +21,12 @@ const CATALOGUE: DisplayCatalogue = {
   contrastMode: 'figma',
   hud: TEST_HUD_CATALOGUE,
   teamNames: { light: 'Lux', dark: 'Umbra' },
-  botRoster: { id: 'test', laners: ['warrior'], enemyRover: 'mirror-player' },
+  botRoster: {
+    id: 'test',
+    laners: ['warrior'],
+    enemyRover: 'mirror-player',
+    difficulties: { laner: 'normal', rover: 'rover' },
+  },
 };
 
 const {

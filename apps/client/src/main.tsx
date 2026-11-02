@@ -25,6 +25,7 @@ import { ResourceController } from './data/resources/ResourceController';
 import { createCoreCatalogue } from './game/content/coreCatalogue';
 import { PLACEHOLDER_PLAYER_NAME } from './game/content/placeholderSetup';
 import { createBrowserMatch } from './game/createBrowserMatch';
+import { createMatchSeed } from './game/createMatchSeed';
 import { readDeveloperFlags } from './game/developerFlags';
 import { isAppleUserAgent } from './game/isAppleUserAgent';
 import { PerformanceSessionClock } from './game/engine/time/PerformanceSessionClock';
@@ -129,7 +130,7 @@ const session = new SessionController({
   catalogue: { load: () => catalogue },
   matchConfig: gameConfig.match,
   playerName: PLACEHOLDER_PLAYER_NAME,
-  seedSource: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
+  seedSource: createMatchSeed,
   createRng: (seed) => new LcgRng(seed),
   createRosterRng,
   themeRoot: document.documentElement,

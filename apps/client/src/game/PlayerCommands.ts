@@ -1,0 +1,88 @@
+import {
+  type EntityId,
+  findMapObjectAt,
+  type MapObject,
+  type MapObjectSnapshot,
+  type Simulation,
+  type Vec2,
+} from '@eternalus/core';
+
+import type { Projection } from './engine/input/Projection.types';
+import type { IntentSource } from './Match.types';
+import type { MatchCamera } from './MatchCamera';
+
+/**
+ * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
+ * `move` or `stop` only when the movement axes change, and `attack-target` once per map object the
+ * held attack button aims at. A press the canvas gestures own is no attack (`setPointerClaimed`;
+ * 06 §10, attack and roof input arbitration). Moving tells the camera to follow again.
+ */
+export class PlayerCommands {
+  private lastMove: Vec2 = { x: 0, y: 0 };
+
+  /** The map object the held attack button last targeted; `null` once released or stopped. */
+  private attackTargetId: EntityId | null = null;
+
+  /** Whether the canvas gestures own the main button's press (`setPointerClaimed`). */
+  private isPointerClaimed = false;
+
+  /**
+   * @param mapObjects The world's map objects (`PreparedWorld.mapObjects`), the attack targets.
+   */
+  public constructor(
+    private readonly input: IntentSource,
+    private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
+    private readonly camera: Projection & Pick<MatchCamera, 'playerMoved'>,
+    private readonly mapObjects: readonly MapObject[],
+  ) {}
+
+  /**
+   * Whether the canvas gestures own the main button's press (a minimap click, or any press while
+   * the developer explorer is shown). While they do, the held button is no attack: one press is
+   * one action.
+   */
+  public setPointerClaimed(isClaimed: boolean): void {
+    this.isPointerClaimed = isClaimed;
+  }
+
+  /**
+   * Reads this tick's intent and queues its commands for the Legend `actorId`. `states` are the
+   * latest snapshot's map objects: only a living one can be the attack target.
+   */
+  public apply(actorId: EntityId, states: readonly MapObjectSnapshot[]): void {
+    const { move, isAttacking, aim } = this.input.read(this.camera);
+    const attackAim = isAttacking === true && !this.isPointerClaimed ? aim : null;
+    this.applyAttack(actorId, attackAim, states);
+    const isMoving = move.x !== 0 || move.y !== 0;
+    if (isMoving) {
+      this.camera.playerMoved();
+    }
+    if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
+      return;
+    }
+    this.simulation.enqueueCommand(
+      isMoving ? { type: 'move', actorId, direction: move } : { type: 'stop', actorId },
+    );
+    if (!isMoving) {
+      // `stop` also drops the attack target, so a button still held queues it again next tick.
+      this.attackTargetId = null;
+    }
+    this.lastMove = move;
+  }
+
+  /**
+   * Queues `attack-target` on the map object under `aim` (the held attack button's world point,
+   * or `null`); holding the button on one target queues one command, not one per tick.
+   */
+  private applyAttack(
+    actorId: EntityId,
+    aim: Vec2 | null,
+    states: readonly MapObjectSnapshot[],
+  ): void {
+    const targetId = aim === null ? null : findMapObjectAt(this.mapObjects, states, aim);
+    if (targetId !== null && targetId !== this.attackTargetId) {
+      this.simulation.enqueueCommand({ type: 'attack-target', actorId, targetId });
+    }
+    this.attackTargetId = targetId;
+  }
+}
