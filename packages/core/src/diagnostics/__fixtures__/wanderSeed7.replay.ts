@@ -1,4 +1,4 @@
-import type { Replay } from '../Replay.types';
+import type { Replay } from '../../Simulation.types';
 
 /**
  * Golden replay: seed 7, the default config of 2026-10-06, `WanderSystem` (see `replay.test.ts`)

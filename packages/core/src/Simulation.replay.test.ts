@@ -6,9 +6,9 @@ import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
 import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
-import type { Replay, ReplaySetup } from './diagnostics/Replay.types';
 import { MapGenerator } from './map/MapGenerator';
 import { Simulation } from './Simulation';
+import type { Replay, ReplaySetup } from './Simulation.types';
 import type { Snapshot } from './state/Snapshot.types';
 import type { Vec2 } from './utils/geometry.types';
 
@@ -104,7 +104,11 @@ describe('Simulation replay export and recent context', () => {
       [0, 1, 2, 3].map((interval) => interval * REPLAY_CHECKPOINT_EVERY),
     );
     // The live match also has a map and a roster, which the recorded plan does not name.
-    expect(exported).toMatchObject(recorded);
+    expect(exported).toEqual({
+      ...recorded,
+      map: new MapGenerator().generate(CONFIG, SEED),
+      roster: [{ team: 'dark', definitionId: 'sentinel', role: 'laner', difficulty: 'normal' }],
+    });
     expect(runReplay(exported, createMatch)).toEqual({
       firstDivergence: null,
       finalHash: live.hash(),

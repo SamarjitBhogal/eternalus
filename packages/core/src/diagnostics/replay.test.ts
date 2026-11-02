@@ -4,9 +4,11 @@ import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MapGenerator } from '../map/MapGenerator';
 import type { Team } from '../teams/teams.types';
 import { Entity } from '../entities/Entity';
 import { Simulation } from '../Simulation';
+import type { Replay, ReplayTargetFactory } from '../Simulation.types';
 import type { System, SystemContext } from '../systems/System.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { IdGenerator } from '../utils/IdGenerator';
@@ -15,7 +17,7 @@ import { WANDER_SEED_7 } from './__fixtures__/wanderSeed7.replay';
 import { NullLogger } from './NullLogger';
 import { randomCommand } from './randomCommands';
 import { recordReplay, runReplay } from './replay';
-import type { Replay, ReplayTarget, ReplayTargetFactory } from './Replay.types';
+import type { ReplayTarget } from './Replay.types';
 
 const MAX_WALKERS = 64;
 const SPAWN_CHANCE = 0.2;
@@ -115,6 +117,18 @@ describe('replay', () => {
     const outcome = runReplay(tampered, createTarget);
     expect(outcome.firstDivergence?.tick).toBe(200);
     expect(outcome.firstDivergence?.actual).toBe(replay.checkpoints[2]?.hash);
+  });
+
+  it('returns the setup it was given beside the commands and checkpoints', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 11);
+    const replay = recordReplay(
+      { config, seed: 11, map, ticks: 10, checkpointEvery: 5, commandsFor: () => [] },
+      createTarget,
+    );
+
+    expect(replay).toMatchObject({ seed: 11, config, map, commands: [] });
+    expect(replay.checkpoints.map(({ tick }) => tick)).toEqual([0, 5, 10]);
   });
 
   it('notices a missing command', () => {

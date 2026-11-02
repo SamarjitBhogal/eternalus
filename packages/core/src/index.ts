@@ -67,18 +67,12 @@ export { makeLogRecord } from './diagnostics/makeLogRecord';
 export { MemoryLogger } from './diagnostics/MemoryLogger';
 export { NullLogger } from './diagnostics/NullLogger';
 export { runReplay } from './diagnostics/replay';
-export type {
-  Replay,
-  ReplayOutcome,
-  ReplaySetup,
-  ReplayTarget,
-  ReplayTargetFactory,
-} from './diagnostics/Replay.types';
+export type { ReplayOutcome, ReplayTarget } from './diagnostics/Replay.types';
 export { MapPresentationBuilder } from './map/MapPresentationBuilder';
 export { MapGenerator } from './map/MapGenerator';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
-export type { RosterSlot } from './Simulation.types';
+export type { Replay, ReplaySetup, ReplayTargetFactory, RosterSlot } from './Simulation.types';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {
   GameEventHandler,
