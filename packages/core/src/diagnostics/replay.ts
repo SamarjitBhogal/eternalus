@@ -3,7 +3,7 @@ import type { Snapshot } from '../state/Snapshot.types';
 import type { ReplayOf, ReplayOutcome, ReplayTargetFactoryOf } from './Replay.types';
 
 /** What to record: the match setup and how long to run it. */
-type RecordingPlan<S> = S & {
+type RecordingPlan = {
   readonly ticks: number;
   /** A checkpoint every this many ticks, plus one at the end. */
   readonly checkpointEvery: number;
@@ -11,14 +11,16 @@ type RecordingPlan<S> = S & {
   readonly commandsFor: (tick: number, snapshot: Snapshot) => readonly Command[];
 };
 
-/** Runs a match from `plan` on a fresh target and records it as a `Replay`. */
+/**
+ * Runs a match built from `setup` on a fresh target, as `plan` says, and records it as a `Replay`:
+ * the setup, unchanged, beside the commands and checkpoints.
+ */
 export const recordReplay = <S extends object>(
-  plan: RecordingPlan<S>,
+  setup: S,
+  plan: RecordingPlan,
   createTarget: ReplayTargetFactoryOf<S>,
 ): ReplayOf<S> => {
-  const { ticks, checkpointEvery, commandsFor, ...rest } = plan;
-  // The rest of `S & {plan fields}` is `S` again; TypeScript cannot see that for a generic `S`.
-  const setup = rest as unknown as S;
+  const { ticks, checkpointEvery, commandsFor } = plan;
   const target = createTarget(setup);
   const commands: { tick: number; command: Command }[] = [];
   const checkpoints: { tick: number; hash: number }[] = [];
@@ -44,10 +46,8 @@ export const runReplay = <S extends object>(
   replay: ReplayOf<S>,
   createTarget: ReplayTargetFactoryOf<S>,
 ): ReplayOutcome => {
-  const { commands, checkpoints, ...rest } = replay;
-  // The rest of `S & {commands, checkpoints}` is `S` again; TypeScript cannot see that for a generic `S`.
-  const setup = rest as unknown as S;
-  const target = createTarget(setup);
+  const { commands, checkpoints } = replay;
+  const target = createTarget(replay);
   let next = 0;
   for (const checkpoint of checkpoints) {
     while (target.tick < checkpoint.tick) {

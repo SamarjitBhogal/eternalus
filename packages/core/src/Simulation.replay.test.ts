@@ -72,7 +72,8 @@ const playerCommands = (tick: number, snapshot: Snapshot): readonly Command[] =>
 /** Plays the player's side on `live` for `ticks` ticks; the replay harness records it as an oracle. */
 const play = (live: Simulation, ticks: number, checkpointEvery = REPLAY_CHECKPOINT_EVERY): Replay =>
   recordReplay(
-    { config: CONFIG, seed: SEED, ticks, checkpointEvery, commandsFor: playerCommands },
+    { config: CONFIG, seed: SEED },
+    { ticks, checkpointEvery, commandsFor: playerCommands },
     () => live,
   );
 

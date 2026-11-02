@@ -7,6 +7,12 @@ import type { LegendClassId } from '../legends/legends.types';
 export type EnemyRoverRule = 'mirror-player';
 
 /**
+ * The role of a bot in a match: a `laner` takes a lane, the `rover` takes none (architecture 18
+ * §8, DEC-151). The roster slot and the roster's difficulties share this one type.
+ */
+export type BotRole = 'laner' | 'rover';
+
+/**
  * The bots of a match (DEC-61, DEC-102): each team's lane bots by class, in lane-fill order, and
  * how the enemy Rover is picked. Each team's other member is its Rover: the player on their team.
  */
@@ -23,5 +29,5 @@ export type BotRosterDefinition = {
    * the enemy Rover `rover` (architecture 11 §4.7, 18 §8; DEC-149). Ids, never renamed; checked
    * against the loaded difficulties at content load.
    */
-  readonly difficulties: { readonly laner: string; readonly rover: string };
+  readonly difficulties: Readonly<Record<BotRole, string>>;
 };

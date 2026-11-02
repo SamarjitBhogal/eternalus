@@ -63,9 +63,8 @@ const createTarget: ReplayTargetFactory = (setup) =>
 const recordRandomMatch = (seed: number, ticks: number, commandEvery: number): Replay => {
   const commandRng = new SeededRandom(seed).fork('commands');
   return recordReplay(
+    { config: createDefaultGameConfig(), seed },
     {
-      config: createDefaultGameConfig(),
-      seed,
       ticks,
       checkpointEvery: 100,
       commandsFor: (tick, snapshot) =>
@@ -123,19 +122,20 @@ describe('replay', () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 11);
     const replay = recordReplay(
-      { config, seed: 11, map, ticks: 10, checkpointEvery: 5, commandsFor: () => [] },
+      { config, seed: 11, map },
+      { ticks: 10, checkpointEvery: 5, commandsFor: () => [] },
       createTarget,
     );
 
     expect(replay).toMatchObject({ seed: 11, config, map, commands: [] });
+    expect(Object.keys(replay).sort()).toEqual(['checkpoints', 'commands', 'config', 'map', 'seed']);
     expect(replay.checkpoints.map(({ tick }) => tick)).toEqual([0, 5, 10]);
   });
 
   it('notices a missing command', () => {
     const replay = recordReplay(
+      { config: createDefaultGameConfig(), seed: 4 },
       {
-        config: createDefaultGameConfig(),
-        seed: 4,
         ticks: 300,
         checkpointEvery: 100,
         commandsFor: (tick, snapshot) => {

@@ -1,6 +1,7 @@
 import type { GameConfig } from './config/GameConfig.types';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { MapDefinition } from './content/maps/maps.types';
+import type { BotRole } from './content/teams/botRoster.types';
 import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
 import type { ReplayOf, ReplayTargetFactoryOf } from './diagnostics/Replay.types';
@@ -45,7 +46,7 @@ export type RosterSlot = {
   /** The Legend definition (its class). */
   readonly definitionId: string;
   /** A `laner` gets a lane at setup; the `rover` takes none (MS-20). */
-  readonly role: 'laner' | 'rover';
+  readonly role: BotRole;
   /** The bot's difficulty (`content/ai/difficulties/`). */
   readonly difficulty: string;
 };

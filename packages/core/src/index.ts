@@ -49,7 +49,7 @@ export type {
   MinimapGlyph,
   MinimapGlyphShape,
 } from './content/maps/maps.types';
-export type { BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
+export type { BotRole, BotRosterDefinition, EnemyRoverRule } from './content/teams/botRoster.types';
 export type {
   DiagnosticEvent,
   DiagnosticEventMap,
