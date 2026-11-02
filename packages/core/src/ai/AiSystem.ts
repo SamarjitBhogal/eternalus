@@ -96,7 +96,8 @@ export class AiSystem {
     const due: EntityId[] = [];
     entities.forEach(({ id }) => {
       const binding = entities.controllerOf(id);
-      if (binding === undefined) {
+      // A mob still walking out of its structure has no brain yet (DEC-133).
+      if (binding === undefined || entities.isDeploying(id)) {
         return;
       }
       if (ai.get(id) === undefined) {

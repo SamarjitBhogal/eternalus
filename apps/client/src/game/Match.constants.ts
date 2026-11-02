@@ -27,9 +27,6 @@ export const PLACEHOLDER_PLAYER: PlayerChoice = { legend: 'warrior', team: 'ligh
 /** The Legend classes bots play, in catalogue order (reference 14 §5). */
 export const PLACEHOLDER_BOT_CLASSES = ['warrior', 'sentinel', 'magus'] as const;
 
-/** The match seed until match setup (session E) chooses one. */
-export const PLACEHOLDER_MATCH_SEED = 1;
-
 /** How many log records the match keeps for bug reports and the overlay (architecture 15 §5). */
 export const LOG_RING_CAPACITY = 512;
 

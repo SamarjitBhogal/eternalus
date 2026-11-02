@@ -18,10 +18,9 @@ import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
 import { ROVER_TACTICS } from './content/ai/rover';
 import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
 import type { MapDefinition } from './content/maps/maps.types';
-import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
+import type { MapObject } from './content/maps/mapObjects.types';
 import type { GameConfig } from './config/GameConfig.types';
 import { AStarPathfinder } from './map/AStarPathfinder';
-import { WorldMap } from './map/WorldMap';
 import { RETREAT_STRUCTURES } from './content/ai/botLaner';
 import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
 import { RANKS_FORMATION } from './content/mobs/formations/ranks';
@@ -32,6 +31,7 @@ import { FORMATIONS } from './content/mobs/formations/formations';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
@@ -43,14 +43,19 @@ import type { DefinitionSource, Placement, WeaponSource } from './entities/Entit
 import { Unit } from './entities/Unit';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
+import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import type { RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
+import { WorldMap } from './map/WorldMap';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import { IdGenerator } from './utils/IdGenerator';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
+import { WorldObjectStore } from './state/WorldObjectStore';
+import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
+import { CollisionSystem } from './systems/CollisionSystem';
 
 /**
  * The deterministic simulation of one match, and the only thing the client drives
@@ -79,23 +84,45 @@ export class Simulation {
     debug = RELEASE_DEBUG_CONFIG,
     content,
     map,
+    mapObjects,
     levelCurves,
     roster = [],
     weapons,
   }: SimulationOptions) {
-    const valid = validateGameConfig(config);
-    const { space, world, paths } = Simulation.buildWorld(map, valid);
-    this.state = new GameState(valid, seed, map ?? null, { space, paths });
+    const validConfig = validateGameConfig(config);
+    const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
+    this.state = new GameState(validConfig, seed, world, { space, paths });
     const { tickRate } = this.state.config;
     const curves = levelCurves ?? loadLevelCurves();
     const weaponSource = weapons ?? loadWeapons(tickRate);
     const controllers = Simulation.createControllers();
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const registry = createDefaultEntityRegistry();
-    // Units and zones come from different catalogues but share one id counter.
+    const objectsById = new Map(
+      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+    );
+    const definitions = {
+      has: (id: string): boolean => objectsById.has(id) || units.has(id),
+      get: (id: string) => objectsById.get(id) ?? units.get(id),
+    };
+    // One factory for commands and spawning; zones come from another catalogue, so the zone
+    // factory shares its id counter and every entity id stays unique.
     const ids = new IdGenerator();
-    const factory = new EntityFactory(registry, units, ids, weaponSource);
+    const factory = new EntityFactory(registry, definitions, ids, weaponSource);
     this.commandContext = { state: this.state, factory };
+    if (mapObjects !== undefined && map === undefined)
+      throw new Error('Map objects require a generated map');
+    if (mapObjects !== undefined) {
+      this.state.worldObjects = new WorldObjectStore(
+        mapObjects,
+        this.commandContext.factory,
+        this.state.entities,
+        MAP_OBJECT_DEFINITIONS,
+      );
+      this.state.events.on('entity-removed', ({ entityId }) =>
+        this.state.worldObjects?.removed(entityId),
+      );
+    }
     Simulation.spawnRoster(this.state, factory, roster, controllers);
     Simulation.spawnZones(this.state, new EntityFactory(registry, ZONE_DEFINITIONS, ids));
     this.systemContext = { state: this.state, logger };
@@ -108,7 +135,10 @@ export class Simulation {
             {
               factory,
               space,
-              world,
+              collisions:
+                map === undefined || mapObjects === undefined
+                  ? []
+                  : [new CollisionSystem(map, mapObjects)],
               decide: [
                 new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
                   this.queue.enqueue(command);
@@ -184,7 +214,7 @@ export class Simulation {
     if (roster.length === 0) {
       return;
     }
-    const routes = state.routes;
+    const routes = state.world?.routes ?? null;
     if (routes === null) {
       throw new Error('A roster needs a map: bot Legends play its lanes.');
     }
@@ -258,7 +288,7 @@ export class Simulation {
     roster: readonly RosterSlot[],
   ): void {
     for (const slot of roster.filter(({ role }) => role === 'rover')) {
-      const stronghold = state.map?.features.find(
+      const stronghold = state.world?.definition.features.find(
         ({ kind, team }) => kind === 'stronghold' && team === slot.team,
       );
       if (stronghold === undefined) {
@@ -278,7 +308,7 @@ export class Simulation {
    * come from the map alone, so a replay (seed, config and commands) rebuilds them.
    */
   private static spawnZones(state: GameState, factory: EntityFactory): void {
-    for (const feature of state.map?.features ?? []) {
+    for (const feature of state.world?.definition.features ?? []) {
       const definitionId = ZONE_PLACEMENTS[feature.kind];
       if (definitionId === undefined) {
         continue;
@@ -311,29 +341,43 @@ export class Simulation {
   }
 
   /**
-   * The map's spatial pieces: the neighbour index, and one walkability grid shared by the lane
-   * flow fields and A\* for Legends. All `null` without a map.
+   * The map's spatial pieces: the match world (its one walkability grid shared by the lane flow
+   * fields and A\* for Legends), the neighbour index and A\*. All `null` without a map. With
+   * `mapObjects`, the grid also blocks what the collision system blocks (06 §6): every blocking
+   * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
+   * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
+   * features keep their stamp, which also fills a tower's hollow core so no path ends in a pocket
+   * the walls close off.
    */
   private static buildWorld(
     map: MapDefinition | undefined,
     config: GameConfig,
+    mapObjects: readonly MapObject[] = [],
   ): {
     readonly space: SpaceIndex | null;
-    readonly world: WorldMap | null;
+    readonly world: MatchWorld | null;
     readonly paths: AStarPathfinder | null;
   } {
     if (map === undefined) {
       return { space: null, world: null, paths: null };
     }
-    const world = WorldMap.fromDefinition(
-      map,
+    const walkable = new Set(
+      mapObjects.filter(({ isBlocking }) => !isBlocking).map(({ id }) => id),
+    );
+    const grid = WorldMap.fromDefinition(
+      { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
       config.map.navCellSize,
       (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
     );
+    for (const object of mapObjects.filter(({ isBlocking }) => isBlocking)) {
+      for (const footprint of object.footprints) {
+        grid.stampFootprint(footprint, object.passages);
+      }
+    }
     return {
       space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
-      world,
-      paths: new AStarPathfinder(world, {
+      world: new MatchWorld(map, grid),
+      paths: new AStarPathfinder(grid, {
         maxExpansions: config.map.pathMaxExpansions,
         snapCells: config.map.pathSnapCells,
       }),

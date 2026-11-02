@@ -16,7 +16,7 @@ import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 const ambush = () => {
   const logger = new MemoryLogger();
   const simulation = new Simulation({
-    config: createDefaultGameConfig({ match: { initialHordesPerTeam: 2, countdownSeconds: 600 } }),
+    config: createDefaultGameConfig({ match: { countdownSeconds: 600 } }),
     seed: 1,
     logger,
     debug: TEST_DEBUG_CONFIG,
@@ -31,8 +31,11 @@ const ambush = () => {
     count: 1,
   });
   const minionHits: number[] = [];
-  simulation.on('damage-applied', ({ amount, absorbed, source }) => {
-    if (source.definitionId === LIGHT_MINION.id) {
+  simulation.on('damage-applied', ({ targetId, amount, absorbed, source }) => {
+    // The killing blow is cut to the target's last health, so it says nothing about strength.
+    const isKillingBlow = () =>
+      simulation.snapshot().entities.find(({ id }) => id === targetId)?.health?.current === 0;
+    if (source.definitionId === LIGHT_MINION.id && !isKillingBlow()) {
       minionHits.push(amount + absorbed);
     }
   });

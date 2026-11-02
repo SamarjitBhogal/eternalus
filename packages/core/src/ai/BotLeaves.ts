@@ -88,7 +88,7 @@ export class BotLeaves {
   public retreat(turn: BotTurn): BtStatus {
     let best: { readonly id: string; readonly position: Vec2 } | null = null;
     let bestGap = Number.POSITIVE_INFINITY;
-    for (const feature of turn.state.map?.features ?? []) {
+    for (const feature of turn.state.world?.definition.features ?? []) {
       const gap = BotLeaves.gapSquared(turn.position, feature.position);
       const isNearer =
         gap < bestGap || (gap === bestGap && best !== null && compareById(feature.id, best.id) < 0);
@@ -146,7 +146,7 @@ export class BotLeaves {
   /** Finds the anchor of the most advanced allied horde on `lane`. */
   public findHorde(turn: BotTurn, lane: string): boolean {
     const { state, team } = turn;
-    const routes = state.routes;
+    const routes = state.world?.routes ?? null;
     let lead = -1;
     state.hordes.forEach((horde) => {
       // The progress is all that is read, so which of two equal hordes wins does not matter.
@@ -164,7 +164,7 @@ export class BotLeaves {
 
   /** Finds the nearest point of `lane` to `point` (the lane corridor, 11 §4.2). */
   public findLanePoint(turn: BotTurn, lane: string, point: Vec2): boolean {
-    const routes = turn.state.routes;
+    const routes = turn.state.world?.routes ?? null;
     if (routes === null || lane === '') {
       return false;
     }

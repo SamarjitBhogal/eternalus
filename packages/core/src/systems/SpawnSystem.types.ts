@@ -14,8 +14,11 @@ export type SpawnPlan = {
   readonly openingWave: OpeningWaveDefinition;
   /** Each spawning structure kind's horde waves. */
   readonly waves: Readonly<Record<string, readonly SpawnWaveDefinition[]>>;
-  /** The spawn grid's spacing and width. */
-  readonly steering: Pick<HordeSteeringProfile, 'spawnSpacing' | 'spawnColumns'>;
+  /** The spawn grid's spacing and width, and how far a horde spawned inside its structure walks out. */
+  readonly steering: Pick<
+    HordeSteeringProfile,
+    'spawnSpacing' | 'spawnColumns' | 'deployClearance'
+  >;
   readonly weights: LaneAssessmentWeights;
   /** The formation every horde marches in. */
   readonly formationId: string;
@@ -23,3 +26,12 @@ export type SpawnPlan = {
 
 /** A map structure that belongs to a playable team. */
 export type TeamFeature = MapFeature & { readonly team: PlayableTeam };
+
+/** One spawner's repeating wave, with its times converted to ticks once (architecture 03 §10). */
+export type ScheduledWave = {
+  readonly spawner: TeamFeature;
+  readonly wave: SpawnWaveDefinition;
+  /** The tick of the first wave: the countdown's end plus `firstAtSeconds`. */
+  readonly firstTick: number;
+  readonly everyTicks: number;
+};

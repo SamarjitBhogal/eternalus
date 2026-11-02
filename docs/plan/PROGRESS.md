@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-30
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -618,6 +618,133 @@ The example below is fenced so it is not read as a real entry.
   check passed."
 - Next step: the human commits the merge and pushes; PR #22 merges.
 
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced rectangular stronghold compounds with round fortified walls and
+  large palaces occupying their enclosures. Added faction-themed enterable royal throne halls
+  with raised thrones, marble floors, ceremonial carpets, columns, banners and banquet tables.
+  Added a visible, clickable north cathedral entrance and matching interior door. Preserved
+  original landmark anchors and all other scenery. Added optional named interior-location
+  metadata to MapDefinition; generalized preview entry/exit and the named leave control.
+  Added regression coverage for round footprints, both throne-room entries, outside-wall
+  rejection, interior bounds, return-to-world navigation and cathedral north entry.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 35/35; coverage thresholds, production build and documentation checks passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser result: `PASS: both throne rooms enter and exit; cathedral north entrance opens its interior.`
+  Initial sandbox-only Vitest cache errors were resolved by running the full gate outside
+  the sandbox. No guardrails were changed; no dependencies, commits or pushes.
+- Next step: map owner reviews the round strongholds and royal interiors. Player-driven
+  doorway traversal and collision remain future simulation work.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced separate interior maps with same-world building cutaways. Clicking
+  the cathedral or a palace toggles its roof independently without moving the camera or
+  changing maps. Furnished interiors now fit the cathedral's nave/transept/apse and each oval
+  palace footprint. Kept walls and entrance steps visible; suppressed the covered objective
+  marker during cutaways while retaining its original data. Shared roof visibility with the
+  minimap and added a restore-roofs overview control. Replaced old interior-location API
+  fields with building footprints and per-decoration visibility metadata; removed obsolete
+  standalone interior builders and updated governing docs and regression tests.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 36/36; coverage thresholds and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser results: `PASS: roofs toggle in the same world, second click restores identical canvas, multiple roofs open, zoom works.`
+  `PASS: final cutaways and restore-all control render correctly.`
+  Initial test-assertion lint finding was corrected without changing guardrails.
+- Next step: map owner reviews same-world cutaways; future player occupancy can drive the
+  roof visibility state. No dependencies, commits or pushes.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: preserved stronghold perimeter walls and cathedral buttresses during roof
+  cutaways; added visible nave, transept and curved apse wall sections with entrance gaps.
+  Added six partitioned rooms to each palace beside its throne corridor: council, library,
+  kitchen, bedchamber, armory and dining, with room-specific furniture and open doorways.
+  Added cathedral stained-glass windows, candles, chapel benches/partitions, lectern and book,
+  altar inlay and sacristy storage while keeping the central capture court clear. Added
+  assertions for room partitions/doorways, permanent wall rendering and footprint containment;
+  updated governing map docs. Same-world roof toggles remain intact.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 42/42,
+  client 36/36; coverage thresholds and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+  Browser result: `PASS: detailed cathedral and partitioned palace render as same-world cutaways; zoom and pan work.`
+- Next step: map owner reviews the detailed structures. Occupancy-driven roof visibility,
+  movement and collision remain future simulation work. No dependencies, commits or pushes.
+
+### 2026-10-07 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: derived three permanent stone gate passages per stronghold from the existing
+  lane crossings, connecting palace floors through the oval perimeter walls. Reoriented both
+  furnished palace interiors toward the opposing team, preserving their oval footprints and
+  side rooms; extended each throne carpet to its middle entrance. Removed the former single
+  decorative doorway and added regression assertions for gate crossings, roof-independent
+  visibility, carpet alignment and existing interior containment. Updated governing map docs.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0 (core 43/43,
+  client 36/36; formatting, lint, typecheck, knip, coverage and production build passed).
+  Verbatim docs result: `Checked 87 Markdown files under docs/. Documentation check passed.`
+- Next step: map owner reviews entrances and ceremonial aisles in the preview. Movement and
+  gate collision remain future simulation work. No dependencies, commits or pushes.
+
+### 2026-10-10 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: resolved all 18 unmerged paths by integrating same-world cathedral and palace
+  roof cutaways with the generated map, live player/escort simulation, renderer port and camera
+  controls. Kept oval stronghold walls, three lane entrances, furnished side rooms and throne
+  carpets. Presentation follows generated feature IDs and positions without scaling simulation
+  geometry or adding hand-placed gameplay camps. Retained the incoming legacy cathedral builder
+  API and its tests, while the active Match uses one world scene. Preserved all progress entries
+  from both sides; updated map docs, deterministic math calls and integration regression tests.
+  Staged conflict resolutions and related fixes; no commit, push or new merge operation.
+- Checks run: `npm run check:quick` → exit 0; `npm run check` → exit 0. Formatting,
+  no-JS, lint, typecheck, knip, coverage and build passed; core 472/472, client 307/307.
+  Verbatim tail: `Checked 100 Markdown files under docs/. Documentation check passed.`
+  Both `git diff --check` and `git diff --cached --check` passed; Git reports no unmerged paths.
+  Initial formatting and deterministic-math lint findings were fixed without changing guardrails.
+- Next step: human reviews and commits the pending merge. Building collision and automatic
+  occupancy-driven roof visibility remain future work.
+
+### 2026-10-10 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: refined map presentation for the existing player camera without changing
+  camera tracking, zoom, simulation geometry or gameplay. Added clipped, deterministic
+  material detail for slate roofs, masonry floors and walls, carpet, grass, foliage, water
+  and worn roads. Added layered lane verges and narrower stronghold roof trims and banners.
+  Building artwork replaces oversized main-view feature glyphs; minimap markers remain.
+  Added polygon culling, cached material batches and static scenery caches with roof/view/resize
+  invalidation. Live entities render separately. Updated governing map and engine documents.
+- Checks run: `npm run check:quick` passed; `npm run check` passed (exit 0): format,
+  no-JS, lint, typecheck, knip, coverage, production build and documentation. Core 472/472,
+  client 314/314. Verbatim tail: `Checked 100 Markdown files under docs/. Documentation check passed.`
+  Browser inspection covered the close-view roof and interior, roof toggle and movement.
+  An unchanged view measured 16.7 ms/frame in isolated headless Chrome; this is not a
+  moving-camera performance guarantee. Initial lint findings were corrected without weakening
+  guardrails. `git diff --check` passed. Changes remain uncommitted.
+- Next step: human reviews the map at player zoom and provides the next visual requirement;
+  moving-camera performance remains worth profiling separately from cached stationary views.
+
+### 2026-10-13 — Phase 1 / sprint 1.3 — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: replaced the client placeholder seed with a fresh browser-generated unsigned
+  seed per match, shared by map generation and simulation. Seeded off-path corridor camps and
+  corner camps while retaining mirrored definitions, counts, depth-based weights, strongholds,
+  cathedral, capture crossings and lane structures. Seeded forest tree/boulder positions, lake
+  positions, village houses and mountain forms. Reflected movable scenery polygons west/east,
+  including streets and border mountains, with identical materials and sizes. Kept existing
+  camera and map artwork. Lake placement omits a template when its clearance search is exhausted.
+  Updated map documentation and the intentionally changed map golden hash (camp draws now
+  precede obstacle draws). Preserved all earlier uncommitted presentation changes.
+- Checks run: `npm run check:quick` passed; focused generation/scenery regression tests 64/64
+  passed; `npm run check` passed (exit 0): formatting, no-JS, lint, typecheck, knip,
+  coverage, production build and docs. Core 478/478, client 315/315. Verbatim tail:
+  `Checked 100 Markdown files under docs/. Documentation check passed.` New tests cover
+  different-seed variation, same-seed reproduction, exact polygon reflection across multiple
+  seeds and fresh seed requests. Initial type errors and lake-placement/mountain-ID regression
+  failures were fixed without weakening checks. `git diff --check` passed.
+- Next step: human reviews newly generated matches and supplies the next map requirement.
+  Decorative scenery still has no gameplay collision. No commit or push performed.
+
 ### 2026-10-09 — Phase 1 / demo fix — fix/disable-select-timeout — sholtzman + Claude Code
 
 - What was done: the demo plays on the game canvas behind the `character-select` placeholder,
@@ -827,6 +954,155 @@ The example below is fenced so it is not read as a real entry.
 - Next step: the owner pushes the branch, and the PR goes into the phase branch for the team.
   The owner then answers the INBOX items and plan §9, and accepts or changes ADR 0016/0017
   and the re-cut.
+
+### 2026-10-13 — Phase 1 / sprint 1.5 — feat/buildings-and-map-objects — Gurshaan + Codex — verification blocked
+
+- What was done: added a temporary controlled-player sprite preview using both user-supplied
+  knight sheets, copied unchanged after the user confirmed ownership/project-use permission.
+  ResourceController and an injectable ImageLoader load and cache manifest images; source and
+  permission are recorded with the assets. LegendView requests sheet crops through Renderer;
+  Canvas2dRenderer anchors, crops and horizontally mirrors images, retaining the marker until
+  loading succeeds. SpritePreviewController uses mapped actions and tick time: WASD selects
+  idle/walk, 1–4 preview rows, Z switches sheets, E restores automatic playback. Unsupported
+  rows clamp to the smaller sheet's final row. No combat effects, simulation or camera changes.
+  Added an on-screen control legend and updated engine/resource implementation-status notes.
+- Checks run: client coverage suite 329/329 passed; production build, typecheck, knip and
+  docs:check passed. Browser inspection verified transparent idle, attack-row playback and
+  switching to the opaque gray-background sheet. New tests cover frame timing, facing, row
+  selection, smaller-sheet bounds, image loading/cache retry, input edges, renderer crop/flip,
+  and fallback markers. A floating-point expectation and the existing gadget-slot trigger
+  contract were corrected in tests; no assertions or guardrails were weakened.
+  `npm run check:quick` failed only in the existing nested GameTest2 project: verbatim tail
+  `✖ 95 problems (95 errors, 0 warnings)`.
+  `npm run check` failed at formatting, exclusively in GameTest2: verbatim tail
+  `[warn] Code style issues found in 54 files. Run Prettier with --write to fix.`
+  The unrelated nested Git project and repository guardrails were left untouched. Full task
+  verification is blocked, so the task is not declared done. `git diff --check` passed.
+- Next step: human resolves how the nested GameTest2 project belongs in the repository checks;
+  then rerun the full gate. Temporary grid-row metadata can later be replaced with authored
+  frame anchors and directional sequences. Changes are uncommitted; local preview runs on 5173.
+
+### 2026-10-13 — Phase 1 / maintenance — feat/buildings-and-map-objects — Gurshaan + Codex — pull
+
+- What was done: ran the requested `git pull --no-rebase --no-commit --no-autostash` against
+  the current branch's configured origin upstream. Fetch updated remote-tracking references;
+  pull reported `Already up to date.` No integration, merge commit or conflict resolution was
+  needed. Preserved all local sprite changes, untracked assets and the nested GameTest2 project.
+- Checks run: pull exit 0; `git ls-files --unmerged` returned no entries; `git diff --check`
+  passed. Branch is one commit ahead and zero behind its upstream. `npm run check` failed at
+  formatting on the same pre-existing GameTest2 files. Verbatim tail:
+  `[warn] Code style issues found in 54 files. Run Prettier with --write to fix.`
+  Repository validation remains blocked; no unrelated files or guardrails were changed.
+- Next step: human reviews local sprite work; resolve the separate GameTest2 quality-gate
+  blocker before repository verification can pass. No commit or push performed.
+
+### 2026-10-13 — Phase 1 / sprint 1.5 — feat/buildings-and-map-objects — Gurshaan + Codex — sprite timing/crops
+
+- What was done: replaced uniform four-tick playback with per-row timing, retaining a faster
+  walk while ability frames last 10–12 ticks. Replaced equal-height row division with explicit
+  pixel boundaries for both sheets and integer inset crop margins. Preserved crop aspect ratio
+  when drawing the controlled Legend. Updated engine implementation-status notes. Browser
+  inspection exposed next-row wings under the initial uniform crop; the authored row boundaries
+  removed that observed fragment from the attack preview.
+- Checks run: targeted SpritePreviewController and LegendView tests 12/12 passed, including
+  exact frame-duration boundaries, loop completion, next-row exclusion and source aspect ratio.
+  Typecheck passed. `npm run check:quick` remains blocked by the existing GameTest2 lint errors
+  (95 errors). `npm run check` failed at formatting only in GameTest2; verbatim tail:
+  `[warn] Code style issues found in 54 files. Run Prettier with --write to fix.`
+  `git diff --check` passed. Full repository verification remains blocked; no guardrails or
+  unrelated GameTest2 files were altered. Changes remain uncommitted.
+- Next step: human tests all preview rows and resolves the existing GameTest2 gate blocker;
+  exact per-frame anchors and additional in-between art remain future sprite authoring work.
+
+### 2026-10-16 — Phase 1 / sprint 1.5 — feat/buildings-and-map-objects — Gurshaan + Codex — paladin replacement
+
+- What was done: removed both former knight atlases and SpritePreviewController, its metadata
+  and its obsolete preview tests. Added the supplied Angelic Paladin atlas with an imagegen
+  backdrop-cleanup derivative stored in client assets. Replaced grid-row playback with a new
+  PaladinAnimationController, individual atlas crops, source-pixel foot pivots, timed idle/run
+  loops and one-shot slash, thrust, ranged and ascension sequences. Attacks return to locomotion.
+  Preview bindings are WASD, 1 slash, 2 thrust, 3 aimed ranged, 4 ascend, E automatic/reset;
+  sheet switching is removed. The ranged cast releases one visual bolt after windup, traveling
+  96 world units analytically with a locked direction, gold trail and terminal impact. Added
+  an ascension aura, pixel-crisp sprite sampling, optional rotation/opacity/glow in Renderer,
+  and gold control-label styling. Existing ResourceController loading and generic rendering
+  infrastructure support the replacement; no old asset or controller references remain in src.
+  Updated engine/resource implementation-status notes. No simulation damage or collision added.
+- Checks run: targeted controller/effect/render/resource/input tests 41/41 passed; full client
+  coverage suite 333/333 passed. Typecheck, production build, knip and docs:check passed.
+  Browser inspection verified a transparent paladin, aimed traveling bolt and ascension aura;
+  decoded alpha samples confirmed empty atlas space is transparent. Production bundles only
+  the replacement paladin atlas. `git diff --check` passed. Initial non-null assertions and an
+  unused type export were fixed without relaxing guardrails.
+  `npm run check:quick` fails only in the existing nested GameTest2 project, verbatim tail:
+  `✖ 95 problems (95 errors, 0 warnings)`.
+  `npm run check` fails at formatting only in GameTest2, verbatim tail:
+  `[warn] Code style issues found in 54 files. Run Prettier with --write to fix.`
+  Full repository verification remains blocked, so the task is not declared fully done.
+- Next step: human tests the new preview and resolves the existing nested-project check
+  blocker before the full gate can pass. Gameplay abilities/projectile collision remain future
+  simulation work. Changes are uncommitted; historical progress entries remain intact.
+
+### 2026-10-20 — Phase 1 / sprint 1.5 — feat/buildings-and-map-objects — Gurshaan + Codex — PR #30 revisions
+
+- What was done: removed the entire temporary sprite implementation, atlases, resource loaders,
+  renderer extensions, animation tests and controls, restoring those files to the branch's
+  pre-sprite implementation. Historical progress entries remain append-only. Pulled the current
+  upstream (Already up to date), then merged origin/phase/1-simulation-kernel-and-world with
+  explicit owner authorization, without committing. Resolved conflicts in this log and reference
+  05 by preserving both histories, then reapplied the review fixes from the retained backup
+  stash named codex-pr30-review-fixes-before-phase-merge. No unmerged index entries remain.
+- Review fixes: B1 and S3 fit oval palace decoration inside generated rings using layout.wallRing
+  in absolute world units. Removed fixed-angle decorative towers; generated turrets remain the
+  towers. Passages use generated team/gate positions. Scenery near generated ring footprints
+  draws beneath features. B3/S1 renamed the presentation class to MapPresentationBuilder and
+  separated MapPresentation/MapBuilding from the unchanged MapDefinition contract; removed dead
+  fields and shared anchors, floor radii and door geometry in content. B4 preserves minimap
+  glyphs regardless of roof state. B5 repaired UTF-8 punctuation. B7 removes the unused separate
+  cathedral interior API and its obsolete tests/settings. S2 fixes the toolbar after a second
+  click closes the last roof, with a pointer-event regression test. S4 moves new-builder colours
+  to MAP_PALETTE. S5 sets building membership and visibility during construction, retaining
+  shadows and permanent walls. S6 moves builder assertions beside their implementations and
+  removes copied scenery tests. S7 makes the mutable roof set private. Applied the small naming,
+  redundant getter, import order, small ellipse and function-size nits without redesigning
+  cameras or gameplay. B2 restores the earlier interior paragraph and preserves the old table,
+  with dated approved-design amendments, DEC-36 integration intent and INBOX tracking.
+- Checks on the resolved merge: full coverage passes, core 478/478 and client 429/429; typecheck,
+  production build, knip and docs validation pass. Verbatim documentation result:
+  Checked 109 Markdown files under docs/.
+  Documentation check passed.
+  Browser inspection before phase integration verified marker-based characters, the exposed
+  generated stronghold ring and same-world cathedral cutaway. After integration, all suites
+  and the build were rerun. An overlap-check performance regression was fixed with conservative
+  polygon bounds instead of raising timeouts; no assertions, coverage or guardrails weakened.
+  npm run check:quick fails only on the existing unrelated GameTest2 project:
+  ✖ 95 problems (95 errors, 0 warnings)
+  npm run check fails at formatting only in that project:
+  [warn] Code style issues found in 54 files. Run Prettier with --write to fix.
+  Both staged and unstaged git diff --check checks pass. GameTest2 was not changed.
+- Next: resolve the unrelated nested-project check failures, then hand the resolved branch to
+  Claude Code for B6/ADR 0010's architecture critic, Ponytail review/cuts and final full check.
+  The PR description still needs that actual gate evidence and the renamed/removed core API
+  notice; use a conforming squash title such as feat(core): add same-world building cutaways.
+  The phase merge and fixes are deliberately uncommitted and unpushed, with the backup stash
+  retained. Full repository verification and the release gate remain incomplete.
+
+### 2026-10-20 — Phase 1 / verification — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: verified the user's removal of the nested GameTest2 directory. Its tracked
+  gitlink deletion remains unstaged; no other Git changes, commit or push were made in this
+  follow-up. The previously resolved phase merge is still pending its merge commit.
+- Checks: npm run check passed in full, exit 0: format, no-JS, lint, typecheck, knip, coverage,
+  production build and documentation validation. Core 478/478 and client 429/429 tests pass.
+  Verbatim final output:
+  Checked 109 Markdown files under docs/.
+  Documentation check passed.
+  The first sandboxed attempt passed static checks but failed because Vitest workers could not
+  access sandbox temporary module files (ENOENT). The complete check was rerun outside that
+  sandbox and passed without code or guardrail changes.
+- Next: include the tracked GameTest2 deletion when preparing the merge commit. The team's
+  ADR 0010 review gate and PR description evidence remain pending; no release-gate approval
+  is implied by the passing automated checks.
 
 ### 2026-10-10 — Phase 1 / S2 — feat/legend-aether — Claudio + Claude Code
 
@@ -1456,6 +1732,24 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 585 passed (585)"; client "Tests 416 passed (416)"; "✓ built in 200ms"; "Documentation
   check passed."
 - Next step: quick `/pr-review`, then merge PR #36 into `phase/2-sprint-2-work`.
+
+### 2026-10-27 — Phase 2 / integration — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: fetched origin and merged origin/phase/2-sprint-2-work at 230a330 into the
+  existing map branch at 1f7295a using --no-commit --no-ff, as requested by the owner. The only
+  conflict was in this progress log; preserved both histories. All source changes merged
+  cleanly, including the client test fixture's new Legend progression/aether fields. Existing
+  map presentation, mirrored seeded scenery and roof cutaways were preserved; no new
+  dependencies or unrelated changes were introduced.
+- Checks run: npm run check:quick passed. npm run check passed in full, exit 0: formatting,
+  no-JS, lint, typecheck, knip, coverage, production build and docs. Core 597/597 tests and
+  client 429/429 tests pass. Knip retains its existing configuration hint only. Verbatim tail:
+  Checked 113 Markdown files under docs/.
+  Documentation check passed.
+  git diff --check and git diff --cached --check passed; no unmerged index entries remain.
+- Next: review and commit the resolved merge, then push when authorized. The merge is left
+  pending and uncommitted, so GitHub and HEAD do not include Phase 2 until the merge commit
+  is made. No commit, push or PR action performed.
 
 ### 2026-10-25 — Phase 2 / sprint 2.2 — feat/minion-m1-marching (merge of phase 2) — SamarjitBhogal + Claude Code
 
@@ -2252,6 +2546,84 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   passed."
 - Next step: merge up the stack.
 
+### 2026-10-27 — Phase 2 / map objects — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: connected authored physical footprints to deterministic swept-circle collision,
+  retaining both Cathedral entrances and all stronghold lane entrances. Added obstacle-backed
+  map-object health, persistent destruction snapshots, ordinary attack targeting, walkable ruins,
+  health bars and minimap invalidation. Building collapse damages owned contents through the
+  shared damage pipeline. Terrain stays indestructible; Cathedral health follows its existing
+  indestructible requirement. Missing scenery HP uses the owner's approved temporary value in
+  content. Seeded placement and mirrored object identities are preserved. No sprite assets or
+  dependencies were added. Updated the governing map, structure and physics implementation notes.
+- Checks run: npm run check:quick passed. npm run check passed, exit 0: formatting, no-JS,
+  lint, typecheck, knip, coverage, production build and documentation. Core 615/615 tests and
+  client 435/435 tests pass. The coverage suite preserves its thresholds and time limits; the
+  existing map-overlap test now rejects disjoint bounds before the same polygon checks and
+  assertions. Regression coverage includes entrances, tunnelling, bridge crossings, destruction,
+  walk-through ruins, replay hashes and minimap refresh. Browser preview loaded without console
+  errors; the existing pre-launch placeholder limited manual gameplay verification. Verbatim tail:
+
+  ```text
+  Checked 113 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next: human playtest and balance temporary scenery health. Changes remain uncommitted; no PR,
+  commit or push action was performed.
+
+### 2026-10-30 — Phase 2 / PR #30 review corrections — feat/buildings-and-map-objects — Gurshaan + Codex
+
+- What was done: merged origin/phase/2-sprint-2-work at c5b4d23 with the owner's explicit
+  approval, resolved all conflicts and restored the saved local collision/destruction work.
+  Kept the merge uncommitted. Replaced ID-based selection and reflection with authored metadata
+  and per-kind interior/placement registries; shared Cathedral massing, precinct and throne-room
+  content; derived palace scale from generated wall footprints; centralized palette and passage
+  constants. Restored append-only design text and recorded the approved mirrored-camp amendment.
+  Refiled the HUD-owned input/toolbar follow-ups. Logged match seeds and mocked startup RNG in
+  tests. Removed renderer caching and close-view detail from this change, preserving their code
+  and tests in a local renderer follow-up patch/archive, scheduled in INBOX with Gurshaan as owner.
+  SceneView again owns all draw order. Preserved the three Match explorer signatures. Added
+  GameState.livingBuffTowerCount(team), excluding obstacle proxies, and the shared throne anchor
+  and room bounds for the separate game-loop integration. The later coordinated rename remains
+  deferred. Physical map placements are injected explicitly, preserving headless horde scenarios.
+- Checks run: npm run check:quick passed; focused geometry, seed, input, collision, destruction
+  and BuffTower-query regressions passed. npm run check passed, exit 0: format, no-JS, lint,
+  typecheck, knip, coverage, build and documentation. Core 725/725 tests and client 428/428
+  tests passed. The renderer-specific tests travel with the extracted renderer code; no
+  guardrail or coverage threshold was weakened. An initial Knip runtime memory-allocation
+  failure was retried; the retry identified an unused type export, which was fixed before the
+  passing full gate. Verbatim final tail:
+
+  ```text
+  Checked 115 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next: independent architecture critic and reviewer-owned Ponytail handoff; update PR target,
+  title and description with honest gate status. The renderer follow-up still needs material
+  metadata, cache activation inside SceneView, file-length/capture-layer corrections and
+  camera-moving p95 measurements before its own PR. No commit, push or new PR was performed.
+
+### 2026-10-30 — Phase 2 / Sprint 2 — PR #30 critic follow-up
+
+- Branch: feat/buildings-and-map-objects.
+- Fixed the critic's content-injection violation: Simulation supplies map-object definitions to
+  WorldObjectStore; the store no longer imports global content policy. Added a custom definition
+  ID and health regression. Independent code re-review approved the fix with no new blocker.
+- Checks: npm run check:quick passed. npm run check passed (exit 0): 726 core tests and
+  428 client tests, coverage, formatting, lint, typecheck, Knip, build and docs. Verbatim tail:
+
+  ```text
+  Checked 115 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next: PR metadata update is blocked by GitHub integration permissions (403 Resource not
+  accessible by integration). Prepared title, phase-branch target and description are saved
+  outside the repository for manual application. Ponytail and its post-cut full check remain
+  required before merge. Changes and the pending Phase 2 merge remain uncommitted and unpushed.
+
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2b-minion-controller — SamarjitBhogal + Claude Code
 
 - What was done: CodeRabbit round on PR #44 (and the critic's follow-ups). A chasing minion no
@@ -2488,6 +2860,70 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 - Next step: the product owner signs off on the doc 18 §5.2 change on PR #61 (ADR 0018, DEC-96;
   `INBOX.md` item); then mark it ready for review.
 
+### 2026-10-30 — Phase 2 / sprint 2.2 — docs/pr-review-rulings — sholtzman + Claude Code
+
+- What was done: recorded the owner's 2026-10-30 rulings from the open-PR review in the decisions
+  log: DEC-85 (mirrored random camps, #30-A), DEC-86 (capture rules, #49), DEC-87 (spawn timeline),
+  DEC-89 (most-struggling lane), DEC-90 (Legend XP target), DEC-91 (horde event names, #38-E),
+  DEC-93 (tier-1 and tier-2 first waves at +165 s and +195 s, amending DEC-87). Requirements FR-005,
+  FR-031, FR-033, FR-037 and FR-049 now cite them; structures doc §7 states the capture rules;
+  INBOX DEC-15 question (1) closed by DEC-85; the XP-curve item notes that the resize waits for
+  bot laners (PR #46). DEC-88 and DEC-92 belong to the game-loop work.
+  Later the same day: DEC-94 (ObjectPool covers projectiles, not event payloads; PR #51) and
+  DEC-99 (`crushed` is hard control; a re-applied stun restarts its timer; PR #52). The coding
+  principles Object Pool row and the glossary's Object Pool entry cite DEC-94.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  731 passed (731)"; client "Tests 415 passed (415)"; "✓ built in 257ms"; "Documentation check
+  passed." Moved onto the phase head `9c58897` (PRs #46 and #47; `INBOX.md` and this log kept both
+  sides), then again `EXIT=0`: core "Tests 787 passed (787)"; client "Tests 419 passed (419)";
+  "✓ built in 117ms"; "Documentation check passed." Moved onto `f12d680` (PRs #60 and #61; this
+  log, `INBOX.md` and the decisions log kept both sides), then `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 791 passed (791)"; client "Tests 419 passed (419)"; "✓ built
+  in 118ms"; "Documentation check passed."
+- Next step: a PR into `phase/2-sprint-2-work`. Docs owned elsewhere still to align
+  (doc 18 §3.1/§3.3/§10, doc 07 §6 tower rows, doc 12 §2, FR-003) go to their sessions.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/minion-m1-review — sholtzman + Claude Code
+
+- What was done: fixed the review findings on the merged PR #38 (minion M1) and the stalls they
+  hid. Wave hordes spawned inside their structure's footprint never moved; the lane field now
+  leads every reachable blocked corridor cell out (MS-31, Call 4 B). A mob that would slide along
+  a wall faces the slide direction and walks that way (MS-35). The anchor holds while any member
+  fights (MS-33). One opening horde per lane at load-in, every wave timed from the countdown's
+  end (MS-30; `match.initialHordesPerTeam` removed). First tier-1 and tier-2 waves at +200 s and
+  +230 s (DEC-127). `GameState.world` is a `MatchWorld` (F7d). Horde membership lives only in
+  the store (MS-29). Separation falls off as 1/r (F7b). Merged the phase branch at `f12d680`
+  (#61): MS-31 and MS-35 replace #61's walk-out and separation hold, and a chase on blocked ground
+  follows the field out (DEC-126). Docs 02, 03, 04, 06, 10, 12 and 18, the minion plan and the
+  phase 2 plan updated, and a status note under doc 07 §6; DEC-128 records Call 2 (MS-32). Ponytail
+  cut: `FlowFieldBuilder.pointWallsOut` uses `cellOf`. The `INBOX.md` #61 item is decided and the
+  MS-33 item added. Merged `docs/pr-review-rulings` (PR #62) for the DEC-87 and DEC-93 rows; FR-005
+  now gives the DEC-127 first times.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  818 passed (818)"; client "Tests 419 passed (419)"; "✓ built in 108ms"; "Documentation check
+  passed." After merging PR #62, again `EXIT=0`: core "Tests 818 passed (818)"; client "Tests 419
+  passed (419)"; "✓ built in 107ms"; "Documentation check passed." Critic round 2: approve, no
+  blockers; after its fixes, `EXIT=0`: core "Tests 818 passed (818)"; client "Tests 419 passed
+  (419)"; "✓ built in 116ms"; "Documentation check passed."
+- Soak (seed 1, 3 lanes, 900 s): skipped spawns 30.61 % light / 33.47 % dark without bots, 23.62 %
+  / 43.22 % with bots; the < 5 % bar still fails until #56 gives hordes structures to attack.
+- Next step: pre-PR gate and the PR into `phase/2-sprint-2-work`; then merge this fix into #55
+  and #56 and build the Legend-only chase limit (MS-34) on #56.
+
+### 2026-10-31 — Phase 2 / sprint 2.2 — feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: fixed PR #30's review findings for the author, at the product owner's request:
+  merged the phase branch and #63; H1 objects stamp the `WorldMap`, a destroyed one (and its
+  feature) reopens; S1 walk out of a footprint; DEC-121 (a) side teams; G1 map centre opened;
+  DEC-133 tower hordes walk out before their brain engages, until wholly on walkable ground or at
+  the exit; DEC-121 (c) collision right after movement, pinned. Three critic rounds, every finding
+  fixed; each new test failed under a break first. Residual seed-2 "stall" = fight tail, 0 under a
+  strict metric.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  887 passed (887)"; client "Tests 433 passed (433)"; "Documentation check passed."
+- Next step: push to PR #30 (merges after #63); Sam applies the design-text drafts for DEC-121 (c)
+  and DEC-133 (INBOX); author: S3, S5, S6, N2.
+
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/capture-points — Aryan Walanj + Claude
 
 - What was done: reworked PR #49 on `phase/2-sprint-2-work` per the architecture review. Capture
@@ -2503,5 +2939,6 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   `SimulationOptions.capturePoints` are gone. Merged the phase branch (#59–#61).
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
   825 passed (825)"; client "Tests 424 passed (424)"; "✓ built in 1.10s"; "Documentation check
-  passed."
+  passed." After merging the phase branch again (#62, #63, #30; `spawnZones` reads
+  `GameState.world`): `EXIT=0`, core "Tests 921 passed (921)", client "Tests 438 passed (438)".
 - Next step: critic and ponytail (pre-PR gate) in a Claude Code session; architecture re-review.

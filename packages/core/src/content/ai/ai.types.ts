@@ -25,7 +25,7 @@ export type HordeSteeringProfile = {
    * cell it follows the lane's flow field instead (architecture 18 §5.2).
    */
   readonly blockedLookAhead: number;
-  /** Push at contact, falling to 0 at `separationRadius`. */
+  /** Push at half `separationRadius`; it scales as 1/distance, shifted to 0 at the radius (10 §9). */
   readonly separationWeight: number;
   /** A combined steer shorter than this counts as none, so a settled horde stands still. */
   readonly minSteer: number;
@@ -35,6 +35,12 @@ export type HordeSteeringProfile = {
   readonly spawnSpacing: number;
   /** Members per row of the spawn grid. */
   readonly spawnColumns: number;
+  /**
+   * How far past the first walkable ground along its way out a deploying horde's rearmost
+   * member's exit lies (DEC-133). A mob stops deploying there, or sooner, once its body stands
+   * on walkable ground.
+   */
+  readonly deployClearance: number;
 };
 
 /** The weights of the lane assessment (architecture 18 §3.3); each term runs from 0 to 1. */

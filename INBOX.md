@@ -88,6 +88,10 @@ Reply inline (`Decision: …`).
     runs every tick, not heavy (05 §16), because rules 2–4 read this tick's `xp-gained` events.
     Also on the cap-10 scale: balancing.md's bosses' "expected Legend level" (4 and 7) need
     rescaling to cap 50 (×5 would give 20 and 35); say if you want that.
+  - **Update 2026-10-30 (DEC-90):** the target is level 50 at about 20 minutes for an active
+    Legend, with the XP to the next level rising each level. Your choice of 2026-10-30: the resize
+    waits for bot laners (PR #46). Measure the real XP per minute once bots fight in lanes, then
+    size `content/progression/levelCurves.ts` to DEC-90.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
@@ -97,6 +101,10 @@ Reply inline (`Decision: …`).
       ADR 0017 (next item) before the generator changes. (4) From ADR 0017: which classes does a
       corridor get when it holds other than three camps?
   -     Accepted " keep depth-based weights but define the classes by position in the corridor" where the vertical line down the centre of the map defines the division. RNG determines the location of the camps on each side so both sides are different, but they must equate in terms of overall difficulty (1 light on left means 1 light on right; not necessarily in mirrored locations but the same amount of weighted camps on left team and right team's sides)
+  - **Question (1) closed 2026-10-30 by DEC-85** (decisions log, PR #30 review, #30-A): for the
+    MVP, forest and corner camps take seeded random positions, and the two sides stay mirrored.
+    The per-side placement of ADR 0017 is a next-sprint stretch goal or post-MVP, so questions
+    (2)–(4) and the ADR 0017 item below wait for it.
 - [ ] **DEC-15 — accept ADR 0017.** `docs/decisions/0017-balanced-asymmetric-camp-placement.md`
       (draft) amends ADR 0009 for forest camps only: the seeded RNG places them per side with
       equal counts per weight class, and everything else stays mirrored. Accept, change or reject
@@ -118,10 +126,14 @@ Reply inline (`Decision: …`).
       (b) each spawner's wave table only, or (c) a horde definition in content; cadence per
       spawner or one interval for all. Until you answer, M1 reads `hordeSizes` and the spawner
       cadences (plan §3 stand-in). Details: doc 18 §10.
+  - **(1) terms and weights answered 2026-10-30 by DEC-89** (decisions log): your three signals
+    (own towers damaged, enemy pushed furthest, allies hurt or killed), equal `TUNE` weights.
+    The tie-break is still open.
 - [x] **Minion M1 (`feat/minion-m1-marching`) — one question, one better-than-design item.**
       (1) **First heavy horde:** DISC-10 says "every 180 s". Should the first one leave when the
       countdown ends, like the towers' waves (60 s, the current `Recommendation:`), or 180 s
-      after it (240 s)? (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
+      after it (240 s)? **Answered 2026-10-30 by DEC-87:** it leaves 180 s after the countdown
+      ends, then every 90 s. (2) **Better than the design (needs your sign-off):** doc 18 §3.2 and §4
       say each mob carries a `hordeId` back-pointer. The code keeps membership only in
       `state.hordes` (`hordeOf(id)`), which refuses double membership, so the two cannot drift
       apart. If you agree, doc 18 §3.2, §4 and 15's `HordeMembershipConsistentInvariant` change
@@ -308,8 +320,33 @@ Reply inline (`Decision: …`).
       `onHit`, heavy and parry wait for the ability framework (4.2). SCRUM-287's "validation
       rejects a class-locked weapon in the wrong loadout" waits for `WeaponAllowedRule`
       (SCRUM-290).
+- [ ] **PR #30 — schedule occupancy-driven cutaways** (owner: Gurshaan). A building's roof opens
+      today only when it is clicked; no plan item has the roof open while a unit is inside it.
+      The PR #30 notes said "Phase 2 sprints 2.1 and 2.4", but those sprints are the Structure
+      family and walls/gates. Which sprint gets occupancy-driven cutaways, or are they post-MVP?
+- [ ] **PR #30 — tick order in the design text (DEC-121 (c))** (owner: sholtzman). The code runs
+      `MovementSystem` → `CollisionSystem` → `SpaceSystem` → `PathingSystem`, pinned by a test;
+      architecture 10 §8/§9 and 18 §3.2 still put collision after pathing. Edit and apply Draft 1
+      and the first §3.2 part of Draft 2 in the PR #30 review work folder
+      (`pr30-g1-round3/design-drafts.md`).
+- [ ] **PR #30 — tower-horde deploy in the design text (DEC-133)** (owner: sholtzman; doc 18
+      owner SamarjitBhogal). A horde that spawns inside a tower walks straight out with no brain
+      and stops deploying once its body stands wholly on walkable ground, or at its exit;
+      architecture 18 §3.2/§5.2 still say the lane field leads it out. Edit and apply the rest of
+      Draft 2 in the same file.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
+
+- [ ] **PR #30 renderer follow-up** — Owner: Gurshaan. Separate caching/batching and close-view
+      material detail from the map PR; retain all renderer-specific tests with that change.
+      Keep draw order inside SceneView, address renderer file length and the capture layer,
+      and measure Match.render p95 while the camera moves at 1080p, DPR 2 (target ≤ 8 ms).
+      Depends on the map PR landing; preserve the stable Match explorer signatures. See
+      [round-2 B3](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5708899077).
+- [ ] **PR #22 input follow-up** — Owner: sholtzman, HUD/character-select branch. Arbitrate raw
+      left-click roof toggles against the attack binding after PR #30 merges.
+- [ ] **PR #22 toolbar follow-up** — Owner: sholtzman, HUD/character-select branch. Move map
+      toolbar state from game/useMatch into the bridge after PR #30 merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
@@ -477,12 +514,23 @@ Reply inline (`Decision: …`).
       overlay on a `pause-menu` press edge (`open-overlay` / `close-overlay`), so the pause key is
       the player's binding.
 
-- [ ] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
+- [x] **Fix PR `fix/horde-leave-stronghold` → Sam (2026-10-30), better than the design, please
       sign off:** hordes spawn inside the Stronghold's blocking footprint (doc 18 §3.2), and §5.2's
       "no heading onto unwalkable ground" then held every minion forever. The PR (1) lets a mob
       standing on unwalkable ground walk straight out to its slot, and (2) when separation would
       push a mob onto unwalkable ground, keeps its own heading instead of holding (crowds at a
       wall deadlocked). Doc 18 §5.2 is updated in the same PR. Yes / no / change?
+  - Decision (sholtzman, chat, 2026-10-30): accepted as an interim fix on the phase branch
+    (DEC-126). The #38 fix (`fix/minion-m1-review`) replaces (1) with the flow field that leads
+    out of every blocked corridor cell (MS-31) and (2) with the turn at a wall (MS-35); doc 18
+    §5.2 and doc 10 §9 and §12 say so.
+- [x] **#38 fix → Sam (2026-10-30), better than the design:** doc 18 §4 holds a horde's anchor
+      only while its leader fights, so the anchor marched on while other members fought. The fix
+      holds it while any member has an attack target; in the 900 s soak (seed 1) skipped spawns
+      fell from 66 % to 33 %.
+  - Decision (sholtzman, chat, 2026-10-30, Call 5): "fix and get the fighting / proceeding
+    working"; the critic ruled this rule better than the design. Built as MS-33 on
+    `fix/minion-m1-review`; doc 18 §1 and §4 and the minion plan §3 updated.
 
 ## Feedback
 
@@ -508,6 +556,8 @@ Reply inline (`Decision: …`).
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-10-20 — Recorded the owner's 2026-10-16 approval in [PR #30 round-1 review](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5554590031): same-world roof cutaways supersede the separate cathedral scene; oval palaces, furnished side rooms, throne aisles and the cathedral north door are accepted. The dated amendments in architecture 06 and reference 05 preserve the earlier design and explain DEC-36 integration.
 
 - 2026-10-10 — **Your chat clarifications of 2026-10-10 (DEC-11) and the source of the new
   requirements** recorded in `docs/reference/game-design/13-owner-decisions-log.md` (appended to

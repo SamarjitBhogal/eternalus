@@ -4,7 +4,7 @@ description: Alphabetical one-line definitions of every game and engineering ter
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-10-30
 tags: [reference, glossary, vocabulary, naming]
 related:
   - 'docs/reference/README.md'
@@ -140,7 +140,7 @@ related:
 | Mount                          | Post-MVP horse-like entity that lets Warrior-type Legends cross the huge map quickly; different Light and Dark skins.                                                                                                                       | `docs/plan/backlog-post-mvp.md`                                                                                |
 | MVP status tags                | **MVP**, **MVP-if-time**, **post-MVP**, **removed**, plus `idea-pending` (teal) and `needs-planning` (yellow) from the game doc's highlights.                                                                                               | `game-design/00-overview-and-status-legend.md`                                                                 |
 | Neutral                        | The third team value for camps, bosses and assist mobs; a property on the `Team` component, not a class (D10); "Medium" may become its in-fiction name.                                                                                     | `Team` `'neutral'`                                                                                             |
-| Object Pool                    | Reused instances for projectiles, particles and high-frequency event payloads so hot paths allocate nothing.                                                                                                                                | `entities/ProjectilePool`                                                                                      |
+| Object Pool                    | Reused instances for projectiles and particles so hot paths allocate nothing. High-frequency event payloads join only once profiling shows GC pauses (DEC-94).                                                                              | `entities/ProjectilePool`                                                                                      |
 | Obstacle                       | A concrete, data-driven entity: tree, rock, bridge segment; breakable or unbreakable, burnable, fellable, carryable by weight.                                                                                                              | `Obstacle`, `ObstacleDefinition`, `content/obstacles/`                                                         |
 | OCP litmus test                | The product owner's test for the architecture: "new idea? add a new class (and a content entry, and a registry line); nothing else changes".                                                                                                | brief §5; `docs/architecture/17-extension-recipes.md`                                                          |
 | Open question (OQ)             | A numbered design or naming question awaiting a human decision; agents add rows, never decide them.                                                                                                                                         | `game-design/12-open-questions.md` (OQ-nn)                                                                     |

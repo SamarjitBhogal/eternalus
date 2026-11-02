@@ -10,6 +10,7 @@ export const HORDE_STEERING = {
   marchSpeedFactor: 0.9, // TUNE: under 1, so the ranks keep up with the anchor
   spawnSpacing: 2, // TUNE: over the heavy minion's 1.6 m diameter
   spawnColumns: 4, // TUNE:
+  deployClearance: 3, // TUNE: past the wall line and a heavy's radius from the first open cell
 } as const satisfies HordeSteeringProfile;
 
 /**
