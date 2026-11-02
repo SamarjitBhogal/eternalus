@@ -196,6 +196,10 @@ describe('SessionController crash reports', () => {
     expect(session.controller.phase).toBe('menu');
     expect(session.store.getState().session.reason).toBe('screen-crashed');
     expect(session.popup()).toMatchObject({ stage: 'asking', cause: 'screen' });
+
+    // The crash stopped the reveal countdown: its end must not move the menu to match-loading.
+    session.clock.advance(REVEAL_COUNTDOWN_MS);
+    expect(session.controller.phase).toBe('menu');
   });
 
   it('gives the reveal no way out except a crash: no player intent leaves pre-launch', async () => {

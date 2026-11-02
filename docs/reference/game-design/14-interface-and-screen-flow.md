@@ -53,7 +53,8 @@ directly.
    returns to the home screen, where a themed popup says so (DEC-102).
 3. **Pre-launch reveal (10 s)** — after the countdown the friendly team is shown on its
    pedestals for 10 seconds with a timer counting down into launch; the enemy team appears in
-   the **top right**. The reveal has no cancel: only a screen crash leaves it, to the menu (DEC-141).
+   the **top right**. The reveal has no cancel: a screen crash ends it early, to the menu (DEC-141); the countdown's
+   end also leaves it.
 4. **Match loading screen** — stays until everything for the match is loaded. Both teams'
    characters are shown: friendly team on **top**, enemy team on the **bottom**.
 5. **Match** — the game loads in and the HUD appears around the screen.

@@ -322,18 +322,25 @@ enough to call every N ticks in tests and on demand from the developer menu.
 
 ```ts
 // Sketch: packages/core/src/diagnostics/Replay.types.ts
-export type Replay = {
+// What the match was built with: the optional fields of `SimulationOptions` that shape the world.
+export type ReplaySetup = Pick<
+  SimulationOptions,
+  'seed' | 'config' | 'map' | 'mapObjects' | 'roster'
+>;
+export type Replay = ReplaySetup & {
   readonly versions: { readonly core: string; readonly content: string; readonly schema: number };
-  readonly seed: number;
-  readonly config: GameConfig;
   readonly commands: readonly { readonly tick: number; readonly command: Command }[];
   readonly checkpoints: readonly { readonly tick: number; readonly hash: number }[];
 };
 ```
 
-A replay is seed + config + command log + versions; `runReplay(replay, createTarget)` builds a
-fresh `Simulation` through the factory it is given (so `diagnostics/` never imports
-`Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
+A replay is self-contained: its setup (seed, config and, when the match had them, the generated
+map, the map objects and the bot roster), the command log and the versions. The setup is plain
+data and `exportReplay()` copies it from the options the match was built with, so a replay
+reproduces a match whose world the client prepared (the roster can depend on the player's pick)
+without the code that prepared it. `runReplay(replay, createTarget)` builds a fresh `Simulation`
+through the factory it is given, which receives the replay's setup (so `diagnostics/` never
+imports `Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
 Replays are the regression-test format (fixtures under `__fixtures__/`, format in
 [15](15-diagnostics-and-runtime-testing.md) §7), the bug-report format (the developer menu can dump
 one) and the match-history record persisted by `ReplayRepository`.
@@ -417,11 +424,12 @@ a view never needs anything from the entity beyond its `definitionId`.
 The simulation kernel (sprint 1.1, PR #13) implements §2–§10 as written, with these interim gaps,
 each closed by the session or phase named:
 
-- `Simulation` takes one `SimulationOptions` object (`config`, `seed`, `logger`, optional
-  `systems`, `debug`, `content` and `levelCurves`; CONTRIBUTING §4). Its `EntityFactory` uses
+- `Simulation` takes one `SimulationOptions` object (`SimulationOptions` in
+  `packages/core/src/Simulation.types.ts` lists its fields; CONTRIBUTING §4). Its `EntityFactory` uses
   `createDefaultEntityRegistry()`. `exportReplay()` and `recentContext()` exist (ADR 0025 §4: a log of the external commands and
   replay checkpoints, both outside the hashed state); no `dispose()` yet.
-- `move`, `stop`, `attack-target`, `cast-ability`, `intent` and `dev-set-controller` are routed to
+- `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
+  `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /

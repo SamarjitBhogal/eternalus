@@ -112,6 +112,7 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
   it('puts the roof back when the Legend walks out of the building', () => {
     const { match, input, roofsDrawn, footprintOf, playerPosition } = setUp();
     match.tick();
+    expect(roofsDrawn('light-stronghold').drawn).toBe(0);
     const footprint = footprintOf('light-stronghold');
     const isInside = (): boolean => {
       const at = playerPosition();
@@ -130,6 +131,7 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
   it('puts the roof back when the Legend dies (it leaves the snapshot)', () => {
     const { match, simulation, roofsDrawn } = setUp();
     match.tick();
+    expect(roofsDrawn('light-stronghold').drawn).toBe(0);
     const entityId = match.playerEntityId;
     if (entityId === null) throw new Error('the player did not spawn');
 

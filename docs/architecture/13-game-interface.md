@@ -710,8 +710,9 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   button that closes the view no longer steps the browser's history (DEC-112).
 - **Developer chrome and pause.** The developer flag is the `?dev=1` query only, because
   `settings.developer.menuEnabled` does not exist yet. The free camera, the overview, the explorer
-  toolbar and the map legend need it (DEC-32; INBOX HC-F8), and so does the click that cuts a
-  building's roof away with its "Restore roofs & overview" button (DEC-143). Normal play draws
+  toolbar and the map legend start shown with it, or are shown by the hotkey of DEC-105
+  (Cmd or Ctrl+Shift+F3) in any build (DEC-32; INBOX HC-F8). The same holds for the click that
+  cuts a building's roof away with its "Restore roofs & overview" button (DEC-143). Normal play draws
   nothing over the canvas: a building's roof opens while the player's Legend stands inside it,
   and the minimap is player HUD, drawn whatever the flag (DEC-143; [06](06-map-and-minimap.md)
   §10). The interim "Leave cathedral" control (register CD-22) is gone with the separate
