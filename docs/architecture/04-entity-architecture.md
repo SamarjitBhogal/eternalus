@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -219,9 +219,10 @@ can check the ids a definition names (dangling references), and the validator re
 broken rule at once in one `ContentValidationError`. The rules are listed in one file,
 `content/defaultContentRules.ts` (`createDefaultContentRules()`); a new rule is a class and one
 line there.
-`loadDisplayContent()` validates the display-only families (Legends and Legend specs) through the
-same `ContentValidator`; the rules that need the Legend catalogue come from
-`createLegendSpecRules(legends)` (ADR 0018).
+`loadDisplayContent()` validates the display-only families (Legends, Legend specs and the locked
+classes) and the bot roster, setup data, through the same `ContentValidator`; the rules that need
+the Legend catalogue come from `createLegendSpecRules(legends)` (ADR 0018) and
+`createBotRosterRules(legends)` (DEC-61).
 
 ## 6. `EntityFactory` and `EntityRegistry`
 

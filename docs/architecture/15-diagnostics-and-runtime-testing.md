@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-11-02
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -214,6 +214,15 @@ level filter is one comparison; scope filters let the overlay show `core.invaria
 short sink names are the ones in [01](01-layered-oop-model.md) §3,
 [09](09-hardware-abstraction.md) §1 and §8, the plan and the research.
 
+The error reports of DEC-106 sit beside the sinks in `data/logging/` (ADR 0025 §3).
+`ErrorReporter` is a `LogSink`: it saves each record its rule table (`ErrorReporter.constants.ts`)
+lists as a report without a note (the silent path, §5), and the session hands it a crash
+(`reportCrash`), whose popup asks for a note. It saves through the `ReportWriter` port
+(`DevServerReportWriter`, which sends the report to the endpoint of the dev and preview servers,
+and `MemoryReportWriter`, the test double); a report that cannot be saved is offered to copy, and
+a database later is one more adapter. The reports land in `logs/errors/` at the repository root,
+out of git, one JSON file each.
+
 ## 5. From a violation to the screen
 
 `InvariantRunner.report(v, state)` does two things in a fixed order: it emits
@@ -226,8 +235,9 @@ of ring buffers that hold 512, `TUNE`, plan Phase 1). That record is the bug rep
 
 - recent commands reproduce the moment, and `Simulation.exportReplay()` reproduces the whole match.
 
-In the browser the record reaches `RingBufferSink` (kept for "copy repro") and `OverlaySink`,
-which publishes `diagnostic` on the bridge; `diagnosticsSlice.violations` collects them and
+In the browser the record reaches `RingBufferSink` (kept for "copy repro"), `ErrorReporter`
+(which saves it as an error report without a note, §4; ADR 0025 §6) and `OverlaySink`, which
+publishes `diagnostic` on the bridge; `diagnosticsSlice.violations` collects them and
 `PerfOverlay` shows the last N with a "copy repro" button whose payload equals the `LogRecord`
 (plan Phase 5, sprint 5.5). `DeveloperMenu` shows the count per invariant, the current level and
 a "dump replay" action; `MatchBridge` may also raise a one-line `announce` for `fatal` (dev only,
@@ -487,6 +497,12 @@ every `died` removal of the tick had an `entity-died` with its killer this tick
 `DamageSource` kinds are still those of 05 §9 (`weapon`, `ability`, `status`, `structure`,
 `environment`); the `self`/`script` kinds and resolving the attacker in the store join with the
 abilities and the match director.
+
+Crash and error reports (ADR 0025, accepted 2026-10-30, DEC-124) are built (build-plan step 12):
+core's `Simulation.exportReplay()` and `recentContext()` (with the log of external commands and
+the replay checkpoints; `531cd90`), the client's writer (`ErrorReporter`, `ReportWriter` and its
+adapters, the dev-server plugin; `6db5713`), and the crash popup and the `ErrorBoundary`
+(`226e2c6`).
 
 ## Related
 

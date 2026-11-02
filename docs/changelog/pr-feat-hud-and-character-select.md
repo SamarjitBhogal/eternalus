@@ -4,7 +4,7 @@ description: The record for the pull request of feat/hud-and-character-select (c
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [changelog, pull-request, ui, hud, character-select]
 related:
   [
@@ -906,6 +906,31 @@ pending: T-10 and T-13 (held for the bot-roster build), T-12 and T-75 (redrafted
 with that build; T-12's redraft still lets a timeout start a match with no Legend, which DEC-102
 replaces), T-23 (redrafted to DEC-62, for his approval), T-125 (SamarjitBhogal's) and T-152 (the UI
 enhancements task line, whose wait for HC-S5 is over; its text still needs his approval).
+
+## Owner answers of 2026-11-02 (HC-T1)
+
+The owner answered `INBOX.md` HC-T1 on his decision page on 2026-11-02: "every group: Approve (all
+54 rows approved), except T-199" (DEC-142). His words are kept verbatim outside the repository
+(`eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-11-02-hc-q30-hc-t1.md`), with
+his process ruling of the same day (DEC-138): a doc that is wrong about code a critic has verified
+is corrected without asking him; design decisions still go to him.
+
+| Rows                                                | His answer                                                                                                                                                                                                    | Applied                                                                                                                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-10, T-12, T-13, T-23, T-75, T-152, T-181 to T-226 | "Approve" (every group)                                                                                                                                                                                       | applied (`--apply-b27` of the D2b generator, outside the repository), except T-199; T-202 and T-221 were redrafted first to the built step 12 (DEC-138)    |
+| T-125, architecture 18 (owned by SamarjitBhogal)    | "Approve"                                                                                                                                                                                                     | applied; **flagged for SamarjitBhogal**: the bot Legend row of 18 §2 now names every playable class (`LEGEND_CLASSES`) in place of the three class ids     |
+| T-159, 04 §12's worked example                      | "Approve"                                                                                                                                                                                                     | its first line was applied on 2026-10-29; the worked-example table's file, constant and class names follow the HC-Q18 (2) build (spawn by `kind`, step 14) |
+| T-199, 06 §10's "Free view and interior" row        | "Change or ask": the minimap is always shown in the HUD and is not a developer item; the developer options (free view and the like) need not always show; building roofs hide on their own when players enter | not applied (DEC-143); redrafted after the phase-branch merge                                                                                              |
+
+**HC-T1 after these answers:** 52 rows are applied, in 20 files (architecture 02, 03, 04, 05, 08,
+09, 13, 14, 15, 17 and 18; requirements 05 and 06; references 09 and 14; the phase 6 plan and the
+UI enhancements plan; the root `AGENTS.md`, `CONTRIBUTING.md` and `apps/client/AGENTS.md`); the 17
+docs among them have `last-reviewed: 2026-11-02`. The table holds 205 applied rows and 1 pending
+(T-199). Redrafted before they were applied (DEC-138), because build-plan step 12 (`531cd90`,
+`6db5713`, `226e2c6`, critic loops 1 to 3) built what they said was still to come: T-202 (13 §10,
+the "Session" status bullet: the built crash flow, and `match-crashed` is no longer a banner) and
+T-221 (15 §13: the reports are built). The status notes that named the applied rows as pending got
+a dated append: 13 §10 (two bullets), 14 §14, 17 §12 and the UI enhancements plan §1.
 
 ## Working ids
 

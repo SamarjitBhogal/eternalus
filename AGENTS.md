@@ -6,8 +6,9 @@ source of agent instructions. Tool-specific files (`CLAUDE.md`, `GEMINI.md`,
 `packages/core/AGENTS.md` and `apps/client/AGENTS.md`; read the one nearest to the files you edit.
 
 Eternalus is a browser-only 2D game: TypeScript monorepo, custom Canvas 2D engine, React UI,
-single player vs. AI bots, no server. **The architecture below is the target design:**
-`docs/plan/` tracks how much of it is built. Follow the design when adding code.
+single player vs. AI bots, no game server (the dev and preview servers take error reports,
+ADR 0025). **The architecture below is the target design:** `docs/plan/` tracks how much of it
+is built. Follow the design when adding code.
 
 ## Read first (in this order)
 

@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-22
+last-reviewed: 2026-11-02
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -411,8 +411,10 @@ each closed by the session or phase named:
 
 - `Simulation` takes `(config, seed, logger, systems = [])` (Sprint 1 brief); it becomes
   `SimulationOptions` when content and `debug` arrive (four parameters at most, CONTRIBUTING §4).
-  No `exportReplay()` or `dispose()` yet. Its `EntityFactory` has an empty registry until session
-  C passes `createDefaultEntityRegistry()` (marked `TODO` in `Simulation.ts`).
+  `exportReplay()` and `recentContext()` exist (ADR 0025 §4: a log of the external commands and
+  replay checkpoints, both outside the hashed state); no `dispose()` yet. Its `EntityFactory` has
+  an empty registry until session C passes `createDefaultEntityRegistry()` (marked `TODO` in
+  `Simulation.ts`).
 - `move`, `stop`, `attack-target`, `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.

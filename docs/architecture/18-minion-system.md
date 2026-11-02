@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards and the lanes of bo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-17
+last-reviewed: 2026-11-02
 tags: [architecture, minions, hordes, guards, spawning, ai, core]
 paths:
   [
@@ -42,14 +42,14 @@ tree; this doc builds on them and never restates them.
 **Entity legend.** The entity types this system implements, with their `EntityKind` and family
 from doc [04 §1](04-entity-architecture.md#1-the-family-tree):
 
-| Entity type        | `EntityKind`                         | Family   | What this system does with it                                                                                                                                                         | Controller               |
-| ------------------ | ------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| Light lane minion  | `light-mob`                          | `Mob`    | Spawned in hordes by the Stronghold (opening hordes) and SpawnerTowers; marches, fights, dies                                                                                         | `MinionController`       |
-| Medium lane minion | `medium-mob`                         | `Mob`    | Spawned in hordes by BuffTowers                                                                                                                                                       | `MinionController`       |
-| Heavy lane minion  | `heavy-mob`                          | `Mob`    | Spawned in hordes by the Stronghold down the worst lane                                                                                                                               | `MinionController`       |
-| Tower guard        | a `Mob` kind with a guard definition | `Mob`    | Light guards at SpawnerTowers, medium at BuffTowers, ranged and melee at the Stronghold; spawned and respawned by the structure's `GuardPlan`; hold its perimeter; belong to no horde | `GuardController`        |
-| Bot Legend (laner) | `warrior`, `sentinel`, `magus`       | `Legend` | Gets a lane at match setup (§8); the doc 11 laner tree plays it                                                                                                                       | `BotLegendController`    |
-| Horde              | none (not an entity)                 | —        | The composite that groups lane minions: members, leader, formation, lane progress                                                                                                     | `HordeSystem` (a system) |
+| Entity type        | `EntityKind`                            | Family   | What this system does with it                                                                                                                                                         | Controller               |
+| ------------------ | --------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Light lane minion  | `light-mob`                             | `Mob`    | Spawned in hordes by the Stronghold (opening hordes) and SpawnerTowers; marches, fights, dies                                                                                         | `MinionController`       |
+| Medium lane minion | `medium-mob`                            | `Mob`    | Spawned in hordes by BuffTowers                                                                                                                                                       | `MinionController`       |
+| Heavy lane minion  | `heavy-mob`                             | `Mob`    | Spawned in hordes by the Stronghold down the worst lane                                                                                                                               | `MinionController`       |
+| Tower guard        | a `Mob` kind with a guard definition    | `Mob`    | Light guards at SpawnerTowers, medium at BuffTowers, ranged and melee at the Stronghold; spawned and respawned by the structure's `GuardPlan`; hold its perimeter; belong to no horde | `GuardController`        |
+| Bot Legend (laner) | every playable class (`LEGEND_CLASSES`) | `Legend` | Gets a lane at match setup (§8); the doc 11 laner tree plays it                                                                                                                       | `BotLegendController`    |
+| Horde              | none (not an entity)                    | —        | The composite that groups lane minions: members, leader, formation, lane progress                                                                                                     | `HordeSystem` (a system) |
 
 **Not handled here.** Bosses (`mini-boss`, `greater-boss`) and their `BossController`, forest and
 corner camps, checkpoint assist spawns, A\* for Legends, turrets, projectiles, zones, the enemy

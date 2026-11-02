@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-02
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -63,6 +63,7 @@ requestAnimationFrame(t)
 export interface LoopTarget {
   tick(): void;
   render(alpha: number): void;
+  crashed(error: unknown): void; // `tick` or `render` threw: the loop has stopped for good; called once
 }
 export type GameLoopOptions = {
   readonly tickMs: number; // 1000 / 30 (D9)
