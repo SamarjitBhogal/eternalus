@@ -26,6 +26,14 @@ describe('BuildingRoofs', () => {
     expect(roofs.hasOpened).toBe(false);
   });
 
+  it('says whether a point is on a building, and opens no roof doing so', () => {
+    const roofs = new BuildingRoofs(buildings);
+    expect(roofs.isBuildingAt(IN_CATHEDRAL)).toBe(true);
+    expect(roofs.isBuildingAt(OUTSIDE)).toBe(false);
+    expect([...roofs.hidden]).toEqual([]);
+    expect(roofs.hasOpened).toBe(false);
+  });
+
   it('closes the roof when the Legend walks out, or into another building', () => {
     const roofs = new BuildingRoofs(buildings);
     roofs.playerAt(IN_LIGHT_STRONGHOLD);

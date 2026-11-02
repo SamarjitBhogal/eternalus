@@ -62,6 +62,11 @@ export class BuildingRoofs {
     return true;
   }
 
+  /** Whether `point` is on a building's footprint; it changes no roof. */
+  public isBuildingAt(point: Vec2): boolean {
+    return findBuildingAt(this.buildings, point) !== undefined;
+  }
+
   /** Closes every roof the developer opened; the player's building stays open. */
   public restore(): void {
     this.opened.clear();

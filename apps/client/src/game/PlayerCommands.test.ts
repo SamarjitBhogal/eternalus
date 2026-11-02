@@ -48,19 +48,18 @@ const HOUSE_STATES: readonly MapObjectSnapshot[] = [
 const setUp = () => {
   const input = new ScriptedIntent();
   const enqueueCommand = vi.fn<Simulation['enqueueCommand']>();
-  const playerMoved = vi.fn<() => void>();
   const commands = new PlayerCommands(
     input,
     { enqueueCommand },
-    { screenToWorld: (point) => point, playerMoved },
+    { screenToWorld: (point) => point },
     [HOUSE],
   );
   const queued = (type: Command['type']): number =>
     enqueueCommand.mock.calls.filter(([command]) => command.type === type).length;
-  const tick = (): void => {
-    commands.apply(ACTOR, HOUSE_STATES);
+  const tick = (): boolean => {
+    return commands.apply(ACTOR, HOUSE_STATES);
   };
-  return { input, commands, enqueueCommand, playerMoved, queued, tick };
+  return { input, commands, enqueueCommand, queued, tick };
 };
 
 describe('PlayerCommands', () => {
@@ -105,21 +104,20 @@ describe('PlayerCommands', () => {
     expect(queued('attack-target')).toBe(1);
   });
 
-  it('queues move or stop only when the axes change; tells the camera while it moves', () => {
-    const { input, enqueueCommand, playerMoved, tick } = setUp();
-    tick();
+  it('queues move or stop only when the axes change; returns whether the player moves', () => {
+    const { input, enqueueCommand, tick } = setUp();
+    expect(tick()).toBe(false);
     expect(enqueueCommand).not.toHaveBeenCalled();
 
     input.move = { x: 1, y: 0 };
-    tick();
-    tick();
+    expect(tick()).toBe(true);
+    expect(tick()).toBe(true);
     input.move = { x: 0, y: 0 };
-    tick();
+    expect(tick()).toBe(false);
 
     expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
       { type: 'move', actorId: ACTOR, direction: { x: 1, y: 0 } },
       { type: 'stop', actorId: ACTOR },
     ]);
-    expect(playerMoved).toHaveBeenCalledTimes(2);
   });
 });

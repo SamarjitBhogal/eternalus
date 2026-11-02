@@ -9,13 +9,13 @@ import {
 
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
-import type { MatchCamera } from './MatchCamera';
 
 /**
  * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
  * `move` or `stop` only when the movement axes change, and `attack-target` once per map object the
  * held attack button aims at. A press the canvas gestures own is no attack (`setPointerClaimed`;
- * 06 §10, attack and roof input arbitration). Moving tells the camera to follow again.
+ * 06 §10, attack and roof input arbitration). It only turns input into commands: `apply` tells
+ * `Match` whether the player moves, and `Match` tells the camera (DEC-151).
  */
 export class PlayerCommands {
   private lastMove: Vec2 = { x: 0, y: 0 };
@@ -32,14 +32,14 @@ export class PlayerCommands {
   public constructor(
     private readonly input: IntentSource,
     private readonly simulation: Pick<Simulation, 'enqueueCommand'>,
-    private readonly camera: Projection & Pick<MatchCamera, 'playerMoved'>,
+    private readonly camera: Projection,
     private readonly mapObjects: readonly MapObject[],
   ) {}
 
   /**
-   * Whether the canvas gestures own the main button's press (a minimap click, or any press while
-   * the developer explorer is shown). While they do, the held button is no attack: one press is
-   * one action.
+   * Whether the canvas gestures own the main button's press (a minimap click, a press on a
+   * building or a drag while the developer explorer is shown; a plain click on open world is
+   * not claimed, DEC-150). While they do, the held button is no attack: one press is one action.
    */
   public setPointerClaimed(isClaimed: boolean): void {
     this.isPointerClaimed = isClaimed;
@@ -48,17 +48,16 @@ export class PlayerCommands {
   /**
    * Reads this tick's intent and queues its commands for the Legend `actorId`. `states` are the
    * latest snapshot's map objects: only a living one can be the attack target.
+   *
+   * @returns Whether the player's movement input is non-zero this tick.
    */
-  public apply(actorId: EntityId, states: readonly MapObjectSnapshot[]): void {
+  public apply(actorId: EntityId, states: readonly MapObjectSnapshot[]): boolean {
     const { move, isAttacking, aim } = this.input.read(this.camera);
     const attackAim = isAttacking === true && !this.isPointerClaimed ? aim : null;
     this.applyAttack(actorId, attackAim, states);
     const isMoving = move.x !== 0 || move.y !== 0;
-    if (isMoving) {
-      this.camera.playerMoved();
-    }
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
-      return;
+      return isMoving;
     }
     this.simulation.enqueueCommand(
       isMoving ? { type: 'move', actorId, direction: move } : { type: 'stop', actorId },
@@ -68,6 +67,7 @@ export class PlayerCommands {
       this.attackTargetId = null;
     }
     this.lastMove = move;
+    return isMoving;
   }
 
   /**

@@ -7,6 +7,7 @@ import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { matchSlice } from '../slices/matchSlice';
 import type { RootState } from '../store';
+import { isDead } from './isDead';
 
 /** One tile of a structure strip: an icon over a health bar, bound to its structure by identity. */
 export type HudStructureTile = {
@@ -31,9 +32,8 @@ const SIDE_TEAM: Readonly<Record<HudSide, Readonly<Record<PlayableTeam, Playable
   enemy: { light: 'dark', dark: 'light' },
 };
 
-/** A structure at zero health is destroyed (DEC-69); unknown health is not. */
-const isDestroyed = ({ health }: StructureStatus): boolean =>
-  health !== null && health.current <= 0;
+/** A structure at zero health is destroyed (DEC-69); unknown health is not (`isDead`). */
+const isDestroyed = ({ health }: StructureStatus): boolean => isDead(health);
 
 /** Sort key of a lane: lane order, structures without a lane last. */
 const laneRank = (laneIndex: number | null): number => laneIndex ?? Number.POSITIVE_INFINITY;

@@ -8,6 +8,7 @@ import {
   type Vec2,
 } from '@eternalus/core';
 
+import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
@@ -160,21 +161,23 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * One tick: the player's intent becomes commands, the simulation steps, and the roof of the
-   * building the player's Legend now stands in opens. A dead Legend (no health left, or gone from
-   * the snapshot) stands in no building, so its roof closes (DEC-143, DEC-149).
+   * One tick: the player's intent becomes commands (and moving input sends the camera back to
+   * following), the simulation steps, and the roof of the building the player's Legend now stands
+   * in opens. A dead Legend (`isDead`, or gone from the snapshot) stands in no building, so its
+   * roof closes (DEC-143, DEC-149).
    */
   public tick(): void {
     if (this.playerId !== null) {
-      this.commands.apply(this.playerId, this.current.mapObjects ?? []);
+      const isMoving = this.commands.apply(this.playerId, this.current.mapObjects ?? []);
+      if (isMoving) {
+        this.camera.playerMoved();
+      }
     }
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
     const player = this.playerEntity();
-    const health = player?.health ?? null;
-    const isDead = health !== null && health.current <= 0;
-    this.roofs.playerAt(isDead ? null : (player?.transform ?? null));
+    this.roofs.playerAt(isDead(player?.health ?? null) ? null : (player?.transform ?? null));
     this.bridge.afterTick(this.current, this.playerId);
   }
 
@@ -237,6 +240,14 @@ export class Match implements LoopTarget {
   }
 
   /**
+   * Whether the screen point (device pixels) is on a building's footprint. Unlike `toggleRoofAt`
+   * it changes no roof: the pointer controls use it to claim a press on a building (DEC-150).
+   */
+  public isBuildingAt(screenX: number, screenY: number): boolean {
+    return this.roofs.isBuildingAt(this.camera.worldAt(screenX, screenY));
+  }
+
+  /**
    * Shows the whole battlefield in the free view and puts back every roof the developer cut away
    * (the player's building stays open).
    */
@@ -256,9 +267,10 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Whether the canvas gestures own the main button's press (a minimap click, or any press while
-   * the developer explorer is shown). While they do, the held button is no attack: one press is
-   * one action (06 §10, attack and roof input arbitration).
+   * Whether the canvas gestures own the main button's press (a minimap click, a press on a
+   * building or a drag while the developer explorer is shown; a plain click on open world is
+   * not claimed, DEC-150). While they do, the held button is no attack: one press is one action
+   * (06 §10, attack and roof input arbitration).
    */
   public setPointerClaimed(isClaimed: boolean): void {
     this.commands.setPointerClaimed(isClaimed);

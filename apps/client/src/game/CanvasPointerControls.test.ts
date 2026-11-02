@@ -34,6 +34,7 @@ function setUp(isExplorerShown: boolean) {
     panBy: vi.fn(),
     zoomBy: vi.fn(),
     hasDeveloperRoofs: false,
+    isBuildingAt: vi.fn<(x: number, y: number) => boolean>(() => false),
     toggleRoofAt: vi.fn<(x: number, y: number) => boolean>(() => {
       match.hasDeveloperRoofs = !match.hasDeveloperRoofs;
       return true;
@@ -139,8 +140,20 @@ describe('CanvasPointerControls with the developer explorer', () => {
     expect(roofs).toEqual([true, false]);
   });
 
-  it('claims every press until its release or a cancel, so a drag or roof click is no attack', () => {
+  it('leaves a plain click on open world unclaimed, so it attacks (DEC-150)', () => {
+    const { canvas, match, pointer } = setUp(true);
+
+    canvas.dispatchEvent(pointer('pointerdown', 100, 50));
+
+    expect(match.isBuildingAt).toHaveBeenCalledWith(200, 100);
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(false);
+    canvas.dispatchEvent(pointer('pointermove', 102, 50));
+    expect(match.setPointerClaimed).not.toHaveBeenCalledWith(true);
+  });
+
+  it('claims a press on a building until its release or a cancel, so a roof click is no attack', () => {
     const { canvas, match, pointer, controls } = setUp(true);
+    match.isBuildingAt.mockReturnValue(true);
 
     canvas.dispatchEvent(pointer('pointerdown', 100, 50));
     expect(match.setPointerClaimed).toHaveBeenLastCalledWith(true);
@@ -150,6 +163,24 @@ describe('CanvasPointerControls with the developer explorer', () => {
     controls.cancelDrag();
 
     expect(match.setPointerClaimed).toHaveBeenLastCalledWith(false);
+  });
+
+  it('claims a drag once it passes the click slop, not before', () => {
+    const { canvas, match, pointer } = setUp(true);
+    canvas.dispatchEvent(pointer('pointerdown', 100, 50));
+
+    canvas.dispatchEvent(pointer('pointermove', 100 + CLICK_SLOP - 1, 50));
+    expect(match.setPointerClaimed).not.toHaveBeenCalledWith(true);
+    canvas.dispatchEvent(pointer('pointermove', 100 + CLICK_SLOP, 50));
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(true);
+    canvas.dispatchEvent(pointer('pointerup', 100 + CLICK_SLOP, 50));
+    expect(match.setPointerClaimed).toHaveBeenLastCalledWith(false);
+  });
+
+  it('never asks about buildings in normal play', () => {
+    const { match, click } = setUp(false);
+    click(100, 50);
+    expect(match.isBuildingAt).not.toHaveBeenCalled();
   });
 
   it('neither toggles a roof nor pans after a press that moved past the click slop', () => {
