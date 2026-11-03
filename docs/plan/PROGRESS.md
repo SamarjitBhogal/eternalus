@@ -4341,3 +4341,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: merge into `feat/hud-and-character-select` and open the PR to
   `phase/2-sprint-2-work`; BD-B (`Match`'s pointer and explorer controls in their own class) at the
   A19 merge (`INBOX.md` HC-S6).
+
+### 2026-11-02 — Phase 2 / Track B (S1 carry-over) / HUD and character select, PR #68 Windows CI — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done: PR #68's first CI run failed on `windows-latest` only (2 of 1735 client tests).
+  The note test made the report read-only to prove the rename, and Windows refuses to replace a
+  read-only file; it now proves the rename by the file's identity (`stat` `ino`), on every
+  platform. The browser-match replay test (a whole match recorded and replayed) took 6.4 s on the
+  runner against the 5 s default; it gets the 60 s that core gives its whole-match tests. Red
+  proof: `eternalus-agent-work/hud-charselect/build-1102/pr68-windows-ci-redproofs.md`.
+- Checks run: `npm run check` EXIT 0: "All matched files use Prettier code style!"; core "Tests
+  945 passed (945)"; client "Tests 1735 passed (1735)"; "Documentation check passed."
+- Next step: PR #68 CI on both runners; a teammate review.
