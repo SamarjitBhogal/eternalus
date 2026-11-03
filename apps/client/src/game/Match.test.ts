@@ -3,6 +3,8 @@ import {
   type InputIntent,
   type MapDefinition,
   MapGenerator,
+  MapPresentationBuilder,
+  MapObjectBuilder,
   MemoryLogger,
   NullLogger,
   Simulation,
@@ -25,11 +27,15 @@ const SEED = 1;
 class ScriptedIntent implements IntentSource {
   public move: Vec2 = { x: 0, y: 0 };
 
+  public isAttacking = false;
+
+  public aim: Vec2 | null = null;
+
   public projection: Projection | null = null;
 
   public read(projection: Projection): InputIntent {
     this.projection = projection;
-    return { move: this.move, aim: null, triggered: [] };
+    return { move: this.move, isAttacking: this.isAttacking, aim: this.aim, triggered: [] };
   }
 }
 
@@ -40,8 +46,8 @@ type Content = NonNullable<ConstructorParameters<typeof Simulation>[0]['content'
  * A rock (kind `obstacle`, which has no view of its own) plus the player's Legend, with speeds already per tick as the simulation sees them.
  */
 const CONTENT_WITH_A_ROCK: Content = (() => {
-  const movement = { maxSpeed: 0.2, acceleration: 0.05, mass: 1 };
-  const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movement };
+  const movementProfile = { maxSpeed: 0.2, acceleration: 0.05, mass: 1 };
+  const unit = { baseHealth: 100, footprintRadius: 0.5, visionRadius: 10, movementProfile };
   const definitions = [
     {
       id: 'warrior',
@@ -77,7 +83,12 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
   };
 })();
 
-const setUp = (map?: MapDefinition, content?: Content, hasHordes = false) => {
+const setUp = (
+  map?: MapDefinition,
+  content?: Content,
+  hasHordes = false,
+  hasMapObjects = false,
+) => {
   const config = createDefaultGameConfig();
   const generated = map ?? new MapGenerator().generate(config, SEED);
   const simulation = new Simulation({
@@ -85,6 +96,14 @@ const setUp = (map?: MapDefinition, content?: Content, hasHordes = false) => {
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined ? {} : { content }),
+    ...(hasMapObjects
+      ? {
+          mapObjects: new MapObjectBuilder().build(
+            generated,
+            new MapPresentationBuilder().build(generated),
+          ),
+        }
+      : {}),
     ...(hasHordes ? { map: generated } : {}),
   });
   const scheduler = new FakeFrameScheduler();
@@ -135,6 +154,68 @@ const playerX = (match: Match): number =>
   Number.NaN;
 
 describe('Match', () => {
+  it('updates the main scene and minimap when a map object is destroyed', () => {
+    const { match, simulation, renderer, map } = setUp(undefined, undefined, true, true);
+    const house = new MapPresentationBuilder()
+      .build(map)
+      .scenery.find((piece) => piece.object?.kind === 'house' && piece.object.isFootprint);
+    if (house?.object === undefined) throw new Error('Missing house');
+    match.tick();
+    match.render(0);
+    const fills = () =>
+      renderer.calls.flatMap((call) => (call.op === 'fillPolygon' ? [call.args[0]] : []));
+    expect(fills()).toContainEqual(house.shape);
+    const target = match.snapshot.mapObjects?.find((object) => object.id === house.object?.id);
+    if (target?.entityId == null) throw new Error('Missing map object');
+    simulation.enqueueCommand({ type: 'dev-remove-entity', entityId: target.entityId });
+    match.tick();
+    renderer.calls.length = 0;
+    match.render(0);
+    expect(fills()).not.toContainEqual(house.shape);
+    match.destroy();
+  });
+  it('queues one attack per target while the attack button is held, and again after a release or a stop', () => {
+    const { match, simulation, input, map } = setUp(undefined, undefined, true, true);
+    const house = new MapObjectBuilder()
+      .build(map, new MapPresentationBuilder().build(map))
+      .find((object) => object.kind === 'house');
+    const corner = house?.footprints[0]?.[0];
+    const opposite = house?.footprints[0]?.[2];
+    if (corner === undefined || opposite === undefined) throw new Error('Missing house');
+    match.tick();
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const attacks = () =>
+      enqueue.mock.calls.filter(([command]) => command.type === 'attack-target').length;
+    input.isAttacking = true;
+    input.aim = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
+
+    for (let tick = 0; tick < 5; tick += 1) match.tick();
+    expect(attacks()).toBe(1);
+    input.isAttacking = false;
+    match.tick();
+    input.isAttacking = true;
+    match.tick();
+    expect(attacks()).toBe(2);
+    // `stop` also drops the attack target, so the held button queues it once more after one.
+    input.move = { x: 1, y: 0 };
+    match.tick();
+    input.move = { x: 0, y: 0 };
+    match.tick();
+    match.tick();
+    expect(attacks()).toBe(3);
+    match.destroy();
+  });
+
+  it('reports closed roofs after the same building is toggled twice', () => {
+    const { match } = setUp();
+    // The following camera initially centres on the light stronghold.
+    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.hasOpenRoofs).toBe(true);
+    expect(match.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.hasOpenRoofs).toBe(false);
+    match.destroy();
+  });
   it("spawns the player's Warrior at the Light stronghold on the first tick", () => {
     const { match, lightStronghold } = setUp();
     expect(match.playerEntityId).toBeNull();

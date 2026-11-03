@@ -1,6 +1,7 @@
+import type { CONTROLLER_IDS } from './controllerIds';
+
 /** Which controller drives an entity (architecture 11 §2); kebab-case, never renamed once used. */
-export type ControllerId =
-  'player' | 'bot-legend' | 'minion' | 'guard' | 'turret' | 'boss' | 'rover';
+export type ControllerId = (typeof CONTROLLER_IDS)[number];
 
 /** How often each controller decides, and how many decisions a tick may hold (11 §6). */
 export type AiCadence = {
@@ -24,7 +25,7 @@ export type HordeSteeringProfile = {
    * cell it follows the lane's flow field instead (architecture 18 §5.2).
    */
   readonly blockedLookAhead: number;
-  /** Push at contact, falling to 0 at `separationRadius`. */
+  /** Push at half `separationRadius`; it scales as 1/distance, shifted to 0 at the radius (10 §9). */
   readonly separationWeight: number;
   /** A combined steer shorter than this counts as none, so a settled horde stands still. */
   readonly minSteer: number;
@@ -39,13 +40,19 @@ export type HordeSteeringProfile = {
   readonly spawnSpacing: number;
   /** Members per row of the spawn grid. */
   readonly spawnColumns: number;
+  /**
+   * How far past the first walkable ground along its way out a deploying horde's rearmost
+   * member's exit lies (DEC-133). A mob stops deploying there, or sooner, once its body stands
+   * on walkable ground.
+   */
+  readonly deployClearance: number;
 };
 
-/** The weights of the lane assessment (architecture 18 §3.3); each term runs from 0 to 1. */
+/** The weights of the lane assessment (architecture 18 §3.3, DEC-89); each term runs from 0 to 1. */
 export type LaneAssessmentWeights = {
-  readonly damageNotDealt: number;
-  readonly structuresLost: number;
+  readonly structureDamageTaken: number;
   readonly pushedBack: number;
+  readonly alliesHurt: number;
 };
 
 /** The classes the aggro priority list names (architecture 11 §4.3). */
@@ -77,7 +84,7 @@ export type AggroRuleDefinition = {
   readonly priority: readonly AggroPriority[];
   /** A chase ends when the mob is this far from where it left its formation. */
   readonly leashRadius: number;
-  /** A chase ends this many ticks after it started on its current target. */
+  /** A chase of a Legend ends this many ticks after it started on it (MS-34, DEC-135). */
   readonly aggroDurationTicks: number;
   /** After re-forming, a mob waits this many ticks before it may acquire again. */
   readonly aggroCooldownTicks: number;
@@ -89,4 +96,44 @@ export type AggroRuleDefinition = {
    * them. 0 turns it off.
    */
   readonly ghostFirstWaveTicks: number;
+};
+
+/** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */
+export type AiMemory = Readonly<Record<string, string | number | boolean | null>>;
+
+/**
+ * How hard a bot Legend plays (architecture 11 §4.2): a `BotDifficultyDefinition` in
+ * `content/ai/difficulties/`, named by the bot's AI profile. Distances are metres.
+ */
+export type BotDifficultyDefinition = {
+  readonly id: string;
+  /** Below this fraction of its health the bot retreats (`Survive`). */
+  readonly retreatHealthFraction: number;
+  /** A retreating bot rejoins its lane at or above this fraction of its health. */
+  readonly rejoinHealthFraction: number;
+  /** Enemies this close make the bot fight (`Fight`). */
+  readonly engageRadius: number;
+  /** A bot this close to where it is going stops there. */
+  readonly arrivalDistance: number;
+  /** The `UtilityScorer`'s weight for each target consideration. */
+  readonly utilityWeights: Readonly<Record<'closeness' | 'weakness', number>>;
+  /** The chance, each time a cast is allowed, that a fighting bot casts an ability (0 to 1). */
+  readonly abilityUseChance: number;
+  /** At least this many ticks between two casts. */
+  readonly castIntervalTicks: number;
+};
+
+/** How the Rover hunts and mirrors the human (architecture 11 §4.7). Distances are metres. */
+export type RoverTactics = {
+  /** How far the Rover senses Legends for `HumanProximity` and mirroring. */
+  readonly senseRadius: number;
+  /** The human this close may be hunted. */
+  readonly huntRadius: number;
+  /** It hunts when its health fraction leads the human's by at least this much. */
+  readonly huntAdvantage: number;
+  /**
+   * How it weighs a lane (11 §4.7): `pressure` (`StructurePressure`: how badly its team is doing
+   * there, 0 to 1) against `human` (`HumanProximity`: 1 on the human's lane).
+   */
+  readonly laneWeights: Readonly<Record<'pressure' | 'human', number>>;
 };

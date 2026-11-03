@@ -11,7 +11,7 @@ export type LaneStructureEntry = {
   readonly x: number;
   readonly y: number;
   readonly radius: number;
-  /** Base health plus shield bars at match start: the 100 % of `damageNotDealt` (18 §3.3). */
+  /** Base health plus shield bars at match start: the 100 % of `structureDamageTaken` (18 §3.3). */
   readonly startingHealth: number;
 };
 

@@ -1,83 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
-
 import { createDefaultGameConfig } from './config/defaultGameConfig';
-import type { GameConfig } from './config/GameConfig.types';
-import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
-import { MemoryLogger } from './diagnostics/MemoryLogger';
-import { BLOCKED_LANE_MAP } from './map/__fixtures__/blockedLaneMap';
-import { MapGenerator } from './map/MapGenerator';
 import { OPENING_WAVE } from './content/structures/spawnWaves';
-import { WorldMap } from './map/WorldMap';
+import { MemoryLogger } from './diagnostics/MemoryLogger';
+import { MapGenerator } from './map/MapGenerator';
 import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
-import type { MapDefinition } from './content/maps/maps.types';
-import { ContentCatalogue } from './content/ContentCatalogue';
-import { loadDefaultContent } from './content/loadDefaultContent';
-import type { UnitDefinition } from './content/units/units.types';
-
-/** The shipped content with every minion's controller and attack taken away, so hordes only march. */
-const MARCHING_ONLY = new ContentCatalogue<UnitDefinition>(
-  loadDefaultContent(30)
-    .all()
-    .map((definition) => {
-      if (definition.controller !== 'minion') {
-        return definition;
-      }
-      const { id, kind, displayName, baseHealth, footprintRadius, visionRadius, movement } =
-        definition;
-      const marcher: UnitDefinition = {
-        id,
-        kind,
-        displayName,
-        baseHealth,
-        footprintRadius,
-        visionRadius,
-        movement,
-        ...(definition.movementStrategy === undefined
-          ? {}
-          : { movementStrategy: definition.movementStrategy }),
-      };
-      return marcher;
-    }),
-);
-
-/**
- * A match on `map` whose countdown outlasts the test, so only the opening hordes march; with
- * `isMarchingOnly`, minions never fight.
- */
-const match = (map: MapDefinition, seed = 1, isMarchingOnly = false) => {
-  const logger = new MemoryLogger();
-  const config = createDefaultGameConfig({
-    match: { initialHordesPerTeam: 2, countdownSeconds: 600 },
-  });
-  const simulation = new Simulation({
-    config,
-    seed,
-    logger,
-    debug: TEST_DEBUG_CONFIG,
-    map,
-    ...(isMarchingOnly ? { content: MARCHING_ONLY } : {}),
-  });
-  return { simulation, logger, config };
-};
-
-const run = (simulation: Simulation, ticks: number): void => {
-  for (let tick = 0; tick < ticks; tick += 1) {
-    simulation.step();
-  }
-};
-
-/** A lane minion, not a tower guard (guards are mobs too, but in no horde). */
-const isMinion = ({ definitionId }: { readonly definitionId: string }): boolean =>
-  definitionId.endsWith('-minion');
-
-/** The two-lane map with only its Strongholds, so a march meets no tower before the lane's end. */
-const STRONGHOLDS_ONLY: MapDefinition = {
-  ...TWO_LANE_MAP,
-  features: TWO_LANE_MAP.features.filter(({ kind }) => kind === 'stronghold'),
-};
+import { isMinion, match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatches';
 
 describe('Simulation with lane hordes (architecture 18, M1)', () => {
   it('walks every opening horde down its lane to the enemy end, invariants clean', () => {
@@ -88,11 +17,10 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     // Lanes are 160 m long and light minions walk 3.5 m/s: about 46 s, so 60 s is plenty.
     run(simulation, 60 * 30);
 
-    expect(spawned).toEqual(['light lane-0', 'light lane-1', 'dark lane-0', 'dark lane-1']);
+    expect(spawned).toEqual(['dark lane-0', 'dark lane-1', 'light lane-0', 'light lane-1']);
     const minions = simulation.snapshot().entities.filter(isMinion);
-    expect(minions).toHaveLength(
-      2 * config.match.initialHordesPerTeam * config.match.hordeSizes[OPENING_WAVE.weightClass],
-    );
+    // Two teams, two lanes, one opening horde of `hordeSizes.light` each.
+    expect(minions).toHaveLength(2 * 2 * config.match.hordeSizes[OPENING_WAVE.weightClass]);
     const near = (x: number) => (minion: (typeof minions)[number]) =>
       Math.abs((minion.transform?.x ?? 0) - x) < 15;
     expect(minions.filter(({ team }) => team === 'light').every(near(180))).toBe(true);
@@ -165,17 +93,59 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     }
   });
 
-  it('spawns the opening hordes of the generated map at its Strongholds', () => {
+  it.each([
+    [3, 48],
+    [5, 80],
+  ])(
+    'spawns one opening horde per lane on the generated map: %i lanes, %i light mobs a team (FR-004)',
+    (numLanes, perTeam) => {
+      const config = createDefaultGameConfig({ map: { numLanes } });
+      const map = new MapGenerator().generate(config, 1);
+      const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map });
+
+      simulation.step();
+
+      const minions = simulation.snapshot().entities.filter(isMinion);
+      expect(minions.filter(({ team }) => team === 'light')).toHaveLength(perTeam);
+      expect(minions.filter(({ team }) => team === 'dark')).toHaveLength(perTeam);
+    },
+  );
+
+  it('marches every opening horde up its lane on the generated map, none held', () => {
+    // The opening hordes start at their lane's base by the Stronghold (MS-30); bot laners make the
+    // crowd realistic.
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
-    const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map });
-
-    simulation.step();
-
-    const minions = simulation.snapshot().entities.filter(isMinion);
-    expect(minions).toHaveLength(
-      2 * config.match.initialHordesPerTeam * config.match.hordeSizes.light,
+    const roster = (['light', 'dark'] as const).flatMap((team) =>
+      Array.from({ length: config.match.legendsPerTeam - 1 }, () => ({
+        team,
+        definitionId: 'warrior',
+        role: 'laner' as const,
+        difficulty: 'normal',
+      })),
     );
+    const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map, roster });
+    const minionsAt = () =>
+      new Map(
+        simulation
+          .snapshot()
+          .entities.filter(isMinion)
+          .map(({ id, transform }) => [id, transform]),
+      );
+
+    // 40 s after the countdown: on the way up the lane, before the first waves and
+    // any fight. Timed from the countdown's end, so a countdown that holds units still holds.
+    run(simulation, (config.match.countdownSeconds + 40) * config.tickRate);
+    const before = minionsAt();
+    run(simulation, config.tickRate);
+    const after = minionsAt();
+
+    expect(after.size).toBe(2 * config.map.numLanes * config.match.hordeSizes.light);
+    const held = [...after].filter(([id, to]) => {
+      const from = before.get(id);
+      return from == null || to == null || Math.hypot(to.x - from.x, to.y - from.y) < 1;
+    });
+    expect(held).toEqual([]);
   });
 
   it('fights when opposing hordes meet: kills on both sides, invariants clean (M2b)', () => {
@@ -186,10 +156,8 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
 
     run(simulation, 60 * 30);
 
-    const { initialHordesPerTeam, hordeSizes } = createDefaultGameConfig({
-      match: { initialHordesPerTeam: 2 },
-    }).match;
-    const opened = initialHordesPerTeam * hordeSizes.light;
+    // The two opening hordes of each team; the first wave is 180 s after the countdown (DEC-87).
+    const opened = 2 * createDefaultGameConfig().match.hordeSizes.light;
     expect(alive('light')).toBeLessThan(opened);
     expect(alive('dark')).toBeLessThan(opened);
     expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
@@ -207,198 +175,5 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     });
 
     expect(hashes[0]).toEqual(hashes[1]);
-  });
-});
-
-/** The generated map's walkability grid, as the pipeline builds it. */
-const gridOf = (map: MapDefinition, config: GameConfig): WorldMap =>
-  WorldMap.fromDefinition(
-    map,
-    config.map.navCellSize,
-    (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
-  );
-
-/**
- * A match with one opening horde per lane and team, and no later waves; with `isMarchingOnly`,
- * minions never fight, so every mob is still alive at the end of a march.
- */
-const laneMatch = (map: MapDefinition, numLanes: number, isMarchingOnly = false) => {
-  const config = createDefaultGameConfig({
-    map: { numLanes, campsPerSide: numLanes === 1 ? 0 : 6 },
-    match: { initialHordesPerTeam: numLanes, countdownSeconds: 6000 },
-  });
-  const logger = new MemoryLogger();
-  const simulation = new Simulation({
-    config,
-    seed: 1,
-    logger,
-    map,
-    ...(isMarchingOnly ? { content: MARCHING_ONLY } : {}),
-  });
-  return { config, logger, simulation };
-};
-
-/**
- * Runs `ticks` ticks and returns how far the farthest mob ends from its enemy end, and the share
- * of samples (every 10 ticks) that found a mob on unwalkable ground after it first stood on
- * walkable ground (the Stronghold hordes spawn inside the Stronghold's footprint).
- */
-const march = (map: MapDefinition, numLanes: number, ticks: number) => {
-  const { config, logger, simulation } = laneMatch(map, numLanes, true);
-  const grid = gridOf(map, config);
-  const hasLeft = new Set<string>();
-  let samples = 0;
-  let offGround = 0;
-  for (let tick = 0; tick < ticks; tick += 1) {
-    simulation.step();
-    if (tick % 10 !== 0) {
-      continue;
-    }
-    for (const { id, definitionId, transform } of simulation.snapshot().entities) {
-      const cell = isMinion({ definitionId }) && transform !== null ? grid.cellAt(transform) : null;
-      if (cell === null) {
-        continue;
-      }
-      if (grid.isWalkable(cell.col, cell.row)) {
-        hasLeft.add(id);
-      }
-      if (hasLeft.has(id)) {
-        samples += 1;
-        offGround += grid.isWalkable(cell.col, cell.row) ? 0 : 1;
-      }
-    }
-  }
-  const mobs = simulation.snapshot().entities.filter(isMinion);
-  const farthest = Math.max(
-    ...mobs.map(({ team, transform }) =>
-      Math.min(
-        ...map.lanes.map(({ path }) => {
-          const end = (team === 'light' ? path[path.length - 1] : path[0]) ?? { x: 0, y: 0 };
-          return Math.hypot((transform?.x ?? 0) - end.x, (transform?.y ?? 0) - end.y);
-        }),
-      ),
-    ),
-  );
-  const warnings = logger.records.filter(({ severityText }) => severityText !== 'INFO');
-  return { mobs: mobs.length, farthest, offGroundShare: offGround / samples, warnings };
-};
-
-describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)', () => {
-  it('routes a horde around a block across its lane to the enemy end', () => {
-    const { mobs, farthest, offGroundShare, warnings } = march(BLOCKED_LANE_MAP, 1, 60 * 30);
-
-    expect(mobs).toBe(2 * 16);
-    expect(farthest).toBeLessThan(15);
-    // Without collision a mob can still clip a corner; without the field half the march is in it.
-    expect(offGroundShare).toBeLessThan(0.1);
-    expect(warnings).toEqual([]);
-  });
-
-  // Commented out on 2026-10-30 at the owner's request (PR #39): this full 530 s match takes
-  // about 8 s locally but over 100 s on the GitHub runners under coverage, past the 60 s
-  // timeout. Restore it once it is made cheaper (fewer ticks or a non-coverage soak job).
-  // eslint-disable-next-line vitest/no-commented-out-tests -- too slow for CI under coverage (above)
-  // it.each([3, 5])(
-  //   'brings every opening horde to its enemy end with no stuck mob: %i lanes',
-  //   (numLanes) => {
-  //     const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes } }), 1);
-  //     // The longest lane is about 1.5 km; light minions march it in under 500 s.
-  //     const { mobs, farthest, offGroundShare, warnings } = march(map, numLanes, 530 * 30);
-  //
-  //     expect(mobs).toBe(2 * numLanes * 16);
-  //     expect(farthest).toBeLessThan(15);
-  //     expect(offGroundShare).toBeLessThan(0.01);
-  //     expect(warnings).toEqual([]);
-  //   },
-  //   60_000,
-  // );
-
-  it('gives the same hash on the generated map for the same seed, tick for tick', () => {
-    const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes: 5 } }), 1);
-    const first = laneMatch(map, 5).simulation;
-    const second = laneMatch(map, 5).simulation;
-    for (let checkpoint = 0; checkpoint < 5; checkpoint += 1) {
-      run(first, 300);
-      run(second, 300);
-      expect(first.hash()).toBe(second.hash());
-    }
-    // A 5-lane soak of 1,500 ticks per run; coverage instrumentation makes it slow (as in M8).
-  }, 60_000);
-});
-
-describe('Simulation structures', () => {
-  it('sends tower guards after an enemy that walks in, then back to their posts (18 §7)', () => {
-    const { simulation, logger } = match(STRONGHOLDS_ONLY);
-    simulation.step();
-    const guardsOf = (team: string) =>
-      simulation
-        .snapshot()
-        .entities.filter(
-          ({ definitionId, team: owner }) => definitionId.endsWith('-guard') && owner === team,
-        );
-    const posts = new Map(guardsOf('light').map(({ id, transform }) => [id, transform]));
-    // A dark minion appears just outside the light Stronghold's guard ring (radius 40, posts at 42).
-    simulation.enqueueCommand({
-      type: 'dev-spawn',
-      kind: 'light-mob',
-      definitionId: 'training-dummy',
-      team: 'dark',
-      at: { x: 10, y: 30 + 47 },
-      count: 1,
-    });
-    run(simulation, 30);
-    const moved = guardsOf('light').filter(({ id, transform }) => {
-      const post = posts.get(id);
-      return (
-        Math.hypot((transform?.x ?? 0) - (post?.x ?? 0), (transform?.y ?? 0) - (post?.y ?? 0)) > 1
-      );
-    });
-    expect(moved.length).toBeGreaterThan(0);
-
-    run(simulation, 30 * 30);
-
-    for (const { id, transform } of guardsOf('light')) {
-      const post = posts.get(id);
-      expect(
-        Math.hypot((transform?.x ?? 0) - (post?.x ?? 0), (transform?.y ?? 0) - (post?.y ?? 0)),
-      ).toBeLessThan(3);
-    }
-    expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
-  });
-
-  it('holds a horde that cannot fight in front of the first enemy tower on its lane (18 §6.2)', () => {
-    const { simulation } = match(TWO_LANE_MAP, 1, true);
-
-    run(simulation, 60 * 30);
-
-    // Dark's lane-0 SpawnerTower stands at x 140 with radius 14: Light's lane-0 horde gathers
-    // in front of x 126, in ranks no deeper than 8.
-    const lightLane0 = simulation
-      .snapshot()
-      .entities.filter((entity) => isMinion(entity) && entity.team === 'light')
-      .filter(({ transform }) => (transform?.y ?? 0) < 30)
-      .map(({ transform }) => transform?.x ?? 0);
-    expect(lightLane0.length).toBeGreaterThan(0);
-    expect(Math.max(...lightLane0)).toBeLessThan(126);
-    expect(Math.min(...lightLane0)).toBeGreaterThan(126 - 15);
-  });
-
-  it('builds every lane structure of the map before anything else spawns', () => {
-    const { simulation } = match(TWO_LANE_MAP);
-
-    const structures = simulation
-      .snapshot()
-      .entities.filter(({ family }) => family === 'structure')
-      .map(({ id, kind, team }) => ({ id, kind, team }));
-
-    // Feature id order: buff towers, spawner towers, then strongholds; the cathedral stays map data.
-    expect(structures).toEqual([
-      { id: 'entity-1', kind: 'buff-tower', team: 'dark' },
-      { id: 'entity-2', kind: 'buff-tower', team: 'light' },
-      { id: 'entity-3', kind: 'spawner-tower', team: 'dark' },
-      { id: 'entity-4', kind: 'spawner-tower', team: 'light' },
-      { id: 'entity-5', kind: 'stronghold', team: 'dark' },
-      { id: 'entity-6', kind: 'stronghold', team: 'light' },
-    ]);
   });
 });

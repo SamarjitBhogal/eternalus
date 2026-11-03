@@ -1,10 +1,15 @@
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
+import { Deploying } from '../components/Deploying';
 import { Health } from '../components/Health';
+import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
+import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
+import { distanceToPath, distanceToSegment, isPointInPolygon } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
+import { length, sub } from '../utils/vec2';
 import type { Entity } from '../entities/Entity';
 import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
 
@@ -111,6 +116,48 @@ export class EntityStore {
     return true;
   }
 
+  /** The entity's health as a fraction of its maximum, or `undefined` without `Health`. */
+  public healthFractionOf(id: EntityId): number | undefined {
+    const health = this.entities.get(id)?.findComponent(Health);
+    return health === undefined ? undefined : health.current / health.max;
+  }
+
+  /**
+   * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
+   * two footprints (architecture 05 §10); a map object is measured to its footprint polygons, not
+   * its bounding circle. `false` when either is unknown or the attacker cannot attack.
+   */
+  public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
+    const attacker = this.entities.get(attackerId);
+    const target = this.entities.get(targetId);
+    const combat = attacker?.findComponent(Combat);
+    const from = attacker?.findComponent(Transform);
+    const to = target?.findComponent(Transform);
+    if (combat === undefined || from === undefined || to === undefined) {
+      return false;
+    }
+    const object = target?.findComponent(MapObjectBody);
+    if (object !== undefined) {
+      const reach = from.radius + combat.attack.reach;
+      return object.object.footprints.some((shape) => {
+        const first = shape[0];
+        const last = shape.at(-1);
+        // A shape without corners is never in reach (`MapObjectBuilder` rejects one anyway).
+        return (
+          first !== undefined &&
+          last !== undefined &&
+          (isPointInPolygon(from.position, shape) ||
+            Math.min(
+              distanceToPath(from.position, shape),
+              distanceToSegment(from.position, last, first),
+            ) <= reach)
+        );
+      });
+    }
+    const gap = length(sub(to.position, from.position));
+    return gap - from.radius - to.radius <= combat.attack.reach;
+  }
+
   /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */
   public attackTargetOf(id: EntityId): EntityId | null {
     return this.entities.get(id)?.findComponent(Combat)?.targetId ?? null;
@@ -129,6 +176,14 @@ export class EntityStore {
   /** The controller that drives the entity and its AI profile, or `undefined` when none does. */
   public controllerOf(id: EntityId): ControllerBinding | undefined {
     return this.entities.get(id)?.findComponent(ControllerBinding);
+  }
+
+  /**
+   * Whether the entity is walking out of the structure it spawned inside (`Deploying`, DEC-133).
+   * Lets `ai/` keep a deploying mob's brain off without importing `components/`.
+   */
+  public isDeploying(id: EntityId): boolean {
+    return this.entities.get(id)?.hasComponent(Deploying) === true;
   }
 
   /** Whether the entity exists and has health left (`false` for anything without `Health`). */

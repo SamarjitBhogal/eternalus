@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import type { Command } from '../commands/Command.types';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { AiCadence } from '../content/ai/ai.types';
@@ -144,6 +145,32 @@ describe('AiSystem', () => {
     expect(asked.slice(3, 3 + Math.min(3, deferred.length))).toEqual(deferred.slice(0, 3));
   });
 
+  it('starts a brain with the memory its spawn gave it', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      new ContentCatalogue<UnitDefinition>([TRAINING_DUMMY]),
+    );
+    const bot = factory.create('light-mob', 'training-dummy', {
+      team: 'light',
+      position: { x: 0, y: 0 },
+      controller: { controllerId: 'minion', profileId: 'lane-minion', memory: { lane: 'l0' } },
+    });
+    state.entities.add(bot);
+
+    const keeper: Controller = {
+      id: 'minion',
+      hasProfile: () => true,
+      decide: ({ brain }) => ({ commands: [], memory: brain.memory, rngState: brain.rngState }),
+    };
+    new AiSystem(state, { minion: keeper }, cadenceWith(10), () => undefined).update({ state });
+
+    expect(state.ai.get(bot.id)).toMatchObject({
+      profileId: 'lane-minion',
+      memory: { lane: 'l0' },
+    });
+  });
+
   it('writes the memory a controller returns back to its brain', () => {
     const { state, ids, step } = setUp(1);
 
@@ -166,6 +193,25 @@ describe('AiSystem', () => {
     expect(state.ai.size).toBe(0);
   });
 
+  it('gives a deploying minion no brain until its Deploying component is removed', () => {
+    const { state, ids, asked, step } = setUp(1);
+    const entity = state.entities.get(ids[0] ?? '');
+    entity?.addComponent(new Deploying({ x: 5, y: 0 }));
+
+    for (let tick = 0; tick < 2 * EVERY; tick += 1) {
+      step();
+    }
+    expect(state.ai.size).toBe(0);
+    expect(asked).toEqual([]);
+
+    entity?.removeComponent(Deploying);
+    for (let tick = 0; tick < EVERY; tick += 1) {
+      step();
+    }
+    expect(state.ai.size).toBe(1);
+    expect(asked).toEqual([ids[0]]);
+  });
+
   it('throws the first tick it sees an entity whose controller has no implementation', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     const definitions = new ContentCatalogue<UnitDefinition>([
@@ -180,6 +226,23 @@ describe('AiSystem', () => {
     expect(() => {
       system.update({ state });
     }).toThrow('not registered');
+  });
+
+  it('throws the first tick it sees an entity whose AI profile its controller does not have', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const definitions = new ContentCatalogue<UnitDefinition>([
+      { ...LIGHT_MINION, controller: 'minion', aiProfile: 'no-such-profile' },
+    ]);
+    const factory = new EntityFactory(createDefaultEntityRegistry(), definitions);
+    state.entities.add(
+      factory.create('light-mob', 'light-minion', { team: 'light', position: { x: 0, y: 0 } }),
+    );
+    const system = new AiSystem(state, { minion: stopper([]) }, cadenceWith(10), () => undefined);
+
+    expect(() => {
+      system.update({ state });
+    }).toThrow('AI profile "no-such-profile"');
+    expect(state.ai.size).toBe(0);
   });
 
   it('checks the definitions against the registry before a match starts', () => {
@@ -204,5 +267,23 @@ describe('AiSystem', () => {
         minion: stopper([]),
       });
     }).toThrow('Definition "p" names AI profile "typo"');
+  });
+
+  it('falls back to the controller id as the profile when a definition names none', () => {
+    const minion = (profiles: readonly string[]): Controller => ({
+      ...stopper([]),
+      hasProfile: (profileId) => profiles.includes(profileId),
+    });
+
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'm', controller: 'minion' }], {
+        minion: minion(['minion']),
+      });
+    }).not.toThrow();
+    expect(() => {
+      AiSystem.assertRegistered([{ id: 'm', controller: 'minion' }], {
+        minion: minion(['lane-minion']),
+      });
+    }).toThrow('Definition "m" names AI profile "minion"');
   });
 });

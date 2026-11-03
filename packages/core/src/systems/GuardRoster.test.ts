@@ -9,6 +9,7 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
 import { GuardRoster } from './GuardRoster';
 
@@ -17,10 +18,10 @@ const TICK_RATE = 30;
 describe('GuardRoster', () => {
   const guarded = (overrides: DeepPartial<GameConfig> = {}) => {
     const config = createDefaultGameConfig({
-      match: { initialHordesPerTeam: 0, countdownSeconds: 6000 },
+      match: { countdownSeconds: 6000 },
       ...overrides,
     });
-    const state = new GameState(config, 1, TWO_LANE_MAP);
+    const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
     spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
     const roster = new GuardRoster(factory, factory.definitions, GUARD_PLANS);

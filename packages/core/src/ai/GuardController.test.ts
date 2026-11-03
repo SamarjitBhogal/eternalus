@@ -10,6 +10,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
 import { GuardController } from './GuardController';
 import { Perception } from './perception/Perception';
@@ -22,7 +23,7 @@ const controller = new GuardController({
 /** A light guard posted at (60, 20) by a home of radius 10 at (50, 20), leash 8. */
 const setUp = () => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const perception = new Perception(state);
   const add = (team: 'light' | 'dark', x: number, definitionId = 'light-minion') => {
@@ -99,6 +100,19 @@ describe('GuardController', () => {
     expect(decide(engaging)).toMatchObject({
       commands: [{ type: 'stop', actorId: guard }],
       memory: { fsm: 'returning', targetId: null },
+    });
+  });
+
+  it('engaging: keeps a minion target past the aggro duration (MS-34)', () => {
+    const { state, add, decide } = setUp();
+    const enemy = add('dark', 64);
+    while (state.tick < 20) {
+      state.advanceTick();
+    }
+
+    expect(decide({ fsm: 'engaging', targetId: enemy, aggroUntilTick: 10 })).toMatchObject({
+      commands: [],
+      memory: { fsm: 'engaging', targetId: enemy },
     });
   });
 

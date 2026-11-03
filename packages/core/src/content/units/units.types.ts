@@ -46,7 +46,8 @@ export type UnitDefinition = EntityDefinitionBase & {
   readonly footprintRadius: number;
   /** Sight radius in world units. */
   readonly visionRadius: number;
-  readonly movement: MovementProfile;
+  /** Top speed, acceleration and mass; `movementStrategy` says how the unit steers. */
+  readonly movementProfile: MovementProfile;
   /** The strategy that steers this unit each tick; none for a unit nothing steers. */
   readonly movementStrategy?: MovementStrategyId;
   /** The basic attack; a unit without one cannot attack (a training dummy). */
