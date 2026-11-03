@@ -3191,3 +3191,18 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   entries are never rewritten (OG-12); new entries keep the three-bullet shape.
 - Checks run: `npm run docs:check` and Prettier on the two docs; docs-only change.
 - Next step: merge #56, #57, #58 in order.
+
+### 2026-11-02 — Phase 3 / minion soak — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: the minion plan's done-when soak on #58's head (`816c238`), a throwaway probe,
+  not committed: seeds 1 and 2, 3 lanes, 600 s, bot rosters, map objects. With every invariant
+  once a second: 0 violations (`guard-within-leash` for tower guards and camp mobs, map-object
+  overlap, horde membership), 0 guard posts refilled after their due tick, 0 % of 496 horde units
+  skipped per team, at most 284 / 250 units on a team (cap 300). Tick time at the release
+  invariant level (developer laptop, not the reference laptop): seed 1 p50 1.58, p95 3.35, p99
+  4.00, max 10.99 ms (4 of 18,000 ticks over 8 ms); seed 2 p50 1.44, p95 2.61, p99 3.13, max
+  7.92 ms. With heavy invariants every 30 ticks, those ticks cost 160 to 360 ms, so heavy-level
+  soaks run slowly. No tower fell and no camp was cleared in 600 s on the generated map: hordes
+  march about 1.5 km and bots never attack structures or camps (minion plan §3).
+- Checks run: the probe above; docs-only change, `npm run docs:check` passes.
+- Next step: bot laners attack structures (the M3 stand-in), on a branch from #58's head.
