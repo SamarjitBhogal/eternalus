@@ -16,6 +16,10 @@ export default mergeConfig(
       environment: 'node',
       sequence: { shuffle: true, seed: 20260926 },
       restoreMocks: true,
+      // Tests that build a whole generated world take 2-3 s on the Windows CI runner under
+      // coverage, and Vitest's 5 s default failed them on runner speed alone (PR #68); core's
+      // `testTimeout` is the same 60 s for the same reason.
+      testTimeout: 60_000,
       // Vitest blanks every CSS import it does not process, `?raw` included; tests that read a
       // stylesheet's text (`global.css?raw`, a module's `?raw`) get it. Plain imports are unchanged.
       css: { include: [/\.css\?raw$/] },

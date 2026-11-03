@@ -81,7 +81,5 @@ describe('replay of a browser-built match', () => {
     expect(outcome.firstDivergence).toBeNull();
     expect(outcome.finalHash).toBe(report.checkpoints.at(-1)?.hash);
     expect(report.checkpoints.at(-1)?.tick).toBe(300);
-    // A whole match, recorded and replayed: under 1 s locally, over 6 s on the Windows CI runner
-    // under coverage; core's `testTimeout` gives its whole-match tests the same 60 s.
-  }, 60_000);
+  });
 });
