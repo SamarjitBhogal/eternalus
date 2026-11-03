@@ -932,6 +932,42 @@ the "Session" status bullet: the built crash flow, and `match-crashed` is no lon
 T-221 (15 §13: the reports are built). The status notes that named the applied rows as pending got
 a dated append: 13 §10 (two bullets), 14 §14, 17 §12 and the UI enhancements plan §1.
 
+## The last cycle before the pull request (2026-11-02)
+
+Built on `feat/hud-plan-b6` after the HC-T1 answers above, then merged into this branch.
+
+- **Batch 5 merged** (`dccd92f`): the owner's crash popup texts and a screen crash during the
+  reveal returns to the menu (`62652b0`, DEC-140, DEC-141); the 52 approved HC-T1 rows
+  (`da57c29`, DEC-142); DEC-138 to DEC-143 logged (`3ceb877`).
+- **Phase branch merged** (`54716be`, `e2c3e1e`: PRs #42 to #63 and #30): #30's buildings in
+  `MatchCamera`, `Match` and `prepareMatchWorld`; the simulation gets the map, the map objects and
+  the setup's bots. The client cathedral-interior model and CD-22's "Leave cathedral" control are
+  deleted (#30 removed the separate interior).
+- **T-199 applied with its build** (`6a00e25`, `9c913ff`, DEC-143): `BuildingRoofs` opens the roof
+  of the building the player's Legend stands in; the roof click is developer-only; the minimap is
+  player HUD. So the HC-T1 table above, which says T-199 is pending, now has no pending row.
+  `b3e2a2e`: hiding the explorer puts back the roofs the developer opened.
+- **Critic loop 1 fixes** (`22878e0`, `5fa9300`, `dfb0560`): a replay carries the map, map objects
+  and roster its match was built with (`ReplaySetup`); a press the canvas gestures own is no attack
+  (06 §10 arbitration); hiding the explorer returns to the following camera at its base zoom.
+- **The owner's loop-1 answers** (DEC-147 to DEC-149, `73dd83d`, `b8b220b`, `bba83ad`): the
+  minimap toggle stays as a player option; the leave-interior task is dropped; six
+  better-than-design items built (bot difficulty by role as core content with
+  `BotRosterDifficultyRule`, `createMatchSeed`, the developer-roof names, a dead Legend opens no
+  roof, `SessionController.crashToMenu`, core `findBuildingAt`). The player's Legend id stays with
+  the game-loop lane (A19, built on `feat/match-director`); a test pins the interim (`99563b4`).
+- **Critic loop 2 fixes** (`8fe9763`, `60dec74`, `662d8c2`): the replay types are generic in core
+  `diagnostics/` (`ReplayOf<S>`), with `ReplaySetup`, `Replay` and `ReplayTargetFactory` in
+  `Simulation.types.ts`; `SessionController` builds `MatchRequest.roster` from its catalogue; each
+  press sets its own claim.
+- **The owner's loop-2 answers** (DEC-150 to DEC-152, `6f67263`, `826f929`, `eaa5f7c`): with the
+  explorer shown a plain click on the world attacks, and only drags and roof clicks are claimed;
+  `Match` tells the camera that the player moved; one `isDead` check; one core `BotRole` type; a
+  crash report's replay keeps the map inline until the Phase 5 replay store is designed.
+- **Core API added or changed for reviewers:** `findBuildingAt`, `ReplaySetup`, `BotRole` and
+  `BotRosterDefinition.difficulties` are exported; `Replay` now holds its setup (map, map objects,
+  roster); `recordReplay(setup, plan, createTarget)` takes the setup apart from the plan.
+
 ## Working ids
 
 One line each, saying what the id is. Most come from the plan's sources, which are outside the
