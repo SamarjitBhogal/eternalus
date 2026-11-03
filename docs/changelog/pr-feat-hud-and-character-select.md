@@ -983,9 +983,10 @@ Built on `feat/hud-plan-b6` after the HC-T1 answers above, then merged into this
   held gives a second `attack-target` on a click: developer-only, and the target is the same;
   (3) after a minimap press with the explorer hidden, a cancel leaves the claim set until the
   next press or a focus loss: present before this PR, and no attack depends on it.
-- **Windows CI** (PR #68's first run): the note test no longer makes the report read-only
-  (Windows will not replace a read-only file); it checks the file's identity changes. The
-  browser-match replay test gets a 60 s timeout, as core's whole-match tests have.
+- **Windows CI** (PR #68's first two runs): the note test no longer makes the report read-only
+  (Windows will not replace a read-only file); it checks the file's identity changes. The client
+  suite gets core's 60 s `testTimeout` in `apps/client/vitest.config.ts`: three different
+  whole-match tests ran over the 5 s default on the Windows runner across two runs.
 - **DEC-138 renumbered DEC-154** before the first push: SamarjitBhogal's guard-post ruling had
   already pushed DEC-138 (#56).
 - **Core API added or changed for reviewers:** `findBuildingAt`, `ReplaySetup`, `BotRole` and

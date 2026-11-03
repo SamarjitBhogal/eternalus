@@ -4353,3 +4353,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check` EXIT 0: "All matched files use Prettier code style!"; core "Tests
   945 passed (945)"; client "Tests 1735 passed (1735)"; "Documentation check passed."
 - Next step: PR #68 CI on both runners; a teammate review.
+
+### 2026-11-03 — Phase 2 / Track B (S1 carry-over) / HUD and character select, PR #68 Windows CI (2) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done: PR #68's second CI run failed on `windows-latest` only, on a different
+  whole-match client test (`createBrowserMatch.test.ts`, 5.2 s against the 5 s default). The
+  runner's speed is the one cause of three failures across two runs, so the client suite now has
+  core's 60 s `testTimeout` in `apps/client/vitest.config.ts` and the replay test's own 60 s is
+  gone (`bfe4fac`). Changelog bullet "Windows CI" and the PR body brought in line.
+- Checks run: CI run 41593504943 on `bfe4fac`: `npm run check (windows-latest)` pass,
+  `npm run check (ubuntu-latest)` pass. Local `npm run check` EXIT 0: "All matched files use
+  Prettier code style!"; core "Tests 945 passed (945)"; client "Tests 1735 passed (1735)";
+  "Documentation check passed."
+- Next step: a teammate review of PR #68; it merges after the minions and weapons PRs (merge
+  commit).
