@@ -3110,3 +3110,13 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 962 passed (962)"; client "Tests 434 passed (434)"; "✓ built in 189ms"; "Documentation
   check passed."
 - Next step: push #57, retarget it to `phase/3-sprint-3-work`; then M6 (#58).
+
+### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's #57 thread on `GuardRoster.update`: an empty post counted its team's
+  units (a walk of the entity store) before the cheap checks, so every post of a fallen structure
+  paid it each tick. The cap count now runs last; the same posts fill on the same ticks.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 954 passed (954)"; client "Tests 434 passed (434)"; "✓ built in 218ms"; "Documentation
+  check passed."
+- Next step: merge into #57 (M5b) and #58 (M6).
