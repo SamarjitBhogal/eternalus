@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
+import { Transform } from '../components/Transform';
+import type { Entity } from '../entities/Entity';
+import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import { WorldObjectStore } from '../state/WorldObjectStore';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -101,5 +105,58 @@ describe('GuardRoster', () => {
 
     // One lost SpawnerTower: 6 - 2 light guards and both heavy guards come back.
     expect(guardsOf('stronghold', 'light').filter((id) => id !== null)).toHaveLength(6);
+  });
+
+  it('finds clear ground for a blocked post when its leash span is shorter than a nav cell', () => {
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+    spawnMapStructures(state);
+    const units = loadDefaultContent(TICK_RATE);
+    const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
+    // One factory for guards and the map object, so entity ids come from one counter.
+    const factory = new EntityFactory(createDefaultEntityRegistry(), {
+      has: (id) => units.has(id) || objects.has(id),
+      get: (id) => objects.get(id) ?? units.get(id),
+    });
+    let home: Entity | undefined;
+    state.entities.forEach((entity) => {
+      if (entity.kind === 'spawner-tower' && state.entities.teamOf(entity.id) === 'light') {
+        home ??= entity;
+      }
+    });
+    const { position, radius } = home?.getComponent(Transform) ?? {
+      position: { x: 0, y: 0 },
+      radius: 0,
+    };
+    // Posts at radius + 2, the leash edge at radius + 5: a 3 m span, under the 5 m nav cell. A
+    // block reaching 1 m past the posts leaves clear ground only inside that span.
+    const half = radius + 3;
+    const square = [
+      { x: position.x - half, y: position.y - half },
+      { x: position.x + half, y: position.y - half },
+      { x: position.x + half, y: position.y + half },
+      { x: position.x - half, y: position.y + half },
+    ];
+    state.worldObjects = new WorldObjectStore(
+      [{ id: 'block', kind: 'furniture', isBlocking: true, footprints: [square] }],
+      factory,
+      state.entities,
+      MAP_OBJECT_DEFINITIONS,
+    );
+    const base = GUARD_PLANS['spawner-tower'];
+    if (base === undefined) {
+      throw new Error('no spawner-tower guard plan');
+    }
+    const plan = { ...base, postGap: 2, leashRadius: 5 };
+    new GuardRoster(factory, factory.definitions, { 'spawner-tower': plan }).layOut(state);
+
+    let posts = 0;
+    state.guards.forEach((post) => {
+      if (post.homeId !== home?.id) return;
+      posts += 1;
+      const gap = Math.hypot(post.postX - post.homeX, post.postY - post.homeY);
+      expect(state.worldObjects?.blockingAt({ x: post.postX, y: post.postY }, 0.4)).toBeNull();
+      expect(gap - post.homeRadius).toBeLessThanOrEqual(plan.leashRadius);
+    });
+    expect(posts).toBe(4);
   });
 });
