@@ -158,8 +158,10 @@ export class GuardRoster {
    * Where a guard of `body` radius stands for the post at `turn` on the `ring` around `home`: the
    * ring point if it is clear, else the first clear point straight out from it up to the leash
    * `edge`, else the nearest clear point around a ring, inner rings first (a fort's walls reach
-   * past its structure's collider, 07 §6). Steps are one nav cell, along the ray and of arc. A
-   * post with nothing clear inside its leash keeps the ring point.
+   * past its structure's collider, 07 §6). Steps are one body radius, along the ray and of arc: a
+   * gap the guard fits through is two radii wide, so no step skips one, even where the leash span
+   * is shorter than a nav cell (a camp's). A post with nothing clear inside its leash keeps the
+   * ring point.
    *
    * @remarks ponytail: a linear scan once per post at load-in; a fort-aware ring (posts laid out
    * from the fort's footprint) replaces it if posts must look even around every fort.
@@ -180,7 +182,7 @@ export class GuardRoster {
     const isClear = (point: Vec2): boolean =>
       (grid?.isWalkableAt(point.x, point.y) ?? true) &&
       (state.worldObjects?.blockingAt(point, body) ?? null) === null;
-    const step = grid?.cellSize ?? edge;
+    const step = body > 0 ? body : (grid?.cellSize ?? edge);
     for (let radius = ring; radius <= edge; radius += step) {
       if (isClear(at(radius, turn))) return at(radius, turn);
     }

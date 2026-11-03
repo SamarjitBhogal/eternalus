@@ -3137,3 +3137,15 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 954 passed (954)"; client "Tests 434 passed (434)"; "✓ built in 218ms"; "Documentation
   check passed."
 - Next step: merge into #57 (M5b) and #58 (M6).
+
+### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: DEC-138's post search stepped one nav cell (5 m), so where a plan's leash span is
+  shorter (camps: posts at 3 m, edge at 7 m) it tried only the ring and kept a post inside the
+  camp fire (M6 merge probe: 46 camp mobs in furniture on seeds 1 and 2). It now steps one body
+  radius: a gap a guard fits through is two radii wide, so no step skips one. Test:
+  `GuardRoster.test` with a 3 m leash span and a block 1 m past the posts (red before the fix).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 955 passed (955)"; client "Tests 434 passed (434)"; "✓ built in 266ms"; "Documentation
+  check passed."
+- Next step: merge into #57 (M5b) and #58 (M6).
