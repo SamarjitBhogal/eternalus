@@ -3132,3 +3132,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 955 passed (955)"; client "Tests 434 passed (434)"; "✓ built in 266ms"; "Documentation
   check passed."
 - Next step: merge into #57 (M5b) and #58 (M6).
+
+### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: the M6 merge probe still found 6 camp mobs in camp fires on seed 1 (two mirrored
+  camps): the nav grid blocks every 5 m cell a footprint touches, so a fire's 8 m stone blocks the
+  grid past the 7 m camp leash, though the ground there is clear. DEC-138's search now runs again
+  on the map objects alone when nothing in the leash is clear on both; guards seek, and collision
+  uses the exact shapes. Test: `GuardRoster.test` with the grid blocked past the leash and the
+  object only over the posts (red without the second pass).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 956 passed (956)"; client "Tests 434 passed (434)"; "✓ built in 261ms"; "Documentation
+  check passed."
+- Next step: merge into #57 (M5b) and #58 (M6).
