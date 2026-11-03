@@ -1,4 +1,4 @@
-import { chmod, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
@@ -29,8 +29,11 @@ describe('errorReportsPlugin: notes', () => {
   it('sets the note by renaming a new file over the report, keeping the rest', async () => {
     const { send, stored, files, dir } = setUp();
     await send();
-    // A read-only report: only a new file renamed over it can change it.
-    await chmod(path.join(dir, `${SAVED_ID}.json`), 0o444);
+    // The file's identity: a write in place keeps it, a new file renamed over the report does not.
+    // (A read-only report would prove it on POSIX only: Windows refuses to replace one.)
+    const identity = async (): Promise<bigint> =>
+      (await stat(path.join(dir, `${SAVED_ID}.json`), { bigint: true })).ino;
+    const before = await identity();
 
     const result = await send({
       url: noteUrl(SAVED_ID),
@@ -41,6 +44,7 @@ describe('errorReportsPlugin: notes', () => {
       status: 200,
       body: { id: SAVED_ID, file: `logs/errors/${SAVED_ID}.json` },
     });
+    expect(await identity()).not.toBe(before);
     expect(await stored(SAVED_ID)).toEqual({
       ...REPORT,
       receivedAt: RECEIVED_AT,
