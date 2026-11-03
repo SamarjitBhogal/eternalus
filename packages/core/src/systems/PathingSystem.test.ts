@@ -1,27 +1,24 @@
 import { describe, expect, it } from 'vitest';
-
+import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
-import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
-import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
-import { SpaceIndex } from '../physics/SpaceIndex';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import { WorldMap } from '../map/WorldMap';
+import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import type { MovementContext } from '../entities/strategies/MovementStrategy.types';
 import { PathingSystem } from './PathingSystem';
-
-const logger = new NullLogger();
-const FORMATIONS = { ranks: RANKS_FORMATION };
-const STRATEGIES = createDefaultStrategyRegistry().movement;
+import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
 
 describe('PathingSystem', () => {
   it.each([
@@ -31,7 +28,9 @@ describe('PathingSystem', () => {
     'sends the leader to the anchor and each member to its rank and file behind it%s',
     (_, isFillerSkipped) => {
       const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-      const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+        space,
+      });
       const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
       const { slotSpacing, ranksWidth } = RANKS_FORMATION;
       // Light on lane-0 walks +x along y 20; the anchor is 40 m in, at (60, 20).
@@ -83,33 +82,8 @@ describe('PathingSystem', () => {
     },
   );
 
-  it('chases a member’s attack target instead of its slot, and stops at attack reach', () => {
-    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
-    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
-    const minion = factory.create('light-mob', 'light-minion', {
-      team: 'light',
-      position: { x: 60, y: 20 },
-    });
-    const enemy = factory.create('light-mob', 'light-minion', {
-      team: 'dark',
-      position: { x: 60, y: 30 },
-    });
-    state.entities.add(minion);
-    state.entities.add(enemy);
-    // The anchor (60, 20) is where the minion stands, so without a target it would not move.
-    state.hordes.add({
-      id: 'horde-1',
-      team: 'light',
-      weightClass: 'light',
-      lane: 'lane-0',
-      formationId: 'ranks',
-      memberIds: [minion.id],
-      progress: 40,
-    });
-    state.entities.setAttackTarget(minion.id, enemy.id);
-    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
-    const index = () => {
+  describe('a deploying member', () => {
+    const indexAll = (space: SpaceIndex, state: GameState) => {
       space.begin(state.entities.size);
       state.entities.forEach((entity) => {
         const { x, y } = entity.getComponent(Transform).position;
@@ -118,92 +92,304 @@ describe('PathingSystem', () => {
       space.commit();
     };
 
-    index();
-    system.update({ state, logger });
-    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
+    it('walks straight to its exit across blocked ground, ignoring its slot and the field', () => {
+      const config = createDefaultGameConfig();
+      const grid = WorldMap.fromDefinition(
+        BLOCKED_LANE_MAP,
+        config.map.navCellSize,
+        (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+      );
+      const fields = new LaneFlowFields(
+        grid,
+        BLOCKED_LANE_MAP,
+        config.map.flowFieldCorridorHalfWidth,
+      );
+      const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+      const state = new GameState(config, 1, matchWorldOf(BLOCKED_LANE_MAP), { space });
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      // In the rift (x 50..70), as inside its structure; its exit is past it, while its slot
+      // (the anchor, 15 m in) lies behind it.
+      const minion = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 55, y: 20 },
+      });
+      minion.addComponent(new Deploying({ x: 75, y: 20 }));
+      state.entities.add(minion);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [minion.id],
+        progress: 10,
+      });
+      indexAll(space, state);
 
-    // Edge to edge 1.2 m apart: inside the 1.5 m reach, so it stops.
-    enemy.getComponent(Transform).moveTo({ x: 60, y: 22 });
-    index();
-    system.update({ state, logger });
-    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, fields).update({
+        state,
+        logger,
+      });
+
+      const { heading } = minion.getComponent(Movement);
+      expect(heading.x).toBeCloseTo(1);
+      expect(heading.y).toBeCloseTo(0);
+      expect(minion.hasComponent(Deploying)).toBe(true);
+    });
+
+    it('drops Deploying at its exit and steers to its slot in the same update', () => {
+      const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+        space,
+      });
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      // Lane-0 anchor is (60, 20); the leader stands at its exit, 10 m behind it.
+      const leader = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 50, y: 20 },
+      });
+      leader.addComponent(new Deploying({ x: 50, y: 20 }));
+      state.entities.add(leader);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [leader.id],
+        progress: 40,
+      });
+      indexAll(space, state);
+
+      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+        state,
+        logger,
+      });
+
+      expect(leader.hasComponent(Deploying)).toBe(false);
+      expect(leader.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+    });
+
+    it('drops Deploying short of its exit once its body stands on walkable ground, so a unit on the exit cannot hold it', () => {
+      const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+        space,
+      });
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      // Open ground, 1 m short of its exit, where another unit stands.
+      const mob = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 49, y: 20 },
+      });
+      mob.addComponent(new Deploying({ x: 50, y: 20 }));
+      state.entities.add(mob);
+      state.entities.add(
+        factory.create('light-mob', 'light-minion', { team: 'light', position: { x: 50, y: 20 } }),
+      );
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [mob.id],
+        progress: 40,
+      });
+      indexAll(space, state);
+
+      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+        state,
+        logger,
+      });
+
+      expect(mob.hasComponent(Deploying)).toBe(false);
+    });
+
+    it('drops Deploying at its exit even where its body still touches blocked ground', () => {
+      const config = createDefaultGameConfig();
+      const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+      const state = new GameState(config, 1, matchWorldOf(BLOCKED_LANE_MAP), { space });
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      const mob = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 60, y: 20 },
+      });
+      mob.addComponent(new Deploying({ x: 60, y: 20 }));
+      state.entities.add(mob);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [mob.id],
+        progress: 10,
+      });
+      indexAll(space, state);
+
+      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
+        state,
+        logger,
+      });
+
+      expect(state.world?.grid.isWalkableAt(60, 20)).toBe(false);
+      expect(mob.hasComponent(Deploying)).toBe(false);
+    });
   });
 
-  it('holds a chase at blocked ground, neither following the lane field nor entering it', () => {
-    const config = createDefaultGameConfig();
-    const grid = WorldMap.fromDefinition(
-      BLOCKED_LANE_MAP,
-      config.map.navCellSize,
-      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
-    );
-    const fields = new LaneFlowFields(
-      grid,
-      BLOCKED_LANE_MAP,
-      config.map.flowFieldCorridorHalfWidth,
-    );
-    const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
-    const state = new GameState(config, 1, BLOCKED_LANE_MAP, space);
+  it('steers every member on every tick through the same buffers, allocating none per unit', () => {
+    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+      space,
+    });
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
-    // Light marches +x; the minion is just past the rift (x 50..70) and its target is upstream,
-    // behind it, so the lane field points away from the target and the straight line is blocked.
-    const minion = factory.create('light-mob', 'light-minion', {
-      team: 'light',
-      position: { x: 75, y: 20 },
+    const members = [30, 34, 38].map((x) => {
+      const entity = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x, y: 20 },
+      });
+      state.entities.add(entity);
+      return entity;
     });
-    const enemy = factory.create('light-mob', 'light-minion', {
-      team: 'dark',
-      position: { x: 45, y: 20 },
-    });
-    state.entities.add(minion);
-    state.entities.add(enemy);
     state.hordes.add({
       id: 'horde-1',
       team: 'light',
       weightClass: 'light',
       lane: 'lane-0',
       formationId: 'ranks',
-      memberIds: [minion.id],
-      progress: 65,
+      memberIds: members.map(({ id }) => id),
+      progress: 40,
     });
-    state.entities.setAttackTarget(minion.id, enemy.id);
-    space.begin(state.entities.size);
-    state.entities.forEach((entity) => {
-      const { x, y } = entity.getComponent(Transform).position;
-      space.add(entity.id, x, y);
-    });
-    space.commit();
+    const laneFollow = STRATEGIES['lane-follow'];
+    const buffers: object[][] = [];
+    const recording = {
+      ...STRATEGIES,
+      'lane-follow': {
+        desiredVelocity: (self: number, context: MovementContext) => {
+          buffers.push([context.found, context.out, context.target]);
+          return laneFollow.desiredVelocity(self, context);
+        },
+      },
+    };
+    const system = new PathingSystem(recording, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
 
-    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, fields).update({
-      state,
-      logger,
-    });
+    for (let tick = 0; tick < 2; tick += 1) {
+      space.begin(state.entities.size);
+      state.entities.forEach((entity) => {
+        const { x, y } = entity.getComponent(Transform).position;
+        space.add(entity.id, x, y);
+      });
+      space.commit();
+      system.update({ state, logger });
+    }
 
-    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+    expect(buffers).toHaveLength(2 * members.length);
+    const [first] = buffers;
+    expect(buffers.every((row) => row.every((buffer, at) => buffer === first?.[at]))).toBe(true);
   });
 
   it('does nothing without a map or index, without hordes or with an unknown formation', () => {
     const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
-    const state = new GameState(
-      createDefaultGameConfig(),
-      1,
-      TWO_LANE_MAP,
-      new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2),
-    );
+    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+      space,
+    });
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    // A real, indexed member, so only the formation lookup can stop it from being steered.
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 30, y: 20 },
+    });
+    state.entities.add(minion);
+    space.begin(1);
+    space.add(minion.id, 30, 20);
+    space.commit();
     state.hordes.add({
       id: 'horde-1',
       team: 'light',
       weightClass: 'light',
       lane: 'lane-0',
       formationId: 'wedge',
-      memberIds: ['entity-1'],
-      progress: 0,
+      memberIds: [minion.id],
+      progress: 40,
     });
 
     expect(() => {
       system.update({ state: new GameState(createDefaultGameConfig(), 1), logger });
-      system.update({ state: new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP), logger });
+      system.update({
+        state: new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP)),
+        logger,
+      });
       system.update({ state, logger });
     }).not.toThrow();
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+  });
+
+  describe('leaves every heading alone', () => {
+    const setUpMember = (formationId: string, isMapped = true) => {
+      const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+      const state = new GameState(
+        createDefaultGameConfig(),
+        1,
+        isMapped ? matchWorldOf(TWO_LANE_MAP) : null,
+        {
+          space,
+        },
+      );
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      const minion = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 30, y: 30 },
+      });
+      state.entities.add(minion);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId,
+        memberIds: [minion.id],
+        progress: 40,
+      });
+      space.begin(state.entities.size);
+      space.add(minion.id, 30, 30);
+      space.commit();
+      return { state, heading: () => minion.getComponent(Movement).heading };
+    };
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+
+    it('for a horde whose formation is unknown', () => {
+      const { state, heading } = setUpMember('wedge');
+      system.update({ state, logger });
+      expect(heading()).toEqual({ x: 0, y: 0 });
+    });
+
+    it('in a match without a map', () => {
+      const { state, heading } = setUpMember('ranks', false);
+      system.update({ state, logger });
+      expect(heading()).toEqual({ x: 0, y: 0 });
+    });
+
+    it('in a mapped match without a spatial index', () => {
+      const { state, heading } = setUpMember('ranks');
+      const unindexed = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+      state.entities.forEach((entity) => {
+        unindexed.entities.add(entity);
+      });
+      const horde = state.hordes.get('horde-1');
+      if (horde !== undefined) {
+        unindexed.hordes.add(horde);
+      }
+      system.update({ state: unindexed, logger });
+      expect(heading()).toEqual({ x: 0, y: 0 });
+    });
+
+    it('for a unit outside any horde', () => {
+      const { state, heading } = setUpMember('ranks');
+      state.hordes.removeMember(state.hordes.get('horde-1')?.memberIds[0] ?? '');
+      system.update({ state, logger });
+      expect(heading()).toEqual({ x: 0, y: 0 });
+    });
   });
 
   it('rebuilds dirty flow fields within the configured cell budget each tick', () => {
@@ -217,7 +403,7 @@ describe('PathingSystem', () => {
       HORDE_STEERING.slotArrivalRadius,
       fields,
     );
-    const state = new GameState(config, 1, TWO_LANE_MAP);
+    const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
     fields.markDirty([field?.goal ?? 0]);
     const serving = field?.integration;
 
@@ -229,69 +415,5 @@ describe('PathingSystem', () => {
 
     expect(isServingAfterOneTick).toBe(true);
     expect(field?.integration).not.toBe(serving);
-  });
-
-  describe('guards (18 §7)', () => {
-    /** A light guard at (60, 20) posted at (60, 30), with no horde anywhere. */
-    const guarded = () => {
-      const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-      const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
-      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
-      const add = (team: 'light' | 'dark', x: number, y: number, definitionId: string) => {
-        const entity = factory.create('light-mob', definitionId, { team, position: { x, y } });
-        state.entities.add(entity);
-        return entity;
-      };
-      const guard = add('light', 60, 20, 'light-guard');
-      state.guards.add({
-        id: 'home:0',
-        homeId: 'home',
-        team: 'light',
-        mobId: 'light-guard',
-        row: 0,
-        indexInRow: 0,
-        postX: 60,
-        postY: 30,
-        homeX: 60,
-        homeY: 40,
-        homeRadius: 5,
-        leashRadius: 8,
-        leashTolerance: 2,
-        respawnTicks: 3600,
-      });
-      state.guards.fill(0, guard.id);
-      const step = () => {
-        space.begin(state.entities.size);
-        state.entities.forEach((entity) => {
-          const { x, y } = entity.getComponent(Transform).position;
-          space.add(entity.id, x, y);
-        });
-        space.commit();
-        new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius).update({
-          state,
-          logger,
-        });
-      };
-      return { state, guard, add, step };
-    };
-
-    it('walks a guard with no target back to its post, with no horde in the match', () => {
-      const { state, guard, step } = guarded();
-      expect(state.hordes.size).toBe(0);
-
-      step();
-
-      expect(guard.getComponent(Movement).heading).toEqual({ x: 0, y: 1 });
-    });
-
-    it('chases the guard’s attack target instead of its post', () => {
-      const { state, guard, add, step } = guarded();
-      const enemy = add('dark', 70, 20, 'light-minion');
-      state.entities.setAttackTarget(guard.id, enemy.id);
-
-      step();
-
-      expect(guard.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
-    });
   });
 });

@@ -16,12 +16,13 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { VeterancySystem } from './VeterancySystem';
 
 const setUp = () => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const config = createDefaultGameConfig();
-  const state = new GameState(config, 1, TWO_LANE_MAP, space);
+  const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), { space });
   const units = loadDefaultContent(30);
   const factory = new EntityFactory(createDefaultEntityRegistry(), units);
   const statuses = new StatusEffectApplier(loadStatusEffects(30, 2));

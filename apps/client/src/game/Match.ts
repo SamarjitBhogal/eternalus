@@ -1,9 +1,10 @@
 import {
-  CathedralInteriorBuilder,
+  MapPresentationBuilder,
+  MapObjectBuilder,
+  findMapObjectAt,
   type EntityId,
   makeLogRecord,
   type MapDefinition,
-  MapSceneryBuilder,
   type Snapshot,
   type Vec2,
 } from '@eternalus/core';
@@ -27,6 +28,7 @@ import { EntityLayer } from './views/EntityLayer';
 import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
+import { WorldObjectsView } from './views/WorldObjectsView';
 import { SceneView } from './views/SceneView';
 
 /**
@@ -34,17 +36,18 @@ import { SceneView } from './views/SceneView';
  * loop, the renderer, the camera, the player's intent and the views, and owns their lifetime.
  * Each tick turns the player's intent into commands, steps the simulation and keeps the last two
  * snapshots; each frame follows the player with the camera and draws the scene. The player's
- * Legend is spawned at its team's stronghold when the match is created. Dragging, the overview
- * and the cathedral interior switch to the free `MapExplorer` view until the player moves.
+ * Legend is spawned at its team's stronghold when the match is created. Building roof cutaways
+ * stay in the same world scene; dragging and the overview switch to the free `MapExplorer` view
+ * until the player moves.
  */
 export class Match implements LoopTarget {
   private readonly loop: GameLoop;
 
   private readonly entities: EntityLayer;
+  private readonly objectView: WorldObjectsView;
+  private readonly mapObjects: ReturnType<MapObjectBuilder['build']>;
 
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
-
-  private readonly interior: { readonly scene: SceneView; readonly miniMap: MiniMapView } | null;
 
   private readonly explorer: MapExplorer;
 
@@ -57,6 +60,9 @@ export class Match implements LoopTarget {
   private playerId: EntityId | null = null;
 
   private lastMove: Vec2 = { x: 0, y: 0 };
+
+  /** The map object the held attack button last targeted; `null` once released or stopped. */
+  private attackTargetId: EntityId | null = null;
 
   private isFollowing = true;
 
@@ -71,16 +77,13 @@ export class Match implements LoopTarget {
 
   /** Canvas CSS pixels → device pixels → the world point the camera shows there. */
   private readonly projection: Projection = {
-    screenToWorld: (point) =>
-      this.deps.camera.screenToWorld(
-        { x: point.x * this.pixelRatio, y: point.y * this.pixelRatio },
-        {
-          worldWidth: this.deps.map.width,
-          worldHeight: this.deps.map.height,
-          screenWidth: this.screenWidth,
-          screenHeight: this.screenHeight,
-        },
-      ),
+    screenToWorld: (point) => {
+      const view = this.currentView();
+      return {
+        x: view.x + ((point.x * this.pixelRatio) / this.screenWidth) * view.width,
+        y: view.y + ((point.y * this.pixelRatio) / this.screenHeight) * view.height,
+      };
+    },
   };
 
   /**
@@ -103,24 +106,33 @@ export class Match implements LoopTarget {
         );
       }),
     );
-    const scenery = new MapSceneryBuilder(map).build();
-    const scene = new SceneView([
-      new MapView(map, scenery),
-      new SceneryView(scenery, 'detail'),
+    const presentation = deps.presentation ?? new MapPresentationBuilder().build(map);
+    this.explorer = new MapExplorer(map, presentation);
+    this.mapObjects = new MapObjectBuilder().build(map, presentation);
+    this.objectView = new WorldObjectsView(this.mapObjects, this.explorer.hiddenRoofs, () =>
+      this.currentView(),
+    );
+    const scenery = presentation.scenery;
+    const landscape = new SceneView([
+      new MapView(
+        map,
+        scenery,
+        this.explorer.hiddenRoofs,
+        () => this.currentView(),
+        presentation.buildings,
+        this.objectView.isDestroyed,
+      ),
+      new SceneryView(
+        scenery,
+        'detail',
+        this.explorer.hiddenRoofs,
+        () => this.currentView(),
+        this.objectView.isDestroyed,
+      ),
+      this.objectView,
       this.entities,
     ]);
-    this.world = { scene, miniMap: new MiniMapView(map, scene) };
-    const interior = new CathedralInteriorBuilder().build(map);
-    this.explorer = new MapExplorer(map, interior);
-    if (interior === null) {
-      this.interior = null;
-    } else {
-      const inside = new SceneView([
-        new MapView(interior.map, interior.scenery),
-        new SceneryView(interior.scenery, 'detail'),
-      ]);
-      this.interior = { scene: inside, miniMap: new MiniMapView(interior.map, inside) };
-    }
+    this.world = { scene: landscape, miniMap: new MiniMapView(map, landscape) };
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
@@ -149,9 +161,9 @@ export class Match implements LoopTarget {
     return this.playerId;
   }
 
-  /** Whether the view is inside the cathedral. */
-  public get isInterior(): boolean {
-    return this.explorer.isInterior;
+  /** Whether any building roof is hidden. */
+  public get hasOpenRoofs(): boolean {
+    return this.explorer.hiddenRoofs.size > 0;
   }
 
   /** The latest snapshot. */
@@ -188,10 +200,11 @@ export class Match implements LoopTarget {
       camera.track(player.transform, CAMERA_SMOOTHING);
     }
     const view = this.currentView();
-    const { scene, miniMap } = this.views;
+    const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
+    this.objectView.show(this.current.mapObjects ?? []);
     scene.draw(renderer);
     miniMap.draw(renderer, this.screenWidth, this.screenHeight, view);
   }
@@ -203,7 +216,7 @@ export class Match implements LoopTarget {
    * @returns Whether the click was on the minimap.
    */
   public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
-    const target = this.views.miniMap.worldPointAt(
+    const target = this.world.miniMap.worldPointAt(
       screenX,
       screenY,
       this.screenWidth,
@@ -244,24 +257,20 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Enters the cathedral when the screen point (device pixels) is on it.
+   * Toggles a building roof when the screen point (device pixels) is on it.
    *
-   * @returns Whether the view moved inside.
+   * @returns Whether a building was selected.
    */
-  public enterAt(screenX: number, screenY: number): boolean {
+  public toggleRoofAt(screenX: number, screenY: number): boolean {
     const view = this.currentView();
-    const isEntered = this.explorer.enterAt({
+    const wasToggled = this.explorer.toggleRoofAt({
       x: view.x + (screenX / this.screenWidth) * view.width,
       y: view.y + (screenY / this.screenHeight) * view.height,
     });
-    if (isEntered) {
-      this.isExploring = true;
-      this.isFollowing = false;
-    }
-    return isEntered;
+    return wasToggled;
   }
 
-  /** Shows the whole battlefield in the free view, leaving the cathedral if inside. */
+  /** Shows the whole battlefield in the free view, restoring all building roofs. */
   public overview(): void {
     this.explorer.overview();
     this.isExploring = true;
@@ -281,11 +290,23 @@ export class Match implements LoopTarget {
     if (this.playerId === null) {
       return;
     }
-    const { move } = this.deps.input.read(this.projection);
+    const { move, isAttacking, aim } = this.deps.input.read(this.projection);
+    const targetId =
+      isAttacking === true && aim !== null
+        ? findMapObjectAt(this.mapObjects, this.current.mapObjects ?? [], aim)
+        : null;
+    // Holding the button on one target queues one command, not one per tick.
+    if (targetId !== null && targetId !== this.attackTargetId) {
+      this.deps.simulation.enqueueCommand({
+        type: 'attack-target',
+        actorId: this.playerId,
+        targetId,
+      });
+    }
+    this.attackTargetId = targetId;
     const isMoving = move.x !== 0 || move.y !== 0;
-    // Any movement brings the camera back to the player, even a key held since before a click,
-    // except inside the cathedral, which the player leaves with the leave button.
-    if (isMoving && !this.explorer.isInterior) {
+    // Any movement brings the camera back to the player, including held keys.
+    if (isMoving) {
       this.isFollowing = true;
       this.isExploring = false;
     }
@@ -297,12 +318,11 @@ export class Match implements LoopTarget {
         ? { type: 'move', actorId: this.playerId, direction: move }
         : { type: 'stop', actorId: this.playerId },
     );
+    if (!isMoving) {
+      // `stop` also drops the attack target, so a button still held queues it again next tick.
+      this.attackTargetId = null;
+    }
     this.lastMove = move;
-  }
-
-  /** The scene and minimap on screen: the cathedral's inside it, the battlefield's otherwise. */
-  private get views(): { readonly scene: SceneView; readonly miniMap: MiniMapView } {
-    return this.explorer.isInterior && this.interior !== null ? this.interior : this.world;
   }
 
   /** The drawing area's width over its height, until the first resize a default. */

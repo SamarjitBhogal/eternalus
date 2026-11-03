@@ -17,7 +17,7 @@ export const MEDIUM_CAMP_MOB = {
   aiProfile: 'camp-mob',
   attack: { strategy: 'melee', damage: 28, reach: 1.5, interval: 1.2 }, // TUNE: balancing.md medium minion
   xpValue: 45, // TUNE: balancing.md "XP sources" (medium minion kill); camp mobs have no row of their own
-  movement: {
+  movementProfile: {
     maxSpeed: 3.2, // TUNE: m/s, balancing.md medium minion
     acceleration: 16, // TUNE: m/s², top speed after 0.2 s
     mass: 1.125, // TUNE: as the medium minion

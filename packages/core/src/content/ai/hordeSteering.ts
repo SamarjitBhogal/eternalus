@@ -11,6 +11,7 @@ export const HORDE_STEERING = {
   objectiveHoldGap: 1, // TUNE: under the light minion's 1.5 m reach, so the leader can hit it
   spawnSpacing: 2, // TUNE: over the heavy minion's 1.6 m diameter
   spawnColumns: 4, // TUNE:
+  deployClearance: 3, // TUNE: past the wall line and a heavy's radius from the first open cell
 } as const satisfies HordeSteeringProfile;
 
 /**

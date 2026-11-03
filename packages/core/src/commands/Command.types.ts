@@ -27,6 +27,8 @@ export type Aim = { readonly point: Vec2; readonly targetId: EntityId | null };
  * this tick.
  */
 export type InputIntent = {
+  /** Whether the existing basic-attack binding is held. */
+  readonly isAttacking?: boolean;
   readonly move: Vec2;
   readonly aim: Vec2 | null;
   readonly triggered: readonly AbilitySlot[];
@@ -91,6 +93,7 @@ export type CommandRejectReason =
   | 'invalid-position'
   | 'invalid-origin'
   | 'cap-exceeded'
+  | 'horde-only'
   | 'invalid-direction'
   | 'not-movable'
   | 'cannot-attack'

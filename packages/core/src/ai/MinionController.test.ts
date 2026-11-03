@@ -17,6 +17,7 @@ import { GameState } from '../state/GameState';
 import { Collider } from '../components/Collider';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { IdGenerator } from '../utils/IdGenerator';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { MinionController } from './MinionController';
 import { Perception } from './perception/Perception';
 
@@ -31,7 +32,7 @@ const controller = new MinionController({
 
 const setUp = () => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP, space);
+  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
@@ -177,10 +178,11 @@ describe('MinionController', () => {
     expect(decision.memory).toMatchObject({ targetId: closer });
   });
 
-  it('engaging: stops and returns when the target dies, the leash breaks or aggro runs out', () => {
+  it('engaging: stops and returns when the target dies, the leash breaks or a Legend’s aggro runs out', () => {
     const { state, add, decide, advance } = setUp();
     const self = add('light', 50);
     const target = add('dark', 52);
+    const legend = add('dark', 53, 20, 'warrior', 'warrior');
     const returning = { fsm: 'returning', targetId: null };
     const stop = [{ type: 'stop', actorId: self }];
 
@@ -189,9 +191,21 @@ describe('MinionController', () => {
       memory: returning,
     });
     advance(10);
-    expect(decide(self, engagingOn(target, { aggroUntilTick: 10 })).commands).toEqual(stop);
+    expect(decide(self, engagingOn(legend, { aggroUntilTick: 10 })).commands).toEqual(stop);
     state.entities.get(target)?.getComponent(Health).applyDamage(1e6);
     expect(decide(self, engagingOn(target)).commands).toEqual(stop);
+  });
+
+  it('engaging: keeps a minion target past the aggro duration; only a Legend escapes it (MS-34)', () => {
+    const { add, decide, advance } = setUp();
+    const self = add('light', 50);
+    const target = add('dark', 52);
+    advance(20);
+
+    const decision = decide(self, engagingOn(target, { aggroUntilTick: 10 }));
+
+    expect(decision.commands).toEqual([]);
+    expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: target });
   });
 
   it('returning: marches again at its slot, with a cooldown, and keeps returning until then', () => {

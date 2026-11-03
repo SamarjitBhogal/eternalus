@@ -68,7 +68,7 @@ export class StructureSystem implements System {
     }
     const { breakability } = this.definitions.get(structure.definitionId);
     const isBreakable = StructureSystem.passes(breakability, down, total);
-    if (collider.isUnbreakable !== isBreakable) {
+    if (collider.isUnbreakable === !isBreakable) {
       return;
     }
     collider.setUnbreakable(!isBreakable);

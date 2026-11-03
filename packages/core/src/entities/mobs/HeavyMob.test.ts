@@ -16,6 +16,6 @@ describe('HeavyMob', () => {
     expect(minion.kind).toBe('heavy-mob');
     expect(minion).toBeInstanceOf(Mob);
     expect(minion.getComponent(Health).current).toBe(definition.baseHealth);
-    expect(minion.getComponent(Movement).maxSpeed).toBe(definition.movement.maxSpeed);
+    expect(minion.getComponent(Movement).maxSpeed).toBe(definition.movementProfile.maxSpeed);
   });
 });

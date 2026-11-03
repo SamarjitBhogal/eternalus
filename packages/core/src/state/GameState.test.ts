@@ -4,9 +4,14 @@ import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import type { MapDefinition } from '../content/maps/maps.types';
 import { Entity } from '../entities/Entity';
+import type { Team } from '../teams/teams.types';
 import { SeededRandom } from '../utils/SeededRandom';
+import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
+import { matchWorldOf } from './__fixtures__/matchWorld';
 import { GameState } from './GameState';
+import { TestBuffTower } from './__fixtures__/TestBuffTower';
 
 class Soldier extends Entity {
   public readonly kind = 'soldier';
@@ -28,12 +33,49 @@ class Marker extends Entity {
   }
 }
 
+/** An entity of any family and team at `(x, y)`, for the ally-damage tally. */
+class Placed extends Entity {
+  public readonly kind = 'placed';
+
+  public constructor(
+    id: string,
+    public readonly family: string,
+    private readonly team: Team,
+    private readonly x: number,
+    private readonly y: number,
+  ) {
+    super(id, 'placed');
+  }
+
+  protected installComponents(): void {
+    this.addComponent(new Transform({ x: this.x, y: this.y }, 0.5));
+    this.addComponent(new Health(100));
+    this.addComponent(new TeamMembership(this.team));
+  }
+}
+
 const spawned = (entity: Entity): Entity => {
   entity.spawn({});
   return entity;
 };
 
 describe('GameState', () => {
+  it('counts living BuffTower entities by team, excluding dead, removed and non-structure entities', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    expect(state.livingBuffTowerCount('light')).toBe(0);
+    const light = spawned(new TestBuffTower('light-tower', 'light'));
+    const dark = spawned(new TestBuffTower('dark-tower', 'dark'));
+    state.entities.add(light);
+    state.entities.add(dark);
+    state.entities.add(spawned(new Soldier('soldier', 'soldier')));
+    state.entities.add(spawned(new TestBuffTower('proxy', 'light', 'obstacle')));
+    expect(state.livingBuffTowerCount('light')).toBe(1);
+    expect(state.livingBuffTowerCount('dark')).toBe(1);
+    light.getComponent(Health).applyDamage(100);
+    expect(state.livingBuffTowerCount('light')).toBe(0);
+    state.entities.remove(dark.id, 'dev-removed');
+    expect(state.livingBuffTowerCount('dark')).toBe(0);
+  });
   it('starts at tick 0 in the countdown and counts ticks', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     expect(state.tick).toBe(0);
@@ -83,6 +125,48 @@ describe('GameState', () => {
           health: null,
         },
       ],
+      hordes: [],
+      teams: {
+        light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+        dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      },
+    });
+  });
+
+  it('snapshots the hordes and team counters as copies the store no longer changes', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'dark',
+      weightClass: 'medium',
+      lane: 'lane-1',
+      formationId: 'ranks',
+      memberIds: ['entity-2', 'entity-1'],
+      progress: 12,
+    });
+    state.recordSpawnRequest('dark', 3, 2);
+
+    const snapshot = state.snapshot();
+    state.hordes.removeMember('entity-1');
+    state.hordes.setProgress('horde-1', 20);
+    state.recordSpawnRequest('dark', 1, 1);
+    state.recordTowerLost('dark', 'lane-1');
+
+    expect(snapshot.hordes).toEqual([
+      {
+        id: 'horde-1',
+        team: 'dark',
+        weightClass: 'medium',
+        lane: 'lane-1',
+        formationId: 'ranks',
+        memberIds: ['entity-1', 'entity-2'],
+        leaderId: 'entity-1',
+        progress: 12,
+      },
+    ]);
+    expect(snapshot.teams).toEqual({
+      light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      dark: { unitsRequested: 3, unitsSuppressed: 1, towersLostByLane: {} },
     });
   });
 
@@ -145,14 +229,106 @@ describe('GameState', () => {
     state.recordSpawnRequest('dark', 16, 10);
     state.recordSpawnRequest('dark', 16, 16);
 
-    expect(state.teams.dark).toEqual({ unitsRequested: 32, unitsSuppressed: 6 });
-    expect(state.teams.light).toEqual({ unitsRequested: 0, unitsSuppressed: 0 });
+    expect(state.teams.dark).toEqual({
+      unitsRequested: 32,
+      unitsSuppressed: 6,
+      towersLostByLane: {},
+    });
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
     expect(() => {
       state.recordSpawnRequest('light', 4, 5);
     }).toThrow(RangeError);
     expect(() => {
       state.recordSpawnRequest('light', 4, -1);
     }).toThrow(RangeError);
-    expect(state.teams.light).toEqual({ unitsRequested: 0, unitsSuppressed: 0 });
+    expect(state.teams.light).toEqual({
+      unitsRequested: 0,
+      unitsSuppressed: 0,
+      towersLostByLane: {},
+    });
+  });
+
+  it('counts lost lane towers per team and lane', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-0');
+    state.recordTowerLost('light', 'lane-1');
+
+    expect(state.teams.light.towersLostByLane).toEqual({ 'lane-0': 2, 'lane-1': 1 });
+    expect(state.teams.dark.towersLostByLane).toEqual({});
+  });
+
+  describe('ally damage (DEC-89, architecture 18 §3.3)', () => {
+    /**
+     * The two-lane map (lane-0 at y 20, lane-1 at y 40) with a Light Legend near lane-0, a Light
+     * mob and a Light structure near lane-1, a Dark mob, and a neutral camp mob.
+     */
+    const stateWithUnits = (map: MapDefinition | null = TWO_LANE_MAP) => {
+      const state = new GameState(
+        createDefaultGameConfig(),
+        1,
+        map === null ? null : matchWorldOf(map),
+      );
+      for (const entity of [
+        new Placed('legend-light', 'legend', 'light', 60, 22),
+        new Placed('mob-light', 'mob', 'light', 60, 38),
+        new Placed('tower-light', 'structure', 'light', 60, 41),
+        new Placed('mob-dark', 'mob', 'dark', 140, 20),
+        new Placed('camp-mob', 'mob', 'neutral', 100, 30),
+      ]) {
+        state.entities.add(spawned(entity));
+      }
+      const hit = (targetId: string, attackerId: string | null, amount: number) => {
+        state.events.emit('damage-applied', {
+          targetId,
+          amount,
+          absorbed: 0,
+          source: { attackerId, kind: 'weapon', definitionId: 'test-weapon' },
+        });
+      };
+      return { state, hit };
+    };
+
+    it("counts enemy hits on a team's Legends and mobs on the lane nearest each victim", () => {
+      const { state, hit } = stateWithUnits();
+
+      hit('legend-light', 'mob-dark', 30);
+      hit('mob-light', 'mob-dark', 10);
+      hit('mob-dark', 'legend-light', 25);
+
+      expect(state.allyDamage.share('light', 'lane-0')).toBe(0.75);
+      expect(state.allyDamage.share('light', 'lane-1')).toBe(0.25);
+      expect(state.allyDamage.share('dark', 'lane-0')).toBe(1);
+    });
+
+    it('leaves out hits from a neutral attacker or no attacker, on structures, and without a map', () => {
+      const { state, hit } = stateWithUnits();
+
+      hit('legend-light', 'camp-mob', 30);
+      hit('mob-light', null, 10);
+      hit('tower-light', 'mob-dark', 40);
+      hit('camp-mob', 'legend-light', 15);
+      const withoutMap = stateWithUnits(null);
+      withoutMap.hit('legend-light', 'mob-dark', 30);
+
+      expect(state.allyDamage.size).toBe(0);
+      expect(withoutMap.state.allyDamage.size).toBe(0);
+    });
+
+    it("leaves out hits from the victim's own team and from an attacker already removed", () => {
+      const { state, hit } = stateWithUnits();
+      state.entities.remove('camp-mob', 'died');
+
+      hit('legend-light', 'camp-mob', 30);
+      hit('legend-light', 'legend-light', 10);
+      hit('mob-light', 'legend-light', 5);
+
+      expect(state.allyDamage.size).toBe(0);
+    });
   });
 });

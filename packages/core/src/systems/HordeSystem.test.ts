@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -10,13 +11,18 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { IdGenerator } from '../utils/IdGenerator';
+import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { HordeSystem } from './HordeSystem';
 
 const FACTOR = 0.5;
 const logger = new NullLogger();
 
-const setUp = () => {
-  const state = new GameState(createDefaultGameConfig(), 1, TWO_LANE_MAP);
+const setUp = (map: typeof TWO_LANE_MAP | null = TWO_LANE_MAP) => {
+  const state = new GameState(
+    createDefaultGameConfig(),
+    1,
+    map === null ? null : matchWorldOf(map),
+  );
   const system = new HordeSystem(state, { marchSpeedFactor: FACTOR, objectiveHoldGap: 1 });
   const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
   const addHorde = (members: readonly [string, string][], progress = 0) => {
@@ -74,6 +80,29 @@ describe('HordeSystem', () => {
     expect(dissolved).toEqual([hordeId]);
   });
 
+  it('ends the walk out of a member that leaves its horde, since nothing else would (DEC-133)', () => {
+    const { state, system, addHorde } = setUp();
+    const { memberIds } = addHorde([
+      ['light-mob', 'light-minion'],
+      ['light-mob', 'light-minion'],
+    ]);
+    const [stays = '', leaves = ''] = memberIds;
+    for (const id of memberIds) {
+      state.entities.get(id)?.addComponent(new Deploying({ x: 40, y: 20 }));
+    }
+
+    state.events.emit('team-changed', {
+      entityId: leaves,
+      from: 'light',
+      to: 'dark',
+      cause: 'test',
+    });
+    system.update({ state, logger });
+
+    expect(state.entities.get(leaves)?.hasComponent(Deploying)).toBe(false);
+    expect(state.entities.get(stays)?.hasComponent(Deploying)).toBe(true);
+  });
+
   it('advances the anchor at a fraction of the slowest member’s speed, up to the lane end', () => {
     const { state, system, addHorde } = setUp();
     const { hordeId, memberIds } = addHorde([
@@ -107,13 +136,35 @@ describe('HordeSystem', () => {
     expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
   });
 
-  it('does nothing without a map', () => {
-    const state = new GameState(createDefaultGameConfig(), 1);
-    const system = new HordeSystem(state, { marchSpeedFactor: FACTOR, objectiveHoldGap: 1 });
+  it('holds the anchor while any member fights, not only the leader (MS-33)', () => {
+    const { state, system, addHorde } = setUp();
+    const { hordeId, memberIds } = addHorde(
+      [
+        ['light-mob', 'light-minion'],
+        ['light-mob', 'light-minion'],
+      ],
+      10,
+    );
+    const [leader = '', follower = ''] = memberIds;
+    expect(state.hordes.get(hordeId)?.leaderId).toBe(leader);
+    const { memberIds: enemies } = addHorde([['light-mob', 'training-dummy']]);
+    state.entities.setAttackTarget(follower, enemies[0] ?? '');
 
-    expect(() => {
-      system.update({ state, logger });
-    }).not.toThrow();
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
+
+    state.entities.clearAttackTarget(follower);
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
+  });
+
+  it('leaves the anchor where it is without a map', () => {
+    const { state, system, addHorde } = setUp(null);
+    const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
+
+    system.update({ state, logger });
+
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
   });
 
   it('holds the anchor in front of a standing objective and advances once it falls', () => {

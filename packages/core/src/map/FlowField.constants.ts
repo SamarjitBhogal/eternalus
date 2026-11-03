@@ -47,6 +47,3 @@ export const DIRECTION_PREFERENCE = {
   light: [0, 1, 2, 3, 4, 5, 6, 7],
   dark: [1, 0, 2, 3, 5, 4, 7, 6],
 } as const;
-
-/** A line-of-sight check samples the grid this fraction of a cell apart. */
-export const LINE_STEP_FRACTION = 0.25;

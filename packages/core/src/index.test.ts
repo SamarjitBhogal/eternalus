@@ -5,11 +5,11 @@ import * as core from './index';
 describe('@eternalus/core public API', () => {
   it('exports exactly the documented runtime values', () => {
     expect(Object.keys(core).sort()).toEqual([
-      'CathedralInteriorBuilder',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
       'MapGenerator',
-      'MapSceneryBuilder',
+      'MapObjectBuilder',
+      'MapPresentationBuilder',
       'MemoryLogger',
       'NullLogger',
       'SEVERITY',
@@ -17,6 +17,8 @@ describe('@eternalus/core public API', () => {
       'Simulation',
       'StateHasher',
       'createDefaultGameConfig',
+      'findMapObjectAt',
+      'isPointInPolygon',
       'makeLogRecord',
       'runReplay',
       'validateGameConfig',
@@ -44,7 +46,16 @@ describe('@eternalus/core public API', () => {
       logger: new core.NullLogger(),
     });
     sim.step();
-    expect(sim.snapshot()).toEqual({ tick: 1, phase: 'countdown', entities: [] });
+    expect(sim.snapshot()).toEqual({
+      tick: 1,
+      phase: 'countdown',
+      entities: [],
+      hordes: [],
+      teams: {
+        light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+        dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      },
+    });
   });
 
   it('builds a default config that passes validation', () => {

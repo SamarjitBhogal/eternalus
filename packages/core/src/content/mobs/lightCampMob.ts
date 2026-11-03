@@ -17,7 +17,7 @@ export const LIGHT_CAMP_MOB = {
   aiProfile: 'camp-mob',
   attack: { strategy: 'melee', damage: 12, reach: 1.5, interval: 1.0 }, // TUNE: balancing.md light minion
   xpValue: 20, // TUNE: balancing.md "XP sources" (light minion kill); camp mobs have no row of their own
-  movement: {
+  movementProfile: {
     maxSpeed: 3.5, // TUNE: m/s, balancing.md light minion
     acceleration: 17.5, // TUNE: m/s², top speed after 0.2 s
     mass: 0.5, // TUNE: as the light minion

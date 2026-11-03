@@ -12,10 +12,10 @@ import type { WeaponDefinition } from './weapons/weapons.types';
 
 const perTick = (definition: UnitDefinition, tickRate: number, rate: TickRate): UnitDefinition => ({
   ...definition,
-  movement: {
-    ...definition.movement,
-    maxSpeed: definition.movement.maxSpeed / tickRate,
-    acceleration: definition.movement.acceleration / (tickRate * tickRate),
+  movementProfile: {
+    ...definition.movementProfile,
+    maxSpeed: definition.movementProfile.maxSpeed / tickRate,
+    acceleration: definition.movementProfile.acceleration / (tickRate * tickRate),
   },
   ...(definition.attack && {
     attack: {
