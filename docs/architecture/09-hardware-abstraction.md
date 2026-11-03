@@ -4,7 +4,7 @@ description: The ports-and-adapters layer that isolates the game from the browse
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-02
 tags: [architecture, hal, input, ports, adapters, keybindings]
 paths:
   [
@@ -131,7 +131,11 @@ export const INPUT_ACTIONS = [
 export type InputAction = (typeof INPUT_ACTIONS)[number];
 
 export type InputChord =
-  | { readonly device: 'keyboard'; readonly code: string; readonly modifiers?: readonly string[] }
+  | {
+      readonly device: 'keyboard';
+      readonly code: string;
+      readonly modifiers?: readonly ChordModifier[];
+    } // `ChordModifier`: 'Alt' | 'Control' | 'Meta' | 'Shift' (13 §6.1)
   | { readonly device: 'mouse'; readonly button: 0 | 1 | 2 | 3 | 4 }
   | { readonly device: 'gamepad'; readonly button: number }
   | {

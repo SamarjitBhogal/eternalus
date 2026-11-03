@@ -114,40 +114,42 @@ describe('Match free view', () => {
     expect(camera.zoom).toBe(2);
   });
 
-  it('enters the cathedral on a click on it, draws the interior and leaves on overview', () => {
+  it('leaves the explorer with every developer roof back and the following camera at base zoom', () => {
+    const { match, camera, shown, cathedral, toScreen } = setUp();
+    match.zoomBy(2);
+    match.overview();
+    const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, shown());
+    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+
+    match.leaveExplorer();
+
+    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(camera.zoom).toBe(1);
+    expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
+  });
+
+  it('toggles the cathedral roof in the same world and restores it on overview', () => {
     const { match, input, renderer, shown, cathedral, toScreen } = setUp();
     match.overview();
     const view = shown();
 
-    expect(match.enterAt(0, 0)).toBe(false);
+    expect(match.toggleRoofAt(0, 0)).toBe(false);
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, view);
-    expect(match.enterAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.isInterior).toBe(true);
+    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.hasDeveloperRoofs).toBe(true);
     const inside = shown();
-    expect(inside.height).toBeLessThanOrEqual(2200);
+    expect(inside).toEqual(view);
     expect(
       renderer.calls.some((call) => call.op === 'fillPolygon' && call.args[1] === '#938e7c'),
     ).toBe(true);
 
-    // Walking does not drop the player out of the cathedral view.
+    // Walking resumes player following while the roof remains open.
     input.move = { x: 1, y: 0 };
     match.tick();
-    expect(shown()).toEqual(inside);
+    expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
+    expect(match.hasDeveloperRoofs).toBe(true);
 
     match.overview();
-    expect(match.isInterior).toBe(false);
-  });
-
-  it('leaves the cathedral for the following camera (normal play, I-55)', () => {
-    const { match, shown, cathedral, toScreen } = setUp();
-    const following = shown();
-    match.overview();
-    const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, shown());
-    expect(match.enterAt(onCathedral.x, onCathedral.y)).toBe(true);
-
-    match.leaveInterior();
-
-    expect(match.isInterior).toBe(false);
-    expect(shown()).toEqual(following);
+    expect(match.hasDeveloperRoofs).toBe(false);
   });
 });

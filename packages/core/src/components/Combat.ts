@@ -10,8 +10,15 @@ export class Combat {
 
   private readyAtTickValue = 0;
 
-  /** @param attack - The basic attack, with `interval` already in ticks. */
-  public constructor(public readonly attack: UnitAttack) {}
+  /**
+   * @param attack - The basic attack, with `interval` already in ticks.
+   * @param weaponId - The equipped weapon the attack comes from (05 §10), or `null` for a unit's own
+   *   attack (mobs).
+   */
+  public constructor(
+    public readonly attack: UnitAttack,
+    public readonly weaponId: string | null = null,
+  ) {}
 
   /** The entity being attacked, or `null` when idle. */
   public get targetId(): string | null {

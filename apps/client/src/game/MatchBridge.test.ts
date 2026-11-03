@@ -27,6 +27,11 @@ const snapshotAt = (tick: number, entities: readonly EntitySnapshot[] = []): Sna
   tick,
   phase: 'early-game',
   entities,
+  hordes: [],
+  teams: {
+    light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+    dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+  },
 });
 
 function setUp(numLanes = createDefaultGameConfig().map.numLanes) {

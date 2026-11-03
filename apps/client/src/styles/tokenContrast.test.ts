@@ -93,7 +93,6 @@ const PAIRS: readonly Pair[] = [
     ),
   ),
   pair('clock and key labels on the ground', ['--hud-text'], [HUD], TEXT),
-  pair('Leave cathedral label', ['--text-primary'], ['--surface-scrim', HUD], TEXT),
   pair('status fill vs track', ['--hud-status-fill'], ['--hud-status-track'], NON_TEXT),
   pair('cream bar fill vs rest', ['--hud-bar-cream', HUD], ['--hud-bar-cream-rest', HUD], NON_TEXT),
   pair('marker vs cream fill', ['--hud-bar-cream-marker'], ['--hud-bar-cream', HUD], NON_TEXT),

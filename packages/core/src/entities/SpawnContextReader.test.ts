@@ -58,4 +58,32 @@ describe('SpawnContextReader', () => {
       );
     }
   });
+
+  it('reads the spawn’s own controller, and refuses one that is not valid', () => {
+    const controller = { controllerId: 'bot-legend', profileId: 'normal', memory: { lane: 'l0' } };
+    const base = { definition: DEFINITION, position: POSITION, team: 'light' };
+
+    expect(reader.placed<typeof DEFINITION>({ ...base, controller }).controller).toEqual(
+      controller,
+    );
+    expect(reader.placed<typeof DEFINITION>(base).controller).toBeUndefined();
+    for (const bad of [
+      'bot-legend',
+      { ...controller, controllerId: 'wizard' },
+      { ...controller, profileId: 3 },
+      { ...controller, memory: null },
+    ]) {
+      expect(() => reader.placed<typeof DEFINITION>({ ...base, controller: bad })).toThrow(
+        'not a known controller',
+      );
+    }
+  });
+
+  it('reads the weapon source only when it has has() and get()', () => {
+    const weapons = { has: () => false, get: () => undefined };
+
+    expect(reader.weapons({ weapons })).toBe(weapons);
+    expect(reader.weapons({})).toBeNull();
+    expect(reader.weapons({ weapons: { has: 'nope' } })).toBeNull();
+  });
 });

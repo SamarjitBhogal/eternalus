@@ -124,4 +124,14 @@ describe('loadDisplayContent', () => {
       ),
     );
   });
+
+  it('rejects a bot roster that names an unknown difficulty (DEC-149)', () => {
+    const botRoster = { ...BOT_ROSTER, difficulties: { laner: 'normal', rover: 'nightmare' } };
+
+    expect(() => loadDisplayContent({ botRoster })).toThrow(
+      new ContentValidationError(
+        'Invalid content: standard: rover difficulty "nightmare" is not a bot difficulty',
+      ),
+    );
+  });
 });

@@ -1,33 +1,25 @@
-import type { CathedralInterior, MapDefinition, Vec2 } from '@eternalus/core';
+import type { MapDefinition, Vec2 } from '@eternalus/core';
 
 import type { WorldRect } from './engine/render/Renderer.types';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
 /**
- * Owns the free, presentation-only view of the map: aspect-correct pan and zoom over the whole
- * battlefield, and stepping into the cathedral's interior. It never changes map data.
+ * Owns the free, presentation-only view of the map (the developer explorer): aspect-correct pan
+ * and zoom over the whole battlefield. It never changes map data; roof cutaways are
+ * `BuildingRoofs`'.
  */
 export class MapExplorer {
   private center: Vec2;
   private zoom = 1;
-  private isInside = false;
 
-  /** Starts with an overview of the battlefield; `interior` is `null` when there is none. */
-  public constructor(
-    private readonly map: MapDefinition,
-    private readonly interior: CathedralInterior | null,
-  ) {
+  /** Starts with an overview of the generated battlefield. */
+  public constructor(private readonly map: MapDefinition) {
     this.center = { x: map.width / 2, y: map.height / 2 };
   }
 
-  /** The map currently being explored: the battlefield or the cathedral interior. */
+  /** The unchanged battlefield being explored. */
   public get currentMap(): MapDefinition {
-    return this.isInside && this.interior !== null ? this.interior.map : this.map;
-  }
-
-  /** Whether the view is inside the cathedral. */
-  public get isInterior(): boolean {
-    return this.isInside;
+    return this.map;
   }
 
   /** Keeps the world's proportions intact at every window size and zoom level. */
@@ -70,25 +62,8 @@ export class MapExplorer {
     this.zoom = Math.max(1, Math.min(EXPLORER_SETTINGS.maxZoom, this.zoom * factor));
   }
 
-  /** Enters only when the selected world point falls inside the cathedral footprint. */
-  public enterAt(point: Vec2): boolean {
-    const entry = this.interior?.entry;
-    if (
-      this.isInside ||
-      entry === undefined ||
-      Math.abs(point.x - entry.center.x) > entry.halfWidth ||
-      Math.abs(point.y - entry.center.y) > entry.halfHeight
-    )
-      return false;
-    this.isInside = true;
-    this.zoom = EXPLORER_SETTINGS.interiorZoom;
-    this.center = { x: this.currentMap.width / 2, y: this.currentMap.height / 2 };
-    return true;
-  }
-
-  /** Leaves the cathedral and restores the battlefield overview. */
+  /** Shows the whole battlefield again. */
   public overview(): void {
-    this.isInside = false;
     this.zoom = 1;
     this.center = { x: this.map.width / 2, y: this.map.height / 2 };
   }

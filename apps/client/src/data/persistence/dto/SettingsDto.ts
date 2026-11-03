@@ -8,7 +8,10 @@ type ChordDtoV1 = {
   readonly device: 'keyboard' | 'mouse' | 'gamepad';
   readonly code: string;
   readonly label: string;
-  /** Optional, so records saved before modifier chords (DEC-105) still read as version 1. */
+  /**
+   * Optional, so records saved before modifier chords (DEC-105) still read as version 1. An
+   * optional field that old saves lack needs no `schemaVersion` bump (DEC-125).
+   */
   readonly modifiers?: readonly (typeof CHORD_MODIFIERS)[number][];
 };
 

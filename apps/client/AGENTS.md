@@ -39,7 +39,8 @@ Package-specific rules. The root `AGENTS.md` still applies.
 ## Adding code
 
 - React component: create `<Name>.tsx`, a co-located `<Name>.module.css`, and a test.
-- Function components only. Put logic in custom hooks (`useXxx.ts`) next to the component.
+- Function components only, except the one `ErrorBoundary` class (ADR 0025). Put logic in custom
+  hooks (`useXxx.ts`) next to the component.
 - Styles in the co-located `.module.css` with camelCase class names. No inline `style` except
   for values computed at runtime.
 - New game → UI data: add the event to `bridge/events.ts`, publish it (throttled) from

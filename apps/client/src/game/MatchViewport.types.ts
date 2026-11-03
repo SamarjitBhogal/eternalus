@@ -23,17 +23,18 @@ export type ViewportCanvas = EventTarget &
   };
 
 /**
- * How the match's pointer controls talk back to `GameCanvas`'s chrome: the cathedral interior
- * (normal play, DEC-32), the developer explorer's overview and whether the explorer is shown
- * (`?dev=1` at the start, then DEC-105's hotkey; DEC-32, INBOX HC-F8).
+ * How the match's pointer controls talk back to `GameCanvas`'s chrome: whether the developer
+ * explorer cut a building roof away, its overview and whether the explorer is shown (`?dev=1` at
+ * the start, then DEC-105's hotkey; DEC-32, INBOX HC-F8).
  */
 export type ViewportChrome = {
-  /** The view went inside the cathedral (`true`) or back to the battlefield (`false`). */
-  readonly onInteriorChanged: (isInside: boolean) => void;
+  /**
+   * A developer roof click or the overview left some roof the developer opened (`true`) or none
+   * (`false`); the roof of the player's building does not count (DEC-143).
+   */
+  readonly onDeveloperRoofsChanged: (hasDeveloperRoofs: boolean) => void;
   /** DEC-105's hotkey showed (`true`) or hid (`false`) the developer explorer. */
   readonly onExplorerChanged: (isShown: boolean) => void;
-  /** Gives the Leave cathedral control its action; `null` when the match ends. */
-  readonly setLeaveInterior: (run: (() => void) | null) => void;
   /** Gives the developer toolbar's overview button its action; `null` when the match ends. */
   readonly setOverview: (run: (() => void) | null) => void;
 };

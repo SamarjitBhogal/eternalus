@@ -1,7 +1,8 @@
-import { type GameConfig, SEVERITY, Simulation } from '@eternalus/core';
+import { type GameConfig, makeLogRecord, SEVERITY, Simulation } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { SinkLogger } from '../data/logging/SinkLogger';
@@ -33,26 +34,42 @@ export type BrowserMatchDeps = {
   readonly settings: Pick<SettingsController, 'bindings'>;
   /** Stamps the match's log records (the engine clock; core never reads time). */
   readonly clock: SessionClock;
-  /** The page's sinks for WARN and worse; each match adds its own TRACE ring buffer. */
+  /**
+   * The page's sinks for WARN and worse (the error reporter among them); each match adds its own
+   * TRACE ring buffer.
+   */
   readonly sinks: readonly LogSink[];
 };
 
-/** A match's logger: WARN and worse to the page's sinks, everything to its own TRACE ring buffer. */
-function createMatchLogger(deps: BrowserMatchDeps): SinkLogger {
+/**
+ * A match's logger: everything to its own TRACE ring buffer first, so a report a page sink makes
+ * already holds the record (ADR 0025 §3), then WARN and worse to the page's sinks.
+ */
+function createMatchLogger(deps: BrowserMatchDeps, ring: RingBufferSink): SinkLogger {
   return new SinkLogger(
     () => deps.clock.now(),
     [
+      { sink: ring, minSeverity: SEVERITY.TRACE },
       ...deps.sinks.map((sink) => ({ sink, minSeverity: SEVERITY.WARN })),
-      { sink: new RingBufferSink(LOG_RING_CAPACITY), minSeverity: SEVERITY.TRACE },
     ],
   );
+}
+
+/** What an error report needs from the match (ADR 0025 §3, §4): it only reads the simulation. */
+function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEvidence {
+  const replay = simulation.exportReplay();
+  return {
+    match: { seed: replay.seed, tick: simulation.tick, ...simulation.recentContext(), replay },
+    logTail: ring.tail(LOG_RING_CAPACITY),
+  };
 }
 
 /**
  * The browser match factory `main.tsx` binds (13 §10; 13 §2's injected `createMatch`). Each call
  * builds the adapters (renderer, camera, devices, mapper, logger, frame scheduler), a fresh
- * `Simulation(setup.seed)`, the `Match` on `request.world` and its `MatchHost`, then starts the
- * host, which owns everything from then on.
+ * `Simulation(setup.seed)` on `request.world`'s map and map objects with the setup's bots as its
+ * roster, the `Match` on the same world and its `MatchHost`, then starts the host, which owns
+ * everything from then on. The match log records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
@@ -65,15 +82,27 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     }
     // The match points the camera at the player's spawn, so its start point does not matter.
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
-    const logger = createMatchLogger(deps);
+    const ring = new RingBufferSink(LOG_RING_CAPACITY);
+    const logger = createMatchLogger(deps, ring);
+    const { seed } = request.setup;
+    logger.log(makeLogRecord('INFO', 'client.match', 'Match seed', { attributes: { seed } }));
     const mapper = new InputMapper(settings.bindings ?? PRESETS.wasd);
     const keyboard = new KeyboardDevice((code) => mapper.isBound(code));
     const mouse = new MouseDevice();
     const input = new DeviceIntentSource([keyboard, mouse], mapper);
+    let simulation: Simulation;
     let match: Match;
     try {
+      simulation = new Simulation({
+        config: gameConfig,
+        seed,
+        logger,
+        map: request.world.map,
+        mapObjects: request.world.mapObjects,
+        roster: request.roster,
+      });
       match = new Match({
-        simulation: new Simulation({ config: gameConfig, seed: request.setup.seed, logger }),
+        simulation,
         world: request.world,
         tickRate: gameConfig.tickRate,
         scheduler: new RafFrameScheduler(window),
@@ -106,6 +135,8 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
       bus: deps.bus,
       mapper,
       adapters: [renderer, camera],
+      evidence: () => readEvidence(simulation, ring),
+      currentTick: () => simulation.tick,
     });
     // A throw here has already been undone by the host (every listener, the match, the adapters).
     host.start();

@@ -126,6 +126,38 @@ describe('Match lifecycle', () => {
     expect(logger.records.filter((record) => record.severityText === 'ERROR')).toEqual([]);
   });
 
+  // DEC-149 (7): until core reports the player's Legend id (A19, built on feat/match-director),
+  // `Match` adopts the first spawn of the player's class and team. That is safe only while roster
+  // bots spawn and announce it in the Simulation constructor, before `Match` subscribes; this test
+  // pins it.
+  it('adopts its own spawn, never a roster bot of the same class and team (DEC-149)', () => {
+    const world = prepareMatchWorld(CONFIG, 1);
+    const simulation = new Simulation({
+      config: CONFIG,
+      seed: 1,
+      logger: new NullLogger(),
+      map: world.map,
+      mapObjects: world.mapObjects,
+      roster: [
+        { team: PLAYER.team, definitionId: PLAYER.legend, role: 'laner', difficulty: 'normal' },
+      ],
+    });
+    const twinIds = () =>
+      simulation
+        .snapshot()
+        .entities.filter(({ kind, team }) => kind === PLAYER.legend && team === PLAYER.team)
+        .map(({ id }) => id);
+    const bots = twinIds();
+    const match = new Match({ ...matchDeps(world).deps, simulation });
+
+    match.tick();
+
+    expect(bots).toHaveLength(1);
+    expect(match.playerEntityId).not.toBeNull();
+    expect(bots).not.toContain(match.playerEntityId);
+    expect(twinIds()).toContain(match.playerEntityId);
+  });
+
   it('hands a throw from a tick to onCrash with the tick, and its loop stops (DEC-106)', () => {
     const { deps } = matchDeps();
     const match = new Match(deps);

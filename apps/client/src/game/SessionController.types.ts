@@ -1,4 +1,4 @@
-import type { Logger, MapFeatureKind, SeededRandom } from '@eternalus/core';
+import type { Logger, MapFeatureKind, RosterSlot, SeededRandom } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -12,6 +12,8 @@ import type {
   UiIntent,
 } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import type { ErrorReporter } from '../data/logging/ErrorReporter';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { ResourceController } from '../data/resources/ResourceController';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
@@ -28,6 +30,8 @@ export type MatchRequest = {
   readonly world: PreparedWorld;
   /** Map-feature kinds the HUD lists as capture points: `catalogue.hud.objectiveKinds` (one list). */
   readonly captureKinds: readonly MapFeatureKind[];
+  /** The setup's bots as the simulation's roster: `botRosterSlots` over the catalogue's difficulties. */
+  readonly roster: readonly RosterSlot[];
   /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
   readonly onCrash: (crash: MatchCrash) => void;
 };
@@ -41,6 +45,13 @@ export interface RunningMatch {
    * (13 §7; INBOX HC-Q8).
    */
   setPaused(isPaused: boolean): void;
+  /**
+   * What an error report needs from this match (ADR 0025 §3): its seed, tick, recent commands and
+   * events, replay so far and log records. Only reads; works after a crash too.
+   */
+  evidence(): MatchEvidence;
+  /** Ticks the simulation has completed; a cheap read, unlike `evidence()`, which copies the log. */
+  currentTick(): number;
 }
 
 /**
@@ -97,7 +108,9 @@ export interface SessionContext {
   abortMatch(error: unknown): void;
   /**
    * A running match crashed: logs FATAL `client.session` with the error, its stack, the seed and
-   * the tick, then returns to `menu` with reason `'match-crashed'` (DEC-106; 13 §2 `match` row).
+   * the tick, reports the crash with its match evidence (source `'game-loop'`), opens the crash
+   * popup, then returns to `menu` with reason `'match-crashed'` (DEC-106, ADR 0025; 13 §2 `match`
+   * row).
    */
   endCrashedMatch(crash: MatchCrash): void;
   /**
@@ -128,6 +141,10 @@ export interface SessionState {
    * `match` state implements it; in every other phase an attach does nothing.
    */
   attachViewport?(viewport: MatchViewport, context: SessionContext): () => void;
+  /** The running match's `evidence()`, or `null`; only the `match` state implements it. */
+  matchEvidence?(): MatchEvidence | null;
+  /** The running match's `currentTick()`, or `null`; only the `match` state implements it. */
+  matchTick?(): number | null;
 }
 
 /** The part of core's `MatchConfig` the session needs. */
@@ -173,4 +190,6 @@ export type SessionControllerDeps = {
   >;
   /** The licence blocks of every bundled asset (`describeCredits` over the manifest). */
   readonly credits: readonly CreditEntry[];
+  /** Where a crash is reported and its note saved (ADR 0025 §3; the page's `ErrorReporter`). */
+  readonly reporter: Pick<ErrorReporter, 'reportCrash' | 'addNote'>;
 };

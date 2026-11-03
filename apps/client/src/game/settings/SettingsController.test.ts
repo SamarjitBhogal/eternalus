@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { BridgeEventMap } from '../../bridge/events';
 import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
 import { TypedEventBus } from '../../bridge/TypedEventBus';
+import { isReportedSilently } from '../../data/logging/__fixtures__/errorReports';
 import { MemoryStorageAdapter } from '../../data/persistence/MemoryStorageAdapter';
 import { PersistenceController } from '../../data/persistence/PersistenceController';
 import { INPUT_ACTIONS, PRESETS, type SavedBinding } from '../input/keybindings';
@@ -162,6 +163,8 @@ describe('SettingsController', () => {
     await Promise.resolve(); // let the rejected save be reported
 
     expect(published[0]?.bindings).toEqual(PRESETS.wasd);
+    const [loadFailed] = logger.records;
+    expect(isReportedSilently(loadFailed?.scope ?? '', loadFailed?.body ?? '')).toBe(true);
     expect(logger.records.map((record) => [record.severityText, record.body])).toEqual([
       ['WARN', 'settings could not be loaded; using defaults'],
       ['ERROR', 'settings could not be saved'],

@@ -25,6 +25,7 @@ import type { Team } from '../teams/teams.types';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import type { System, SystemContext } from './System.types';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 
 const CONFIG = createDefaultGameConfig();
 const statusSystem = (applier: StatusEffectApplier) =>
@@ -37,6 +38,8 @@ const setUp = () => {
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(CONFIG.tickRate),
+    undefined,
+    loadWeapons(CONFIG.tickRate),
   );
   const spawn = (kind: string, definitionId: string, x: number, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x, y: 0 }, team });

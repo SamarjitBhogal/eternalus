@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -425,7 +425,8 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   ability needs nothing here.
 - **Files:** one id in `INPUT_ACTIONS` and one `DEFAULT_CHORDS` entry in
   `client/game/input/keybindings.ts` (13 §6.1, 09 §3); an `InputIntent` field set by `InputMapper.toIntent`
-  and read by `PlayerController` (or a `clientActions` case for a client-only action); the
+  and read by `PlayerController` (or a `clientActions` case for a client-only action on state `Match` owns, or one entry in
+  `MatchHost`'s one-shot table for a chord with modifiers, DEC-117); the
   prompt through `<KeyGlyph action="<id>"/>`. The settings screen lists actions from the same
   table, so rebinding needs no change.
 - **Registry line:** the `keybindings.ts` entry.
@@ -584,6 +585,8 @@ HC-T1); R1's word for the locked class's id changes with that id's content renam
   and one `ACTION_LABELS` entry in `ui/strings.ts`. It has no `clientActions` case, because only
   the selection steps' prompts read it, in `ui/` ([13](13-game-interface.md) §6.2). R21's docs
   step, the controls table of the controls reference, waits for the owner (`INBOX.md` HC-T1 T-188).
+  **Appended 2026-11-02:** the owner approved it (HC-T1, DEC-142); the controls reference's
+  default bindings table has the row.
 - **The bot roster**: the lane bots' classes and the enemy Rover's rule are core content
   (`content/teams/botRoster.ts`, DEC-61, DEC-102), validated by `BotRosterClassRule` through
   `loadDisplayContent()`. A new Rover rule is one `EnemyRoverRule` member and one entry in

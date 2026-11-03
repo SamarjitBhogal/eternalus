@@ -232,7 +232,7 @@ the next render, verified by a test and by a reviewer in the browser.
 3. Architecture doc 05 and reference docs 01, 06, 07 and 08 match the code, or an ADR records
    the deviation; every "(rename pending)" note is still visible in content display names.
 4. Phase PR approved (sholtzman + AI owner + product owner sign-off on abilities), CI green on
-   three OSes, merged by SamarjitBhogal.
+   Linux and Windows, merged by SamarjitBhogal.
 
 ## Risks
 

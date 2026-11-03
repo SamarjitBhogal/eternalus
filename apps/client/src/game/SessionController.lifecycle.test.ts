@@ -1,7 +1,8 @@
 import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
-import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
+import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
+import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
@@ -13,6 +14,7 @@ import type {
   SessionControllerDeps,
 } from './SessionController.types';
 import { createRosterRng } from './session/createRosterRng';
+import { botRosterSlots } from './session/botRosterSlots';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { MatchState } from './session/states/MatchState';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
@@ -23,9 +25,8 @@ const CONFIG = createDefaultGameConfig();
 const MAGUS_LEGEND = firstAvailableSpecId('magus');
 
 const CHROME = {
-  onInteriorChanged: () => undefined,
+  onDeveloperRoofsChanged: () => undefined,
   onExplorerChanged: () => undefined,
-  setLeaveInterior: () => undefined,
   setOverview: () => undefined,
 };
 
@@ -53,9 +54,19 @@ function setUp(overrides: Partial<SessionControllerDeps> = {}) {
     worlds.push(world);
     return world;
   });
-  const handles: { destroy: ReturnType<typeof vi.fn>; setPaused: ReturnType<typeof vi.fn> }[] = [];
+  const handles: {
+    destroy: ReturnType<typeof vi.fn>;
+    setPaused: ReturnType<typeof vi.fn>;
+    evidence: ReturnType<typeof vi.fn<typeof fakeMatchEvidence>>;
+    currentTick: ReturnType<typeof vi.fn>;
+  }[] = [];
   const createMatch = vi.fn<MatchFactory>((): RunningMatch => {
-    const handle = { destroy: vi.fn(), setPaused: vi.fn() };
+    const handle = {
+      destroy: vi.fn(),
+      setPaused: vi.fn(),
+      evidence: vi.fn(fakeMatchEvidence),
+      currentTick: vi.fn(() => 0),
+    };
     handles.push(handle);
     return handle;
   });
@@ -139,6 +150,28 @@ describe('SessionController match lifetime', () => {
     expect(passed).toBe(attached);
   });
 
+  it("builds the match's roster from the locked rosters and the catalogue's difficulties", async () => {
+    const session = setUp();
+    await session.toMatch();
+
+    session.controller.attachViewport(viewport());
+
+    const [request] = session.createMatch.mock.calls[0] ?? [];
+    expect(request?.roster).not.toHaveLength(0);
+    const { difficulties } = shippedCatalogue().load().botRoster;
+    expect(request?.roster).toEqual(
+      botRosterSlots(
+        { allies: request?.setup.allies ?? [], enemies: request?.setup.enemies ?? [] },
+        difficulties,
+      ),
+    );
+    // Each slot's difficulty is its role's, read from the catalogue, not from the helper alone.
+    for (const slot of request?.roster ?? []) {
+      expect(slot.difficulty).toEqual(difficulties[slot.role]);
+    }
+    expect(difficulties.rover).not.toEqual(difficulties.laner);
+  });
+
   it("draws the bots' Legends at LOCK IN from the injected roster stream of the match seed", async () => {
     const rosterRng = vi.fn(createRosterRng);
     const session = setUp({ createRosterRng: rosterRng });
@@ -173,6 +206,23 @@ describe('SessionController match lifetime', () => {
     expect(session.handles[1]?.destroy).not.toHaveBeenCalled();
     session.intent({ kind: 'leave-match' });
     expect(session.handles[1]?.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives the running match's evidence, and null outside a match (ADR 0025 §3)", async () => {
+    const session = setUp();
+    expect(session.controller.matchEvidence()).toBeNull();
+    await session.toMatch();
+    expect(session.controller.matchEvidence()).toBeNull();
+
+    session.controller.attachViewport(viewport());
+    const evidence = session.controller.matchEvidence();
+    session.intent({ kind: 'leave-match' });
+
+    expect(session.handles[0]?.evidence.mock.results).toEqual([
+      { type: 'return', value: evidence },
+    ]);
+    expect(evidence).toEqual(fakeMatchEvidence());
+    expect(session.controller.matchEvidence()).toBeNull();
   });
 
   it('never ends a newer match on a stale detach', async () => {

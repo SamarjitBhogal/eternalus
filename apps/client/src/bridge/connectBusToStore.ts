@@ -25,6 +25,7 @@ export function connectBusToStore(
     bus.on('session-phase', (event) => dispatch(sessionSlice.actions.phaseChanged(event))),
     bus.on('menu-route', ({ route }) => dispatch(sessionSlice.actions.routeChanged(route))),
     bus.on('overlay', ({ overlay }) => dispatch(sessionSlice.actions.overlayChanged(overlay))),
+    bus.on('crash-report', (report) => dispatch(sessionSlice.actions.crashReportChanged(report))),
     bus.on('content-catalogue', (catalogue) =>
       dispatch(contentSlice.actions.catalogueLoaded(catalogue)),
     ),
