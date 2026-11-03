@@ -353,7 +353,9 @@ Reply inline (`Decision: …`).
       The HUD branch's snapshot fixtures also need the new fields: `EntitySnapshot.area` and
       `CaptureSnapshot.presence`. Whichever of PR #64 and the HUD PR lands second makes
       `ZoneArea.contains` and the HUD PR's `findBuildingAt` (its DEC-149 (6)) share one
-      point-in-footprint test.
+      point-in-footprint predicate (`footprint.some(isPointInPolygon)`). Share the predicate, not
+      `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
+      only the first of two overlapping footprints.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
