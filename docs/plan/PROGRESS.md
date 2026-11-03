@@ -3183,3 +3183,11 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 971 passed (971)"; client "Tests 434 passed (434)"; "✓ built in 218ms"; "Documentation
   check passed."
 - Next step: push #58, retarget it to `phase/3-sprint-3-work`. Checkpoint defenders wait for #64.
+
+### 2026-11-02 — Phase 3 / minion M6 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's two #58 threads. Doc 07's status note no longer lists camps as not
+  built (M6 adds `Camp`). Not changed: the 2026-10-30 M6 entry's four bullets, since pushed
+  entries are never rewritten (OG-12); new entries keep the three-bullet shape.
+- Checks run: `npm run docs:check` and Prettier on the two docs; docs-only change.
+- Next step: merge #56, #57, #58 in order.
