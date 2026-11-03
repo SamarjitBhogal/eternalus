@@ -4,7 +4,7 @@ description: The build plan for the minion system of architecture doc 18 and eve
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [plan, minions, hordes, guards, camps, bots, spawning, ai]
 related:
   - docs/architecture/18-minion-system.md
@@ -105,24 +105,25 @@ M4 needs only `WorldMap`, so it can run beside M2.
 
 Each stand-in is removed by the phase named.
 
-| Stand-in                                                                                                                                                          | Used in | Replaced by                                              |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------- |
-| Nothing marks a lane flow field dirty: no event reports a gate or terrain change, so the time-sliced rebuild runs only when a test asks for it                    | M4      | the gate and structure changes of doc 07 §10             |
-| No wall-avoidance term or collision resolution: a heading into a wall turns along its open grid axis (18 §5.2), and the field leads a unit out (10 §9)            | M4      | `CollisionSystem` and the wall-avoidance term (10 §8–§9) |
-| Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2)           | M1      | the owner's answer, wherever it puts them                |
-| No entity kind is a turret, so the aggro list's `turret-attacking-ally-minion` entry never matches                                                                | M2b     | turret entities (sprint 2.3)                             |
-| Guard plans are content keyed by structure definition id and the posts live in `state.guards`, since no `Spawner` component exists (07 §6 puts `GuardPlan` on it) | M2c     | the `Spawner` component (Phase 2 sprint 2.7)             |
-| The Stronghold's light guards fight in melee: no ranged attack exists until projectiles (sprint 2.3)                                                              | M2c     | the ranged attack strategy of sprint 2.3                 |
-| Checkpoint defenders are not built: `CaptureSystem` (PR #64) is not on the phase branch yet                                                                       | M6      | M6's second half, once PR #64 lands                      |
-| No camp reward: clearing a camp emits `camp-cleared`, but nothing pays the clearing Legends                                                                       | M6      | `ProgressionSystem` listening to `camp-cleared`          |
-| Bot laners walk in a straight line to where they are going, with no path around obstacles                                                                         | M3      | M8: A\* for Legends (built)                              |
-| Bot laners never attack structures and never cast; `Push` follows the lead horde's anchor                                                                         | M3      | M2c (structures), Phase 4 (casts)                        |
-| Nothing heals a retreated bot, so it rejoins only once something restores its health                                                                              | M3      | base healing, once it is designed                        |
-| The client's match passes a placeholder roster (every Legend but each Rover a bot laner)                                                                          | M3      | session E's match setup rosters                          |
-| The human is always their team's Rover (DISC-51), so no lane counts a human laner (`assignLanes`' `occupied` is unwired)                                          | M3      | sim and developer mode (sprint 3.8)                      |
-| The Rover finds the human (the enemy Legend no controller drives) with a map-wide Legend query, past 11 §3's radii                                                | M8      | the match state's `humanLegendId` (12 §4)                |
-| Bots cast `ability-1` and the cast is refused (`not-supported`); a bot runs A\* again on each blocked decision                                                    | M8      | Phase 4 abilities; a path cache in the brain             |
-| Minion strength measures lane progress along the lane polyline, not the flow-field distance `balancing.md` suggests                                               | M5a     | M4 merged in: the lane's field                           |
+| Stand-in                                                                                                                                                                                                                        | Used in | Replaced by                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------- |
+| Nothing marks a lane flow field dirty: no event reports a gate or terrain change, so the time-sliced rebuild runs only when a test asks for it                                                                                  | M4      | the gate and structure changes of doc 07 §10                  |
+| No wall-avoidance term or collision resolution: a heading into a wall turns along its open grid axis (18 §5.2), and the field leads a unit out (10 §9)                                                                          | M4      | `CollisionSystem` and the wall-avoidance term (10 §8–§9)      |
+| Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2)                                                                         | M1      | the owner's answer, wherever it puts them                     |
+| No entity kind is a turret, so the aggro list's `turret-attacking-ally-minion` entry never matches                                                                                                                              | M2b     | turret entities (sprint 2.3)                                  |
+| Guard plans are content keyed by structure definition id and the posts live in `state.guards`, since no `Spawner` component exists (07 §6 puts `GuardPlan` on it)                                                               | M2c     | the `Spawner` component (Phase 2 sprint 2.7)                  |
+| The Stronghold's light guards fight in melee: no ranged attack exists until projectiles (sprint 2.3)                                                                                                                            | M2c     | the ranged attack strategy of sprint 2.3                      |
+| Checkpoint defenders are not built: `CaptureSystem` (PR #64) is not on the phase branch yet                                                                                                                                     | M6      | M6's second half, once PR #64 lands                           |
+| No camp reward: clearing a camp emits `camp-cleared`, but nothing pays the clearing Legends                                                                                                                                     | M6      | `ProgressionSystem` listening to `camp-cleared`               |
+| Bot laners walk in a straight line to where they are going, with no path around obstacles                                                                                                                                       | M3      | M8: A\* for Legends (built)                                   |
+| Bot laners never attack structures and never cast; `Push` follows the lead horde's anchor                                                                                                                                       | M3      | M2c (structures), Phase 4 (casts)                             |
+| Nothing heals a retreated bot, so it rejoins only once something restores its health                                                                                                                                            | M3      | base healing, once it is designed                             |
+| The client's match passes a placeholder roster (every Legend but each Rover a bot laner)                                                                                                                                        | M3      | session E's match setup rosters                               |
+| The human is always their team's Rover (DISC-51), so no lane counts a human laner (`assignLanes`' `occupied` is unwired)                                                                                                        | M3      | sim and developer mode (sprint 3.8)                           |
+| The Rover finds the human (the enemy Legend no controller drives) with a map-wide Legend query, past 11 §3's radii                                                                                                              | M8      | the match state's `humanLegendId` (12 §4)                     |
+| Bots cast `ability-1` and the cast is refused (`not-supported`); a bot runs A\* again on each blocked decision                                                                                                                  | M8      | Phase 4 abilities; a path cache in the brain                  |
+| Minion strength measures lane progress along the lane polyline, not the flow-field distance `balancing.md` suggests                                                                                                             | M5a     | M4 merged in: the lane's field                                |
+| M4's done-when "hordes reach the enemy end" is tested as "every opening mob reaches its first enemy objective's gather point": since M2c a horde holds at a standing objective, and the march-only test hordes cannot attack it | M4      | a full-match march with fighting hordes (sprint 3.8 sim soak) |
 
 ## Related
 

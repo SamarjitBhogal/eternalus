@@ -3206,3 +3206,21 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   march about 1.5 km and bots never attack structures or camps (minion plan §3).
 - Checks run: the probe above; docs-only change, `npm run docs:check` passes.
 - Next step: bot laners attack structures (the M3 stand-in), on a branch from #58's head.
+
+### 2026-11-02 — Phase 3 / minion M4 test — chore/minion-full-march-test — SamarjitBhogal + Claude Code
+
+- What was done: restored the full-match march test commented out at the owner's request on
+  2026-10-30 (PR #39: 530 s, over 100 s on CI under coverage). Since M2c a horde holds at its first
+  enemy objective, and march-only hordes cannot attack, so "reach the enemy end" cannot pass; the
+  test checks sprint 3.1's metric for the first objective instead: for 3 and 5 lanes (seed 1),
+  every opening mob (full size, counted) comes within 15 m along its lane of its first enemy
+  objective's gather point (18 §6.2), with under 1 % of samples off walkable ground and no
+  warnings. Only the opening hordes march (long countdown); the loop stops once every mob arrives
+  and samples once a second; 1.4–2.6 s locally. Critic round 1 blocked "arrived" judged on horde
+  anchors (which move whether or not mobs follow); it now judges each mob (at 1 m only 6 of 96
+  arrive, so it measures mobs). A missing objective throws. Plan §3 row and INBOX item for the
+  redefined M4 done-when.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 973 passed (973)"; client "Tests 434 passed (434)"; "✓ built in 156ms"; "Documentation
+  check passed."
+- Next step: critic round 2, then a draft PR into `phase/3-sprint-3-work` after #58.

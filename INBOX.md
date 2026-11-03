@@ -16,6 +16,16 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
+      The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
+      cannot pass as written since M2c: a horde holds at its next standing objective, and the
+      march-only test hordes cannot attack it. The full-match test you had commented out (PR #39,
+      too slow for CI) is restored as: every opening mob comes within 15 m (along its lane) of its
+      first enemy objective's gather point, under 1 % of samples off walkable ground, no warnings
+      (sprint 3.1's "reach the enemy SpawnerTower" metric). 1.4–2.6 s locally. The full march to
+      the enemy end waits for the sprint 3.8 sim soak with fighting hordes. Approve, or say what to
+      change.
+
 - [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
       checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
       which is only on PR #64 (`feat/capture-points-v2`, open; #49 was closed), not yet on the
