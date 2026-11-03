@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -451,7 +451,9 @@ and melee guards at the `Stronghold`, per the game doc) are Mobs owned by their 
   disengage.
 - The differences are data: the leash is measured from the home structure, its radius is the
   structure's `GuardPlan.leashRadius` (07 §6; game doc: guards "don't leave the tower's
-  perimeter") and the idle state holds the guard's post near the structure.
+  perimeter") and the idle state holds the guard's post near the structure. A post on blocked
+  ground or inside a map object (a fort's walls reach past its structure's collider) moves to the
+  nearest clear point inside the leash, straight out first, then around the ring (DEC-138).
 - Guards move with `LeashedChaseMovementStrategy` (04 §4; 10 §9's "seek/arrival inside their
   leash"): chase the target `PathingSystem` hands it (from `Combat.targetId`, §5.2) while one is
   set, otherwise return to the post.

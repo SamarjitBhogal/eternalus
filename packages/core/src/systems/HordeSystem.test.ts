@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -77,6 +78,29 @@ describe('HordeSystem', () => {
     state.events.emit('entity-removed', { entityId: 'entity-99', cause: 'died' });
     system.update({ state, logger });
     expect(dissolved).toEqual([hordeId]);
+  });
+
+  it('ends the walk out of a member that leaves its horde, since nothing else would (DEC-133)', () => {
+    const { state, system, addHorde } = setUp();
+    const { memberIds } = addHorde([
+      ['light-mob', 'light-minion'],
+      ['light-mob', 'light-minion'],
+    ]);
+    const [stays = '', leaves = ''] = memberIds;
+    for (const id of memberIds) {
+      state.entities.get(id)?.addComponent(new Deploying({ x: 40, y: 20 }));
+    }
+
+    state.events.emit('team-changed', {
+      entityId: leaves,
+      from: 'light',
+      to: 'dark',
+      cause: 'test',
+    });
+    system.update({ state, logger });
+
+    expect(state.entities.get(leaves)?.hasComponent(Deploying)).toBe(false);
+    expect(state.entities.get(stays)?.hasComponent(Deploying)).toBe(true);
   });
 
   it('advances the anchor at a fraction of the slowest member’s speed, up to the lane end', () => {

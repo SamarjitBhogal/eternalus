@@ -8,6 +8,7 @@ import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
 import { compareById } from '../utils/compareById';
 import { cos, sin } from '../utils/deterministicMath';
+import type { Vec2 } from '../utils/geometry.types';
 
 /**
  * Runs every structure's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6): it lays out
@@ -46,10 +47,13 @@ export class GuardRoster {
       }
       const total = plan.table.reduce((sum, row) => sum + row.count, 0);
       const ring = transform.radius + plan.postGap;
+      const edge = transform.radius + plan.leashRadius;
       let post = 0;
       plan.table.forEach((row, rowIndex) => {
+        const body = this.bodyRadius(row.mobId);
         for (let indexInRow = 0; indexInRow < row.count; indexInRow += 1, post += 1) {
           const turn = (2 * Math.PI * post) / total;
+          const at = GuardRoster.clearPost(state, transform.position, turn, ring, edge, body);
           state.guards.add({
             id: `${home.id}:${String(post)}`,
             homeId: home.id,
@@ -57,8 +61,8 @@ export class GuardRoster {
             mobId: row.mobId,
             row: rowIndex,
             indexInRow,
-            postX: transform.position.x + ring * cos(turn),
-            postY: transform.position.y + ring * sin(turn),
+            postX: at.x,
+            postY: at.y,
             homeX: transform.position.x,
             homeY: transform.position.y,
             homeRadius: transform.radius,
@@ -99,6 +103,54 @@ export class GuardRoster {
       state.guards.fill(index, guard.id);
       state.events.emit('entity-spawned', { entityId: guard.id, kind, team: slot.team });
     });
+  }
+
+  /**
+   * Where a guard of `body` radius stands for the post at `turn` on the `ring` around `home`: the
+   * ring point if it is clear, else the first clear point straight out from it up to the leash
+   * `edge`, else the nearest clear point around a ring, inner rings first (a fort's walls reach
+   * past its structure's collider, 07 §6). Steps are one nav cell, along the ray and of arc. A
+   * post with nothing clear inside its leash keeps the ring point.
+   *
+   * @remarks ponytail: a linear scan once per post at load-in; a fort-aware ring (posts laid out
+   * from the fort's footprint) replaces it if posts must look even around every fort.
+   */
+  private static clearPost(
+    state: GameState,
+    home: Vec2,
+    turn: number,
+    ring: number,
+    edge: number,
+    body: number,
+  ): Vec2 {
+    const at = (radius: number, angle: number): Vec2 => ({
+      x: home.x + radius * cos(angle),
+      y: home.y + radius * sin(angle),
+    });
+    const grid = state.world?.grid;
+    const isClear = (point: Vec2): boolean =>
+      (grid?.isWalkableAt(point.x, point.y) ?? true) &&
+      (state.worldObjects?.blockingAt(point, body) ?? null) === null;
+    const step = grid?.cellSize ?? edge;
+    for (let radius = ring; radius <= edge; radius += step) {
+      if (isClear(at(radius, turn))) return at(radius, turn);
+    }
+    for (let radius = ring; radius <= edge; radius += step) {
+      for (let arc = step; arc <= Math.PI * radius; arc += step) {
+        for (const angle of [turn + arc / radius, turn - arc / radius]) {
+          if (isClear(at(radius, angle))) return at(radius, angle);
+        }
+      }
+    }
+    return at(ring, turn);
+  }
+
+  /** A guard mob's body radius, from its definition's `footprintRadius`. */
+  private bodyRadius(mobId: string): number {
+    const definition = this.definitions.get(mobId);
+    return 'footprintRadius' in definition && typeof definition.footprintRadius === 'number'
+      ? definition.footprintRadius
+      : 0;
   }
 
   /** False for a post its row gave up for lost structures of `shrink.perLost` (DISC-21). */

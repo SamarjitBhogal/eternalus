@@ -292,6 +292,13 @@ yet; until they arrive, a heading that would enter unwalkable ground turns along
 (18 §5.2, MS-35), and the field's blocked corridor cells (§9) lead a unit that still enters one
 back out.
 
+**2026-10-27 (PR #30, map objects).** Map-enabled simulations built with `mapObjects` now have a
+`CollisionSystem`: it resolves moving circles against authored polygon footprints after movement. `StaticCollisionIndex` provides a grid broad phase;
+`CollisionResolver` sweeps edges and vertices and slides along contacts. Building entrances are
+gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
+while retaining collision at their sides. Destroyed object IDs disable their static footprints.
+Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

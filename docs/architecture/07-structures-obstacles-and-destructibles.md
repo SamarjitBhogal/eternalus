@@ -401,6 +401,23 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 
+**2026-10-27 (PR #30, map objects).** Generated map objects currently reuse the `Obstacle`
+entity with a `MapObjectBody` component while the full structure family remains planned.
+`WorldObjectStore` retains health and destruction records after entity removal. Definitions live
+in `content/maps/mapObjectDefinitions.ts`; scenery health is the owner ruling DEC-121 (b), 100 HP
+for this sprint. Terrain and the Cathedral remain indestructible. Destroying a main building also
+destroys its owned walls and furnishings through the damage pipeline. Ruins remain in snapshots
+and rendering but release their collision footprints.
+
+The Structure family replaces this stand-in in Phase 2 sprint 2.1. Until then a side's map
+objects carry its team (`MapObject.team`), so only the other side can attack them (DEC-121 (a)).
+Blocking footprints already block the pathing grid and a destroyed one reopens its cells; the
+`terrain-changed` event follows in sprint 2.5. The game-loop integration uses `GameState.livingBuffTowerCount(team)`:
+only living `structure` / `buff-tower` entities with the owning team's membership count.
+Decorative obstacle proxies never grant King immunity. The King's victory and immunity damage
+step remain owned by the game-loop work. The hall's throne anchor and room bounds are content
+in `buildingGeometry.ts`; the hall rotates toward the middle entrance before ring scaling.
+
 ## Related
 
 - [04 Entity architecture](./04-entity-architecture.md)

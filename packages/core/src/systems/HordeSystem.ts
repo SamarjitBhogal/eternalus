@@ -1,3 +1,4 @@
+import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameEventMap } from '../state/GameEvents.types';
@@ -40,6 +41,8 @@ export class HordeSystem implements System {
   /** Drops the members that left, then advances every horde's formation anchor along its lane. */
   public update({ state }: SystemContext): void {
     for (const entityId of this.leaving) {
+      // Only `PathingSystem` ends a horde member's walk out (DEC-133); outside a horde it ends here.
+      state.entities.get(entityId)?.removeComponent(Deploying);
       const horde = state.hordes.removeMember(entityId);
       if (horde?.memberIds.length === 0) {
         state.events.emit('horde-dissolved', HordeSystem.payloadOf(horde));

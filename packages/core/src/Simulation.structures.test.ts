@@ -14,13 +14,14 @@ describe('Simulation structures', () => {
           ({ definitionId, team: owner }) => definitionId.endsWith('-guard') && owner === team,
         );
     const posts = new Map(guardsOf('light').map(({ id, transform }) => [id, transform]));
-    // A dark minion appears just outside the light Stronghold's guard ring (radius 40, posts at 42).
+    // A dark minion appears just outside the light Stronghold's guard ring (radius 40, posts at 42),
+    // beside its on-map post at (52, 30); the map is 60 tall, so a post above it moves on the map.
     simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: 'light-mob',
       definitionId: 'training-dummy',
       team: 'dark',
-      at: { x: 10, y: 30 + 47 },
+      at: { x: 10 + 47, y: 30 },
       count: 1,
     });
     run(simulation, 30);

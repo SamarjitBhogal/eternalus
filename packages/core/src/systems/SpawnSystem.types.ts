@@ -14,8 +14,11 @@ export type SpawnPlan = {
   readonly openingWave: OpeningWaveDefinition;
   /** Each spawning structure kind's horde waves. */
   readonly waves: Readonly<Record<string, readonly SpawnWaveDefinition[]>>;
-  /** The spawn grid's spacing and width. */
-  readonly steering: Pick<HordeSteeringProfile, 'spawnSpacing' | 'spawnColumns'>;
+  /** The spawn grid's spacing and width, and how far a horde spawned inside its structure walks out. */
+  readonly steering: Pick<
+    HordeSteeringProfile,
+    'spawnSpacing' | 'spawnColumns' | 'deployClearance'
+  >;
   readonly weights: LaneAssessmentWeights;
   /** The formation every horde marches in. */
   readonly formationId: string;

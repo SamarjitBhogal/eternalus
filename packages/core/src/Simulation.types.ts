@@ -1,4 +1,5 @@
 import type { GameConfig } from './config/GameConfig.types';
+import type { MapObject } from './content/maps/mapObjects.types';
 import type { MapDefinition } from './content/maps/maps.types';
 import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
@@ -10,6 +11,8 @@ import type { PlayableTeam } from './teams/teams.types';
 
 /** Everything a `Simulation` is built from (architecture 03 §6). Only the first three are required. */
 export type SimulationOptions = {
+  /** Explicit physical map placements; omitted in headless horde scenarios. Requires `map`. */
+  readonly mapObjects?: readonly MapObject[];
   /** The match config; validated, so an invalid one throws `ConfigValidationError`. */
   readonly config: GameConfig;
   /** The match seed, a whole number from 0 to 2^32 - 1. */

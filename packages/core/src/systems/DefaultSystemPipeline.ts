@@ -2,6 +2,7 @@ import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
@@ -14,6 +15,7 @@ import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStr
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import { CombatSystem } from './CombatSystem';
+import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
@@ -33,7 +35,8 @@ import { SystemPipeline } from './SystemPipeline';
 
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
- * progress, statuses, movement, the neighbour index, steering, combat, progression (kill XP),
+ * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
+ * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
  * structure losses and breakability, spawning, enraging, death, then invariants last. This is the
  * one place a system is added, at its position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
@@ -61,6 +64,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       readonly space: SpaceIndex | null;
       /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
       readonly decide: readonly System[];
+      readonly collisions?: readonly System[];
     },
   ) {
     const { tickRate, map } = state.config;
@@ -76,10 +80,31 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
+    const world = state.world?.grid ?? null;
+    const features = state.world?.definition.features ?? [];
+    if (world !== null && state.worldObjects !== undefined) {
+      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
+      state.events.on('entity-removed', ({ entityId }) => {
+        const object = state.worldObjects?.objectFor(entityId);
+        if (object?.isBlocking !== true) return;
+        const cells = object.footprints.flatMap((footprint) =>
+          world.clearFootprint(footprint, object.passages),
+        );
+        // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
+        // object (a wall segment, turret or rock shares its feature's id), so clear that stamp too.
+        const backing = features.find(
+          ({ id, definitionId }) =>
+            id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
+        )?.footprint;
+        if (backing !== undefined) cells.push(...world.clearFootprint(backing));
+        flowFields?.markDirty(cells);
+      });
+    }
     super([
       ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
+      ...(hordes?.collisions ?? []),
       ...(hordes === undefined
         ? []
         : [
@@ -92,6 +117,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             ),
           ]),
       new CombatSystem(damage),
+      ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
       new StructureSystem(STRUCTURE_DEFINITIONS),

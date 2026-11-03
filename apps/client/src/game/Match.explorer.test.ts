@@ -104,27 +104,28 @@ describe('Match free view', () => {
     expect(camera.zoom).toBe(2);
   });
 
-  it('enters the cathedral on a click on it, draws the interior and leaves on overview', () => {
+  it('toggles the cathedral roof in the same world and restores it on overview', () => {
     const { match, input, renderer, shown, cathedral, toScreen } = setUp();
     match.overview();
     const view = shown();
 
-    expect(match.enterAt(0, 0)).toBe(false);
+    expect(match.toggleRoofAt(0, 0)).toBe(false);
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, view);
-    expect(match.enterAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.isInterior).toBe(true);
+    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.hasOpenRoofs).toBe(true);
     const inside = shown();
-    expect(inside.height).toBeLessThanOrEqual(2200);
+    expect(inside).toEqual(view);
     expect(
       renderer.calls.some((call) => call.op === 'fillPolygon' && call.args[1] === '#938e7c'),
     ).toBe(true);
 
-    // Walking does not drop the player out of the cathedral view.
+    // Walking resumes player following while the roof remains open.
     input.move = { x: 1, y: 0 };
     match.tick();
-    expect(shown()).toEqual(inside);
+    expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
+    expect(match.hasOpenRoofs).toBe(true);
 
     match.overview();
-    expect(match.isInterior).toBe(false);
+    expect(match.hasOpenRoofs).toBe(false);
   });
 });

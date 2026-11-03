@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Deploying } from '../components/Deploying';
 import type { Command } from '../commands/Command.types';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { AiCadence } from '../content/ai/ai.types';
@@ -190,6 +191,25 @@ describe('AiSystem', () => {
     step();
 
     expect(state.ai.size).toBe(0);
+  });
+
+  it('gives a deploying minion no brain until its Deploying component is removed', () => {
+    const { state, ids, asked, step } = setUp(1);
+    const entity = state.entities.get(ids[0] ?? '');
+    entity?.addComponent(new Deploying({ x: 5, y: 0 }));
+
+    for (let tick = 0; tick < 2 * EVERY; tick += 1) {
+      step();
+    }
+    expect(state.ai.size).toBe(0);
+    expect(asked).toEqual([]);
+
+    entity?.removeComponent(Deploying);
+    for (let tick = 0; tick < EVERY; tick += 1) {
+      step();
+    }
+    expect(state.ai.size).toBe(1);
+    expect(asked).toEqual([ids[0]]);
   });
 
   it('throws the first tick it sees an entity whose controller has no implementation', () => {

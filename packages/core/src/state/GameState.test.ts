@@ -11,6 +11,7 @@ import { SeededRandom } from '../utils/SeededRandom';
 import { TWO_LANE_MAP } from './__fixtures__/twoLaneMap';
 import { matchWorldOf } from './__fixtures__/matchWorld';
 import { GameState } from './GameState';
+import { TestBuffTower } from './__fixtures__/TestBuffTower';
 
 class Soldier extends Entity {
   public readonly kind = 'soldier';
@@ -59,6 +60,22 @@ const spawned = (entity: Entity): Entity => {
 };
 
 describe('GameState', () => {
+  it('counts living BuffTower entities by team, excluding dead, removed and non-structure entities', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    expect(state.livingBuffTowerCount('light')).toBe(0);
+    const light = spawned(new TestBuffTower('light-tower', 'light'));
+    const dark = spawned(new TestBuffTower('dark-tower', 'dark'));
+    state.entities.add(light);
+    state.entities.add(dark);
+    state.entities.add(spawned(new Soldier('soldier', 'soldier')));
+    state.entities.add(spawned(new TestBuffTower('proxy', 'light', 'obstacle')));
+    expect(state.livingBuffTowerCount('light')).toBe(1);
+    expect(state.livingBuffTowerCount('dark')).toBe(1);
+    light.getComponent(Health).applyDamage(100);
+    expect(state.livingBuffTowerCount('light')).toBe(0);
+    state.entities.remove(dark.id, 'dev-removed');
+    expect(state.livingBuffTowerCount('dark')).toBe(0);
+  });
   it('starts at tick 0 in the countdown and counts ticks', () => {
     const state = new GameState(createDefaultGameConfig(), 1);
     expect(state.tick).toBe(0);

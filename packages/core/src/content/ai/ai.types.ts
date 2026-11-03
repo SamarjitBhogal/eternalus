@@ -40,6 +40,12 @@ export type HordeSteeringProfile = {
   readonly spawnSpacing: number;
   /** Members per row of the spawn grid. */
   readonly spawnColumns: number;
+  /**
+   * How far past the first walkable ground along its way out a deploying horde's rearmost
+   * member's exit lies (DEC-133). A mob stops deploying there, or sooner, once its body stands
+   * on walkable ground.
+   */
+  readonly deployClearance: number;
 };
 
 /** The weights of the lane assessment (architecture 18 §3.3, DEC-89); each term runs from 0 to 1. */
