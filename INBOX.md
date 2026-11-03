@@ -30,15 +30,6 @@ Reply inline (`Decision: …`).
       `AiSystem` would defer some each tick (estimate, not measured). Keep 96, or raise it? Approve,
       or say what to change.
 
-- [ ] **Hordes pile up at a gate that is not breakable yet (PR #56 soak, 2026-10-31).** At cap
-      300 the dark team still skips 15.78 % of horde spawns (light: 0 %). About 110 dark minions
-      wait at light's lane-1 gate (full health): MS-12 makes a horde hold at a gate until two of
-      the defender's three buff towers fall (07 §3). Waiting minions do not die, so each new wave
-      adds to the pile until the cap stops spawns. `balancing.md`'s 5 % bar assumes minions die
-      within about 2 minutes. Options: (a) accept it, and the bar applies only while no horde
-      holds at a gate; (b) a lane's spawns pause while its hordes hold at a gate; (c) the gate's
-      fire defence (07 §4, MVP-if-time) thins the pile. Or say what to do.
-
 - [ ] **Enraged minions run faster than `maxSpeed` (PR #56, 2026-10-31) — doc wording to
       approve.** `balancing.md` gives `enraged` +10% move speed per stack, but docs 04 §3
       (`Movement` row: `speed <= maxSpeed`), 10 §2 step 4 ("clamp to `maxSpeed`") and 15 §3
@@ -68,6 +59,8 @@ Reply inline (`Decision: …`).
       guard pays its minion class's `xpValue`; no reference gives guards their own. (8) **DISC-21
       timing:** a lost SpawnerTower drops two light Stronghold posts, but a guard already on one
       stays until it dies. Approve, or say what to change; doc 18 follows.
+  - **Update 2026-11-02 (DEC-144):** there is no aggro timeout any more, so (1) is now only the
+    leash: attacking a structure ignores it.
 
 - [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR
@@ -294,6 +287,8 @@ Reply inline (`Decision: …`).
   - Decision (sholtzman, chat, 2026-10-30): the chase rhythm: "Yes, Legend-only limit". Only a
     Legend escapes a chase by time; minions and guards keep any other unit target until it dies
     or the leash breaks (MS-34, DEC-135; built in PR #56).
+  - Superseded (sholtzman, 2026-11-02): DEC-144 (MS-36), "distance, then time". No time limit
+    while the target is inside the leash, a Legend too; the aggro duration is gone (PR #56).
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
@@ -391,6 +386,20 @@ Reply inline (`Decision: …`).
       and stops deploying once its body stands wholly on walkable ground, or at its exit;
       architecture 18 §3.2/§5.2 still say the lane field leads it out. Edit and apply the rest of
       Draft 2 in the same file.
+- [ ] **PR #56 — the `returning` state now acts as the resting state (DEC-144 G)** (owner:
+      SamarjitBhogal, doc 18). Since MS-36 a returning mob acquires exactly as a resting one, and
+      the cooldown runs in every state, so `returning` only marks "on the way back to the slot or
+      post" (`marching` or `holding` again within `reformDistance`). The owner kept it in #56 and
+      asked you to decide: (a) keep it as is, (b) merge it into the resting state (doc 18 §6.1,
+      §7 and `LeashBehaviour` lose one state), or (c) give it a job of its own. Or say what to do.
+- [ ] **PR #56 — your "edge dance" idea for guards, kept for when towers shoot (sprint 2.3)**
+      (DEC-144). You asked whether a guard should be "more aggressive and willing to leave the
+      circle a little" when a Legend dances at its edge, and return to its post if it still cannot
+      hit it. You chose to skip it for now: with no rest and guards that defend each other, a melee
+      dance does not pay, a ranged Legend dances farther than "a little", and tower fire answers
+      it. When projectiles land, decide: (a) drop the idea, or (b) build it (a guard follows past
+      the circle by a set distance for a set time, then walks back; doc 18 §7, the guard aggro
+      content and `guard-within-leash` change). Or say what to do.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
@@ -613,6 +622,15 @@ Reply inline (`Decision: …`).
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-02 — **Hordes pile up at a gate that is not breakable yet (PR #56 soak, 2026-10-31)**,
+  closed with no option chosen, as the decision page said unless the owner objected. The pile-up
+  came mostly from opposing hordes walking through each other after a short fight, not only from
+  MS-12's hold at the gate. The fix is MS-36 (DEC-144, "distance, then time"), PR #56. The same
+  soak after the fix (seed 1, bots, 3 lanes, 900 s, cap 300) skips 0 % of horde spawns for both
+  teams (dark was 15.78 %), with 0 crossings in 300 s with and without bots. The opening hordes
+  now meet and fight at the lane centre. Options (a) to (c) stay available if a soak shows a pile
+  again.
 
 - 2026-10-20 — Recorded the owner's 2026-10-16 approval in [PR #30 round-1 review](https://github.com/SamarjitBhogal/eternalus/pull/30#pullrequestreview-5554590031): same-world roof cutaways supersede the separate cathedral scene; oval palaces, furnished side rooms, throne aisles and the cathedral north door are accepted. The dated amendments in architecture 06 and reference 05 preserve the earlier design and explain DEC-36 integration.
 

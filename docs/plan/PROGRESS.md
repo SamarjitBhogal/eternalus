@@ -3107,3 +3107,95 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 956 passed (956)"; client "Tests 434 passed (434)"; "✓ built in 261ms"; "Documentation
   check passed."
 - Next step: merge into #57 (M5b) and #58 (M6).
+
+### 2026-11-02 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — sholtzman + Claude Code
+
+- What was done: MS-36 / DEC-144, "distance, then time" (the owner's answers A b, B a, C a, D b).
+  `LeashBehaviour` rewritten: the leash tests the target's position, not the mob's; no time limit
+  inside it (a Legend too; supersedes DEC-135's Legend limit); a target outside it is dropped
+  after `leashGraceTicks` (90) unless another enemy in reach is taken first; a dead target's
+  killer takes the next enemy at once; a returning mob acquires; the cooldown (Legends only)
+  starts at the leash break; call for help (`callForHelpRadius` 7.5) brings in an enemy attacking
+  a horde-mate; guards never take or keep a target outside their circle. 15 new or rewritten
+  controller tests, each red on 79bb571's leash code first (record in the agent-work folder,
+  `m56-ms36-tests-red.log`). Probes (seed 1, 3 lanes): 0 crossings in 300 s with and without
+  bots; soak 900 s with bots at cap 300 skips 0 % for both teams (dark was 15.78 %); 16v16 fight
+  over by 51 to 54 s with call for help, still on at 60 s without. Docs: decisions log DEC-144
+  batch; doc 18 MS-36, §6.1, §7; doc 11 §4.3; phase-3 plan; INBOX gate pile-up item closed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 963 passed (963)"; client "Tests 434 passed (434)"; "✓ built in 124ms"; "Documentation
+  check passed."
+- Next step: the pre-PR gate (critic, ponytail), push to #56, and the #56 comment.
+
+### 2026-11-02 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards (round 2) — sholtzman + Claude Code
+
+- What was done: MS-36 / DEC-144 round 2, from the critic's first review and the owner's answers
+  E b, F b, G a and "No, emergent is enough" (a guard does not step back to pull its target in).
+  `LeashBehaviour`: a target outside the leash with no other enemy in reach is chased and attacked
+  for `leashGraceTicks`, then the leash breaks (E); guards get a grace of 0 and stop at their
+  circle at once (`content/ai/aggro/towerGuard.ts`); after a break the cooldown leaves alone only
+  the enemy that escaped, a minion too (new memory field `escapedId`; F); a call for help beats
+  the escape and cooldown filters; `attack()` emits nothing when the mob already fights that
+  target. `returning` kept; an INBOX item asks the minion owner (G). `Simulation.modifiers.test`
+  now checks the first defended loss whose lane spawns again (a lost SpawnerTower ends its lane's
+  light hordes, doc 18 §3.1); its assertions are unchanged. 10 new or changed tests, each red
+  first (`m56-ms36-r2-ef-red.log`, `m56-ms36-r2-helpcall-red.log` in the agent-work folder).
+  Probes (seed 1, 3 lanes): 0 crossings in 300 s with and without bots; soak 900 s with bots at
+  cap 300 skips 0 % for both teams, mean step 0.508 ms, worst 3.71 ms; 16v16 fight over at 49 s
+  and 54 s. Docs: decisions log DEC-144 row and the round-2 answers, batch order fixed (the
+  2026-10-30 M2c batch now sits below the 2026-10-31 PR #30 batch); doc 18 MS-36, §6.1, §7; doc 11
+  §4.3; INBOX (G).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 965 passed (965)"; client "Tests 434 passed (434)"; "✓ built in 120ms"; "Documentation
+  check passed."
+- Next step: critic round 2, push to #56, and the #56 comment.
+
+### 2026-11-02 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards (round 3) — sholtzman + Claude Code
+
+- What was done: MS-36 / DEC-144 round 3, from the critic's second review and the owner's guard
+  answers ("1 + 2, skip 3" and "Widen tolerance"). Guards have no rest (`aggroCooldownTicks` 0),
+  and the guards of one structure defend each other anywhere in its circle: `LeashRules` gains
+  `isMate` and `helpRadius` (minion: its horde and `callForHelpRadius`; guard: the same home, a
+  reach derived from its post). The `guard-within-leash` tolerance grows from 2 m to 5 m
+  (`content/structures/guardPlans.ts`): a guard fighting a target at the circle's edge can stand
+  beyond it by its melee stance (up to 3.1 m), plus one decision's walk (1.2 m). Found when
+  `Simulation.modifiers` tripped the invariant (10.01 m); the overshoot was latent before (3436366
+  trips it at 594 s, after that test's window). Guards now hold longer (the first defended loss
+  comes at 613 s, was 351 s), so that test searches 900 s, not 500 s; its assertions are
+  unchanged. Critic round 2: F2 test (the escaped enemy is fought again after the cooldown), F4
+  TSDoc, F5 doc 18 §6.1 wording, ponytail cut 1 (early `continue`); ponytail cut 2 (inline
+  `moveGuardTo`) rejected: a base helper with 8 call sites. 4 new tests, each red first
+  (`m56-ms36-r3-cooldown-ends-red.log`, `m56-ms36-r3-guards-red.log`,
+  `m56-ms36-r3-tolerance-red.md` in the agent-work folder). Docs: decisions log DEC-144 row and
+  the guard answers; doc 15 §3; doc 18 MS-36, §6.1, §7; INBOX (edge dance kept for tower fire).
+- Correction to the round-2 entry above (critic round 2 F3): it says the `Simulation.modifiers`
+  assertions are unchanged. Not exact: the `memberIds.length > 0` check became part of picking
+  the loss, and the `towersLostByLane` literal `{ [lane]: 1 }` became a tally of the team's losses.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 969 passed (969)"; client "Tests 434 passed (434)"; "✓ built in 109ms"; "Documentation
+  check passed."
+- Next step: critic round 3 (the last of three), push to #56, and the #56 comment.
+- Critic round 3 (the last of three): APPROVE WITH NITS, 0 blockers. Fixed: F1 (the tolerance
+  basis is 3.55 m, not 3.1 m: a heavy guard, 0.8 m, against a Sentinel, 1.25 m, at 1.5 m reach;
+  5 m still covers walk plus stance with about 0.5 m of margin; new `guardPlans.test` checks the
+  sum for every guard), F2 (the "outside" enemy in the guard test now stands inside the guard's
+  help query, 9 m past the edge), F3 (the `Simulation.modifiers` tally counts only
+  `ENRAGING_STRUCTURES`), F7 (two guard test names), F4 (doc 18 status note and INBOX M2c item:
+  no aggro timeout since DEC-144), F10 ("leav" → "leave" in the decisions log and INBOX). F5 and
+  F6 answered in the #56 comment; F8 (`callForHelpRadius: 0` stays) and F9 (moving tests to a
+  `LeashBehaviour.test.ts` is a follow-up) rejected. Ponytail: 1 cut, applied
+  (`GuardController.rulesFor` uses `geometry.distance`). Red first:
+  `m56-ms36-r3-critic3-red.log`, `m56-ms36-r3b-tolerance-red.log`.
+- Correction to the text above: "4 new tests, each red first" was overstated. The guard test
+  that the enemy outside the circle is left alone passed on the old code too (its enemy stood
+  outside the help query); F2 moved it, and it is now red under a break. The `Simulation.modifiers`
+  window: the base searched 300 s for the loss and 400 s for the next horde (500 s was round 2's).
+- Rebased onto #56's `be5366d` (SamarjitBhogal's merge of phase 3 and the DEC-138 guard-post
+  fixes, pushed during round 3). Conflicts only in doc 18 §7, the decisions log and this file;
+  both sides kept. Note: DEC-138 is used twice, by the guard-post batch here and by a docs ruling
+  on the local HUD branch; one of them needs a new number before both reach the phase branch.
+- Checks run (rebased head, before this bullet): `npm run check` → `EXIT=0`: "All matched files
+  use Prettier code style!"; core "Tests 974 passed (974)"; client "Tests 434 passed (434)"; "✓
+  built in 114ms"; "Documentation check passed." Soak (cap 300, bots, 900 s): 0 non-INFO log
+  records, 0 % spawns skipped, step mean 0.460 ms, worst 3.25 ms.
+- Next step: push to #56 and post the #56 comment.
