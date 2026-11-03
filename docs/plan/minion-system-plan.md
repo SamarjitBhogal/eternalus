@@ -4,7 +4,7 @@ description: The build plan for the minion system of architecture doc 18 and eve
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [plan, minions, hordes, guards, camps, bots, spawning, ai]
 related:
   - docs/architecture/18-minion-system.md
@@ -116,7 +116,8 @@ Each stand-in is removed by the phase named.
 | Checkpoint defenders are not built: `CaptureSystem` (PR #64) is not on the phase branch yet                                                                       | M6      | M6's second half, once PR #64 lands                      |
 | No camp reward: clearing a camp emits `camp-cleared`, but nothing pays the clearing Legends                                                                       | M6      | `ProgressionSystem` listening to `camp-cleared`          |
 | Bot laners walk in a straight line to where they are going, with no path around obstacles                                                                         | M3      | M8: A\* for Legends (built)                              |
-| Bot laners never attack structures and never cast; `Push` follows the lead horde's anchor                                                                         | M3      | M2c (structures), Phase 4 (casts)                        |
+| Bot laners never cast                                                                                                                                             | M3      | Phase 4 (casts)                                          |
+| A bot's last leg to a structure goes straight at it from the gather point; the Stronghold stands off the lane inside its wall ring, so a bot can lean on the ring | M3      | A\* to the nearest open point of the footprint's edge    |
 | Nothing heals a retreated bot, so it rejoins only once something restores its health                                                                              | M3      | base healing, once it is designed                        |
 | The client's match passes a placeholder roster (every Legend but each Rover a bot laner)                                                                          | M3      | session E's match setup rosters                          |
 | The human is always their team's Rover (DISC-51), so no lane counts a human laner (`assignLanes`' `occupied` is unwired)                                          | M3      | sim and developer mode (sprint 3.8)                      |

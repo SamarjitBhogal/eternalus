@@ -3206,3 +3206,22 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   march about 1.5 km and bots never attack structures or camps (minion plan §3).
 - Checks run: the probe above; docs-only change, `npm run docs:check` passes.
 - Next step: bot laners attack structures (the M3 stand-in), on a branch from #58's head.
+
+### 2026-11-02 — Phase 3 / minion M3 stand-in — feat/minion-bot-structures — SamarjitBhogal + Claude Code
+
+- What was done: bot laners attack structures (doc 11 §4.2 `Push`; minion plan §3's M3 stand-in).
+  New `Push` branch ahead of following the horde: `BotLeaves.findObjective` takes the lane's next
+  standing enemy structure from `laneStructures.objectiveFor` (a gate only once breakable) when
+  the bot is within `engageRadius` of the point hordes gather at; `siege` sends `attack-target`,
+  walks to that point, then straight at the structure, and holds in reach. `Fight` still outranks
+  it. Tests: three `Push` cases in `BotLegendController.test` (its index now holds units only, as
+  `SpaceSystem` does) and a two-lane scenario where bots hit dark structures in 90 s, both red
+  before. Probe (seed 1, 1,200 s, bots, map objects, heavy invariants every 10 s): bots' first
+  structure hit at 220 s, 134 bot and 80 minion hits, 3 structures lost (2 without this change),
+  0 violations. Plan §3's row is now "Bot laners never cast". Critic: PASS, no blockers; its
+  should-fixes applied (a test that a unit near the structure is fought first; the straight last
+  leg to an off-lane Stronghold as a `ponytail:` remark and a plan §3 row).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 976 passed (976)"; client "Tests 434 passed (434)"; "✓ built in 352ms"; "Documentation
+  check passed."
+- Next step: pre-PR gate, then a draft PR into `phase/3-sprint-3-work` that merges after #58.
