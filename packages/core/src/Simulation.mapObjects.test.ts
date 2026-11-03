@@ -312,4 +312,33 @@ describe('Simulation with a roster and map objects (as the client builds a match
       expect(guards.length).toBeGreaterThan(0);
     },
   );
+
+  // A camp's fire blocks its posts and, on the coarse nav grid, its whole leash (seed 1: two
+  // mirrored camps); the camp mobs must still stand clear of it.
+  it.each([1, 2])(
+    'stands every camp mob clear of map objects once camps fill (seed %i)',
+    (seed) => {
+      const config = createDefaultGameConfig({ match: { countdownSeconds: 1 } });
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+        debug: TEST_DEBUG_CONFIG,
+      });
+
+      expect(() => {
+        for (let tick = 0; tick < config.tickRate + 3; tick += 1) {
+          simulation.step();
+        }
+      }).not.toThrow();
+      const campMobs = simulation
+        .snapshot()
+        .entities.filter(({ definitionId }) => definitionId.endsWith('-camp-mob'));
+      expect(campMobs.length).toBeGreaterThan(0);
+    },
+  );
 });

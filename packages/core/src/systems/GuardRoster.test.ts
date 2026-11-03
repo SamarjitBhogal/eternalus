@@ -248,4 +248,55 @@ describe('GuardRoster', () => {
     });
     expect(posts).toBe(4);
   });
+
+  it('falls back to ground clear of map objects when the coarse nav grid blocks the whole leash', () => {
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+    spawnMapStructures(state);
+    const units = loadDefaultContent(TICK_RATE);
+    const objects = new Map(Object.values(MAP_OBJECT_DEFINITIONS).map((d) => [d.id, d]));
+    const factory = new EntityFactory(createDefaultEntityRegistry(), {
+      has: (id) => units.has(id) || objects.has(id),
+      get: (id) => objects.get(id) ?? units.get(id),
+    });
+    let home: Entity | undefined;
+    state.entities.forEach((entity) => {
+      if (entity.kind === 'spawner-tower' && state.entities.teamOf(entity.id) === 'light') {
+        home ??= entity;
+      }
+    });
+    const { position, radius } = home?.getComponent(Transform) ?? {
+      position: { x: 0, y: 0 },
+      radius: 0,
+    };
+    const square = (half: number) => [
+      { x: position.x - half, y: position.y - half },
+      { x: position.x + half, y: position.y - half },
+      { x: position.x + half, y: position.y + half },
+      { x: position.x - half, y: position.y + half },
+    ];
+    // The object covers the posts; the grid is blocked out past the leash edge, as a footprint
+    // stamped onto coarse cells is.
+    state.world?.grid.stampFootprint(square(radius + 10));
+    state.worldObjects = new WorldObjectStore(
+      [{ id: 'block', kind: 'furniture', isBlocking: true, footprints: [square(radius + 3)] }],
+      factory,
+      state.entities,
+      MAP_OBJECT_DEFINITIONS,
+    );
+    const base = GUARD_PLANS['spawner-tower'];
+    if (base === undefined) {
+      throw new Error('no spawner-tower guard plan');
+    }
+    new GuardRoster(factory, factory.definitions, { 'spawner-tower': base }).layOut(state);
+
+    let posts = 0;
+    state.guards.forEach((post) => {
+      if (post.homeId !== home?.id) return;
+      posts += 1;
+      const gap = Math.hypot(post.postX - post.homeX, post.postY - post.homeY);
+      expect(state.worldObjects?.blockingAt({ x: post.postX, y: post.postY }, 0.4)).toBeNull();
+      expect(gap - post.homeRadius).toBeLessThanOrEqual(base.leashRadius);
+    });
+    expect(posts).toBe(4);
+  });
 });

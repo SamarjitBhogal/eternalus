@@ -18,8 +18,8 @@ Reply inline (`Decision: …`).
 
 - [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
       checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
-      which is only on PR #49 (`feat/capture-points`); that branch predates the minion work and
-      conflicts in six core files, so it was not folded in. Once #49 is on the phase branch,
+      which is only on PR #64 (`feat/capture-points-v2`, open; #49 was closed), not yet on the
+      phase branch. Once #64 is on the phase branch,
       defenders are a guard plan per checkpoint asked for by `CaptureSystem`. Recommendations
       ready for then: the leash is the zone's radius; defenders at an unowned point are neutral
       (doc 18 §10, item 4). (2) **Camps as built:** inactive until the countdown ends; light 4

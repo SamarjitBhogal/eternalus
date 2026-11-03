@@ -3149,3 +3149,37 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 955 passed (955)"; client "Tests 434 passed (434)"; "✓ built in 266ms"; "Documentation
   check passed."
 - Next step: merge into #57 (M5b) and #58 (M6).
+
+### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: the M6 merge probe still found 6 camp mobs in camp fires on seed 1 (two mirrored
+  camps): the nav grid blocks every 5 m cell a footprint touches, so a fire's 8 m stone blocks the
+  grid past the 7 m camp leash, though the ground there is clear. DEC-138's search now runs again
+  on the map objects alone when nothing in the leash is clear on both; guards seek, and collision
+  uses the exact shapes. Test: `GuardRoster.test` with the grid blocked past the leash and the
+  object only over the posts (red without the second pass).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 956 passed (956)"; client "Tests 434 passed (434)"; "✓ built in 261ms"; "Documentation
+  check passed."
+- Next step: merge into #57 (M5b) and #58 (M6).
+
+### 2026-11-02 — Phase 3 / minion M6 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: brought #58 onto #57's head (M5b on M2c on `phase/3-sprint-3-work`) in three
+  merges (`1c023a6`, `08dd3fc` and this one). Conflicts, both sides kept: `GuardRoster` (M6's camp
+  plans by definition id, first fill tick, neutral cap exemption and `camp-cleared`, with DEC-138's
+  clear posts and the cheap-checks-first refill), `SpawnSystem`'s guard-plan validation, M2c's
+  split of `Simulation.hordes.test` (M6's camp test moved to `Simulation.structures.test`), docs
+  15, 18 and the plan (CaptureSystem is now PR #64), INBOX (the owner's newer answers; M6's two
+  agent notes dropped, superseded by DEC-89 and the 2026-10-29 decision; the M6 item now names
+  PR #64) and this file. After the merge: camp mobs' `movement` became `movementProfile`; two tests build
+  `GameState` from `matchWorldOf`; the removed `initialHordesPerTeam` is dropped. The merge probe
+  (seeds 1, 2, 360 s, bots, map objects, every invariant) found camp mobs inside camp fires; fixed
+  on #56 (body-radius step, then an objects-only second pass) and merged in. New test: every camp
+  mob clear of map objects once camps fill, seeds 1 and 2 (seed 1 red before). Probe after: 0
+  violations, 5.6–6.5 ms per tick (dev laptop).
+- Critic: PASS, no blockers; its should-fix (the INBOX item's PR #49) and nits applied.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 971 passed (971)"; client "Tests 434 passed (434)"; "✓ built in 218ms"; "Documentation
+  check passed."
+- Next step: push #58, retarget it to `phase/3-sprint-3-work`. Checkpoint defenders wait for #64.
