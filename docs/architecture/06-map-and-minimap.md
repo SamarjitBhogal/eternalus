@@ -466,13 +466,15 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   and returns to the following camera at its base zoom (`Match.leaveExplorer`), so developer
   state does not stay in normal play. A press the canvas gestures own (a minimap click, or any
   press with the explorer shown) is claimed until its release (`Match.setPointerClaimed`), so the
-  held attack button does not act on it. With the explorer shown, a click (a release within the
-  click slop) that toggles a roof is a roof click; any other click attacks the map object under
-  its release point once (`Match.attackAt`), and a drag does neither. A click on the building the
-  player's Legend stands in toggles nothing (its roof is already cut away), so it attacks. The
-  owner selected "Allow attack" (option text: "A plain click on the world attacks even with the
-  explorer shown; only drags and roof clicks are claimed."), DEC-150. This is the attack and roof
-  input arbitration the 2026-10-30 amendment gives this branch. View state only: the simulation and its determinism are untouched.
+  held attack button does not act on it. With the explorer shown, a click (a press whose pointer
+  travels less than the click slop in total before its release) that toggles a roof is a roof
+  click; any other click attacks the map object under its release point once (`Match.attackAt`),
+  and a drag does neither. A click on the building the player's Legend stands in toggles nothing
+  (its roof is already cut away), so it attacks (DEC-153). The owner selected "Allow attack"
+  (option text: "A plain click on the world attacks even with the explorer shown; only drags and
+  roof clicks are claimed."), DEC-150. This is the attack and roof input arbitration the
+  2026-10-30 amendment gives this branch. View state only: the simulation and its determinism
+  are untouched.
   This builds the "occupancy-driven cutaways" the 2026-10-30
   amendment below calls not yet scheduled; the "Free view and interior" row's Today cell says
   this since 2026-11-02 (T-199). This bullet supersedes two sentences of the 2026-10-20

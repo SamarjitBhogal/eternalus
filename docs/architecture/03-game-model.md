@@ -342,8 +342,8 @@ map, the map objects and the bot roster), the command log and the versions. The 
 data and `exportReplay()` copies it from the options the match was built with, so a replay
 reproduces a match whose world the client prepared (the roster can depend on the player's pick)
 without the code that prepared it. `runReplay(replay, createTarget)` builds a fresh `Simulation`
-through the factory it is given, which receives the replay's setup (so `diagnostics/` never
-imports `Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
+through the factory it is given, which receives the replay itself and builds from its setup
+fields (so `diagnostics/` never imports `Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
 Replays are the regression-test format (fixtures under `__fixtures__/`, format in
 [15](15-diagnostics-and-runtime-testing.md) §7), the bug-report format (the developer menu can dump
 one) and the match-history record persisted by `ReplayRepository`.

@@ -912,12 +912,12 @@ enhancements task line, whose wait for HC-S5 is over; its text still needs his a
 The owner answered `INBOX.md` HC-T1 on his decision page on 2026-11-02: "every group: Approve (all
 54 rows approved), except T-199" (DEC-142). His words are kept verbatim outside the repository
 (`eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-11-02-hc-q30-hc-t1.md`), with
-his process ruling of the same day (DEC-138): a doc that is wrong about code a critic has verified
+his process ruling of the same day (DEC-154): a doc that is wrong about code a critic has verified
 is corrected without asking him; design decisions still go to him.
 
 | Rows                                                | His answer                                                                                                                                                                                                    | Applied                                                                                                                                                    |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T-10, T-12, T-13, T-23, T-75, T-152, T-181 to T-226 | "Approve" (every group)                                                                                                                                                                                       | applied (`--apply-b27` of the D2b generator, outside the repository), except T-199; T-202 and T-221 were redrafted first to the built step 12 (DEC-138)    |
+| T-10, T-12, T-13, T-23, T-75, T-152, T-181 to T-226 | "Approve" (every group)                                                                                                                                                                                       | applied (`--apply-b27` of the D2b generator, outside the repository), except T-199; T-202 and T-221 were redrafted first to the built step 12 (DEC-154)    |
 | T-125, architecture 18 (owned by SamarjitBhogal)    | "Approve"                                                                                                                                                                                                     | applied; **flagged for SamarjitBhogal**: the bot Legend row of 18 §2 now names every playable class (`LEGEND_CLASSES`) in place of the three class ids     |
 | T-159, 04 §12's worked example                      | "Approve"                                                                                                                                                                                                     | its first line was applied on 2026-10-29; the worked-example table's file, constant and class names follow the HC-Q18 (2) build (spawn by `kind`, step 14) |
 | T-199, 06 §10's "Free view and interior" row        | "Change or ask": the minimap is always shown in the HUD and is not a developer item; the developer options (free view and the like) need not always show; building roofs hide on their own when players enter | not applied (DEC-143); redrafted after the phase-branch merge                                                                                              |
@@ -926,7 +926,7 @@ is corrected without asking him; design decisions still go to him.
 09, 13, 14, 15, 17 and 18; requirements 05 and 06; references 09 and 14; the phase 6 plan and the
 UI enhancements plan; the root `AGENTS.md`, `CONTRIBUTING.md` and `apps/client/AGENTS.md`); the 17
 docs among them have `last-reviewed: 2026-11-02`. The table holds 205 applied rows and 1 pending
-(T-199). Redrafted before they were applied (DEC-138), because build-plan step 12 (`531cd90`,
+(T-199). Redrafted before they were applied (DEC-154), because build-plan step 12 (`531cd90`,
 `6db5713`, `226e2c6`, critic loops 1 to 3) built what they said was still to come: T-202 (13 §10,
 the "Session" status bullet: the built crash flow, and `match-crashed` is no longer a banner) and
 T-221 (15 §13: the reports are built). The status notes that named the applied rows as pending got
@@ -938,7 +938,7 @@ Built on `feat/hud-plan-b6` after the HC-T1 answers above, then merged into this
 
 - **Batch 5 merged** (`dccd92f`): the owner's crash popup texts and a screen crash during the
   reveal returns to the menu (`62652b0`, DEC-140, DEC-141); the 52 approved HC-T1 rows
-  (`da57c29`, DEC-142); DEC-138 to DEC-143 logged (`3ceb877`).
+  (`da57c29`, DEC-142); DEC-139 to DEC-143 and DEC-154 (first DEC-138) logged (`3ceb877`).
 - **Phase branch merged** (`54716be`, `e2c3e1e`: PRs #42 to #63 and #30): #30's buildings in
   `MatchCamera`, `Match` and `prepareMatchWorld`; the simulation gets the map, the map objects and
   the setup's bots. The client cathedral-interior model and CD-22's "Leave cathedral" control are
@@ -964,6 +964,27 @@ Built on `feat/hud-plan-b6` after the HC-T1 answers above, then merged into this
   explorer shown a plain click on the world attacks, and only drags and roof clicks are claimed;
   `Match` tells the camera that the player moved; one `isDead` check; one core `BotRole` type; a
   crash report's replay keeps the map inline until the Phase 5 replay store is designed.
+- **Critic loop 3** (the last of three) on `eaa5f7c`: architecture "request changes" (1 blocker,
+  5 minor), correctness "request changes", ponytail "cuts" (minor). The blocker: a drag that
+  began on a map object could leave a lasting `attack-target`. Fixed in `5500a0c` with the
+  critic's BD-A: with the explorer shown every press is claimed until its release; a click that
+  toggles no roof attacks under its release point once (`Match.attackAt`); a drag does neither;
+  a click on the building the Legend stands in attacks (owner, DEC-153). `crashToMenu` is
+  private; a new roster test; ponytail cuts 1 and 2 applied, cut 3 (inline generics) rejected for
+  the layering rule of `packages/core/AGENTS.md`. Docs fixed in `dd41ca1` and with this entry.
+  Scheduled, not built: `Match`'s pointer and explorer controls in their own class at the A19
+  merge (BD-B, `INBOX.md` HC-S6). Rejected: an `isDead` predicate in core (the bridge placement
+  is forced; a snapshot-level flag is not worth a snapshot-contract change).
+- **Delta re-check** (owner, DEC-153; pre-PR gate step 3): one correctness critic on
+  `eaa5f7c..dd41ca1` approved with four nits. Fixed: 06 §10 said "a release within the click
+  slop", but the code adds up the whole pointer path. Rejected: (1) `onPointerUp` has no button
+  filter: with chorded buttons the pointer fires `pointerup` only when its last button comes up,
+  so a filter would leave the press claimed; (2) the explorer hotkey pressed while the button is
+  held gives a second `attack-target` on a click: developer-only, and the target is the same;
+  (3) after a minimap press with the explorer hidden, a cancel leaves the claim set until the
+  next press or a focus loss: present before this PR, and no attack depends on it.
+- **DEC-138 renumbered DEC-154** before the first push: SamarjitBhogal's guard-post ruling had
+  already pushed DEC-138 (#56).
 - **Core API added or changed for reviewers:** `findBuildingAt`, `ReplaySetup`, `BotRole` and
   `BotRosterDefinition.difficulties` are exported; `Replay` now holds its setup (map, map objects,
   roster); `recordReplay(setup, plan, createTarget)` takes the setup apart from the plan.

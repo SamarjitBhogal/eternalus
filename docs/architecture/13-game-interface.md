@@ -118,9 +118,10 @@ export class SessionController {
 (`report-screen-crash`) leaves every phase except `menu` and `match` through one method,
 `SessionController.crashToMenu(reason)`, which runs the phase's exit hook and enters `menu` with
 `reason: 'screen-crashed'`, the crash popup open over it. In `match`, `handleScreenCrash` calls
-`crashMatch`, which enters `menu` with `reason: 'match-crashed'` (§10). Both sit outside the
-table, so no intent can use them, and `pre-launch` has no `menu` edge: the reveal has no cancel
-(DEC-141), and only a crash ends it early. A crash in `menu` itself shows `screen-crashed` again and goes back to
+`crashMatch`, which leaves by the table's `match` → `menu` edge with `reason: 'match-crashed'`
+(§10). `crashToMenu` sits outside the table and is private to the session, so no intent can
+use it, and `pre-launch` has no `menu` edge: the reveal has no cancel (DEC-141), and only a
+crash ends it early. A crash in `menu` itself shows `screen-crashed` again and goes back to
 `home`; the table has no `menu` → `menu` move.
 
 The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The

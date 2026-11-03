@@ -278,9 +278,10 @@ and the bot roster) + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
 Recording captures every command that enters through `Simulation.enqueueCommand` and a
 `StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is
-part of the setup, and the bots' own commands are regenerated from it. `StateHasher` is FNV-1a 32-bit (offset basis `0x811c9dc5`, prime
-`0x01000193`, `Math.imul`) over its own canonical serialisation: tick, phase, RNG state, then every
-entity in store order with its component fields ([03](03-game-model.md) §9).
+part of the setup, and the bots' own commands are regenerated from it. `StateHasher` is FNV-1a
+32-bit (offset basis `0x811c9dc5`, prime `0x01000193`, `Math.imul`) over its own canonical
+serialisation: tick, phase, RNG state, then every entity in store order with its component
+fields ([03](03-game-model.md) §9).
 
 ```ts
 // packages/core/src/diagnostics/Replay.types.ts and replay.ts (DEC-20)
@@ -293,7 +294,9 @@ export interface ReplayTarget {
 } // the slice of Simulation a replay drives
 // generic: ReplayOf<S> = S + commands + checkpoints; ReplaySetup, Replay and ReplayTargetFactory
 // are its Simulation instances (Simulation.types.ts)
-export type ReplayTargetFactoryOf<S> = (setup: S) => ReplayTarget; // e.g. (setup) => new Simulation({ ...setup, logger, systems })
+// e.g. (replay) => new Simulation({ ...replay, logger, systems }): runReplay passes the replay
+// itself, and Simulation ignores its commands and checkpoints
+export type ReplayTargetFactoryOf<S> = (setup: S) => ReplayTarget;
 export type ReplayOutcome = {
   readonly ok: boolean;
   readonly firstDivergence: { tick: number; expected: number; actual: number } | null;

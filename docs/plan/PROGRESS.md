@@ -4319,3 +4319,25 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   (936)", client "Tests 1694 passed (1694)", "Documentation check passed.").
 - Next step: the critic and ponytail gate on `feat/hud-plan-b6`; the owner drops the phase 2
   leave-interior task and answers T-199 (HC-T1).
+
+### 2026-11-02 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the pre-PR gate — feat/hud-plan-b6 — sholtzman + Claude Code
+
+- What was done: batch 5 merged (`62652b0`, `da57c29`, `3ceb877` via `dccd92f`); hiding the
+  explorer puts the developer's roofs back (`b3e2a2e`); critic loop 1 fixes (replay carries its
+  setup, `ReplaySetup`; pointer claims; base zoom on leaving the explorer); DEC-147 to DEC-149
+  built (bot difficulty by role in core content, `createMatchSeed`, developer-roof names, a dead
+  Legend opens no roof, `crashToMenu`, core `findBuildingAt`), with a test pinning the interim
+  spawn adoption until A19 (`99563b4`); loop 2 fixes (generic replay types in `diagnostics/`,
+  `MatchRequest.roster`); DEC-150 to DEC-152 (`6f67263`, `826f929`, `eaa5f7c`); critic loop 3
+  and its fix, the critic's BD-A (`5500a0c`: with the explorer shown a click attacks on release,
+  a drag never attacks, a click on the Legend's own building attacks, DEC-153); docs (`dd41ca1`
+  and this entry's commit). The owner's one delta re-check (DEC-153): approve, four nits, one doc
+  fix, three rejected (`docs/changelog/pr-feat-hud-and-character-select.md`). The HUD lane's
+  DEC-138 renumbered DEC-154 (SamarjitBhogal pushed DEC-138 first, #56). Red proofs in
+  `eternalus-agent-work/hud-charselect/build-1102/` (`loop*-redproofs-*.md`).
+- Checks run: `npm run check` EXIT 0 on the final tree: "All matched files use Prettier code
+  style!"; core "Tests 945 passed (945)"; client "Tests 1735 passed (1735)"; "Documentation check
+  passed." (knip printed one configuration hint, not a failure).
+- Next step: merge into `feat/hud-and-character-select` and open the PR to
+  `phase/2-sprint-2-work`; BD-B (`Match`'s pointer and explorer controls in their own class) at the
+  A19 merge (`INBOX.md` HC-S6).

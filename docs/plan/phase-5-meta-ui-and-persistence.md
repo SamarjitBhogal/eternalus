@@ -225,6 +225,11 @@ and 3.8 (sim mode), Phase 2 sprint 2.7 (spawn origins), Phase 1 sprint 1.5 (`Dev
   - 2026-11-02 (DEC-152): today a crash report's replay holds the generated map and map objects
     inline. When this store is designed, choose again whether a stored replay holds the world or
     generates it again from config and seed (which needs the versions guard).
+  - 2026-11-02 (HUD PR critic loop 3, BD-C; `INBOX.md` HC-S6): consider nesting the setup in
+    the replay, `ReplayOf<S> = { setup: S; commands; checkpoints }`, instead of spreading its
+    fields (`Replay.types.ts` today): the replay factory then gets only the setup, and a schema
+    version has a place. It changes the crash-report JSON, the fixtures, `exportReplay` and
+    architecture 03 §9 and 15 §7.
 - [ ] **`DeveloperMenu` complete** (enabled by `?dev=1` or a persisted settings toggle, opened
       in-game by a rebindable `dev-menu-toggle` action: add/remove Legends with class and team
       pickers (≤ 10 per team); spawn mobs from origin points, i.e. Stronghold gates, tower slots

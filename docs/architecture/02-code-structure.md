@@ -346,8 +346,8 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
 - **Merge of the phase branch and roofs (2026-11-02).** With the phase branch's buildings (#30),
   `game/prepareMatchWorld.ts` builds the map's presentation and map objects once, and
   `createBrowserMatch.ts` hands the map, the map objects and `request.roster` to the `Simulation`
-  (`SessionController.createMatch` builds that roster with `game/session/botRosterSlots.ts`); `#30`'s `useMatch.ts` changes did not
-  return (DEC-50). The cathedral interior scene, its camera paths and the "Leave cathedral"
+  (`SessionController.createMatch` builds that roster with `game/session/botRosterSlots.ts`);
+  `#30`'s `useMatch.ts` changes did not return (DEC-50). The cathedral interior scene, its camera paths and the "Leave cathedral"
   control are gone. New is `game/BuildingRoofs.ts`, the one owner of roof cutaways: the
   player's building and the developer explorer's clicks (DEC-143; [06](06-map-and-minimap.md)
   §10).
