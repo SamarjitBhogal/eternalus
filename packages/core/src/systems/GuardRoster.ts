@@ -84,13 +84,12 @@ export class GuardRoster {
         }
         return;
       }
-      const room =
-        state.config.limits.maxUnitsPerTeam - state.entities.countOnTeam(slot.team, Unit);
+      // The cap count walks the entity store, so it runs last, after the cheap checks.
       if (
         state.tick < slot.respawnAtTick ||
-        room <= 0 ||
         !state.entities.isAlive(slot.homeId) ||
-        !this.isPostKept(state, slot)
+        !this.isPostKept(state, slot) ||
+        state.entities.countOnTeam(slot.team, Unit) >= state.config.limits.maxUnitsPerTeam
       ) {
         return;
       }
