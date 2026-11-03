@@ -50,7 +50,8 @@ export class BuildingRoofs {
   /**
    * The developer explorer's click: opens the roof of the building under `point`, or closes it
    * again if the developer opened it. The building the player's Legend stands in is left as it is:
-   * its roof is already cut away, so a toggle there would change nothing drawn (DEC-150).
+   * its roof is already cut away, so a toggle there would change nothing drawn and the click
+   * attacks instead (DEC-150, DEC-153).
    *
    * @returns Whether a roof was toggled: `false` on open ground and on the player's building.
    */
