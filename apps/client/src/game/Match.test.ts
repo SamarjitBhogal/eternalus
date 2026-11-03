@@ -203,6 +203,37 @@ describe('Match', () => {
     match.destroy();
   });
 
+  it("attacks the map object under the explorer's click through the camera, once (DEC-150)", () => {
+    const { match, simulation, camera, world, map } = setUp(undefined, true, true);
+    const house = world.mapObjects.find((object) => object.kind === 'house');
+    const corner = house?.footprints[0]?.[0];
+    const opposite = house?.footprints[0]?.[2];
+    if (corner === undefined || opposite === undefined) throw new Error('Missing house');
+    const centre = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
+    camera.lookAt(centre);
+    const view = camera.visibleArea(map.width, map.height);
+    const onHouse = {
+      x: ((centre.x - view.x) / view.width) * 1280,
+      y: ((centre.y - view.y) / view.height) * 720,
+    };
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const attacks = () =>
+      enqueue.mock.calls.filter(([command]) => command.type === 'attack-target');
+    // No player Legend before the first tick: no attack.
+    match.attackAt(onHouse.x, onHouse.y);
+    expect(attacks()).toEqual([]);
+
+    match.tick();
+    match.attackAt(onHouse.x, onHouse.y);
+
+    const targetId = match.snapshot.mapObjects?.find(({ id }) => id === house?.id)?.entityId;
+    expect(targetId).toEqual(expect.any(String));
+    expect(attacks()).toEqual([
+      [{ type: 'attack-target', actorId: match.playerEntityId, targetId }],
+    ]);
+    match.destroy();
+  });
+
   it('reports closed roofs after the same building is toggled twice', () => {
     const { match } = setUp();
     // The following camera initially centres on the light stronghold.

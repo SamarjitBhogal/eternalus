@@ -104,6 +104,26 @@ describe('PlayerCommands', () => {
     expect(queued('attack-target')).toBe(1);
   });
 
+  it("queues one attack-target on the living map object under the explorer's click (DEC-150)", () => {
+    const { commands, enqueueCommand } = setUp();
+
+    commands.attackAt(ACTOR, { x: 2, y: 2 }, HOUSE_STATES);
+
+    expect(enqueueCommand.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: ACTOR, targetId: HOUSE_ENTITY },
+    ]);
+  });
+
+  it("queues no attack on the explorer's click on open ground or a destroyed object", () => {
+    const { commands, enqueueCommand } = setUp();
+    const destroyed = HOUSE_STATES.map((state) => ({ ...state, isDestroyed: true }));
+
+    commands.attackAt(ACTOR, { x: 10, y: 10 }, HOUSE_STATES);
+    commands.attackAt(ACTOR, { x: 2, y: 2 }, destroyed);
+
+    expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
   it('queues move or stop only when the axes change; returns whether the player moves', () => {
     const { input, enqueueCommand, tick } = setUp();
     expect(tick()).toBe(false);

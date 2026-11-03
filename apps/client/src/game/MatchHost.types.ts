@@ -25,7 +25,7 @@ export type MatchHostDeps = {
     | 'panBy'
     | 'zoomBy'
     | 'toggleRoofAt'
-    | 'isBuildingAt'
+    | 'attackAt'
     | 'hasDeveloperRoofs'
     | 'overview'
     | 'leaveExplorer'

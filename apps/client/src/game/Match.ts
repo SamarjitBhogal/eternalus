@@ -232,19 +232,20 @@ export class Match implements LoopTarget {
   /**
    * The developer explorer's click: cuts away the roof of the building under the screen point
    * (device pixels), or puts back one it cut away. The view does not move.
-   *
-   * @returns Whether the point was on a building.
+   * @returns Whether a roof was toggled: not on open ground or the player's building (DEC-150).
    */
   public toggleRoofAt(screenX: number, screenY: number): boolean {
     return this.roofs.toggleAt(this.camera.worldAt(screenX, screenY));
   }
 
   /**
-   * Whether the screen point (device pixels) is on a building's footprint. Unlike `toggleRoofAt`
-   * it changes no roof: the pointer controls use it to claim a press on a building (DEC-150).
+   * The explorer's plain click that is no roof click (DEC-150): the player's Legend attacks the
+   * living map object under the screen point (device pixels), once; no Legend, no attack.
    */
-  public isBuildingAt(screenX: number, screenY: number): boolean {
-    return this.roofs.isBuildingAt(this.camera.worldAt(screenX, screenY));
+  public attackAt(screenX: number, screenY: number): void {
+    if (this.playerId === null) return;
+    const point = this.camera.worldAt(screenX, screenY);
+    this.commands.attackAt(this.playerId, point, this.current.mapObjects ?? []);
   }
 
   /**
@@ -267,10 +268,9 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Whether the canvas gestures own the main button's press (a minimap click, a press on a
-   * building or a drag while the developer explorer is shown; a plain click on open world is
-   * not claimed, DEC-150). While they do, the held button is no attack: one press is one action
-   * (06 §10, attack and roof input arbitration).
+   * Whether the canvas gestures own the main button's press (a minimap click, or any press with the
+   * developer explorer shown): the held button is then no attack, and a plain click with the
+   * explorer attacks on its release instead (`attackAt`, DEC-150; 06 §10, input arbitration).
    */
   public setPointerClaimed(isClaimed: boolean): void {
     this.commands.setPointerClaimed(isClaimed);

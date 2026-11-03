@@ -128,7 +128,13 @@ describe('replay', () => {
     );
 
     expect(replay).toMatchObject({ seed: 11, config, map, commands: [] });
-    expect(Object.keys(replay).sort()).toEqual(['checkpoints', 'commands', 'config', 'map', 'seed']);
+    expect(Object.keys(replay).sort()).toEqual([
+      'checkpoints',
+      'commands',
+      'config',
+      'map',
+      'seed',
+    ]);
     expect(replay.checkpoints.map(({ tick }) => tick)).toEqual([0, 5, 10]);
   });
 

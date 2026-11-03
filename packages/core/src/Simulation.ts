@@ -75,7 +75,10 @@ export class Simulation {
   private readonly commandLog: Replay['commands'][number][] = [];
   /** `hash()` at tick 0 and every `REPLAY_CHECKPOINT_EVERY` ticks, ascending. Not hashed. */
   private readonly checkpoints: Replay['checkpoints'][number][] = [];
-  /** What the match was built with, copied into every exported replay. */
+  /**
+   * What the match was built with, copied into every exported replay. A crash report's replay
+   * keeps the generated map and map objects inline (DEC-152); revisit at the Phase 5 replay store.
+   */
   private readonly setup: ReplaySetup;
 
   /**

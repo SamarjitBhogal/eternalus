@@ -172,17 +172,15 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     expect(roof.drawn).toBe(roof.of);
   });
 
-  it('says whether a screen point is on a building without cutting its roof away', () => {
-    const { match, roofsDrawn, toScreen, cathedral: centre } = setUp();
-    match.overview();
-    const onCathedral = toScreen(centre ?? { x: -1, y: -1 });
-    const offMap = toScreen({ x: -1000, y: -1000 });
+  it("toggles no roof on a click on the Legend's building, so the click attacks (DEC-150)", () => {
+    const { match, roofsDrawn, toScreen, playerPosition } = setUp();
+    match.tick();
+    const onPlayer = toScreen(playerPosition() ?? { x: -1, y: -1 });
 
-    expect(match.isBuildingAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.isBuildingAt(offMap.x, offMap.y)).toBe(false);
+    expect(match.toggleRoofAt(onPlayer.x, onPlayer.y)).toBe(false);
+
     expect(match.hasDeveloperRoofs).toBe(false);
-    const cathedral = roofsDrawn('cathedral-lane-1');
-    expect(cathedral.drawn).toBe(cathedral.of);
+    expect(roofsDrawn('light-stronghold').drawn).toBe(0);
   });
 
   it("combines with the developer's roofs: the overview restores those, not the Legend's", () => {

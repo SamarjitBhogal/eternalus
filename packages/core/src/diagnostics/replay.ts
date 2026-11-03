@@ -40,7 +40,9 @@ export const recordReplay = <S extends object>(
 
 /**
  * Plays `replay` on a fresh target, feeding each command before the step of its tick, and
- * compares the hash at every checkpoint. Stops at the first divergence.
+ * compares the hash at every checkpoint. Stops at the first divergence. `createTarget` receives
+ * the replay itself, commands and checkpoints too: the factory must build from its setup fields
+ * only.
  */
 export const runReplay = <S extends object>(
   replay: ReplayOf<S>,

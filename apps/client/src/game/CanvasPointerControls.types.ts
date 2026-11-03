@@ -9,7 +9,7 @@ export type CanvasPointerControlsDeps = {
     | 'panBy'
     | 'zoomBy'
     | 'toggleRoofAt'
-    | 'isBuildingAt'
+    | 'attackAt'
     | 'hasDeveloperRoofs'
     | 'overview'
     | 'leaveExplorer'

@@ -27,12 +27,10 @@ describe('createMatchSeed', () => {
   });
 
   it('draws from the browser crypto by default', () => {
-    const getRandomValues = vi.spyOn(crypto, 'getRandomValues').mockImplementation(((
-      values: Uint32Array,
-    ) => {
-      values[0] = 123_456_789;
+    const getRandomValues = vi.spyOn(crypto, 'getRandomValues').mockImplementation((values) => {
+      if (values instanceof Uint32Array) values[0] = 123_456_789;
       return values;
-    }) as typeof crypto.getRandomValues);
+    });
 
     try {
       expect(createMatchSeed()).toBe(123_456_789);

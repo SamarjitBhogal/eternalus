@@ -2,7 +2,7 @@ import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
-import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
+import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
@@ -14,6 +14,7 @@ import type {
   SessionControllerDeps,
 } from './SessionController.types';
 import { createRosterRng } from './session/createRosterRng';
+import { botRosterSlots } from './session/botRosterSlots';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { MatchState } from './session/states/MatchState';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
@@ -147,6 +148,28 @@ describe('SessionController match lifetime', () => {
     expect(request?.world).toBe(session.worlds[0]);
     expect(request?.captureKinds).toEqual(['capture-point', 'cathedral']);
     expect(passed).toBe(attached);
+  });
+
+  it("builds the match's roster from the locked rosters and the catalogue's difficulties", async () => {
+    const session = setUp();
+    await session.toMatch();
+
+    session.controller.attachViewport(viewport());
+
+    const [request] = session.createMatch.mock.calls[0] ?? [];
+    expect(request?.roster).not.toHaveLength(0);
+    const { difficulties } = shippedCatalogue().load().botRoster;
+    expect(request?.roster).toEqual(
+      botRosterSlots(
+        { allies: request?.setup.allies ?? [], enemies: request?.setup.enemies ?? [] },
+        difficulties,
+      ),
+    );
+    // Each slot's difficulty is its role's, read from the catalogue, not from the helper alone.
+    for (const slot of request?.roster ?? []) {
+      expect(slot.difficulty).toEqual(difficulties[slot.role]);
+    }
+    expect(difficulties.rover).not.toEqual(difficulties.laner);
   });
 
   it("draws the bots' Legends at LOCK IN from the injected roster stream of the match seed", async () => {

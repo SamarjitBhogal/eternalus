@@ -26,12 +26,15 @@ describe('BuildingRoofs', () => {
     expect(roofs.hasOpened).toBe(false);
   });
 
-  it('says whether a point is on a building, and opens no roof doing so', () => {
+  it("toggles nothing on the Legend's building: its roof is already cut away (DEC-150)", () => {
     const roofs = new BuildingRoofs(buildings);
-    expect(roofs.isBuildingAt(IN_CATHEDRAL)).toBe(true);
-    expect(roofs.isBuildingAt(OUTSIDE)).toBe(false);
-    expect([...roofs.hidden]).toEqual([]);
+    roofs.playerAt(IN_CATHEDRAL);
+
+    expect(roofs.toggleAt(IN_CATHEDRAL)).toBe(false);
+
     expect(roofs.hasOpened).toBe(false);
+    roofs.playerAt(OUTSIDE);
+    expect([...roofs.hidden]).toEqual([]);
   });
 
   it('closes the roof when the Legend walks out, or into another building', () => {
@@ -62,9 +65,9 @@ describe('BuildingRoofs', () => {
   it("keeps the Legend's building open when the developer toggles or restores it", () => {
     const roofs = new BuildingRoofs(buildings);
     roofs.playerAt(IN_LIGHT_STRONGHOLD);
-    roofs.toggleAt(IN_LIGHT_STRONGHOLD);
+    expect(roofs.toggleAt(IN_LIGHT_STRONGHOLD)).toBe(false);
     expect([...roofs.hidden]).toEqual(['light-stronghold']);
-    roofs.toggleAt(IN_LIGHT_STRONGHOLD);
+    expect(roofs.toggleAt(IN_LIGHT_STRONGHOLD)).toBe(false);
     expect([...roofs.hidden]).toEqual(['light-stronghold']);
     roofs.toggleAt(IN_CATHEDRAL);
     expect([...roofs.hidden].sort()).toEqual(['cathedral-lane-1', 'light-stronghold']);

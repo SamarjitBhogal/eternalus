@@ -37,7 +37,7 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     panBy: vi.fn(),
     zoomBy: vi.fn(),
     toggleRoofAt: vi.fn(() => false),
-    isBuildingAt: vi.fn(() => false),
+    attackAt: vi.fn(),
     hasDeveloperRoofs: false,
     overview: vi.fn(),
     leaveExplorer: vi.fn(),

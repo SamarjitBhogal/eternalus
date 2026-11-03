@@ -10,10 +10,10 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
  * HC-F8): drag to pan, the wheel to zoom, a short click on a building to cut its roof away or put
  * it back, and the toolbar's world overview, which also puts those roofs back. In normal play a
  * roof opens only while the player's Legend is inside (DEC-143). A press these gestures own (a
- * minimap click, a press on a building with the explorer, or a drag with it) is claimed until its
- * release, so the attack button does not also act on it; a plain click on open world is not
- * claimed and attacks (06 §10, DEC-150). Positions arrive in CSS pixels and reach the match in
- * device pixels.
+ * minimap click, or any press with the explorer) is claimed until its release, so the held attack
+ * button does not act on it. With the explorer, a click (a release within the click slop) that is
+ * no roof click attacks once at the release point (`Match.attackAt`); a drag does neither (06 §10,
+ * DEC-150). Positions arrive in CSS pixels and reach the match in device pixels.
  */
 export class CanvasPointerControls {
   private press: { x: number; y: number; distance: number } | null = null;
@@ -101,11 +101,8 @@ export class CanvasPointerControls {
     const { match } = this.deps;
     // The claim comes from this press alone, so a press whose release never arrived leaves none.
     const isOnMinimap = match.lookAtMinimapPoint(point.x, point.y);
-    // ponytail: attack is read each tick while held (`PlayerCommands.apply`), so a drag that starts
-    // on a map object can queue one `attack-target` before the press passes CLICK_SLOP. Upgrade
-    // path: hold the attack until the press is known to be a click or a drag.
-    const isOnBuilding = this.isExplorerShown && match.isBuildingAt(point.x, point.y);
-    match.setPointerClaimed(isOnMinimap || isOnBuilding);
+    // With the explorer the press may yet be a drag, so it never attacks while held (DEC-150).
+    match.setPointerClaimed(isOnMinimap || this.isExplorerShown);
     if (isOnMinimap) {
       return;
     }
@@ -127,12 +124,11 @@ export class CanvasPointerControls {
       dx * (canvas.width / canvas.clientWidth),
       dy * (canvas.height / canvas.clientHeight),
     );
-    const distance = this.press.distance + Math.hypot(dx, dy);
-    this.press = { x: pointer.clientX, y: pointer.clientY, distance };
-    if (distance >= CLICK_SLOP) {
-      // The press is a drag, not a click: the gestures own it (DEC-150).
-      this.deps.match.setPointerClaimed(true);
-    }
+    this.press = {
+      x: pointer.clientX,
+      y: pointer.clientY,
+      distance: this.press.distance + Math.hypot(dx, dy),
+    };
   };
 
   private readonly onPointerUp = (event: Event): void => {
@@ -149,10 +145,15 @@ export class CanvasPointerControls {
     }
     const distance =
       press.distance + Math.hypot(pointer.clientX - press.x, pointer.clientY - press.y);
+    if (!this.isExplorerShown || distance >= CLICK_SLOP) {
+      return;
+    }
     const point = this.devicePoint(pointer);
     const { match } = this.deps;
-    if (this.isExplorerShown && distance < CLICK_SLOP && match.toggleRoofAt(point.x, point.y)) {
+    if (match.toggleRoofAt(point.x, point.y)) {
       chrome.onDeveloperRoofsChanged(match.hasDeveloperRoofs);
+    } else {
+      match.attackAt(point.x, point.y);
     }
   };
 

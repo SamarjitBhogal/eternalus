@@ -32,9 +32,6 @@ const SIDE_TEAM: Readonly<Record<HudSide, Readonly<Record<PlayableTeam, Playable
   enemy: { light: 'dark', dark: 'light' },
 };
 
-/** A structure at zero health is destroyed (DEC-69); unknown health is not (`isDead`). */
-const isDestroyed = ({ health }: StructureStatus): boolean => isDead(health);
-
 /** Sort key of a lane: lane order, structures without a lane last. */
 const laneRank = (laneIndex: number | null): number => laneIndex ?? Number.POSITIVE_INFINITY;
 
@@ -81,7 +78,8 @@ function tilesOf(
     displayName: kind.displayName,
     iconAssetId: kind.iconAssetId,
     healthFraction: healthFractionOf(members),
-    isDestroyed: members.some(isDestroyed),
+    // A structure at zero health is destroyed (DEC-69); unknown health is not.
+    isDestroyed: members.some(({ health }) => isDead(health)),
   }));
 }
 

@@ -13,9 +13,11 @@ import type { IntentSource } from './Match.types';
 /**
  * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
  * `move` or `stop` only when the movement axes change, and `attack-target` once per map object the
- * held attack button aims at. A press the canvas gestures own is no attack (`setPointerClaimed`;
- * 06 §10, attack and roof input arbitration). It only turns input into commands: `apply` tells
- * `Match` whether the player moves, and `Match` tells the camera (DEC-151).
+ * held attack button aims at. A press the canvas gestures own is no held attack
+ * (`setPointerClaimed`; 06 §10, attack and roof input arbitration): with the developer explorer
+ * shown that is every press, and a plain click attacks once on its release instead (`attackAt`,
+ * DEC-150). It only turns input into commands: `apply` tells `Match` whether the player moves, and
+ * `Match` tells the camera (DEC-151).
  */
 export class PlayerCommands {
   private lastMove: Vec2 = { x: 0, y: 0 };
@@ -37,9 +39,10 @@ export class PlayerCommands {
   ) {}
 
   /**
-   * Whether the canvas gestures own the main button's press (a minimap click, a press on a
-   * building or a drag while the developer explorer is shown; a plain click on open world is
-   * not claimed, DEC-150). While they do, the held button is no attack: one press is one action.
+   * Whether the canvas gestures own the main button's press (a minimap click, or any press while
+   * the developer explorer is shown). While they do, the held button is no attack: one press is
+   * one action. With the explorer, a plain click that is no roof click attacks on its release
+   * through `attackAt` (DEC-150).
    */
   public setPointerClaimed(isClaimed: boolean): void {
     this.isPointerClaimed = isClaimed;
@@ -68,6 +71,19 @@ export class PlayerCommands {
     }
     this.lastMove = move;
     return isMoving;
+  }
+
+  /**
+   * The developer explorer's plain click (DEC-150): queues one `attack-target` for the Legend
+   * `actorId` on the map object under `point` (world units). `states` are the latest snapshot's map
+   * objects: only a living one can be the target, so open ground or a destroyed object queues
+   * nothing.
+   */
+  public attackAt(actorId: EntityId, point: Vec2, states: readonly MapObjectSnapshot[]): void {
+    const targetId = findMapObjectAt(this.mapObjects, states, point);
+    if (targetId !== null) {
+      this.simulation.enqueueCommand({ type: 'attack-target', actorId, targetId });
+    }
   }
 
   /**

@@ -49,22 +49,18 @@ export class BuildingRoofs {
 
   /**
    * The developer explorer's click: opens the roof of the building under `point`, or closes it
-   * again if the developer opened it.
+   * again if the developer opened it. The building the player's Legend stands in is left as it is:
+   * its roof is already cut away, so a toggle there would change nothing drawn (DEC-150).
    *
-   * @returns Whether `point` was on a building.
+   * @returns Whether a roof was toggled: `false` on open ground and on the player's building.
    */
   public toggleAt(point: Vec2): boolean {
     const building = findBuildingAt(this.buildings, point);
-    if (building === undefined) return false;
+    if (building === undefined || building.id === this.occupied) return false;
     if (this.opened.has(building.id)) this.opened.delete(building.id);
     else this.opened.add(building.id);
     this.refresh();
     return true;
-  }
-
-  /** Whether `point` is on a building's footprint; it changes no roof. */
-  public isBuildingAt(point: Vec2): boolean {
-    return findBuildingAt(this.buildings, point) !== undefined;
   }
 
   /** Closes every roof the developer opened; the player's building stays open. */
