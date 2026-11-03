@@ -113,26 +113,35 @@ describe('Simulation with the minion modifiers (minion plan M5a)', () => {
 
   it('enrages the lane of a tower lost in play, and the next horde there (MS-16, DISC-24)', () => {
     const { simulation, logger, losses, spawned, stepUntil, stacksAt, enragedAt } = siege();
+    // Hordes fight to the death (MS-36), so a tower can fall with none of its team's minions left
+    // on the lane; a loss with some left shows who is enraged. A lost SpawnerTower also ends its
+    // lane's light hordes (18 §3.1), so the loss checked is the first one its lane spawns after.
+    // Guards with no rest that defend each other (DEC-144) hold the first such tower to about 610 s.
+    const nextAfter =
+      (loss: LaneEvent) =>
+      ({ tick, team, lane }: LaneEvent) =>
+        tick > loss.tick && team === loss.team && lane === loss.lane;
+    const isChecked = (loss: LaneEvent) =>
+      loss.memberIds.length > 0 && spawned.some(nextAfter(loss));
 
-    stepUntil(() => losses.length > 0, 300);
-    const [loss] = losses;
-    if (loss === undefined) {
-      throw new Error('no lane structure fell in the first 300 s');
+    stepUntil(() => losses.some(isChecked), 900);
+    const loss = losses.find(isChecked);
+    const next = loss === undefined ? undefined : spawned.find(nextAfter(loss));
+    if (loss === undefined || next === undefined) {
+      throw new Error('no defended lane structure fell with a horde spawned after it in 900 s');
     }
     expect(ENRAGING_STRUCTURES).toContain(loss.kind);
-    expect(loss.memberIds.length).toBeGreaterThan(0);
     // One stack for each of the team's minions on that lane, and for no one else.
     expect([...enragedAt(loss.tick)].sort()).toEqual([...loss.memberIds].sort());
     // The count MinionStrengthStep reads to move DISC-24's point for the enemy's hordes there.
-    expect(simulation.snapshot().teams[loss.team].towersLostByLane).toEqual({ [loss.lane]: 1 });
-
-    const isNext = ({ tick, team, lane }: LaneEvent) =>
-      tick > loss.tick && team === loss.team && lane === loss.lane;
-    stepUntil(() => spawned.some(isNext), 400);
-    const next = spawned.find(isNext);
-    if (next === undefined) {
-      throw new Error(`no ${loss.team} horde spawned on ${loss.lane} after the loss`);
+    const lostByLane: Record<string, number> = {};
+    for (const { kind, team, lane } of losses) {
+      if (team === loss.team && ENRAGING_STRUCTURES.some((enraging) => enraging === kind)) {
+        lostByLane[lane] = (lostByLane[lane] ?? 0) + 1;
+      }
     }
+    expect(simulation.snapshot().teams[loss.team].towersLostByLane).toEqual(lostByLane);
+
     const lost = simulation.snapshot().teams[loss.team].towersLostByLane[loss.lane] ?? 0;
     expect(next.memberIds.map((id) => stacksAt(next.tick, id))).toEqual(
       next.memberIds.map(() => lost),

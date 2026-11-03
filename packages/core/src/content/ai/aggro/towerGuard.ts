@@ -17,7 +17,8 @@ export const TOWER_GUARD_AGGRO = {
     'closest-legend',
   ],
   leashRadius: 8, // TUNE: balancing.md guard leash (the guard plan's is the one guards read)
-  aggroDurationTicks: 69, // TUNE: as the lane minion (Dota 2.3 s)
-  aggroCooldownTicks: 90, // TUNE: as the lane minion (Dota 3 s)
+  leashGraceTicks: 0, // owner DEC-144 E: a guard never chases past its circle
+  aggroCooldownTicks: 0, // owner DEC-144: no rest; a guard fights any enemy in its circle at once
+  callForHelpRadius: 0, // unused: guards answer a fellow guard anywhere in their circle (DEC-144)
   reformDistance: 1, // TUNE: no reference value; a guard settles close to its post
 } as const satisfies AggroRuleDefinition;

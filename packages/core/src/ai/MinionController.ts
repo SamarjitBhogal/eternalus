@@ -14,20 +14,19 @@ import type {
 
 /**
  * Drives a lane minion (architecture 18 §6.1, 11 §4.3): `marching → engaging → returning →
- * marching`, through the `LeashBehaviour` it shares with `GuardController`. Marching, it
- * acquires the best-ranked enemy in `acquisitionRadius` (priority, then distance, then id)
- * and emits one `attack-target`; engaging, it switches only to a strictly
- * better-ranked enemy, and ends the chase with one `stop` when the target dies, the mob leaves its
- * leash or the aggro duration runs out; returning, it marches again within `reformDistance` of its
- * formation slot, with a cooldown before it may acquire. The chase itself is `PathingSystem`'s and
- * the hits `CombatSystem`'s. Stateless: everything it remembers is in the brain it returns.
+ * marching`, through the `LeashBehaviour` it shares with `GuardController`. Its leash is a circle
+ * of `leashRadius` around where it took its target, and it fights a target inside it with no time
+ * limit (MS-36, DEC-144); an enemy attacking a horde-mate within `callForHelpRadius` is in reach
+ * too. Returning, it marches again within `reformDistance` of its formation slot. The chase
+ * itself is `PathingSystem`'s and the hits `CombatSystem`'s. Stateless: everything it remembers is
+ * in the brain it returns.
  *
  * The horde's next objective (18 §6.2) is a candidate too, ranked `lane-objective`, once it is
  * breakable and either its edge is within `acquisitionRadius` or the horde has gathered at it (its
  * anchor within `acquisitionRadius` of the objective's front), so the rear ranks and a Stronghold
  * standing off the lane are reached too. A gate that is not breakable yet is never one, so the
- * horde holds in front of it and fights what comes. Attacking the objective ignores the leash and
- * the aggro timeout: a structure cannot drag a mob away.
+ * horde holds in front of it and fights what comes. Attacking the objective ignores the leash: a
+ * structure cannot drag a mob away.
  */
 export class MinionController implements Controller {
   public readonly id = 'minion';
@@ -38,13 +37,18 @@ export class MinionController implements Controller {
   private readonly behaviour: LeashBehaviour;
   private readonly rules: LeashRules<'marching'> = {
     idle: 'marching',
-    isOutsideLeash: ({ position, rule }, memory) => {
-      const dx = position.x - memory.leashX;
-      const dy = position.y - memory.leashY;
+    isOutsideLeash: ({ rule }, memory, point) => {
+      const dx = point.x - memory.leashX;
+      const dy = point.y - memory.leashY;
       return dx * dx + dy * dy > rule.leashRadius * rule.leashRadius;
     },
     isHome: (situation) => this.isAtSlot(situation),
     extra: (situation) => this.objectiveCandidate(situation),
+    isMate: ({ state, id }, victimId) => {
+      const hordeId = state.hordes.hordeOf(id)?.id;
+      return hordeId !== undefined && state.hordes.hordeOf(victimId)?.id === hordeId;
+    },
+    helpRadius: ({ rule }) => rule.callForHelpRadius,
   };
 
   /** @param content - Aggro profiles, formations and kind classes; the controller holds none. */
