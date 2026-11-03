@@ -3225,3 +3225,12 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Tests 976 passed (976)"; client "Tests 434 passed (434)"; "✓ built in 352ms"; "Documentation
   check passed."
 - Next step: pre-PR gate, then a draft PR into `phase/3-sprint-3-work` that merges after #58.
+
+### 2026-11-02 — Phase 3 / minion plan stand-ins — feat/minion-bot-structures — SamarjitBhogal + Claude Code
+
+- What was done: plan §3's M4 row "Nothing marks a lane flow field dirty" removed: PR #30's
+  `DefaultSystemPipeline` reopens a destroyed blocking map object's cells and marks the lane fields
+  over them dirty, and gates are not blocking in the MVP, so no gate change alters the grid.
+- Checks run: `npm run docs:check` and Prettier; docs-only change.
+- Next step: the owner's call on the two remaining M4/M5a stand-ins (strength by the field's
+  distance; a wall-avoidance term now that `CollisionSystem` exists).

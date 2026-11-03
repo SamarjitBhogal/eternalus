@@ -107,7 +107,6 @@ Each stand-in is removed by the phase named.
 
 | Stand-in                                                                                                                                                          | Used in | Replaced by                                              |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------- |
-| Nothing marks a lane flow field dirty: no event reports a gate or terrain change, so the time-sliced rebuild runs only when a test asks for it                    | M4      | the gate and structure changes of doc 07 §10             |
 | No wall-avoidance term or collision resolution: a heading into a wall turns along its open grid axis (18 §5.2), and the field leads a unit out (10 §9)            | M4      | `CollisionSystem` and the wall-avoidance term (10 §8–§9) |
 | Horde sizes come from `GameConfig.match.hordeSizes` and cadences from the spawner records, until the owner decides where they live (doc 18 §10, item 2)           | M1      | the owner's answer, wherever it puts them                |
 | No entity kind is a turret, so the aggro list's `turret-attacking-ally-minion` entry never matches                                                                | M2b     | turret entities (sprint 2.3)                             |
