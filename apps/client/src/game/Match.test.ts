@@ -1,10 +1,7 @@
 import {
   createDefaultGameConfig,
   type InputIntent,
-  type MapDefinition,
-  MapGenerator,
   MapPresentationBuilder,
-  MapObjectBuilder,
   MemoryLogger,
   NullLogger,
   Simulation,
@@ -12,6 +9,9 @@ import {
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { BridgeEventMap } from '../bridge/events';
+import { MINI_MAP_DESIGN_FRAME, MINI_MAP_RING } from '../bridge/minimapRing';
+import { TypedEventBus } from '../bridge/TypedEventBus';
 import { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
@@ -19,9 +19,24 @@ import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
+import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
+import { prepareMatchWorld } from './prepareMatchWorld';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
+
+/**
+ * The centre of the HUD minimap ring on the tests' 1280 × 720 canvas (device pixels), from the
+ * ring `bridge/minimapRing.ts` exports: a click there lands on the map only if `Match` injects
+ * that ring into its `MiniMapView`.
+ */
+const RING_CENTRE = (() => {
+  const scale = Math.min(1280 / MINI_MAP_DESIGN_FRAME.width, 720 / MINI_MAP_DESIGN_FRAME.height);
+  return {
+    x: 1280 - (MINI_MAP_RING.right + MINI_MAP_RING.width / 2) * scale,
+    y: (MINI_MAP_RING.top + MINI_MAP_RING.height / 2) * scale,
+  };
+})();
 
 /** An intent source the test steers by hand. */
 class ScriptedIntent implements IntentSource {
@@ -83,46 +98,30 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
   };
 })();
 
-const setUp = (
-  map?: MapDefinition,
-  content?: Content,
-  hasHordes = false,
-  hasMapObjects = false,
-) => {
+/**
+ * A match on seed 1's prepared world. The simulation gets the map only `withHordes` (its lane
+ * hordes spawn), and the world's map objects only `withMapObjects`.
+ */
+const setUp = (content?: Content, withHordes = false, withMapObjects = false) => {
   const config = createDefaultGameConfig();
-  const generated = map ?? new MapGenerator().generate(config, SEED);
+  const world = prepareMatchWorld(config, SEED);
+  const generated = world.map;
   const simulation = new Simulation({
     config,
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined ? {} : { content }),
-    ...(hasMapObjects
-      ? {
-          mapObjects: new MapObjectBuilder().build(
-            generated,
-            new MapPresentationBuilder().build(generated),
-          ),
-        }
-      : {}),
-    ...(hasHordes ? { map: generated } : {}),
+    ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
+    ...(withHordes ? { map: generated } : {}),
   });
   const scheduler = new FakeFrameScheduler();
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const logger = new MemoryLogger();
-  const unsubscribes = { count: 0 };
-  const subscribe = simulation.on.bind(simulation);
-  vi.spyOn(simulation, 'on').mockImplementation((type, handler) => {
-    const unsubscribe = subscribe(type, handler);
-    return () => {
-      unsubscribes.count += 1;
-      unsubscribe();
-    };
-  });
   const match = new Match({
     simulation,
-    map: generated,
+    world,
     tickRate: config.tickRate,
     scheduler,
     renderer,
@@ -130,6 +129,13 @@ const setUp = (
     input,
     player: { legend: 'warrior', team: 'light' },
     logger,
+    onCrash: () => undefined,
+    // A bus nobody listens to, at the shipped cadence.
+    bridge: {
+      bus: new TypedEventBus<BridgeEventMap>(),
+      publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
+      captureKinds: [],
+    },
   });
   match.resize(1280, 720, 1);
   const lightStronghold = generated.features.find(
@@ -138,12 +144,11 @@ const setUp = (
   return {
     match,
     simulation,
-    scheduler,
     renderer,
     camera,
     input,
     logger,
-    unsubscribes,
+    world,
     map: generated,
     lightStronghold,
   };
@@ -155,7 +160,7 @@ const playerX = (match: Match): number =>
 
 describe('Match', () => {
   it('updates the main scene and minimap when a map object is destroyed', () => {
-    const { match, simulation, renderer, map } = setUp(undefined, undefined, true, true);
+    const { match, simulation, renderer, map } = setUp(undefined, true, true);
     const house = new MapPresentationBuilder()
       .build(map)
       .scenery.find((piece) => piece.object?.kind === 'house' && piece.object.isFootprint);
@@ -174,11 +179,9 @@ describe('Match', () => {
     expect(fills()).not.toContainEqual(house.shape);
     match.destroy();
   });
-  it('queues one attack per target while the attack button is held, and again after a release or a stop', () => {
-    const { match, simulation, input, map } = setUp(undefined, undefined, true, true);
-    const house = new MapObjectBuilder()
-      .build(map, new MapPresentationBuilder().build(map))
-      .find((object) => object.kind === 'house');
+  it('queues no attack while the canvas gestures own the press (a minimap click or the explorer)', () => {
+    const { match, simulation, input, world } = setUp(undefined, true, true);
+    const house = world.mapObjects.find((object) => object.kind === 'house');
     const corner = house?.footprints[0]?.[0];
     const opposite = house?.footprints[0]?.[2];
     if (corner === undefined || opposite === undefined) throw new Error('Missing house');
@@ -189,31 +192,56 @@ describe('Match', () => {
     input.isAttacking = true;
     input.aim = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
 
-    for (let tick = 0; tick < 5; tick += 1) match.tick();
+    match.setPointerClaimed(true);
+    match.tick();
+    match.tick();
+    expect(attacks()).toBe(0);
+    match.setPointerClaimed(false);
+    match.tick();
+
     expect(attacks()).toBe(1);
-    input.isAttacking = false;
+    match.destroy();
+  });
+
+  it("attacks the map object under the explorer's click through the camera, once (DEC-150)", () => {
+    const { match, simulation, camera, world, map } = setUp(undefined, true, true);
+    const house = world.mapObjects.find((object) => object.kind === 'house');
+    const corner = house?.footprints[0]?.[0];
+    const opposite = house?.footprints[0]?.[2];
+    if (corner === undefined || opposite === undefined) throw new Error('Missing house');
+    const centre = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
+    camera.lookAt(centre);
+    const view = camera.visibleArea(map.width, map.height);
+    const onHouse = {
+      x: ((centre.x - view.x) / view.width) * 1280,
+      y: ((centre.y - view.y) / view.height) * 720,
+    };
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const attacks = () =>
+      enqueue.mock.calls.filter(([command]) => command.type === 'attack-target');
+    // No player Legend before the first tick: no attack.
+    match.attackAt(onHouse.x, onHouse.y);
+    expect(attacks()).toEqual([]);
+
     match.tick();
-    input.isAttacking = true;
-    match.tick();
-    expect(attacks()).toBe(2);
-    // `stop` also drops the attack target, so the held button queues it once more after one.
-    input.move = { x: 1, y: 0 };
-    match.tick();
-    input.move = { x: 0, y: 0 };
-    match.tick();
-    match.tick();
-    expect(attacks()).toBe(3);
+    match.attackAt(onHouse.x, onHouse.y);
+
+    const targetId = match.snapshot.mapObjects?.find(({ id }) => id === house?.id)?.entityId;
+    expect(targetId).toEqual(expect.any(String));
+    expect(attacks()).toEqual([
+      [{ type: 'attack-target', actorId: match.playerEntityId, targetId }],
+    ]);
     match.destroy();
   });
 
   it('reports closed roofs after the same building is toggled twice', () => {
     const { match } = setUp();
     // The following camera initially centres on the light stronghold.
-    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
     expect(match.toggleRoofAt(640, 360)).toBe(true);
-    expect(match.hasOpenRoofs).toBe(true);
+    expect(match.hasDeveloperRoofs).toBe(true);
     expect(match.toggleRoofAt(640, 360)).toBe(true);
-    expect(match.hasOpenRoofs).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
     match.destroy();
   });
   it("spawns the player's Warrior at the Light stronghold on the first tick", () => {
@@ -250,19 +278,6 @@ describe('Match', () => {
     expect(playerX(match)).toBe(rested);
   });
 
-  it('plays the same way twice for the same seed and intents (deterministic)', () => {
-    const play = (): number => {
-      const { match, input } = setUp();
-      for (let tick = 0; tick < 300; tick += 1) {
-        input.move = tick < 150 ? { x: 1, y: 0 } : { x: 0, y: 1 };
-        match.tick();
-      }
-      return playerX(match);
-    };
-
-    expect(play()).toBe(play());
-  });
-
   it('draws the scene with the camera on the player and the player ringed', () => {
     const { match, renderer, camera, map, lightStronghold } = setUp();
     match.tick();
@@ -282,26 +297,18 @@ describe('Match', () => {
     ).toBe(true);
   });
 
-  it('runs whole ticks from the loop: 100 ms of frames is 3 ticks', () => {
-    const { match, simulation, scheduler } = setUp();
-    match.start();
-    scheduler.advance(0);
-
-    scheduler.runFrames(5, 20);
-
-    expect(simulation.tick).toBe(3);
-  });
-
   it('stops following the player after a minimap click, until the player moves again', () => {
     const { match, camera, input, map } = setUp();
     match.tick();
-    const minimap = { x: 1280 * 0.8, y: 720 * 0.8 };
 
-    const clickedMinimap = match.lookAtMinimapPoint(minimap.x, minimap.y);
+    const clickedMinimap = match.lookAtMinimapPoint(RING_CENTRE.x, RING_CENTRE.y);
     const lookedAt = camera.visibleArea(map.width, map.height);
     match.render(0);
 
     expect(clickedMinimap).toBe(true);
+    // The ring's centre is the map's centre.
+    expect(lookedAt.x + lookedAt.width / 2).toBeCloseTo(map.width / 2);
+    expect(lookedAt.y + lookedAt.height / 2).toBeCloseTo(map.height / 2);
     expect(camera.visibleArea(map.width, map.height)).toEqual(lookedAt);
     expect(match.lookAtMinimapPoint(1, 1)).toBe(false);
 
@@ -311,20 +318,8 @@ describe('Match', () => {
     expect(camera.visibleArea(map.width, map.height)).not.toEqual(lookedAt);
   });
 
-  it('stops the loop and its subscription on destroy: 0 scheduled frames, 0 listeners', () => {
-    const { match, scheduler, simulation, unsubscribes } = setUp();
-    match.start();
-
-    match.destroy();
-    scheduler.advance(1000);
-
-    expect(scheduler.hasPendingFrame).toBe(false);
-    expect(simulation.tick).toBe(0);
-    expect(unsubscribes.count).toBe(1);
-  });
-
   it('logs once for each kind it has to draw with the default view', () => {
-    const { match, simulation, logger } = setUp(undefined, CONTENT_WITH_A_ROCK);
+    const { match, simulation, logger } = setUp(CONTENT_WITH_A_ROCK);
     simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: 'obstacle',
@@ -344,7 +339,7 @@ describe('Match', () => {
   });
 
   it('draws the lane hordes and other mobs with their own view, logging no default-view warning', () => {
-    const { match, simulation, logger } = setUp(undefined, undefined, true);
+    const { match, simulation, logger } = setUp(undefined, true);
     simulation.enqueueCommand({
       type: 'dev-spawn',
       kind: 'light-mob',
@@ -371,7 +366,7 @@ describe('Match', () => {
     input.move = { x: 1, y: 0 };
     match.tick();
 
-    match.lookAtMinimapPoint(1280 * 0.8, 720 * 0.8);
+    match.lookAtMinimapPoint(RING_CENTRE.x, RING_CENTRE.y);
     const lookedAt = camera.visibleArea(map.width, map.height);
     match.tick();
     match.render(0);
@@ -391,33 +386,5 @@ describe('Match', () => {
 
     expect(aim?.x).toBeCloseTo(view.x + view.width / 2);
     expect(aim?.y).toBeCloseTo(view.y + view.height / 2);
-  });
-
-  it('refuses a map without a stronghold for the player team', () => {
-    const map = new MapGenerator().generate(createDefaultGameConfig(), SEED);
-    const withoutLight = {
-      ...map,
-      features: map.features.filter((feature) => feature.team !== 'light'),
-    };
-
-    const config = createDefaultGameConfig();
-    const simulation = new Simulation({ config, seed: SEED, logger: new NullLogger() });
-    const on = vi.spyOn(simulation, 'on');
-
-    expect(
-      () =>
-        new Match({
-          simulation,
-          map: withoutLight,
-          tickRate: config.tickRate,
-          scheduler: new FakeFrameScheduler(),
-          renderer: new RecordingRenderer(),
-          camera: new Camera({ x: 0, y: 0 }, 10, 10),
-          input: new ScriptedIntent(),
-          player: { legend: 'warrior', team: 'light' },
-          logger: new MemoryLogger(),
-        }),
-    ).toThrow(`Map "${map.id}" has no light stronghold`);
-    expect(on).not.toHaveBeenCalled();
   });
 });

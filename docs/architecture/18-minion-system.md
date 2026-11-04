@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-03
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -51,16 +51,16 @@ tree; this doc builds on them and never restates them.
 **Entity legend.** The entity types this system implements, with their `EntityKind` and family
 from doc [04 §1](04-entity-architecture.md#1-the-family-tree):
 
-| Entity type        | `EntityKind`                         | Family   | What this system does with it                                                                                                                                                         | Controller               |
-| ------------------ | ------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| Light lane minion  | `light-mob`                          | `Mob`    | Spawned in hordes by the Stronghold (opening hordes) and SpawnerTowers; marches, fights, dies                                                                                         | `MinionController`       |
-| Medium lane minion | `medium-mob`                         | `Mob`    | Spawned in hordes by BuffTowers                                                                                                                                                       | `MinionController`       |
-| Heavy lane minion  | `heavy-mob`                          | `Mob`    | Spawned in hordes by the Stronghold down the worst lane                                                                                                                               | `MinionController`       |
-| Tower guard        | a `Mob` kind with a guard definition | `Mob`    | Light guards at SpawnerTowers, medium at BuffTowers, ranged and melee at the Stronghold; spawned and respawned by the structure's `GuardPlan`; hold its perimeter; belong to no horde | `GuardController`        |
-| Camp mob           | a `Mob` kind with a camp definition  | `Mob`    | Forest camps (corner: MVP-if-time) spawn their group after the camp's cooldown (07 §6); held by `GuardController` with the camp as home (§7.1); in no horde                           | `GuardController`        |
-| Zone defender      | a `Mob` kind from a checkpoint table | `Mob`    | Spawned when a capture point crosses a checkpoint (07 §7); held by `GuardController` with the capture point as home (§7.1); in no horde                                               | `GuardController`        |
-| Bot Legend (laner) | `warrior`, `sentinel`, `magus`       | `Legend` | Gets a lane at match setup (§8); the doc 11 laner tree plays it                                                                                                                       | `BotLegendController`    |
-| Horde              | none (not an entity)                 | —        | The composite that groups lane minions: members, leader, formation, lane progress                                                                                                     | `HordeSystem` (a system) |
+| Entity type        | `EntityKind`                            | Family   | What this system does with it                                                                                                                                                         | Controller               |
+| ------------------ | --------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Light lane minion  | `light-mob`                             | `Mob`    | Spawned in hordes by the Stronghold (opening hordes) and SpawnerTowers; marches, fights, dies                                                                                         | `MinionController`       |
+| Medium lane minion | `medium-mob`                            | `Mob`    | Spawned in hordes by BuffTowers                                                                                                                                                       | `MinionController`       |
+| Heavy lane minion  | `heavy-mob`                             | `Mob`    | Spawned in hordes by the Stronghold down the worst lane                                                                                                                               | `MinionController`       |
+| Tower guard        | a `Mob` kind with a guard definition    | `Mob`    | Light guards at SpawnerTowers, medium at BuffTowers, ranged and melee at the Stronghold; spawned and respawned by the structure's `GuardPlan`; hold its perimeter; belong to no horde | `GuardController`        |
+| Camp mob           | a `Mob` kind with a camp definition     | `Mob`    | Forest camps (corner: MVP-if-time) spawn their group after the camp's cooldown (07 §6); held by `GuardController` with the camp as home (§7.1); in no horde                           | `GuardController`        |
+| Zone defender      | a `Mob` kind from a checkpoint table    | `Mob`    | Spawned when a capture point crosses a checkpoint (07 §7); held by `GuardController` with the capture point as home (§7.1); in no horde                                               | `GuardController`        |
+| Bot Legend (laner) | every playable class (`LEGEND_CLASSES`) | `Legend` | Gets a lane at match setup (§8); the doc 11 laner tree plays it                                                                                                                       | `BotLegendController`    |
+| Horde              | none (not an entity)                    | —        | The composite that groups lane minions: members, leader, formation, lane progress                                                                                                     | `HordeSystem` (a system) |
 
 **Scheduled here, designed elsewhere (MS-28).** The Rover (11 §4.7; it takes no lane, §8), the
 bot Legends' behaviour tree and ability use (11 §4.2) and A\* for Legends (10 §9) are built by the
@@ -110,7 +110,7 @@ terms, and the guards: `content/structures/guardPlans.ts`, one post per guard in
 laid out and refilled by `SpawnSystem`, `GuardController` sharing `ai/LeashBehaviour` with
 `MinionController`, `LeashedChaseMovementStrategy` and `GuardWithinLeashInvariant`. Interim: a
 guard's leash is measured from its structure's edge; a horde gathered at its objective acquires it
-from every rank, and attacking the objective ignores the leash and the aggro timeout (both in
+from every rank, and attacking the objective ignores the leash (both in
 `INBOX.md` for sign-off); the Stronghold, standing off the lane, is gathered at from the lane's end.
 Pull request M5b adds minion XP (`VeterancySystem`, `content/mobs/minionVeterancy.ts`, the
 `veteran` and `rallied` statuses) and the ghosted first wave (`AggroRuleDefinition.ghostFirstWaveTicks`,
@@ -131,36 +131,37 @@ of 2026-10-16. MS-5, MS-6, MS-14, MS-17, MS-18, MS-21 and MS-22 were withdrawn i
 the build split moved to the plan). MS-29 to MS-35 come from the owner's review of PR #38
 (2026-10-29 to 2026-10-30); MS-34, the chase limit, is recorded with its build in M2c.
 
-| #     | Decision                                                                                                                                                                                                                                          | Where      |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| MS-1  | All minion, horde and bot behaviour is scripted and deterministic in core. No model or network in the loop.                                                                                                                                       | all        |
-| MS-2  | This doc owns hordes, minion and guard behaviour and the spawn flow; doc 04 §7 and doc 11 §4.3–4.4 point here.                                                                                                                                    | all        |
-| MS-3  | Superseded by MS-28. Was: lane hordes, tower guards and bot lanes only; camps, bosses, turrets and checkpoint spawns stay in docs 07, 11 and 12.                                                                                                  | legend     |
-| MS-4  | A horde marches as a group and fights as individuals; survivors re-form and march on.                                                                                                                                                             | §4, §5, §6 |
-| MS-7  | Lane following targets the lane's flow field (10 §9).                                                                                                                                                                                             | §5         |
-| MS-8  | Spawning follows the full DISC-10 schedule.                                                                                                                                                                                                       | §3         |
-| MS-9  | The worst lane is one `LaneAssessment` over the game doc's terms, shared by every consumer. **Open**: the owner signs off the terms, weights and tie-break (§10). (amended 2026-10-30 by DEC-89: terms and weights settled; tie-break still open) | §3.3       |
-| MS-10 | A spawn that only partly fits under the unit cap spawns the members that fit and counts the rest as suppressed.                                                                                                                                   | §3.4       |
-| MS-11 | Target priority is doc 11's League-style aggro list, as content.                                                                                                                                                                                  | §6         |
-| MS-12 | Hordes attack structures in lane order; a horde holds at a gate that is not breakable yet.                                                                                                                                                        | §6.2       |
-| MS-13 | Guards follow the doc 11 baseline; the owner's Tower Guardians refinement is guard content plus a second idle rule.                                                                                                                               | §7         |
-| MS-15 | No team commander, goal seam or lane redirection in the MVP; all are [post-MVP backlog](../plan/backlog-post-mvp.md) items.                                                                                                                       | backlog    |
-| MS-16 | Minion modifiers keep their own status: strength by distance (MVP-full, DISC-24) and enraged (MVP) ship with the MVP; minion XP and the ghosted first wave are MVP-if-time.                                                                       | plan       |
-| MS-19 | Steering follows 10 §9: separation from all neighbours, and obstacle and wall avoidance always outrank keeping a formation slot.                                                                                                                  | §5.2       |
-| MS-20 | Match setup fills each lane with bot Legends up to `GameConfig.match.legendsPerLane`, counting the human's Legend in its lane; the Rover takes no lane.                                                                                           | §8         |
-| MS-23 | **Owner, DEC-43.** A horde marches in formation; members break formation to fight and to steer around obstacles, and re-form afterwards. Shape and spacing are content.                                                                           | §5.1       |
-| MS-24 | **Owner, DEC-44.** A horde advances up its lane toward the enemy from where it spawns; it turns aside only to attack an enemy that is right there.                                                                                                | §3.2, §4   |
-| MS-25 | **Owner, DEC-45, DEC-46.** Every lane minion spawns as part of a horde, developer-menu spawns included; no mob exists without its horde record.                                                                                                   | §3.2, §3.5 |
-| MS-26 | A mob disengages with `stop`, which clears both heading and attack target (03 §3).                                                                                                                                                                | §6.1       |
-| MS-27 | Controllers own target selection: minions and guards rank candidates in `ai/`, not through a `TargetingStrategy`.                                                                                                                                 | §6.1       |
-| MS-28 | **Owner, 2026-10-27 (amends DEC-47).** The minion plan schedules every AI-driven enemy except bosses; camp mobs and zone defenders are leashed guards (§7.1).                                                                                     | §7.1, plan |
-| MS-29 | **Owner, #38-A.** Horde membership lives only in `state.hordes`: a mob carries no `hordeId`, and the invariant checks the store's records.                                                                                                        | §4         |
-| MS-30 | **Owner, DEC-84, DEC-87, DEC-127.** One opening horde per lane spawns at the lane's base at load-in; every scheduled wave is timed from the countdown's end.                                                                                      | §3.1, §3.2 |
-| MS-31 | **Owner, Call 4 B.** A horde spawns at its structure's centre; the lane field leads every reachable blocked corridor cell out the shortest way (10 §9).                                                                                           | §3.2, §5.2 |
-| MS-32 | **Owner, Call 2 (DEC-128).** Conversion swaps a mob's brain: a converted mob leaves its horde, joins none, and fights on its own.                                                                                                                 | §4, §6.1   |
-| MS-33 | **Owner, Call 5.** The formation anchor holds while any member fights, not only the leader, so the horde fights as one.                                                                                                                           | §4         |
-| MS-34 | **Owner, DEC-135.** The aggro duration ends only a chase of a Legend; minions and guards keep any other unit target until it dies or the leash breaks.                                                                                            | §6.1, §7   |
-| MS-35 | **Owner, 2026-10-30.** A mob that would slide along a wall faces the slide direction and walks that way; a march never stalls at a wall.                                                                                                          | §5.2       |
+| #     | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Where      |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| MS-1  | All minion, horde and bot behaviour is scripted and deterministic in core. No model or network in the loop.                                                                                                                                                                                                                                                                                                                                                                                                                       | all        |
+| MS-2  | This doc owns hordes, minion and guard behaviour and the spawn flow; doc 04 §7 and doc 11 §4.3–4.4 point here.                                                                                                                                                                                                                                                                                                                                                                                                                    | all        |
+| MS-3  | Superseded by MS-28. Was: lane hordes, tower guards and bot lanes only; camps, bosses, turrets and checkpoint spawns stay in docs 07, 11 and 12.                                                                                                                                                                                                                                                                                                                                                                                  | legend     |
+| MS-4  | A horde marches as a group and fights as individuals; survivors re-form and march on.                                                                                                                                                                                                                                                                                                                                                                                                                                             | §4, §5, §6 |
+| MS-7  | Lane following targets the lane's flow field (10 §9).                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | §5         |
+| MS-8  | Spawning follows the full DISC-10 schedule.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | §3         |
+| MS-9  | The worst lane is one `LaneAssessment` over the game doc's terms, shared by every consumer. **Open**: the owner signs off the terms, weights and tie-break (§10). (amended 2026-10-30 by DEC-89: terms and weights settled; tie-break still open)                                                                                                                                                                                                                                                                                 | §3.3       |
+| MS-10 | A spawn that only partly fits under the unit cap spawns the members that fit and counts the rest as suppressed.                                                                                                                                                                                                                                                                                                                                                                                                                   | §3.4       |
+| MS-11 | Target priority is doc 11's League-style aggro list, as content.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | §6         |
+| MS-12 | Hordes attack structures in lane order; a horde holds at a gate that is not breakable yet.                                                                                                                                                                                                                                                                                                                                                                                                                                        | §6.2       |
+| MS-13 | Guards follow the doc 11 baseline; the owner's Tower Guardians refinement is guard content plus a second idle rule.                                                                                                                                                                                                                                                                                                                                                                                                               | §7         |
+| MS-15 | No team commander, goal seam or lane redirection in the MVP; all are [post-MVP backlog](../plan/backlog-post-mvp.md) items.                                                                                                                                                                                                                                                                                                                                                                                                       | backlog    |
+| MS-16 | Minion modifiers keep their own status: strength by distance (MVP-full, DISC-24) and enraged (MVP) ship with the MVP; minion XP and the ghosted first wave are MVP-if-time.                                                                                                                                                                                                                                                                                                                                                       | plan       |
+| MS-19 | Steering follows 10 §9: separation from all neighbours, and obstacle and wall avoidance always outrank keeping a formation slot.                                                                                                                                                                                                                                                                                                                                                                                                  | §5.2       |
+| MS-20 | Match setup fills each lane with bot Legends up to `GameConfig.match.legendsPerLane`, counting the human's Legend in its lane; the Rover takes no lane.                                                                                                                                                                                                                                                                                                                                                                           | §8         |
+| MS-23 | **Owner, DEC-43.** A horde marches in formation; members break formation to fight and to steer around obstacles, and re-form afterwards. Shape and spacing are content.                                                                                                                                                                                                                                                                                                                                                           | §5.1       |
+| MS-24 | **Owner, DEC-44.** A horde advances up its lane toward the enemy from where it spawns; it turns aside only to attack an enemy that is right there.                                                                                                                                                                                                                                                                                                                                                                                | §3.2, §4   |
+| MS-25 | **Owner, DEC-45, DEC-46.** Every lane minion spawns as part of a horde, developer-menu spawns included; no mob exists without its horde record.                                                                                                                                                                                                                                                                                                                                                                                   | §3.2, §3.5 |
+| MS-26 | A mob disengages with `stop`, which clears both heading and attack target (03 §3).                                                                                                                                                                                                                                                                                                                                                                                                                                                | §6.1       |
+| MS-27 | Controllers own target selection: minions and guards rank candidates in `ai/`, not through a `TargetingStrategy`.                                                                                                                                                                                                                                                                                                                                                                                                                 | §6.1       |
+| MS-28 | **Owner, 2026-10-27 (amends DEC-47).** The minion plan schedules every AI-driven enemy except bosses; camp mobs and zone defenders are leashed guards (§7.1).                                                                                                                                                                                                                                                                                                                                                                     | §7.1, plan |
+| MS-29 | **Owner, #38-A.** Horde membership lives only in `state.hordes`: a mob carries no `hordeId`, and the invariant checks the store's records.                                                                                                                                                                                                                                                                                                                                                                                        | §4         |
+| MS-30 | **Owner, DEC-84, DEC-87, DEC-127.** One opening horde per lane spawns at the lane's base at load-in; every scheduled wave is timed from the countdown's end.                                                                                                                                                                                                                                                                                                                                                                      | §3.1, §3.2 |
+| MS-31 | **Owner, Call 4 B.** A horde spawns at its structure's centre; the lane field leads every reachable blocked corridor cell out the shortest way (10 §9).                                                                                                                                                                                                                                                                                                                                                                           | §3.2, §5.2 |
+| MS-32 | **Owner, Call 2 (DEC-128).** Conversion swaps a mob's brain: a converted mob leaves its horde, joins none, and fights on its own.                                                                                                                                                                                                                                                                                                                                                                                                 | §4, §6.1   |
+| MS-33 | **Owner, Call 5.** The formation anchor holds while any member fights, not only the leader, so the horde fights as one.                                                                                                                                                                                                                                                                                                                                                                                                           | §4         |
+| MS-34 | **Owner, DEC-135.** The aggro duration ends only a chase of a Legend; minions and guards keep any other unit target until it dies or the leash breaks. Superseded by MS-36.                                                                                                                                                                                                                                                                                                                                                       | §6.1, §7   |
+| MS-35 | **Owner, 2026-10-30.** A mob that would slide along a wall faces the slide direction and walks that way; a march never stalls at a wall.                                                                                                                                                                                                                                                                                                                                                                                          | §5.2       |
+| MS-36 | **Owner, DEC-144.** Distance, then time: a mob fights a target inside its leash with no time limit, a Legend too, and drops it only after chasing it outside the leash for `leashGraceTicks`; it takes any enemy in reach first, and an enemy attacking a horde-mate within `callForHelpRadius` is in reach. After a leash break it leaves alone only the enemy that escaped, for `aggroCooldownTicks`. Guards have no grace and no rest, never take or keep a target outside their circle, and defend each other anywhere in it. | §6.1, §7   |
 
 ## 2. Where it sits
 
@@ -378,11 +379,10 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
 `attack-target` sets and `stop` clears, and hands the strategy the target and an arrival radius
 (the attack reach), so the strategy never reads components:
 
-| Mob state (§6.1) | `Combat.targetId` | Steering target                                                                    |
-| ---------------- | ----------------- | ---------------------------------------------------------------------------------- |
-| marching         | none              | its formation slot around the anchor, with arrival                                 |
-| engaging         | set               | the target, with arrival at attack reach; formation is broken                      |
-| returning        | none              | its formation slot again; the controller switches it to marching on arrival (§6.1) |
+| Mob state (§6.1) | `Combat.targetId` | Steering target                                                                  |
+| ---------------- | ----------------- | -------------------------------------------------------------------------------- |
+| marching         | none              | its formation slot around the anchor, with arrival; after a fight, the walk back |
+| engaging         | set               | the target, with arrival at attack reach; formation is broken                    |
 
 - `PathingSystem` combines the strategy's target with the rest of 10 §9 by priority: **obstacle
   and wall avoidance**, then **separation from all neighbours** (through `SpatialHash`,
@@ -406,27 +406,43 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
 
 ### 6.1 `MinionController`
 
-A state machine per mob, `marching → engaging → returning → marching`, with memory
-`{ fsm, targetId, aggroUntilTick, cooldownUntilTick, leashAnchor }` in its brain (11 §2). It runs at
-the minion cadence of 11 §6. Target selection lives here (MS-27): the ranking is a pure helper in
-`ai/` that `GuardController` shares; it is not a `TargetingStrategy`.
+A state machine per mob, `marching ⇄ engaging`, with memory
+`{ fsm, targetId, breakAtTick, cooldownUntilTick, escapedId, leashAnchor }` in its brain
+(11 §2). It runs at the minion cadence of 11 §6. Target selection lives here (MS-27): the ranking
+is a pure helper in `ai/` that `GuardController` shares; it is not a `TargetingStrategy`.
 
-- **marching:** no command; the movement strategy keeps the mob in its slot.
-- **acquire** (at cadence): candidates from `Perception.unitsWithin(pos, acquisitionRadius,
-{ hostileTo: team })` plus the horde's next objective (§6.2); ranked by the aggro priority list,
-  then distance, then id. Switch only to a strictly higher priority. The list and its numbers are
-  the `AggroRuleDefinition` content of 11 §4.3 (League's order, Dota's aggro duration and
-  cooldown, all `TUNE`), including "call for help".
-- **engaging:** one `attack-target { targetId }` on entering (and on each switch). From then on
-  the attack is `CombatSystem`'s job (05) and the chase is the movement strategy's (§5.2). It ends
-  when the target dies, the mob leaves `leashRadius` of `leashAnchor`, or, for a Legend target,
-  `aggroDurationTicks` elapse (MS-34): any other unit is fought until it dies or the leash breaks.
-- **returning:** one `stop { actorId }` on entering, which clears the attack target (MS-26), so the
-  mob neither keeps hitting nor keeps chasing. The strategy steers it back to its slot; within
-  `reformDistance` of the slot it is `marching` again, with `aggroCooldownTicks` before it may
-  re-acquire.
+The rule is "distance, then time" (MS-36): a mob fights its target for as long as the target stays
+inside its leash, and drops it only after chasing it outside the leash for a grace time.
+It never walks on past an enemy in reach, except, for a short cooldown, the enemy that just
+escaped its leash (DEC-144 F).
 
-The leash anchor is the mob's position when it left `marching`, so a mob never chases a Legend
+- **marching:** no command; the movement strategy keeps the mob in its slot, or walks it back
+  there after a fight. There is no separate returning state (DEC-155).
+- **acquire** (at cadence, in every state): candidates from `Perception.unitsWithin(pos, radius,
+{ hostileTo: team })` plus the horde's next objective (§6.2). A unit counts when it is within
+  `acquisitionRadius`, or within `callForHelpRadius` while it attacks a horde-mate ("call for
+  help"), and when it lies inside a leash anchored where the mob stands. Candidates rank by the
+  aggro priority list, then distance, then id. The list and its numbers are the
+  `AggroRuleDefinition` content of 11 §4.3 (League's order, Dota's cooldown, all `TUNE`).
+- **engaging:** one `attack-target { targetId }` on entering and on each switch; each time, the
+  leash anchor moves to where the mob stands. From then on the attack is `CombatSystem`'s job (05)
+  and the chase is the movement strategy's (§5.2).
+  - While the target is inside `leashRadius` of the anchor, the mob fights it with no time limit,
+    a Legend too, and switches only to a strictly higher priority.
+  - When the target leaves the leash, the mob takes the best other enemy in reach at once. With
+    none, it keeps chasing and attacking the target for `leashGraceTicks` (DEC-144 E): a target
+    back inside in that time is fought on; otherwise the leash breaks, the mob emits one `stop` and
+    is `marching` again.
+  - When the target dies, the mob takes the next enemy in reach at once; with none it is
+    `marching` again, with one `stop` and no cooldown.
+- **after a leash break:** the `stop` cleared the attack target (MS-26), so the mob neither keeps
+  hitting nor keeps chasing. The strategy steers it back to its slot, and it fights any enemy in
+  reach on the way. For `aggroCooldownTicks` from the leash break it leaves alone the enemy that
+  escaped (`escapedId`), Legend or minion, so that enemy cannot pull it out again at once
+  (DEC-144 F). It fights every other enemy in reach, and the escaped enemy too while that enemy
+  attacks the mob or a horde-mate.
+
+The leash anchor is where the mob stood when it took its target, so a mob never chases a Legend
 across the map.
 
 A converted mob (one whose team changes) gets a new brain in place of `MinionController` and
@@ -454,19 +470,30 @@ Tower guards (light guards at a `SpawnerTower`, "numerous" medium guards at a `B
 and melee guards at the `Stronghold`, per the game doc) are Mobs owned by their structure's
 `Spawner`; they belong to no horde.
 
-- `GuardController` runs `holding → engaging → returning → holding`. It reuses the acquire, engage
-  and return logic of §6.1 through a shared `LeashBehaviour` helper (DRY), including `stop` to
-  disengage.
+- `GuardController` runs `holding ⇄ engaging`. It reuses the acquire and engage logic of §6.1
+  through a shared `LeashBehaviour` helper (DRY), including `stop` to disengage; with no target,
+  the movement walks it back to its post.
 - The differences are data: the leash is measured from the home structure, its radius is the
   structure's `GuardPlan.leashRadius` (07 §6; game doc: guards "don't leave the tower's
   perimeter") and the idle state holds the guard's post near the structure. A post on blocked
   ground or inside a map object (a fort's walls reach past its structure's collider) moves to the
   nearest clear point inside the leash, straight out first, then around the ring (DEC-138).
+- A guard's leash is that circle around the structure's edge, not an anchor (MS-36), and its
+  aggro content gives it no grace (DEC-144 E). A guard never takes or keeps a target outside it,
+  and takes the next enemy inside it. When its target leaves the circle it stops at once and
+  walks back to its post, so an enemy that follows is fought nearer
+  the structure, under its fire once towers shoot.
+- A guard has no rest after a leash break either, and the guards of one structure defend each
+  other: an enemy that attacks any of them, anywhere in the circle, is in reach of all of them
+  (DEC-144). `GuardController` supplies this as its `LeashRules` (who is a mate, how far help
+  reaches); the minion's are its horde and `callForHelpRadius`.
 - Guards move with `LeashedChaseMovementStrategy` (04 §4; 10 §9's "seek/arrival inside their
   leash"): chase the target `PathingSystem` hands it (from `Combat.targetId`, §5.2) while one is
   set, otherwise return to the post.
 - `GuardWithinLeashInvariant` (15 §3) checks that no guard is farther than `leashRadius` plus a
-  `TUNE` tolerance (the distance it can cover between two decisions) from its structure.
+  `TUNE` tolerance from its structure: the distance it can cover between two decisions, plus the
+  farthest it stands from a target in reach, since a guard fighting a target at the circle's edge
+  can stand beyond it (DEC-144).
 - Spawning and respawning are the structure's `GuardPlan`, run by `SpawnSystem`, never controller
   logic (SRP). A lost SpawnerTower shrinks the Stronghold's guard table (DISC-21, 07 §8).
 
@@ -509,6 +536,11 @@ where it comes from.
   `entity-10` would come before `entity-9`) into the lane with the fewest Legends, lowest index
   first.
 - The Rover (`RoverController`, 11 §4.7) takes no lane.
+- The bot difficulty each role plays (lane bots `normal`, the Rover `rover`) is the bot roster's
+  `difficulties` field in core `content/teams/botRoster.ts`, checked against the loaded bot
+  difficulties at content load by `content/validation/BotRosterDifficultyRule.ts` (DEC-149).
+  `game/session/botRosterSlots.ts` takes it per bot role from the session's injected catalogue; the
+  client's `contentSlice` default holds empty placeholders only.
 - The lane is stored as the `MapLane.id` in the bot-Legend `AiMemory` (11 §2) and does not change
   during the match.
 
@@ -528,8 +560,8 @@ Per doc 11 §8, plus:
 - `LaneFollowMovementStrategy`: a horde walks a lane in formation with no overlap beyond a
   tolerance and no allocation per unit; a member blocked by an obstacle leaves its slot and
   re-forms.
-- `MinionController` and `GuardController`: table-driven transitions; `returning` emits `stop` and
-  the target is cleared; gate holding until `structure-breakability-changed`.
+- `MinionController` and `GuardController`: table-driven transitions; a leash break emits `stop`,
+  clears the target and rests the mob; gate holding until `structure-breakability-changed`.
 - `GuardWithinLeashInvariant`: a test that deliberately drags a guard past its leash triggers it.
 - Camp mobs and checkpoint defenders (§7.1): a camp is inert before its cooldown and emits
   `camp-cleared` when emptied; each checkpoint spawns its listed composition; a camp mob or

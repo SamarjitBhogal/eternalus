@@ -5,8 +5,12 @@ import type { SessionContext, SessionState } from '../../SessionController.types
 export class MenuState implements SessionState {
   public readonly phase: SessionPhase = 'menu';
 
-  /** Drops any previous setup and shows the home route. */
+  /**
+   * Releases the match's assets (`leave-match` skips results; a no-op once released), drops any
+   * previous setup and shows the home route.
+   */
   public enter(context: SessionContext): void {
+    context.releaseAssets('match');
     context.clearMatchSetup();
     context.bus.emit('menu-route', { route: 'home' });
   }

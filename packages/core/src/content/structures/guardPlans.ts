@@ -3,8 +3,11 @@ import type { GuardPlanDefinition } from './structures.types';
 const LEASH = 8; // TUNE: balancing.md "leash radius 8 m"
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
 const POST_GAP = 2; // TUNE: no reference value; just outside the footprint
-// TUNE: a guard decides every 10 ticks at up to 3.5 m/s (about 1.2 m), plus a margin.
-const TOLERANCE = 2;
+// TUNE: owner 2026-11-02 (DEC-144): one decision's walk (10 ticks at up to 3.5 m/s) plus the
+// farthest a guard stands from a target in reach (radii + reach, up to 0.8 + 1.25 + 1.5 = 3.55 m
+// for a heavy guard against a Sentinel); at most 4.5 m for one guard, so about 0.5 m of margin.
+// guardPlans.test.ts checks the sum against every guard and target in content.
+const TOLERANCE = 5;
 
 const CAMP = {
   leashRadius: 6, // TUNE: balancing.md camp leash

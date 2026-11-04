@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-03
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -35,7 +35,7 @@ carried over unchanged.
 
 ```mermaid
 flowchart LR
-  IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q[CommandQueue]
+  IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q["CommandQueues (bots', external)"]
   Q -->|next tick| APPLY[CommandApplySystem]
   APPLY --> SYS[SystemPipeline: AiSystem ... MovementSystem, CombatSystem, DeathSystem ... InvariantSystem]
   SYS -->|mutates| STATE[(GameState)]
@@ -132,11 +132,13 @@ export type Command =
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
 
-- `CommandQueue` is drained once (DEC-20), at the start of each `step()`, in enqueue order; a
-  command enqueued while a step runs (a bot deciding during `AiSystem`) waits for the next drain, so
-  every command applies exactly one tick boundary after it was issued. The client enqueues the
-  human's commands first, then controllers enqueue in store order during `AiSystem`, so the order is
-  deterministic.
+- Two `CommandQueue`s, the bots' (filled during `AiSystem`) and the external one
+  (`enqueueCommand`: player, developer menu), are drained once (DEC-20), at the start of each
+  `step()`: the bots' first, then the external, each in enqueue order (DEC-156). A command enqueued
+  while a step runs (a bot deciding during `AiSystem`, an event handler) waits for the next drain,
+  so every command applies exactly one tick boundary after it was issued. Controllers enqueue in
+  store order, so the order is deterministic, and a replay, which feeds the external commands
+  before each step, reproduces it.
 - `applyCommand(command, handlers, ctx)` dispatches to the handler registered for
   `command.type` (DEC-20): one `CommandHandler` class per type in `commands/handlers/`, listed in
   `commands/defaultCommandHandlers.ts` (the single place of change, 02 §9). The registry's type
@@ -323,19 +325,29 @@ component with simulation state adds its fields in `StateHasher`. `Simulation.ha
 enough to call every N ticks in tests and on demand from the developer menu.
 
 ```ts
-// Sketch: packages/core/src/diagnostics/Replay.types.ts
-export type Replay = {
+// Sketch: `ReplayOf<S>` and `ReplayTargetFactoryOf<S>` are generic, in
+// packages/core/src/diagnostics/Replay.types.ts; the concrete types below are in
+// packages/core/src/Simulation.types.ts.
+// What the match was built with: the required `seed` and `config` and the optional `map`,
+// `mapObjects` and `roster` of `SimulationOptions`.
+export type ReplaySetup = Pick<
+  SimulationOptions,
+  'seed' | 'config' | 'map' | 'mapObjects' | 'roster'
+>;
+export type Replay = ReplaySetup & {
   readonly versions: { readonly core: string; readonly content: string; readonly schema: number };
-  readonly seed: number;
-  readonly config: GameConfig;
   readonly commands: readonly { readonly tick: number; readonly command: Command }[];
   readonly checkpoints: readonly { readonly tick: number; readonly hash: number }[];
 };
 ```
 
-A replay is seed + config + command log + versions; `runReplay(replay, createTarget)` builds a
-fresh `Simulation` through the factory it is given (so `diagnostics/` never imports
-`Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
+A replay is self-contained: its setup (seed, config and, when the match had them, the generated
+map, the map objects and the bot roster), the command log and the versions. The setup is plain
+data and `exportReplay()` copies it from the options the match was built with, so a replay
+reproduces a match whose world the client prepared (the roster can depend on the player's pick)
+without the code that prepared it. `runReplay(replay, createTarget)` builds a fresh `Simulation`
+through the factory it is given, which receives the replay itself and builds from its setup
+fields (so `diagnostics/` never imports `Simulation`), feeds the commands at their ticks, and compares `hash()` at each checkpoint.
 Replays are the regression-test format (fixtures under `__fixtures__/`, format in
 [15](15-diagnostics-and-runtime-testing.md) §7), the bug-report format (the developer menu can dump
 one) and the match-history record persisted by `ReplayRepository`.
@@ -419,11 +431,13 @@ a view never needs anything from the entity beyond its `definitionId`.
 The simulation kernel (sprint 1.1, PR #13) implements §2–§10 as written, with these interim gaps,
 each closed by the session or phase named:
 
-- `Simulation` takes `(config, seed, logger, systems = [])` (Sprint 1 brief); it becomes
-  `SimulationOptions` when content and `debug` arrive (four parameters at most, CONTRIBUTING §4).
-  No `exportReplay()` or `dispose()` yet. Its `EntityFactory` has an empty registry until session
-  C passes `createDefaultEntityRegistry()` (marked `TODO` in `Simulation.ts`).
-- `move`, `stop`, `attack-target`, `cast-ability`, `intent` and `dev-set-controller` are routed to
+- `Simulation` takes one `SimulationOptions` object (`SimulationOptions` in
+  `packages/core/src/Simulation.types.ts` lists its fields; CONTRIBUTING §4). Its `EntityFactory`
+  uses `createDefaultEntityRegistry()`. `exportReplay()` and `recentContext()` exist (ADR 0025 §4:
+  a log of the external commands and replay checkpoints, both outside the hashed state); no
+  `dispose()` yet.
+- `move`, `stop` and `attack-target` have their own handlers (`MoveHandler`, `StopHandler`,
+  `AttackTargetHandler`). `cast-ability`, `intent` and `dev-set-controller` are routed to
   `UnsupportedCommandHandler` (rejected `not-supported`) until their systems exist; `pick-up`,
   `throw`, `interact` and `dev-set-assert-level` are not in the union yet.
 - `dev-spawn` and `dev-remove-entity` spawn and remove directly and emit `entity-spawned` /

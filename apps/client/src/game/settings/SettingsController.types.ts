@@ -17,4 +17,6 @@ export type SettingsControllerDeps = {
   readonly persistence: SettingsStorage;
   /** Where load and save failures are reported. */
   readonly logger: Logger;
+  /** True on an Apple device, where Cmd (Meta) takes the place of Ctrl (DEC-118). */
+  readonly isApplePlatform: boolean;
 };
