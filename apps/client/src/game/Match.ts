@@ -14,6 +14,7 @@ import {
 import type { MatchDeps } from './Match.types';
 import { MatchBridge } from './MatchBridge';
 import { MatchCamera } from './MatchCamera';
+import { MatchViewControls } from './MatchViewControls';
 import { PlayerCommands } from './PlayerCommands';
 import { strongholdOf } from './seatedConfig';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
@@ -25,17 +26,18 @@ import { SceneView } from './views/SceneView';
 import { WorldObjectsView } from './views/WorldObjectsView';
 
 /**
- * The composition root of one match (architecture 08 §7): it wires the simulation, the game
- * loop, the renderer, the camera, the player's intent and the views, and owns their lifetime.
- * Each tick turns the player's intent into commands (`PlayerCommands`), steps the simulation and
- * keeps the last two snapshots; each frame follows the player with the camera and draws the scene
- * and the minimap (inside the HUD ring). The player's Legend is the simulation's, spawned at its
- * team's stronghold by core from the config's seat. Which part of the world is shown (the following camera, or the free
- * view that dragging and the overview switch to) is `MatchCamera`'s. Buildings stay in the same
- * world scene: `BuildingRoofs` cuts away the roof of the building the player's Legend stands in
- * (DEC-143) and those the developer explorer opens, and the views draw those interiors in place.
- * The minimap is player HUD, drawn every frame whatever the developer flag (DEC-143). The world
- * (map, presentation, map objects) arrives prepared (06 §1); its `MatchBridge` publishes to the UI.
+ * The composition root of one match (architecture 08 §7): it wires the simulation, the game loop,
+ * the renderer, the camera, the player's intent and the views, and owns their lifetime. Each tick
+ * turns the player's intent into commands (`PlayerCommands`), steps the simulation and keeps the
+ * last two snapshots; each frame follows the player with the camera and draws the scene and the
+ * minimap (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's
+ * stronghold by core from the config's seat. Which part of the world is shown (the following
+ * camera, or the free view that dragging and the overview switch to) is `MatchCamera`'s. Buildings
+ * stay in the same world scene: `BuildingRoofs` cuts away the roof of the building the player's
+ * Legend stands in (DEC-143) and those the developer explorer opens, and the views draw those
+ * interiors in place. The minimap is player HUD, drawn every frame whatever the developer flag
+ * (DEC-143). The world (map, presentation, map objects) arrives prepared (06 §1); its `MatchBridge`
+ * publishes to the UI. The canvas gestures act through its `controls` (`MatchViewControls`).
  */
 export class Match implements LoopTarget {
   private readonly loop: GameLoop;
@@ -60,6 +62,9 @@ export class Match implements LoopTarget {
   private current: Snapshot;
 
   private readonly playerId: EntityId | null;
+
+  /** What the canvas gestures do to this match: camera, minimap, roofs, explorer attack. */
+  public readonly controls: MatchViewControls;
 
   /**
    * Creates the match, takes the player's Legend from the simulation's snapshot (core spawned it
@@ -106,20 +111,20 @@ export class Match implements LoopTarget {
     this.bridge = new MatchBridge({ ...bridge, tickRate, map });
     this.current = simulation.snapshot();
     this.playerId = this.current.match.humanLegendId;
+    this.controls = new MatchViewControls({
+      camera: this.camera,
+      roofs: this.roofs,
+      commands: this.commands,
+      miniMap: this.world.miniMap,
+      playerId: this.playerId,
+      mapObjects: () => this.current.mapObjects ?? [],
+    });
     camera.lookAt(spawnPoint);
   }
 
   /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
   public get playerEntityId(): EntityId | null {
     return this.playerId;
-  }
-
-  /**
-   * Whether the developer explorer opened any roof (the toolbar then offers to restore them); the
-   * roof of the player's building does not count.
-   */
-  public get hasDeveloperRoofs(): boolean {
-    return this.roofs.hasOpened;
   }
 
   /** The latest snapshot. */
@@ -192,79 +197,6 @@ export class Match implements LoopTarget {
    */
   public crashed(error: unknown): void {
     this.deps.onCrash({ error, tick: this.deps.simulation.tick });
-  }
-
-  /**
-   * Moves the camera to the world point under a minimap click and stops following the player
-   * until the player moves again.
-   *
-   * @returns Whether the click was on the minimap.
-   */
-  public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
-    const { screenWidth, screenHeight } = this.camera;
-    const target = this.world.miniMap.worldPointAt(screenX, screenY, screenWidth, screenHeight);
-    if (target === null) {
-      return false;
-    }
-    this.camera.lookAt(target);
-    return true;
-  }
-
-  /** Drags the view by a screen offset (device pixels), switching to the free view. */
-  public panBy(screenDx: number, screenDy: number): void {
-    this.camera.panBy(screenDx, screenDy);
-  }
-
-  /** Zooms whichever view is on screen; `factor` above 1 zooms in. */
-  public zoomBy(factor: number): void {
-    this.camera.zoomBy(factor);
-  }
-
-  /**
-   * The developer explorer's click: cuts away the roof of the building under the screen point
-   * (device pixels), or puts back one it cut away. The view does not move.
-   * @returns Whether a roof was toggled: not on open ground or the player's building (DEC-150).
-   */
-  public toggleRoofAt(screenX: number, screenY: number): boolean {
-    return this.roofs.toggleAt(this.camera.worldAt(screenX, screenY));
-  }
-
-  /**
-   * The explorer's plain click that is no roof click (DEC-150): the player's Legend attacks the
-   * living map object under the screen point (device pixels), once; no Legend, no attack.
-   */
-  public attackAt(screenX: number, screenY: number): void {
-    if (this.playerId === null) return;
-    const point = this.camera.worldAt(screenX, screenY);
-    this.commands.attackAt(this.playerId, point, this.current.mapObjects ?? []);
-  }
-
-  /**
-   * Shows the whole battlefield in the free view and puts back every roof the developer cut away
-   * (the player's building stays open).
-   */
-  public overview(): void {
-    this.camera.overview();
-    this.roofs.restore();
-  }
-
-  /**
-   * The developer explorer was hidden: puts back the roofs the developer cut away (the player's
-   * building stays open) and returns to the following camera at its base zoom, so developer state
-   * does not stay in normal play (DEC-143).
-   */
-  public leaveExplorer(): void {
-    this.roofs.restore();
-    this.camera.leaveExplorer();
-  }
-
-  /**
-   * Whether the canvas gestures own the main button's press (a minimap click, or any press with the
-   * developer explorer shown): the held button is then no attack, and a plain click with the
-   * explorer attacks on its release instead (`attackAt`, DEC-150; 06 §10, input arbitration).
-   */
-  public setPointerClaimed(isClaimed: boolean): void {
-    this.commands.setPointerClaimed(isClaimed);
   }
 
   /**

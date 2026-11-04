@@ -1,10 +1,11 @@
-import type { Match } from './Match';
 import type { MatchViewport } from './MatchViewport.types';
+import type { MatchViewControls } from './MatchViewControls';
 
 /** What the canvas pointer controls drive and listen on. */
 export type CanvasPointerControlsDeps = {
-  readonly match: Pick<
-    Match,
+  /** The match's view controls (`Match.controls`). */
+  readonly controls: Pick<
+    MatchViewControls,
     | 'lookAtMinimapPoint'
     | 'panBy'
     | 'zoomBy'

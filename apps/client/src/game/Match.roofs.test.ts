@@ -112,7 +112,7 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);
     const cathedral = roofsDrawn('cathedral-lane-1');
     expect(cathedral.drawn).toBe(cathedral.of);
-    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
   });
 
   it('puts the roof back when the Legend walks out of the building', () => {
@@ -183,24 +183,24 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     match.tick();
     const onPlayer = toScreen(playerPosition() ?? { x: -1, y: -1 });
 
-    expect(match.toggleRoofAt(onPlayer.x, onPlayer.y)).toBe(false);
+    expect(match.controls.toggleRoofAt(onPlayer.x, onPlayer.y)).toBe(false);
 
-    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);
   });
 
   it("combines with the developer's roofs: the overview restores those, not the Legend's", () => {
     const { match, roofsDrawn, toScreen, cathedral: centre } = setUp();
     match.tick();
-    match.overview();
+    match.controls.overview();
     const onCathedral = toScreen(centre ?? { x: -1, y: -1 });
-    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.hasDeveloperRoofs).toBe(true);
+    expect(match.controls.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.controls.hasDeveloperRoofs).toBe(true);
     expect(roofsDrawn('cathedral-lane-1').drawn).toBe(0);
 
-    match.overview();
+    match.controls.overview();
 
-    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
     const cathedral = roofsDrawn('cathedral-lane-1');
     expect(cathedral.drawn).toBe(cathedral.of);
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);

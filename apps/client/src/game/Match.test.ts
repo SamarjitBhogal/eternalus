@@ -195,11 +195,11 @@ describe('Match', () => {
     input.isAttacking = true;
     input.aim = { x: (corner.x + opposite.x) / 2, y: (corner.y + opposite.y) / 2 };
 
-    match.setPointerClaimed(true);
+    match.controls.setPointerClaimed(true);
     match.tick();
     match.tick();
     expect(attacks()).toBe(0);
-    match.setPointerClaimed(false);
+    match.controls.setPointerClaimed(false);
     match.tick();
 
     expect(attacks()).toBe(1);
@@ -223,7 +223,7 @@ describe('Match', () => {
     const attacks = () =>
       enqueue.mock.calls.filter(([command]) => command.type === 'attack-target');
     match.tick();
-    match.attackAt(onHouse.x, onHouse.y);
+    match.controls.attackAt(onHouse.x, onHouse.y);
 
     const targetId = match.snapshot.mapObjects?.find(({ id }) => id === house?.id)?.entityId;
     expect(targetId).toEqual(expect.any(String));
@@ -236,11 +236,11 @@ describe('Match', () => {
   it('reports closed roofs after the same building is toggled twice', () => {
     const { match } = setUp();
     // The following camera initially centres on the light stronghold.
-    expect(match.hasDeveloperRoofs).toBe(false);
-    expect(match.toggleRoofAt(640, 360)).toBe(true);
-    expect(match.hasDeveloperRoofs).toBe(true);
-    expect(match.toggleRoofAt(640, 360)).toBe(true);
-    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.controls.hasDeveloperRoofs).toBe(true);
+    expect(match.controls.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
     match.destroy();
   });
   it("has the player's Warrior at the Light stronghold from construction, before any tick", () => {
@@ -298,7 +298,7 @@ describe('Match', () => {
     const { match, camera, input, map } = setUp();
     match.tick();
 
-    const clickedMinimap = match.lookAtMinimapPoint(RING_CENTRE.x, RING_CENTRE.y);
+    const clickedMinimap = match.controls.lookAtMinimapPoint(RING_CENTRE.x, RING_CENTRE.y);
     const lookedAt = camera.visibleArea(map.width, map.height);
     match.render(0);
 
@@ -307,7 +307,7 @@ describe('Match', () => {
     expect(lookedAt.x + lookedAt.width / 2).toBeCloseTo(map.width / 2);
     expect(lookedAt.y + lookedAt.height / 2).toBeCloseTo(map.height / 2);
     expect(camera.visibleArea(map.width, map.height)).toEqual(lookedAt);
-    expect(match.lookAtMinimapPoint(1, 1)).toBe(false);
+    expect(match.controls.lookAtMinimapPoint(1, 1)).toBe(false);
 
     input.move = { x: 1, y: 0 };
     match.tick();
@@ -363,7 +363,7 @@ describe('Match', () => {
     input.move = { x: 1, y: 0 };
     match.tick();
 
-    match.lookAtMinimapPoint(RING_CENTRE.x, RING_CENTRE.y);
+    match.controls.lookAtMinimapPoint(RING_CENTRE.x, RING_CENTRE.y);
     const lookedAt = camera.visibleArea(map.width, map.height);
     match.tick();
     match.render(0);
