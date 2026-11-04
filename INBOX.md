@@ -1765,7 +1765,7 @@ Reply inline (`Decision: …`).
     (Recommended)" (DEC-153, built on `feat/hud-plan-b6` in `5500a0c`). The re-check (one
     correctness critic on `eaa5f7c..dd41ca1`) approved with four nits: one doc wording fixed,
     three rejected with reasons in the PR changelog.
-- [ ] **HC-S6 — Better than the design, scheduled: `Match`'s pointer and explorer controls in their
+- [x] **HC-S6 — Better than the design, scheduled: `Match`'s pointer and explorer controls in their
       own class (HUD PR, critic loop 3, BD-B; DEC-139).** About 85 lines of `Match` only pass the
       canvas gestures through (`hasDeveloperRoofs`, `lookAtMinimapPoint`, `panBy`, `zoomBy`,
       `toggleRoofAt`, `attackAt`, `overview`, `leaveExplorer`, `setPointerClaimed`). A
@@ -1777,6 +1777,10 @@ Reply inline (`Decision: …`).
       instead of spreading it (noted on the Phase 5 replay task, with DEC-152); (b) a map validation rule
       against overlapping building footprints before #64's capture zones reuse `findBuildingAt`
       (told to the #64 lane; noted in the HUD PR).
+  - Built 2026-11-04 (`feat/match-director`, after the phase/3 merge): `MatchViewControls` holds
+    the nine members; `Match` builds it and exposes it as `controls`, and `MatchHost` gives
+    `match.controls` to `CanvasPointerControls`. Architecture 06 §10 names the new owner. (a) and
+    (b) stay where they were noted.
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
       (`spawnRoster`, `spawnRovers`, `spawnBot`, `buildWorld`, `createControllers`,

@@ -4546,3 +4546,35 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the two deferred items above; then the pre-PR gate. Before the PR the
   `docs/game-loop-and-results-plan` branch (DEC-71 to DEC-88) merges first and this branch is
   rebased on the phase branch.
+
+### 2026-11-04 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge, BD-B — feat/match-director — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`387a5fd`, PR #68) into `feat/match-director`
+  (`45f53d2`), then built BD-B (`INBOX.md` HC-S6, DEC-139).
+  - Merge fallout forced by A19 (core spawns the seat from config): phase/3's client tests seat
+    the player with `seatedConfig` (`Match.roofs.test.ts`, `createBrowserMatch.test.ts`); the
+    DEC-149 adoption test now proves `Match` takes the seat's Legend, not a roster twin, before any
+    tick; the ADR 0025 evidence test reads the seat from the replay config, expects no command for
+    it, and watches the TRACE ring at its own `write` (the seat's ERROR `core.match` is logged
+    while the match is built, before `evidence()` exists).
+  - Merge fallout forced by DEC-88: phase/3's horde, map-object and destruction tests step through
+    the countdown; two `DefaultInvariantRunner` calls take the phase lists. `HordeSystem` holds
+    every anchor while the match holds units idle (in the merge commit: phase/3's fight test is
+    red without it); 18 §4 notes the hold.
+  - BD-B: `MatchViewControls` holds the nine canvas-gesture members; `Match.controls` exposes it,
+    `MatchHost` gives it to `CanvasPointerControls`. Architecture 06 §10 names the new owner of
+    `leaveExplorer`, `setPointerClaimed` and `attackAt` (owner doc, reported).
+- Fail-first breaks: the DEC-149 test is red when `Match` adopts the first Legend of the player's
+  class and team (`expected [ 'entity-886' ] to deeply equal [ 'entity-885' ]`); the evidence
+  test is red when the page sinks come before the ring (`lastInRing` was the INFO seed record).
+  Both files restored and compared with the index. The `HordeSystem` test was seen red in the
+  previous session ("expected 10.058333333333334 to be 10").
+- Not covered: an error report made while the match is built has no match evidence (no running
+  match yet); it falls back to the page log tail, which holds the seat's ERROR.
+- Checks run: `npm run check` → `EXIT=0` (`md-check-bdb-2026-11-04.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1087 passed (1087)", statements 99.08 %;
+  client "Tests 1740 passed (1740)", statements 96.82 %; "✓ built in 260ms"; "Documentation check
+  passed."
+- Next step: the pre-PR gate against base `387a5fd` (architecture critic, ponytail, re-check),
+  then the PR into phase/3; then the same merge for `feat/match-scoring` and
+  `feat/results-flow`.
