@@ -41,6 +41,17 @@ const layoutRules = (layout: MapLayout): readonly (readonly [boolean, string])[]
     ],
     [!(wallRing.laneApron >= 0), 'wallRing.laneApron must be >= 0'],
     [
+      wallRing.frontArc !== undefined &&
+        !(
+          Number.isFinite(wallRing.frontArc.verticalScale) &&
+          wallRing.frontArc.verticalScale >= 1 &&
+          Number.isFinite(wallRing.frontArc.curveStepDegrees) &&
+          wallRing.frontArc.curveStepDegrees > 0 &&
+          wallRing.frontArc.curveStepDegrees <= wallRing.maxSegmentArcDegrees
+        ),
+      'wallRing.frontArc needs a finite verticalScale >= 1 and 0 < curveStepDegrees <= maxSegmentArcDegrees',
+    ],
+    [
       obstacles.choices.some((choice) => !(choice.weight > 0)),
       'obstacles.choices weights must be > 0',
     ],

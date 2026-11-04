@@ -124,6 +124,22 @@ export const ROAD_STYLE = {
   miterLimit: 2,
 } as const;
 
+/** Presentation-only energy-shield materials and engraving dimensions in world units. */
+export const SHIELD_STYLE = {
+  glow: 'rgba(99,217,242,0.10)',
+  glass: 'rgba(78,179,211,0.24)',
+  gate: 'rgba(119,218,239,0.07)',
+  edge: '#8edbea',
+  core: '#d9faff',
+  lattice: 'rgba(179,238,248,0.45)',
+  metal: '#537b87',
+  metalDark: '#304b58',
+  runeSize: 3,
+  runeLine: 0.35,
+  pylonRadius: 5,
+  pylonCoreRadius: 2,
+} as const;
+
 /** TUNE: deterministic decorative density; these settings have no gameplay effect. */
 export const SCENERY_SETTINGS = {
   gridStep: 22,

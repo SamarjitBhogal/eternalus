@@ -45,6 +45,8 @@ export type MapFeature = {
   readonly laneId?: string;
   /** The ground the feature covers, in world units, when its definition has a size. */
   readonly footprint?: Polygon;
+  /** Generated boundary dimensions; palace presentation must use the actual enclosing layout. */
+  readonly wallBoundary?: Pick<MapLayout['wallRing'], 'radius' | 'thickness' | 'frontArc'>;
 };
 
 /** The kinds of ground shapes that are not entities. Walls are features, not terrain. */
@@ -118,6 +120,8 @@ export type MapLayout = {
     readonly buff: readonly [number, number];
   };
   readonly wallRing: {
+    /** Open, enemy-facing shield arc; omitted for a legacy closed circular ring. */
+    readonly frontArc?: { readonly verticalScale: number; readonly curveStepDegrees: number };
     readonly radius: number;
     readonly thickness: number;
     /** The arc facing the enemy over which the gates are spread evenly (architecture 06 §3). */
@@ -214,6 +218,8 @@ export type MapDecoration = {
   readonly isPassage?: true;
   /** Authored lane surface replaces the main view's schematic screen-width lane line. */
   readonly isLaneSurface?: true;
+  /** This artwork supplies the main-view drawing of a generated feature, without changing it. */
+  readonly replacesFeature?: string;
 };
 
 /** A selectable same-world building, derived from its interior floor and door polygons. */

@@ -25,8 +25,8 @@ import type { MapConfig } from './MapGenerator.types';
 
 const SEED = 1234;
 /** FNV-1a of the default map's JSON at SEED; see the golden-hash test. */
-// Off-path camps now consume seeded draws before obstacle generation.
-const GOLDEN_HASH = 3_170_480_840;
+// Includes the approved front shield and joined mountain bounds, retaining lane anchors (2026-11-03).
+const GOLDEN_HASH = 2_479_674_981;
 const EPSILON = 1e-6;
 
 type Ground = 'map-1' | 'generated';
@@ -213,11 +213,11 @@ describe('MapGenerator', () => {
     }
   });
 
-  it('puts a turret on every wall ring corner: one per gate or wall segment', () => {
+  it('puts an emitter on every shield join, including both ends of the open arc', () => {
     const map = generate();
     const ringPieces = countFor(map, 'gate', 'light') + countFor(map, 'wall-segment', 'light');
 
-    expect(countFor(map, 'turret', 'light')).toBe(ringPieces);
+    expect(countFor(map, 'turret', 'light')).toBe(ringPieces + 1);
   });
 
   it('puts the capture points on the centre line and the Cathedral on the middle lane', () => {
@@ -370,6 +370,33 @@ describe('MapGenerator', () => {
     ['a two-sided footprint', { footprintSides: 2 }],
     ['a negative lane apron', { wallRing: { ...DEFAULT_MAP_LAYOUT.wallRing, laneApron: -1 } }],
     [
+      'an infinite shield height',
+      {
+        wallRing: {
+          ...DEFAULT_MAP_LAYOUT.wallRing,
+          frontArc: { verticalScale: Infinity, curveStepDegrees: 6 },
+        },
+      },
+    ],
+    [
+      'a zero shield curve step',
+      {
+        wallRing: {
+          ...DEFAULT_MAP_LAYOUT.wallRing,
+          frontArc: { verticalScale: 1.5, curveStepDegrees: 0 },
+        },
+      },
+    ],
+    [
+      'a shield curve coarser than its segments',
+      {
+        wallRing: {
+          ...DEFAULT_MAP_LAYOUT.wallRing,
+          frontArc: { verticalScale: 1.5, curveStepDegrees: 90 },
+        },
+      },
+    ],
+    [
       'lane bends out of order',
       {
         laneProfile: [
@@ -391,6 +418,32 @@ describe('MapGenerator', () => {
 
     expect(map.lanes).toHaveLength(1);
     expect(ofKind(map, 'cathedral')).toHaveLength(1);
+  });
+
+  it('copies generated shield dimensions without freezing the input layout', () => {
+    const layout = structuredClone(DEFAULT_MAP_LAYOUT);
+    const map = new MapGenerator({ layout }).generate({ map: DEFAULT_MAP_CONFIG }, SEED);
+    const stronghold = map.features.find((feature) => feature.kind === 'stronghold');
+    expect(stronghold?.wallBoundary?.frontArc).toEqual(layout.wallRing.frontArc);
+    expect(Object.isFrozen(stronghold?.wallBoundary?.frontArc)).toBe(true);
+    expect(Object.isFrozen(layout.wallRing.frontArc)).toBe(false);
+  });
+
+  it('keeps the existing lanes, gates and tower anchors when the circular shield becomes a front arc', () => {
+    const { frontArc, ...wallRing } = DEFAULT_MAP_LAYOUT.wallRing;
+    expect(frontArc).toBeDefined();
+    const oldMap = new MapGenerator({ layout: { ...DEFAULT_MAP_LAYOUT, wallRing } }).generate(
+      { map: DEFAULT_MAP_CONFIG },
+      SEED,
+    );
+    const map = generate();
+    expect(map.lanes).toEqual(oldMap.lanes);
+    const kinds = new Set(['stronghold', 'gate', 'spawner-tower', 'buff-tower']);
+    const anchors = (world: MapDefinition) =>
+      world.features
+        .filter((feature) => kinds.has(feature.kind))
+        .map(({ id, position }) => ({ id, position }));
+    expect(anchors(map)).toEqual(anchors(oldMap));
   });
 
   it('rejects a preset whose ground does not fit the configured lanes', () => {

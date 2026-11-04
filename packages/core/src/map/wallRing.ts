@@ -8,9 +8,34 @@ type Arc = { readonly start: number; readonly end: number; readonly laneIndex?: 
 /** Gates never take more than this share of the gap to their neighbour, so they never overlap. */
 const MAX_GATE_SHARE_OF_GAP = 0.4;
 
+const boundaryPoint = (
+  centre: Vec2,
+  ring: MapLayout['wallRing'],
+  radius: number,
+  angle: number,
+): Vec2 => {
+  const point = polarPoint(centre, radius, angle);
+  const unchanged = (ring.exitArcDegrees * RADIANS_PER_DEGREE) / 2;
+  const t = Math.max(0, (Math.abs(angle) - unchanged) / (Math.PI / 2 - unchanged));
+  const blend = t * t * (3 - 2 * t);
+  const scaleY = 1 + ((ring.frontArc?.verticalScale ?? 1) - 1) * blend;
+  return { x: point.x, y: centre.y + (point.y - centre.y) * scaleY };
+};
+
 const arcFootprint = (centre: Vec2, ring: MapLayout['wallRing'], arc: Arc): Polygon => {
   const inner = ring.radius - ring.thickness / 2;
   const outer = ring.radius + ring.thickness / 2;
+  if (ring.frontArc !== undefined) {
+    const count = Math.max(
+      1,
+      Math.ceil((arc.end - arc.start) / (ring.frontArc.curveStepDegrees * RADIANS_PER_DEGREE)),
+    );
+    const edge = (radius: number) =>
+      Array.from({ length: count + 1 }, (_, i) =>
+        boundaryPoint(centre, ring, radius, arc.start + ((arc.end - arc.start) * i) / count),
+      );
+    return [...edge(inner), ...edge(outer).reverse()];
+  }
   return [
     polarPoint(centre, inner, arc.start),
     polarPoint(centre, outer, arc.start),
@@ -41,6 +66,21 @@ const ringArcs = (gateAngles: readonly number[], ring: MapLayout['wallRing']): A
     (ring.gateArcDegrees * RADIANS_PER_DEGREE) / 2,
     Math.min(...gaps) * MAX_GATE_SHARE_OF_GAP,
   );
+  if (ring.frontArc !== undefined) {
+    const limit = Math.PI / 2;
+    let nextWall = -limit;
+    const arcs: Arc[] = [];
+    for (const gate of gates) {
+      const start = gate.angle - halfGate;
+      if (start > nextWall)
+        arcs.push(...splitArc(nextWall, start, ring.maxSegmentArcDegrees * RADIANS_PER_DEGREE));
+      arcs.push({ start, end: gate.angle + halfGate, laneIndex: gate.laneIndex });
+      nextWall = gate.angle + halfGate;
+    }
+    if (nextWall < limit)
+      arcs.push(...splitArc(nextWall, limit, ring.maxSegmentArcDegrees * RADIANS_PER_DEGREE));
+    return arcs;
+  }
   return gates.flatMap((gate, index) => {
     const nextStart = gate.angle + (gaps[index] ?? 0) - halfGate;
     return [
@@ -64,12 +104,16 @@ export const buildWallRing = (
   const pieces = arcs.map((arc): WallRingPiece => ({
     kind: arc.laneIndex === undefined ? 'wall-segment' : 'gate',
     ...(arc.laneIndex === undefined ? {} : { laneIndex: arc.laneIndex }),
-    position: polarPoint(centre, ring.radius, (arc.start + arc.end) / 2),
+    position: boundaryPoint(centre, ring, ring.radius, (arc.start + arc.end) / 2),
     width: distance(
-      polarPoint(centre, ring.radius, arc.start),
-      polarPoint(centre, ring.radius, arc.end),
+      boundaryPoint(centre, ring, ring.radius, arc.start),
+      boundaryPoint(centre, ring, ring.radius, arc.end),
     ),
     footprint: arcFootprint(centre, ring, arc),
   }));
-  return { pieces, vertices: arcs.map((arc) => polarPoint(centre, ring.radius, arc.start)) };
+  const vertices = arcs.map((arc) => boundaryPoint(centre, ring, ring.radius, arc.start));
+  const last = arcs.at(-1);
+  if (ring.frontArc !== undefined && last !== undefined)
+    vertices.push(boundaryPoint(centre, ring, ring.radius, last.end));
+  return { pieces, vertices };
 };

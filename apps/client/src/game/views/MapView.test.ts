@@ -101,6 +101,26 @@ describe('MapView', () => {
     expect(lines).toHaveLength(MAP.lanes.length);
   });
 
+  it('uses feature-owned shield art instead of drawing the old solid wall marker over it', () => {
+    const wall = MAP.features.find((feature) => feature.kind === 'wall-segment');
+    if (wall?.footprint === undefined) throw new Error('Missing wall');
+    const art: MapDecoration = {
+      id: 'shield',
+      replacesFeature: wall.id,
+      shape: wall.footprint,
+      color: '#8edbea',
+      layer: 'ground',
+      object: { id: wall.id, kind: 'wall', isFootprint: false },
+    };
+    const renderer = new RecordingRenderer();
+    new MapView(MAP, [art]).draw(renderer);
+    expect(
+      renderer.calls
+        .filter((call) => call.op === 'fillPolygon' && call.args[0] === wall.footprint)
+        .map((call) => call.args[1]),
+    ).toEqual([art.color]);
+  });
+
   it('uses world-sized road artwork without a screen-width line on top, retaining minimap routes', () => {
     const road: MapDecoration = {
       id: 'road',

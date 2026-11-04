@@ -2966,3 +2966,28 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
 
 - Next step: human playtest and review of the visual changes. All changes remain uncommitted;
   no push or PR was performed.
+
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — front shield arc
+
+- What was done: replaced the complete outer stronghold ring with mirrored blue front arcs,
+  following the author's confirmed annotated outline. Preserved all original lane, gate and tower
+  anchor positions; taller tips join the rear mountain boundary. Shield panel artwork follows the
+  physical polygons, with translucent glass, luminous rims, runes and emitters. Artwork retains
+  segment destruction ownership, and the main view omits the replaced plain feature fills.
+  Added optional boundary metadata, validation, legacy closed-ring support and regressions for
+  geometry, presentation, anchor preservation and mountain containment. Updated the map design.
+- Checks run: npm run check:quick passed. Initial full tests caught shifted tower deployment
+  positions; corrected the geometry while keeping the existing deployment assertions unchanged.
+  Two default-worker runs then hit the unchanged roof-toolbar test's five-second startup timeout;
+  it passed in isolation. Final npm run check passed (exit 0) with VITEST_MAX_WORKERS=2:
+  formatting, no-JS, lint, typecheck, Knip, coverage, build and docs; 904 core and 451 client tests
+  passed. All timeouts, assertions and coverage thresholds remain unchanged. Visually inspected
+  a preview rendered from the actual map views. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: human playtest and review of the shield appearance. Changes remain uncommitted;
+  no push or PR was performed.

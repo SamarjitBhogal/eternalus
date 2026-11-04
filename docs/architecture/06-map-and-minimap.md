@@ -520,6 +520,27 @@ The client caches those polygons from the original footprint. Remains and cosmet
 add colliders, damage or simulation state; snapshot destruction still controls visibility and
 walkability. Interior remains follow the same roof and parent-building visibility as intact art.
 
+### 2026-11-03 — Front-facing stronghold shield
+
+At the author's request (annotated outline confirmed in chat), the default stronghold boundary
+is an open, enemy-facing blue shield arc rather than a full circle. This supersedes the earlier
+amendment's unchanged circular-ring appearance. Its curved front, taller tips and tessellation
+come from `defaultMapLayout.ts` (`wallRing.frontArc`); omitting that profile retains closed-circle
+generation. Both sides use mirrored generated geometry. Gate count still follows `numLanes`.
+Mountain bounds join the two rear endpoints to the world edge, so closed gates still seal the
+base. Preset corner bounds are fitted behind that boundary instead of covering its lane exits.
+
+Each segment remains an independent wall object with the same health and destruction rules.
+Physical footprints follow the visible curve; gate positions and lane starts share the same
+profile while preserving the original lane and tower anchors. Generated strongholds carry copied `MapFeature.wallBoundary` dimensions, which palace
+placement reads instead of mistaking the taller shield's extent for a larger palace radius.
+
+`MapShieldBuilder` dresses those exact polygons with translucent blue panels, luminous edges,
+seams, runes and emitter artwork for the existing turret features. `MapDecoration.replacesFeature`
+suppresses the main view's plain feature marker; explicit object ownership removes the correct
+panel artwork when its wall segment dies. The minimap retains its generated feature markers.
+All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
+
 ## Related
 
 - [03 Game model](./03-game-model.md)

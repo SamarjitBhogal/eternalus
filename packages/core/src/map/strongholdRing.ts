@@ -1,7 +1,7 @@
 import type { MapDefinition, MapFeature, MapLayout } from '../content/maps/maps.types';
 import { distance } from '../utils/geometry';
 
-/** Reads the generated concentric wall edges, so presentation cannot silently use another layout. */
+/** Reads generated boundary dimensions; legacy concentric maps infer them from their wall edges. */
 export function strongholdRing(
   map: MapDefinition,
   stronghold: MapFeature,
@@ -12,6 +12,8 @@ export function strongholdRing(
       (feature.footprint ?? []).map((point) => distance(stronghold.position, point)),
     );
   if (distances.length === 0) throw new Error(`Missing generated wall ring for ${stronghold.id}`);
+  if (stronghold.wallBoundary !== undefined)
+    return { radius: stronghold.wallBoundary.radius, thickness: stronghold.wallBoundary.thickness };
   const inner = Math.min(...distances);
   const outer = Math.max(...distances);
   return { radius: (inner + outer) / 2, thickness: outer - inner };
