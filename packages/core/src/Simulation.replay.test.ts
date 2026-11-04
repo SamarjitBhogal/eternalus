@@ -140,10 +140,11 @@ describe('Simulation replay export and recent context', () => {
     });
   });
 
-  it('applies a command enqueued during a step after the bot commands of that step, as a replay does (DEC-156)', () => {
+  it('applies a command enqueued during a step after the bot commands of that step, the order a replay feeds them (DEC-156)', () => {
     const probe = createMatch({ config: CONFIG, seed: SEED });
     for (let tick = 0; tick < REPLAY_CHECKPOINT_EVERY; tick += 1) probe.step();
-    // The tick of the first applied bot command: the bots queued it in the step before.
+    // The tick of the first bot command in recentContext()'s window; the bots queued it in the
+    // step before.
     const botTick = probe
       .recentContext()
       .recentCommands.find(({ command }) => 'actorId' in command)?.tick;
