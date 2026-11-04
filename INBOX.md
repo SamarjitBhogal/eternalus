@@ -386,12 +386,11 @@ Reply inline (`Decision: …`).
       and stops deploying once its body stands wholly on walkable ground, or at its exit;
       architecture 18 §3.2/§5.2 still say the lane field leads it out. Edit and apply the rest of
       Draft 2 in the same file.
-- [ ] **PR #56 — the `returning` state now acts as the resting state (DEC-144 G)** (owner:
-      SamarjitBhogal, doc 18). Since MS-36 a returning mob acquires exactly as a resting one, and
-      the cooldown runs in every state, so `returning` only marks "on the way back to the slot or
-      post" (`marching` or `holding` again within `reformDistance`). The owner kept it in #56 and
-      asked you to decide: (a) keep it as is, (b) merge it into the resting state (doc 18 §6.1,
-      §7 and `LeashBehaviour` lose one state), or (c) give it a job of its own. Or say what to do.
+- [ ] **FR-071 still names the `returning` state (PR #56, DEC-155)** (owner: sholtzman,
+      `docs/requirements/06-mvp-requirements.md`). FR-071 gives the minion FSM as
+      `marching → engaging → returning`. Since DEC-155 it is `marching ⇄ engaging`: a leash break
+      rests the mob at once and its movement walks it back. Its acceptance text ("returns to its
+      lane when the leash expires") still holds. Update the FSM wording, or say to keep it.
 - [ ] **PR #56 — your "edge dance" idea for guards, kept for when towers shoot (sprint 2.3)**
       (DEC-144). You asked whether a guard should be "more aggressive and willing to leave the
       circle a little" when a Legend dances at its edge, and return to its post if it still cannot
@@ -622,6 +621,12 @@ Reply inline (`Decision: …`).
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
+  2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and
+  `GuardController` now run `marching ⇄ engaging` and `holding ⇄ engaging`; a leash break rests
+  the mob at once and its movement walks it back. `isHome`, `isAtSlot`, `reformDistance` and the
+  minion controller's `formations` content are gone. Doc 18 §5.2, §6.1, §7 and §9 follow.
 
 - 2026-11-02 — **Hordes pile up at a gate that is not breakable yet (PR #56 soak, 2026-10-31)**,
   closed with no option chosen, as the decision page said unless the owner objected. The pile-up

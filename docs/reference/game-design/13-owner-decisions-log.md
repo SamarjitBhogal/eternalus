@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-03
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,18 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-03 (#56: the `returning` state, SamarjitBhogal)
+
+DEC-144's Call G left the `returning` state to SamarjitBhogal, doc 18's owner, through an INBOX
+item. Answered on PR #56 on 2026-11-03. DEC-145 to DEC-154 are taken by other branches.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                | Changes                                                                                                                                |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| DEC-155 | **`returning` merged into the resting state (answers DEC-144 G).** Since MS-36 a returning mob acquired and cooled down exactly as a resting one. Option (b): a leash break rests the mob at once (`marching` or `holding`), keeping the cooldown on the escaped enemy; its movement walks it back to its slot or post. | Architecture 18 §5.2, §6.1, §7, §9; `LeashBehaviour`, `MinionController`, `GuardController`; aggro content (`reformDistance` removed). |
+
+The answer (SamarjitBhogal, 2026-11-03, posted on PR #56): of "(a) keep it as is, (b) merge it
+into the resting state, or (c) give it a job of its own", option (b), "Merge it".
 
 ## Batch 2026-11-02 (#56: fight to the death, sholtzman)
 

@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-03
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -371,11 +371,10 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
 `attack-target` sets and `stop` clears, and hands the strategy the target and an arrival radius
 (the attack reach), so the strategy never reads components:
 
-| Mob state (§6.1) | `Combat.targetId` | Steering target                                                                    |
-| ---------------- | ----------------- | ---------------------------------------------------------------------------------- |
-| marching         | none              | its formation slot around the anchor, with arrival                                 |
-| engaging         | set               | the target, with arrival at attack reach; formation is broken                      |
-| returning        | none              | its formation slot again; the controller switches it to marching on arrival (§6.1) |
+| Mob state (§6.1) | `Combat.targetId` | Steering target                                                                  |
+| ---------------- | ----------------- | -------------------------------------------------------------------------------- |
+| marching         | none              | its formation slot around the anchor, with arrival; after a fight, the walk back |
+| engaging         | set               | the target, with arrival at attack reach; formation is broken                    |
 
 - `PathingSystem` combines the strategy's target with the rest of 10 §9 by priority: **obstacle
   and wall avoidance**, then **separation from all neighbours** (through `SpatialHash`,
@@ -399,7 +398,7 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
 
 ### 6.1 `MinionController`
 
-A state machine per mob, `marching → engaging → returning → marching`, with memory
+A state machine per mob, `marching ⇄ engaging`, with memory
 `{ fsm, targetId, breakAtTick, cooldownUntilTick, escapedId, leashAnchor }` in its brain
 (11 §2). It runs at the minion cadence of 11 §6. Target selection lives here (MS-27): the ranking
 is a pure helper in `ai/` that `GuardController` shares; it is not a `TargetingStrategy`.
@@ -409,7 +408,8 @@ inside its leash, and drops it only after chasing it outside the leash for a gra
 It never walks on past an enemy in reach, except, for a short cooldown, the enemy that just
 escaped its leash (DEC-144 F).
 
-- **marching:** no command; the movement strategy keeps the mob in its slot.
+- **marching:** no command; the movement strategy keeps the mob in its slot, or walks it back
+  there after a fight. There is no separate returning state (DEC-155).
 - **acquire** (at cadence, in every state): candidates from `Perception.unitsWithin(pos, radius,
 { hostileTo: team })` plus the horde's next objective (§6.2). A unit counts when it is within
   `acquisitionRadius`, or within `callForHelpRadius` while it attacks a horde-mate ("call for
@@ -424,15 +424,15 @@ escaped its leash (DEC-144 F).
   - When the target leaves the leash, the mob takes the best other enemy in reach at once. With
     none, it keeps chasing and attacking the target for `leashGraceTicks` (DEC-144 E): a target
     back inside in that time is fought on; otherwise the leash breaks, the mob emits one `stop` and
-    is `returning`.
+    is `marching` again.
   - When the target dies, the mob takes the next enemy in reach at once; with none it is
     `marching` again, with one `stop` and no cooldown.
-- **returning:** the `stop` cleared the attack target (MS-26), so the mob neither keeps hitting nor
-  keeps chasing. The strategy steers it back to its slot, it fights any enemy in reach on the way,
-  and within `reformDistance` of the slot it is `marching` again. For `aggroCooldownTicks` from
-  the leash break it leaves alone the enemy that escaped (`escapedId`), Legend or minion, so that
-  enemy cannot pull it out again at once (DEC-144 F). It fights every other enemy in reach, and
-  the escaped enemy too while that enemy attacks the mob or a horde-mate.
+- **after a leash break:** the `stop` cleared the attack target (MS-26), so the mob neither keeps
+  hitting nor keeps chasing. The strategy steers it back to its slot, and it fights any enemy in
+  reach on the way. For `aggroCooldownTicks` from the leash break it leaves alone the enemy that
+  escaped (`escapedId`), Legend or minion, so that enemy cannot pull it out again at once
+  (DEC-144 F). It fights every other enemy in reach, and the escaped enemy too while that enemy
+  attacks the mob or a horde-mate.
 
 The leash anchor is where the mob stood when it took its target, so a mob never chases a Legend
 across the map.
@@ -462,9 +462,9 @@ Tower guards (light guards at a `SpawnerTower`, "numerous" medium guards at a `B
 and melee guards at the `Stronghold`, per the game doc) are Mobs owned by their structure's
 `Spawner`; they belong to no horde.
 
-- `GuardController` runs `holding → engaging → returning → holding`. It reuses the acquire, engage
-  and return logic of §6.1 through a shared `LeashBehaviour` helper (DRY), including `stop` to
-  disengage.
+- `GuardController` runs `holding ⇄ engaging`. It reuses the acquire and engage logic of §6.1
+  through a shared `LeashBehaviour` helper (DRY), including `stop` to disengage; with no target,
+  the movement walks it back to its post.
 - The differences are data: the leash is measured from the home structure, its radius is the
   structure's `GuardPlan.leashRadius` (07 §6; game doc: guards "don't leave the tower's
   perimeter") and the idle state holds the guard's post near the structure. A post on blocked
@@ -547,8 +547,8 @@ Per doc 11 §8, plus:
 - `LaneFollowMovementStrategy`: a horde walks a lane in formation with no overlap beyond a
   tolerance and no allocation per unit; a member blocked by an obstacle leaves its slot and
   re-forms.
-- `MinionController` and `GuardController`: table-driven transitions; `returning` emits `stop` and
-  the target is cleared; gate holding until `structure-breakability-changed`.
+- `MinionController` and `GuardController`: table-driven transitions; a leash break emits `stop`,
+  clears the target and rests the mob; gate holding until `structure-breakability-changed`.
 - `GuardWithinLeashInvariant`: a test that deliberately drags a guard past its leash triggers it.
 - Camp mobs and checkpoint defenders (§7.1): a camp is inert before its cooldown and emits
   `camp-cleared` when emptied; each checkpoint spawns its listed composition; a camp mob or

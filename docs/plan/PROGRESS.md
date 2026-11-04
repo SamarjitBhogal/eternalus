@@ -3199,3 +3199,31 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   built in 114ms"; "Documentation check passed." Soak (cap 300, bots, 900 s): 0 non-INFO log
   records, 0 % spawns skipped, step mean 0.460 ms, worst 3.25 ms.
 - Next step: push to #56 and post the #56 comment.
+
+### 2026-11-03 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards (test split, `returning` merge) — SamarjitBhogal + Claude Code
+
+- Critic round 3's F9, done on #56 at the owner's request (it was listed as a follow-up above).
+  The 17 shared leash tests (cooldown, grace, call for help, target death, acquiring while
+  returning, priority ranking; 16 word for word, 1 renamed in the merge below) moved from `ai/MinionController.test.ts` (551 lines) to the new
+  `ai/LeashBehaviour.test.ts` (299 lines), still driven through `MinionController`'s rules. The
+  9 minion-specific tests stay (144 lines). The shared setup moved to
+  `ai/__fixtures__/minionControllerSetup.ts`. The move changed no test body or assertion; 26
+  tests before and after. Five were then updated for the merge below.
+- `returning` merged into the resting state (DEC-155, answering DEC-144 G: option b).
+  `LeashBehaviour` runs `idle ⇄ engaging`: a leash break emits `stop` and rests the mob at once,
+  with `escapedId` and the cooldown; `PathingSystem` already walks a mob with no target back to
+  its slot or post. Removed: `LeashRules.isHome`, `MinionController.isAtSlot` and its scratch
+  points, `AggroRuleDefinition.reformDistance` (both profiles) and `MinionControllerContent.formations`
+  (only `isAtSlot` read it). Five tests updated to the new state: two leash-break tests expect
+  the resting state, and the three `returning:` tests now check that a memory saved as
+  `returning` reads as resting, keeping its cooldown. Doc 18 §5.2, §6.1, §7, §9, the phase-3
+  plan's FSM line, the decisions log (DEC-155) and the INBOX item (moved to Done) follow. New
+  INBOX item for sholtzman: FR-071 (`06-mvp-requirements.md`) still names `returning`.
+- Critic (`architecture-reviewer`, working tree vs `879525f`): APPROVE WITH NITS, 0 blockers.
+  Applied: the decision recorded as DEC-155 (was only in INBOX), the FR-071 INBOX item, TSDoc and
+  plan rewraps, a test comment, `GuardController` keeps its `Pick` of the content, this entry's
+  wording.
+- Checks run (after the critic fixes): `npm run check` → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 974 passed (974)"; client "Tests 434 passed (434)"; "✓ built
+  in 260ms"; "Documentation check passed."
+- Next step: push to #56; sholtzman answers the FR-071 INBOX item.
