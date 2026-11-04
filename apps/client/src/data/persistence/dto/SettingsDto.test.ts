@@ -27,6 +27,17 @@ describe('validateSettingsDto', () => {
     expect(validateSettingsDto(VALID, KNOWN_ACTIONS)).toEqual({ ok: true, dto: VALID });
   });
 
+  it('accepts a keyboard chord with modifier keys (DEC-105)', () => {
+    const chord = {
+      device: 'keyboard',
+      code: 'F3',
+      label: 'Ctrl+Shift+F3',
+      modifiers: ['Control', 'Shift'],
+    } as const;
+    const record = { ...VALID, bindings: [{ action: 'attack', chords: [chord] }] };
+    expect(validateSettingsDto(record, KNOWN_ACTIONS)).toEqual({ ok: true, dto: record });
+  });
+
   it.each([
     ['a non-object', 'settings', 'not an object'],
     ['a future version', { ...VALID, schemaVersion: 2 }, 'schemaVersion: unsupported version 2'],
@@ -47,6 +58,32 @@ describe('validateSettingsDto', () => {
       {
         ...VALID,
         bindings: [{ action: 'attack', chords: [{ device: 'pen', code: '0', label: '' }] }],
+      },
+      'bindings[0].chords: invalid chord',
+    ],
+    [
+      'a chord with an unknown modifier',
+      {
+        ...VALID,
+        bindings: [
+          {
+            action: 'attack',
+            chords: [{ device: 'keyboard', code: 'F3', label: 'F3', modifiers: ['Hyper'] }],
+          },
+        ],
+      },
+      'bindings[0].chords: invalid chord',
+    ],
+    [
+      'a chord whose modifiers are not a list',
+      {
+        ...VALID,
+        bindings: [
+          {
+            action: 'attack',
+            chords: [{ device: 'keyboard', code: 'F3', label: 'F3', modifiers: 'Shift' }],
+          },
+        ],
       },
       'bindings[0].chords: invalid chord',
     ],

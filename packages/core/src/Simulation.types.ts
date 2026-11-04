@@ -1,8 +1,10 @@
 import type { GameConfig } from './config/GameConfig.types';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { MapDefinition } from './content/maps/maps.types';
+import type { BotRole } from './content/teams/botRoster.types';
 import type { DebugConfig } from './diagnostics/InvariantRunner.types';
 import type { Logger } from './diagnostics/Logger.types';
+import type { ReplayOf, ReplayTargetFactoryOf } from './diagnostics/Replay.types';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
@@ -44,7 +46,23 @@ export type RosterSlot = {
   /** The Legend definition (its class). */
   readonly definitionId: string;
   /** A `laner` gets a lane at setup; the `rover` takes none (MS-20). */
-  readonly role: 'laner' | 'rover';
+  readonly role: BotRole;
   /** The bot's difficulty (`content/ai/difficulties/`). */
   readonly difficulty: string;
 };
+
+/**
+ * What a match was built with: the seed, the config and, when the match had them, the generated
+ * map, its placed objects and the bot roster. Plain data, so a replay can rebuild the same
+ * world without the code that prepared it (architecture 03 §9, 15 §7).
+ */
+export type ReplaySetup = Pick<
+  SimulationOptions,
+  'seed' | 'config' | 'map' | 'mapObjects' | 'roster'
+>;
+
+/** A recorded match: its `ReplaySetup`, the commands and the checkpoint hashes. */
+export type Replay = ReplayOf<ReplaySetup>;
+
+/** Builds a fresh target (a `Simulation` with its systems) from a replay's `ReplaySetup`. */
+export type ReplayTargetFactory = ReplayTargetFactoryOf<ReplaySetup>;

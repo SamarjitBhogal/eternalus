@@ -45,6 +45,7 @@ describe('rebinding move-up from W to ArrowUp', () => {
       bus: eventBus,
       persistence,
       logger: new NullLogger(),
+      isApplePlatform: false,
     });
     await controller.start();
     const mapper = new InputMapper(store.getState().settings.bindings);

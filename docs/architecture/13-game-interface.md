@@ -4,7 +4,7 @@ description: The presentation layer of the client - React screens and HUD, the S
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-17
+last-reviewed: 2026-11-02
 tags: [architecture, ui, react, redux, hud, bridge, input, keybindings, developer-menu]
 paths:
   [
@@ -89,30 +89,50 @@ export class SessionController {
     bus: TypedEventBus<BridgeEventMap>;
     persistence: PersistenceController;
     resources: ResourceController;
-    createMatch: (setup: MatchSetup) => Match; // Match stays the composition root of a match
+    prepareWorld: (seed: number) => PreparedWorld; // pure: the map from the seed, run in 'match-loading' (DEC-50)
+    createMatch: (request: MatchRequest, viewport: MatchViewport) => RunningMatch; // the match factory main.tsx binds; Match stays the composition root of a match (DEC-50)
     states: Readonly<Record<SessionPhase, SessionState>>; // defaultSessionStates.ts, the only file naming them
+    createRng: (seed: number) => Rng; // the match's random stream from its seed
+    createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>; // LOCK IN's stream for the bots' Legends (DEC-61)
     logger: Logger;
+    reporter: Pick<ErrorReporter, 'reportCrash' | 'addNote'>; // where a crash is reported and its note saved (ADR 0025 §3)
   }) {}
   public start(): Promise<void>; // enters 'boot'
-  public attachViewport(host: HTMLElement): void; // from GameCanvas.tsx
+  public attachViewport(viewport: MatchViewport): () => void; // from MatchScreen's GameCanvas.tsx; in 'match' it creates the Match and returns its detach (DEC-50)
   private transition(to: SessionPhase): Promise<void>; // checks TRANSITIONS, exit → enter, emits 'session-phase'
 }
 ```
 
-| From               | To                          | Trigger                                                                                                                                    | Work done in `enter`/`exit`                                                                                                                                                                                 |
-| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `boot`             | `menu`                      | manifest loaded (`boot` group), `persistence.open()` resolved (`ready` or `degraded`)                                                      | creates the default profile on first boot (settings and bindings load beside the phase machine, in `SettingsController`, §6.3); projects the content catalogue (`loadDefaultContent()`) into `contentSlice` |
-| `menu`             | `loading`                   | `ui-intent { kind: 'start-match' }`                                                                                                        | builds `MatchSetup` (seed, `GameConfig` from the preset plus developer overrides, random `playerTeam`, the saved or auto-built `Loadout`)                                                                   |
-| `loading`          | `character-select` / `menu` | selection-screen asset group loaded / cancelled or failed                                                                                  | loads the `selection` asset group (themed background set for the player's team) and shows `LoadingScreen`; the `MatchSetup` draft (seed, config, `playerTeam`) already exists from `menu`                   |
-| `character-select` | `pre-launch` / `menu`       | player confirmed a class before the 60 s `SessionClock` countdown ended / countdown expired with no selection (`reason: 'select-timeout'`) | builds the rosters from content (allies + enemies), assigns `playerTeam` from the setup RNG stream, starts the countdown through the injected `SessionClock`                                                |
-| `pre-launch`       | `match-loading`             | 10 s `SessionClock` reveal elapsed                                                                                                         | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                                                |
-| `match-loading`    | `match` / `menu`            | `match` asset group loaded / failed                                                                                                        | `createMatch(setup)`, `match.start()`; on failure logs and returns to `menu` with a banner                                                                                                                  |
-| `match`            | `results` / `menu`          | `match-ended { result }` from `Simulation.on`, a `Simulation.step()` exception, `forfeit` / `leave-match`                                  | `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                                           |
-| `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                | releases the `match` asset group                                                                                                                                                                            |
+| From               | To                          | Trigger                                                                                                                                                                                                                                                                                                                                                    | Work done in `enter`/`exit`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `boot`             | `menu`                      | manifest loaded (`boot` group), `persistence.open()` resolved (`ready` or `degraded`)                                                                                                                                                                                                                                                                      | creates the default profile on first boot (settings and bindings load beside the phase machine, in `SettingsController`, §6.3); projects the display content (`loadDisplayContent()`, [02](02-code-structure.md) §6) into `contentSlice`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `menu`             | `loading`                   | `ui-intent { kind: 'start-match' }`                                                                                                                                                                                                                                                                                                                        | builds `MatchSetup` (seed, `GameConfig` from the preset plus developer overrides, random `playerTeam`, the saved or auto-built `Loadout`) and the allied and enemy rosters from content: each team's Rover and its lane bots by class (the bot roster), their Legends filled at LOCK IN (DEC-61, DEC-102)                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `loading`          | `character-select` / `menu` | selection-screen asset group loaded / cancelled or failed                                                                                                                                                                                                                                                                                                  | loads the selection asset groups (themed background set for the player's team): the `selection` group, the group of the class step's layout and, with the Figma-raster effects, the plate groups ([14](14-persistence-and-resources.md) §11; DEC-52, DEC-54) and shows `LoadingScreen`; the `MatchSetup` draft (seed, config, `playerTeam`) already exists from `menu`                                                                                                                                                                                                                                                                                                                                                             |
+| `character-select` | `pre-launch` / `menu`       | the 60 s `SessionClock` countdown ended after LOCK IN: it always runs the full 60 s, and LOCK IN locks the pick, fills the bots and shows the locked view without ending it (DEC-60, DEC-61) / it ended before LOCK IN, with or without a class: no match starts, and the home screen shows the select-timeout popup (`reason: 'select-timeout'`, DEC-102) | records the class pick and then the Legend pick, in two steps of one screen (DEC-49; `Recommendation:`, INBOX HC-F1); Back clears the class (`clear-class-selection`); `SessionController` holds the selection and `canConfirmSelection` (`bridge/selectionRules.ts`) decides LOCK IN; starts the countdown through the injected `SessionClock`; LOCK IN locks the pick, gives each bot a Legend of its class from the seed's roster stream and the enemy Rover a copy of the pick (`fillRosters`; DEC-61, DEC-102; the Legend copy is `Recommendation:`), publishes the rosters (`selection-locked`) and shows the locked view (DEC-60); the rosters' classes and `playerTeam` come from the setup built in `menu` (DEC-34, SD-2) |
+| `pre-launch`       | `match-loading`             | 10 s `SessionClock` reveal elapsed                                                                                                                                                                                                                                                                                                                         | shows the allied team on pedestals and the enemy roster top right; no cancel                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `match-loading`    | `match` / `menu`            | `match` asset group loaded and the match world prepared / either failed                                                                                                                                                                                                                                                                                    | prepares the match world (`prepareWorld`: the map from `setup.seed`) once the `match` group has loaded; on failure logs and returns to `menu` with a banner. The `Match` is created in `match` (DEC-50)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `match`            | `results` / `menu`          | `match-ended { result }` from `Simulation.on`, `forfeit` / `leave-match`, a crash (a tick, a frame or the screen throws; DEC-106)                                                                                                                                                                                                                          | when the match screen's viewport attaches, `createMatch(request, viewport)` builds and starts the match, and its detach destroys it (DEC-50); releases the selection asset groups (`Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-F9); pauses the match while an overlay is open (single player); `persistence.saveMatchResult(…)` in one unit of work ([14](14-persistence-and-resources.md) §6); `match.destroy()` on exit: 0 listeners, 0 frames                                                                                                                                                                                                                                                                   |
+| `results`          | `menu` / `loading`          | `navigate` / `start-match` (rematch with the same setup, `Recommendation:`)                                                                                                                                                                                                                                                                                | releases the `match` asset group                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+
+**The screen-crash exit is not a table edge (DEC-149; DEC-141).** A screen that throws
+(`report-screen-crash`) leaves every phase except `menu` and `match` through one method,
+`SessionController.crashToMenu(reason)`, which runs the phase's exit hook and enters `menu` with
+`reason: 'screen-crashed'`, the crash popup open over it. In `match`, `handleScreenCrash` calls
+`crashMatch`, which leaves by the table's `match` → `menu` edge with `reason: 'match-crashed'`
+(§10). `crashToMenu` sits outside the table and is private to the session, so no intent can
+use it, and `pre-launch` has no `menu` edge: the reveal has no cancel (DEC-141), and only a
+crash ends it early. A crash in `menu` itself shows `screen-crashed` again and goes back to
+`home`; the table has no `menu` → `menu` move.
 
 The three selection phases come from the owner's screen flow of 2026-10-03 ([reference 14](../reference/game-design/14-interface-and-screen-flow.md)); their countdowns are session time through the `SessionClock` port, never simulation ticks. Any other pair throws (`IllegalSessionTransition`): a wrong transition is a bug, not a state. The
-table is the test (`SessionController.test.ts` walks every pair with fake states, a
-`MemoryStorageAdapter` and a fake `ResourceController`).
+table is the test (`SessionController.transitions.test.ts` walks every pair with fake states, a
+`MemoryStorageAdapter` and a fake asset loader).
+
+**Owner decision DEC-50 (2026-10-17).** `SessionController` owns the `Match` lifetime: the match
+world is prepared in `match-loading`, the `Match` is created when the match screen attaches its
+viewport (`attachViewport`) and is destroyed on leaving `match`, so no map, simulation or game
+loop exists during character select
+([decisions log](../reference/game-design/13-owner-decisions-log.md)).
 
 ## 3. Screens and HUD
 
@@ -120,31 +140,41 @@ Screens are function components that read memoised selectors through the typed h
 `ui-intent`s; they hold no game data of their own (rule 10). Every gameplay name and number they
 show comes from content through the store (`contentSlice`, `matchSlice`), never from a literal.
 
-| Screen                                                    | Reads (selectors)                                                                        | Emits (`ui-intent`)                                                                         | Status                                                                            |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `BootScreen` (also the loading screen for `loading`)      | `selectLoadingProgress`, `selectPersistenceStatus`                                       | `retry-boot`                                                                                | **MVP** (requirements: "simple loading screen")                                   |
-| `MainMenuScreen`                                          | `selectProfileSummary`, `selectMenuRoute`, `selectFactionBlurb`                          | `start-match`, `navigate`                                                                   | **MVP**; attract mode **MVP-if-time**                                             |
-| `LoadoutScreen`                                           | `selectLoadoutsByClass`, `selectContentIndex`, `selectLoadoutProblems`                   | `edit-loadout` (validated in L3 by `validateLoadout`), `save-loadout`, `auto-build-loadout` | **MVP**                                                                           |
-| `ProfileScreen` (themed name pending; Chronicle proposed) | `selectMatchHistory` (newest first), `selectAchievements`, `selectProfileStats`          | `export-profile`, `import-profile`                                                          | **MVP**; achievements panel **MVP-if-time** behind the `AchievementHook` registry |
-| `SettingsScreen`                                          | `selectBindings`, `selectBindingConflicts`, `selectAudioSettings`, `selectStorageStatus` | `set-bindings`, `apply-binding-preset`, `save-settings`, `request-persistence`              | **MVP** (§6)                                                                      |
-| `AboutScreen`                                             | `selectCredits` (generated from the manifest's `licence` and `source` fields)            | none                                                                                        | **MVP**                                                                           |
-| `MatchScreen`                                             | `selectSessionPhase`; renders the `viewport` prop and the HUD                            | `leave-match`, `forfeit`                                                                    | **MVP**                                                                           |
-| `ResultsScreen`                                           | `selectMatchResult`, `selectVerdictLine`                                                 | `navigate`, `start-match` (rematch)                                                         | **MVP**                                                                           |
+| Screen                                                                                                                                                                                                                      | Reads (selectors)                                                                                                                                                                           | Emits (`ui-intent`)                                                                         | Status                                                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `BootScreen` (also the loading screen for `loading`)                                                                                                                                                                        | `selectLoadingProgress`, `selectPersistenceStatus`                                                                                                                                          | `retry-boot`                                                                                | **MVP** (requirements: "simple loading screen")                                   |
+| `MainMenuScreen`                                                                                                                                                                                                            | `selectProfileSummary`, `selectMenuRoute`, `selectFactionBlurb`                                                                                                                             | `start-match`, `navigate`                                                                   | **MVP**; attract mode **MVP-if-time**                                             |
+| `LoadoutScreen`                                                                                                                                                                                                             | `selectLoadoutsByClass`, `selectContentIndex`, `selectLoadoutProblems`                                                                                                                      | `edit-loadout` (validated in L3 by `validateLoadout`), `save-loadout`, `auto-build-loadout` | **MVP**                                                                           |
+| `ProfileScreen` (themed name pending; Chronicle proposed)                                                                                                                                                                   | `selectMatchHistory` (newest first), `selectAchievements`, `selectProfileStats`                                                                                                             | `export-profile`, `import-profile`                                                          | **MVP**; achievements panel **MVP-if-time** behind the `AchievementHook` registry |
+| `SettingsScreen`                                                                                                                                                                                                            | `selectBindings`, `selectBindingConflicts`, `selectAudioSettings`, `selectStorageStatus`                                                                                                    | `set-bindings`, `apply-binding-preset`, `save-settings`, `request-persistence`              | **MVP** (§6)                                                                      |
+| `AboutScreen`                                                                                                                                                                                                               | `selectCredits` (generated from the manifest's `licence` and `source` fields)                                                                                                               | none                                                                                        | **MVP**                                                                           |
+| `CharacterSelectScreen` (the class step, then the Legend step, DEC-49, then the locked view after LOCK IN, DEC-60; the class step's layout by data, DEC-52; View Details over the class and Legend steps, DEC-103, DEC-109) | `contentSlice` (classes, Legends, layout), `matchSetupSlice` (team, allies, selection, lock, countdown), `selectAllyTiles`, `assetsSlice` (art URLs)                                        | `select-class`, `clear-class-selection`, `confirm-selection`                                | **MVP** (DEC-49)                                                                  |
+| `MatchScreen`                                                                                                                                                                                                               | the open overlay and the bindings (`usePauseMenuKey`); renders the `viewport` prop (the only screen that does, so no `Match` exists outside `match`, DEC-50), the HUD and the pause overlay | `open-overlay`, `close-overlay`; `leave-match` (from the pause overlay), `forfeit`          | **MVP**                                                                           |
+| `ResultsScreen`                                                                                                                                                                                                             | `selectMatchResult`, `selectVerdictLine`                                                                                                                                                    | `navigate`, `start-match` (rematch)                                                         | **MVP**                                                                           |
 
-| HUD element                | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                   | Status  |
-| -------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `HealthBar`, `AetherBar`   | `matchSlice.player` (from `hud-state`)                                                     | base bar plus one patterned segment per shield bar (never colour alone); `aether / maxAether` with level and XP-to-next                                                                                                     | **MVP** |
-| `AbilityBar`               | `selectAbilitySlots` ([05](05-abilities-weapons-and-loadouts.md) §15)                      | one slot per `AbilitySlotSnapshot`: icon, cooldown sweep, ultimate charge, `blockedBy` hint, `<KeyGlyph action={slot.slot} />`                                                                                              | **MVP** |
-| `MinimapPanel`             | `settingsSlice.hud.minimapVisible`                                                         | the frame around the `'minimap'` renderer layer that `GameCanvas.tsx` positions under it ([08](08-game-engine.md) §4); a click emits `minimap-click { u, v }` (normalised), which `Match` projects with `MinimapProjection` | **MVP** |
-| `MatchClock`, `Scoreboard` | `matchSlice.clock` (5 Hz), `matchSlice.scoreboard` (1 Hz)                                  | `mm:ss` and the phase label; team scores, structures alive, per-Legend rows                                                                                                                                                 | **MVP** |
-| `Announcer`                | `matchSlice.announcements` (from `announce`, [12](12-game-story-and-match-director.md) §8) | a queue with per-item TTL and `priority`; also the surface for live achievements and, post-MVP, tutorial dialogue                                                                                                           | **MVP** |
-| `DeveloperMenu`            | `diagnosticsSlice`, `matchSlice`, `settingsSlice.developer`                                | §4                                                                                                                                                                                                                          | **MVP** |
-| `PerfOverlay`              | `diagnosticsSlice.perf`, `diagnosticsSlice.violations`, `diagnosticsSlice.logTail`         | tick and frame histograms, last long animation frame, memory sample, log tail, violations with "copy repro" ([15](15-diagnostics-and-runtime-testing.md) §5)                                                                | **MVP** |
+| HUD element                                           | Source in the store                                                                        | Behaviour                                                                                                                                                                                                                                                       | Status                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `HealthBar`, `AetherBar`                              | `matchSlice.player` (from `hud-state`)                                                     | base bar plus one patterned segment per shield bar (never colour alone); `aether / maxAether`; level and XP in `LevelBadge`                                                                                                                                     | **MVP**                                     |
+| `AbilityBar`                                          | `selectAbilitySlots` ([05](05-abilities-weapons-and-loadouts.md) §15)                      | one slot per `AbilitySlotSnapshot`: icon, cooldown sweep (the owner's vertical fill, register CD-28), ultimate charge, `blockedBy` hint, `<KeyGlyph action={slot.slot} />`; the gadget slots use the same slot ([05](05-abilities-weapons-and-loadouts.md) §11) | **MVP**                                     |
+| `LevelBadge`                                          | `matchSlice.player` (`level`, `xp`, `xpToNext`), the HUD kit (`selectHudKit`)              | the class emblem by asset id (an empty shield where the class has none), an XP ring (`xp / xpToNext`) and the level number, alike on every class (DEC-62)                                                                                                       | **MVP**                                     |
+| `WeaponPanel`                                         | the HUD kit                                                                                | the weapon art by asset id, or an empty container (DEC-57, DEC-62), and a weapon-level bar: weapons level up during each match, probably post-MVP (DEC-62; OQ-63)                                                                                               | **MVP**; level bar likely post-MVP (DEC-62) |
+| `UltimateChargeBar`, `ChargePips`                     | `matchSlice.player` (the ultimate slot)                                                    | the ultimate, an additional ability on its own key (DEC-62): its charge bar and pips, "no data" until OQ-64 rules them                                                                                                                                          | **MVP**; OQ-64                              |
+| `StructureStrip`, `ObjectiveTracker`, `CrystalStatus` | `matchSlice` structures and capture points (`structure-state`, `capture-state`)            | one tile per structure kind and capture point of each team, generated from the map, so a `numLanes` change needs no code (NFR-008); owner shown by an allegiance flag as well as colour (§7); a tile without data shows "no data"                               | **MVP**                                     |
+| `MinimapPanel`                                        | `settingsSlice.hud.minimapVisible`                                                         | the frame around the `'minimap'` renderer layer that `GameCanvas.tsx` positions under it ([08](08-game-engine.md) §4); a click emits `minimap-click { u, v }` (normalised), which `Match` projects with `MinimapProjection`                                     | **MVP**                                     |
+| `MatchClock`, `Scoreboard`                            | `matchSlice.clock` (5 Hz), `matchSlice.scoreboard` (1 Hz)                                  | `mm:ss` and the phase label; team scores, structures alive, per-Legend rows                                                                                                                                                                                     | **MVP**                                     |
+| `Announcer`                                           | `matchSlice.announcements` (from `announce`, [12](12-game-story-and-match-director.md) §8) | a queue with per-item TTL and `priority`; also the surface for live achievements and, post-MVP, tutorial dialogue                                                                                                                                               | **MVP**                                     |
+| `DeveloperMenu`                                       | `diagnosticsSlice`, `matchSlice`, `settingsSlice.developer`                                | §4                                                                                                                                                                                                                                                              | **MVP**                                     |
+| `PerfOverlay`                                         | `diagnosticsSlice.perf`, `diagnosticsSlice.violations`, `diagnosticsSlice.logTail`         | tick and frame histograms, last long animation frame, memory sample, log tail, violations with "copy repro" ([15](15-diagnostics-and-runtime-testing.md) §5)                                                                                                    | **MVP**                                     |
 
 Announcer lines, verdict lines and faction blurbs are content in core
 (`content/narrative/`); the HUD renders `displayName`s from the snapshot and the
-content index. `ErrorBoundary` wraps every screen and the HUD (plan Phase 6, sprint 6.4): a
-throw inside the match routes to `results` with a diagnostic, never a blank page.
+content index. One `ErrorBoundary`, the one class component (DEC-115), wraps the current screen
+in `App`, keyed by the session phase and the menu route so that it resets when the screen
+changes; the HUD renders inside `MatchScreen`, so it is covered. A throw from a tick or a frame
+never reaches it: the game loop catches that one (`LoopTarget.crashed`, [08](08-game-engine.md)
+§2). A crash ends the match, if one runs, and returns to the menu with the crash popup, which asks
+for a note and saves the error report (`match-crashed`, or `screen-crashed` outside a match);
+never a blank page (DEC-106, DEC-124; ADR 0025 §5).
 
 ## 4. The developer menu
 
@@ -208,6 +238,9 @@ export type BridgeEventMap = {
     readonly teams: Readonly<Record<PlayableTeam, TeamStats>>;
   };
   'capture-state': { readonly points: readonly CapturePointSnapshot[] };
+  'structure-state': { readonly structures: readonly StructureSnapshot[] }; // the structure strip; every 30 ticks
+  'asset-urls': { readonly group: AssetGroup; readonly urls: Readonly<Record<AssetId, string>> }; // images the DOM shows (14 §11, DEC-51)
+  credits: { readonly entries: readonly CreditEntry[] }; // AboutScreen, from the manifest's licence and source (DEC-51)
   announce: {
     readonly id: AnnouncementId;
     readonly params: Readonly<Record<string, string>>;
@@ -218,7 +251,7 @@ export type BridgeEventMap = {
   'perf-sample': PerfSample; // histograms, last long frame, memory (a bridge-defined type)
   'session-phase': { readonly phase: SessionPhase };
   'loading-progress': {
-    readonly group: 'boot' | 'menu' | 'match';
+    readonly group: AssetGroup; // 'boot', the selection groups, 'match' (14 §11)
     readonly loadedBytes: number;
     readonly totalBytes: number;
   };
@@ -246,6 +279,7 @@ export type UiIntent =
   | { readonly kind: 'minimap-click'; readonly u: number; readonly v: number }
   | { readonly kind: 'export-profile' }
   | { readonly kind: 'import-profile'; readonly json: string }
+  | { readonly kind: 'clear-class-selection' } // Back from the Legend step (DEC-49)
   | { readonly kind: 'retry-boot' }; // ... one member per screen intent named in §3
 ```
 
@@ -253,7 +287,8 @@ Slices (`bridge/slices/`): `sessionSlice` (phase, `menuRoute`, banners), `matchS
 player, scoreboard, capture points, announcements, result), `settingsSlice` (bindings, audio,
 accessibility, developer, hud), `loadingSlice`, `persistenceSlice`, and the `Recommendation:`s
 `contentSlice` (display-ready content index), `profileSlice` (summary, loadouts, history,
-achievements) and `diagnosticsSlice` (perf samples, violations, log tail). Slice state is plain
+achievements), `diagnosticsSlice` (perf samples, violations, log tail) and `assetsSlice`
+(the URLs of the loaded images and the credits, [14](14-persistence-and-resources.md) §11). Slice state is plain
 data typed with core `import type`s (`PlayerSnapshot`, `MatchResult`, `Loadout`); the `data/`
 vocabulary (persistence status, asset groups) is re-stated as string unions in `events.ts`
 because `bridge/` may not import `data/`.
@@ -284,16 +319,19 @@ export const INPUT_ACTIONS = [
   'camera-zoom-out',
   'toggle-minimap',
   'pause-menu',
+  'view-details',
   'toggle-developer-menu',
   'toggle-perf-overlay',
+  'toggle-developer-camera',
 ] as const;
 export type InputAction = (typeof INPUT_ACTIONS)[number];
+export type ChordModifier = 'Alt' | 'Control' | 'Meta' | 'Shift'; // as `getModifierState` names them
 export type InputChord =
   | {
       readonly device: 'keyboard';
       readonly code: string;
       readonly label: string;
-      readonly modifiers?: readonly string[];
+      readonly modifiers?: readonly ChordModifier[];
     } // code + the key label seen at bind time
   | { readonly device: 'mouse'; readonly button: 0 | 1 | 2 | 3 | 4 }
   | { readonly device: 'gamepad'; readonly button: number } // post-MVP; 'gamepad-axis' as in 09 §3
@@ -326,16 +364,18 @@ one definition of "the same physical input", is `bridge/chordKey.ts`: `game/inpu
 Adding an action is one id in `INPUT_ACTIONS` and one `DEFAULT_CHORDS` entry (the record type
 demands it); no screen, prompt or system names a key.
 
-| `InputAction`                                        | Default (`TUNE`, [09-controls](../reference/game-design/09-controls.md)) | Effect                                                                                               | Status                                    |
-| ---------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `move-up/down/left/right`                            | W S A D (`wasd`); arrows (`arrows`)                                      | `intent.move` axis, normalised                                                                       | **MVP**                                   |
-| `attack`; `ability-1..3`, `ability-4`                | mouse 0; 1 2 3, 4 (ultimate)                                             | `intent.attack` edge with the aim; `intent.cast` slot (ids equal the `AbilitySlot` literals, 05 §15) | **MVP**                                   |
-| `gadget-1`, `gadget-2`                               | Z, C                                                                     | `intent.cast` gadget slots → `cast-ability { slot: 'gadget-1' \| 'gadget-2' }` (DISC-61)             | **MVP** (artifacts **MVP-if-time**)       |
-| `sprint`, `interact`                                 | `Recommendation:` Shift, E                                               | `intent.isSprinting`; pick-up/drop, enter a turret                                                   | **MVP** (pick-up **MVP-if-time**)         |
-| `turret-toggle-control`, `turret-switch-ammo`        | P, T                                                                     | `intent.turretToggle`, `intent.turretAmmo`                                                           | **MVP-if-time** (manual turrets, 11 §4.5) |
-| `camera-zoom-in/out`, `toggle-minimap`, `pause-menu` | `Recommendation:` `Equal`/`Minus`, M, Escape                             | client-only (camera, `settingsSlice.hud`, pause)                                                     | **MVP**                                   |
-| `toggle-developer-menu`, `toggle-perf-overlay`       | `Recommendation:` Backquote, F9                                          | client-only, active only when the developer flag is on                                               | **MVP**                                   |
-| gamepad chords, first-person view switch             | —                                                                        | `GamepadDevice` + glyph tables; `Camera` mode                                                        | **post-MVP** (D12)                        |
+| `InputAction`                                        | Default (`TUNE`, [09-controls](../reference/game-design/09-controls.md))                                                                    | Effect                                                                                                                                                                                                                             | Status                                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `move-up/down/left/right`                            | W S A D (`wasd`); arrows (`arrows`)                                                                                                         | `intent.move` axis, normalised                                                                                                                                                                                                     | **MVP**                                   |
+| `attack`; `ability-1..3`, `ability-4`                | mouse 0; 1 2 3, 4 (ultimate)                                                                                                                | `intent.attack` edge with the aim; `intent.cast` slot (ids equal the `AbilitySlot` literals, 05 §15)                                                                                                                               | **MVP**                                   |
+| `gadget-1`, `gadget-2`                               | Z, C                                                                                                                                        | `intent.cast` gadget slots → `cast-ability { slot: 'gadget-1' \| 'gadget-2' }` (DISC-61)                                                                                                                                           | **MVP** (artifacts **MVP-if-time**)       |
+| `sprint`, `interact`                                 | `Recommendation:` Shift, E                                                                                                                  | `intent.isSprinting`; pick-up/drop, enter a turret                                                                                                                                                                                 | **MVP** (pick-up **MVP-if-time**)         |
+| `turret-toggle-control`, `turret-switch-ammo`        | P, T                                                                                                                                        | `intent.turretToggle`, `intent.turretAmmo`                                                                                                                                                                                         | **MVP-if-time** (manual turrets, 11 §4.5) |
+| `camera-zoom-in/out`, `toggle-minimap`, `pause-menu` | `Recommendation:` `Equal`/`Minus`, M, Escape                                                                                                | client-only (camera, `settingsSlice.hud`, pause)                                                                                                                                                                                   | **MVP**                                   |
+| `view-details`                                       | V (DEC-103)                                                                                                                                 | client-only: opens View Details on the character-select steps; read in `ui/` by the step's prompt (§6.2, §6.4)                                                                                                                     | **MVP**                                   |
+| `toggle-developer-menu`, `toggle-perf-overlay`       | `Recommendation:` Backquote, F9                                                                                                             | client-only, active only when the developer flag is on                                                                                                                                                                             | **MVP**                                   |
+| `toggle-developer-camera`                            | Cmd+Shift+F3 and Ctrl+Shift+F3, both bound on every platform, the player's own platform's first (chords with `modifiers`, DEC-105, DEC-118) | client-only, a one-shot press (§6.2, DEC-117): shows or hides the free camera, the overview, the explorer toolbar and the map legend; `MatchHost` runs it on the key press through `InputMapper.isActionKey`; works in every build | **MVP**                                   |
+| gamepad chords, first-person view switch             | —                                                                                                                                           | `GamepadDevice` + glyph tables; `Camera` mode                                                                                                                                                                                      | **post-MVP** (D12)                        |
 
 ### 6.2 `InputMapper`
 
@@ -354,7 +394,7 @@ export class InputMapper {
   public setBindings(bindings: readonly Binding[]): void; // rebuilds the chord index; called on every settings save
   public resolve(snapshot: InputSnapshot): ActionState; // an action is active if ANY chord of ANY device matches
   public toIntent(actions: ActionState, projection: Projection): InputIntent; // pointer → world through Camera.screenToWorld
-  public clientActions(actions: ActionState): readonly InputAction[]; // the client-only edges (§6.1), handled by Match
+  public clientActions(actions: ActionState): readonly InputAction[]; // the client-only edges (§6.1), handled by Match, except `pause-menu` (read in `ui/`) and the one-shot actions (run by `MatchHost`, below)
 }
 ```
 
@@ -364,8 +404,24 @@ export class InputMapper {
 included), `pick-up`, `throw` ([11](11-game-ai.md) §4.1). `InputIntent` is a core type (public API,
 [02](02-code-structure.md) §6) with no key names in it, so the replay log is device-agnostic and
 bots and the human share one `Command` vocabulary. `BindingResolver` keys chords with
-`chordKey(chord)` (`'keyboard:KeyW'`, `'mouse:3'`) in a `Map<string, readonly InputAction[]>`;
+`chordKey(chord)` (`'keyboard:KeyW'`, `'mouse:3'`; with modifiers, sorted, `'keyboard:Control+Shift+F3'`) in a `Map<string, readonly InputAction[]>`;
 the same function detects conflicts in the settings screen.
+
+Three inputs are not read by `Match`: the screens' prompts, because outside a match no `Match`
+exists, the pause key, because it also resumes a paused match, whose stopped loop cannot read
+it, and the client-only one-shot actions, below. The first two read their chords in `ui/`
+(`ui/components/actionShortcut.ts`): one listener per prompt matches presses against the current
+bindings by `chordKey`, so a rebinding still applies. This path serves screen prompts and the
+pause overlay only, never gameplay (DEC-50; `Recommendation:`, the owner's Keep of 2026-10-28,
+INBOX HC-F7).
+
+A chord with modifiers (`toggle-developer-camera`, Ctrl+Shift+F3) is a one-shot press: it
+matches on the key press with exactly the chord's modifiers and is never held input, because the
+snapshot `Match` polls carries key codes only, with no modifiers. `MatchHost` runs a one-shot
+action from its own key listener, through a table of action to handler (today one entry,
+`toggle-developer-camera`, which shows or hides the map explorer of the pointer controls, state
+that `Match` does not own); a new one-shot action is one entry in that table. `clientActions`
+stays the path for the client edges of state `Match` owns, such as the camera zoom (DEC-117).
 
 ### 6.3 Press-to-bind
 
@@ -398,7 +454,13 @@ a table by controller family; Kenney's CC0 Input Prompts are the licensed source
 Prompt strings are templates with `{action:…}` placeholders (`Press
 {action:turret-toggle-control} to assume control`) rendered by `<Prompt template="…" />`, which
 inserts a `KeyGlyph` per placeholder. No component contains a key name, so a rebinding re-renders
-every prompt with no code change: the requirements doc's acceptance test (§8).
+every prompt with no code change: the requirements doc's acceptance test (§8). On the
+character-select screens the Back prompts (the Legend step's and View Details') reuse a match
+binding, `<KeyGlyph action="pause-menu" />`, so no input is bound to two actions (§6.3;
+`Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-F7). View Details has its own action,
+`view-details` (V by default, DEC-103), on both class layouts and on the Legend step (DEC-109);
+while it is open, only a `pause-menu` key or mouse button works, and it closes the view (DEC-65;
+that button's release does not step the browser's history, DEC-112).
 
 ## 7. Styling, accessibility and React rules
 
@@ -408,6 +470,9 @@ every prompt with no code change: the requirements doc's acceptance test (§8).
   and spacing and z-index scales are `Recommendation:`s). No colour literal outside `global.css`;
   no inline `style` except runtime-computed values (bar widths, cooldown sweeps). HUD elements
   sit `position: absolute` over the canvas host with `pointer-events: none` unless interactive.
+  The selection screens are one 1920 × 1080 artboard scaled as a whole; the HUD is sized by its
+  own unit `--hud-u` (1 px at 1920 × 1080); no text renders below `--text-min`, whose value
+  `styles/global.css` sets (`Recommendation:`, the owner's Keep of 2026-10-28, INBOX HC-Q14).
 - **Accessibility minimums** (ES-11 and plan sprint 5.5, `Recommendation:` beyond the sources'
   remappable controls): every screen operable by keyboard alone with a visible focus ring; every
   interactive element has an accessible name; `prefers-reduced-motion` disables shake and flashes;
@@ -415,19 +480,30 @@ every prompt with no code change: the requirements doc's acceptance test (§8).
   colour alone (shape or outline too, on HUD and minimap glyphs); nothing flashes faster than
   3 Hz; the match pauses from `pause-menu`. Rebinding itself is "one of the best value
   accessibility features" ([research B2](../research/persistence-input-diagnostics-research.md#b2-rebinding-ux-and-data-representation)).
-- **React rules** (`apps/client/AGENTS.md`): function components only; logic in co-located
-  `useXxx.ts` hooks; one store, slices via `createSlice` registered in `combineSlices(...)`, never
-  a second `configureStore`; typed hooks instead of the plain `react-redux` ones; one component
-  per file plus its `.module.css` and `.test.tsx`; no `dangerouslySetInnerHTML` (ES-08); labels in
-  one strings file; game names from content; `ui/` never imports `game/`, `data/` or core (rule
-  5; the planned lint block is in [02](02-code-structure.md) §11).
+- **React rules** (`apps/client/AGENTS.md`): function components only, except the one
+  `ErrorBoundary` class (§3, ADR 0025); logic in co-located `useXxx.ts` hooks; one store, slices
+  via `createSlice` registered in `combineSlices(...)`, never a second `configureStore`; typed
+  hooks instead of the plain `react-redux` ones; one component per file plus its `.module.css`
+  and `.test.tsx`; no `dangerouslySetInnerHTML` (ES-08); labels in one strings file; game names
+  from content; `ui/` never imports `game/`, `data/` or core (rule 5; the planned lint block is
+  in [02](02-code-structure.md) §11).
+- **Display switches** (owner decisions DEC-53, DEC-54 and DEC-55,
+  [decisions log](../reference/game-design/13-owner-decisions-log.md)). On the screens built from
+  the owner's Figma, the Figma look is the default and each alternative is chosen by one content
+  value: `effectsRenderer` (`'figma-raster'` or `'css'`) for the selection screens' glass, halos
+  and button chrome, and `contrastMode` (`'figma'` or `'minimums'`, also chosen by the OS setting
+  `prefers-contrast: more`) for the HUD colours that fall below the minimums above, which stay
+  listed exceptions in the `'figma'` set. A later improvement on a frame ships the same way, with
+  the frame's original kept as a live, selectable variant.
 
 ## 8. Tests
 
 - **Server-render tests in Node** (`react-dom/server`, no DOM): each screen and HUD element
   renders against a store seeded with fixture slices, at the states that matter (`BootScreen` at
   0 %, 50 %, error, "storage not persisted"); a walk over every interactive element asserts an
-  accessible name.
+  accessible name. A test that needs a page (real key events, the focus) opts in with
+  `// @vitest-environment happy-dom` on its first line, one file at a time; every other file stays
+  in Node (DEC-111).
 - **Slices and selectors**: reducers are pure functions of bus payloads; `connectBusToStore` is
   tested with a fake bus (30 ticks of `match-clock` → 5 dispatches; `selectMatchClock` → `mm:ss`).
 - **`InputMapper`**: any chord of any device activates an action; edges fire once; `toIntent`
@@ -458,17 +534,24 @@ it('rebinds move-up from W to Up Arrow and every prompt follows', () => {
 
 ## 9. Recipe: a screen, a HUD element, an action
 
-| I am adding…                   | Files                                                                                                  | Plus                                                                                                         |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| A screen                       | `ui/screens/<Name>Screen.tsx` + `.module.css` + `.test.tsx`; a `MenuRoute` literal or a `SessionPhase` | one line in `App.tsx`; selectors it needs; a `SessionState` class if it is a phase                           |
-| A HUD element                  | `ui/hud/<Name>.tsx` + `.module.css` + `.test.tsx`                                                      | a selector; a slice field if new data; a `BridgeEventMap` entry and a `MatchBridge` publish if new game data |
-| Data React needs from the game | `bridge/events.ts` entry, `slices/<name>Slice.ts` field, `selectors/select<Fact>.ts`                   | publish (throttled) from `MatchBridge`                                                                       |
-| A UI action toward the game    | a `UiIntent` member                                                                                    | a handler in `SessionController` or `Match`; a `Command` member if it changes state                          |
-| A player action                | one id in `INPUT_ACTIONS`, one `DEFAULT_CHORDS` entry                                                  | an `InputIntent` field and its `PlayerController` case, or a `clientActions` case; a `<KeyGlyph/>` use       |
-| A developer-menu button        | a `dev-*` `Command` member and `applyCommand` case, or a `DevToggle` member                            | one button in `DeveloperMenu` and one line in the spy test                                                   |
+| I am adding…                                | Files                                                                                                                    | Plus                                                                                                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A screen                                    | `ui/screens/<Name>Screen.tsx` + `.module.css` + `.test.tsx`; a `MenuRoute` literal or a `SessionPhase`                   | one line in `App.tsx`; selectors it needs; a `SessionState` class if it is a phase                                                                                                                  |
+| A view over a selection step (View Details) | `ui/screens/<Name>Screen.tsx` + `.module.css` + `.test.tsx`; its open state in a hook beside the step (`useViewDetails`) | the step keeps it mounted and `inert` while closed; `useModalKeyFilter` stops every key and bound mouse button while it is open, and only `pause-menu` closes it; no `SessionPhase`, no `MenuRoute` |
+| A HUD element                               | `ui/hud/<Name>.tsx` + `.module.css` + `.test.tsx`                                                                        | a selector; a slice field if new data; a `BridgeEventMap` entry and a `MatchBridge` publish if new game data                                                                                        |
+| Data React needs from the game              | `bridge/events.ts` entry, `slices/<name>Slice.ts` field, `selectors/select<Fact>.ts`                                     | publish (throttled) from `MatchBridge`                                                                                                                                                              |
+| A UI action toward the game                 | a `UiIntent` member                                                                                                      | a handler in `SessionController` or `Match`; a `Command` member if it changes state                                                                                                                 |
+| A player action                             | one id in `INPUT_ACTIONS`, one `DEFAULT_CHORDS` entry                                                                    | an `InputIntent` field and its `PlayerController` case, or a `clientActions` case, or one entry in `MatchHost`'s one-shot table (DEC-117); a `<KeyGlyph/>` use                                      |
+| A developer-menu button                     | a `dev-*` `Command` member and `applyCommand` case, or a `DevToggle` member                                              | one button in `DeveloperMenu` and one line in the spy test                                                                                                                                          |
 
 Nothing else changes: the OCP litmus test holds because the registries (`App.tsx`, `events.ts`,
 `combineSlices`, `INPUT_ACTIONS`) are the only lists.
+
+A layout variant of a screen (the class step's alternate frame 62:70, DEC-52) or an improvement
+on one of the owner's frames (DEC-53) is chosen by one content value, never by a player setting
+unless the owner asks for one; the frame's original stays a live, selectable variant, and the
+difference is registered in
+[reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md).
 
 ## 10. Implementation status
 
@@ -490,6 +573,177 @@ and the keybinding and settings stack of §6: `keybindings.ts`, `BindingResolver
 - Boot does not wait for the settings: the store has no bindings until the first `settings`
   event; with the memory adapter that is immediate, with IndexedDB (S2) it needs a boot-time wait
   or the `degraded` path of [14](14-persistence-and-resources.md) §10.
+
+HUD (2026-10-18): the `AbilityBar` cooldown sweep of §3 is the owner's Figma look, a vertical fill
+rather than a conic sweep. A slot on cooldown shows the frame's red vertical gradient, cut from the
+bottom to the share of the cooldown still to run (`cooldownRemainingTicks / cooldownTicks`); a
+ready slot shows the gold glow. The meanings are the owner's (OD-9); the look and its open
+question, the fill's direction, are register row CD-28 in
+[reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md#3-register).
+
+HUD and character select (`feat/hud-and-character-select`, 2026-10-24; the owner's Figma frames,
+[reference 15](../reference/game-design/15-figma-frames-and-creative-decisions.md); DEC-48 to
+DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), except:
+
+- **§2's `character-select` row** says the phase ends when the player confirms a class and builds
+  the rosters there. The branch builds the rosters in `menu`, each bot by class from the bot
+  roster content, and runs the owner's flow (2026-10-30, `feat/hud-plan-b2`): the countdown always
+  runs its full 60 s, LOCK IN locks the pick and shows a locked view (DEC-60) and fills each bot's
+  Legend, the enemy's tenth bot copying the player's pick (DEC-61, DEC-102), and a countdown that
+  ends before LOCK IN starts no match (DEC-102). The row and the `menu` → `loading` row are
+  redrafted to that flow and wait for his approval (HC-T1 T-10, T-12, T-13). **§3's
+  `CharacterSelectScreen` row, §6.1 and §6.4** do not name the locked view, View Details or its
+  `view-details` action yet (HC-T1 T-181 to T-184). **§3's `LevelBadge`, `WeaponPanel`, ultimate
+  and structure rows** are not in the table yet: their draft, redrafted to his HUD rules (DEC-62),
+  waits for his approval (HC-T1). **Appended 2026-11-02:** the owner approved these rows (HC-T1
+  T-10, T-12, T-13, T-23 and T-181 to T-184; DEC-142), so the text above now says all of this.
+- **Screens.** `CharacterSelectScreen` runs the class step (62:125, or 62:70 when the content value
+  `classSelectLayout` is `'alternate'`, through the registry `CLASS_STEP_LAYOUTS`; DEC-52) and then
+  the Legend step (58:271; DEC-49) inside the one `character-select` phase, then, from LOCK IN
+  until the countdown ends, the locked view (`LockedSelectStep`, DEC-60); each step is one entry of
+  its registry `SELECTION_STEPS`. Key V opens View Details over the class and Legend steps
+  (`ViewDetailsScreen`; the class case, `ClassDetailsScreen`, is shared by both class layouts;
+  DEC-103, DEC-109): a component inside the screen, neither a `MenuRoute` nor a `SessionPhase`.
+  After a select timeout the menu shows the popup `SelectTimeoutNotice` (DEC-102). `MatchScreen`
+  holds the HUD and the pause overlay. `ui/App.tsx` registers both in `PHASE_SCREENS`, and only
+  `MatchScreen` renders the viewport, so no canvas exists outside `match`.
+- **`Match` lifetime (DEC-50).** `match-loading` loads the `match` group, then calls `prepareWorld`
+  (`game/prepareMatchWorld.ts`: the map from `setup.seed`). In `match`, `MatchState.attachViewport`
+  creates the match through the injected factory `createMatch(request, viewport)`
+  (`game/createBrowserMatch.ts`, bound only by `main.tsx`), which builds the adapters, `Simulation`,
+  `Match` and `MatchHost`; `attachViewport` returns its detach. Each attach builds a fresh
+  `Simulation` from the setup's seed, so a re-attach (a StrictMode remount, a replaced viewport)
+  restarts the match from tick 0 on the same prepared world. `MatchHost` owns the window, document
+  and canvas listeners and the devices, tears them down in order, applies the bindings from the
+  `settings` event, and releases held input on pause and on focus loss. Leaving `match` destroys the
+  match and drops the world. A live check of the built app (2026-10-24, development and production
+  builds) found no canvas and no animation-frame callback before `match`, the world prepared once
+  and only in `match-loading`, the `Match` created only in `match`, its loop running there and
+  stopped after Leave match, and the keyboard-only flow working. Long animation frames during
+  character select are judged on the production build, where none occurred in seven runs (build
+  ruling OD-30, listed in [reference
+  15](../reference/game-design/15-figma-frames-and-creative-decisions.md#appendix-the-build-rulings)).
+  The title fit (`useFitFontSize`) now measures after layout, through a one-shot `ResizeObserver`,
+  instead of forcing it. Residual risk: the change from the class step to the Legend step is not
+  measurably cheaper for it, so a slower machine may still stutter there. The evidence is the
+  probe's records in the coordinating session's working folder
+  (`eternalus-agent-work/hud-charselect/wf7/probe-r2/` and `results/f2.json`), outside the
+  repository.
+- **Session.** `menu` builds the setup draft (seed, `playerTeam`, and the allied and enemy
+  rosters by class from the bot roster content, `buildMatchSetup`; no config or loadout yet).
+  `SessionController` holds the class and Legend pick; `canConfirmSelection`
+  (`bridge/selectionRules.ts`) is the one rule for LOCK IN, in the session and in the UI. LOCK IN
+  fills the rosters (`fillRosters`: each bot a Legend of its class from the seed's roster stream,
+  the enemy Rover a copy of the pick) and publishes them (`selection-locked`); every later intent
+  is ignored. The countdown's end after LOCK IN goes on to `pre-launch`; before it, with or
+  without a class, to `menu` with `select-timeout`, which the menu shows as a popup, not a banner.
+  `cancel-match` returns to `menu`, but no screen sends it. The other failures carry a
+  `SessionReason` banner (`cancelled`, `match-failed`, `load-failed`); `match-crashed` and
+  `screen-crashed` open the crash popup instead (§3). A `boot` load that rejects (a loader bug; a
+  missing asset is only warned) opens the menu with `load-failed` until `BootScreen` offers a
+  retry (plan Phase 5, sprint 5.2). Nothing produces `results` yet: `match-ended` comes with the
+  `MatchDirector` (Phase 3, sprint 3.5). A throw from a tick or a frame during a match stops
+  `GameLoop`, which calls `LoopTarget.crashed` once; `Match` passes the error and the tick to the
+  request's `onCrash`, and the running `MatchState` ends the match through
+  `SessionContext.endCrashedMatch`: `SessionCrashes` logs FATAL `client.session` (error, stack,
+  seed, tick) and reports the crash at once through the page's `ErrorReporter` (`CrashReportFlow`;
+  the report holds the match's replay and recent context and no note yet, ADR 0025 §3), then
+  returns to `menu` with `match-crashed`, where the crash popup asks for the note (DEC-106,
+  DEC-124). A screen that throws reaches the same flow through `ErrorBoundary`
+  (`report-screen-crash`): in a match it ends the match the same way; elsewhere the crash is
+  reported with `screen-crashed`, then `crashToMenu` returns to `menu` (§2, DEC-149; ADR 0025 §5).
+  `SessionController` takes no `persistence` yet (`main.tsx` opens it
+  beside the session, and nothing saves a match result), so its transitions test has no
+  `MemoryStorageAdapter` (§2).
+- **Bridge.** New events beyond §5's sketch: `structure-state`, `asset-urls` (each image's URL and,
+  where the manifest declares one, its draw box), `credits` and `selection-locked` (the rosters LOCK
+  IN filled); §5's `capture-state` is now published; `loading-progress` names seven asset groups
+  ([14](14-persistence-and-resources.md) §14); `hud-state` is `{ player }` with no
+  `spectatedLegendId` (no spectate producer yet). The display types live in
+  `bridge/catalogue.types.ts` and `bridge/hud.types.ts`; `bridge/` also gains `selectionRules.ts`,
+  `minimapRing.ts` and `legendNames.ts`, and `assetsSlice`. The HUD data is in
+  `hudSlice` (the Sprint 1 contract), `matchSlice.clock` is nullable, and `match-setup` resets the
+  setup, HUD and match slices so a rematch shows no stale HUD.
+- **HUD data.** `MatchBridge` publishes `match-clock` and `hud-state` every 6 ticks and
+  `structure-state` and `capture-state` every 30, from `Match`'s tick. Core's `Snapshot` has no
+  `player`, so it projects the HUD player from the player's `EntitySnapshot` (health and maximum
+  health live, the slot list empty, every other value `null`, DEC-17) and the structure and
+  capture rosters from the `MapDefinition` (structure health `null`, capture owner `neutral`).
+  Each field becomes live when core publishes it: structure health (Phase 2, sprint 2.1), capture
+  state (sprint 2.6), XP and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
+  [05](05-abilities-weapons-and-loadouts.md) §15).
+- **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
+  (the weapon art at its manifest draw box, and the weapon-level bar, OQ-63), `GadgetBar` (the
+  gadget slots, each with `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64),
+  `StructureStrip`, `ObjectiveTracker` (with an allegiance flag, register CD-03) and
+  `CrystalStatus`. `HealthBar` and `AetherBar` are one-line leaves over `ResourceBar`; no shield
+  segment is drawn, because the snapshot carries no shield data; Phase 4, sprint 4.7 builds
+  `HealthBar` on live Legend data as §3 designs it, shield segments included, though its task does
+  not name them. `AbilityBar` places its slots at the frame's fixed positions (the ultimate, then
+  abilities 1 to 3; the gadgets in `GadgetBar`), and the `default-action` prompt of
+  [05](05-abilities-weapons-and-loadouts.md) §15 is not built: it belongs to Phase 4, sprint 4.7,
+  whose `AbilityBar` reads 05 §15's slot list (`default-action` is its last slot, prompted on
+  `<KeyGlyph action="interact" />`), though the sprint's task does not name it.
+  `MatchClock` shows no phase label until `match-clock` carries the phase (Phase 3, sprint 3.5).
+  `MinimapPanel` is a frame only: there is no `minimap-click` intent (the canvas handles a click)
+  and no `minimapVisible` setting, and the canvas draws the minimap inside the HUD's ring
+  ([06](06-map-and-minimap.md) §10). The `toggle-minimap` binding (M) has no handler, so the key
+  does nothing; the setting and the M handler are a Phase 5, sprint 5.4 task (DEC-147; `INBOX.md`
+  HC-Q19). Not built,
+  because the frames do not draw them, each with the plan entry that schedules it: `Scoreboard`
+  (named for Phase 3, sprint 3.5 in [the Phase 2 architecture
+  plan](../plan/phase-2-architecture.md), with no task line yet), `Announcer` (Phase 2, sprint 2.8,
+  and Phase 3, sprint 3.5), `DeveloperMenu` (v0 in Phase 1, sprint 1.5; complete in Phase 5,
+  sprint 5.5) and `PerfOverlay` (v1 in Phase 1, sprint 1.5; v2 in Phase 5, sprint 5.5).
+- **Styling and accessibility.** The selection screens are one 1920 × 1080 artboard scaled as a
+  whole; the HUD is sized by its own unit `--hud-u`; both keep text at or above `--text-min`.
+  The display switches (DEC-54, DEC-55) are built (`effectsRenderer` with the developer override
+  `?dev=1&fx=css` or `fx=raster`; `contrastMode` written to `data-contrast` on `<html>` by
+  `SessionController`). The in-game reduce-motion setting is saved but not yet applied to the
+  page; only `prefers-reduced-motion` reaches CSS, except in View Details, which reads the setting
+  itself (`data-reduce-motion` on its own root) until UE-03 applies it everywhere (INBOX HC-S3;
+  specified as UE-03 in [the UI enhancements plan](../plan/ui-enhancements-plan.md)).
+- **Character select, known gaps (2026-10-30).** Content has no description of a class's default
+  ability, proficiency or specialty, or of a Legend's abilities, so View Details' rows show a
+  label and a name only, and several Legends have no lore paragraph yet (register CD-41). View
+  Details' icons are the panels' renditions, smaller than frame 145:2's, until new renditions exist
+  (CD-40). While View Details is open its filter (`ui/components/modalKeyFilter.ts`) stops every
+  key press and every press of a mouse button bound to an action; a `pause-menu` key or button
+  closes the view, and a click still reaches the view's own buttons. The tests render in Node with
+  no DOM (§8), so View Details' open path (the V press or the prompt click that opens it, the focus
+  it keeps and gives back) runs in no test; a DOM test environment (jsdom or happy-dom) is a new
+  development dependency, which needs the owner's approval (`INBOX.md` HC-Q23). The open and
+  closed renders are tested (`ViewDetailsScreen`, and the class case in `ClassDetailsScreen`), and
+  the focus helper is tested with the pause overlay. **Appended 2026-10-30:** the owner approved a
+  page for such tests (DEC-111); `ClassSelectStep.viewDetails.test.tsx` runs in happy-dom and
+  covers the V press, the prompt click, the focus on Esc Back and its return on close. A side
+  button that closes the view no longer steps the browser's history (DEC-112).
+- **Developer chrome and pause.** The developer flag is the `?dev=1` query only, because
+  `settings.developer.menuEnabled` does not exist yet. The free camera, the overview, the explorer
+  toolbar and the map legend start shown with it, or are shown by the hotkey of DEC-105
+  (Cmd or Ctrl+Shift+F3) in any build (DEC-32; INBOX HC-F8). The same holds for the click that
+  cuts a building's roof away with its "Restore roofs & overview" button (DEC-143). Normal play draws
+  nothing over the canvas: a building's roof opens while the player's Legend stands inside it,
+  and the minimap is player HUD, drawn whatever the developer flag; only the player's own
+  minimap setting may hide it (DEC-143, DEC-147; [06](06-map-and-minimap.md) §10). The interim
+  "Leave cathedral" control (register CD-22) is gone with the separate interior, so no
+  `leave-interior` intent is planned (corrected 2026-11-02; the owner dropped the task, DEC-148).
+  The pause key is read by the UI hook
+  `usePauseMenuKey`, because a paused loop cannot read it, and `MatchState` pauses the match
+  while an overlay is open (single player only; INBOX HC-Q8).
+- **Developer hotkey, one-shot actions and the crash banner (2026-10-30).** The developer camera
+  hotkey is built: `toggle-developer-camera` (Cmd+Shift+F3 and Ctrl+Shift+F3, both bound on every
+  platform, the player's own first, as `SettingsController` publishes them; DEC-105, DEC-118)
+  shows or hides the free camera, the overview, the explorer toolbar and the map legend in any
+  build, so the "Developer chrome and pause" bullet above is out of date on the developer flag. It
+  is a one-shot press: `MatchHost` matches it on the key press with exactly the chord's modifiers
+  and runs it from a table of action to handler, today one entry (DEC-117). `clientActions` is
+  still not built. A loop crash is interim: the session ends the match and the
+  menu shows a banner for `match-crashed` (DEC-106); ADR 0025's report popup and `ErrorBoundary`
+  replace it in build-plan step 12 (DEC-115, DEC-116). The design wording for these is pending in
+  `INBOX.md` HC-T1 (T-196, T-202, T-209 to T-212). **Appended 2026-11-02:** step 12 replaced the
+  banner with the crash popup and added the `ErrorBoundary` (the "Session" bullet above, §3), and
+  the owner approved those rows (HC-T1, DEC-142), so §3, §6.1, §6.2, §9 and this note say it.
 
 ## Related
 
