@@ -102,6 +102,25 @@ describe('Simulation capture points', () => {
     expect(zonesOf(match(false))).toEqual([]);
   });
 
+  it('refuses a developer spawn of a capture point: only the map places one', () => {
+    const simulation = match();
+    const rejected: string[] = [];
+    simulation.on('command-rejected', ({ reason }) => rejected.push(reason));
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'capture-point',
+      definitionId: 'capture-point',
+      team: 'light',
+      at: { x: 0, y: 0 },
+      count: 1,
+    });
+
+    simulation.step();
+
+    expect(rejected).toEqual(['map-only']);
+    expect(zonesOf(simulation)).toHaveLength(CONFIG.map.numLanes);
+  });
+
   it('captures the Cathedral for the team whose Legend stands in it, the same way every run', () => {
     const cathedral = MAP.features.find(({ kind }) => kind === 'cathedral');
     const play = () => {

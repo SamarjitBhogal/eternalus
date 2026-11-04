@@ -66,7 +66,14 @@ export class CaptureSystem implements System {
     }
   }
 
-  /** The summed weight of each side's units whose centre is on `zone`'s area. */
+  /**
+   * The summed weight of each side's units whose centre is on `zone`'s area.
+   *
+   * @remarks ponytail: every unit is tested against every zone (O(zones × units)). That is fine up
+   * to 5 lanes (the config sweep in `balancing.md`) and the unit cap. If profiling puts
+   * `CaptureSystem` in the tick budget, ask `state.space` for the units near each zone; the index
+   * then misses units spawned that tick.
+   */
   private weightsInside(zone: CaptureZone, units: readonly Unit[]): SideWeights {
     const weights: SideWeights = { light: 0, dark: 0, neutral: 0 };
     for (const unit of units) {

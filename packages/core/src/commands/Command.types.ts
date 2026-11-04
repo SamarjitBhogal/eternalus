@@ -94,6 +94,7 @@ export type CommandRejectReason =
   | 'invalid-origin'
   | 'cap-exceeded'
   | 'horde-only'
+  | 'map-only'
   | 'invalid-direction'
   | 'not-movable'
   | 'cannot-attack'

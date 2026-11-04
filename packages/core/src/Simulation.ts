@@ -51,7 +51,6 @@ import { SpaceIndex } from './physics/SpaceIndex';
 import { WorldMap } from './map/WorldMap';
 import { zoneAreaOf } from './map/zoneArea';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
-import { IdGenerator } from './utils/IdGenerator';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
 import { WorldObjectStore } from './state/WorldObjectStore';
@@ -98,18 +97,23 @@ export class Simulation {
     const weaponSource = weapons ?? loadWeapons(tickRate);
     const controllers = Simulation.createControllers();
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
-    const registry = createDefaultEntityRegistry();
     const objectsById = new Map(
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
     );
     const definitions = {
-      has: (id: string): boolean => objectsById.has(id) || units.has(id),
-      get: (id: string) => objectsById.get(id) ?? units.get(id),
+      has: (id: string): boolean =>
+        objectsById.has(id) || ZONE_DEFINITIONS.has(id) || units.has(id),
+      get: (id: string) =>
+        objectsById.get(id) ??
+        (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
     };
-    // One factory for commands and spawning; zones come from another catalogue, so the zone
-    // factory shares its id counter and every entity id stays unique.
-    const ids = new IdGenerator();
-    const factory = new EntityFactory(registry, definitions, ids, weaponSource);
+    // One factory for commands and spawning, so entity ids come from one counter.
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      definitions,
+      undefined,
+      weaponSource,
+    );
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
@@ -125,7 +129,7 @@ export class Simulation {
       );
     }
     Simulation.spawnRoster(this.state, factory, roster, controllers);
-    Simulation.spawnZones(this.state, new EntityFactory(registry, ZONE_DEFINITIONS, ids));
+    Simulation.spawnZones(this.state, factory);
     this.systemContext = { state: this.state, logger };
     this.pipeline =
       systems === undefined
