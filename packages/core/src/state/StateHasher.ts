@@ -15,9 +15,10 @@ import type { GameState } from './GameState';
 /**
  * Fingerprints a match state as a 32-bit FNV-1a hash of a canonical serialisation
  * (architecture 03 §9): tick, phase and RNG state, then every entity in store order with its
- * component fields in a fixed order, then the rest of the match state. It covers state the client
- * never sees (velocity), so two runs that diverge anywhere show it at the next hash. A new
- * component with simulation state adds its fields to `fieldsOf`.
+ * component fields in a fixed order, then the rest of the match state: the timeline, the hordes and
+ * spawn counters (architecture 18 §3.4, §4). It covers state the client never sees (velocity), so
+ * two runs that diverge anywhere show it at the next hash. A new component with simulation state
+ * adds its fields to `fieldsOf`.
  */
 export class StateHasher {
   /** The hash of `state` right now. */
@@ -27,16 +28,59 @@ export class StateHasher {
       entities.push(StateHasher.fieldsOf(entity));
     });
     const { match } = state;
-    const fields: unknown[] = [state.tick, match.phase, state.rng.getState(), entities];
+    const parts: unknown[] = [state.tick, match.phase, state.rng.getState(), entities];
     // Appended only once a field leaves its initial value (0 or false), so a match no director
     // runs hashes exactly as before (recorded replay checkpoints stay valid). One list feeds both
     // the check and the hash, so a new field cannot be left out of the check. The schedule comes
     // from the config, which a replay carries, so it is not hashed.
     const matchFields = [match.phaseEnteredTick, match.timelineCursor, match.isIdleHeld];
     if (matchFields.some((value) => value !== 0 && value !== false)) {
-      fields.push(['match', ...matchFields]);
+      parts.push(['match', ...matchFields]);
     }
-    return fnv1a(JSON.stringify(fields));
+    // Hordes and the spawn counters are appended only once a horde was asked for, for the same
+    // reason.
+    const { light, dark } = state.teams;
+    if (state.hordes.issuedIds > 0 || light.unitsRequested > 0 || dark.unitsRequested > 0) {
+      const hordes: unknown[] = [
+        state.hordes.issuedIds,
+        light.unitsRequested,
+        light.unitsSuppressed,
+        dark.unitsRequested,
+        dark.unitsSuppressed,
+      ];
+      state.hordes.forEach((horde) => {
+        hordes.push([
+          horde.id,
+          horde.team,
+          horde.weightClass,
+          horde.lane,
+          horde.formationId,
+          horde.leaderId,
+          horde.progress,
+          ...horde.memberIds,
+        ]);
+      });
+      parts.push(['hordes', ...hordes]);
+    }
+    // Lost towers are appended only once a lane has one, for the same reason.
+    const lost = (['light', 'dark'] as const).flatMap((team) =>
+      Object.keys(state.teams[team].towersLostByLane)
+        .sort()
+        .map((lane) => [team, lane, state.teams[team].towersLostByLane[lane]]),
+    );
+    if (lost.length > 0) {
+      parts.push(['enraged', ...lost]);
+    }
+    // Brains are appended only once one exists, for the same reason.
+    if (state.ai.size > 0 || state.ai.deferred.length > 0) {
+      const brains: unknown[] = [...state.ai.deferred];
+      state.ai.forEach((id, brain) => {
+        brains.push([id, brain.controllerId, brain.profileId, brain.memory, brain.rngState]);
+      });
+      parts.push(['ai', ...brains]);
+    }
+    if (state.worldObjects !== undefined) parts.push(state.worldObjects.snapshot());
+    return fnv1a(JSON.stringify(parts));
   }
 
   private static fieldsOf(entity: Entity): unknown[] {

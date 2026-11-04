@@ -42,13 +42,13 @@ const MAGUS = classCardFixture({
         rowPlate: 'oracle-row-plate',
       },
     }),
-    specCardFixture({ specId: 'necromancer', displayName: 'Necromancer', status: 'locked' }),
+    specCardFixture({ specId: 'necromancer', displayName: 'Heretic', status: 'locked' }),
   ],
 });
 const WARRIOR = classCardFixture({
   classId: 'warrior',
-  displayName: 'Legionnaire',
-  specs: [specCardFixture({ specId: 'knight', displayName: 'Centurion' })],
+  displayName: 'Vanguard',
+  specs: [specCardFixture({ specId: 'knight', displayName: 'Templar' })],
 });
 const LOCKED_ONLY = classCardFixture({
   classId: 'sentinel',
@@ -135,7 +135,7 @@ describe('selectLegendStepView', () => {
       light?.legends.map((legend) => legend.subClassName),
     );
     expect(viewOf({ classId: 'warrior', specId: null }, 'dark')?.legends[0]).toMatchObject({
-      subClassName: 'Centurion',
+      subClassName: 'Templar',
       legendName: null,
     });
   });

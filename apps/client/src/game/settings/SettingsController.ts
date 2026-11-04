@@ -3,13 +3,15 @@ import { makeLogRecord } from '@eternalus/core';
 import type { Binding } from '../../bridge/Binding.types';
 import type { UiIntent } from '../../bridge/events';
 import type { SettingsSliceState } from '../../bridge/slices/settingsSlice';
+import { ownPlatformChordsFirst } from '../input/bindingEdits';
 import type { SettingsControllerDeps } from './SettingsController.types';
 import { applySettingsIntent, settingsWithDefaults } from './settingsState';
 
 /**
  * The one writer of settings and keybindings, in every session phase (menu and in-match pause).
  * Loads the saved settings at start, then turns each settings intent from the UI into new
- * settings, publishes them on the bus (the store and `InputMapper` follow) and saves them.
+ * settings, publishes them on the bus (the store and `InputMapper` follow) and saves them. The
+ * published bindings list the platform's own modifier chords first (DEC-118).
  */
 export class SettingsController {
   private readonly deps: SettingsControllerDeps;
@@ -53,9 +55,8 @@ export class SettingsController {
     if (this.settings === null || !isSettingsIntent) {
       return;
     }
-    const next = applySettingsIntent(this.settings, intent);
-    this.publish(next);
-    this.deps.persistence.saveSettings(next).catch((error: unknown) => {
+    const published = this.publish(applySettingsIntent(this.settings, intent));
+    this.deps.persistence.saveSettings(published).catch((error: unknown) => {
       this.report('ERROR', 'settings could not be saved', error);
     });
   };
@@ -66,8 +67,13 @@ export class SettingsController {
     );
   }
 
-  private publish(settings: SettingsSliceState): void {
-    this.settings = settings;
-    this.deps.bus.emit('settings', settings);
+  private publish(settings: SettingsSliceState): SettingsSliceState {
+    const published = {
+      ...settings,
+      bindings: ownPlatformChordsFirst(settings.bindings, this.deps.isApplePlatform),
+    };
+    this.settings = published;
+    this.deps.bus.emit('settings', published);
+    return published;
   }
 }

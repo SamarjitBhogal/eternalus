@@ -3,6 +3,14 @@
   pointer-events: none;
 }
 
+/* View Details (145:2, DEC-103): the strip moved by whole px from 72:784 (45, 767) to 145:61's box
+   (116, 624). It keeps its 105 × 140 minis, not 145:45's 1.171× (resampling a raster, I-45). */
+.strip[data-placement='view-details'] {
+  position: absolute;
+  left: 71px;
+  top: -143px;
+}
+
 /* The strip's text leaves (72:785, the CD-13 line, the names): Cinzel Regular 14. */
 .headerText,
 .pending,

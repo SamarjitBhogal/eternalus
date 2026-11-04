@@ -1,10 +1,14 @@
-import { createDefaultGameConfig } from '@eternalus/core';
-import { describe, expect, it } from 'vitest';
+import { createDefaultGameConfig, type LogRecord, Simulation } from '@eternalus/core';
+import { describe, expect, it, vi } from 'vitest';
 
-import type { BridgeEventMap } from '../bridge/events';
+import type { BridgeEventMap, RosterEntry } from '../bridge/events';
 import type { PlayerHudSnapshot } from '../bridge/hud.types';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import type { LogSink } from '../data/logging/LogSink.types';
+import { RingBufferSink } from '../data/logging/RingBufferSink';
+import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { createBrowserMatch } from './createBrowserMatch';
+import { botRosterSlots } from './session/botRosterSlots';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
@@ -17,7 +21,7 @@ import type { MatchRequest } from './SessionController.types';
 const CONFIG = createDefaultGameConfig();
 const SEED = 3;
 
-function setUp(canvas = new FakeViewportCanvas()) {
+function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []) {
   const window = new FakeBrowserTarget();
   const document = new FakeBrowserTarget();
   const bus = new TypedEventBus<BridgeEventMap>();
@@ -28,22 +32,27 @@ function setUp(canvas = new FakeViewportCanvas()) {
     bus,
     settings: { bindings: null },
     clock: new FakeSessionClock(),
-    sinks: [],
+    sinks,
   });
   const viewport: MatchViewport = {
     canvas,
     chrome: {
-      onInteriorChanged: () => undefined,
-      setLeaveInterior: () => undefined,
+      onDeveloperRoofsChanged: () => undefined,
+      onExplorerChanged: () => undefined,
       setOverview: () => undefined,
     },
     isExplorerShown: false,
   };
-  const request = (world: PreparedWorld = prepareMatchWorld(CONFIG, SEED)): MatchRequest => ({
+  const request = (
+    world: PreparedWorld = prepareMatchWorld(CONFIG, SEED),
+    onCrash: MatchRequest['onCrash'] = () => undefined,
+  ): MatchRequest => ({
     setup: { seed: SEED, playerTeam: 'dark', allies: [], enemies: [] },
     player: { legend: 'sentinel', team: 'dark' },
     world,
     captureKinds: ['capture-point', 'cathedral'],
+    roster: [],
+    onCrash,
   });
   /** Every listener on the window, the document and the canvas. */
   const listeners = (): number =>
@@ -73,6 +82,23 @@ describe('createBrowserMatch', () => {
     expect(window.pendingFrames).toBe(0);
   });
 
+  it("hands a crash of the match's loop to the request's onCrash, with no frame left (DEC-106)", () => {
+    const { window, factory, viewport, request } = setUp();
+    const onCrash = vi.fn<MatchRequest['onCrash']>();
+    const error = new Error('step failed');
+    factory(request(undefined, onCrash), viewport);
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+    vi.spyOn(Simulation.prototype, 'step').mockImplementation(() => {
+      throw error;
+    });
+
+    window.runFrame((2 * MS_PER_SECOND) / CONFIG.tickRate);
+
+    expect(onCrash.mock.calls).toEqual([[{ error, tick: 1 }]]);
+    expect(window.pendingFrames).toBe(0);
+  });
+
   it("runs the requested Legend on the browser's frames and leaves nothing behind on destroy", () => {
     const { window, bus, factory, viewport, request, listeners } = setUp();
     const busBefore = bus.listenerCount();
@@ -91,5 +117,118 @@ describe('createBrowserMatch', () => {
     expect(listeners()).toBe(0);
     expect(window.pendingFrames).toBe(0);
     expect(bus.listenerCount()).toBe(busBefore + 1);
+  });
+
+  it("gives the simulation's replay and history and the match's TRACE ring as evidence (ADR 0025 §3)", () => {
+    // The seat's ERROR comes while the match is built, before `evidence()` can be read, so the ring
+    // is watched at its own `write`.
+    const ringWrites = vi.spyOn(RingBufferSink.prototype, 'write');
+    const atPageSink: { record: LogRecord; lastInRing: LogRecord | undefined }[] = [];
+    const pageSink: LogSink = {
+      write: (record) => {
+        atPageSink.push({ record, lastInRing: ringWrites.mock.calls.at(-1)?.[0] });
+      },
+    };
+    const { window, factory, viewport, request } = setUp(undefined, [pageSink]);
+    // A class with no definition: core cannot spawn the seat (ERROR core.match, A19).
+    const stale: MatchRequest = { ...request(), player: { legend: 'stale-class', team: 'dark' } };
+
+    const running = factory(stale, viewport);
+    window.runFrame(0);
+    window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+    const { match, logTail } = running.evidence();
+
+    expect(match.seed).toBe(SEED);
+    expect(match.tick).toBe(1);
+    expect(running.currentTick()).toBe(1);
+    expect(match.replay.seed).toBe(SEED);
+    // The seat is config, so the replay rebuilds it and queues no command for it (A19); the setup
+    // has no bots and the seat has no Legend, so nothing else is queued either.
+    expect(match.replay.config.match.seat?.definitionId).toBe('stale-class');
+    expect(match.replay.commands).toEqual([]);
+    expect(match.recentCommands).toEqual([]);
+    expect(match.replay.checkpoints.map(({ tick }) => tick)).toEqual([0]);
+    expect(match.recentEvents.length).toBeGreaterThan(0);
+    // The match seed first, then the seat that did not spawn.
+    expect(logTail.map(({ severityText, scope }) => [severityText, scope])).toEqual([
+      ['INFO', 'client.match'],
+      ['ERROR', 'core.match'],
+    ]);
+    expect(logTail[0]?.attributes).toEqual({ seed: SEED });
+    // Only WARN and worse reach the page's sinks, after the ring already holds the record.
+    expect(atPageSink.map(({ record }) => record)).toEqual([logTail[1]]);
+    expect(atPageSink[0]?.lastInRing).toBe(atPageSink[0]?.record);
+  });
+
+  it("plays on the world's map with the setup's bots as the simulation's roster (18 §8)", () => {
+    const { factory, viewport, request } = setUp();
+    const bot = (index: number, classId: 'magus' | 'warrior'): RosterEntry => ({
+      legendId: `light-${String(index + 1)}`,
+      displayName: `Bot ${String(index + 1)}`,
+      classId,
+      specId: null,
+      isBot: true,
+      isPlayer: false,
+      isRover: index === 0,
+      team: 'light',
+    });
+    const base = request();
+    const enemies = [bot(0, 'magus'), bot(1, 'warrior')];
+    const withBots: MatchRequest = {
+      ...base,
+      setup: { ...base.setup, enemies },
+      roster: botRosterSlots(
+        { allies: [], enemies },
+        shippedCatalogue().load().botRoster.difficulties,
+      ),
+    };
+
+    const running = factory(withBots, viewport);
+    const spawned = running
+      .evidence()
+      .match.recentEvents.flatMap((event) =>
+        event.type === 'entity-spawned' ? [[event.payload.kind, event.payload.team]] : [],
+      );
+
+    // Core spawns the lane bots first, then the Rovers at their Stronghold, then the seat (A19).
+    expect(spawned).toEqual([
+      ['warrior', 'light'],
+      ['magus', 'light'],
+      ['sentinel', 'dark'],
+    ]);
+    running.destroy();
+  });
+
+  it("builds the simulation on the world's map objects, which its replay records", () => {
+    const { factory, viewport, request } = setUp();
+    const world = prepareMatchWorld(CONFIG, SEED);
+
+    const running = factory(request(world), viewport);
+    const { replay } = running.evidence().match;
+
+    expect(world.mapObjects.length).toBeGreaterThan(0);
+    expect(replay.mapObjects).toEqual(world.mapObjects);
+    running.destroy();
+  });
+
+  it('draws the minimap every frame, with the developer explorer hidden or shown (DEC-143)', () => {
+    for (const isExplorerShown of [false, true]) {
+      // The minimap is the only drawing that clips (to the HUD ring, `clipToEllipse`).
+      let clips = 0;
+      const canvas = new FakeViewportCanvas(1280, 720, {
+        ...FakeViewportCanvas.silentContext(),
+        clip: () => {
+          clips += 1;
+        },
+      });
+      const { window, factory, viewport, request } = setUp(canvas);
+      const running = factory(request(), { ...viewport, isExplorerShown });
+
+      window.runFrame(0);
+      window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
+
+      expect({ isExplorerShown, clips }).toEqual({ isExplorerShown, clips: 2 });
+      running.destroy();
+    }
   });
 });

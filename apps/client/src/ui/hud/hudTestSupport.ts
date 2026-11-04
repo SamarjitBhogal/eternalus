@@ -41,7 +41,7 @@ export const settingsWith = (bindings: readonly Binding[]): RootState['settings'
   bindings,
 });
 
-/** The match setup of the Figma HUD: a Light player who picked the Legionnaire (`warrior`). */
+/** The match setup of the Figma HUD: a Light player who picked the `warrior` class. */
 export const FIGMA_MATCH_SETUP: RootState['matchSetup'] = {
   ...matchSetupSlice.getInitialState(),
   playerTeam: 'light',

@@ -2,7 +2,9 @@ import { EntityRegistry } from './EntityRegistry';
 import { Magus } from './legends/Magus';
 import { Sentinel } from './legends/Sentinel';
 import { Warrior } from './legends/Warrior';
+import { HeavyMob } from './mobs/HeavyMob';
 import { LightMob } from './mobs/LightMob';
+import { MediumMob } from './mobs/MediumMob';
 import { Obstacle } from './Obstacle';
 import { Projectile } from './Projectile';
 
@@ -16,6 +18,8 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('sentinel', Sentinel);
   registry.register('magus', Magus);
   registry.register('light-mob', LightMob);
+  registry.register('medium-mob', MediumMob);
+  registry.register('heavy-mob', HeavyMob);
   registry.register('obstacle', Obstacle);
   registry.register('projectile', Projectile);
   return registry;

@@ -10,10 +10,11 @@ import { KeyPrompt } from './KeyPrompt';
 import styles from './KeyPrompt.module.css';
 import promptCss from './KeyPrompt.module.css?raw';
 
-/** The default chords of the two prompts' actions (game/input/keybindings.ts): C and Esc. */
+/** The default chords of the prompts' actions (game/input/keybindings.ts): C, Esc and V. */
 const DEFAULT_BINDINGS: readonly Binding[] = [
   { action: 'gadget-2', chords: [{ device: 'keyboard', code: 'KeyC', label: 'C' }] },
   { action: 'pause-menu', chords: [{ device: 'keyboard', code: 'Escape', label: 'Esc' }] },
+  { action: 'view-details', chords: [{ device: 'keyboard', code: 'KeyV', label: 'V' }] },
 ];
 
 const renderWith = (element: ReactElement, bindings: readonly Binding[]): string =>
@@ -44,8 +45,37 @@ describe('KeyPrompt', () => {
       DEFAULT_BINDINGS,
     );
 
-    expect(html).toContain(String(styles.legendBack));
+    expect(html).toContain(`${String(styles.keyLine)} ${String(styles.legendBack)}`);
     expect(accessibleNames(html, 'button')).toEqual(['Esc back']);
+  });
+
+  // DEC-103: V opens View Details on both steps; View Details' own Back is 148:203.
+  it.each([
+    [
+      'class-view-details',
+      'view-details',
+      'View Details',
+      'V View Details',
+      styles.classViewDetails,
+    ],
+    [
+      'legend-view-details',
+      'view-details',
+      'View Details',
+      'V View Details',
+      styles.legendViewDetails,
+    ],
+    ['details-back', 'pause-menu', 'back', 'Esc back', styles.detailsBack],
+  ] as const)('draws the %s skin on 58:328’s key line', (skin, action, label, name, placement) => {
+    const html = renderWith(
+      <KeyPrompt action={action} label={label} onPress={noop} skin={skin} />,
+      DEFAULT_BINDINGS,
+    );
+
+    expect(html).toContain(
+      `class="${String(styles.prompt)} ${String(styles.keyLine)} ${String(placement)}"`,
+    );
+    expect(accessibleNames(html, 'button')).toEqual([name]);
   });
 
   it('takes the focus on mount only when asked to', () => {
@@ -80,10 +110,13 @@ describe('KeyPrompt', () => {
   });
 
   it('places each skin at its Figma node with its cap box (58:328, 62:84)', () => {
-    expect(promptCss).toMatch(/\.legendBack \{\s*left: 73px;\s*top: 971px;\s*gap: 9px;/);
+    expect(promptCss).toMatch(/\.keyLine \{\s*top: 971px;\s*gap: 9px;\s*\}/);
+    expect(promptCss).toMatch(/\.legendBack \{\s*left: 73px;\s*\}/);
     expect(promptCss).toMatch(
-      /\.legendBack \.cap \{\s*min-width: 40px;\s*height: 22px;\s*margin-top: 3px;\s*padding: 0 3px 1px 2px;/,
+      /\.keyLine \.cap \{\s*min-width: 40px;\s*height: 22px;\s*margin-top: 3px;\s*padding: 0 3px 1px 2px;/,
     );
+    // 148:203: View Details' Back is 58:328 moved 43 px right.
+    expect(promptCss).toMatch(/\.detailsBack \{\s*left: 116px;\s*\}/);
     // The Figma's "esc " centres its glyphs; a rendered trailing space would widen the cap (58:328).
     expect(promptCss).not.toContain('::after');
     expect(promptCss).toMatch(/\.viewDetails \{\s*left: 83px;\s*top: 748px;\s*gap: 14px;/);
@@ -100,7 +133,7 @@ describe('KeyPrompt', () => {
   // OD-21f: at 21 px the Esc <kbd> (which inherits the cap's font) scrolled 34 × 24 in a 34 × 21
   // box. Cinzel 20's line box is its Figma AUTO leading, the label's own `--leading-game-20`.
   it('gives the Back cap the 20 px game leading, so its key label never overflows its box', () => {
-    const backCap = /\n\.legendBack \.cap \{([^}]*)\}/.exec(promptCss)?.[1] ?? 'missing';
+    const backCap = /\n\.keyLine \.cap \{([^}]*)\}/.exec(promptCss)?.[1] ?? 'missing';
 
     expect(backCap).toContain('line-height: calc(var(--leading-game-20) * 1px);');
     expect(backCap).not.toContain('line-height: 21px;');

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
 import { FakeRunningMatch } from './FakeRunningMatch';
 
 describe('FakeRunningMatch', () => {
@@ -24,5 +25,18 @@ describe('FakeRunningMatch', () => {
       destroyCount: 2,
       pauses: [true, false],
     });
+  });
+
+  it('answers evidence() with the evidence it was built with, or a fake one', () => {
+    const evidence = fakeMatchEvidence(99);
+
+    expect(new FakeRunningMatch(evidence).evidence()).toBe(evidence);
+    expect(new FakeRunningMatch().evidence().match.seed).toBe(fakeMatchEvidence().match.seed);
+  });
+
+  it('answers currentTick() with the tick of its evidence', () => {
+    expect(new FakeRunningMatch(fakeMatchEvidence(99)).currentTick()).toBe(
+      fakeMatchEvidence(99).match.tick,
+    );
   });
 });

@@ -1,3 +1,6 @@
+/** The zoom a camera starts at: 1 shows its base view size. */
+export const BASE_ZOOM = 1;
+
 /**
  * Furthest the camera can zoom out: half the base view size shows twice as much.
  * TUNE: provisional.

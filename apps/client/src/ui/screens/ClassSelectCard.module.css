@@ -158,9 +158,58 @@
   filter: brightness(1.12);
 }
 
-/* CD-05: never picked; the lock and "Locked" are its non-colour cue. */
+/* --- A locked class (DEC-59, DEC-104): never picked; a lock cursor on hover. Inside the same
+   frame a void replaces the art: purple at the frame, black inside, with streaks of air drawn into
+   the pit, under the art's own shade and 1 px stroke; a weathered lock in the middle. Its only
+   text is "Coming Soon..." in the countdown's red, at the name's place. --- */
 .card[aria-disabled='true'] {
-  cursor: not-allowed;
+  cursor: var(--selection-cursor-locked);
+}
+
+.card[aria-disabled='true'] [data-arch-part='under'] {
+  fill: none;
+}
+
+.card[aria-disabled='true'] [data-arch-layer='art']::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: url(#sel-arch-clip);
+  background:
+    radial-gradient(ellipse closest-side, var(--selection-ink) 30%, transparent 70%),
+    repeating-conic-gradient(
+      color-mix(in srgb, var(--class-harbinger-accent) 25%, transparent) 0deg 2deg,
+      transparent 2deg 11deg
+    ),
+    radial-gradient(
+      ellipse closest-side,
+      var(--selection-ink) 55%,
+      var(--team-dark-accent) 90%,
+      var(--class-harbinger-accent) 100%
+    );
+  content: '';
+}
+
+.card .voidLock {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 70px;
+  translate: -50% -50%;
+  color: var(--selection-parchment-faint);
+  pointer-events: none;
+  /* Weathered: chips bitten out of the edges and a worn lower half. */
+  mask-image:
+    radial-gradient(circle at 22% 64%, transparent 0 3px, var(--mask-opaque) 4px),
+    radial-gradient(circle at 78% 82%, transparent 0 4px, var(--mask-opaque) 5px),
+    radial-gradient(circle at 66% 12%, transparent 0 3px, var(--mask-opaque) 4px),
+    linear-gradient(
+      165deg,
+      var(--mask-opaque) 50%,
+      color-mix(in srgb, var(--mask-opaque) 45%, transparent)
+    );
+  mask-composite: intersect;
 }
 
 /* --- Text leaves (Cinzel Regular, centred on the Figma centres): each line box at its Figma box
@@ -250,7 +299,8 @@
   top: calc(543.91px + var(--card-fy));
 }
 
-.lockGlyph {
-  margin-right: 6px;
-  vertical-align: -2px;
+/* The 32 px name size would overflow the card; the role's 24 px fits "Coming Soon...". */
+.comingSoon {
+  color: var(--selection-countdown);
+  font-size: max(24px, calc(var(--text-min) / var(--stage-scale)));
 }

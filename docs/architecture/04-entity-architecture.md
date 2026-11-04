@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-02
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -72,16 +72,16 @@ classDiagram
   Zone <|-- CapturePoint
 ```
 
-| Family (abstract)       | Concrete kinds (`EntityKind`)                                                                                                  | Installs                                                                                                           | Owned per tick by                                              | Status                                                   |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
-| `Unit`                  | (abstract: mobile things)                                                                                                      | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`       | `MovementSystem`, `CollisionSystem`, `CombatSystem`            | MVP                                                      |
-| `Legend`                | `warrior` (display name in content, DEC-48), `sentinel`, `magus`; `flying` reserved (shown as a locked selection card, DEC-48) | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `flying` **post-MVP** (D12)                         |
-| `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                                                         | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                           | `HordeSystem`, `PathingSystem`, `MinionController`             | MVP                                                      |
-| `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                                                      | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                              | `BossController`                                               | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
-| `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral`                             | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed | `StructureSystem`, `SpawnSystem`, `TurretController`           | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
-| `Zone`                  | `capture-point`                                                                                                                | `Transform`, `Capturable`, `Team`; no `Collider`                                                                   | `CaptureSystem`                                                | MVP                                                      |
-| `Obstacle` (concrete)   | `obstacle` with data-driven `kind`: tree, rock, bridge-segment                                                                 | `Transform`, `Collider`, optional `Health` (breakable), carry weight                                               | `StructureSystem` (breakability), `Carry` via `PickUpStrategy` | MVP (static); felling, burning, throwing **MVP-if-time** |
-| `Projectile` (concrete) | `projectile`                                                                                                                   | `Transform`, `Movement`, `Collider`, `Team`; pooled                                                                | `MovementSystem` (swept), `CombatSystem`                       | MVP                                                      |
+| Family (abstract)       | Concrete kinds (`EntityKind`)                                                                                                             | Installs                                                                                                           | Owned per tick by                                              | Status                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
+| `Unit`                  | (abstract: mobile things)                                                                                                                 | `Transform`, `Health`, `Movement`, `Combat`, `Team`, `Collider` (circle), `StatusEffects`, `Vision`, `Carry`       | `MovementSystem`, `CollisionSystem`, `CombatSystem`            | MVP                                                      |
+| `Legend`                | `warrior` (display name in content, DEC-48), `sentinel`, `magus`; `harbinger` reserved (shown as a locked selection card, DEC-48, DEC-59) | plus `Abilities` (3 + ultimate + 2 gadget slots), `Loadout`, `Progression`                                         | `AbilitySystem`, `ProgressionSystem`, controllers              | MVP; `harbinger` **post-MVP** (D12)                      |
+| `Mob`                   | `light-mob`, `medium-mob`, `heavy-mob`                                                                                                    | `Unit` set; belongs to a `Horde` or a `Spawner`; `team` may be `neutral`                                           | `HordeSystem`, `PathingSystem`, `MinionController`             | MVP                                                      |
+| `Boss`                  | `mini-boss`, `greater-boss` (the Eternal)                                                                                                 | `Unit` set with a multi-move FSM in `BossController`; zone-restricted                                              | `BossController`                                               | MVP-if-time (mini-boss), MVP-if-time (greater boss)      |
+| `Structure`             | `stronghold`, `spawner-tower`, `buff-tower`, `wall-segment`, `gate`, `turret`, `camp`, `cathedral`                                        | `Transform`, `Health` (layered shield bars), `Team`, `Collider` (polygon footprint); `Spawner`, `Vision` as needed | `StructureSystem`, `SpawnSystem`, `TurretController`           | MVP (turrets, camps MVP; corner camps MVP-if-time)       |
+| `Zone`                  | `capture-point`                                                                                                                           | `Transform`, `Capturable`, `Team`; no `Collider`                                                                   | `CaptureSystem`                                                | MVP                                                      |
+| `Obstacle` (concrete)   | `obstacle` with data-driven `kind`: tree, rock, bridge-segment                                                                            | `Transform`, `Collider`, optional `Health` (breakable), carry weight                                               | `StructureSystem` (breakability), `Carry` via `PickUpStrategy` | MVP (static); felling, burning, throwing **MVP-if-time** |
+| `Projectile` (concrete) | `projectile`                                                                                                                              | `Transform`, `Movement`, `Collider`, `Team`; pooled                                                                | `MovementSystem` (swept), `CombatSystem`                       | MVP                                                      |
 
 Subclasses exist only where an instance genuinely needs different lifecycle code (a Legend levels
 up and respawns; a Mob despawns with its horde; a Structure never moves). Everything tunable is a
@@ -161,12 +161,12 @@ following West's warning about manager-mediated calls (research §2).
 A strategy is a stateless, shared object selected by a definition field and resolved through the
 `StrategyRegistry` at spawn. Systems call the interface; they never branch on `kind`.
 
-| Interface           | Contract                                           | MVP implementations                                                                                                                                                                                                                                          | Selected by            |
-| ------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
-| `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks); minions and guards rank targets in their controllers ([18](18-minion-system.md) §6.1)                                                         | `definition.targeting` |
-| `AttackStrategy`    | `attack(attacker, targetId, attack, ctx): void`    | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                                                                                                       | `weapon.attack`        |
-| `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `LaneFollowMovementStrategy` (hordes, flow-field target; [18-minion-system](18-minion-system.md) §5), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps, tower guards), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movement`  |
-| `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                                                                                                      | `definition.pickUp`    |
+| Interface           | Contract                                           | MVP implementations                                                                                                                                                                                                                                          | Selected by                                                     |
+| ------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| `TargetingStrategy` | `selectTarget(self, perception): EntityId \| null` | `NearestEnemyTargetingStrategy`, `StickyTurretTargetingStrategy`, `CommandedTargetingStrategy` (player picks); minions and guards rank targets in their controllers ([18](18-minion-system.md) §6.1)                                                         | `definition.targeting`                                          |
+| `AttackStrategy`    | `attack(attacker, targetId, attack, ctx): void`    | `MeleeAttackStrategy`, `RangedProjectileAttackStrategy`, `BeamAttackStrategy` (Death Ray, MVP-if-time)                                                                                                                                                       | `weapon.attack`                                                 |
+| `MovementStrategy`  | `desiredVelocity(self, ctx): Vec2`                 | `LaneFollowMovementStrategy` (hordes, flow-field target; [18-minion-system](18-minion-system.md) §5), `SeekArriveMovementStrategy`, `LeashedChaseMovementStrategy` (camps, tower guards), `DirectedMovementStrategy` (Legends), `StationaryMovementStrategy` | `definition.movementStrategy` (speed profile `movementProfile`) |
+| `PickUpStrategy`    | `canPickUp(self, target)`, `pickUp`, `throw`       | `LightPickUpStrategy` (Warrior), `GrabPickUpStrategy` (Sentinel, applies crushed), `LevitatePickUpStrategy` (Magus); `GraspPickUpStrategy` **post-MVP**                                                                                                      | `definition.pickUp`                                             |
 
 Strategies use the seeded `Rng` from the context and vectors only (no angles), so they stay
 deterministic. Adding a strategy is a class and a `defaultStrategyRegistry.ts` line.
@@ -202,12 +202,12 @@ export type LegendDefinition = EntityDefinitionBase & {
 };
 ```
 
-| Definition            | Distinctive fields                                                                                                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MobDefinition`       | `weightClass`, `stats`, `movement`, `targeting`, `attack`, `aggro` (acquisition range, leash ticks, aggro cooldown, priority order, as data), `xpValue`, `strengthByDistance` curve id        |
-| `BossDefinition`      | `stats`, `moves: BossMoveDefinition[]` (FSM states with ability ids and transition rules), `zoneRestriction`, `rewards` (team XP, permanent buff id, final-hit item, MVP-if-time)             |
-| `StructureDefinition` | `footprint` (convex polygon), `baseHealth`, `shieldPerBuffTower` (`TUNE` 1.25 spawner / 1.5 buff / 2.0 wall, game doc), `breakableWhen` rule id, `spawnTable?`, `aura?`, `turret?`, `guards?` |
-| `ObstacleDefinition`  | `kind` (tree, rock, bridge-segment), `breakable`, `health?`, `weight` (which `PickUpStrategy` may lift it), `blocksPathing`, `fallDamage?` (MVP-if-time)                                      |
+| Definition            | Distinctive fields                                                                                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MobDefinition`       | `weightClass`, `stats`, `movementStrategy`, `movementProfile`, `targeting`, `attack`, `aggro` (acquisition range, leash ticks, aggro cooldown, priority order, as data), `xpValue`, `strengthByDistance` curve id |
+| `BossDefinition`      | `stats`, `moves: BossMoveDefinition[]` (FSM states with ability ids and transition rules), `zoneRestriction`, `rewards` (team XP, permanent buff id, final-hit item, MVP-if-time)                                 |
+| `StructureDefinition` | `footprint` (convex polygon), `baseHealth`, `shieldPerBuffTower` (`TUNE` 1.25 spawner / 1.5 buff / 2.0 wall, game doc), `breakableWhen` rule id, `spawnTable?`, `aura?`, `turret?`, `guards?`                     |
+| `ObstacleDefinition`  | `kind` (tree, rock, bridge-segment), `breakable`, `health?`, `weight` (which `PickUpStrategy` may lift it), `blocksPathing`, `fallDamage?` (MVP-if-time)                                                          |
 
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).
@@ -219,9 +219,10 @@ can check the ids a definition names (dangling references), and the validator re
 broken rule at once in one `ContentValidationError`. The rules are listed in one file,
 `content/defaultContentRules.ts` (`createDefaultContentRules()`); a new rule is a class and one
 line there.
-`loadDisplayContent()` validates the display-only families (Legends and Legend specs) through the
-same `ContentValidator`; the rules that need the Legend catalogue come from
-`createLegendSpecRules(legends)` (ADR 0018).
+`loadDisplayContent()` validates the display-only families (Legends, Legend specs and the locked
+classes) and the bot roster, setup data, through the same `ContentValidator`; the rules that need
+the Legend catalogue come from `createLegendSpecRules(legends)` (ADR 0018) and
+`createBotRosterRules(legends)` (DEC-61).
 
 ## 6. `EntityFactory` and `EntityRegistry`
 
@@ -300,7 +301,7 @@ client-side (views) and pooled there; mobs may be pooled later if profiling show
 
 ## 12. Worked example: adding a fourth Legend class
 
-`flying` (shown locked, its display name in content, DEC-48;
+`harbinger` (shown locked, its display name in content, DEC-48, DEC-59;
 post-MVP) needs a unique movement layer, so it is a class, not data.
 
 | Step | File                                                                                                    | Change                                                                                     |

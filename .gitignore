@@ -8,7 +8,8 @@ dist/
 # Test output
 coverage/
 
-# Logs
+# Logs (logs/errors/: error reports from the dev server, ADR 0025)
+logs/
 *.log
 npm-debug.log*
 

@@ -1,5 +1,7 @@
 import type { DamageStep } from './DamageStep.types';
+import { MINION_STRENGTH } from '../content/mobs/minionModifiers';
 import { FriendlyFireStep } from './FriendlyFireStep';
+import { MinionStrengthStep } from './MinionStrengthStep';
 import { StatusModifierStep } from './StatusModifierStep';
 
 /**
@@ -9,4 +11,5 @@ import { StatusModifierStep } from './StatusModifierStep';
 export const createDefaultDamageSteps = (): readonly DamageStep[] => [
   new FriendlyFireStep(),
   new StatusModifierStep(),
+  new MinionStrengthStep(MINION_STRENGTH),
 ];

@@ -10,8 +10,9 @@ import { ResourceController } from './ResourceController';
 /** Byte totals per group at a pixel ratio of 1 and 2: the HC-Q15 budgets accepted by OD-7. */
 const BUDGETS: readonly (readonly [AssetGroup, number, number])[] = [
   ['boot', 25_888, 25_888],
-  ['selection', 4_055_862, 1_905_016],
-  ['selection-primary', 795_914, 865_606],
+  // OD-44: the three Legend minis (49,506 / 118,376 B) move from selection-primary to selection (DEC-109).
+  ['selection', 4_105_368, 2_023_392],
+  ['selection-primary', 746_408, 747_230],
   ['selection-alternate', 456_024, 587_480],
   ['selection-raster', 867_022, 243_798],
   ['selection-primary-raster', 1_041_660, 281_268],
@@ -86,21 +87,24 @@ describe('ResourceController with the shipped manifest', () => {
 
   it("hands out each group's draw boxes, keyed like its URLs, the same before and after a load", async () => {
     const { resources } = shippedResources(1);
-    const before = resources.boxes('selection-primary');
+    const before = resources.boxes('selection');
 
-    await resources.load('selection-primary', () => undefined);
+    await resources.load('selection', () => undefined);
 
     expect(resources.boxes('selection-raster')).toEqual({
       'lock-in-chrome': { left: 754, top: 890, width: 411, height: 156 },
       'oracle-row-plate': { left: 459, top: 65, width: 1002, height: 936 },
     });
-    expect(resources.boxes('selection-primary')).toEqual(before);
-    expect(Object.keys(before).sort()).toEqual([
-      'catalyst-mini@legend-mini',
-      'necromancer-mini@legend-mini',
-      'oracle-mini@legend-mini',
-    ]);
-    expect(Object.keys(resources.boxes('selection'))).toContain('oracle-card-art@card-picked');
+    expect(resources.boxes('selection')).toEqual(before);
+    expect(Object.keys(before)).toEqual(
+      expect.arrayContaining([
+        'catalyst-mini@legend-mini',
+        'necromancer-mini@legend-mini',
+        'oracle-mini@legend-mini',
+        'oracle-card-art@card-picked',
+      ]),
+    );
+    expect(resources.boxes('selection-primary')).toEqual({});
     expect(resources.boxes('boot')).toEqual({});
   });
 });

@@ -3,7 +3,10 @@ import type { ReactElement } from 'react';
 import { useAppSelector } from '../../bridge/hooks';
 import type { HudSide } from '../../bridge/hud.types';
 import { selectStructureIconUrls } from '../../bridge/selectors/selectStructureIconUrls';
-import { selectStructureStrip } from '../../bridge/selectors/selectStructureStrip';
+import {
+  type HudStructureTile,
+  selectStructureStrip,
+} from '../../bridge/selectors/selectStructureStrip';
 import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { STRINGS } from '../strings';
@@ -16,6 +19,14 @@ const SIDE_LABEL: Readonly<Record<HudSide, string>> = {
   enemy: STRINGS.hud.enemyStructures,
 };
 
+/** The state part of a tile's accessible name: destroyed, its health, or no data yet. */
+function tileState(tile: HudStructureTile): string {
+  if (tile.isDestroyed) return STRINGS.hud.destroyed;
+  return tile.healthFraction === null
+    ? STRINGS.noDataYet
+    : `${String(percentOf(tile.healthFraction))}%`;
+}
+
 const SIDE_CLASS: Readonly<Record<HudSide, string | undefined>> = {
   // The allied strip is `.strip`'s default layout; only the enemy strip adds a class.
   allied: undefined,
@@ -27,7 +38,9 @@ const SIDE_CLASS: Readonly<Record<HudSide, string | undefined>> = {
  * every wall segment and gate), each a team-inked icon over its own health bar, bound by identity.
  * The enemy strip is laid out mirrored, so each bar stays under its own icon (CD-04), with the
  * `mirrored` icon renditions. Icons are masks inked by the owning team's token (`data-team`;
- * HC-F5, 13 §7); an icon whose file has not loaded is not drawn.
+ * HC-F5, 13 §7); an icon whose file has not loaded is not drawn. A destroyed tile (DEC-69; the
+ * Wall after any one segment or gate, DEC-108) darkens its icon under lighter crack lines, in CSS,
+ * and drops its health bar.
  */
 export function StructureStrip({ side }: { readonly side: HudSide }): ReactElement {
   const tiles = useAppSelector((state) => selectStructureStrip(state, side));
@@ -44,13 +57,9 @@ export function StructureStrip({ side }: { readonly side: HudSide }): ReactEleme
           <div
             key={tile.tileId}
             role="group"
-            aria-label={STRINGS.hud.structure(
-              tile.displayName,
-              tile.healthFraction === null
-                ? STRINGS.noDataYet
-                : `${String(percentOf(tile.healthFraction))}%`,
-            )}
+            aria-label={STRINGS.hud.structure(tile.displayName, tileState(tile))}
             data-team={tile.team}
+            data-destroyed={tile.isDestroyed ? true : undefined}
             data-structure-id={tile.tileId}
             className={styles.tile}
           >
@@ -61,11 +70,15 @@ export function StructureStrip({ side }: { readonly side: HudSide }): ReactEleme
                 style={cssVars({ '--structure-icon': `url("${url}")` })}
               />
             )}
-            <StatusBar
-              label={STRINGS.hud.health}
-              fraction={tile.healthFraction}
-              className={styles.bar}
-            />
+            {tile.isDestroyed ? (
+              <span className={styles.cracks} aria-hidden="true" />
+            ) : (
+              <StatusBar
+                label={STRINGS.hud.health}
+                fraction={tile.healthFraction}
+                className={styles.bar}
+              />
+            )}
           </div>
         );
       })}

@@ -52,8 +52,8 @@ export class FakeViewportCanvas extends FakeBrowserTarget implements ViewportCan
     return this.context;
   }
 
-  /** A 2D context that draws nothing. */
-  private static silentContext(): DrawContext {
+  /** A 2D context that draws nothing; a test can spread it and spy on one method. */
+  public static silentContext(): DrawContext {
     const ignore = (): void => undefined;
     return {
       beginPath: ignore,

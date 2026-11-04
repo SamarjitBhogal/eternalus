@@ -161,13 +161,26 @@ describe('LegendSelectCard', () => {
     expect(accessibleNames(html, '[role=radio]')).toEqual(['Oracle Elarion Locked']);
   });
 
-  // 58:271 refreshed 2026-10-24: the owner's rename of 55:257 to "Oracle" re-centred its auto-width
-  // box from x 84.6, 166 wide (centre 167.6) to x 90.6, 155 wide (centre 168.1) in the card.
-  it('centres the picked title on the live Figma 55:257 box, centre x 168.1 of the 336 px card (CSS)', () => {
+  // 58:271 after the 2026-10-24 refresh: the owner set 55:257 to Cinzel 32, its auto-width box now
+  // x 105.6, 124 wide (centre 167.6), top 544.4 in the card.
+  it('centres the picked title on the live Figma 55:257 box, centre x 167.6 of the 336 px card (CSS)', () => {
     expect(cardCss).toMatch(
-      /\.card\[data-look='picked'\] \.title \{\n {2}left: calc\(0\.1px \+ var\(--card-fx\) \+ var\(--title-dx\)\);\n {2}top: calc\(538\.4px \+ var\(--card-fy\)\);\n {2}width: 336px;/,
+      /\.card\[data-look='picked'\] \.title \{\n {2}left: calc\(-0\.4px \+ var\(--card-fx\) \+ var\(--title-dx\)\);\n {2}top: calc\(544\.4px \+ var\(--card-fy\)\);\n {2}width: 336px;/,
     );
   });
+
+  // The owner's 58:271 edit: 55:257, 55:259 and 55:261 all Cinzel 32 (were 40 picked, 36 idle).
+  it.each(['picked', 'idle'])(
+    'sets the %s card title at Cinzel 32 on its 43 px line (CSS)',
+    (look) => {
+      const rule =
+        new RegExp(`\\.card\\[data-look='${look}'\\] \\.title \\{([^}]*)\\}`).exec(cardCss)?.[1] ??
+        'missing';
+
+      expect(rule).toContain('font-size: max(32px, calc(var(--text-min) / var(--stage-scale)));');
+      expect(rule).toContain('line-height: calc(var(--leading-game-32) * 1px);');
+    },
+  );
 
   it('stacks idle cards above the picked one and keeps the text off translate (CSS)', () => {
     expect(cardCss).toMatch(/\.card\[data-look='picked'\] \{[^}]*z-index: 0;/);

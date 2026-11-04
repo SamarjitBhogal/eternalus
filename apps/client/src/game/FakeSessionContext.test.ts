@@ -12,12 +12,13 @@ import type { MatchViewport } from './MatchViewport.types';
 const VIEWPORT: MatchViewport = {
   canvas: new FakeViewportCanvas(),
   chrome: {
-    onInteriorChanged: () => undefined,
-    setLeaveInterior: () => undefined,
+    onDeveloperRoofsChanged: () => undefined,
+    onExplorerChanged: () => undefined,
     setOverview: () => undefined,
   },
   isExplorerShown: false,
 };
+const ON_CRASH = (): void => undefined;
 
 describe('FakeSessionContext', () => {
   it('carries a real bus and clock, the shipped catalogue and the shipped credits', () => {
@@ -36,15 +37,18 @@ describe('FakeSessionContext', () => {
   it('records every call with exactly the arguments it was given, and the call order', () => {
     const context = new FakeSessionContext();
     const error = new Error('no 2D canvas');
+    const crash = { error: new Error('step failed'), tick: 12 };
 
     context.transition('menu');
     context.transition('menu', 'load-failed');
     context.newMatchSetup();
     context.repeatMatchSetup();
     context.clearMatchSetup();
+    context.lockIn();
     context.prepareWorld();
     context.dropWorld();
     context.abortMatch(error);
+    context.endCrashedMatch(crash);
     context.releaseAssets('match');
 
     expect(context.calls).toEqual({
@@ -54,10 +58,12 @@ describe('FakeSessionContext', () => {
       clearMatchSetup: [[]],
       selection: [],
       recordSelection: [],
+      lockIn: [[]],
       prepareWorld: [[]],
       createMatch: [],
       dropWorld: [[]],
       abortMatch: [[error]],
+      endCrashedMatch: [[crash]],
       loadAssets: [],
       releaseAssets: [['match']],
     });
@@ -68,9 +74,11 @@ describe('FakeSessionContext', () => {
       'newMatchSetup',
       'repeatMatchSetup',
       'clearMatchSetup',
+      'lockIn',
       'prepareWorld',
       'dropWorld',
       'abortMatch',
+      'endCrashedMatch',
       'releaseAssets',
     ]);
   });
@@ -124,14 +132,17 @@ describe('FakeSessionContext', () => {
   it('builds a new FakeRunningMatch per createMatch and keeps each in order', () => {
     const context = new FakeSessionContext();
 
-    const first = context.createMatch(VIEWPORT);
-    const second = context.createMatch(VIEWPORT);
+    const first = context.createMatch(VIEWPORT, ON_CRASH);
+    const second = context.createMatch(VIEWPORT, ON_CRASH);
 
     expect(first).toBeInstanceOf(FakeRunningMatch);
     expect(second).not.toBe(first);
     expect(context.matches).toEqual([first, second]);
     expect(context.matches[1]).toBe(second);
-    expect(context.calls.createMatch).toEqual([[VIEWPORT], [VIEWPORT]]);
+    expect(context.calls.createMatch).toEqual([
+      [VIEWPORT, ON_CRASH],
+      [VIEWPORT, ON_CRASH],
+    ]);
   });
 
   it('throws the given errors from createMatch and prepareWorld, after recording the call', () => {
@@ -141,7 +152,7 @@ describe('FakeSessionContext', () => {
     context.createMatchError = matchError;
     context.prepareWorldError = worldError;
 
-    expect(() => context.createMatch(VIEWPORT)).toThrow(matchError);
+    expect(() => context.createMatch(VIEWPORT, ON_CRASH)).toThrow(matchError);
     expect(() => {
       context.prepareWorld();
     }).toThrow(worldError);

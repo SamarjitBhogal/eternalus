@@ -4,7 +4,7 @@ description: The MVP list from the requirements doc merged with the game doc's M
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-29
 tags: [reference, game-design, mvp, scope]
 related:
   - 'docs/requirements/06-mvp-requirements.md'
@@ -108,17 +108,17 @@ Open questions for both are consolidated in `../../plan/multiplayer-and-scalabil
 
 ### Controls, UI, presentation
 
-| Item                                                                                                                       | Tag          | Source                 |
-| -------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------------- |
-| Top-down; WASD default movement; 1, 2, 3, 4 for abilities with 4 the ultimate; Z and C for gadgets; click to attack        | **MVP**      | requirements; game doc |
-| No hard-coded controls; configurable via settings with press-to-bind; mouse side buttons; prompts reflect current bindings | **MVP**      | requirements           |
-| Controller support; first-person full game (third-person option)                                                           | **post-MVP** | requirements; game doc |
-| Low-poly or pixel art in-game                                                                                              | **MVP**      | game doc               |
-| High-quality character art on the selection screen                                                                         | **post-MVP** | game doc (yellow)      |
-| Simple loading screen                                                                                                      | **MVP**      | requirements           |
-| Simple game boot menu (structure below)                                                                                    | **MVP**      | requirements           |
-| Developer menu, enable/disable in-game (structure below)                                                                   | **MVP**      | requirements           |
-| Anti-air defence                                                                                                           | **post-MVP** | game doc (orange)      |
+| Item                                                                                                                       | Tag          | Source                                 |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------------------------------- |
+| Top-down; WASD default movement; 1, 2, 3, 4 for abilities with 4 the ultimate; Z and C for gadgets; click to attack        | **MVP**      | requirements; game doc                 |
+| No hard-coded controls; configurable via settings with press-to-bind; mouse side buttons; prompts reflect current bindings | **MVP**      | requirements                           |
+| Controller support; first-person full game (third-person option)                                                           | **post-MVP** | requirements; game doc                 |
+| Low-poly or pixel art in-game                                                                                              | **MVP**      | game doc                               |
+| High-quality character art on the selection screen (the owner's Figma art for now; DEC-51)                                 | **MVP**      | game doc (yellow); DEC-51 (2026-10-28) |
+| Simple loading screen                                                                                                      | **MVP**      | requirements                           |
+| Simple game boot menu (structure below)                                                                                    | **MVP**      | requirements                           |
+| Developer menu, enable/disable in-game (structure below)                                                                   | **MVP**      | requirements                           |
+| Anti-air defence                                                                                                           | **post-MVP** | game doc (orange)                      |
 
 ### Engineering constraints stated with the MVP
 
@@ -136,7 +136,8 @@ Open questions for both are consolidated in `../../plan/multiplayer-and-scalabil
 - All non-player characters are bots, including the enemy Rover. **MVP**
 - WASD and numbers for abilities; controller and first-person come later. **MVP** / **post-MVP**
 - Low-poly or pixel art in-game, with high-quality character art on the selection screen.
-  **MVP** / selection-screen art **post-MVP** (yellow)
+  **MVP**; selection-screen art **MVP** since 2026-10-28 (DEC-51: the owner's Figma art for now;
+  yellow in the game doc)
 - Ability upgrades on hold beyond basic level scaling. **MVP** decision (yellow: the hold itself
   is the thing needing planning)
 

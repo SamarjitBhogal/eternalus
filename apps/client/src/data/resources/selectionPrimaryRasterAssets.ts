@@ -1,7 +1,7 @@
 import classRowPlateMagus from '../../assets/selection-primary-raster/classes/class-row-plate-magus.webp';
 import classRowPlateMagus2x from '../../assets/selection-primary-raster/classes/class-row-plate-magus@2x.webp';
-import flyingCardPlateIdle from '../../assets/selection-primary-raster/classes/flying-card-plate-idle.webp';
-import flyingCardPlateIdle2x from '../../assets/selection-primary-raster/classes/flying-card-plate-idle@2x.webp';
+import harbingerCardPlateIdle from '../../assets/selection-primary-raster/classes/harbinger-card-plate-idle.webp';
+import harbingerCardPlateIdle2x from '../../assets/selection-primary-raster/classes/harbinger-card-plate-idle@2x.webp';
 import magusCardPlatePicked from '../../assets/selection-primary-raster/classes/magus-card-plate-picked.webp';
 import magusCardPlatePicked2x from '../../assets/selection-primary-raster/classes/magus-card-plate-picked@2x.webp';
 import selectClassChrome from '../../assets/selection-primary-raster/chrome/select-class-chrome.webp';
@@ -38,16 +38,16 @@ export const SELECTION_PRIMARY_RASTER_ASSETS: readonly AssetManifestEntry[] = [
       'Owner art (DEC-51): Figma z5Udjg41B9Vtcb9IJHHyTs frame 62:125, protocol R1 render (OA1) on scratch duplicate 96:3 of page 96:2; pass cs-P2b-rowplate: composite over the original frame fill and backdrop; crisp cards 62:147/152/157/162 and all text but the label 62:228 and the 62:200 halo names hidden (r1-log W4); opaque crop; 1x lossless WebP. file = 62:200 over everything beneath it (render bounds 491, 198.87, 1215.57 × 681.95) cropped to (491, 198, 1216, 683), nothing removed, alpha 0 in the three holes (7434 px), 2x lossy q92 (alpha lossless)',
   },
   {
-    id: 'flying-card-plate-idle',
+    id: 'harbinger-card-plate-idle',
     type: 'ui-image',
     group: 'selection-primary-raster',
     file: {
-      url: flyingCardPlateIdle,
+      url: harbingerCardPlateIdle,
       bytes: 85496,
       hash: 'c8e570a02bf5600bf8f850cb1140a226f095f7a68b502f05ad854893c07aec4f',
     },
     file2x: {
-      url: flyingCardPlateIdle2x,
+      url: harbingerCardPlateIdle2x,
       bytes: 26948,
       hash: '5294b7dfe62dacc7270f17f5b44ca7217b847bdd59db8e41ae29cce2b0f32606',
     },

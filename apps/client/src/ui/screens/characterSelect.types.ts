@@ -1,7 +1,10 @@
 import type { LegendClassId } from '../../bridge/domain.types';
 
-/** The two steps of the character-select phase (HC-F1): pick a class, then one of its Legends. */
-export type SelectionStep = 'class' | 'legend';
+/**
+ * The steps of the character-select phase: pick a class, then one of its Legends (HC-F1); after
+ * LOCK IN, the locked view until the countdown ends (DEC-60).
+ */
+export type SelectionStep = 'class' | 'legend' | 'locked';
 
 /** Props every selection step receives from the shell. */
 export type SelectionStepProps = {

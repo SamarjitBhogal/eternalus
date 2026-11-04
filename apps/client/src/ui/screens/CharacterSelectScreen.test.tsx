@@ -1,9 +1,11 @@
 import type { ComponentType } from 'react';
 import { describe, expect, it } from 'vitest';
 
+import type { Binding } from '../../bridge/Binding.types';
 import type { DisplayCatalogue } from '../../bridge/catalogue.types';
 import type { PlayableTeam } from '../../bridge/domain.types';
 import { matchSetupSlice } from '../../bridge/slices/matchSetupSlice';
+import { settingsSlice } from '../../bridge/slices/settingsSlice';
 import selectionStageStyles from '../components/SelectionStage.module.css';
 import { accessibleNames, autofocusedClassIds, renderWithStore, TEST_CONTENT } from '../testStore';
 import { CharacterSelectScreen } from './CharacterSelectScreen';
@@ -14,25 +16,36 @@ import { rememberedClassId } from './useRememberedClassId';
 /** As `App` mounts it: every screen gets the viewport, which this one must never render. */
 const Screen: ComponentType<ScreenProps> = CharacterSelectScreen;
 
+/** Esc bound to `pause-menu`, the Back prompt's action, so a mounted Back reads "Esc back". */
+const ESC: readonly Binding[] = [
+  { action: 'pause-menu', chords: [{ device: 'keyboard', code: 'Escape', label: 'Esc' }] },
+];
+
 function render(
   classId: string | null,
   {
     team = 'light',
     content = TEST_CONTENT,
     countdownMs = 42_000,
+    specId = null,
+    isLockedIn = false,
   }: {
     readonly team?: PlayableTeam | null;
     readonly content?: DisplayCatalogue;
     readonly countdownMs?: number;
+    readonly specId?: string | null;
+    readonly isLockedIn?: boolean;
   } = {},
 ): string {
   return renderWithStore(<Screen viewport={<div data-viewport-sentinel="" />} />, {
     content,
+    settings: { ...settingsSlice.getInitialState(), bindings: ESC },
     matchSetup: {
       ...matchSetupSlice.getInitialState(),
       playerTeam: team,
-      selection: { classId, specId: null },
+      selection: { classId, specId },
       countdownMs,
+      isLockedIn,
     },
   });
 }
@@ -65,6 +78,26 @@ describe('CharacterSelectScreen', () => {
     expect(html).toContain('Magus &gt; Choose Your Legend');
     expect(html).not.toContain('Choose Your Class');
     expect(vignettes(html)).toEqual(['bottom']);
+  });
+
+  it('shows the locked view from LOCK IN, with the Legend step’s bottom vignette (DEC-60)', () => {
+    const html = render('magus', { specId: 'oracle', isLockedIn: true });
+
+    expect(html).toContain('>Elarion</h3>');
+    expect(html).not.toContain('Choose Your Legend');
+    expect(html).not.toContain('role="radiogroup"');
+    expect(vignettes(html)).toEqual(['bottom']);
+    expect(html).toMatch(/role="timer"[^>]*>42</);
+  });
+
+  it('shows Esc (Back) on the Legend step only: not on either class layout or the locked view (DEC-60)', () => {
+    const hasEsc = (html: string) => accessibleNames(html, 'button').includes('Esc back');
+    const alternate: DisplayCatalogue = { ...TEST_CONTENT, classSelectLayout: 'alternate' };
+
+    expect(hasEsc(render('magus'))).toBe(true);
+    expect(hasEsc(render(null))).toBe(false);
+    expect(hasEsc(render(null, { content: alternate }))).toBe(false);
+    expect(hasEsc(render('magus', { specId: 'oracle', isLockedIn: true }))).toBe(false);
   });
 
   it("draws the class step in the catalogue's alternate layout (O5, 62:70)", () => {

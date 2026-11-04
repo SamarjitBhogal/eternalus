@@ -42,7 +42,7 @@ describe('LevelBadge', () => {
   });
 
   it('shows a dash, no ring and no emblem without data or kit', () => {
-    const html = render(null, 'flying');
+    const html = render(null, 'harbinger');
     expect(html).toContain(`<span class="${String(styles.level)}" aria-hidden="true">—</span>`);
     expect(html).not.toContain('<img');
     expect(accessibleNames(html, '[role=img]')).toEqual(['Level: No data yet']);

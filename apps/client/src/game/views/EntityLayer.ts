@@ -34,6 +34,7 @@ export class EntityLayer implements WorldLayer {
   ): void {
     const before = new Map(previous?.entities.map((entity) => [entity.id, entity]) ?? []);
     this.states = current.entities.flatMap((entity) => {
+      if (entity.mapObjectId !== undefined) return [];
       const position = EntityLayer.positionOf(entity, before.get(entity.id), alpha);
       return position === null ? [] : [{ entity, position, isFocused: entity.id === focusId }];
     });

@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 
 import { isSelectableClass } from '../../bridge/selectionRules';
 import { ArchCard, type ArchArtMode, type ArchLayerKind } from '../components/ArchCard';
+import { classNames } from '../components/classNames';
 import { cssVars } from '../components/cssVars';
 import { LockGlyph } from '../components/LockGlyph';
 import { useAssetBox } from '../components/useAssetBox';
@@ -25,7 +26,9 @@ const LAYERS: readonly ArchLayerKind[] = ['outer-outline', 'art', 'inner-outline
  * baked at this card's art (plate mode: both 1 px strokes live at their own nodes, OD-1);
  * otherwise the live art (cover mode: the art's own 1 px stroke). Either way the overlay's 1 px
  * stroke sits at the overlay node, the slot's `overlay` offset from the art. A locked class stays
- * focusable with `aria-disabled` and shows a lock and "Locked" instead of its ally count (CD-05).
+ * focusable with `aria-disabled`; inside the same frame it draws a dark void with a weathered lock
+ * in the middle instead of its art, and only "Coming Soon..." in place of its name, role and ally
+ * count (DEC-59, DEC-104).
  */
 export function ClassSelectCard({
   card,
@@ -43,12 +46,14 @@ export function ClassSelectCard({
   const look: ClassCardLook = isPicked ? 'picked' : 'idle';
   const origin = slot.card[look];
   const artOrigin = classArtOrigin(origin, look);
-  const plateId = card.art.cardPlates[look] ?? null;
+  const isAvailable = isSelectableClass(card);
+  // DEC-104: a locked class draws the void, never its art or plate.
+  const plateId = isAvailable ? (card.art.cardPlates[look] ?? null) : null;
   const plateUrl = useAssetUrl(plateId);
   const plateBox = useAssetBox(plateId);
   const plate = plateUrl !== null && isBakedAt(plateBox, artOrigin) ? plateBox : undefined;
   const artMode: ArchArtMode = plate === undefined ? 'cover' : 'plate';
-  const isAvailable = isSelectableClass(card);
+  const coverArt = isAvailable ? card.art.card : null;
   return (
     <button
       type="button"
@@ -76,19 +81,23 @@ export function ClassSelectCard({
     >
       <ArchCard
         layers={LAYERS}
-        artAssetId={plate === undefined ? card.art.card : plateId}
+        artAssetId={plate === undefined ? coverArt : plateId}
         artMode={artMode}
         origin={originRemainder(origin)}
       />
-      <span className={styles.name}>{card.displayName}</span>{' '}
-      <span className={styles.role}>{card.roleLabel}</span>{' '}
       {isAvailable ? (
-        <span className={styles.allies}>{STRINGS.characterSelect.allyCount(allyCount)}</span>
+        <>
+          <span className={styles.name}>{card.displayName}</span>{' '}
+          <span className={styles.role}>{card.roleLabel}</span>{' '}
+          <span className={styles.allies}>{STRINGS.characterSelect.allyCount(allyCount)}</span>
+        </>
       ) : (
-        <span className={styles.allies}>
-          <LockGlyph className={styles.lockGlyph} />
-          {STRINGS.characterSelect.locked}
-        </span>
+        <>
+          <LockGlyph className={styles.voidLock} />
+          <span className={classNames(styles.name, styles.comingSoon)}>
+            {STRINGS.characterSelect.comingSoon}
+          </span>
+        </>
       )}
     </button>
   );

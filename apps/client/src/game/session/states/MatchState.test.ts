@@ -9,7 +9,11 @@ import { MatchState } from './MatchState';
 
 const VIEWPORT: MatchViewport = {
   canvas: new FakeViewportCanvas(),
-  chrome: { onInteriorChanged: vi.fn(), setLeaveInterior: vi.fn(), setOverview: vi.fn() },
+  chrome: {
+    onDeveloperRoofsChanged: vi.fn(),
+    onExplorerChanged: vi.fn(),
+    setOverview: vi.fn(),
+  },
   isExplorerShown: false,
 };
 
@@ -33,7 +37,7 @@ describe('MatchState', () => {
   it('builds the match on attach and destroys it on detach', () => {
     const { context, handles, state } = setUp();
     const detach = state.attachViewport(VIEWPORT, context);
-    expect(context.calls.createMatch).toEqual([[VIEWPORT]]);
+    expect(context.calls.createMatch).toEqual([[VIEWPORT, expect.any(Function)]]);
     detach();
     expect(handles[0]?.destroyCount).toBe(1);
   });
@@ -56,6 +60,19 @@ describe('MatchState', () => {
     expect(() => {
       detach();
     }).not.toThrow();
+  });
+
+  it('ends the match on a crash of the running match, never of a replaced one (DEC-106)', () => {
+    const { context, state } = setUp();
+    const crash = { error: new Error('step failed'), tick: 7 };
+    state.attachViewport(VIEWPORT, context);
+    state.attachViewport(VIEWPORT, context);
+    const [replaced, running] = context.calls.createMatch.map(([, onCrash]) => onCrash);
+
+    replaced?.(crash);
+    expect(context.calls.endCrashedMatch).toEqual([]);
+    running?.(crash);
+    expect(context.calls.endCrashedMatch).toEqual([[crash]]);
   });
 
   it('destroys the match, drops the world and closes any overlay on exit', () => {
@@ -89,5 +106,28 @@ describe('MatchState', () => {
     const { context, state } = setUp();
     state.handleIntent({ kind: 'leave-match' }, context);
     expect(context.calls.transition).toEqual([['menu']]);
+  });
+
+  it("gives the running match's evidence, and null without a match (ADR 0025 §3)", () => {
+    const { context, handles, state } = setUp();
+    expect(state.matchEvidence()).toBeNull();
+
+    state.attachViewport(VIEWPORT, context);
+    const detach = state.attachViewport(VIEWPORT, context);
+    expect(state.matchEvidence()).toBe(handles[1]?.evidence());
+
+    detach();
+    expect(state.matchEvidence()).toBeNull();
+  });
+
+  it("gives the running match's tick, and null without a match", () => {
+    const { context, handles, state } = setUp();
+    expect(state.matchTick()).toBeNull();
+
+    const detach = state.attachViewport(VIEWPORT, context);
+    expect(state.matchTick()).toBe(handles[0]?.currentTick());
+
+    detach();
+    expect(state.matchTick()).toBeNull();
   });
 });

@@ -31,7 +31,7 @@ are the **planned** layout; create them as code is added.
 | `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams   | `state/`, `utils/`, types of `commands/` and `config/`                |
 | `match/`        | `MatchDirector`, `MatchTimeline`, phase classes, timeline actions   | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types |
 | `systems/`      | Per-tick logic implementing `System`. Never import another system.  | everything except `ai/`                                               |
-| `ai/`           | Bot controllers. They only return `Command`s.                       | `state/`, `commands/`, `utils/`                                       |
+| `ai/`           | Bot controllers: return a `Decision`, never mutate state.           | `state/`, `commands/`, `content/` and `teams/` (types), `utils/`      |
 | `Simulation.ts` | Composes everything; the only thing the client drives               | everything                                                            |
 
 `match/` also uses the `Logger` port, `makeLogRecord` and `DebugConfig` of `diagnostics/`, as

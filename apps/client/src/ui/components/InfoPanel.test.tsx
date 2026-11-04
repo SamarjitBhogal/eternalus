@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { DetailRow } from '../../bridge/catalogue.types';
 import { renderWithStore } from '../testStore';
-import { InfoPanel } from './InfoPanel';
+import { focusTitleIfAsked, InfoPanel } from './InfoPanel';
 import { INFO_PANEL_TITLE_FIT } from './InfoPanel.constants';
 import styles from './InfoPanel.module.css';
 import panelCss from './InfoPanel.module.css?raw';
@@ -119,11 +119,50 @@ describe('InfoPanel', () => {
   });
 
   // OD-21e: the fit is measured in the browser, so a server render draws every title at 96 px.
+  it('makes the title focusable from script only when asked to focus it (the locked view)', () => {
+    const titleTag = (shouldFocusTitle?: boolean) =>
+      /<h3[^>]*>/.exec(
+        renderWithStore(
+          <InfoPanel
+            layout="legend"
+            title="Elarion"
+            subtitle={null}
+            subtitleAccentToken="--legend-oracle-accent"
+            description={null}
+            detailsHeader="Signature / Specialty / Ultimate"
+            rows={[]}
+            {...(shouldFocusTitle === undefined ? {} : { shouldFocusTitle })}
+          />,
+        ),
+      )?.[0];
+
+    expect(titleTag(true)).toContain('tabindex="-1"');
+    expect(titleTag(false)).not.toContain('tabindex');
+    expect(titleTag()).not.toContain('tabindex');
+  });
+
+  it('focuses the title on mount only when asked (the effect body)', () => {
+    let focused = 0;
+    const title = {
+      focus: () => {
+        focused += 1;
+      },
+    };
+
+    focusTitleIfAsked(false, title);
+    expect(focused).toBe(0);
+    focusTitleIfAsked(true, title);
+    expect(focused).toBe(1);
+    expect(() => {
+      focusTitleIfAsked(true, null);
+    }).not.toThrow();
+  });
+
   it('server-renders a long title at the Figma size, with no runtime size yet', () => {
     const html = renderWithStore(
       <InfoPanel
         layout="legend"
-        title="Juggernaut"
+        title="Bulwark"
         subtitle={null}
         subtitleAccentToken="--class-sentinel-accent"
         description={null}
@@ -132,7 +171,7 @@ describe('InfoPanel', () => {
       />,
     );
 
-    expect(html).toContain(`<h3 class="${String(styles.title)}">Juggernaut</h3>`);
+    expect(html).toContain(`<h3 class="${String(styles.title)}">Bulwark</h3>`);
     expect(html).not.toContain('font-size');
     expect(/\n\.title \{([^}]*)\}/.exec(panelCss)?.[1]).toContain(
       `font-size: ${stageFontSize(INFO_PANEL_TITLE_FIT.designSize)};`,
@@ -154,11 +193,16 @@ describe('InfoPanel', () => {
       class: 529 - origin('class'),
       'class-alternate': 573 - origin('class-alternate'),
       legend: 553 - origin('legend'),
+      // View Details (145:2, one rule for both): the left column to 145:96's right edge, x 676.
+      'class-details': 676 - origin('legend-details'),
+      'legend-details': 676 - origin('legend-details'),
     });
     expect(INFO_PANEL_TITLE_FIT.maxWidth).toEqual({
       class: 484,
       'class-alternate': 508,
       legend: 500,
+      'class-details': 560,
+      'legend-details': 560,
     });
   });
 

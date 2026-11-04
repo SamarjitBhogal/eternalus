@@ -3,12 +3,14 @@ import { type LogAttributes, makeLogRecord } from '@eternalus/core';
 import type {
   AssetGroup,
   ClassSelection,
+  FilledRosters,
   LoadingProgress,
   MatchSetupDraft,
   SessionPhase,
   SessionReason,
 } from '../bridge/events';
-import type { PreparedWorld } from './Match.types';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
+import type { MatchCrash, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { SESSION_TRANSITIONS } from './SessionController.constants';
 import type {
@@ -17,8 +19,11 @@ import type {
   SessionControllerDeps,
   SessionState,
 } from './SessionController.types';
+import { botRosterSlots } from './session/botRosterSlots';
 import { buildMatchSetup } from './session/buildMatchSetup';
+import { fillRosters } from './session/fillRosters';
 import { IllegalSessionTransition } from './session/IllegalSessionTransition';
+import { SessionCrashes } from './session/SessionCrashes';
 
 /**
  * Owns the session phase machine (architecture 13 §2): boot → menu → loading → character-select
@@ -26,19 +31,29 @@ import { IllegalSessionTransition } from './session/IllegalSessionTransition';
  * to the current state; every phase change is checked against `SESSION_TRANSITIONS` and published
  * as `session-phase`. Owns the match's lifetime (DEC-50): `match-loading` prepares the world,
  * `attachViewport` in `match` creates the `Match`, leaving `match` destroys it. Loads and releases
- * the asset groups each phase needs through the resources facade.
+ * the asset groups each phase needs through the resources facade. Keeps the setup as built (what a
+ * rematch republishes) apart from the rosters LOCK IN fills (what the match is built from).
  */
 export class SessionController {
   private current: SessionState | null = null;
   private setup: MatchSetupDraft | null = null;
   private selection: ClassSelection | null = null;
+  private rosters: FilledRosters | null = null;
   private world: PreparedWorld | null = null;
   private readonly publishedGroups = new Set<AssetGroup>();
   private stopListening = (): void => undefined;
   private readonly context: SessionContext;
+  private readonly crashes: SessionCrashes;
 
   /** Loads the content catalogue; nothing runs until `start()`. */
   public constructor(private readonly deps: SessionControllerDeps) {
+    this.crashes = new SessionCrashes(deps, {
+      phase: () => this.current?.phase ?? null,
+      seed: () => this.setup?.seed ?? null,
+      matchTick: () => this.current?.matchTick?.() ?? null,
+      transition: this.transition.bind(this),
+      crashToMenu: this.crashToMenu.bind(this),
+    });
     this.context = {
       bus: deps.bus,
       clock: deps.clock,
@@ -63,17 +78,23 @@ export class SessionController {
         this.selection = selection;
         deps.bus.emit('class-selection', selection);
       },
+      lockIn: () => {
+        this.lockIn();
+      },
       prepareWorld: () => {
         if (this.setup === null) throw new Error('No match setup to prepare a world for');
         this.world = deps.prepareWorld(this.setup.seed);
       },
-      createMatch: (viewport) => this.createMatch(viewport),
+      createMatch: (viewport, onCrash) => this.createMatch(viewport, onCrash),
       dropWorld: () => {
         this.world = null;
       },
       abortMatch: (error) => {
         this.logError('The match could not start.', { error: String(error) });
         this.transition('menu', 'match-failed');
+      },
+      endCrashedMatch: (crash) => {
+        this.crashes.endCrashedMatch(crash);
       },
       loadAssets: (groups, onReady, onFailed) => this.loadAssets(groups, onReady, onFailed),
       releaseAssets: (group) => {
@@ -94,6 +115,7 @@ export class SessionController {
     if (this.current !== null) throw new Error('SessionController is already started');
     this.deps.themeRoot.dataset.contrast = this.context.catalogue.contrastMode;
     this.stopListening = this.deps.bus.on('ui-intent', (intent) => {
+      this.crashes.handleIntent(intent);
       this.current?.handleIntent?.(intent, this.context);
     });
     this.enter('boot', null);
@@ -110,6 +132,11 @@ export class SessionController {
     delete this.deps.themeRoot.dataset.contrast;
   }
 
+  /** The running match's evidence for an error report, or `null` outside a match (ADR 0025 §3). */
+  public matchEvidence(): MatchEvidence | null {
+    return this.current?.matchEvidence?.() ?? null;
+  }
+
   /**
    * `GameCanvas` calls this when its canvas mounts (architecture 13 §1); call the returned
    * function when it unmounts. Outside `match` it does nothing and returns a no-op.
@@ -118,6 +145,20 @@ export class SessionController {
     const state = this.current;
     if (state?.attachViewport === undefined) return () => undefined;
     return state.attachViewport(viewport, this.context);
+  }
+
+  /**
+   * The screen-crash exit (DEC-149; DEC-141 for `pre-launch`): leaves any phase but `menu` for
+   * `menu` with `reason`, outside `SESSION_TRANSITIONS`, so no intent can use it. `match` crashes
+   * through `crashMatch`, not this method. Runs the phase's exit hook as every move does. Only
+   * the screen-crash path calls it, through `SessionCrashes`.
+   */
+  private crashToMenu(reason: SessionReason): void {
+    const from = this.current;
+    if (from === null) throw new Error("Session is not running; cannot enter 'menu'");
+    if (from.phase === 'menu') throw new IllegalSessionTransition('menu', 'menu');
+    from.exit?.(this.context);
+    this.enter('menu', reason);
   }
 
   private transition(to: SessionPhase, reason: SessionReason | null): void {
@@ -144,16 +185,21 @@ export class SessionController {
         seed,
         rng: this.deps.createRng(seed),
         legendClasses: this.context.catalogue.legendClasses,
+        botRoster: this.context.catalogue.botRoster,
         legendsPerTeam: this.deps.matchConfig.legendsPerTeam,
         playerName: this.deps.playerName,
       }),
     );
   }
 
-  /** Every published setup starts clean: no pick, no world (as `connectBusToStore` resets the store). */
+  /**
+   * Every published setup starts clean: no pick, no filled rosters, no world (as
+   * `connectBusToStore` resets the store).
+   */
   private publishSetup(setup: MatchSetupDraft): void {
     this.setup = setup;
     this.selection = null;
+    this.rosters = null;
     this.world = null;
     this.deps.themeRoot.dataset.team = setup.playerTeam;
     this.deps.bus.emit('match-setup', setup);
@@ -162,22 +208,39 @@ export class SessionController {
   private clearMatchSetup(): void {
     this.setup = null;
     this.selection = null;
+    this.rosters = null;
     this.world = null;
     delete this.deps.themeRoot.dataset.team;
     this.deps.bus.emit('match-setup', null);
   }
 
-  private createMatch(viewport: MatchViewport): RunningMatch {
-    const { setup, selection, world } = this;
-    if (setup === null || selection === null || world === null) {
-      throw new Error('A match needs a setup, a class selection and a prepared world');
+  private lockIn(): void {
+    const { setup, selection } = this;
+    if (setup === null || selection === null) throw new Error('LOCK IN needs a setup and a pick');
+    const { legendClasses, botRoster } = this.context.catalogue;
+    this.rosters = fillRosters({
+      draft: setup,
+      selection,
+      legendClasses,
+      enemyRover: botRoster.enemyRover,
+      rng: this.deps.createRosterRng(setup.seed),
+    });
+    this.deps.bus.emit('selection-locked', this.rosters);
+  }
+
+  private createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch {
+    const { setup, selection, rosters, world } = this;
+    if (setup === null || selection === null || rosters === null || world === null) {
+      throw new Error('A match needs a setup, a locked-in selection and a prepared world');
     }
     return this.deps.createMatch(
       {
-        setup,
+        setup: { ...setup, ...rosters },
         world,
         player: { legend: selection.classId, team: setup.playerTeam },
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
+        roster: botRosterSlots(rosters, this.context.catalogue.botRoster.difficulties),
+        onCrash,
       },
       viewport,
     );

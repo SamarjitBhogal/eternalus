@@ -90,7 +90,7 @@ const setUp = (
     defeat: record('defeat'),
   };
   const timeline = new MatchTimeline(entries);
-  const state = new GameState(config, 1, timeline.schedule());
+  const state = new GameState(config, 1, null, {}, timeline.schedule());
   const logger = new MemoryLogger();
   const director = new MatchDirector({
     phases,

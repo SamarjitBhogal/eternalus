@@ -25,6 +25,7 @@ export function connectBusToStore(
     bus.on('session-phase', (event) => dispatch(sessionSlice.actions.phaseChanged(event))),
     bus.on('menu-route', ({ route }) => dispatch(sessionSlice.actions.routeChanged(route))),
     bus.on('overlay', ({ overlay }) => dispatch(sessionSlice.actions.overlayChanged(overlay))),
+    bus.on('crash-report', (report) => dispatch(sessionSlice.actions.crashReportChanged(report))),
     bus.on('content-catalogue', (catalogue) =>
       dispatch(contentSlice.actions.catalogueLoaded(catalogue)),
     ),
@@ -43,6 +44,7 @@ export function connectBusToStore(
       dispatch(setup.setRosters({ allies: draft.allies, enemies: draft.enemies }));
     }),
     bus.on('class-selection', (selection) => dispatch(setup.select(selection))),
+    bus.on('selection-locked', (rosters) => dispatch(setup.lockIn(rosters))),
     bus.on('countdown', ({ kind, remainingMs }) =>
       dispatch(kind === 'select' ? setup.setCountdown(remainingMs) : setup.setReveal(remainingMs)),
     ),
