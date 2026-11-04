@@ -1,10 +1,6 @@
 import type { InputDevice, MutableInputSnapshot, ScreenPoint } from './InputDevice.types';
-import {
-  BUTTON_BITS,
-  MAIN_BUTTON,
-  POINTER_EVENTS,
-  SUPPRESSED_EVENTS,
-} from './MouseDevice.constants';
+import { MAIN_BUTTON } from './mouseButtons.constants';
+import { BUTTON_BITS, POINTER_EVENTS, SUPPRESSED_EVENTS } from './MouseDevice.constants';
 
 /**
  * The mouse adapter, on pointer events over the canvas. Reads every button, side buttons

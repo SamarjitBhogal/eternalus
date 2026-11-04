@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -179,8 +179,11 @@ acquisition radius 500 units in both League and Dota (our world units differ, so
 map); League's priority list (1) enemy Legends attacking an allied Legend, (2) enemy minions
 attacking an allied Legend, (3) enemy minions attacking an allied minion, (4) enemy turrets
 attacking an allied minion, (5) closest enemy minion, (6) closest enemy Legend; Dota's aggro
-duration 2.3 s (≈ 69 ticks) and cooldown 3 s (90 ticks). "Call for help": an enemy Legend that
-basic-attacks an allied Legend inside the radius becomes priority 1.
+cooldown 3 s (90 ticks). Dota's 2.3 s aggro duration is not used: the owner's leash rule,
+"distance, then time" (18 §6.1, DEC-144), replaces it. "Call for help": an enemy Legend that
+basic-attacks an allied Legend inside the radius becomes priority 1, and an enemy that attacks a
+horde-mate is in reach out to `callForHelpRadius` (DEC-144). The cooldown, after a leash break,
+leaves alone only the enemy that escaped (DEC-144 F).
 
 ```ts
 // packages/core/src/content/ai/aggro/lane-minion.ts (sketch)
@@ -197,8 +200,9 @@ export const laneMinionAggro = {
   ],
   reevaluateEveryTicks: 15, // TUNE
   leashRadius: 700, // TUNE
-  aggroDurationTicks: 69, // TUNE: Dota 2.3 s
+  leashGraceTicks: 90, // TUNE: owner DEC-144, 3 s of chase outside the leash before it breaks
   aggroCooldownTicks: 90, // TUNE: Dota 3 s
+  callForHelpRadius: 700, // TUNE: owner DEC-144; the leash
   ghostFirstWaveTicks: 0, // 0 = off; League ghosts the first wave for 18–28 s
 } satisfies AggroRuleDefinition;
 ```

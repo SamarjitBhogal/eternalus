@@ -1,24 +1,19 @@
-import { isPointInPolygon } from '@eternalus/core';
-import type { MapDefinition, MapPresentation, Vec2 } from '@eternalus/core';
+import type { MapDefinition, Vec2 } from '@eternalus/core';
 
 import type { WorldRect } from './engine/render/Renderer.types';
 import { EXPLORER_SETTINGS } from './MapExplorer.constants';
 
-/** Owns camera navigation and same-world roof cutaways for the map preview. */
+/**
+ * Owns the free, presentation-only view of the map (the developer explorer): aspect-correct pan
+ * and zoom over the whole battlefield. It never changes map data; roof cutaways are
+ * `BuildingRoofs`'.
+ */
 export class MapExplorer {
   private center: Vec2;
   private zoom = 1;
-  private readonly roofs = new Set<string>();
-  /** Roof state can only be changed through the explorer's toggle and reset methods. */
-  public get hiddenRoofs(): ReadonlySet<string> {
-    return this.roofs;
-  }
 
   /** Starts with an overview of the generated battlefield. */
-  public constructor(
-    private readonly map: MapDefinition,
-    private readonly presentation: MapPresentation = { scenery: [], buildings: [] },
-  ) {
+  public constructor(private readonly map: MapDefinition) {
     this.center = { x: map.width / 2, y: map.height / 2 };
   }
 
@@ -67,20 +62,8 @@ export class MapExplorer {
     this.zoom = Math.max(1, Math.min(EXPLORER_SETTINGS.maxZoom, this.zoom * factor));
   }
 
-  /** Toggles a building roof in place without changing the world or camera. */
-  public toggleRoofAt(point: Vec2): boolean {
-    const building = this.presentation.buildings.find((entry) =>
-      entry.footprint.some((shape) => isPointInPolygon(point, shape)),
-    );
-    if (building === undefined) return false;
-    if (this.roofs.has(building.id)) this.roofs.delete(building.id);
-    else this.roofs.add(building.id);
-    return true;
-  }
-
-  /** Restores roofs and the battlefield overview. */
+  /** Shows the whole battlefield again. */
   public overview(): void {
-    this.roofs.clear();
     this.zoom = 1;
     this.center = { x: this.map.width / 2, y: this.map.height / 2 };
   }

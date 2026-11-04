@@ -20,19 +20,19 @@ tooling; everything else is checked in review. For AI agents, `AGENTS.md` is the
 
 ## 2. Naming
 
-| Thing                | Convention                                       | Example                       |
-| -------------------- | ------------------------------------------------ | ----------------------------- |
-| Classes, types       | PascalCase                                       | `GameState`                   |
-| Variables, functions | camelCase                                        | `applyDamage`                 |
-| Constants            | SCREAMING_SNAKE_CASE                             | `TICK_RATE`                   |
-| Content IDs          | kebab-case strings, never renamed once used      | `"basic-attack"`              |
-| Class files          | PascalCase, only that class in the file (§3.1)   | `MovementSystem.ts`           |
-| A class's types      | `<ClassName>.types.ts` next to the class         | `MovementSystem.types.ts`     |
-| A class's constants  | `<ClassName>.constants.ts` next to the class     | `MovementSystem.constants.ts` |
-| Non-class files      | camelCase                                        | `vectorMath.ts`               |
-| React components     | PascalCase `.tsx` + `.module.css`                | `HealthBar.tsx`               |
-| Tests                | `<name>.test.ts(x)`, next to the file under test | `MovementSystem.test.ts`      |
-| Booleans             | `is/has/can/should/was` prefix                   | `isAlive`                     |
+| Thing                | Convention                                                             | Example                       |
+| -------------------- | ---------------------------------------------------------------------- | ----------------------------- |
+| Classes, types       | PascalCase                                                             | `GameState`                   |
+| Variables, functions | camelCase                                                              | `applyDamage`                 |
+| Constants            | SCREAMING_SNAKE_CASE                                                   | `TICK_RATE`                   |
+| Content IDs          | kebab-case strings, never renamed once a save or a release stores them | `"basic-attack"`              |
+| Class files          | PascalCase, only that class in the file (§3.1)                         | `MovementSystem.ts`           |
+| A class's types      | `<ClassName>.types.ts` next to the class                               | `MovementSystem.types.ts`     |
+| A class's constants  | `<ClassName>.constants.ts` next to the class                           | `MovementSystem.constants.ts` |
+| Non-class files      | camelCase                                                              | `vectorMath.ts`               |
+| React components     | PascalCase `.tsx` + `.module.css`                                      | `HealthBar.tsx`               |
+| Tests                | `<name>.test.ts(x)`, next to the file under test                       | `MovementSystem.test.ts`      |
+| Booleans             | `is/has/can/should/was` prefix                                         | `isAlive`                     |
 
 ## 3. Object-oriented design
 
@@ -88,7 +88,8 @@ systems/
 
 ## 5. React, CSS Modules, engine
 
-- Function components and hooks only. Read data with store selectors; put logic in custom hooks.
+- Function components and hooks only, except the one `ErrorBoundary` class (ADR 0025). Read data
+  with store selectors; put logic in custom hooks.
 - Styles in a co-located `Component.module.css` with camelCase class names. Global CSS only in
   `apps/client/src/styles/` (variables and reset). No inline styles except runtime values.
 - Only the 2D renderer (`game/engine/render/Canvas2dRenderer.ts`) touches the canvas context.

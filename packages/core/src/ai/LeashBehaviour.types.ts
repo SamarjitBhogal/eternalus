@@ -9,13 +9,15 @@ import type { Perception } from './perception/Perception';
 
 /** A leashed mob's memory between decisions (18 §6.1, §7); `Idle` names its resting state. */
 export type LeashMemory<Idle extends string> = {
-  readonly fsm: Idle | 'engaging' | 'returning';
+  readonly fsm: Idle | 'engaging';
   readonly targetId: string | null;
-  /** The chase ends at this tick. */
-  readonly aggroUntilTick: number;
-  /** The mob may acquire again from this tick. */
+  /** 0 while the target is inside the leash; else the tick at which the leash breaks (MS-36). */
+  readonly breakAtTick: number;
+  /** Until this tick the mob leaves `escapedId` alone, unless it attacks the mob or a horde-mate. */
   readonly cooldownUntilTick: number;
-  /** Where the mob was when it started to engage. */
+  /** The target that escaped at the last leash break (DEC-144 F); `null` for none. */
+  readonly escapedId: string | null;
+  /** Where the mob was when it took its target. */
   readonly leashX: number;
   readonly leashY: number;
 };
@@ -45,10 +47,16 @@ export type LeashCandidate = { readonly id: EntityId; readonly rank: number; rea
 export type LeashRules<Idle extends string> = {
   /** The resting state's name: `marching` for minions, `holding` for guards. */
   readonly idle: Idle;
-  /** Whether the mob has gone past its leash. */
-  readonly isOutsideLeash: (situation: LeashSituation, memory: LeashMemory<Idle>) => boolean;
-  /** Whether a returning mob is back where it rests (its slot or its post). */
-  readonly isHome: (situation: LeashSituation) => boolean;
+  /** Whether `point` (a target or a candidate) lies outside the mob's leash. */
+  readonly isOutsideLeash: (
+    situation: LeashSituation,
+    memory: LeashMemory<Idle>,
+    point: Vec2,
+  ) => boolean;
   /** A candidate the perception query cannot see (the lane objective), ranked first in. */
   readonly extra: (situation: LeashSituation) => LeashCandidate | null;
+  /** Whether an attack on `victimId` calls the mob for help: a horde-mate, or a fellow guard. */
+  readonly isMate: (situation: LeashSituation, victimId: EntityId) => boolean;
+  /** How far from the mob an enemy attacking a mate may stand to be taken (DEC-144 D). */
+  readonly helpRadius: (situation: LeashSituation) => number;
 };

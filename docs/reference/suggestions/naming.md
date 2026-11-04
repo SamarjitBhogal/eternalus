@@ -4,7 +4,7 @@ description: Themed name proposals for every placeholder in the game doc and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-29
 tags: [reference, suggestions, naming, content]
 paths: ['packages/core/src/content/**']
 related:
@@ -23,6 +23,8 @@ Conventions used here: **Recommended** = the author's pick; every option carries
 
 ### Warrior (formerly Assault) — MVP
 
+**Decided (DEC-48).** The display name is content: `displayName` in `packages/core/src/content/legends/warrior.ts`. The options below are kept as the record of the proposal.
+
 The class is lighter, lower health, faster, with light weapons and damage split between magic and physical. Its sub-classes are Assassin, Knight and Paladin, so the class name has to sit above a stealthy, a balanced and a sustained fighter without being any one of them.
 
 | Option       | Why                                                                                                                       |
@@ -34,7 +36,9 @@ The class is lighter, lower health, faster, with light weapons and damage split 
 | Warden       | Neutral and orderly (both factions "favoured order"), but it suggests defence rather than attack                          |
 | Champion     | Fits the lore of orderly factions sending champions, but it is also what MOBAs call every player character                |
 
-### Flying (rename pending) — post-MVP
+### Flying — post-MVP
+
+**Decided (DEC-48).** The display name is content: `displayName` in `packages/core/src/content/legends/locked/harbinger.ts`. The class stays post-MVP. The options below are kept as the record of the proposal.
 
 Air-based, moves like a jet or helicopter, ability damage and range, can melee at a risk. Sub-classes Hover and Strafe.
 
@@ -46,9 +50,9 @@ Air-based, moves like a jet or helicopter, ability damage and range, can melee a
 | Valkyr      | Chooser of the slain; strong image, but gendered and heavily used elsewhere                                           |
 | Corsair     | Aerial raider; fits Strafe better than Hover                                                                          |
 
-## Sub-classes (names pending) — post-MVP (D11)
+## Sub-classes (decided, DEC-49; MVP since DEC-56)
 
-The game doc labels all sub-class names as pending, so every row has options; the working name is listed first. Sentinel's second sub-class has no working name or focus yet, so its row proposes both.
+The owner decided the sub-class titles and Legend names (DEC-49); they are content in `packages/core/src/content/legends/specs/`, and sub-classes are MVP (DEC-56). The proposals below are kept as the record. The game doc labels all sub-class names as pending, so every row has options; the working name is listed first. Sentinel's second sub-class has no working name or focus yet, so its row proposes both.
 
 | Class    | Working name | Focus (from the game doc)                                          | Recommended     | Alternates                                                | Why                                                                                                                       |
 | -------- | ------------ | ------------------------------------------------------------------ | --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -273,8 +277,8 @@ Code identifier stays `DeveloperMenu` (`apps/client/src/ui/hud/DeveloperMenu`).
 
 | Placeholder (today)               | Recommended pick                           | Alternates                                     | MVP status  |
 | --------------------------------- | ------------------------------------------ | ---------------------------------------------- | ----------- |
-| Warrior (class)                   | Vanguard                                   | Striker, Duelist, Reaver, Warden, Champion     | MVP         |
-| Flying (class)                    | Harrier                                    | Skyborne, Zephyr, Valkyr, Corsair              | post-MVP    |
+| Warrior (class)                   | decided (DEC-48), in content               | Striker, Duelist, Reaver, Warden, Champion     | MVP         |
+| Flying (class)                    | decided (DEC-48), in content               | Skyborne, Zephyr, Valkyr, Corsair              | post-MVP    |
 | Warrior / Assassin                | Shade                                      | Wraith, Nightblade, Cutthroat                  | post-MVP    |
 | Warrior / Knight                  | Blade                                      | Duelist, Sellsword, Lancer                     | post-MVP    |
 | Warrior / Paladin                 | Templar                                    | Zealot, Crusader, Justicar                     | post-MVP    |
@@ -310,7 +314,7 @@ The requirements doc wants a rename of "Warrior" to be "just change the class na
 
 1. **Display names live in content definitions.** Every definition in `packages/core/src/content/` carries `displayName` (and, only if the owner accepts a faction pair such as Beacon/Pyre, an optional `displayNameByTeam`). The HUD, the loadout screen, the announcer and the Chronicle read `displayName` through the snapshot; no React component or view contains a gameplay name string. Changing "Warrior" to "Vanguard" on screen is a one-line content change and no test that checks behaviour breaks.
 2. **Code identifiers use the stable internal name.** The class is `Warrior` (`packages/core/src/entities/Warrior.ts`) until the owner decides otherwise. If the owner does want the class identifier renamed, it is a mechanical rename-symbol in the IDE plus a file rename, exactly what the requirements doc describes. It needs no ADR because no behaviour and no data changes.
-3. **kebab-case content IDs never change once used** (`CONTRIBUTING.md` §2). `'warrior'` is the content ID of the class forever, even if the class becomes Vanguard, because IDs are stored in saved loadouts, match history rows, replays and test fixtures. A renamed ID would need a persistence migration and would silently break replays.
+3. **kebab-case content IDs never change once a save or a release stores them** (`CONTRIBUTING.md` §2). Once saved loadouts, match history rows or replays store `'warrior'`, it is the content ID of the class for good, even if the class becomes Vanguard: a renamed ID would then need a persistence migration and would silently break replays. Until then, an ID rename is a content refactor whose missed references fail the checks (ADR 0023).
 4. **Registries map IDs to classes**, so a class rename touches the one registry line and nothing else (`EntityRegistry`, `AbilityRegistry`, `ViewRegistry`).
 5. **Events, commands and status-effect IDs follow the same rule**: kebab-case strings that describe the thing, never the display name (`'buff-tower'`, not `'ward'`).
 
@@ -319,7 +323,7 @@ Sketch (not code that exists):
 ```ts
 // packages/core/src/content/legends/warrior.ts (sketch)
 export const ASSAULT_LEGEND = {
-  id: 'warrior', // stable content ID: never renamed once used
+  id: 'warrior', // stable content ID: never renamed once a save or a release stores it
   displayName: 'Vanguard', // proposed; change freely, nothing else moves
   displayNameByTeam: undefined, // optional faction pair, e.g. { light: 'Templar', dark: 'Reaver' }
   role: 'balance',

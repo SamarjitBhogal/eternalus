@@ -1,11 +1,12 @@
-import type { Replay } from '../Replay.types';
+import type { GameConfig } from '../../config/GameConfig.types';
+import type { ReplayOf } from '../Replay.types';
 
 /**
  * Golden replay: seed 7, the default config of 2026-10-06, `WanderSystem` (see `replay.test.ts`)
  * and one random command every 10 ticks for 300 ticks. If it stops reproducing, either a
  * determinism bug crept in or the rules changed on purpose; only the second may regenerate it.
  */
-export const WANDER_SEED_7: Replay = {
+export const WANDER_SEED_7: ReplayOf<{ readonly seed: number; readonly config: GameConfig }> = {
   seed: 7,
   config: {
     tickRate: 30,
