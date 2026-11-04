@@ -2923,3 +2923,46 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   887 passed (887)"; client "Tests 433 passed (433)"; "Documentation check passed."
 - Next step: push to PR #30 (merges after #63); Sam applies the design-text drafts for DEC-121 (c)
   and DEC-133 (INBOX); author: S3, S5, S6, N2.
+
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — branch sync
+
+- What was done: fetched origin, fast-forwarded the local branch from 796f77d to its remote
+  head dd1a416, then to Phase 2 head e2c3e1e. Both updates were fast-forwards; no conflicts,
+  new merge commits or source edits were required. HEAD and origin/phase/2-sprint-2-work have
+  no commits unique to either side.
+- Checks run: npm run check passed (exit 0): formatting, no-JS, lint, typecheck, Knip,
+  coverage, build and documentation; core 887/887 tests and client 433/433 tests passed.
+  Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: continue work from the synchronized branch. This required progress entry is
+  uncommitted; no commit or push was performed.
+
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — map detail pass
+
+- What was done: added lane-facing cathedral side portals and steps, plus matching interior
+  thresholds and selection footprints, retaining the existing walkable wall openings. Roads now
+  use joined world-space surfaces, soft shoulders and restrained wear; explicit isLaneSurface
+  metadata removes the main view's overlaid fixed-pixel lane line while retaining minimap routes.
+  Replaced uniform rubble with cached artwork by object kind: stumps and fallen logs, burned house
+  shells, scattered rock shards, broken walls/towers, collapsed tents, furniture and gate timber,
+  and palace debris. Extended ruin bounds keep fallen logs visible. Fire is cosmetic and existing
+  destruction collision/snapshot behavior is preserved. Updated the map design amendment.
+- Checks run: npm run check:quick passed. Focused geometry and rendering regressions passed;
+  visually inspected a render sheet made from the actual views. An initial full run caught the
+  interior-fit test's old footprint expectation; updated it to cover and require all four authored
+  door thresholds, with no assertions removed. Final npm run check passed (exit 0): formatting,
+  no-JS, lint, typecheck, Knip, coverage, build and docs; 891 core and 450 client tests passed.
+  Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: human playtest and review of the visual changes. All changes remain uncommitted;
+  no push or PR was performed.

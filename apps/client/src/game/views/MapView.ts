@@ -24,6 +24,7 @@ import type { WorldRect } from '../engine/render/Renderer.types';
 export class MapView implements WorldLayer {
   private readonly map: MapDefinition;
   private readonly groundScenery: SceneryView;
+  private readonly hasLaneSurfaces: boolean;
 
   /** Creates a view for one map; `scenery` supplies its ground-layer decorations. */
   public constructor(
@@ -35,6 +36,7 @@ export class MapView implements WorldLayer {
     private readonly isDestroyed: (id: string) => boolean = () => false,
   ) {
     this.map = map;
+    this.hasLaneSurfaces = scenery.some((piece) => piece.isLaneSurface === true);
     this.groundScenery = new SceneryView(scenery, 'ground', hiddenRoofs, detailArea, isDestroyed);
   }
 
@@ -99,7 +101,7 @@ export class MapView implements WorldLayer {
     for (const piece of this.map.terrain) {
       renderer.fillPolygon(piece.shape, TERRAIN_COLORS[piece.kind]);
     }
-    for (const lane of this.map.lanes) {
+    for (const lane of isMinimap || !this.hasLaneSurfaces ? this.map.lanes : []) {
       renderer.strokePath(lane.path, LANE_COLOR, LANE_WIDTH);
     }
   }

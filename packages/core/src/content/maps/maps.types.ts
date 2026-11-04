@@ -212,6 +212,8 @@ export type MapDecoration = {
   readonly object?: MapObjectArt;
   /** A bridge deck cuts a walkable corridor through otherwise solid decorative terrain. */
   readonly isPassage?: true;
+  /** Authored lane surface replaces the main view's schematic screen-width lane line. */
+  readonly isLaneSurface?: true;
 };
 
 /** A selectable same-world building, derived from its interior floor and door polygons. */

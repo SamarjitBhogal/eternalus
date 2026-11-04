@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-03
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -502,6 +502,23 @@ scheduled (INBOX).
 Renderer caching and close-view material detail belong to the separate renderer follow-up in
 INBOX, with camera-moving p95 measurements. The map keeps its seeded scenery and worn roads.
 The HUD branch owns attack/roof input arbitration and bridge-backed toolbar state.
+
+### 2026-11-03 — Lane-facing entrances and environmental remains
+
+Cathedral side portals use shared doorway geometry alongside the north and south entrances.
+Exterior portals, interior thresholds and roof-selection footprints align with the existing
+walkable transept openings. Door ornaments and steps add no new solid footprints.
+
+Lane roads follow the generated polyline with joined, world-sized surfaces and restrained wear.
+Explicit `MapDecoration.isLaneSurface` metadata suppresses the main view's schematic lane
+stroke when authored road surfaces exist; schematic maps and minimaps retain their route lines.
+Road styling lives in `content/maps/map1Scenery.ts` and never changes lane routing.
+
+Destroyed artwork is selected by physical object kind: tree stumps and fallen logs, burned house
+shells, scattered rock fragments, collapsed tents, broken timber and ruined stone structures.
+The client caches those polygons from the original footprint. Remains and cosmetic fire do not
+add colliders, damage or simulation state; snapshot destruction still controls visibility and
+walkability. Interior remains follow the same roof and parent-building visibility as intact art.
 
 ## Related
 

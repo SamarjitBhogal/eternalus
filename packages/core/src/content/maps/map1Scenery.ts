@@ -19,6 +19,9 @@ export const MAP_PALETTE = {
   groundFleck: 'rgba(139,151,104,0.18)',
   bridgeRail: '#cac0a5',
   laneVerge: 'rgba(82,76,54,0.12)',
+  roadShoulder: '#777458',
+  roadWear: 'rgba(195,179,141,0.22)',
+  roadPebble: 'rgba(74,71,54,0.20)',
   mountainFoot: 'rgba(35,45,36,0.35)',
   mountainMassLight: '#545e55',
   mountainMass: '#48554d',
@@ -108,6 +111,17 @@ export const MAP_PALETTE = {
   light: '#6db9bc',
   dark: '#aa718f',
   gold: '#d5b77b',
+} as const;
+
+/** Presentation-only road dimensions in sketch units; lane routing stays unchanged. */
+export const ROAD_STYLE = {
+  vergeWidth: 10,
+  shoulderWidth: 7.5,
+  surfaceWidth: 6,
+  wearWidth: 2.2,
+  stoneSpacing: 17,
+  stoneSize: 0.55,
+  miterLimit: 2,
 } as const;
 
 /** TUNE: deterministic decorative density; these settings have no gameplay effect. */
