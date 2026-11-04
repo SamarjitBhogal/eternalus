@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-04
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,16 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-04 (the owner's ruling on PR #69's review, `feat/buildings-and-map-objects`)
+
+The owner's answer of 2026-11-04, given in chat on the review of PR #69 (finding B1). The answer
+is kept verbatim outside the repository, in
+`eternalus-agent-work/pr-review-2026-10-29/pr69/owner-answers-2026-11-04-pr69.md`.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Docs changed                           |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| DEC-158 | **The Stronghold wall is a shield arc from cliff face to cliff face, not a ring** (answers PR #69's review, B1). Asked: PR #69 made the default wall an open, enemy-facing shield arc whose rear is closed by mountain cliffs and the map edge (per side: walls 9 → 6, turrets 12 → 10, gates unchanged); its only source was the author's annotated image, and architecture 06 said the circular ring stays. The owner kept the arc: "the wall shouldnt be a circle but rather an arc that stretches from cliff-face to cliff-face. ... there is no reason a stronghold engineer would create a wall that can be circumvented and attacked from behind if the citadel already were built in an alcove of a mountain side". So: the default layout's `wallRing.frontArc` (`content/maps/defaultMapLayout.ts`) is the design, and the wall carries the shield art. Each arc tip meets its cliff corner, which seals the rear; a test keeps them together. The requirement "wall around the Stronghold" is met by the arc and the cliffs together. ADR 0009's "wall rings with gates at lane exits and turrets at vertices" still holds: the ring is open at the rear. | architecture 06 (amendment 2026-11-03) |
 
 ## Batch 2026-11-03 (the owner's answers on PR #68's review, `feat/hud-and-character-select`)
 

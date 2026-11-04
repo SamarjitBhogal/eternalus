@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-04
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -584,13 +584,14 @@ walkability. Interior remains follow the same roof and parent-building visibilit
 
 ### 2026-11-03 — Front-facing stronghold shield
 
-At the author's request (annotated outline confirmed in chat), the default stronghold boundary
-is an open, enemy-facing blue shield arc rather than a full circle. This supersedes the earlier
-amendment's unchanged circular-ring appearance. Its curved front, taller tips and tessellation
-come from `defaultMapLayout.ts` (`wallRing.frontArc`); omitting that profile retains closed-circle
-generation. Both sides use mirrored generated geometry. Gate count still follows `numLanes`.
-Mountain bounds join the two rear endpoints to the world edge, so closed gates still seal the
-base. Preset corner bounds are fitted behind that boundary instead of covering its lane exits.
+The owner ruled that the Stronghold wall is an arc from cliff face to cliff face, not a ring
+(DEC-158): the default stronghold boundary is an open, enemy-facing blue shield arc. This
+supersedes the earlier amendment's unchanged circular-ring appearance. Its curved front, taller
+tips and tessellation come from `defaultMapLayout.ts` (`wallRing.frontArc`); omitting that profile
+retains closed-circle generation. Both sides use mirrored generated geometry. Gate count still
+follows `numLanes`. Mountain bounds join the two rear endpoints to the world edge, so closed gates
+still seal the base. Preset corner bounds are fitted behind that boundary instead of covering its
+lane exits.
 
 Each segment remains an independent wall object with the same health and destruction rules.
 Physical footprints follow the visible curve; gate positions and lane starts share the same
