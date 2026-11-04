@@ -1986,6 +1986,16 @@ Reply inline (`Decision: …`).
       `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
       only the first of two overlapping footprints. (2026-11-03: done on #64 after the HUD PR
       merged into it: `isPointInAnyPolygon` in `utils/geometry.ts`. The density % part is open.)
+- [ ] **PR #64 better than the design? (critic round 6, 2026-11-03)** — `MatchBridge` finds each
+      capture point's zone by position: core's `Simulation.spawnZones` puts a zone on its map
+      feature's position, and the client relies on that (a whole-match test in
+      `createBrowserMatch.test.ts` guards it). The critic suggests that a zone's `EntitySnapshot`
+      carries its map feature id, as a map object carries `mapObjectId`. Then the link is a field,
+      not an unwritten contract between the packages. It also settles two meanings of `pointId`:
+      core's capture events name the zone's entity id, the HUD's `CapturePointStatus.pointId` is
+      the feature id; they meet when architecture 12 §8 turns `capture-point-owner-changed` into
+      `point-taken`. It is a core API change (`EntitySnapshot`). Build it on #64, or later with the
+      `point-taken` wiring?
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

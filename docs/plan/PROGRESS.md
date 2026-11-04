@@ -4454,8 +4454,14 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   from the zone on its feature's position, and re-sends the last array while nothing changes
   (architecture 13 status note). Its tests failed first under three breaks: the static roster
   (1 red), a new array on each publish (2 red), and a link that misses (the whole-match test red).
-- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
-  "Tests 1000 passed (1000)"; client "Tests 1744 passed (1744)"; "✓ built in 277ms";
-  "Documentation check passed."
-- Next step: Samarjit re-reviews #64 on base `phase/3-sprint-3-work`. The minion stack
-  (#56 → #58) conflicts stay for whichever lands second.
+  Critic round 6 (approve): a point whose zone is gone shows no capture again (neutral, no
+  progress), not frozen values (break: keep the last values, 1 red); each point and its position
+  are one `CaptureSite`. Its better-than-design item, a feature id on the zone's snapshot, is in
+  `INBOX.md` for the owner.
+- Checks run: `npm run check` on `a46e8f1` → `EXIT=0`: core "Tests 1000 passed (1000)"; client
+  "Tests 1744 passed (1744)"; "Documentation check passed.". On the round 6 fixes it is not yet
+  green: two runs ended with 9 and 4 core simulation tests "timed out in 60000ms" while the
+  machine was swapping (5.7 of 7 GB swap used). The core code is unchanged since `a46e8f1`; the
+  changed client tests pass ("Tests 19 passed (19)"). Re-run on a quiet machine before the push.
+- Next step: Samarjit re-reviews #64 on base `phase/3-sprint-3-work`. The owner answers the
+  feature-id item. The minion stack (#56 → #58) conflicts stay for whichever lands second.

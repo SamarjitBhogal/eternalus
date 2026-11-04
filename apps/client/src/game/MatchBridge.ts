@@ -2,7 +2,7 @@ import type { CaptureSnapshot, EntityId, MapDefinition, Snapshot, Vec2 } from '@
 
 import type { CapturePointStatus, PlayerHudSnapshot, StructureStatus } from '../bridge/hud.types';
 import { ROSTER_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
-import type { MatchBridgeDeps } from './MatchBridge.types';
+import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
 
 /**
  * All game → UI publishing for one match (architecture 12 §8, 13 §5), owned by `Match`. It
@@ -16,8 +16,7 @@ import type { MatchBridgeDeps } from './MatchBridge.types';
  */
 export class MatchBridge {
   private readonly structures: readonly StructureStatus[];
-  /** Where each capture point's zone stands, in `capturePoints` order (`Simulation.spawnZones`). */
-  private readonly capturePositions: readonly Vec2[];
+  private readonly captureSites: readonly CaptureSite[];
   private capturePoints: readonly CapturePointStatus[];
 
   /** Builds the two rosters from the map; publishes nothing yet. */
@@ -26,14 +25,17 @@ export class MatchBridge {
     const features = deps.map.features.filter((feature) =>
       deps.captureKinds.includes(feature.kind),
     );
-    this.capturePositions = features.map((feature) => feature.position);
-    this.capturePoints = features.map((feature) => ({
-      pointId: feature.id,
-      kind: feature.kind,
-      laneIndex: MatchBridge.laneIndexOf(deps.map, feature.laneId),
-      ownerTeam: 'neutral',
-      progress: null,
+    this.captureSites = features.map((feature) => ({
+      position: feature.position,
+      noZone: {
+        pointId: feature.id,
+        kind: feature.kind,
+        laneIndex: MatchBridge.laneIndexOf(deps.map, feature.laneId),
+        ownerTeam: 'neutral',
+        progress: null,
+      },
     }));
+    this.capturePoints = this.captureSites.map(({ noZone }) => noZone);
   }
 
   /** Publishes both rosters, the clock and the HUD once, before the first tick. */
@@ -66,26 +68,28 @@ export class MatchBridge {
 
   /**
    * The capture points with each zone's owner and progress. A zone stands on its feature's
-   * position, which links it to its point; a point with no zone keeps its last values. Returns
-   * the last array when nothing changed.
+   * position, which links it to its point; a point with no zone shows no capture (neutral, no
+   * progress). An unchanged point, and an unchanged list, is the last one published.
    */
   private liveCapturePoints(snapshot: Snapshot): readonly CapturePointStatus[] {
-    const points = this.capturePoints.map((point, index) => {
-      const capture = MatchBridge.captureAt(snapshot, this.capturePositions[index]);
-      return capture === null ||
-        (capture.owner === point.ownerTeam && capture.progress === point.progress)
-        ? point
-        : { ...point, ownerTeam: capture.owner, progress: capture.progress };
+    const points = this.captureSites.map(({ position, noZone }, index) => {
+      const capture = MatchBridge.captureAt(snapshot, position);
+      const next =
+        capture === null
+          ? noZone
+          : { ...noZone, ownerTeam: capture.owner, progress: capture.progress };
+      const last = this.capturePoints[index] ?? noZone;
+      return last.ownerTeam === next.ownerTeam && last.progress === next.progress ? last : next;
     });
     return points.every((point, index) => point === this.capturePoints[index])
       ? this.capturePoints
       : points;
   }
 
-  private static captureAt(snapshot: Snapshot, position: Vec2 | undefined): CaptureSnapshot | null {
+  private static captureAt(snapshot: Snapshot, position: Vec2): CaptureSnapshot | null {
     const zone = snapshot.entities.find(
       ({ capture, transform }) =>
-        capture !== null && transform?.x === position?.x && transform?.y === position?.y,
+        capture !== null && transform?.x === position.x && transform.y === position.y,
     );
     return zone?.capture ?? null;
   }
