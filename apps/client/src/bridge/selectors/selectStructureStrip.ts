@@ -7,6 +7,7 @@ import { contentSlice } from '../slices/contentSlice';
 import { matchSetupSlice } from '../slices/matchSetupSlice';
 import { matchSlice } from '../slices/matchSlice';
 import type { RootState } from '../store';
+import { isDead } from './isDead';
 
 /** One tile of a structure strip: an icon over a health bar, bound to its structure by identity. */
 export type HudStructureTile = {
@@ -18,6 +19,11 @@ export type HudStructureTile = {
   readonly iconAssetId: AssetId;
   /** Health 0..1 (summed over an aggregated group); `null` while any member's health is unknown. */
   readonly healthFraction: number | null;
+  /**
+   * The tile shows destroyed (DEC-69): its structure is at zero health, or, for an aggregated
+   * group (the one Wall), any one member is: a single destroyed wall segment or gate (DEC-108).
+   */
+  readonly isDestroyed: boolean;
 };
 
 /** The team each strip shows, seen from the player. */
@@ -72,6 +78,8 @@ function tilesOf(
     displayName: kind.displayName,
     iconAssetId: kind.iconAssetId,
     healthFraction: healthFractionOf(members),
+    // A structure at zero health is destroyed (DEC-69); unknown health is not.
+    isDestroyed: members.some(({ health }) => isDead(health)),
   }));
 }
 

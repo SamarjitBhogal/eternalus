@@ -20,9 +20,8 @@ export const ASSET_LICENCES: Readonly<Record<LicenceId, AssetLicence>> = {
   owner: {
     work: 'Eternalus artwork',
     licenceName: 'Owner-made for Eternalus',
-    // TODO(sam): the credit for your own art is worded from DEC-51 until you word it (INBOX HC-Q7).
     notice:
-      "Art by Sam Holtzman, made with Nano Banana (Gemini), Figma's image model and Figma; the Magus model rendered with Tripo Studio.",
+      "Interim art by Sam Holtzman, made with Nano Banana (Gemini), Figma's image model and Figma; the Magus model rendered with Tripo Studio. It will be replaced when a digital artist is hired for the project.",
     text: null,
   },
   'ofl-cinzel': {

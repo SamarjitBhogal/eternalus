@@ -14,7 +14,7 @@ import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.constants';
-import type { PlayerChoice, PreparedWorld } from './Match.types';
+import type { MatchDeps, PlayerChoice, PreparedWorld } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
@@ -61,6 +61,7 @@ function matchDeps(world: PreparedWorld = prepareMatchWorld(CONFIG, 1)) {
     input: { read: () => STILL },
     player: PLAYER,
     logger: new NullLogger(),
+    onCrash: vi.fn<MatchDeps['onCrash']>(),
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
   };
   return { deps, clocks, on, unsubscribes };
@@ -123,6 +124,55 @@ describe('Match lifecycle', () => {
 
     expect(match.playerEntityId).not.toBeNull();
     expect(logger.records.filter((record) => record.severityText === 'ERROR')).toEqual([]);
+  });
+
+  // DEC-149 (7): until core reports the player's Legend id (A19, built on feat/match-director),
+  // `Match` adopts the first spawn of the player's class and team. That is safe only while roster
+  // bots spawn and announce it in the Simulation constructor, before `Match` subscribes; this test
+  // pins it.
+  it('adopts its own spawn, never a roster bot of the same class and team (DEC-149)', () => {
+    const world = prepareMatchWorld(CONFIG, 1);
+    const simulation = new Simulation({
+      config: CONFIG,
+      seed: 1,
+      logger: new NullLogger(),
+      map: world.map,
+      mapObjects: world.mapObjects,
+      roster: [
+        { team: PLAYER.team, definitionId: PLAYER.legend, role: 'laner', difficulty: 'normal' },
+      ],
+    });
+    const twinIds = () =>
+      simulation
+        .snapshot()
+        .entities.filter(({ kind, team }) => kind === PLAYER.legend && team === PLAYER.team)
+        .map(({ id }) => id);
+    const bots = twinIds();
+    const match = new Match({ ...matchDeps(world).deps, simulation });
+
+    match.tick();
+
+    expect(bots).toHaveLength(1);
+    expect(match.playerEntityId).not.toBeNull();
+    expect(bots).not.toContain(match.playerEntityId);
+    expect(twinIds()).toContain(match.playerEntityId);
+  });
+
+  it('hands a throw from a tick to onCrash with the tick, and its loop stops (DEC-106)', () => {
+    const { deps } = matchDeps();
+    const match = new Match(deps);
+    const error = new Error('step failed');
+    match.start();
+    deps.scheduler.advance(0);
+    deps.scheduler.advance(TICK_MS);
+    vi.spyOn(deps.simulation, 'step').mockImplementation(() => {
+      throw error;
+    });
+
+    deps.scheduler.advance(TICK_MS);
+
+    expect(deps.onCrash.mock.calls).toEqual([[{ error, tick: 1 }]]);
+    expect(deps.scheduler.hasPendingFrame).toBe(false);
   });
 
   it('runs whole ticks from the loop: 100 ms of frames is 3 ticks', () => {

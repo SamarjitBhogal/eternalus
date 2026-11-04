@@ -5,7 +5,7 @@ import type { MiniMapRing } from './views/MiniMapView.types';
 export const BACKGROUND_COLOR = '#202927';
 
 /**
- * The HUD minimap ring both minimaps (battlefield and interior) draw inside: the one value
+ * The HUD minimap ring the minimap draws inside: the one value
  * `bridge/minimapRing.ts` holds for `game/` and `ui/` (01 §2; 06 §10), injected into `MiniMapView`.
  */
 export const HUD_MINIMAP_RING: MiniMapRing = {
@@ -28,20 +28,6 @@ export const FOLLOW_VIEW_HEIGHT = 36;
 
 /** How many log records the match keeps for bug reports and the overlay (architecture 15 §5). */
 export const LOG_RING_CAPACITY = 512;
-
-/**
- * PROTOTYPE(PROTO-01) TEMPORARY: demo code. Delete with `Match.spawnEscort` when Phase 2's
- * `SpawnSystem` and Phase 3's lane hordes land.
- *
- * Prototype decision (2026-10-08, demo): minions that escort the player, spawned around the
- * player's spawn point until Phase 2's `SpawnSystem` and Phase 3's lane hordes replace them.
- */
-export const PROTOTYPE_ESCORT = {
-  definitionId: 'light-minion',
-  kind: 'light-mob',
-  count: 6, // TUNE:
-  spawnRadius: 2, // TUNE: metres from the player's spawn point
-} as const;
 
 /** Milliseconds in one second, to turn a tick rate into a tick length. */
 export const MS_PER_SECOND = 1000;

@@ -14,5 +14,5 @@ export const COLOSSUS = {
   roleLabel: null,
   description: 'Heaviest, slowest, strongest — a walking tank that specialises in fortifications.',
   roleRatings: null,
-  detailNames: { signature: null, specialty: null, ultimate: null },
+  detailNames: { ultimate: null, 'ability-1': null, 'ability-2': null, 'ability-3': null },
 } as const satisfies LegendSpecDefinition;

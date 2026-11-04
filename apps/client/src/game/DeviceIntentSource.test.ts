@@ -97,6 +97,7 @@ describe('Player scenario: walking with the keyboard', () => {
       input,
       player: { legend: 'warrior', team: 'light' },
       logger: new MemoryLogger(),
+      onCrash: () => undefined,
       bridge: {
         bus: new TypedEventBus<BridgeEventMap>(),
         publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

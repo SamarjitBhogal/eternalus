@@ -8,8 +8,9 @@ import { rosterNamesThatAreNotIds, shippedCatalogue } from './__fixtures__/shipp
 
 /**
  * Where a screen draws an asset: the primary class step (62:125), the alternate class step
- * (62:70: no cards, roster or Legends strip), the Legend step (58:271), a plate of the class step
- * or of the Legend step (drawn only on `'figma-raster'`), or the match HUD (62:231).
+ * (62:70: no cards or roster; its View Details draws the Legends strip, DEC-109), the Legend step
+ * (58:271), a plate of the class step or of the Legend step (drawn only on `'figma-raster'`), or
+ * the match HUD (62:231).
  */
 type Use =
   'class-primary' | 'class-alternate' | 'legend-step' | 'class-plate' | 'legend-plate' | 'hud';
@@ -41,7 +42,8 @@ function assetUses(catalogue: DisplayCatalogue): ReadonlyMap<AssetId, ReadonlySe
       add(spec.art.card, ['legend-step']);
       add(spec.art.refraction, ['legend-step']);
       add(spec.art.portrait, ROSTER);
-      add(spec.art.mini, ['class-primary']);
+      // Both layouts' View Details draw the Legends strip (DEC-109, OD-44).
+      add(spec.art.mini, ['class-primary', 'class-alternate']);
       add(spec.art.rowPlate, ['legend-plate']);
       for (const row of spec.details) add(row.iconAssetId, ['legend-step']);
     }

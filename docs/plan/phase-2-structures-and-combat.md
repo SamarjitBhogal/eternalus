@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-11-02
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -215,6 +215,18 @@ Owner: _ (client lane). Weeks 4–5.
 - [ ] **HUD `HealthBar` for the selected structure and `Announcer` events** (tower razed, point
       captured) via the bridge. Owner: _. Test: bridge events reach the store throttled. Done
       when: `ui/` still imports only `bridge/`.
+- [x] **HUD leave-interior control** (replaces the interim "Leave cathedral" button in
+      `game/GameCanvasChrome.tsx`, register CD-22: the bridge publishes whether the camera is
+      inside the cathedral interior, a `ui/hud/` control shows only then, styled from tokens, and
+      emits a `leave-interior` `UiIntent` that `Match` handles, per the architecture 13 §9
+      recipe). Owner: _. Test: the control renders only while the camera is inside and dispatches
+      `leave-interior`; `Match` returns to the following camera on the intent. Done when: `game/`
+      renders no normal-play control.
+      **Superseded 2026-11-02 (DEC-143):** the separate interior is gone (#30's same-world
+      buildings), and a building's roof opens while the player's Legend stands inside it, so
+      there is no interior state to leave and no control to build; `game/` renders no
+      normal-play control. Dropped by the owner on 2026-11-02 (DEC-148)
+      ([06](../architecture/06-map-and-minimap.md) §10).
 
 **Success metric:** every structure and obstacle kind renders on the map and minimap with 0
 kind-specific code outside `ViewRegistry` entries.
@@ -255,7 +267,7 @@ Owner: _ (each sprint adds its own; one person wires the soak). Week 5.
 3. Architecture doc 07 and reference doc 03 match the code, or an ADR records the deviation.
 4. Demo: a reviewer razes a SpawnerTower with debug damage, watches wall bars drop on the HUD
    and the minimap, opens a gate, fires a turret manually and captures a checkpoint.
-5. Phase PR approved (sholtzman + client lane lead), CI green on three OSes, merged by
+5. Phase PR approved (sholtzman + client lane lead), CI green on Linux and Windows, merged by
    SamarjitBhogal.
 
 ## Risks

@@ -4,7 +4,7 @@ description: The record for the pull request of feat/hud-and-character-select (c
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-27
+last-reviewed: 2026-11-02
 tags: [changelog, pull-request, ui, hud, character-select]
 related:
   [
@@ -204,6 +204,12 @@ to existing design text moved to D2b, the patch in `INBOX.md` HC-T1.
   HC-B1).
 - Rows the pre-PR critic named as new features or better than the design are merged into
   `INBOX.md` HC-B1 under its ids (BD1, BD2, NF1 to NF5).
+- DV-70, DV-71 and DV-81 (2026-10-30, batch 2 of the build plan, `feat/hud-plan-b2`): superseded.
+  DV-70: on the alternate layout View Details no longer commits the shown class; it opens the class
+  details screen, and a Select Class button commits (DEC-109, `f6b1b5c`). DV-71: View Details
+  answers its own `view-details` action (V), not `gadget-2` (DEC-103, `d7b7b15`); Back keeps
+  `pause-menu`. DV-81: the locked-in state exists: LOCK IN shows the locked view until the
+  countdown ends (DEC-60, `fb3b8cd`).
 
 ## ADR 0018's amendments, applied in this pull request
 
@@ -371,6 +377,12 @@ re-check, only these owner items remain:
   the docs within the pull request, so the owner signs HC-B1 before the merge, or defers it
   explicitly and the description says so.
 
+**Status on 2026-10-28** ([the owner's answers](#owner-answers-of-2026-10-28)): group (i) is
+approved and applied; HC-B1 is approved and its rows are applied wherever no other open item holds
+them; HC-Q7 (1) is answered except the terms of the tools the art was made with. What remains before
+the merge: those terms, if the owner deems them needed, and the integration with the sibling pull
+requests in the order he chose (HC-Q21 (b)).
+
 Architecture 08's status note (game-data-05) is not appended directly: an earlier 08 §11 was
 removed so that 08 stays unchanged until the owner approves its note (`fb310c6`; the open
 `INBOX.md` item "Session C/H → Sam (2026-10-09, PRs #18 and #19)"). HC-T1 T-79 is that note,
@@ -471,11 +483,11 @@ Failing checklist items ([checklists](../agents/checklists.md)) and how each is 
 
 | Checklist item                                                             | Failed in                                                                  | Handling                                                                                                                                                                                    |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| §2 Guardrail configs untouched, or changed through an ADR linked in the PR | game-data, ui-screens, ui-hud-components-assets, docs-process, integration | Owner: [ADR 0020](../decisions/0020-client-test-configuration.md) (proposed) records the three lines; the pull request links it, and its guardrail box stays unticked until he accepts it.  |
+| §2 Guardrail configs untouched, or changed through an ADR linked in the PR | game-data, ui-screens, ui-hud-components-assets, docs-process, integration | Owner: [ADR 0020](../decisions/0020-client-test-configuration.md) records the three lines; the pull request links it; the owner accepted it on 2026-10-28.                                  |
 | §2 Docs, frontmatter and PROGRESS entry present; PR template complete      | core-bridge, docs-process                                                  | Repaired: the description follows `.github/pull_request_template.md` (outside the repository until the pull request opens); the naming suggestions' gap is `INBOX.md` HC-T1 T-147 to T-150. |
 | PR template complete (the description draft)                               | docs-process                                                               | Repaired, as above (pr-docs-process-01 to -03, -11).                                                                                                                                        |
 | §2 No product or game-design decisions by the agent                        | docs-process                                                               | Repaired for the Phase 6 task line (taken out; HC-T1 T-152 waits for HC-S5); owner for FR-057's agent-written acceptance sentence (HC-T1, T-93a).                                           |
-| §3 Documented: ADR if a decision changed                                   | game-data, docs-process                                                    | Owner: [ADR 0019](../decisions/0019-session-controller-owns-the-match.md) records DEC-50; ADR 0020 the test configuration. Both proposed.                                                   |
+| §3 Documented: ADR if a decision changed                                   | game-data, docs-process                                                    | Owner: [ADR 0019](../decisions/0019-session-controller-owns-the-match.md) records DEC-50; ADR 0020 the test configuration. Both accepted on 2026-10-28.                                     |
 | §1 Definition of done: the sprint checkbox ticked                          | docs-process                                                               | Owner: the phase 1, sprint 1.4 tick is HC-T1 T-80 (group (ii)).                                                                                                                             |
 | Every source file has a sibling test (02 §8, `AGENTS.md` "Testing")        | ui-screens                                                                 | Repaired: `c3290dd` (pr-ui-screens-02).                                                                                                                                                     |
 | No semantic conflict with the open sibling pull requests                   | integration                                                                | Owner: the merge order (HC-Q21) and the weapon art (HC-Q22); the resolution is the integration recipe below.                                                                                |
@@ -513,15 +525,15 @@ Every finding and how it is handled:
 | pr-docs-process-07             | blocker, owner (upheld as should-fix) | The merge preconditions are open.                                                             | Owner: the merge preconditions (above).                                                                                                                       |
 | pr-docs-process-08             | should-fix, owner (upheld as nit)     | FR-057's agent-written acceptance sentence was applied.                                       | Owner: HC-T1 T-93a, flagged for his check.                                                                                                                    |
 | pr-docs-process-09             | should-fix, owner (upheld)            | HC-B1 was listed as not blocking the merge.                                                   | Owner: HC-B1 joins the merge preconditions (above).                                                                                                           |
-| pr-docs-process-10             | nit, owner                            | Squash or merge commit for a branch of 111 commits (125 with merges).                         | Owner: asked in the pull request's description.                                                                                                               |
+| pr-docs-process-10             | nit, owner                            | Squash or merge commit for a branch of 111 commits (125 with merges).                         | Owner: answered on 2026-10-28: a merge commit (below).                                                                                                        |
 | pr-docs-process-11             | nit                                   | Relative links in the description.                                                            | Repaired: absolute GitHub links.                                                                                                                              |
 | pr-docs-process-12             | nit, owner                            | The HC-T1 patch is outside the repository, so the other reviewers cannot read it.             | Owner: once he approves group (i), its rows are applied on the branch and show in the pull request's diff; the rest waits in the patch unless he asks for it. |
 | pr-docs-process-13             | nit, owner                            | DEC-50 changes an architecture decision without an ADR.                                       | Owner: ADR 0019.                                                                                                                                              |
 | pr-docs-process-14             | nit                                   | The D11 row names ADR 0018 but records only ADR 0006.                                         | Repaired as a row for the owner: HC-T1 T-151, group (i).                                                                                                      |
 | pr-integration-01              | should-fix (upheld as nit)            | Resolving M1's `useMatch.ts` change can silently drop the map handed to the simulation.       | The integration recipe (below); not a defect at this head.                                                                                                    |
 | pr-integration-02              | should-fix (upheld as nit)            | After M3 and M8 the bots have two roster sources and a Rover keyed to a fixed team.           | The integration recipe (below).                                                                                                                               |
-| pr-integration-03              | should-fix, owner (upheld as nit)     | The HUD's class-keyed weapon art against `feat/weapons`' default weapons.                     | Owner: HC-Q22.                                                                                                                                                |
-| pr-integration-04              | should-fix, owner (upheld as nit)     | The merge order with the nine sibling pull requests.                                          | Owner: HC-Q21.                                                                                                                                                |
+| pr-integration-03              | should-fix, owner (upheld as nit)     | The HUD's class-keyed weapon art against `feat/weapons`' default weapons.                     | Owner: HC-Q22, answered on 2026-10-28 (DEC-57).                                                                                                               |
+| pr-integration-04              | should-fix, owner (upheld as nit)     | The merge order with the nine sibling pull requests.                                          | Owner: HC-Q21, answered on 2026-10-28: (b).                                                                                                                   |
 | pr-integration-05              | nit                                   | The player's identity is untested when allied bots share the player's class.                  | Not changed at this head (below); in the recipe.                                                                                                              |
 | pr-integration-06              | nit, owner                            | As pr-game-data-01.                                                                           | Owner: ADR 0020.                                                                                                                                              |
 | pr-integration-07              | nit                                   | Trivial text conflicts with the siblings.                                                     | The integration recipe (below).                                                                                                                               |
@@ -531,11 +543,12 @@ Every finding and how it is handled:
 - The merge preconditions, listed under
   [the pre-PR critic's second run](#the-pre-pr-critics-second-run).
 - ADR 0019 (DEC-50, the basis of HC-T1 T-07, T-08, T-14 to T-16 and T-86) and ADR 0020 (the test
-  configuration): accept or refuse; both are proposed.
-- HC-Q21: the merge order with the nine sibling pull requests, before either side merges.
-- HC-Q22: each class's start weapon and the HUD's weapon art, when `feat/weapons` merges.
-- Squash or merge commit (pr-docs-process-10): `docs/process/git-workflow.md` §4 squash-merges task
-  pull requests, which would fold the branch's 111 commits into one; asked in the description.
+  configuration): both accepted on 2026-10-28.
+- HC-Q21: the merge order with the nine sibling pull requests: answered on 2026-10-28, (b).
+- HC-Q22: each class's start weapon and the HUD's weapon art: answered on 2026-10-28 (DEC-57).
+- Squash or merge commit (pr-docs-process-10): a merge commit, the owner's choice for this pull
+  request (2026-10-28). It departs from `docs/process/git-workflow.md`'s default, which squash-merges
+  task pull requests (§4, §5), and keeps the branch's commits.
 - HC-T1 T-93a (FR-057's acceptance sentence) and the rest of HC-T1, row by row.
 
 **Not changed, with reasons:**
@@ -555,8 +568,9 @@ Every finding and how it is handled:
 
 ### Integration recipe
 
-For whoever resolves the merges with the sibling pull requests, whichever order HC-Q21 picks; the
-side that merges second applies it. The siblings that target `phase/2-sprint-2-work`, as the
+For whoever resolves the merges with the sibling pull requests. The owner picked HC-Q21's option
+(b) on 2026-10-28: the minion stack and `feat/weapons` merge first, and this branch, which merges
+second, applies the recipe once. The siblings that target `phase/2-sprint-2-work`, as the
 remote-tracking refs stood on 2026-10-27 (the phase branch was still `230a330`):
 
 | Id      | Branch                              | Built on                     |
@@ -603,8 +617,31 @@ remote-tracking refs stood on 2026-10-27 (the phase branch was still `230a330`):
    `packages/core/src/content/defaultContentRules.ts` (Weapons): keep all four imports
    (`RoleRatingRangeRule`, added by `42bb212`, `SpecClassExistsRule`, `WEAPONS` and
    `WeaponDefinition`). Run Prettier on the touched docs.
-5. **Then** run `npm run check`, have the critic check the integration change (ADR 0010), and apply
-   the owner's answer to HC-Q22 once `feat/weapons` is in.
+5. **Then** run `npm run check` and have the critic check the integration change (ADR 0010).
+   HC-Q22 is answered (DEC-57): the HUD keeps its class-keyed Figma art, so the integration changes
+   no HUD art; each Legend's start weapon is `feat/weapons`' to set.
+
+**Added 2026-10-30** (batch 2, `feat/hud-plan-b2`; the architecture critic's loop 1): two more
+items for step 2, once M3 (pull request #46) has merged. (a)
+`packages/core/src/content/teams/botRoster.test.ts` restates M3's lane rule
+(`packages/core/src/state/assignLanes.ts`) in a local helper, `lanesInRosterOrder`, to check that
+the bot roster's order puts one Vanguard, one Sentinel and one Magus in each lane (DEC-102). Make
+the test import `assignLanes` and delete the helper. (b) `assignLanes` also takes `occupied`, the
+Legends already on each lane ("a human laner in sim or developer mode", its TSDoc), and starts its
+round from the emptiest lane, so with a human laner the roster's order can put two bots of one
+class in one lane. M3 passes no `occupied` today; whoever wires a human laner adds a test for the
+mix, and the owner decides whether DEC-102's mix holds in that mode.
+
+**Added 2026-10-30** (batches 3 and 4, `feat/hud-plan-b3a`): one more item, for the sync with the
+phase branch. The structures architecture (`docs/architecture/07-structures-obstacles-and-destructibles.md`,
+§10 and §11) ends a destroyed structure with `structure-destroyed` and `entity-removed { cause:
+RemovalCause }`, so a destroyed structure can leave the world and every snapshot built from it. The
+HUD's destroyed tile (DEC-69, DEC-108; commit `cf7efbe`) reads `health.current` at 0
+(`selectStructureStrip`'s `isDestroyed`), so it needs the destroyed structure published with
+`health.current` 0, not dropped. Live matches publish no structure health yet, so nothing shows the
+look today. When pull request #55 merges, check which snapshot it publishes for a destroyed
+structure; if it drops the structure, the publisher keeps it with health 0 (or the strip reads the
+`structure-destroyed` event), and the owner is not asked: DEC-69 already fixes the look.
 
 ### The repairs and their review
 
@@ -688,6 +725,282 @@ records. Checks at `be4aca3`, the coordinating session's runs: `npm run check` e
 the development and production builds (the development build's long-frame check during character
 select is information only, OD-30). Round B16's progress entry records the check on the final code.
 
+## Owner answers of 2026-10-28
+
+The owner answered the merge decisions in chat on 2026-10-28, from a decision page whose items were
+numbered D1 to D8. These numbers are used only for that page (here, in `INBOX.md` and in the status
+column of the HC-T1 table); they are not the docs stream's phase D1
+([below](#the-docs-streams-phases-d1-d2a-d2b)) or the architecture README's decisions D1 to D11. His
+words are quoted in `INBOX.md` under each item and, for D2 and D8, in the decisions log.
+
+| Item | Asked                                                                            | His answer                                                                                                                                                                                     | Applied                                                                                                                                                                                                                                           |
+| ---- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1   | `INBOX.md` HC-T1 group (i): 54 doc edits                                         | "Approve all 54"                                                                                                                                                                               | the 54 rows (`b1121f5`), with `last-reviewed` on the 18 docs they touch                                                                                                                                                                           |
+| D2   | HC-Q7 (1) and (3): the selection art in the MVP; the tools' terms and the credit | "Art is MVP; terms and credit in the note", with a note: the art changes when a digital artist is employed for the project; until then the Figma art is what is included; more artwork follows | DEC-51's appended note and FR-111 reworded (`7b87f76`); references 10 and 11 wait as HC-T1 T-155 to T-157; the credit is drafted from his words for his confirmation (HC-Q7 (3)); the tools' terms are not stated (HC-Q7 (1) stays open for them) |
+| D3   | HC-B1: the better-than-design and new items                                      | "Approve all"                                                                                                                                                                                  | the HC-T1 rows whose only open basis was HC-B1 (`e28854b`); DEC-22's appended note (BD1)                                                                                                                                                          |
+| D4   | ADR 0019: `SessionController` owns the `Match`                                   | "Accept"                                                                                                                                                                                       | ADR 0019 accepted (`9f7cb80`); HC-T1 T-07, T-08, T-14, T-15 and T-86 (`e28854b`)                                                                                                                                                                  |
+| D5   | ADR 0020: the client test configuration                                          | "Accept"                                                                                                                                                                                       | ADR 0020 accepted (`9f7cb80`)                                                                                                                                                                                                                     |
+| D6   | HC-Q21: the merge order with the nine sibling pull requests                      | "(b) Minions and weapons first; this branch resolves once"                                                                                                                                     | recorded; this branch waits for them, then applies the [integration recipe](#integration-recipe) once                                                                                                                                             |
+| D7   | Squash or merge commit for this pull request                                     | "Merge commit"                                                                                                                                                                                 | recorded here and in the description: a departure, for this pull request, from the squash default of `docs/process/git-workflow.md` §4 and §5                                                                                                     |
+| D8   | HC-Q22: each class's start weapon and the HUD's weapon art                       | "Keep the per-class Figma art", and the start weapon of each Legend                                                                                                                            | DEC-57; the HUD keeps its class-keyed art; it answers point (2) of `feat/weapons`' INBOX item                                                                                                                                                     |
+
+With D3 and D4, 24 HC-T1 rows are applied: T-07, T-08, T-09, T-14, T-15, T-21, T-25, T-27, T-30,
+T-32 to T-35, T-37, T-40, T-42 to T-45, T-48, T-51, T-55, T-86 and T-89. Rows tied to HC-B1 or ADR
+0019 that also carry another open item stay pending: T-11 and T-31 (HC-Q7 (2)), T-16 (HC-F9, HC-Q8),
+T-23 (HC-Q2), T-29 (HC-Q14) and T-90 (HC-F7). The HC-T1 table keeps every applied row as the owner
+saw it, with its status changed; 59 rows stay pending.
+
+**What remains before the merge:** the terms of the tools the art was made with, if the owner deems
+them needed (HC-Q7 (1)), and the integration with the sibling pull requests that D6 orders: once the
+minion stack and `feat/weapons` have merged into `phase/2-sprint-2-work`, this branch merges it
+once, resolves with the integration recipe, re-runs `npm run check` and has the critic check the
+integration change (ADR 0010). The credit drafted in HC-Q7 (3) replaces the notice marked
+`TODO(sam)` in `apps/client/src/data/resources/assetLicences.ts` once he confirms it.
+
+## Owner answers of 2026-10-28 (non-blocking)
+
+Later the same day the owner answered the 42 non-blocking questions in chat, from a second decision
+page whose items were keyed N1 to N5, F1 to F17, R1 to R7, Q1 to Q6, T1 to T5, S1 and S2. These
+keys belong to that page and to this table only: they are not the plan's flow defaults F1 to F9 or
+the critic's findings N1 to N29 and S1 to S5 ([working ids](#working-ids)). Elsewhere each answer
+is cited by its `INBOX.md` item. His words are quoted under each item he answered in `INBOX.md`; the
+game-design decisions among them are DEC-58 to DEC-70 in the decisions log (with appended notes on
+DEC-48, DEC-49, DEC-51 and DEC-57), and his answer on FR-111 is recorded in
+[ADR 0022](../decisions/0022-fr-111-selection-art-is-mvp.md). His instruction with them: "Make sure
+all of these items are written down. Don't want to have to write this all again." His rename (T5)
+replaces every name in the other answers.
+
+| Key | Item                                                 | His answer, short                                                                                         | Recorded; what follows                                                                                         |
+| --- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| N1  | HC-Q7 (2) to (5) and the credit                      | keep the credit; (2) yes "if this doesn't mess with the architecture"; (4) misread; (5) Cinzel everywhere | HC-Q7; DEC-67; HC-T1 T-11, T-24, T-31 applied; open: the tools' terms, (4) asked again; build: the menus' font |
+| N2  | FR-111 and NFR-010                                   | "I don't care what number is used"                                                                        | ADR 0022, accepted on that delegation                                                                          |
+| N3  | DEC-57 against reference 07                          | "Same weapons, new names; Bastions move into the MVP"; the rest in scope; staffs ranged by default        | DEC-64; DEC-57's note; HC-Q22                                                                                  |
+| N4  | HC-T1 T-155 to T-157                                 | "Review them one by one first": explain them                                                              | HC-T1 (explained by name); pending                                                                             |
+| N5  | HC-T1 A-1 and A-2                                    | "Keep both"                                                                                               | accepted                                                                                                       |
+| F1  | HC-F1, the character-select flow                     | the countdown is always 60 s; bots 3/3/3 per team plus an enemy mirror, filled at LOCK IN                 | DEC-60, DEC-61; open: the bots' Legends; build; T-10, T-13 held, T-12, T-75 redrafted                          |
+| F2  | HC-F2, the locked fourth class                       | "Use the id harbinger"; a "Coming Soon..." look                                                           | DEC-59; T-158 to T-161 approved, T-162, T-163 pending; build: the content rename and the look                  |
+| F3  | HC-F3, ally tiles, team badge, backdrop              | "Keep"; names, art and backdrops stay easy to add by team                                                 | DEC-70; HC-F3 (1) still open                                                                                   |
+| F4  | HC-F4, the pick reaches the match                    | "Keep"; every pick holds for the match                                                                    | DEC-61; ticked                                                                                                 |
+| F5  | HC-F5, team colours, flag, key glyphs                | "Keep"; on the Dark team your points and towers are red                                                   | DEC-62; ticked                                                                                                 |
+| F6  | HC-F6, real game data only                           | "Keep"; empty frames, weapon container and shield, except the Vanguard's helmet                           | DEC-62; open: the weapon panel against DEC-57; build                                                           |
+| F7  | HC-F7, the reused keys                               | "Keep the reused keys"                                                                                    | T-28, T-90 applied; ticked                                                                                     |
+| F8  | HC-F8, developer tools                               | "Show the developer tools for the course demo", as a show-or-hide developer hotkey                        | DEC-66; build                                                                                                  |
+| F9  | HC-F9, selection art released at the match           | "Keep"                                                                                                    | T-16 applied (with R6); ticked                                                                                 |
+| F10 | HC-Q6, eight visual defaults                         | "Keep all eight"; his improvement notes                                                                   | HC-Q6 ticked; the notes are his Sprint 3 list (HC-U1)                                                          |
+| F11 | HC-Q9, behaviours the frames do not show             | "Veto one": no Esc on the class step; LOCK IN keeps a locked view                                         | DEC-60; build                                                                                                  |
+| F12 | HC-Q10, nine short texts                             | "Keep all nine"                                                                                           | ticked                                                                                                         |
+| F13 | HC-Q12, the class ids the match accepts              | "Keep the open id with its checks"                                                                        | ticked                                                                                                         |
+| F14 | HC-Q14, the 12 px text floor                         | "Keep 12 px"                                                                                              | T-29 applied; ticked                                                                                           |
+| F15 | HC-Q15, lossless image sizes                         | "Accept the lossless sizes"                                                                               | ticked                                                                                                         |
+| F16 | HC-Q16, Catalyst's Dark name                         | "Confirm Nadirev"                                                                                         | DEC-58, DEC-49's note; build: remove the `TODO(sam)` marker                                                    |
+| F17 | HC-C1, the register rows CD-01 to CD-38              | "Keep every row"                                                                                          | HC-C1; CD-25, CD-30, CD-38 explained (HC-U1); open: CD-25's mask                                               |
+| R1  | HC-Q1, the missing Legend details                    | "Later": he details abilities and weapons next sprint; Light and Dark alike but for art and names         | DEC-70; open until next sprint                                                                                 |
+| R2  | HC-Q2, the HUD's weapon level, ultimate, bars, clock | "Rules in the note"                                                                                       | DEC-62; T-23 redrafted, pending; open: the ultimate's tiers and pips, the clock                                |
+| R3  | HC-Q3, the Figma's abilities                         | default abilities, proficiencies and passives per class; "majority not MVP, documented regardless"        | DEC-63; next sprint                                                                                            |
+| R4  | HC-Q4, the structure strip                           | "Keep for MVP"; a CSS destroyed look, health bar hidden                                                   | DEC-69; build                                                                                                  |
+| R5  | HC-Q5, the alternate class layout                    | Ultimate / Abilities rows; a full-screen View Details modal; at most three critic loops                   | DEC-65; open: the Magus description (asked by wording); build                                                  |
+| R6  | HC-Q8, the match runtime                             | "Confirm pause; keep MatchHost; yes to (1) and (2)"; critics compare with the architecture                | T-16, T-59 applied; build: step errors to the session                                                          |
+| R7  | HC-Q17, sub-class gameplay                           | "Later": the selection screen now, the rest next sprint                                                   | DEC-70; plan tasks for next sprint                                                                             |
+| Q1  | HC-Q18 (1), the art-id prefix check                  | "Replace the prefix check"                                                                                | HC-Q18; code change                                                                                            |
+| Q2  | HC-Q18 (2), class id versus entity kind              | no choice: research the open branches, then follow the architecture                                       | HC-Q18; research                                                                                               |
+| Q3  | HC-Q18 (3), content text naming itself               | no choice: "Whichever fits the architecture best"                                                         | HC-Q18; as built until agents next change it                                                                   |
+| Q4  | HC-Q18 (4), ids renamable until saved                | "Every content id"                                                                                        | T-100 to T-102, T-136 to T-144 applied                                                                         |
+| Q5  | HC-Q19, minimap click, setting, M key                | "Keep canvas path; setting and M in sprint 5.4"; did not know the setting and the key                     | HC-Q19 (explained); plan task and doc rows to come                                                             |
+| Q6  | HC-Q20, the first download size                      | "Load on demand now": "Look ahead, remember behind."                                                      | DEC-68; build                                                                                                  |
+| T1  | HC-T1, the 20 deviation rows                         | "Approve all 20", "if they pass critical checks"                                                          | 18 applied; T-10, T-13 held (DEC-61)                                                                           |
+| T2  | HC-T1 T-80 to T-85                                   | "Approve all six", same condition                                                                         | applied                                                                                                        |
+| T3  | HC-T1 T-145                                          | "Approve"; task-recording rows approved in general                                                        | applied                                                                                                        |
+| T4  | HC-T1 T-153                                          | "Approve: it ends lower", same condition                                                                  | applied                                                                                                        |
+| T5  | HC-T1 T-118, T-120, T-132, T-133                     | "Approve all four", with the rename                                                                       | applied; the rename is DEC-58                                                                                  |
+| S1  | HC-S5, the UI enhancements                           | "Build these, switched on by default", no enhancement named                                               | HC-S5; open: which ones (planned: all eleven, on by default); T-152 pending                                    |
+| S2  | HC-U1, his Sprint 3 list                             | "List in the note"; did not know CD-25, CD-30, CD-38                                                      | HC-U1 (his four notes; the three rows explained)                                                               |
+
+**HC-T1 after these answers:** 49 more rows applied (`--apply-b18` of the D2b generator, outside
+the repository): T-05, T-11, T-16 to T-20, T-22, T-24, T-26, T-28, T-29, T-31, T-36, T-38, T-39,
+T-41, T-46, T-47, T-56 to T-59, T-79 to T-85, T-90, T-100 to T-102, T-118, T-120, T-132, T-133,
+T-136 to T-145 and T-153; A-1 and A-2 accepted. 16 rows are pending: T-10 and T-13 (held for the
+bot-roster build), T-12 and T-75 (redrafted to DEC-60, applied with that build), T-23 (redrafted to
+DEC-62, for his approval), T-125 (SamarjitBhogal's), T-152 (waits for his list of enhancements),
+T-155 to T-157 (explained, for his approval), T-158 to T-161 (approved, applied with the content
+rename of `flying` to `harbinger`) and T-162, T-163 (for his approval). His approvals of the
+deviation rows, the plan rows and T-153 were given "if they pass critical checks"; each row was
+checked against his answers, and the critic's check of the integration covers the applied text.
+
+**Rules he set with these answers**, for the work that follows: at most three critic loops on a
+check ("Max 3 loops on the critic check we blew out my weekly limit last week."); critics compare
+the match-runtime work against the architecture and approve it only as in line with it, as good or
+better; doc rows that only record finished work as tasks are approved in general ("If this is just
+task recording for already-finished work, I approve all items like this"); numbering of decisions,
+work items and pull requests is left to the agents.
+
+**Build work that follows** (none of it on this branch yet): the content rename (DEC-58, DEC-59)
+and the locked card's look; the fixed countdown, the locked view, no Esc on the class step and the
+bot rosters (DEC-60, DEC-61); the HUD's empty frames and emblems (DEC-62); the destroyed-structure
+look (DEC-69); the Legend step's detail rows and the View Details modal (DEC-65); the developer
+hotkey (DEC-66); Cinzel in the menus (DEC-67); load on demand (DEC-68); simulation-step errors to
+the session (HC-Q8 (1)); the art-id guard (HC-Q18 (1)); the `TODO(sam)` on Nadirev. For next
+sprint: the class kits (DEC-63), sub-class gameplay (DEC-70) and his Sprint 3 list (HC-U1).
+
+## The critic's check of round B18 (loop 1)
+
+His approvals of the deviation rows, the plan rows and T-153 hold "if they pass critical checks",
+with at most three critic loops (the section above). In loop 1 the architecture critic read the 49
+rows round B18 applied (`5415d6d` to `0cd98b7`) against the design at `230a330`; its report is in
+the coordinating session's working folder (`decisions/record-and-research.json`), outside the
+repository. **Verdict: request changes**, with no blocker, 3 should-fix findings and 7 nits; every
+other applied row passes, and so do DEC-58 to DEC-70, ADR 0022 and the history checks. Stream B's
+round B19 fixed all ten with the new `INBOX.md` HC-T1 rows T-164 to T-179, each correcting the row
+its status names:
+
+| Finding (severity)                                                                                                | Fix                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T-18 (should-fix): `CharacterSelectScreen` emits `cancel-match`, which no `ui/` file emits                        | T-166 drops it from 13 §3's Emits. T-12's pending redraft still names `cancel-match` as a trigger, which `INBOX.md` HC-T1 flags.                                   |
+| T-90 (should-fix): 13 §6.2's reason does not cover the pause key and contradicts the `clientActions` sketch       | T-169 gives the reason 13 §10 gives (a paused match's stopped loop cannot read the key); T-170 marks `pause-menu` as the exception in the sketch.                  |
+| The id rows (should-fix): they cite ADR 0018 point 5, which covers Legend ids only, and CP-13 changed with no ADR | ADR 0023 records the owner's HC-Q18 (4) answer; T-175, T-176, T-177, T-178 and T-179 cite it, and so does the basis of T-100 to T-102 and T-136 to T-144 in HC-T1. |
+| T-59 (nit): a dangling "because" clause                                                                           | T-172.                                                                                                                                                             |
+| T-38 (nit): interim state in 02 §3's tree                                                                         | T-171; the planned `assets/manifest.json` moves to 02 §12's status note.                                                                                           |
+| T-17 (nit): the base design's `MemoryStorageAdapter` dropped                                                      | T-165 keeps it as the target; 13 §10 says the session takes no persistence yet.                                                                                    |
+| T-16, T-28, T-29, T-90 (nit): `Recommendation:` labels the owner kept; 13 §7 copied 12 px                         | T-164, T-167, T-168 and T-169 note his Keep of 2026-10-28; T-168 names `--text-min` in `styles/global.css` instead of the value.                                   |
+| T-80 (nit): the test name misquoted                                                                               | T-173.                                                                                                                                                             |
+| T-85 (nit): "no such import" holds for non-test files only                                                        | T-174.                                                                                                                                                             |
+| DEC-61, DEC-62 (nit): the recorder's interim defaults are not labelled                                            | Notes appended to both rows label them `Recommendation:`; the rows are not rewritten.                                                                              |
+
+The critic also asks that the pull request description raise ADR 0022's "accepted on delegation"
+with the owner: it is a reading of an unclear answer, quoted in full in the ADR. ADR 0023 rests on
+the same reading. A second loop, if the coordinating session runs one, checks round B19.
+
+## Owner answers of 2026-10-29
+
+The owner answered the eleven questions of the build plan for the rest of this pull request in three
+dialogs on 2026-10-29, and his P1 answer asked for an enhancement review page, which he answered in
+chat the same day. The keys P1 to P11 belong to that build plan and this table only; they are not
+the roster audit's fix items P1 to P11 ([below](#the-roster-audits-fix-items-od-38)). His words
+are kept verbatim outside the repository
+(`eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-10-29-plan.md`) and quoted in
+the decisions log, DEC-100 to DEC-108, which state every value he set, with dated notes appended to
+DEC-48, DEC-51, DEC-53, DEC-57, DEC-59 to DEC-62, DEC-65, DEC-66 and DEC-69. His standing
+instruction with them: "Answers must be documented in the code so I do not need to make these
+decisions again."
+
+| Key    | Item                                                            | His answer, short                                                                                                                                      | Recorded; what follows                              |
+| ------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| P1     | HC-S5, which UI enhancements                                    | all eleven, on by default (the review page); UE-01 a larger pulse from 5 s, UE-07 at 25 %, UE-08 every 5 s, UE-12 more dramatic in gold, red or bronze | DEC-100; `docs/plan/ui-enhancements-plan.md`; build |
+| P2     | HC-F6, the HUD weapon slot                                      | "Empty kit (Recommended)"                                                                                                                              | DEC-101; build                                      |
+| P3     | HC-F1, the bots and the timeout                                 | one of each class per lane; a timeout before LOCK IN returns home with a "Failed to Choose Legend" popup                                               | DEC-102; build; T-12 is redrafted again with it     |
+| P4     | HC-Q5, View Details                                             | key V opens a full screen after frame "View Details Example", built from the existing components, with a vignette backdrop; Unison Ward as ability 1   | DEC-103; build                                      |
+| P5     | HC-F2, the Coming Soon card                                     | a purple-to-black void in the church-window frame; a weathered CSS lock in the middle                                                                  | DEC-104; build; then register CD-05                 |
+| P6     | HC-F8, the developer hotkey                                     | "Cmd/Ctrl+Shift+F3 (Recommended)"                                                                                                                      | DEC-105; build                                      |
+| P7     | HC-Q8, a crash in the game loop                                 | the menu with a message; traceable reports in `logs/errors/`, written by the local server (option A)                                                   | DEC-106; build                                      |
+| P8     | HC-T1 T-155 to T-157, the selection art in references 10 and 11 | "Approve all three (Recommended)"                                                                                                                      | applied (`3849c8b`); DEC-51's note                  |
+| P9     | HC-Q7 (4), DEC-53 as an `AGENTS.md` rule                        | "No (Recommended)"                                                                                                                                     | DEC-107; `AGENTS.md` unchanged                      |
+| P10    | HC-Q20, where the game is served                                | "Local only (Recommended)"                                                                                                                             | DEC-107                                             |
+| P11    | HC-Q4, when the Wall tile shows destroyed                       | after the first breach: any wall segment or gate                                                                                                       | DEC-108; build                                      |
+| Review | HC-T1 T-162 and T-163, the Harbinger id in two docs             | "approve both"                                                                                                                                         | applied (`3849c8b`)                                 |
+
+**HC-T1 after these answers:** T-155 to T-163 are applied (`--apply-b20` of the D2b generator,
+outside the repository; T-158 to T-161 had waited for the content rename, `6ce2141`). The
+critic's loop 2 (round B20a, 2026-10-30) added T-180, the last `flying` in 04 §1's `Legend` row,
+and restored the `[STATUS: needs-planning]` marker that T-155 had dropped; T-159 changed only 04
+§12's first line, and the worked example's table waits for the HC-Q18 (2) build. 7 rows are
+pending: T-10 and T-13 (held for the bot-roster build), T-12 and T-75 (redrafted to DEC-60, applied
+with that build; T-12's redraft still lets a timeout start a match with no Legend, which DEC-102
+replaces), T-23 (redrafted to DEC-62, for his approval), T-125 (SamarjitBhogal's) and T-152 (the UI
+enhancements task line, whose wait for HC-S5 is over; its text still needs his approval).
+
+## Owner answers of 2026-11-02 (HC-T1)
+
+The owner answered `INBOX.md` HC-T1 on his decision page on 2026-11-02: "every group: Approve (all
+54 rows approved), except T-199" (DEC-142). His words are kept verbatim outside the repository
+(`eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-11-02-hc-q30-hc-t1.md`), with
+his process ruling of the same day (DEC-154): a doc that is wrong about code a critic has verified
+is corrected without asking him; design decisions still go to him.
+
+| Rows                                                | His answer                                                                                                                                                                                                    | Applied                                                                                                                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-10, T-12, T-13, T-23, T-75, T-152, T-181 to T-226 | "Approve" (every group)                                                                                                                                                                                       | applied (`--apply-b27` of the D2b generator, outside the repository), except T-199; T-202 and T-221 were redrafted first to the built step 12 (DEC-154)    |
+| T-125, architecture 18 (owned by SamarjitBhogal)    | "Approve"                                                                                                                                                                                                     | applied; **flagged for SamarjitBhogal**: the bot Legend row of 18 §2 now names every playable class (`LEGEND_CLASSES`) in place of the three class ids     |
+| T-159, 04 §12's worked example                      | "Approve"                                                                                                                                                                                                     | its first line was applied on 2026-10-29; the worked-example table's file, constant and class names follow the HC-Q18 (2) build (spawn by `kind`, step 14) |
+| T-199, 06 §10's "Free view and interior" row        | "Change or ask": the minimap is always shown in the HUD and is not a developer item; the developer options (free view and the like) need not always show; building roofs hide on their own when players enter | not applied (DEC-143); redrafted after the phase-branch merge                                                                                              |
+
+**HC-T1 after these answers:** 52 rows are applied, in 20 files (architecture 02, 03, 04, 05, 08,
+09, 13, 14, 15, 17 and 18; requirements 05 and 06; references 09 and 14; the phase 6 plan and the
+UI enhancements plan; the root `AGENTS.md`, `CONTRIBUTING.md` and `apps/client/AGENTS.md`); the 17
+docs among them have `last-reviewed: 2026-11-02`. The table holds 205 applied rows and 1 pending
+(T-199). Redrafted before they were applied (DEC-154), because build-plan step 12 (`531cd90`,
+`6db5713`, `226e2c6`, critic loops 1 to 3) built what they said was still to come: T-202 (13 §10,
+the "Session" status bullet: the built crash flow, and `match-crashed` is no longer a banner) and
+T-221 (15 §13: the reports are built). The status notes that named the applied rows as pending got
+a dated append: 13 §10 (two bullets), 14 §14, 17 §12 and the UI enhancements plan §1.
+
+## The last cycle before the pull request (2026-11-02)
+
+Built on `feat/hud-plan-b6` after the HC-T1 answers above, then merged into this branch.
+
+- **Batch 5 merged** (`dccd92f`): the owner's crash popup texts and a screen crash during the
+  reveal returns to the menu (`62652b0`, DEC-140, DEC-141); the 52 approved HC-T1 rows
+  (`da57c29`, DEC-142); DEC-139 to DEC-143 and DEC-154 (first DEC-138) logged (`3ceb877`).
+- **Phase branch merged** (`54716be`, `e2c3e1e`: PRs #42 to #63 and #30): #30's buildings in
+  `MatchCamera`, `Match` and `prepareMatchWorld`; the simulation gets the map, the map objects and
+  the setup's bots. The client cathedral-interior model and CD-22's "Leave cathedral" control are
+  deleted (#30 removed the separate interior).
+- **T-199 applied with its build** (`6a00e25`, `9c913ff`, DEC-143): `BuildingRoofs` opens the roof
+  of the building the player's Legend stands in; the roof click is developer-only; the minimap is
+  player HUD. So the HC-T1 table above, which says T-199 is pending, now has no pending row.
+  `b3e2a2e`: hiding the explorer puts back the roofs the developer opened.
+- **Critic loop 1 fixes** (`22878e0`, `5fa9300`, `dfb0560`): a replay carries the map, map objects
+  and roster its match was built with (`ReplaySetup`); a press the canvas gestures own is no attack
+  (06 §10 arbitration); hiding the explorer returns to the following camera at its base zoom.
+- **The owner's loop-1 answers** (DEC-147 to DEC-149, `73dd83d`, `b8b220b`, `bba83ad`): the
+  minimap toggle stays as a player option; the leave-interior task is dropped; six
+  better-than-design items built (bot difficulty by role as core content with
+  `BotRosterDifficultyRule`, `createMatchSeed`, the developer-roof names, a dead Legend opens no
+  roof, `SessionController.crashToMenu`, core `findBuildingAt`). The player's Legend id stays with
+  the game-loop lane (A19, built on `feat/match-director`); a test pins the interim (`99563b4`).
+- **Critic loop 2 fixes** (`8fe9763`, `60dec74`, `662d8c2`): the replay types are generic in core
+  `diagnostics/` (`ReplayOf<S>`), with `ReplaySetup`, `Replay` and `ReplayTargetFactory` in
+  `Simulation.types.ts`; `SessionController` builds `MatchRequest.roster` from its catalogue; each
+  press sets its own claim.
+- **The owner's loop-2 answers** (DEC-150 to DEC-152, `6f67263`, `826f929`, `eaa5f7c`): with the
+  explorer shown a plain click on the world attacks, and only drags and roof clicks are claimed;
+  `Match` tells the camera that the player moved; one `isDead` check; one core `BotRole` type; a
+  crash report's replay keeps the map inline until the Phase 5 replay store is designed.
+- **Critic loop 3** (the last of three) on `eaa5f7c`: architecture "request changes" (1 blocker,
+  5 minor), correctness "request changes", ponytail "cuts" (minor). The blocker: a drag that
+  began on a map object could leave a lasting `attack-target`. Fixed in `5500a0c` with the
+  critic's BD-A: with the explorer shown every press is claimed until its release; a click that
+  toggles no roof attacks under its release point once (`Match.attackAt`); a drag does neither;
+  a click on the building the Legend stands in attacks (owner, DEC-153). `crashToMenu` is
+  private; a new roster test; ponytail cuts 1 and 2 applied, cut 3 (inline generics) rejected for
+  the layering rule of `packages/core/AGENTS.md`. Docs fixed in `dd41ca1` and with this entry.
+  Scheduled, not built: `Match`'s pointer and explorer controls in their own class at the A19
+  merge (BD-B, `INBOX.md` HC-S6). Rejected: an `isDead` predicate in core (the bridge placement
+  is forced; a snapshot-level flag is not worth a snapshot-contract change).
+- **Delta re-check** (owner, DEC-153; pre-PR gate step 3): one correctness critic on
+  `eaa5f7c..dd41ca1` approved with four nits. Fixed: 06 §10 said "a release within the click
+  slop", but the code adds up the whole pointer path. Rejected: (1) `onPointerUp` has no button
+  filter: with chorded buttons the pointer fires `pointerup` only when its last button comes up,
+  so a filter would leave the press claimed; (2) the explorer hotkey pressed while the button is
+  held gives a second `attack-target` on a click: developer-only, and the target is the same;
+  (3) after a minimap press with the explorer hidden, a cancel leaves the claim set until the
+  next press or a focus loss: present before this PR, and no attack depends on it.
+- **Windows CI** (PR #68's first two runs): the note test no longer makes the report read-only
+  (Windows will not replace a read-only file); it checks the file's identity changes. The client
+  suite gets core's 60 s `testTimeout` in `apps/client/vitest.config.ts`: three different
+  whole-match tests ran over the 5 s default on the Windows runner across two runs.
+- **Review (SamarjitBhogal, approved 2026-11-04 UTC), five optional follow-ups:** (1) the base
+  moved to `phase/3-sprint-3-work`, the branch the minion PRs now target (same commit as
+  `phase/2-sprint-2-work` then), and the PR merges now (DEC-157); (2) the replay's command log stamps each
+  external command with the tick it applied in, and bot and external commands wait in two queues
+  (DEC-156, ADR 0025 amendment, architecture 03 §3; two tests, both red on the old code); (3)
+  splitting `Simulation.ts` and `SessionController.ts` waits until the open PRs that edit
+  `Simulation.ts` merge (`INBOX.md` HC-S7); (4) the client `testTimeout` stays at core's 60 s; (5)
+  overlapping building footprints were already raised for #64 (HC-S6 (b)).
+- **DEC-138 renumbered DEC-154** before the first push: SamarjitBhogal's guard-post ruling had
+  already pushed DEC-138 (#56).
+- **Core API added or changed for reviewers:** `findBuildingAt`, `ReplaySetup`, `BotRole` and
+  `BotRosterDefinition.difficulties` are exported; `Replay` now holds its setup (map, map objects,
+  roster); `recordReplay(setup, plan, createTarget)` takes the setup apart from the plan.
+
 ## Working ids
 
 One line each, saying what the id is. Most come from the plan's sources, which are outside the
@@ -754,62 +1067,62 @@ Defaults the coordinating session applied where the owner had not decided, each 
 
 Rulings of the plan's issue table, which each work-package extract repeats. Where a later build ruling (OD-nn) revised one, the line gives the final state.
 
-| Id   | What it is                                                                                                                                                                                                                                             |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| I-03 | The plan's ruling that the HUD kit has no `hud-kit` event: `selectHudKit` joins the player's class selection, fixed for the whole match, with the loaded display catalogue.                                                                            |
-| I-05 | The plan's ruling that each HUD structure icon is one mask per kind, cut from the alpha of a Figma render made on the scratch page and tinted by a team colour token.                                                                                  |
-| I-07 | The plan's ruling that objective letters come from `STRINGS.hud.objectiveLetters` in lane order and fall back to the lane number (`String(index + 1)`) past the end of that list.                                                                      |
-| I-11 | The plan's ruling that the warrior and sentinel Legends are the owner's own (OA3): selectable, with sub-class titles but no Legend name on either team, held in `packages/core/src/content/legends/specs/`.                                            |
-| I-12 | The plan's ruling that one function, `canConfirmSelection` in `bridge/selectionRules.ts`, decides whether a selection can be locked in, for both the session and the UI.                                                                               |
-| I-13 | The plan's ruling on scaling: the selection screens are a 1920 × 1080 artboard (`SelectionStage`) scaled by `transform`, the HUD scales by `--hud-u`, and both keep a minimum text size (I-51).                                                        |
-| I-14 | The plan's ruling that arrow keys on both selection steps move focus and pick an available card (WAI-ARIA radio group; locked cards take focus only), while the class step emits nothing until Select Class.                                           |
-| I-16 | The plan's ruling on roster tiles: the player tile gets a cream 2 px border and its pick's sigil, a Legend bot its portrait in that Legend's accent, other bots an idle 1 px border.                                                                   |
-| I-18 | The plan's ruling that semi-transparent colours are explicit tokens and CSS modules never compute colours; colour functions over tokens are allowed only in `styles/global.css` (revised by OD-25).                                                    |
-| I-20 | The plan's ruling that Cinzel text uses per-size line-height tokens (`--leading-game-<size>`) equal to Figma's AUTO line height, with no baseline knob unless a measured offset exceeds 0.5 px (I-88).                                                 |
-| I-23 | The plan's ruling that the roving-focus maths of both selection radio groups lives once, in `ui/components/rovingRadio.ts`.                                                                                                                            |
-| I-24 | The plan's ruling on shared SVG defs: the selection filter ids (seven, OD-17 (b)), each with an explicit region (I-66), plus one HUD level-number filter with Figma's `hardAlpha` matrices stripped (revised by OD-17 and OD-3).                       |
-| I-27 | The plan's ruling that a gadget icon is drawn on a 127 × 127 canvas placed at (−20, −20) inside its 87 px slot, so its glow is not clipped.                                                                                                            |
-| I-29 | The plan's ruling that the match clock shows elapsed time as `mm:ss`, minutes zero-padded to two digits and never capped (6000 s shows `100:00`).                                                                                                      |
-| I-30 | The plan's ruling that ability slots show no cooldown seconds numeral, because architecture 13 §3 asks only for a sweep (built as the red fill of OD-9).                                                                                               |
-| I-34 | The plan's ruling that the developer toolbar and legend sit top-left, clear of the HUD, only with `?dev=1`, and normal play shows only the Leave cathedral control there (positions revised by OD-14).                                                 |
-| I-36 | The plan's ruling on plates (opaque Figma renders of glass effects): class card plates, one row plate per step and two button chromes, each exported over its full bounds and drawn uncropped in Figma's order.                                        |
-| I-43 | The plan's ruling that work packages run one at a time in one worktree with one writer, and parallel work happens only on human-created branches and worktrees.                                                                                        |
-| I-45 | The plan's ruling that each use of an image whose device-pixel box differs (size, rotation, mirroring, sub-pixel phase) gets its own rendition file, drawn unscaled with no transform (cover-mode masters exempt, OD-17c).                             |
-| I-46 | The plan's ruling that every 1× image file the visual audit compares is lossless WebP, while the optional `file2x` may be lossy at quality 90 or above; the byte cost went to the owner as HC-Q15.                                                     |
-| I-47 | The plan's ruling on asset groups: shared selection art in `selection`, each class-step layout's art in its own group, and plates in raster-only groups, so a session loads only its layout's and renderer's art.                                      |
-| I-48 | The plan's ruling that an open overlay pauses the single-player match: `MatchState` calls `setPaused`, which stops the game loop keeping its remainder, and `MatchHost` releases held input.                                                           |
-| I-49 | The plan's ruling, withdrawn in round 3, to apply the in-game reduced-motion setting; only the OS `prefers-reduced-motion` path ships (motion tokens zeroed), and the in-game setting waits as INBOX HC-S3.                                            |
-| I-50 | The plan's ruling that `styles/tokenContrast.test.ts` checks a declared list of colour pairs in both colour sets: with `figma` exactly the listed exceptions fail, with `minimums` every pair meets its minimum.                                       |
-| I-51 | The plan's ruling on minimum text size: `--text-min: 12px` floors text below 1080p, forced on the HUD by ES-11 and a fill-in on the selection screens (CD-23), identical at 1920 × 1080.                                                               |
-| I-52 | The plan's ruling that core exports `loadDisplayContent()`, returning legends, specs and map features validated through the DEC-22 rule classes, instead of exporting the raw catalogues.                                                              |
-| I-53 | The plan's ruling that gameplay display names live in core (`displayName` on `MapFeatureDefinition`, `detailNames` on Legend definitions), and the client keeps only presentation such as icon ids, tokens and tile groups.                            |
-| I-54 | The plan's ruling that `bindActionShortcut` lets a screen control answer its bound action's keyboard chord on `keydown` and mouse chord on `pointerdown`, with one-line hooks over it.                                                                 |
-| I-55 | The plan's ruling that the cathedral and minimap clicks work in normal play, while drag, wheel zoom and the world overview need the developer flag `?dev=1`; `Match.leaveInterior()` restores the following camera.                                    |
-| I-57 | The plan's ruling that an unexpected `loadAssets` rejection (a bug) logs one error, publishes `failed` and returns to `menu` with `'load-failed'` (or `'match-failed'` from `match-loading`); `onReady` is never called.                               |
-| I-58 | The plan's ruling that `PlayerChoice.specId` is dropped (`PlayerChoice` holds only `legend` and `team`), because nothing in `game/` reads the Legend pick during a match.                                                                              |
-| I-59 | The plan's ruling that undesigned, unproduced HUD states (shield segments and the destroyed-structure look) are not built, with one architecture 13 §10 line saying when they arrive.                                                                  |
-| I-60 | The plan's ruling that the countdown keeps the Figma's static look (urgency is suggestion HC-S1) and HUD values jump to each publish with no transitions (suggestion HC-S2).                                                                           |
-| I-61 | The plan's ruling that the developer explorer chrome is not restyled (only its position and cursor change), while the normal-play Leave button gets its own token-only rule (I-75).                                                                    |
-| I-62 | The plan's ruling that HUD team inks come from `data-team` attributes and CSS module rules mapping to team tokens, with no TypeScript token table and no inline style.                                                                                 |
-| I-64 | The plan's ruling that the `AssetLoader` port and its contract test suite live in `data/resources/loaders/`, with the `UiImageLoader`, `FontLoader` and `FakeAssetLoader` adapters each running the contract.                                          |
-| I-66 | The plan's ruling that every glow filter declares an explicit region sized for its smallest user, covering 3σ plus the offset on each side, asserted per filter and user by `SelectionDefs.test.tsx`.                                                  |
-| I-68 | The plan's ruling that the minimap ring constants stay in `bridge/minimapRing.ts` and `Match` passes them into `MiniMapView`, so `game/views/` imports nothing from `bridge/`.                                                                         |
-| I-69 | The plan's ruling on row plates: a `rowPlate` field on class and Legend art (`null` means live halos), drawn only in the exact Figma state it was exported from, at full render bounds, never cropped.                                                 |
-| I-70 | The plan's ruling that every Figma paint comes from one source only, the raster or the live CSS/SVG, so strokes and effects drawn live are removed before a Figma render.                                                                              |
-| I-71 | The plan's ruling that a spike decides how the HUD level number's grain is drawn; it chose the SVG noise filter under register row CD-25 (resolved by OD-3).                                                                                           |
-| I-72 | The plan's ruling on pause-dialog focus: the opener is stored before `open-overlay`, Resume autofocuses, the viewport and HUD are `inert`, and focus returns to the opener on close.                                                                   |
-| I-74 | The plan's ruling that HUD test fixtures live in one module, `bridge/hudFixtures.ts` (now `bridge/__fixtures__/hudFixtures.ts`), used by tests, `ui/testStore.tsx` and the harness, with a `game/content` test checking it against `HUD_PRESENTATION`. |
-| I-75 | The plan's ruling that the normal-play "Leave cathedral" button is an interim control in `game/GameCanvas.tsx`, styled from tokens only, until a HUD control with a `leave-interior` intent replaces it (DV-119).                                      |
-| I-76 | The plan's ruling that the bridge fixture modules are imported only by tests, `ui/testStore.tsx` and the harness, never by anything `main.tsx` reaches, checked by a grep.                                                                             |
-| I-79 | The plan's ruling on the pre-PR order: D2a docs, pre-PR critic, reconciliation, owner sign-off, D2b docs, ponytail, `npm run check`, then the PR, which never opens with a sign-off pending.                                                           |
-| I-80 | The plan's ruling (from OA1) that a content value `effectsRenderer`, `'figma-raster'` by default or `'css'`, picks how the selection screens draw effects CSS cannot match; `?dev=1&fx=` overrides it.                                                 |
-| I-81 | The plan's ruling (from OA2) that a content value `contrastMode`, `'figma'` by default or `'minimums'`, set as `data-contrast` on `<html>`, swaps only the below-minimum colour tokens; `prefers-contrast: more` selects it too.                       |
-| I-82 | The plan's ruling (from OA3) that Legend spec ids and team-independent sub-class titles come from the owner, and Legend art, accent tokens and plate ids are keyed by spec id, never by a Legend name.                                                 |
-| I-83 | The plan's ruling (from OA3) that a Legend's name is stored per team (`legendName`: light and dark strings, or `null`), both spelled out with no reversal code, resolved for the player's team by `legendNameFor`.                                     |
-| I-84 | The plan's ruling (from OA3) that fidelity scenarios render a harness-only catalogue restoring the Figma's own strings where shipped ones differ, while live-content scenarios check shipped names for layout only (narrowed by OD-22).                |
-| I-86 | The plan's ruling that `game/session/selectionAssetGroups.ts` holds the selection asset-group registries, `selectionAssetGroups(layout, renderer)` and `SELECTION_ASSET_GROUPS`, imported by `LoadingState` and `MatchState`.                          |
-| I-87 | The plan's ruling that a meter with a `null` value renders as `role="img"` labelled "<label>: No data yet" with a hatch, and as `role="meter"` with value attributes only for a real value.                                                            |
-| I-88 | The plan's ruling that Cinzel font rules sit only on text-leaf elements, with no baseline knob or `translate` by default; only a measured ink offset above 0.5 px adds `--font-game-translate`.                                                        |
+| Id   | What it is                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I-03 | The plan's ruling that the HUD kit has no `hud-kit` event: `selectHudKit` joins the player's class selection, fixed for the whole match, with the loaded display catalogue.                                                                                                                                                                                                                                |
+| I-05 | The plan's ruling that each HUD structure icon is one mask per kind, cut from the alpha of a Figma render made on the scratch page and tinted by a team colour token.                                                                                                                                                                                                                                      |
+| I-07 | The plan's ruling that objective letters come from `STRINGS.hud.objectiveLetters` in lane order and fall back to the lane number (`String(index + 1)`) past the end of that list.                                                                                                                                                                                                                          |
+| I-11 | The plan's ruling that the warrior and sentinel Legends are the owner's own (OA3): selectable, with sub-class titles but no Legend name on either team, held in `packages/core/src/content/legends/specs/`.                                                                                                                                                                                                |
+| I-12 | The plan's ruling that one function, `canConfirmSelection` in `bridge/selectionRules.ts`, decides whether a selection can be locked in, for both the session and the UI.                                                                                                                                                                                                                                   |
+| I-13 | The plan's ruling on scaling: the selection screens are a 1920 × 1080 artboard (`SelectionStage`) scaled by `transform`, the HUD scales by `--hud-u`, and both keep a minimum text size (I-51).                                                                                                                                                                                                            |
+| I-14 | The plan's ruling that arrow keys on both selection steps move focus and pick an available card (WAI-ARIA radio group; locked cards take focus only), while the class step emits nothing until Select Class.                                                                                                                                                                                               |
+| I-16 | The plan's ruling on roster tiles: the player tile gets a cream 2 px border and its pick's sigil, a Legend bot its portrait in that Legend's accent, other bots an idle 1 px border.                                                                                                                                                                                                                       |
+| I-18 | The plan's ruling that semi-transparent colours are explicit tokens and CSS modules never compute colours; colour functions over tokens are allowed only in `styles/global.css` (revised by OD-25).                                                                                                                                                                                                        |
+| I-20 | The plan's ruling that Cinzel text uses per-size line-height tokens (`--leading-game-<size>`) equal to Figma's AUTO line height, with no baseline knob unless a measured offset exceeds 0.5 px (I-88).                                                                                                                                                                                                     |
+| I-23 | The plan's ruling that the roving-focus maths of both selection radio groups lives once, in `ui/components/rovingRadio.ts`.                                                                                                                                                                                                                                                                                |
+| I-24 | The plan's ruling on shared SVG defs: the selection filter ids (seven, OD-17 (b)), each with an explicit region (I-66), plus one HUD level-number filter with Figma's `hardAlpha` matrices stripped (revised by OD-17 and OD-3).                                                                                                                                                                           |
+| I-27 | The plan's ruling that a gadget icon is drawn on a 127 × 127 canvas placed at (−20, −20) inside its 87 px slot, so its glow is not clipped.                                                                                                                                                                                                                                                                |
+| I-29 | The plan's ruling that the match clock shows elapsed time as `mm:ss`, minutes zero-padded to two digits and never capped (6000 s shows `100:00`).                                                                                                                                                                                                                                                          |
+| I-30 | The plan's ruling that ability slots show no cooldown seconds numeral, because architecture 13 §3 asks only for a sweep (built as the red fill of OD-9).                                                                                                                                                                                                                                                   |
+| I-34 | The plan's ruling that the developer toolbar and legend sit top-left, clear of the HUD, only with `?dev=1`, and normal play shows only the Leave cathedral control there (positions revised by OD-14).                                                                                                                                                                                                     |
+| I-36 | The plan's ruling on plates (opaque Figma renders of glass effects): class card plates, one row plate per step and two button chromes, each exported over its full bounds and drawn uncropped in Figma's order.                                                                                                                                                                                            |
+| I-43 | The plan's ruling that work packages run one at a time in one worktree with one writer, and parallel work happens only on human-created branches and worktrees.                                                                                                                                                                                                                                            |
+| I-45 | The plan's ruling that each use of an image whose device-pixel box differs (size, rotation, mirroring, sub-pixel phase) gets its own rendition file, drawn unscaled with no transform (cover-mode masters exempt, OD-17c).                                                                                                                                                                                 |
+| I-46 | The plan's ruling that every 1× image file the visual audit compares is lossless WebP, while the optional `file2x` may be lossy at quality 90 or above; the byte cost went to the owner as HC-Q15.                                                                                                                                                                                                         |
+| I-47 | The plan's ruling on asset groups: shared selection art in `selection`, each class-step layout's art in its own group, and plates in raster-only groups, so a session loads only its layout's and renderer's art.                                                                                                                                                                                          |
+| I-48 | The plan's ruling that an open overlay pauses the single-player match: `MatchState` calls `setPaused`, which stops the game loop keeping its remainder, and `MatchHost` releases held input.                                                                                                                                                                                                               |
+| I-49 | The plan's ruling, withdrawn in round 3, to apply the in-game reduced-motion setting; only the OS `prefers-reduced-motion` path ships (motion tokens zeroed), and the in-game setting waits as INBOX HC-S3.                                                                                                                                                                                                |
+| I-50 | The plan's ruling that `styles/tokenContrast.test.ts` checks a declared list of colour pairs in both colour sets: with `figma` exactly the listed exceptions fail, with `minimums` every pair meets its minimum.                                                                                                                                                                                           |
+| I-51 | The plan's ruling on minimum text size: `--text-min: 12px` floors text below 1080p, forced on the HUD by ES-11 and a fill-in on the selection screens (CD-23), identical at 1920 × 1080.                                                                                                                                                                                                                   |
+| I-52 | The plan's ruling that core exports `loadDisplayContent()`, returning legends, specs and map features validated through the DEC-22 rule classes, instead of exporting the raw catalogues.                                                                                                                                                                                                                  |
+| I-53 | The plan's ruling that gameplay display names live in core (`displayName` on `MapFeatureDefinition`, `detailNames` on Legend definitions), and the client keeps only presentation such as icon ids, tokens and tile groups.                                                                                                                                                                                |
+| I-54 | The plan's ruling that `bindActionShortcut` lets a screen control answer its bound action's keyboard chord on `keydown` and mouse chord on `pointerdown`, with one-line hooks over it.                                                                                                                                                                                                                     |
+| I-55 | The plan's ruling that the cathedral and minimap clicks work in normal play, while drag, wheel zoom and the world overview need the developer flag `?dev=1`; `Match.leaveInterior()` restores the following camera.                                                                                                                                                                                        |
+| I-57 | The plan's ruling that an unexpected `loadAssets` rejection (a bug) logs one error, publishes `failed` and returns to `menu` with `'load-failed'` (or `'match-failed'` from `match-loading`); `onReady` is never called.                                                                                                                                                                                   |
+| I-58 | The plan's ruling that `PlayerChoice.specId` is dropped (`PlayerChoice` holds only `legend` and `team`), because nothing in `game/` reads the Legend pick during a match.                                                                                                                                                                                                                                  |
+| I-59 | The plan's ruling that undesigned, unproduced HUD states (shield segments and the destroyed-structure look) are not built, with one architecture 13 §10 line saying when they arrive.                                                                                                                                                                                                                      |
+| I-60 | The plan's ruling that the countdown keeps the Figma's static look (urgency is suggestion HC-S1) and HUD values jump to each publish with no transitions (suggestion HC-S2).                                                                                                                                                                                                                               |
+| I-61 | The plan's ruling that the developer explorer chrome is not restyled (only its position and cursor change), while the normal-play Leave button gets its own token-only rule (I-75).                                                                                                                                                                                                                        |
+| I-62 | The plan's ruling that HUD team inks come from `data-team` attributes and CSS module rules mapping to team tokens, with no TypeScript token table and no inline style.                                                                                                                                                                                                                                     |
+| I-64 | The plan's ruling that the `AssetLoader` port and its contract test suite live in `data/resources/loaders/`, with the `UiImageLoader`, `FontLoader` and `FakeAssetLoader` adapters each running the contract.                                                                                                                                                                                              |
+| I-66 | The plan's ruling that every glow filter declares an explicit region sized for its smallest user, covering 3σ plus the offset on each side, asserted per filter and user by `SelectionDefs.test.tsx`.                                                                                                                                                                                                      |
+| I-68 | The plan's ruling that the minimap ring constants stay in `bridge/minimapRing.ts` and `Match` passes them into `MiniMapView`, so `game/views/` imports nothing from `bridge/`.                                                                                                                                                                                                                             |
+| I-69 | The plan's ruling on row plates: a `rowPlate` field on class and Legend art (`null` means live halos), drawn only in the exact Figma state it was exported from, at full render bounds, never cropped.                                                                                                                                                                                                     |
+| I-70 | The plan's ruling that every Figma paint comes from one source only, the raster or the live CSS/SVG, so strokes and effects drawn live are removed before a Figma render.                                                                                                                                                                                                                                  |
+| I-71 | The plan's ruling that a spike decides how the HUD level number's grain is drawn; it chose the SVG noise filter under register row CD-25 (resolved by OD-3).                                                                                                                                                                                                                                               |
+| I-72 | The plan's ruling on pause-dialog focus: the opener is stored before `open-overlay`, Resume autofocuses, the viewport and HUD are `inert`, and focus returns to the opener on close.                                                                                                                                                                                                                       |
+| I-74 | The plan's ruling that HUD test fixtures live in one module, `bridge/hudFixtures.ts` (now `bridge/__fixtures__/hudFixtures.ts`), used by tests, `ui/testStore.tsx` and the harness, with a `game/content` test checking it against `HUD_PRESENTATION`.                                                                                                                                                     |
+| I-75 | The plan's ruling that the normal-play "Leave cathedral" button is an interim control in `game/GameCanvas.tsx`, styled from tokens only, until a HUD control with a `leave-interior` intent replaces it (DV-119).                                                                                                                                                                                          |
+| I-76 | The plan's ruling that the bridge fixture modules are imported only by tests, `ui/testStore.tsx` and the harness, never by anything `main.tsx` reaches, checked by a grep.                                                                                                                                                                                                                                 |
+| I-79 | The plan's ruling on the pre-PR order: D2a docs, pre-PR critic, reconciliation, owner sign-off, D2b docs, ponytail, `npm run check`, then the PR, which never opens with a sign-off pending.                                                                                                                                                                                                               |
+| I-80 | The plan's ruling (from OA1) that a content value `effectsRenderer`, `'figma-raster'` by default or `'css'`, picks how the selection screens draw effects CSS cannot match; `?dev=1&fx=` overrides it.                                                                                                                                                                                                     |
+| I-81 | The plan's ruling (from OA2) that a content value `contrastMode`, `'figma'` by default or `'minimums'`, set as `data-contrast` on `<html>`, swaps only the below-minimum colour tokens; `prefers-contrast: more` selects it too.                                                                                                                                                                           |
+| I-82 | The plan's ruling (from OA3) that Legend spec ids and team-independent sub-class titles come from the owner, and Legend art, accent tokens and plate ids are keyed by spec id, never by a Legend name. Its test's art-id prefix check was replaced on 2026-10-29 by the content-driven name guard, keeping the one-owner check (`b57b919`; the owner's "Replace the prefix check", `INBOX.md` HC-Q18 (1)). |
+| I-83 | The plan's ruling (from OA3) that a Legend's name is stored per team (`legendName`: light and dark strings, or `null`), both spelled out with no reversal code, resolved for the player's team by `legendNameFor`.                                                                                                                                                                                         |
+| I-84 | The plan's ruling (from OA3) that fidelity scenarios render a harness-only catalogue restoring the Figma's own strings where shipped ones differ, while live-content scenarios check shipped names for layout only (narrowed by OD-22).                                                                                                                                                                    |
+| I-86 | The plan's ruling that `game/session/selectionAssetGroups.ts` holds the selection asset-group registries, `selectionAssetGroups(layout, renderer)` and `SELECTION_ASSET_GROUPS`, imported by `LoadingState` and `MatchState`.                                                                                                                                                                              |
+| I-87 | The plan's ruling that a meter with a `null` value renders as `role="img"` labelled "<label>: No data yet" with a hatch, and as `role="meter"` with value attributes only for a real value.                                                                                                                                                                                                                |
+| I-88 | The plan's ruling that Cinzel font rules sit only on text-leaf elements, with no baseline knob or `translate` by default; only a measured ink offset above 0.5 px adds `--font-game-translate`.                                                                                                                                                                                                            |
 
 ### The pre-PR critic's first run (B1, S1 to S5, N1 to N29, BD1, BD2, NF1 to NF5)
 
@@ -1046,7 +1359,8 @@ Protocol R1 (DEC-54) renders the owner's frames from duplicates on one scratch p
 
 The roster rename-friction audit (build ruling OD-38; its report is in the coordinating session's
 working folder) listed fixes P1 to P11. The roster-fix round built P1 to P5, P7 and P11; P8 waits
-for the owner (`INBOX.md` HC-Q18 (1)), and the audit's other items were not built.
+for the owner (`INBOX.md` HC-Q18 (1)), and the audit's other items were not built. P8 was built
+on 2026-10-29 (`b57b919`).
 
 | Id  | What it is                                                                                                                                                                                                                                                         |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -1056,7 +1370,7 @@ for the owner (`INBOX.md` HC-Q18 (1)), and the audit's other items were not buil
 | P4  | Value pins outside the content's own tests read the expected names from content; the content's own tests keep their pins.                                                                                                                                          |
 | P5  | Stale or unknown ids fail loudly: (a) boot fails on a presentation key with no content entry; (b) character select logs ERROR for a class or Legend id the catalogue does not have, and ignores it; (c) the match logs ERROR when core rejects the player's spawn. |
 | P7  | Tests take the shipped Legend ids from content (helpers in `apps/client/src/game/content/__fixtures__/shippedCatalogue.ts`) instead of literals.                                                                                                                   |
-| P8  | Not built: replace plan ruling I-82's art-id prefix check with P3's guard. A test guardrail, so it needs the owner (`INBOX.md` HC-Q18 (1)).                                                                                                                        |
+| P8  | Not built: replace plan ruling I-82's art-id prefix check with P3's guard. A test guardrail, so it needs the owner (`INBOX.md` HC-Q18 (1)). Built 2026-10-29 (`b57b919`), after the owner's answer "Replace the prefix check".                                     |
 | P11 | Id-permanence TSDoc: the Legend and locked-class id fields say that an id can change until a save or a release stores it (ADR 0018 point 5).                                                                                                                       |
 
 ## Related

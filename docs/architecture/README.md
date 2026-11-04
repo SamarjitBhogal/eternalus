@@ -4,7 +4,7 @@ description: The index of the eighteen architecture docs with the layered model 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-25
+last-reviewed: 2026-10-28
 tags: [architecture, index]
 related:
   [
@@ -133,7 +133,7 @@ the Phase 0 PR (DISC-55 tracks that `docs/decisions/` held only 0000–0002 befo
 | D8  | Single-threaded simulation on the main thread for the MVP; snapshots structured-clone-safe so a Worker move is cheap                                | [08 §10](08-game-engine.md#10-threading-single-threaded-now-worker-ready-later-d8)             | 03 §5, 08                                                                       |
 | D9  | Fixed 30 ticks/s simulation; render at display rate with interpolation                                                                              | [03 §7](03-game-model.md#7-the-fixed-timestep-contract), [08 §2](08-game-engine.md#2-gameloop) | 03, 08                                                                          |
 | D10 | Team is a component, not a class; neutral things are `team: 'neutral'` (`Camp` structures, `Boss` units), because revives and ascension change team | [ADR 0006](../decisions/)                                                                      | [04 §8](04-entity-architecture.md#8-team-is-a-property-not-a-class-d10)         |
-| D11 | Sub-classes are MVP (ADR 0018), modelled as `LegendSpecDefinition` data consumed by the class; a subclass only for unique behaviour                 | [ADR 0006](../decisions/)                                                                      | [04 §9](04-entity-architecture.md#9-sub-classes-and-specialisations-d11), 17 R2 |
+| D11 | Sub-classes are MVP (ADR 0018), modelled as `LegendSpecDefinition` data consumed by the class; a subclass only for unique behaviour                 | [ADR 0006](../decisions/), [ADR 0018](../decisions/0018-mvp-legend-pick-as-setup-data.md)      | [04 §9](04-entity-architecture.md#9-sub-classes-and-specialisations-d11), 17 R2 |
 | D12 | Flying class, mounts, anti-air, form change, ability tree, controller support and first-person are post-MVP with explicit extension points          | [../plan/backlog-post-mvp.md](../plan/backlog-post-mvp.md)                                     | 17 §10, 07 §14, 11 §9                                                           |
 
 ## 5. What survives an engine port

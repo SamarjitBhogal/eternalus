@@ -1,12 +1,9 @@
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
-import { Transform } from '../components/Transform';
 import type { DamagePipeline } from '../combat/DamagePipeline';
-import type { Entity } from '../entities/Entity';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
-import { length, sub } from '../utils/vec2';
 import type { System, SystemContext } from './System.types';
 
 /**
@@ -44,7 +41,7 @@ export class CombatSystem implements System {
       if (statuses?.has('cannot-attack') === true) {
         return;
       }
-      if (!combat.canAttack(state.tick) || !CombatSystem.inReach(attacker, target, combat)) {
+      if (!combat.canAttack(state.tick) || !state.entities.isInReach(attacker.id, target.id)) {
         return;
       }
 
@@ -54,16 +51,5 @@ export class CombatSystem implements System {
       });
       combat.beginAttack(state.tick, statuses?.multiplier('attackSpeed') ?? 1);
     });
-  }
-
-  /** Edge-to-edge distance between the two footprints is within the attack's reach. */
-  private static inReach(attacker: Entity, target: Entity, combat: Combat): boolean {
-    const from = attacker.findComponent(Transform);
-    const to = target.findComponent(Transform);
-    if (from === undefined || to === undefined) {
-      return false;
-    }
-    const gap = length(sub(to.position, from.position)) - from.radius - to.radius;
-    return gap <= combat.attack.reach;
   }
 }

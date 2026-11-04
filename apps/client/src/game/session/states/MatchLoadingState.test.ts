@@ -4,7 +4,7 @@ import type { AssetGroup } from '../../../bridge/events';
 import { firstAvailableSpecId } from '../../content/__fixtures__/shippedCatalogue';
 import { FakeSessionContext } from '../../FakeSessionContext';
 import { flushMicrotasks, testResources, testSession } from '../../testSessionDeps';
-import { REVEAL_COUNTDOWN_MS } from '../sessionTiming.constants';
+import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
 import { MatchLoadingState } from './MatchLoadingState';
 
 /** The Legend these tests pick for the sentinel class. */
@@ -28,6 +28,8 @@ async function atMatchLoading(overrides: Parameters<typeof testSession>[0] = {})
   await session.resolveLoads();
   session.intent({ kind: 'select-class', classId: 'sentinel', specId: SENTINEL_LEGEND });
   session.intent({ kind: 'confirm-selection' });
+  // DEC-60: LOCK IN holds the full select countdown; the reveal follows it.
+  session.clock.advance(SELECT_COUNTDOWN_MS);
   session.clock.advance(REVEAL_COUNTDOWN_MS);
   return session;
 }
@@ -86,6 +88,7 @@ describe('MatchLoadingState', () => {
     await settle();
     session.intent({ kind: 'select-class', classId: 'sentinel', specId: SENTINEL_LEGEND });
     session.intent({ kind: 'confirm-selection' });
+    session.clock.advance(SELECT_COUNTDOWN_MS);
     session.clock.advance(REVEAL_COUNTDOWN_MS);
     await settle();
 

@@ -1,4 +1,5 @@
 import type { SessionPhase, UiIntent } from '../../../bridge/events';
+import type { MatchEvidence } from '../../../data/logging/ErrorReport.types';
 import type { MatchViewport } from '../../MatchViewport.types';
 import type { RunningMatch, SessionContext, SessionState } from '../../SessionController.types';
 import { SELECTION_ASSET_GROUPS } from '../selectionAssetGroups';
@@ -7,7 +8,8 @@ import { SELECTION_ASSET_GROUPS } from '../selectionAssetGroups';
  * The match (13 §2, DEC-50): created when the match screen's viewport attaches and destroyed
  * when the phase ends (0 listeners, 0 frames); an open overlay pauses it (13 §7: the match
  * pauses from `pause-menu`, ES-11; single player, INBOX HC-Q8); `leave-match` returns to the
- * menu. Entering releases the selection screens' assets (HC-F9).
+ * menu, and so does a crash of its game loop (DEC-106). Entering releases the selection screens'
+ * assets (HC-F9).
  */
 export class MatchState implements SessionState {
   public readonly phase: SessionPhase = 'match';
@@ -24,13 +26,16 @@ export class MatchState implements SessionState {
 
   /**
    * Builds the match on the viewport, paused if an overlay is open; one viewport at a time, so a
-   * second attach replaces the first match. A failure returns to the menu (`'match-failed'`).
+   * second attach replaces the first match. A failure returns to the menu (`'match-failed'`); so
+   * does a crash of the running match (`endCrashedMatch`, DEC-106), never of a replaced one.
    */
   public attachViewport(viewport: MatchViewport, context: SessionContext): () => void {
     this.stop();
     let match: RunningMatch;
     try {
-      match = context.createMatch(viewport);
+      match = context.createMatch(viewport, (crash) => {
+        if (this.running === match) context.endCrashedMatch(crash);
+      });
     } catch (error) {
       context.abortMatch(error);
       return () => undefined;
@@ -43,6 +48,16 @@ export class MatchState implements SessionState {
       // A stale detach (StrictMode, a replaced viewport) never ends a newer match.
       if (this.running === match) this.stop();
     };
+  }
+
+  /** The running match's evidence (ADR 0025 §3), or `null` before a viewport attaches. */
+  public matchEvidence(): MatchEvidence | null {
+    return this.running?.evidence() ?? null;
+  }
+
+  /** The running match's tick (no evidence built), or `null` before a viewport attaches. */
+  public matchTick(): number | null {
+    return this.running?.currentTick() ?? null;
   }
 
   /** Destroys the match, drops the world and closes any open overlay. */

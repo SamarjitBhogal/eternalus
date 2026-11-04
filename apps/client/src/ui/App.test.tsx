@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SESSION_PHASES } from '../bridge/events';
+import { SESSION_PHASES, type SessionPhase } from '../bridge/events';
 import { matchSetupSlice } from '../bridge/slices/matchSetupSlice';
 import { App } from './App';
 import { STRINGS } from './strings';
@@ -18,6 +18,35 @@ describe('App', () => {
   it('renders the home screen for the menu phase on the home route', () => {
     const html = renderWithStore(<App />, { session: sessionAt('menu') });
     expect(html).toContain(STRINGS.menu.startMatch);
+  });
+
+  it('shows the select-timeout popup over every menu route, and in no other phase (DEC-102)', () => {
+    const title = STRINGS.selectTimeoutPopup.title;
+    const at = (session: ReturnType<typeof sessionAt>) => renderWithStore(<App />, { session });
+    for (const menuRoute of ['home', 'settings'] as const) {
+      const html = at(sessionAt('menu', { menuRoute, reason: 'select-timeout' }));
+      expect(html).toContain(title);
+      expect(html.indexOf(title)).toBeGreaterThan(html.indexOf('<main'));
+    }
+    expect(at(sessionAt('menu'))).not.toContain(title);
+    expect(at(sessionAt('loading', { reason: 'select-timeout' }))).not.toContain(title);
+  });
+
+  it('shows the crash popup, outside the screen, in every phase once a report is open', () => {
+    const title = STRINGS.crashReportPopup.matchMessage;
+    const withReport = (phase: SessionPhase) =>
+      renderWithStore(<App />, {
+        session: {
+          ...sessionAt(phase, { reason: 'match-crashed' }),
+          crashReport: { stage: 'asking', noteLimit: 2000, cause: 'match', crashNumber: 1 },
+        },
+      });
+    for (const phase of SESSION_PHASES) {
+      const html = withReport(phase);
+      expect(html).toContain(title);
+      expect(html.indexOf(title)).toBeGreaterThan(html.indexOf('<main'));
+    }
+    expect(renderWithStore(<App />, { session: sessionAt('menu') })).not.toContain(title);
   });
 
   it.each([

@@ -1,3 +1,4 @@
+import { type BotRosterDefinition, loadDisplayContent } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
 import { classCardFixture } from '../../bridge/__fixtures__/catalogueFixtures';
@@ -8,9 +9,22 @@ import type { Rng } from './Rng.types';
 const card = (classId: string) => classCardFixture({ classId, displayName: classId.toUpperCase() });
 const CLASSES = [card('warrior'), card('sentinel'), card('magus')];
 const fixedRng = (value: number): Rng => ({ nextInt: () => value });
+/** The shipped roster: three of each class, grouped (DEC-61, DEC-102). */
+const SHIPPED_ROSTER = loadDisplayContent().botRoster;
 
-function build(rng: Rng = new LcgRng(1), legendClasses = CLASSES) {
-  return buildMatchSetup({ seed: 1, rng, legendClasses, legendsPerTeam: 10, playerName: 'Ada' });
+function build(
+  rng: Rng = new LcgRng(1),
+  legendClasses = CLASSES,
+  botRoster: BotRosterDefinition = SHIPPED_ROSTER,
+) {
+  return buildMatchSetup({
+    seed: 1,
+    rng,
+    legendClasses,
+    botRoster,
+    legendsPerTeam: 10,
+    playerName: 'Ada',
+  });
 }
 
 describe('buildMatchSetup', () => {
@@ -43,16 +57,31 @@ describe('buildMatchSetup', () => {
     }
   });
 
-  it('gives bots the catalogue classes in order with unique ids and names', () => {
+  it('gives each team the roster’s lane bots in roster order, with unique ids and names', () => {
     const { allies, enemies } = build();
-    expect(allies.slice(1, 4).map((entry) => entry.classId)).toEqual([
-      'sentinel',
-      'magus',
-      'warrior',
-    ]);
-    expect(enemies[1]?.displayName).toBe('SENTINEL 2');
+    for (const team of [allies, enemies]) {
+      expect(team.slice(1).map((entry) => entry.classId)).toEqual(SHIPPED_ROSTER.laners);
+    }
+    expect(enemies[4]?.displayName).toBe('SENTINEL 5');
     const ids = [...allies, ...enemies].map((entry) => entry.legendId);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('leaves every Legend and both Rovers’ classes for LOCK IN to fill (DEC-61)', () => {
+    const { allies, enemies } = build();
+    expect([...allies, ...enemies].every((entry) => entry.specId === null)).toBe(true);
+    expect([allies[0]?.classId, enemies[0]?.classId]).toEqual(['warrior', 'warrior']);
+    expect(enemies[0]?.displayName).toBe('WARRIOR 1');
+  });
+
+  it('refuses a roster whose lane bots and Rover do not make a team', () => {
+    const short = { ...SHIPPED_ROSTER, laners: SHIPPED_ROSTER.laners.slice(1) };
+    expect(() => build(new LcgRng(1), CLASSES, short)).toThrow(
+      'the bot roster has 8 lane bots; a team of 10 needs 9 and its Rover',
+    );
+    expect(() => build(new LcgRng(1), CLASSES, { ...SHIPPED_ROSTER, laners: [] })).toThrow(
+      'the bot roster has 0 lane bots',
+    );
   });
 
   it('draws the same team from the same seed', () => {
@@ -62,25 +91,16 @@ describe('buildMatchSetup', () => {
     expect(new Set(teams(7))).toEqual(new Set(['light', 'dark']));
   });
 
-  it('refuses an empty catalogue', () => {
-    expect(() => build(new LcgRng(1), [])).toThrow('no selectable Legend classes');
+  it('refuses a roster class the catalogue lacks', () => {
+    expect(() => build(new LcgRng(1), [])).toThrow(
+      'the bot roster names "warrior", not a selectable class',
+    );
   });
 
-  it('never gives a locked class to anyone and cycles the selectable classes in order', () => {
-    const locked = classCardFixture({ classId: 'flying', status: 'locked' });
-    const { allies, enemies } = build(new LcgRng(1), [locked, ...CLASSES]);
-    const roster = [...allies, ...enemies];
-    expect(roster.filter((entry) => entry.classId === 'flying')).toEqual([]);
-    expect(allies.slice(0, 4).map((entry) => entry.classId)).toEqual([
-      'warrior',
-      'sentinel',
-      'magus',
-      'warrior',
-    ]);
-  });
-
-  it('refuses a catalogue with only locked classes', () => {
-    const locked = classCardFixture({ classId: 'flying', status: 'locked' });
-    expect(() => build(new LcgRng(1), [locked])).toThrow('no selectable Legend classes');
+  it('never gives a bot a locked class (DEC-48)', () => {
+    const locked = classCardFixture({ classId: 'magus', status: 'locked' });
+    expect(() => build(new LcgRng(1), [card('warrior'), card('sentinel'), locked])).toThrow(
+      'the bot roster names "magus", not a selectable class',
+    );
   });
 });

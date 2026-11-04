@@ -1,7 +1,8 @@
 import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
-import { firstAvailableSpecId } from './content/__fixtures__/shippedCatalogue';
+import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
+import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
@@ -12,6 +13,8 @@ import type {
   SessionContext,
   SessionControllerDeps,
 } from './SessionController.types';
+import { createRosterRng } from './session/createRosterRng';
+import { botRosterSlots } from './session/botRosterSlots';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { MatchState } from './session/states/MatchState';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
@@ -22,8 +25,8 @@ const CONFIG = createDefaultGameConfig();
 const MAGUS_LEGEND = firstAvailableSpecId('magus');
 
 const CHROME = {
-  onInteriorChanged: () => undefined,
-  setLeaveInterior: () => undefined,
+  onDeveloperRoofsChanged: () => undefined,
+  onExplorerChanged: () => undefined,
   setOverview: () => undefined,
 };
 
@@ -51,9 +54,19 @@ function setUp(overrides: Partial<SessionControllerDeps> = {}) {
     worlds.push(world);
     return world;
   });
-  const handles: { destroy: ReturnType<typeof vi.fn>; setPaused: ReturnType<typeof vi.fn> }[] = [];
+  const handles: {
+    destroy: ReturnType<typeof vi.fn>;
+    setPaused: ReturnType<typeof vi.fn>;
+    evidence: ReturnType<typeof vi.fn<typeof fakeMatchEvidence>>;
+    currentTick: ReturnType<typeof vi.fn>;
+  }[] = [];
   const createMatch = vi.fn<MatchFactory>((): RunningMatch => {
-    const handle = { destroy: vi.fn(), setPaused: vi.fn() };
+    const handle = {
+      destroy: vi.fn(),
+      setPaused: vi.fn(),
+      evidence: vi.fn(fakeMatchEvidence),
+      currentTick: vi.fn(() => 0),
+    };
     handles.push(handle);
     return handle;
   });
@@ -75,6 +88,8 @@ function setUp(overrides: Partial<SessionControllerDeps> = {}) {
     }
     session.intent({ kind: 'select-class', classId: 'magus', specId: MAGUS_LEGEND });
     session.intent({ kind: 'confirm-selection' });
+    // DEC-60: LOCK IN holds the full select countdown; the reveal follows it.
+    session.clock.advance(SELECT_COUNTDOWN_MS);
     session.clock.advance(REVEAL_COUNTDOWN_MS);
   };
   const toMatch = async (): Promise<void> => {
@@ -95,6 +110,7 @@ describe('SessionController match lifetime', () => {
     session.clock.advance(SELECT_COUNTDOWN_MS - 1);
     session.intent({ kind: 'select-class', classId: 'magus', specId: MAGUS_LEGEND });
     session.intent({ kind: 'confirm-selection' });
+    session.clock.advance(1);
     session.clock.advance(REVEAL_COUNTDOWN_MS);
 
     expect(session.controller.phase).toBe('match-loading');
@@ -122,13 +138,49 @@ describe('SessionController match lifetime', () => {
 
     session.controller.attachViewport(attached);
 
-    const { seed, playerTeam } = session.store.getState().matchSetup;
+    const { seed, playerTeam, allies, enemies } = session.store.getState().matchSetup;
     const [request, passed] = session.createMatch.mock.calls[0] ?? [];
     expect(request?.setup.seed).toBe(seed);
+    // The rosters LOCK IN filled: every bot with its Legend, the enemy Rover mirrored (DEC-61).
+    expect(request?.setup).toMatchObject({ allies, enemies });
+    expect(request?.setup.enemies[0]).toMatchObject({ classId: 'magus', specId: MAGUS_LEGEND });
     expect(request?.player).toEqual({ legend: 'magus', team: playerTeam });
     expect(request?.world).toBe(session.worlds[0]);
     expect(request?.captureKinds).toEqual(['capture-point', 'cathedral']);
     expect(passed).toBe(attached);
+  });
+
+  it("builds the match's roster from the locked rosters and the catalogue's difficulties", async () => {
+    const session = setUp();
+    await session.toMatch();
+
+    session.controller.attachViewport(viewport());
+
+    const [request] = session.createMatch.mock.calls[0] ?? [];
+    expect(request?.roster).not.toHaveLength(0);
+    const { difficulties } = shippedCatalogue().load().botRoster;
+    expect(request?.roster).toEqual(
+      botRosterSlots(
+        { allies: request?.setup.allies ?? [], enemies: request?.setup.enemies ?? [] },
+        difficulties,
+      ),
+    );
+    // Each slot's difficulty is its role's, read from the catalogue, not from the helper alone.
+    for (const slot of request?.roster ?? []) {
+      expect(slot.difficulty).toEqual(difficulties[slot.role]);
+    }
+    expect(difficulties.rover).not.toEqual(difficulties.laner);
+  });
+
+  it("draws the bots' Legends at LOCK IN from the injected roster stream of the match seed", async () => {
+    const rosterRng = vi.fn(createRosterRng);
+    const session = setUp({ createRosterRng: rosterRng });
+    await session.toCharacterSelect();
+    expect(rosterRng).not.toHaveBeenCalled();
+
+    await session.toMatchLoading();
+
+    expect(rosterRng.mock.calls).toEqual([[session.store.getState().matchSetup.seed]]);
   });
 
   it('does nothing for a viewport attached outside the match', async () => {
@@ -154,6 +206,23 @@ describe('SessionController match lifetime', () => {
     expect(session.handles[1]?.destroy).not.toHaveBeenCalled();
     session.intent({ kind: 'leave-match' });
     expect(session.handles[1]?.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives the running match's evidence, and null outside a match (ADR 0025 §3)", async () => {
+    const session = setUp();
+    expect(session.controller.matchEvidence()).toBeNull();
+    await session.toMatch();
+    expect(session.controller.matchEvidence()).toBeNull();
+
+    session.controller.attachViewport(viewport());
+    const evidence = session.controller.matchEvidence();
+    session.intent({ kind: 'leave-match' });
+
+    expect(session.handles[0]?.evidence.mock.results).toEqual([
+      { type: 'return', value: evidence },
+    ]);
+    expect(evidence).toEqual(fakeMatchEvidence());
+    expect(session.controller.matchEvidence()).toBeNull();
   });
 
   it('never ends a newer match on a stale detach', async () => {
@@ -186,6 +255,29 @@ describe('SessionController match lifetime', () => {
     await session.toMatch();
     expect(session.controller.phase).toBe('match');
     expect(session.prepareWorld).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns to the menu with match-crashed and one FATAL record when the match crashes (DEC-106)', async () => {
+    const session = setUp();
+    await session.toMatch();
+    session.controller.attachViewport(viewport());
+    const seed = session.store.getState().matchSetup.seed;
+    const error = new Error('step failed');
+
+    session.createMatch.mock.calls[0]?.[0].onCrash({ error, tick: 42 });
+
+    expect(session.controller.phase).toBe('menu');
+    expect(session.store.getState().session.reason).toBe('match-crashed');
+    expect(session.handles[0]?.destroy).toHaveBeenCalledTimes(1);
+    expect(session.logger.records).toEqual([
+      expect.objectContaining({
+        severityText: 'FATAL',
+        scope: 'client.session',
+        body: 'The match stopped because of an error.',
+        tick: 42,
+        attributes: { error: 'Error: step failed', stack: error.stack ?? null, seed },
+      }),
+    ]);
   });
 
   it('returns to the menu with match-failed and builds no match when the world fails', async () => {

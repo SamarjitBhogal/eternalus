@@ -100,9 +100,41 @@ describe('selectStructureStrip', () => {
         displayName: 'Wall',
         iconAssetId: 'structure-wall',
         healthFraction: 0.6,
+        isDestroyed: false,
       },
     ]);
     expect(wallTile(null)[0]?.healthFraction).toBeNull();
+  });
+
+  it('shows a structure destroyed at zero health, never at unknown or some health (DEC-69)', () => {
+    const towers = [
+      structure('light-buff-0', 'buff-tower', 'light', 0, { current: 0, max: 40 }),
+      structure('light-buff-1', 'buff-tower', 'light', 1, { current: 1, max: 40 }),
+      structure('light-buff-2', 'buff-tower', 'light', 2, null),
+    ];
+    const tiles = selectStructureStrip(storeWith('light', towers).getState(), 'allied');
+    expect(tiles.map((tile) => [tile.tileId, tile.isDestroyed])).toEqual([
+      ['light-buff-0', true],
+      ['light-buff-1', false],
+      ['light-buff-2', false],
+    ]);
+  });
+
+  it('shows the one Wall tile destroyed once any one wall segment or gate is (DEC-108)', () => {
+    const health = (current: number): StructureStatus['health'] => ({ current, max: 40 });
+    const wallDestroyed = (wall0: number, wall1: number, gate: number): boolean | undefined =>
+      selectStructureStrip(
+        storeWith('light', [
+          structure('light-wall-0', 'wall-segment', 'light', null, health(wall0)),
+          structure('light-wall-1', 'wall-segment', 'light', null, health(wall1)),
+          structure('light-gate-0', 'gate', 'light', null, health(gate)),
+        ]).getState(),
+        'allied',
+      )[0]?.isDestroyed;
+    expect(wallDestroyed(40, 40, 40)).toBe(false);
+    expect(wallDestroyed(0, 40, 40)).toBe(true);
+    expect(wallDestroyed(40, 0, 40)).toBe(true);
+    expect(wallDestroyed(40, 40, 0)).toBe(true);
   });
 
   it('binds the Figma bars by identity: production towers 18, 23, 20 of 46', () => {

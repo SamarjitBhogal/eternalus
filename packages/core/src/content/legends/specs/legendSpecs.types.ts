@@ -8,11 +8,17 @@ export type RoleRatings = {
   readonly control: number;
 };
 
-/** Display names of a Legend's selection-screen detail rows (Figma 56:47); `null` until named. */
+/**
+ * Display names of a Legend's selection-screen detail rows, "Ultimate / Abilities" (DEC-65): the
+ * ultimate on top, then abilities 1 to 3 (key order is panel order). The class's default ability
+ * (Aetheric Recall) is not one of them. `null` until named; the abilities are designed next sprint
+ * (DEC-70).
+ */
 type SpecDetailNames = {
-  readonly signature: string | null;
-  readonly specialty: string | null;
   readonly ultimate: string | null;
+  readonly 'ability-1': string | null;
+  readonly 'ability-2': string | null;
+  readonly 'ability-3': string | null;
 };
 
 /**

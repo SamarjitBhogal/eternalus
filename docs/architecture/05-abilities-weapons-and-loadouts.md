@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-24
+last-reviewed: 2026-11-02
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -84,7 +84,7 @@ export type AbilityTargeting =
   | { readonly kind: 'directional' }; // dashes: the aim vector, no range
 
 export type AbilityDefinition = {
-  readonly id: AbilityId; // 'blade-runner'; never renamed once used
+  readonly id: AbilityId; // 'blade-runner'; never renamed once a save or a release stores it
   readonly displayName: string; // 'Death Ray (working title)' lives here, not in code
   readonly classId: LegendId; // abilities are class-specific (game doc); enforced by LoadoutValidator
   readonly slot: AbilitySlotKind;
@@ -570,7 +570,9 @@ source)` is built and is the only caller of `Health.applyDamage`. Each modifier 
 `DamageStep` (`adjust(hit, state) → amount`, 0 blocks) and **the order is the list in
 `combat/defaultDamageSteps.ts`**; shields-then-base stays inside `Health`. The steps today are
 `FriendlyFireStep` (no damage between same-team entities; awaiting the owner's sign-off in
-`INBOX.md`) and `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
+`INBOX.md`), `StatusModifierStep` (`damageDealt` / `damageTaken`; 05 §8) and `MinionStrengthStep`
+(the minion strength-by-distance curve, its base-stat point moved toward the enemy for each lane
+tower the enemy has lost there, DISC-24; [18](18-minion-system.md) MS-16). Interim differences: no `DamageType` yet (nothing reads it; it joins `DamageHit` and
 `apply` with the first resistance); the pipeline itself emits `entity-died` with the killer, so
 `DeathResolver` is not a separate class yet. `GameState.killerOf` keeps this tick's killers, so
 `DeathSystem` removes with the cause `died` and puts the killer on `entity-removed`;
@@ -638,6 +640,24 @@ by any class (reference 07: the class table's bias is a bias); `uniqueTo` locks 
 | Short blades (`short-blades`)               | glove      | fast melee; throwable (a persistent projectile, retrieve or regenerate)                 | warrior   | MVP-if-time             |
 | Barricades (`barricades`)                   | —          | movement lock, `mass` change, moving collider, knockback absorption                     | sentinel  | post-MVP ("needs work") |
 
+**Implementation status (SCRUM-183 / SCRUM-287, first slice).** `content/weapons/` holds
+`WeaponDefinition` (`id`, `displayName`, `weaponClass`, `attacks`, `allowedClasses`, `uniqueTo`;
+`attacks` are `UnitAttack`s, seconds authored and ticks once loaded) and `weaponCatalogue.ts`;
+`loadWeapons` converts and validates at load. A Legend's damage comes from its weapon, never from
+the Legend: `LegendDefinition` has no `attack` and must name its weapon with
+`defaultLoadout.primaryWeaponId`, the one field of the design's `LoadoutTemplate` built so far;
+`KnownWeaponRule` checks every Legend names one and that it resolves. The shipped catalogue is the
+three default weapons from the table above, with each class's `balancing.md` basic attack as
+`TUNE` numbers until the owner sets weapon numbers and default weapons (`INBOX.md`): Warrior
+`raptor-talons`, Sentinel `wuuthrad` (no MVP spear or battle axe is named yet; Wuuthrad is MVP-if-time), Magus `magus-staff` (melee only). `EntityFactory` passes the
+injected weapon source in the spawn context, `Legend` builds `Combat` from the weapon's first attack
+and `Combat.weaponId` names it, so the `DamageSource` is the entity plus its weapon; mobs keep
+their own `attack` and name their own definition (04 §5). Not built yet: ranged attacks and flex
+(projectiles, sprint 2.3), `onHit`, `heavyAttack`, `parry`, `grants` (ability framework, 4.2),
+`damageType`, `damageClass`, `damageMultipliers`, `sprite`, the `AttackStrategy` contract's
+`weapon` argument, and `allowedClasses` / `uniqueTo` enforcement in a loadout (`WeaponAllowedRule`,
+SCRUM-290).
+
 ## 11. Artifacts (gadgets Z and C)
 
 An artifact is an `AbilityDefinition` with `slot: 'gadget'` (`ArtifactDefinition =
@@ -669,7 +689,7 @@ export type LoadoutSlot =
 export type AbilityChoice = { readonly abilityId: AbilityId; readonly varietyId: VarietyId | null };
 export type Loadout = {
   readonly classId: LegendId;
-  readonly specId: LegendSpecId | null; // post-MVP specialisation (D11); null in the MVP
+  readonly specId: LegendSpecId | null; // gameplay spec (ADR 0018); null until built (HC-Q17)
   readonly primaryWeaponId: WeaponId; // MVP
   readonly secondaryWeaponId: WeaponId | null; // MVP-if-time
   readonly passiveId: AbilityId | null; // MVP-if-time (Magus: Studious or Necromancy)
@@ -836,8 +856,9 @@ are the same string literals as the `InputAction`s in `keybindings.ts`
 ([09 §3](09-hardware-abstraction.md#3-the-mapping-pipeline-device--inputaction--command)), so the
 glyph needs no mapping table and a rebinding updates every prompt with no code change;
 `default-action` is a contextual prompt on `<KeyGlyph action="interact" />` (`Recommendation:`).
-Display names and icons come from the catalogue the client already loads for the `LoadoutScreen`
-(`loadDefaultContent()`), resolved once at match start into the slice, never from entities.
+Display names and icons come from the display catalogue the client builds at boot (core's
+`loadDisplayContent()` and the client's own presentation data), joined with the player's selection
+by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event.
 `AetherBar` and `HealthBar` read the same record; `LoadoutScreen` edits a `Loadout` value and calls
 `validateLoadout` through the public API.
 
@@ -920,7 +941,9 @@ Display names and icons come from the catalogue the client already loads for the
   (core's `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`,
   published as `content-catalogue`), joined with the player's selection by `selectHudKit`; there
   is no `hud-kit` event. The slot display names are `null` and the icons are client-side asset ids
-  until ability content exists (INBOX HC-Q3). The `xp` and `xpToNext` comments in §15 record the
+  until ability content exists (INBOX HC-Q3); a live match shows only the art that fits the picked
+  Legend (its class's emblem and gadget, its start weapon) and leaves every other frame empty
+  (DEC-101, DEC-114). The `xp` and `xpToNext` comments in §15 record the
   owner's reading of the XP ring (2026-10-18).
 
 ## Related
