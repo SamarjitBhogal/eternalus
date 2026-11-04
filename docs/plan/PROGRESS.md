@@ -2961,3 +2961,21 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   "Documentation check passed."
 - Next step: push to `feat/capture-points-v2` (PR #64); HUD branch: density % in
   `ObjectiveTracker` (INBOX).
+
+### 2026-11-03 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64) — sholtzman + Claude Code
+
+- What was done: answered the PR #64 review (head `48ba952`). `Simulation` builds one
+  `EntityFactory`: `ZONE_DEFINITIONS` is one more definition source, and the second zone factory
+  with its shared id counter is gone (finding 2; ids and hashes unchanged). The command factory
+  can now see zones, so `DevSpawnHandler` refuses a zone with the new reason `map-only` (critic
+  blocker: the step threw on a missing area; the new `Simulation.capture` test failed under a
+  deliberate break first). `CaptureSystem.weightsInside` has a `ponytail:` remark for its
+  O(zones × units) scan (finding 7). The PR description records the pre-PR gate; the base moves
+  to `phase/3-sprint-3-work`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 939 passed (939)"; client "Tests 440 passed (440)"; "✓ built in 124ms"; "Documentation
+  check passed."
+- Next step: Samarjit re-reviews #64. Whichever of #64 and the minion stack (#56 → #58) lands
+  second resolves their conflicts (11 files, `git merge-tree`): one helper composes the units,
+  zones and structures definition sources and refuses duplicate ids, and `spawnZones` runs after
+  `spawnStructures` (feature id order for both is decided there).
