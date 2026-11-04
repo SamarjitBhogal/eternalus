@@ -195,6 +195,7 @@ describe('MatchBridge', () => {
     expect(unchanged).toBe(atStart);
     expect(later?.[0]).toMatchObject({ pointId: first.id, ownerTeam: 'dark', progress: -1 });
     expect(later?.[1]).toBe(atStart?.[1]);
+    expect(zoneGone?.[1]).toBe(atStart?.[1]);
     expect(zoneGone?.[0]).toMatchObject({
       pointId: first.id,
       ownerTeam: 'neutral',

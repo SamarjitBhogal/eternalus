@@ -17,8 +17,10 @@ export type MatchBridgeDeps = {
   readonly captureKinds: readonly MapFeatureKind[];
 };
 
-/** A capture point the HUD lists: where its zone stands (`Simulation.spawnZones`), and its status with no zone. */
+/** A capture point the HUD lists, and where its zone stands. */
 export type CaptureSite = {
+  /** The map feature's position, where `Simulation.spawnZones` puts the zone. */
   readonly position: Vec2;
-  readonly noZone: CapturePointStatus;
+  /** The point's status while no zone stands there: neutral, no progress. */
+  readonly withoutZone: CapturePointStatus;
 };

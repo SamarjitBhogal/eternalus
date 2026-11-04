@@ -27,7 +27,7 @@ export class MatchBridge {
     );
     this.captureSites = features.map((feature) => ({
       position: feature.position,
-      noZone: {
+      withoutZone: {
         pointId: feature.id,
         kind: feature.kind,
         laneIndex: MatchBridge.laneIndexOf(deps.map, feature.laneId),
@@ -35,7 +35,7 @@ export class MatchBridge {
         progress: null,
       },
     }));
-    this.capturePoints = this.captureSites.map(({ noZone }) => noZone);
+    this.capturePoints = this.captureSites.map(({ withoutZone }) => withoutZone);
   }
 
   /** Publishes both rosters, the clock and the HUD once, before the first tick. */
@@ -72,13 +72,13 @@ export class MatchBridge {
    * progress). An unchanged point, and an unchanged list, is the last one published.
    */
   private liveCapturePoints(snapshot: Snapshot): readonly CapturePointStatus[] {
-    const points = this.captureSites.map(({ position, noZone }, index) => {
+    const points = this.captureSites.map(({ position, withoutZone }, index) => {
       const capture = MatchBridge.captureAt(snapshot, position);
       const next =
         capture === null
-          ? noZone
-          : { ...noZone, ownerTeam: capture.owner, progress: capture.progress };
-      const last = this.capturePoints[index] ?? noZone;
+          ? withoutZone
+          : { ...withoutZone, ownerTeam: capture.owner, progress: capture.progress };
+      const last = this.capturePoints[index] ?? withoutZone;
       return last.ownerTeam === next.ownerTeam && last.progress === next.progress ? last : next;
     });
     return points.every((point, index) => point === this.capturePoints[index])
@@ -89,7 +89,10 @@ export class MatchBridge {
   private static captureAt(snapshot: Snapshot, position: Vec2): CaptureSnapshot | null {
     const zone = snapshot.entities.find(
       ({ capture, transform }) =>
-        capture !== null && transform?.x === position.x && transform.y === position.y,
+        capture !== null &&
+        transform !== null &&
+        transform.x === position.x &&
+        transform.y === position.y,
     );
     return zone?.capture ?? null;
   }
