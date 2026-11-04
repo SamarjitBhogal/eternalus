@@ -270,11 +270,10 @@ enqueued in. A command enqueued during `step()` (from an event handler) applies 
 so a replay applied it one tick early. The owner chose "Log at apply time" (DEC-156). §4's "Command
 log" item changes as below. Where the text above disagrees, this section wins.
 
-- **Command log.** `Simulation.step()` appends `{ tick, command }` for each external command
-  (player, developer menu, through `enqueueCommand`) when it applies it, with the tick of that
-  step. External and bot commands wait in two queues; `step()` applies the bots' first, then the
-  external ones, which is the order a replay reproduces. Bot commands stay out of the log, as
-  before.
+- **Command log.** Each external command (player, developer menu, through `enqueueCommand`) is
+  logged with the tick it applies in, when it applies. External and bot commands wait in two
+  queues: the previous step's bot commands apply first, then the external ones, which is the order
+  a replay reproduces. Bot commands stay out of the log, as before.
 
 ## Open questions for the owner
 

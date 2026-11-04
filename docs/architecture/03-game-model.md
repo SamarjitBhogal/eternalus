@@ -35,7 +35,7 @@ carried over unchanged.
 
 ```mermaid
 flowchart LR
-  IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q[CommandQueue]
+  IN[InputMapper / controllers / DeveloperMenu] -->|Command| Q["CommandQueues (bots', external)"]
   Q -->|next tick| APPLY[CommandApplySystem]
   APPLY --> SYS[SystemPipeline: AiSystem ... MovementSystem, CombatSystem, DeathSystem ... InvariantSystem]
   SYS -->|mutates| STATE[(GameState)]

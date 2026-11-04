@@ -4370,8 +4370,8 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 
 ### 2026-11-03 — Phase 2 / Track B (S1 carry-over) / HUD and character select, PR #68 review — feat/hud-and-character-select — sholtzman + Claude Code
 
-- What was done: SamarjitBhogal approved PR #68 with five optional follow-ups. The owner chose two
-  (DEC-156 and the base branch). The PR now targets `phase/3-sprint-3-work`. The replay's command
+- What was done: SamarjitBhogal approved PR #68 with five optional follow-ups. The owner chose two:
+  the PR targets `phase/3-sprint-3-work` and merges now (DEC-157). The replay's command
   log stamps each external command with the tick it applied in: `Simulation` keeps the bots' and
   the external commands in two queues and `step()` applies the bots' first, the order a replay
   reproduces. ADR 0025 amendment 2026-11-03, architecture 03 §3, DEC-156. File-length splits
@@ -4379,4 +4379,5 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the old `Simulation.ts` (`eternalus-agent-work/hud-charselect/build-1102/dec156-redproof.txt`).
 - Checks run: `npm run check` EXIT 0: "All matched files use Prettier code style!"; core "Tests
   947 passed (947)"; client "Tests 1735 passed (1735)"; "Documentation check passed."
-- Next step: the merge timing of PR #68 (owner); then merge with a merge commit.
+- Next step: merge PR #68 with a merge commit once CI passes; #56, #57 and #58 resolve the
+  conflicts with it.

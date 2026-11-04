@@ -989,7 +989,7 @@ Built on `feat/hud-plan-b6` after the HC-T1 answers above, then merged into this
   whole-match tests ran over the 5 s default on the Windows runner across two runs.
 - **Review (SamarjitBhogal, approved 2026-11-04 UTC), five optional follow-ups:** (1) the base
   moved to `phase/3-sprint-3-work`, the branch the minion PRs now target (same commit as
-  `phase/2-sprint-2-work` then; the owner's choice); (2) the replay's command log stamps each
+  `phase/2-sprint-2-work` then), and the PR merges now (DEC-157); (2) the replay's command log stamps each
   external command with the tick it applied in, and bot and external commands wait in two queues
   (DEC-156, ADR 0025 amendment, architecture 03 §3; two tests, both red on the old code); (3)
   splitting `Simulation.ts` and `SessionController.ts` waits until the open PRs that edit
