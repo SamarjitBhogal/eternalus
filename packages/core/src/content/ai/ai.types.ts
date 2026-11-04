@@ -82,14 +82,24 @@ export type AggroRuleDefinition = {
   readonly acquisitionRadius: number;
   /** Best first; an enemy that matches no entry is never acquired. */
   readonly priority: readonly AggroPriority[];
-  /** A chase ends when the mob is this far from where it left its formation. */
+  /**
+   * A mob fights only a target this close to where it took it (MS-36, DEC-144). A guard's leash
+   * is its guard plan's, measured from its structure's edge.
+   */
   readonly leashRadius: number;
-  /** A chase of a Legend ends this many ticks after it started on it (MS-34, DEC-135). */
-  readonly aggroDurationTicks: number;
-  /** After re-forming, a mob waits this many ticks before it may acquire again. */
+  /**
+   * A target outside the leash is chased this many ticks, then dropped; back inside sooner, it is
+   * fought on. 0 drops it at once (DEC-144 E).
+   */
+  readonly leashGraceTicks: number;
+  /** For this many ticks after a leash breaks, the mob leaves alone the enemy that escaped. */
   readonly aggroCooldownTicks: number;
-  /** A returning mob this close to its formation slot is marching again. */
-  readonly reformDistance: number;
+  /**
+   * An enemy this close that attacks a horde-mate may be acquired too ("call for help"). The
+   * leash still applies, so a value above `leashRadius` acts as `leashRadius`. Guards ignore it:
+   * they answer a fellow guard anywhere in their circle.
+   */
+  readonly callForHelpRadius: number;
   /**
    * The ghosted first wave (11 §4.3, MVP-if-time): for this many ticks after the countdown, and
    * during it, Legends match no priority entry, so the opening hordes meet before a Legend can bait

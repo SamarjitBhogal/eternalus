@@ -1,122 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { Health } from '../components/Health';
+import { Collider } from '../components/Collider';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import { AGGRO_RULES } from '../content/ai/aggro/aggroRules';
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
-import { loadDefaultContent } from '../content/loadDefaultContent';
-import { loadWeapons } from '../content/weapons/loadWeapons';
-import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
-import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
-import { EntityFactory } from '../entities/EntityFactory';
-import { SpaceIndex } from '../physics/SpaceIndex';
-import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
-import type { AiMemory } from '../state/AiState.types';
+import type { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
-import { Collider } from '../components/Collider';
-import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
-import { IdGenerator } from '../utils/IdGenerator';
-import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import { CLASS_OF, controller, engagingOn, setUp } from './__fixtures__/minionControllerSetup';
 import { MinionController } from './MinionController';
 import { Perception } from './perception/Perception';
 
-const CLASS_OF = (kind: string) =>
-  kind === 'warrior' ? ('legend' as const) : kind.endsWith('-mob') ? ('minion' as const) : null;
-
-const controller = new MinionController({
-  aggro: AGGRO_RULES,
-  formations: { ranks: RANKS_FORMATION },
-  classOf: CLASS_OF,
-});
-
-const setUp = () => {
-  const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
-  const factory = new EntityFactory(
-    createDefaultEntityRegistry(),
-    loadDefaultContent(30),
-    undefined,
-    loadWeapons(30),
-  );
-  const perception = new Perception(state);
-  const add = (
-    team: 'light' | 'dark',
-    x: number,
-    y = 20,
-    kind = 'light-mob',
-    id = 'light-minion',
-  ) => {
-    const entity = factory.create(kind, id, { team, position: { x, y } });
-    state.entities.add(entity);
-    return entity.id;
-  };
-  /** Refills the index the way `SpaceSystem` does: every unit, in store order. */
-  const index = () => {
-    space.begin(state.entities.size);
-    state.entities.forEach((entity) => {
-      const { x, y } = entity.getComponent(Transform).position;
-      space.add(entity.id, x, y);
-    });
-    space.commit();
-  };
-  const decide = (entityId: string, memory: AiMemory = {}, profileId = 'lane-minion') => {
-    index();
-    return controller.decide({
-      state,
-      entityId,
-      perception,
-      brain: {
-        controllerId: 'minion',
-        profileId,
-        memory,
-        rngState: { seed: 1, words: [1, 2, 3, 4] as const },
-      },
-    });
-  };
-  const advance = (ticks: number) => {
-    for (let tick = 0; tick < ticks; tick += 1) {
-      state.advanceTick();
-    }
-  };
-  const structures = new EntityFactory(
-    createDefaultEntityRegistry(),
-    STRUCTURE_DEFINITIONS,
-    new IdGenerator(1000),
-  );
-  /** Adds a dark structure on lane-0, indexes the structures and puts `memberId` in a light horde. */
-  const objective = (definitionId: string, x: number, memberId: string, progress = 0) => {
-    const entity = structures.create(STRUCTURE_DEFINITIONS.get(definitionId).kind, definitionId, {
-      team: 'dark',
-      position: { x, y: 20 },
-      laneId: 'lane-0',
-    });
-    state.entities.add(entity);
-    state.indexStructures();
-    state.hordes.add({
-      id: state.hordes.nextId(),
-      team: 'light',
-      weightClass: 'light',
-      lane: 'lane-0',
-      formationId: 'ranks',
-      memberIds: [memberId],
-      progress,
-    });
-    return entity;
-  };
-  return { state, add, decide, advance, objective };
-};
-
-const engagingOn = (targetId: string, overrides: Partial<Record<string, number>> = {}) => ({
-  fsm: 'engaging',
-  targetId,
-  aggroUntilTick: 1000,
-  cooldownUntilTick: 0,
-  leashX: 50,
-  leashY: 20,
-  ...overrides,
-});
-
+// The acquire and engage rules a minion shares with a guard: LeashBehaviour.test.ts.
 describe('MinionController', () => {
   it('marching: acquires the nearest enemy in range and attacks it, keeping its RNG', () => {
     const { add, decide } = setUp();
@@ -131,84 +25,14 @@ describe('MinionController', () => {
     expect(decision.memory).toMatchObject({
       fsm: 'engaging',
       targetId: near,
-      aggroUntilTick: LANE_MINION_AGGRO.aggroDurationTicks,
+      breakAtTick: 0,
       leashX: 50,
       leashY: 20,
     });
     expect(decision.rngState).toEqual({ seed: 1, words: [1, 2, 3, 4] as const });
   });
 
-  it('marching: does nothing with no enemy in range, or while its cooldown runs', () => {
-    const { add, decide } = setUp();
-    const self = add('light', 50);
-    add('dark', 50 + LANE_MINION_AGGRO.acquisitionRadius + 1);
-
-    expect(decide(self).commands).toEqual([]);
-    expect(decide(self).memory).toMatchObject({ fsm: 'marching' });
-
-    add('dark', 52);
-    expect(decide(self, { fsm: 'marching', cooldownUntilTick: 5 }).commands).toEqual([]);
-  });
-
-  it('ranks by the priority list before distance: an enemy hitting an allied Legend goes first', () => {
-    const { state, add, decide } = setUp();
-    const self = add('light', 50);
-    add('dark', 51);
-    const legend = add('light', 58, 20, 'warrior', 'warrior');
-    const attacker = add('dark', 54);
-    state.entities.setAttackTarget(attacker, legend);
-
-    expect(decide(self).commands).toEqual([
-      { type: 'attack-target', actorId: self, targetId: attacker },
-    ]);
-  });
-
-  it('engaging: switches only to a strictly better-ranked enemy', () => {
-    const { state, add, decide } = setUp();
-    const self = add('light', 50);
-    const target = add('dark', 54);
-    const closer = add('dark', 51);
-
-    expect(decide(self, engagingOn(target)).commands).toEqual([]);
-
-    const legend = add('light', 49, 20, 'warrior', 'warrior');
-    state.entities.setAttackTarget(closer, legend);
-    const decision = decide(self, engagingOn(target));
-    expect(decision.commands).toEqual([{ type: 'attack-target', actorId: self, targetId: closer }]);
-    expect(decision.memory).toMatchObject({ targetId: closer });
-  });
-
-  it('engaging: stops and returns when the target dies, the leash breaks or a Legend’s aggro runs out', () => {
-    const { state, add, decide, advance } = setUp();
-    const self = add('light', 50);
-    const target = add('dark', 52);
-    const legend = add('dark', 53, 20, 'warrior', 'warrior');
-    const returning = { fsm: 'returning', targetId: null };
-    const stop = [{ type: 'stop', actorId: self }];
-
-    expect(decide(self, engagingOn(target, { leashX: 30 }))).toMatchObject({
-      commands: stop,
-      memory: returning,
-    });
-    advance(10);
-    expect(decide(self, engagingOn(legend, { aggroUntilTick: 10 })).commands).toEqual(stop);
-    state.entities.get(target)?.getComponent(Health).applyDamage(1e6);
-    expect(decide(self, engagingOn(target)).commands).toEqual(stop);
-  });
-
-  it('engaging: keeps a minion target past the aggro duration; only a Legend escapes it (MS-34)', () => {
-    const { add, decide, advance } = setUp();
-    const self = add('light', 50);
-    const target = add('dark', 52);
-    advance(20);
-
-    const decision = decide(self, engagingOn(target, { aggroUntilTick: 10 }));
-
-    expect(decision.commands).toEqual([]);
-    expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: target });
-  });
-
-  it('returning: marches again at its slot, with a cooldown, and keeps returning until then', () => {
+  it('reads a memory saved as `returning` (merged into marching, DEC-144 G) as marching on or off its slot, keeping the cooldown its leash break started', () => {
     const { state, add, decide, advance } = setUp();
     const leader = add('light', 60);
     const loner = add('light', 70);
@@ -224,11 +48,10 @@ describe('MinionController', () => {
     });
     advance(3);
 
-    expect(decide(leader, { fsm: 'returning' }).memory).toMatchObject({
-      fsm: 'marching',
-      cooldownUntilTick: 3 + LANE_MINION_AGGRO.aggroCooldownTicks,
-    });
-    expect(decide(loner, { fsm: 'returning' }).memory).toMatchObject({ fsm: 'returning' });
+    expect(
+      decide(leader, { fsm: 'returning', cooldownUntilTick: 7, escapedId: 'escaped' }).memory,
+    ).toMatchObject({ fsm: 'marching', cooldownUntilTick: 7, escapedId: 'escaped' });
+    expect(decide(loner, { fsm: 'returning' }).memory).toMatchObject({ fsm: 'marching' });
     const stray = add('light', 100);
     expect(decide(stray, { fsm: 'returning' }).memory).toMatchObject({ fsm: 'marching' });
   });
@@ -240,8 +63,9 @@ describe('MinionController', () => {
     expect(decide(self, { fsm: 'dancing', targetId: 7 }).memory).toEqual({
       fsm: 'marching',
       targetId: null,
-      aggroUntilTick: 0,
+      breakAtTick: 0,
       cooldownUntilTick: 0,
+      escapedId: null,
       leashX: 0,
       leashY: 0,
     });
@@ -300,13 +124,12 @@ describe('MinionController', () => {
     ]);
   });
 
-  it('keeps hitting its objective past the aggro duration', () => {
-    const { add, decide, advance, objective } = setUp();
+  it('keeps hitting its objective, though it stands past the leash: a structure cannot drag a mob away', () => {
+    const { add, decide, objective } = setUp();
     const self = add('light', 124);
     const tower = objective('spawner-tower', 140, self);
-    advance(20);
 
-    const decision = decide(self, engagingOn(tower.id, { aggroUntilTick: 10, leashX: 124 }));
+    const decision = decide(self, engagingOn(tower.id, { leashX: 124 }));
 
     expect(decision.commands).toEqual([]);
     expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: tower.id });
@@ -316,7 +139,6 @@ describe('MinionController', () => {
     const { state, add, advance } = setUp();
     const ghosting = new MinionController({
       aggro: { ghost: { ...LANE_MINION_AGGRO, id: 'ghost', ghostFirstWaveTicks: 30 } },
-      formations: { ranks: RANKS_FORMATION },
       classOf: CLASS_OF,
     });
     const self = add('light', 50);

@@ -77,6 +77,9 @@ export type GuardPlanDefinition = {
   readonly respawnSeconds: number;
   /** Posts stand on a ring this far outside the structure's edge. */
   readonly postGap: number;
-  /** How far past its leash a guard may be between two decisions (`GuardWithinLeashInvariant`). */
+  /**
+   * How far past its leash a guard may stand (`GuardWithinLeashInvariant`): the distance it covers
+   * between two decisions plus the farthest it stands from a target in reach.
+   */
   readonly leashTolerance: number;
 };

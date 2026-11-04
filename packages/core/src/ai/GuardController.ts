@@ -1,5 +1,5 @@
 import type { GuardSlot } from '../state/GuardStore.types';
-import { sqrt } from '../utils/deterministicMath';
+import { distance } from '../utils/geometry';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 import { GUARD_STATES } from './GuardController.constants';
 import { LeashBehaviour } from './LeashBehaviour';
@@ -7,11 +7,14 @@ import type { LeashRules } from './LeashBehaviour.types';
 import type { MinionControllerContent } from './MinionController.types';
 
 /**
- * Drives a tower guard (architecture 18 §7, 11 §4.4): `holding → engaging → returning → holding`,
+ * Drives a tower guard (architecture 18 §7, 11 §4.4): `holding ⇄ engaging`,
  * through the `LeashBehaviour` it shares with `MinionController`. The differences are data from
- * its post in `state.guards`: the leash is measured from its structure's edge with the guard
- * plan's `leashRadius`, and it rests at its post. Spawning and respawning are `SpawnSystem`'s
- * (the guard plan), never this controller's. Stateless.
+ * its post in `state.guards`: its leash is the circle the guard plan's `leashRadius` draws around
+ * its structure's edge, and it rests at its post. It never takes or keeps a target outside that
+ * circle (MS-36, DEC-144): when the target leaves, the guard walks back to its post, so an enemy
+ * that follows is fought nearer the structure. It has no grace and no rest, and the guards of
+ * one structure defend each other anywhere in its circle (DEC-144). Spawning and respawning are
+ * `SpawnSystem`'s (the guard plan), never this controller's. Stateless.
  */
 export class GuardController implements Controller {
   public readonly id = 'guard';
@@ -57,19 +60,15 @@ export class GuardController implements Controller {
 
   /** The leash and the resting place of the guard on `post`. */
   private static rulesFor(post: GuardSlot): LeashRules<'holding'> {
+    const home = { x: post.homeX, y: post.homeY };
     return {
       idle: 'holding',
-      isOutsideLeash: ({ position }) => {
-        const dx = position.x - post.homeX;
-        const dy = position.y - post.homeY;
-        return sqrt(dx * dx + dy * dy) - post.homeRadius > post.leashRadius;
-      },
-      isHome: ({ position, rule }) => {
-        const dx = position.x - post.postX;
-        const dy = position.y - post.postY;
-        return dx * dx + dy * dy <= rule.reformDistance * rule.reformDistance;
-      },
+      isOutsideLeash: (_situation, _memory, point) =>
+        distance(point, home) - post.homeRadius > post.leashRadius,
       extra: () => null,
+      // Guards of one structure defend each other anywhere in its circle (DEC-144).
+      isMate: ({ state }, victimId) => state.guards.slotOf(victimId)?.homeId === post.homeId,
+      helpRadius: ({ position }) => distance(position, home) + post.homeRadius + post.leashRadius,
     };
   }
 }
