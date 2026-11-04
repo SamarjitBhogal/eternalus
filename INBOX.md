@@ -1777,6 +1777,14 @@ Reply inline (`Decision: …`).
       instead of spreading it (noted on the Phase 5 replay task, with DEC-152); (b) a map validation rule
       against overlapping building footprints before #64's capture zones reuse `findBuildingAt`
       (told to the #64 lane; noted in the HUD PR).
+- [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
+      guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
+      (`spawnRoster`, `spawnRovers`, `spawnBot`, `buildWorld`, `createControllers`,
+      `defaultContent`) that build the match but do not run it; they can move to their own class.
+      Six open PRs edit the file (#56, #57, #58, #64, #66, #67), so the split waits until they
+      merge. `SessionController.ts` (327 lines): its asset loading (`loadAssets`,
+      `releaseAssets`, `publishLoaded`, `publishProgress`) is the part to move out. Nothing to
+      answer unless you want it sooner.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).

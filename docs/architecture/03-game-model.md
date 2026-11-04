@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-03
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -132,11 +132,13 @@ export type Command =
   | { readonly type: 'dev-set-assert-level'; readonly level: AssertLevel };
 ```
 
-- `CommandQueue` is drained once (DEC-20), at the start of each `step()`, in enqueue order; a
-  command enqueued while a step runs (a bot deciding during `AiSystem`) waits for the next drain, so
-  every command applies exactly one tick boundary after it was issued. The client enqueues the
-  human's commands first, then controllers enqueue in store order during `AiSystem`, so the order is
-  deterministic.
+- Two `CommandQueue`s, the bots' (filled during `AiSystem`) and the external one
+  (`enqueueCommand`: player, developer menu), are drained once (DEC-20), at the start of each
+  `step()`: the bots' first, then the external, each in enqueue order (DEC-156). A command enqueued
+  while a step runs (a bot deciding during `AiSystem`, an event handler) waits for the next drain,
+  so every command applies exactly one tick boundary after it was issued. Controllers enqueue in
+  store order, so the order is deterministic, and a replay, which feeds the external commands
+  before each step, reproduces it.
 - `applyCommand(command, handlers, ctx)` dispatches to the handler registered for
   `command.type` (DEC-20): one `CommandHandler` class per type in `commands/handlers/`, listed in
   `commands/defaultCommandHandlers.ts` (the single place of change, 02 §9). The registry's type

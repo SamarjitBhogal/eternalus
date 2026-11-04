@@ -4367,3 +4367,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Documentation check passed."
 - Next step: a teammate review of PR #68; it merges after the minions and weapons PRs (merge
   commit).
+
+### 2026-11-03 — Phase 2 / Track B (S1 carry-over) / HUD and character select, PR #68 review — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done: SamarjitBhogal approved PR #68 with five optional follow-ups. The owner chose two
+  (DEC-156 and the base branch). The PR now targets `phase/3-sprint-3-work`. The replay's command
+  log stamps each external command with the tick it applied in: `Simulation` keeps the bots' and
+  the external commands in two queues and `step()` applies the bots' first, the order a replay
+  reproduces. ADR 0025 amendment 2026-11-03, architecture 03 §3, DEC-156. File-length splits
+  scheduled (`INBOX.md` HC-S7). Red proof: both new tests in `Simulation.replay.test.ts` fail on
+  the old `Simulation.ts` (`eternalus-agent-work/hud-charselect/build-1102/dec156-redproof.txt`).
+- Checks run: `npm run check` EXIT 0: "All matched files use Prettier code style!"; core "Tests
+  947 passed (947)"; client "Tests 1735 passed (1735)"; "Documentation check passed."
+- Next step: the merge timing of PR #68 (owner); then merge with a merge commit.

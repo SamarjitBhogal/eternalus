@@ -987,6 +987,14 @@ Built on `feat/hud-plan-b6` after the HC-T1 answers above, then merged into this
   (Windows will not replace a read-only file); it checks the file's identity changes. The client
   suite gets core's 60 s `testTimeout` in `apps/client/vitest.config.ts`: three different
   whole-match tests ran over the 5 s default on the Windows runner across two runs.
+- **Review (SamarjitBhogal, approved 2026-11-04 UTC), five optional follow-ups:** (1) the base
+  moved to `phase/3-sprint-3-work`, the branch the minion PRs now target (same commit as
+  `phase/2-sprint-2-work` then; the owner's choice); (2) the replay's command log stamps each
+  external command with the tick it applied in, and bot and external commands wait in two queues
+  (DEC-156, ADR 0025 amendment, architecture 03 §3; two tests, both red on the old code); (3)
+  splitting `Simulation.ts` and `SessionController.ts` waits until the open PRs that edit
+  `Simulation.ts` merge (`INBOX.md` HC-S7); (4) the client `testTimeout` stays at core's 60 s; (5)
+  overlapping building footprints were already raised for #64 (HC-S6 (b)).
 - **DEC-138 renumbered DEC-154** before the first push: SamarjitBhogal's guard-post ruling had
   already pushed DEC-138 (#56).
 - **Core API added or changed for reviewers:** `findBuildingAt`, `ReplaySetup`, `BotRole` and

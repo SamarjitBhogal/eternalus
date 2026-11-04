@@ -4,7 +4,7 @@ description: Record of the owner's decisions DEC-106, DEC-115 and DEC-116, accep
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-03
 tags: [adr, diagnostics, crash-reports, logging, vite, error-boundary, replays]
 related:
   - 'docs/reference/game-design/13-owner-decisions-log.md'
@@ -262,6 +262,19 @@ popup); 15 §4, §5 and §13 (reporter, writer, reports); 02 §3 (`data/logging/
   turns Vite's own host check off (Vite's types warn of DNS rebinding); the plugin's `Host` check
   (§2) still holds, so never remove it. With `server.https`, the `Origin` check (`http://` only)
   refuses every report, and the page falls back to copy until that check learns `https://`.
+
+## Amendment 2026-11-03 (product owner)
+
+PR #68's review (SamarjitBhogal) found that §4's command log stamped a command with the tick it was
+enqueued in. A command enqueued during `step()` (from an event handler) applies in the next step,
+so a replay applied it one tick early. The owner chose "Log at apply time" (DEC-156). §4's "Command
+log" item changes as below. Where the text above disagrees, this section wins.
+
+- **Command log.** `Simulation.step()` appends `{ tick, command }` for each external command
+  (player, developer menu, through `enqueueCommand`) when it applies it, with the tick of that
+  step. External and bot commands wait in two queues; `step()` applies the bots' first, then the
+  external ones, which is the order a replay reproduces. Bot commands stay out of the log, as
+  before.
 
 ## Open questions for the owner
 

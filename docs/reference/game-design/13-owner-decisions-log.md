@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-03
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-03 (the owner's answers on PR #68's review, `feat/hud-and-character-select`)
+
+The owner's answer of 2026-11-03, given in chat on SamarjitBhogal's review notes on PR #68
+(follow-up 2). The owner's selection is kept verbatim outside the repository, in
+`eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-11-03-pr68-review.md`. DEC-155 is
+taken on `feat/minion-m2c-objectives-guards` (#56), so this batch starts at DEC-156.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Docs changed                                        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| DEC-156 | **The replay's command log stamps each external command with the tick it applied in** (answers PR #68's review, follow-up 2; amends ADR 0025 §4). Asked: `Simulation.enqueueCommand` logged a command with the current tick, but a command enqueued during `step()` (from an event handler) applies in the next step, so a replay applied it one tick early; nothing enqueues during a step today. The options were a guard that throws, logging at apply time, or no change. The owner chose "Log at apply time (Recommended)". So: `step()` logs each external command (player, developer menu) when it applies it. External and bot commands wait in two queues; `step()` applies the bots' first, then the external ones. A replay feeds the external commands before each step, after the bots queued theirs, so this is the order it reproduces, also for an external command enqueued during a step before `AiSystem` runs. Bot commands stay out of the log. Both tests in `Simulation.replay.test.ts` fail on the old code. | ADR 0025 (amendment 2026-11-03); architecture 03 §3 |
 
 ## Batch 2026-11-02 (the owner's answers on the HUD PR's critic loop 3, `feat/hud-plan-b6`)
 
