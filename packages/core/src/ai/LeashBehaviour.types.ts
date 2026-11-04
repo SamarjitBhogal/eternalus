@@ -9,7 +9,7 @@ import type { Perception } from './perception/Perception';
 
 /** A leashed mob's memory between decisions (18 §6.1, §7); `Idle` names its resting state. */
 export type LeashMemory<Idle extends string> = {
-  readonly fsm: Idle | 'engaging' | 'returning';
+  readonly fsm: Idle | 'engaging';
   readonly targetId: string | null;
   /** 0 while the target is inside the leash; else the tick at which the leash breaks (MS-36). */
   readonly breakAtTick: number;
@@ -53,8 +53,6 @@ export type LeashRules<Idle extends string> = {
     memory: LeashMemory<Idle>,
     point: Vec2,
   ) => boolean;
-  /** Whether a returning mob is back where it rests (its slot or its post). */
-  readonly isHome: (situation: LeashSituation) => boolean;
   /** A candidate the perception query cannot see (the lane objective), ranked first in. */
   readonly extra: (situation: LeashSituation) => LeashCandidate | null;
   /** Whether an attack on `victimId` calls the mob for help: a horde-mate, or a fellow guard. */

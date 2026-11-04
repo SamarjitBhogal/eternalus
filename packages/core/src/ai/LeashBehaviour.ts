@@ -12,19 +12,19 @@ import type {
 } from './LeashBehaviour.types';
 
 /**
- * The acquire, engage and return logic every leashed mob shares (architecture 18 §6.1, §7;
+ * The acquire and engage logic every leashed mob shares (architecture 18 §6.1, §7;
  * MS-36, DEC-144: "distance, then time"). It takes the best-ranked enemy in reach (priority, then
  * distance, then id) and emits one `attack-target`, anchoring its leash where it stands; a
  * mate's attacker within the rules' `helpRadius` counts as in reach. It fights the target with
  * no time limit while the target is inside the leash, switching only to a strictly better-ranked
  * enemy. When the target leaves the leash the mob takes another enemy in reach at once; with none
  * it chases the target for `leashGraceTicks` (DEC-144 E): back inside, the target is fought on,
- * else the leash breaks, the mob emits one `stop`, returns and, for `aggroCooldownTicks`, leaves
- * alone the enemy that escaped (DEC-144 F). An enemy attacking the mob or a mate is never left
- * alone. A dead target with no enemy left in reach leaves it resting, with no cooldown. It
- * never takes a candidate outside its leash, and `objective` ignores the leash, since a structure
- * cannot drag a mob away. Returning, it acquires as at rest. Controllers supply only what differs
- * (`LeashRules`). Pure, apart from one scratch point.
+ * else the leash breaks: the mob emits one `stop` and rests again (with no target, its movement
+ * walks it back to its slot or post), and for `aggroCooldownTicks` it leaves alone the enemy that
+ * escaped (DEC-144 F). An enemy attacking the mob or a mate is never left alone. A dead target
+ * with no enemy left in reach leaves it resting, with no cooldown. It never takes a candidate
+ * outside its leash, and `objective` ignores the leash, since a structure cannot drag a mob away.
+ * Controllers supply only what differs (`LeashRules`). Pure, apart from one scratch point.
  */
 export class LeashBehaviour {
   private readonly point: MutableVec2 = { x: 0, y: 0 };
@@ -45,9 +45,7 @@ export class LeashBehaviour {
     if (best !== null) {
       return this.attack(situation, memory, best.id);
     }
-    return memory.fsm === 'returning' && rules.isHome(situation)
-      ? { memory: { ...memory, fsm: rules.idle }, commands: [] }
-      : { memory, commands: [] };
+    return { memory, commands: [] };
   }
 
   /**
@@ -56,7 +54,7 @@ export class LeashBehaviour {
    */
   public static read<Idle extends string>(
     memory: AiMemory,
-    states: readonly (Idle | 'engaging' | 'returning')[],
+    states: readonly (Idle | 'engaging')[],
     idle: Idle,
   ): LeashMemory<Idle> {
     const number = (key: keyof LeashMemory<Idle>): number => {
@@ -121,7 +119,7 @@ export class LeashBehaviour {
     return {
       memory: {
         ...memory,
-        fsm: 'returning',
+        fsm: rules.idle,
         targetId: null,
         breakAtTick: 0,
         cooldownUntilTick,

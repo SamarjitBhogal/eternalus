@@ -20,5 +20,4 @@ export const TOWER_GUARD_AGGRO = {
   leashGraceTicks: 0, // owner DEC-144 E: a guard never chases past its circle
   aggroCooldownTicks: 0, // owner DEC-144: no rest; a guard fights any enemy in its circle at once
   callForHelpRadius: 0, // unused: guards answer a fellow guard anywhere in their circle (DEC-144)
-  reformDistance: 1, // TUNE: no reference value; a guard settles close to its post
 } as const satisfies AggroRuleDefinition;

@@ -120,7 +120,7 @@ describe('GuardController', () => {
     expect(decide(engaging)).toMatchObject({
       commands: [{ type: 'stop', actorId: guard }],
       memory: {
-        fsm: 'returning',
+        fsm: 'holding',
         targetId: null,
         breakAtTick: 0,
         cooldownUntilTick: state.tick + TOWER_GUARD_AGGRO.aggroCooldownTicks,
@@ -155,12 +155,11 @@ describe('GuardController', () => {
     }
   });
 
-  it('returning: holds again at its post, keeping the cooldown fields LeashBehaviour carries (guard content sets the cooldown to 0)', () => {
+  it('reads a memory saved as `returning` (merged into holding, DEC-144 G) as holding off its post, keeping the cooldown fields LeashBehaviour carries (guard content sets the cooldown to 0)', () => {
     const { add, decide, moveGuardTo } = setUp();
     moveGuardTo(63);
-    expect(decide({ fsm: 'returning' }).memory).toMatchObject({ fsm: 'returning' });
+    expect(decide({ fsm: 'returning' }).memory).toMatchObject({ fsm: 'holding' });
 
-    moveGuardTo(60.5);
     const escaped = add('dark', 62, 'warrior', 'warrior');
     const cooling = { cooldownUntilTick: 10, escapedId: escaped };
     expect(decide({ fsm: 'returning', ...cooling }).memory).toEqual(

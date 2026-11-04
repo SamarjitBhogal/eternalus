@@ -22,5 +22,4 @@ export const LANE_MINION_AGGRO = {
   leashGraceTicks: 90, // TUNE: owner DEC-144, "breaks after N time (e.g., 3 seconds)"
   aggroCooldownTicks: 90, // TUNE: Dota 3 s
   callForHelpRadius: 7.5, // TUNE: owner DEC-144; the leash, so a helper takes only what it may fight
-  reformDistance: 2, // TUNE: no reference value; one slot of the ranks formation
 } as const satisfies AggroRuleDefinition;

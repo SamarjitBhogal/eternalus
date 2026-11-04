@@ -100,8 +100,6 @@ export type AggroRuleDefinition = {
    * they answer a fellow guard anywhere in their circle.
    */
   readonly callForHelpRadius: number;
-  /** A returning mob this close to its formation slot is marching again. */
-  readonly reformDistance: number;
 };
 
 /** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */

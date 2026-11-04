@@ -7,7 +7,7 @@ import type { LeashRules } from './LeashBehaviour.types';
 import type { MinionControllerContent } from './MinionController.types';
 
 /**
- * Drives a tower guard (architecture 18 §7, 11 §4.4): `holding → engaging → returning → holding`,
+ * Drives a tower guard (architecture 18 §7, 11 §4.4): `holding ⇄ engaging`,
  * through the `LeashBehaviour` it shares with `MinionController`. The differences are data from
  * its post in `state.guards`: its leash is the circle the guard plan's `leashRadius` draws around
  * its structure's edge, and it rests at its post. It never takes or keeps a target outside that
@@ -65,11 +65,6 @@ export class GuardController implements Controller {
       idle: 'holding',
       isOutsideLeash: (_situation, _memory, point) =>
         distance(point, home) - post.homeRadius > post.leashRadius,
-      isHome: ({ position, rule }) => {
-        const dx = position.x - post.postX;
-        const dy = position.y - post.postY;
-        return dx * dx + dy * dy <= rule.reformDistance * rule.reformDistance;
-      },
       extra: () => null,
       // Guards of one structure defend each other anywhere in its circle (DEC-144).
       isMate: ({ state }, victimId) => state.guards.slotOf(victimId)?.homeId === post.homeId,
