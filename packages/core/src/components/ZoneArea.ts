@@ -1,4 +1,4 @@
-import { distance, isPointInPolygon } from '../utils/geometry';
+import { distance, isPointInAnyPolygon } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 
 /**
@@ -18,11 +18,11 @@ export class ZoneArea {
   }
 
   /**
-   * Whether `point` is inside the area. A point exactly on an edge may count or not, as
-   * `isPointInPolygon` decides.
+   * Whether `point` is inside the area, by the same test as `findBuildingAt`. A point exactly on
+   * an edge may count or not, as `isPointInPolygon` decides.
    */
   public contains(point: Vec2): boolean {
-    return this.polygons.some((polygon) => isPointInPolygon(point, polygon));
+    return isPointInAnyPolygon(point, this.polygons);
   }
 
   /** How far the area reaches from `center`: a circle of this radius around it holds the area. */

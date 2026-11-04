@@ -1776,7 +1776,9 @@ Reply inline (`Decision: …`).
       loop: (a) BD-C, Phase 5: nest a replay's setup (`{ setup: S; commands; checkpoints }`)
       instead of spreading it (noted on the Phase 5 replay task, with DEC-152); (b) a map validation rule
       against overlapping building footprints before #64's capture zones reuse `findBuildingAt`
-      (told to the #64 lane; noted in the HUD PR).
+      (told to the #64 lane; noted in the HUD PR). (2026-11-03, #64 lane: zones share the point
+      test `isPointInAnyPolygon`, not `findBuildingAt`, so (b) does not gate #64; it still holds
+      for the roofs.)
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
       (`spawnRoster`, `spawnRovers`, `spawnBot`, `buildWorld`, `createControllers`,
@@ -1982,7 +1984,8 @@ Reply inline (`Decision: …`).
       `ZoneArea.contains` and the HUD PR's `findBuildingAt` (its DEC-149 (6)) share one
       point-in-footprint predicate (`footprint.some(isPointInPolygon)`). Share the predicate, not
       `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
-      only the first of two overlapping footprints.
+      only the first of two overlapping footprints. (2026-11-03: done on #64 after the HUD PR
+      merged into it: `isPointInAnyPolygon` in `utils/geometry.ts`. The density % part is open.)
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

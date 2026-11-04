@@ -4437,3 +4437,21 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   second resolves their conflicts (11 files, `git merge-tree`): one helper composes the units,
   zones and structures definition sources and refuses duplicate ids, and `spawnZones` runs after
   `spawnStructures` (feature id order for both is decided there).
+
+### 2026-11-03 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64) — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`387a5fd`, the HUD PR #68) into #64 as
+  `1d9efb8`, because #64's base moves to phase 3. The conflicts were docs only; two HUD tests
+  gained the new snapshot fields (`MatchBridge.test.ts`) or leave out the zone spawns
+  (`createBrowserMatch.test.ts`). Then `ZoneArea.contains` and `findBuildingAt` share one
+  point-in-footprint test, `isPointInAnyPolygon` (`utils/geometry.ts`), as `INBOX.md` (PR #64
+  density follow-up) asks of whichever PR lands second. They share the test, not `findBuildingAt`
+  itself: the fort zone is the court inside the walls (DEC-145 (a)), not a building footprint.
+  The new geometry test failed under a deliberate break first (`polygons.slice(0, 1)`: 3 tests
+  red, one per caller). Dated notes record this in architecture 06 §10, DEC-149 and `INBOX.md`
+  HC-S6 (b), which no longer gates #64.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 1000 passed (1000)"; client "Tests 1742 passed (1742)"; "✓ built in 247ms";
+  "Documentation check passed."
+- Next step: Samarjit re-reviews #64 on base `phase/3-sprint-3-work`. The minion stack
+  (#56 → #58) conflicts stay for whichever lands second.
