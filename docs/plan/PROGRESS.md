@@ -4464,7 +4464,8 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   machine was swapping (5.7 of 7 GB swap used), so its later steps (`build`, `docs:check`) did
   not run. The core code is unchanged since `a46e8f1`. `MatchBridge.test.ts`,
   `createBrowserMatch.test.ts` and `AssetManifest.files.test.ts` pass alone ("Tests 19 passed
-  (19)"). Critic round 7 (final loop, on `60c5b09`): approve; its nits are applied. Re-run
-  `npm run check` on a quiet machine before the push.
+  (19)"). Critic round 7 (final loop, on `60c5b09`): approve; its nits are applied. Re-run on
+  `b2d33e1` (2026-11-04, machine no longer swapping): `EXIT 0`: core "Tests 1000 passed (1000)";
+  client "Tests 1744 passed (1744)"; "✓ built in 315ms"; "Documentation check passed.".
 - Next step: Samarjit re-reviews #64 on base `phase/3-sprint-3-work`. The owner answers the
   feature-id item. The minion stack (#56 → #58) conflicts stay for whichever lands second.
