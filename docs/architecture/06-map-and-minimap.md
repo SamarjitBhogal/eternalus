@@ -483,11 +483,9 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   testing and clears on overview". `BuildingRoofs` owns the roof state now.
 - **Building at a point (2026-11-02, DEC-149).** Core's `findBuildingAt` (`map/findBuildingAt.ts`)
   is the one "which building's interior holds this point" test over `MapBuilding` footprints:
-  `BuildingRoofs` uses it, and capture zones are meant to reuse it. (2026-11-03, PR #64:
-  capture zones share its point test, `isPointInAnyPolygon` in `utils/geometry.ts`, not the
-  function itself. A zone's floor is not always a building footprint: an outer capture point
-  covers the court inside its fort's walls, DEC-145 (a). A zone also asks whether a point is on
-  its own floor, so the first-match rule for overlapping footprints never applies to it.)
+  `BuildingRoofs` uses it, and capture zones are meant to reuse it. (2026-11-03, PR #64: zones
+  share its point test, `isPointInAnyPolygon`, not the function: a fort zone is the court,
+  DEC-145 (a).)
 
 ### 2026-10-20 — PR #30 review corrections and accepted cutaway design
 

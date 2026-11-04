@@ -118,6 +118,21 @@ describe('createBrowserMatch', () => {
     expect(bus.listenerCount()).toBe(busBefore + 1);
   });
 
+  it('links each capture point the HUD lists to its zone in the simulation (PR #64)', () => {
+    const { bus, factory, viewport, request } = setUp();
+    const published: BridgeEventMap['capture-state'][] = [];
+    bus.on('capture-state', (event) => published.push(event));
+
+    const running = factory(request(), viewport);
+    const points = published.at(-1)?.points ?? [];
+    running.destroy();
+
+    expect(points.length).toBeGreaterThan(0);
+    for (const point of points) {
+      expect(point).toMatchObject({ ownerTeam: 'neutral', progress: 0 });
+    }
+  });
+
   it("gives the simulation's replay and history and the match's TRACE ring as evidence (ADR 0025 §3)", () => {
     let running: RunningMatch | null = null;
     const atPageSink: { record: LogRecord; lastInRing: LogRecord | undefined }[] = [];

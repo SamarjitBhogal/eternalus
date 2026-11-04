@@ -3,6 +3,7 @@ import {
   type EntitySnapshot,
   type MapFeatureKind,
   type Snapshot,
+  type Team,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
@@ -152,6 +153,47 @@ describe('MatchBridge', () => {
     for (const point of points) {
       expect(point).toMatchObject({ ownerTeam: 'neutral', progress: null });
     }
+  });
+
+  it("publishes each capture point's owner and progress from the zone on its feature", () => {
+    const { map, bridge, captures } = setUp();
+    const [first, second] = map.features.filter((feature) => CAPTURE_KINDS.includes(feature.kind));
+    if (first === undefined || second === undefined) {
+      throw new Error('The map needs two capture features.');
+    }
+    const zoneOn = (owner: Team, progress: number): EntitySnapshot => ({
+      ...PLAYER,
+      id: 'zone-1',
+      kind: 'capture-point',
+      family: 'zone',
+      definitionId: 'capture-point',
+      team: 'neutral',
+      transform: { ...first.position, radius: 0 },
+      health: null,
+      area: [],
+      capture: {
+        owner,
+        progress,
+        checkpoint: 0,
+        checkpoints: 3,
+        lockedBy: null,
+        presence: { light: 0, dark: 0, neutral: 0 },
+      },
+    });
+    bridge.publishAll(snapshotAt(0, [PLAYER, zoneOn('light', 0.5)]), null);
+    bridge.afterTick(snapshotAt(30, [PLAYER, zoneOn('light', 0.5)]), null);
+    bridge.afterTick(snapshotAt(60, [PLAYER, zoneOn('dark', -1)]), null);
+    const [atStart, unchanged, later] = captures.map((event) => event.points);
+
+    expect(atStart?.[0]).toMatchObject({ pointId: first.id, ownerTeam: 'light', progress: 0.5 });
+    expect(atStart?.[1]).toMatchObject({
+      pointId: second.id,
+      ownerTeam: 'neutral',
+      progress: null,
+    });
+    expect(unchanged).toBe(atStart);
+    expect(later?.[0]).toMatchObject({ pointId: first.id, ownerTeam: 'dark', progress: -1 });
+    expect(later?.[1]).toBe(atStart?.[1]);
   });
 
   it('follows the lane count of the config', () => {

@@ -18,8 +18,8 @@ export class ZoneArea {
   }
 
   /**
-   * Whether `point` is inside the area, by the same test as `findBuildingAt`. A point exactly on
-   * an edge may count or not, as `isPointInPolygon` decides.
+   * Whether `point` is inside the area. A point exactly on an edge may count or not, as
+   * `isPointInPolygon` decides.
    */
   public contains(point: Vec2): boolean {
     return isPointInAnyPolygon(point, this.polygons);

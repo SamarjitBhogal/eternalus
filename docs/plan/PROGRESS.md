@@ -4449,9 +4449,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   itself: the fort zone is the court inside the walls (DEC-145 (a)), not a building footprint.
   The new geometry test failed under a deliberate break first (`polygons.slice(0, 1)`: 3 tests
   red, one per caller). Dated notes record this in architecture 06 §10, DEC-149 and `INBOX.md`
-  HC-S6 (b), which no longer gates #64.
+  HC-S6 (b), which no longer gates #64. The critic (round 5: approve) found that the HUD still
+  showed every capture point as neutral: `MatchBridge` now takes each point's owner and progress
+  from the zone on its feature's position, and re-sends the last array while nothing changes
+  (architecture 13 status note). Its tests failed first under three breaks: the static roster
+  (1 red), a new array on each publish (2 red), and a link that misses (the whole-match test red).
 - Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
-  "Tests 1000 passed (1000)"; client "Tests 1742 passed (1742)"; "✓ built in 247ms";
+  "Tests 1000 passed (1000)"; client "Tests 1744 passed (1744)"; "✓ built in 277ms";
   "Documentation check passed."
 - Next step: Samarjit re-reviews #64 on base `phase/3-sprint-3-work`. The minion stack
   (#56 → #58) conflicts stay for whichever lands second.
