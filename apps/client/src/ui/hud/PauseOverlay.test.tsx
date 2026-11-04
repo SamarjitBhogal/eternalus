@@ -6,7 +6,7 @@ import { buttonNames, renderWithStore } from '../testStore';
 import { PauseOverlay } from './PauseOverlay';
 
 function render(overlay: Overlay | null): string {
-  return renderWithStore(<PauseOverlay />, {
+  return renderWithStore(<PauseOverlay openerRef={{ current: null }} />, {
     session: { ...sessionSlice.getInitialState(), overlay },
   });
 }
@@ -30,5 +30,14 @@ describe('PauseOverlay', () => {
     expect(html).toContain('aria-label="Settings"');
     expect(html).toContain('role="tablist"');
     expect(html).not.toContain('Leave match');
+  });
+
+  it('autofocuses Resume in the pause view (I-72)', () => {
+    expect(render('pause')).toMatch(/<button[^>]*autofocus=""[^>]*>Resume<\/button>/);
+    expect(render('pause').match(/autofocus=""/g)).toHaveLength(1);
+  });
+
+  it('makes the dialog itself focusable for the settings view', () => {
+    expect(render('settings')).toMatch(/<div role="dialog"[^>]*tabindex="-1"/);
   });
 });

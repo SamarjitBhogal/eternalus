@@ -1,0 +1,69 @@
+/**
+ * The three role-rating bars (Figma 58:323), each a fraction from 0 to 1; `RoleRatingRangeRule`
+ * checks it.
+ */
+export type RoleRatings = {
+  readonly damage: number;
+  readonly support: number;
+  readonly control: number;
+};
+
+/**
+ * Display names of a Legend's selection-screen detail rows, "Ultimate / Abilities" (DEC-65): the
+ * ultimate on top, then abilities 1 to 3 (key order is panel order). The class's default ability
+ * (Aetheric Recall) is not one of them. `null` until named; the abilities are designed next sprint
+ * (DEC-70).
+ */
+type SpecDetailNames = {
+  readonly ultimate: string | null;
+  readonly 'ability-1': string | null;
+  readonly 'ability-2': string | null;
+  readonly 'ability-3': string | null;
+};
+
+/**
+ * A Legend's own name on each team (DEC-49): the factions are mirror universes, so the Dark name is
+ * the Light name spelled backwards. Both are stored; nothing computes one from the other.
+ */
+export type LegendName = {
+  readonly light: string;
+  readonly dark: string;
+};
+
+/**
+ * A Legend: a named specialisation of a class (DEC-49; 17 R2). Display and setup data only (ADR
+ * 0018): no stat modifiers or ability overrides until R2's gameplay lands, so picking
+ * one changes nothing in the simulation.
+ *
+ * @remarks The sub-class title (`displayName`) and the Legend's name (`legendName`) are two
+ * different things: the title is the same on both teams, the name is per team.
+ */
+export type LegendSpecDefinition = {
+  /**
+   * Kebab-case content id. No save or release stores it yet, so renaming it is a content refactor
+   * whose missed references must fail the checks (ADR 0018 point 5); once a save or a release
+   * references it, it is never renamed (17 R26).
+   */
+  readonly id: string;
+  /**
+   * The class's content id (kebab-case, like every id reference in content); `SpecClassExistsRule`
+   * checks that it names a loaded Legend class.
+   */
+  readonly classId: string;
+  /**
+   * Whether a player can pick this Legend at character select (DEC-49: setup data); one that is not
+   * shows as a locked card and cannot be locked in.
+   */
+  readonly isSelectable: boolean;
+  /** The sub-class title players see ("Oracle"), the same on both teams; never mirrored. */
+  readonly displayName: string;
+  /** The Legend's name per team; `null` while the owner has named none. */
+  readonly legendName: LegendName | null;
+  /** Role line after the title ("Support"); `null` until written. */
+  readonly roleLabel: string | null;
+  /** Selection-screen lore paragraph; `null` until written. */
+  readonly description: string | null;
+  /** `null` while the owner has given none. */
+  readonly roleRatings: RoleRatings | null;
+  readonly detailNames: SpecDetailNames;
+};

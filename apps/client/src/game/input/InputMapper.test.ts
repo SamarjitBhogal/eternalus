@@ -85,6 +85,37 @@ describe('InputMapper', () => {
     expect([...actions.pressed].sort()).toEqual(['attack', 'pause-menu', 'sprint']);
   });
 
+  it('matches a modifier chord only with exactly its modifiers held (DEC-105)', () => {
+    const mapper = new InputMapper(PRESETS.wasd);
+    const press = (
+      held: Partial<Record<'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey', boolean>>,
+    ): boolean =>
+      mapper.isActionKey('toggle-developer-camera', {
+        code: 'F3',
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        ...held,
+      });
+
+    expect(press({ ctrlKey: true, shiftKey: true })).toBe(true);
+    expect(press({ metaKey: true, shiftKey: true })).toBe(true);
+    expect(press({})).toBe(false);
+    expect(press({ ctrlKey: true })).toBe(false);
+    expect(press({ ctrlKey: true, shiftKey: true, altKey: true })).toBe(false);
+    expect(press({ ctrlKey: true, metaKey: true, shiftKey: true })).toBe(false);
+  });
+
+  it('never holds a modifier chord as gameplay input: F3 held with Ctrl and Shift is no action', () => {
+    const actions = new InputMapper(PRESETS.wasd).resolve(
+      snapshotWith(['ControlLeft', 'ShiftLeft', 'F3']),
+    );
+
+    expect([...actions.held]).toEqual(['sprint']);
+    expect(new InputMapper(PRESETS.wasd).isBound('F3')).toBe(false);
+  });
+
   it('says which key codes are bound, so devices prevent defaults only for those', () => {
     const mapper = new InputMapper(PRESETS.wasd);
 
