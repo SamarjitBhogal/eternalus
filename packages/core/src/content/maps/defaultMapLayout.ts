@@ -14,7 +14,7 @@ export const DEFAULT_MAP_LAYOUT: MapLayout = {
   laneProfile: [{ u: 0.55, v: 1 }],
   laneBands: { spawner: [0.3, 0.4], buff: [0.14, 0.22] },
   wallRing: {
-    // TUNE: shield outline approved from the author's annotated image, 2026-11-03.
+    // An arc from cliff face to cliff face, not a ring (DEC-158). TUNE: the curve values.
     frontArc: { verticalScale: 1.5, curveStepDegrees: 6 },
     radius: 100,
     thickness: 10,

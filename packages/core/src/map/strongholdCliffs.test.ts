@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import { strongholdCliffs } from './strongholdCliffs';
 import { mirrorPolygon } from './symmetry';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MapGenerator } from './MapGenerator';
+import { distance } from '../utils/geometry';
 
 describe('strongholdCliffs', () => {
   it('joins both shield ends to mirrored mountain boundaries without closing the base interior', () => {
@@ -16,5 +19,23 @@ describe('strongholdCliffs', () => {
     const { frontArc, ...wallRing } = DEFAULT_MAP_LAYOUT.wallRing;
     expect(frontArc).toBeDefined();
     expect(strongholdCliffs({ ...DEFAULT_MAP_LAYOUT, wallRing }, 1600, 900)).toEqual([]);
+  });
+  it('meets every shield tip at its cliff corner, so the open rear stays sealed (DEC-158)', () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
+    for (const [team, edge] of [
+      ['light', 'west'],
+      ['dark', 'east'],
+    ] as const) {
+      const wall = map.features
+        .filter((f) => f.team === team && f.kind === 'wall-segment')
+        .flatMap((f) => f.footprint ?? []);
+      for (const side of ['north', 'south']) {
+        const cliff = map.terrain.find((t) => t.id === `${edge}-stronghold-cliff-${side}`);
+        const gap = Math.min(
+          ...(cliff?.shape ?? []).flatMap((corner) => wall.map((v) => distance(v, corner))),
+        );
+        expect(gap).toBeLessThan(1e-6);
+      }
+    }
   });
 });
