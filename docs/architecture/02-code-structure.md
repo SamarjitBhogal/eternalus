@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-02
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -87,36 +87,44 @@ core/src/
 client/src/
   main.tsx                    composes <Provider store={store}><App/></Provider>, builds the controllers
   game/Match.ts               composition root for one match (sim + loop + renderer + input + views + bridge)
+  game/createBrowserMatch.ts  the match factory main.tsx binds: browser adapters, Simulation, Match and MatchHost (DEC-50)
   game/SessionController.ts   boot → menu → loading → match → results
   game/engine/                L1: loop/, render/, camera/, input/, audio/, time/
   game/views/                 SceneView (draw order), EntityView + ViewRegistry, TerrainView, MinimapView
   game/input/                 keybindings.ts (INPUT_ACTIONS + DEFAULT_CHORDS), InputMapper
   game/settings/              SettingsController: settings intents → settings event + persistence
-  bridge/                     store.ts, eventBus.ts, events.ts, Binding.types.ts, chordKey.ts, slices/*, selectors/*
+  bridge/                     store.ts, eventBus.ts, events.ts, Binding.types.ts, chordKey.ts, catalogue.types.ts, hud.types.ts, selectionRules.ts, legendNames.ts, minimapRing.ts, slices/*, selectors/*
   data/persistence/           PersistenceController, repositories/*, StorageAdapter, adapters, schema/, dto/*
-  data/resources/             ResourceController, AssetManifest, loaders/, AssetCache
+  data/resources/             ResourceController, AssetManifest (+ one file per asset group), loaders/ (AssetLoader port + adapters), AssetCache
+  data/logging/               SinkLogger, ConsoleSink, RingBufferSink, ErrorReporter, ReportWriter (port + adapters), ErrorReport.types.ts
   ui/screens/                 BootScreen, MainMenuScreen, LoadoutScreen, ProfileScreen, SettingsScreen, ...
   ui/hud/                     HealthBar, AetherBar, AbilityBar, MinimapPanel, MatchClock, Scoreboard, ...
   ui/components/              reusable presentational components, e.g. <KeyGlyph action="..."/>
   styles/                     global.css: tokens + reset only
-  assets/                     manifest + licensed or team-made assets
+  assets/                     licensed or team-made asset files, one folder per asset group, licences/ (the typed manifest is data/resources/AssetManifest.ts, 14 §11)
 ```
 
-| Folder                                       | Responsibility                                              | May import                                                                                    | Key classes and files                                                                                                                                                 |
-| -------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `game/engine/loop/`                          | Fixed-step accumulator loop and the frame port              | Browser APIs, `engine/`                                                                       | `GameLoop`, `FrameScheduler` (port), `RafFrameScheduler`, `FakeFrameScheduler`                                                                                        |
-| `game/engine/render/`                        | The only code that touches the 2D context                   | Browser APIs, `engine/`                                                                       | `Renderer` (port), `Canvas2dRenderer`, `RecordingRenderer`, `SpriteAtlas`, `LayerStack`                                                                               |
-| `game/engine/camera/`, `time/`, `audio/`     | World ↔ screen transform; clocks; audio port                | Browser APIs, `engine/`                                                                       | `Camera`, `Clock`, `PerformanceClock`, `FakeClock`, `AudioOutput` (port), `WebAudioOutput`, `NullAudioOutput`                                                         |
-| `game/engine/input/`                         | Raw device state, no game vocabulary                        | Browser APIs, `engine/`                                                                       | `InputDevice` (port), `KeyboardDevice`, `MouseDevice`, `GamepadDevice`, `FakeInputDevice`, `DeviceState.types.ts`                                                     |
-| `game/views/`                                | Draw snapshots; the draw order lives in `SceneView` only    | core `import type`, `engine/` port types, `views/`                                            | `SceneView`, `EntityView`, `ViewRegistry`, `defaultViewRegistry.ts`, `LegendView`, `MobView`, `StructureView`, `TerrainView`, `MinimapView`                           |
-| `game/input/`                                | Bindings as data and device → `InputAction` → `InputIntent` | `engine/input/` types, core `import type`, `bridge/Binding.types.ts` and `bridge/chordKey.ts` | `keybindings.ts`, `InputMapper`, `BindingResolver` (types and `chordKey` in `bridge/`, because `ui/` and `bridge/` need them too)                                     |
-| `game/settings/`                             | Settings and bindings in every session phase (13 §6.3)      | core, `input/`, `bridge/`                                                                     | `SettingsController`, `settingsState.ts` (persistence reached through a structural port)                                                                              |
-| `game/Match.ts`, `game/SessionController.ts` | Composition root and session flow                           | core, `engine/`, `views/`, `input/`, `bridge/`, `data/`                                       | `Match`, `SessionController`                                                                                                                                          |
-| `bridge/`                                    | The one store and the one event bus; display-ready slices   | core `import type`, `bridge/`                                                                 | `store.ts`, `eventBus.ts`, `events.ts`, `Binding.types.ts`, `chordKey.ts`, `slices/matchSlice.ts`, `slices/sessionSlice.ts`, `slices/settingsSlice.ts`, `selectors/*` |
-| `data/persistence/`                          | One facade over IndexedDB; repositories; DTOs; migrations   | core `import type`, `data/`                                                                   | `PersistenceController`, `StorageAdapter` (port), `IndexedDbStorageAdapter`, `MemoryStorageAdapter`, `repositories/*Repository.ts`, `schema/migrations.ts`, `dto/*`   |
-| `data/resources/`                            | One facade over asset loading and caching                   | Browser APIs, `data/`                                                                         | `ResourceController`, `AssetManifest`, `loaders/ImageLoader.ts`, `loaders/AudioLoader.ts`, `loaders/JsonLoader.ts`, `AssetCache`                                      |
-| `ui/screens/`, `ui/hud/`, `ui/components/`   | React; reads selectors, dispatches UI intents to the bus    | `bridge/`, `ui/`, `styles/`                                                                   | `App.tsx`, `*Screen.tsx`, HUD pieces, `KeyGlyph.tsx`                                                                                                                  |
-| `styles/`                                    | Design tokens and reset                                     | none                                                                                          | `global.css`                                                                                                                                                          |
+| Folder                                       | Responsibility                                                                                                                                          | May import                                                                                    | Key classes and files                                                                                                                                                                                                                                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `game/engine/loop/`                          | Fixed-step accumulator loop and the frame port                                                                                                          | Browser APIs, `engine/`                                                                       | `GameLoop`, `FrameScheduler` (port), `RafFrameScheduler`, `FakeFrameScheduler`                                                                                                                                                                                                                    |
+| `game/engine/render/`                        | The only code that touches the 2D context                                                                                                               | Browser APIs, `engine/`                                                                       | `Renderer` (port), `Canvas2dRenderer`, `RecordingRenderer`, `SpriteAtlas`, `LayerStack`                                                                                                                                                                                                           |
+| `game/engine/camera/`, `time/`, `audio/`     | World ↔ screen transform; clocks; audio port                                                                                                            | Browser APIs, `engine/`                                                                       | `Camera`, `Clock`, `PerformanceClock`, `FakeClock`, `AudioOutput` (port), `WebAudioOutput`, `NullAudioOutput`                                                                                                                                                                                     |
+| `game/engine/input/`                         | Raw device state, no game vocabulary                                                                                                                    | Browser APIs, `engine/`                                                                       | `InputDevice` (port), `KeyboardDevice`, `MouseDevice`, `GamepadDevice`, `FakeInputDevice`, `DeviceState.types.ts`                                                                                                                                                                                 |
+| `game/views/`                                | Draw snapshots; the draw order lives in `SceneView` only                                                                                                | core `import type`, `engine/` port types, `views/`                                            | `SceneView`, `EntityView`, `ViewRegistry`, `defaultViewRegistry.ts`, `LegendView`, `MobView`, `StructureView`, `TerrainView`, `MinimapView`                                                                                                                                                       |
+| `game/input/`                                | Bindings as data and device → `InputAction` → `InputIntent`                                                                                             | `engine/input/` types, core `import type`, `bridge/Binding.types.ts` and `bridge/chordKey.ts` | `keybindings.ts`, `InputMapper`, `BindingResolver` (types and `chordKey` in `bridge/`, because `ui/` and `bridge/` need them too)                                                                                                                                                                 |
+| `game/settings/`                             | Settings and bindings in every session phase (13 §6.3)                                                                                                  | core, `input/`, `bridge/`                                                                     | `SettingsController`, `settingsState.ts` (persistence reached through a structural port)                                                                                                                                                                                                          |
+| `game/content/`                              | The display catalogue the UI reads: core's display content joined with the client's presentation data (art ids, accents, layouts, the effects renderer) | core, `bridge/` (types)                                                                       | `coreCatalogue.ts`, `buildDisplayCatalogue.ts`, `screenPresentation.ts`, `classPresentation.ts`, `hudPresentation.ts`, `CatalogueSource.types.ts`                                                                                                                                                 |
+| `game/Match.ts`, `game/SessionController.ts` | Composition root and session flow                                                                                                                       | core, `engine/`, `views/`, `input/`, `bridge/`, `data/`                                       | `Match`, `SessionController`                                                                                                                                                                                                                                                                      |
+| `bridge/`                                    | The one store and the one event bus; display-ready slices                                                                                               | core `import type`, `bridge/`                                                                 | `store.ts`, `eventBus.ts`, `events.ts`, `Binding.types.ts`, `chordKey.ts`, `catalogue.types.ts`, `hud.types.ts`, `selectionRules.ts`, `legendNames.ts`, `minimapRing.ts` (shared HUD layout geometry), `slices/matchSlice.ts`, `slices/sessionSlice.ts`, `slices/settingsSlice.ts`, `selectors/*` |
+| `data/persistence/`                          | One facade over IndexedDB; repositories; DTOs; migrations                                                                                               | core `import type`, `data/`                                                                   | `PersistenceController`, `StorageAdapter` (port), `IndexedDbStorageAdapter`, `MemoryStorageAdapter`, `repositories/*Repository.ts`, `schema/migrations.ts`, `dto/*`                                                                                                                               |
+| `data/resources/`                            | One facade over asset loading and caching                                                                                                               | Browser APIs, `data/`                                                                         | `ResourceController`, `AssetManifest`, `loaders/AssetLoader.ts` (port) and `AssetLoader.contract.ts`, `loaders/UiImageLoader.ts`, `loaders/FontLoader.ts`, `loaders/ImageLoader.ts`, `loaders/AudioLoader.ts`, `loaders/JsonLoader.ts`, `AssetCache`                                              |
+| `data/logging/`                              | The client's logging: the sinks behind core's `Logger` port and the error reports (ADR 0025)                                                            | core, Browser APIs, `data/`                                                                   | `SinkLogger`, `LogSink.types.ts`, `ConsoleSink`, `RingBufferSink`, `ErrorReporter`, `ErrorReport.types.ts`, `ReportWriter.types.ts` (port) and `ReportWriter.contract.ts`, `DevServerReportWriter`, `MemoryReportWriter`                                                                          |
+| `ui/screens/`, `ui/hud/`, `ui/components/`   | React; reads selectors, dispatches UI intents to the bus                                                                                                | `bridge/`, `ui/`, `styles/`                                                                   | `App.tsx`, `*Screen.tsx`, HUD pieces, `KeyGlyph.tsx`                                                                                                                                                                                                                                              |
+| `styles/`                                    | Design tokens and reset                                                                                                                                 | none                                                                                          | `global.css`                                                                                                                                                                                                                                                                                      |
+
+Beside `src/`, `apps/client/errorReportsPlugin.ts` (with its `.constants.ts` and `.test.ts`) is
+the Vite plugin that `vite.config.ts` adds: an endpoint in the dev and preview servers only,
+never in `vite build`, that writes the error reports to `logs/errors/` (ADR 0025 §1, §2).
 
 ## 4. Naming
 
@@ -126,7 +134,7 @@ client/src/
 | Non-class file                 | camelCase                                                                                                        | `applyCommand.ts`, `deterministicMath.ts`                 |
 | Content definition file        | camelCase form of the ID, exporting a SCREAMING_SNAKE constant                                                   | `content/abilities/bladeRunner.ts` exports `BLADE_RUNNER` |
 | Content family catalogue       | `<family>Catalogue.ts`                                                                                           | `content/abilities/abilityCatalogue.ts`                   |
-| Content ID                     | kebab-case string, never renamed once used                                                                       | `'blade-runner'`, `'spawner-tower'`                       |
+| Content ID                     | kebab-case string, never renamed once a save or a release stores it                                              | `'blade-runner'`, `'spawner-tower'`                       |
 | Registry population file       | `default<Registry>.ts` exporting `createDefault<Registry>()`                                                     | `entities/defaultEntityRegistry.ts`                       |
 | System                         | `<Name>System`                                                                                                   | `CaptureSystem`                                           |
 | Component                      | Plain noun                                                                                                       | `Health`, `StatusEffects`                                 |
@@ -165,7 +173,10 @@ do not resolve because of the package `exports` map). Adding an export is an API
 called out in the PR. Planned surface: `Simulation` and `SimulationOptions`; the `Command`,
 `Snapshot`, `EntitySnapshot` and `GameEventMap` types; `GameConfig`, `validateGameConfig`,
 `createDefaultGameConfig`; `ContentCatalogue` and `loadDefaultContent()` (read-only definitions for
-the loadout screen); `Loadout`, `validateLoadout`, `autoBuildLoadout`; `PlayerController` and
+the loadout screen); `loadDisplayContent()` (the Legend and Legend-spec display data, validated
+through the content rules, and the map features' display names, for the selection screens and the
+HUD, and the bot roster, setup data the session builds the rosters from; DEC-49, DEC-61, DEC-102,
+ADR 0018); `Loadout`, `validateLoadout`, `autoBuildLoadout`; `PlayerController` and
 `InputIntent`; the `Logger` and `LogRecord` types; `DiagnosticEvent`; `Replay` and `runReplay`;
 `MapGenerator`, the `MapDefinition` types, `PlayableTeam` and `Team`
 ([integration contract](../agents/prompts/2026-10-03-ultracode-sessions.md) §2.2); the ID types.
@@ -199,56 +210,56 @@ changes the shape of the world, it is config. If a player may change it, it is a
 
 ## 9. Single place of change
 
-| Registry                    | File                                                                           | One line adds                                             |
-| --------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| `EntityRegistry`            | `core/src/entities/defaultEntityRegistry.ts`                                   | A concrete entity class for an `EntityKind`               |
-| `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                      | A movement, targeting, attack or pick-up strategy         |
-| Damage steps                | `core/src/combat/defaultDamageSteps.ts`                                        | A rule every hit runs through, at its position            |
-| `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                 | An `AbilityEffect` or `AbilityRestriction` class          |
-| `ControllerRegistry`        | `core/src/ai/defaultControllerRegistry.ts`                                     | A `Controller` for a `ControllerId`                       |
-| Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                               | A definition (legend, mob, ability, weapon, ...)          |
-| `SystemPipeline` order      | `core/src/systems/defaultSystemPipeline.ts`                                    | A system, at its position in the tick                     |
-| `GameEventMap`              | `core/src/state/GameEvents.types.ts`                                           | An event name and payload type                            |
-| `Command` union             | `core/src/commands/Command.types.ts`                                           | A command (the handler registry then demands its handler) |
-| Command handlers            | `core/src/commands/defaultCommandHandlers.ts`                                  | A handler for a command type                              |
-| Diagnostic events           | `core/src/diagnostics/DiagnosticEvent.types.ts`                                | A diagnostic event name and its attributes                |
-| Built-in invariants         | `core/src/diagnostics/defaultInvariants.ts`                                    | An invariant                                              |
-| `MatchTimeline`             | `core/src/config/GameConfig` `timeline`                                        | A scheduled match event                                   |
-| `ViewRegistry`              | `client/src/game/views/defaultViewRegistry.ts`                                 | A view for an entity family or kind                       |
-| Draw order                  | `client/src/game/views/SceneView.ts`                                           | A layer in the frame                                      |
-| Keybindings                 | `client/src/game/input/keybindings.ts`                                         | An `InputAction` with its default chords                  |
-| Redux slices                | `client/src/bridge/store.ts` (`combineSlices`)                                 | A slice                                                   |
-| Bridge events               | `client/src/bridge/events.ts`                                                  | A game → UI or UI → game message                          |
-| Repositories and migrations | `client/src/data/persistence/PersistenceController.ts`, `schema/migrations.ts` | A persisted record type / a schema step                   |
-| Asset manifest              | `client/src/data/resources/AssetManifest.ts`                                   | An asset                                                  |
-| Screens                     | `client/src/ui/App.tsx` (phase → screen)                                       | A screen                                                  |
+| Registry                    | File                                                                                 | One line adds                                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `EntityRegistry`            | `core/src/entities/defaultEntityRegistry.ts`                                         | A concrete entity class for an `EntityKind`                                                                                    |
+| `StrategyRegistry`          | `core/src/entities/strategies/defaultStrategyRegistry.ts`                            | A movement, targeting, attack or pick-up strategy                                                                              |
+| Damage steps                | `core/src/combat/defaultDamageSteps.ts`                                              | A rule every hit runs through, at its position                                                                                 |
+| `AbilityRegistry`           | `core/src/abilities/defaultAbilityRegistry.ts`                                       | An `AbilityEffect` or `AbilityRestriction` class                                                                               |
+| `ControllerRegistry`        | `core/src/ai/defaultControllerRegistry.ts`                                           | A `Controller` for a `ControllerId`                                                                                            |
+| Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                                     | A definition (legend, mob, ability, weapon, ...)                                                                               |
+| `SystemPipeline` order      | `core/src/systems/defaultSystemPipeline.ts`                                          | A system, at its position in the tick                                                                                          |
+| `GameEventMap`              | `core/src/state/GameEvents.types.ts`                                                 | An event name and payload type                                                                                                 |
+| `Command` union             | `core/src/commands/Command.types.ts`                                                 | A command (the handler registry then demands its handler)                                                                      |
+| Command handlers            | `core/src/commands/defaultCommandHandlers.ts`                                        | A handler for a command type                                                                                                   |
+| Diagnostic events           | `core/src/diagnostics/DiagnosticEvent.types.ts`                                      | A diagnostic event name and its attributes                                                                                     |
+| Built-in invariants         | `core/src/diagnostics/defaultInvariants.ts`                                          | An invariant                                                                                                                   |
+| `MatchTimeline`             | `core/src/config/GameConfig` `timeline`                                              | A scheduled match event                                                                                                        |
+| `ViewRegistry`              | `client/src/game/views/defaultViewRegistry.ts`                                       | A view for an entity family or kind                                                                                            |
+| Draw order                  | `client/src/game/views/SceneView.ts`                                                 | A layer in the frame                                                                                                           |
+| Keybindings                 | `client/src/game/input/keybindings.ts`                                               | An `InputAction` with its default chords                                                                                       |
+| Redux slices                | `client/src/bridge/store.ts` (`combineSlices`)                                       | A slice                                                                                                                        |
+| Bridge events               | `client/src/bridge/events.ts`                                                        | A game → UI or UI → game message                                                                                               |
+| Repositories and migrations | `client/src/data/persistence/PersistenceController.ts`, `schema/migrations.ts`       | A persisted record type / a schema step                                                                                        |
+| Asset manifest              | `client/src/data/resources/AssetManifest.ts` (concatenates one file per asset group) | An asset: its files (`file`, optional `file2x`), per-use `renditions` and, for an image placed at a baked slot, its draw `box` |
+| Screens                     | `client/src/ui/App.tsx` (phase → screen)                                             | A screen                                                                                                                       |
 
 ## 10. I am adding X → it goes in Y
 
-| I am adding...                                  | It goes in...                                                                   | Plus                                                                                     |
-| ----------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| A tuning number or display name                 | `core/content/<family>/<id>.ts`                                                 | nothing else                                                                             |
-| A world parameter (`numLanes`)                  | `core/config/GameConfig`                                                        | a `validateGameConfig()` check, a map test                                               |
-| A new legend, mob, structure, boss class        | `core/entities/<family>/<Name>.ts` + a definition in `content/`                 | `defaultEntityRegistry.ts` line                                                          |
-| A variant of an existing kind (new mob flavour) | `core/content/mobs/<id>.ts` only                                                | catalogue line                                                                           |
-| Per-entity state                                | `core/components/<Name>.ts`                                                     | attach it in the family's `attachComponents()`                                           |
-| Per-tick behaviour                              | `core/systems/<Name>System.ts`                                                  | `defaultSystemPipeline.ts` line                                                          |
-| Behaviour that varies by kind                   | `core/entities/strategies/<Name><Family>Strategy.ts`                            | `defaultStrategyRegistry.ts` line, strategy id in content                                |
-| A rule that changes every hit (05 §9)           | `core/combat/<Name>Step.ts` (a `DamageStep`)                                    | `defaultDamageSteps.ts` line, at its position in the order                               |
-| An ability, effect, restriction                 | `core/content/abilities/<id>.ts`; `core/abilities/effects                       | restrictions/<Name>.ts`                                                                  | `defaultAbilityRegistry.ts` line for a new class |
-| A weapon, artifact, status effect               | `core/content/weapons                                                           | artifacts                                                                                | status-effects/<id>.ts`                          | catalogue line |
-| A command                                       | `core/commands/Command.types.ts` + `commands/handlers/<Name>Handler.ts`         | `defaultCommandHandlers.ts` line; a producer (`InputMapper`, controller, developer menu) |
-| An event                                        | `core/state/GameEvents.types.ts`                                                | emitter and listeners                                                                    |
-| A runtime check                                 | `core/diagnostics/invariants/<Fact>Invariant.ts`                                | `defaultInvariants.ts` line                                                              |
-| A bot behaviour                                 | `core/ai/<Name>Controller.ts` or a behaviour-tree node                          | aggro numbers in `content/`                                                              |
-| Something drawn on the canvas                   | `client/game/views/<Name>View.ts`                                               | `defaultViewRegistry.ts` line; draw order in `SceneView`                                 |
-| A key or mouse action                           | `client/game/input/keybindings.ts`                                              | `InputMapper` mapping to an `InputIntent` field                                          |
-| A screen or HUD element                         | `client/ui/screens/<Name>Screen.tsx` or `ui/hud/<Name>.tsx`                     | selector; slice if new data; bridge event if new game data                               |
-| Data React needs from the game                  | `client/bridge/events.ts` + `slices/<name>Slice.ts`                             | publish (throttled) from `Match`'s `MatchBridge`                                         |
-| A persisted record                              | `client/data/persistence/dto/<Name>Dto.ts` + `repositories/<Name>Repository.ts` | `schema/migrations.ts` step, `PersistenceController` accessor                            |
-| An image, sound or JSON asset                   | `client/assets/` + `AssetManifest.ts` line                                      | licence noted in the PR                                                                  |
-| A CSS token                                     | `client/styles/global.css`                                                      | nothing else                                                                             |
-| A rule change to tooling                        | an ADR in `docs/decisions/`                                                     | the config change in the same PR                                                         |
+| I am adding...                                  | It goes in...                                                                   | Plus                                                                                           |
+| ----------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| A tuning number or display name                 | `core/content/<family>/<id>.ts`                                                 | nothing else                                                                                   |
+| A world parameter (`numLanes`)                  | `core/config/GameConfig`                                                        | a `validateGameConfig()` check, a map test                                                     |
+| A new legend, mob, structure, boss class        | `core/entities/<family>/<Name>.ts` + a definition in `content/`                 | `defaultEntityRegistry.ts` line                                                                |
+| A variant of an existing kind (new mob flavour) | `core/content/mobs/<id>.ts` only                                                | catalogue line                                                                                 |
+| Per-entity state                                | `core/components/<Name>.ts`                                                     | attach it in the family's `attachComponents()`                                                 |
+| Per-tick behaviour                              | `core/systems/<Name>System.ts`                                                  | `defaultSystemPipeline.ts` line                                                                |
+| Behaviour that varies by kind                   | `core/entities/strategies/<Name><Family>Strategy.ts`                            | `defaultStrategyRegistry.ts` line, strategy id in content                                      |
+| A rule that changes every hit (05 §9)           | `core/combat/<Name>Step.ts` (a `DamageStep`)                                    | `defaultDamageSteps.ts` line, at its position in the order                                     |
+| An ability, effect, restriction                 | `core/content/abilities/<id>.ts`; `core/abilities/effects                       | restrictions/<Name>.ts`                                                                        | `defaultAbilityRegistry.ts` line for a new class |
+| A weapon, artifact, status effect               | `core/content/weapons                                                           | artifacts                                                                                      | status-effects/<id>.ts`                          | catalogue line |
+| A command                                       | `core/commands/Command.types.ts` + `commands/handlers/<Name>Handler.ts`         | `defaultCommandHandlers.ts` line; a producer (`InputMapper`, controller, developer menu)       |
+| An event                                        | `core/state/GameEvents.types.ts`                                                | emitter and listeners                                                                          |
+| A runtime check                                 | `core/diagnostics/invariants/<Fact>Invariant.ts`                                | `defaultInvariants.ts` line                                                                    |
+| A bot behaviour                                 | `core/ai/<Name>Controller.ts` or a behaviour-tree node                          | aggro numbers in `content/`                                                                    |
+| Something drawn on the canvas                   | `client/game/views/<Name>View.ts`                                               | `defaultViewRegistry.ts` line; draw order in `SceneView`                                       |
+| A key or mouse action                           | `client/game/input/keybindings.ts`                                              | `InputMapper` mapping to an `InputIntent` field                                                |
+| A screen or HUD element                         | `client/ui/screens/<Name>Screen.tsx` or `ui/hud/<Name>.tsx`                     | selector; slice if new data; bridge event if new game data                                     |
+| Data React needs from the game                  | `client/bridge/events.ts` + `slices/<name>Slice.ts`                             | publish (throttled) from `Match`'s `MatchBridge`                                               |
+| A persisted record                              | `client/data/persistence/dto/<Name>Dto.ts` + `repositories/<Name>Repository.ts` | `schema/migrations.ts` step, `PersistenceController` accessor                                  |
+| An image, font, sound or JSON asset             | `client/src/assets/<group>/` + a line in its group's manifest file              | `licence` and `source` in the entry; a third-party licence text in `assets/licences/` (DEC-51) |
+| A CSS token                                     | `client/styles/global.css`                                                      | nothing else                                                                                   |
+| A rule change to tooling                        | an ADR in `docs/decisions/`                                                     | the config change in the same PR                                                               |
 
 ## 11. How knip and ESLint relate to the tree
 
@@ -290,6 +301,56 @@ changes the shape of the world, it is config. If a player may change it, it is a
   and `performance` is the next step of the same block.
 - The tree, the tables in this doc and the lint blocks must agree; a PR that adds a folder updates
   all three ([01-layered-oop-model.md](01-layered-oop-model.md) §7).
+
+## 12. Implementation status
+
+HUD and character select (`feat/hud-and-character-select`, 2026-10-24). Folders and files the
+branch added or moved. The §3 tree lines and the §9 and §10 rows that name them are in the design
+text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
+
+- **Assets.** `apps/client/src/assets/` holds one folder per asset group (`boot/`, `selection/`,
+  `selection-primary/`, `selection-alternate/`, `selection-raster/`,
+  `selection-primary-raster/`, `match/`) plus `licences/` (the Cinzel OFL and the Phosphor Icons
+  MIT texts, DEC-51). The typed manifest is not in `assets/`: it is
+  `data/resources/AssetManifest.ts`, which concatenates one file per group
+  (`data/resources/<group>Assets.ts`), so adding an asset is one line in its group's file with
+  its `licence` and `source`, plus the file. The generated `assets/manifest.json` of
+  [14](14-persistence-and-resources.md) §11 stays planned. The loaders are
+  `data/resources/loaders/` (`AssetLoader.ts` port, `UiImageLoader.ts`, `FontLoader.ts`); there is
+  no `AssetCache` yet ([14](14-persistence-and-resources.md) §14).
+- **Bridge.** `bridge/catalogue.types.ts` and `bridge/hud.types.ts` (display types shared with
+  `ui/`), `bridge/selectionRules.ts`, `bridge/minimapRing.ts`, `bridge/legendNames.ts`, the
+  `bridge/selectors/` folder and the new `assetsSlice` ([13](13-game-interface.md) §10).
+- **Game.** `game/content/` builds the display catalogue the UI reads from core's display content
+  (`coreCatalogue.ts`, `buildDisplayCatalogue.ts` and the presentation files) in place of
+  `placeholderCatalogue.ts`. `main.tsx` calls `createCoreCatalogue` with the manifest's asset ids
+  and the developer overrides, so no `game/content/` module reads `data/`; the shipped catalogue for
+  tests is `game/content/__fixtures__/shippedCatalogue.ts`. `game/session/` gains
+  `selectionAssetGroups.ts`, `fillRosters.ts` (LOCK IN's roster fill, DEC-61) and
+  `createRosterRng.ts` (its random stream, injected as `SessionControllerDeps.createRosterRng`) and
+  loses `runPlaceholderLoad.ts`; new are `game/MatchBridge.ts`,
+  `game/MatchHost.ts`, `game/createBrowserMatch.ts` and `game/prepareMatchWorld.ts`;
+  `game/useMatch.ts` is gone (DEC-50).
+- **Core.** `loadDisplayContent()` is exported from `@eternalus/core`: the Legend and Legend-spec
+  display data, the locked class cards (DEC-48), the team display names and the bot roster (DEC-61,
+  DEC-102), each validated through the content rules, the map features' display names (DEC-49;
+  ADR 0018) and the profile screen's display name; core also exports the types `LegendClassId`,
+  `BotRosterDefinition` and `EnemyRoverRule`. It takes optional catalogues, each defaulting to the
+  shipped one. The specs live in `packages/core/src/content/legends/specs/` (each says whether it
+  can be picked, `isSelectable`, which gates LOCK IN; the client adds only art, accents and icons),
+  the locked cards in `content/legends/locked/`, the team names in
+  `content/teams/teamDisplayNames.ts`, the bot roster in `content/teams/botRoster.ts` (checked by
+  `content/validation/BotRosterClassRule.ts` and `BotRosterDifficultyRule.ts`) and the
+  profile screen's name in
+  `content/profile/profileDisplayName.ts`.
+- **Merge of the phase branch and roofs (2026-11-02).** With the phase branch's buildings (#30),
+  `game/prepareMatchWorld.ts` builds the map's presentation and map objects once, and
+  `createBrowserMatch.ts` hands the map, the map objects and `request.roster` to the `Simulation`
+  (`SessionController.createMatch` builds that roster with `game/session/botRosterSlots.ts`);
+  `#30`'s `useMatch.ts` changes did not return (DEC-50). The cathedral interior scene, its camera paths and the "Leave cathedral"
+  control are gone. New is `game/BuildingRoofs.ts`, the one owner of roof cutaways: the
+  player's building and the developer explorer's clicks (DEC-143; [06](06-map-and-minimap.md)
+  §10).
 
 ## Related
 

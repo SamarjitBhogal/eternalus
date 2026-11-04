@@ -36,8 +36,8 @@
   --color-bg: var(--surface-0);
   --color-text: var(--text-primary);
 
-  --font-display: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
-  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: var(--font-game);
+  --font-body: var(--font-game);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -54,6 +54,190 @@
   --motion-fast: 120ms;
   --motion-medium: 240ms;
   --motion-ambient: 24s;
+
+  /* Game screens (Figma z5Udjg41B9Vtcb9IJHHyTs 62:125, 62:70, 58:271, 62:231); the frames bind no
+     Figma variables, so each value is the frame's literal and the name says its role. */
+
+  /* Cinzel 400/700 (SIL OFL 1.1), registered by FontLoader from the boot group (DEC-51). A capitals
+     face: never text-transform content text. Menus read it through --font-display and --font-body
+     (DEC-67: Cinzel everywhere). */
+  --font-game: 'Cinzel', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  /* Cinzel line heights = Figma AUTO box heights (unitless px; selection uses ×1px, HUD ×--hud-u). */
+  --leading-game-96: 129;
+  --leading-game-64: 83;
+  --leading-game-48: 63;
+  --leading-game-40: 54;
+  --leading-game-36: 48;
+  --leading-game-32: 43;
+  --leading-game-24: 32;
+  --leading-game-20: 27;
+  --leading-game-16: 22;
+  --leading-game-15: 20;
+  --leading-game-14: 19;
+  /* Minimum rendered text size below 1080p (ES-11; Recommendation, INBOX HC-Q14). */
+  --text-min: 12px;
+  /* The opaque stop of an alpha mask (a mask reads only alpha), e.g. the XP glow ring. */
+  --mask-opaque: #000000;
+
+  /* Selection screens */
+  --selection-ink: #131313;
+  --selection-ink-scrim: rgb(19 19 19 / 20%);
+  --selection-ink-veil: rgb(19 19 19 / 50%);
+  --selection-ink-missing: rgb(19 19 19 / 80%);
+  --selection-parchment: #f9e0c7;
+  --selection-parchment-faint: rgb(249 224 199 / 60%);
+  /* The glow-button rings (62:223, 58:273) seen through the glass bodies stacked above them. */
+  --selection-parchment-under-glass: rgb(249 224 199 / 50%);
+  --selection-text: #ffffff;
+  --selection-text-soft: rgb(255 255 255 / 85%);
+  --selection-text-dim: rgb(255 255 255 / 75%);
+  --selection-placeholder-line: rgb(255 255 255 / 25%);
+  --selection-glass-rim: rgb(255 255 255 / 80%);
+  --selection-tile-idle: rgb(255 255 255 / 40%);
+  --selection-countdown: #ff1a00;
+  --selection-countdown-glow: rgb(255 26 0 / 15%);
+  /* DEC-59: the lock cursor over a locked class card (LockGlyph's padlock, parchment on ink). */
+  --selection-cursor-locked:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='30' viewBox='-1 -1 18 22'%3E%3Cpath d='M 4 9 V 6 A 4 4 0 0 1 12 6 V 9' fill='none' stroke='%23131313' stroke-width='4'/%3E%3Cpath d='M 4 9 V 6 A 4 4 0 0 1 12 6 V 9' fill='none' stroke='%23f9e0c7' stroke-width='2'/%3E%3Crect x='1' y='9' width='14' height='11' rx='2' fill='%23f9e0c7' stroke='%23131313'/%3E%3C/svg%3E")
+      12 15,
+    not-allowed;
+  --selection-detail-accent: rgb(255 26 0 / 40%);
+  /* View Details (145:2): the row names (148:180 …) and dividers (145:84, 148:184). */
+  --selection-detail-name: #00d9ff;
+  --selection-banner-title: #710b00;
+  --selection-brace: #b2ccd9;
+  --selection-glow-frost: #bddeff;
+  --selection-glow-frost-soft: rgb(189 222 255 / 55%);
+  --selection-glow-sky: #75b4fb;
+  --selection-glow-azure: #5291fc;
+  --selection-glow-azure-strong: rgb(82 145 252 / 80%);
+  --selection-glow-azure-half: rgb(82 145 252 / 50%);
+  --selection-glow-pale: #d1e2ff;
+  --selection-glass-centre: rgb(117 180 251 / 20%);
+  --selection-glass-edge: rgb(117 180 251 / 4%);
+  --selection-art-shade: rgb(0 0 0 / 20%);
+  --selection-art-shade-deep: rgb(0 0 0 / 36%);
+  --selection-art-shade-light: rgb(0 0 0 / 5%);
+  --selection-art-warm: rgb(49 13 0 / 10%);
+  --selection-drop-shadow: rgb(0 0 0 / 60%);
+  --selection-keycap: #d9d9d9;
+  --selection-keycap-ink: #151616;
+  --selection-keycap-ink-alt: #000000;
+  --selection-stat-track: #d9d9d9;
+  --selection-stat-fill-start: rgb(217 217 217 / 80%);
+  --selection-stat-fill-end: #bddeff;
+
+  /* Class and Legend accents; content names them (accentToken). */
+  --class-warrior-accent: #eda84d;
+  --class-sentinel-accent: #67ed4d;
+  --class-magus-accent: #bddeff;
+  --class-harbinger-accent: #9b32f3;
+  --legend-catalyst-accent: #eda84d;
+  --legend-oracle-accent: #bddeff;
+  --legend-necromancer-accent: #9b32f3;
+
+  /* Match HUD (62:231) */
+  --hud-frame-backdrop: #3e2217;
+  --hud-text: #ffffff;
+  --hud-marker: #ffffff;
+  --hud-cream: #f9e0c7;
+  --hud-cream-bright: #ffefcc;
+  --hud-amber: #f9bd45;
+  --hud-orange: #f98d45;
+  --hud-xp-glow: rgb(255 155 4 / 50%);
+  --hud-active-fill: rgb(35 35 35 / 20%);
+  --hud-slot-border: #929390;
+  --hud-slot-shade-strong: rgb(113 11 0 / 50%);
+  --hud-slot-shade-soft: rgb(113 11 0 / 10%);
+  --hud-bar-hairline: rgb(249 224 199 / 50%);
+  --hud-bar-cream: rgb(249 224 199 / 80%);
+  --hud-bar-cream-rest: rgb(249 224 199 / 20%);
+  /* The cream bars' value marker (65:722, 62:258: the "#FFF 51%" stop); its own token, apart from
+     --hud-marker, so the minimums set can change it alone (OD-11). */
+  --hud-bar-cream-marker: #ffffff;
+  --hud-health: #ff1a00;
+  --hud-health-fill: rgb(255 26 0 / 60%);
+  --hud-health-rest: rgb(255 26 0 / 40%);
+  --hud-aether: #5291fc;
+  --hud-aether-fill: rgb(82 145 252 / 60%);
+  --hud-aether-rest: rgb(82 145 252 / 40%);
+  /* The bars' marker → rest fall a quarter, half and three quarters of the way to the rest
+     (SegmentedBar .leading). Declared once, here: each var() resolves on <html>, where the
+     minimums set re-declares the rests and the cream marker, so every set derives its own fades
+     (OD-25 a). Cream keeps the gradient's own premultiplied points (color-mix). Health and aether
+     mix the opaque white --hud-marker (255, alpha 1) into the rest in straight alpha, as Figma
+     blends: each channel and the alpha move n/4 back to the rest. color-mix() cannot express
+     that, since it always mixes premultiplied (lighter: fade-2 green 189.6 instead of 140.5). */
+  --hud-health-fade-1: rgb(
+    from var(--hud-health-rest) calc(r + (255 - r) * 0.75) calc(g + (255 - g) * 0.75)
+      calc(b + (255 - b) * 0.75) / calc(alpha + (1 - alpha) * 0.75)
+  );
+  --hud-health-fade-2: rgb(
+    from var(--hud-health-rest) calc(r + (255 - r) * 0.5) calc(g + (255 - g) * 0.5)
+      calc(b + (255 - b) * 0.5) / calc(alpha + (1 - alpha) * 0.5)
+  );
+  --hud-health-fade-3: rgb(
+    from var(--hud-health-rest) calc(r + (255 - r) * 0.25) calc(g + (255 - g) * 0.25)
+      calc(b + (255 - b) * 0.25) / calc(alpha + (1 - alpha) * 0.25)
+  );
+  --hud-aether-fade-1: rgb(
+    from var(--hud-aether-rest) calc(r + (255 - r) * 0.75) calc(g + (255 - g) * 0.75)
+      calc(b + (255 - b) * 0.75) / calc(alpha + (1 - alpha) * 0.75)
+  );
+  --hud-aether-fade-2: rgb(
+    from var(--hud-aether-rest) calc(r + (255 - r) * 0.5) calc(g + (255 - g) * 0.5)
+      calc(b + (255 - b) * 0.5) / calc(alpha + (1 - alpha) * 0.5)
+  );
+  --hud-aether-fade-3: rgb(
+    from var(--hud-aether-rest) calc(r + (255 - r) * 0.25) calc(g + (255 - g) * 0.25)
+      calc(b + (255 - b) * 0.25) / calc(alpha + (1 - alpha) * 0.25)
+  );
+  --hud-bar-cream-fade-1: color-mix(
+    in srgb,
+    var(--hud-bar-cream-marker) 75%,
+    var(--hud-bar-cream-rest)
+  );
+  --hud-bar-cream-fade-2: color-mix(
+    in srgb,
+    var(--hud-bar-cream-marker) 50%,
+    var(--hud-bar-cream-rest)
+  );
+  --hud-bar-cream-fade-3: color-mix(
+    in srgb,
+    var(--hud-bar-cream-marker) 25%,
+    var(--hud-bar-cream-rest)
+  );
+  --hud-charge-pip-border: #d9d9d9;
+  --hud-charge-pip-fill: rgb(168 0 3 / 50%);
+  --hud-status-fill: #b1aea9;
+  --hud-status-track: #737574;
+  --hud-xp-ring-outer: #625a57;
+  --hud-xp-ring-inner: #564745;
+  --hud-level-shadow-near: #370907;
+  --hud-level-shadow-far: #000000;
+  --hud-level-noise: #3e2217;
+  /* Not in the Figma (forced or fill-in states; register CD-03, CD-13): */
+  --hud-no-data-hatch: rgb(249 224 199 / 25%);
+  --hud-allegiance-flag: #f9e0c7;
+  /* Team HUD colours (10-art-and-lore: team colours are the HUD colours; Figma allied = Light). */
+  --team-light-hud-structure: #5291fc;
+  --team-dark-hud-structure: #710b00;
+  --team-light-hud-letter: #7b8a9f;
+  --team-light-hud-letter-shadow: rgb(0 0 0 / 50%);
+  --team-light-hud-letter-blur: 5;
+  --team-neutral-hud-letter: #b0b0b0;
+  --team-neutral-hud-letter-shadow: rgb(0 0 0 / 50%);
+  --team-neutral-hud-letter-blur: 4;
+  --team-dark-hud-letter: #ac938e;
+  --team-dark-hud-letter-shadow: #000000;
+  --team-dark-hud-letter-blur: 5;
+  /* Reference only, painted by no rule: the flat fills of the objective shield art (65:621 light,
+     65:606 neutral, 65:616 dark), which ships as Figma renders (DEC-54) with its own colours. The
+     letters' and the shield edges' contrast pairs are measured on them
+     (styles/tokenContrast.test.ts). */
+  --team-light-hud-shield-art: #1d4a85;
+  --team-neutral-hud-shield-art: #605d58;
+  --team-dark-hud-shield-art: #6e1615;
 }
 
 :root[data-team='light'] {
@@ -74,6 +258,54 @@
   :root {
     --motion-fast: 0ms;
     --motion-medium: 0ms;
+  }
+}
+
+/* DEC-55: tokens of the pairs below 13 §7's minimums (CD-21), and only those. The Figma values in
+   :root stay the default (contrastMode 'figma'). Each value keeps its token's OKLCH hue and alpha
+   and moves its lightness by the smallest step that meets 4.5:1 (text) or 3:1 (bars, icons) plus
+   0.05; chroma is reduced only where the sRGB gamut forces it (method: reference 15 §5, CD-21). */
+:root[data-contrast='minimums'] {
+  --team-light-hud-letter: #acbcd2;
+  --team-neutral-hud-letter: #d7d7d7;
+  --team-dark-hud-letter: #b59c96;
+  --hud-health-fill: rgb(255 134 115 / 60%);
+  --hud-aether-fill: rgb(122 172 255 / 60%);
+  /* Each bar's rest and peak, solved with its fill: the white value numeral sits on all three. */
+  --hud-health-rest: rgb(118 6 0 / 40%);
+  --hud-aether-rest: rgb(0 55 142 / 40%);
+  --hud-health: #e91700;
+  --hud-aether: #3572db;
+  --hud-status-fill: #d5d2cd;
+  --team-dark-hud-structure: #cf6755;
+  /* OD-11 (a): the cream bars' marker meets 3:1 against their fill. No colour also meets 3:1
+     against the cream rest; the fill's edge with the rest (4.51:1) still shows the value. */
+  --hud-bar-cream-marker: #676767;
+  /* OD-11 (b): rings drawn around the objective shield rasters, 3:1 against the ground; each starts
+     from its shield's flat fill. Not declared in :root, so the figma set draws no ring. */
+  --team-light-hud-shield-outline: #4775b3;
+  --team-neutral-hud-shield-outline: #76736d;
+  --team-dark-hud-shield-outline: #b4574f;
+}
+
+/* The OS asking for more contrast selects the same set (identical declarations, asserted). */
+@media (prefers-contrast: more) {
+  :root {
+    --team-light-hud-letter: #acbcd2;
+    --team-neutral-hud-letter: #d7d7d7;
+    --team-dark-hud-letter: #b59c96;
+    --hud-health-fill: rgb(255 134 115 / 60%);
+    --hud-aether-fill: rgb(122 172 255 / 60%);
+    --hud-health-rest: rgb(118 6 0 / 40%);
+    --hud-aether-rest: rgb(0 55 142 / 40%);
+    --hud-health: #e91700;
+    --hud-aether: #3572db;
+    --hud-status-fill: #d5d2cd;
+    --team-dark-hud-structure: #cf6755;
+    --hud-bar-cream-marker: #676767;
+    --team-light-hud-shield-outline: #4775b3;
+    --team-neutral-hud-shield-outline: #76736d;
+    --team-dark-hud-shield-outline: #b4574f;
   }
 }
 

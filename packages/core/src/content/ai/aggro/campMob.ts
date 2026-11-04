@@ -16,8 +16,8 @@ export const CAMP_MOB_AGGRO = {
     'closest-legend',
   ],
   leashRadius: 6, // TUNE: balancing.md camp leash (the guard plan's is the one camp mobs read)
-  aggroDurationTicks: 69, // TUNE: as the lane minion (Dota 2.3 s)
-  aggroCooldownTicks: 90, // TUNE: as the lane minion (Dota 3 s)
+  leashGraceTicks: 0, // as the tower guard (DEC-144 E): never chases past its circle
+  aggroCooldownTicks: 0, // as the tower guard (DEC-144): no rest
   ghostFirstWaveTicks: 0, // camps never ghost
-  reformDistance: 1, // TUNE: no reference value; a mob settles close to its post
+  callForHelpRadius: 0, // unused: guard-post mobs answer a fellow anywhere in their circle
 } as const satisfies AggroRuleDefinition;

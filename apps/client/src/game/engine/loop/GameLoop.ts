@@ -6,7 +6,8 @@ import type { GameLoopOptions, LoopTarget } from './GameLoop.types';
  * The fixed-timestep loop (architecture 08 §2): each frame adds the elapsed time (clamped to
  * `maxFrameMs`) to an accumulator, runs whole ticks while it holds at least `tickMs`, then
  * renders with `alpha = accumulator / tickMs`. It reads time only from the scheduler, so a fake
- * scheduler controls it completely in tests.
+ * scheduler controls it completely in tests. A tick or render that throws destroys the loop and
+ * hands the error to `target.crashed` (DEC-106: a crash ends the match instead of freezing it).
  */
 export class GameLoop {
   private accumulatorMs = 0;
@@ -71,10 +72,15 @@ export class GameLoop {
     this.lastTimestampMs = timestampMs;
     this.accumulatorMs += Math.min(Math.max(elapsedMs, 0), maxFrameMs);
 
-    while (this.accumulatorMs >= tickMs - TICK_EPSILON_MS) {
-      this.target.tick();
-      this.accumulatorMs = Math.max(0, this.accumulatorMs - tickMs);
+    try {
+      while (this.accumulatorMs >= tickMs - TICK_EPSILON_MS) {
+        this.target.tick();
+        this.accumulatorMs = Math.max(0, this.accumulatorMs - tickMs);
+      }
+      this.target.render(this.accumulatorMs / tickMs);
+    } catch (error) {
+      this.destroy();
+      this.target.crashed(error);
     }
-    this.target.render(this.accumulatorMs / tickMs);
   };
 }
