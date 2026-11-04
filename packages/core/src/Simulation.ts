@@ -65,13 +65,19 @@ import { CollisionSystem } from './systems/CollisionSystem';
  */
 export class Simulation {
   private readonly state: GameState;
-  private readonly queue = new CommandQueue();
+  /** Commands the bots queued during the last step (`AiSystem`). A replay regenerates them. */
+  private readonly botQueue = new CommandQueue();
+  /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
+  private readonly externalQueue = new CommandQueue();
   private readonly handlers: CommandHandlers = createDefaultCommandHandlers();
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
   private readonly hasher = new StateHasher();
-  /** Every command enqueued through `enqueueCommand`, with its tick (ADR 0025 §4). Not hashed. */
+  /**
+   * Every command from `enqueueCommand`, with the tick it applied in (ADR 0025 §4, DEC-156). Not
+   * hashed.
+   */
   private readonly commandLog: Replay['commands'][number][] = [];
   /** `hash()` at tick 0 and every `REPLAY_CHECKPOINT_EVERY` ticks, ascending. Not hashed. */
   private readonly checkpoints: Replay['checkpoints'][number][] = [];
@@ -159,7 +165,7 @@ export class Simulation {
                   : [new CollisionSystem(map, mapObjects)],
               decide: [
                 new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
-                  this.queue.enqueue(command);
+                  this.botQueue.enqueue(command);
                 }),
               ],
             },
@@ -182,25 +188,31 @@ export class Simulation {
   }
 
   /**
-   * Queues `command`; it is applied at the start of the next `step()`. It also enters the replay's
-   * command log. Bot commands bypass this method, so they stay out of the log: a replay
-   * regenerates them from the seed. Call it between steps: the log stamps the completed ticks, so a
-   * command enqueued during a step (from an event handler) would replay one step early.
+   * Queues `command`; it is applied at the start of the next `step()`, which also enters it in the
+   * replay's command log. Bot commands bypass this method, so they stay out of the log: a replay
+   * regenerates them from the seed.
    */
   public enqueueCommand(command: Command): void {
-    this.commandLog.push({ tick: this.tick, command });
-    this.queue.enqueue(command);
+    this.externalQueue.enqueue(command);
   }
 
   /**
-   * Advances exactly one tick: records and applies the queued commands in order, runs the systems
-   * in order, counts the tick, records a replay checkpoint every `REPLAY_CHECKPOINT_EVERY` ticks
-   * and emits `tick-completed`.
+   * Advances exactly one tick: applies the bots' queued commands, then the external ones (each
+   * logged with this tick), each in queue order; runs the systems in order, counts the tick, records
+   * a replay checkpoint every `REPLAY_CHECKPOINT_EVERY` ticks and emits `tick-completed`. A replay
+   * feeds the external commands before the step, after the bots queued theirs, and this order is
+   * the one it reproduces, also for a command enqueued during a step (DEC-156). A command enqueued
+   * while these apply waits for the next step.
    */
   public step(): void {
-    for (const command of this.queue.drain()) {
-      this.state.recordCommand(command);
-      applyCommand(command, this.handlers, this.commandContext);
+    const decided = this.botQueue.drain();
+    const external = this.externalQueue.drain();
+    for (const command of decided) {
+      this.apply(command);
+    }
+    for (const command of external) {
+      this.commandLog.push({ tick: this.state.tick, command });
+      this.apply(command);
     }
     this.pipeline.run(this.systemContext);
     this.state.advanceTick();
@@ -242,6 +254,11 @@ export class Simulation {
   /** The last applied commands (players' and bots') and the last events, oldest first (15 §5). */
   public recentContext(): LogContext {
     return recentContext(this.state);
+  }
+
+  private apply(command: Command): void {
+    this.state.recordCommand(command);
+    applyCommand(command, this.handlers, this.commandContext);
   }
 
   private recordCheckpoint(): void {

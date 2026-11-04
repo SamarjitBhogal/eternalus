@@ -116,6 +116,62 @@ describe('Simulation replay export and recent context', () => {
     });
   });
 
+  it('logs a command enqueued during a step at the tick it applies, so it replays the same (DEC-156)', () => {
+    const live = createMatch({ config: CONFIG, seed: SEED });
+    let hasMoved = false;
+    live.on('entity-spawned', ({ entityId, kind }) => {
+      if (hasMoved || kind !== 'warrior') return;
+      hasMoved = true;
+      live.enqueueCommand({ type: 'move', actorId: entityId, direction: { x: 1, y: 0 } });
+    });
+    live.enqueueCommand(spawn('warrior', 'warrior', { x: 50, y: 50 }));
+    for (let tick = 0; tick < REPLAY_CHECKPOINT_EVERY; tick += 1) live.step();
+
+    const exported = live.exportReplay();
+
+    // The spawn applies in the step of tick 0; the move, enqueued inside that step, in tick 1's.
+    expect(exported.commands.map(({ tick, command }) => [tick, command.type])).toEqual([
+      [0, 'dev-spawn'],
+      [1, 'move'],
+    ]);
+    expect(runReplay(exported, createMatch)).toEqual({
+      firstDivergence: null,
+      finalHash: live.hash(),
+    });
+  });
+
+  it('applies a command enqueued during a step after the bot commands of that step, as a replay does (DEC-156)', () => {
+    const probe = createMatch({ config: CONFIG, seed: SEED });
+    for (let tick = 0; tick < REPLAY_CHECKPOINT_EVERY; tick += 1) probe.step();
+    // The tick of the first applied bot command: the bots queued it in the step before.
+    const botTick = probe
+      .recentContext()
+      .recentCommands.find(({ command }) => 'actorId' in command)?.tick;
+    if (botTick === undefined || botTick < 1) throw new Error('no bot command to order against');
+    const live = createMatch({ config: CONFIG, seed: SEED });
+    live.on('entity-spawned', ({ entityId, kind }) => {
+      if (kind === 'warrior') {
+        live.enqueueCommand({ type: 'move', actorId: entityId, direction: { x: 1, y: 0 } });
+      }
+    });
+    for (let tick = 0; tick < botTick - 1; tick += 1) live.step();
+    live.enqueueCommand(spawn('warrior', 'warrior', { x: 50, y: 50 }));
+    live.step();
+    live.step();
+
+    const warriorId = warriorOf(live.snapshot());
+    const actors = live
+      .recentContext()
+      .recentCommands.filter(({ tick }) => tick === botTick)
+      .map(({ command }) => ('actorId' in command ? command.actorId : null));
+
+    // Bot commands first, the warrior's move last.
+    expect(warriorId).toBeDefined();
+    expect(actors.length).toBeGreaterThan(1);
+    expect(actors.filter((actorId) => actorId === warriorId)).toHaveLength(1);
+    expect(actors[actors.length - 1]).toBe(warriorId);
+  });
+
   it('keeps bot commands out of the log while recentContext() shows them', () => {
     const live = createMatch({ config: CONFIG, seed: SEED });
     play(live, REPLAY_CHECKPOINT_EVERY);
