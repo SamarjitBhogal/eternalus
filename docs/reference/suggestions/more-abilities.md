@@ -1,10 +1,10 @@
 ---
 title: More abilities
-description: Proposed additional abilities and alternative ultimates for the three MVP classes, post-MVP ideas for the Flying class and the sub-classes, the AbilityEffect strategies each one composes, and the proposed status-effect table with duration and stack semantics; read it when a class needs its third ability or a status effect needs a definition.
+description: Proposed additional abilities and alternative ultimates for the three MVP classes, post-MVP ideas for the Flying class, sub-class ideas (sub-classes are MVP since DEC-56), the AbilityEffect strategies each one composes, and the proposed status-effect table with duration and stack semantics; read it when a class needs its third ability or a status effect needs a definition.
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-28
 tags: [reference, suggestions, abilities, ultimates, status-effects, content]
 paths:
   [
@@ -152,9 +152,9 @@ Every row is **post-MVP** (D12): the class exists in the taxonomy as `[Flying]` 
 | Updraft      | A gust in a 4 m circle: enemies are knocked up and you gain 2 s of +40% flight speed and altitude.                                         | None        | **Gale**: knockup. **Tailwind**: no knockup, the speed buff is shared with allies in the circle.             | Iron Hide and Anchor negate the knockup; the gust does nothing to structures.                        | knockback (`knockup`), buff |
 | Talon Volley | Rain six bolts on a 5 m circle beneath you over 1.5 s; higher altitude widens the circle and lowers each bolt's damage (Firestorm's rule). | Magical     | **Hail**: six weaker bolts. **Spear**: one bolt, full damage, marks the target.                              | Move out of the circle; it cannot be cast while carrying (Grasp).                                    | projectile ×6, zone, damage |
 
-## 6. Sub-class signature abilities — post-MVP (D11)
+## 6. Sub-class signature abilities (D11)
 
-Sub-classes are data (`LegendSpecDefinition`) that override ability ids, so a signature ability is one content file per sub-class and no new class unless its effect kind is new. Names follow the recommended picks in `naming.md`; every row is **post-MVP**.
+Sub-classes are data (`LegendSpecDefinition`) that override ability ids, so a signature ability is one content file per sub-class and no new class unless its effect kind is new. Names follow the recommended picks in `naming.md`; sub-class gameplay is MVP scope since DEC-56, with its phase open (`INBOX.md` HC-Q17), and the Flying row stays post-MVP with its class. The owner's Legends are content (`packages/core/src/content/legends/specs/`, DEC-49).
 
 | Sub-class (working name → proposed) | Signature ability | Effect (one line)                                                                                                 | Composes                    |
 | ----------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |

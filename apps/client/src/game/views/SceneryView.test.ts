@@ -1,6 +1,7 @@
 import { createDefaultGameConfig, MapGenerator, MapPresentationBuilder } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
+import { HUD_MINIMAP_RING } from '../Match.constants';
 import { SceneryView } from './SceneryView';
 import { SceneView } from './SceneView';
 import { MiniMapView } from './MiniMapView';
@@ -68,7 +69,7 @@ describe('SceneryView roof cutaways', () => {
     const scene = new SceneView([
       new SceneryView(PRESENTATION.scenery, 'detail', new Set(['light-stronghold'])),
     ]);
-    new MiniMapView(MAP_1, scene).draw(renderer, 1600, 900, {
+    new MiniMapView(MAP_1, scene, HUD_MINIMAP_RING).draw(renderer, 1600, 900, {
       x: 0,
       y: 0,
       width: MAP_1.width,

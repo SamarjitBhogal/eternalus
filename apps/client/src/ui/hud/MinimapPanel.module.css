@@ -1,0 +1,18 @@
+/* The ring's ellipse box, from the HUD's top-right corner (65:743 Compass Ring: 255 × 244 at
+   (1636, 47)); the same box as MINI_MAP_RING in bridge/minimapRing.ts. */
+.panel {
+  position: absolute;
+  top: calc(47 * var(--hud-u));
+  right: calc(29 * var(--hud-u));
+  width: calc(255 * var(--hud-u));
+  height: calc(244 * var(--hud-u));
+}
+
+/* The frame raster with its shadow bleed: (1616, 27) 295 × 284 (I-45). */
+.frame {
+  position: absolute;
+  left: calc(-20 * var(--hud-u));
+  top: calc(-20 * var(--hud-u));
+  width: calc(295 * var(--hud-u));
+  height: calc(284 * var(--hud-u));
+}

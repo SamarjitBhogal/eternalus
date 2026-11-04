@@ -46,6 +46,12 @@ export class RecordingRenderer implements Renderer {
     this.calls.push({ op: 'strokeScreenRect', args });
   }
 
+  /** Records the call, then runs `draw`, so the calls it makes follow it in `calls`. */
+  public clipToEllipse(...args: Parameters<Renderer['clipToEllipse']>): void {
+    this.calls.push({ op: 'clipToEllipse', args });
+    args[1]();
+  }
+
   /** Records the call. */
   public fillPolygon(...args: Parameters<Renderer['fillPolygon']>): void {
     this.calls.push({ op: 'fillPolygon', args });
