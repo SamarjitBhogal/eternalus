@@ -160,7 +160,7 @@ Owner: _ (sim lane A). Weeks 6–7. Follows
       points for capture/hold, structures and kills, `TUNE`; `MatchResult` with per-Legend
       scores). Owner: _. Test: razing a Stronghold produces a `MatchResult` on the same tick;
       scores are deterministic. Done when: `MatchResult` is a plain DTO for Phase 5 history.
-- [ ] **Match clock and phase on the HUD** (`MatchClock`, `Announcer` messages per phase) via
+- [ ] _(feat/hud-and-character-select: `MatchClock` reads the clock through the bridge (`match-clock`, every 6 ticks); the phase label and the `Announcer` wait for the `MatchDirector`, sprint 3.5)_ **Match clock and phase on the HUD** (`MatchClock`, `Announcer` messages per phase) via
       the bridge. Owner: _. Test: throttled dispatch. Done when: the HUD reads the store only.
 
 **Success metric:** a scripted timeline test walks all phases and ends with a `MatchResult`;

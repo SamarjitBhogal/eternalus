@@ -1,3 +1,5 @@
+import type { AbilitySlot } from '@eternalus/core';
+
 /**
  * Every player action that can be bound to a key or a button. Adding an action is one literal
  * here and one entry in `game/input/keybindings.ts` (its `DEFAULT_CHORDS` record demands it).
@@ -24,8 +26,13 @@ export type InputAction =
   | 'camera-zoom-out'
   | 'toggle-minimap'
   | 'pause-menu'
+  | 'view-details'
   | 'toggle-developer-menu'
-  | 'toggle-perf-overlay';
+  | 'toggle-perf-overlay'
+  | 'toggle-developer-camera';
+
+/** A modifier key a keyboard chord needs held, named as `KeyboardEvent.getModifierState` names it. */
+export type ChordModifier = 'Alt' | 'Control' | 'Meta' | 'Shift';
 
 /**
  * One physical input that triggers an action. Two chords are the same input when their `device`
@@ -42,7 +49,18 @@ export type InputChord = {
   readonly code: string;
   /** The text a prompt shows: the key seen at bind time (`'W'`, `'↑'`) or a button name. */
   readonly label: string;
+  /**
+   * Keyboard only: the modifier keys held with `code` (13 §6.1), as in DEC-105's Cmd+Shift+F3.
+   * None, or empty, for a plain key.
+   */
+  readonly modifiers?: readonly ChordModifier[];
 };
+
+/**
+ * The `InputAction`s that are also HUD slots (05 §15, 17 R21): core's `AbilitySlot` without
+ * `default-action`, so `<KeyGlyph action={slot} />` needs no mapping table.
+ */
+export type HudSlotId = Extract<InputAction, Exclude<AbilitySlot, 'default-action'>>;
 
 /** The chords bound to one action. Any chord of any device triggers it. */
 export type Binding = { readonly action: InputAction; readonly chords: readonly InputChord[] };

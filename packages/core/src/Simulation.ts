@@ -11,7 +11,10 @@ import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers'
 import { validateGameConfig } from './config/validateGameConfig';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
+import type { LogContext } from './diagnostics/Logger.types';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { recentContext } from './diagnostics/recentContext';
+import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
 import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
 import { AI_CADENCE } from './content/ai/cadence';
 import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
@@ -46,7 +49,7 @@ import { GameState } from './state/GameState';
 import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
-import type { RosterSlot, SimulationOptions } from './Simulation.types';
+import type { Replay, ReplaySetup, RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
 import { WorldMap } from './map/WorldMap';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
@@ -63,12 +66,27 @@ import { CollisionSystem } from './systems/CollisionSystem';
  */
 export class Simulation {
   private readonly state: GameState;
-  private readonly queue = new CommandQueue();
+  /** Commands the bots queued during the last step (`AiSystem`). A replay regenerates them. */
+  private readonly botQueue = new CommandQueue();
+  /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
+  private readonly externalQueue = new CommandQueue();
   private readonly handlers: CommandHandlers = createDefaultCommandHandlers();
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
   private readonly hasher = new StateHasher();
+  /**
+   * Every command from `enqueueCommand`, with the tick it applied in (ADR 0025 §4, DEC-156). Not
+   * hashed.
+   */
+  private readonly commandLog: Replay['commands'][number][] = [];
+  /** `hash()` at tick 0 and every `REPLAY_CHECKPOINT_EVERY` ticks, ascending. Not hashed. */
+  private readonly checkpoints: Replay['checkpoints'][number][] = [];
+  /**
+   * What the match was built with, copied into every exported replay. A crash report's replay
+   * keeps the generated map and map objects inline (DEC-152); revisit at the Phase 5 replay store.
+   */
+  private readonly setup: ReplaySetup;
 
   /**
    * Creates a match from its options (architecture 03 §6).
@@ -89,6 +107,13 @@ export class Simulation {
     weapons,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
+    this.setup = {
+      seed,
+      config: validConfig,
+      ...(map === undefined ? {} : { map }),
+      ...(mapObjects === undefined ? {} : { mapObjects }),
+      ...(roster.length === 0 ? {} : { roster }),
+    };
     const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
     this.state = new GameState(validConfig, seed, world, { space, paths });
     const { tickRate } = this.state.config;
@@ -143,7 +168,7 @@ export class Simulation {
                   : [new CollisionSystem(map, mapObjects)],
               decide: [
                 new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
-                  this.queue.enqueue(command);
+                  this.botQueue.enqueue(command);
                 }),
               ],
             },
@@ -157,6 +182,7 @@ export class Simulation {
         }),
       );
     });
+    this.recordCheckpoint();
   }
 
   /** Number of ticks completed. */
@@ -164,22 +190,38 @@ export class Simulation {
     return this.state.tick;
   }
 
-  /** Queues `command`; it is applied at the start of the next `step()`. */
+  /**
+   * Queues `command`; it is applied at the start of the next `step()`, which also enters it in the
+   * replay's command log. Bot commands bypass this method, so they stay out of the log: a replay
+   * regenerates them from the seed.
+   */
   public enqueueCommand(command: Command): void {
-    this.queue.enqueue(command);
+    this.externalQueue.enqueue(command);
   }
 
   /**
-   * Advances exactly one tick: records and applies the queued commands in order, runs the systems
-   * in order, counts the tick and emits `tick-completed`.
+   * Advances exactly one tick: applies the bots' queued commands, then the external ones (each
+   * logged with this tick), each in queue order; runs the systems in order, counts the tick, records
+   * a replay checkpoint every `REPLAY_CHECKPOINT_EVERY` ticks and emits `tick-completed`. A replay
+   * feeds the external commands before the step, after the bots queued theirs, and this order is
+   * the one it reproduces, also for a command enqueued during a step (DEC-156). A command enqueued
+   * while these apply waits for the next step.
    */
   public step(): void {
-    for (const command of this.queue.drain()) {
-      this.state.recordCommand(command);
-      applyCommand(command, this.handlers, this.commandContext);
+    const decided = this.botQueue.drain();
+    const external = this.externalQueue.drain();
+    for (const command of decided) {
+      this.apply(command);
+    }
+    for (const command of external) {
+      this.commandLog.push({ tick: this.state.tick, command });
+      this.apply(command);
     }
     this.pipeline.run(this.systemContext);
     this.state.advanceTick();
+    if (this.state.tick % REPLAY_CHECKPOINT_EVERY === 0) {
+      this.recordCheckpoint();
+    }
     this.state.events.emit('tick-completed', { tick: this.state.tick });
   }
 
@@ -222,6 +264,34 @@ export class Simulation {
         state.entities.add(factory.create(kind, definitionId, placement));
       }
     }
+  }
+
+  /**
+   * The match so far as a `Replay` (architecture 03 §6, ADR 0025 §4): what it was built with (seed,
+   * config, and the map, map objects and roster when it had them), a copy of the command log and
+   * the checkpoints recorded so far. Plain data. It does not hash now: after a throw inside
+   * `step()` the state holds half a tick, and that hash cannot be reproduced.
+   */
+  public exportReplay(): Replay {
+    return {
+      ...this.setup,
+      commands: [...this.commandLog],
+      checkpoints: [...this.checkpoints],
+    };
+  }
+
+  /** The last applied commands (players' and bots') and the last events, oldest first (15 §5). */
+  public recentContext(): LogContext {
+    return recentContext(this.state);
+  }
+
+  private apply(command: Command): void {
+    this.state.recordCommand(command);
+    applyCommand(command, this.handlers, this.commandContext);
+  }
+
+  private recordCheckpoint(): void {
+    this.checkpoints.push({ tick: this.state.tick, hash: this.hash() });
   }
 
   /**

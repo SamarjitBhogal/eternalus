@@ -4,7 +4,7 @@ description: Reconciles the requirements doc's explicit Entity class tree with C
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-25
 tags: [adr, entities, oop, composition]
 related:
   ['docs/architecture/04-entity-architecture.md', 'docs/reference/suggestions/discrepancies.md']
@@ -12,7 +12,8 @@ related:
 
 # 0006. Entity model: shallow inheritance plus composition
 
-- Status: accepted (product owner decision 2026-09-30 for D4/D11; D10 confirmed 2026-10-03, DEC-03)
+- Status: accepted (product owner decision 2026-09-30 for D4/D11; D10 confirmed 2026-10-03, DEC-03);
+  amended by 0018: sub-classes are MVP
 - Date: 2026-09-30
 
 ## Context

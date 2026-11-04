@@ -2,13 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { type BridgeEventMap, SESSION_PHASES, type SessionPhase } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
-import { placeholderCatalogue } from './content/placeholderCatalogue';
-import { PLACEHOLDER_MATCH_CONFIG } from './content/placeholderSetup';
-import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { SessionController } from './SessionController';
 import type { SessionContext, SessionState } from './SessionController.types';
 import { IllegalSessionTransition } from './session/IllegalSessionTransition';
-import { LcgRng } from './session/LcgRng';
+import { testSessionDeps } from './testSessionDeps';
 
 // Architecture 13 §2, written out independently of SESSION_TRANSITIONS.
 const LEGAL: readonly (readonly [SessionPhase, SessionPhase])[] = [
@@ -43,21 +40,11 @@ describe('SessionController transition table', () => {
     const bus = new TypedEventBus<BridgeEventMap>();
     const phases: SessionPhase[] = [];
     bus.on('session-phase', ({ phase }) => phases.push(phase));
-    const controller = new SessionController({
-      bus,
-      clock: new FakeSessionClock(),
-      states,
-      catalogue: placeholderCatalogue,
-      matchConfig: PLACEHOLDER_MATCH_CONFIG,
-      playerName: 'Tester',
-      seedSource: () => 1,
-      createRng: (seed) => new LcgRng(seed),
-      themeRoot: { dataset: {} },
-    });
+    const controller = new SessionController(testSessionDeps({ bus, states }));
     controller.start();
     const context = captured.context;
     if (context === null) throw new Error('boot did not enter');
-    return { controller, phases, context };
+    return { controller, phases, context, bus };
   }
 
   // SESSION_PHASES is in flow order, so each phase is reachable through the ones before it.
@@ -89,6 +76,43 @@ describe('SessionController transition table', () => {
       expect(controller.phase).toBe(from);
     });
   }
+
+  // A screen crash leaves every phase but `menu` and `match` for the menu (DEC-149), outside the
+  // intent table; the test drives it as the session is driven, through the `ui-intent` bus. In
+  // `match` the same intent ends the match instead (`SessionController.crash.test.ts`).
+  const SCREEN_CRASH = {
+    kind: 'report-screen-crash',
+    screen: 'screen',
+    message: 'render failed',
+    stack: '',
+    componentStack: '',
+  } as const;
+  const crashingPhases = SESSION_PHASES.filter((phase) => phase !== 'menu' && phase !== 'match');
+  for (const from of crashingPhases) {
+    it(`a screen crash in ${from} reaches the menu with screen-crashed, outside the intent table (DEC-149)`, () => {
+      const { context, controller, bus } = withFakeStates();
+      const moves: BridgeEventMap['session-phase'][] = [];
+      bus.on('session-phase', (move) => moves.push(move));
+      for (const step of pathTo(from)) context.transition(step);
+
+      bus.emit('ui-intent', SCREEN_CRASH);
+
+      expect(controller.phase).toBe('menu');
+      expect(moves.at(-1)).toMatchObject({ phase: 'menu', reason: 'screen-crashed' });
+    });
+  }
+
+  it('keeps a screen crash in menu in menu: it shows the reason again, with no move', () => {
+    const { context, controller, bus } = withFakeStates();
+    context.transition('menu');
+    const moves: SessionPhase[] = [];
+    bus.on('session-phase', ({ phase }) => moves.push(phase));
+
+    bus.emit('ui-intent', SCREEN_CRASH);
+
+    expect(controller.phase).toBe('menu');
+    expect(moves).toEqual(['menu']);
+  });
 
   it('cannot repeat a match setup that was never made', () => {
     const { context } = withFakeStates();

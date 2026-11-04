@@ -1733,6 +1733,774 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."
 - Next step: quick `/pr-review`, then merge PR #36 into `phase/2-sprint-2-work`.
 
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, foundation — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done: the foundation for the owner's three Figma frames (Pre-Game Class Selection
+  62:125 with its alternate 62:70, Pre-Game Sub-Class Selection 58:271, HUD Draft 62:231), built
+  by gated agent packages from the master plan (decisions DEC-48…DEC-55):
+  - Core: Legionnaire as the warrior display name, the display-only Legend family (Catalyst,
+    Oracle, Necromancer; Velite, Centurion, Praetorian; Colossus, Juggernaut) with mirrored Magus
+    Legend names per team, map-feature display names and `loadDisplayContent()`.
+  - Assets: the owner's Figma art exported on a scratch page (originals verified unchanged),
+    lossless WebP renditions, Cinzel (OFL) and Phosphor (MIT) with licences, behind a minimal
+    `data/resources` `ResourceController` and `AssetManifest` (asset groups boot, selection,
+    selection-primary, selection-alternate, match).
+  - Bridge and content: HUD and catalogue contracts, events, slices, selectors, the core-backed
+    display catalogue (placeholder catalogue retired), the `effectsRenderer` and `contrastMode`
+    data switches, tokens (Figma-exact set and an accessibility-minimums set) and strings.
+  - Lifecycle (audit AS-1): `SessionController` owns the `Match` (DEC-50). The world is prepared
+    in `match-loading`; the `Match` is created only when the match viewport attaches and is
+    destroyed on leaving `match`. Nothing builds a map, Simulation, game loop or rAF before
+    `match` (the game loop no longer runs during class selection). `MatchBridge` publishes what
+    the simulation has; the minimap draws in the HUD ring through `Renderer.clipToEllipse`.
+  - Screens are not built yet: `App.tsx` still shows `PlaceholderScreen` (WP-F F2 registers the
+    real screens after the selection and HUD packages).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 487 passed (487)"; client "Tests 735 passed (735)", statements 96% (base 89.19%);
+  "✓ built in 155ms"; "Documentation check passed."
+- Next step: the selection screens (WP-SEL-SHARED, WP-LEGEND, WP-CLASS) and the HUD (WP-HUD) in
+  parallel local sub-branches with the pixel audit against the Figma, then WP-F F2 integration
+  and the final audit.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the match screen and HUD of Figma 62:231 (package WP-HUD), not yet registered in
+  `App.tsx` (WP-F F2 does that):
+  - `ui/screens/MatchScreen`: the viewport under a HUD section (`--hud-u` = one Figma px, nine
+    regions in the Figma's paint order) and the pause overlay beside both; the viewport and the
+    HUD are `inert` while an overlay is open. `PauseOverlay` autofocuses Resume, focuses the
+    dialog for the settings view and returns focus to the element the pause key captured.
+  - `ui/hud/`: segmented health, aether, ultimate and weapon bars, the level badge (XP ring =
+    XP within the level, emblem from the class kit, total level), the ability and gadget slots
+    with the owner's slot meanings (OD-9: gold glow = ready, red fill from the bottom = remaining
+    cooldown, a key glyph on every slot), charge boxes, structure strips bound by identity,
+    objectives with an allegiance flag, the clock, the crystal and the minimap ring. A `null`
+    value draws the "no data yet" hatch and is an image named "No data yet".
+  - Bridge selectors `selectHudKit`, `selectHudSlotView`, `selectStructureStrip`,
+    `selectObjectives`, `selectMatchClockText`; `HudSide`; the Figma fixture's slots follow OD-9.
+- Checks run: `npm run check` → `EXIT=0` (quoted in the WP-HUD report); pixel audit of the
+  `hud-draft` harness scenario against `hud.figma.png`: 64 match, 44 identical, 4 masked, 27
+  differ (Cinzel text rasterisation, the 15 px numerals 1 px high, sub-pixel edges of the charge
+  boxes and the XP ring).
+- Next step: the orchestrator's gate and the HUD-vs-Figma critic; WP-F F2 registers
+  `MatchScreen` in `App.tsx`.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD fix round 1 — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the named leaves `ui/hud/HealthBar` and `ui/hud/AetherBar` (OD-19(b): each one
+  line over `ResourceBar`, passing `className` through), each with a server-render test (Figma
+  value 1850 / 4700, "—" and the "No data yet" image before the first publish, no shield
+  overlay); `MatchScreen` renders them instead of `ResourceBar` directly (the aether placement
+  class is unchanged).
+- Checks run: `npm run check` → `EXIT=0` (client 159 files, 860 tests; core 85 files, 487 tests).
+- Next step: the orchestrator's gate re-check; the T-HUD-20 objective-letter fallback waits for
+  the orchestrator's decision; the visual audit loop on `hud-draft`.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD visual fix round 1 — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the two fixable defects of the WP-HUD raster audit, round 1.
+  - `ResourceBar.module.css`: the health and aether numeral box sits 1 `--hud-u` below the
+    Figma's top 2 through a named, commented local knob (`--value-baseline-nudge: 1`). Chrome
+    rounds Cinzel 15's ascent and descent and puts the baseline about 0.8 px above Figma's, so the
+    numerals were 1 px high; tops of 2.5 and 2.8 render like 2. This is a per-leaf baseline offset
+    found by the audit: OD-18 outranks the plan's "no knob tuned during the audit" (§11.4 step 7,
+    I-88) for this leaf. It is a `top`, not a `translate` (I-45).
+  - `ChargePips`: each box stroke is drawn on the edges the Figma render shows, which sit on a
+    1/8 px grid (`PIP_GEOMETRY.edgeStepsPerPx`); the fills, widths and viewBox keep the node
+    geometry. A `normalised` change of at most 0.063 px that needs a CD row (CD-17 type) in the
+    register (reference doc 15), which WP-DOCS owns.
+- Checks run: `npm run check` → `EXIT=0` (client 159 files, 863 tests; core 85 files, 487
+  tests). Harness `hud-draft` re-shot: health-value and aether-value now shift 0 (OD-18 /
+  OD-21(d) floor), the charge boxes match; byte-identical to the auditor's combined probe.
+- Next step: WP-DOCS registers the charge-box CD row and records the numeral baseline knob; the
+  re-audit of `hud-draft`.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD visual fix round 2 — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: two of the three defects of the WP-HUD raster audit, round 2.
+  - `LevelBadge.module.css`: the XP glow draws only the fill's shadow, as Figma does. A
+    drop-shadow filter also paints the copy it shades, and the copy's anti-aliased edge showed
+    through the r 80.5 mask and tinted the stroke's outer edge. The copy now sits
+    `--xp-glow-shift` (whole px, at least 400 Figma px) left of its place, outside the masked
+    wrapper, and the shadow is offset back by the same shift. The 80.25 fill clip stays.
+  - `SegmentedBar.module.css`: the health and aether marker → rest step gets three stops at a
+    quarter, half and three quarters, each the straight-alpha mix Figma draws (relative colour
+    from the rest token towards the white marker, so the minimums set follows); the gradient
+    names `in srgb` so those stops keep the legacy interpolation space. The cream bars get the
+    premultiplied points of their own ramp, so they render unchanged (byte-identical in the
+    harness, both colour sets).
+  - Not done here: the HUD key-label centre needs `KeyGlyph.module.css` (WP-F) changed, which is
+    not additive; it is routed to WP-F as a CCR.
+- Checks run: `npm run check` (result quoted in the WP-HUD report). Harness `hud-draft` re-shot:
+  xp-ring 4.17 %, xp-ring-inner 4.54 %, level-icon 4.43 % (official mask), all MATCH under the
+  CD-25 information mask; health marker zone 0 px over dE 2.3, aether 16. The 1280 × 720, dark,
+  green, minimums and minimums-peak scenarios change only on the ring edge and the marker
+  columns; null and live-no-data are byte-identical; the CSS path equals `hud-draft`.
+- Next step: WP-F applies or rejects the KeyGlyph CCR; the re-audit of `hud-draft`.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD key-label centre (KeyGlyph CCR applied) — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the HUD key-label defect of the WP-HUD audits (rounds 2 and 3), on the
+  orchestrator's instruction to apply the open CCR to `KeyGlyph.module.css` (WP-F file).
+  - `.hud` padding is `calc(1 * var(--hud-u)) calc(2 * var(--hud-u)) 0 calc(3 * var(--hud-u))`,
+    so the content centre sits on the Figma text node 65:668 (+13, +13 of the 25 × 25 box). The
+    digits were about 1 px high and 0.6 px left.
+  - The CCR said to check the change against OD-21(f) (key-cap overflow). With the padding alone
+    the 23-unit line box overflows the 22-unit content box (scroll 23 × 24, client 23 × 23), so
+    the line height is now `calc(22 * var(--hud-u))`: the line box fills the content box (FID-17).
+    At 1920 × 1080 (DPR 1 and 2) this renders byte-identical to the padding alone; at 1280 × 720
+    it also centres the digits vertically (padding alone left them about 0.5–0.9 px high).
+  - `KeyGlyph.test.tsx`: a test of the `.hud` rule (box, stroke, padding, line height). It
+    failed before the CSS change.
+- Checks run: `npm run check` (result quoted in the WP-HUD report). Harness, every scenario
+  before and after: only pixels inside the six HUD key boxes change; key-label rows ult / 1 / 2 /
+  3 are 4.81 / 3.69 / 5.77 / 4.17 % (were 8.01 / 5.13 / 10.26 / 9.46), shift 0, ink box 0, glyph
+  centroids within 0.17 px of Figma's (OD-18 floor). The CSS path still equals the raster path.
+  The text lists are unchanged.
+- Next step: the re-audit of `hud-draft`; WP-F confirms the change to its file.
+
+### 2026-10-18 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD OD-9 docs record — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the HUD-vs-Figma critic's one finding, OD-9 not yet recorded in the docs. Docs
+  only; no code changed.
+  - Reference 15 §3: register row CD-28 (`fill-in`): the red vertical fill is the on-cooldown
+    look, cut from the bottom to `cooldownRemainingTicks / cooldownTicks`; the gold glow is the
+    ready look; the fill's direction is a default for the owner to confirm (HC-C1).
+  - Architecture 13 §10 (Implementation status): the `AbilityBar` cooldown sweep of §3 is that
+    vertical fill, with a link to CD-28. §3's design text is unchanged.
+  - Architecture 05 §15 `PlayerSnapshot` sketch: `xp` is the XP earned inside the current level
+    (resets on level-up), `xpToNext` the XP the current level needs to reach the next.
+  - `last-reviewed` 2026-10-18 on all three; `INBOX.md` HC-C1 gains one sentence naming CD-28.
+- Checks run: `npm run check` (result quoted in the WP-HUD report). Harness `hud-draft` re-shot
+  and compared with the previous shot and the Figma reference.
+- Next step: the PR's deviation table lists the vertical fill as acceptable (owner design).
+
+### 2026-10-19 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD XP-ring edges and glow (CSS-quality audit) — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the two fixable XP-ring defects of the WP-HUD CSS-quality audit (65:653).
+  - `LevelBadge.module.css`, arc edges: the conic gradient uses the Figma's own edge geometry
+    as soft ramps. It starts at −1.05° with a 0.69° fade-in, has the orange stop at
+    p × 174° + 1.05°, and fades out over 0.75° centred on p × 360°. The hard `transparent 0`
+    stop is gone, because Chrome draws conic hard stops aliased (the end was a staircase and the
+    start 1.4 px late). The fade-in narrows to the gap left before a full turn
+    (`min(0.69deg, (1 − p) × 360deg)`), so p = 1 closes with no notch. With no XP (p = 0),
+    `LevelBadge` sets `data-xp-arc="none"` and the fill and glow copy draw no arc; the edge ramps
+    alone would leave a 1–2 px sliver at 12 o'clock.
+  - `LevelBadge.module.css`, glow: the drop-shadow σ is now `calc(4 * var(--hud-u))`, a tuning
+    value with a comment: Figma's blur 10 is nominally σ 5 but measures as σ 4 here, the same
+    finding as `SLOT_GLOW_SIGMA`.
+  - `LevelBadge.test.tsx`: the existing exact pin of the drop-shadow string now says
+    `calc(4 * …)` (still exact). Three new tests cover the gradient stops with no hard stop, p = 0
+    (`data-xp-arc="none"` and the `background: none` rule) and p = 1 (no attribute, and the
+    fade-in and fade-out stops that close the ring).
+- Checks run: `npm run check` (result quoted in the WP-HUD report). Harness `hud-draft`, raster
+  and CSS paths, re-shot. The two paths are still byte-identical to each other, because the HUD
+  does not depend on the renderer. The shot is byte-identical to the auditor's combined probe.
+  Only the badge box changed: 132 of 139 rows are identical, and xp-ring, -outer and -fill moved
+  from 4.17 to 3.60 %. Arc-edge zone: 36 px over 2.3 before, 13 after. Glow bands r 81–93:
+  dL* −0.28 to +0.33, with 0 px over 2.3. In harness scenarios at p = 0, 1 and 0.998, the ring
+  is empty at p = 0, closes with no dip at 12 o'clock at p = 1, and shows a closing gap at 0.998.
+- Next step: the re-audit of `hud-draft` on both paths. The stroke edge (r 79–81) and the level
+  number stay open, as the audit found.
+
+### 2026-10-23 — Phase 2 / Track B (S1 carry-over) / HUD and character select, WP-HUD frame 8:2 and CD-25 dispositions — feat/hud-charselect-hud — sholtzman + Claude Code
+
+- What was done: the HUD-vs-Figma critic's two docs findings. Docs only; no code changed.
+  - Reference 15 §1: frame 8:2's role reads "deleted by the owner 2026-10-18 (OD-9); 62:231 is
+    the only HUD frame" (the Figma no longer has the node).
+  - Reference 15 §3, CD-25: the status reads "registered (OD-3, 2026-10-18); mask pending owner
+    sign-off (HC-C1)"; the row states the measurement's outcome instead of its condition, and
+    points to HC-S4. The level-number mask is still not applied: it waits for the owner.
+  - `INBOX.md`: HC-C1 asks the owner to sign off CD-25 and its mask; HC-Q2 (2) asks how an
+    uncharged ultimate looks, with CD-28's default, and no longer cites 8:2; HC-Q2 (5) is marked
+    answered by OD-9 (CD-28); new HC-S4 records the hybrid grain field ("option A") as a
+    better-than-design candidate, not built.
+  - `last-reviewed` 2026-10-23 on reference 15.
+- Checks run: `npm run check` (result quoted in the WP-HUD report). The harness could not re-shoot
+  `hud-draft`: its sources and the shot and diff tools are gone from the scratch space. Every
+  file outside `docs/` and `INBOX.md` hashes the same before and after this edit, so the HUD
+  render is unchanged; the region numbers were re-measured on the last shot of that code.
+- Next step: the owner signs CD-25 (then the mask is applied) or picks HC-S4.
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, final visual audit (stream C) — fix/hud-charselect-visual — sholtzman + Claude Code
+
+- What was done (recorded by stream B from stream C's report): the final pixel audit of 62:125,
+  62:70, 58:271 and 62:231 against the Figma as refreshed on 2026-10-24, on the Figma-raster
+  path, until a round changed nothing; every remaining difference has a ruling (register CD-29 to
+  CD-35). Fixes: the measured blur for the label and countdown glows (OD-27; 32 regions better,
+  none worse); the picked Legend title centred on the owner's renamed 55:257 box; the battle axe
+  with the owner's Noise grain, extracted from his own frame (OD-28, register CD-37). Also the CSS
+  effects path measured once for information, a live-content layout review on both teams and at
+  1280 × 720, and the HUD's slot meanings re-checked against OD-9.
+- Checks run: `npm run check` before the commits, `EXIT=0`: core 85 files, 487 tests; client 199
+  files, 1208 tests, statements 95.38 %; docs check passed (log in the stream's working folder).
+- Next step: the owner signs CD-25's mask (HC-C1); docs that quote the match budget use the new
+  totals (141,646 / 359,902 B, OD-29 (d)).
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, docs for the owner's sign-off (stream B) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only; no code changed):
+  - Architecture, append-only (OD-26): one Implementation-status note each in 01 (new §8), 02 (new
+    §12), 05 (new §18), 06 §10, 13 §10, 14 §14 and 17 (new §12), and three paragraphs citing
+    DEC-50 and DEC-52 to DEC-55 in 13 §2, §7 and §9. Two 13 §10 sentences wait for the merged live
+    probe (`⟨PENDING-A⟩`).
+  - Every change to existing design text is an unapplied patch with the owner's edit table (T-01
+    to T-79, plus A-1 and A-2 merged earlier), inlined in `INBOX.md` HC-T1.
+  - Reference 15: a `floor` kind; CD-26 records the frame's own Oracle/Cantor inconsistency and the
+    panel-subtitle mask; new rows CD-29 to CD-37 (rendering floors with every number from the final
+    audit in §4, fit-to-width titles, the battle-axe extraction).
+  - New `docs/plan/ui-enhancements-plan.md` (UE-01 to UE-12, each a data-selectable variant with
+    the Figma original kept live) with its task line in Phase 6, sprint 6.3.
+  - `INBOX.md`: HC-T1, HC-B1 (reconciled) and HC-C1 rewritten; HC-Q15 with the measured sizes;
+    new HC-S5; the owner's playtest of 2026-10-24 recorded in Done.
+  - Ids re-checked after `git fetch` across 39 remote refs and the open PRs: DEC-48…55, OQ-63…70,
+    FR-119, ADR 0018 and the CD, HC and UE ids are unique. An independent fact-check found 19
+    imprecisions; all are fixed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 487 passed (487)"; client "Tests 1207 passed (1207)", statements 95.38 %; "✓ built";
+  "Checked 113 Markdown files under docs/." and "Documentation check passed.".
+- Next step: after the merge and the upstream sync, replace the `⟨PENDING-A⟩` sentences with the
+  live-probe result and regenerate the patch on the merged tree; the owner answers HC-T1, HC-B1,
+  HC-C1, HC-Q1 (5) and HC-S5.
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, screen registration, live probe and upstream sync — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (recorded by stream B from the coordinating session's results):
+  - `ui/App.tsx` registers `CharacterSelectScreen` and `MatchScreen` in `PHASE_SCREENS`
+    (`5c0f7da`). Only `MatchScreen` renders the viewport; `PlaceholderScreen` no longer shows it.
+    The App test that pins this failed first against the old App (5 phases showed a viewport).
+    Eight unused tokens this branch had added were removed, each grepped first.
+  - A live probe of the built app passed all ten criteria in development and production builds:
+    no canvas and no animation frame before the match, the world prepared only in
+    `match-loading`, the loop running in the match and stopped after Leave match, the
+    keyboard-only flow, Esc and C left to the page on the selection screens, no page errors, and
+    the `Match` created only in the match. Long frames during character select are judged on the
+    production build (OD-30): none in seven runs.
+  - `useFitFontSize` measures after layout through a one-shot `ResizeObserver` and applies the
+    fit with `flushSync`; its new tests failed first. Residual risk: the class-to-Legend step is
+    not measurably cheaper, so a slower machine may still stutter there.
+  - Merged `origin/phase/2-sprint-2-work` (34 commits: PRs #31, #33, #34, #35, #36, #37, #41) as
+    `5755dfe`.
+  - Evidence: the probe records are outside the repository (`eternalus-agent-work/hud-charselect/`
+    `wf7/probe-r2/`, `results/f2.json`).
+- Checks run: after F2, `npm run check` → `EXIT=0` (core 487 tests; client 1219 tests); after the
+  sync, `npm run check` → `EXIT=0`: core "Test Files 112 passed (112)", "Tests 606 passed (606)";
+  client "Test Files 199 passed (199)", "Tests 1220 passed (1220)", statements 95.36 %;
+  "Checked 116 Markdown files under docs/." "Documentation check passed."
+- Next step: the owner's sign-offs (INBOX HC-T1, HC-B1, HC-C1, HC-Q1 (5)).
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, docs follow-up after the sync (stream B) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only):
+  - Architecture 13 §10: the two placeholder sentences now record the screen registration and
+    the live check, with its residual risk and where the evidence is. 05 §18 records that the
+    HUD's aether, level and XP stay `null` after the sync, because core's entity snapshot carries
+    only health (INBOX HC-F6 gains a line).
+  - Reference 15: Select Class's label glow is an open residual for the owner, not a floor
+    (CD-30); CD-21 now gives its fifteen `minimums` tokens and the thirteen pairs' ratios in both
+    sets (new §5, computed as `tokenContrast.test.ts` computes them); a new appendix lists the
+    build rulings OD-1 to OD-30 that the docs cite. INBOX HC-C1 matches.
+  - The unapplied design-text patch was regenerated on the synced tree (79 edits, only line
+    numbers moved) and the HC-T1 table updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 606 passed (606)"; client "Tests 1220 passed (1220)", statements 95.36 %; "✓ built";
+  "Checked 116 Markdown files under docs/." "Documentation check passed."
+- Next step: the pre-PR critic on the merged branch, then the owner's sign-offs.
+
+### 2026-10-24 — Phase 2 / Track B (S1 carry-over) / HUD and character select, docs for the pre-PR critic's run 1 (stream B) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only):
+  - Architecture 13: the three paragraphs citing the owner's decisions (§2 DEC-50, §7 the display
+    switches, §9 the variants) moved from the design text into the §10 note until he approves
+    their wording, because §2's table still described the old lifetime (critic S5). §10 now also
+    records the missing shield segments (N17), a re-attach restarting at tick 0 (N21), the minimap
+    inside the HUD ring (N23), the fixed slots and the unbuilt default-action prompt (N25), the
+    frame-only minimap panel (N26) and the plan entry for each deferred HUD piece (N29).
+    Architecture 14 §14: a failed asset is warned about, not raised as a typed error.
+  - Reference 15's appendix defines every cited ruling part (OD-11a to OD-29d) and OD-31 to
+    OD-33; every OD id cited in the repository resolves there.
+  - `INBOX.md` HC-B1 adds the critic's BD1, BD2 and NF1 to NF5, merged with the existing rows.
+    HC-T1 lists rows T-01 to T-99: T-86 to T-90 for the critic's items, and T-91 to T-99 for ADR
+    0018's own amendments, which apply only if the owner accepts it.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 606 passed (606)"; client "Tests 1220 passed (1220)", statements 95.36 %; "✓ built";
+  "Checked 116 Markdown files under docs/." "Documentation check passed."
+- Next step: the working ids that resolve nowhere in the repository (the DV rows and the work
+  package names) wait for a ruling; then the critic's second run.
+
+### 2026-10-25 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the pre-PR critic's rework round (lanes A and B) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (code; recorded by stream B from the orchestrator's facts and the lane reports):
+  - Lane A, `fix/hud-charselect-critic-a`, 20 commits for the critic's S1, S2, N4, N5, NF3, S4,
+    N9, N6, N7 and NF4: `loadDisplayContent()` takes injectable catalogues and both its
+    validations are tested; the locked fourth card, the Magus's alternate-layout description and
+    the team names are core display content; `main.tsx` injects the catalogue's known asset ids,
+    so `game/content/` reads no `data/` module; each placed image declares its draw box on its
+    manifest entry, published with the URLs, replacing five `ui/` tables (the HUD weapon art
+    included); the character-select shell is split into its own files and hooks; both card rows
+    share one tested focus helper, and Back returns focus to View Details in the alternate layout.
+  - Lane B, `fix/hud-charselect-critic-b`, 15 commits for N10 to N16, N2, N3 and N22: derived
+    selectors moved to `bridge/selectors/`; companion files renamed after their owners;
+    `classNames` moved to `ui/components/`; the glow buttons' plate boxes moved into their skin
+    rules; oversized files and functions split; sibling tests for `useAssetUrl`, `useStageScale`,
+    `FakeViewportCanvas` and `GameCanvasChrome`; a recording `FakeSessionContext` replaces
+    `spyContext`; the bridge re-exports core's `PlayableTeam` and `Team`; three constructors
+    gained TSDoc. `GameCanvasChrome`'s CSS stays in `GameCanvas.module.css` (a PR note).
+  - Merged into `feat/hud-and-character-select` as `751a057` (lane A), `e260398` (lane B) and
+    `f529a90` (with the docs round 4b56fc6). Conflicts: `testSessionDeps.ts` and
+    `FakeSessionContext` (lane B's recording fake, reading lane A's `shippedCatalogue()`), the
+    `WeaponPanel.tsx` imports, and `boxes: {}` added to lane B's three tests that dispatch
+    `groupUrlsChanged`.
+  - Not in this round: N1 (the test fixtures still live in `bridge/`) and S3 (a separate code
+    sweep of the working ids cited in code). Open gap: the one-line hook wiring
+    `rovingKeyDown(actions.move)` is untested; the helper is tested.
+  - Reports: `eternalus-agent-work/hud-charselect/critic/rework1/` (A1 to A4, B1 to B3), outside
+    the repository. The pixel re-shoot of the merged tree was still running when this entry was
+    written.
+- Checks run (merged tree, as reported by the orchestrator): `npm run check` → `EXIT=0`; core
+  "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %.
+- Next step: the pixel re-shoot result, the code sweep (S3), then the critic's second run.
+
+### 2026-10-25 — Phase 2 / Track B (S1 carry-over) / HUD and character select, ADR 0018 accepted as corrected, the PR register and doc drift (stream B, round B6) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only):
+  - The owner accepted ADR 0018 on 2026-10-24 and corrected it on 2026-10-25 (DEC-56, his words
+    quoted in the decisions log): sub-classes (Legends) are MVP, and the pick ships first as setup
+    data. ADR 0018 is rewritten to match, retitled "Sub-classes (Legends) are MVP" (the file keeps
+    its name) and accepted. Applied, revised to match: ADR 0006's Status line; FR-057 keeps only
+    mid-match class switching, and the new FR-119 (MVP) covers sub-classes and names the content
+    files instead of copying the roster; architecture 04 §9 (heading too), 17 R2 and the
+    architecture README's D11 row; the phase 2 and phase 4 plan items. HC-Q1 (5) is answered;
+    HC-Q17 asks which phase builds sub-class gameplay. DEC-56, FR-119 and HC-Q17 were checked
+    free on every local and remote ref after a fetch.
+  - The unapplied patch (INBOX HC-T1) now has 89 rows: the applied ones left it, T-100 to T-102
+    carry ADR 0018's id wording to `AGENTS.md`, 04 §10 and 17 R26 for the owner, and T-64, T-73
+    and T-78 now say sub-classes are MVP.
+  - New `docs/changelog/pr-feat-hud-and-character-select.md` (build ruling OD-35): the plan's
+    deviation table DV-01 to DV-138 with final DEC numbers, the applied ADR 0018 rows, and one
+    line for each working id the branch cites (249 ids, drafted from the plan's sources by two
+    subagents and reviewed; 14 render-log lines are marked as restated from the asset sources,
+    because that log was not recovered). A resolver script found a definition in the repository
+    for every id cited on the branch's added lines (849 ids, 0 unresolved).
+  - Status notes match the merged code: 02 §12 (`loadDisplayContent()` also returns the locked
+    cards and the team names, with optional catalogues; `main.tsx` injects the catalogue's asset
+    ids), 13 §10 and 14 §14 (draw boxes on manifest entries and in `asset-urls`), 17 §12 (the
+    display names are core content, named by file).
+  - Reference 15's appendix gains OD-34 to OD-36.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed."
+- Next step: the roster audit (B7), the owner's sign-offs (HC-T1, HC-B1, HC-C1, HC-Q17), the
+  code sweep and the critic's second run.
+
+### 2026-10-25 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the roster rows, the staff fill-in and the PR register's index (stream B, round B7) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only; the branch was first fast-forwarded to the task branch's `dfe56a0`,
+  the code sweep, which touches no docs):
+  - Reference 15: CD-38 registers the Magus staff in the HUD's weapon panel as a `fill-in`
+    (centred at its native size in the weapon art's layout box; no Figma original exists), and the
+    appendix gains OD-37, which supersedes OD-8's "stays unused" for that slot only. INBOX HC-C1
+    lists CD-38.
+  - The unapplied patch (INBOX HC-T1) has 95 rows. The rows that copied a display name, a title or
+    a Legend name now cite DEC-48, DEC-49 or DEC-56 and point to the content files; T-65 replaces
+    reference 01's eight sub-class rows with one pointer row (T-66 to T-72 merged into it). New rows
+    T-103 to T-115 carry DEC-56 into reference 01, reference 10, the glossary, the naming and
+    more-abilities suggestions and the post-MVP backlog, for one sign-off. HC-T1 flags T-93a, the
+    applied FR-057 acceptance sentence, as agent-written. HC-Q16 points to the content file.
+  - The PR register (`docs/changelog/pr-feat-hud-and-character-select.md`) names the round-4
+    critic of R4-08, defines the streams, the lanes, the rounds B1 to B8 and the merged rows T-66
+    to T-72, and follows the code sweep (the fixtures in `bridge/__fixtures__/`). The resolver
+    found a definition in the repository for every id cited on the branch's added lines (869 ids,
+    0 unresolved, on `dfe56a0` plus this round).
+  - `docs/changelog/README.md` lists the register. The index still lacks the earlier PR records
+    (`pr-feat-sim-kernel.md`, `pr-feat-session-shell-home.md`, `pr-feat-settings-keybindings.md`,
+    `pr-feat-minion-follow-prototype.md`); they are not backfilled here.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed."
+- Next step: the roster audit's list of docs (B8), then the owner's sign-offs.
+
+### 2026-10-25 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the roster audit's doc items (stream B, round B8) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only; the roster rename-friction audit and its rulings are build ruling
+  OD-38, and the code fixes are a separate round):
+  - The unapplied patch (INBOX HC-T1) has 122 rows. New rows T-116 to T-135 remove the remaining
+    copies of class names and "post-MVP sub-classes" from the requirements, architecture 04, 05,
+    17 and 18, the phase 4 plan, the backlog, reference 10 and 11, the glossary and the reference
+    README, each pointing to the content files; four are optional, and T-125 (architecture 18) is
+    addressed to its owner, SamarjitBhogal. T-136 to T-142 and the revised T-100 to T-102 change
+    "never renamed once used" to "never renamed once a save or a release stores it"; their
+    wording waits for the owner's answer to HC-Q18 (4). T-77's term is now "Flying", and T-101
+    no longer quotes a stale display name. Two stale texts of the owner's are flagged in HC-T1,
+    not edited (CP-13's "Why" line and phase 4's exit criterion 3).
+  - Reference 15: the shipped side of the Figma's renamed Legends (§1, CD-13, CD-14, CD-26) now
+    points to `packages/core/src/content/legends/specs/`; the Figma's own strings stay. The
+    appendix gains OD-38.
+  - INBOX: HC-F2 cites ADR 0018 point 5 (the id stays the owner's question); new HC-Q18 asks four
+    decisions with recommendations (the art-id prefix guard, class id versus entity kind,
+    self-naming prose, how far id permanence reaches) and notes the provenance strings and the
+    asset rename.
+  - The resolver found a definition in the repository for every id cited on the branch's added
+    lines (900 ids, 0 unresolved).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1305 passed (1305)", statements 95.99 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed."
+- Next step: the code fixes' round and its progress entry, then the owner's sign-offs (HC-T1,
+  HC-Q17, HC-Q18).
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the roster audit's code fixes (lane B, OD-38) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (code; recorded by stream B from the orchestrator's facts and the proof in
+  `eternalus-agent-work/hud-charselect/roster-audit/fixes/`, outside the repository; the audit's
+  items P1 to P11 are defined in `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - Lane B, `fix/hud-charselect-critic-b`, 12 commits (`f23ce76`, `51b4e61`, `59c7bdc`,
+    `c1671e0`, `b4637d5`, `1cc5568`, `d0be63f`, `84cf26c`, `eed8002`, `6703db0`, `cbdcb27`,
+    `f896faf`), merged together with round B8 (`0b85863`) into `feat/hud-and-character-select`
+    as `fcc7c85`.
+  - P1: the Results screen's "X wins." and the explorer's stronghold labels read the team names
+    from content.
+  - P5: (a) boot fails on a presentation key with no content entry; (b) `CharacterSelectState`
+    logs ERROR `client.session` for a class or Legend id the catalogue does not have and ignores
+    it (`SessionContext` gained `logger`); a judgement call: a known Legend id under the wrong
+    class is ignored silently; (c) `Match` logs ERROR `client.match` when core rejects the
+    player's spawn.
+  - P2: the content tests build their expected prose from `displayName`.
+  - P3: the art-name guards read the names from content. The asset id
+    `legionnaire-legend-portrait` became `warrior-legend-portrait` (4 webp files moved with
+    `git mv`, 100 % similarity, the same SHA-256), the constant `LEGIONNAIRE_LEGEND` became
+    `WARRIOR_LEGEND`, and the About screen's collapsed credits show the new id.
+  - P4 and P7: tests read the expected names and ids from content (helpers
+    `rosterNamesThatAreNotIds` and `firstAvailableSpecId` in
+    `apps/client/src/game/content/__fixtures__/shippedCatalogue.ts`).
+  - P11: id TSDoc in `legendSpecs.types.ts` and `lockedClasses.types.ts`. `f896faf` dropped the
+    stale "ADR 0018, proposed" from two content comments.
+  - Pixels: 246 of 250 shots are byte-identical to the baseline. The 4 that differ are the
+    harness's own asset-check page (`check-assets-fonts`, 4 variants): the same thumbnails,
+    reordered because the renamed URL sorts later, checked by eye and by the bounding box. No app
+    screen changed.
+  - Trial renames, before → after: a sub-class title with its Legend names, 4 failures in 3 files
+    plus stale prose → 2 tests, both in `legendSpecCatalogue.test.ts`; a class display name, 3
+    tests → 1; a Legend id, 16 tests in 6 files → 6 in 3 files. The Legend-id trial found that
+    the new name guard flags that Legend's art ids once its id differs from its title (`INBOX.md`
+    HC-Q18 (1)).
+  - Disclosed for the critic: `Match.ts` has 335 lines and `buildDisplayCatalogue.ts` 304, both
+    past the ~300-line guideline.
+- Checks run (at `fcc7c85`, the orchestrator's log `results/verify-fcc7c85.log` in the same
+  folder): `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  615 passed (615)"; client "Tests 1312 passed (1312)", statements 96.02 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed." The id resolver: 900
+  ids, 0 without a definition.
+- Next step: the production live probe (running), the critic's second run, ponytail, `/verify`.
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the roster-fix round's record, the owner's visual sign-off and two id-wording rows (stream B, round B9) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, after fast-forwarding the docs branch to `fcc7c85`):
+  - The progress entry above for the roster-fix round, from the orchestrator's facts.
+  - PR register (`docs/changelog/pr-feat-hud-and-character-select.md`): the roster-fix round,
+    round B9, and the audit's items P1 to P5, P7, P8 and P11.
+  - Reference 15: the appendix gains OD-39 (the owner judged the visuals good enough for the
+    MVP; his functional UI/UX improvements wait for Sprint 3) and OD-39a (he confirmed it on the
+    current head; the Legend title centring was checked), with his words.
+  - INBOX: new HC-U1 for Sprint 3 (his UI/UX list, carrying CD-25's mask, CD-30 and CD-38).
+    HC-C1 records his words and that he viewed the live host; its box stays his to tick. HC-Q18
+    (1) gains the trial finding (the name guard flags 7 art ids in 20 files and 1 token once
+    `oracle` stops being an id), and (4) notes that the locked-class id's TSDoc already applies
+    ADR 0018 point 5. HC-T1 gains T-143 and T-144 (the naming suggestions' "never change once
+    used" and "never renamed once used"), which wait for HC-Q18 (4); the table has 124 rows, and
+    the intro's one 104-character line is rewrapped.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1312 passed (1312)", statements 96.02 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed." `git apply --check` on
+  the unapplied patch prints nothing; the id resolver: 908 ids, 0 without a definition.
+- Next step: the owner's sign-offs (HC-T1, HC-C1, HC-Q17, HC-Q18), then the critic's second run.
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the doc side of the pre-PR critic's second run (stream B, round B10) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only; the critic's code findings are being reworked in lanes A and B):
+  - PR register (`docs/changelog/pr-feat-hud-and-character-select.md`): a section for the critic's
+    second run at `fcc7c85`. It records the verdict (request-changes, no blockers), each finding
+    with its severity, class and where it goes, the refuted list, and build-01: the JavaScript
+    bundle grew from 385.94 kB at base to 666.44 kB, partly from 62 inlined images. It also holds
+    the notes for the pull request's description and the merge preconditions.
+  - INBOX HC-T1: a note at its top splits the rows. Group (i) is 47 rows that only record the
+    owner's decisions or align `apps/client/AGENTS.md` with the approved design; it is the merge
+    precondition the critic asked for, and its patch also applies on its own. Group (ii) needs his
+    judgement. Nothing is ticked. New row T-145 schedules the replacement of the interim "Leave
+    cathedral" control in Phase 2, sprint 2.8 (register CD-22). T-32, T-36, T-41 and T-43 add the
+    manifest entry's draw box and the bridge's shared HUD layout geometry, and T-79, the drafted
+    architecture 08 status note, now names `createBrowserMatch` and `MatchHost`. The table has 125
+    rows.
+  - INBOX: HC-Q7 (1) names FR-111 and asks for the terms of the art tools, a merge precondition;
+    new HC-Q19 asks about the minimap's click intent, its visibility setting and the M key.
+  - Architecture 13 §10 (the branch's status note): the Session bullet names the uncaught
+    `Simulation.step()` exception and Phase 6, sprint 6.4; shield segments and the `default-action`
+    prompt point at Phase 4, sprint 4.7; the `toggle-minimap` binding has no handler (HC-Q19).
+  - Architecture 08 gains no note directly: an earlier one was removed so that 08 stays unchanged
+    until the owner approves its note (`fb310c6`), so the note stays HC-T1 row T-79.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 615 passed (615)"; client "Tests 1312 passed (1312)", statements 96.02 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed." `git apply --check`
+  prints nothing for the whole patch and for group (i) alone; the id resolver: 913 ids, 0
+  without a definition.
+- Next step: the next round, with the rework's facts; the owner's sign-off of HC-T1 group (i)
+  and his answer to HC-Q7 (1).
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the rework of the pre-PR critic's second run (lanes A and B) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (code; recorded by stream B from the orchestrator's facts and the evidence in
+  `eternalus-agent-work/hud-charselect/critic/run2/rework/`, outside the repository; the finding
+  ids are defined in `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - Lane A, `fix/hud-charselect-critic-a`, 7 commits, merged as `6b84d64`: the `accessibleNames`
+    tests moved beside their file (`3244c4d`, ui-screens-06); `legendStepState.shownLegend`
+    extracted and tested (`c2b1182`, ui-screens-01); one "No data yet" string and the template
+    `STRINGS.noDataFor(label)` replace two strings (`c0a1713`, ui-screens-07); the selection cards'
+    props types in companion files and a shared `previewHandlers.ts`, the card functions now 66 and
+    61 lines (`8a6eb2f`, ui-screens-08); `cssRule` throws on a missing selector, with
+    `hudTestSupport.test.ts`, and its 21 callers pass (`3140a5f`, ui-hud-components-assets-07);
+    `bindLatestActionShortcut`, tested in Node, and the unused `isEnabled` dropped (`e450fa0`,
+    ui-hud-components-assets-06); the glow buttons' chrome plates placed at their manifest draw
+    boxes, with `BOXED_CHROME_PLATES` and the literal CSS boxes deleted (`7c8d70b`,
+    ui-hud-components-assets-01). Disclosed: one test was inverted on purpose, because a plate's
+    box now belongs to the plate; the chrome image gains inline CSS custom properties, runtime
+    values from the manifest, as `WeaponPanel` does.
+  - Lane B, `fix/hud-charselect-critic-b`, 10 commits, merged as `66482f4`: a roster fact dropped
+    from a TSDoc (`8893235`, core-bridge-11); a size pin replaced by a comparison with
+    `LEGEND_SPECS.all()` (`a2e825b`, core-bridge-10); the `SpecDetailNames` export dropped
+    (`b90d942`, core-bridge-04); the profile screen's display name moved into core content,
+    `content/profile/profileDisplayName.ts`, through `loadDisplayContent()` (`61401b2`, `e93e61e`,
+    game-data-02); `LegendSpecDefinition.isSelectable`, true for every Legend today, replaces the
+    client presentation's status (`c17e116`, `4dfb446`, game-data-03); the HUD mirror's TSDoc gives
+    its real reason (`6b2e4a6`, core-bridge-06); `GameCanvasChrome.module.css`, with the built CSS
+    byte-identical once class names are normalised (`63a9de1`, game-data-07);
+    `assetsInlineLimit: 0` with `vite.config.test.ts` (`dc5bdfa`, build-01): 666.44 → 557.09 kB,
+    gzip 242.72 → 174.14 kB, data URIs 62 → 0, image files emitted 99 → 152.
+  - Tests: core 615 → 617, client 1312 → 1331; no assertion dropped (per-file counts in each
+    lane's notes).
+  - Pixels: 246 of 250 shots byte-identical to the baseline. The 4 that differ are the harness's
+    asset-check page (`check-assets-fonts`, 4 variants), byte-identical to the shots verified in
+    the roster-fix round. The shoot reported "worktree untouched: NO"; the only files it changed
+    were 36 gitignored TypeScript build outputs, and no tracked file changed.
+- Checks run (at `66482f4`, the orchestrator's log `results/verify-66482f4.log` in the same
+  folder): `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  617 passed (617)"; client "Tests 1331 passed (1331)", statements 96.3 %; the JavaScript bundle
+  557.32 kB (gzip 174.19 kB); "✓ built"; "Documentation check passed." The id resolver: 913 ids,
+  0 without a definition.
+- Next step: the ponytail review (running) and its cuts, the critic's delta check, the final
+  check and the live probe.
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the record of the critic's second-run rework (stream B, round B11) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, after fast-forwarding the docs branch to `66482f4`):
+  - The progress entry above for the rework round, from the orchestrator's facts.
+  - PR register: each reworked finding of the second run names its commit; build-01's outcome (no
+    image inlined; the bundle at 557.32 kB, still over Vite's 500 kB warning from code growth);
+    the rework's test totals and pixel proof; the N22 definition now says the control's CSS has
+    its own module.
+  - Status notes: architecture 02 §12 names `content/profile/profileDisplayName.ts` and
+    `LegendSpecDefinition.isSelectable`; 17 §12's display-name bullet adds the profile screen's
+    name; 14 §14 says the build inlines no asset, so each group's bytes load with the group.
+  - INBOX: HC-T1 gains T-146, FR-090's acceptance (the profile screen's display name lives in
+    core content, not `ui/`), in group (i) because its basis is rule 11 (48 rows in group (i), 126
+    in the table); new HC-Q20 on the bundle size, to decide in Sprint 3.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 617 passed (617)"; client "Tests 1331 passed (1331)", statements 96.3 %; "✓ built";
+  "Checked 117 Markdown files under docs/." "Documentation check passed." `git apply --check`
+  prints nothing for the whole patch and for group (i) alone; the id resolver: 917 ids, 0
+  without a definition.
+- Next step: the next round after the ponytail cuts and the critic's delta; the owner's sign-off
+  of HC-T1 group (i) and his answer to HC-Q7 (1).
+
+### 2026-10-26 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the ponytail cuts, the critic's delta re-check and the final check (pre-PR gate steps 2 and 3) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done (code in lanes A and B; recorded by stream B in round B12 from the orchestrator's
+  facts and the evidence in `eternalus-agent-work/hud-charselect/{ponytail,critic/delta,results}/`,
+  outside the repository; the cut and finding ids are defined in
+  `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - Ponytail (ADR 0010, level lite): four area reviewers proposed 20 cuts; a skeptic per area
+    accepted 19 and rejected pt-ui-hud-components-1 (a shared screen-reader-only stylesheet would
+    belong to no component, against ADR 0002). The orchestrator added pt-orch-1, the second pin of
+    the class ids in `loadDisplayContent.test.ts`. Lane A (`ui/`, 10 commits, `b45b295` to
+    `98f9ab2`, net −84 lines) merged as `30329db`; lane B (core, bridge, game and data, 10 commits,
+    `cc8ff8c` to `09a86ab`, net −64 lines) merged as `a9e8295`. Net −148 lines.
+  - Tests unchanged in number (core 617, client 1331); every changed test file keeps its number of
+    tests and expectations; one expectation changed on purpose (pt-orch-1).
+  - Pixels at `a9e8295`: 246 of 250 byte-identical to the baseline; the 4 that differ are the
+    known reorder on the harness's asset-check page, byte-identical to the shots verified in the
+    roster-fix round. "Worktree untouched: NO" was 3 gitignored build outputs only.
+  - Live probe at `a9e8295`: the development build passes every criterion, with its long-frame
+    check during character select information only (OD-30); the production build passes every
+    criterion, that one included. The in-match check confirms pt-game-data-1 in a real browser.
+  - The critic's delta re-check (`fcc7c85` to `a9e8295`): request-changes only because owner
+    items remain (C-01 and core-bridge-01 through `INBOX.md` HC-T1 group (i); HC-Q7 (1) for C-02
+    and ui-hud-components-assets-04). Every upheld run-2 code violation is closed, and the delta
+    adds no code violation. New: d-core-game-bridge-01 (acceptable: three public API changes of
+    `@eternalus/core` to call out in the pull request) and C-03 (this entry). Refuted: d-ui-01.
+  - Round B12 (docs): the PR register gains the ponytail table, the delta verdict, the API note
+    and the remaining merge preconditions; `INBOX.md` HC-Q20 gives the bundle size at `a9e8295`.
+    The pull request's description is drafted outside the repository
+    (`eternalus-agent-work/hud-charselect/streams/docs/PR-DESCRIPTION.md`).
+- Checks run: step 3 at `a9e8295` (the orchestrator's log `results/verify-a9e8295.log`):
+  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 617
+  passed (617)"; client "Tests 1331 passed (1331)", statements 96.3 %; the JavaScript bundle
+  556.27 kB (gzip 173.96 kB); "✓ built"; "Documentation check passed." Round B12's docs commit:
+  `npm run check` → `EXIT=0` with the same test totals, "Documentation check passed.";
+  `git apply --check` prints nothing for the whole patch and for group (i) alone; the id
+  resolver: 919 ids, 0 without a definition.
+- Next step: the owner's sign-off of HC-T1 group (i) and his answer to HC-Q7 (1), the merge
+  preconditions; then the pull request opens with the drafted description.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the doc side of the /pr-review before the merge (stream B, round B13) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `a171761`; the review's finding ids are defined in the PR register's
+  new `/pr-review` section, `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - The `/pr-review` (six areas and a skeptic, at `a171761`): request-changes, no blocker upheld.
+    The register records the verdict, the failing checklist items, every finding's handling, the
+    owner items, the items not changed with their reasons, and an integration recipe for the merges
+    with the nine sibling pull requests. HC-B1 joins the merge preconditions. The code repairs are
+    in progress in other worktrees.
+  - Reference 12: OQ-03's status says MVP (DEC-56) with the phase open (HC-Q17). The Phase 6 plan is
+    back to its base text: its UI enhancements task line waits as `INBOX.md` HC-T1 T-152 until
+    HC-S5 is answered, and the UI enhancements plan says the task is unscheduled.
+  - HC-T1 gains T-147 to T-151 in group (i) (the naming suggestions record DEC-48; the D11 row
+    records ADR 0018) and T-152 in group (ii): 132 rows, 53 in group (i).
+  - Proposed for the owner: ADR 0019 (DEC-50) and ADR 0020 (the client test configuration), both
+    in the decisions index; new `INBOX.md` HC-Q21 (the merge order) and HC-Q22 (the HUD's weapon art
+    against `feat/weapons`). The pull request's description is rewritten to the template, outside
+    the repository.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  617 passed (617)"; client "Tests 1331 passed (1331)"; "✓ built"; "Checked 119 Markdown files
+  under docs/." "Documentation check passed." `git apply --check` prints nothing for the whole
+  patch and for group (i) alone; the id resolver: 935 ids, 0 without a definition.
+- Next step: the code repairs' commits (recorded in a later round); the owner's answers to the merge
+  preconditions (HC-T1 group (i), HC-Q7 (1) and (3), HC-B1), ADR 0019 and ADR 0020, and HC-Q21.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the resumed check of round B13 (stream B's successor) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `5e2a00e`; a resumed run of round B13, whose first run was
+  interrupted during its final checks): every round-B13 item was checked against `c3ffd28` and
+  `5e2a00e` and found in place. The D2b patches regenerate byte-identical from the committed tree
+  (132 rows over 35 files; group (i) 53 rows over 18 files), and the inline HC-T1 table matches the
+  generated one row for row. HC-Q21, HC-Q22, T-147 to T-152 and the ADR numbers 0019 and 0020
+  appear on no other local or remote ref after a fetch.
+  - PR register, merge preconditions: the HC-T1 group (i) bullet now notes 53 rows since the
+    `/pr-review` (the critic's 48 kept), and the HC-Q7 bullet adds (3), the wording of the owner's
+    credit (pr-ui-hud-components-assets-03), as the description and the owner items already said.
+  - `INBOX.md`: HC-B1 says it is now a merge precondition (pr-docs-process-09), and HC-Q7 says its
+    (3) goes with (1) before the merge.
+  - Outside the repository, the pull request's description: a note on the title, and the body now
+    starts at the template's "Summary"; the test cases are recounted with a script kept beside it
+    (773 at the base, 1,608 at `a171761`, each `it.each` call counted once; the first run's grep
+    gave 766 and 1,596); the code repairs are mentioned only as in progress.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  617 passed (617)"; client "Tests 1331 passed (1331)"; "✓ built"; "Checked 119 Markdown files
+  under docs/." "Documentation check passed." `git apply --check` prints nothing for the whole
+  patch and for group (i) alone; the id resolver: 935 ids, 0 without a definition.
+- Next step: unchanged from round B13: the code repairs' commits (a later round); the owner's
+  answers to the merge preconditions (HC-T1 group (i), HC-Q7 (1) and (3), HC-B1), ADR 0019 and
+  ADR 0020, and HC-Q21.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the /pr-review's code repairs and their review (stream B, round B14) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (code in lanes A and B and one follow-up; recorded by stream B from the evidence in
+  `eternalus-agent-work/hud-charselect/pr-review/`, outside the repository; the finding ids are
+  defined in the PR register's `/pr-review` section,
+  `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - Lane A, merged as `a632723`: `14d90cd` (pr-ui-hud-components-assets-01: `usePauseOverlayFocus`
+    and 7 tests), `c3290dd` (pr-ui-screens-02: sibling tests for `useClassSelectStep`, 6, and
+    `useLegendSelectStep`, 5; `onCardKeyDown` typed as `ReturnType<typeof rovingKeyDown>`),
+    `90f915a` (-04) and `c0ec551` (-05). Lane B, merged as `932c7c7`: `2fbe59b` (pr-game-data-04),
+    `2a58d2d` (pr-game-data-03: progress reported once per entry, still monotonic), `42bb212`
+    (pr-ui-screens-04: `RoleRatingRangeRule`), `1853e14` (pr-core-bridge-03) and `b918397` (the
+    code part of pr-docs-process-06). Every new or changed test went red first.
+  - The repairs' review (one reviewer and a skeptic, `a171761` to `932c7c7`): no blocker; rd-01,
+    this record, upheld as should-fix; the nits rd-02 to rd-04 fixed in `76bae8e`, `71a5b24` and
+    `7166412`, and `c72266b` caches an entry before its rendition warnings (red, then green).
+  - Docs: the register marks each repaired finding with its commit, records the review, and its
+    integration recipe keeps four imports in `defaultContentRules.ts`; 14 §14's status note records
+    the per-entry progress and the retired rejected load. HC-T1 gains T-153 (group (ii): 14 §11's
+    "ends at the manifest sum" holds only when every file loads) and T-154 (group (i): DEC-49's file
+    list names `RoleRatingRangeRule.ts`): 134 rows, 54 in group (i).
+- Checks run: at `c72266b` (the orchestrator's log `pr-review/check-c72266b.log`): `npm run check`
+  → `EXIT=0`: core "Tests 619 passed (619)"; client "Tests 1357 passed (1357)", statements
+  96.45 %; the JavaScript bundle 556.61 kB (gzip 174.04 kB); "Documentation check passed." Live
+  probe at `c72266b`: development ALL PASS (its long-frame check information only, OD-30),
+  production ALL PASS. Pixels at `932c7c7`: 246 of 250 byte-identical, the 4 others the known
+  asset-check page reorder. This round's docs commit: `npm run check` → `EXIT=0`: "All matched
+  files use Prettier code style!"; core "Tests 619 passed (619)"; client "Tests 1357 passed
+  (1357)"; "✓ built"; "Checked 119 Markdown files under docs/." "Documentation check passed."
+  `git apply --check` prints nothing for the whole patch and for group (i) alone; the id
+  resolver: 938 ids, 0 without a definition.
+- Next step: the owner's decisions (ADR 0019, ADR 0020, HC-Q21, HC-Q22, HC-B1, squash or merge
+  commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the ponytail review's doc cuts before the merge (stream B, round B15) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `b783682`; the second review round's ponytail findings pc-03 to
+  pc-06 and the plan part of pc-07, in `eternalus-agent-work/hud-charselect/pr-review/`, outside
+  the repository):
+  - pc-03: ADR 0019 and ADR 0020 have short titles like the other ADRs ("0019. SessionController
+    owns the Match", "0020. Client test configuration"); their descriptions keep the detail. The
+    regenerated `docs/README.md` index now differs from `a171761` by the two new rows only.
+  - pc-04: in the D2b generator, HC-T1 row T-152 loses the basis note that the prose above the
+    table already gives and gets a shorter "Branch says" cell; T-153 and T-154, added in round
+    B14, were also wider than their columns and are shortened too. No cell is wider than its
+    column at `a171761`, so the inline table differs from `a171761` by its eight new rows only
+    (T-147 to T-154). The two patches are unchanged.
+  - pc-05: the PR register's owner items point to the merge preconditions instead of repeating
+    them, and the findings rows pr-docs-process-07 and -09 say "(above)", where the list is.
+  - pc-06: the register's "Not changed" entry for pr-ui-hud-components-assets-06 points to ADR
+    0020's Consequences, which keeps the reasons.
+  - pc-07: the UI enhancements plan's Related line no longer repeats §1's "unscheduled".
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  619 passed (619)"; client "Tests 1357 passed (1357)"; "✓ built"; "Checked 119 Markdown files
+  under docs/." "Documentation check passed." `git apply --check` prints nothing for the whole
+  patch and for group (i) alone; the id resolver: 936 ids, 0 without a definition.
+- Next step: unchanged from round B14: the owner's decisions (ADR 0019, ADR 0020, HC-Q21, HC-Q22,
+  HC-B1, squash or merge commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
+
+### 2026-10-27 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's critic loop and its fixes (stream B, round B16) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (code on `fix/hud-charselect-critic-b`, merged into the task branch, and docs on
+  this branch; recorded by stream B from the evidence in
+  `eternalus-agent-work/hud-charselect/pr-review/`, outside the repository; the finding ids and
+  rounds B15 and B16 are defined in the PR register's section "The owner's critic loop",
+  `docs/changelog/pr-feat-hud-and-character-select.md`):
+  - The loop: two critics in parallel, correctness and ponytail, for two rounds at most. Round 1
+    (`a171761` to `df70ab5`): both approve; cc-01 should-fix, cc-02 to cc-04 and pc-01 to pc-07
+    nits. Round 2 (`df70ab5` to `be4aca3`): both approve; every accepted round-1 finding fixed,
+    cc-03 and pc-01 in part; new cc2-01 (should-fix), cc2-02, cc2-03, pc2-01 and pc2-02. The loop
+    stops after round 2, so these were fixed without a third round.
+  - Round 1's findings: cc-01 fixed in round B14 (`b783682`); cc-02 in `eade1c2` (`freeAll` and
+    `release(group)` go on past a throwing release and rethrow the first error; red before the fix
+    (2 tests) and with either half reverted); cc-03 in part in `4bbe7e8` (an exported, tested
+    `isOverlayOpen`; red on the break `overlay === 'pause'`), the effect's dependency array staying
+    out of reach of the Node-only tests; cc-04 in `8439831` (TSDoc); pc-01 in `289f793`, then
+    `6750f03`; pc-02 rejected: `StructureStrip`'s `SIDE_CLASS` record matches its sibling
+    variant-to-class records, the registry style of `AGENTS.md` rule 12, for about 6 lines; pc-03 to
+    pc-06 in round B15 (`66eca5e`, `b1f7121`, `6e838a6`, `8765a16`); pc-07 in `0c05712` (the TSDoc)
+    and in round B15 (`6cfabc8`, the plan). The five code commits (`eade1c2`, `8439831`, `4bbe7e8`,
+    `0c05712`, `289f793`) merged as `be4aca3`, with 3 new client tests.
+  - Round 2's findings: pc2-01 fixed in `6750f03` (`radioGroup` moved into `ui/testStore.tsx` and
+    the second builder deleted; the test count unchanged; a deliberate break turned 4 tests red);
+    cc2-01 and cc2-02 in this round (this entry, and the register's new section, which defines the
+    loop's ids and rounds B15 and B16); cc2-03 by the correction at the end of this entry; pc2-02 in
+    this round (14 §14's status note keeps one sentence on progress, the one HC-T1 T-153 depends on,
+    without commit hashes).
+- Checks run: at `be4aca3` (the coordinating session's log `pr-review/check-be4aca3.log`):
+  `npm run check` → `EXIT=0`: core "Tests 619 passed (619)"; client "Tests 1360 passed (1360)",
+  statements 96.47 %; the JavaScript bundle 556.75 kB (gzip 174.10 kB); "Documentation check
+  passed." Live probe at `be4aca3`: development ALL PASS (its long-frame check information only,
+  OD-30), production ALL PASS. This round, on the final code (`6750f03`) with this round's docs:
+  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 619 passed
+  (619)"; client "Tests 1360 passed (1360)", statements 96.48 %; the JavaScript bundle 556.75 kB
+  (gzip 174.10 kB); "✓ built"; "Checked 119 Markdown files under docs/." "Documentation check
+  passed." `git apply --check` prints nothing for the whole patch and for group (i) alone; the id
+  resolver: 937 ids, 0 without a definition.
+- Next step: unchanged from round B14: the owner's decisions (ADR 0019, ADR 0020, HC-Q21, HC-Q22,
+  HC-B1, squash or merge commit, HC-T1 group (i), HC-Q7 (1) and (3)), then the pull request.
+- Correction (cc2-03; round B14's entry is not rewritten): `90f915a` and `c0ec551` in round B14's
+  entry are pr-ui-hud-components-assets-04 and -05.
+
 ### 2026-10-27 — Phase 2 / integration — feat/buildings-and-map-objects — Gurshaan + Codex
 
 - What was done: fetched origin and merged origin/phase/2-sprint-2-work at 230a330 into the
@@ -2251,6 +3019,255 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   check passed."
 - Next step: add the three CI checks as required on `main`.
 
+### 2026-10-28 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's answers to the merge decisions (stream B, round B17) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `7a55b2e`; the owner's answers of 2026-10-28, given in chat from a
+  decision page whose items D1 to D8 the PR register's new section "Owner answers of 2026-10-28"
+  defines):
+  - D1, `INBOX.md` HC-T1 group (i) ("Approve all 54"): `d2b-group-i.patch` applied once
+    `git apply --check` printed nothing; the 19 files equal the generator's group (i) copies
+    (`b1121f5`).
+  - D3, HC-B1 ("Approve all"), and D4, ADR 0019 ("Accept"): the 24 HC-T1 rows whose only open basis
+    was HC-B1 or DEC-50 applied with the D2b generator's new `--apply-b17` (`e28854b`). Six rows
+    tied to HC-B1 or ADR 0019 stay pending because they also carry another open item: T-11 and T-31
+    (HC-Q7 (2)), T-16 (HC-F9, HC-Q8), T-23 (HC-Q2), T-29 (HC-Q14) and T-90 (HC-F7). DEC-22 gets the
+    appended note HC-B1's BD1 promised.
+  - D4 and D5: ADR 0019 and ADR 0020 accepted, recorded as ADR 0018 records its acceptance
+    (`9f7cb80`).
+  - D2, HC-Q7 (1) and (3): DEC-51's appended note and FR-111 reworded (`7b87f76`); new HC-T1 rows
+    T-155 to T-157 propose the same for references 10 and 11 (pending: no row existed for them);
+    HC-Q7 (3) holds a credit drafted from his words for his confirmation. He did not state the
+    tools' terms, so HC-Q7 stays open for them and for (2), (4) and (5).
+  - D8, HC-Q22: new DEC-57 in a new batch 2026-10-28, with his words. DEC-57 was free on all 82
+    local and remote refs after `git fetch` and in every local worktree (the game-loop plan's
+    working copy names DEC-57 as the next free number and assigns none).
+  - D6 and D7: HC-Q21 (b) and the merge commit recorded in `INBOX.md`, the PR register (owner items,
+    the integration recipe, the /pr-review's disposition cells) and the pull request's description
+    (outside the repository); the merge commit departs from `docs/process/git-workflow.md`'s squash
+    default (§4, §5) for this pull request only.
+  - `INBOX.md` (`160d096`): HC-T1's prose and table (78 rows applied, 59 pending, each open item
+    named), HC-B1, HC-Q21 and HC-Q22 ticked with his answers, HC-Q7's answer, a Done entry.
+  - Every edit to a sholtzman-owned doc this round (`last-reviewed` 2026-10-28 on each doc):
+    - Group (i) rows: `apps/client/AGENTS.md` T-01 to T-04, T-06; architecture 04 T-50, T-54, T-119,
+      T-121; 05 T-122; 13 T-87, T-88; 17 T-123, T-124; the architecture README T-151; reference 01
+      T-61 to T-65, T-103 to T-106, T-115; reference 10 T-107, T-128, T-129; reference 11 T-130,
+      T-131; the decisions log T-154; reference 14 T-73, T-74; the glossary T-76 to T-78, T-108; the
+      naming suggestions T-109, T-110, T-147 to T-150; the more-abilities suggestions T-111 to
+      T-113; the reference README T-134, T-135; the backlog T-114, T-126; the phase 4 plan T-127;
+      requirements 02 T-117; requirements 06 T-116, T-146.
+    - HC-B1 and ADR 0019 rows: architecture 01 T-45; 02 T-37, T-40, T-42 to T-44, T-89; 04 T-51; 05
+      T-55; 13 T-07 to T-09, T-14, T-15, T-21, T-25, T-27, T-86; 14 T-30, T-32 to T-35; 17 T-48.
+    - The branch's Implementation-status notes (not design text): 01 §8, 02 §12 and 17 §12 say which
+      of their rows are now in the design text; in 13 §10 the bullet on DEC-50 and DEC-52 to DEC-55
+      is replaced by one on the `match` row that still waits (T-16).
+    - ADR 0019 and ADR 0020: Status line, frontmatter `status: active` and description.
+    - Decisions log: the batch 2026-10-28 with DEC-57; appended notes at the end of DEC-22's and
+      DEC-51's decision cells (Prettier re-padded the DEC-21 to DEC-24 table, whitespace only).
+    - Requirements 06: FR-111's statement, source and status; its acceptance and phase are
+      unchanged.
+    - PR register: the section "Owner answers of 2026-10-28", a dated status under the merge
+      preconditions, the owner items, the integration recipe's intro and step 5, and five /pr-review
+      disposition cells.
+    - `docs/README.md` regenerated (the descriptions changed by T-103 and T-111, and ADR 0019's and
+      ADR 0020's).
+  - Outside the repository (`eternalus-agent-work/hud-charselect/streams/docs/`): the D2b generator
+    gains `--apply-b17` and the rows T-155 to T-157; `d2b.patch` now holds the 59 pending rows over
+    30 files and `EDIT-TABLE.rows.md` all 137 rows plus A-1 and A-2; `d2b-group-i.patch` is applied
+    and no longer generated. The id resolver now ignores `FNV-1a`, a hash name that a group (i)
+    table re-pad put on an added line. Backups in `b17-backup/`.
+- Checks run, on `160d096` with this entry and the register's last fix in the working tree:
+  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 619 passed
+  (619)"; client "Tests 1360 passed (1360)", statements 96.48 %; the JavaScript bundle 556.75 kB
+  (gzip 174.10 kB); "✓ built"; "Checked 119 Markdown files under docs/." "Documentation check passed."
+  `git apply --check d2b.patch` (the 59 pending rows) prints nothing; the post-B17 tree plus that
+  patch equals round B16's fully patched copies in all 36 files of B16's patch except this round's
+  own edits (the four status notes, T-155 to T-157), `last-reviewed` ignored; the id resolver: 958
+  ids, 0 without a definition (it resolves D1 to D8 to the architecture README's decision rows, the
+  first definition it finds; the register's new section defines the decision page's D1 to D8 and
+  says they differ).
+- Next step: the owner's remaining answers (the tools' terms in HC-Q7 (1) if he wants them stated,
+  the credit draft in HC-Q7 (3), the rest of HC-T1); the code change to `assetLicences.ts` once he
+  confirms the credit; then, once the minion stack and `feat/weapons` have merged into
+  `phase/2-sprint-2-work`, the one integration with the register's recipe (HC-Q21 (b)), and the pull
+  request, merged with a merge commit.
+- Flag for the owner: the requirements README ("How to cite and change a requirement") and NFR-010
+  change a requirement only through an accepted ADR. FR-111 was reworded on his answer to HC-Q7 (1),
+  which the item said would decide its wording, and on DEC-51's note; no ADR records it.
+- Correction (`b1121f5`'s message is not rewritten): it says T-103 and T-113 changed the two index
+  descriptions; they are T-103 and T-111.
+
+### 2026-10-28 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's non-blocking answers (stream B, round B18) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `5415d6d`: `a6ed088` ADR 0022, `ac007bd` the decisions log,
+  `a1c03fb` the applied rows, `bdafffa` INBOX and the register; the owner's 42 answers of
+  2026-10-28 to the non-blocking questions, given in chat from a second decision page whose keys
+  N1 to S2 the PR register's new section "Owner answers of 2026-10-28 (non-blocking)" defines; his
+  verbatim answers and a ledger, one row per answer with where it is recorded, are outside the
+  repository in `eternalus-agent-work/hud-charselect/decisions/`):
+  - `INBOX.md`: an "Answered 2026-10-28" line with his words under each of the 34 items he answered;
+    HC-F4, HC-F5, HC-F7, HC-F9, HC-Q6, HC-Q10, HC-Q12, HC-Q14 and HC-Q15 ticked; HC-T1's answer
+    and its regenerated table (127 rows applied, 16 pending); his Sprint 3 list in HC-U1; the
+    register rows CD-25, CD-30 and CD-38, row T-153's section and rows T-155 to T-157 explained by
+    name and content; a Done entry.
+  - Decisions log: a new batch 2026-10-28 with DEC-58 to DEC-70 (his rename, "still not final";
+    the `harbinger` id and the "Coming Soon..." card; the fixed 60 s countdown and the locked view;
+    the bot rosters; the HUD rules; the class kits; the weapons; the detail rows and the View
+    Details modal; the developer hotkey; Cinzel everywhere; load on demand; the destroyed-structure
+    look; sub-class gameplay next sprint), his words quoted, readings marked; notes appended to
+    the decision cells of DEC-48, DEC-49, DEC-51 and DEC-57 (Prettier re-padded those two tables,
+    whitespace only). DEC-58 to DEC-70 were free on all 82 local and remote refs after `git fetch`,
+    in every local worktree and in `INBOX.md`.
+  - ADR 0022 (new, accepted on his delegation, "I don't care what number is used"): records his
+    answer that made FR-111's rewording of round B17, as NFR-010 asks; adds nothing beyond it.
+    0022 was free on every ref; 0021 stays the game-loop plan's. `docs/README.md` regenerated.
+  - Every edit to a sholtzman-owned doc this round (`last-reviewed` 2026-10-28 on each):
+    - HC-T1 rows applied (49, `--apply-b18` of the D2b generator): `AGENTS.md` T-100;
+      `CONTRIBUTING.md` T-136; `apps/client/AGENTS.md` T-05; architecture 01 T-46; 02 T-36, T-38,
+      T-39, T-41, T-138; 04 T-101, T-120; 05 T-139; 06 T-56, T-57; 08 T-58, T-79 (a new §11
+      status section); 09 T-59; 13 T-11, T-16 to T-20, T-22, T-24, T-26, T-28, T-29, T-90; 14
+      T-31, T-153; 16 T-140; 17 T-47, T-102; plans phase 1 T-80 (sprint 1.4's `Match` task
+      ticked), T-85; phase 2 T-145 (a new sprint 2.8 task); phase 3 T-84; phase 4 T-83; phase 5
+      T-81, T-82; reference 08 T-141; reference 11 T-132; the glossary T-133; the suggestions
+      README T-142; the naming suggestions T-143, T-144; requirements 02 (CP-13) T-137;
+      requirements 06 (FR-047's statement) T-118.
+    - Implementation-status notes (not design text): the lead sentences of 01 §8, 02 §12, 06 §10,
+      14 §14 and 17 §12 now say their rows are in the design text; 13 §10's first bullet now names
+      what still waits (the `character-select` and `menu` → `loading` rows, §3's HUD rows); 06
+      §10's camera bullet adds that the developer hotkey (DEC-66) is not built.
+    - Decisions log, ADR 0022 and the PR register's new section, as above; `last-reviewed` only on
+      06, 08, 09, 16, the phase 1, 2, 3 and 5 plans, reference 08 and the suggestions README (the
+      others already had 2026-10-28).
+  - Not applied, with reasons (`INBOX.md` HC-T1): T-10 and T-13 held, because his bots are filled
+    at LOCK IN with the enemy mirroring the player (DEC-61), which changes where the rosters are
+    completed; T-12 and T-75 redrafted to DEC-60 and applied with that build; T-23 redrafted to
+    his HUD rules (DEC-62), for his approval; T-152 waits for his list of enhancements; T-155 to
+    T-157 explained, for his approval; T-125 is SamarjitBhogal's. New rows T-158 to T-161
+    (`flying` to `harbinger` in architecture 04 §1 and §12, 17 R1 and the phase 4 plan's sprint
+    4.1; approved with HC-F2, applied with the content rename) and T-162, T-163 (reference 12
+    OQ-02 and the naming suggestions; for his approval).
+  - Outside the repository: the D2b generator gains `--apply-b18`, the redrafts and T-158 to
+    T-163; `d2b.patch` now holds the 16 pending rows over 11 files. Backups in `b18-backup/`.
+- Checks run, on `5415d6d` with all of this round's edits in the working tree (this entry's
+  checks line still a placeholder): `npm run check` → `EXIT=0`: "All matched files use Prettier
+  code style!"; core "Tests 619 passed (619)", statements 99.19 %; client "Tests 1360 passed
+  (1360)", statements 96.48 %; the JavaScript bundle 556.83 kB (gzip 174.14 kB); "✓ built";
+  "Checked 120 Markdown files under docs/." "Documentation check passed."
+  `git apply --check d2b.patch` (the 16 pending rows) prints nothing; the post-B18 tree plus that
+  patch equals round B17's fully patched copies in all 30 files of B17's patch except this
+  round's own edits (T-12, T-23, T-75 and T-152 redrafted, T-158 to T-163, the status notes),
+  `last-reviewed` and table padding ignored; before any change, the B17 generator reproduced every
+  B17 output byte for byte on `5415d6d`. The id resolver: 1010 ids, 0 without a definition (it
+  resolves a decision-page key such as N2 or F10 to the first definition it finds; the register's
+  new section defines the page's keys and says they differ).
+- Next step: the build work his answers order (the content rename and the "Coming Soon..." card;
+  the fixed countdown, the locked view and the bot rosters; the HUD's empty frames; the
+  destroyed-structure look; the developer hotkey; Cinzel in the menus; load on demand; step errors
+  to the session; the art-id guard), each with its doc rows; his open answers (the bots' Legends,
+  the weapon panel, CD-25's mask, the Magus description, HC-Q7 (1) and (4), the enhancements,
+  T-155 to T-157, T-162, T-163, T-23); next sprint: the class kits and sub-class gameplay; then
+  the integration with the sibling pull requests (HC-Q21 (b)).
+
+### 2026-10-28 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the critic's check of round B18, loop 1 (stream B, round B19) — docs/hud-charselect-docs — sholtzman + Claude Code
+
+- What was done (docs only, on `0cd98b7`: `f35683d` ADR 0023, `bfd6607` the corrected rows,
+  `38dc4d1` the decisions log, `6f0430c` INBOX and the PR register). The architecture critic, loop 1
+  of the owner's three, read the 49 rows round B18 applied against the design at `230a330`: no
+  blocker, 3 should-fix findings and 7 nits (its report is outside the repository, in
+  `eternalus-agent-work/hud-charselect/decisions/record-and-research.json`). All ten are fixed:
+  - Should-fix: `cancel-match` left 13 §3's `CharacterSelectScreen` Emits (T-166; no `ui/` file
+    emits it, DEC-60); 13 §6.2 now gives the reason 13 §10 gives for reading the pause key in `ui/`
+    (a paused match's stopped loop cannot read it) and the `clientActions` sketch marks
+    `pause-menu` as the exception (T-169, T-170); the content-id rule cites the new ADR 0023 and
+    `INBOX.md` HC-Q18 (4) instead of ADR 0018 point 5, which covers Legend ids only (T-175 to
+    T-179, and the basis cells of HC-T1 rows T-100 to T-102 and T-136 to T-144).
+  - Nits: the owner's Keep of 2026-10-28 beside the `Recommendation:` labels of HC-F9, HC-F7 and
+    HC-Q14, and `--text-min` named in place of a copied 12 px (T-164, T-167, T-168, T-169); the
+    `MemoryStorageAdapter` target kept (T-165); 02 §3's interim wording moved to 02 §12 (T-171);
+    09 §2's sentence order (T-172); the exact test name (T-173); "no non-test file" (T-174);
+    `Recommendation:` notes appended to DEC-61 and DEC-62 for the recorder's interim defaults.
+  - ADR numbers: 0023 was free on all 82 local and remote refs after `git fetch`, in every local
+    worktree, in `INBOX.md` and in `eternalus-agent-work/`, and is used for the content-id record.
+    **0024 is reserved for the coming "load on demand" ADR** (DEC-68; INBOX HC-Q20). The load-on-
+    demand research (`eternalus-agent-work/hud-charselect/decisions/research/load-on-demand.md`)
+    calls that ADR "0023" while leaving the number to the orchestrator; read it as 0024. 0021
+    stays the game-loop plan's.
+  - Every edit to a sholtzman-owned doc this round (`last-reviewed` already 2026-10-28 on each):
+    - HC-T1 rows applied (16, `--apply-b19` of the D2b generator): `AGENTS.md` T-175; architecture
+      02 T-171; 04 T-176; 09 T-172; 13 T-164 to T-170; 17 T-177; the phase 1 plan T-173, T-174;
+      the naming suggestions T-179; requirements 02 (CP-13) T-178. Prettier re-padded 13 §2's
+      table, whitespace only.
+    - Implementation-status notes (not design text): 13 §10's Session bullet (`SessionController`
+      takes no `persistence` yet, so its transitions test has no `MemoryStorageAdapter`) and 02
+      §12's Assets bullet (the generated `assets/manifest.json` of 14 §11 stays planned).
+    - The decisions log: notes appended to the decision cells of DEC-61 and DEC-62 (the rows are
+      not rewritten; no other row changed).
+    - ADR 0023 (new, accepted on the owner's delegation of 2026-10-28, as ADR 0022 was;
+      `docs/README.md` regenerated); the PR register's new section "The critic's check of round
+      B18 (loop 1)"; this entry.
+    - `INBOX.md` (not under `docs/`): HC-T1's round B19 bullet and regenerated table, a line under
+      HC-Q18 naming ADR 0023, a Done entry.
+  - Not changed: T-12's pending redraft still names `cancel-match` as a trigger; HC-T1 flags it for
+    the DEC-60 build. The TSDoc of `lockedClasses.types.ts` and `legendSpecs.types.ts` still cites
+    ADR 0018 point 5 (code; ADR 0023 says it can cite the new record when that code next changes).
+  - Outside the repository: the D2b generator gains T-164 to T-179, `--apply-b19`,
+    `B19-APPLIED.rows.md` and `basis_b19()`; its README records the round. Backups in
+    `b19-backup/`. The new rows were first numbered after the row each corrects, with a letter
+    suffix, and renumbered before any commit, because a six-character id would have re-padded all
+    of HC-T1's table (pc-04).
+- Checks run, on `0cd98b7` with all of this round's edits except this entry in the working tree:
+  `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests 619 passed
+  (619)", statements 99.19 %; client "Tests 1360 passed (1360)", statements 96.48 %; the
+  JavaScript bundle 556.83 kB (gzip 174.14 kB); "✓ built"; "Checked 121 Markdown files under
+  docs/." "Documentation check passed." Before any change the B18 generator reproduced every B18
+  output byte for byte on `0cd98b7`. After it, `git apply --check d2b.patch` (the 16 pending rows)
+  prints nothing; the patched copies differ from round B18's only by this round's own edits (04,
+  13, 17 and the naming suggestions; the other seven files are byte for byte the same); no edit-
+  table cell is wider than its column, so the inline table changes only in its 12 basis cells and
+  16 new rows. T-164 to T-179 were free on every ref and in the agent working folders. The id
+  resolver against `230a330`, with this entry written: 1028 ids, 0 without a definition.
+- Next step: a second critic loop on round B19 if the coordinating session runs one (two of the
+  owner's three remain); then the build work round B18 listed, ADR 0024 (load on demand) among it.
+
+### 2026-10-29 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the owner's build-plan answers (batch 1 docs pass, round B20) — feat/hud-plan-b1 — sholtzman + Claude Code
+
+- What was done (docs, plus code comments): `3849c8b` the applied rows, `4fca16b` two Nadirev
+  comments, `90442f6` the records; on 2026-10-30 the critic's loop 2 (approve, no blocker) and its
+  ponytail review were applied in place to this unmerged text, in one `docs(docs)` and one
+  `chore(client)` commit. On 2026-10-29 the owner answered the build plan's P1 to P11 and the
+  enhancement review page (verbatim in
+  `eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-10-29-plan.md`), with the
+  instruction: "Answers must be documented in the code so I do not need to make these decisions
+  again."
+  - Decisions log: DEC-100 to DEC-108 (numbering in the log's batch intro), and dated notes on
+    DEC-48, DEC-51, DEC-53, DEC-57, DEC-59 to DEC-62, DEC-65, DEC-66 and DEC-69.
+  - HC-T1: T-155 to T-163 applied; the critic's loop 2 (round B20a) added T-180 and restored the
+    marker T-155 had dropped; 7 rows pending (`INBOX.md` HC-T1).
+  - Every edit to a sholtzman-owned doc (detail in the commits; `last-reviewed` bumped on each but
+    this log):
+    - `docs/architecture/04-entity-architecture.md`: HC-T1 T-158, T-159 (first line only), T-180.
+    - `docs/architecture/17-extension-recipes.md`: T-160.
+    - `docs/plan/phase-4-legends-abilities-and-loadouts.md`: T-161.
+    - `docs/reference/game-design/10-art-and-lore.md`: T-155.
+    - `docs/reference/game-design/11-mvp-scope.md`: T-156, T-157.
+    - `docs/reference/game-design/12-open-questions.md`: T-162.
+    - `docs/reference/suggestions/naming.md`: T-163.
+    - `docs/reference/game-design/13-owner-decisions-log.md`: the new batch and the eleven notes.
+    - `docs/plan/ui-enhancements-plan.md`: DEC-100's values (UE-01, UE-06, UE-07, UE-08, UE-12,
+      every default on) and the answered owner question.
+    - `docs/changelog/pr-feat-hud-and-character-select.md`: the section "Owner answers of
+      2026-10-29"; notes on ruling I-82 and roster item P8.
+    - `docs/plan/PROGRESS.md`: this entry.
+    - `INBOX.md` (not under `docs/`): dated notes on the answered items, HC-T1's bullet and table, a
+      Done entry; HC-Q1 (1)'s "Necromancer" is the question as asked on 2026-10-17 and is left as
+      written.
+  - Code comments: Nadirev cites DEC-58 (`4fca16b`); `RETIRED_NAMES` cites DEC-49 and DEC-58, and
+    `--font-game` cites DEC-67 (the `chore(client)` commit).
+  - Stale text that changes with the build: what `INBOX.md` HC-F1, HC-F8 and HC-Q4 track, and also
+    13 §10's status note, reference 14 §5, `bridge/selectors/selectStructureStrip.ts` (the Wall
+    tile) and `game/input/keybindings.ts` (no V).
+- Checks run: `npm run check` EXIT=0, core 620/620, client 1363/1363; `npm run docs:check` passes.
+- Next step: merge into `feat/hud-and-character-select`; steps 6 and 7 of the build plan.
+
 ### 2026-10-29 — Phase 2 / sprint 2.2 — chore/ci-drop-macos — SamarjitBhogal + Claude Code
 
 - What was done: CI matrix drops `macos-latest` and keeps `ubuntu-latest` and `windows-latest`,
@@ -2431,6 +3448,369 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   663 passed (663)"; client "Tests 415 passed (415)"; "✓ built in 174ms"; "Documentation check
   passed."
 - Next step: merge into `phase/2-sprint-2-work`.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batch 2 of the build plan (steps 6 to 9 and DEC-109; docs pass, round B21) — feat/hud-plan-b2 — sholtzman + Claude Code
+
+- What was done: batch 2 built steps 6 to 9 of the build plan and DEC-109 in 14 commits on
+  `9620398` (`4f1d2b5` to `20bf6ef`): the bot roster content and the bots filled at LOCK IN under
+  a 60 s countdown that LOCK IN does not end (DEC-60, DEC-61, DEC-102); the "Failed to Choose
+  Legend" popup (DEC-102); the locked view, with Esc on the Legend step only (DEC-60); the Legend
+  panel's Ultimate / Abilities rows, Oracle's Unison Ward as ability 1 (DEC-65, DEC-103); 32 px
+  Legend card titles (the owner's edit of frame 58:271); the `view-details` action on V and View
+  Details on both selection steps (DEC-103); the alternate layout's View Details and Select Class
+  (DEC-109). This docs pass (round B21) records it:
+  - HC-T1 (the D2b generator outside the repository, round B21): T-10, T-12, T-13, T-75 and T-152
+    redrafted; T-181 to T-190 new; nothing applied; 17 rows pending (`INBOX.md` HC-T1).
+  - Every edit to a sholtzman-owned doc (`last-reviewed` bumped on each but this log):
+    - `docs/architecture/13-game-interface.md`: §10's status note (the built flow, the screens,
+      the session, the bridge's `selection-locked`, View Details' interim reduce-motion reading, a
+      known-gaps bullet).
+    - `docs/architecture/02-code-structure.md`: §12's status note (`fillRosters.ts`, the bot
+      roster, core's new type exports).
+    - `docs/architecture/17-extension-recipes.md`: §12's status note (a selection step, a
+      keybinding action, the bot roster).
+    - `docs/reference/game-design/15-figma-frames-and-creative-decisions.md`: frame 145:2 in §1;
+      rows CD-39 to CD-46; dated notes on CD-09 and CD-10.
+    - `docs/reference/game-design/13-owner-decisions-log.md`: dated notes on DEC-52 and DEC-109.
+    - `docs/changelog/pr-feat-hud-and-character-select.md`: "Changed since the table" marks DV-70,
+      DV-71 and DV-81 superseded.
+    - `docs/plan/PROGRESS.md`: this entry.
+    - `INBOX.md` (not under `docs/`): notes under HC-F1, HC-F7, HC-Q5, HC-Q9 and HC-C1; HC-T1's
+      bullet and table; a Done entry.
+  - Not ticked: HC-Q5. DEC-109 answers its View Details question only; the Magus description and
+    the class step's row titles stay open (DEC-109's appended note).
+- Checks run: batch 2's `npm run check` EXIT=0, core 628/628, client 1431/1431
+  (`eternalus-agent-work/hud-charselect/build-1029/check-b2-dec109.log`); its red proofs are
+  `redproofs-b2-steps67.txt`, `redproofs-b2-steps89.txt` and `redproofs-b2-dec109.txt` in the same
+  folder. This pass (docs only): `npm run check` EXIT=0, core 628/628, client 1431/1431,
+  "Documentation check passed." (`check-b2-docs.log` there); `git apply --check` of the D2b patch
+  prints nothing.
+- Next step: the critic gate on `feat/hud-plan-b2`, then merge into `feat/hud-and-character-select`.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batch 2's critic loop 1 (findings F1, V1 to V6 and the nits; docs pass, round B22) — feat/hud-plan-b2 — sholtzman + Claude Code
+
+- What was done: the architecture critic's loop 1 on batch 2 (`9620398..a37cd83`) and the visual
+  shoot. Code fixes (the coordinating session, in the same working tree): F1, the three Legend
+  mini portraits move from the `selection-primary` group to `selection`
+  (`data/resources/selectionLegendStripAssets.ts`; 49,506 / 118,376 B move between the group
+  budgets, OD-44), so the alternate layout's View Details shows them
+  (`coreCatalogue.assets.test.ts` now counts the minis as drawn by both layouts); V1, View
+  Details' filter
+  (`ui/components/modalKeyFilter.ts`) also stops mouse buttons bound to an action, and a
+  `pause-menu` button closes it; V2, `ClassDetailsScreen.test.tsx`; V4, the roster's random stream
+  is injected (`SessionControllerDeps.createRosterRng`, bound in `main.tsx`) and
+  `game/session/Rng.types.ts`' TSDoc corrected; V5, the comment in `LegendDetailsPanel.tsx`.
+  Rejected: V3 (a test of the V press that opens View Details needs a DOM test environment, a new
+  dependency only the owner approves; `INBOX.md` HC-Q23). This docs pass (round B22) records it:
+  - HC-T1 (the D2b generator outside the repository, round B22): T-12 redrafted without the
+    `cancel-match` trigger (V6); T-191 new (02 §6: the display loader also carries the bot roster,
+    the critic's nit; the wording is the owner's); nothing applied; 18 rows pending.
+  - Every edit to a sholtzman-owned doc (`last-reviewed` already 2026-10-30 on each but this log):
+    - `docs/architecture/13-game-interface.md`: §10's known-gaps bullet (V1, V2, V3).
+    - `docs/reference/game-design/15-figma-frames-and-creative-decisions.md`: dated notes in the
+      Why cells of CD-42 (V5: no rating bars is the recorder's reading, not DEC-103's) and CD-45
+      (the locked Legend's panel against DEC-60's "details of the class").
+    - `docs/changelog/pr-feat-hud-and-character-select.md`: the "Integration recipe" gains two
+      items for M3 (`botRoster.test.ts` restates `assignLanes`; `occupied` and the lane mix).
+    - `docs/plan/PROGRESS.md`: this entry.
+    - `INBOX.md` (not under `docs/`): HC-T1's bullet and table; notes under HC-C1 and HC-Q15; new
+      HC-B2 (better than the design: a view over a selection step, and its name) and HC-Q23; a Done
+      entry.
+  - V4: no current doc says the session's only random stream is `createRng` or `LcgRng`; the old
+    mentions are in dated records, which stay as written.
+- Checks run: `npm run check` EXIT=0 (core 116 files / 628 tests, client 236 files / 1440 tests,
+  build, "Documentation check passed."). Red proofs, each break turned its test red and was
+  restored byte-identical: F1 (minis spread back into `SELECTION_PRIMARY_ASSETS`), a mini's group
+  back to `selection-primary`, V1 (the button handler returns at once), V2 (no description; no
+  strip; always open), V4 (LOCK IN builds its own `SeededRandom`). This pass (docs only):
+  `npm run docs:check` "Documentation check passed."; Prettier clean on the touched files;
+  `git apply --check` of the D2b patch prints nothing.
+- Next step: the critic's loop 2 on the fixes, then merge into `feat/hud-and-character-select`.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batch 2's critic loops 2 and 3 (round B23) — feat/hud-plan-b2 — sholtzman + Claude Code
+
+- What was done: the architecture critic's loop 2 on `a37cd83..b1bb032` approved (no blocker or
+  major; loop 1's findings resolved, V3's rejection acceptable); its minor finding and nits are
+  fixed in `e7f7cf4` and this round: the roster stream's name and fork move from
+  `SessionController.constants.ts` (the class no longer reads them) into
+  `game/session/createRosterRng.ts`, bound in `main.tsx` and the test deps, with its own test (the
+  same seed repeats; the stream is apart from the seed's own); the TSDoc of `modalKeyFilter.ts`,
+  `useModalKeyFilter.ts` and `ViewDetailsScreen.tsx` names the bound mouse buttons, and says that a
+  `pause-menu` button's release is no longer filtered once the view closes. Declined: View Details'
+  backdrop keeps the selection tokens `--selection-art-shade` and `--selection-drop-shadow` (its
+  own palette; the critic agreed); ponytail loop 2's hoisted `pause-menu` match (two different
+  questions, no line saved). Loop 3 on `b1bb032..e7f7cf4` approved with nits only.
+  - Every edit to a sholtzman-owned doc: `docs/architecture/02-code-structure.md` §12
+    "Implementation status" names `createRosterRng.ts` among the `game/session/` files (a status
+    note, not design text); `docs/plan/PROGRESS.md`: this entry.
+- Checks run: `npm run check` EXIT=0 on `e7f7cf4` plus this round (core 116 files / 628 tests,
+  client 237 files / 1442 tests, build, "Documentation check passed."). Red proofs, each break turned its test red and
+  was restored byte-identical: the button listeners left bound on unbind; the button listeners in
+  the bubble phase; a second control in the class View Details; LOCK IN building its own
+  `SeededRandom` (again, after the move); the roster stream without its fork; the roster stream
+  off the match seed.
+- Next step: merge `feat/hud-plan-b2` into `feat/hud-and-character-select` (no fast-forward, local);
+  then the remaining build-plan steps.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4 of the build plan merged (steps 4, 10, 11, 12 partial, 13; DEC-110 to DEC-112, DEC-114; docs pass, round B24) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: lane 3b (merged in `dfab3f7`) built steps 4, 10 and 11: the Coming Soon void on the
+  locked card (`180601d`, DEC-104), the empty live HUD kit with the Vanguard's helmet only
+  (`80a9689`, DEC-101) and destroyed structures on the strip (`cf7efbe`, DEC-69, DEC-108). Lane 4
+  (merged in `373e426`) built step 12 in part and step 13: a crashed match ends and returns to the
+  menu with a message (`cca838d`, DEC-106) and the developer camera tools show or hide on
+  Cmd/Ctrl+Shift+F3 (`e84c8aa`, DEC-105). Lane 3a built DEC-110 to DEC-112 (`b1fe73e`, `8d33344`,
+  `1662eb8`, docs in `e0597fc`). DEC-114 (`1f5cb75`): the live HUD shows the art that fits the
+  picked Legend (the Vanguard's Courage gadget, the Magus staff, the Bulwark's Wuuthrad) and leaves
+  every other frame empty; red proofs 8/8 (`eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-dec114.txt`,
+  outside the repository).
+  - Docs (round B24): `13-owner-decisions-log.md` gets DEC-114 to DEC-116 (the owner's answers Q1
+    to Q3; no DEC-113 row, the number belongs to `docs/game-loop-and-results-plan`) and a dated
+    note on DEC-101; reference 15 gets dated notes on CD-05, CD-38 and OD-37; the PR register's
+    "Integration recipe" gets one item (a destroyed structure must stay published with health 0;
+    check against PR #55); `INBOX.md`: HC-T1's round B24 bullet and table (T-184 redrafted, T-192 to
+    T-208 new, 35 pending), status notes under HC-F2, HC-F6, HC-F8, HC-Q4 and HC-Q8, HC-Q24 to
+    HC-Q26 (answered) and HC-Q27 (accept the crash-report ADR), a Done entry.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-114 to DEC-116 rows; the DEC-101
+    note), reference 15 (three dated notes in Why cells and the OD-37 row), the PR register (one
+    dated paragraph), this entry. The design-text changes (17 new rows and T-184's redraft) are
+    pending rows in the D2b patch, not applied.
+- Checks run: the merged check before DEC-114 gave EXIT=0 (core 628/628, client 1475/1475;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-merged.log`, outside the repository).
+  The final check: to be filled by the orchestrator. This pass (docs only): `npm run docs:check`
+  and Prettier on the touched files, `git apply --check` of the D2b patch.
+- Next step: critic loop 1 (running), merge into `feat/hud-and-character-select`, the owner's
+  acceptance of ADR 0025, the step-12 report lane, steps 15 and 16; step 17 waits for PRs #55 to
+  #58.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 1 (items m1, m2, n1, n3, A2, B1, M2; DEC-117, DEC-118; docs pass, round B25) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: code fixes from the critic's loop 1 (the orchestrator's, uncommitted when this docs
+  pass ran): `MatchHost` runs a client-only one-shot action from a table of action to handler
+  (`runOneShotAction`, one entry: `toggle-developer-camera`; m1, DEC-117); the two default chords of
+  `toggle-developer-camera` are ordered by platform at load, Cmd first on an Apple device (n1,
+  DEC-118); a test ties the stored chord modifiers (`CHORD_MODIFIERS`) to the bridge's
+  `ChordModifier` type (m2); the test order nit (n3); a `ponytail:` comment on `endCrashedMatch`
+  (A2: the menu banner is DEC-106's interim; build-plan step 12 replaces it with ADR 0025's report
+  popup and `ErrorBoundary`). Red proofs 8/8 in
+  `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop1.txt` (outside the repository).
+  - Docs (round B25): `13-owner-decisions-log.md` gets a fourth batch of 2026-10-30 with DEC-117 and
+    DEC-118 (the owner's answers B1, m1 and n1; DEC-119 stays unused) and dated notes on DEC-57,
+    DEC-62 and DEC-105; reference 15 gets CD-47 (a destroyed structure's look, DEC-69, `cf7efbe`);
+    status notes in architecture 13 §10, architecture 06 §10 and architecture 14 §14 (the chord
+    `modifiers` field added inside schema version 1); `INBOX.md`: HC-T1's round B25 bullet and table
+    (T-196 redrafted, T-209 to T-212 new, 39 pending), HC-B3, HC-Q28 and HC-Q29 (answered), a Done
+    entry.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-117 and DEC-118 rows; dated notes on
+    DEC-57, DEC-62 and DEC-105), reference 15 (the CD-47 row), architecture 13 §10, 06 §10 and 14 §14
+    (one dated status note each), this entry. The design-text changes (T-196's redraft and four new
+    rows) are pending rows in the D2b patch, not applied.
+  - The orchestrator, after the docs pass: the 14 §14 note words the optional field as a reading
+    for the owner, not an interim, and `INBOX.md` gains HC-B4 (better than the design: an optional
+    field that old saves lack needs no new save version; open). ADR 0025's draft is checked against
+    the installed Vite 8.3.1 and React 19.3 types (one fix: `componentStack` may be null) and added
+    as `docs/decisions/0025-error-reports-through-the-local-dev-server.md` (proposed); HC-Q27 names
+    it.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1482/1482, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop1-fixes.log`, outside the
+  repository). The previous entry's final check, run on `3588904`: EXIT=0 (core 628/628, client
+  1477/1477; `b34-check-3588904.log` in the same folder). This docs pass also ran `npm run
+docs:check`, Prettier on the touched files and `git apply --check` of the D2b patch.
+- Next step: critic loop 2, merge into `feat/hud-and-character-select`, the owner's acceptance of
+  ADR 0025, the step-12 report lane.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 2 (items V1, D1, N1 to N3) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: the critic's loop 2 found no blocker; every loop-1 item is closed. Fixes:
+  - V1 and N1: `game/input/keybindings.ts` is plain data again (no platform read; the developer
+    camera chords in literal order, Ctrl first). `main.tsx` reads the platform (a user agent that
+    contains "Mac") and injects it as `isApplePlatform` into `SettingsController`, which lists the
+    platform's own chord first each time it publishes the settings and saves what it published
+    (`ownPlatformChordsFirst` in `game/input/bindingEdits.ts`). DEC-118's behaviour is unchanged.
+    Red proofs 6/6 in `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop2.txt`
+    (outside the repository; script `redproof_loop2.py` beside it). The `main.tsx` line has no unit
+    test (composition root); the type makes the flag required.
+  - D1: ADR 0025 (proposed) no longer says the plugin's middleware runs before Vite's own; the
+    plugin depends on no Vite middleware order or check, refuses a `Host` other than `localhost`,
+    `127.0.0.1` or `[::1]` (DNS rebinding), and its Watch line names `server.allowedHosts: true`
+    and `server.https`. The critic's Vite source lines were not re-read: the installed Vite chunk
+    files are not readable in this session; the `allowedHosts` warning was read in Vite's types.
+  - N2: `last-reviewed` bumped in architecture 06 and 14 (13 was already current). N3: the loop-1
+    Done entry in `INBOX.md` names HC-B4.
+  - Every edit to a sholtzman-owned doc: the decisions log (a dated note on DEC-118 and one more
+    path in its last cell), ADR 0025 (§1, §2, §8 item 2, Watch), architecture 13 §10 (the status
+    note names `SettingsController`), 06 and 14 (`last-reviewed` only), `INBOX.md` (a dated note
+    under HC-Q28, the loop-1 Done entry, a new Done entry), this entry. No design text changed.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1485/1485, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop2-fixes.log`, outside the
+  repository), run with this entry in place.
+- Next step: critic loop 3 (the last) on this round, merge into `feat/hud-and-character-select`;
+  the owner's answers to HC-Q27 (ADR 0025) and HC-B4 before the PR.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, batches 3 and 4's critic loop 3 (items T1, T2, D2, D3) — feat/hud-plan-b3a — sholtzman + Claude Code
+
+- What was done: the critic's loop 3 (the last of three) closed all five loop-2 items and found no
+  blocker. Fixes:
+  - T1: loop 2 deleted the four user-agent tests and left the platform check untested in
+    `main.tsx`. Correction to the previous entry ("The `main.tsx` line has no unit test"): the check
+    is now `isAppleUserAgent` in `apps/client/src/game/isAppleUserAgent.ts` (beside
+    `developerFlags.ts`, same pattern), tested for a Mac, an iPad, an iPhone, Windows and Linux;
+    `main.tsx` passes it `window.navigator.userAgent`.
+  - T2: the Apple row of `SettingsController.test.ts` also checks `controller.bindings`, so the
+    order the controller keeps (and the next rebind swap reads) is pinned.
+  - D2: DEC-118's last cell names `bindingEdits.ts` for `ownPlatformChordsFirst`. D3: one ADR 0025
+    line rewrapped.
+  - Red proofs 4/4 in `eternalus-agent-work/hud-charselect/build-1029/b34-redproofs-loop3.txt`
+    (outside the repository; script `redproof_loop3.py` beside it). No critic loop 4 (the owner's
+    limit is three); these fixes have red proofs and a full check, not a critic read.
+  - Every edit to a sholtzman-owned doc: the decisions log (DEC-118's last cell), ADR 0025 (one
+    line rewrapped), `INBOX.md` (a Done entry), this entry. No design text changed.
+- Checks run: `npm run check` EXIT=0 (core 628/628, client 1490/1490, documentation check passed;
+  `eternalus-agent-work/hud-charselect/build-1029/b34-check-loop3-fixes.log`, outside the
+  repository), run with this entry in place.
+- Next step: merge into `feat/hud-and-character-select`; the owner's answers to HC-Q27 (ADR 0025)
+  and HC-B4 before the PR.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, record ADR 0025's acceptance (DEC-124) and HC-B4 (DEC-125) (docs pass, round B26) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: the owner accepted ADR 0025 ("sure. accept both. continue"), answered its three
+  open questions as recommended in one dialog, and took option 1 of HC-B4. His words are kept
+  verbatim in `eternalus-agent-work/hud-charselect/decisions/owner-answers-2026-10-30-adr0025-hcb4.md`
+  (outside the repository).
+  - Docs (round B26): `13-owner-decisions-log.md` gets a fifth batch of 2026-10-30 with DEC-124
+    (ADR 0025 accepted: (a) the silent-error list of its §6 as written; (b) a screen crash outside
+    a match uses a new reason `'screen-crashed'`, "The screen stopped because of an error.", and the
+    same note popup; (c) the copy-mode text and a "Copy report" button) and DEC-125 (a record's
+    `schemaVersion` is bumped only for a field old saves cannot satisfy), and dated notes on
+    DEC-115 and DEC-116. ADR 0025 is accepted (`status: active`, its description and Status line);
+    each open question carries its answer, and the two pointers to them (§5 Q2, §6 Q1) carry the
+    answer in brackets. Architecture 14 §14's status note records DEC-125. `INBOX.md`: HC-Q27 and
+    HC-B4 answered and ticked; dated notes under HC-Q8, HC-Q25 and HC-Q26; HC-T1's round B26 bullet
+    and table (T-202, T-203 and T-207 redrafted, T-208's status changed, T-213 to T-226 new, 53
+    pending); a Done entry.
+  - The orchestrator: the citation comment for DEC-125 in
+    `apps/client/src/data/persistence/dto/SettingsDto.ts`.
+  - Every edit to a sholtzman-owned doc: the decisions log (the fifth batch's DEC-124 and DEC-125
+    rows; dated notes on DEC-115 and DEC-116), ADR 0025 (frontmatter `description` and `status`,
+    the Status line, the pointers to Q2 in §5 and to Q1 in §6, one answer under each open
+    question), architecture 14 §14 (one dated note), `INBOX.md`, this entry; `docs/README.md`'s
+    index line for ADR 0025 is regenerated from the new description. The design-text changes (14
+    new rows and three redrafts) are pending rows in the D2b patch, not applied.
+- Checks run: `npm run docs:check` "Documentation check passed." (122 files); Prettier clean on
+  the seven touched files; `git apply --check` of the D2b patch printed nothing; the pre-commit
+  `npm run check:quick` passed. The full `npm run check` was not run on this commit: the writer
+  part of step 12 was being built in the same worktree, uncommitted; the lane's full check runs
+  after the writer part.
+- Next step: build-plan step 12 (ADR 0025 §8) in this lane: core (the external command log, the
+  replay checkpoints, `exportReplay()`, `recentContext()`), then the writer, then the popup.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, build-plan step 12 (ADR 0025 §8 items 1 to 3: replay export, error-report writer, crash popup) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: three code commits on top of `f9fbaf8`.
+  - `531cd90` (core): `Simulation.enqueueCommand` logs external commands; checkpoints at tick 0
+    and every `REPLAY_CHECKPOINT_EVERY` ticks; `exportReplay()`; `recentContext()` in
+    `diagnostics/recentContext.ts`, shared with `InvariantRunner`; `LogContext` exported.
+  - `6db5713` (writer): the dev-server plugin `apps/client/errorReportsPlugin.ts`; under
+    `src/data/logging/` the `ErrorReport` types and constants, the `ReportWriter` port with its
+    contract test, the dev-server and memory writers, `ErrorReporter` (the crash path, notes, and
+    ADR §6's silent reports), `logWindowErrors.ts`; the match evidence chain; the `main.tsx`
+    wiring; `logs/` in `.gitignore`.
+  - `226e2c6` (popup): `ErrorBoundary` (the one class component, DEC-115) around the current
+    screen in `App`; `CrashReportNotice` with DEC-106's words and DEC-124 (b) and (c) (asking,
+    saving, saved, copy); `CrashReportFlow` and `handleScreenCrash` in `src/game/session/`; the
+    reporter is a `SessionController` dependency; a loop crash and a screen crash in a match both
+    report before the session leaves `match`; outside a match the session returns to the menu
+    with `'screen-crashed'`. The `'match-crashed'` banner and the DEC-106 interim are removed.
+- Red proofs (scripts and outputs in `eternalus-agent-work/hud-charselect/build-1030/`, outside
+  the repository): core 10 breaks, writer 56, popup 54; every break RED, baseline and restore
+  green, production files restored byte for byte.
+- Checks run: `npm run check` EXIT 0 on `226e2c6`'s tree. Core 118 files, 634 tests; client 252
+  files, 1657 tests; client coverage (lines, branches, functions, statements) 96.79 / 93.59 /
+  95.23 / 97.23; "Documentation check passed." (122 files).
+- Gaps reported to the owner, not changed: ADR 0025 does not define `reportCrash`'s input or a
+  failed note write (the writer returns copy mode); the plugin's answer `file` uses
+  `ERROR_REPORTS_FOLDER`, not its `dir` option; `ErrorReport.constants.ts` is in the app and the
+  node tsconfig projects; `SESSION_TRANSITIONS` has no move to `menu` from `menu` or
+  `pre-launch` (a menu crash goes back to `home`; a `pre-launch` crash keeps the popup and the
+  reveal runs on); the source is `screen:<registry id>`, not the component name (names are
+  mangled in a build); the saving and saved texts are recommendations, not owner words.
+- Next step: the pre-PR gate (critic and ponytail, at most three loops) on `f9fbaf8..HEAD`, then
+  a `--no-ff` merge into `feat/hud-and-character-select`; then build-plan step 15 (load on demand).
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, build-plan step 12's critic loop 1 (six minor items, four nits, ponytail cuts) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: the critic (architecture-reviewer on `f9fbaf8..c228b73`) found no blockers, six
+  minor items and four nits; the ponytail review found five cuts. Fixed in `dce7b0c`:
+  - The report's stack text and the FATAL record keep React's component stack.
+  - The popup's title comes from what crashed (`cause`: match or screen), not the session reason,
+    so a crash in the pre-launch reveal says "The screen stopped because of an error.".
+  - A crash number keys the dialog, so a second crash starts with an empty note.
+  - A saved report whose note write failed has its own copy text (`isReportSaved`), not DEC-124
+    (c)'s "could not be saved".
+  - A happy-dom test with the real `App` and `GameCanvas` shows the report comes before the
+    viewport detach.
+  - The tick is read through `RunningMatch.currentTick()`, in a try/catch, not by building the
+    evidence.
+  - `SessionCrashes` owns the crash wiring; `SessionController.ts` is 310 lines.
+  - `ErrorBoundary.types.ts`; the plugin tests are split in two files with shared fixtures.
+  - A test links each silent-report rule's body to its log site.
+  - `reportedErrorOf` moves to `data/logging/`; `logWindowErrors` reuses it; one `errorText`
+    const.
+  - Not done, with reasons: `ErrorReporter.withNote`'s non-JSON branch stays (it keeps `addNote`
+    from rejecting; cutting it deletes a test); `logTail.slice(-LOG_TAIL_RECORDS)` stays (the one
+    place the report's limit applies to both evidence sources); DEC-115 and DEC-116's "Where"
+    cells stay as written (historical rows; their dated notes record the acceptance).
+  - `INBOX.md`: HC-Q30 asks the owner for the popup's three texts with no owner words (saving,
+    saved, note not saved) and three behaviours (the second click after a saved note, a crash in
+    the pre-launch reveal, a crash of the home screen); `strings.ts` cites it.
+- Red proofs: 27 breaks, every break RED in its own test file, baseline and restore green
+  (`eternalus-agent-work/hud-charselect/build-1030/s12-loop1-redproofs.txt`).
+- Checks run: `npm run check` EXIT 0 on `dce7b0c`'s tree. Core 118 files, 634 tests; client 255
+  files, 1672 tests; client coverage 96.92 / 93.85 / 95.35 / 97.36; "Documentation check passed."
+- Next step: critic loop 2 on `c228b73..HEAD`, then the `--no-ff` merge into
+  `feat/hud-and-character-select`.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, build-plan step 12's critic loop 2 (one minor item, five nits) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: the critic (on `c228b73..4ad6d72`) found no blockers, one minor item and five
+  nits, and found that the three items loop 1 declined have reasons that hold. The ponytail review
+  found four cuts.
+  - `INBOX.md` HC-Q30 (the minor item): item 5 is built as option A until the owner answers, not
+    as the recommended B; its "Today" now says the popup stays open over the starting match and
+    its two buttons only close it.
+  - Code (the commit after `4ad6d72`): `MATCH_CRASH_BODY` in `SessionCrashes.constants.ts`;
+    `crashMatch` private; `crashNumber`'s TSDoc; `logWindowErrors` reads the message and the stack
+    once per event; `ErrorReporter.test.ts` (335 lines) split into the silent path (195) and
+    `ErrorReporter.crash.test.ts` (106), with the shared setup in
+    `__fixtures__/errorReporterSetUp.ts`. The test count is 33 before and after (the file at
+    `4ad6d72` was run beside the split files).
+  - Not done, with reasons: no `SessionCrashes.test.ts`, because `SessionCrashes` is
+    `SessionController`'s crash wiring moved out for the file length, and
+    `SessionController.crash.test.ts` tests and red-proofs it through the session's public API; a
+    sibling test would repeat those tests. Ponytail: the try/catch around the tick read stays (a
+    crash path must not throw into `componentDidCatch`, `currentTick` is a port method, and a test
+    holds it); `componentStack` stays a string that is `''` when React gives none (ADR 0025 §5).
+  - For the PR: `GameCanvas.crash.test.tsx` imports `ui/App` from `game/` (test only, as
+    `main.tsx` composes them; precedent `SettingsScreen.rebind.test.tsx`), and it holds the
+    client's first `vi.mock`; `LogContext` is a new export of `@eternalus/core`.
+- Checks run: no new behaviour, so no red proofs (refactors and moved tests; the existing tests
+  cover them). `npm run check` EXIT 0: core 118 files, 634 tests; client 256 files, 1672 tests;
+  client coverage 96.93 / 93.85 / 95.37 / 97.37; "Documentation check passed."
+- Next step: critic loop 3 (the last) on this loop's diff, then the `--no-ff` merge into
+  `feat/hud-and-character-select`.
+
+### 2026-10-30 — Phase 2 / Track B (S1 carry-over) / HUD and character select, build-plan step 12's critic loop 3 (no findings) — feat/hud-plan-b5 — sholtzman + Claude Code
+
+- What was done: the critic (on `4ad6d72..299a2da`) found nothing at any severity: every loop-2
+  item fixed or declined with a reason that holds, the `ErrorReporter` test split moves the tests
+  unchanged (15 `it(` and 34 `expect(` before and after), `logWindowErrors` behaves the same, and
+  HC-Q30 item 5 matches the build. The gate ends after three loops with no blockers.
+- Checks run: `npm run check:quick` EXIT 0 at `299a2da`; the full `npm run check` EXIT 0 ran on
+  the loop-2 code (`c604ee0`'s tree; `299a2da` changes only `INBOX.md` and this file).
+- Next step: the `--no-ff` merge into `feat/hud-and-character-select` waits: an unfinished merge
+  of `origin/phase/2-sprint-2-work` (started 2026-10-30 18:41, not by this lane) is open in that
+  worktree, and the owner chose to wait for it to be committed or aborted. Then build-plan step
+  15 (load on demand).
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2a-brains-perception — SamarjitBhogal + Claude Code
 
@@ -3227,3 +4607,81 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   Prettier code style!"; core "Tests 974 passed (974)"; client "Tests 434 passed (434)"; "✓ built
   in 260ms"; "Documentation check passed."
 - Next step: push to #56; sholtzman answers the FR-071 INBOX item.
+
+### 2026-11-02 — Phase 2 / Track B (S1 carry-over) / HUD and character select, merge of the phase branch and T-199 (DEC-143) — feat/hud-plan-b6 — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/2-sprint-2-work` (`e2c3e1e`; every phase PR since `230a330`,
+  #42 to #63 and #30) as `54716be`: #30's buildings ported into `MatchCamera`, `Match` and
+  `prepareMatchWorld`; the simulation gets the map, the map objects and the setup's bots; the old
+  interior model and "Leave cathedral" deleted. Then DEC-143 (T-199): `game/BuildingRoofs.ts` owns
+  roof cutaways (the player's building opens, closes on leaving or death; developer clicks add to
+  it), the roof click is developer-only, the minimap has a test that it draws with the explorer
+  hidden or shown. Docs: 06 §10 (T-199 row, notes), 13 §10, 02 §12, reference 05 and 15 (CD-22)
+  dated notes, the phase 2 plan's leave-interior task. Red proofs in
+  `eternalus-agent-work/hud-charselect/build-1102/w4-redproof.md`.
+- Checks run: `npm run check` EXIT 0 on the merge and again on T-199 (core "Tests 936 passed
+  (936)", client "Tests 1694 passed (1694)", "Documentation check passed.").
+- Next step: the critic and ponytail gate on `feat/hud-plan-b6`; the owner drops the phase 2
+  leave-interior task and answers T-199 (HC-T1).
+
+### 2026-11-02 — Phase 2 / Track B (S1 carry-over) / HUD and character select, the pre-PR gate — feat/hud-plan-b6 — sholtzman + Claude Code
+
+- What was done: batch 5 merged (`62652b0`, `da57c29`, `3ceb877` via `dccd92f`); hiding the
+  explorer puts the developer's roofs back (`b3e2a2e`); critic loop 1 fixes (replay carries its
+  setup, `ReplaySetup`; pointer claims; base zoom on leaving the explorer); DEC-147 to DEC-149
+  built (bot difficulty by role in core content, `createMatchSeed`, developer-roof names, a dead
+  Legend opens no roof, `crashToMenu`, core `findBuildingAt`), with a test pinning the interim
+  spawn adoption until A19 (`99563b4`); loop 2 fixes (generic replay types in `diagnostics/`,
+  `MatchRequest.roster`); DEC-150 to DEC-152 (`6f67263`, `826f929`, `eaa5f7c`); critic loop 3
+  and its fix, the critic's BD-A (`5500a0c`: with the explorer shown a click attacks on release,
+  a drag never attacks, a click on the Legend's own building attacks, DEC-153); docs (`dd41ca1`
+  and this entry's commit). The owner's one delta re-check (DEC-153): approve, four nits, one doc
+  fix, three rejected (`docs/changelog/pr-feat-hud-and-character-select.md`). The HUD lane's
+  DEC-138 renumbered DEC-154 (SamarjitBhogal pushed DEC-138 first, #56). Red proofs in
+  `eternalus-agent-work/hud-charselect/build-1102/` (`loop*-redproofs-*.md`).
+- Checks run: `npm run check` EXIT 0 on the final tree: "All matched files use Prettier code
+  style!"; core "Tests 945 passed (945)"; client "Tests 1735 passed (1735)"; "Documentation check
+  passed." (knip printed one configuration hint, not a failure).
+- Next step: merge into `feat/hud-and-character-select` and open the PR to
+  `phase/2-sprint-2-work`; BD-B (`Match`'s pointer and explorer controls in their own class) at the
+  A19 merge (`INBOX.md` HC-S6).
+
+### 2026-11-02 — Phase 2 / Track B (S1 carry-over) / HUD and character select, PR #68 Windows CI — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done: PR #68's first CI run failed on `windows-latest` only (2 of 1735 client tests).
+  The note test made the report read-only to prove the rename, and Windows refuses to replace a
+  read-only file; it now proves the rename by the file's identity (`stat` `ino`), on every
+  platform. The browser-match replay test (a whole match recorded and replayed) took 6.4 s on the
+  runner against the 5 s default; it gets the 60 s that core gives its whole-match tests. Red
+  proof: `eternalus-agent-work/hud-charselect/build-1102/pr68-windows-ci-redproofs.md`.
+- Checks run: `npm run check` EXIT 0: "All matched files use Prettier code style!"; core "Tests
+  945 passed (945)"; client "Tests 1735 passed (1735)"; "Documentation check passed."
+- Next step: PR #68 CI on both runners; a teammate review.
+
+### 2026-11-03 — Phase 2 / Track B (S1 carry-over) / HUD and character select, PR #68 Windows CI (2) — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done: PR #68's second CI run failed on `windows-latest` only, on a different
+  whole-match client test (`createBrowserMatch.test.ts`, 5.2 s against the 5 s default). The
+  runner's speed is the one cause of three failures across two runs, so the client suite now has
+  core's 60 s `testTimeout` in `apps/client/vitest.config.ts` and the replay test's own 60 s is
+  gone (`bfe4fac`). Changelog bullet "Windows CI" and the PR body brought in line.
+- Checks run: CI run 41593504943 on `bfe4fac`: `npm run check (windows-latest)` pass,
+  `npm run check (ubuntu-latest)` pass. Local `npm run check` EXIT 0: "All matched files use
+  Prettier code style!"; core "Tests 945 passed (945)"; client "Tests 1735 passed (1735)";
+  "Documentation check passed."
+- Next step: a teammate review of PR #68; it merges after the minions and weapons PRs (merge
+  commit).
+
+### 2026-11-03 — Phase 2 / Track B (S1 carry-over) / HUD and character select, PR #68 review — feat/hud-and-character-select — sholtzman + Claude Code
+
+- What was done: SamarjitBhogal approved PR #68 with five optional follow-ups. The owner chose two:
+  the PR targets `phase/3-sprint-3-work` and merges now (DEC-157). The replay's command
+  log stamps each external command with the tick it applied in: `Simulation` keeps the bots' and
+  the external commands in two queues and `step()` applies the bots' first, the order a replay
+  reproduces. ADR 0025 amendment 2026-11-03, architecture 03 §3, DEC-156. File-length splits
+  scheduled (`INBOX.md` HC-S7). Red proof: both new tests in `Simulation.replay.test.ts` fail on
+  the old `Simulation.ts` (`eternalus-agent-work/hud-charselect/build-1102/dec156-redproof.txt`).
+- Checks run: `npm run check` EXIT 0: "All matched files use Prettier code style!"; core "Tests
+  947 passed (947)"; client "Tests 1735 passed (1735)"; "Documentation check passed."
+- Next step: merge PR #68 with a merge commit once CI passes; #56, #57 and #58 resolve the
+  conflicts with it.

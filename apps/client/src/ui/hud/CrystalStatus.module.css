@@ -1,0 +1,14 @@
+/* Crystal 65:623 with its glows: the raster's render bounds (833, 118) 256 × 256 (I-45). */
+.crystal {
+  position: relative;
+  width: calc(256 * var(--hud-u));
+  height: calc(256 * var(--hud-u));
+}
+
+.image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(256 * var(--hud-u));
+  height: calc(256 * var(--hud-u));
+}
