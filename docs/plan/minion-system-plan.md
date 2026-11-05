@@ -4,7 +4,7 @@ description: The build plan for the minion system of architecture doc 18 and eve
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-05
 tags: [plan, minions, hordes, guards, camps, bots, spawning, ai]
 related:
   - docs/architecture/18-minion-system.md
@@ -117,7 +117,7 @@ Each stand-in is removed by the phase named.
 | Bot laners walk in a straight line to where they are going, with no path around obstacles                                                                                                                                       | M3      | M8: A\* for Legends (built)                                   |
 | Bot laners never cast                                                                                                                                                                                                           | M3      | Phase 4 (casts)                                               |
 | A bot's last leg to a structure goes straight at it from the gather point; the Stronghold stands off the lane inside its wall ring, so a bot can lean on the ring                                                               | M3      | A\* to the nearest open point of the footprint's edge         |
-| Nothing heals a retreated bot, so it rejoins only once something restores its health                                                                                                                                            | M3      | base healing, once it is designed                             |
+| Nothing heals a retreated bot, so it rejoins only once something restores its health                                                                                                                                            | M3      | out-of-combat healing, DEC-188 (built)                        |
 | The client's match passes a placeholder roster (every Legend but each Rover a bot laner)                                                                                                                                        | M3      | session E's match setup rosters                               |
 | The human is always their team's Rover (DISC-51), so no lane counts a human laner (`assignLanes`' `occupied` is unwired)                                                                                                        | M3      | sim and developer mode (sprint 3.8)                           |
 | The Rover finds the human (the enemy Legend no controller drives) with a map-wide Legend query, past 11 §3's radii                                                                                                              | M8      | the match state's `humanLegendId` (12 §4)                     |

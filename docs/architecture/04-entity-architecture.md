@@ -4,7 +4,7 @@ description: The entity families, the Entity base class and its lifecycle hooks,
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-05
 tags: [architecture, entities, components, strategies, type-object, factory]
 paths:
   [
@@ -211,6 +211,16 @@ export type LegendDefinition = EntityDefinitionBase & {
 
 Definitions are Flyweights: shared, immutable, referenced by id from state
 ([03-game-model.md](03-game-model.md) §11).
+
+**Out-of-combat healing (DEC-188, DEC-215).** One content record, `OUT_OF_COMBAT_HEALING` in
+`content/healing/`, holds the flat base rate for every Legend and mob, the delay before healing
+starts and the structure bonuses, keyed by structure kind. Each bonus names a zone shape
+(`HealingZoneShape`); `systems/HealingZones.ts` resolves it with one strategy per shape:
+`fort-box`, the box round a lane tower's fort walls, and `stronghold-interior`, the ground inside
+the team's shield without the shield's own walls, gates and turrets. A unit is in a zone when its
+centre point is. Two zones never overlap: that is a property of the generated maps, checked by a
+test over them, not a case the code resolves. A new zone shape is a union member and one
+strategy; a per-class rate replaces the flat rate with a lookup by definition id.
 
 **Validation (DEC-22).** `loadDefaultContent()` builds the catalogues and runs `ContentValidator`
 once, at load, never at import time. The validator knows no rule in particular: each rule is a

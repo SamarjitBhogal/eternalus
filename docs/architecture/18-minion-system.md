@@ -240,9 +240,9 @@ mob ever exists without its horde (MS-25).
 **Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `StatusEffectSystem`
 → `MovementSystem` → `CollisionSystem` (10 §9, DEC-121 (c)) → `SpaceSystem` → `StuckSystem`
 (§5.2, DEC-193) → `PathingSystem` → … → `SpawnSystem` (schedule and fulfilment) →
-`EnragedSystem` (MS-16) → `DeathSystem` → `InvariantSystem` → `SnapshotSystem`. A horde spawned
-on tick N has its members and record when the invariants and the snapshot of tick N run, and its
-first decisions in tick N+1.
+`EnragedSystem` (MS-16) → `OutOfCombatHealingSystem` (DEC-188) → `DeathSystem` →
+`InvariantSystem` → `SnapshotSystem`. A horde spawned on tick N has its members and record when
+the invariants and the snapshot of tick N run, and its first decisions in tick N+1.
 
 **Where a horde starts.** An opening horde spawns at its lane's base (MS-30). Every other horde
 spawns at the origin, the spawning structure's centre, inside its footprint, and the lane field

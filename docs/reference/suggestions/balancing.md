@@ -4,7 +4,7 @@ description: Proposed tuning values, formulas and balance knobs for the MVP (hor
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-11-05
 tags: [reference, suggestions, balancing, content, testing]
 paths: ['packages/core/src/content/**', 'packages/core/src/config/**']
 related:
@@ -115,6 +115,8 @@ Breakability rule for walls and gates: `TUNE` "unbreakable until at least 2 buff
 Which towers contribute wall shields (DISC-21): the general note says "all towers provide the wall extra HP", the detailed rule says 200% per BuffTower. `Recommendation:` only BuffTowers grant shield bars; each lost SpawnerTower instead removes 2 of the Stronghold's guards (the doc's "reduces the capital's guards"). Option: a lost SpawnerTower also removes 10% of the wall's _base_ health.
 
 Auras (BuffTower and Stronghold; `TUNE` "reduces enemy health and damage by 10% each", "increases effects of debuffs"; the rest `Recommendation:`): radius 12 m; enemies inside deal 10% less damage, have 10% less max health, and debuffs on them last 25% longer; allies inside deal 10% more damage and regenerate aether 50% faster. The Stronghold's aura scales with `aliveBuffTowers / totalBuffTowers`, so "destroying buff buildings removes the capital's aura" holds at zero and degrades smoothly before that.
+
+Out-of-combat healing (DEC-188, amended by DEC-215; the values live in `packages/core/src/content/healing/outOfCombatHealing.ts`, `TUNE`): after 10 s without dealing or taking damage, every Legend and mob regains 2% of max health per second, one flat rate. While its centre point is in the heal zone of a friendly structure that has taken no hit for 10 s, it gains +10 points (lane towers: the box round the fort walls, gateways included) or +15 points (Stronghold: the ground inside its shield, not on the shield's walls, gates or turrets; hits on those do not count as hits on the Stronghold). Two zones never overlap. A heal from an allied Legend adds to this one.
 
 Guards (`TUNE` "respawn every 2 minutes", "don't leave the tower's perimeter"; counts are `Recommendation:`): SpawnerTower 4 light, BuffTower 6 medium ("numerous"), Stronghold 6 light ranged + 2 heavy melee, minus 2 light per lost SpawnerTower; leash radius 8 m; respawn 120 s after death.
 
