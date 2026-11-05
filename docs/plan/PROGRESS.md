@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-05
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -5012,9 +5012,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   done-when item is answered (DEC-167); answers added under Minion M6, M5b, M3, the unit-cap item
   and HC-Q6. Minion plan: phase M9 (crowd avoidance, DEC-180) and a stand-in row; the healing
   stand-in row names DEC-188. Phase 4 sprint 4.4: the weapon hit model (DEC-184). No design text in
-  `docs/architecture/` is edited: it goes with each code PR. Open: the exact files of DEC-185, the
-  audit's items B3 and B5, and the three DEC-188 defaults.
-- Checks run: see the final `npm run check` result in the session report (docs-only change).
+  `docs/architecture/` is edited: it goes with each code PR. Second pass (2026-11-05): critic r1 fixes
+  (camp-mob wording in DEC-165 and DEC-166 marked "as built"; DEC-168 list of B2 to B9 corrected
+  against the audit); DEC-183, DEC-185, DEC-186, DEC-187 and DEC-188 amended with the owner's
+  answers of 2026-11-05; new batch DEC-190 to DEC-193 (XP rework, sign-offs, facing chevron, stuck
+  units and leash); `INBOX.md`: the deferred walkable-walls item. Open: the audit's items B3 and
+  B5 have no named owner in the runner reports. The owner answered the DEC-193 leash question
+  ("Lane minions only") and three minimap defaults (DEC-187) on 2026-11-05.
+- Checks run (`npm run check`, 2026-11-05, log `eternalus-agent-work/playtest-2026-11-04/check-rulings-r2.log`):
+  `All matched files use Prettier code style!`; core `Tests  1079 passed (1079)`; client
+  `Tests  1754 passed (1754)`; `✓ built in 311ms`; `Documentation check passed.`; `exit 0`.
 - Next step: the code PRs (`fix/minion-stack-followups`, `fix/click-attack-units`,
   `feat/local-minimap`, `feat/structure-xp`, `feat/out-of-combat-heal`) update the architecture
   docs and cite these DEC numbers.
