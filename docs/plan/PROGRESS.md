@@ -4741,6 +4741,91 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: merge PR #68 with a merge commit once CI passes; #56, #57 and #58 resolve the
   conflicts with it.
 
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — branch sync
+
+- What was done: fetched origin, fast-forwarded the local branch from 796f77d to its remote
+  head dd1a416, then to Phase 2 head e2c3e1e. Both updates were fast-forwards; no conflicts,
+  new merge commits or source edits were required. HEAD and origin/phase/2-sprint-2-work have
+  no commits unique to either side.
+- Checks run: npm run check passed (exit 0): formatting, no-JS, lint, typecheck, Knip,
+  coverage, build and documentation; core 887/887 tests and client 433/433 tests passed.
+  Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: continue work from the synchronized branch. This required progress entry is
+  uncommitted; no commit or push was performed.
+
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — map detail pass
+
+- What was done: added lane-facing cathedral side portals and steps, plus matching interior
+  thresholds and selection footprints, retaining the existing walkable wall openings. Roads now
+  use joined world-space surfaces, soft shoulders and restrained wear; explicit isLaneSurface
+  metadata removes the main view's overlaid fixed-pixel lane line while retaining minimap routes.
+  Replaced uniform rubble with cached artwork by object kind: stumps and fallen logs, burned house
+  shells, scattered rock shards, broken walls/towers, collapsed tents, furniture and gate timber,
+  and palace debris. Extended ruin bounds keep fallen logs visible. Fire is cosmetic and existing
+  destruction collision/snapshot behavior is preserved. Updated the map design amendment.
+- Checks run: npm run check:quick passed. Focused geometry and rendering regressions passed;
+  visually inspected a render sheet made from the actual views. An initial full run caught the
+  interior-fit test's old footprint expectation; updated it to cover and require all four authored
+  door thresholds, with no assertions removed. Final npm run check passed (exit 0): formatting,
+  no-JS, lint, typecheck, Knip, coverage, build and docs; 891 core and 450 client tests passed.
+  Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: human playtest and review of the visual changes. All changes remain uncommitted;
+  no push or PR was performed.
+
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — front shield arc
+
+- What was done: replaced the complete outer stronghold ring with mirrored blue front arcs,
+  following the author's confirmed annotated outline. Preserved all original lane, gate and tower
+  anchor positions; taller tips join the rear mountain boundary. Shield panel artwork follows the
+  physical polygons, with translucent glass, luminous rims, runes and emitters. Artwork retains
+  segment destruction ownership, and the main view omits the replaced plain feature fills.
+  Added optional boundary metadata, validation, legacy closed-ring support and regressions for
+  geometry, presentation, anchor preservation and mountain containment. Updated the map design.
+- Checks run: npm run check:quick passed. Initial full tests caught shifted tower deployment
+  positions; corrected the geometry while keeping the existing deployment assertions unchanged.
+  Two default-worker runs then hit the unchanged roof-toolbar test's five-second startup timeout;
+  it passed in isolation. Final npm run check passed (exit 0) with VITEST_MAX_WORKERS=2:
+  formatting, no-JS, lint, typecheck, Knip, coverage, build and docs; 904 core and 451 client tests
+  passed. All timeouts, assertions and coverage thresholds remain unchanged. Visually inspected
+  a preview rendered from the actual map views. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: human playtest and review of the shield appearance. Changes remain uncommitted;
+  no push or PR was performed.
+
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 review fix and pre-PR gate — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` 387a5fd (PR #68) into the PR branch (eb0e012).
+  Owner rulings DEC-158 (the Stronghold wall is a shield arc from cliff face to cliff face) and
+  DEC-159 (no closed-ring wall: `wallRing.frontArc` required; closed-ring branches and the tests
+  that covered only the closed ring removed; ring tests of gate order, chord, splitting, narrowing
+  and anchors ported to the arc). Seal test (each tip on its cliff corner); layout validation
+  rejects outer gates past ±90°; one `shieldReach` from `boundaryPoint`; `MapShieldBuilder` no
+  longer guesses vertex order; `strongholdRing` throws instead of inferring; palace ruins drop the
+  timber ground by identity. Each new or ported test was turned red by a deliberate break first.
+  Gate: critic r1 approve (S1–S4), r2 request-changes (narrowing test could not fail; fixed), r3
+  approve; ponytail: 1 cut taken (shared reach), 5 rejected with reasons in the PR review.
+- Checks run: `npm run check` on 95cc4a5 → EXIT=0; core "Tests 967 passed (967)", client
+  "Tests 1753 passed (1753)", "Documentation check passed."
+- Next step: push to `feat/buildings-and-map-objects` (remote head must still be 52c1297), approve
+  #69; after #56 and #64 merge, re-run #56's soak probe and #64's zone tests.
+
 ### 2026-11-02 — Phase 3 / minion M6 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
 
 - What was done: brought #58 onto #57's head (M5b on M2c on `phase/3-sprint-3-work`) in three
@@ -4842,6 +4927,81 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
+
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 base sync — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: pushed 32eefbf; the base had moved to f40811f (#56, #57, #58, #66, #67, the
+  minion stack), so `origin/phase/3-sprint-3-work` was merged again (1e33263). Only this file
+  conflicted; both sides kept. Re-ran #56's soak probe (cap 300, bots, 900 s) on 1e33263 and on
+  f40811f: the gameplay output is identical (skipped 0 % / 0 %, deaths 1639, non-INFO 0); step
+  times overlap over three runs each (mean 0.62–0.76 ms both; worst-tick spikes on both).
+- Checks run: `npm run check` on 1e33263 → EXIT=0; core "Tests 1076 passed (1076)", client
+  "Tests 1754 passed (1754)", "Documentation check passed."
+- Next step: push, approve #69; after #64 merges, re-run #64's zone tests.
+
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 review follow-up — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: Samarjit's review of 97d7263 (approve with S1–S3). S3: `MapFeature.wallBoundary`
+  no longer copies `frontArc` (nothing read it); the new test was red on the old code, and the
+  golden map hash changed only because of that field (adding it back gives the old hash). N2: the
+  missing-wall error says "wall arc". S1 (scoped title) and S2 (PR description with the gate
+  results) are PR metadata, set when this is pushed.
+- Checks run: `npm run check` → EXIT=0; core "Tests 1076 passed (1076)", client "Tests 1754
+  passed (1754)", "Documentation check passed."
+- Next step: push, set the PR title and description, squash-merge; after #64 merges, re-run #64's
+  zone tests.
+
+### 2026-11-04 — Phase 3 / horde steering deadlock — fix/horde-guard-deadlock — sholtzman + Claude Code
+
+- What was done: a unit whose pull toward its target is cancelled by separation no longer stalls
+  for good. Root cause: `addSeparation` zeroed any sum shorter than `minSteer`, so two units that
+  met head-on (one extra entity before the first wave put the light lane-0 leader on its light
+  guard's post at (76, 20), the guard 0.995 ahead and walking back to it) each had a pull of 1
+  against a push of about 1.21; both nets fell to 0.21 and both stood still from tick 634 to past
+  tick 1,800. Now, when the push cancels a pull, the unit steps aside: a quarter turn from the
+  pull, to the side the push leans to, else always the same side, so two units meeting head-on
+  step to opposite sides. A unit with no pull still settles to zero. Shared by
+  `LaneFollowMovementStrategy` and `LeashedChaseMovementStrategy`; no new tuning number. Tests,
+  both red first: `LaneFollowMovementStrategy.test` "steps aside, never stalls, …" ("expected 0
+  to be greater than or equal to 0.25") and the structures scenario with one extra entity
+  ("expected 80.50056128703002 to be greater than 111"). Hash tests compare runs, none pins a
+  literal; all pass.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 249ms";
+  "Documentation check passed."
+- Next step: pre-PR gate, then PR into phase/3; unblocks #64.
+
+### 2026-11-04 — Phase 3 / horde steering deadlock, critic round 1 — fix/horde-guard-deadlock — sholtzman + Claude Code
+
+- What was done: the critic (request-changes) found that no test pinned the "side the push leans
+  to" rule (hard-coding one side still passed 1058/1058) and that its probe measured this rule as
+  the main source of the new shuffling: 16 of 20 wedge layouts reversed almost every tick, against
+  4 of 20 with a fixed side. The side step is now always a quarter turn to the left of the pull.
+  Two units meeting head-on still step to opposite sides in world terms. New test
+  `LaneFollowMovementStrategy.test` "steps to the left of its pull, whichever way the push that
+  cancels it leans", red first with the lean rule put back ("expected { x: +0, y: -1 } to deeply
+  equal { x: +0, y: 1 }"). A `ponytail:` note names the ceiling (a crowd pressed into a gap can
+  shuffle) and the upgrade (10 §9 `AvoidanceStrategy`). Doc 18 §5.2 states the rule. The
+  critic's whole-match probe, reversals over 120° per minion-minute: two-lane fight 240 s, 59.1
+  before the fix and 68.3 with the fixed side; full match 360 s, 27.9 before and 35.4 with the
+  fixed side. Remaining shuffle is an owner acceptance item.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 1059 passed (1059)"; client "Tests 1736 passed (1736)"; "✓ built in 222ms";
+  "Documentation check passed." This line was filled in after that run (docs-only).
+- Next step: critic re-check of this round, then PR into phase/3; unblocks #64.
+
+### 2026-11-04 — Phase 3 / horde steering deadlock, critic round 2 — fix/horde-guard-deadlock — sholtzman + Claude Code
+
+- What was done: the critic re-check approved (no blockers) and found one error in the round-1
+  wording. **Correction to the round-1 entry above:** the side step is not "to the left of the
+  pull". World +y is south, so a pull east steps south: a quarter turn to the unit's right,
+  clockwise on screen. The behaviour was right; only the stated direction was wrong. Doc 18 §5.2,
+  the `addSeparation` TSDoc and the test name now say "to the same side of its pull every time",
+  with no direction. Test nits applied: the neighbours are named by their side
+  (`neighbourSouth`/`neighbourNorth`), and the offset comes from `minSteer`, so retuning it keeps
+  the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
+  (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
+  acceptance; 10 §9 already allows it for the MVP.
 
 ### 2026-11-05 — Phase 3 / local minimap — feat/local-minimap — sholtzman + Claude Code
 
