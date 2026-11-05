@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-05
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -4842,3 +4842,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
+
+### 2026-11-05 — Phase 3 / playtest fixes: click attack — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: a click and the held attack button now target a living enemy unit under the
+  cursor, not only map objects (ddc41ce). Critic round 1 fixes (d06de14): `Match.clickAt` resolves
+  a click as unit, then roof, then map object; when units overlap the one drawn on top (largest y)
+  wins, and an exact tie goes to the later snapshot entity (DEC-183); the click resolver gets the
+  snapshot as a parameter and core owns the unit families list (`isUnitFamily`), both signed off as
+  better than the design (DEC-191). Architecture 06 §10 describes the new click order. Critic
+  round 2: no blockers. Each new test was turned red by a deliberate break first (runner report
+  `report-click-attack-r2.md` in the work folder).
+- Checks run: `npm run check` (log `check-click-docs.log` in the work folder) → `exit 0`: "All
+  matched files use Prettier code style!"; core "Tests 1058 passed (1058)"; client "Tests 1746
+  passed (1746)"; "✓ built in 300ms"; "Documentation check passed."
+- Next step: ponytail review, then the PR into `phase/3-sprint-3-work` after the rulings PR
+  (DEC-183 and DEC-191 rows).
