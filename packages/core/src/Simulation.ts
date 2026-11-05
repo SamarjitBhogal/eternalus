@@ -63,7 +63,10 @@ import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
 import { WorldObjectStore } from './state/WorldObjectStore';
-import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
+import {
+  MAP_OBJECT_DEFINITIONS,
+  RUINED_FORT_WALL_DEFINITION,
+} from './content/maps/mapObjectDefinitions';
 import { CollisionSystem } from './systems/CollisionSystem';
 
 /**
@@ -130,7 +133,10 @@ export class Simulation {
     const controllers = Simulation.createControllers();
     const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
     const objectsById = new Map(
-      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+      [...Object.values(MAP_OBJECT_DEFINITIONS), RUINED_FORT_WALL_DEFINITION].map((definition) => [
+        definition.id,
+        definition,
+      ]),
     );
     const definitions = {
       has: (id: string): boolean => objectsById.has(id) || units.has(id),
@@ -156,6 +162,10 @@ export class Simulation {
         definitions: MAP_OBJECT_DEFINITIONS,
         owners,
       });
+      // Where a structure's killing hit landed decides which fort wall falls with it (DEC-217 (12)).
+      this.state.events.on('entity-died', ({ entityId, killer }) =>
+        this.state.worldObjects?.died(entityId, killer.attackerId),
+      );
       this.state.events.on('entity-removed', ({ entityId }) =>
         this.state.worldObjects?.removed(entityId),
       );
@@ -266,7 +276,8 @@ export class Simulation {
    * 07 §1): every feature whose definition is a structure becomes that structure, with its team
    * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
    * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
-   * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
+   * of the same id, and of the objects that are `partOf` it (a lane tower's fort walls), as its
+   * `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
    * DEC-185 D; a gate's own outline, DEC-217 (17)). A blocking such object (a fort) is the
    * structure's body: it has no health of its own (one pool, DEC-185 B). Only towers share one
    * pool (DEC-217 (13)): the palace's and the gates' objects do not block, so they keep their own
@@ -283,16 +294,20 @@ export class Simulation {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
-    const bodies = new Map(mapObjects.map((object) => [object.id, object]));
     const owners = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
         const { kind, hasMapFootprint } = structures.get(definitionId);
         const placement = { position, team, ...(laneId !== undefined && { laneId }) };
         const structure = factory.create(kind, definitionId, placement);
-        const body = hasMapFootprint === true ? bodies.get(id) : undefined;
-        if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
-        if (body?.isBlocking === true) owners.set(body.id, structure.id);
+        const body =
+          hasMapFootprint === true
+            ? mapObjects.filter((object) => object.id === id || object.partOf === id)
+            : [];
+        if (body.length > 0) {
+          structure.addComponent(new Footprint(body.flatMap(({ footprints }) => footprints)));
+        }
+        for (const object of body) if (object.isBlocking) owners.set(object.id, structure.id);
         state.entities.add(structure);
       }
     }

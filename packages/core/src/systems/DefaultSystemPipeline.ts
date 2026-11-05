@@ -94,21 +94,24 @@ export class DefaultSystemPipeline extends SystemPipeline {
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {
-      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10).
+      // A destroyed blocking map object reopens its cells and the lane fields over them (07 §10):
+      // an obstacle's own object, or the objects a structure's body loses when it falls (its own
+      // object and the fort wall that took the killing hit, DEC-217 (12)).
       state.events.on('entity-removed', ({ entityId }) => {
-        const object = state.worldObjects?.objectFor(entityId);
-        if (object?.isBlocking !== true) return;
-        const cells = object.footprints.flatMap((footprint) =>
-          world.clearFootprint(footprint, object.passages),
-        );
-        // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
-        // object (a wall segment, turret or rock shares its feature's id), so clear that stamp too.
-        const backing = features.find(
-          ({ id, definitionId }) =>
-            id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
-        )?.footprint;
-        if (backing !== undefined) cells.push(...world.clearFootprint(backing));
-        flowFields?.markDirty(cells);
+        for (const object of state.worldObjects?.fallen(entityId) ?? []) {
+          if (!object.isBlocking) continue;
+          const cells = object.footprints.flatMap((footprint) =>
+            world.clearFootprint(footprint, object.passages),
+          );
+          // `Simulation.buildWorld`'s rule: the grid also stamps the blocking feature behind an
+          // object (a wall segment, turret, rock or tower shares its feature's id), so clear it too.
+          const backing = features.find(
+            ({ id, definitionId }) =>
+              id === object.id && MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking === true,
+          )?.footprint;
+          if (backing !== undefined) cells.push(...world.clearFootprint(backing));
+          flowFields?.markDirty(cells);
+        }
       });
     }
     super([

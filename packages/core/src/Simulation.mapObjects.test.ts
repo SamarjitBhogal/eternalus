@@ -12,6 +12,7 @@ import { NullLogger } from './diagnostics/NullLogger';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
 import { MapPresentationBuilder } from './map/MapPresentationBuilder';
+import { DamagePipeline } from './combat/DamagePipeline';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
 import type { GameState } from './state/GameState';
@@ -188,8 +189,12 @@ describe('Simulation with a roster and map objects (as the client builds a match
       }
     });
 
-    // A fort is 12 blocks: 4 walls cut by doorways into 6, 4 corner towers and the keep.
-    const fort = mapObjects.find(({ kind }) => kind === 'spawner-tower')?.footprints.length;
+    // A fort is 12 blocks: 4 walls cut by doorways into 7 wall objects, then the tower's own
+    // object: 4 corner towers and the keep (DEC-217 (12)).
+    const tower = mapObjects.find(({ kind }) => kind === 'spawner-tower');
+    const fort = mapObjects
+      .filter(({ id, partOf }) => id === tower?.id || partOf === tower?.id)
+      .flatMap(({ footprints }) => footprints).length;
     expect(fort).toBe(12);
     expect(shapes.get('spawner-tower')).toBe(fort);
     expect(shapes.get('buff-tower')).toBe(fort);
@@ -317,6 +322,86 @@ describe('Simulation with a roster and map objects (as the client builds a match
         ['map-object-spawner-tower', 'map-object-buff-tower'].includes(definitionId),
       ),
     ).toEqual([]);
+  });
+
+  it("turns a dead tower's fort into ruins: the wall that took the killing hit falls and opens its cells, the others keep theirs blocked at half health (DEC-217 (12), DEC-219 (a))", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const { state } = simulation as unknown as { readonly state: GameState };
+    const tower = laneTowers(map).find(({ team }) => team === 'light');
+    const id = tower?.id ?? '';
+    const centre = tower?.position ?? { x: 0, y: 0 };
+    const middle = (objectId: string): Vec2 => {
+      const points = mapObjects.find((object) => object.id === objectId)?.footprints[0] ?? [];
+      return {
+        x: points.reduce((sum, { x }) => sum + x, 0) / points.length,
+        y: points.reduce((sum, { y }) => sum + y, 0) / points.length,
+      };
+    };
+    const grid = state.world?.grid;
+    const top = middle(`${id}-fort-wall-top`);
+    const standing = [
+      `${id}-fort-wall-left`,
+      `${id}-fort-wall-right-lower`,
+      `${id}-fort-wall-bottom-left`,
+    ];
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at: { x: centre.x, y: top.y - 3 },
+      count: 1,
+    });
+    simulation.step();
+    const towerId =
+      simulation
+        .snapshot()
+        .entities.find(
+          ({ family, transform }) =>
+            family === 'structure' && transform?.x === centre.x && transform.y === centre.y,
+        )?.id ?? '';
+    const warrior =
+      simulation.snapshot().entities.find(({ definitionId }) => definitionId === 'warrior')?.id ??
+      null;
+    // The warrior stands north of the top wall, nearer it than any other part of the fort.
+    expect(top.y).toBeLessThan(centre.y);
+    expect(grid?.isWalkableAt(top.x, top.y)).toBe(false);
+    expect(grid?.isWalkableAt(centre.x, centre.y)).toBe(false);
+
+    new DamagePipeline().apply(state, towerId, 1_000_000, {
+      attackerId: warrior,
+      kind: 'weapon',
+      definitionId: 'warrior',
+    });
+    simulation.step();
+
+    const objects = new Map(simulation.snapshot().mapObjects?.map((object) => [object.id, object]));
+    expect(state.entities.has(towerId)).toBe(false);
+    // The wall the warrior hit falls with the tower, and so does the keep: their ground opens.
+    expect(objects.get(`${id}-fort-wall-top`)?.isDestroyed).toBe(true);
+    expect(objects.get(id)?.isDestroyed).toBe(true);
+    expect(grid?.isWalkableAt(top.x, top.y)).toBe(true);
+    expect(grid?.isWalkableAt(centre.x, centre.y)).toBe(true);
+    expect(state.worldObjects?.blockingAt(top, 0.5)).toBeNull();
+    // Every other wall stands, blocks the grid and collision, and has half a wall's health.
+    for (const wall of standing) {
+      const at = middle(wall);
+      expect(objects.get(wall)).toMatchObject({
+        isDestroyed: false,
+        health: { current: 1000, max: 1000 },
+      });
+      expect(grid?.isWalkableAt(at.x, at.y)).toBe(false);
+      expect(state.worldObjects?.blockingAt(at, 0.5)).toBe(wall);
+    }
   });
 
   it('lets a light horde sent at an enemy spawner tower on the generated map hit it within a minute (DEC-185, playtest 2026-11-04)', () => {

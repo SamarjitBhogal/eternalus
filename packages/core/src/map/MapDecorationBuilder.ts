@@ -13,9 +13,12 @@ export abstract class MapDecorationBuilder {
   protected isFootprint: true | undefined;
   private object: MapObjectArt | undefined;
 
-  /** Assigns physical ownership explicitly while the object's art is authored. */
-  protected beginObject(id: string, kind: MapObjectKind): void {
-    this.object = { id, kind, isFootprint: false };
+  /**
+   * Assigns physical ownership explicitly while the object's art is authored; `partOf` names the
+   * feature whose structure the object is part of the body of (`MapObject.partOf`).
+   */
+  protected beginObject(id: string, kind: MapObjectKind, partOf?: string): void {
+    this.object = { id, kind, isFootprint: false, ...(partOf === undefined ? {} : { partOf }) };
   }
 
   /** Subsequent ground marks belong to no physical object. */
@@ -50,7 +53,12 @@ export abstract class MapDecorationBuilder {
     kind: MapObjectKind = 'furniture',
   ): void {
     const owner = this.object;
-    this.object = { id: owner?.id ?? id, kind: owner?.kind ?? kind, isFootprint: true };
+    this.object = {
+      id: owner?.id ?? id,
+      kind: owner?.kind ?? kind,
+      isFootprint: true,
+      ...(owner?.partOf === undefined ? {} : { partOf: owner.partOf }),
+    };
     this.polygon(id, shape, color);
     this.object = owner;
   }

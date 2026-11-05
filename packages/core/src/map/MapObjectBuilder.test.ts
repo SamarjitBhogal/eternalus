@@ -47,6 +47,33 @@ describe('MapObjectBuilder', () => {
     expect(teamOf('capture-point-lane-0')).toBeUndefined();
     expect(objects.filter((o) => o.kind === 'tree').every((o) => o.team === undefined)).toBe(true);
   });
+  it("makes each fort wall of a lane tower its own wall object, part of the tower, and keeps a capture point's fort one object (DEC-217 (12))", () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
+    const objects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const tower = 'light-spawner-tower-lane-0-0';
+    const walls = objects.filter(({ partOf }) => partOf === tower);
+    // The tower's own object keeps its 4 corner towers and its keep.
+    expect(objects.find(({ id }) => id === tower)).toMatchObject({ kind: 'spawner-tower' });
+    expect(objects.find(({ id }) => id === tower)?.footprints).toHaveLength(5);
+    // 4 walls, cut by the west, east and south doorways into 7.
+    expect(walls.map(({ id }) => id)).toEqual([
+      `${tower}-fort-wall-top`,
+      `${tower}-fort-wall-left`,
+      `${tower}-fort-wall-left-lower`,
+      `${tower}-fort-wall-right`,
+      `${tower}-fort-wall-right-lower`,
+      `${tower}-fort-wall-bottom-left`,
+      `${tower}-fort-wall-bottom-right`,
+    ]);
+    for (const wall of walls) {
+      expect(wall).toMatchObject({ kind: 'wall', isBlocking: true });
+      expect(wall.footprints).toHaveLength(1);
+      // Scenery once its tower falls: either side may break it (DEC-121 (a)).
+      expect(wall.team).toBeUndefined();
+    }
+    expect(objects.filter(({ partOf }) => partOf === 'capture-point-lane-0')).toEqual([]);
+    expect(objects.find(({ id }) => id === 'capture-point-lane-0')?.footprints).toHaveLength(12);
+  });
   it('refuses a footprint with fewer than 3 points', () => {
     const map = { ...new MapGenerator().generate(createDefaultGameConfig(), 1), features: [] };
     const presentation = {
