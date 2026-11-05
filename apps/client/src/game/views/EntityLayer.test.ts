@@ -84,7 +84,7 @@ describe('EntityLayer', () => {
 
   it('turns the facing between the last two snapshots by alpha, as a unit vector (08 §8)', () => {
     const spy = new SpyView();
-    const layer = new EntityLayer(new ViewRegistry(spy));
+    const layer = new EntityLayer(new ViewRegistry(spy), () => false);
 
     layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 0, 0, SOUTH)]), 0.5, null);
     layer.draw(new RecordingRenderer());
@@ -95,7 +95,7 @@ describe('EntityLayer', () => {
 
   it('faces a new entity, or one that turned right round, the way it faces now', () => {
     const spy = new SpyView();
-    const layer = new EntityLayer(new ViewRegistry(spy));
+    const layer = new EntityLayer(new ViewRegistry(spy), () => false);
     const west = { x: -1, y: 0 };
 
     layer.show(
