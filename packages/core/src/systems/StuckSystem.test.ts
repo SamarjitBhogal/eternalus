@@ -83,6 +83,7 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
   };
   return {
     state,
+    factory,
     chaser,
     target,
     run,
@@ -174,5 +175,34 @@ describe('StuckSystem', () => {
     };
 
     expect(hashes()).toEqual(hashes());
+  });
+
+  it('plans at most maxPlansPerTick a tick; a unit past the budget stays due and plans on a later tick (11 §6)', () => {
+    const chase = riftChase(() => []);
+    // Two more chasers beside the first, all standing still in front of the rift.
+    const others = [18, 22].map((y) => {
+      const unit = chase.factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 40, y },
+      });
+      chase.state.entities.add(unit);
+      chase.state.entities.setAttackTarget(unit.id, chase.target.id);
+      return unit;
+    });
+    const chasers = [chase.chaser, ...others];
+    const system = new StuckSystem({ ...STUCK_DETECTION, maxPlansPerTick: 1 });
+    const window = STUCK_DETECTION.windowSeconds * config.tickRate;
+    const detouring: number[] = [];
+    const due: number[] = [];
+    for (let tick = 0; tick <= window + 3; tick += 1) {
+      system.update({ state: chase.state, logger });
+      chase.state.advanceTick();
+      detouring.push(chasers.filter((unit) => unit.getComponent(ChaseWatch).waypoint).length);
+      due.push(chasers.filter((unit) => unit.getComponent(ChaseWatch).isPlanDue).length);
+    }
+
+    // All three are stuck on the same tick; one plan a tick serves them over three ticks.
+    expect(detouring.slice(window - 1, window + 3)).toEqual([0, 1, 2, 3]);
+    expect(due.slice(window - 1, window + 3)).toEqual([0, 2, 1, 0]);
   });
 });

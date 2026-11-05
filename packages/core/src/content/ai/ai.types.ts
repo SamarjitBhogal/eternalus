@@ -136,6 +136,11 @@ export type StuckDetectionRule = {
   readonly minProgress: number;
   /** A detouring unit this close to its waypoint asks A\* for the next one. */
   readonly waypointRadius: number;
+  /**
+   * At most this many A\* plans a tick (architecture 11 §6, cost control); a unit due one past it
+   * keeps it due and plans on a later tick.
+   */
+  readonly maxPlansPerTick: number;
 };
 
 /** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */

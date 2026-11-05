@@ -23,7 +23,13 @@ import type { System, SystemContext } from './System.types';
  * straight as before. The nav grid blocks a tower's whole court, so a way to a unit inside one ends
  * on the open ground nearest it, and hordes never path through a court (owner 2026-11-05, A). Runs
  * after the positions are resolved and before `PathingSystem`, which steers mobs to the waypoint;
- * bot Legends read it on their next decision.
+ * bot Legends read it on their next decision. At most `maxPlansPerTick` A\* plans run a tick (11
+ * §6, cost control); a unit due one past that keeps it due (`ChaseWatch.isPlanDue`) and plans on a
+ * later tick.
+ *
+ * @remarks ponytail: the due units are served in store order each tick, so a crowd that keeps
+ * coming due ahead of a unit can hold it back; a round-robin cursor like `state.ai.cursor`
+ * (AiSystem) serves the skipped first once that shows.
  */
 export class StuckSystem implements System {
   public readonly name = 'stuck';
@@ -41,6 +47,7 @@ export class StuckSystem implements System {
       windowTicks: Math.round(this.rule.windowSeconds * tickRate),
       minProgress: this.rule.minProgress,
     };
+    let plans = this.rule.maxPlansPerTick;
     state.entities.forEach((entity) => {
       const targetId = entity.findComponent(Combat)?.targetId ?? null;
       const self = entity.findComponent(Transform);
@@ -64,6 +71,10 @@ export class StuckSystem implements System {
       const isStuck = watch.observe(targetId, gap, isInReach, window);
       const isAtWaypoint = watch.waypoint !== null && gap <= this.rule.waypointRadius;
       if (isStuck || isAtWaypoint) {
+        watch.requestPlan();
+      }
+      if (watch.isPlanDue && plans > 0) {
+        plans -= 1;
         this.plan(state, entity, watch, self.position);
       }
     });
