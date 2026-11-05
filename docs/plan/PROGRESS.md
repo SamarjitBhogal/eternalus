@@ -4785,6 +4785,34 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: the probe above; docs-only change, `npm run docs:check` passes.
 - Next step: bot laners attack structures (the M3 stand-in), on a branch from #58's head.
 
+### 2026-11-02 — Phase 3 / minion M3 stand-in — feat/minion-bot-structures — SamarjitBhogal + Claude Code
+
+- What was done: bot laners attack structures (doc 11 §4.2 `Push`; minion plan §3's M3 stand-in).
+  New `Push` branch ahead of following the horde: `BotLeaves.findObjective` takes the lane's next
+  standing enemy structure from `laneStructures.objectiveFor` (a gate only once breakable) when
+  the bot is within `engageRadius` of the point hordes gather at; `siege` sends `attack-target`,
+  walks to that point, then straight at the structure, and holds in reach. `Fight` still outranks
+  it. Tests: three `Push` cases in `BotLegendController.test` (its index now holds units only, as
+  `SpaceSystem` does) and a two-lane scenario where bots hit dark structures in 90 s, both red
+  before. Probe (seed 1, 1,200 s, bots, map objects, heavy invariants every 10 s): bots' first
+  structure hit at 220 s, 134 bot and 80 minion hits, 3 structures lost (2 without this change),
+  0 violations. Plan §3's row is now "Bot laners never cast". Critic: PASS, no blockers; its
+  should-fixes applied (a test that a unit near the structure is fought first; the straight last
+  leg to an off-lane Stronghold as a `ponytail:` remark and a plan §3 row).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 976 passed (976)"; client "Tests 434 passed (434)"; "✓ built in 352ms"; "Documentation
+  check passed."
+- Next step: pre-PR gate, then a draft PR into `phase/3-sprint-3-work` that merges after #58.
+
+### 2026-11-02 — Phase 3 / minion plan stand-ins — feat/minion-bot-structures — SamarjitBhogal + Claude Code
+
+- What was done: plan §3's M4 row "Nothing marks a lane flow field dirty" removed: PR #30's
+  `DefaultSystemPipeline` reopens a destroyed blocking map object's cells and marks the lane fields
+  over them dirty, and gates are not blocking in the MVP, so no gate change alters the grid.
+- Checks run: `npm run docs:check` and Prettier; docs-only change.
+- Next step: the owner's call on the two remaining M4/M5a stand-ins (strength by the field's
+  distance; a wall-avoidance term now that `CollisionSystem` exists).
+
 ### 2026-11-02 — Phase 3 / minion M4 test — chore/minion-full-march-test — SamarjitBhogal + Claude Code
 
 - What was done: restored the full-match march test commented out at the owner's request on
@@ -4802,3 +4830,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 973 passed (973)"; client "Tests 434 passed (434)"; "✓ built in 156ms"; "Documentation
   check passed."
 - Next step: critic round 2, then a draft PR into `phase/3-sprint-3-work` after #58.
+
+### 2026-11-04 — Phase 3 / minion stack merge — chore/minion-full-march-test — sholtzman + Claude Code
+
+- What was done: #56, #57, #58 and #66 merged into `phase/3-sprint-3-work` (8e058d8) after an
+  independent audit with no merge-blockers. Merged `phase/3-sprint-3-work` into this branch (#67)
+  and resolved its two docs conflicts with #66: this log keeps all three 2026-11-02 entries in
+  commit order; minion plan §3 takes #66's rows (no "flow field dirty" row, "Bot laners never
+  cast", the straight-last-leg row) and adds this branch's M4 done-when row.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
