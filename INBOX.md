@@ -16,7 +16,8 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions.**
+- [ ] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
+      better-than-design item.**
       (1) Start facing: a unit faces east (`INITIAL_FACING` in `Transform.constants.ts`) until it
       first moves or attacks. Guards, camp mobs and Legends in the countdown show east, and ability
       cones will use this facing (architecture 05). Options: east for all; toward the enemy
@@ -24,6 +25,10 @@ Reply inline (`Decision: …`).
       (2) Ring colour: DEC-192 says the team shows in the ring. The build keeps the team colour in
       the disc, and the ring is white (Legends) or near-black (mobs). It differs from your
       reference image (grey disc, team-coloured ring). Options: restyle now, restyle later, or keep.
+      (3) Better than the design (critic, not built): `LegendView` and `MobView` each draw the
+      chevron. An abstract `UnitView extends DefaultEntityView` with an abstract outline, or a
+      `FacingChevronView` decorator, would hold it once. Recommendation: build it in one tidy PR
+      after the playtest PRs merge. Approve, or say no.
 
 - [ ] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"

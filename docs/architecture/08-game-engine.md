@@ -246,8 +246,8 @@ flowchart LR
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
   only and never mutate state (rule 6).
 - Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
-  same blend, scaled back to length 1 (`EntityLayer.turn`), and takes `current` when the two
-  facings are opposite. Entities that appeared this tick draw at `current` (no ghost from the
+  same blend, scaled back to length 1 (`EntityLayer.turn`), and snaps at the midpoint when the two
+  facings are opposite (a zero blend takes `current`). Entities that appeared this tick draw at `current` (no ghost from the
   origin).
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 

@@ -138,7 +138,7 @@ fields. Each component guards its own invariants so a bug shows up where it happ
 `Transform` also owns the facing rules (DEC-192). The facing is a unit vector; it starts as
 `INITIAL_FACING` (`Transform.constants.ts`) until the first turn. It follows the direction of the
 velocity (`MovementSystem`). A unit with an attack target in reach faces the target instead, as
-`CombatSystem` runs after `MovementSystem`. A zero direction, and a point equal to the unit's own
+`CombatSystem` runs after `MovementSystem`, unless a status stops its attacks (`cannot-attack`). A zero direction, and a point equal to the unit's own
 position, keep the facing. Core turns at once. The client blends the facing between two ticks
 ([08 §8](08-game-engine.md)). The invariant `finite-transforms` checks the position and the
 facing ([15 §3](15-diagnostics-and-runtime-testing.md)).
