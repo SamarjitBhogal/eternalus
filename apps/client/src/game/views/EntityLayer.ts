@@ -75,7 +75,10 @@ export class EntityLayer implements WorldLayer {
     return { x: from.x + (to.x - from.x) * alpha, y: from.y + (to.y - from.y) * alpha };
   }
 
-  /** The facing `alpha` of the way from `from` to `to`, kept a unit vector; `to` when opposite. */
+  /**
+   * The facing `alpha` of the way from `from` to `to`, kept a unit vector. Opposite facings snap at
+   * the midpoint (a zero blend takes `to`).
+   */
   private static turn(from: WorldPoint, to: WorldPoint, alpha: number): WorldPoint {
     const { x, y } = EntityLayer.lerp(from, to, alpha);
     const size = Math.hypot(x, y);
