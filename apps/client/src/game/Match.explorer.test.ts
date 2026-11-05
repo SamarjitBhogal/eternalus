@@ -5,7 +5,7 @@ import {
   Simulation,
   type Vec2,
 } from '@eternalus/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
@@ -37,8 +37,9 @@ const setUp = () => {
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
+  const simulation = new Simulation({ config, seed: 1, logger: new NullLogger() });
   const match = new Match({
-    simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
+    simulation,
     world,
     tickRate: config.tickRate,
     scheduler: new FakeFrameScheduler(),
@@ -69,7 +70,7 @@ const setUp = () => {
     x: ((point.x - view.x) / view.width) * SCREEN.width,
     y: ((point.y - view.y) / view.height) * SCREEN.height,
   });
-  return { match, camera, input, map, renderer, shown, cathedral, toScreen };
+  return { match, simulation, camera, input, map, renderer, shown, cathedral, toScreen };
 };
 
 describe('Match free view', () => {
@@ -119,7 +120,7 @@ describe('Match free view', () => {
     match.zoomBy(2);
     match.overview();
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, shown());
-    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.clickAt(onCathedral.x, onCathedral.y)).toBe(true);
 
     match.leaveExplorer();
 
@@ -133,9 +134,9 @@ describe('Match free view', () => {
     match.overview();
     const view = shown();
 
-    expect(match.toggleRoofAt(0, 0)).toBe(false);
+    expect(match.clickAt(0, 0)).toBe(false);
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, view);
-    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.clickAt(onCathedral.x, onCathedral.y)).toBe(true);
     expect(match.hasDeveloperRoofs).toBe(true);
     const inside = shown();
     expect(inside).toEqual(view);
@@ -151,5 +152,63 @@ describe('Match free view', () => {
 
     match.overview();
     expect(match.hasDeveloperRoofs).toBe(false);
+  });
+});
+
+describe('Match.clickAt: unit, then roof, then map object (DEC-183, DEC-150)', () => {
+  /** Spawns a dark-team minion at `at`, ticks once, and returns its snapshot (id and position). */
+  const spawnDarkMinion = (
+    setup: ReturnType<typeof setUp>,
+    at: Vec2,
+  ): { id: string; x: number; y: number } => {
+    setup.simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'light-mob',
+      definitionId: 'training-dummy',
+      team: 'dark',
+      at,
+      count: 1,
+    });
+    setup.match.tick();
+    const minion = setup.match.snapshot.entities.find(
+      ({ kind, team }) => kind === 'light-mob' && team === 'dark',
+    );
+    if (minion?.transform == null) throw new Error('The dark minion did not spawn');
+    return { id: minion.id, x: minion.transform.x, y: minion.transform.y };
+  };
+
+  it('attacks the dark-team minion under a click, through the camera and the snapshot', () => {
+    const setup = setUp();
+    const { match, simulation, shown, toScreen, map } = setup;
+    match.overview();
+    const minion = spawnDarkMinion(setup, { x: map.width / 2, y: map.height / 2 + 30 });
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const onMinion = toScreen(minion, shown());
+
+    match.clickAt(onMinion.x, onMinion.y);
+
+    expect(enqueue.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: match.playerEntityId, targetId: minion.id },
+    ]);
+  });
+
+  it('attacks an enemy inside the cathedral and leaves the roof closed; no unit toggles it', () => {
+    const setup = setUp();
+    const { match, simulation, shown, toScreen, cathedral } = setup;
+    match.overview();
+    const minion = spawnDarkMinion(setup, cathedral ?? { x: -1, y: -1 });
+    const enqueue = vi.spyOn(simulation, 'enqueueCommand');
+    const onMinion = toScreen(minion, shown());
+
+    expect(match.clickAt(onMinion.x, onMinion.y)).toBe(false);
+
+    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(enqueue.mock.calls.map(([command]) => command)).toEqual([
+      { type: 'attack-target', actorId: match.playerEntityId, targetId: minion.id },
+    ]);
+    // With no unit under the cursor a click on the same roof still toggles it (DEC-150, DEC-153).
+    const roofSpot = toScreen({ x: minion.x + 5, y: minion.y + 5 }, shown());
+    expect(match.clickAt(roofSpot.x, roofSpot.y)).toBe(true);
+    expect(match.hasDeveloperRoofs).toBe(true);
   });
 });

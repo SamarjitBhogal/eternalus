@@ -21,6 +21,7 @@ describe('@eternalus/core public API', () => {
       'findBuildingAt',
       'findMapObjectAt',
       'isPointInPolygon',
+      'isUnitFamily',
       'loadDisplayContent',
       'makeLogRecord',
       'runReplay',

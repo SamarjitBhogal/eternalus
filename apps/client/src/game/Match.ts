@@ -168,7 +168,7 @@ export class Match implements LoopTarget {
    */
   public tick(): void {
     if (this.playerId !== null) {
-      const isMoving = this.commands.apply(this.playerId, this.current.mapObjects ?? []);
+      const isMoving = this.commands.apply(this.playerId, this.current);
       if (isMoving) {
         this.camera.playerMoved();
       }
@@ -230,22 +230,26 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * The developer explorer's click: cuts away the roof of the building under the screen point
-   * (device pixels), or puts back one it cut away. The view does not move.
-   * @returns Whether a roof was toggled: not on open ground or the player's building (DEC-150).
+   * The developer explorer's click at a screen point (device pixels): the player's Legend attacks
+   * the living enemy unit under it, once (a unit is drawn on top of a roof; DEC-183). With no unit,
+   * the roof of the building there is cut away or put back (DEC-150); with no roof click either,
+   * the Legend attacks the map object under the point. No Legend, no attack.
+   *
+   * @returns Whether a roof was toggled, so the chrome can report the roofs (DEC-150).
    */
-  public toggleRoofAt(screenX: number, screenY: number): boolean {
-    return this.roofs.toggleAt(this.camera.worldAt(screenX, screenY));
-  }
-
-  /**
-   * The explorer's plain click that is no roof click (DEC-150): the player's Legend attacks the
-   * living map object under the screen point (device pixels), once; no Legend, no attack.
-   */
-  public attackAt(screenX: number, screenY: number): void {
-    if (this.playerId === null) return;
+  public clickAt(screenX: number, screenY: number): boolean {
     const point = this.camera.worldAt(screenX, screenY);
-    this.commands.attackAt(this.playerId, point, this.current.mapObjects ?? []);
+    const actorId = this.playerId;
+    if (actorId !== null && this.commands.attackUnitAt(actorId, point, this.current)) {
+      return false;
+    }
+    if (this.roofs.toggleAt(point)) {
+      return true;
+    }
+    if (actorId !== null) {
+      this.commands.attackObjectAt(actorId, point, this.current);
+    }
+    return false;
   }
 
   /**
@@ -270,7 +274,7 @@ export class Match implements LoopTarget {
   /**
    * Whether the canvas gestures own the main button's press (a minimap click, or any press with the
    * developer explorer shown): the held button is then no attack, and a plain click with the
-   * explorer attacks on its release instead (`attackAt`, DEC-150; 06 §10, input arbitration).
+   * explorer attacks on its release instead (`clickAt`, DEC-150; 06 §10, input arbitration).
    */
   public setPointerClaimed(isClaimed: boolean): void {
     this.commands.setPointerClaimed(isClaimed);
