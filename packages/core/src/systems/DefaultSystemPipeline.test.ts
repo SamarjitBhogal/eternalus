@@ -122,6 +122,8 @@ describe('DefaultSystemPipeline', () => {
       'combat',
       'map-destruction',
       'progression',
+      'veterancy',
+      'structure',
       'spawn',
       'enraged',
       'death',

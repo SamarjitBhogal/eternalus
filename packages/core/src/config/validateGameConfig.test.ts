@@ -88,7 +88,7 @@ describe('validateGameConfig', () => {
     ['tickRate', { tickRate: 60 }],
     ['limits.maxLegendsPerTeam', { limits: { maxLegendsPerTeam: 11 } }],
     ['limits.maxLegendsPerTeam', { limits: { maxLegendsPerTeam: 0 } }],
-    ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 145 } }],
+    ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 301 } }],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 1.5 } }],
     ['map.numLanes', { map: { numLanes: 0 } }],
     ['map.numLanes', { map: { numLanes: 4 } }],
@@ -118,7 +118,7 @@ describe('validateGameConfig', () => {
     ['match.plannedMatchSeconds', { match: { plannedMatchSeconds: 0 } }],
     ['match.countdownSeconds', { match: { countdownSeconds: 1801 } }],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 47 } }],
-    ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 49 } } }],
+    ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 101 } } }],
   ])('rejects a bad %s', (path, overrides) => {
     expect(failurePath(overrides)).toBe(path);
   });

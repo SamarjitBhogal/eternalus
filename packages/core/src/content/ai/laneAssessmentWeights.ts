@@ -1,8 +1,8 @@
 import type { LaneAssessmentWeights } from './ai.types';
 
-/** The lane-assessment weights (MS-9, open for the owner's sign-off; architecture 18 §3.3). */
+/** The lane-assessment weights (MS-9, DEC-89; architecture 18 §3.3): equal to start. */
 export const LANE_ASSESSMENT_WEIGHTS = {
-  damageNotDealt: 1 / 3, // TUNE: Recommendation in architecture 18 §3.3
-  structuresLost: 1 / 3, // TUNE: Recommendation in architecture 18 §3.3
-  pushedBack: 1 / 3, // TUNE: Recommendation in architecture 18 §3.3
+  structureDamageTaken: 1 / 3, // TUNE: DEC-89
+  pushedBack: 1 / 3, // TUNE: DEC-89
+  alliesHurt: 1 / 3, // TUNE: DEC-89
 } as const satisfies LaneAssessmentWeights;

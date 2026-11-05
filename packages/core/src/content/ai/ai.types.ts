@@ -31,6 +31,11 @@ export type HordeSteeringProfile = {
   readonly minSteer: number;
   /** The formation anchor advances at this fraction of the slowest member's top speed. */
   readonly marchSpeedFactor: number;
+  /**
+   * The anchor stops this far in front of the edge of the horde's next standing objective
+   * (architecture 18 §4, §6.2), so the front rank gathers within reach of it.
+   */
+  readonly objectiveHoldGap: number;
   /** Gap between members in the spawn grid; at least the largest minion's diameter. */
   readonly spawnSpacing: number;
   /** Members per row of the spawn grid. */
@@ -43,11 +48,11 @@ export type HordeSteeringProfile = {
   readonly deployClearance: number;
 };
 
-/** The weights of the lane assessment (architecture 18 §3.3); each term runs from 0 to 1. */
+/** The weights of the lane assessment (architecture 18 §3.3, DEC-89); each term runs from 0 to 1. */
 export type LaneAssessmentWeights = {
-  readonly damageNotDealt: number;
-  readonly structuresLost: number;
+  readonly structureDamageTaken: number;
   readonly pushedBack: number;
+  readonly alliesHurt: number;
 };
 
 /** The classes the aggro priority list names (architecture 11 §4.3). */
@@ -77,14 +82,30 @@ export type AggroRuleDefinition = {
   readonly acquisitionRadius: number;
   /** Best first; an enemy that matches no entry is never acquired. */
   readonly priority: readonly AggroPriority[];
-  /** A chase ends when the mob is this far from where it left its formation. */
+  /**
+   * A mob fights only a target this close to where it took it (MS-36, DEC-144). A guard's leash
+   * is its guard plan's, measured from its structure's edge.
+   */
   readonly leashRadius: number;
-  /** A chase ends this many ticks after it started on its current target. */
-  readonly aggroDurationTicks: number;
-  /** After re-forming, a mob waits this many ticks before it may acquire again. */
+  /**
+   * A target outside the leash is chased this many ticks, then dropped; back inside sooner, it is
+   * fought on. 0 drops it at once (DEC-144 E).
+   */
+  readonly leashGraceTicks: number;
+  /** For this many ticks after a leash breaks, the mob leaves alone the enemy that escaped. */
   readonly aggroCooldownTicks: number;
-  /** A returning mob this close to its formation slot is marching again. */
-  readonly reformDistance: number;
+  /**
+   * An enemy this close that attacks a horde-mate may be acquired too ("call for help"). The
+   * leash still applies, so a value above `leashRadius` acts as `leashRadius`. Guards ignore it:
+   * they answer a fellow guard anywhere in their circle.
+   */
+  readonly callForHelpRadius: number;
+  /**
+   * The ghosted first wave (11 §4.3, MVP-if-time): for this many ticks after the countdown, and
+   * during it, Legends match no priority entry, so the opening hordes meet before a Legend can bait
+   * them. 0 turns it off.
+   */
+  readonly ghostFirstWaveTicks: number;
 };
 
 /** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */

@@ -10,7 +10,8 @@ import type { UnitFilter } from './Perception.types';
  * so they never depend on the grid layout (11 §5). One instance per `AiSystem`; its result array
  * is reused, so read a result before the next query.
  *
- * @remarks ponytail: no `structuresWithin` until structure entities exist (minion plan M2c).
+ * @remarks ponytail: no `structuresWithin` until a controller needs it; M2c reads lane objectives
+ * from `state.laneStructures`.
  */
 export class Perception {
   private found = new Int32Array(0);
