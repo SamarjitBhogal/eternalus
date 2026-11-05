@@ -78,6 +78,29 @@ describe('MovementSystem', () => {
     expect(movement.speed).toBeLessThan(fullSpeed);
   });
 
+  it('faces the way it moves (DEC-192)', () => {
+    const { context, dummy } = setUp();
+    dummy.getComponent(Movement).steer({ x: 0, y: -1 });
+
+    new MovementSystem().update(context);
+
+    expect(dummy.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('keeps its facing once it has stopped (DEC-192)', () => {
+    const { context, dummy } = setUp();
+    const movement = dummy.getComponent(Movement);
+    const system = new MovementSystem();
+    movement.steer({ x: 0, y: -1 });
+    system.update(context);
+
+    movement.stop();
+    system.update(context);
+
+    expect(movement.speed).toBe(0);
+    expect(dummy.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
   it('leaves entities without Movement where they are', () => {
     const { context } = setUp();
     const statue = new Statue('statue-1', 'statue');

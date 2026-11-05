@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { TeamMembership } from '../../components/TeamMembership';
 import { Transform } from '../../components/Transform';
+import { INITIAL_FACING } from '../../components/Transform.constants';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
 import { validateGameConfig } from '../../config/validateGameConfig';
 import type { Team } from '../../teams/teams.types';
@@ -103,8 +104,8 @@ describe('DevSpawnHandler', () => {
     expect(
       context.state.snapshot().entities.map(({ team, transform }) => ({ team, transform })),
     ).toEqual([
-      { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },
-      { team: 'dark', transform: { x: 10, y: 20, radius: 0.5 } },
+      { team: 'dark', transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING } },
+      { team: 'dark', transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING } },
     ]);
   });
 

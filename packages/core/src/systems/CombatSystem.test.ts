@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { Combat } from '../components/Combat';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
+import { Transform } from '../components/Transform';
+import { INITIAL_FACING } from '../components/Transform.constants';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { ContentCatalogue } from '../content/ContentCatalogue';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -66,6 +68,32 @@ describe('CombatSystem', () => {
     new CombatSystem(new DamagePipeline()).update(context);
 
     expect(dummy.getComponent(Health).current).toBe(dummy.getComponent(Health).max);
+  });
+
+  it('turns to face a target in reach, also while the attack cools down (DEC-192)', () => {
+    const { state, warrior, spawn, context, attack } = setUp();
+    const facing = warrior.getComponent(Transform).facing;
+    const system = new CombatSystem(new DamagePipeline());
+    attack(spawn('light-mob', 'training-dummy', -1, 'dark'));
+
+    system.update(context);
+    expect(facing).toEqual({ x: -1, y: 0 });
+
+    warrior.getComponent(Transform).face({ x: 0, y: 1 });
+    state.advanceTick();
+    system.update(context);
+
+    expect(warrior.getComponent(Combat).canAttack(state.tick)).toBe(false);
+    expect(facing).toEqual({ x: -1, y: 0 });
+  });
+
+  it('does not turn toward a target out of reach', () => {
+    const { warrior, spawn, context, attack } = setUp();
+
+    attack(spawn('light-mob', 'training-dummy', -50, 'dark'));
+    new CombatSystem(new DamagePipeline()).update(context);
+
+    expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
 
   it('drops a target once it is dead', () => {

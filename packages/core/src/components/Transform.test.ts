@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Transform } from './Transform';
+import { INITIAL_FACING } from './Transform.constants';
 
 describe('Transform', () => {
   it('starts at the given position and moves by and to points', () => {
@@ -39,5 +40,32 @@ describe('Transform', () => {
 
     expect(transform.position).toBe(position);
     expect(position).toEqual({ x: 1, y: 2 });
+  });
+
+  it('faces INITIAL_FACING until it turns, then along the direction, as a unit vector', () => {
+    const transform = new Transform({ x: 0, y: 0 }, 1);
+    expect(transform.facing).toEqual(INITIAL_FACING);
+
+    transform.face({ x: 0, y: -3 });
+
+    expect(transform.facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('keeps its facing when turned along no direction (DEC-192: a still unit keeps it)', () => {
+    const transform = new Transform({ x: 0, y: 0 }, 1);
+    transform.face({ x: -2, y: 0 });
+
+    transform.face({ x: 0, y: 0 });
+
+    expect(transform.facing).toEqual({ x: -1, y: 0 });
+  });
+
+  it('never holds a non-finite facing', () => {
+    const transform = new Transform({ x: 0, y: 0 }, 1);
+
+    expect(() => {
+      transform.face({ x: Number.NaN, y: 1 });
+    }).toThrow('facing direction must be finite');
+    expect(transform.facing).toEqual(INITIAL_FACING);
   });
 });

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 
 import type { Command } from './commands/Command.types';
+import { INITIAL_FACING } from './components/Transform.constants';
 import { ConfigValidationError } from './config/ConfigValidationError';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { loadDefaultContent } from './content/loadDefaultContent';
@@ -12,6 +13,7 @@ import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { NullLogger } from './diagnostics/NullLogger';
 import { Simulation } from './Simulation';
 import type { System } from './systems/System.types';
+import type { Vec2 } from './utils/geometry.types';
 
 const UNIT_DEFINITIONS = loadDefaultContent(createDefaultGameConfig().tickRate);
 
@@ -110,7 +112,7 @@ describe('Simulation', () => {
         family: 'legend',
         definitionId: 'warrior',
         team: 'light',
-        transform: { x: 10, y: 20, radius: 0.5 },
+        transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING },
         health: { current: 600, max: 600 },
       },
     ]);
@@ -198,6 +200,49 @@ describe('Simulation', () => {
     sim.step();
 
     expect(sim.snapshot().entities[0]?.transform?.x).toBeGreaterThan(0);
+  });
+
+  it('faces units by moving and attacking, the same for the same seed and commands (DEC-192)', () => {
+    const run = (): { readonly hash: number; readonly facings: readonly (Vec2 | undefined)[] } => {
+      const sim = new Simulation({
+        config: createDefaultGameConfig(),
+        seed: 3,
+        logger: new NullLogger(),
+        debug: TEST_DEBUG_CONFIG,
+      });
+      const spawn = (kind: string, definitionId: string, x: number, team: 'light' | 'dark') => {
+        sim.enqueueCommand({
+          type: 'dev-spawn',
+          kind,
+          definitionId,
+          team,
+          at: { x, y: 0 },
+          count: 1,
+        });
+      };
+      spawn('warrior', 'warrior', 0, 'light');
+      spawn('warrior', 'warrior', 20, 'light');
+      spawn('light-mob', 'training-dummy', 19, 'dark');
+      sim.step();
+      sim.enqueueCommand({ type: 'move', actorId: 'entity-1', direction: { x: 3, y: 4 } });
+      sim.enqueueCommand({ type: 'attack-target', actorId: 'entity-2', targetId: 'entity-3' });
+      for (let step = 0; step < 5; step += 1) sim.step();
+      sim.enqueueCommand(stop('entity-1'));
+      for (let step = 0; step < 30; step += 1) sim.step();
+      return {
+        hash: sim.hash(),
+        facings: sim.snapshot().entities.map((entity) => entity.transform?.facing),
+      };
+    };
+
+    const first = run();
+
+    // The mover keeps the way it walked once stopped; the attacker faces its target, west.
+    const [mover, attacker] = first.facings;
+    expect(mover?.x).toBeCloseTo(0.6);
+    expect(mover?.y).toBeCloseTo(0.8);
+    expect(attacker).toEqual({ x: -1, y: 0 });
+    expect(run()).toEqual(first);
   });
 
   it('builds entities from the content it is given', () => {

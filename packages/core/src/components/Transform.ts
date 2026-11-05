@@ -1,10 +1,16 @@
 import type { Vec2 } from '../utils/geometry.types';
+import { length, scaleInto } from '../utils/vec2';
 import type { MutableVec2 } from '../utils/vec2.types';
+import { INITIAL_FACING } from './Transform.constants';
 
-/** Where an entity is and how much room it takes. Position must always be a finite point. */
+/**
+ * Where an entity is, which way it faces and how much room it takes. Position must always be a
+ * finite point; facing is always a unit vector (architecture 10 §10: vectors, never angles).
+ */
 export class Transform {
   private readonly currentPosition: MutableVec2;
   private readonly beforeMovement: MutableVec2;
+  private readonly currentFacing: MutableVec2 = { ...INITIAL_FACING };
 
   /**
    * @param position - Starting point in world units.
@@ -33,6 +39,28 @@ export class Transform {
     return this.beforeMovement;
   }
 
+  /**
+   * The direction the entity faces, a unit vector: `INITIAL_FACING` until it first turns. Read it,
+   * but do not keep it: turns update it in place.
+   */
+  public get facing(): Vec2 {
+    return this.currentFacing;
+  }
+
+  /**
+   * Turns to face along `direction`, which may have any length. A zero direction keeps the
+   * current facing, so an entity that stops still faces the way it last turned (DEC-192).
+   *
+   * @throws Error when `direction` is not a finite vector.
+   */
+  public face(direction: Vec2): void {
+    Transform.assertFinite(direction.x, direction.y, 'facing direction');
+    const size = length(direction);
+    if (size > 0) {
+      scaleInto(this.currentFacing, direction, 1 / size);
+    }
+  }
+
   /** Moves to `position`. */
   public moveTo(position: Vec2): void {
     this.place(position.x, position.y);
@@ -51,9 +79,9 @@ export class Transform {
     this.currentPosition.y = y;
   }
 
-  private static assertFinite(x: number, y: number): void {
+  private static assertFinite(x: number, y: number, name = 'position'): void {
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
-      throw new Error(`Transform position must be finite, got (${String(x)}, ${String(y)}).`);
+      throw new Error(`Transform ${name} must be finite, got (${String(x)}, ${String(y)}).`);
     }
   }
 }

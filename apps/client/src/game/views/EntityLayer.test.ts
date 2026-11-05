@@ -9,13 +9,17 @@ import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
 
-const unit = (id: string, x: number, y: number): EntitySnapshot => ({
+const EAST = { x: 1, y: 0 };
+
+const SOUTH = { x: 0, y: 1 };
+
+const unit = (id: string, x: number, y: number, facing = EAST): EntitySnapshot => ({
   id,
   kind: 'light-mob',
   family: 'mob',
   definitionId: 'training-dummy',
   team: 'dark',
-  transform: { x, y, radius: 0.4 },
+  transform: { x, y, radius: 0.4, facing },
   health: null,
 });
 
@@ -78,6 +82,33 @@ describe('EntityLayer', () => {
     expect(spy.drawn.map((state) => state.position)).toEqual([{ x: 2.5, y: 1 }]);
   });
 
+  it('turns the facing between the last two snapshots by alpha, as a unit vector (08 §8)', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(new ViewRegistry(spy));
+
+    layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 0, 0, SOUTH)]), 0.5, null);
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn[0]?.facing.x).toBeCloseTo(Math.SQRT1_2);
+    expect(spy.drawn[0]?.facing.y).toBeCloseTo(Math.SQRT1_2);
+  });
+
+  it('faces a new entity, or one that turned right round, the way it faces now', () => {
+    const spy = new SpyView();
+    const layer = new EntityLayer(new ViewRegistry(spy));
+    const west = { x: -1, y: 0 };
+
+    layer.show(
+      snapshot(1, [unit('turned', 0, 0)]),
+      snapshot(2, [unit('turned', 0, 0, west), unit('new', 0, 1, SOUTH)]),
+      0.5,
+      null,
+    );
+    layer.draw(new RecordingRenderer());
+
+    expect(spy.drawn.map((state) => state.facing)).toEqual([west, SOUTH]);
+  });
+
   it('draws a new entity where it is, without a ghost from the origin', () => {
     const spy = new SpyView();
     const layer = new EntityLayer(new ViewRegistry(spy));
@@ -108,7 +139,10 @@ describe('EntityLayer', () => {
 
     layer.show(
       snapshot(1, [legend, member('m', 'mob', 0)]),
-      snapshot(2, [{ ...legend, transform: { x: 20, y: 0, radius: 0.5 } }, member('m', 'mob', 4)]),
+      snapshot(2, [
+        { ...legend, transform: { x: 20, y: 0, radius: 0.5, facing: { x: 1, y: 0 } } },
+        member('m', 'mob', 4),
+      ]),
       0.5,
       null,
     );
