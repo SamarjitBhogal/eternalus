@@ -96,9 +96,7 @@ const march = (map: MapDefinition, numLanes: number, ticks: number) => {
 
 /** How close (m) along its lane a mob must come to its objective's gather point to have arrived. */
 const ARRIVAL_TOLERANCE = 15;
-/** A countdown long enough that no wave leaves during the march: only the opening hordes walk. */
-const NO_WAVES_COUNTDOWN_SECONDS = 6000;
-/** The longest wait (s) for the last mob; seed 1's arrive by about 290 s. */
+/** The longest wait (s) after the countdown for the last mob; seed 1's arrive by about 290 s. */
 const MARCH_CAP_SECONDS = 330;
 
 /**
@@ -108,10 +106,7 @@ const MARCH_CAP_SECONDS = 330;
  * ground is off it. The gather points come from a fixture state with the same map's structures.
  */
 const marchToObjectives = (numLanes: number) => {
-  const config = createDefaultGameConfig({
-    map: { numLanes },
-    match: { countdownSeconds: NO_WAVES_COUNTDOWN_SECONDS },
-  });
+  const config = createDefaultGameConfig({ map: { numLanes } });
   const map = new MapGenerator().generate(config, 1);
   const lanes = new GameState(config, 1, matchWorldOf(map));
   spawnMapStructures(lanes);
@@ -137,7 +132,10 @@ const marchToObjectives = (numLanes: number) => {
   const hasLeft = new Set<string>();
   let samples = 0;
   let offGround = 0;
-  const ticks = MARCH_CAP_SECONDS * config.tickRate;
+  // The countdown holds every unit (DEC-88): the march starts when it ends.
+  const ticks =
+    Math.round(config.match.countdownSeconds * config.tickRate) +
+    MARCH_CAP_SECONDS * config.tickRate;
   for (let tick = 1; tick < ticks && arrived.size < goals.size; tick += 1) {
     simulation.step();
     if (tick % config.tickRate !== 0) {
