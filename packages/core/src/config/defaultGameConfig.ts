@@ -62,7 +62,7 @@ const defaultTimeline = (countdownTicks: number): readonly MatchTimelineEntry[] 
   },
   // TUNE: game doc, the gem explodes mid-game
   { id: 'mid-game', at: { atFraction: 0.5 }, action: { kind: 'enter-phase', phase: 'mid-game' } },
-  // TUNE: Recommendation, no source (12 §3)
+  // TUNE: the owner's ruling, DEC-175 (no reference doc gives a fraction)
   { id: 'end-game', at: { atFraction: 0.75 }, action: { kind: 'enter-phase', phase: 'end-game' } },
 ];
 

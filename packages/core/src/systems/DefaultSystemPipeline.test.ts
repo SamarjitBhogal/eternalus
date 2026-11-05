@@ -45,13 +45,13 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
-      invariants: new DefaultInvariantRunner(
-        TEST_DEBUG_CONFIG,
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
         logger,
-        PROGRESSION.curves,
-        MATCH_PHASES,
-        TERMINAL_MATCH_PHASES,
-      ),
+        curves: PROGRESSION.curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
@@ -92,13 +92,13 @@ describe('DefaultSystemPipeline', () => {
     state.worldObjects = new WorldObjectStore([], factory, state.entities, MAP_OBJECT_DEFINITIONS);
 
     const pipeline = new DefaultSystemPipeline({
-      invariants: new DefaultInvariantRunner(
-        TEST_DEBUG_CONFIG,
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
         logger,
-        PROGRESSION.curves,
-        MATCH_PHASES,
-        TERMINAL_MATCH_PHASES,
-      ),
+        curves: PROGRESSION.curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
@@ -136,13 +136,13 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
-      invariants: new DefaultInvariantRunner(
-        TEST_DEBUG_CONFIG,
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
         logger,
-        PROGRESSION.curves,
-        MATCH_PHASES,
-        TERMINAL_MATCH_PHASES,
-      ),
+        curves: PROGRESSION.curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
@@ -172,13 +172,13 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
-      invariants: new DefaultInvariantRunner(
-        TEST_DEBUG_CONFIG,
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
         logger,
-        PROGRESSION.curves,
-        MATCH_PHASES,
-        TERMINAL_MATCH_PHASES,
-      ),
+        curves: PROGRESSION.curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
@@ -209,13 +209,13 @@ describe('DefaultSystemPipeline', () => {
     const logger = new MemoryLogger();
     const state = new GameState(createDefaultGameConfig(), 1);
     const pipeline = new DefaultSystemPipeline({
-      invariants: new DefaultInvariantRunner(
-        TEST_DEBUG_CONFIG,
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
         logger,
-        PROGRESSION.curves,
-        MATCH_PHASES,
-        TERMINAL_MATCH_PHASES,
-      ),
+        curves: PROGRESSION.curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
       state,
       progression: PROGRESSION,
       director: IDLE_DIRECTOR,
@@ -271,13 +271,13 @@ describe('DefaultSystemPipeline', () => {
     });
     const seenByDirector: boolean[] = [];
     const pipeline = new DefaultSystemPipeline({
-      invariants: new DefaultInvariantRunner(
-        TEST_DEBUG_CONFIG,
+      invariants: new DefaultInvariantRunner({
+        debug: TEST_DEBUG_CONFIG,
         logger,
-        PROGRESSION.curves,
-        MATCH_PHASES,
-        TERMINAL_MATCH_PHASES,
-      ),
+        curves: PROGRESSION.curves,
+        phaseOrder: MATCH_PHASES,
+        terminalPhases: TERMINAL_MATCH_PHASES,
+      }),
       state,
       progression: PROGRESSION,
       director: {
@@ -345,13 +345,13 @@ describe('DefaultSystemPipeline', () => {
       const world = state.world?.grid;
       for (const footprint of house.footprints) world?.stampFootprint(footprint);
       const pipeline = new DefaultSystemPipeline({
-        invariants: new DefaultInvariantRunner(
-          TEST_DEBUG_CONFIG,
-          new MemoryLogger(),
-          PROGRESSION.curves,
-          MATCH_PHASES,
-          TERMINAL_MATCH_PHASES,
-        ),
+        invariants: new DefaultInvariantRunner({
+          debug: TEST_DEBUG_CONFIG,
+          logger: new MemoryLogger(),
+          curves: PROGRESSION.curves,
+          phaseOrder: MATCH_PHASES,
+          terminalPhases: TERMINAL_MATCH_PHASES,
+        }),
         state,
         progression: PROGRESSION,
         director: IDLE_DIRECTOR,

@@ -56,7 +56,8 @@ type RosterSlotBase = {
 /**
  * One Legend of a match roster (architecture 18 §8), told apart by who pilots it: a `bot` plays at
  * its difficulty; the `human` slot is the player's Legend, at most one per roster and on
- * `config.match.playerTeam`, with no controller (DISC-51: the human player is their team's Rover).
+ * `config.match.playerTeam`, with no controller (DISC-51: the human player is their team's Rover;
+ * DEC-173).
  */
 export type RosterSlot =
   | (RosterSlotBase & {

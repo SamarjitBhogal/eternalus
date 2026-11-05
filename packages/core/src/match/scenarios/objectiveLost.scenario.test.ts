@@ -42,13 +42,13 @@ const playOut = () => {
     logger,
   });
   const pipeline = new DefaultSystemPipeline({
-    invariants: new DefaultInvariantRunner(
-      TEST_DEBUG_CONFIG,
+    invariants: new DefaultInvariantRunner({
+      debug: TEST_DEBUG_CONFIG,
       logger,
-      CURVES,
-      MATCH_PHASES,
-      TERMINAL_MATCH_PHASES,
-    ),
+      curves: CURVES,
+      phaseOrder: MATCH_PHASES,
+      terminalPhases: TERMINAL_MATCH_PHASES,
+    }),
     state,
     progression: { units: UNITS, curves: CURVES, xpSources: XP_SOURCES },
     director,

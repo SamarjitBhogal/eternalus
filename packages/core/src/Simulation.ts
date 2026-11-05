@@ -168,13 +168,13 @@ export class Simulation {
     if (systems === undefined) {
       const director = createDefaultMatchDirector({ state: this.state, timeline, debug, logger });
       this.pipeline = new DefaultSystemPipeline({
-        invariants: new DefaultInvariantRunner(
+        invariants: new DefaultInvariantRunner({
           debug,
           logger,
           curves,
-          MATCH_PHASES,
-          TERMINAL_MATCH_PHASES,
-        ),
+          phaseOrder: MATCH_PHASES,
+          terminalPhases: TERMINAL_MATCH_PHASES,
+        }),
         state: this.state,
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
