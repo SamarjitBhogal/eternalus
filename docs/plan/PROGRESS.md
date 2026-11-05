@@ -2923,3 +2923,16 @@ attackSpeed)`). `StateHasher` hashes active statuses. Docs 02, 05, 17 (R9) and t
   887 passed (887)"; client "Tests 433 passed (433)"; "Documentation check passed."
 - Next step: push to PR #30 (merges after #63); Sam applies the design-text drafts for DEC-121 (c)
   and DEC-133 (INBOX); author: S3, S5, S6, N2.
+
+### 2026-11-04 — Phase 3 / sprint 3.1 — chore/coderabbit-config — SamarjitBhogal + Claude Code
+
+- What was done: fixed the `.coderabbit.yaml` parse error ("An override must specify teams,
+  paths, or both" at `reviews.auto_approvals.overrides[0]`) by giving the never-approve override
+  `paths` globs matching every file, dotfiles included. The error made CodeRabbit fall back to
+  defaults, which also dropped `base_branches` and skipped reviews on PRs into phase branches;
+  both are fixed by this. Critic: approve, no blockers; its dotfile-glob and heading fixes
+  applied. Ponytail: no cuts.
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 887 passed (887)"; client "Tests 433 passed
+  (433)"; "Documentation check passed."
+- Next step: PR into `phase/3-sprint-3-work`; the custom check flags `.coderabbit.yaml` changes,
+  so the product owner signs it off.
