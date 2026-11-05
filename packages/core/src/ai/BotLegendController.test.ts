@@ -8,10 +8,12 @@ import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { BOT_DIFFICULTIES } from '../content/ai/difficulties/botDifficulties';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import type { MapDefinition } from '../content/maps/maps.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { Unit } from '../entities/Unit';
+import { AStarPathfinder } from '../map/AStarPathfinder';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
@@ -33,10 +35,71 @@ const controller = new BotLegendController({
 });
 const RNG = { seed: 1, words: [1, 2, 3, 4] as const };
 
-/** A light Warrior laner on lane-0 (from x 20 to x 180 along y 20) of the two-lane map. */
-const setUp = (at = { x: 60, y: 20 }) => {
-  const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
+const GLYPH = { shape: 'dot', size: 1, colourRole: 'team' } as const;
+
+/**
+ * One lane along y 100 from x 20 to x 160, and the dark Stronghold off its end at (240, 100)
+ * behind a wall (x 170..180, y 0..150) with its way round at the top: the case where walking
+ * straight at the Stronghold from the lane's end leans on the wall (B66-F1).
+ */
+const WALLED_STRONGHOLD_MAP: MapDefinition = {
+  id: 'walled-stronghold',
+  displayName: 'Walled Stronghold',
+  width: 300,
+  height: 200,
+  seed: 1,
+  lanes: [
+    {
+      id: 'lane-0',
+      index: 0,
+      path: [
+        { x: 20, y: 100 },
+        { x: 160, y: 100 },
+      ],
+    },
+  ],
+  terrain: [
+    {
+      id: 'wall',
+      kind: 'rift',
+      shape: [
+        { x: 170, y: 0 },
+        { x: 180, y: 0 },
+        { x: 180, y: 150 },
+        { x: 170, y: 150 },
+      ],
+    },
+  ],
+  features: [
+    {
+      id: 'stronghold-dark',
+      kind: 'stronghold',
+      team: 'dark',
+      definitionId: 'stronghold',
+      position: { x: 240, y: 100 },
+      minimapGlyph: GLYPH,
+    },
+  ],
+};
+
+/** One decision's travel: a `move` holds a Warrior's 6 m/s top speed for the 6 ticks between. */
+const STRIDE = 1.2;
+
+/**
+ * A light Warrior laner on lane-0 (on the two-lane map from x 20 to x 180 along y 20), with A\*
+ * over the map's nav grid when `withPaths` is set.
+ */
+const setUp = (at = { x: 60, y: 20 }, map = TWO_LANE_MAP, withPaths = false) => {
+  const config = createDefaultGameConfig();
+  const space = new SpaceIndex(map.width, map.height, 2);
+  const world = matchWorldOf(map);
+  const paths = withPaths
+    ? new AStarPathfinder(world.grid, {
+        maxExpansions: config.map.pathMaxExpansions,
+        snapCells: config.map.pathSnapCells,
+      })
+    : null;
+  const state = new GameState(config, 1, world, { space, paths });
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
@@ -91,6 +154,7 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
       isRetreating: true,
       targetId: null,
       nextCastTick: 0,
+      isHalted: false,
     });
   });
 
@@ -140,6 +204,28 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decide({ lane: 'lane-0', targetId: near }, 'never-casts').commands).toEqual([
       { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
     ]);
+  });
+
+  it('holds still in reach, or at its destination, without re-sending an idle move every decision (B66-F2)', () => {
+    const { state, bot, add, decide } = setUp();
+    const enemy = add('dark', 61);
+    const halt = { type: 'move', actorId: bot, direction: { x: 0, y: 0 } };
+
+    const holding = decide({ lane: 'lane-0', targetId: enemy }, 'never-casts');
+    expect(holding.commands).toEqual([halt]);
+    expect(decide(holding.memory, 'never-casts').commands).toEqual([]);
+    // Moving again clears it, so the next halt is sent once more.
+    state.entities.get(enemy)?.getComponent(Transform).moveTo({ x: 66, y: 20 });
+    const closing = decide(holding.memory, 'never-casts');
+    expect(closing.commands).toEqual([{ type: 'move', actorId: bot, direction: { x: 6, y: 0 } }]);
+    state.entities.get(enemy)?.getComponent(Transform).moveTo({ x: 61, y: 20 });
+    expect(decide(closing.memory, 'never-casts').commands).toEqual([halt]);
+
+    // Regroup: on its lane, it halts once and then sends nothing.
+    const regroup = setUp({ x: 30, y: 21 });
+    const arrived = regroup.decide();
+    expect(arrived.commands).toEqual([{ ...halt, actorId: regroup.bot }]);
+    expect(regroup.decide(arrived.memory).commands).toEqual([]);
   });
 
   it('Fight: fights back against a camp mob that attacks it, and never farms one that leaves it alone (DEC-166)', () => {
@@ -215,6 +301,36 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     expect(decide({ lane: 'lane-0', targetId: tower }).commands).toEqual([
       { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
     ]);
+  });
+
+  it('Push: walks round a wall to the Stronghold’s edge and into reach, rather than leaning on the wall from its lane’s end (B66-F1)', () => {
+    const { state, bot, decide } = setUp({ x: 158, y: 100 }, WALLED_STRONGHOLD_MAP, true);
+    spawnMapStructures(state);
+    const stronghold = nextTower(state);
+    const body = state.entities.get(bot)?.getComponent(Transform);
+    let memory: AiMemory = { lane: 'lane-0' };
+    let heading = { x: 0, y: 0 };
+    // Walks as a held `move` drives it, blocked (not slid) by the wall, until it is in reach.
+    for (let turn = 0; turn < 300 && !state.entities.isInReach(bot, stronghold); turn += 1) {
+      const decision = decide(memory);
+      memory = decision.memory;
+      const move = decision.commands.findLast(({ type }) => type === 'move');
+      if (move?.type === 'move') {
+        const length = Math.hypot(move.direction.x, move.direction.y);
+        heading =
+          length === 0
+            ? { x: 0, y: 0 }
+            : { x: move.direction.x / length, y: move.direction.y / length };
+      }
+      const at = body?.position ?? { x: 0, y: 0 };
+      const next = { x: at.x + heading.x * STRIDE, y: at.y + heading.y * STRIDE };
+      if (state.world?.grid.isWalkableAt(next.x, next.y) === true) {
+        body?.moveTo(next);
+      }
+    }
+
+    expect(stronghold).toBe('entity-1001');
+    expect(state.entities.isInReach(bot, stronghold)).toBe(true);
   });
 
   it('Fight before Push: an enemy unit near the structure is fought first', () => {
