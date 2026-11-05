@@ -5040,3 +5040,38 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   This line was filled in after that run (docs-only); `prettier --check` and `docs:check` were
   re-run on it.
 - Next step: architecture critic, ponytail, then the PR into phase/3 after #75 merges.
+
+### 2026-11-05 — Phase 3 / minion-stack follow-ups, critic round 1 fixes — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: every should-fix and nit of the two round-1 critics (critic A on the minion-stack
+  follow-ups, critic B on the tower-access commits), with the owner rulings DEC-217 (13), (14),
+  (16) and DEC-219 (b), (c) cited at the values. The previous entry's "Docs step (uncommitted)" is
+  commit `e3eb9dc`. One line per commit:
+  - `9d566c6`: `VeterancySystem.gainLevels` is private and the one way kills level a minion
+    (DEC-168); `Veterancy.recordKill` only counts. Veterancy test titles and victims fixed.
+  - `89eb9aa`: `BUFF_TOWER_KIND` in `StructureSystem.constants.ts`; `passes` TSDoc.
+  - `97a0f30`: bot navigation split out of `BotLeaves` into `ai/BotMovement.ts`.
+  - `77b44d7`: the leash decision parts are built once per controller (critic A BTD 4).
+  - `707ae2e`: `StuckWindow` in `ChaseWatch.types.ts`; options objects for `ChaseWatch.observe`
+    and `WorldObjectStore`.
+  - `adc71d7`: one outline rule (`EntityStore.outlineOf`) and one aim rule
+    (`EntityStore.aimPointOf`) for reach, stuck detection and the chase; a chase of a map object
+    now aims at its outline, where reach is measured (critic B BTD 1).
+  - `52850de`: fort boxes read once when the match is built and injected into `PathingSystem`
+    (`PathingWorld`), so a tower that falls before the first chase keeps its box.
+  - `eb8f844`: comment lines over 100 characters re-wrapped.
+  - `93dbe93`: `STUCK_DETECTION.maxPlansPerTick` (8, TUNE: a cost cap) caps the stuck A\* plans a
+    tick (11 §6); a unit past it keeps a plan due (`ChaseWatch.isPlanDue`).
+  - `6be1094`: the B8 test checks breakability comes from the given definitions; a test pins
+    veteran × rallied at ×1.365 (DEC-219 (c)).
+  - `4444ed0`: DEC-217 (13), (16) and DEC-219 (b), (c) cited in code; `Footprint` TSDoc.
+  - `df98c17`: architecture 02, 07, 10, 11 and 18 brought in line with the code.
+- Left out on purpose (the orchestrator sends them to `INBOX.md`): one health pool decided by the
+  body's `isBlocking` (critic B BTD 3), the dead-fort nav-cell test (DEC-217 (12) changes it), and
+  the other better-than-design items. DEC-217 (12), (15), (17) are for a later branch.
+- Checks run: `npm run check` at `df98c17` → exit 0 (log `check-followups-r1fix.log` in the
+  audit's runner-reports): "All matched files use Prettier code style!"; core "Tests 1155 passed
+  (1155)"; client "Tests 1754 passed (1754)"; "✓ built in 253ms"; "Documentation check passed.";
+  "exit 0". Each new test was seen red with its fix broken on purpose. This line was filled in
+  after that run (docs-only); `prettier --check` and `docs:check` were re-run on it.
+- Next step: critic re-check of this round, ponytail, then the PR into phase/3 after #75 merges.
