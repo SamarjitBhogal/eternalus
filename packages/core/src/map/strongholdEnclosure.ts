@@ -8,6 +8,8 @@ import { outerFace } from './wallRing';
  * and gates from tip to tip, closed behind by the cliffs, which run from each tip to the world
  * edge behind the Stronghold (`strongholdCliffs`). The face is sorted north to south: it rises
  * steadily from tip to tip (`buildWallRing`). `undefined` when the map has no shield for that team.
+ * It is the outline of the Stronghold's heal zone, which leaves out the ground of the shield's
+ * walls, gates and turrets (`HealingZones`, DEC-215 (2), (5)).
  */
 export const strongholdEnclosure = (
   map: MapDefinition,

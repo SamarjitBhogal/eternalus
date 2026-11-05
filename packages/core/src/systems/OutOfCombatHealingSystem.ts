@@ -1,34 +1,24 @@
-import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
-import type {
-  HealingZoneShape,
-  OutOfCombatHealing,
-} from '../content/healing/outOfCombatHealing.types';
-import type { Entity } from '../entities/Entity';
-import { strongholdEnclosure } from '../map/strongholdEnclosure';
+import type { OutOfCombatHealing } from '../content/healing/outOfCombatHealing.types';
 import type { GameState } from '../state/GameState';
-import type { Team } from '../teams/teams.types';
-import { isPointInPolygon } from '../utils/geometry';
-import type { Polygon, Vec2 } from '../utils/geometry.types';
+import { HealingZones } from './HealingZones';
+import type { BonusZone } from './OutOfCombatHealingSystem.types';
 import type { System, SystemContext } from './System.types';
 
-/** A quiet friendly structure's bonus per tick and the ground it covers. */
-type BonusZone = {
-  readonly team: Team | undefined;
-  readonly bonusPerTick: number;
-  readonly contains: (point: Vec2) => boolean;
-};
-
 /**
- * Heals every living Legend and mob over time once it is out of combat (DEC-188). A unit is in
- * combat from the tick it deals or takes damage (`damage-applied`, attacker and target) until
- * `delaySeconds` pass. Out of combat it regains a flat share of its max health per second. Inside
- * the zone of a living friendly structure that `structureBonuses` lists and that has taken no
- * damage for `structureQuietSeconds`, that structure's bonus is added; overlapping zones give the
- * largest bonus only. Structures are never healed, nor the dead, and health never passes max.
- * Talks to the damage systems only through events. Runs after every system that deals damage and
- * before `DeathSystem`, so a unit killed this tick stays dead.
+ * Heals every living Legend and mob over time once it is out of combat (DEC-188, amended by
+ * DEC-215). A unit is in combat from the tick it deals or takes damage (`damage-applied`, attacker
+ * and target) until `delaySeconds` pass. Out of combat it regains a flat share of its max health
+ * per second. While its centre point is in the zone (`HealingZones`) of a living friendly
+ * structure that `structureBonuses` lists and that has taken no damage for
+ * `structureQuietSeconds`, that structure's bonus is added. Only hits on the structure itself
+ * count: a hit on a Stronghold's walls, gates or turrets has its own target id (DEC-215 (2)).
+ * Two zones never overlap (DEC-215 (1)), so the first zone that holds the unit gives its bonus.
+ * This heal only adds to health, so a heal from another source (an allied Legend's) in the same
+ * tick adds to it (DEC-215 (1)). Structures are never healed, nor the dead, and health never
+ * passes max. Talks to the damage systems only through events. Runs after every system that deals
+ * damage and before `DeathSystem`, so a unit killed this tick stays dead.
  *
  * The rate is one flat number for every unit (owner, MVP). A per-class rate would replace
  * `content.healthFractionPerSecond` with a lookup keyed by the unit's definition id in `update`.
@@ -41,33 +31,11 @@ export class OutOfCombatHealingSystem implements System {
   private readonly quietTicks: number;
   private readonly perTick: number;
   private readonly tickRate: number;
-  /** Each team's shield enclosure, from the map (owner 2026-11-05: "inside arc + cliffs"). */
-  private readonly shields = new Map<Team, Polygon>();
-  /** One zone strategy per `HealingZoneShape`: the ground a structure's bonus covers, if any. */
-  private readonly zoneShapes: Readonly<
-    Record<
-      HealingZoneShape,
-      (structure: Entity, team: Team | undefined) => ((point: Vec2) => boolean) | undefined
-    >
-  > = {
-    // ponytail: the box around the fort's polygons is its outer wall line because every fort is an
-    // axis-aligned square (MapFortificationBuilder); a fort of another shape needs their hull.
-    'fort-outline': (structure) => {
-      const box = structure.findComponent(Footprint)?.bounds;
-      return box === undefined
-        ? undefined
-        : ({ x, y }) =>
-            x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
-    },
-    'shield-enclosure': (_structure, team) => {
-      const shield = team === undefined ? undefined : this.shields.get(team);
-      return shield === undefined ? undefined : (point) => isPointInPolygon(point, shield);
-    },
-  };
+  private readonly zones: HealingZones;
 
   /**
    * @param state - The match whose events this system listens to; its config sets the tick rate
-   *   and its map the Strongholds' shields.
+   *   and its map the Strongholds' zones.
    * @param content - The rates, delays and structure bonuses, injected.
    */
   public constructor(
@@ -78,11 +46,7 @@ export class OutOfCombatHealingSystem implements System {
     this.delayTicks = Math.round(content.delaySeconds * this.tickRate);
     this.quietTicks = Math.round(content.structureQuietSeconds * this.tickRate);
     this.perTick = content.healthFractionPerSecond / this.tickRate;
-    const map = state.world?.definition;
-    for (const stronghold of map?.features.filter(({ kind }) => kind === 'stronghold') ?? []) {
-      const shield = map && strongholdEnclosure(map, stronghold);
-      if (shield !== undefined) this.shields.set(stronghold.team, shield);
-    }
+    this.zones = new HealingZones(state.world?.definition);
     state.events.on('damage-applied', ({ targetId, source }) => {
       this.lastActive.set(targetId, state.tick);
       this.lastHurt.set(targetId, state.tick);
@@ -117,12 +81,8 @@ export class OutOfCombatHealingSystem implements System {
       const bonus =
         position === undefined
           ? 0
-          : Math.max(
-              0,
-              ...zones
-                .filter((zone) => zone.team === team && zone.contains(position))
-                .map((zone) => zone.bonusPerTick),
-            );
+          : (zones.find((zone) => zone.team === team && zone.zone.contains(position))
+              ?.bonusPerTick ?? 0);
       health.heal(health.max * (this.perTick + bonus));
     });
   }
@@ -140,9 +100,9 @@ export class OutOfCombatHealingSystem implements System {
         return;
       }
       const team = state.entities.teamOf(entity.id);
-      const contains = this.zoneShapes[bonus.zone](entity, team);
-      if (contains !== undefined) {
-        zones.push({ team, bonusPerTick: bonus.fractionPerSecond / this.tickRate, contains });
+      const zone = this.zones.zoneOf(bonus.zone, entity, team);
+      if (zone !== undefined) {
+        zones.push({ team, bonusPerTick: bonus.fractionPerSecond / this.tickRate, zone });
       }
     });
     return zones;

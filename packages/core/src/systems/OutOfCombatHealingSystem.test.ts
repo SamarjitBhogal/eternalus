@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { Collider } from '../components/Collider';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
+import type { MapObjectKind } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -18,8 +21,10 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
+import { WorldObjectStore } from '../state/WorldObjectStore';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
+import { IdGenerator } from '../utils/IdGenerator';
 import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 
 const logger = new NullLogger();
@@ -47,6 +52,16 @@ const shieldFront = (team: PlayableTeam, offset: number): Vec2 => {
   const reach = (wallBoundary?.radius ?? 0) + (wallBoundary?.thickness ?? 0) / 2 + offset;
   return { x: position.x + (team === 'light' ? reach : -reach), y: position.y };
 };
+
+/** The point straight ahead of a Stronghold, `offset` m inside its shield's inner face. */
+const shieldInside = (team: PlayableTeam, offset: number): Vec2 => {
+  const { position, wallBoundary } = strongholdOf(team);
+  const reach = (wallBoundary?.radius ?? 0) - (wallBoundary?.thickness ?? 0) / 2 - offset;
+  return { x: position.x + (team === 'light' ? reach : -reach), y: position.y };
+};
+
+/** The map objects a team's shield is made of. */
+const SHIELD_OBJECTS: readonly MapObjectKind[] = ['wall', 'gate', 'turret'];
 
 const setUp = () => {
   const state = new GameState(CONFIG, 1, matchWorldOf(MAP));
@@ -154,7 +169,7 @@ describe('OutOfCombatHealingSystem', () => {
   });
 
   it.each(['spawner-tower', 'buff-tower'])(
-    "adds 10 points (12 per cent a second) inside a friendly %s's outer walls, none just outside",
+    "adds 10 points (12 per cent a second) in a friendly %s's fort box (its gateway), none just outside",
     (kind) => {
       const { minion, wound, gainAt, structure, fortWest } = setUp();
       const fort = structure(kind, 'light');
@@ -166,14 +181,11 @@ describe('OutOfCombatHealingSystem', () => {
     },
   );
 
-  it('adds 15 points (17%/s) anywhere the shield arc and cliffs enclose, wall included', () => {
+  it('adds 15 points (17%/s) anywhere inside the shield, in front of and behind the Stronghold', () => {
     const { minion, wound, gainAt } = setUp();
     const light = strongholdOf('light');
-    const wall = MAP.features.find(
-      ({ kind, team }) => kind === 'wall-segment' && team === 'light',
-    )?.position;
-    const spots = [shieldFront('light', -EDGE), { x: EDGE, y: light.position.y }, wall ?? FAR].map(
-      (spot) => wound(minion('light', spot)),
+    const spots = [shieldInside('light', EDGE), { x: EDGE, y: light.position.y }].map((spot) =>
+      wound(minion('light', spot)),
     );
     const dark = wound(minion('dark', { x: MAP.width - EDGE, y: light.position.y }));
 
@@ -183,19 +195,26 @@ describe('OutOfCombatHealingSystem', () => {
     }
   });
 
-  it('gives no Stronghold bonus just outside the shield arc, nor inside an enemy shield', () => {
+  it('gives no Stronghold bonus on its wall, outside the shield, nor inside an enemy shield', () => {
     const { minion, wound, gainAt } = setUp();
+    const wall = MAP.features.find(
+      ({ kind, team }) => kind === 'wall-segment' && team === 'light',
+    )?.position;
+    if (wall === undefined) throw new Error('no wall segment');
+    const onFace = wound(minion('light', shieldFront('light', -EDGE)));
+    const onWall = wound(minion('light', wall));
     const outside = wound(minion('light', shieldFront('light', EDGE)));
-    const enemy = wound(minion('light', shieldFront('dark', -EDGE)));
+    const enemy = wound(minion('light', shieldInside('dark', EDGE)));
 
-    gainAt(DELAY, outside);
-    expect(outside.current - outside.max / 2).toBeCloseTo(perTick(outside, 2), 9);
-    expect(enemy.current - enemy.max / 2).toBeCloseTo(perTick(enemy, 2), 9);
+    gainAt(DELAY, onFace);
+    for (const health of [onFace, onWall, outside, enemy]) {
+      expect(health.current - health.max / 2).toBeCloseTo(perTick(health, 2), 9);
+    }
   });
 
   it('gives no Stronghold bonus while it is under attack, and gives it back after 10 s quiet', () => {
     const { minion, wound, hit, gainAt, structure, tickTo } = setUp();
-    const health = wound(minion('light', shieldFront('light', -EDGE)));
+    const health = wound(minion('light', shieldInside('light', EDGE)));
     tickTo(DELAY - 5);
     hit(structure('stronghold', 'light').id, 'enemy');
 
@@ -203,23 +222,53 @@ describe('OutOfCombatHealingSystem', () => {
     expect(gainAt(DELAY - 5 + DELAY, health)).toBeCloseTo(perTick(health, 17), 9);
   });
 
-  it('never stacks bonuses where zones overlap: the largest one counts', () => {
-    const { minion, wound, gainAt, structure } = setUp();
-    const spot = shieldFront('light', -EDGE);
-    const box = { x: spot.x - 1, y: spot.y - 1, width: 2, height: 2 };
-    const fort: Footprint['polygons'] = [
-      [
-        { x: box.x, y: box.y },
-        { x: box.x + box.width, y: box.y },
-        { x: box.x + box.width, y: box.y + box.height },
-      ],
-    ];
-    // Both towers' forts moved onto one spot inside the shield: three zones overlap there.
-    structure('spawner-tower', 'light').addComponent(new Footprint(fort));
-    structure('buff-tower', 'light').addComponent(new Footprint(fort));
-    const health = wound(minion('light', spot));
+  it("does not count hits on the Stronghold's walls, gates or turrets as an attack on it (DEC-215 (2))", () => {
+    const { state, minion, wound, hit, gainAt, tickTo } = setUp();
+    const definitions = new Map(
+      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+    );
+    state.worldObjects = new WorldObjectStore({
+      objects: MAP_OBJECTS.filter(
+        ({ kind, team }) => team === 'light' && SHIELD_OBJECTS.includes(kind),
+      ),
+      factory: new EntityFactory(
+        createDefaultEntityRegistry(),
+        {
+          has: (id) => definitions.has(id),
+          get: (id) => {
+            const definition = definitions.get(id);
+            if (definition === undefined) throw new Error('no map object definition');
+            return definition;
+          },
+        },
+        new IdGenerator(2000),
+      ),
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
+    const shield = state.worldObjects.snapshot().flatMap(({ entityId }) => entityId ?? []);
+    const health = wound(minion('light', shieldInside('light', EDGE)));
+    tickTo(DELAY - 5);
+    for (const id of shield) hit(id, 'enemy');
 
+    expect(new Set(shield.map((id) => state.worldObjects?.objectFor(id)?.kind))).toEqual(
+      new Set(SHIELD_OBJECTS),
+    );
     expect(gainAt(DELAY, health)).toBeCloseTo(perTick(health, 17), 9);
+  });
+
+  it("counts a unit in a zone by its centre point only, not by its body's edge (DEC-215 (3))", () => {
+    const { minion, wound, gainAt, structure, fortWest } = setUp();
+    const fort = structure('spawner-tower', 'light');
+    const outside = minion('light', fortWest(fort, -0.2));
+    const inside = minion('light', fortWest(fort, 0.2));
+    const radius = outside.getComponent(Collider).shape.radius;
+    const [outsideHealth, insideHealth] = [wound(outside), wound(inside)];
+
+    // Each body reaches across the edge of the box; only the second centre is inside it.
+    expect(radius).toBeGreaterThan(0.2);
+    expect(gainAt(DELAY, insideHealth)).toBeCloseTo(perTick(insideHealth, 12), 9);
+    expect(outsideHealth.current - outsideHealth.max / 2).toBeCloseTo(perTick(outsideHealth, 2), 9);
   });
 
   it('gives no bonus under an enemy tower', () => {
@@ -279,9 +328,9 @@ describe('OutOfCombatHealingSystem', () => {
   it('heals the same way twice: same setup, same hash', () => {
     const hashes = [1, 2].map(() => {
       const { state, minion, wound, hit, gainAt, structure, fortWest } = setUp();
-      const health = wound(minion('light', shieldFront('light', -EDGE)), 0.9);
+      const health = wound(minion('light', shieldInside('light', EDGE)), 0.9);
       wound(minion('light', fortWest(structure('buff-tower', 'light'), EDGE)), 0.9);
-      wound(minion('dark', shieldFront('dark', -EDGE)), 0.9);
+      wound(minion('dark', shieldInside('dark', EDGE)), 0.9);
       wound(minion(), 0.9);
       // Three seconds: long enough to heal in every zone, too short for anyone to reach max.
       for (let tick = DELAY; tick < DELAY + 3 * TICK_RATE; tick += 1) {
