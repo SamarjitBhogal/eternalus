@@ -6,7 +6,12 @@ import { sqrt } from '../utils/deterministicMath';
 import type { Controller, Decision, DecisionInput } from './Controller.types';
 import { decideLeashed } from './decideLeashed';
 import { LeashBehaviour } from './LeashBehaviour';
-import type { LeashCandidate, LeashControllerContent, LeashRules } from './LeashBehaviour.types';
+import type {
+  LeashCandidate,
+  LeashControllerContent,
+  LeashDecisionParts,
+  LeashRules,
+} from './LeashBehaviour.types';
 import { MINION_STATES } from './MinionController.constants';
 import type { MinionSituation } from './MinionController.types';
 
@@ -44,6 +49,17 @@ export class MinionController implements Controller {
     },
     helpRadius: ({ rule }) => rule.callForHelpRadius,
   };
+  /** What `decideLeashed` reads from this controller, built once (DEC-168 B1, critic A BTD 4). */
+  private readonly parts: LeashDecisionParts<'marching', HordeAggroRuleDefinition> = {
+    controllerId: this.id,
+    profileOf: (profileId) => this.profileOf(profileId),
+    states: MINION_STATES,
+    idle: 'marching',
+    situate: (state, entityId) => ({
+      rules: this.rules,
+      objective: MinionController.objectiveOf(state, entityId),
+    }),
+  };
 
   /** @param content - Aggro profiles and kind classes; the controller holds none. */
   public constructor(private readonly content: LeashControllerContent) {
@@ -61,16 +77,7 @@ export class MinionController implements Controller {
    * @throws Error when the brain names no minion aggro profile (a content error).
    */
   public decide(input: DecisionInput): Decision {
-    return decideLeashed(input, this.behaviour, {
-      controllerId: this.id,
-      profileOf: (profileId) => this.profileOf(profileId),
-      states: MINION_STATES,
-      idle: 'marching',
-      situate: (state, entityId) => ({
-        rules: this.rules,
-        objective: MinionController.objectiveOf(state, entityId),
-      }),
-    });
+    return decideLeashed(input, this.behaviour, this.parts);
   }
 
   /** The minion aggro profile `profileId` names, or `undefined` (AI56-F9). */
