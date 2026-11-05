@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-04
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -4842,3 +4842,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
+
+### 2026-11-04 — Phase 3 / owner rulings of 2026-11-04 — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answers of 2026-11-04 in the decisions log (two batches):
+  DEC-160 to DEC-169, DEC-180 and DEC-181 (minion-stack follow-ups; DEC-160 and DEC-165 carry
+  their same-day amendments) and DEC-182 to DEC-189 (playtest fixes; DEC-188 lists three defaults
+  to confirm). DEC-170 to DEC-179 are other sessions' and are not written. `INBOX.md`: the M4
+  done-when item is answered (DEC-167); answers added under Minion M6, M5b, M3, the unit-cap item
+  and HC-Q6. Minion plan: phase M9 (crowd avoidance, DEC-180) and a stand-in row; the healing
+  stand-in row names DEC-188. Phase 4 sprint 4.4: the weapon hit model (DEC-184). No design text in
+  `docs/architecture/` is edited: it goes with each code PR. Open: the exact files of DEC-185, the
+  audit's items B3 and B5, and the three DEC-188 defaults.
+- Checks run: see the final `npm run check` result in the session report (docs-only change).
+- Next step: the code PRs (`fix/minion-stack-followups`, `fix/click-attack-units`,
+  `feat/local-minimap`, `feat/structure-xp`, `feat/out-of-combat-heal`) update the architecture
+  docs and cite these DEC numbers.

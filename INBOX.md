@@ -16,7 +16,7 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
+- [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
       cannot pass as written since M2c: a horde holds at its next standing objective, and the
       march-only test hordes cannot attack it. The full-match test you had commented out (PR #39,
@@ -25,6 +25,8 @@ Reply inline (`Decision: …`).
       (sprint 3.1's "reach the enemy SpawnerTower" metric). 1.4–2.6 s locally. The full march to
       the enemy end waits for the sprint 3.8 sim soak with fighting hordes. Approve, or say what to
       change.
+  - **Answered 2026-11-04 by DEC-167** (chat, B66-F5): the restored march test's "first enemy
+    objective" check is approved.
 
 - [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
       checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
@@ -42,6 +44,11 @@ Reply inline (`Decision: …`).
       4 m of their posts. A horde passing a camp near its lane would take hits and not fight back.
       Should lane minions fight camp mobs that attack them, or ignore camps entirely (then camp
       mobs should not attack minions either)? Approve, or say what to change.
+  - **Answered 2026-11-04 (items (2) and (3); item (1) stays open):** (3) by DEC-166: units fight
+    back against any neutral camp mob that attacks them; bot camp farming is not built now.
+    (2) by DEC-167: camps wake when the match countdown ends (no separate camp cooldown setting);
+    camp mobs keep the lane-minion stats and XP as tuning defaults. Camp-mob kills count toward
+    minion veterancy (DEC-165, amended 2026-11-04 evening).
 
 - [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
       blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
@@ -54,6 +61,10 @@ Reply inline (`Decision: …`).
       first wave** ships off (`ghostFirstWaveTicks: 0`, as 11 §4.3's sketch); League uses 18–28 s.
       Turn it on, and with what value? (4) Plan row M5 still lists Tower Guardians; they are
       deferred until you answer (1). Approve, or say what to change.
+  - **Answered 2026-11-04 (items (2) and (3); item (1) stays open):** (2) by DEC-164 and DEC-165:
+    veteran damage is additive, +10% per level; **tower guards level up too**; guards are rallied
+    too; a killed guard and a killed camp mob both count as kills; rally pulse 0.5 s and linger
+    1 s stay as tuning defaults. (3) by DEC-165: the ghosted first wave ships off.
 
 - [ ] **Unit cap 300 (DEC-137, PR #56, 2026-10-31) — doc wording to approve.** The code has
       `MAX_UNITS_PER_TEAM = 300` (the default and the validator's ceiling). These docs still say
@@ -68,6 +79,8 @@ Reply inline (`Decision: …`).
       / 5". Up to 600 mobs at a minion cadence of 5 is up to about 120 brains due per tick, so
       `AiSystem` would defer some each tick (estimate, not measured). Keep 96, or raise it? Approve,
       or say what to change.
+  - **Answered 2026-11-04 (open point (2) only; (1) and the doc wording stay open):** by DEC-181:
+    `maxDecisionsPerTick` stays 96; the guard leash tolerance widens to about 5.5 m.
 
 - [ ] **Enraged minions run faster than `maxSpeed` (PR #56, 2026-10-31) — doc wording to
       approve.** `balancing.md` gives `enraged` +10% move speed per stack, but docs 04 §3
@@ -251,6 +264,9 @@ Reply inline (`Decision: …`).
     agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
     out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
     Accepted; doc 18 §8 says roster order (PR #46).
+  - **Update 2026-11-04 by DEC-188:** healing is now designed: Legends and minions heal 2% of max
+    health per second after 10 s out of combat, +10 points under a friendly tower that is not under
+    attack (`feat/out-of-combat-heal`). This replaces the "out of scope for now" answer to (2).
 - [ ] **Minion M8 — the neighbour grid's layout (better than the design, for sign-off).** Doc
       10 §5 stores `SpatialHash` as a counting sort over a per-cell `cellStart` array. On a
       generated map that array has hundreds of thousands of cells, and clearing and summing it
@@ -1355,6 +1371,9 @@ Reply inline (`Decision: …`).
     The eight defaults stay for now; your notes 1 (a local minimap view) and 2 (the gold glow only
     when an ability is ready; a red fill rising from the bottom) change default (4) and the cooldown
     look in Sprint 3.
+  - **Update 2026-11-04 by DEC-182:** default (4) is replaced by the local minimap view (400 world
+    units across, north up, clipped to the ring; `feat/local-minimap`). DEC-187: it shows Legends
+    and minions.
 - [ ] **HC-Q7 — Scope and docs questions from this branch.** (1) Your Figma art ships now (DEC-51),
       but 10-art-and-lore and 11-mvp-scope list "High-quality character art on the selection screen"
       as post-MVP, and the MVP requirements' FR-111 says that art "is not built"; the branch treats
