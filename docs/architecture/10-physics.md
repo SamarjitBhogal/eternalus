@@ -223,7 +223,8 @@ Breakability changes at runtime through `StructureSystem` (`07` §3), never in p
 
 ## 9. Steering and pathing interplay
 
-Order in `SystemPipeline`: `MovementSystem` → `StuckSystem` → `PathingSystem` → `CollisionSystem`.
+Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSystem` → `StuckSystem` →
+`PathingSystem` (DEC-121 (c): every later reader sees resolved positions).
 
 - `PathingSystem` computes **next tick's** `desiredVelocity` from the positions just integrated:
   flow-field follow (bilinear interpolation of the four surrounding field vectors × `maxSpeed`),

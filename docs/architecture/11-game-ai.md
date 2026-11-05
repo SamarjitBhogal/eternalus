@@ -196,8 +196,8 @@ Each aggro profile names the one controller that reads it (`controller`), and a 
 accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a horde minion's
 profile (`HordeAggroRuleDefinition`) adds `leashRadius` and `callForHelpRadius`, and a guard's or
 camp mob's (`GuardAggroRuleDefinition`) adds nothing, since its leash and its mates come from its
-post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content, turned into ticks with
-the match's tick rate where they are read.
+post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content, except
+`ghostFirstWaveTicks`, turned into ticks with the match's tick rate where they are read.
 
 ```ts
 // packages/core/src/content/ai/aggro/lane-minion.ts (sketch)
@@ -214,10 +214,10 @@ export const laneMinionAggro = {
     'lane-objective', // the horde's next standing structure (18 §6.2)
   ],
   reevaluateEveryTicks: 15, // TUNE
-  leashRadius: 700, // TUNE; DEC-193: +15 % for lane minions (laneMinion.ts `LEASH`)
+  leashRadius: 805, // TUNE: 700 × 1.15, DEC-193: +15 % for lane minions (laneMinion.ts `LEASH`)
   leashGraceSeconds: 3, // TUNE: owner DEC-144, 3 s of chase outside the leash before it breaks
   aggroCooldownSeconds: 3, // TUNE: Dota 3 s
-  callForHelpRadius: 700, // TUNE: owner DEC-144; the leash
+  callForHelpRadius: 805, // TUNE: owner DEC-144; the leash
   ghostFirstWaveTicks: 0, // 0 = off; League ghosts the first wave for 18–28 s
 } satisfies HordeAggroRuleDefinition;
 ```
@@ -400,11 +400,12 @@ work named:
   each blocked decision.
 - The bot leaves also read the nav grid directly (`state.world.grid`). A bot sent to a point on
   blocked ground (a tower's centre) stops at the edge of that ground on its side
-  (`BotLeaves.approach`). To fight an enemy on blocked ground, or to push a structure, it goes by
-  A\* to that edge and then straight in (`closeIn`), so the collision system stops it at the real
-  walls (DEC-189). While stuck detection has a detour waypoint for it, a fighting or pushing bot
-  heads there (`EntityStore.detourWaypointOf`, DEC-193). A bot that already stands still sends no
-  new halt (`isHalted` in its memory).
+  (`BotMovement.approach`, the leaves' navigation in `ai/BotMovement.ts`). To fight an enemy on
+  blocked ground, or to push a structure, it goes by A\* to that edge and then straight in
+  (`closeIn`), so the collision system stops it at the real walls (DEC-189). While stuck
+  detection has a detour waypoint for it, a fighting or pushing bot heads there
+  (`EntityStore.detourWaypointOf`, DEC-193). A bot that already stands still sends no new halt
+  (`isHalted` in its memory).
 - A brain's `profileId` names the controller's own content directly: an aggro profile
   (`content/ai/aggro/`) for `MinionController` and `GuardController`, each accepting only a profile
   whose `controller` names it, and a `BotDifficultyDefinition`

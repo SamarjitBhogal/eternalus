@@ -237,10 +237,12 @@ members are created through `EntityFactory`, the `Horde` record (§4) is inserte
 `horde-spawned { hordeId, lane, team, memberIds }` emitted. No listener creates the record, so no
 mob ever exists without its horde (MS-25).
 
-**Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `MovementSystem` →
-`StuckSystem` (§5.2, DEC-193) → `PathingSystem` → `CollisionSystem` (10 §9) → … → `SpawnSystem` (schedule and fulfilment) → `EnragedSystem` (MS-16) → `DeathSystem`
-→ `InvariantSystem` → `SnapshotSystem`. A horde spawned on tick N has its members and record when
-the invariants and the snapshot of tick N run, and its first decisions in tick N+1.
+**Pipeline positions.** `CommandApplySystem` → `AiSystem` → `HordeSystem` → `StatusEffectSystem`
+→ `MovementSystem` → `CollisionSystem` (10 §9, DEC-121 (c)) → `SpaceSystem` → `StuckSystem`
+(§5.2, DEC-193) → `PathingSystem` → … → `SpawnSystem` (schedule and fulfilment) →
+`EnragedSystem` (MS-16) → `DeathSystem` → `InvariantSystem` → `SnapshotSystem`. A horde spawned
+on tick N has its members and record when the invariants and the snapshot of tick N run, and its
+first decisions in tick N+1.
 
 **Where a horde starts.** An opening horde spawns at its lane's base (MS-30). Every other horde
 spawns at the origin, the spawning structure's centre, inside its footprint, and the lane field
@@ -325,9 +327,11 @@ Before each batch `SpawnSystem` checks `GameConfig.limits.maxUnitsPerTeam`. If o
 batch fits, it spawns that many; if none fits, no horde is created. `spawn-suppressed` is a
 **counter, not an event**: `TeamState` (03 §2) keeps `unitsRequested` and `unitsSuppressed` per
 team, both hashed, which `TeamUnitCapInvariant` (15), the developer menu (13 §4) and the
-suppressed-share metric read. A tower guard's refill (§7) counts too: each is one unit requested,
-and one suppressed if the cap blocks it. A blocked refill counts once, on the tick its post comes
-due, not again on each tick it waits (DEC-169).
+suppressed-share metric read. A tower guard's refill (§7) counts too: each that succeeds is one
+unit requested (DEC-169), and one the cap blocks is one requested and one suppressed, counted once
+on the tick its post comes due, not again on each tick it waits (S56-F1). The counts are of
+attempts (DEC-219 (b)): a refill blocked when due and filled later is two requested and one
+suppressed.
 
 ### 3.5 Developer-menu spawns
 
@@ -420,9 +424,11 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   never sideways; a march never stalls at a wall, and a chase that cannot turn holds (MS-35). A
   held chase does not hold for ever: `StuckSystem`, just before `PathingSystem`, finds a chaser
   that has come no closer to its target for a while and gives it the next A\* waypoint round,
-  which `PathingSystem` steers it to (DEC-193; the numbers are `STUCK_DETECTION` in
-  `content/ai/stuckDetection.ts`). A chase of a structure with a `Footprint` (a lane tower's
-  fort, the Stronghold's palace, 07 §13) aims at the nearest point of its outline. The blocked
+  which `PathingSystem` steers it to (DEC-193, DEC-217 (14); the numbers, with the cap on A\*
+  plans a tick, are `STUCK_DETECTION` in `content/ai/stuckDetection.ts`). A chase of a target
+  with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
+  Stronghold's palace, 07 §13) aims at the nearest point of its outline, the point attack reach
+  is measured to (`EntityStore.aimPointOf`). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court)
   never holds or turns a chase: the mob closes in until collision stops it at a wall, in reach
   (DEC-185). A

@@ -122,7 +122,8 @@ export type BreakabilityRule =
   | { readonly kind: 'all-of'; readonly rules: readonly BreakabilityRule[] };
 ```
 
-`StructureSystem.isBreakable(structure)` evaluates the rule each tick against `GameState`:
+`StructureSystem` evaluates each structure's rule each tick against `GameState`
+(`updateBreakability`, through `isBreakableUnder`):
 threshold = `ceil(fraction × buffTowersPerTeam)` (2 of 3 today; 4 of 5 with five lanes). The result
 sets `Collider.isUnbreakable` and is emitted as `structure-breakability-changed`, so the
 `DamagePipeline` rejects damage to unbreakable targets and `CollisionSystem` runs swept tests
@@ -411,8 +412,9 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   palace wall reaches the Stronghold (DEC-185, DEC-185 (D)). The circle `Collider` stays. A lane
   tower's fort map object, which blocks, is the tower's body: it has no health of its own, so
   damage to the fort goes to the tower (one pool, DEC-185 (B)). After the tower falls, its fort
-  stays standing as scenery with no health. The Stronghold's palace and the gates have map
-  objects that do not block, so they keep their own health. `Simulation` takes the structure
+  stays standing as scenery with no health. Only towers share one pool with their fort
+  (DEC-217 (13)): the Stronghold's palace map object does not block, and a gate's definition has
+  no `hasMapFootprint`, so both keep their own health. `Simulation` takes the structure
   definitions from one injected source (`SimulationOptions.structures`, default
   `STRUCTURE_DEFINITIONS`) for the structures it builds and for `StructureSystem` (DEC-168 B8).
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
