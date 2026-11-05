@@ -1,9 +1,10 @@
-import type { MapObject, MapObjectKind, MapObjectSnapshot } from '@eternalus/core';
+import type { MapObject, MapObjectSnapshot } from '@eternalus/core';
 import type { Renderer } from '../engine/render/Renderer';
 import type { WorldRect } from '../engine/render/Renderer.types';
 import type { ObjectDrawGeometry } from './WorldObjectsView.types';
 import { OBJECT_DRAWING as S } from './WorldObjectsView.constants';
 import type { WorldLayer } from './SceneView.types';
+import { ObjectRuinsView } from './ObjectRuinsView';
 
 /** Snapshot-driven health and ruined artwork; roof toggles cannot change physical state. */
 export class WorldObjectsView implements WorldLayer {
@@ -30,7 +31,7 @@ export class WorldObjectsView implements WorldLayer {
             width: Math.max(...xs) - Math.min(...xs),
             height: Math.max(...ys) - Math.min(...ys),
           };
-          return [object.id, { object, bounds }];
+          return [object.id, { object, bounds, ruins: new ObjectRuinsView(object.kind, bounds) }];
         }),
     );
   }
@@ -56,6 +57,7 @@ export class WorldObjectsView implements WorldLayer {
       const geometry = this.objects.get(state.id);
       if (geometry === undefined) continue;
       const { object, bounds } = geometry;
+      const visibleBounds = state.isDestroyed ? geometry.ruins.bounds : bounds;
       if (
         object.buildingId !== undefined &&
         (this.isDestroyed(object.buildingId) ||
@@ -63,13 +65,13 @@ export class WorldObjectsView implements WorldLayer {
       )
         continue;
       if (
-        bounds.x + bounds.width < view.x ||
-        bounds.x > view.x + view.width ||
-        bounds.y + bounds.height < view.y ||
-        bounds.y > view.y + view.height
+        visibleBounds.x + visibleBounds.width < view.x ||
+        visibleBounds.x > view.x + view.width ||
+        visibleBounds.y + visibleBounds.height < view.y ||
+        visibleBounds.y > view.y + view.height
       )
         continue;
-      if (state.isDestroyed) this.ruin(renderer, bounds, object.kind);
+      if (state.isDestroyed) geometry.ruins.draw(renderer);
       else if (state.health !== null && view.width < S.healthBarViewLimit) {
         const width = Math.min(S.barWidth, Math.max(S.barHeight, bounds.width));
         const x = bounds.x + (bounds.width - width) / 2;
@@ -93,31 +95,8 @@ export class WorldObjectsView implements WorldLayer {
         geometry.object.isInterior !== true &&
         (geometry.object.buildingId === undefined || !this.isDestroyed(geometry.object.buildingId))
       )
-        this.ruin(renderer, geometry.bounds, geometry.object.kind);
+        geometry.ruins.draw(renderer);
     }
-  }
-  private ruin(renderer: Renderer, b: WorldRect, kind: MapObjectKind): void {
-    const bottom = b.y + b.height;
-    renderer.fillPolygon(
-      [
-        { x: b.x, y: bottom },
-        { x: b.x + b.width * 0.1, y: b.y + b.height * 0.55 },
-        { x: b.x + b.width * 0.8, y: b.y + b.height * 0.65 },
-        { x: b.x + b.width, y: bottom },
-      ],
-      S.rubbleShadow,
-    );
-    for (let i = 0; i < 4; i++)
-      this.rect(
-        renderer,
-        {
-          x: b.x + b.width * (0.1 + i * 0.2),
-          y: b.y + b.height * (0.6 + (i % 2) * 0.12),
-          width: b.width * 0.16,
-          height: b.height * 0.18,
-        },
-        S.rubbleColors[kind],
-      );
   }
   private rect(renderer: Renderer, b: WorldRect, color: string): void {
     renderer.fillPolygon(

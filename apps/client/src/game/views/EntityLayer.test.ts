@@ -74,7 +74,7 @@ const minimapMarks = (layer: EntityLayer): [unknown, number][] =>
 describe('EntityLayer', () => {
   it('interpolates positions between the last two snapshots by alpha', () => {
     const spy = new SpyView();
-    const layer = new EntityLayer(new ViewRegistry(spy));
+    const layer = new EntityLayer(new ViewRegistry(spy), () => false);
 
     layer.show(snapshot(1, [unit('a', 0, 0)]), snapshot(2, [unit('a', 10, 4)]), 0.25, null);
     layer.draw(new RecordingRenderer());
@@ -111,7 +111,7 @@ describe('EntityLayer', () => {
 
   it('draws a new entity where it is, without a ghost from the origin', () => {
     const spy = new SpyView();
-    const layer = new EntityLayer(new ViewRegistry(spy));
+    const layer = new EntityLayer(new ViewRegistry(spy), () => false);
 
     layer.show(snapshot(1, []), snapshot(2, [unit('new', 50, 50)]), 0.5, null);
     layer.draw(new RecordingRenderer());
@@ -121,7 +121,7 @@ describe('EntityLayer', () => {
 
   it('draws back to front by y, marks the focused entity, and skips entities without a place', () => {
     const spy = new SpyView();
-    const layer = new EntityLayer(new ViewRegistry(spy));
+    const layer = new EntityLayer(new ViewRegistry(spy), () => false);
     const placeless = { ...unit('ghost', 0, 0), transform: null };
 
     layer.show(null, snapshot(1, [unit('low', 0, 9), unit('high', 0, 1), placeless]), 0, 'low');
@@ -134,7 +134,7 @@ describe('EntityLayer', () => {
   });
 
   it('marks Legends and mobs on the minimap via their views, interpolated, Legends last', () => {
-    const layer = new EntityLayer(createDefaultViewRegistry());
+    const layer = new EntityLayer(createDefaultViewRegistry(), () => false);
     const legend = member('l', 'legend', 10);
 
     layer.show(

@@ -16,6 +16,7 @@ import { MapStrongholdBuilder } from './MapStrongholdBuilder';
 import { MapStrongholdGatesBuilder } from './MapStrongholdGatesBuilder';
 import { MapVillageBuilder } from './MapVillageBuilder';
 import { CathedralExteriorBuilder } from './CathedralExteriorBuilder';
+import { MapShieldBuilder } from './MapShieldBuilder';
 import { LAVA_RIVERS } from '../content/maps/map1Landforms';
 import { distance, distanceToPath, isPointInPolygon } from '../utils/geometry';
 import { SeededRandom } from '../utils/SeededRandom';
@@ -103,6 +104,7 @@ export class MapSceneryBuilder extends MapDecorationBuilder {
           ...new MapStrongholdBuilder().build(feature, strongholdRing(this.world, feature)),
           ...new MapStrongholdGatesBuilder().build(feature, this.world.features),
         ]),
+      ...new MapShieldBuilder().build(this.world.features),
     ];
   }
 
