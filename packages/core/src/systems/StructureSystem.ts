@@ -7,10 +7,8 @@ import { Structure } from '../entities/structures/Structure';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { GameState } from '../state/GameState';
 import type { PlayableTeam } from '../teams/teams.types';
+import { BUFF_TOWER_KIND } from './StructureSystem.constants';
 import type { System, SystemContext } from './System.types';
-
-/** The kind whose losses open walls and gates (07 §3). */
-const BUFF_TOWER_KIND = 'buff-tower';
 
 /**
  * Keeps the structures' lifecycle (architecture 07 §3, §8, §11): announces each structure that
@@ -85,8 +83,10 @@ export class StructureSystem implements System {
 
   /**
    * Whether `rule` lets a structure take damage with `down` of its team's `total` BuffTowers lost
-   * (`total` from config: `numLanes × buffTowersPerLane`, 07 §3). Pure, so an invariant can
-   * re-evaluate it from scratch.
+   * (`total` from config: `numLanes × buffTowersPerLane`, 07 §3): the rule `update` applies
+   * (`isBreakableUnder`), in the counts its tests name. An invariant may not import `systems/`
+   * (architecture 02 §2), so one that re-evaluates breakability calls `isBreakableUnder` in
+   * `content/structures/breakability.ts` instead.
    */
   public static passes(rule: BreakabilityRule, down: number, total: number): boolean {
     return isBreakableUnder(rule, { lost: down, total });
