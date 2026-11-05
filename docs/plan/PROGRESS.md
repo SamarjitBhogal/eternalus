@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-05
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -4842,3 +4842,23 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
+
+### 2026-11-05 — Phase 3 / local minimap — feat/local-minimap — sholtzman + Claude Code
+
+- What was done: the minimap shows a local view. Commit `e1cf2f0`: the circle of 200 world units
+  around the player (DEC-182: north up, ring clip, camera focus while dead, centre marker, a click
+  moves the camera). Commit `b720143`: Legends and all mobs (minions, tower guards, camp mobs;
+  not bosses or the dead) as team-coloured dots (DEC-187). Commit `4068bb4` (critic round 1): unit
+  markers go through `EntityView.drawMinimap` and `minimapLayer`, one `MinimapProjection` serves
+  the picture and the click (DEC-191), team outline per dot (white, near-black, grey, 1.5 px).
+  Docs pass (this entry, docs only): architecture 04, 06 §8 and §10, 07, 08 §5 and 17 follow the
+  code; 08 §5 records `MinimapProjection` in device pixels, not the `Projection` port (critic:
+  acceptable), and names `MatchCamera` as the real `Projection`; reference 15 CD-18, INBOX HC-Q6
+  (4) and HC-U1 note 1 have dated "superseded" notes; the phase-2 plan sprint 2.8 notes the unit
+  part is met. DEC rows are on another branch; this branch does not edit the decisions log.
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1056 passed (1056)"; client "Tests 1746 passed (1746)"; "✓ built in 570ms";
+  "Documentation check passed." This entry was added after that run (docs-only); `prettier --check`
+  and `docs:check` were re-run after it.
+- Next step: add the DEC rows (DEC-187 text "Legends and all mobs", the G1 outline answer),
+  merge the sibling `unit-facing-chevron` work, then the pre-PR gate.
