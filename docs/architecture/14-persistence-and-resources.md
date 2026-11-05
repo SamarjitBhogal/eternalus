@@ -4,7 +4,7 @@ description: The "single access with a controller in front" design for local dat
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-02
 tags: [architecture, persistence, indexeddb, repositories, dto, migrations, resources, assets]
 paths: ['apps/client/src/data/**']
 related:
@@ -297,7 +297,7 @@ Wall-clock fields exist only here, never in core.
 | `loadouts`   | `id`                 | `SavedLoadoutDtoV1`       | `schemaVersion`, `id`, `profileId`, `classId`, `name`, `updatedAt`, `loadout: LoadoutDtoV1` (mirrors core `Loadout`, [05](05-abilities-weapons-and-loadouts.md) §12: `primaryWeaponId`, `abilities[3]`, `ultimate`, `artifacts[2]`, …)                                                                                                                                                                     | **MVP**                               |
 | `settings`   | `[profileId, group]` | `SettingsGroupDtoV1`      | `schemaVersion`, `profileId`, `group: 'bindings' \| 'audio' \| 'accessibility' \| 'developer' \| 'storage'`, `value`: bindings `{ preset, bindings: BindingDtoV1[] }` (`{ action, chords: ChordDtoV1[] }`, [13](13-game-interface.md) §6); audio `{ master, music, sfx }`; accessibility `{ reducedMotion }`; developer `{ menuEnabled, assertLevel }`; storage `{ recordSimulatedMatches, storeReplays }` | **MVP**                               |
 | `matches`    | `id`                 | `MatchHistoryRecordDtoV1` | as in [mechanics-ideas §8](../reference/suggestions/mechanics-ideas.md#8-match-history-record-contents): `id`, `profileId`, `playedAt`, `durationTicks`, `tickRate`, `seed`, `mapPresetId`, `configHash`, `coreVersion`, `contentVersion`, `isSimulation`, `result`, `player`, `legends: LegendScoreDtoV1[]`, `teams`, `timeline`, `achievements`, `replayId`                                              | **MVP**                               |
-| `replays`    | `matchId`            | `ReplayDtoV1`             | `schemaVersion`, `matchId`, `profileId`, `playedAt`, `replay: Replay` (core: `versions { core, content, schema }`, `seed`, `config`, `commands[{ tick, command }]`, `checkpoints[{ tick, hash }]`)                                                                                                                                                                                                         | **MVP** (cut line 9 in the plan)      |
+| `replays`    | `matchId`            | `ReplayDtoV1`             | `schemaVersion`, `matchId`, `profileId`, `playedAt`, `replay: Replay` (core: `versions { core, content, schema }`, the setup (`seed`, `config`, `map`, `mapObjects`, `roster`), `commands[{ tick, command }]`, `checkpoints[{ tick, hash }]`)                                                                                                                                                              | **MVP** (cut line 9 in the plan)      |
 | `meta`       | `key`                | `MetaDtoV1`               | `key: 'schema'`, `dbVersion`, `coreVersion`, `contentVersion`, `persistRequestedAt`, `lastOpenedAt`                                                                                                                                                                                                                                                                                                        | **MVP**                               |
 | `quarantine` | `id` (auto)          | `QuarantineRecordDtoV1`   | `id`, `store`, `key`, `reason`, `quarantinedAt`, `value: unknown`                                                                                                                                                                                                                                                                                                                                          | **MVP**                               |
 
@@ -501,11 +501,11 @@ export class ResourceController {
 
 ## 13. Recipes
 
-| I am adding…                  | Files                                                                                                                                                                       | Plus                                                                                                          |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts`                                        | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures     |
-| A field or a settings group   | bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; or one `group` literal with its `value` DTO and default                                                    | a fixture at the old version in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
-| An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter` | nothing else (views ask by id); one line in `main.tsx`                                                        |
+| I am adding…                  | Files                                                                                                                                                                                                                                                                               | Plus                                                                                                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A persisted record type       | `dto/<Name>Dto.ts` (+ `validate`, `upgrade`, `to`/`from` mappers), `repositories/<Name>Repository.ts` + `Storage<Name>Repository.ts`                                                                                                                                                | one `Migration` entry (store + indexes), one property on `PersistenceController`, contract-suite fixtures                                                       |
+| A field or a settings group   | a field old saves cannot satisfy (required, renamed or retyped): bump `schemaVersion`, extend `upgrade<Name>Dto` and the mappers; an optional field they simply lack: no bump, the validator accepts its absence (DEC-125); or one `group` literal with its `value` DTO and default | a fixture at the old version (or, for an optional field, one saved without it) in the migration test; one `settingsSlice` field ([13](13-game-interface.md) §5) |
+| An asset or a storage backend | one line in its asset group's manifest file (concatenated into `ASSET_MANIFEST`) with `licence` and `source`; or `<Tech>StorageAdapter.ts` passing `describeStorageAdapter`                                                                                                         | nothing else (views ask by id); one line in `main.tsx`                                                                                                          |
 
 ## 14. Implementation status
 
@@ -530,6 +530,20 @@ reads through the shared `readOrQuarantine`. Interim gaps, to settle before
 - A quarantine is reported through an injected `warn` callback, because `data/` imports core
   types only (§1); `main.tsx` turns it into a `Logger` record. No `degraded` status or memory
   fallback yet (§10): a failed open leaves the settings on defaults.
+- **Stored chord modifiers (2026-10-30).** A stored keyboard chord has an optional `modifiers`
+  field (DEC-105), added inside schema version 1: records saved before it still read, because the
+  field is optional, so no upgrade step was needed and none was written. §13's recipe "A field or
+  a settings group" says to bump `schemaVersion`. The branch reads that rule as applying to a
+  field old records cannot satisfy (a required, renamed or retyped field); an optional field that
+  old records simply lack needs no bump. That reading waits for the owner (`INBOX.md` HC-B4); if he
+  keeps the recipe as written, the settings record moves to version 2 with a pass-through upgrade.
+  `CHORD_MODIFIERS` in `dto/SettingsDto.ts` lists the allowed names, and a test in
+  `settingsState.test.ts` ties that list to the bridge's `ChordModifier` type, so the two cannot
+  drift apart. **Appended 2026-10-30:** the owner adopted that reading (DEC-125, `INBOX.md`
+  HC-B4), so it is now the rule: an optional field that old saves lack needs no `schemaVersion`
+  bump, and the settings record stays at version 1. The wording of §13's recipe row waits for him
+  in `INBOX.md` HC-T1 (T-226). **Appended 2026-11-02:** he approved it (HC-T1, DEC-142); §13's row
+  "A field or a settings group" now says the rule.
 
 Resources (`feat/hud-and-character-select`, 2026-10-24; the owner's art and the Cinzel font,
 DEC-51). §1 and §11 say this since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1); the

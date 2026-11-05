@@ -24,6 +24,6 @@ describe('selectSelectedClassCard', () => {
 
   it('has no card before a pick or for a class the catalogue lacks', () => {
     expect(selectSelectedClassCard(stateWith(null))).toBeUndefined();
-    expect(selectSelectedClassCard(stateWith('flying'))).toBeUndefined();
+    expect(selectSelectedClassCard(stateWith('harbinger'))).toBeUndefined();
   });
 });

@@ -36,7 +36,7 @@ export const placeCampSlots = (input: CampLayoutInput): readonly CampSlot[] =>
     }
     const { band, stronghold, centreX } = input;
     return Array.from({ length: count }, (_, index): CampSlot => {
-      const u = band[0] + ((index + 0.5) / count) * (band[1] - band[0]);
+      const u = band[0] + ((index + (input.rng?.next() ?? 0.5)) / count) * (band[1] - band[0]);
       const x = stronghold.x + u * (centreX - stronghold.x);
       const top = upper.yAtX(x);
       const bottom = lower.yAtX(x);

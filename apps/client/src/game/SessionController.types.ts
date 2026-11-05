@@ -1,4 +1,4 @@
-import type { Logger, MapFeatureKind } from '@eternalus/core';
+import type { Logger, MapFeatureKind, RosterSlot, SeededRandom } from '@eternalus/core';
 
 import type { DisplayCatalogue } from '../bridge/catalogue.types';
 import type {
@@ -12,10 +12,12 @@ import type {
   UiIntent,
 } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import type { ErrorReporter } from '../data/logging/ErrorReporter';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { ResourceController } from '../data/resources/ResourceController';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
-import type { PlayerChoice, PreparedWorld } from './Match.types';
+import type { MatchCrash, PlayerChoice, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import type { Rng } from './session/Rng.types';
 
@@ -28,6 +30,10 @@ export type MatchRequest = {
   readonly world: PreparedWorld;
   /** Map-feature kinds the HUD lists as capture points: `catalogue.hud.objectiveKinds` (one list). */
   readonly captureKinds: readonly MapFeatureKind[];
+  /** The setup's bots as the simulation's roster: `botRosterSlots` over the catalogue's difficulties. */
+  readonly roster: readonly RosterSlot[];
+  /** Called once if the match's game loop stops because a tick or a frame threw (DEC-106). */
+  readonly onCrash: (crash: MatchCrash) => void;
 };
 
 /** A match that is running in `match`; only `MatchState` holds one. */
@@ -39,6 +45,13 @@ export interface RunningMatch {
    * (13 §7; INBOX HC-Q8).
    */
   setPaused(isPaused: boolean): void;
+  /**
+   * What an error report needs from this match (ADR 0025 §3): its seed, tick, recent commands and
+   * events, replay so far and log records. Only reads; works after a crash too.
+   */
+  evidence(): MatchEvidence;
+  /** Ticks the simulation has completed; a cheap read, unlike `evidence()`, which copies the log. */
+  currentTick(): number;
 }
 
 /**
@@ -73,19 +86,33 @@ export interface SessionContext {
   /** Records the pick, or clears it with `null`, and publishes `class-selection`. */
   recordSelection(selection: ClassSelection | null): void;
   /**
+   * LOCK IN (DEC-61): fills both rosters from the setup and the pick (`fillRosters`) and publishes
+   * them as `selection-locked`. The setup itself stays as built, for a rematch.
+   * @throws Without a setup or a pick.
+   */
+  lockIn(): void;
+  /**
    * Builds the world for the current setup's seed (06 §1: the generator runs before `Simulation`).
    * @throws Without a setup, or when generation fails.
    */
   prepareWorld(): void;
   /**
-   * Builds and starts the match on `viewport` from the setup, the selection and the world.
+   * Builds and starts the match on `viewport` from the setup with the rosters LOCK IN filled, the
+   * selection and the world; `onCrash` is called if its game loop later stops on a throw.
    * @throws When one of them is missing or the factory fails.
    */
-  createMatch(viewport: MatchViewport): RunningMatch;
+  createMatch(viewport: MatchViewport, onCrash: (crash: MatchCrash) => void): RunningMatch;
   /** Drops the prepared world (the match is over). */
   dropWorld(): void;
   /** Logs why the match could not start and returns to `menu` with reason `'match-failed'` (13 §2). */
   abortMatch(error: unknown): void;
+  /**
+   * A running match crashed: logs FATAL `client.session` with the error, its stack, the seed and
+   * the tick, reports the crash with its match evidence (source `'game-loop'`), opens the crash
+   * popup, then returns to `menu` with reason `'match-crashed'` (DEC-106, ADR 0025; 13 §2 `match`
+   * row).
+   */
+  endCrashedMatch(crash: MatchCrash): void;
   /**
    * Loads `groups` in order: `loading-progress` while loading, then `ready` and `asset-urls` per
    * group, then `onReady` once. Synchronous when nothing is left to load. An unexpected rejection
@@ -114,6 +141,10 @@ export interface SessionState {
    * `match` state implements it; in every other phase an attach does nothing.
    */
   attachViewport?(viewport: MatchViewport, context: SessionContext): () => void;
+  /** The running match's `evidence()`, or `null`; only the `match` state implements it. */
+  matchEvidence?(): MatchEvidence | null;
+  /** The running match's `currentTick()`, or `null`; only the `match` state implements it. */
+  matchTick?(): number | null;
 }
 
 /** The part of core's `MatchConfig` the session needs. */
@@ -132,6 +163,12 @@ export type SessionControllerDeps = {
   readonly seedSource: () => number;
   /** The match's random stream from its seed. */
   readonly createRng: (seed: number) => Rng;
+  /**
+   * The stream LOCK IN draws the bots' Legends from (`fillRosters`), apart from `createRng`'s team
+   * draw: `session/createRosterRng.ts`. Its own factory because core's `nextInt(min, max)` is not
+   * the `Rng` port's `nextInt(maxExclusive)`.
+   */
+  readonly createRosterRng: (seed: number) => Pick<SeededRandom, 'nextInt'>;
   /**
    * Receives `data-team="light|dark"` while a match setup exists and `data-contrast` (the
    * catalogue's colour set, DEC-55) while the session runs (`<html>` in the app).
@@ -153,4 +190,6 @@ export type SessionControllerDeps = {
   >;
   /** The licence blocks of every bundled asset (`describeCredits` over the manifest). */
   readonly credits: readonly CreditEntry[];
+  /** Where a crash is reported and its note saved (ADR 0025 §3; the page's `ErrorReporter`). */
+  readonly reporter: Pick<ErrorReporter, 'reportCrash' | 'addNote'>;
 };

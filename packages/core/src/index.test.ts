@@ -6,11 +6,11 @@ import * as core from './index';
 describe('@eternalus/core public API', () => {
   it('exports exactly the documented runtime values', () => {
     expect(Object.keys(core).sort()).toEqual([
-      'CathedralInteriorBuilder',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
       'MapGenerator',
-      'MapSceneryBuilder',
+      'MapObjectBuilder',
+      'MapPresentationBuilder',
       'MemoryLogger',
       'NullLogger',
       'SEVERITY',
@@ -18,6 +18,9 @@ describe('@eternalus/core public API', () => {
       'Simulation',
       'StateHasher',
       'createDefaultGameConfig',
+      'findBuildingAt',
+      'findMapObjectAt',
+      'isPointInPolygon',
       'loadDisplayContent',
       'makeLogRecord',
       'runReplay',
@@ -66,6 +69,11 @@ describe('@eternalus/core public API', () => {
         humanLegendId: null,
       },
       entities: [],
+      hordes: [],
+      teams: {
+        light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+        dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      },
     });
   });
 

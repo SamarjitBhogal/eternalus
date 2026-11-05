@@ -18,12 +18,12 @@ describe('MainMenuScreen', () => {
     expect(html).toContain('data-background="test-neutral"');
   });
 
-  it('shows the cancellation banner after a select timeout', () => {
+  it('shows no banner after a select timeout: the popup tells it (DEC-102)', () => {
     const html = renderWithStore(<MainMenuScreen />, {
       session: sessionAt('menu', { reason: 'select-timeout' }),
     });
-    expect(html).toContain('role="status"');
-    expect(html).toContain(STRINGS.reasonBanners['select-timeout']);
+    expect(STRINGS.reasonBanners['select-timeout']).toBeUndefined();
+    expect(html).not.toContain('role="status"');
   });
 
   it.each([
@@ -34,6 +34,14 @@ describe('MainMenuScreen', () => {
     expect(STRINGS.reasonBanners[reason]).toBe(banner);
     expect(html).toContain(`<p role="status"`);
     expect(html).toContain(banner);
+  });
+
+  it('shows no banner for a crash: the crash popup says it (DEC-106, DEC-124)', () => {
+    for (const reason of ['match-crashed', 'screen-crashed']) {
+      expect(
+        renderWithStore(<MainMenuScreen />, { session: sessionAt('menu', { reason }) }),
+      ).not.toContain('role="status"');
+    }
   });
 
   it('shows no banner without a reason or for a reason with no message', () => {

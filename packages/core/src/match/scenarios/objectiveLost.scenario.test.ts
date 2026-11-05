@@ -8,6 +8,7 @@ import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { ASSIST_WINDOW_SECONDS, SCORING_WEIGHTS } from '../../content/match/scoring';
 import { loadLevelCurves } from '../../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../../content/progression/xpSources';
+import { loadWeapons } from '../../content/weapons/loadWeapons';
 import { DefaultInvariantRunner } from '../../diagnostics/DefaultInvariantRunner';
 import { TEST_DEBUG_CONFIG } from '../../diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from '../../diagnostics/MemoryLogger';
@@ -35,7 +36,7 @@ const MAX_TICKS = 30;
 const playOut = () => {
   const logger = new MemoryLogger();
   const timeline = MatchTimeline.resolve(CONFIG);
-  const state = new GameState(CONFIG, 7, timeline.schedule());
+  const state = new GameState(CONFIG, 7, null, {}, timeline.schedule());
   const director = createDefaultMatchDirector({
     state,
     timeline,
@@ -56,7 +57,12 @@ const playOut = () => {
     director,
   });
   director.start(state);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), UNITS);
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    UNITS,
+    undefined,
+    loadWeapons(CONFIG.tickRate),
+  );
   const warrior = factory.create('warrior', 'warrior', { position: { x: 0, y: 0 }, team: 'light' });
   const objective = factory.create('light-mob', 'training-dummy', {
     position: { x: 1, y: 0 },

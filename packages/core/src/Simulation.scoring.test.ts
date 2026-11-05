@@ -6,6 +6,7 @@ import type { GameConfig } from './config/GameConfig.types';
 import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
 import { Scoring } from './match/Scoring';
+import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import type { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
@@ -97,6 +98,30 @@ describe('Simulation: scoring', () => {
     ]);
   });
 
+  it('gives a roster bot a bot row in the fold of tick 0 (the roster spawns after the director)', () => {
+    const fold = vi.spyOn(Scoring.prototype, 'fold');
+    const sim = new Simulation({
+      config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
+      seed: 1,
+      logger: new NullLogger(),
+      map: TWO_LANE_MAP,
+      roster: [{ team: 'dark', definitionId: 'warrior', role: 'laner', difficulty: 'normal' }],
+    });
+
+    sim.step();
+
+    const bot = sim.snapshot().entities.find((entity) => entity.family === 'legend');
+    expect(bot).toBeDefined();
+    expect(fold.mock.calls[0]?.[0].state.match.scoring.legends).toEqual([
+      expect.objectContaining({
+        entityId: bot?.id,
+        team: 'dark',
+        classId: 'warrior',
+        controller: 'bot',
+      }),
+    ]);
+  });
+
   it('counts a minion killed through full steps by its kind: a light mob is worth 1', () => {
     const { sim, foldedState, playOut } = build();
 
@@ -108,12 +133,15 @@ describe('Simulation: scoring', () => {
   });
 
   it('is deterministic with scoring in the hash: a replay reproduces every checkpoint', () => {
+    const fromSetup = ({ config, seed }: { config: GameConfig; seed: number }) =>
+      createTarget(config, seed);
     const replay = recordReplay(
-      { config: CONFIG, seed: 3, ticks: TICKS, checkpointEvery: 10, commandsFor },
-      createTarget,
+      { config: CONFIG, seed: 3 },
+      { ticks: TICKS, checkpointEvery: 10, commandsFor },
+      fromSetup,
     );
 
-    expect(runReplay(replay, createTarget).firstDivergence).toBeNull();
+    expect(runReplay(replay, fromSetup).firstDivergence).toBeNull();
   });
 
   it('hashes the scoring: a changed score changes the hash', () => {

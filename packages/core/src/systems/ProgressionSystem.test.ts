@@ -17,6 +17,7 @@ import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
 import type { Team } from '../teams/teams.types';
 import { ProgressionSystem } from './ProgressionSystem';
+import { loadWeapons } from '../content/weapons/loadWeapons';
 
 const CONFIG = createDefaultGameConfig();
 const UNITS = loadDefaultContent(CONFIG.tickRate);
@@ -28,7 +29,12 @@ const XP_SOURCES = { legendKill: { base: 150, perVictimLevel: 25 } };
 
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
-  const factory = new EntityFactory(createDefaultEntityRegistry(), UNITS);
+  const factory = new EntityFactory(
+    createDefaultEntityRegistry(),
+    UNITS,
+    undefined,
+    loadWeapons(CONFIG.tickRate),
+  );
   const spawn = (kind: string, definitionId: string, team: Team): Entity => {
     const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
     state.entities.add(entity);

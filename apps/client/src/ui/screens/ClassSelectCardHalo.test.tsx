@@ -32,8 +32,8 @@ describe('ClassSelectCardHalo', () => {
     const html = render('magus');
 
     expect(html).toContain('src="/assets/test/warrior-card-art.webp"');
-    expect(html).toContain('>Legionnaire</span>');
-    expect(html).toContain('--card-accent:var(--class-flying-accent)');
+    expect(html).toContain('>Vanguard</span>');
+    expect(html).toContain('--card-accent:var(--class-harbinger-accent)');
     expect(html).toMatch(/data-look="picked" style="left:1097px;top:220px/);
     expect(count(html, 'data-look="picked"')).toBe(2);
   });

@@ -2,21 +2,29 @@ import { describe, expect, it } from 'vitest';
 
 import { classCardFixture, specCardFixture } from '../../../bridge/__fixtures__/catalogueFixtures';
 import type { DisplayCatalogue } from '../../../bridge/catalogue.types';
-import type { ClassSelection, UiIntent } from '../../../bridge/events';
+import type { ClassSelection, FilledRosters, UiIntent } from '../../../bridge/events';
 import { selectLegendStepView } from '../../../bridge/selectors/selectLegendStepView';
 import {
   catalogueWithUnselectableLegend,
   shippedCatalogue,
 } from '../../content/__fixtures__/shippedCatalogue';
+import { FakeSessionContext } from '../../FakeSessionContext';
 import { testSession, testSessionDeps } from '../../testSessionDeps';
 import { SELECT_COUNTDOWN_MS } from '../sessionTiming.constants';
+import { CharacterSelectState } from './CharacterSelectState';
+
+const SHIPPED = shippedCatalogue().load();
 
 /**
  * A class with no selectable Legend, a class with an available and a locked Legend, and a locked
- * class, over the shipped catalogue.
+ * class, over the shipped catalogue, with lane bots of its two playable classes.
  */
 const CATALOGUE = {
-  ...shippedCatalogue().load(),
+  ...SHIPPED,
+  botRoster: {
+    ...SHIPPED.botRoster,
+    laners: ['warrior', 'warrior', 'warrior', 'magus', 'magus', 'magus', 'magus', 'magus', 'magus'],
+  },
   legendClasses: [
     classCardFixture({
       classId: 'warrior',
@@ -29,7 +37,7 @@ const CATALOGUE = {
         specCardFixture({ specId: 'sealed', status: 'locked' }),
       ],
     }),
-    classCardFixture({ classId: 'flying', status: 'locked' }),
+    classCardFixture({ classId: 'harbinger', status: 'locked' }),
   ],
 };
 
@@ -41,14 +49,16 @@ function atCharacterSelect(catalogue: DisplayCatalogue = CATALOGUE) {
   });
   const picks: (ClassSelection | null)[] = [];
   const remaining: number[] = [];
+  const locks: FilledRosters[] = [];
   session.bus.on('class-selection', (selection) => picks.push(selection));
   session.bus.on('countdown', ({ remainingMs }) => remaining.push(remainingMs));
+  session.bus.on('selection-locked', (rosters) => locks.push(rosters));
   session.controller.start();
   session.intent({ kind: 'start-match' });
   const send = (...intents: readonly UiIntent[]): void => {
     for (const intent of intents) session.intent(intent);
   };
-  return { ...session, picks, remaining, send };
+  return { ...session, picks, remaining, locks, send };
 }
 
 describe('CharacterSelectState', () => {
@@ -74,7 +84,7 @@ describe('CharacterSelectState', () => {
   it("ignores a locked class, an unknown class, a locked Legend and another class's Legend", () => {
     const { picks, send } = atCharacterSelect();
     send(
-      { kind: 'select-class', classId: 'flying' },
+      { kind: 'select-class', classId: 'harbinger' },
       { kind: 'select-class', classId: 'unknown-class' },
       { kind: 'select-class', classId: 'magus', specId: 'sealed' },
       { kind: 'select-class', classId: 'warrior', specId: 'oracle' },
@@ -106,7 +116,7 @@ describe('CharacterSelectState', () => {
   it('ignores a locked or unselectable pick without logging', () => {
     const { picks, send, logger } = atCharacterSelect();
     send(
-      { kind: 'select-class', classId: 'flying' },
+      { kind: 'select-class', classId: 'harbinger' },
       { kind: 'select-class', classId: 'magus', specId: 'sealed' },
       { kind: 'select-class', classId: 'warrior', specId: 'oracle' },
     );
@@ -146,41 +156,94 @@ describe('CharacterSelectState', () => {
     expect(controller.phase).toBe('character-select');
   });
 
-  it('confirms a picked Legend', () => {
-    const { controller, send } = atCharacterSelect();
+  it('locks in a picked Legend and holds it until the full countdown ends (DEC-60)', () => {
+    const { controller, clock, store, send } = atCharacterSelect();
     send(
       { kind: 'select-class', classId: 'magus', specId: 'oracle' },
       { kind: 'confirm-selection' },
     );
+    expect(controller.phase).toBe('character-select');
+    expect(store.getState().matchSetup.isLockedIn).toBe(true);
+    clock.advance(SELECT_COUNTDOWN_MS - 1);
+    expect(controller.phase).toBe('character-select');
+    clock.advance(1);
     expect(controller.phase).toBe('pre-launch');
   });
 
-  it('confirms a class with no selectable Legend', () => {
-    const { controller, send } = atCharacterSelect();
+  it('locks in a class with no selectable Legend', () => {
+    const { controller, clock, send } = atCharacterSelect();
     send({ kind: 'select-class', classId: 'warrior' }, { kind: 'confirm-selection' });
+    clock.advance(SELECT_COUNTDOWN_MS);
     expect(controller.phase).toBe('pre-launch');
   });
 
-  it('goes to pre-launch at the timeout with a class and no Legend, to the menu with none', () => {
-    const picked = atCharacterSelect();
-    picked.send({ kind: 'select-class', classId: 'magus' });
-    picked.clock.advance(SELECT_COUNTDOWN_MS);
-    expect(picked.controller.phase).toBe('pre-launch');
-
-    const none = atCharacterSelect();
-    none.clock.advance(SELECT_COUNTDOWN_MS);
-    expect(none.controller.phase).toBe('menu');
-    expect(none.store.getState().session.reason).toBe('select-timeout');
+  it('fills the rosters once, at LOCK IN, with the enemy Rover copying the pick (DEC-61)', () => {
+    const { locks, send } = atCharacterSelect();
+    send({ kind: 'select-class', classId: 'magus', specId: 'oracle' });
+    expect(locks).toEqual([]);
+    send({ kind: 'confirm-selection' }, { kind: 'confirm-selection' });
+    expect(locks).toHaveLength(1);
+    expect(locks[0]?.allies[0]).toMatchObject({
+      isPlayer: true,
+      classId: 'magus',
+      specId: 'oracle',
+    });
+    expect(locks[0]?.enemies[0]).toMatchObject({
+      isRover: true,
+      classId: 'magus',
+      specId: 'oracle',
+    });
   });
 
-  it('keeps one countdown across a pick, Back and a new pick (TAP-11)', () => {
+  it('ignores every pick, Back, LOCK IN and cancel after LOCK IN (DEC-60)', () => {
+    const { controller, picks, store, send } = atCharacterSelect();
+    send(
+      { kind: 'select-class', classId: 'magus', specId: 'oracle' },
+      { kind: 'confirm-selection' },
+      { kind: 'select-class', classId: 'warrior' },
+      { kind: 'clear-class-selection' },
+      { kind: 'cancel-match' },
+    );
+    expect(picks).toEqual([{ classId: 'magus', specId: 'oracle' }]);
+    expect(controller.phase).toBe('character-select');
+    expect(store.getState().matchSetup.selection).toEqual({ classId: 'magus', specId: 'oracle' });
+  });
+
+  it('starts no match when the countdown ends before LOCK IN, with or without a pick (DEC-102)', () => {
+    for (const pick of [
+      [],
+      [{ kind: 'select-class', classId: 'magus' }],
+      [{ kind: 'select-class', classId: 'magus', specId: 'oracle' }],
+    ] as const satisfies readonly (readonly UiIntent[])[]) {
+      const { controller, clock, locks, store, send } = atCharacterSelect();
+      send(...pick);
+      clock.advance(SELECT_COUNTDOWN_MS);
+      expect(controller.phase).toBe('menu');
+      expect(store.getState().session.reason).toBe('select-timeout');
+      expect(locks).toEqual([]);
+    }
+  });
+
+  it('starts every visit unlocked: the state is reused (a rematch)', () => {
+    const state = new CharacterSelectState();
+    const context = new FakeSessionContext();
+    for (const visit of [1, 2]) {
+      state.enter(context);
+      state.handleIntent({ kind: 'select-class', classId: 'magus', specId: 'oracle' }, context);
+      state.handleIntent({ kind: 'confirm-selection' }, context);
+      state.exit();
+      expect(context.calls.lockIn).toHaveLength(visit);
+    }
+  });
+
+  it('keeps one countdown across a pick, Back, a new pick and LOCK IN (TAP-11, DEC-60)', () => {
     const { controller, clock, remaining, send } = atCharacterSelect();
     clock.advance(20_000);
     send({ kind: 'select-class', classId: 'magus' });
     clock.advance(10_000);
     send({ kind: 'clear-class-selection' });
     clock.advance(10_000);
-    send({ kind: 'select-class', classId: 'warrior' });
+    send({ kind: 'select-class', classId: 'warrior' }, { kind: 'confirm-selection' });
 
     expect(remaining.at(-1)).toBe(20_000);
     expect(remaining.every((ms) => ms % 1_000 === 0)).toBe(true);

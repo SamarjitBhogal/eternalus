@@ -6,18 +6,32 @@ import type { LoopTarget } from './GameLoop.types';
 
 const TICK_MS = 1000 / 30;
 
-/** Counts ticks and keeps every render alpha. */
+/** Counts ticks, keeps every render alpha and every crash; `failOn` makes a tick or a render throw. */
 class RecordingTarget implements LoopTarget {
   public ticks = 0;
 
   public readonly alphas: number[] = [];
 
+  public readonly crashes: unknown[] = [];
+
+  /** Throws this from the tick that would be number `tick`, or from every render. */
+  public failOn:
+    { readonly tick: number; readonly error: Error } | { readonly render: Error } | null = null;
+
   public tick(): void {
+    if (this.failOn !== null && 'tick' in this.failOn && this.ticks + 1 === this.failOn.tick) {
+      throw this.failOn.error;
+    }
     this.ticks += 1;
   }
 
   public render(alpha: number): void {
+    if (this.failOn !== null && 'render' in this.failOn) throw this.failOn.render;
     this.alphas.push(alpha);
+  }
+
+  public crashed(error: unknown): void {
+    this.crashes.push(error);
   }
 }
 
@@ -112,6 +126,36 @@ describe('GameLoop', () => {
 
     expect(target.ticks).toBe(0);
     expect(target.alphas.at(-1)).toBe(0);
+  });
+
+  it('stops for good and reports the error once when a tick throws (DEC-106)', () => {
+    const { scheduler, target, loop } = runningLoop();
+    const error = new Error('step failed');
+    target.failOn = { tick: 2, error };
+
+    scheduler.advance(TICK_MS * 3);
+    scheduler.advance(TICK_MS * 3);
+
+    expect(target.crashes).toEqual([error]);
+    expect(target.ticks).toBe(1);
+    expect(target.alphas).toEqual([0]);
+    expect(scheduler.hasPendingFrame).toBe(false);
+    loop.start();
+    expect(loop.isRunning).toBe(false);
+  });
+
+  it('stops for good and reports the error once when a render throws (DEC-106)', () => {
+    const scheduler = new FakeFrameScheduler();
+    const target = new RecordingTarget();
+    const error = new Error('draw failed');
+    target.failOn = { render: error };
+    new GameLoop(scheduler, target, { tickMs: TICK_MS, maxFrameMs: 5 * TICK_MS }).start();
+
+    scheduler.advance(0);
+    scheduler.advance(TICK_MS);
+
+    expect(target.crashes).toEqual([error]);
+    expect(scheduler.hasPendingFrame).toBe(false);
   });
 
   it('refuses a non-positive tick or a clamp shorter than a tick', () => {

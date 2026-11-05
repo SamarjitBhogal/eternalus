@@ -1,5 +1,7 @@
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
+import type { CanvasPointerControlsDeps } from './CanvasPointerControls.types';
 import type { InputDevice } from './engine/input/InputDevice.types';
 import type { InputMapper } from './input/InputMapper';
 import type { Match } from './Match';
@@ -14,19 +16,9 @@ export type HostDocument = EventTarget & { readonly hidden: boolean };
 /** Everything `MatchHost` hosts (built by `createBrowserMatch`, or a test). */
 export type MatchHostDeps = {
   /** The parts of `Match` the host and its pointer controls drive. */
-  readonly match: Pick<
-    Match,
-    | 'start'
-    | 'destroy'
-    | 'resize'
-    | 'setPaused'
-    | 'lookAtMinimapPoint'
-    | 'panBy'
-    | 'zoomBy'
-    | 'enterAt'
-    | 'overview'
-    | 'leaveInterior'
-  >;
+  readonly match: Pick<Match, 'start' | 'destroy' | 'resize' | 'setPaused'> & {
+    readonly controls: CanvasPointerControlsDeps['controls'];
+  };
   /** The canvas, its chrome and the developer flag, as `GameCanvas` attached them. */
   readonly viewport: MatchViewport;
   readonly window: HostWindow;
@@ -39,7 +31,12 @@ export type MatchHostDeps = {
   readonly input: { releaseAll(): void };
   /** The `settings` event's bindings reach the mapper (13 §6.3, A24-1). */
   readonly bus: TypedEventBus<BridgeEventMap>;
-  readonly mapper: Pick<InputMapper, 'setBindings'>;
+  /** Also matches the one-shot actions' chords (DEC-117) against the current bindings. */
+  readonly mapper: Pick<InputMapper, 'setBindings' | 'isActionKey'>;
   /** Adapters destroyed after the match (renderer, camera): the host is their owner. */
   readonly adapters: readonly { destroy(): void }[];
+  /** The match's evidence for an error report (`createBrowserMatch` reads the simulation). */
+  readonly evidence: () => MatchEvidence;
+  /** The simulation's tick, without building the evidence. */
+  readonly currentTick: () => number;
 };

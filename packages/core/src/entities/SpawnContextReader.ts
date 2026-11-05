@@ -1,5 +1,8 @@
+import type { ControllerSpawn } from './EntityFactory.types';
+import { CONTROLLER_IDS } from '../content/ai/controllerIds';
 import type { Vec2 } from '../utils/geometry.types';
 import type { Entity } from './Entity';
+import type { WeaponSource } from './EntityFactory.types';
 import { SPAWNABLE_TEAMS } from './SpawnContextReader.constants';
 import type {
   DefinitionRef,
@@ -56,7 +59,42 @@ export class SpawnContextReader {
       );
     }
 
-    return { ...positioned, team };
+    const controller = this.controllerOf(SpawnContextReader.fields(context).controller);
+    return controller === undefined ? { ...positioned, team } : { ...positioned, team, controller };
+  }
+
+  /**
+   * The context's `Placement.controller`, or `undefined` when it gives none.
+   *
+   * @throws Error when it gives one that is not a known controller with a profile and a memory.
+   */
+  private controllerOf(candidate: unknown): ControllerSpawn | undefined {
+    if (candidate === undefined) {
+      return undefined;
+    }
+    const { controllerId, profileId, memory } = SpawnContextReader.fields(candidate);
+    const id = CONTROLLER_IDS.find((known) => known === controllerId);
+    if (id === undefined || typeof profileId !== 'string' || !SpawnContextReader.isObject(memory)) {
+      throw new Error(
+        `Entity "${this.entity.id}" was given a spawn controller that is not a known controller with a profile and a memory.`,
+      );
+    }
+    // Safe: memory is the plain data the spawner wrote (`Placement.controller` is typed).
+    return { controllerId: id, profileId, memory: memory as ControllerSpawn['memory'] };
+  }
+
+  /** The weapon source the factory put in the context, or `null` when it has none. */
+  public weapons(context: unknown): WeaponSource | null {
+    const { weapons } = SpawnContextReader.fields(context);
+    return SpawnContextReader.isWeaponSource(weapons) ? weapons : null;
+  }
+
+  private static isWeaponSource(value: unknown): value is WeaponSource {
+    return (
+      SpawnContextReader.isObject(value) &&
+      typeof value.has === 'function' &&
+      typeof value.get === 'function'
+    );
   }
 
   private static fields(context: unknown): Readonly<Record<string, unknown>> {

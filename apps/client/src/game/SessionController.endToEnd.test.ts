@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BridgeEventMap } from '../bridge/events';
 import { isSelectableClass } from '../bridge/selectionRules';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { MemoryReportWriter } from '../data/logging/MemoryReportWriter';
 import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { Camera } from './engine/Camera';
@@ -21,17 +22,17 @@ import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { MatchViewport } from './MatchViewport.types';
 import type { MatchFactory } from './SessionController.types';
-import { REVEAL_COUNTDOWN_MS } from './session/sessionTiming.constants';
 import { seatedConfig } from './seatedConfig';
-import { testSession } from './testSessionDeps';
+import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
+import { flushMicrotasks, testReporter, testSession } from './testSessionDeps';
 
 const CONFIG = createDefaultGameConfig();
 
 const viewport = (canvas: FakeViewportCanvas): MatchViewport => ({
   canvas,
   chrome: {
-    onInteriorChanged: () => undefined,
-    setLeaveInterior: () => undefined,
+    onDeveloperRoofsChanged: () => undefined,
+    onExplorerChanged: () => undefined,
     setOverview: () => undefined,
   },
   isExplorerShown: false,
@@ -52,6 +53,7 @@ describe('SessionController with the real match, end to end', () => {
   function realSession() {
     const bus = new TypedEventBus<BridgeEventMap>();
     const builds: Build[] = [];
+    const writer = new MemoryReportWriter();
     const createMatch: MatchFactory = (request, attached) => {
       const window = new FakeBrowserTarget();
       const document = new FakeBrowserTarget();
@@ -86,6 +88,7 @@ describe('SessionController with the real match, end to end', () => {
         input: new DeviceIntentSource([keyboard, mouse], mapper),
         player: request.player,
         logger: new NullLogger(),
+        onCrash: request.onCrash,
         bridge: {
           bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
@@ -103,12 +106,25 @@ describe('SessionController with the real match, end to end', () => {
         bus,
         mapper,
         adapters: [renderer, camera],
+        currentTick: () => simulation.tick,
+        // What `createBrowserMatch` reads (`readEvidence`), without its log ring.
+        evidence: () => ({
+          match: {
+            seed: request.setup.seed,
+            tick: simulation.tick,
+            ...simulation.recentContext(),
+            replay: simulation.exportReplay(),
+          },
+          logTail: [],
+        }),
       });
       host.start();
       builds.push({ match, scheduler, window, document, unsubscribed });
       return host;
     };
-    const session = testSession({ bus, createMatch });
+    // `session` is read only when a crash is reported, long after it was built.
+    const reporter = testReporter(writer, () => session.controller.matchEvidence());
+    const session = testSession({ bus, createMatch, reporter });
     /** Boot, character select (the magus class, its first Legend), the reveal and the match load. */
     const toMatch = async (): Promise<void> => {
       session.controller.start();
@@ -121,6 +137,8 @@ describe('SessionController with the real match, end to end', () => {
         specId: firstAvailableSpecId('magus'),
       });
       session.intent({ kind: 'confirm-selection' });
+      // DEC-60: LOCK IN holds the full select countdown; the reveal follows it.
+      session.clock.advance(SELECT_COUNTDOWN_MS);
       session.clock.advance(REVEAL_COUNTDOWN_MS);
       await session.resolveLoads();
     };
@@ -129,7 +147,7 @@ describe('SessionController with the real match, end to end', () => {
       (build?.window.listenerCount() ?? -1) +
       (build?.document.listenerCount() ?? -1) +
       canvas.listenerCount();
-    return { ...session, builds, listeners, toMatch };
+    return { ...session, builds, listeners, toMatch, writer };
   }
 
   it('runs nothing before the match, plays it, then leaves 0 frames and 0 listeners', async () => {
@@ -156,6 +174,60 @@ describe('SessionController with the real match, end to end', () => {
     expect(build?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(build, canvas)).toBe(0);
     expect(session.bus.listenerCount()).toBe(busBefore);
+  });
+
+  it('ends a match whose tick throws: the menu with match-crashed, 0 frames, 0 listeners (DEC-106)', async () => {
+    const session = realSession();
+    await session.toMatch();
+    const busBefore = session.bus.listenerCount();
+    const canvas = new FakeViewportCanvas();
+    session.controller.attachViewport(viewport(canvas));
+    const [build] = session.builds;
+    build?.scheduler.runFrames(2, MS_PER_SECOND / CONFIG.tickRate);
+    vi.spyOn(Simulation.prototype, 'step').mockImplementation(() => {
+      throw new Error('step failed');
+    });
+
+    build?.scheduler.advance(MS_PER_SECOND / CONFIG.tickRate);
+
+    expect(session.controller.phase).toBe('menu');
+    expect(session.store.getState().session.reason).toBe('match-crashed');
+    expect(build?.scheduler.hasPendingFrame).toBe(false);
+    expect(session.listeners(build, canvas)).toBe(0);
+    expect(session.bus.listenerCount()).toBe(busBefore);
+  });
+
+  it('ends a match whose screen crashed: 0 frames, 0 listeners, and the report holds the replay', async () => {
+    const session = realSession();
+    await session.toMatch();
+    const busBefore = session.bus.listenerCount();
+    const canvas = new FakeViewportCanvas();
+    session.controller.attachViewport(viewport(canvas));
+    const [build] = session.builds;
+    build?.scheduler.runFrames(3, MS_PER_SECOND / CONFIG.tickRate);
+    const { seed } = session.store.getState().matchSetup;
+
+    session.intent({
+      kind: 'report-screen-crash',
+      screen: 'match',
+      message: 'render failed',
+      stack: '',
+      componentStack: '',
+    });
+    await flushMicrotasks();
+
+    expect(session.controller.phase).toBe('menu');
+    expect(session.store.getState().session.reason).toBe('match-crashed');
+    expect(build?.scheduler.hasPendingFrame).toBe(false);
+    expect(session.listeners(build, canvas)).toBe(0);
+    expect(session.bus.listenerCount()).toBe(busBefore);
+    const [report] = session.writer.saved;
+    expect(session.writer.saved).toHaveLength(1);
+    expect(report?.error.source).toBe('screen:match');
+    expect(report?.match?.seed).toBe(seed);
+    expect(report?.match?.tick).toBeGreaterThan(0);
+    expect(report?.match?.replay.seed).toBe(report?.match?.seed);
+    expect(report?.match?.replay.checkpoints.length).toBeGreaterThan(0);
   });
 
   it('tears the first StrictMode match down completely before the second runs', async () => {

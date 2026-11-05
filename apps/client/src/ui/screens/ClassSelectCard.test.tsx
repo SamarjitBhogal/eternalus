@@ -5,7 +5,10 @@ import type { LegendClassCard } from '../../bridge/catalogue.types';
 import type { RootState } from '../../bridge/store';
 import { accessibleNames, assetsWithBoxes, renderWithStore, TEST_CONTENT } from '../testStore';
 import { ClassSelectCard } from './ClassSelectCard';
+import globalCss from '../../styles/global.css?raw';
+import lockStyles from '../components/LockGlyph.module.css';
 import cardCss from './ClassSelectCard.module.css?raw';
+import cardStyles from './ClassSelectCard.module.css';
 import { classSlot } from './classSelectLayout';
 
 const cardOf = (classId: string): LegendClassCard => {
@@ -14,7 +17,7 @@ const cardOf = (classId: string): LegendClassCard => {
   return card;
 };
 
-const INDEX: Readonly<Record<string, number>> = { warrior: 0, sentinel: 1, magus: 2, flying: 3 };
+const INDEX: Readonly<Record<string, number>> = { warrior: 0, sentinel: 1, magus: 2, harbinger: 3 };
 
 function render(
   classId: string,
@@ -64,7 +67,7 @@ describe('ClassSelectCard', () => {
   it('is a radio named by its class, role and ally count, described by the panel', () => {
     const html = render('warrior', { isTabbable: true });
 
-    expect(accessibleNames(html, '[role=radio]')).toEqual(['Legionnaire Assault 2 Allies']);
+    expect(accessibleNames(html, '[role=radio]')).toEqual(['Vanguard Assault 2 Allies']);
     expect(rootTag(html)).toContain('type="button"');
     expect(rootTag(html)).toContain('aria-checked="false"');
     expect(rootTag(html)).toContain('aria-describedby="panel"');
@@ -103,7 +106,7 @@ describe('ClassSelectCard', () => {
     expect(html).not.toContain('magus-card-art');
   });
 
-  it('draws the live art where the look has no plate (Magus idle, Legionnaire picked)', () => {
+  it('draws the live art where the look has no plate (Magus idle, Vanguard picked)', () => {
     for (const html of [render('magus'), render('warrior', { isPicked: true })]) {
       expect(rootTag(html)).toContain('data-art-mode="cover"');
       expect(rootTag(html)).not.toContain('--art-left');
@@ -120,7 +123,7 @@ describe('ClassSelectCard', () => {
         `\\.card\\[data-look='${look}'\\]\\[data-art-mode='cover'\\] \\[data-arch-layer='inner-outline'\\] \\{([^}]*)\\}`,
       ).exec(cardCss)?.[1] ?? 'missing';
 
-    expect(rootTag(render('flying', { isLoaded: false }))).toContain(
+    expect(rootTag(render('harbinger', { isLoaded: false }))).toContain(
       '--overlay-dx:1.077px;--overlay-dy:0.047px',
     );
     expect(rootTag(render('warrior', { isLoaded: false }))).toContain(
@@ -170,14 +173,41 @@ describe('ClassSelectCard', () => {
     expect(rootTag(render('sentinel'))).not.toContain('data-previewed');
   });
 
-  it('shows a locked class with a lock and "Locked" instead of its ally count (CD-05)', () => {
-    const html = render('flying');
+  it('shows a locked class as "Coming Soon..." over a void with a lock, never its art (DEC-104)', () => {
+    const html = render('harbinger');
 
     expect(rootTag(html)).toContain('aria-disabled="true"');
     expect(rootTag(html)).toContain('tabindex="-1"');
-    expect(accessibleNames(html, '[role=radio]')).toEqual(['Harbinger aerial Locked']);
-    expect(html).toContain('<svg');
-    expect(html).not.toContain('Allies');
+    expect(rootTag(html)).toContain('data-art-mode="cover"');
+    expect(accessibleNames(html, '[role=radio]')).toEqual(['Coming Soon...']);
+    expect(html).toContain(`class="${String(cardStyles.name)} ${String(cardStyles.comingSoon)}"`);
+    expect(html).toContain(`class="${String(lockStyles.glyph)} ${String(cardStyles.voidLock)}"`);
+    expect(html).toContain('data-arch-art="missing"');
+    expect(html).not.toContain('harbinger-card');
+    for (const text of ['Harbinger', 'aerial', 'Locked', 'Allies']) {
+      expect(html).not.toContain(text);
+    }
+  });
+
+  it('draws the void purple at the frame and black inside, the text in the countdown red, a lock cursor (DEC-59, DEC-104)', () => {
+    const rule = (selector: string): string =>
+      new RegExp(`${selector.replace(/[.[\]()*+?^$|]/g, '\\$&')} \\{([^}]*)\\}`).exec(
+        cardCss,
+      )?.[1] ?? 'missing';
+    const voidFill = rule(".card[aria-disabled='true'] [data-arch-layer='art']::before");
+
+    expect(voidFill).toContain('clip-path: url(#sel-arch-clip)');
+    expect(voidFill).toMatch(
+      /var\(--selection-ink\) 55%,\s*var\(--team-dark-accent\) 90%,\s*var\(--class-harbinger-accent\) 100%/,
+    );
+    expect(voidFill).toContain('repeating-conic-gradient(');
+    expect(rule(".card[aria-disabled='true'] [data-arch-part='under']")).toContain('fill: none');
+    expect(rule('.comingSoon')).toContain('color: var(--selection-countdown)');
+    expect(rule(".card[aria-disabled='true']")).toContain('cursor: var(--selection-cursor-locked)');
+    expect(rule('.card .voidLock')).toContain('mask-composite: intersect');
+    expect(globalCss).toMatch(
+      /--selection-cursor-locked:\s*url\("data:image\/svg\+xml,[^"]+"\)\s+12 15,\s+not-allowed;/,
+    );
   });
 
   it('carries no colour literal in its markup', () => {

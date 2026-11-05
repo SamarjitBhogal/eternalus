@@ -7,7 +7,7 @@ import type {
   LockedClassPresentation,
   SpecPresentation,
 } from './CataloguePresentation.types';
-import { MAGUS_HUD, SENTINEL_HUD, WARRIOR_HUD } from './hudPresentation';
+import { EMPTY_HUD, MAGUS_HUD, WARRIOR_HUD, WUUTHRAD_HUD_WEAPON } from './hudPresentation';
 
 /** Keyed by core class id. Plates are present on both renderers; `'css'` empties them (DEC-54). */
 export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
@@ -34,7 +34,7 @@ export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
       rowPlate: null,
     },
     detailIcons: {},
-    hud: SENTINEL_HUD,
+    hud: EMPTY_HUD,
     layoutOverrides: {},
   },
   magus: {
@@ -63,13 +63,13 @@ export const CLASS_PRESENTATION: Readonly<Record<string, ClassPresentation>> = {
  * and role label are core content.
  */
 export const LOCKED_CLASS_PRESENTATION: Readonly<Record<string, LockedClassPresentation>> = {
-  flying: {
-    accentToken: '--class-flying-accent',
+  harbinger: {
+    accentToken: '--class-harbinger-accent',
     art: {
-      card: 'flying-card-art',
-      sigil: 'flying-sigil',
+      card: 'harbinger-card-art',
+      sigil: 'harbinger-sigil',
       model: null,
-      cardPlates: { idle: 'flying-card-plate-idle' },
+      cardPlates: { idle: 'harbinger-card-plate-idle' },
       rowPlate: null,
     },
   },
@@ -104,7 +104,7 @@ export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
   knight: WARRIOR_LEGEND,
   paladin: WARRIOR_LEGEND,
   colossus: SENTINEL_LEGEND,
-  juggernaut: SENTINEL_LEGEND,
+  juggernaut: { ...SENTINEL_LEGEND, hudWeapon: WUUTHRAD_HUD_WEAPON },
   catalyst: {
     accentToken: '--legend-catalyst-accent',
     art: {
@@ -124,10 +124,10 @@ export const SPEC_PRESENTATION: Readonly<Record<string, SpecPresentation>> = {
       mini: 'oracle-mini',
       rowPlate: 'oracle-row-plate',
     },
+    // DEC-65: no Aetheric Recall row on a Legend; DEC-103: Unison Ward is ability 1 (a preview).
     detailIcons: {
-      signature: 'magus-detail-aetheric-recall',
-      specialty: 'oracle-detail-unison-ward',
       ultimate: 'oracle-detail-severed-accord',
+      'ability-1': 'oracle-detail-unison-ward',
     },
   },
   necromancer: {

@@ -1,4 +1,5 @@
-import type { Replay } from '../Replay.types';
+import type { GameConfig } from '../../config/GameConfig.types';
+import type { ReplayOf } from '../Replay.types';
 
 /**
  * Golden replay: seed 7, the default config of 2026-10-06, `WanderSystem` (see `replay.test.ts`)
@@ -9,7 +10,7 @@ import type { Replay } from '../Replay.types';
  * `config.match.playerTeam` was added on 2026-10-30 with its default, `light`; it is not hashed.
  * `config.match.seat` was added on 2026-10-30 with its default, `null` (sim mode).
  */
-export const WANDER_SEED_7: Replay = {
+export const WANDER_SEED_7: ReplayOf<{ readonly seed: number; readonly config: GameConfig }> = {
   seed: 7,
   config: {
     tickRate: 30,
@@ -22,6 +23,10 @@ export const WANDER_SEED_7: Replay = {
       worldWidth: 1600,
       worldHeight: 900,
       navCellSize: 5,
+      flowFieldCorridorHalfWidth: 25,
+      flowFieldCellBudget: 2000,
+      pathMaxExpansions: 6000,
+      pathSnapCells: 12,
       presetId: 'map-1',
     },
     match: {
@@ -33,7 +38,6 @@ export const WANDER_SEED_7: Replay = {
         medium: 8,
         heavy: 4,
       },
-      initialHordesPerTeam: 3,
       plannedMatchSeconds: 1200,
       timeline: [
         {

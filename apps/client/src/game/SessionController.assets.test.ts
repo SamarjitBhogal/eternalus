@@ -9,7 +9,7 @@ import type {
   SessionState,
 } from './SessionController.types';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
-import { REVEAL_COUNTDOWN_MS } from './session/sessionTiming.constants';
+import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
 import { flushMicrotasks, TEST_SELECTION_BOX, testSession } from './testSessionDeps';
 
 const SELECTION_GROUPS: readonly AssetGroup[] = [
@@ -50,6 +50,8 @@ function sessionWithResults(overrides: Partial<SessionControllerDeps> = {}) {
       specId: firstAvailableSpecId('magus'),
     });
     session.intent({ kind: 'confirm-selection' });
+    // DEC-60: LOCK IN holds the full select countdown; the reveal follows it.
+    session.clock.advance(SELECT_COUNTDOWN_MS);
     session.clock.advance(REVEAL_COUNTDOWN_MS);
     await session.resolveLoads();
   };

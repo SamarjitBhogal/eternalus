@@ -4,6 +4,9 @@ import { connectBusToStore } from '../bridge/connectBusToStore';
 import type { AssetGroup, BridgeEventMap, SessionPhase, UiIntent } from '../bridge/events';
 import { createAppStore } from '../bridge/store';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { ErrorReporter } from '../data/logging/ErrorReporter';
+import type { ErrorReporterDeps } from '../data/logging/ErrorReporter.types';
+import { MemoryReportWriter } from '../data/logging/MemoryReportWriter';
 import { ASSET_LICENCES } from '../data/resources/assetLicences';
 import { ASSET_MANIFEST } from '../data/resources/AssetManifest';
 import type { AssetManifest } from '../data/resources/AssetManifest.types';
@@ -12,9 +15,11 @@ import { FakeAssetLoader } from '../data/resources/loaders/FakeAssetLoader';
 import { ResourceController } from '../data/resources/ResourceController';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
+import { FakeRunningMatch } from './FakeRunningMatch';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import { SessionController } from './SessionController';
 import type { SessionControllerDeps } from './SessionController.types';
+import { createRosterRng } from './session/createRosterRng';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { LcgRng } from './session/LcgRng';
 import { SELECTION_ASSET_GROUPS } from './session/selectionAssetGroups';
@@ -58,11 +63,30 @@ export function testResources(): {
 }
 
 /**
+ * An `ErrorReporter` over `writer` for tests: a fixed clock and environment, no page log, the
+ * evidence from `matchEvidence` (none by default) and a silent fallback.
+ */
+export function testReporter(
+  writer: MemoryReportWriter,
+  matchEvidence: ErrorReporterDeps['matchEvidence'] = () => null,
+): ErrorReporter {
+  return new ErrorReporter({
+    writer,
+    now: () => 1_000,
+    environment: { gameVersion: '0.0.0', commit: 'test', contentVersion: null, userAgent: 'test' },
+    pageLogTail: () => [],
+    matchEvidence,
+    fallback: { write: () => undefined },
+  });
+}
+
+/**
  * A full `SessionControllerDeps` for tests (02 §8: real classes, fakes at the ports): a real
  * bus, a `FakeSessionClock`, the default states, `shippedCatalogue()`, core's match config, seeds
- * counting from 42, `LcgRng`, a bare theme root, worlds from `prepareMatchWorld`, a match factory
- * returning an inert handle, a `MemoryLogger`, resources over an empty manifest (every load is
- * synchronous; pass `testResources()` for pending loads) and the shipped credits.
+ * counting from 42, `LcgRng`, the real roster stream, a bare theme root, worlds from
+ * `prepareMatchWorld`, a match factory returning an inert handle, a `MemoryLogger`, resources over
+ * an empty manifest (every load is synchronous; pass `testResources()` for pending loads) and the
+ * shipped credits.
  */
 export function testSessionDeps(
   overrides: Partial<SessionControllerDeps> = {},
@@ -78,9 +102,10 @@ export function testSessionDeps(
     playerName: 'Tester',
     seedSource: () => ++seed,
     createRng: (value) => new LcgRng(value),
+    createRosterRng,
     themeRoot: { dataset: {} },
     prepareWorld: (value) => prepareMatchWorld(config, value),
-    createMatch: () => ({ destroy: () => undefined, setPaused: () => undefined }),
+    createMatch: () => new FakeRunningMatch(),
     logger: new MemoryLogger(),
     resources: new ResourceController({
       manifest: { version: 'test', assets: [] },
@@ -89,6 +114,7 @@ export function testSessionDeps(
       warn: () => undefined,
     }),
     credits: describeCredits(ASSET_MANIFEST.assets, ASSET_LICENCES),
+    reporter: testReporter(new MemoryReportWriter()),
     ...overrides,
   };
 }

@@ -12,7 +12,7 @@ const magus = classCardFixture({
     specCardFixture({ specId: 'lost', status: 'locked' }),
   ],
 });
-const flying = classCardFixture({ classId: 'flying', status: 'locked' });
+const harbinger = classCardFixture({ classId: 'harbinger', status: 'locked' });
 
 describe('selectionRules', () => {
   it('confirms an available class without Legends once it is the selection', () => {
@@ -27,12 +27,12 @@ describe('selectionRules', () => {
   });
 
   it('never confirms a locked class or a selection for another class', () => {
-    expect(canConfirmSelection(flying, { classId: 'flying', specId: null })).toBe(false);
+    expect(canConfirmSelection(harbinger, { classId: 'harbinger', specId: null })).toBe(false);
     expect(canConfirmSelection(warrior, { classId: 'magus', specId: null })).toBe(false);
   });
 
   it('treats only available classes and Legends as selectable', () => {
-    expect([isSelectableClass(warrior), isSelectableClass(flying)]).toEqual([true, false]);
+    expect([isSelectableClass(warrior), isSelectableClass(harbinger)]).toEqual([true, false]);
     expect(isSelectableSpec(specCardFixture({ specId: 'lost', status: 'locked' }))).toBe(false);
     expect(isSelectableSpec(specCardFixture({ specId: 'oracle' }))).toBe(true);
   });

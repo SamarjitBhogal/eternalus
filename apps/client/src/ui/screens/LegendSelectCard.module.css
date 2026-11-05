@@ -228,15 +228,16 @@
   color: var(--selection-parchment);
 }
 
-/* 55:257 title 40, box (90.6, 538.4) 155 × 54 of the card: centre x 168.1 (the live Figma, after
-   the owner renamed it "Oracle"; the "Cantor" box was centred at 167.6). */
+/* 55:257 title 32, box (105.6, 544.4) 124 × 43 of the card: centre x 167.6. The owner set all
+   three card titles to Cinzel 32 in 58:271 after the 2026-10-24 refresh (was 40 here and 36 on the
+   idle cards; build plan step 8). No DEC or INBOX item records it; the frame is the source. */
 .card[data-look='picked'] .title {
-  left: calc(0.1px + var(--card-fx) + var(--title-dx));
-  top: calc(538.4px + var(--card-fy));
+  left: calc(-0.4px + var(--card-fx) + var(--title-dx));
+  top: calc(544.4px + var(--card-fy));
   width: 336px;
   font-family: var(--font-game);
-  font-size: max(40px, calc(var(--text-min) / var(--stage-scale)));
-  line-height: calc(var(--leading-game-40) * 1px);
+  font-size: max(32px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-32) * 1px);
 }
 
 /* 55:258 Legend name 24, box (116.56, 588.15) 103 × 32: centre x 168.06. */
@@ -249,14 +250,15 @@
   line-height: calc(var(--leading-game-24) * 1px);
 }
 
-/* 55:259 title 36, box (53.29, 438.54) 168 × 49 of the card: centre x 137.29. */
+/* 55:259 title 32 (the owner's 58:271 edit, above), box (63.29, 441.54) 149 × 43 of the card:
+   centre x 137.79. */
 .card[data-look='idle'] .title {
-  left: calc(-0.38px + var(--card-fx) + var(--title-dx));
-  top: calc(438.54px + var(--card-fy));
+  left: calc(0.12px + var(--card-fx) + var(--title-dx));
+  top: calc(441.54px + var(--card-fy));
   width: 275.34px;
   font-family: var(--font-game);
-  font-size: max(36px, calc(var(--text-min) / var(--stage-scale)));
-  line-height: calc(var(--leading-game-36) * 1px);
+  font-size: max(32px, calc(var(--text-min) / var(--stage-scale)));
+  line-height: calc(var(--leading-game-32) * 1px);
 }
 
 /* 55:260 Legend name 20, box (93.4, 481.07) 88 × 27: centre x 137.4. */

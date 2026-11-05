@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-29
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:
@@ -29,8 +29,14 @@ performance budget is proved. The word is **horde**, not "hoard".
 **Minion work moved.** The [minion system plan](minion-system-plan.md) (design:
 [18-minion-system](../architecture/18-minion-system.md)) supersedes the minion items of sprints
 3.1–3.4 and 3.7; its §"Relation to Phase 3" lists exactly which. Read it before any sprint 3.1,
-3.2, 3.3, 3.4 or 3.7 task. A\* for Legends, forest camps, checkpoint assist spawns and the Rover
-stay here (DEC-47).
+3.2, 3.3, 3.4 or 3.7 task. DEC-47 kept A\* for Legends, forest camps, checkpoint assist spawns
+and the Rover here; MS-28 (below) moves them.
+
+**Amended by doc 18 MS-28 (owner, 2026-10-27).** The minion plan also takes over the breakdown of
+A\* for Legends (3.2), forest camps and checkpoint assist spawns (3.4), and the Rover and bot
+ability use (3.7), as its phases M6 and M8 (its §1.1 lists every AI-driven entity). Nothing is
+dropped and the work still ships in these weeks. Sprints 3.5, 3.6 (bosses: the minion system does
+not control them) and 3.8 stay here.
 
 - **Branch:** `phase/3-minions-hordes-and-ai` (stacked on `phase/2-…` until it merges).
 - **Weeks:** 6–7 (2026-11-09 → 2026-11-20). Week 6: sprints 3.1, 3.2, 3.3, 3.5; week 7:
@@ -90,9 +96,10 @@ Owner: _ (map owner). Weeks 5–6. Follows
       no angles). Owner: _. Test: 48 mobs in a corridor never overlap by more than a tolerance
       after 300 ticks; ID-ordered neighbour lists keep the replay hash stable. Done when: the
       steering loop allocates nothing per unit.
-- [ ] **A\* for Legends and camp chases** (octile heuristic, string-pulling; used by bots only
+- [ ] **A\* for Legends** (octile heuristic, string-pulling; used by bots only
       — the human moves with WASD). Owner: _. Test: shortest path around a stamped footprint.
-      Done when: A\* is a second `MovementStrategy`, selected by definition.
+      Done when: A\* is a `PathQuery` (`state.paths`) the bot leaves call when the straight line
+      is blocked (doc 11 §6; owner, 2026-10-27), since bots steer by `move` commands.
 
 **Success metric:** pathing plus steering for 288 mobs costs ≤ 2.5 ms per tick p95 in
 `npm run bench` (`Recommendation:` budget split from the 8 ms tick), and a terrain change is
@@ -188,7 +195,7 @@ Owner: _ (AI owner). Week 7. Depends on 3.3.
       later, ability choice; ticked at 5 Hz with `entityId % 6` stagger, per
       [research §7](../research/game-architecture-and-performance-research.md#7-game-ai-for-bots)).
       Owner: _. Test: a laner pushes its lane, retreats below a health threshold and returns to
-      base to heal; 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
+      base (healing there is outside the minion system for now; owner, 2026-10-27); 20 bots cost ≤ 1 ms per tick p95. Done when: leaves read snapshots and emit
       `Command`s only.
 - [ ] **`RoverController`** (the "hard bot": reacts to structure health across lanes, mirrors
       or targets the human player). Owner: _. Test: the Rover moves to the lane with the lowest
@@ -238,7 +245,7 @@ invariant violations; identical hashes on replay.
    spawns at 60 s, a camp activating, the quarter-mark mini-boss, and the match ending when a
    Stronghold falls; then switch to sim mode and let bots finish a match.
 3. Architecture docs 11 and 12 match the code, or an ADR records the deviation.
-4. Phase PR approved (sholtzman + map owner), CI green on three OSes, merged by SamarjitBhogal.
+4. Phase PR approved (sholtzman + map owner), CI green on Linux and Windows, merged by SamarjitBhogal.
 5. The MVP-core line of the roadmap is now demoable end to end.
 
 ## Risks

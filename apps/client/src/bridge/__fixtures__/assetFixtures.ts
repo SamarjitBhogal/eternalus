@@ -99,7 +99,7 @@ export const TEST_ASSET_BOXES: Readonly<Record<string, RasterBox>> = {
   'warrior-card-plate-idle': { left: 524, top: 277, width: 246, height: 525 },
   'sentinel-card-plate-idle': { left: 825, top: 277, width: 246, height: 525 },
   'magus-card-plate-picked': { left: 1111, top: 243, width: 277, height: 592 },
-  'flying-card-plate-idle': { left: 1427, top: 277, width: 246, height: 525 },
+  'harbinger-card-plate-idle': { left: 1427, top: 277, width: 246, height: 525 },
   'class-row-plate-magus': { left: 491, top: 198, width: 1216, height: 683 },
   'oracle-row-plate': { left: 459, top: 65, width: 1002, height: 936 },
   'select-class-chrome': { left: 740, top: 858, width: 439, height: 163 },

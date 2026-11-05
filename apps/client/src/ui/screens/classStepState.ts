@@ -1,7 +1,7 @@
 /**
  * The class step's local state, pure (precedent `bindingCapture.ts`): which class is picked on
  * screen and which one a hover or focus previews. Nothing here is game data and nothing is
- * emitted until Select Class (primary) or View Details (alternate) asks for an intent.
+ * emitted until Select Class asks for an intent.
  */
 import type { LegendClassId } from '../../bridge/domain.types';
 import type { UiIntent } from '../../bridge/events';
@@ -79,7 +79,7 @@ export function selectPickedIntent(state: ClassStepLocal): UiIntent | null {
     : { kind: 'select-class', classId: state.pickedClassId };
 }
 
-/** `select-class` for the shown class (alternate: View Details), or `null` when it is not available. */
+/** `select-class` for the shown class (alternate: Select Class), or `null` when it is not available. */
 export function selectShownIntent(
   state: ClassStepLocal,
   cards: readonly ClassStepCard[],

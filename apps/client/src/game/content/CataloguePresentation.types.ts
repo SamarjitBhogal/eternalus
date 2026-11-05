@@ -45,6 +45,8 @@ export type SpecPresentation = {
   readonly accentToken: ColourToken;
   readonly art: LegendSpecArt;
   readonly detailIcons: DetailIcons;
+  /** The Legend's own start-weapon art on the HUD, over its class kit's (DEC-114). */
+  readonly hudWeapon?: ClassHudDisplay['weapon'];
 };
 
 /**

@@ -1,18 +1,22 @@
 import type { InputAction } from '../bridge/Binding.types';
-import type { RoleRatingAxis } from '../bridge/catalogue.types';
+import type { DetailSlot, RoleRatingAxis } from '../bridge/catalogue.types';
 import type { MenuRoute, SessionPhase, SessionReason } from '../bridge/events';
 import type { HudAllegiance, HudBlockReason } from '../bridge/hud.types';
 
 /**
- * Banner text per `session.reason`: every `SessionReason` has one (a missing reason is a compile
- * error); the store holds the reason as a string, so an unknown one shows no banner.
+ * Banner text per `session.reason`: every `SessionReason` but the popup ones has one (a missing
+ * reason is a compile error); `select-timeout` shows `selectTimeoutPopup` instead (DEC-102), and
+ * `match-crashed` and `screen-crashed` show `crashReportPopup` (DEC-106, DEC-124). The store holds
+ * the reason as a string, so an unknown one shows no banner.
  */
 const REASON_BANNERS: Readonly<Record<string, string>> = {
-  'select-timeout': 'Match cancelled: no character selected.',
   cancelled: 'Match cancelled.',
   'match-failed': 'Match could not start.',
   'load-failed': 'Loading failed.',
-} satisfies Record<SessionReason, string>;
+} satisfies Record<
+  Exclude<SessionReason, 'select-timeout' | 'match-crashed' | 'screen-crashed'>,
+  string
+>;
 
 /** A value not known yet, e.g. before the first publish (CD-13, DEC-17). */
 const NO_DATA_YET = 'No data yet';
@@ -32,6 +36,41 @@ export const STRINGS = {
     about: 'About / credits',
   },
   reasonBanners: REASON_BANNERS,
+  /** The popup over the home screen when the select countdown ended before LOCK IN (DEC-102). */
+  selectTimeoutPopup: {
+    // DEC-102: the owner's title and text, word for word.
+    title: 'Failed to Choose Legend',
+    text: 'The countdown ended before you locked in a Legend. You have been returned to the lobby.',
+    // Recommendation: the review page's preview of the one close control, not the owner's words
+    // (DEC-102).
+    close: 'Continue',
+  },
+  /**
+   * The crash popup over the menu after a crash (DEC-106, ADR 0025 §5): it replaces the old
+   * `match-crashed` banner and opens for `match-crashed` and `screen-crashed`.
+   */
+  crashReportPopup: {
+    // DEC-106: the build plan's message, kept by the owner.
+    matchMessage: 'The match stopped because of an error.',
+    // DEC-124 (b): the owner's text for a screen crash outside a match.
+    screenMessage: 'The screen stopped because of an error.',
+    // DEC-106: the review page's note prompt and buttons, unchanged by the owner.
+    notePrompt: 'What were you doing when it happened? (optional)',
+    saveNote: 'Save note and return to menu',
+    returnToMenu: 'Return to menu',
+    // DEC-124 (c): the owner's text and the button for a report that could not be saved.
+    copyMessage: 'The report could not be saved. Copy it and send it to the team.',
+    copyReport: 'Copy report',
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 3): the owner's text for a saved report whose
+    // note write failed.
+    noteNotSavedMessage:
+      'The report was saved, but the note was not. Copy the note and send it to the team via the shared Discord channel.',
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 1): the owner's text while the note is written.
+    saving: 'Saving the note and report...',
+    // DEC-140 (owner, 2026-11-02; INBOX HC-Q30 item 2): approved as built.
+    saved: (file: string): string => `The report was saved as ${file}.`,
+    reportLabel: 'Report text',
+  },
   comingSoon: 'Coming in sprint 2.',
   about: {
     title: 'About / credits',
@@ -105,12 +144,11 @@ export const STRINGS = {
   /** The match viewport; the explorer labels show only with the developer flag (13 §4, DEC-32). */
   viewport: {
     canvas: 'Battlefield',
-    leaveCathedral: 'Leave cathedral',
     explorer: {
-      canvas: 'Drag to explore, scroll to zoom, click the cathedral to enter',
-      worldHint: 'Drag to explore · Scroll to zoom · Click cathedral to enter',
-      interiorHint: 'Drag to explore · Scroll to zoom · Explore the sanctuary',
+      canvas: 'Drag to explore, scroll to zoom, click a building to toggle its roof',
+      hint: 'Drag to explore · Scroll to zoom · Click a building to toggle its roof',
       overview: 'World overview',
+      restoreRoofs: 'Restore roofs & overview',
       /** Team names are content (`DisplayCatalogue.teamNames`, passed by `main.tsx`). */
       legend: {
         stronghold: (teamName: string): string => `${teamName} stronghold`,
@@ -126,12 +164,28 @@ export const STRINGS = {
     selectClassHint: 'Choose a class first.',
     classDetailsHeader: 'Default ability / Weapon Proficiency / Specialty',
     classAlternateDetailsHeader: 'Signature / Proficiency / Specialty',
-    legendDetailsHeader: 'Signature / Specialty / Ultimate',
+    /** DEC-65: the Ultimate on top, then abilities 1 to 3. */
+    legendDetailsHeader: 'Ultimate / Abilities',
     legendsHeader: 'Legends',
     legendsPending: 'Legends to come',
     legendBreadcrumb: (classDisplayName: string): string =>
       `${classDisplayName} > Choose Your Legend`,
     viewDetails: 'View Details',
+    /**
+     * View Details' row labels (DEC-65, DEC-103): the class rows as the Figma's View Details
+     * Example draws them (145:2: 148:179 …), the Legend's Ultimate as the owner names it (DEC-65).
+     */
+    detailLabels: {
+      signature: 'Default ability',
+      proficiency: 'Weapon Proficiency',
+      specialty: 'Specialty',
+      ultimate: 'Ultimate',
+      // Recommendation: "Ability n". The owner names the rows "abilities 1, 2, and 3" (DEC-65) but
+      // gives them no labels.
+      'ability-1': 'Ability 1',
+      'ability-2': 'Ability 2',
+      'ability-3': 'Ability 3',
+    } satisfies Record<DetailSlot, string>,
     previousClass: 'Previous class',
     nextClass: 'Next class',
     // Cinzel draws lower case as small capitals (58:276, 58:326).
@@ -140,6 +194,8 @@ export const STRINGS = {
     back: 'back',
     allyCount: (count: number): string => (count === 1 ? '1 Ally' : `${String(count)} Allies`),
     locked: 'Locked',
+    /** A locked class card's only text, in place of its name (DEC-59, DEC-104). */
+    comingSoon: 'Coming Soon...',
     missingName: '—',
     ratingAxes: {
       damage: 'Damage',
@@ -172,6 +228,8 @@ export const STRINGS = {
     captureProgress: 'Capture progress',
     noData: '—',
     emptySlot: 'empty',
+    /** A structure tile's state once its structure is destroyed (DEC-69). */
+    destroyed: 'destroyed',
     ready: 'ready',
     notReady: 'not ready',
     /** Objective shield letters in lane order (65:620, 65:613, 65:617); past the end, `index + 1`. */
@@ -224,8 +282,10 @@ export const ACTION_LABELS: Readonly<Record<InputAction, string>> = {
   'camera-zoom-out': 'Zoom out',
   'toggle-minimap': 'Toggle minimap',
   'pause-menu': 'Pause menu',
+  'view-details': 'View Details',
   'toggle-developer-menu': 'Developer menu',
   'toggle-perf-overlay': 'Performance overlay',
+  'toggle-developer-camera': 'Developer camera tools',
 };
 
 /** Names of `MouseEvent.button` 0–4 as a captured chord shows them. */

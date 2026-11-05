@@ -16,7 +16,7 @@ const selectEmblem = (state: RootState) => selectHudKit(state)?.emblemAssetId ??
 
 /**
  * The level badge (Figma 65:655, OD-9): the XP ring shows the progress through the current level
- * (`xp / xpToNext`), the medallion is the class emblem from content (the Legionnaire helmet in
+ * (`xp / xpToNext`), the medallion is the class emblem from content (the warrior helmet in
  * the Figma), the number is the total level. Without an XP value the ring stays dark and the
  * badge is an image "No data yet"; without a level the number is "—" (CD-13).
  */

@@ -4,7 +4,7 @@ description: Themed name proposals for every placeholder in the game doc and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-29
 tags: [reference, suggestions, naming, content]
 paths: ['packages/core/src/content/**']
 related:
@@ -38,7 +38,7 @@ The class is lighter, lower health, faster, with light weapons and damage split 
 
 ### Flying — post-MVP
 
-**Decided (DEC-48).** The display name is content: `displayName` in `packages/core/src/content/legends/locked/flying.ts`. The class stays post-MVP. The options below are kept as the record of the proposal.
+**Decided (DEC-48).** The display name is content: `displayName` in `packages/core/src/content/legends/locked/harbinger.ts`. The class stays post-MVP. The options below are kept as the record of the proposal.
 
 Air-based, moves like a jet or helicopter, ability damage and range, can melee at a risk. Sub-classes Hover and Strafe.
 
