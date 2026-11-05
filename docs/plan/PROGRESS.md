@@ -5002,3 +5002,41 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
   (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
   acceptance; 10 §9 already allows it for the MVP.
+
+### 2026-11-05 — Phase 3 / minion-stack follow-ups and tower access — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done (one line per commit, then this docs step):
+  - `8f47858`: same-seed hash tests for minion levels, camp clear and respawn, and guard posts.
+  - `72fcf70`: additive veteran damage (DEC-164), tower guards level up (DEC-165), one minion
+    level with two sources (DEC-168 B3), guard and camp-mob stat blocks built from the lane-minion
+    blocks (B5).
+  - `09ed81d`: guard respawn rules as strategies (`each`, `group`; DEC-168 B4); `camp-cleared`
+    names the killer of the last mob and its team.
+  - `27675c5`: one leash decision both controllers call (`ai/decideLeashed.ts`, DEC-168 B1);
+    split aggro profile types (B2); the anchor stays fixed per target (DEC-160); units fight back
+    at camp mobs that attack them (DEC-166); leash durations in seconds.
+  - `16ddf25`: owner round-2 answers: guards are rallied and a guard kill counts (DEC-165),
+    guard refills counted (DEC-169), escaped-enemy take-back only inside the old leash (DEC-160
+    G2), guard leash tolerance widened (DEC-181).
+  - `37f47da`: structure definitions from one injected source (B8), breakability registry (B7),
+    ally-damage listener `state/AllyDamageTally.ts` (B6), one steering helper in `PathingSystem`
+    (B9 part 1).
+  - `67fb042`: bots stop oscillating at towers (`approach`), siege to the footprint edge, no
+    repeated halt (B9 part 2).
+  - `5ebfab1`: a camp-mob kill counts toward minion veterancy (DEC-165).
+  - `a83bf85`: minions reach a tower's fort walls (`Footprint`); a chase closes on its target's
+    own blocked ground; bots follow an enemy into a tower (DEC-185, DEC-189).
+  - `7352ddd`: stuck chasers path round (`StuckSystem`, `ChaseWatch`); one tower health pool;
+    Stronghold `Footprint`; lane minion leash +15 % (DEC-185, DEC-193).
+  - Docs step (uncommitted): architecture 18 (status note, MS-36 field names, §3.2 pipeline,
+    §3.3, §3.4, §5.2, §6.1, §7, §7.1, §9), 11 (§3, §4.2, §4.3, §6, §10), 07 (§1, §3, §6, §13),
+    03 (`camp-cleared` payload), 05 (`add` modifiers), 10 (§9) and 12 (§2, camps) brought in line
+    with the code, with the DEC rows of PR #75 cited. The minion plan is left for after #75,
+    which rewrites the same table lines (M6 row: camps wake at the countdown's end, DEC-167; §3:
+    this branch removes the bot last-leg stand-in).
+- Checks run: `npm run check` → exit 0 (log `check-followups-docs.log` in the audit's
+  runner-reports): "All matched files use Prettier code style!"; core "Tests 1147 passed (1147)";
+  client "Tests 1754 passed (1754)"; "✓ built in 273ms"; "Documentation check passed."; "exit 0".
+  This line was filled in after that run (docs-only); `prettier --check` and `docs:check` were
+  re-run on it.
+- Next step: architecture critic, ponytail, then the PR into phase/3 after #75 merges.
