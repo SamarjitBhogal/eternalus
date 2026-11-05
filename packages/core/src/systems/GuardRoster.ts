@@ -4,28 +4,37 @@ import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
+import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
 import { compareById } from '../utils/compareById';
 import { cos, sin } from '../utils/deterministicMath';
-import { WAITING_FOR_GROUP } from './GuardRoster.constants';
 import type { Vec2 } from '../utils/geometry.types';
+import { EachGuardRespawn } from './EachGuardRespawn';
+import { GroupGuardRespawn } from './GroupGuardRespawn';
+import type { GuardRespawnRule } from './GuardRoster.types';
 
 /**
  * Runs every structure's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6): it lays out
  * one post per guard on a ring around the structure (`state.guards`); each tick a post whose guard
- * died empties and waits `respawnSeconds`, and an empty post whose time has come is filled while
- * its structure stands and the unit cap has room. A row with `shrink` keeps `count` fewer posts per
- * lost structure of the kind it names (DISC-21: the Stronghold's light guards per lost
- * SpawnerTower); a guard on a dropped post stays until it dies. A `group` plan (a camp) waits for
- * its last guard to die, emits `camp-cleared` and refills every post together (18 §7.1). Plans
- * are looked up by the structure's definition id.
+ * died or left the post's team (`team-changed`) empties, and an empty post whose time has come is
+ * filled while its structure stands and the unit cap has room. When an emptied post comes back is
+ * its plan's respawn rule (`each` or `group`, DEC-168), which also announces a cleared home. A
+ * row with `shrink` keeps `count` fewer posts per lost structure of the kind it names (DISC-21:
+ * the Stronghold's light guards per lost SpawnerTower); a guard on a dropped post stays until it
+ * dies. Plans are looked up by the structure's definition id.
  */
 export class GuardRoster {
+  /** Each plan's respawn rule, by its `respawn` id (DEC-168). */
+  private readonly respawns: Readonly<Record<GuardPlanDefinition['respawn'], GuardRespawnRule>> = {
+    each: new EachGuardRespawn(),
+    group: new GroupGuardRespawn(),
+  };
+
   /**
    * @param factory - Builds the guards.
    * @param definitions - Where each guard's mob definition, and so its kind, is looked up.
-   * @param plans - Each structure kind's guard plan (content).
+   * @param plans - Each structure's guard plan, keyed by structure definition id (content).
    */
   public constructor(
     private readonly factory: EntityFactory,
@@ -87,30 +96,39 @@ export class GuardRoster {
   }
 
   /**
-   * Empties the posts whose guard died, announces each group home emptied this tick, then fills
-   * the posts whose respawn time has come.
+   * Hands each post whose guard was lost to its plan's respawn rule, then fills the posts whose
+   * respawn time has come.
    */
   public update(state: GameState): void {
     state.guards.forEach((slot, index) => {
-      if (slot.guardId !== null && !state.entities.isAlive(slot.guardId)) {
-        const isGroup = this.planOf(state, slot)?.respawn === 'group';
-        state.guards.vacate(index, isGroup ? WAITING_FOR_GROUP : state.tick + slot.respawnTicks);
+      if (slot.guardId !== null && GuardRoster.isLost(state, slot.guardId, slot)) {
+        // A post whose home is gone has no plan to look up; `each` releases it, never to refill.
+        this.respawns[this.planOf(state, slot)?.respawn ?? 'each'].release(state, index, slot);
       }
     });
-    this.announceCleared(state);
     state.guards.forEach((slot, index) => {
-      if (slot.guardId !== null) {
+      if (
+        slot.guardId !== null ||
+        slot.respawnAtTick === null ||
+        state.tick < slot.respawnAtTick ||
+        // DEC-162: a fallen structure's posts are not refilled; its living guards stay at their
+        // posts until killed and still count against the unit cap.
+        !state.entities.isAlive(slot.homeId) ||
+        !this.isPostKept(state, slot)
+      ) {
         return;
       }
       // The cap count walks the entity store, so it runs last, after the cheap checks; neutral
       // camps count against no team's unit cap (18 §7.1).
       if (
-        state.tick < slot.respawnAtTick ||
-        !state.entities.isAlive(slot.homeId) ||
-        !this.isPostKept(state, slot) ||
-        (slot.team !== 'neutral' &&
-          state.entities.countOnTeam(slot.team, Unit) >= state.config.limits.maxUnitsPerTeam)
+        slot.team !== 'neutral' &&
+        state.entities.countOnTeam(slot.team, Unit) >= state.config.limits.maxUnitsPerTeam
       ) {
+        // A post comes due at its respawn tick, so a refill the cap blocks is counted then, once,
+        // not again on each tick it waits (18 §3.4).
+        if (state.tick === slot.respawnAtTick) {
+          state.recordSpawnRequest(slot.team, 1, 0);
+        }
         return;
       }
       const { kind } = this.definitions.get(slot.mobId);
@@ -125,28 +143,11 @@ export class GuardRoster {
   }
 
   /**
-   * For each home whose posts are all empty and waiting for their group, starts the group's
-   * respawn timer and emits `camp-cleared` (18 §7.1), in post order.
+   * Whether post `slot` lost `guardId`: it died, or it left the post's team (`team-changed`, a
+   * conversion, DEC-128), so a converted guard is not steered back to its old post.
    */
-  private announceCleared(state: GameState): void {
-    const homes = new Map<string, { isAllEmpty: boolean; isWaiting: boolean; ticks: number }>();
-    state.guards.forEach(({ homeId, guardId, respawnAtTick, respawnTicks }) => {
-      const home = homes.get(homeId) ?? { isAllEmpty: true, isWaiting: false, ticks: respawnTicks };
-      home.isAllEmpty &&= guardId === null;
-      home.isWaiting ||= respawnAtTick === WAITING_FOR_GROUP;
-      homes.set(homeId, home);
-    });
-    for (const [homeId, { isAllEmpty, isWaiting, ticks }] of homes) {
-      if (!isAllEmpty || !isWaiting) {
-        continue;
-      }
-      state.guards.forEach((slot, index) => {
-        if (slot.homeId === homeId) {
-          state.guards.vacate(index, state.tick + ticks);
-        }
-      });
-      state.events.emit('camp-cleared', { entityId: homeId });
-    }
+  private static isLost(state: GameState, guardId: EntityId, slot: GuardSlot): boolean {
+    return !state.entities.isAlive(guardId) || state.entities.teamOf(guardId) !== slot.team;
   }
 
   private planOf(state: GameState, slot: GuardSlot): GuardPlanDefinition | undefined {

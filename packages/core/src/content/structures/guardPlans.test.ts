@@ -5,6 +5,7 @@ import { AI_CADENCE } from '../ai/cadence';
 import { LEGEND_CLASSES } from '../legends/legendCatalogue';
 import { MOB_DEFINITIONS } from '../mobs/mobCatalogue';
 import { GUARD_PLANS } from './guardPlans';
+import { STRUCTURE_DEFINITIONS } from './structureCatalogue';
 
 describe('GUARD_PLANS', () => {
   it('gives every guard a leash tolerance of one decision walk plus its farthest stance (DEC-144)', () => {
@@ -24,5 +25,11 @@ describe('GUARD_PLANS', () => {
         });
       }
     }
+  });
+
+  it('keys every plan by a structure definition id, so no plan is silently left unused', () => {
+    const unknown = Object.keys(GUARD_PLANS).filter((id) => !STRUCTURE_DEFINITIONS.has(id));
+
+    expect(unknown).toEqual([]);
   });
 });

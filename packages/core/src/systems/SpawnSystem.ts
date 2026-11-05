@@ -43,8 +43,6 @@ export class SpawnSystem implements System {
   private readonly spawners: readonly Structure[];
   private readonly scheduled: readonly ScheduledWave[];
   private readonly guards: GuardRoster;
-  /** The definition ids of the structures on this map, whose guard plans are checked. */
-  private readonly homes = new Set<string>();
 
   /**
    * @param state - The match; its structure entities, already spawned, are the spawn points.
@@ -62,9 +60,11 @@ export class SpawnSystem implements System {
   ) {
     // The opening source sends the opening hordes even when it has no recurring waves.
     const spawners: Structure[] = [];
+    // The definition ids of every structure on this map, whose guard plans are checked.
+    const homes = new Set<string>();
     state.entities.forEach((entity) => {
       if (entity instanceof Structure) {
-        this.homes.add(entity.definitionId);
+        homes.add(entity.definitionId);
       }
       const team = state.entities.teamOf(entity.id);
       if (
@@ -86,7 +86,7 @@ export class SpawnSystem implements System {
         everyTicks: Math.round(wave.everySeconds * tickRate),
       })),
     );
-    this.validate();
+    this.validate(homes);
     this.guards = new GuardRoster(factory, plan.definitions, plan.guards);
     this.guards.layOut(state);
   }
@@ -94,10 +94,11 @@ export class SpawnSystem implements System {
   /**
    * Rejects a plan whose waves name an unknown mob or a mob of another weight class, start before
    * the countdown ends, or repeat more often than once a tick, or whose guard plans name an
-   * unknown mob. Only the waves and guards this map's spawners can have are checked, so a match
+   * unknown mob. Only the waves this map's spawners can send and the guard plans of the structures
+   * on it (`homes`, by definition id, whether or not they spawn hordes) are checked, so a match
    * without hordes needs no minions.
    */
-  private validate(): void {
+  private validate(homes: ReadonlySet<string>): void {
     const { openingWave, definitions, guards } = this.plan;
     const kinds = new Set(this.spawners.map(({ kind }) => kind));
     const waves = [
@@ -105,7 +106,7 @@ export class SpawnSystem implements System {
       ...this.scheduled.map(({ spawner, wave }) => [spawner.kind, wave] as const),
     ];
     // Only the plans of structures on this map, so a match without them needs no guard content.
-    const guardProblems = [...this.homes].flatMap((id) =>
+    const guardProblems = [...homes].flatMap((id) =>
       (guards[id]?.table ?? []).flatMap(({ mobId }) =>
         definitions.has(mobId) ? [] : [`${id} guard plan names unknown mob "${mobId}"`],
       ),
