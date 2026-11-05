@@ -11,6 +11,7 @@ import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import { TWO_LANE_MAP } from '../../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../../state/AiState.types';
 import { GameState } from '../../state/GameState';
+import type { Team } from '../../teams/teams.types';
 import { IdGenerator } from '../../utils/IdGenerator';
 import { MinionController } from '../MinionController';
 import { Perception } from '../perception/Perception';
@@ -26,12 +27,12 @@ export const controller = new MinionController({
 });
 
 /**
- * A two-lane match with a space index: `add` places units, `decide` runs the controller for one
+ * A two-lane match (the default config unless given) with a space index: `add` places units, `decide` runs the controller for one
  * mob, `objective` gives a light horde a dark lane-0 structure to march on.
  */
-export const setUp = () => {
+export const setUp = (config = createDefaultGameConfig()) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
-  const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), { space });
+  const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), { space });
   const factory = new EntityFactory(
     createDefaultEntityRegistry(),
     loadDefaultContent(30),
@@ -39,13 +40,7 @@ export const setUp = () => {
     loadWeapons(30),
   );
   const perception = new Perception(state);
-  const add = (
-    team: 'light' | 'dark',
-    x: number,
-    y = 20,
-    kind = 'light-mob',
-    id = 'light-minion',
-  ) => {
+  const add = (team: Team, x: number, y = 20, kind = 'light-mob', id = 'light-minion') => {
     const entity = factory.create(kind, id, { team, position: { x, y } });
     state.entities.add(entity);
     return entity.id;

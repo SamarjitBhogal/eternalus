@@ -1,6 +1,8 @@
 /**
- * A lane minion's kills and the level they earned (game doc "Minion XP"). Added by
- * `VeterancySystem` on a minion's first kill.
+ * A minion's level and kills (game doc "Minion XP"): one level with two sources (DEC-168). Kills
+ * earn a level every `killsPerLevel`; that level and any other source's (the zone level-up,
+ * balancing.md "+1 minion level (max 3)") are added with `gainLevels`, and a later kill never takes
+ * them back. Added by `VeterancySystem` on a minion's first kill or level.
  */
 export class Veterancy {
   private killsValue = 0;
@@ -12,20 +14,24 @@ export class Veterancy {
     return this.killsValue;
   }
 
-  /** Levels earned, from 0 to the cap. */
+  /** Levels gained from every source, from 0 to the cap. */
   public get level(): number {
     return this.levelValue;
   }
 
   /**
-   * Counts one kill; returns whether it earned a level (every `killsPerLevel` kills, up to
-   * `maxLevel`).
+   * Counts one kill and returns whether it earns a level: every `killsPerLevel`-th kill (a whole
+   * number) does. The level itself comes from `gainLevels`, which keeps the cap.
    */
-  public recordKill(killsPerLevel: number, maxLevel: number): boolean {
+  public recordKill(killsPerLevel: number): boolean {
     this.killsValue += 1;
-    const earned = Math.min(maxLevel, Math.floor(this.killsValue / killsPerLevel));
-    const isLevelUp = earned > this.levelValue;
-    this.levelValue = earned;
-    return isLevelUp;
+    return this.killsValue % killsPerLevel === 0;
+  }
+
+  /** Gains up to `levels` levels without passing `maxLevel`; returns how many it gained. */
+  public gainLevels(levels: number, maxLevel: number): number {
+    const gained = Math.max(0, Math.min(levels, maxLevel - this.levelValue));
+    this.levelValue += gained;
+    return gained;
   }
 }

@@ -7,6 +7,7 @@ import {
   distanceToSegment,
   isPointInPolygon,
   lerpPoint,
+  nearestPointOnPolygons,
   polarPoint,
   regularPolygon,
 } from './geometry';
@@ -92,5 +93,30 @@ describe('geometry', () => {
         cell,
       ),
     ).toBe(true);
+  });
+
+  it('writes the nearest point of several outlines into out, closing edges included', () => {
+    const square = [
+      { x: 10, y: 0 },
+      { x: 20, y: 0 },
+      { x: 20, y: 10 },
+      { x: 10, y: 10 },
+    ];
+    const far = [
+      { x: 40, y: 0 },
+      { x: 50, y: 0 },
+      { x: 45, y: 10 },
+    ];
+    const out = { x: -1, y: -1 };
+
+    // The closing edge (10, 10) → (10, 0) is the nearest one.
+    expect(nearestPointOnPolygons({ x: 7, y: 4 }, [far, square], out)).toBe(3);
+    expect(out).toEqual({ x: 10, y: 4 });
+    // A corner, when the point is past both of its edges.
+    expect(nearestPointOnPolygons({ x: 23, y: 14 }, [square], out)).toBe(5);
+    expect(out).toEqual({ x: 20, y: 10 });
+    // No corners: Infinity, and `out` keeps what it held.
+    expect(nearestPointOnPolygons({ x: 0, y: 0 }, [], out)).toBe(Number.POSITIVE_INFINITY);
+    expect(out).toEqual({ x: 20, y: 10 });
   });
 });

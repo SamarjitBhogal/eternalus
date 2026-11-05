@@ -1,14 +1,18 @@
-import type { AggroRuleDefinition } from '../ai.types';
+import { GUARD_LEASH } from '../../structures/guardLeash';
+import type { GuardAggroRuleDefinition } from '../ai.types';
 
 /**
  * The tower guard's aggro rules (architecture 18 §7, 11 §4.4): the lane minion's priority list
- * without the lane objective, and a radius that stays inside the guard's leash, measured from
- * its post. Its leash is the structure's guard plan, so `leashRadius` here is unused by guards.
+ * without `lane-objective` and `turret-attacking-ally-minion` (no turret entity exists yet), and a
+ * radius that stays inside the guard's leash, measured from its post. Its leash is its post's
+ * guard plan.
  */
 export const TOWER_GUARD_AGGRO = {
   id: 'tower-guard',
-  // TUNE: the 8 m leash less the 2 m post gap, so a guard acquires only what it may chase.
-  acquisitionRadius: 6,
+  controller: 'guard',
+  // TUNE: the leash less the post gap, so a guard at an unmoved post acquires only what it may
+  // chase.
+  acquisitionRadius: GUARD_LEASH.tower - GUARD_LEASH.postGap,
   priority: [
     'legend-attacking-ally-legend',
     'minion-attacking-ally-legend',
@@ -16,9 +20,7 @@ export const TOWER_GUARD_AGGRO = {
     'closest-minion',
     'closest-legend',
   ],
-  leashRadius: 8, // TUNE: balancing.md guard leash (the guard plan's is the one guards read)
-  leashGraceTicks: 0, // owner DEC-144 E: a guard never chases past its circle
-  aggroCooldownTicks: 0, // owner DEC-144: no rest; a guard fights any enemy in its circle at once
+  leashGraceSeconds: 0, // owner DEC-144 E: a guard never chases past its circle
+  aggroCooldownSeconds: 0, // owner DEC-144: no rest; a guard fights any enemy in its circle at once
   ghostFirstWaveTicks: 0, // guards never ghost
-  callForHelpRadius: 0, // unused: guards answer a fellow guard anywhere in their circle (DEC-144)
-} as const satisfies AggroRuleDefinition;
+} as const satisfies GuardAggroRuleDefinition;

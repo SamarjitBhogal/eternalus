@@ -66,8 +66,16 @@ export type GameEventMap = {
     readonly isBreakable: boolean;
     readonly lane: string | null;
   };
-  /** A camp's whole group is dead (18 §7.1); the group comes back after its respawn time. */
-  readonly 'camp-cleared': { readonly entityId: EntityId };
+  /**
+   * A camp's whole group is dead (18 §7.1); the group comes back after its respawn time.
+   * `killerId` dealt the last mob's lethal hit and `team` is its team; both `null` when no killer
+   * is known (a death outside the damage pipeline).
+   */
+  readonly 'camp-cleared': {
+    readonly entityId: EntityId;
+    readonly team: Team | null;
+    readonly killerId: EntityId | null;
+  };
   readonly 'shield-bars-changed': {
     readonly entityId: EntityId;
     readonly bars: readonly ShieldBar[];

@@ -56,16 +56,16 @@ export abstract class Structure extends Entity {
 }
 ```
 
-| Class          | Extra components                     | Responsibility                                                                      | MVP status                          |
-| -------------- | ------------------------------------ | ----------------------------------------------------------------------------------- | ----------------------------------- |
-| `Stronghold`   | `Spawner`, `Aura`                    | Capital; its death ends the match; spawns initial hordes and later waves            | MVP                                 |
-| `SpawnerTower` | `Spawner`, `Combat` (self-defence)   | Front line; spawns light hordes every 60 s after the countdown; guards              | MVP                                 |
-| `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; team buffs, enemy debuff aura (10% health/damage, TUNE); shield source | MVP                                 |
-| `WallSegment`  | none                                 | Ring collider; unbreakable until the rule in §3 passes                              | MVP                                 |
-| `Gate`         | `GateState`, `Combat` (fire defence) | Opens for allies/hordes, closes otherwise; burns enemies passing through            | MVP (fire: MVP-if-time)             |
-| `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                           | MVP (manual: MVP-if-time)           |
-| `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates after cooldown                   | MVP (corner: MVP-if-time)           |
-| `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                | MVP (boss summon: per plan phase 3) |
+| Class          | Extra components                     | Responsibility                                                                             | MVP status                          |
+| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------- |
+| `Stronghold`   | `Spawner`, `Aura`                    | Capital; its death ends the match; spawns initial hordes and later waves                   | MVP                                 |
+| `SpawnerTower` | `Spawner`, `Combat` (self-defence)   | Front line; spawns light hordes every 60 s after the countdown; guards                     | MVP                                 |
+| `BuffTower`    | `Spawner`, `Aura`, `Combat`          | Second line; team buffs, enemy debuff aura (10% health/damage, TUNE); shield source        | MVP                                 |
+| `WallSegment`  | none                                 | Ring collider; unbreakable until the rule in §3 passes                                     | MVP                                 |
+| `Gate`         | `GateState`, `Combat` (fire defence) | Opens for allies/hordes, closes otherwise; burns enemies passing through                   | MVP (fire: MVP-if-time)             |
+| `Turret`       | `TurretState`, `Combat`              | Auto-fires bolts; Warrior Legends may take manual control                                  | MVP (manual: MVP-if-time)           |
+| `Camp`         | `Spawner`                            | Neutral spawner for forest/corner camps; activates when the match countdown ends (DEC-167) | MVP (corner: MVP-if-time)           |
+| `Cathedral`    | `Spawner` (gem), `Aura`              | Middle capture point's building; summons the `GreaterBoss` mid-match                       | MVP (boss summon: per plan phase 3) |
 
 Not a structure: `CapturePoint` is a `Zone` (no collider, §7). Anti-air buildings and form-change
 stations (Ascendance/Enchantment) are **post-MVP** (§14).
@@ -122,12 +122,16 @@ export type BreakabilityRule =
   | { readonly kind: 'all-of'; readonly rules: readonly BreakabilityRule[] };
 ```
 
-`StructureSystem.isBreakable(structure)` evaluates the rule each tick against `GameState`:
+`StructureSystem` evaluates each structure's rule each tick against `GameState`
+(`updateBreakability`, through `isBreakableUnder`):
 threshold = `ceil(fraction × buffTowersPerTeam)` (2 of 3 today; 4 of 5 with five lanes). The result
 sets `Collider.isUnbreakable` and is emitted as `structure-breakability-changed`, so the
 `DamagePipeline` rejects damage to unbreakable targets and `CollisionSystem` runs swept tests
-against them (`10-physics.md` §7). New rules are new union members plus one `case` in the
-evaluator (OCP).
+against them (`10-physics.md` §7). New rules are new union members plus one evaluator in the
+breakability registry, `BREAKABILITY_EVALUATORS` in `content/structures/breakability.ts`, not a
+branch in `StructureSystem` (OCP; DEC-168 B7). The evaluators judge a rule on facts the system
+gathers once per team per tick (how many of the team's BuffTowers are lost,
+`LaneStructures.lostCount`).
 
 **Sentinel sprint-through** (MVP-if-time): a Sentinel at full speed (`Movement.speed >=
 maxSpeed × sprintThrough.fullSpeedFraction`, TUNE 1.0; the doc says up to 1 minute of straight
@@ -210,7 +214,7 @@ batch is fulfilled in one step together with its horde record ([18](18-minion-sy
 | `Stronghold`    | 3 light hordes of 16 at match start (48 units); later light swarms and heavy mobs       | ranged + melee guards, leash to the walls | MVP         |
 | `SpawnerTower`  | 1 light horde every 60 s after the 60 s countdown (TUNE)                                | light mob guards                          | MVP         |
 | `BuffTower`     | light and medium swarms (TUNE cadence)                                                  | numerous medium guards                    | MVP         |
-| `Camp` (forest) | none; a fixed group after the activation cooldown (TUNE)                                | the group itself, leashed to the camp     | MVP         |
+| `Camp` (forest) | none; a fixed group once the match countdown ends (DEC-167)                             | the group itself, leashed to the camp     | MVP         |
 | `Camp` (corner) | a `MiniBoss` + support every 5 min after its death (TUNE); crystal is `never` breakable | boss guards                               | MVP-if-time |
 | `Cathedral`     | the gem summons the `GreaterBoss` mid-match via `MatchTimeline`                         | none                                      | phase 3     |
 
@@ -401,6 +405,19 @@ Sprint 1.2 (PR #14) ships the `Structure` base, the `Obstacle` class and layered
   `WorldMap`; the main view draws structures from the map layer (`StructureView` draws nothing).
   Minion plan M6 adds `Camp` (forest camps, rule `never`, circle radius 1 `TUNE`, since camp
   features have no footprint); its group is a guard plan (18 §7.1), not a `Spawner` component yet.
+- **Minion follow-ups (`fix/minion-stack-followups`, 2026-11-05).** Lane towers and the
+  Stronghold also carry a `Footprint` component: the polygons of their map object of the same id
+  (a tower's fort, the Stronghold's palace outline), which `Simulation` copies for a definition
+  with `hasMapFootprint`. Attack reach to the structure is measured to those outlines, and a chase
+  aims at their nearest point, so a hit on a fort wall is a hit on the tower and melee at the
+  palace wall reaches the Stronghold (DEC-185, DEC-185 (D)). The circle `Collider` stays. A lane
+  tower's fort map object, which blocks, is the tower's body: it has no health of its own, so
+  damage to the fort goes to the tower (one pool, DEC-185 (B)). After the tower falls, its fort
+  stays standing as scenery with no health. Only towers share one pool with their fort
+  (DEC-217 (13)): the Stronghold's palace map object does not block, and a gate's definition has
+  no `hasMapFootprint`, so both keep their own health. `Simulation` takes the structure
+  definitions from one injected source (`SimulationOptions.structures`, default
+  `STRUCTURE_DEFINITIONS`) for the structures it builds and for `StructureSystem` (DEC-168 B8).
 - `ObstacleDefinition` keeps `kind: 'obstacle'` (the entity class) and moves tree/rock/bridge to
   `obstacleType`; `fell` and `minimapGlyph` arrive with felling and the minimap work.
 

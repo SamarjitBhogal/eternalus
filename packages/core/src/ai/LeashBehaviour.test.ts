@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { Health } from '../components/Health';
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
 import { engagingOn, setUp } from './__fixtures__/minionControllerSetup';
+import { MINION_STATES } from './MinionController.constants';
+import { LeashBehaviour } from './LeashBehaviour';
+
+const { tickRate } = createDefaultGameConfig();
+/** The lane minion's grace and cooldown in ticks: content gives seconds (AI56-F10). */
+const GRACE = LANE_MINION_AGGRO.leashGraceSeconds * tickRate;
+const COOLDOWN = LANE_MINION_AGGRO.aggroCooldownSeconds * tickRate;
 
 // Driven through MinionController's rules; GuardController.test.ts covers the guard's.
 describe('LeashBehaviour', () => {
@@ -66,7 +74,13 @@ describe('LeashBehaviour', () => {
     const attacker = add('dark', 53, 20, 'warrior', 'warrior');
     state.entities.setAttackTarget(attacker, self);
 
-    const decision = decide(self, { fsm: 'marching', cooldownUntilTick: 5, escapedId: attacker });
+    const decision = decide(self, {
+      fsm: 'marching',
+      cooldownUntilTick: 5,
+      escapedId: attacker,
+      leashX: 50,
+      leashY: 20,
+    });
 
     expect(decision.commands).toEqual([
       { type: 'attack-target', actorId: self, targetId: attacker },
@@ -122,7 +136,7 @@ describe('LeashBehaviour', () => {
   it('engaging: chases a target that leaves the leash for the grace, then breaks (DEC-144 E: distance, then time)', () => {
     const { add, decide, advance, moveTo } = setUp();
     const self = add('light', 50);
-    // 10 from where it was taken: outside the 7.5 leash, and out of reach.
+    // 10 from where it was taken: outside the 8.625 leash, and out of reach.
     const target = add('dark', 60);
     advance(5);
 
@@ -132,7 +146,7 @@ describe('LeashBehaviour', () => {
       memory: {
         fsm: 'engaging',
         targetId: target,
-        breakAtTick: 5 + LANE_MINION_AGGRO.leashGraceTicks,
+        breakAtTick: 5 + GRACE,
       },
     });
     expect(decide(self, left.memory).commands).toEqual([]);
@@ -144,14 +158,14 @@ describe('LeashBehaviour', () => {
     });
 
     moveTo(target, 60);
-    advance(LANE_MINION_AGGRO.leashGraceTicks);
+    advance(GRACE);
     expect(decide(self, left.memory)).toMatchObject({
       commands: [{ type: 'stop', actorId: self }],
       memory: {
         fsm: 'marching',
         targetId: null,
         breakAtTick: 0,
-        cooldownUntilTick: 95 + LANE_MINION_AGGRO.aggroCooldownTicks,
+        cooldownUntilTick: 95 + COOLDOWN,
         escapedId: target,
       },
     });
@@ -169,7 +183,7 @@ describe('LeashBehaviour', () => {
     });
   });
 
-  it('engaging: re-anchors on the Legend that escaped its leash only when it attacks the mob', () => {
+  it('engaging: keeps its anchor and its grace on the Legend that escaped its leash, even when it attacks the mob (DEC-160)', () => {
     const { state, add, decide } = setUp();
     const self = add('light', 50);
     // In reach of where the mob stands, but 12 from where it took the Legend.
@@ -179,10 +193,40 @@ describe('LeashBehaviour', () => {
     expect(decide(self, grace)).toMatchObject({ commands: [], memory: grace });
 
     state.entities.setAttackTarget(legend, self);
-    // Still chasing it in the grace, it needs no new command.
-    expect(decide(self, grace)).toMatchObject({
+    // Only a switch to another target moves the anchor, so the grace runs on.
+    expect(decide(self, grace)).toMatchObject({ commands: [], memory: grace });
+  });
+
+  it('engaging: a Legend that backs away while it keeps hitting the mob cannot pull its leash: the anchor stays, and the leash breaks after the grace (DEC-160)', () => {
+    const { state, add, decide, advance, moveTo } = setUp();
+    const self = add('light', 50);
+    const legend = add('dark', 52, 20, 'warrior', 'warrior');
+    state.entities.setAttackTarget(legend, self);
+
+    const taken = decide(self);
+    expect(taken.memory).toMatchObject({ fsm: 'engaging', targetId: legend, leashX: 50 });
+
+    // It backs away, hitting all the while; the mob chases it.
+    moveTo(legend, 56);
+    moveTo(self, 53);
+    const inside = decide(self, taken.memory);
+    expect(inside).toMatchObject({ commands: [], memory: taken.memory });
+
+    moveTo(legend, 60); // 10 from the anchor: outside the 8.625 leash, 4 from the mob
+    moveTo(self, 56);
+    advance(5);
+    const outside = decide(self, inside.memory);
+    expect(outside).toMatchObject({
       commands: [],
-      memory: { fsm: 'engaging', targetId: legend, breakAtTick: 0, leashX: 50 },
+      memory: { fsm: 'engaging', targetId: legend, leashX: 50, breakAtTick: 5 + GRACE },
+    });
+
+    moveTo(legend, 64);
+    moveTo(self, 60);
+    advance(GRACE);
+    expect(decide(self, outside.memory)).toMatchObject({
+      commands: [{ type: 'stop', actorId: self }],
+      memory: { fsm: 'marching', targetId: null, escapedId: legend },
     });
   });
 
@@ -191,7 +235,7 @@ describe('LeashBehaviour', () => {
     const self = add('light', 50);
     const mate = add('light', 56);
     const outsider = add('light', 58);
-    // 7 away: past the 5.4 reach, inside the 7.5 call for help.
+    // 7 away: past the 5.4 reach, inside the 8.625 call for help.
     const enemy = add('dark', 57);
     state.hordes.add({
       id: 'horde-1',
@@ -212,7 +256,7 @@ describe('LeashBehaviour', () => {
     ]);
   });
 
-  it('answers a call for help from a Legend it would leave alone: escaped, or in the cooldown (DEC-144 D)', () => {
+  it('answers a call for help from the Legend it left alone in the cooldown (DEC-144 D), but keeps the anchor on the one it chases (DEC-160)', () => {
     const { state, add, decide } = setUp();
     const self = add('light', 50);
     const mate = add('light', 53);
@@ -229,13 +273,55 @@ describe('LeashBehaviour', () => {
     });
     state.entities.setAttackTarget(legend, mate);
 
-    expect(decide(self, engagingOn(legend, { leashX: 40, breakAtTick: 50 }))).toMatchObject({
-      commands: [],
-      memory: { fsm: 'engaging', targetId: legend, breakAtTick: 0, leashX: 50 },
-    });
+    const grace = engagingOn(legend, { leashX: 40, breakAtTick: 50 });
+    expect(decide(self, grace)).toMatchObject({ commands: [], memory: grace });
     expect(
-      decide(self, { fsm: 'marching', cooldownUntilTick: 5, escapedId: legend }).commands,
+      decide(self, {
+        fsm: 'marching',
+        cooldownUntilTick: 5,
+        escapedId: legend,
+        leashX: 50,
+        leashY: 20,
+      }).commands,
     ).toEqual([{ type: 'attack-target', actorId: self, targetId: legend }]);
+  });
+
+  it('marching in its cooldown: does not take back an escaped Legend that keeps hitting it from outside the old leash (DEC-160)', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    // 13 m from the old anchor (40, 20), past the 8.625 m leash, but in reach of where the mob stands.
+    const kiter = add('dark', 53, 20, 'warrior', 'warrior');
+    state.entities.setAttackTarget(kiter, self);
+
+    const decision = decide(self, {
+      fsm: 'marching',
+      cooldownUntilTick: 5,
+      escapedId: kiter,
+      leashX: 40,
+      leashY: 20,
+    });
+
+    expect(decision.commands).toEqual([]);
+    expect(decision.memory).toMatchObject({ fsm: 'marching', targetId: null });
+  });
+
+  it('marching in its cooldown: takes back an escaped Legend that attacks it from inside the old leash (DEC-160)', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    const returned = add('dark', 53, 20, 'warrior', 'warrior');
+    state.entities.setAttackTarget(returned, self);
+
+    const decision = decide(self, {
+      fsm: 'marching',
+      cooldownUntilTick: 5,
+      escapedId: returned,
+      leashX: 46,
+      leashY: 20,
+    });
+
+    expect(decision.commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: returned },
+    ]);
   });
 
   it('engaging: takes the next enemy in range at once when its target dies (MS-36)', () => {
@@ -285,6 +371,48 @@ describe('LeashBehaviour', () => {
       commands: [{ type: 'attack-target', actorId: self, targetId: next }],
       memory: { fsm: 'engaging', targetId: next, leashX: 50 },
     });
+  });
+
+  it('fights back against a neutral camp mob that attacks it, and leaves alone one that does not (DEC-166)', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    const camp = add('neutral', 52, 20, 'light-mob', 'light-camp-mob');
+    const ally = add('light', 53);
+
+    expect(decide(self).commands).toEqual([]);
+
+    state.entities.setAttackTarget(camp, ally);
+    expect(decide(self).commands).toEqual([]);
+
+    state.entities.setAttackTarget(camp, self);
+    expect(decide(self)).toMatchObject({
+      commands: [{ type: 'attack-target', actorId: self, targetId: camp }],
+      memory: { fsm: 'engaging', targetId: camp },
+    });
+  });
+
+  it('reads a target or an escaped enemy that is no longer alive as none, so its brain keeps no dead entity (AI56-F3)', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    const dead = add('dark', 70);
+    const living = add('dark', 72);
+    state.entities.get(dead)?.getComponent(Health).applyDamage(1e6);
+
+    expect(
+      decide(self, { fsm: 'marching', cooldownUntilTick: 5, escapedId: dead }).memory,
+    ).toMatchObject({ fsm: 'marching', escapedId: null });
+    const isAlive = (id: string) => state.entities.isAlive(id);
+    expect(
+      LeashBehaviour.read(
+        { fsm: 'engaging', targetId: dead, escapedId: living },
+        MINION_STATES,
+        'marching',
+        isAlive,
+      ),
+    ).toMatchObject({ fsm: 'engaging', targetId: null, escapedId: living });
+    expect(
+      LeashBehaviour.read({ targetId: 'removed' }, MINION_STATES, 'marching', isAlive),
+    ).toMatchObject({ targetId: null });
   });
 
   it('reads a memory saved as `returning` (merged into the resting state, DEC-144 G) and takes an enemy in reach (MS-36)', () => {

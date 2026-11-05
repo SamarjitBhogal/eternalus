@@ -8,6 +8,7 @@ import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
 import { AiState } from './AiState';
 import { AllyDamageStore } from './AllyDamageStore';
+import { AllyDamageTally } from './AllyDamageTally';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
 import { GameEvents } from './GameEvents';
@@ -117,34 +118,7 @@ export class GameState {
     this.events.on('xp-gained', (award) => {
       this.xpAwards.push(award);
     });
-    this.events.on('damage-applied', (hit) => {
-      this.countAllyDamage(hit);
-    });
-  }
-
-  /**
-   * Adds a hit on a playable team's Legend or mob to `allyDamage`, on the lane nearest the victim
-   * (DEC-89, architecture 18 §3.3). Only a hit from the victim's enemy team counts: not one with no
-   * attacker, or from a neutral (forest camp), removed or same-team attacker; nor any hit in a
-   * match without a map.
-   */
-  private countAllyDamage({ targetId, amount, source }: GameEventMap['damage-applied']): void {
-    const victim = this.entities.get(targetId);
-    const team = this.entities.teamOf(targetId);
-    const position = victim?.findComponent(Transform)?.position;
-    if (
-      (victim?.family !== 'legend' && victim?.family !== 'mob') ||
-      (team !== 'light' && team !== 'dark') ||
-      source.attackerId === null ||
-      this.entities.teamOf(source.attackerId) !== (team === 'light' ? 'dark' : 'light') ||
-      position === undefined
-    ) {
-      return;
-    }
-    const lane = this.world?.routes.nearestLane(position);
-    if (lane !== undefined) {
-      this.allyDamage.add(team, lane.id, amount);
-    }
+    new AllyDamageTally(this.events, this.entities, this.world, this.allyDamage);
   }
 
   /** The lane structures as they stood at match start (architecture 18 §6.2); empty until indexed. */

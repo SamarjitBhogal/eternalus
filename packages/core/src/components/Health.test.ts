@@ -28,6 +28,19 @@ describe('Health', () => {
     expect(health.current).toBe(100);
   });
 
+  it('raises the cap and heals by the raise on a level-up, but never revives', () => {
+    const living = new Health(100);
+    living.applyDamage(30);
+    const dead = new Health(100);
+    dead.applyDamage(100);
+
+    living.raiseMaxAndHeal(10);
+    dead.raiseMaxAndHeal(10);
+
+    expect([living.max, living.current]).toEqual([110, 80]);
+    expect([dead.max, dead.current, dead.isDead]).toEqual([110, 0, true]);
+  });
+
   it('matches the worked example: 1000 base + 3 bars of 1500 = 5500', () => {
     const health = new Health(1000);
     health.addShield('buff-tower-1', 1500);
