@@ -20,12 +20,12 @@ export type ControllerRegistry = Readonly<Partial<Record<ControllerId, Controlle
  */
 export const createDefaultControllerRegistry = (content: {
   /** The leashed mobs' content: minions and guards each accept only their own aggro profiles. */
-  readonly minion: LeashControllerContent;
+  readonly leash: LeashControllerContent;
   readonly botLegend: BotLegendControllerContent;
   readonly rover: RoverControllerContent;
 }): ControllerRegistry => ({
-  minion: new MinionController(content.minion),
-  guard: new GuardController(content.minion),
+  minion: new MinionController(content.leash),
+  guard: new GuardController(content.leash),
   'bot-legend': new BotLegendController(content.botLegend),
   rover: new RoverController(content.rover),
 });

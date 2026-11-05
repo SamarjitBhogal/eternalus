@@ -14,8 +14,10 @@ export type RecordedCommand = {
 };
 
 /**
- * One playable team's match counters (architecture 03 §2). `unitsSuppressed` counts the members
- * the unit cap kept out of a horde (architecture 18 §3.4), `unitsRequested` every member asked for.
+ * One playable team's match counters (architecture 03 §2). `unitsRequested` counts every unit asked
+ * for: each horde member (architecture 18 §3.4) and each guard refill (DEC-169), whether it was
+ * spawned or not. `unitsSuppressed` counts those the unit cap kept out: horde members and blocked
+ * guard refills; a refill that succeeded is a request only.
  */
 export type TeamState = {
   readonly unitsRequested: number;

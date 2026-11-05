@@ -1,13 +1,16 @@
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
-import type { BreakabilityRule } from '../content/structures/breakability.types';
+import { isBreakableUnder } from '../content/structures/breakability';
+import type { BreakabilityFacts, BreakabilityRule } from '../content/structures/breakability.types';
 import type { StructureDefinition } from '../content/structures/structures.types';
-import { BuffTower } from '../entities/structures/BuffTower';
 import { Structure } from '../entities/structures/Structure';
 import type { ContentCatalogue } from '../content/ContentCatalogue';
 import type { GameState } from '../state/GameState';
-import type { Team } from '../teams/teams.types';
+import type { PlayableTeam } from '../teams/teams.types';
 import type { System, SystemContext } from './System.types';
+
+/** The kind whose losses open walls and gates (07 §3). */
+const BUFF_TOWER_KIND = 'buff-tower';
 
 /**
  * Keeps the structures' lifecycle (architecture 07 §3, §8, §11): announces each structure that
@@ -27,47 +30,48 @@ export class StructureSystem implements System {
   /** Announces this tick's destroyed structures, then updates breakability, in store order. */
   public update({ state }: SystemContext): void {
     const living: Structure[] = [];
-    const buffTowersAlive = new Map<Team, number>();
     state.entities.forEach((entity) => {
       if (!(entity instanceof Structure)) {
         return;
       }
-      const team = state.entities.teamOf(entity.id) ?? 'neutral';
       if (entity.findComponent(Health)?.isDead === true) {
         state.events.emit('structure-destroyed', {
           entityId: entity.id,
           kind: entity.kind,
-          team,
+          team: state.entities.teamOf(entity.id) ?? 'neutral',
           lane: entity.laneId,
         });
         return;
       }
       living.push(entity);
-      if (entity instanceof BuffTower) {
-        buffTowersAlive.set(team, (buffTowersAlive.get(team) ?? 0) + 1);
-      }
     });
     const { numLanes, buffTowersPerLane } = state.config.map;
     const total = numLanes * buffTowersPerLane;
+    const lostByTeam = new Map<PlayableTeam, number>();
     for (const structure of living) {
       const team = state.entities.teamOf(structure.id) ?? 'neutral';
-      const down = Math.max(0, total - (buffTowersAlive.get(team) ?? 0));
-      this.updateBreakability(state, structure, down, total);
+      let lost = 0;
+      if (team === 'light' || team === 'dark') {
+        lost =
+          lostByTeam.get(team) ??
+          state.laneStructures.lostCount(team, BUFF_TOWER_KIND, state.entities);
+        lostByTeam.set(team, lost);
+      }
+      this.updateBreakability(state, structure, { lost, total });
     }
   }
 
   private updateBreakability(
     state: GameState,
     structure: Structure,
-    down: number,
-    total: number,
+    facts: BreakabilityFacts,
   ): void {
     const collider = structure.findComponent(Collider);
     if (collider === undefined) {
       return;
     }
     const { breakability } = this.definitions.get(structure.definitionId);
-    const isBreakable = StructureSystem.passes(breakability, down, total);
+    const isBreakable = isBreakableUnder(breakability, facts);
     if (collider.isUnbreakable === !isBreakable) {
       return;
     }
@@ -85,9 +89,6 @@ export class StructureSystem implements System {
    * re-evaluate it from scratch.
    */
   public static passes(rule: BreakabilityRule, down: number, total: number): boolean {
-    if (rule.kind === 'allied-buff-towers-down') {
-      return down >= Math.ceil(rule.fraction * total);
-    }
-    return rule.kind === 'always';
+    return isBreakableUnder(rule, { lost: down, total });
   }
 }

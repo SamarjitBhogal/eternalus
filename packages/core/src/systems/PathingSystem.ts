@@ -71,6 +71,25 @@ export class PathingSystem implements System {
   }
 
   /**
+   * Steers one mob for the next tick: toward the unit it attacks, stopping at reach, else toward
+   * `this.target` (its slot or post), which the caller has set. The one rule horde members and
+   * guards share.
+   */
+  private steer(
+    state: SystemContext['state'],
+    id: string,
+    index: number,
+    movement: Movement,
+    strategy: MovementStrategy,
+    context: { flow: FlowQuery | null } & Omit<MovementContext, 'flow'>,
+  ): void {
+    const reach = this.chase(state, id);
+    context.arrivalRadius = reach ?? this.slotArrivalRadius;
+    context.isChasing = reach !== undefined;
+    movement.steer(strategy.desiredVelocity(index, context));
+  }
+
+  /**
    * Steers a mob that spawned inside its structure straight to its exit (DEC-133), with no lane
    * field and no ground check, since it starts on blocked ground. Returns `true`, steering
    * nothing, once its body stands wholly on walkable ground or it is at its exit, whichever is
@@ -174,10 +193,7 @@ export class PathingSystem implements System {
           entity.removeComponent(Deploying);
         }
         formationSlot(this.anchor, this.forward, slot, formation, this.target);
-        const reach = this.chase(state, memberId);
-        context.arrivalRadius = reach ?? this.slotArrivalRadius;
-        context.isChasing = reach !== undefined;
-        movement.steer(strategy.desiredVelocity(index, context));
+        this.steer(state, memberId, index, movement, strategy, context);
       }
     });
     // Guards (18 §7): the unit they chase, or their post; never a lane field.
@@ -198,10 +214,7 @@ export class PathingSystem implements System {
       }
       this.target.x = postX;
       this.target.y = postY;
-      const reach = this.chase(state, guardId);
-      context.arrivalRadius = reach ?? this.slotArrivalRadius;
-      context.isChasing = reach !== undefined;
-      movement.steer(strategy.desiredVelocity(index, context));
+      this.steer(state, guardId, index, movement, strategy, context);
     });
   }
 }
