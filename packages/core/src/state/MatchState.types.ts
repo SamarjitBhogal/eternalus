@@ -14,7 +14,7 @@ export type ScheduledMark = {
  * and replayed like the rest of the state. Read-only: only the writers of `MatchRecord`, which
  * holds it as `GameState.match`, change it (DEC-172, DEC-177).
  */
-export type MatchState = {
+export interface MatchState {
   /** Changed only through `MatchRecord.setPhase`, which also stamps `phaseEnteredTick`. */
   readonly phase: MatchPhase;
   readonly phaseEnteredTick: number;
@@ -42,4 +42,4 @@ export type MatchState = {
    * already is.
    */
   readonly result: MatchResult | null;
-};
+}
