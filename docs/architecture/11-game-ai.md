@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-04
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -300,10 +300,13 @@ fields) belongs to `PathingSystem`, which time-slices its rebuilds
 
 ## 7. Sim mode (MVP)
 
-The human is the `MatchConfig.seat` (`{ definitionId, at }`; its team is `MatchConfig.playerTeam`);
-`state.match.humanLegendId: EntityId | null` is the Legend `Simulation` spawns for it when the match
-is built. With no seat, `humanLegendId` is `null` and every Legend gets `bot-legend` (or
-`rover`) and nobody reads input: the match plays itself. This is a first-class feature, not a
+The human is the `MatchConfig.seat` (`{ definitionId }`, a Legend definition; its team is
+`MatchConfig.playerTeam`; both in `config/GameConfig.types.ts`);
+`state.match.humanLegendId: EntityId | null` is the Legend `Simulation` spawns for it at its team's
+Stronghold when the match is built, after the bot roster and with no controller, so a seat needs
+the map. A seat that names no Legend definition leaves `humanLegendId` `null` and logs an error;
+the match plays on. With no seat, `humanLegendId` is `null` and every Legend gets `bot-legend`
+(or `rover`) and nobody reads input: the match plays itself. This is a first-class feature, not a
 debug hack. Soak tests ([15-diagnostics](./15-diagnostics-and-runtime-testing.md)) run sim mode
 headless in Node for thousands of ticks; balancing runs many seeds and compares `MatchResult`s;
 the developer menu's "remove/add user-controlled Legend" (requirements: "sim game") is a

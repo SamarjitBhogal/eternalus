@@ -27,7 +27,10 @@ export type SimulationOptions = {
   readonly debug?: DebugConfig;
   /** Where entity definitions are found by id; `loadDefaultContent(config.tickRate)` when omitted. */
   readonly content?: DefinitionSource;
-  /** The generated map; its lanes and structures drive the lane hordes (architecture 18). Without one, nothing spawns on lanes. */
+  /**
+   * The generated map; its lanes and structures drive the lane hordes (architecture 18). Without
+   * one, nothing spawns on lanes, and a `roster` or a `config.match.seat` throws.
+   */
   readonly map?: MapDefinition;
   /** The level curves Legends level along; `loadLevelCurves()` when omitted. */
   readonly levelCurves?: Pick<ContentCatalogue<LevelCurveDefinition>, 'has' | 'get'>;

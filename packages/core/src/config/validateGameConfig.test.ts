@@ -148,46 +148,25 @@ describe('validateGameConfig', () => {
     },
   );
 
-  it.each([
-    null,
-    { definitionId: 'warrior', at: { x: 0, y: 0 } },
-    { definitionId: 'x', at: { x: 1600, y: 900 } },
-  ])('accepts a seat of null or a Legend inside the world (%j)', (seat) => {
-    expect(failurePath({ match: { seat } })).toBeNull();
-  });
+  it.each([null, { definitionId: 'warrior' }, { definitionId: 'x' }])(
+    'accepts a seat of null or a Legend id (%j)',
+    (seat) => {
+      expect(failurePath({ match: { seat } })).toBeNull();
+    },
+  );
 
-  it.each([undefined, 'warrior', { at: { x: 1, y: 1 } }, { definitionId: '', at: { x: 1, y: 1 } }])(
-    'rejects a seat that is not null or a Legend id with a point (%j)',
+  it.each([undefined, 'warrior', {}, { definitionId: '' }, { definitionId: 7 }])(
+    'rejects a seat that is not null or a Legend id (%j)',
     (seat) => {
       const config = createDefaultGameConfig();
       expect(() => validateGameConfig({ ...config, match: { ...config.match, seat } })).toThrow(
         new ConfigValidationError(
           'match.seat',
-          'must be null or { definitionId: a non-empty string, at: a point }',
+          'must be null or { definitionId: a non-empty string }',
         ),
       );
     },
   );
-
-  it.each([
-    { x: -1, y: 10 },
-    { x: 10, y: -0.5 },
-    { x: 1600.5, y: 10 },
-    { x: 10, y: 900.5 },
-    { x: Number.NaN, y: 10 },
-    { x: 10, y: Infinity },
-    { x: '10', y: 10 },
-    { y: 10 },
-  ])('rejects a seat outside the world or not finite (%j)', (at) => {
-    const config = createDefaultGameConfig();
-    const seat = { definitionId: 'warrior', at };
-    expect(() => validateGameConfig({ ...config, match: { ...config.match, seat } })).toThrow(
-      new ConfigValidationError(
-        'match.seat',
-        'its point must be a finite point inside the world (map.worldWidth x map.worldHeight)',
-      ),
-    );
-  });
 
   it('rejects a config with a missing section', () => {
     expect(() => validateGameConfig(withoutKey(createDefaultGameConfig(), 'match'))).toThrow(

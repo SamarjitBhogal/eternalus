@@ -77,13 +77,13 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
     const { window, gameConfig, settings } = deps;
-    // The seat needs the team's stronghold: a map without one fails here, before anything is built.
-    const config = seatedConfig(gameConfig, request.world.map, request.player);
+    // Core spawns the seat at the team's Stronghold: a map without one throws in `Simulation`, below.
+    const config = seatedConfig(gameConfig, request.player);
     const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
     }
-    // The match points the camera at the player's spawn, so its start point does not matter.
+    // The match points the camera at the player's Legend, so its start point does not matter.
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
     const ring = new RingBufferSink(LOG_RING_CAPACITY);
     const logger = createMatchLogger(deps, ring);

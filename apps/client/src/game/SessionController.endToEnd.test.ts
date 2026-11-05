@@ -21,6 +21,7 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.co
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { MatchViewport } from './MatchViewport.types';
+import { prepareMatchWorld } from './prepareMatchWorld';
 import type { MatchFactory } from './SessionController.types';
 import { seatedConfig } from './seatedConfig';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
@@ -59,9 +60,10 @@ describe('SessionController with the real match, end to end', () => {
       const document = new FakeBrowserTarget();
       const scheduler = new FakeFrameScheduler();
       const simulation = new Simulation({
-        config: seatedConfig(CONFIG, request.world.map, request.player),
+        config: seatedConfig(CONFIG, request.player),
         seed: request.setup.seed,
         logger: new NullLogger(),
+        map: request.world.map,
       });
       const unsubscribed: number[] = [];
       const subscribe = simulation.on.bind(simulation);
@@ -258,14 +260,14 @@ describe('SessionController with the real match, end to end', () => {
 
   it('spawns every selectable class of the shipped catalogue as a Legend', () => {
     const selectable = shippedCatalogue().load().legendClasses.filter(isSelectableClass);
+    const { map } = prepareMatchWorld(CONFIG, 1);
     expect(selectable.length).toBeGreaterThan(0);
     for (const { classId } of selectable) {
       const simulation = new Simulation({
-        config: createDefaultGameConfig({
-          match: { seat: { definitionId: classId, at: { x: 10, y: 10 } } },
-        }),
+        config: createDefaultGameConfig({ match: { seat: { definitionId: classId } } }),
         seed: 1,
         logger: new NullLogger(),
+        map,
       });
       const { match, entities } = simulation.snapshot();
       const kinds = entities

@@ -94,9 +94,10 @@ describe('Player scenario: walking with the keyboard', () => {
     const world = prepareMatchWorld(config, 1);
     const match = new Match({
       simulation: new Simulation({
-        config: seatedConfig(config, world.map, PLAYER),
+        config: seatedConfig(config, PLAYER),
         seed: 1,
         logger: new NullLogger(),
+        map: world.map,
       }),
       world,
       tickRate: config.tickRate,

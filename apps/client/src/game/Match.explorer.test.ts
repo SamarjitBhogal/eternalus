@@ -41,9 +41,10 @@ const setUp = () => {
   const input = new ScriptedIntent();
   const match = new Match({
     simulation: new Simulation({
-      config: seatedConfig(config, world.map, PLAYER),
+      config: seatedConfig(config, PLAYER),
       seed: 1,
       logger: new NullLogger(),
+      map: world.map,
     }),
     world,
     tickRate: config.tickRate,

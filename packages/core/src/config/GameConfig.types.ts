@@ -1,5 +1,4 @@
 import type { PlayableTeam } from '../teams/teams.types';
-import type { Vec2 } from '../utils/geometry.types';
 import type { MatchTimelineEntry } from './MatchTimelineEntry.types';
 
 /**
@@ -50,11 +49,11 @@ export type MatchConfig = {
    */
   readonly playerTeam: PlayableTeam;
   /**
-   * The human's seat (plan A19): the Legend the human plays, spawned for `playerTeam` at `at` when
-   * the match is built; `null` in sim mode (no human). `definitionId` is the Legend definition, named
-   * as in a roster slot. Until the map option gives core the map, `at` is the client's spawn point.
+   * The human's seat (plan A19): the Legend the human plays, spawned for `playerTeam` at its
+   * Stronghold when the match is built, so a seat needs the map; `null` in sim mode (no human).
+   * `definitionId` is the Legend definition, named as in a roster slot.
    */
-  readonly seat: { readonly definitionId: string; readonly at: Vec2 } | null;
+  readonly seat: { readonly definitionId: string } | null;
 };
 
 /** Per-team caps the developer menu and spawners must respect. */

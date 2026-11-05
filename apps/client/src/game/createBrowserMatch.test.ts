@@ -70,14 +70,17 @@ describe('createBrowserMatch', () => {
     expect(window.pendingFrames).toBe(0);
   });
 
-  it('rethrows what Match threw and leaves nothing behind', () => {
+  it('rethrows what the simulation threw and leaves nothing behind', () => {
     const { window, factory, viewport, request, listeners } = setUp();
     const world = prepareMatchWorld(CONFIG, SEED);
     const withoutDark = {
       ...world,
       map: { ...world.map, features: world.map.features.filter((f) => f.team !== 'dark') },
     };
-    expect(() => factory(request(withoutDark), viewport)).toThrow('has no dark stronghold');
+    // Core spawns the dark seat at the dark Stronghold, so the map without one throws (A19).
+    expect(() => factory(request(withoutDark), viewport)).toThrow(
+      "The map has no dark Stronghold for the human's Legend.",
+    );
     expect(listeners()).toBe(0);
     expect(window.pendingFrames).toBe(0);
   });

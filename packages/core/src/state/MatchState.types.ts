@@ -28,7 +28,10 @@ export type MatchState = {
   isIdleHeld: boolean;
   /** The team the match is played (or spectated) for, from `config.match.playerTeam`. */
   readonly playerTeam: PlayableTeam;
-  /** The human's Legend; `null` in sim mode (11 §7), and when the seat's spawn failed. Set once by `Simulation` from `config.match.seat`. */
+  /**
+   * The human's Legend; `null` in sim mode (11 §7), and when the seat names no Legend definition.
+   * Set once by `Simulation` from `config.match.seat`, when the match is built.
+   */
   humanLegendId: EntityId | null;
   /**
    * How the match ended; `null` until a verdict. Set once by the `MatchDirector`, which does

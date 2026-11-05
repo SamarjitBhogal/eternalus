@@ -44,9 +44,10 @@ const setUp = () => {
   const world = prepareMatchWorld(config, 1);
   const player: PlayerChoice = { legend: 'warrior', team: 'light' };
   const simulation = new Simulation({
-    config: seatedConfig(config, world.map, player),
+    config: seatedConfig(config, player),
     seed: 1,
     logger: new NullLogger(),
+    map: world.map,
   });
   const renderer = new RecordingRenderer();
   const input = new ScriptedIntent();

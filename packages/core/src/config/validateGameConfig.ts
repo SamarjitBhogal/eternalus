@@ -67,12 +67,11 @@ const entriesOf = (timeline: unknown): readonly Readonly<Record<string, unknown>
   // Safe: the `match.timeline` shape rule passed before any rule that calls this.
   timeline as readonly Readonly<Record<string, unknown>>[];
 
-/**
- * The timeline typed; only for rules after the ones that check every mark and action. Every
- * action is `enter-phase` today, so those rules read every entry as one; a new kind makes them
- * filter by kind first.
- */
+/** The timeline typed; only for rules after the ones that check every mark and action. */
 const timelineOf = (config: unknown): readonly MatchTimelineEntry[] =>
+  // ponytail: the timeline rules below read every entry as `enter-phase`, the one action kind
+  // today; the ones that use `.length` and `[first]` would count a second kind, and the compiler
+  // cannot catch that. Upgrade: filter the entries by action kind when `spawn-sovereigns` lands (GL-3).
   // Safe: every mark and every action passed their rules before any rule that calls this.
   valueAt(config, 'match.timeline') as readonly MatchTimelineEntry[];
 
@@ -159,35 +158,10 @@ const RULES: readonly Rule[] = [
   },
   {
     path: 'match.seat',
-    rule: 'must be null or { definitionId: a non-empty string, at: a point }',
+    rule: 'must be null or { definitionId: a non-empty string }',
     isValid: (value) =>
       value === null ||
-      (isRecord(value) &&
-        typeof value.definitionId === 'string' &&
-        value.definitionId !== '' &&
-        isRecord(value.at)),
-  },
-  {
-    path: 'match.seat',
-    rule: 'its point must be a finite point inside the world (map.worldWidth x map.worldHeight)',
-    isValid: (value, config) => {
-      if (value === null) {
-        return true;
-      }
-      // Safe: the shape rule above passed, and the map sizes passed their own rules.
-      const { x, y } = (value as { readonly at: Readonly<Record<string, unknown>> }).at;
-      const width = valueAt(config, 'map.worldWidth') as number;
-      const height = valueAt(config, 'map.worldHeight') as number;
-      // NaN and Infinity fail the range comparisons, so they need no check of their own.
-      return (
-        typeof x === 'number' &&
-        typeof y === 'number' &&
-        x >= 0 &&
-        x <= width &&
-        y >= 0 &&
-        y <= height
-      );
-    },
+      (isRecord(value) && typeof value.definitionId === 'string' && value.definitionId !== ''),
   },
   {
     path: 'match.countdownSeconds',

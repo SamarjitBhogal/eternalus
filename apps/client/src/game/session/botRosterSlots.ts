@@ -7,8 +7,8 @@ import type { FilledRosters } from '../../bridge/events';
  * roster order (each team's lane bots in lane-fill order, DEC-102), with its class as its Legend
  * definition. A Rover bot takes no lane; each bot's `BotRole` picks its difficulty from the
  * roster's `difficulties` (core `content/teams/botRoster.ts`, DEC-149, DEC-151). The player is not
- * a slot: `Match` spawns the player's Legend. `difficulties` is the injected catalogue's roster
- * difficulties, the one source (rule 11).
+ * a slot: core spawns the player's Legend from `config.match.seat` (A19). `difficulties` is the
+ * injected catalogue's roster difficulties, the one source (rule 11).
  */
 export function botRosterSlots(
   rosters: FilledRosters,
