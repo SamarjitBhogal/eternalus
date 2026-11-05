@@ -1,7 +1,6 @@
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
-import { Footprint } from '../components/Footprint';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
@@ -16,15 +15,17 @@ import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
+import type { PathingWorld } from './PathingSystem.types';
 import type { System, SystemContext } from './System.types';
 
 /**
- * Sets next tick's heading of every horde member and every guard (architecture 10 §9, 18 §5): it lays each
- * horde's formation out around its anchor (a member with an attack target chases it instead,
- * stopping at attack reach, and holding at blocked ground rather than following the lane flow
- * field, which leads to the lane's end, not to the target) and asks each mob's `MovementStrategy` how to reach its
- * slot, with neighbours from `state.space`. Runs after `SpaceSystem`, so it reads this tick's
- * positions. Allocates nothing per unit once its scratch has grown to the crowd.
+ * Sets next tick's heading of every horde member and every guard (architecture 10 §9, 18 §5): it
+ * lays each horde's formation out around its anchor (a member with an attack target chases it
+ * instead, stopping at attack reach, and holding at blocked ground rather than following the lane
+ * flow field, which leads to the lane's end, not to the target) and asks each mob's
+ * `MovementStrategy` how to reach its slot, with neighbours from `state.space`. Runs after
+ * `SpaceSystem`, so it reads this tick's positions. Allocates nothing per unit once its scratch has
+ * grown to the crowd.
  *
  * Slots are `formationSlot`'s (18 §5.1), by each formation's shape, counting every follower in
  * `memberIds` order.
@@ -40,23 +41,26 @@ export class PathingSystem implements System {
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
   /** The last `chase`'s target blocked depth (`chase`). */
   private depth = 0;
-  /** The boxes of every structure's `Footprint`, read on first use. */
-  private forts: readonly Rect[] | null = null;
   private found = new Int32Array(0);
+  private readonly flowFields: LaneFlowFields | null;
+  private readonly forts: readonly Rect[];
 
   /**
    * @param strategies - Every movement strategy by id; a mob's `Movement.strategyId` picks one.
    * @param formations - Every formation, by id.
    * @param slotArrivalRadius - A mob this close to its formation slot is there.
-   * @param flowFields - The lane flow fields (06 §6), which this system also rebuilds within
-   *   `config.map.flowFieldCellBudget` each tick; without them mobs steer straight to their targets.
+   * @param world - The lane flow fields and the fort boxes (`PathingWorld`); none of either by
+   *   default.
    */
   public constructor(
     private readonly strategies: StrategyRegistry['movement'],
     private readonly formations: Readonly<Record<string, FormationDefinition>>,
     private readonly slotArrivalRadius: number,
-    private readonly flowFields: LaneFlowFields | null = null,
-  ) {}
+    { flowFields = null, forts = [] }: PathingWorld = {},
+  ) {
+    this.flowFields = flowFields;
+    this.forts = forts;
+  }
 
   /**
    * Points `target` at the unit `memberId` attacks (18 §5.2, engaging) and returns the distance
@@ -95,23 +99,17 @@ export class PathingSystem implements System {
       this.depth = grid?.blockedRun(this.target.x, this.target.y, x, y) ?? 0;
       return self.radius + combat.attack.reach;
     }
-    if (grid !== undefined && this.isInsideFort(state, other.position)) {
+    if (grid !== undefined && this.isInsideFort(other.position)) {
       this.depth = grid.blockedRun(this.target.x, this.target.y, x, y);
     }
     return self.radius + other.radius + combat.attack.reach;
   }
 
-  /** Whether `point` lies in the box of a structure's `Footprint` (a lane tower's fort, the palace). */
-  private isInsideFort(state: SystemContext['state'], { x, y }: Vec2): boolean {
-    if (this.forts === null) {
-      // Structures stand from match start and never move, so their boxes are read once.
-      const forts: Rect[] = [];
-      state.entities.forEach((entity) => {
-        const box = entity.findComponent(Footprint)?.bounds;
-        if (box !== undefined) forts.push(box);
-      });
-      this.forts = forts;
-    }
+  /**
+   * Whether `point` lies in a fort box (`PathingWorld.forts`: a lane tower's fort, the palace,
+   * DEC-217 (16)).
+   */
+  private isInsideFort({ x, y }: Vec2): boolean {
     return this.forts.some(
       (box) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height,
     );

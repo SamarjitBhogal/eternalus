@@ -1,4 +1,5 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { Footprint } from '../components/Footprint';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { STUCK_DETECTION } from '../content/ai/stuckDetection';
@@ -17,6 +18,7 @@ import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
+import type { Rect } from '../utils/geometry.types';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
@@ -42,12 +44,12 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
- * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction, progression (kill XP),
- * minion veterancy, structure losses and breakability, spawning, enraging, death, then invariants
- * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
- * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
- * effects loaded for this match's config) and hands them to the systems that need them, so a damage
- * step applies to every hit and every status event comes from one place.
+ * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
+ * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
+ * death, then invariants last. This is the one place a system is added, at its position in the tick
+ * (architecture 02 §9). It builds the match's one `DamagePipeline` and one `StatusEffectApplier`
+ * (with the status effects loaded for this match's config) and hands them to the systems that need
+ * them, so a damage step applies to every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /**
@@ -123,7 +125,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               createDefaultStrategyRegistry().movement,
               FORMATIONS,
               HORDE_STEERING.slotArrivalRadius,
-              flowFields,
+              { flowFields, forts: DefaultSystemPipeline.fortBoxesOf(state) },
             ),
           ]),
       new CombatSystem(damage),
@@ -149,5 +151,18 @@ export class DefaultSystemPipeline extends SystemPipeline {
       new DeathSystem(),
       new InvariantSystem(invariants),
     ]);
+  }
+
+  /**
+   * The box of every structure's `Footprint` (`PathingWorld.forts`). `Simulation` builds the
+   * structures before the pipeline, so they are read here once, while every one still stands.
+   */
+  private static fortBoxesOf(state: GameState): readonly Rect[] {
+    const forts: Rect[] = [];
+    state.entities.forEach((entity) => {
+      const box = entity.findComponent(Footprint)?.bounds;
+      if (box !== undefined) forts.push(box);
+    });
+    return forts;
   }
 }

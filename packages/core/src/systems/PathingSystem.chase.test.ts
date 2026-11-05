@@ -196,58 +196,71 @@ describe('PathingSystem', () => {
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 
-  it('follows a unit into a fort over the ground the grid blocks there (owner 2026-11-04)', () => {
-    const config = createDefaultGameConfig();
-    const grid = WorldMap.fromDefinition(
-      BLOCKED_LANE_MAP,
-      config.map.navCellSize,
-      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
-    );
-    const fields = new LaneFlowFields(
-      grid,
-      BLOCKED_LANE_MAP,
-      config.map.flowFieldCorridorHalfWidth,
-    );
-    const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
-    const state = new GameState(config, 1, matchWorldOf(BLOCKED_LANE_MAP), { space });
-    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
-    // The rift block (x 50..70, y 10..30) stands in for a fort's court, which the grid blocks;
-    // two walls give the fort's box. The chaser at x 45 sees that ground 5 m ahead.
-    const fort = new Fort('fort', 'spawner-tower');
-    fort.spawn({ at: { x: 60, y: 20 }, polygons: [box(50, 10, 52, 30), box(68, 10, 70, 30)] });
-    const minion = factory.create('light-mob', 'light-minion', {
-      team: 'light',
-      position: { x: 45, y: 20 },
-    });
-    const enemy = factory.create('light-mob', 'light-minion', {
-      team: 'dark',
-      position: { x: 58, y: 20 },
-    });
-    state.entities.add(fort);
-    state.entities.add(minion);
-    state.entities.add(enemy);
-    state.hordes.add({
-      id: 'horde-1',
-      team: 'light',
-      weightClass: 'light',
-      lane: 'lane-0',
-      formationId: 'ranks',
-      memberIds: [minion.id],
-      progress: 45,
-    });
-    state.entities.setAttackTarget(minion.id, enemy.id);
-    space.begin(2);
-    space.add(minion.id, 45, 20);
-    space.add(enemy.id, 58, 20);
-    space.commit();
+  it.each([
+    ['standing', false],
+    ['whose tower fell before the first chase', true],
+  ])(
+    'follows a unit into a fort %s over the ground the grid blocks there (owner 2026-11-04)',
+    (_, isFallen) => {
+      const config = createDefaultGameConfig();
+      const grid = WorldMap.fromDefinition(
+        BLOCKED_LANE_MAP,
+        config.map.navCellSize,
+        (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+      );
+      const fields = new LaneFlowFields(
+        grid,
+        BLOCKED_LANE_MAP,
+        config.map.flowFieldCorridorHalfWidth,
+      );
+      const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+      const state = new GameState(config, 1, matchWorldOf(BLOCKED_LANE_MAP), { space });
+      const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+      // The rift block (x 50..70, y 10..30) stands in for a fort's court, which the grid blocks;
+      // two walls give the fort's box. The chaser at x 45 sees that ground 5 m ahead.
+      const fort = new Fort('fort', 'spawner-tower');
+      fort.spawn({ at: { x: 60, y: 20 }, polygons: [box(50, 10, 52, 30), box(68, 10, 70, 30)] });
+      const minion = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 45, y: 20 },
+      });
+      const enemy = factory.create('light-mob', 'light-minion', {
+        team: 'dark',
+        position: { x: 58, y: 20 },
+      });
+      state.entities.add(fort);
+      state.entities.add(minion);
+      state.entities.add(enemy);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [minion.id],
+        progress: 45,
+      });
+      state.entities.setAttackTarget(minion.id, enemy.id);
+      // The fort boxes are read when the match is built, so a tower that falls before the first
+      // chase keeps its fort's box (no history dependence).
+      const forts = [fort.getComponent(Footprint).bounds];
+      if (isFallen) state.entities.remove(fort.id, 'died');
+      space.begin(2);
+      space.add(minion.id, 45, 20);
+      space.add(enemy.id, 58, 20);
+      space.commit();
 
-    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, fields).update({
-      state,
-      logger,
-    });
+      new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+        flowFields: fields,
+        forts,
+      }).update({
+        state,
+        logger,
+      });
 
-    expect(minion.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
-  });
+      expect(minion.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+    },
+  );
 
   it('holds a chase at blocked ground, neither following the lane field nor entering it', () => {
     const config = createDefaultGameConfig();
@@ -293,7 +306,9 @@ describe('PathingSystem', () => {
     });
     space.commit();
 
-    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, fields).update({
+    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+      flowFields: fields,
+    }).update({
       state,
       logger,
     });

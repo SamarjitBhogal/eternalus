@@ -65,12 +65,13 @@ const riftChase = (systems: (state: GameState) => readonly System[]) => {
     new MovementSystem(),
     new SpaceSystem(space),
     ...systems(state),
-    new PathingSystem(
-      STRATEGIES,
-      FORMATIONS,
-      HORDE_STEERING.slotArrivalRadius,
-      new LaneFlowFields(world.grid, BLOCKED_LANE_MAP, config.map.flowFieldCorridorHalfWidth),
-    ),
+    new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius, {
+      flowFields: new LaneFlowFields(
+        world.grid,
+        BLOCKED_LANE_MAP,
+        config.map.flowFieldCorridorHalfWidth,
+      ),
+    }),
   ];
   let detours = 0;
   const run = (ticks: number) => {
