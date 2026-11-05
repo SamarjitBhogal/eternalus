@@ -34,10 +34,6 @@ export const createMapFeature = (
     minimapGlyph: { ...definition.minimapGlyph },
     ...(spec.laneId === undefined ? {} : { laneId: spec.laneId }),
     ...(footprint === undefined ? {} : { footprint }),
-    ...(spec.wallBoundary === undefined
-      ? {}
-      : {
-          wallBoundary: { ...spec.wallBoundary, frontArc: { ...spec.wallBoundary.frontArc } },
-        }),
+    ...(spec.wallBoundary === undefined ? {} : { wallBoundary: { ...spec.wallBoundary } }),
   };
 };

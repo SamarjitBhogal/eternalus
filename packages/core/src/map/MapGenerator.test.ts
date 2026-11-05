@@ -25,8 +25,9 @@ import type { MapConfig } from './MapGenerator.types';
 
 const SEED = 1234;
 /** FNV-1a of the default map's JSON at SEED; see the golden-hash test. */
-// Includes the approved front shield and joined mountain bounds, retaining lane anchors (2026-11-03).
-const GOLDEN_HASH = 2_479_674_981;
+// Includes the approved front shield and joined mountain bounds, retaining lane anchors (2026-11-03);
+// Strongholds carry only the wall radius and thickness, not frontArc (PR #69 review S3, 2026-11-04).
+const GOLDEN_HASH = 4_128_499_639;
 const EPSILON = 1e-6;
 
 type Ground = 'map-1' | 'generated';
@@ -437,13 +438,13 @@ describe('MapGenerator', () => {
     expect(ofKind(map, 'cathedral')).toHaveLength(1);
   });
 
-  it('copies generated shield dimensions without freezing the input layout', () => {
-    const layout = structuredClone(DEFAULT_MAP_LAYOUT);
-    const map = new MapGenerator({ layout }).generate({ map: DEFAULT_MAP_CONFIG }, SEED);
-    const stronghold = map.features.find((feature) => feature.kind === 'stronghold');
-    expect(stronghold?.wallBoundary?.frontArc).toEqual(layout.wallRing.frontArc);
-    expect(Object.isFrozen(stronghold?.wallBoundary?.frontArc)).toBe(true);
-    expect(Object.isFrozen(layout.wallRing.frontArc)).toBe(false);
+  it('gives each Stronghold only the wall radius and thickness it is read for', () => {
+    const { radius, thickness } = DEFAULT_MAP_LAYOUT.wallRing;
+    const strongholds = ofKind(generate(), 'stronghold');
+    expect(strongholds).toHaveLength(2);
+    for (const stronghold of strongholds) {
+      expect(stronghold.wallBoundary).toStrictEqual({ radius, thickness });
+    }
   });
 
   it('keeps the lanes, gates and tower anchors when the shield tips stretch further', () => {

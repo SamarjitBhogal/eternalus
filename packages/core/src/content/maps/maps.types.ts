@@ -46,7 +46,7 @@ export type MapFeature = {
   /** The ground the feature covers, in world units, when its definition has a size. */
   readonly footprint?: Polygon;
   /** Generated boundary dimensions; palace presentation must use the actual enclosing layout. */
-  readonly wallBoundary?: Pick<MapLayout['wallRing'], 'radius' | 'thickness' | 'frontArc'>;
+  readonly wallBoundary?: Pick<MapLayout['wallRing'], 'radius' | 'thickness'>;
 };
 
 /** The kinds of ground shapes that are not entities. Walls are features, not terrain. */

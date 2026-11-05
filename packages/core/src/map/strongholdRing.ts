@@ -11,7 +11,7 @@ export function strongholdRing(
       feature.team === stronghold.team &&
       (feature.footprint?.length ?? 0) > 0,
   );
-  if (!hasWall) throw new Error(`Missing generated wall ring for ${stronghold.id}`);
+  if (!hasWall) throw new Error(`Missing generated wall arc for ${stronghold.id}`);
   if (stronghold.wallBoundary === undefined)
     throw new Error(`Missing generated wall boundary for ${stronghold.id}`);
   return { radius: stronghold.wallBoundary.radius, thickness: stronghold.wallBoundary.thickness };

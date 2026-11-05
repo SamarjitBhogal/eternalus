@@ -34,7 +34,7 @@ describe('strongholdRing', () => {
     const feature = map.features.find((entry) => entry.kind === 'stronghold');
     if (feature === undefined) throw new Error('Missing stronghold');
     expect(() => strongholdRing({ ...map, features: [feature] }, feature)).toThrow(
-      'Missing generated wall ring',
+      'Missing generated wall arc',
     );
   });
   it('rejects a stronghold with no generated wall boundary instead of inferring it from its walls', () => {
