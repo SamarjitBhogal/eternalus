@@ -10,12 +10,11 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
  * HC-F8): drag to pan, the wheel to zoom, a short click on a building to cut its roof away or put
  * it back (a unit under the click is attacked instead), and the toolbar's world overview, which
  * also puts those roofs back. In normal play a roof opens only while the player's Legend is inside
- * (DEC-143). A press these gestures own (a
- * minimap click, or any press with the explorer) is claimed until its release, so the held attack
- * button does not act on it. With the explorer, a click (a release within the click slop) that is
- * no unit or roof click attacks once at the release point (`Match.clickAt`: unit, roof, map object;
- * DEC-150, DEC-183); a drag does neither (06 §10). Positions arrive in CSS pixels and reach the
- * match in device pixels.
+ * (DEC-143). A press these gestures own (a minimap click, or any press with the explorer) is
+ * claimed until its release, so the held attack button does not act on it. With the explorer, a
+ * click (a release within the click slop) that is no unit or roof click attacks once at the
+ * release point (`Match.clickAt`: unit, roof, map object; DEC-150, DEC-183); a drag does neither
+ * (06 §10). Positions arrive in CSS pixels and reach the match in device pixels.
  */
 export class CanvasPointerControls {
   private press: { x: number; y: number; distance: number } | null = null;
