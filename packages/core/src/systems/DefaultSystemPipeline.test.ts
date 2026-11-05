@@ -314,58 +314,67 @@ describe('DefaultSystemPipeline', () => {
       expect(reopened.includes(5 * (world?.cols ?? 0) + 9)).toBe(hasLanes);
     },
   );
-  it('gives steering the fort boxes of the structures standing when it is built, so a fallen tower keeps its box', () => {
-    const logger = new MemoryLogger();
-    const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
-    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
-      space,
-    });
-    const factory = newFactory();
-    const fort = new Fort('fort', 'spawner-tower');
-    fort.spawn(undefined);
-    state.entities.add(fort);
-    const pipeline = new DefaultSystemPipeline(
-      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
-      state,
-      PROGRESSION,
-      { factory, space, decide: [] },
-    );
-    // The tower falls before any chase; the grid still blocks the court (the rift, x 50..70).
-    state.entities.remove(fort.id, 'died');
-    state.advanceTick();
-    const minion = factory.create('light-mob', 'light-minion', {
-      team: 'light',
-      position: { x: 45, y: 20 },
-    });
-    const enemy = factory.create('light-mob', 'light-minion', {
-      team: 'dark',
-      position: { x: 58, y: 20 },
-    });
-    state.entities.add(minion);
-    state.entities.add(enemy);
-    state.hordes.add({
-      id: 'horde-1',
-      team: 'light',
-      weightClass: 'light',
-      lane: 'lane-0',
-      formationId: 'ranks',
-      memberIds: [minion.id],
-      progress: 45,
-    });
-    state.hordes.add({
-      id: 'horde-2',
-      team: 'dark',
-      weightClass: 'light',
-      lane: 'lane-0',
-      formationId: 'ranks',
-      memberIds: [enemy.id],
-      progress: 40,
-    });
-    state.entities.setAttackTarget(minion.id, enemy.id);
+  it.each([
+    // A tower's fort box is one (DEC-185); the chase closes in over the court's blocked ground.
+    { definitionId: 'spawner-tower', heading: { x: 1, y: 0 } },
+    // A gate's footprint is only its outline for reach (DEC-217 (17)), not a fort box: the chase
+    // holds at the blocked ground.
+    { definitionId: 'gate', heading: { x: 0, y: 0 } },
+  ])(
+    'gives steering the fort boxes of the structures standing when it is built, so a fallen tower keeps its box ($definitionId)',
+    ({ definitionId, heading }) => {
+      const logger = new MemoryLogger();
+      const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+      const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
+        space,
+      });
+      const factory = newFactory();
+      const fort = new Fort('fort', definitionId);
+      fort.spawn(undefined);
+      state.entities.add(fort);
+      const pipeline = new DefaultSystemPipeline(
+        new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
+        state,
+        PROGRESSION,
+        { factory, space, decide: [] },
+      );
+      // The tower falls before any chase; the grid still blocks the court (the rift, x 50..70).
+      state.entities.remove(fort.id, 'died');
+      state.advanceTick();
+      const minion = factory.create('light-mob', 'light-minion', {
+        team: 'light',
+        position: { x: 45, y: 20 },
+      });
+      const enemy = factory.create('light-mob', 'light-minion', {
+        team: 'dark',
+        position: { x: 58, y: 20 },
+      });
+      state.entities.add(minion);
+      state.entities.add(enemy);
+      state.hordes.add({
+        id: 'horde-1',
+        team: 'light',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [minion.id],
+        progress: 45,
+      });
+      state.hordes.add({
+        id: 'horde-2',
+        team: 'dark',
+        weightClass: 'light',
+        lane: 'lane-0',
+        formationId: 'ranks',
+        memberIds: [enemy.id],
+        progress: 40,
+      });
+      state.entities.setAttackTarget(minion.id, enemy.id);
 
-    pipeline.run({ state, logger });
+      pipeline.run({ state, logger });
 
-    // Inside the fort's box the chase closes in over the court's blocked ground (owner 2026-11-04).
-    expect(minion.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
-  });
+      // Inside the fort's box the chase closes in over the court's blocked ground (owner 2026-11-04).
+      expect(minion.getComponent(Movement).heading).toEqual(heading);
+    },
+  );
 });
