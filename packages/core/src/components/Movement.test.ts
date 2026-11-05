@@ -118,4 +118,20 @@ describe('Movement', () => {
     expect(movement.speed).toBe(0);
     expect(movement.heading).toEqual({ x: 1, y: 0 });
   });
+
+  it('reports the top speed the last advance allowed, above maxSpeed for a scale above 1', () => {
+    const movement = new Movement(STATS);
+    movement.steer({ x: 1, y: 0 });
+    expect(movement.topSpeed).toBe(STATS.maxSpeed);
+
+    for (let tick = 0; tick < 5; tick += 1) {
+      movement.advance(1.5);
+    }
+    expect(movement.topSpeed).toBe(STATS.maxSpeed * 1.5);
+    expect(movement.speed).toBe(STATS.maxSpeed * 1.5);
+
+    movement.advance();
+    expect(movement.topSpeed).toBe(STATS.maxSpeed);
+    expect(movement.speed).toBe(STATS.maxSpeed);
+  });
 });

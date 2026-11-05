@@ -176,6 +176,8 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                  | `ProgressionSystem` (assists), `AiSystem` (aggro)                  |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                   | `DeathSystem`, `ProgressionSystem`, `Scoring`                      |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                 | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields) |
+| `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                 | `HordeSystem` (gate holding), views                                |
+| `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                     | `ProgressionSystem` (camp reward), `MatchDirector`                 |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                 | HUD, views                                                         |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                   | HUD, `MinimapView`                                                 |
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                   | `Scoring`, `MatchDirector`, `StatusEffectSystem`                   |

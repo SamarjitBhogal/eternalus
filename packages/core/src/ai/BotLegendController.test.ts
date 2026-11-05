@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -10,11 +11,13 @@ import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
+import { Unit } from '../entities/Unit';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import type { AiMemory } from '../state/AiState.types';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { BotLegendController } from './BotLegendController';
 import { Perception } from './perception/Perception';
 
@@ -54,9 +57,12 @@ const setUp = (at = { x: 60, y: 20 }) => {
   const bot = add('light', at.x, at.y, 'warrior', 'warrior');
   const decide = (memory: AiMemory = { lane: 'lane-0' }, profileId = 'normal') => {
     space.begin(state.entities.size);
+    // Units only, as `SpaceSystem` indexes them: structures are never perceived as enemies.
     state.entities.forEach((entity) => {
-      const { x, y } = entity.getComponent(Transform).position;
-      space.add(entity.id, x, y);
+      if (entity instanceof Unit) {
+        const { x, y } = entity.getComponent(Transform).position;
+        space.add(entity.id, x, y);
+      }
     });
     space.commit();
     return controller.decide({
@@ -181,6 +187,58 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     }
 
     expect(decide().commands).toEqual([{ type: 'move', actorId: bot, direction: { x: 40, y: 0 } }]);
+  });
+
+  // Dark's lane-0 SpawnerTower stands at x 140, radius 14: hordes gather at its near edge, x 126.
+  const nextTower = (state: GameState) =>
+    state.laneStructures.objectiveFor('lane-0', 'light', state.entities)?.id ?? '';
+
+  it('Push: at its lane’s next enemy structure it attacks it, walks up to it, then holds in reach', () => {
+    const { state, bot, decide } = setUp({ x: 116, y: 20 });
+    spawnMapStructures(state);
+    const tower = nextTower(state);
+
+    expect(decide().commands).toEqual([
+      { type: 'attack-target', actorId: bot, targetId: tower },
+      { type: 'move', actorId: bot, direction: { x: 10, y: 0 } },
+    ]);
+    state.entities.get(bot)?.getComponent(Transform).moveTo({ x: 125.5, y: 20 });
+    expect(decide({ lane: 'lane-0', targetId: tower }).commands).toEqual([
+      { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
+    ]);
+  });
+
+  it('Fight before Push: an enemy unit near the structure is fought first', () => {
+    const { state, bot, add, decide } = setUp({ x: 116, y: 20 });
+    spawnMapStructures(state);
+    const enemy = add('dark', 119);
+
+    expect(decide().commands[0]).toEqual({ type: 'attack-target', actorId: bot, targetId: enemy });
+  });
+
+  it('Push: walks with its horde while still short of the structure', () => {
+    const { state, bot, add, decide } = setUp({ x: 30, y: 20 });
+    spawnMapStructures(state);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [add('light', 5, 5)],
+      progress: 50,
+    });
+
+    expect(decide().commands).toEqual([{ type: 'move', actorId: bot, direction: { x: 40, y: 0 } }]);
+  });
+
+  it('Push: leaves a structure that cannot be broken yet alone', () => {
+    const { state, bot, decide } = setUp({ x: 116, y: 20 });
+    spawnMapStructures(state);
+    state.entities.get(nextTower(state))?.getComponent(Collider).setUnbreakable(true);
+
+    // With no horde on its lane it regroups on the lane, where it already stands.
+    expect(decide().commands).toEqual([{ type: 'move', actorId: bot, direction: { x: 0, y: 0 } }]);
   });
 
   it('Regroup: with no allied horde on its lane it returns to the lane, halting once there', () => {

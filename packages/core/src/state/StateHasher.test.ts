@@ -7,6 +7,7 @@ import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { Veterancy } from '../components/Veterancy';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { Entity } from '../entities/Entity';
@@ -98,6 +99,31 @@ describe('StateHasher', () => {
     const { state, soldier } = stateWithSoldier();
     const before = hasher.hash(state);
     change(state, soldier);
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when a collider turns unbreakable', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const wall = new Soldier('entity-1', 'soldier');
+    wall.spawn({});
+    const collider = new Collider({ kind: 'circle', radius: 1 }, 'structure', true);
+    wall.addComponent(collider);
+    state.entities.add(wall);
+    const before = hasher.hash(state);
+
+    collider.setUnbreakable(true);
+
+    expect(hasher.hash(state)).not.toBe(before);
+  });
+
+  it('changes when a minion counts a kill', () => {
+    const { state, soldier } = stateWithSoldier();
+    const veterancy = new Veterancy();
+    soldier.addComponent(veterancy);
+    const before = hasher.hash(state);
+
+    veterancy.recordKill(2, 3);
+
     expect(hasher.hash(state)).not.toBe(before);
   });
 
@@ -306,5 +332,37 @@ describe('StateHasher', () => {
         expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
       },
     );
+  });
+
+  describe('ally damage (DEC-89)', () => {
+    const withTally = (...tallies: readonly ['light' | 'dark', string, number][]): number => {
+      const { state } = stateWithSoldier();
+      for (const [team, lane, amount] of tallies) {
+        state.allyDamage.add(team, lane, amount);
+      }
+      return hasher.hash(state);
+    };
+
+    it('hashes the same tallies the same, and a cleared tally as none', () => {
+      const { state } = stateWithSoldier();
+      const none = hasher.hash(state);
+      state.allyDamage.add('dark', 'lane-1', 9);
+      state.allyDamage.clear('dark');
+
+      expect(withTally(['light', 'lane-0', 5])).toBe(withTally(['light', 'lane-0', 5]));
+      expect(hasher.hash(state)).toBe(none);
+    });
+
+    it('changes with the team, the lane and the amount of a tally', () => {
+      const hashes = [
+        hasher.hash(stateWithSoldier().state),
+        withTally(['light', 'lane-0', 5]),
+        withTally(['dark', 'lane-0', 5]),
+        withTally(['light', 'lane-1', 5]),
+        withTally(['light', 'lane-0', 6]),
+      ];
+
+      expect(new Set(hashes).size).toBe(5);
+    });
   });
 });

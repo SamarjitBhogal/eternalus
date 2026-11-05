@@ -60,6 +60,14 @@ export type GameEventMap = {
     readonly team: Team;
     readonly lane: string | null;
   };
+  /** A wall or gate turned breakable (or back); `lane` is its `MapLane.id`, `null` off the lanes. */
+  readonly 'structure-breakability-changed': {
+    readonly entityId: EntityId;
+    readonly isBreakable: boolean;
+    readonly lane: string | null;
+  };
+  /** A camp's whole group is dead (18 §7.1); the group comes back after its respawn time. */
+  readonly 'camp-cleared': { readonly entityId: EntityId };
   readonly 'shield-bars-changed': {
     readonly entityId: EntityId;
     readonly bars: readonly ShieldBar[];

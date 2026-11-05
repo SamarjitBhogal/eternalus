@@ -30,10 +30,11 @@ import { RANKS_FORMATION } from './content/mobs/formations/ranks';
 import { assignLanes } from './state/assignLanes';
 import { formationSlot } from './state/formationSlot';
 import { unitClassOf } from './content/ai/unitClasses';
-import { FORMATIONS } from './content/mobs/formations/formations';
 import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
 import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
+import { compareById } from './utils/compareById';
 import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
 import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
@@ -130,10 +131,12 @@ export class Simulation {
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
-      definitions,
+      Simulation.withStructures(definitions),
       undefined,
       weaponSource,
     );
+    Simulation.spawnStructures(this.state, factory);
+    this.state.indexStructures();
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
@@ -235,6 +238,32 @@ export class Simulation {
   /** A 32-bit fingerprint of the current state; equal runs give equal hashes. */
   public hash(): number {
     return this.hasher.hash(this.state);
+  }
+
+  /** `units` plus the structure definitions, so one factory builds both (architecture 04 §6). */
+  private static withStructures(units: DefinitionSource): DefinitionSource {
+    return {
+      has: (id) => units.has(id) || STRUCTURE_DEFINITIONS.has(id),
+      get: (id) => (units.has(id) ? units.get(id) : STRUCTURE_DEFINITIONS.get(id)),
+    };
+  }
+
+  /**
+   * Builds the map's structures, in feature id order, before anything else spawns (architecture
+   * 07 §1): every feature whose definition is a structure becomes that structure, with its team
+   * and lane. Features without a structure definition (walls, turrets, camps) stay map data.
+   */
+  private static spawnStructures(state: GameState, factory: EntityFactory): void {
+    const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
+      compareById(a.id, b.id),
+    );
+    for (const { definitionId, position, team, laneId } of features) {
+      if (STRUCTURE_DEFINITIONS.has(definitionId)) {
+        const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
+        const placement = { position, team, ...(laneId !== undefined && { laneId }) };
+        state.entities.add(factory.create(kind, definitionId, placement));
+      }
+    }
   }
 
   /**
@@ -436,7 +465,7 @@ export class Simulation {
   private static createControllers(): ControllerRegistry {
     const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
     return createDefaultControllerRegistry({
-      minion: { aggro: AGGRO_RULES, formations: FORMATIONS, classOf: unitClassOf },
+      minion: { aggro: AGGRO_RULES, classOf: unitClassOf },
       botLegend: bots,
       rover: {
         ...bots,

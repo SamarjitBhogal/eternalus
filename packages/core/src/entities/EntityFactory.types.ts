@@ -30,6 +30,8 @@ export type ControllerSpawn = {
 export type Placement = {
   readonly position: Vec2;
   readonly team?: Team;
+  /** The lane a lane structure stands on (`MapLane.id`). */
+  readonly laneId?: string;
   /** A controller for this entity alone, in place of its definition's (a bot Legend). */
   readonly controller?: ControllerSpawn;
 };
