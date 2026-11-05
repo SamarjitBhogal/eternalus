@@ -7,7 +7,7 @@ import { SPEED_TOLERANCE } from '../InvariantRunner.constants';
 
 /**
  * `finite-transforms` (architecture 15 §3): every position and velocity is a finite vector, and
- * no velocity is longer than its `maxSpeed`.
+ * no velocity is longer than its top speed (`Movement.topSpeed`: `maxSpeed` scaled by statuses).
  */
 export class FiniteTransformsInvariant implements Invariant {
   public readonly id = 'finite-transforms';
@@ -16,7 +16,7 @@ export class FiniteTransformsInvariant implements Invariant {
 
   public readonly cadence = 'tick';
 
-  /** Flags every entity with a non-finite position or velocity, or a velocity above maxSpeed. */
+  /** Flags every entity with a non-finite position or velocity, or a velocity above its top speed. */
   public check(state: GameState): readonly Violation[] {
     const violations: Violation[] = [];
 
@@ -34,9 +34,9 @@ export class FiniteTransformsInvariant implements Invariant {
         violations.push(this.violation(entity.id, 'non-finite velocity', movement.velocity));
       } else if (
         Math.hypot(movement.velocity.x, movement.velocity.y) >
-        movement.maxSpeed * (1 + SPEED_TOLERANCE)
+        movement.topSpeed * (1 + SPEED_TOLERANCE)
       ) {
-        violations.push(this.violation(entity.id, 'velocity above maxSpeed', movement.velocity));
+        violations.push(this.violation(entity.id, 'velocity above top speed', movement.velocity));
       }
     });
 

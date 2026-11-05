@@ -4290,6 +4290,168 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: pre-PR gate and the PR into `phase/2-sprint-2-work`; then merge this fix into #55
   and #56 and build the Legend-only chase limit (MS-34) on #56.
 
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-structures — SamarjitBhogal + Claude Code
+
+- What was done: the part of sprint 2.1 the minion plan's M2c needs (unowned, so built here as
+  plan row M2s). `Stronghold`, `SpawnerTower`, `BuffTower` and `Gate` entities with
+  `content/structures/structureCatalogue.ts` (base health from `balancing.md`) and registry lines;
+  `Simulation` builds one per map structure feature, in feature id order, with its lane.
+  `BreakabilityRule` content, `StructureSystem` (emits `structure-destroyed` and
+  `structure-breakability-changed`, gates unbreakable until 2 of 3 BuffTowers are down) and
+  `BreakabilityStep` in the damage pipeline. The client registers an empty `StructureView` (the map
+  layer already draws buildings). Docs 03, 07, 18 and the minion plan updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  727 passed (727)"; client "Tests 416 passed (416)"; "✓ built in 160ms"; "Documentation check
+  passed." After the critic (blockers: the BuffTower count kept in the system, and
+  `Collider.isUnbreakable` not hashed; both fixed, total now from config) and ponytail (lean, no
+  cuts): core "Tests 728 passed (728)", client "Tests 416 passed (416)", `EXIT=0`.
+- Next step: M2c on top of this branch.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M2c on top of M2s. `state/LaneStructures` (the lane-order objective
+  index, built once the structures spawn); `HordeSystem` holds the anchor `objectiveHoldGap` in
+  front of the next standing objective; `MinionController` attacks the breakable objective as
+  `lane-objective` (gate holding until `structure-breakability-changed`); `assessLanes` scores
+  structure damage not dealt and structures lost; `SpawnSystem` spawns from the structure entities
+  (a destroyed tower stops) and runs the guard plans (`content/structures/guardPlans.ts`, posts in
+  `state.guards`, respawn after 120 s, DISC-21 shrink); `GuardController` on the shared
+  `ai/LeashBehaviour`; `LeashedChaseMovementStrategy`; guards steered by `PathingSystem`;
+  `GuardWithinLeashInvariant`. Light, medium and heavy guard content. Four sign-off items in
+  `INBOX.md`. Docs 18 and the minion plan updated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  751 passed (751)"; client "Tests 416 passed (416)"; "✓ built in 184ms"; "Documentation check
+  passed."
+- Pre-PR gate: critic round 1 had one blocker (no test for `PathingSystem`'s guard steering), now
+  tested with a guard engage-and-return match too; should-fixes applied (`GuardRoster` split out
+  of `SpawnSystem` with its own tests, the DISC-21 shrink names its structure kind in content,
+  guards acquire inside their leash, INBOX items 5–8, a plan §3 row). Critic round 2: approve, no
+  blockers. Ponytail: lean, no cuts. Final `npm run check` → `EXIT=0`: core "Tests 755 passed
+  (755)", client "Tests 416 passed (416)", "✓ built in 172ms", "Documentation check passed."
+- Next step: M5b.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m5b-if-time — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M5b (MVP-if-time) on top of M2c. Minion XP: `Veterancy` component,
+  `VeterancySystem` (kills from `entity-died`, a level per 2 mob kills up to 3, +10% max health,
+  the `veteran` and `rallied` statuses, aura every 0.5 s within 4 m), content in
+  `content/mobs/minionVeterancy.ts`; `Veterancy` is hashed. Ghosted first wave:
+  `AggroRuleDefinition.ghostFirstWaveTicks` read by `LeashBehaviour.rankOf`, shipped at 0 (off).
+  Tower Guardians not built (ranged attacks and numbers missing; `INBOX.md`). Docs 11 and 18
+  updated.
+- Pre-PR gate: critic approve, no blockers; should-fixes applied (only kills of lane minions count,
+  per the game doc; tests for the level cap, non-minion victims and the aura cadence; a hasher test
+  for `Veterancy`; doc 05's status note; doc 11's design text restored). Ponytail: lean, no cuts.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  763 passed (763)"; client "Tests 416 passed (416)"; "✓ built in 153ms"; "Documentation check
+  passed."
+- Next step: M6.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M6, forest camps. `Camp` structure and three forest-camp definitions;
+  light, medium and heavy camp mobs and the `camp-mob` aggro profile; camp groups as `group` guard
+  plans activated at the countdown's end (balancing.md compositions, 6 m leash, 120 s group
+  respawn); `GuardRoster` emits `camp-cleared` (new in doc 03's catalogue); guard plans are looked
+  up by structure definition id; posts may be neutral and skip the unit cap. Checkpoint defenders
+  not built: `CaptureSystem` is only on PR #49, which conflicts with the minion stack (INBOX).
+  INBOX notes record the two earlier minion items as applied by their `Recommendation:`s.
+- Pre-PR gate: critic round 1 had one blocker (no test of a neutral camp mob through
+  `GuardController`), now tested with a camp-post leash invariant case; doc 15's leash row covers
+  camp mobs; the one-way aggro between neutral and team units is an INBOX question. Ponytail: lean.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  768 passed (768)"; client "Tests 416 passed (416)"; "✓ built in 144ms"; "Documentation check
+  passed."
+- Next step: the owner's INBOX answers; checkpoint defenders once PR #49 lands.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — fix/struggling-lane-signals (on PR #56) — Claude Code for sholtzman
+
+- What was done: the owner's most-struggling lane (DEC-89) in `assessLanes`. The three terms are
+  now `structureDamageTaken` (the team's own lane structures' lost share of their starting
+  health), `pushedBack` (unchanged) and `alliesHurt` (the lane's share of the damage the team's
+  Legends and mobs took). New `state/AllyDamageStore` on `GameState.allyDamage`, fed by a
+  `damage-applied` subscriber in `GameState` (lane = `LaneRoutes.nearestLane` of the victim; only
+  hits from the victim's enemy team count) and hashed by `StateHasher` while it holds
+  damage. `SpawnSystem` clears a team's tally right after it picks that team's Stronghold
+  heavy-wave lane. Weights 1/3 each, `TUNE: DEC-89`. Doc 18 §3.3, §10 item 1 and the MS-9 row
+  updated. Written for Samarjit to integrate into PR #56 (no capacity on his side).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  768 passed (768)"; client "Tests 416 passed (416)"; "✓ built in 270ms"; "Documentation check
+  passed." Every new test was seen red against a deliberate break first.
+- Critic round 2 (same day): the enemy-only rule (a removed or same-team attacker no longer
+  counts; new test seen red first, "expected 2 to be +0"), trimmed `AllyDamageStore` TSDoc, doc 18
+  MS-9 note and §3.3 bullet. Correctness critic: PASS. `npm run check` → `EXIT=0`: core "Tests 769
+  passed (769)"; client "Tests 416 passed (416)"; "Checked 115 Markdown files under docs/."
+- Next step: the pre-PR gate (critic, ponytail) and Samarjit's integration into PR #56. PR #47
+  refactors `LaneAssessment` into `laneScores`/`mostLaneScore`: expect a merge conflict there.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-structures — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-m1-review` (PR #63, with the phase head `f12d680` and PR #62)
+  into PR #55. `Simulation`, the damage steps, `Placement`, `SpawnContextReader` and the pipeline
+  keep both sides; `spawnStructures` reads `state.world` (F7d replaced `state.map`). Docs 03, 05,
+  18 and this log keep both sides. `EnragedSystem` loses its "nothing emits `structure-destroyed`
+  yet" remark: `StructureSystem` emits it now.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  830 passed (830)"; client "Tests 420 passed (420)"; "✓ built in 101ms"; "Documentation check
+  passed."
+- Next step: M2c (#56) merges this; its end-to-end test kills a tower and checks the lane's
+  `enraged` stack.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 (CodeRabbit) — feat/minion-structures — sholtzman + Claude Code
+
+- What was done: CodeRabbit's two findings on PR #55. `AiSystem.update` now also throws when an
+  entity's AI profile is one its controller does not have (injected content skips
+  `assertRegistered`); the regression test fails on the old code. A destroyed SpawnerTower or
+  BuffTower still spawning waves is M2c's work (#56 builds it): the minion plan's stand-in row now
+  says so, and its enraged row says only the human's Legend can destroy a structure until M2c.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  831 passed (831)"; client "Tests 420 passed (420)"; "✓ built in 106ms"; "Documentation check
+  passed."
+- Next step: CodeRabbit re-review; M2c (#56) merges this.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — sholtzman + Claude Code
+
+- What was done: merged PR #55 (`3ba4e79`, with PR #63) into M2c over DEC-89; the merge commit
+  lists each side kept. Lane-minion test filters skip guards; two `SpawnSystem` tests run to the
+  DEC-87/DEC-127 first waves. Rover lane `pressure` 3 → 4.5, since DEC-89 dropped the constant
+  damage-not-dealt term, so a lane pushed most of the way still outweighs the human (INBOX
+  updated). CodeRabbit on #56: doc 11 §10 registry and `structuresWithin` notes, INBOX "eight
+  items", direct `LaneStructures` tests, `StructureSystem`'s in-sync guard, the M2c entry above
+  split into two three-bullet entries. MS-34 (DEC-135): only a Legend escapes a chase by time;
+  `MARCHING_ONLY` now disarms tower guards too, since a guard chases a non-fighting minion to its
+  death. Every new or retimed test seen red against a break.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 880 passed (880)"; client "Tests 420 passed (420)"; "Documentation check passed."
+- Next step: the tower-to-enraged scenario test, the test-file splits, the pre-PR gate.
+
+### 2026-10-31 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — sholtzman + Claude Code
+
+- What was done: the tower-to-enraged scenario test (`Simulation.modifiers.test`) showed that
+  `finite-transforms` stopped the match once an enraged minion ran at 1.1 × `maxSpeed`.
+  `Movement.topSpeed` now holds the cap the statuses allowed, and the invariant checks against it
+  (INBOX: approve the doc 04/10/15 wording). The minion plan drops its "only the human's Legend"
+  row. Four long test files split by concern (#63's promise). Soak (seed 1, 3 lanes, bots, 900 s):
+  skipped light 36.37 %, dark 54.24 % (#63: 23.62 %, 43.22 %); tower guards hold 36–38 of the
+  144-unit cap. Not tuned (the prompt says report, do not change numbers).
+- Checks run: `npm run check` → `EXIT=0`: core "Tests 883 passed (883)"; client "Tests 420 passed
+  (420)"; "Documentation check passed."
+- Next step: the pre-PR gate, then push and reply on #56.
+
+### 2026-10-31 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — sholtzman + Claude Code
+
+- What was done: pre-PR gate for #56. Critic round 1 (`f2b264a..61b9a1b`): one blocker, fixed:
+  `cf93e2a` had split the 2026-10-30 M2c entry, which was already on the remote; it is restored
+  word for word (the merge entry above still says "split", as it was then). Also fixed: a stale
+  Rover remark and a literal 30 in a test. Rejected: the `topSpeed` multiplier gap
+  (`StatusEffects.test` covers the math). DEC-137: unit cap 144 → 300 (soak at 300: light 0 %,
+  dark 15.78 %, the rest from hordes holding at an unbreakable gate). INBOX: the docs that still
+  say 144 and `maxDecisionsPerTick`, and the gate hold. Critic round 2: PASS. Ponytail: no cuts.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 883 passed (883)"; client "Tests 420 passed (420)"; "✓ built in 111ms"; "Documentation
+  check passed."
+- Next step: push, the CodeRabbit replies and the summary comment on #56.
+
 ### 2026-10-31 — Phase 2 / sprint 2.2 — feat/buildings-and-map-objects — sholtzman + Claude Code
 
 - What was done: fixed PR #30's review findings for the author, at the product owner's request:
@@ -4303,6 +4465,203 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   887 passed (887)"; client "Tests 433 passed (433)"; "Documentation check passed."
 - Next step: push to PR #30 (merges after #63); Sam applies the design-text drafts for DEC-121 (c)
   and DEC-133 (INBOX); author: S3, S5, S6, N2.
+
+### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (with #30's map objects, collision and DEC-133
+  deploy) into #56. Conflicts: `Simulation` (one factory: map-object, unit and structure
+  definitions), the pipeline's tick-order remark, `SpawnSystem` (deploy kept beside the structure
+  spawners), `PathingSystem.test` (chase tests stay in `PathingSystem.chase.test`, #30's deploy
+  tests kept), `SpawnSystem.test` imports, and both sides of the decisions log and this file. A
+  probe (seeds 1, 2, 360 s, bots and map objects, every invariant) found 35 tower guards spawned
+  inside fort walls for the whole match; `GuardRoster` now moves a blocked post to the nearest clear
+  point inside its leash, straight out, then around the ring (DEC-138, owner's pick 2026-11-02;
+  architecture 18 §7). Critic: PASS, 0 blockers; its two should-fixes (the DEC row, the rule in
+  §7's design text) applied, and the new test also asserts guards spawned. Test:
+  every guard clear and leashed on seeds 1 and 2 (red before the fix). `Simulation.structures`'
+  guard test placed its dummy beside a post that stood off the 60 m map; the dummy moved beside an
+  on-map post, assertions unchanged. Probe after: 0 violations, 4.5–5.2 ms per tick (dev laptop).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 954 passed (954)"; client "Tests 434 passed (434)"; "✓ built in 182ms"; "Documentation
+  check passed."
+- Next step: commit and push the merge on #56, retarget #56 to `phase/3-sprint-3-work`, close
+  #55 (contained in #56), then rebase M5b (#57) and M6 (#58).
+
+### 2026-11-02 — Phase 3 / minion M5b — feat/minion-m5b-if-time — SamarjitBhogal + Claude Code
+
+- What was done: merged #56's head (`a90ee14`: M2c on `phase/3-sprint-3-work`, DEC-89, DEC-135,
+  DEC-137, DEC-138) into #57, which was built on M2c's 2026-10-30 head. Conflicts, both sides
+  kept: `LeashBehaviour`'s remark (MS-34's Legend-only timeout plus the ghosted wave),
+  `mobs.types` (`MinionVeterancyDefinition` beside `MinionStrengthCurve`), the pipeline's
+  tick-order remark (veterancy after progression), doc 18's status paragraph (M3, M5a and M5b),
+  INBOX (M5b item beside the cap, gate-hold and `topSpeed` items) and this file. Fixed after the
+  merge: `VeterancySystem.test` builds `GameState` from `matchWorldOf` (#30's signature).
+  `Simulation.modifiers`' enraged siege test assumed the first lane to lose a tower spawns there
+  again; with minion XP, seed 1's dark Stronghold falls at 238.5 s, before the first wave at 240 s.
+  It now follows the first loss that a horde of that team and lane follows (light lane-0, 240 s);
+  the same assertions, plus "at least one tower lost" and an enraging kind. Critic: PASS, no
+  blockers; should-fixes applied (this result, a rewrapped remark). It traced the 238.5 s fall:
+  M2c alone loses that Stronghold at 340.7 s; minion XP brings it forward. Probe (seeds 1, 2,
+  360 s, bots, map objects, every invariant): 0 violations, 4.5–5.0 ms per tick (dev laptop).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 962 passed (962)"; client "Tests 434 passed (434)"; "✓ built in 189ms"; "Documentation
+  check passed."
+- Next step: push #57, retarget it to `phase/3-sprint-3-work`; then M6 (#58).
+
+### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's #57 thread on `GuardRoster.update`: an empty post counted its team's
+  units (a walk of the entity store) before the cheap checks, so every post of a fallen structure
+  paid it each tick. The cap count now runs last; the same posts fill on the same ticks.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 954 passed (954)"; client "Tests 434 passed (434)"; "✓ built in 218ms"; "Documentation
+  check passed."
+- Next step: merge into #57 (M5b) and #58 (M6).
+
+### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: DEC-138's post search stepped one nav cell (5 m), so where a plan's leash span is
+  shorter (camps: posts at 3 m, edge at 7 m) it tried only the ring and kept a post inside the
+  camp fire (M6 merge probe: 46 camp mobs in furniture on seeds 1 and 2). It now steps one body
+  radius: a gap a guard fits through is two radii wide, so no step skips one. Test:
+  `GuardRoster.test` with a 3 m leash span and a block 1 m past the posts (red before the fix).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 955 passed (955)"; client "Tests 434 passed (434)"; "✓ built in 266ms"; "Documentation
+  check passed."
+- Next step: merge into #57 (M5b) and #58 (M6).
+
+### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
+
+- What was done: the M6 merge probe still found 6 camp mobs in camp fires on seed 1 (two mirrored
+  camps): the nav grid blocks every 5 m cell a footprint touches, so a fire's 8 m stone blocks the
+  grid past the 7 m camp leash, though the ground there is clear. DEC-138's search now runs again
+  on the map objects alone when nothing in the leash is clear on both; guards seek, and collision
+  uses the exact shapes. Test: `GuardRoster.test` with the grid blocked past the leash and the
+  object only over the posts (red without the second pass).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 956 passed (956)"; client "Tests 434 passed (434)"; "✓ built in 261ms"; "Documentation
+  check passed."
+- Next step: merge into #57 (M5b) and #58 (M6).
+
+### 2026-11-02 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards — sholtzman + Claude Code
+
+- What was done: MS-36 / DEC-144, "distance, then time" (the owner's answers A b, B a, C a, D b).
+  `LeashBehaviour` rewritten: the leash tests the target's position, not the mob's; no time limit
+  inside it (a Legend too; supersedes DEC-135's Legend limit); a target outside it is dropped
+  after `leashGraceTicks` (90) unless another enemy in reach is taken first; a dead target's
+  killer takes the next enemy at once; a returning mob acquires; the cooldown (Legends only)
+  starts at the leash break; call for help (`callForHelpRadius` 7.5) brings in an enemy attacking
+  a horde-mate; guards never take or keep a target outside their circle. 15 new or rewritten
+  controller tests, each red on 79bb571's leash code first (record in the agent-work folder,
+  `m56-ms36-tests-red.log`). Probes (seed 1, 3 lanes): 0 crossings in 300 s with and without
+  bots; soak 900 s with bots at cap 300 skips 0 % for both teams (dark was 15.78 %); 16v16 fight
+  over by 51 to 54 s with call for help, still on at 60 s without. Docs: decisions log DEC-144
+  batch; doc 18 MS-36, §6.1, §7; doc 11 §4.3; phase-3 plan; INBOX gate pile-up item closed.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 963 passed (963)"; client "Tests 434 passed (434)"; "✓ built in 124ms"; "Documentation
+  check passed."
+- Next step: the pre-PR gate (critic, ponytail), push to #56, and the #56 comment.
+
+### 2026-11-02 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards (round 2) — sholtzman + Claude Code
+
+- What was done: MS-36 / DEC-144 round 2, from the critic's first review and the owner's answers
+  E b, F b, G a and "No, emergent is enough" (a guard does not step back to pull its target in).
+  `LeashBehaviour`: a target outside the leash with no other enemy in reach is chased and attacked
+  for `leashGraceTicks`, then the leash breaks (E); guards get a grace of 0 and stop at their
+  circle at once (`content/ai/aggro/towerGuard.ts`); after a break the cooldown leaves alone only
+  the enemy that escaped, a minion too (new memory field `escapedId`; F); a call for help beats
+  the escape and cooldown filters; `attack()` emits nothing when the mob already fights that
+  target. `returning` kept; an INBOX item asks the minion owner (G). `Simulation.modifiers.test`
+  now checks the first defended loss whose lane spawns again (a lost SpawnerTower ends its lane's
+  light hordes, doc 18 §3.1); its assertions are unchanged. 10 new or changed tests, each red
+  first (`m56-ms36-r2-ef-red.log`, `m56-ms36-r2-helpcall-red.log` in the agent-work folder).
+  Probes (seed 1, 3 lanes): 0 crossings in 300 s with and without bots; soak 900 s with bots at
+  cap 300 skips 0 % for both teams, mean step 0.508 ms, worst 3.71 ms; 16v16 fight over at 49 s
+  and 54 s. Docs: decisions log DEC-144 row and the round-2 answers, batch order fixed (the
+  2026-10-30 M2c batch now sits below the 2026-10-31 PR #30 batch); doc 18 MS-36, §6.1, §7; doc 11
+  §4.3; INBOX (G).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 965 passed (965)"; client "Tests 434 passed (434)"; "✓ built in 120ms"; "Documentation
+  check passed."
+- Next step: critic round 2, push to #56, and the #56 comment.
+
+### 2026-11-02 — Phase 2 / sprint 2.2 — feat/minion-m2c-objectives-guards (round 3) — sholtzman + Claude Code
+
+- What was done: MS-36 / DEC-144 round 3, from the critic's second review and the owner's guard
+  answers ("1 + 2, skip 3" and "Widen tolerance"). Guards have no rest (`aggroCooldownTicks` 0),
+  and the guards of one structure defend each other anywhere in its circle: `LeashRules` gains
+  `isMate` and `helpRadius` (minion: its horde and `callForHelpRadius`; guard: the same home, a
+  reach derived from its post). The `guard-within-leash` tolerance grows from 2 m to 5 m
+  (`content/structures/guardPlans.ts`): a guard fighting a target at the circle's edge can stand
+  beyond it by its melee stance (up to 3.1 m), plus one decision's walk (1.2 m). Found when
+  `Simulation.modifiers` tripped the invariant (10.01 m); the overshoot was latent before (3436366
+  trips it at 594 s, after that test's window). Guards now hold longer (the first defended loss
+  comes at 613 s, was 351 s), so that test searches 900 s, not 500 s; its assertions are
+  unchanged. Critic round 2: F2 test (the escaped enemy is fought again after the cooldown), F4
+  TSDoc, F5 doc 18 §6.1 wording, ponytail cut 1 (early `continue`); ponytail cut 2 (inline
+  `moveGuardTo`) rejected: a base helper with 8 call sites. 4 new tests, each red first
+  (`m56-ms36-r3-cooldown-ends-red.log`, `m56-ms36-r3-guards-red.log`,
+  `m56-ms36-r3-tolerance-red.md` in the agent-work folder). Docs: decisions log DEC-144 row and
+  the guard answers; doc 15 §3; doc 18 MS-36, §6.1, §7; INBOX (edge dance kept for tower fire).
+- Correction to the round-2 entry above (critic round 2 F3): it says the `Simulation.modifiers`
+  assertions are unchanged. Not exact: the `memberIds.length > 0` check became part of picking
+  the loss, and the `towersLostByLane` literal `{ [lane]: 1 }` became a tally of the team's losses.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 969 passed (969)"; client "Tests 434 passed (434)"; "✓ built in 109ms"; "Documentation
+  check passed."
+- Next step: critic round 3 (the last of three), push to #56, and the #56 comment.
+- Critic round 3 (the last of three): APPROVE WITH NITS, 0 blockers. Fixed: F1 (the tolerance
+  basis is 3.55 m, not 3.1 m: a heavy guard, 0.8 m, against a Sentinel, 1.25 m, at 1.5 m reach;
+  5 m still covers walk plus stance with about 0.5 m of margin; new `guardPlans.test` checks the
+  sum for every guard), F2 (the "outside" enemy in the guard test now stands inside the guard's
+  help query, 9 m past the edge), F3 (the `Simulation.modifiers` tally counts only
+  `ENRAGING_STRUCTURES`), F7 (two guard test names), F4 (doc 18 status note and INBOX M2c item:
+  no aggro timeout since DEC-144), F10 ("leav" → "leave" in the decisions log and INBOX). F5 and
+  F6 answered in the #56 comment; F8 (`callForHelpRadius: 0` stays) and F9 (moving tests to a
+  `LeashBehaviour.test.ts` is a follow-up) rejected. Ponytail: 1 cut, applied
+  (`GuardController.rulesFor` uses `geometry.distance`). Red first:
+  `m56-ms36-r3-critic3-red.log`, `m56-ms36-r3b-tolerance-red.log`.
+- Correction to the text above: "4 new tests, each red first" was overstated. The guard test
+  that the enemy outside the circle is left alone passed on the old code too (its enemy stood
+  outside the help query); F2 moved it, and it is now red under a break. The `Simulation.modifiers`
+  window: the base searched 300 s for the loss and 400 s for the next horde (500 s was round 2's).
+- Rebased onto #56's `be5366d` (SamarjitBhogal's merge of phase 3 and the DEC-138 guard-post
+  fixes, pushed during round 3). Conflicts only in doc 18 §7, the decisions log and this file;
+  both sides kept. Note: DEC-138 is used twice, by the guard-post batch here and by a docs ruling
+  on the local HUD branch; one of them needs a new number before both reach the phase branch.
+- Checks run (rebased head, before this bullet): `npm run check` → `EXIT=0`: "All matched files
+  use Prettier code style!"; core "Tests 974 passed (974)"; client "Tests 434 passed (434)"; "✓
+  built in 114ms"; "Documentation check passed." Soak (cap 300, bots, 900 s): 0 non-INFO log
+  records, 0 % spawns skipped, step mean 0.460 ms, worst 3.25 ms.
+- Next step: push to #56 and post the #56 comment.
+
+### 2026-11-03 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards (test split, `returning` merge) — SamarjitBhogal + Claude Code
+
+- Critic round 3's F9, done on #56 at the owner's request (it was listed as a follow-up above).
+  The 17 shared leash tests (cooldown, grace, call for help, target death, acquiring while
+  returning, priority ranking; 16 word for word, 1 renamed in the merge below) moved from `ai/MinionController.test.ts` (551 lines) to the new
+  `ai/LeashBehaviour.test.ts` (299 lines), still driven through `MinionController`'s rules. The
+  9 minion-specific tests stay (144 lines). The shared setup moved to
+  `ai/__fixtures__/minionControllerSetup.ts`. The move changed no test body or assertion; 26
+  tests before and after. Five were then updated for the merge below.
+- `returning` merged into the resting state (DEC-155, answering DEC-144 G: option b).
+  `LeashBehaviour` runs `idle ⇄ engaging`: a leash break emits `stop` and rests the mob at once,
+  with `escapedId` and the cooldown; `PathingSystem` already walks a mob with no target back to
+  its slot or post. Removed: `LeashRules.isHome`, `MinionController.isAtSlot` and its scratch
+  points, `AggroRuleDefinition.reformDistance` (both profiles) and `MinionControllerContent.formations`
+  (only `isAtSlot` read it). Five tests updated to the new state: two leash-break tests expect
+  the resting state, and the three `returning:` tests now check that a memory saved as
+  `returning` reads as resting, keeping its cooldown. Doc 18 §5.2, §6.1, §7, §9, the phase-3
+  plan's FSM line, the decisions log (DEC-155) and the INBOX item (moved to Done) follow. New
+  INBOX item for sholtzman: FR-071 (`06-mvp-requirements.md`) still names `returning`.
+- Critic (`architecture-reviewer`, working tree vs `879525f`): APPROVE WITH NITS, 0 blockers.
+  Applied: the decision recorded as DEC-155 (was only in INBOX), the FR-071 INBOX item, TSDoc and
+  plan rewraps, a test comment, `GuardController` keeps its `Pick` of the content, this entry's
+  wording.
+- Checks run (after the critic fixes): `npm run check` → `EXIT=0`: "All matched files use
+  Prettier code style!"; core "Tests 974 passed (974)"; client "Tests 434 passed (434)"; "✓ built
+  in 260ms"; "Documentation check passed."
+- Next step: push to #56; sholtzman answers the FR-071 INBOX item.
 
 ### 2026-11-02 — Phase 2 / Track B (S1 carry-over) / HUD and character select, merge of the phase branch and T-199 (DEC-143) — feat/hud-plan-b6 — sholtzman + Claude Code
 
@@ -4466,3 +4825,105 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1753 passed (1753)", "Documentation check passed."
 - Next step: push to `feat/buildings-and-map-objects` (remote head must still be 52c1297), approve
   #69; after #56 and #64 merge, re-run #56's soak probe and #64's zone tests.
+
+### 2026-11-02 — Phase 3 / minion M6 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: brought #58 onto #57's head (M5b on M2c on `phase/3-sprint-3-work`) in three
+  merges (`1c023a6`, `08dd3fc` and this one). Conflicts, both sides kept: `GuardRoster` (M6's camp
+  plans by definition id, first fill tick, neutral cap exemption and `camp-cleared`, with DEC-138's
+  clear posts and the cheap-checks-first refill), `SpawnSystem`'s guard-plan validation, M2c's
+  split of `Simulation.hordes.test` (M6's camp test moved to `Simulation.structures.test`), docs
+  15, 18 and the plan (CaptureSystem is now PR #64), INBOX (the owner's newer answers; M6's two
+  agent notes dropped, superseded by DEC-89 and the 2026-10-29 decision; the M6 item now names
+  PR #64) and this file. After the merge: camp mobs' `movement` became `movementProfile`; two tests build
+  `GameState` from `matchWorldOf`; the removed `initialHordesPerTeam` is dropped. The merge probe
+  (seeds 1, 2, 360 s, bots, map objects, every invariant) found camp mobs inside camp fires; fixed
+  on #56 (body-radius step, then an objects-only second pass) and merged in. New test: every camp
+  mob clear of map objects once camps fill, seeds 1 and 2 (seed 1 red before). Probe after: 0
+  violations, 5.6–6.5 ms per tick (dev laptop).
+- Critic: PASS, no blockers; its should-fix (the INBOX item's PR #49) and nits applied.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 971 passed (971)"; client "Tests 434 passed (434)"; "✓ built in 218ms"; "Documentation
+  check passed."
+- Next step: push #58, retarget it to `phase/3-sprint-3-work`. Checkpoint defenders wait for #64.
+
+### 2026-11-02 — Phase 3 / minion M6 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's two #58 threads. Doc 07's status note no longer lists camps as not
+  built (M6 adds `Camp`). Not changed: the 2026-10-30 M6 entry's four bullets, since pushed
+  entries are never rewritten (OG-12); new entries keep the three-bullet shape.
+- Checks run: `npm run docs:check` and Prettier on the two docs; docs-only change.
+- Next step: merge #56, #57, #58 in order.
+
+### 2026-11-02 — Phase 3 / minion soak — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: the minion plan's done-when soak on #58's head (`816c238`), a throwaway probe,
+  not committed: seeds 1 and 2, 3 lanes, 600 s, bot rosters, map objects. With every invariant
+  once a second: 0 violations (`guard-within-leash` for tower guards and camp mobs, map-object
+  overlap, horde membership), 0 guard posts refilled after their due tick, 0 % of 496 horde units
+  skipped per team, at most 284 / 250 units on a team (cap 300). Tick time at the release
+  invariant level (developer laptop, not the reference laptop): seed 1 p50 1.58, p95 3.35, p99
+  4.00, max 10.99 ms (4 of 18,000 ticks over 8 ms); seed 2 p50 1.44, p95 2.61, p99 3.13, max
+  7.92 ms. With heavy invariants every 30 ticks, those ticks cost 160 to 360 ms, so heavy-level
+  soaks run slowly. No tower fell and no camp was cleared in 600 s on the generated map: hordes
+  march about 1.5 km and bots never attack structures or camps (minion plan §3).
+- Checks run: the probe above; docs-only change, `npm run docs:check` passes.
+- Next step: bot laners attack structures (the M3 stand-in), on a branch from #58's head.
+
+### 2026-11-02 — Phase 3 / minion M3 stand-in — feat/minion-bot-structures — SamarjitBhogal + Claude Code
+
+- What was done: bot laners attack structures (doc 11 §4.2 `Push`; minion plan §3's M3 stand-in).
+  New `Push` branch ahead of following the horde: `BotLeaves.findObjective` takes the lane's next
+  standing enemy structure from `laneStructures.objectiveFor` (a gate only once breakable) when
+  the bot is within `engageRadius` of the point hordes gather at; `siege` sends `attack-target`,
+  walks to that point, then straight at the structure, and holds in reach. `Fight` still outranks
+  it. Tests: three `Push` cases in `BotLegendController.test` (its index now holds units only, as
+  `SpaceSystem` does) and a two-lane scenario where bots hit dark structures in 90 s, both red
+  before. Probe (seed 1, 1,200 s, bots, map objects, heavy invariants every 10 s): bots' first
+  structure hit at 220 s, 134 bot and 80 minion hits, 3 structures lost (2 without this change),
+  0 violations. Plan §3's row is now "Bot laners never cast". Critic: PASS, no blockers; its
+  should-fixes applied (a test that a unit near the structure is fought first; the straight last
+  leg to an off-lane Stronghold as a `ponytail:` remark and a plan §3 row).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 976 passed (976)"; client "Tests 434 passed (434)"; "✓ built in 352ms"; "Documentation
+  check passed."
+- Next step: pre-PR gate, then a draft PR into `phase/3-sprint-3-work` that merges after #58.
+
+### 2026-11-02 — Phase 3 / minion plan stand-ins — feat/minion-bot-structures — SamarjitBhogal + Claude Code
+
+- What was done: plan §3's M4 row "Nothing marks a lane flow field dirty" removed: PR #30's
+  `DefaultSystemPipeline` reopens a destroyed blocking map object's cells and marks the lane fields
+  over them dirty, and gates are not blocking in the MVP, so no gate change alters the grid.
+- Checks run: `npm run docs:check` and Prettier; docs-only change.
+- Next step: the owner's call on the two remaining M4/M5a stand-ins (strength by the field's
+  distance; a wall-avoidance term now that `CollisionSystem` exists).
+
+### 2026-11-02 — Phase 3 / minion M4 test — chore/minion-full-march-test — SamarjitBhogal + Claude Code
+
+- What was done: restored the full-match march test commented out at the owner's request on
+  2026-10-30 (PR #39: 530 s, over 100 s on CI under coverage). Since M2c a horde holds at its first
+  enemy objective, and march-only hordes cannot attack, so "reach the enemy end" cannot pass; the
+  test checks sprint 3.1's metric for the first objective instead: for 3 and 5 lanes (seed 1),
+  every opening mob (full size, counted) comes within 15 m along its lane of its first enemy
+  objective's gather point (18 §6.2), with under 1 % of samples off walkable ground and no
+  warnings. Only the opening hordes march (long countdown); the loop stops once every mob arrives
+  and samples once a second; 1.4–2.6 s locally. Critic round 1 blocked "arrived" judged on horde
+  anchors (which move whether or not mobs follow); it now judges each mob (at 1 m only 6 of 96
+  arrive, so it measures mobs). A missing objective throws. Plan §3 row and INBOX item for the
+  redefined M4 done-when.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 973 passed (973)"; client "Tests 434 passed (434)"; "✓ built in 156ms"; "Documentation
+  check passed."
+- Next step: critic round 2, then a draft PR into `phase/3-sprint-3-work` after #58.
+
+### 2026-11-04 — Phase 3 / minion stack merge — chore/minion-full-march-test — sholtzman + Claude Code
+
+- What was done: #56, #57, #58 and #66 merged into `phase/3-sprint-3-work` (8e058d8) after an
+  independent audit with no merge-blockers. Merged `phase/3-sprint-3-work` into this branch (#67)
+  and resolved its two docs conflicts with #66: this log keeps all three 2026-11-02 entries in
+  commit order; minion plan §3 takes #66's rows (no "flow field dirty" row, "Bot laners never
+  cast", the straight-last-leg row) and adds this branch's M4 done-when row.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.

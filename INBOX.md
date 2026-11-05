@@ -16,6 +16,91 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
+      The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
+      cannot pass as written since M2c: a horde holds at its next standing objective, and the
+      march-only test hordes cannot attack it. The full-match test you had commented out (PR #39,
+      too slow for CI) is restored as: every opening mob comes within 15 m (along its lane) of its
+      first enemy objective's gather point, under 1 % of samples off walkable ground, no warnings
+      (sprint 3.1's "reach the enemy SpawnerTower" metric). 1.4–2.6 s locally. The full march to
+      the enemy end waits for the sprint 3.8 sim soak with fighting hordes. Approve, or say what to
+      change.
+
+- [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
+      checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
+      which is only on PR #64 (`feat/capture-points-v2`, open; #49 was closed), not yet on the
+      phase branch. Once #64 is on the phase branch,
+      defenders are a guard plan per checkpoint asked for by `CaptureSystem`. Recommendations
+      ready for then: the leash is the zone's radius; defenders at an unowned point are neutral
+      (doc 18 §10, item 4). (2) **Camps as built:** inactive until the countdown ends; light 4
+      light, medium 2 medium + 2 light, heavy 1 heavy + 2 medium (balancing.md); 6 m leash; the
+      whole group respawns 120 s after its last mob dies, and `camp-cleared` fires then. A camp
+      never stays gone. Camp mobs use the minion stats and `xpValue` of their class (no reference
+      gives them their own); the 50 XP clear bonus waits for `ProgressionSystem`. (3) **One-way
+      aggro (needs your decision):** `Perception` never offers neutral units as targets, so lane
+      minions, guards and bots ignore camp mobs, while camp mobs attack light and dark units within
+      4 m of their posts. A horde passing a camp near its lane would take hits and not fight back.
+      Should lane minions fight camp mobs that attack them, or ignore camps entirely (then camp
+      mobs should not attack minions either)? Approve, or say what to change.
+
+- [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
+      blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
+      or ranged `AttackStrategy` exists until sprint 2.3) and numbers no reference gives ("higher
+      damage/health than minions"). Give their health and damage, or say to build them melee-only
+      on the guard plans. (2) **Minion XP as built:** a horde minion that kills another horde
+      minion counts the kill (the game doc's "another minion"; guards and camp mobs do not count); every 2 kills, up to level 3, +10% max health (healing by the
+      same) and +10% damage (`veteran`); a levelled minion gives +5% damage (`rallied`) to other
+      friendly horde minions within 4 m, refreshed every 0.5 s, never to itself. (3) **Ghosted
+      first wave** ships off (`ghostFirstWaveTicks: 0`, as 11 §4.3's sketch); League uses 18–28 s.
+      Turn it on, and with what value? (4) Plan row M5 still lists Tower Guardians; they are
+      deferred until you answer (1). Approve, or say what to change.
+
+- [ ] **Unit cap 300 (DEC-137, PR #56, 2026-10-31) — doc wording to approve.** The code has
+      `MAX_UNITS_PER_TEAM = 300` (the default and the validator's ceiling). These docs still say
+      144: requirements 06 (FR-043, FR-098, NFR-007), 01 (scale requirement), 05 (tick row) and
+      the README scale row; DISC-17; `balancing.md` (unit cap paragraph, spawn table); game-design
+      00, 02 and 11; architecture 08 (targets), 10 (soak, "288 minions"), 11 §6 ("288 mobs"),
+      13 (dev spawn), 15 (cap invariant, soak scenario); DISC-18 (288); plan README and phases 1, 2,
+      3 (sprints 3.2, 3.3, 3.8), 5 and 6. The source transcription keeps 144. Proposed: where a doc
+      states the cap, it names where the cap lives ("`limits.maxUnitsPerTeam`, DEC-137"). Open:
+      (1) do the tick targets (p95 ≤ 8 ms "at 144 units per team + 20 Legends") move to 300 too?
+      (2) `maxDecisionsPerTick` (96, `TUNE`, `content/ai/cadence.ts`) comes from 11 §6's "288 mobs
+      / 5". Up to 600 mobs at a minion cadence of 5 is up to about 120 brains due per tick, so
+      `AiSystem` would defer some each tick (estimate, not measured). Keep 96, or raise it? Approve,
+      or say what to change.
+
+- [ ] **Enraged minions run faster than `maxSpeed` (PR #56, 2026-10-31) — doc wording to
+      approve.** `balancing.md` gives `enraged` +10% move speed per stack, but docs 04 §3
+      (`Movement` row: `speed <= maxSpeed`), 10 §2 step 4 ("clamp to `maxSpeed`") and 15 §3
+      (`finite-transforms`: `|velocity| <= maxSpeed`) bound every unit by its content `maxSpeed`.
+      The first tower lost in play (M2c) enraged its lane and the invariant stopped the match.
+      Applied: `Movement.topSpeed` is the cap the last tick allowed (`maxSpeed` times the statuses'
+      `moveSpeed`), and the invariant checks against it. Proposed wording for the three docs:
+      "`maxSpeed` scaled by statuses (`Movement.topSpeed`)". Approve, or say what to change.
+
+- [ ] **Minion M2c (`feat/minion-m2c-objectives-guards`, overnight 2026-10-30) — eight items for
+      sign-off, all applied as below so the work could continue.** (1) **Better than the design:**
+      a horde gathered at its objective (anchor within `acquisitionRadius` of the objective's
+      front) acquires it from every rank, not only the front rank in reach; and attacking a
+      structure ignores the leash and the aggro timeout (doc 18 §6.1 lists both as ways a chase
+      ends, but a minion stands still at a tower, so the timeout made it stop hitting every 2.3 s).
+      (2) **Design gap:** the Stronghold stands off the lane, 60 m inside its wall ring; a horde
+      gathers at the lane's end (the gate) and then charges it under (1). Doc 18 §4 says only "at
+      the lane's end the horde stays". (3) **Interpretation:** a guard's leash is measured from its
+      structure's **edge** ("don't leave the tower's perimeter"); from the centre, an 8 m leash is
+      inside a 14 m tower. (4) **Stand-in:** the Stronghold's "ranged" light guards fight in melee
+      until projectiles exist (sprint 2.3). (5) **Better than the design:** the lane-order
+      structure list (18 §6.2 puts it in the `WorldMap` structures index) is `state/LaneStructures`,
+      built from the structure entities once they spawn, so `ai/` reads it through `state/` and it
+      carries each structure's starting health. (6) **Stronghold leash:** 07 §6 says Stronghold
+      guards "leash to the walls"; the code leashes them 8 m from the Stronghold's edge (about 60 m
+      inside the wall ring). Leash to the wall ring's radius instead? (7) **Guard XP:** a killed
+      guard pays its minion class's `xpValue`; no reference gives guards their own. (8) **DISC-21
+      timing:** a lost SpawnerTower drops two light Stronghold posts, but a guard already on one
+      stays until it dies. Approve, or say what to change; doc 18 follows.
+  - **Update 2026-11-02 (DEC-144):** there is no aggro timeout any more, so (1) is now only the
+    leash: attacking a structure ignores it.
+
 - [ ] **DEC-42 — still open after your answer** (recorded as DEC-42 in
       `docs/reference/game-design/13-owner-decisions-log.md`, 2026-10-16; questions from PR
       #35). (1) Can a stunned unit still act while its aim wobbles, or does stun keep "cannot
@@ -180,9 +265,10 @@ Reply inline (`Decision: …`).
       Rover's numbers; `content/ai/difficulties/rover.ts` and `content/ai/rover.ts` start them
       as `TUNE` (retreat below 20%, engage within 16 m, hunt within 20 m when 0.2 of a health
       bar ahead, sense the human within 400 m), and `normal`/`rover` cast with chance 0.3/0.6
-      at most every 3 s/2 s. The Rover weighs a lane's pressure against the human's lane 3 to 1
-      (`ROVER_TACTICS.laneWeights`), counting pressure from its team's calmest lane, so it
-      leaves the human for a lane pushed most of the way to its end. Confirm or give values.
+      at most every 3 s/2 s. The Rover weighs a lane's pressure against the human's lane 4.5
+      to 1 (`ROVER_TACTICS.laneWeights`; 3 to 1 before DEC-89's lane terms), counting pressure
+      from its team's calmest lane, so it leaves the human for a lane pushed most of the way to
+      its end. Confirm or give values.
       (2) Better than the design, for sign-off: the Phase 3 plan wants A\* "as a second
       `MovementStrategy`", but bots steer by `move`
       commands, so A\* is a `PathQuery` the bot leaves call (doc 11 §10). Its cost then sits in
@@ -240,6 +326,11 @@ Reply inline (`Decision: …`).
     and doc 11 §1 updated (PR #44). Numbers: use the design docs, else the agent's judgement,
     which the owner may correct later, so the aggro radii and `reformDistance` stay as built.
     The design note on the chase rhythm stays open.
+  - Decision (sholtzman, chat, 2026-10-30): the chase rhythm: "Yes, Legend-only limit". Only a
+    Legend escapes a chase by time; minions and guards keep any other unit target until it dies
+    or the leash breaks (MS-34, DEC-135; built in PR #56).
+  - Superseded (sholtzman, 2026-11-02): DEC-144 (MS-36), "distance, then time". No time limit
+    while the target is inside the leash, a Legend too; the aggro duration is gone (PR #56).
 - [ ] **PROTO-01 — still open after your answer** (deletion recorded as DEC-35, 2026-10-10,
       amending DEC-33). (1) Is the escort deleted before real hordes exist (no minions on the map
       for a while) or together with them (Phase 2.7 `SpawnSystem` plus Phase 3.1 hordes)? Which
@@ -1961,6 +2052,19 @@ Reply inline (`Decision: …`).
       and stops deploying once its body stands wholly on walkable ground, or at its exit;
       architecture 18 §3.2/§5.2 still say the lane field leads it out. Edit and apply the rest of
       Draft 2 in the same file.
+- [ ] **FR-071 still names the `returning` state (PR #56, DEC-155)** (owner: sholtzman,
+      `docs/requirements/06-mvp-requirements.md`). FR-071 gives the minion FSM as
+      `marching → engaging → returning`. Since DEC-155 it is `marching ⇄ engaging`: a leash break
+      rests the mob at once and its movement walks it back. Its acceptance text ("returns to its
+      lane when the leash expires") still holds. Update the FSM wording, or say to keep it.
+- [ ] **PR #56 — your "edge dance" idea for guards, kept for when towers shoot (sprint 2.3)**
+      (DEC-144). You asked whether a guard should be "more aggressive and willing to leave the
+      circle a little" when a Legend dances at its edge, and return to its post if it still cannot
+      hit it. You chose to skip it for now: with no rest and guards that defend each other, a melee
+      dance does not pay, a ranged Legend dances farther than "a little", and tower fire answers
+      it. When projectiles land, decide: (a) drop the idea, or (b) build it (a guard follows past
+      the circle by a set distance for a set time, then walks back; doc 18 §7, the guard aggro
+      content and `guard-within-leash` change). Or say what to do.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
@@ -2183,6 +2287,21 @@ Reply inline (`Decision: …`).
     - This should actively be planned for, but is not yet a hard requirement (not until sprint 3)
 
 ## Done
+
+- 2026-11-03 — **PR #56 — the `returning` state (DEC-144 G).** Decision (SamarjitBhogal,
+  2026-11-03, recorded as DEC-155): (b) merge it into the resting state. `LeashBehaviour`, `MinionController` and
+  `GuardController` now run `marching ⇄ engaging` and `holding ⇄ engaging`; a leash break rests
+  the mob at once and its movement walks it back. `isHome`, `isAtSlot`, `reformDistance` and the
+  minion controller's `formations` content are gone. Doc 18 §5.2, §6.1, §7 and §9 follow.
+
+- 2026-11-02 — **Hordes pile up at a gate that is not breakable yet (PR #56 soak, 2026-10-31)**,
+  closed with no option chosen, as the decision page said unless the owner objected. The pile-up
+  came mostly from opposing hordes walking through each other after a short fight, not only from
+  MS-12's hold at the gate. The fix is MS-36 (DEC-144, "distance, then time"), PR #56. The same
+  soak after the fix (seed 1, bots, 3 lanes, 900 s, cap 300) skips 0 % of horde spawns for both
+  teams (dark was 15.78 %), with 0 crossings in 300 s with and without bots. The opening hordes
+  now meet and fight at the lane centre. Options (a) to (c) stay available if a soak shows a pile
+  again.
 
 - 2026-11-02 — **Your answers on the HUD PR's critic loop 3 (HC-Q34)** (`feat/hud-plan-b6`):
   recorded as DEC-153 (a click on the building the Legend stands in attacks; one narrow re-check
