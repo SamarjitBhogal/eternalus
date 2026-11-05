@@ -74,9 +74,9 @@ describe('buildWallRing', () => {
 
     expect(ring.vertices).toHaveLength(ring.pieces.length + 1);
     expect(front.length).toBeGreaterThan(0);
-    expect(
-      front.every((vertex) => Math.abs(distance(vertex, CENTRE) - RING.radius) < 1e-9),
-    ).toBe(true);
+    expect(front.every((vertex) => Math.abs(distance(vertex, CENTRE) - RING.radius) < 1e-9)).toBe(
+      true,
+    );
   });
 
   it('splits long wall arcs so no wall segment is wider than the maximum arc', () => {
