@@ -281,4 +281,14 @@ describe('WorldMap', () => {
     expect(map.isLineClear(10, 20, 100, 20, 30)).toBe(true);
     expect(map.isLineClear(10, 5, 100, 5)).toBe(true);
   });
+
+  it('measures how far blocked ground under a point reaches toward another, sampled as lines are', () => {
+    // 2 m cells; the rift block covers x 50..70, so the first open sample west of it is x 49.5.
+    const map = WorldMap.fromDefinition(BLOCKED_LANE_MAP, 2, () => false);
+
+    expect(map.blockedRun(60, 20, 30, 20)).toBe(10.5);
+    expect(map.blockedRun(40, 20, 60, 20)).toBe(0);
+    // No open ground between: the whole span.
+    expect(map.blockedRun(60, 20, 65, 20)).toBe(5);
+  });
 });

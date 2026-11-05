@@ -13,6 +13,6 @@ export const MINION_VETERANCY = {
   aura: {
     statusId: 'rallied',
     radius: 4, // TUNE: balancing.md 4 m
-    everySeconds: 0.5, // TUNE: no reference value
+    everySeconds: 0.5, // TUNE: no reference value; DEC-165: a tuning default
   },
 } as const satisfies MinionVeterancyDefinition;

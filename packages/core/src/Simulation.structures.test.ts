@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { ContentCatalogue } from './content/ContentCatalogue';
 import { GUARD_PLANS } from './content/structures/guardPlans';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
+import type { StructureDefinition } from './content/structures/structures.types';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { MapGenerator } from './map/MapGenerator';
@@ -74,22 +77,37 @@ describe('Simulation structures', () => {
     expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
   });
 
-  it('holds a horde that cannot fight in front of the first enemy tower on its lane (18 §6.2)', () => {
-    const { simulation } = match(TWO_LANE_MAP, 1, true);
+  // One more entity before the first wave shifts every id after it, so the lane-0 leader meets
+  // a light guard head-on on the lane's centre line; it must step round it, not stall (10 §9).
+  it.each([0, 1])(
+    'holds a horde that cannot fight in front of the first enemy tower on its lane, with %i extra entities (18 §6.2)',
+    (extra) => {
+      const { simulation } = match(TWO_LANE_MAP, 1, true);
+      if (extra > 0) {
+        simulation.enqueueCommand({
+          type: 'dev-spawn',
+          kind: 'light-mob',
+          definitionId: 'training-dummy',
+          team: 'dark',
+          at: { x: 100, y: 55 },
+          count: extra,
+        });
+      }
 
-    run(simulation, 60 * 30);
+      run(simulation, 60 * 30);
 
-    // Dark's lane-0 SpawnerTower stands at x 140 with radius 14: Light's lane-0 horde gathers
-    // in front of x 126, in ranks no deeper than 8.
-    const lightLane0 = simulation
-      .snapshot()
-      .entities.filter((entity) => isMinion(entity) && entity.team === 'light')
-      .filter(({ transform }) => (transform?.y ?? 0) < 30)
-      .map(({ transform }) => transform?.x ?? 0);
-    expect(lightLane0.length).toBeGreaterThan(0);
-    expect(Math.max(...lightLane0)).toBeLessThan(126);
-    expect(Math.min(...lightLane0)).toBeGreaterThan(126 - 15);
-  });
+      // Dark's lane-0 SpawnerTower stands at x 140 with radius 14: Light's lane-0 horde gathers
+      // in front of x 126, in ranks no deeper than 8.
+      const lightLane0 = simulation
+        .snapshot()
+        .entities.filter((entity) => isMinion(entity) && entity.team === 'light')
+        .filter(({ transform }) => (transform?.y ?? 0) < 30)
+        .map(({ transform }) => transform?.x ?? 0);
+      expect(lightLane0.length).toBeGreaterThan(0);
+      expect(Math.max(...lightLane0)).toBeLessThan(126);
+      expect(Math.min(...lightLane0)).toBeGreaterThan(126 - 15);
+    },
+  );
 
   it('builds every lane structure of the map before anything else spawns', () => {
     const { simulation } = match(TWO_LANE_MAP);
@@ -108,5 +126,26 @@ describe('Simulation structures', () => {
       { id: 'entity-5', kind: 'stronghold', team: 'dark' },
       { id: 'entity-6', kind: 'stronghold', team: 'light' },
     ]);
+  });
+
+  it('builds the structures from the definitions it is given, not a fixed set (B8)', () => {
+    const catalogue = new ContentCatalogue<StructureDefinition>(
+      STRUCTURE_DEFINITIONS.all().map((definition) =>
+        definition.id === 'stronghold' ? { ...definition, baseHealth: 123 } : definition,
+      ),
+    );
+    const simulation = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new MemoryLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      map: TWO_LANE_MAP,
+      structures: catalogue,
+    });
+
+    const strongholds = simulation.snapshot().entities.filter(({ kind }) => kind === 'stronghold');
+
+    expect(strongholds).toHaveLength(2);
+    expect(strongholds.every(({ health }) => health?.max === 123)).toBe(true);
   });
 });

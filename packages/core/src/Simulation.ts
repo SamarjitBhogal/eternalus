@@ -8,6 +8,7 @@ import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
+import { Footprint } from './components/Footprint';
 import { validateGameConfig } from './config/validateGameConfig';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
@@ -49,7 +50,13 @@ import { GameState } from './state/GameState';
 import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
-import type { Replay, ReplaySetup, RosterSlot, SimulationOptions } from './Simulation.types';
+import type {
+  Replay,
+  ReplaySetup,
+  RosterSlot,
+  SimulationOptions,
+  StructureSource,
+} from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
 import { WorldMap } from './map/WorldMap';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
@@ -105,6 +112,7 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    structures = STRUCTURE_DEFINITIONS,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
     this.setup = {
@@ -131,11 +139,11 @@ export class Simulation {
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
-      Simulation.withStructures(definitions),
+      Simulation.withStructures(definitions, structures),
       undefined,
       weaponSource,
     );
-    Simulation.spawnStructures(this.state, factory);
+    Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
@@ -172,6 +180,7 @@ export class Simulation {
                 }),
               ],
             },
+            structures,
           )
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
@@ -241,27 +250,43 @@ export class Simulation {
   }
 
   /** `units` plus the structure definitions, so one factory builds both (architecture 04 §6). */
-  private static withStructures(units: DefinitionSource): DefinitionSource {
+  private static withStructures(
+    units: DefinitionSource,
+    structures: StructureSource,
+  ): DefinitionSource {
     return {
-      has: (id) => units.has(id) || STRUCTURE_DEFINITIONS.has(id),
-      get: (id) => (units.has(id) ? units.get(id) : STRUCTURE_DEFINITIONS.get(id)),
+      has: (id) => units.has(id) || structures.has(id),
+      get: (id) => (units.has(id) ? units.get(id) : structures.get(id)),
     };
   }
 
   /**
    * Builds the map's structures, in feature id order, before anything else spawns (architecture
    * 07 §1): every feature whose definition is a structure becomes that structure, with its team
-   * and lane. Features without a structure definition (walls, turrets, camps) stay map data.
+   * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
+   * A structure whose feature has a blocking map object of the same id (a lane tower's fort) takes
+   * that object's footprints as its `Footprint` (DEC-185).
    */
-  private static spawnStructures(state: GameState, factory: EntityFactory): void {
+  private static spawnStructures(
+    state: GameState,
+    factory: EntityFactory,
+    structures: StructureSource,
+    mapObjects: readonly MapObject[] = [],
+  ): void {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
-    for (const { definitionId, position, team, laneId } of features) {
-      if (STRUCTURE_DEFINITIONS.has(definitionId)) {
-        const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
+    const solids = new Map(
+      mapObjects.filter(({ isBlocking }) => isBlocking).map((object) => [object.id, object]),
+    );
+    for (const { id, definitionId, position, team, laneId } of features) {
+      if (structures.has(definitionId)) {
+        const { kind } = structures.get(definitionId);
         const placement = { position, team, ...(laneId !== undefined && { laneId }) };
-        state.entities.add(factory.create(kind, definitionId, placement));
+        const structure = factory.create(kind, definitionId, placement);
+        const body = solids.get(id);
+        if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
+        state.entities.add(structure);
       }
     }
   }
@@ -465,7 +490,7 @@ export class Simulation {
   private static createControllers(): ControllerRegistry {
     const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
     return createDefaultControllerRegistry({
-      minion: { aggro: AGGRO_RULES, classOf: unitClassOf },
+      leash: { aggro: AGGRO_RULES, classOf: unitClassOf },
       botLegend: bots,
       rover: {
         ...bots,

@@ -9,10 +9,11 @@ export type MobDefinition = UnitDefinition & {
 };
 
 /**
- * How lane minions grow from kills (game doc "Minion XP", MVP-if-time; balancing.md): a level per
- * `killsPerLevel` mob kills up to `maxLevel`, each raising max health by `healthPerLevel` of base
- * health and adding a stack of `statusId`; a minion with a level gives `aura.statusId` to the
- * friendly minions within `aura.radius`, every `aura.everySeconds`.
+ * How lane minions and tower guards (DEC-165) grow (game doc "Minion XP", MVP-if-time;
+ * balancing.md): a level per `killsPerLevel` (a whole number) lane-minion kills, or from another
+ * source (DEC-168), up to `maxLevel`, each raising max health by `healthPerLevel` of base health and
+ * adding a stack of `statusId`; a unit with a level gives `aura.statusId` to the friendly lane
+ * minions within `aura.radius`, every `aura.everySeconds`.
  */
 export type MinionVeterancyDefinition = {
   readonly killsPerLevel: number;
