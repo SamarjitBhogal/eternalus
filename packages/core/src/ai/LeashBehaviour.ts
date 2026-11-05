@@ -24,6 +24,7 @@ import type {
  * escaped (DEC-144 F). An enemy attacking the mob or a mate is never left alone. A dead target
  * with no enemy left in reach leaves it resting, with no cooldown. It never takes a candidate
  * outside its leash, and `objective` ignores the leash, since a structure cannot drag a mob away.
+ * During a ghosted first wave (`ghostFirstWaveTicks`, 11 §4.3) Legends are never candidates.
  * Controllers supply only what differs (`LeashRules`). Pure, apart from one scratch point.
  */
 export class LeashBehaviour {
@@ -74,6 +75,17 @@ export class LeashBehaviour {
 
   /** The candidate's place in the priority list; infinite when it matches no entry. */
   public rankOf({ state, team, rule, objective }: LeashSituation, candidate: EntityId): number {
+    const { countdownSeconds } = state.config.match;
+    const ghostUntil = countdownSeconds * state.config.tickRate + rule.ghostFirstWaveTicks;
+    const kind = state.entities.get(candidate)?.kind;
+    if (
+      rule.ghostFirstWaveTicks > 0 &&
+      state.tick < ghostUntil &&
+      kind !== undefined &&
+      this.classOf(kind) === 'legend'
+    ) {
+      return Number.POSITIVE_INFINITY;
+    }
     const rank = aggroRank(candidate, {
       team,
       priority: rule.priority,

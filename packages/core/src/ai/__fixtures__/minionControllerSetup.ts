@@ -15,7 +15,8 @@ import { IdGenerator } from '../../utils/IdGenerator';
 import { MinionController } from '../MinionController';
 import { Perception } from '../perception/Perception';
 
-const CLASS_OF = (kind: string) =>
+/** Warriors are Legends and `*-mob` kinds are minions; nothing else is ranked. */
+export const CLASS_OF = (kind: string) =>
   kind === 'warrior' ? ('legend' as const) : kind.endsWith('-mob') ? ('minion' as const) : null;
 
 /** A lane-minion controller over the default aggro content. */

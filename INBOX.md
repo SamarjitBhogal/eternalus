@@ -16,6 +16,18 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
+      blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
+      or ranged `AttackStrategy` exists until sprint 2.3) and numbers no reference gives ("higher
+      damage/health than minions"). Give their health and damage, or say to build them melee-only
+      on the guard plans. (2) **Minion XP as built:** a horde minion that kills another horde
+      minion counts the kill (the game doc's "another minion"; guards and camp mobs do not count); every 2 kills, up to level 3, +10% max health (healing by the
+      same) and +10% damage (`veteran`); a levelled minion gives +5% damage (`rallied`) to other
+      friendly horde minions within 4 m, refreshed every 0.5 s, never to itself. (3) **Ghosted
+      first wave** ships off (`ghostFirstWaveTicks: 0`, as 11 §4.3's sketch); League uses 18–28 s.
+      Turn it on, and with what value? (4) Plan row M5 still lists Tower Guardians; they are
+      deferred until you answer (1). Approve, or say what to change.
+
 - [ ] **Unit cap 300 (DEC-137, PR #56, 2026-10-31) — doc wording to approve.** The code has
       `MAX_UNITS_PER_TEAM = 300` (the default and the validator's ceiling). These docs still say
       144: requirements 06 (FR-043, FR-098, NFR-007), 01 (scale requirement), 05 (tick row) and

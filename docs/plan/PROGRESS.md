@@ -4330,6 +4330,23 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   (755)", client "Tests 416 passed (416)", "✓ built in 172ms", "Documentation check passed."
 - Next step: M5b.
 
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m5b-if-time — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M5b (MVP-if-time) on top of M2c. Minion XP: `Veterancy` component,
+  `VeterancySystem` (kills from `entity-died`, a level per 2 mob kills up to 3, +10% max health,
+  the `veteran` and `rallied` statuses, aura every 0.5 s within 4 m), content in
+  `content/mobs/minionVeterancy.ts`; `Veterancy` is hashed. Ghosted first wave:
+  `AggroRuleDefinition.ghostFirstWaveTicks` read by `LeashBehaviour.rankOf`, shipped at 0 (off).
+  Tower Guardians not built (ranged attacks and numbers missing; `INBOX.md`). Docs 11 and 18
+  updated.
+- Pre-PR gate: critic approve, no blockers; should-fixes applied (only kills of lane minions count,
+  per the game doc; tests for the level cap, non-minion victims and the aura cadence; a hasher test
+  for `Veterancy`; doc 05's status note; doc 11's design text restored). Ponytail: lean, no cuts.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  763 passed (763)"; client "Tests 416 passed (416)"; "✓ built in 153ms"; "Documentation check
+  passed."
+- Next step: M6.
+
 ### 2026-10-30 — Phase 2 / sprint 2.2 — fix/struggling-lane-signals (on PR #56) — Claude Code for sholtzman
 
 - What was done: the owner's most-struggling lane (DEC-89) in `assessLanes`. The three terms are
@@ -4452,6 +4469,27 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   check passed."
 - Next step: commit and push the merge on #56, retarget #56 to `phase/3-sprint-3-work`, close
   #55 (contained in #56), then rebase M5b (#57) and M6 (#58).
+
+### 2026-11-02 — Phase 3 / minion M5b — feat/minion-m5b-if-time — SamarjitBhogal + Claude Code
+
+- What was done: merged #56's head (`a90ee14`: M2c on `phase/3-sprint-3-work`, DEC-89, DEC-135,
+  DEC-137, DEC-138) into #57, which was built on M2c's 2026-10-30 head. Conflicts, both sides
+  kept: `LeashBehaviour`'s remark (MS-34's Legend-only timeout plus the ghosted wave),
+  `mobs.types` (`MinionVeterancyDefinition` beside `MinionStrengthCurve`), the pipeline's
+  tick-order remark (veterancy after progression), doc 18's status paragraph (M3, M5a and M5b),
+  INBOX (M5b item beside the cap, gate-hold and `topSpeed` items) and this file. Fixed after the
+  merge: `VeterancySystem.test` builds `GameState` from `matchWorldOf` (#30's signature).
+  `Simulation.modifiers`' enraged siege test assumed the first lane to lose a tower spawns there
+  again; with minion XP, seed 1's dark Stronghold falls at 238.5 s, before the first wave at 240 s.
+  It now follows the first loss that a horde of that team and lane follows (light lane-0, 240 s);
+  the same assertions, plus "at least one tower lost" and an enraging kind. Critic: PASS, no
+  blockers; should-fixes applied (this result, a rewrapped remark). It traced the 238.5 s fall:
+  M2c alone loses that Stronghold at 340.7 s; minion XP brings it forward. Probe (seeds 1, 2,
+  360 s, bots, map objects, every invariant): 0 violations, 4.5–5.0 ms per tick (dev laptop).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 962 passed (962)"; client "Tests 434 passed (434)"; "✓ built in 189ms"; "Documentation
+  check passed."
+- Next step: push #57, retarget it to `phase/3-sprint-3-work`; then M6 (#58).
 
 ### 2026-11-02 — Phase 3 / minion M2c — feat/minion-m2c-objectives-guards — SamarjitBhogal + Claude Code
 

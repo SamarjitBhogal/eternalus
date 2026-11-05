@@ -100,6 +100,12 @@ export type AggroRuleDefinition = {
    * they answer a fellow guard anywhere in their circle.
    */
   readonly callForHelpRadius: number;
+  /**
+   * The ghosted first wave (11 §4.3, MVP-if-time): for this many ticks after the countdown, and
+   * during it, Legends match no priority entry, so the opening hordes meet before a Legend can bait
+   * them. 0 turns it off.
+   */
+  readonly ghostFirstWaveTicks: number;
 };
 
 /** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */

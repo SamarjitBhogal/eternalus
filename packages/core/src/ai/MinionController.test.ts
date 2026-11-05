@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../components/Collider';
+import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
+import type { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
-import { controller, engagingOn, setUp } from './__fixtures__/minionControllerSetup';
+import { CLASS_OF, controller, engagingOn, setUp } from './__fixtures__/minionControllerSetup';
+import { MinionController } from './MinionController';
 import { Perception } from './perception/Perception';
 
 // The acquire and engage rules a minion shares with a guard: LeashBehaviour.test.ts.
@@ -129,6 +133,42 @@ describe('MinionController', () => {
 
     expect(decision.commands).toEqual([]);
     expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: tower.id });
+  });
+
+  it('ignores Legends during a ghosted first wave, and only then', () => {
+    const { state, add, advance } = setUp();
+    const ghosting = new MinionController({
+      aggro: { ghost: { ...LANE_MINION_AGGRO, id: 'ghost', ghostFirstWaveTicks: 30 } },
+      classOf: CLASS_OF,
+    });
+    const self = add('light', 50);
+    const legend = add('dark', 52, 20, 'warrior', 'warrior');
+    const space = state.space as SpaceIndex;
+    const decide = () => {
+      space.begin(state.entities.size);
+      state.entities.forEach((entity) => {
+        const { x, y } = entity.getComponent(Transform).position;
+        space.add(entity.id, x, y);
+      });
+      space.commit();
+      return ghosting.decide({
+        state,
+        entityId: self,
+        perception: new Perception(state),
+        brain: {
+          controllerId: 'minion',
+          profileId: 'ghost',
+          memory: {},
+          rngState: { seed: 1, words: [1, 2, 3, 4] as const },
+        },
+      }).commands;
+    };
+    const until = state.config.match.countdownSeconds * state.config.tickRate + 30;
+
+    advance(until - 1);
+    expect(decide()).toEqual([]);
+    advance(1);
+    expect(decide()).toEqual([{ type: 'attack-target', actorId: self, targetId: legend }]);
   });
 
   it('knows its aggro profiles', () => {

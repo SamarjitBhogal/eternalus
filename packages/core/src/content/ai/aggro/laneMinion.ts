@@ -21,5 +21,6 @@ export const LANE_MINION_AGGRO = {
   leashRadius: 7.5, // TUNE: 11 §4.3's 700 units, scaled like the radius
   leashGraceTicks: 90, // TUNE: owner DEC-144, "breaks after N time (e.g., 3 seconds)"
   aggroCooldownTicks: 90, // TUNE: Dota 3 s
+  ghostFirstWaveTicks: 0, // TUNE: 11 §4.3 ships it off; League ghosts the first wave for 18–28 s
   callForHelpRadius: 7.5, // TUNE: owner DEC-144; the leash, so a helper takes only what it may fight
 } as const satisfies AggroRuleDefinition;
