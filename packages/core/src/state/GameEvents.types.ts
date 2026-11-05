@@ -104,7 +104,7 @@ export type GameEventMap = {
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
-    readonly cause?: 'structure-destroyed';
+    readonly cause: 'kill' | 'structure-destroyed';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;

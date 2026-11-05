@@ -162,7 +162,8 @@ Reply inline (`Decision: …`).
       values, also for you to confirm: level cap 10, `xpToNext = 100 + 50·(L−1)`, +8% base health
       and +10 aether per level, Legend kill 150 + 25 × victim level, minion kill 20 / 45 / 120.
   - Update after your PR #31 review (O1–O8): cap 50 (O6). **Income estimate to check:**
-    **Superseded by DEC-190 (2026-11-05); see the update below.** balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
+    **Superseded by DEC-190 (2026-11-05); see the update below.**
+    balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
     135 XP/min (minions about 110 XP/min, the rest kills and objectives). Keeping that income and
     balancing.md's curve shape (growth = half the first step), the cap-50 curve is
     `xpToNext(L) = 4 + 2·(L − 1)`, 2,548 XP to level 50, reached around minute 19. Kills are

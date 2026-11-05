@@ -47,7 +47,7 @@ const setUp = () => {
     });
   };
   const gained = (entityId: string, victimId: string, victimTeam: Team) => {
-    state.events.emit('xp-gained', { entityId, amount: 10, victimId, victimTeam });
+    state.events.emit('xp-gained', { entityId, amount: 10, victimId, victimTeam, cause: 'kill' });
   };
   const gainedFromStructure = (entityId: string, victimId: string, victimTeam: Team) => {
     state.events.emit('xp-gained', {

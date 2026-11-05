@@ -81,7 +81,13 @@ describe('ProgressionSystem', () => {
 
     expect(warrior.getComponent(Progression).xp).toBe(20);
     expect(payloads('xp-gained')).toEqual([
-      { entityId: warrior.id, amount: 20, victimId: minion.id, victimTeam: 'dark' },
+      {
+        entityId: warrior.id,
+        amount: 20,
+        victimId: minion.id,
+        victimTeam: 'dark',
+        cause: 'kill',
+      },
     ]);
   });
 

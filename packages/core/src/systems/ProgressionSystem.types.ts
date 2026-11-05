@@ -18,6 +18,7 @@ export type ProgressionContent = {
 
 /** One kill waiting for this system's pass. */
 type KillAward = {
+  readonly kind: 'kill';
   readonly killerId: EntityId;
   readonly victimId: EntityId;
   readonly victimTeam: Team;
@@ -26,6 +27,7 @@ type KillAward = {
 
 /** One destroyed structure: `xp` for every Legend of `team`, the team that destroyed it. */
 type StructureAward = {
+  readonly kind: 'structure-destroyed';
   readonly team: PlayableTeam;
   readonly victimId: EntityId;
   readonly victimTeam: PlayableTeam;

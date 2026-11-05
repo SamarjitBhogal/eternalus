@@ -21,6 +21,7 @@ import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
 import { SystemPipeline } from './SystemPipeline';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
@@ -211,9 +212,67 @@ describe('DefaultSystemPipeline', () => {
       .filter((event) => event.type === 'xp-gained')
       .map((event) => event.payload);
     expect(awards).toEqual([
-      { entityId: warrior.id, amount: 20, victimId: minion.id, victimTeam: 'dark' },
+      {
+        entityId: warrior.id,
+        amount: 20,
+        victimId: minion.id,
+        victimTeam: 'dark',
+        cause: 'kill',
+      },
     ]);
     expect(state.entities.has(warrior.id)).toBe(false);
+    expect(logger.records).toEqual([]);
+  });
+
+  it('pays a destroyed structure to every living Legend of the other team, once, a tick later (DEC-186)', () => {
+    const logger = new MemoryLogger();
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const pipeline = new DefaultSystemPipeline(
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
+      state,
+      PROGRESSION,
+    );
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      {
+        has: (id) => UNIT_DEFINITIONS.has(id) || STRUCTURE_DEFINITIONS.has(id),
+        get: (id) =>
+          UNIT_DEFINITIONS.has(id) ? UNIT_DEFINITIONS.get(id) : STRUCTURE_DEFINITIONS.get(id),
+      },
+      undefined,
+      loadWeapons(createDefaultGameConfig().tickRate),
+    );
+    const add = (kind: string, definitionId: string, team: 'light' | 'dark') => {
+      const entity = factory.create(kind, definitionId, { position: { x: 0, y: 0 }, team });
+      state.entities.add(entity);
+      return entity;
+    };
+    const lights = [add('warrior', 'warrior', 'light'), add('magus', 'magus', 'light')];
+    const dark = add('warrior', 'warrior', 'dark');
+    const tower = add('spawner-tower', 'spawner-tower', 'dark');
+    new DamagePipeline().apply(state, tower.id, 1_000_000, {
+      attackerId: lights[0]?.id ?? '',
+      kind: 'weapon',
+      definitionId: 'warrior',
+    });
+
+    // Tick 1: Progression runs before Structure, so the fall is announced after it; Death removes it.
+    pipeline.run({ state, logger });
+    expect(state.entities.has(tower.id)).toBe(false);
+    expect(lights.map((l) => l.getComponent(Progression).xp)).toEqual([0, 0]);
+
+    // Tick 2: the award is paid with the structure already gone, which the invariant requires.
+    state.advanceTick();
+    pipeline.run({ state, logger });
+    // Tick 3: nothing is paid twice.
+    state.advanceTick();
+    pipeline.run({ state, logger });
+
+    expect(lights.map((l) => l.getComponent(Progression).xp)).toEqual([
+      XP_SOURCES.structureDestroyed,
+      XP_SOURCES.structureDestroyed,
+    ]);
+    expect(dark.getComponent(Progression).xp).toBe(0);
     expect(logger.records).toEqual([]);
   });
 

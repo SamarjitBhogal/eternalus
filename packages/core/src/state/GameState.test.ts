@@ -212,6 +212,7 @@ describe('GameState', () => {
       amount: 5,
       victimId: 'entity-2',
       victimTeam: 'dark',
+      cause: 'kill',
     } as const;
     state.events.emit('xp-gained', award);
     for (let i = 0; i < 600; i += 1) {
