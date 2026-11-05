@@ -29,10 +29,10 @@ export const MOB_OUTLINE_SCALE = 1.35;
  * along the facing, `halfWidth` across it, all in unit radii, so the chevron sits outside the
  * outlines (`LEGEND_OUTLINE_SCALE`, `MOB_OUTLINE_SCALE`) and inside the focus ring
  * (`FOCUS_RING_SCALE`); `arcSegments` straight pieces draw the arc; `lineWidth` is in screen pixels.
- * The gold is `--team-light-primary` in `styles/global.css`, the palette's gold (canvas views
- * cannot read CSS tokens).
+ * The chevron is gold for every unit, whatever its team (DEC-192). The hex value is the palette's
+ * gold, `--team-light-primary` in `styles/global.css` (canvas views cannot read CSS tokens).
  */
-// TUNE: owner 2026-11-04 (DEC-192): a very small gold chevron at the front; sizes provisional
+// TUNE: owner 2026-11-05 (DEC-192): a very small gold chevron at the front; sizes provisional
 export const FACING_CHEVRON = {
   base: 1.4,
   tip: 1.75,

@@ -40,7 +40,8 @@ import { SystemPipeline } from './SystemPipeline';
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
  * minion veterancy, structure losses and breakability, spawning, enraging, death, then invariants
- * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
+ * last. Combat runs after movement, so a unit with a target in reach faces it, not its own way
+ * (DEC-192). This is the one place a system is added, at its position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
  * step applies to every hit and every status event comes from one place.

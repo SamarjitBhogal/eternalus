@@ -9,7 +9,7 @@ import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
 import { distanceToPath, distanceToSegment, isPointInPolygon } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
-import { length, sub } from '../utils/vec2';
+import { sqrt } from '../utils/deterministicMath';
 import type { Entity } from '../entities/Entity';
 import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
 
@@ -154,7 +154,9 @@ export class EntityStore {
         );
       });
     }
-    const gap = length(sub(to.position, from.position));
+    const dx = to.position.x - from.position.x;
+    const dy = to.position.y - from.position.y;
+    const gap = sqrt(dx * dx + dy * dy);
     return gap - from.radius - to.radius <= combat.attack.reach;
   }
 

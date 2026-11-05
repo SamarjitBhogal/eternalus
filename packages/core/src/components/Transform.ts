@@ -1,5 +1,5 @@
 import type { Vec2 } from '../utils/geometry.types';
-import { length, scaleInto } from '../utils/vec2';
+import { sqrt } from '../utils/deterministicMath';
 import type { MutableVec2 } from '../utils/vec2.types';
 import { INITIAL_FACING } from './Transform.constants';
 
@@ -55,10 +55,18 @@ export class Transform {
    */
   public face(direction: Vec2): void {
     Transform.assertFinite(direction.x, direction.y, 'facing direction');
-    const size = length(direction);
-    if (size > 0) {
-      scaleInto(this.currentFacing, direction, 1 / size);
-    }
+    this.turn(direction.x, direction.y);
+  }
+
+  /**
+   * Turns to face `point`. A point equal to the entity's own position keeps the current facing.
+   * Allocates nothing.
+   *
+   * @throws Error when `point` is not finite.
+   */
+  public lookAt(point: Vec2): void {
+    Transform.assertFinite(point.x, point.y, 'look-at point');
+    this.turn(point.x - this.currentPosition.x, point.y - this.currentPosition.y);
   }
 
   /** Moves to `position`. */
@@ -71,6 +79,15 @@ export class Transform {
     this.beforeMovement.x = this.currentPosition.x;
     this.beforeMovement.y = this.currentPosition.y;
     this.place(this.currentPosition.x + delta.x, this.currentPosition.y + delta.y);
+  }
+
+  private turn(dx: number, dy: number): void {
+    const size = sqrt(dx * dx + dy * dy);
+    if (size > 0) {
+      const scale = 1 / size;
+      this.currentFacing.x = dx * scale;
+      this.currentFacing.y = dy * scale;
+    }
   }
 
   private place(x: number, y: number): void {
