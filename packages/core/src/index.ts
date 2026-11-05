@@ -81,7 +81,7 @@ export type {
   Unsubscribe,
 } from './state/GameEvents.types';
 export type { MatchPhase } from './state/GameState.types';
-export type { EntitySnapshot, Snapshot } from './state/Snapshot.types';
+export type { CaptureSnapshot, EntitySnapshot, Snapshot } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
 export type { PlayableTeam, Team } from './teams/teams.types';
 export { isPointInPolygon } from './utils/geometry';

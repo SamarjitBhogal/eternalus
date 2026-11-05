@@ -4894,3 +4894,131 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
   (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
   acceptance; 10 §9 already allows it for the MVP.
+
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/capture-points — Aryan Walanj + Claude
+
+- What was done: reworked PR #49 on `phase/2-sprint-2-work` per the architecture review. Capture
+  points are `CapturePoint` zones (`entities/zones/`) with a `Capturable` component and content in
+  `content/zones/`, spawned by `Simulation` from the map's `capture-point` and `cathedral`
+  features. `CaptureSystem` runs after `DeathSystem` with the DEC-86 rules: weighted majority
+  (Legend 10, other units 1; structures, projectiles and zones never count), ties pause, rate
+  grows with the margin up to `maxMargin`, enemies drain through 0 first, neutral units retake to
+  neutral, unfinished captures revert to the last locking state. Tuning in
+  `GameConfig.match.capturePoints` (validated, `TUNE`). `EntitySnapshot.capture`, `StateHasher`
+  fields and `CaptureProgressBoundsInvariant`. Client `CapturePointView` (shared team colours,
+  checkpoint count from the snapshot). The old `capture/` folder, `capturePointsFromMap` and
+  `SimulationOptions.capturePoints` are gone. Merged the phase branch (#59–#61).
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  825 passed (825)"; client "Tests 424 passed (424)"; "✓ built in 1.10s"; "Documentation check
+  passed." After merging the phase branch again (#62, #63, #30; `spawnZones` reads
+  `GameState.world`): `EXIT=0`, core "Tests 921 passed (921)", client "Tests 438 passed (438)".
+- Next step: critic and ponytail (pre-PR gate) in a Claude Code session; architecture re-review.
+
+### 2026-11-02 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64) — sholtzman + Claude Code
+
+- What was done: fixed PR #64's review findings for its author, at the product owner's request
+  (DEC-145, DEC-146). A capture zone now covers its building's floor (`map/zoneArea.ts`,
+  `components/ZoneArea.ts`): the fort court for an outer point, the whole Cathedral floor; a unit
+  counts when its centre is on that floor. `checkpoint-reached` fires once per side until the
+  zone changes owner, only for the side the progress leans toward. Each side's weighted presence
+  is published (`CaptureSnapshot.presence`) and drawn as a split bar under the progress bar; the
+  HUD density numbers are an INBOX item for the HUD branch. `EntitySnapshot.area`, StateHasher
+  covers the reached marks. Critic round 1 (request-changes): the fort zone now ends at the walls'
+  inner faces, a step that crosses 0 announces every checkpoint it passes, and doc fixes; ponytail
+  cut `ZoneArea`'s bounding box. Every new test failed under a deliberate break first (A to H).
+- Checks run: `npm run check` → `exit 0` before the critic (core "Tests 937 passed (937)") and
+  after critic round 2 (approve) and the ponytail cut: "All matched files use Prettier code
+  style!"; core "Tests 938 passed (938)"; client "Tests 440 passed (440)"; "✓ built in 116ms";
+  "Documentation check passed."
+- Next step: push to `feat/capture-points-v2` (PR #64); HUD branch: density % in
+  `ObjectiveTracker` (INBOX).
+
+### 2026-11-03 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64) — sholtzman + Claude Code
+
+- What was done: answered the PR #64 review (head `48ba952`). `Simulation` builds one
+  `EntityFactory`: `ZONE_DEFINITIONS` is one more definition source, and the second zone factory
+  with its shared id counter is gone (finding 2; ids and hashes unchanged). The command factory
+  can now see zones, so `DevSpawnHandler` refuses a zone with the new reason `map-only` (critic
+  blocker: the step threw on a missing area; the new `Simulation.capture` test failed under a
+  deliberate break first). `CaptureSystem.weightsInside` has a `ponytail:` remark for its
+  O(zones × units) scan (finding 7). The PR description records the pre-PR gate; the base moves
+  to `phase/3-sprint-3-work`.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 939 passed (939)"; client "Tests 440 passed (440)"; "✓ built in 124ms"; "Documentation
+  check passed."
+- Next step: Samarjit re-reviews #64. Whichever of #64 and the minion stack (#56 → #58) lands
+  second resolves their conflicts (11 files, `git merge-tree`): one helper composes the units,
+  zones and structures definition sources and refuses duplicate ids, and `spawnZones` runs after
+  `spawnStructures` (feature id order for both is decided there).
+
+### 2026-11-03 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64) — sholtzman + Claude Code
+
+- What was done: merged `phase/3-sprint-3-work` (`387a5fd`, the HUD PR #68) into #64 as
+  `1d9efb8`, because #64's base moves to phase 3. The conflicts were docs only; two HUD tests
+  gained the new snapshot fields (`MatchBridge.test.ts`) or leave out the zone spawns
+  (`createBrowserMatch.test.ts`). Then `ZoneArea.contains` and `findBuildingAt` share one
+  point-in-footprint test, `isPointInAnyPolygon` (`utils/geometry.ts`), as `INBOX.md` (PR #64
+  density follow-up) asks of whichever PR lands second. They share the test, not `findBuildingAt`
+  itself: the fort zone is the court inside the walls (DEC-145 (a)), not a building footprint.
+  The new geometry test failed under a deliberate break first (`polygons.slice(0, 1)`: 3 tests
+  red, one per caller). Dated notes record this in architecture 06 §10, DEC-149 and `INBOX.md`
+  HC-S6 (b), which no longer gates #64. The critic (round 5: approve) found that the HUD still
+  showed every capture point as neutral: `MatchBridge` now takes each point's owner and progress
+  from the zone on its feature's position, and re-sends the last array while nothing changes
+  (architecture 13 status note). Its tests failed first under three breaks: the static roster
+  (1 red), a new array on each publish (2 red), and a link that misses (the whole-match test red).
+  Critic round 6 (approve): a point whose zone is gone shows no capture again (neutral, no
+  progress), not frozen values (break: keep the last values, 1 red); each point and its position
+  are one `CaptureSite`. Its better-than-design item, a feature id on the zone's snapshot, is in
+  `INBOX.md` for the owner.
+- Checks run: `npm run check` on `a46e8f1` → `EXIT=0`: core "Tests 1000 passed (1000)"; client
+  "Tests 1744 passed (1744)"; "Documentation check passed.". On the round 6 fixes it is not yet
+  green: two runs ended with 9 and 4 core simulation tests "timed out in 60000ms" while the
+  machine was swapping (5.7 of 7 GB swap used), so its later steps (`build`, `docs:check`) did
+  not run. The core code is unchanged since `a46e8f1`. `MatchBridge.test.ts`,
+  `createBrowserMatch.test.ts` and `AssetManifest.files.test.ts` pass alone ("Tests 19 passed
+  (19)"). Critic round 7 (final loop, on `60c5b09`): approve; its nits are applied. Re-run on
+  `b2d33e1` (2026-11-04, machine no longer swapping): `EXIT 0`: core "Tests 1000 passed (1000)";
+  client "Tests 1744 passed (1744)"; "✓ built in 315ms"; "Documentation check passed.".
+- Next step: Samarjit re-reviews #64 on base `phase/3-sprint-3-work`. The owner answers the
+  feature-id item. The minion stack (#56 → #58) conflicts stay for whichever lands second.
+
+### 2026-11-04 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64) — sholtzman + Claude Code
+
+- What was done: the minion stack (#56, #57, #58, #66) landed in `phase/3-sprint-3-work` at
+  `8e058d8` while #64 waited to be pushed, so this branch merges it. Ten files conflicted. In each
+  code file both sides had added lines at one place, and both are kept: the entity and view
+  registries, the `DefaultSystemPipeline` comment, `SpawnContextReader` (`laneId` and `area`),
+  `StateHasher` and its test (veterancy and ally damage, capture), and `defaultGameConfig.test.ts`
+  (unit cap 300, DEC-137, with `capturePoints`). Doc 15 takes phase 3's `guard-within-leash` row
+  and #64's `capture-progress-bounds` row; `INBOX.md` and PROGRESS keep both sides. One conflict
+  git did not show: phase 3's new `StructureView.test.ts` builds an `EntitySnapshot` without
+  #64's `area` and `capture` (`error TS2739`); it now gives both as `null`, as the other view
+  tests do. `spawnZones` runs after `spawnStructures` and the roster; a capture point's feature has
+  no structure definition, so nothing spawns twice; `MatchBridge` links only snapshots with a
+  `capture`.
+- Checks run: `npm run check` on the merge, run 1: `error TS2739` in
+  `StructureView.test.ts` (fixed above). Run 2: `EXIT 1`: client "Tests 1745 passed (1745)";
+  core "Tests 1 failed | 1106 passed (1107)". The failing test is phase 3's
+  `Simulation.structures.test.ts` "holds a horde that cannot fight in front of the first enemy
+  tower on its lane (18 §6.2)": one light lane-0 minion stands at x 80.5, not within 15 of x 126.
+  It is not a zone effect: the Cathedral zone moved off both lanes gives the same result, and on
+  `8e058d8` alone (no #64 code) one `dev-spawn` before the first wave gives it too (0, 2 or 3
+  give none). Cause, from a probe of `LaneFollowMovementStrategy` and `addSeparation`: the zone
+  takes one entity id, so the horde's leader is `entity-40`; that leader walks the lane's centre
+  line into a light tower guard standing at its post on the same line (77.15, 20.00), and the
+  guard's separation push (strength 1.2) cancels its forward pull, so the steer falls under
+  `minSteer` and it never moves on. A head-on deadlock in phase 3's steering that any extra entity
+  can expose; #64 is not pushed until it is fixed.
+- Next step: the owner chooses where the guard deadlock is fixed (phase 3 PR or #64). Then
+  `npm run check` again, the push, and Samarjit's re-review on base `phase/3-sprint-3-work`.
+
+### 2026-11-04 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64), merge 2 — sholtzman + Claude Code
+
+- What was done: the owner chose a separate phase 3 PR for the guard deadlock in the entry above.
+  That PR, #72, landed in `phase/3-sprint-3-work` at `c9de1a9` together with #67. `4f7c302` merges
+  that head into this branch. Only `PROGRESS.md` conflicted; both sides' entries are kept.
+- Checks run: `npm run check` on `4f7c302`: `EXIT 0`: core "Tests 1112 passed (1112)"; client
+  "Tests 1745 passed (1745)"; "✓ built in 297ms"; "Documentation check passed.". The test that
+  failed in the entry above now passes.
+- Next step: push to #64 with base `phase/3-sprint-3-work`, then Samarjit's re-review.

@@ -4,7 +4,7 @@ description: How the map is generated from GameConfig by a pure MapGenerator, wh
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-03
 tags: [architecture, map, minimap, generation, world]
 paths:
   [
@@ -483,7 +483,9 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   testing and clears on overview". `BuildingRoofs` owns the roof state now.
 - **Building at a point (2026-11-02, DEC-149).** Core's `findBuildingAt` (`map/findBuildingAt.ts`)
   is the one "which building's interior holds this point" test over `MapBuilding` footprints:
-  `BuildingRoofs` uses it, and capture zones are meant to reuse it.
+  `BuildingRoofs` uses it, and capture zones are meant to reuse it. (2026-11-03, PR #64: zones
+  share its point test, `isPointInAnyPolygon` in `utils/geometry.ts`, not the function: a fort
+  zone is the court, DEC-145 (a).)
 
 ### 2026-10-20 — PR #30 review corrections and accepted cutaway design
 

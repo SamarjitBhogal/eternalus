@@ -29,6 +29,11 @@ export const BUILDING_GEOMETRY = {
     /** Middle-back of the ceremonial hall, before team rotation and ring scaling. */
     throne: { x: 0, y: 385, room: { x: -32, y: 360, width: 64, height: 48 } },
   },
+  /**
+   * A fort: an outer capture point's square side, walls included (sketch units), and what every
+   * fort's side is divided by to give its wall thickness.
+   */
+  fort: { capturePointSize: 88, wallDivisor: 10 },
   northDoor: { x: 788, y: 320, width: 24, height: 12 },
   southDoor: { x: 785, y: 541, width: 30, height: 12 },
   stronghold: {

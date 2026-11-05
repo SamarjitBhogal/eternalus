@@ -3,10 +3,12 @@ import type { EntityId } from './EntityStore.types';
 import type { MatchPhase, TeamState } from './GameState.types';
 import type { Horde } from './Horde.types';
 import type { MapObjectSnapshot } from '../content/maps/mapObjects.types';
+import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health` or `TeamMembership`), never a made-up default.
+ * (no `Transform`, `Health`, `TeamMembership`, `ZoneArea` or `Capturable`), never a made-up
+ * default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -17,6 +19,28 @@ export type EntitySnapshot = {
   readonly team: Team | null;
   readonly transform: { readonly x: number; readonly y: number; readonly radius: number } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
+  /** The ground a zone covers (`ZoneArea`), as polygons in world units; `null` for non-zones. */
+  readonly area: readonly Polygon[] | null;
+  /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */
+  readonly capture: CaptureSnapshot | null;
+};
+
+/** One zone's capture state as the client sees it. */
+export type CaptureSnapshot = {
+  readonly owner: Team;
+  /** -1 (fully Dark) to +1 (fully Light); 0 is neutral. */
+  readonly progress: number;
+  /** Checkpoints the current capture has passed, from 0 to `checkpoints`. */
+  readonly checkpoint: number;
+  /** How many checkpoints a full capture passes (`GameConfig.match.capturePoints`). */
+  readonly checkpoints: number;
+  /** The mini-boss that blocks capture, or `null`. */
+  readonly lockedBy: EntityId | null;
+  /**
+   * Each side's summed unit weight inside the zone this tick (DEC-145 (c)); a side's share of the
+   * total is its density.
+   */
+  readonly presence: Readonly<Record<Team, number>>;
 };
 
 /** A lane horde as the client sees it (architecture 18 §4): the store's plain fields, copied. */

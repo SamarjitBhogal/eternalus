@@ -15,14 +15,23 @@ describe('createDefaultGameConfig', () => {
     });
     expect(config.match.hordeSizes).toEqual({ light: 16, medium: 8, heavy: 4 });
     expect(config.limits).toEqual({ maxLegendsPerTeam: 10, maxUnitsPerTeam: 300 });
+    expect(config.match.capturePoints).toEqual({
+      checkpoints: 3,
+      captureSeconds: 12,
+      revertSeconds: 20,
+      maxMargin: 3,
+      weights: { legend: 10, unit: 1 },
+    });
   });
 
   it('merges overrides at every depth and keeps the other defaults', () => {
     const config = createDefaultGameConfig({
       map: { numLanes: 5 },
-      match: { hordeSizes: { heavy: 2 } },
+      match: { hordeSizes: { heavy: 2 }, capturePoints: { weights: { legend: 5 } } },
       limits: { maxUnitsPerTeam: 100 },
     });
+    expect(config.match.capturePoints.weights).toEqual({ legend: 5, unit: 1 });
+    expect(config.match.capturePoints.checkpoints).toBe(3);
     expect(config.map.numLanes).toBe(5);
     expect(config.map.campsPerSide).toBe(6);
     expect(config.match.hordeSizes).toEqual({ light: 16, medium: 8, heavy: 2 });
@@ -36,6 +45,8 @@ describe('createDefaultGameConfig', () => {
     expect(Object.isFrozen(config.map)).toBe(true);
     expect(Object.isFrozen(config.match)).toBe(true);
     expect(Object.isFrozen(config.match.hordeSizes)).toBe(true);
+    expect(Object.isFrozen(config.match.capturePoints)).toBe(true);
+    expect(Object.isFrozen(config.match.capturePoints.weights)).toBe(true);
     expect(Object.isFrozen(config.limits)).toBe(true);
   });
 

@@ -14,6 +14,7 @@ import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
+import { CaptureSystem } from './CaptureSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
@@ -39,8 +40,9 @@ import { SystemPipeline } from './SystemPipeline';
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
- * minion veterancy, structure losses and breakability, spawning, enraging, death, then invariants
- * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
+ * minion veterancy, structure losses and breakability, spawning, enraging, death, capture points,
+ * then invariants last. This is the one place a system is added, at its position in the tick
+ * (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
  * step applies to every hit and every status event comes from one place.
@@ -139,6 +141,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       new DeathSystem(),
+      new CaptureSystem(state.config.match.capturePoints, tickRate),
       new InvariantSystem(invariants),
     ]);
   }

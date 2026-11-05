@@ -26,6 +26,28 @@ export type MapConfig = {
   readonly presetId?: string;
 };
 
+/**
+ * How capture points are taken (DEC-86; architecture 07 §7). Every unit inside a zone adds its
+ * weight to its side (Light, Dark or neutral); the heaviest side moves the zone's progress toward
+ * itself at a rate that grows with its margin over the next side.
+ */
+export type CapturePointsConfig = {
+  /** Checkpoints a capture passes on its way to full (the game doc's three). */
+  readonly checkpoints: number;
+  /** Seconds to fill a zone from neutral to full at a margin of 1 (one minion alone). */
+  readonly captureSeconds: number;
+  /** Seconds an unfinished capture takes to fall all the way back to its last locking state. */
+  readonly revertSeconds: number;
+  /** The largest margin that still speeds a capture up; a bigger margin captures no faster. */
+  readonly maxMargin: number;
+  /** What one unit inside a zone weighs for its side. */
+  readonly weights: {
+    readonly legend: number;
+    /** Every unit that is not a Legend (minions, camp mobs, bosses). */
+    readonly unit: number;
+  };
+};
+
 /** How a match is staffed and paced. Times are authored in seconds and converted to ticks. */
 export type MatchConfig = {
   readonly legendsPerTeam: number;
@@ -37,6 +59,7 @@ export type MatchConfig = {
     readonly heavy: number;
   };
   readonly plannedMatchSeconds: number;
+  readonly capturePoints: CapturePointsConfig;
 };
 
 /** Per-team caps the developer menu and spawners must respect. */
