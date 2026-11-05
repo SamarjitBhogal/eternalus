@@ -68,7 +68,8 @@ export class ProgressionSystem implements System {
     for (const award of this.pending.splice(0)) {
       if ('killerId' in award) {
         // TODO(claudiodh): O4 pays a Legend killed earlier, but `DeathSystem` still removes dead
-        // Legends, so its XP is dropped here; respawn (FR-051, SCRUM-178) must keep them in the store.
+        // Legends, so its XP is dropped here; respawn (FR-051, SCRUM-178) must keep them in the
+        // store.
         const killer = state.entities.get(award.killerId);
         if (killer !== undefined) {
           this.grant(killer, award, state);
@@ -76,6 +77,8 @@ export class ProgressionSystem implements System {
         continue;
       }
       // Every Legend still in the store on the destroying team; a dead one is already removed.
+      // ponytail: stand-in removed by GL-12 (DEC-186, owner 2026-11-05: "pay on respawn"): a Legend
+      // dead when the structure falls must get its share when it respawns; respawn does not exist.
       state.entities.forEach((entity) => {
         if (
           entity.findComponent(TeamMembership)?.team === award.team &&

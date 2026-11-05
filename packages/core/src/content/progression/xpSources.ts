@@ -1,14 +1,15 @@
 import type { XpSourcesDefinition } from './progression.types';
 
 /**
- * XP per Legend kill. TUNE: balancing.md "XP sources" (150 + 25 × victim level), re-priced for the
- * cap-50 curve (O6): the curve keeps balancing.md's total, so a victim at level L is priced as one
- * at level L / 5 on the old cap-10 curve, 150 + 5 × L (400 XP at level 50). Mobs carry their own
- * `xpValue`; sharing, assists, checkpoints, camps and bosses join with their systems.
+ * XP per Legend kill. TUNE: DEC-190 (owner 2026-11-05) replaces the balancing.md "XP sources"
+ * price (150 + 25 × victim level, then 150 + 5 × L): `80 + 1.5 × L` makes a same-level kill
+ * worth about three quarters of a level at every level, so no kill gives several levels. The value
+ * may be fractional. Mobs carry their own `xpValue`; sharing, assists, checkpoints, camps and
+ * bosses join with their systems.
  */
 export const XP_SOURCES: XpSourcesDefinition = {
-  legendKill: { base: 150, perVictimLevel: 5 },
-  // TUNE: balancing.md "XP sources" (structure destroyed: 300 to every allied Legend) + DEC-186
-  // (owner 2026-11-04); one value for every structure kind.
-  structureDestroyed: 300,
+  legendKill: { base: 80, perVictimLevel: 1.5 },
+  // TUNE: DEC-190 (owner 2026-11-05) replaces DEC-186's 300: 120 is at most one level at any level
+  // of the curve. One value for every structure kind.
+  structureDestroyed: 120,
 };
