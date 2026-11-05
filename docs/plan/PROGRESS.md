@@ -5002,3 +5002,27 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
   (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
   acceptance; 10 §9 already allows it for the MVP.
+
+### 2026-11-05 — Phase 3 / Legend XP rework (code and docs) — feat/structure-xp — sholtzman + Claude Code
+
+- What was done: code, in two commits. 77a999e (DEC-186): a destroyed structure pays XP to every
+  living Legend of the destroying team, event-driven by `structure-destroyed` in
+  `ProgressionSystem`, audited by the `level-matches-xp` invariant (structure must be gone, no
+  ally or double award). b44714e (DEC-190): new Legend XP curve and sources in `content/progression`
+  so no same-level kill or structure gives several levels; not final. Critic round 1 follow-ups:
+  `Award` union tagged with `kind`; `xp-gained.cause` required (`'kill' | 'structure-destroyed'`);
+  one `legendOf` helper. Docs follow: INBOX income-estimate item marked superseded plus a new
+  update; `balancing.md` XP recommendations marked superseded with a pointer; architecture 05 §20
+  status note and phase 4 plan status updated. The DEC-186 and DEC-190 rows are on the docs
+  branch, not this one.
+- Tests: `ProgressionSystem.test.ts` (structure award, team filter, level-up, neutral, buildings),
+  `LevelMatchesXpInvariant.test.ts`, `xpSources.test.ts` (all 49 levels, curve sum 7,742), and a
+  pipeline test in `DefaultSystemPipeline.test.ts`: a real tower destroyed through the default
+  pipeline pays 120 XP to each living Legend of the other team one tick later, once, with no
+  invariant violation. Red line (structure branch disabled): "expected [ +0, +0 ] to deeply equal
+  [ 120, 120 ]".
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1066 passed (1066)"; client "Tests 1736 passed (1736)"; "✓ built in 717ms";
+  "Documentation check passed." Log: `eternalus-agent-work/xp-rework/check-xp-r2.log`. This
+  entry was added after that run.
+- Next step: add the DEC rows on the docs branch; build "pay on respawn" with GL-12.
