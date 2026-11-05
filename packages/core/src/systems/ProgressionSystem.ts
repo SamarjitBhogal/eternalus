@@ -109,11 +109,9 @@ export class ProgressionSystem implements System {
   ): void {
     const health = entity.getComponent(Health);
     const aether = entity.getComponent(Aether);
-    const healthRaise = baseHealth * scaling.healthPerLevel; // O3: +8% of level-1 base, additive
-    health.raiseMax(healthRaise);
+    health.raiseMaxAndHeal(baseHealth * scaling.healthPerLevel); // O3: +8% of level-1 base, additive
     aether.raiseMax(scaling.aetherPerLevel);
     if (!health.isDead) {
-      health.heal(healthRaise);
       aether.restore(scaling.aetherPerLevel);
     }
   }

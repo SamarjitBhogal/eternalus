@@ -8,7 +8,7 @@ import type { AuthoredStatusEffect } from './statusEffects.types';
 export const RALLIED = {
   id: 'rallied',
   displayName: 'Rallied',
-  durationSeconds: 1, // TUNE: no reference value; a little over the aura's refresh interval
+  durationSeconds: 1, // TUNE: no reference value, a little over the aura's refresh interval; DEC-165: a tuning default
   stacking: 'refresh',
   maxStacks: 1,
   modifiers: [{ stat: 'damageDealt', op: 'mul', value: 1.05 }], // TUNE: balancing.md +5%

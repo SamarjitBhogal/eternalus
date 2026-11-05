@@ -3,23 +3,25 @@ import { Veterancy } from '../components/Veterancy';
 import type { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { MinionVeterancyDefinition } from '../content/mobs/mobs.types';
+import type { Entity } from '../entities/Entity';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { System, SystemContext } from './System.types';
 
 /**
- * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) that
- * kills another lane minion counts the kill in its `Veterancy`; each level it earns raises its max health by
- * `healthPerLevel` of its base health (healing by the same) and adds a stack of the veteran
- * status. Every `aura.everySeconds`, each minion with a level gives the aura status to the other
- * friendly horde minions within `aura.radius`. Kills come from `entity-died`, counted on this
- * system's pass; it runs after every system that deals damage and before `DeathSystem`.
+ * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) or a
+ * tower guard (DEC-165) that kills a lane minion counts the kill in its `Veterancy`; each level it
+ * gains (`gainLevels`) raises its max health by `healthPerLevel` of its base health (healing by the
+ * same) and adds a stack of the veteran status. Every `aura.everySeconds`, each unit with a level
+ * gives the aura status to the other friendly horde minions within `aura.radius`. Kills come from
+ * `entity-died`, counted on this system's pass; it runs after every system that deals damage and
+ * before `DeathSystem`.
  */
 export class VeterancySystem implements System {
   public readonly name = 'veterancy';
   private readonly kills: { readonly killerId: EntityId; readonly victimId: EntityId }[] = [];
-  private readonly found: Int32Array;
+  private found = new Int32Array(0);
 
   /**
    * @param state - The match whose deaths this system listens to.
@@ -33,7 +35,6 @@ export class VeterancySystem implements System {
     private readonly units: DefinitionSource,
     private readonly veterancy: MinionVeterancyDefinition,
   ) {
-    this.found = new Int32Array(state.config.limits.maxUnitsPerTeam * 2);
     state.events.on('entity-died', ({ entityId, killer }) => {
       if (killer.attackerId !== null) {
         this.kills.push({ killerId: killer.attackerId, victimId: entityId });
@@ -52,43 +53,79 @@ export class VeterancySystem implements System {
     }
   }
 
+  /**
+   * Gives `entityId` up to `levels` minion levels, never past the cap, each with its effects: max
+   * health `healthPerLevel` of base health higher (healed by the same) and a veteran stack. The one
+   * way in for every level source (DEC-168): this system's kills, and the zone level-up
+   * (balancing.md "+1 minion level (max 3)") once capture points emit it. Returns the levels gained.
+   */
+  public gainLevels(state: GameState, entityId: EntityId, levels: number): number {
+    const entity = state.entities.get(entityId);
+    if (entity === undefined || !state.entities.isAlive(entityId)) {
+      return 0;
+    }
+    const gained = VeterancySystem.veterancyOf(entity).gainLevels(levels, this.veterancy.maxLevel);
+    this.applyLevels(state, entity, gained);
+    return gained;
+  }
+
   private countKill(state: GameState, killerId: EntityId, victimId: EntityId): void {
     const killer = state.entities.get(killerId);
-    // "A minion that kills another minion" (game doc): the victim must be a lane minion too,
-    // still in its horde record this tick, so guards and camp mobs never count.
+    // "A minion that kills another minion" (game doc); DEC-165: only horde kills count, so the
+    // victim must be a lane minion still in its horde record this tick, never a guard or camp mob.
     const isMinionKill = state.hordes.hordeOf(victimId) !== undefined;
     if (
       killer === undefined ||
       !isMinionKill ||
       !state.entities.isAlive(killerId) ||
-      state.hordes.hordeOf(killerId) === undefined
+      !VeterancySystem.canLevel(state, killerId)
     ) {
       return;
     }
-    let veterancy = killer.findComponent(Veterancy);
-    if (veterancy === undefined) {
-      veterancy = new Veterancy();
-      killer.addComponent(veterancy);
+    const { killsPerLevel, maxLevel } = this.veterancy;
+    if (VeterancySystem.veterancyOf(killer).recordKill(killsPerLevel, maxLevel)) {
+      this.applyLevels(state, killer, 1);
     }
-    const { killsPerLevel, maxLevel, healthPerLevel, statusId } = this.veterancy;
-    if (!veterancy.recordKill(killsPerLevel, maxLevel)) {
-      return;
-    }
-    const definition = this.units.get(killer.definitionId);
-    const health = killer.findComponent(Health);
+  }
+
+  private applyLevels(state: GameState, entity: Entity, levels: number): void {
+    const definition = this.units.get(entity.definitionId);
+    const health = entity.findComponent(Health);
     if (!MOB_KINDS.has(definition) || health === undefined) {
       return;
     }
-    const raise = definition.baseHealth * healthPerLevel;
-    health.raiseMax(raise);
-    health.heal(raise);
-    this.statuses.apply(state, killerId, statusId, killerId);
+    for (let level = 0; level < levels; level += 1) {
+      health.raiseMaxAndHeal(definition.baseHealth * this.veterancy.healthPerLevel);
+      this.statuses.apply(state, entity.id, this.veterancy.statusId, entity.id);
+    }
+  }
+
+  /** DEC-165: lane minions and tower guards level from their kills; camp mobs (neutral posts) do not. */
+  private static canLevel(state: GameState, id: EntityId): boolean {
+    const post = state.guards.slotOf(id);
+    return (
+      state.hordes.hordeOf(id) !== undefined || (post !== undefined && post.team !== 'neutral')
+    );
+  }
+
+  private static veterancyOf(entity: Entity): Veterancy {
+    const found = entity.findComponent(Veterancy);
+    if (found !== undefined) {
+      return found;
+    }
+    const veterancy = new Veterancy();
+    entity.addComponent(veterancy);
+    return veterancy;
   }
 
   private spreadAura(state: GameState): void {
     const space = state.space;
     if (space === null) {
       return;
+    }
+    // Room for every indexed unit, as `Perception` sizes its buffer: a query never drops one.
+    if (this.found.length < space.count) {
+      this.found = new Int32Array(Math.max(space.count, 2 * this.found.length));
     }
     const { statusId, radius } = this.veterancy.aura;
     state.entities.forEach((entity) => {
