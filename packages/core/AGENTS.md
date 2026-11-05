@@ -19,9 +19,9 @@ are the **planned** layout; create them as code is added.
 
 | Folder          | Holds                                                               | May import                                                            |
 | --------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `config/`       | `GameConfig`, defaults, validation, `MATCH_PHASES`, timeline types  | `utils/`, `teams/` (types)                                            |
+| `config/`       | `GameConfig`, defaults, validation, `MATCH_PHASES`, timeline types  | `utils/`, `teams/`                                                    |
 | `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs   | `content/`, `utils/` and `teams/` (types)                             |
-| `teams/`        | `PlayableTeam` and `Team`, shared by every layer                    | nothing                                                               |
+| `teams/`        | `PlayableTeam`, `Team` and their helpers, shared by every layer     | nothing                                                               |
 | `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers | `content/`, `teams/`, `utils/`                                        |
 | `utils/`        | Generic helpers: vector math, `SeededRandom`, constants             | `utils/` only                                                         |
 | `components/`   | Data owned by entities (`Transform`, `Movement`)                    | `utils/`, `content/`, `teams/` (types)                                |
@@ -31,7 +31,7 @@ are the **planned** layout; create them as code is added.
 | `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams   | `state/`, `utils/`, types of `commands/` and `config/`                |
 | `match/`        | `MatchDirector`, `MatchTimeline`, phase classes, timeline actions   | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types |
 | `systems/`      | Per-tick logic implementing `System`. Never import another system.  | everything except `ai/`                                               |
-| `ai/`           | Bot controllers: return a `Decision`, never mutate state.           | `state/`, `commands/`, `content/` and `teams/` (types), `utils/`      |
+| `ai/`           | Bot controllers: return a `Decision`, never mutate state.           | `state/`, `commands/`, `config/`, `teams/`, `utils/`, content types   |
 | `Simulation.ts` | Composes everything; the only thing the client drives               | everything                                                            |
 
 `match/` also uses the `Logger` port, `makeLogRecord` and `DebugConfig` of `diagnostics/`, as

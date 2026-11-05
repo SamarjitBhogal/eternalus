@@ -1878,12 +1878,18 @@ Reply inline (`Decision: …`).
     (b) stay where they were noted.
 - [ ] **HC-Q35 — The human's Legend: shared spawn path, or a roster slot (match-director critic, better than the design; DEC-139).** Spawn the human through one Legend spawn path shared with the bot roster (built as plan A19, with the seat as `{ definitionId }`), or record the human as a `player` slot of the roster? Recommendation: the shared path; the roster option changes plan A19.
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
-- [ ] **HC-Q36 — The countdown-end tick: one helper, or one mark kind (match-director critic, better than the design; DEC-139).** Keep `Math.round(countdownSeconds * tickRate)` in three production files behind a `countdownTicks` helper in `config/`, or add an at-countdown-end mark kind to the timeline so `countdownSeconds` is the one source? The two critic runs preferred different options; see the decision page.
+- [x] **HC-Q36 — The countdown-end tick: one helper, or one mark kind (match-director critic, better than the design; DEC-139).** Keep `Math.round(countdownSeconds * tickRate)` in three production files behind a `countdownTicks` helper in `config/`, or add an at-countdown-end mark kind to the timeline so `countdownSeconds` is the one source? The two critic runs preferred different options; see the decision page.
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
-- [ ] **HC-Q37 — Team helpers in `teams/` (match-director critic, better than the design; DEC-139).** Add value helpers (`PLAYABLE_TEAMS`, `isPlayableTeam`, the opposing team) to `teams/`, which holds types only today? It repeats the same two literals in five places now, and it changes the architecture 02 §2 row for `teams/`.
+  - Answered 2026-11-04 (DEC-170): "One helper" (B1). Built on `feat/match-director`:
+    `config/countdownTicks.ts`, used by every copy, including `ai/LeashBehaviour.ts`.
+- [x] **HC-Q37 — Team helpers in `teams/` (match-director critic, better than the design; DEC-139).** Add value helpers (`PLAYABLE_TEAMS`, `isPlayableTeam`, the opposing team) to `teams/`, which holds types only today? It repeats the same two literals in five places now, and it changes the architecture 02 §2 row for `teams/`.
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
-- [ ] **HC-Q38 — `GameState.match` read-only, with narrow writers (match-director critic, better than the design; DEC-139).** Expose `GameState.match` as read-only and add narrow writers (`holdIdle`, `endMatch`, `seatHuman`, `advanceTimeline`), as `setPhase` already is for the phase (DEC-84 (6))? Today any system can set `match.result` or `isIdleHeld`.
+  - Answered 2026-11-04 (DEC-171): "Build in this PR". Built on `feat/match-director`:
+    `teams/playableTeams.ts` (`PLAYABLE_TEAMS`, `isPlayableTeam`, `opponentOf`).
+- [x] **HC-Q38 — `GameState.match` read-only, with narrow writers (match-director critic, better than the design; DEC-139).** Expose `GameState.match` as read-only and add narrow writers (`holdIdle`, `endMatch`, `seatHuman`, `advanceTimeline`), as `setPhase` already is for the phase (DEC-84 (6))? Today any system can set `match.result` or `isIdleHeld`.
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-172): "Build in this PR". Built on `feat/match-director`: the
+    writers `holdIdle`, `endMatch`, `seatHuman` and `advanceTimeline` on `GameState`.
 - [ ] **HC-Q39 — `DefaultInvariantRunner` takes an options object (match-director critic, better than the design; DEC-139).** Replace the five positional constructor arguments of `DefaultInvariantRunner` with an options object, as DEC-113 (4) did for `MatchDirector`?
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
 - [ ] **HC-Q40 — The `end-game` mark 0.75 has no source (match-director critic).** The default timeline enters `end-game` at 0.75 of the planned length (`config/defaultGameConfig.ts`), and architecture 12 §3 calls it a recommendation with no source. Keep 0.75, give a source, or change it?

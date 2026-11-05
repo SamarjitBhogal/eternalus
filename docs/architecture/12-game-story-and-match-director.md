@@ -187,15 +187,15 @@ export class MatchDirector {
 export type MatchState = {
   readonly phase: MatchPhase; // written only by GameState.setPhase
   readonly phaseEnteredTick: number;
-  timelineCursor: number; // index of the next unfired entry
+  readonly timelineCursor: number; // index of the next unfired entry; written only by GameState.advanceTimeline (DEC-172)
   readonly schedule: readonly { readonly entryId: string; readonly tick: number }[]; // every entry's resolved tick, in firing order; taken from config, so not hashed
-  isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88)
+  readonly isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88); written only by GameState.holdIdle
   readonly playerTeam: PlayableTeam; // chosen at match creation, also in sim mode
-  humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); spectatedLegendId beside it
+  readonly humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); set once by GameState.seatHuman; spectatedLegendId beside it
   atmosphere:
     'calm' | { readonly kind: 'eternal'; readonly originId: EntityId; readonly sinceTick: number };
   scoring: ScoringState;
-  result: MatchResult | null;
+  readonly result: MatchResult | null; // set once by GameState.endMatch
 };
 ```
 

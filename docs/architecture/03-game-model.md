@@ -68,6 +68,10 @@ export class GameState {
   public get match(): MatchState; // the director's memory (12 §4); `phase` is `match.phase`
   public advanceTick(): void; // called once per step(), by Simulation only
   public setPhase(next: MatchPhase): void; // called by MatchDirector only; stamps `match.phaseEnteredTick`, emits 'phase-changed'
+  public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88); `match` is read-only, these four and setPhase write it (DEC-172)
+  public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
+  public seatHuman(legendId: EntityId | null): void; // Simulation only, once, when the match is built
+  public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
 }
 ```
 
