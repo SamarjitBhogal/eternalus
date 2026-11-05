@@ -93,6 +93,7 @@ export class CathedralExteriorBuilder extends MapDecorationBuilder {
     );
     this.rect('cathedral-north-door-light', 794, 322, 12, 8, P.gold);
     this.visibility = undefined;
+    this.sideEntrances();
     for (let i = 0; i < 5; i++)
       this.rect(
         `cathedral-north-step-${String(i)}`,
@@ -112,5 +113,44 @@ export class CathedralExteriorBuilder extends MapDecorationBuilder {
         P.entryStep,
       );
     return this.pieces;
+  }
+
+  private sideEntrances(): void {
+    for (const [side, door, direction] of [
+      ['west', G.westDoor, -1],
+      ['east', G.eastDoor, 1],
+    ] as const) {
+      const centreY = door.y + door.height / 2;
+      this.visibility = 'roof';
+      this.rect(
+        `cathedral-${side}-portal`,
+        door.x - 2,
+        door.y - 5,
+        door.width + 4,
+        door.height + 10,
+        P.ivoryStone,
+      );
+      this.rect(`cathedral-${side}-door`, door.x, door.y, door.width, door.height, P.shadow);
+      this.rect(
+        `cathedral-${side}-door-inlay`,
+        door.x + 2,
+        door.y + 3,
+        door.width - 4,
+        door.height - 6,
+        P.gold,
+      );
+      this.visibility = undefined;
+      for (let step = 0; step < 5; step++) {
+        const x = direction < 0 ? door.x - (step + 1) * 4 : door.x + door.width + step * 4;
+        this.rect(
+          `cathedral-${side}-step-${String(step)}`,
+          x,
+          centreY - 17 - step,
+          3,
+          34 + step * 2,
+          P.entryStep,
+        );
+      }
+    }
   }
 }
