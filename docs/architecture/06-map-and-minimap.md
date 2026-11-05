@@ -13,6 +13,8 @@ paths:
     'packages/core/src/teams/**',
     'apps/client/src/game/views/MiniMapView*',
     'apps/client/src/game/views/MapView*',
+    'apps/client/src/game/views/WorldObjectsView*',
+    'apps/client/src/game/views/*[Rr]uin*',
   ]
 related:
   [
@@ -566,6 +568,46 @@ scheduled (INBOX).
 Renderer caching and close-view material detail belong to the separate renderer follow-up in
 INBOX, with camera-moving p95 measurements. The map keeps its seeded scenery and worn roads.
 The HUD branch owns attack/roof input arbitration and bridge-backed toolbar state.
+
+### 2026-11-03 — Lane-facing entrances and environmental remains
+
+Cathedral side portals use shared doorway geometry alongside the north and south entrances.
+Exterior portals, interior thresholds and roof-selection footprints align with the existing
+walkable transept openings. Door ornaments and steps add no new solid footprints.
+
+Lane roads follow the generated polyline with joined, world-sized surfaces and restrained wear.
+Explicit `MapDecoration.isLaneSurface` metadata suppresses the main view's schematic lane
+stroke when authored road surfaces exist; schematic maps and minimaps retain their route lines.
+Road styling lives in `content/maps/map1Scenery.ts` and never changes lane routing.
+
+Destroyed artwork is selected by physical object kind: tree stumps and fallen logs, burned house
+shells, scattered rock fragments, collapsed tents, broken timber and ruined stone structures.
+The client caches those polygons from the original footprint. Remains and cosmetic fire do not
+add colliders, damage or simulation state; snapshot destruction still controls visibility and
+walkability. Interior remains follow the same roof and parent-building visibility as intact art.
+
+### 2026-11-03 — Front-facing stronghold shield (owner rulings DEC-158, DEC-159 of 2026-11-04)
+
+The owner ruled that the Stronghold wall is an arc from cliff face to cliff face, not a ring
+(DEC-158): the default stronghold boundary is an open, enemy-facing blue shield arc. This
+supersedes the earlier amendment's unchanged circular-ring appearance. Its curved front, taller
+tips and tessellation come from `defaultMapLayout.ts` (`wallRing.frontArc`). The profile is
+required: there is no closed-ring wall (DEC-159). Layout validation rejects outer gates that would
+end past ±90°, so each tip meets its cliff corner. Both sides use mirrored generated geometry. Gate count still
+follows `numLanes`. Mountain bounds join the two rear endpoints to the world edge, so closed gates
+still seal the base. Preset corner bounds are fitted behind that boundary instead of covering its
+lane exits.
+
+Each segment remains an independent wall object with the same health and destruction rules.
+Physical footprints follow the visible curve; gate positions and lane starts share the same
+profile while preserving the original lane and tower anchors. Generated strongholds carry copied `MapFeature.wallBoundary` dimensions, which palace
+placement reads instead of mistaking the taller shield's extent for a larger palace radius.
+
+`MapShieldBuilder` dresses those exact polygons with translucent blue panels, luminous edges,
+seams, runes and emitter artwork for the existing turret features. `MapDecoration.replacesFeature`
+suppresses the main view's plain feature marker; explicit object ownership removes the correct
+panel artwork when its wall segment dies. The minimap retains its generated feature markers.
+All decoration stays in the existing render layers and adds no new shield-immunity mechanic.
 
 ## Related
 
