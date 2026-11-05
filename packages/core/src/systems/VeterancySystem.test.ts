@@ -184,6 +184,20 @@ describe('VeterancySystem', () => {
     expect(damage).toEqual(['1.100000', '1.200000', '1.300000']);
   });
 
+  it('multiplies the additive veteran bonus by the rally: x1.3 x 1.05 = x1.365 at level 3 (DEC-219 (c))', () => {
+    const { killer, neighbour, kill, step } = setUp();
+    for (let count = 0; count < 2 * MINION_VETERANCY.maxLevel; count += 1) {
+      kill();
+    }
+    kill(true, neighbour.id);
+    kill(true, neighbour.id);
+    step();
+
+    expect(statusesOf(killer)).toContainEqual(['veteran', MINION_VETERANCY.maxLevel]);
+    expect(statusesOf(killer)).toContainEqual(['rallied', 1]);
+    expect(killer.getComponent(StatusEffects).multiplier('damageDealt')).toBeCloseTo(1.365, 6);
+  });
+
   it('levels a tower guard from its own kills, but not a camp mob (DEC-165)', () => {
     const { guard, kill, step } = setUp();
     const towerGuard = guard('light', 'light-guard');
