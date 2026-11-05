@@ -16,6 +16,7 @@ import { EntityFactory } from '../entities/EntityFactory';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { StateHasher } from '../state/StateHasher';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { VeterancySystem } from './VeterancySystem';
 
@@ -152,5 +153,28 @@ describe('VeterancySystem', () => {
     step();
 
     expect(statusesOf(neighbour)).toEqual([]);
+  });
+
+  it('hashes a levelled-up minion the same in two runs, and a further kill differently', () => {
+    const levelled = () => {
+      const run = setUp();
+      run.kill();
+      run.kill();
+      run.step();
+      expect(run.killer.getComponent(Veterancy).level).toBe(1);
+      return run;
+    };
+    const hasher = new StateHasher();
+    const first = levelled();
+    const second = levelled();
+
+    expect(hasher.hash(first.state)).toBe(hasher.hash(second.state));
+
+    // A third kill stays inside level 1, so only the kill count differs from the other run.
+    second.killer
+      .getComponent(Veterancy)
+      .recordKill(MINION_VETERANCY.killsPerLevel, MINION_VETERANCY.maxLevel);
+    expect(second.killer.getComponent(Veterancy).level).toBe(1);
+    expect(hasher.hash(first.state)).not.toBe(hasher.hash(second.state));
   });
 });

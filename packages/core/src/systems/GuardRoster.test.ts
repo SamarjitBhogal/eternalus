@@ -15,6 +15,7 @@ import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { GameState } from '../state/GameState';
+import { StateHasher } from '../state/StateHasher';
 import type { MapDefinition } from '../content/maps/maps.types';
 import { GuardRoster } from './GuardRoster';
 
@@ -108,6 +109,28 @@ describe('GuardRoster', () => {
     expect(guardsOf('stronghold', 'light').filter((id) => id !== null)).toHaveLength(6);
   });
 
+  it('hashes a guard post change: filling and vacating a post each change the hash', () => {
+    const hasher = new StateHasher();
+    const { state, step } = guarded();
+    step();
+    const filled = hasher.hash(state);
+    expect(state.guards.size).toBeGreaterThan(0);
+    let isFirstFilled = false;
+    state.guards.forEach(({ guardId }, index) => {
+      if (index === 0) isFirstFilled = guardId !== null;
+    });
+    expect(isFirstFilled).toBe(true);
+
+    state.guards.vacate(0, state.tick + 100);
+    const vacated = hasher.hash(state);
+    state.guards.vacate(0, state.tick + 200);
+    const later = hasher.hash(state);
+    state.guards.fill(0, 'someone-else');
+    const refilled = hasher.hash(state);
+
+    expect(new Set([filled, vacated, later, refilled]).size).toBe(4);
+  });
+
   describe('forest camps (18 §7.1)', () => {
     /** The two-lane map with one neutral medium forest camp; countdown 2 s (60 ticks). */
     const camped = () => {
@@ -193,6 +216,42 @@ describe('GuardRoster', () => {
       step();
       expect(campMobs().every((id) => id !== null)).toBe(true);
       expect(cleared).toHaveLength(1);
+    });
+
+    it('hashes a cleared and respawned camp the same in two runs, and a later clear differently', () => {
+      const hasher = new StateHasher();
+      // Clears the camp `delay` ticks after the countdown, then stops at one fixed tick.
+      const play = (delay: number) => {
+        const { state, step, campMobs, killCamp, cleared } = camped();
+        step(61);
+        const filled = hasher.hash(state);
+        expect(campMobs().every((id) => id !== null)).toBe(true);
+        step(delay);
+        killCamp(4);
+        step();
+        expect(cleared).toHaveLength(1);
+        const waiting = hasher.hash(state);
+        step(120 * TICK_RATE);
+        expect(campMobs().every((id) => id !== null)).toBe(true);
+        return { filled, waiting, respawned: hasher.hash(state) };
+      };
+
+      const first = play(0);
+      const second = play(0);
+      expect(second).toEqual(first);
+      expect(new Set([first.filled, first.waiting, first.respawned]).size).toBe(3);
+
+      // Clearing one tick later ends at another tick, so compare the waiting hash at one tick.
+      const waitingAt = (delay: number) => {
+        const { state, step, killCamp } = camped();
+        step(61 + delay);
+        killCamp(4);
+        step();
+        step(65 - state.tick);
+        return hasher.hash(state);
+      };
+      expect(waitingAt(0)).toBe(waitingAt(0));
+      expect(waitingAt(0)).not.toBe(waitingAt(1));
     });
   });
 
