@@ -5087,5 +5087,5 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   or `null`, so `isInReach` and `PathingSystem` do not look the outline up twice; one shared
   `Fort` test stand-in in `systems/__fixtures__/Fort.ts`; `BotMovement.approach` inlined into
   `moveTo`.
-- Checks: `npm run check` after the last edit → exit 0: core "Tests  1155 passed (1155)"; client "Tests  1754 passed (1754)"; "✓ built in 299ms"; "Documentation check passed.". Two earlier runs hit 60 s test timeouts while the host load average was 35 (other agents' test runs); the same files passed alone and in the third full run.
+- Checks: `npm run check` after the last edit → exit 0: core "Tests 1155 passed (1155)"; client "Tests 1754 passed (1754)"; "✓ built in 299ms"; "Documentation check passed.". Two earlier runs hit 60 s test timeouts while the host load average was 35 (other agents' test runs); the same files passed alone and in the third full run.
 - Next step: critic r3 on this diff, then PR.
