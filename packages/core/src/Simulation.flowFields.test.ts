@@ -9,6 +9,9 @@ import { BLOCKED_LANE_MAP } from './map/__fixtures__/blockedLaneMap';
 import { MapGenerator } from './map/MapGenerator';
 import { WorldMap } from './map/WorldMap';
 import { Simulation } from './Simulation';
+import { GameState } from './state/GameState';
+import { matchWorldOf } from './state/__fixtures__/matchWorld';
+import { spawnMapStructures } from './state/__fixtures__/spawnMapStructures';
 import { isMinion, MARCHING_ONLY, run } from './__fixtures__/hordeMatches';
 
 /** The generated map's walkability grid, as the pipeline builds it. */
@@ -91,6 +94,87 @@ const march = (map: MapDefinition, numLanes: number, ticks: number) => {
   return { mobs: mobs.length, farthest, offGroundShare: offGround / samples, warnings };
 };
 
+/** How close (m) along its lane a mob must come to its objective's gather point to have arrived. */
+const ARRIVAL_TOLERANCE = 15;
+/** A countdown long enough that no wave leaves during the march: only the opening hordes walk. */
+const NO_WAVES_COUNTDOWN_SECONDS = 6000;
+/** The longest wait (s) for the last mob; seed 1's arrive by about 290 s. */
+const MARCH_CAP_SECONDS = 330;
+
+/**
+ * Marches the opening hordes of a generated map (seed 1) until every one of their mobs has come
+ * within `ARRIVAL_TOLERANCE` along its lane of its first enemy objective's gather point (18 §6.2),
+ * or `MARCH_CAP_SECONDS` pass, and samples every second how often a mob that has stood on walkable
+ * ground is off it. The gather points come from a fixture state with the same map's structures.
+ */
+const marchToObjectives = (numLanes: number) => {
+  const config = createDefaultGameConfig({
+    map: { numLanes },
+    match: { countdownSeconds: NO_WAVES_COUNTDOWN_SECONDS },
+  });
+  const map = new MapGenerator().generate(config, 1);
+  const lanes = new GameState(config, 1, matchWorldOf(map));
+  spawnMapStructures(lanes);
+  const routes = lanes.world?.routes;
+  if (routes === undefined) {
+    throw new Error('the fixture state has no lane routes');
+  }
+  const logger = new MemoryLogger();
+  const simulation = new Simulation({ config, seed: 1, logger, map, content: MARCHING_ONLY });
+  simulation.step();
+  const goals = new Map<string, { lane: string; team: 'light' | 'dark'; front: number }>();
+  for (const { lane, team, memberIds } of simulation.snapshot().hordes) {
+    const objective = lanes.laneStructures.objectiveFor(lane, team, lanes.entities);
+    if (objective === null) {
+      throw new Error(`${team} has no objective on ${lane}`);
+    }
+    for (const id of memberIds) {
+      goals.set(id, { lane, team, front: objective.frontProgress });
+    }
+  }
+  const grid = gridOf(map, config);
+  const arrived = new Set<string>();
+  const hasLeft = new Set<string>();
+  let samples = 0;
+  let offGround = 0;
+  const ticks = MARCH_CAP_SECONDS * config.tickRate;
+  for (let tick = 1; tick < ticks && arrived.size < goals.size; tick += 1) {
+    simulation.step();
+    if (tick % config.tickRate !== 0) {
+      continue;
+    }
+    for (const { id, definitionId, transform } of simulation.snapshot().entities) {
+      const goal = goals.get(id);
+      if (goal !== undefined && transform !== null) {
+        const along = routes.distanceAlong(goal.lane, goal.team, transform);
+        if (along >= goal.front - ARRIVAL_TOLERANCE) {
+          arrived.add(id);
+        }
+      }
+      const cell = isMinion({ definitionId }) && transform !== null ? grid.cellAt(transform) : null;
+      if (cell === null) {
+        continue;
+      }
+      const isWalkable = grid.isWalkable(cell.col, cell.row);
+      if (isWalkable) {
+        hasLeft.add(id);
+      }
+      if (hasLeft.has(id)) {
+        samples += 1;
+        offGround += isWalkable ? 0 : 1;
+      }
+    }
+  }
+  const warnings = logger.records.filter(({ severityText }) => severityText !== 'INFO');
+  return {
+    hordeSize: config.match.hordeSizes.light,
+    mobs: goals.size,
+    arrived: arrived.size,
+    offGroundShare: offGround / samples,
+    warnings,
+  };
+};
+
 describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)', () => {
   it('routes a horde around a block across its lane to the enemy end', () => {
     const { mobs, farthest, offGroundShare, warnings } = march(BLOCKED_LANE_MAP, 1, 60 * 30);
@@ -147,24 +231,22 @@ describe('Simulation with lane flow fields (architecture 10 §9, minion plan M4)
     expect(spawned.filter((id) => !isOnGround(id))).toEqual([]);
   });
 
-  // Commented out on 2026-10-30 at the owner's request (PR #39): this full 530 s match takes
-  // about 8 s locally but over 100 s on the GitHub runners under coverage, past the 60 s
-  // timeout. Restore it once it is made cheaper (fewer ticks or a non-coverage soak job).
-  // eslint-disable-next-line vitest/no-commented-out-tests -- too slow for CI under coverage (above)
-  // it.each([3, 5])(
-  //   'brings every opening horde to its enemy end with no stuck mob: %i lanes',
-  //   (numLanes) => {
-  //     const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes } }), 1);
-  //     // The longest lane is about 1.5 km; light minions march it in under 500 s.
-  //     const { mobs, farthest, offGroundShare, warnings } = march(map, numLanes, 530 * 30);
-  //
-  //     expect(mobs).toBe(2 * numLanes * 16);
-  //     expect(farthest).toBeLessThan(15);
-  //     expect(offGroundShare).toBeLessThan(0.01);
-  //     expect(warnings).toEqual([]);
-  //   },
-  //   60_000,
-  // );
+  // Phase 3 sprint 3.1's metric (hordes reach the enemy SpawnerTower with 0 stuck units), read for
+  // the first enemy objective: since M2c a horde holds at it, and these cannot attack it. Only the
+  // opening hordes march and the loop stops once every mob arrives: the old full 530 s march to
+  // the enemy end was too slow for CI under coverage.
+  it.each([3, 5])(
+    'brings every opening mob to its first enemy objective with none stuck: %i lanes',
+    (numLanes) => {
+      const { hordeSize, mobs, arrived, offGroundShare, warnings } = marchToObjectives(numLanes);
+
+      expect(mobs).toBe(2 * numLanes * hordeSize);
+      expect(arrived).toBe(mobs);
+      expect(offGroundShare).toBeLessThan(0.01);
+      expect(warnings).toEqual([]);
+    },
+    120_000,
+  );
 
   it('gives the same hash on the generated map for the same seed, tick for tick', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig({ map: { numLanes: 5 } }), 1);
