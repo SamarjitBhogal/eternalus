@@ -13,7 +13,7 @@ export class CountdownPhase implements MatchPhaseState {
 
   /** Holds every unit idle. */
   public enter({ state }: DirectorContext): void {
-    state.match.isIdleHeld = true;
+    state.holdIdle(true);
   }
 
   /** Does nothing: the countdown ends by timeline entry, not by a per-tick rule. */
@@ -23,6 +23,6 @@ export class CountdownPhase implements MatchPhaseState {
 
   /** Releases the idle hold. */
   public exit({ state }: DirectorContext): void {
-    state.match.isIdleHeld = false;
+    state.holdIdle(false);
   }
 }

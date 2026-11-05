@@ -6,6 +6,7 @@ import type { Verdict } from '../../state/MatchResult.types';
 import type { PlayableTeam } from '../../teams/teams.types';
 import type { DirectorContext } from '../DirectorContext.types';
 import type { VictoryCondition } from '../VictoryCondition.types';
+import { isPlayableTeam, opponentOf } from '../../teams/playableTeams';
 
 /**
  * A team loses when its last live win objective dies (ADR 0021, DEC-71, architecture 12 §6). It
@@ -25,7 +26,7 @@ export class ObjectiveLostCondition implements VictoryCondition {
     state.events.on('entity-died', ({ entityId }) => {
       const victim = state.entities.get(entityId);
       const team = victim?.findComponent(TeamMembership)?.team;
-      if (victim?.hasComponent(WinObjective) === true && (team === 'light' || team === 'dark')) {
+      if (victim?.hasComponent(WinObjective) === true && isPlayableTeam(team)) {
         this.lostObjectiveTeams.push(team);
       }
     });
@@ -45,7 +46,7 @@ export class ObjectiveLostCondition implements VictoryCondition {
     if (loser === undefined) {
       return null;
     }
-    const winner = lost.length > 1 ? null : ObjectiveLostCondition.opponentOf(loser);
+    const winner = lost.length > 1 ? null : opponentOf(loser);
     return { winner, condition: this.id };
   }
 
@@ -58,9 +59,5 @@ export class ObjectiveLostCondition implements VictoryCondition {
         entity.findComponent(Health)?.isDead !== true;
     });
     return isFound;
-  }
-
-  private static opponentOf(team: PlayableTeam): PlayableTeam {
-    return team === 'light' ? 'dark' : 'light';
   }
 }

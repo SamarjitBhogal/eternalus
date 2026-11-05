@@ -85,7 +85,7 @@ export class MatchDirector {
       configHash: fnv1a(canonicalJson(state.config)),
       finalHash: this.options.hasher.hash(state),
     };
-    match.result = result;
+    state.endMatch(result);
     this.transition(verdict.winner === match.playerTeam ? 'victory' : 'defeat', context);
     state.events.emit('match-ended', { result });
   }
@@ -96,7 +96,7 @@ export class MatchDirector {
     let entry = entries[match.timelineCursor];
     while (entry !== undefined && entry.tick <= context.state.tick) {
       // Advance first, so an entry never fires twice, even when its action throws.
-      match.timelineCursor += 1;
+      context.state.advanceTimeline();
       this.run(entry.action, context);
       entry = entries[match.timelineCursor];
     }

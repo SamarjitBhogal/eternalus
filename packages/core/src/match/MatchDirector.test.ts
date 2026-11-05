@@ -317,7 +317,7 @@ describe('MatchDirector', () => {
       const { state, stepTo } = setUp(FAKE_TIMELINE, true, {
         conditions: [new ScriptedCondition(LIGHT_WINS)],
       });
-      state.match.humanLegendId = 'entity-1';
+      state.seatHuman('entity-1');
 
       stepTo(12);
 

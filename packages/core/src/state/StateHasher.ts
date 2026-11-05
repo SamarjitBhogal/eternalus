@@ -12,6 +12,7 @@ import { Vision } from '../components/Vision';
 import type { Entity } from '../entities/Entity';
 import { fnv1a } from '../utils/fnv1a';
 import type { GameState } from './GameState';
+import { PLAYABLE_TEAMS } from '../teams/playableTeams';
 
 /**
  * Fingerprints a match state as a 32-bit FNV-1a hash of a canonical serialisation
@@ -80,7 +81,7 @@ export class StateHasher {
       parts.push(['allyDamage', ...tallies]);
     }
     // Lost towers are appended only once a lane has one, for the same reason.
-    const lost = (['light', 'dark'] as const).flatMap((team) =>
+    const lost = PLAYABLE_TEAMS.flatMap((team) =>
       Object.keys(state.teams[team].towersLostByLane)
         .sort()
         .map((lane) => [team, lane, state.teams[team].towersLostByLane[lane]]),

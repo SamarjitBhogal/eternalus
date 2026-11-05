@@ -12,6 +12,7 @@ import { AiState } from './AiState';
 import { AllyDamageStore } from './AllyDamageStore';
 import { EntityStore } from './EntityStore';
 import type { EntityId, RemovalRecord } from './EntityStore.types';
+import type { MatchResult } from './MatchResult.types';
 import { GameEvents } from './GameEvents';
 import type { DamageSource, GameEventMap } from './GameEvents.types';
 import { RECENT_COMMAND_CAPACITY } from './GameState.constants';
@@ -28,6 +29,7 @@ import type { SpaceQuery } from './SpaceQuery.types';
 
 import type { WorldObjectStore } from './WorldObjectStore';
 import { MapObjectBody } from '../components/MapObjectBody';
+import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 
 /**
  * The aggregate root of one match: config, the seeded RNG, the world, the entities, the hordes, the
@@ -153,9 +155,9 @@ export class GameState {
     const position = victim?.findComponent(Transform)?.position;
     if (
       (victim?.family !== 'legend' && victim?.family !== 'mob') ||
-      (team !== 'light' && team !== 'dark') ||
+      !isPlayableTeam(team) ||
       source.attackerId === null ||
-      this.entities.teamOf(source.attackerId) !== (team === 'light' ? 'dark' : 'light') ||
+      this.entities.teamOf(source.attackerId) !== opponentOf(team) ||
       position === undefined
     ) {
       return;
@@ -195,6 +197,38 @@ export class GameState {
     this.matchState.phase = next;
     this.matchState.phaseEnteredTick = this.currentTick;
     this.events.emit('phase-changed', { from, to: next });
+  }
+
+  /** Holds (`true`) or releases (`false`) every unit idle (DEC-88). Called by the countdown phase only. */
+  public holdIdle(isHeld: boolean): void {
+    this.matchState.isIdleHeld = isHeld;
+  }
+
+  /**
+   * Stores the match's verdict. Called by the `MatchDirector` only, once: the director is inert
+   * after the end (12 §4), so a second call is a bug and throws.
+   */
+  public endMatch(result: MatchResult): void {
+    if (this.matchState.result !== null) {
+      throw new Error('The match has already ended: its result is set once.');
+    }
+    this.matchState.result = result;
+  }
+
+  /**
+   * Records the human's Legend. Called by `Simulation` only, once, when the match is built; a
+   * second call throws. `null` records that the seat has no Legend and changes nothing.
+   */
+  public seatHuman(legendId: EntityId | null): void {
+    if (this.matchState.humanLegendId !== null) {
+      throw new Error('The human is already seated: humanLegendId is set once.');
+    }
+    this.matchState.humanLegendId = legendId;
+  }
+
+  /** Moves the timeline cursor past the entry that is due. Called by the `MatchDirector` only. */
+  public advanceTimeline(): void {
+    this.matchState.timelineCursor += 1;
   }
 
   /** Counts one completed tick and starts the next tick's bookkeeping. Called once per `Simulation.step()`. */

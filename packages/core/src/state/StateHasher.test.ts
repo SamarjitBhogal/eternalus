@@ -209,13 +209,13 @@ describe('StateHasher', () => {
     [
       'the timeline cursor',
       (state) => {
-        state.match.timelineCursor = 1;
+        state.advanceTimeline();
       },
     ],
     [
       'the idle hold',
       (state) => {
-        state.match.isIdleHeld = true;
+        state.holdIdle(true);
       },
     ],
   ])('changes when %s of the match changes', (_, change) => {
@@ -260,8 +260,10 @@ describe('StateHasher', () => {
       while (state.tick < 3) {
         state.advanceTick();
       }
-      state.match.timelineCursor = fields.timelineCursor;
-      state.match.isIdleHeld = fields.isIdleHeld;
+      for (let mark = 0; mark < fields.timelineCursor; mark += 1) {
+        state.advanceTimeline();
+      }
+      state.holdIdle(fields.isIdleHeld);
       return state;
     };
 

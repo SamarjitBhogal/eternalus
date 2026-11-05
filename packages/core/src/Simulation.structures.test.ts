@@ -8,6 +8,7 @@ import { MapGenerator } from './map/MapGenerator';
 import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import { isMinion, match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatches';
+import { countdownTicks } from './config/countdownTicks';
 
 describe('Simulation structures', () => {
   it('fills the generated map’s forest camps when the countdown ends (18 §7.1)', () => {
@@ -37,7 +38,7 @@ describe('Simulation structures', () => {
   it('sends tower guards after an enemy that walks in, then back to their posts (18 §7)', () => {
     const { simulation, logger, config } = match(STRONGHOLDS_ONLY);
     // The countdown holds every unit (DEC-88); the guards stand at their posts when it ends.
-    run(simulation, Math.round(config.match.countdownSeconds * config.tickRate) + 1);
+    run(simulation, countdownTicks(config.match.countdownSeconds, config.tickRate) + 1);
     const guardsOf = (team: string) =>
       simulation
         .snapshot()
@@ -79,7 +80,7 @@ describe('Simulation structures', () => {
     const { simulation, config } = match(TWO_LANE_MAP, 1, true);
 
     // The countdown holds every unit (DEC-88); then 60 s of marching.
-    run(simulation, Math.round(config.match.countdownSeconds * config.tickRate) + 60 * 30);
+    run(simulation, countdownTicks(config.match.countdownSeconds, config.tickRate) + 60 * 30);
 
     // Dark's lane-0 SpawnerTower stands at x 140 with radius 14: Light's lane-0 horde gathers
     // in front of x 126, in ranks no deeper than 8.

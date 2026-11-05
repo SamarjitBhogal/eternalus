@@ -65,6 +65,7 @@ import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
 import { CollisionSystem } from './systems/CollisionSystem';
 import type { PlayableTeam } from './teams/teams.types';
 import type { Vec2 } from './utils/geometry.types';
+import { PLAYABLE_TEAMS } from './teams/playableTeams';
 
 /**
  * The deterministic simulation of one match, and the only thing the client drives
@@ -229,11 +230,13 @@ export class Simulation {
     const { factory } = this.commandContext;
     const reason = Simulation.seatRefusal(factory, definitionId);
     if (reason === null) {
-      this.state.match.humanLegendId = Simulation.spawnLegend(
-        this.state,
-        factory,
-        { definitionId, team: playerTeam },
-        { position, team: playerTeam },
+      this.state.seatHuman(
+        Simulation.spawnLegend(
+          this.state,
+          factory,
+          { definitionId, team: playerTeam },
+          { position, team: playerTeam },
+        ),
       );
       return;
     }
@@ -396,7 +399,7 @@ export class Simulation {
     // Every lane is assigned before anything spawns, so a roster that does not fit spawns nothing.
     const { legendsPerTeam, seat, playerTeam } = state.config.match;
     const { maxUnitsPerTeam } = state.config.limits;
-    const plans = (['light', 'dark'] as const).map((team) => {
+    const plans = PLAYABLE_TEAMS.map((team) => {
       // The human's Legend joins `playerTeam` after the roster (`seatHuman`), so it counts here.
       const isSeated = seat !== null && team === playerTeam;
       const size = roster.filter((slot) => slot.team === team).length + (isSeated ? 1 : 0);

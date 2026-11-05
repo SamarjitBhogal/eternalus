@@ -265,9 +265,64 @@ describe('GameState', () => {
       expect(state.phaseChangesThisTick()).toEqual([]);
     });
 
+    it('holds and releases the idle flag through holdIdle', () => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+
+      state.holdIdle(true);
+      expect(state.match.isIdleHeld).toBe(true);
+      state.holdIdle(false);
+      expect(state.match.isIdleHeld).toBe(false);
+    });
+
+    it('advances the timeline cursor one entry at a time', () => {
+      const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
+
+      state.advanceTimeline();
+      state.advanceTimeline();
+
+      expect(state.match.timelineCursor).toBe(2);
+    });
+
+    it('stores the result once and refuses a second one', () => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+      const result = {
+        winner: 'light',
+        condition: 'objective-lost',
+        playerTeam: 'light',
+        hadHuman: false,
+        durationTicks: 1,
+        seed: 1,
+        configHash: 0,
+        finalHash: 0,
+      } as const;
+
+      expect(state.match.result).toBeNull();
+      state.endMatch(result);
+
+      expect(state.match.result).toEqual(result);
+      expect(() => {
+        state.endMatch({ ...result, winner: 'dark' });
+      }).toThrow('already ended');
+      expect(state.match.result?.winner).toBe('light');
+    });
+
+    it('seats the human once and refuses a second seat; a null seat changes nothing', () => {
+      const state = new GameState(createDefaultGameConfig(), 1);
+
+      state.seatHuman(null);
+      expect(state.match.humanLegendId).toBeNull();
+      state.seatHuman('entity-7');
+
+      expect(state.match.humanLegendId).toBe('entity-7');
+      expect(() => {
+        state.seatHuman('entity-8');
+      }).toThrow('already seated');
+      expect(state.match.humanLegendId).toBe('entity-7');
+    });
+
     it('snapshots the phase and the unfired marks, from the timeline cursor on', () => {
       const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
-      state.match.timelineCursor = 1;
+      state.advanceTimeline();
       state.setPhase('early-game');
 
       expect(state.snapshot().match).toEqual({

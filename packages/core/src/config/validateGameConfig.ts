@@ -8,6 +8,8 @@ import type { GameConfig } from './GameConfig.types';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './matchPhases';
 import type { MatchTimelineEntry, TimelineActionKind } from './MatchTimelineEntry.types';
 import { timelineMarkTick } from './timelineMarkTick';
+import { countdownTicks } from './countdownTicks';
+import { isPlayableTeam } from '../teams/playableTeams';
 
 type Rule = {
   readonly path: string;
@@ -154,7 +156,7 @@ const RULES: readonly Rule[] = [
   {
     path: 'match.playerTeam',
     rule: "must be a playable team: 'light' or 'dark'",
-    isValid: (value) => value === 'light' || value === 'dark',
+    isValid: isPlayableTeam,
   },
   {
     path: 'match.seat',
@@ -241,7 +243,7 @@ const RULES: readonly Rule[] = [
       const [first] = timelineOf(config);
       return (
         first !== undefined &&
-        timelineMarkTick(first.at, tickRate, planned) === Math.round(countdownSeconds * tickRate)
+        timelineMarkTick(first.at, tickRate, planned) === countdownTicks(countdownSeconds, tickRate)
       );
     },
   },

@@ -74,13 +74,13 @@ describe('CombatSystem', () => {
     const health = dummy.getComponent(Health);
     const system = new CombatSystem(new DamagePipeline());
     attack(dummy);
-    state.match.isIdleHeld = true;
+    state.holdIdle(true);
 
     system.update(context);
     expect(health.current).toBe(health.max);
     expect(warrior.getComponent(Combat).targetId).toBe(dummy.id);
 
-    state.match.isIdleHeld = false;
+    state.holdIdle(false);
     system.update(context);
     expect(health.current).toBe(health.max - warrior.getComponent(Combat).attack.damage);
   });

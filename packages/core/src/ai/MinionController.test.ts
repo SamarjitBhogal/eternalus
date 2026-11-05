@@ -9,6 +9,7 @@ import { GameState } from '../state/GameState';
 import { CLASS_OF, controller, engagingOn, setUp } from './__fixtures__/minionControllerSetup';
 import { MinionController } from './MinionController';
 import { Perception } from './perception/Perception';
+import { countdownTicks } from '../config/countdownTicks';
 
 // The acquire and engage rules a minion shares with a guard: LeashBehaviour.test.ts.
 describe('MinionController', () => {
@@ -163,7 +164,7 @@ describe('MinionController', () => {
         },
       }).commands;
     };
-    const until = state.config.match.countdownSeconds * state.config.tickRate + 30;
+    const until = countdownTicks(state.config.match.countdownSeconds, state.config.tickRate) + 30;
 
     advance(until - 1);
     expect(decide()).toEqual([]);

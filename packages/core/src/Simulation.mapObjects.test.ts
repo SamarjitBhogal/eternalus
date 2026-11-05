@@ -18,6 +18,7 @@ import { LaneRoutes } from './state/LaneRoutes';
 import type { PlayableTeam } from './teams/teams.types';
 import { isPointInPolygon } from './utils/geometry';
 import type { Vec2 } from './utils/geometry.types';
+import { countdownTicks } from './config/countdownTicks';
 
 /** Both teams' bots as the client composes them: laners plus a Rover that starts in its palace. */
 const roster = (legendsPerTeam: number): RosterSlot[] =>
@@ -123,8 +124,8 @@ describe('Simulation with a roster and map objects (as the client builds a match
       const towers = laneTowers(map);
       // The opening hordes leave at tick 0 and the countdown holds every unit (DEC-88); every
       // horde after it is one tower's.
-      const countdownTicks = Math.round(config.match.countdownSeconds * config.tickRate);
-      for (let tick = 0; tick < countdownTicks; tick += 1) {
+      const countdownEnd = countdownTicks(config.match.countdownSeconds, config.tickRate);
+      for (let tick = 0; tick < countdownEnd; tick += 1) {
         simulation.step();
       }
       const sent: { readonly tower: LaneTower; readonly memberIds: readonly string[] }[] = [];

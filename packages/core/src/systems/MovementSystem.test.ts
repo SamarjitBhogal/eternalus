@@ -108,7 +108,7 @@ describe('MovementSystem', () => {
     const movement = dummy.getComponent(Movement);
     const transform = dummy.getComponent(Transform);
     movement.steer({ x: 1, y: 0 });
-    context.state.match.isIdleHeld = true;
+    context.state.holdIdle(true);
     const system = new MovementSystem();
 
     system.update(context);
@@ -116,7 +116,7 @@ describe('MovementSystem', () => {
     expect(movement.speed).toBe(0);
     expect(transform.position).toEqual({ x: 0, y: 0 });
 
-    context.state.match.isIdleHeld = false;
+    context.state.holdIdle(false);
     system.update(context);
     expect(transform.position.x).toBeGreaterThan(0);
   });

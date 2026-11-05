@@ -6,6 +6,7 @@ import {
 } from './GameConfig.constants';
 import type { DeepPartial, GameConfig, MatchConfig } from './GameConfig.types';
 import type { MatchTimelineEntry } from './MatchTimelineEntry.types';
+import { countdownTicks } from './countdownTicks';
 
 /** MVP defaults (architecture 03 §10, requirements doc MVP list, integration contract §2.2). */
 const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
@@ -85,7 +86,7 @@ export const createDefaultGameConfig = (overrides: DeepPartial<GameConfig> = {})
       ...match,
       ...matchOverrides,
       hordeSizes: { ...match.hordeSizes, ...matchOverrides.hordeSizes },
-      timeline: [...(timeline ?? defaultTimeline(Math.round(countdownSeconds * tickRate)))],
+      timeline: [...(timeline ?? defaultTimeline(countdownTicks(countdownSeconds, tickRate)))],
     },
     limits: { ...limits, ...overrides.limits },
   });

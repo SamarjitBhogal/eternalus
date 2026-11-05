@@ -7,6 +7,7 @@ import { MapGenerator } from './map/MapGenerator';
 import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import { isMinion, match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatches';
+import { countdownTicks } from './config/countdownTicks';
 
 describe('Simulation with lane hordes (architecture 18, M1)', () => {
   it('walks every opening horde down its lane to the enemy end, invariants clean', () => {
@@ -155,7 +156,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
         .length;
 
     // The countdown holds every unit (DEC-88); then 60 s of marching and fighting.
-    run(simulation, Math.round(config.match.countdownSeconds * config.tickRate) + 60 * 30);
+    run(simulation, countdownTicks(config.match.countdownSeconds, config.tickRate) + 60 * 30);
 
     // The two opening hordes of each team; the first wave is 180 s after the countdown (DEC-87).
     const opened = 2 * createDefaultGameConfig().match.hordeSizes.light;

@@ -13,6 +13,7 @@ import { GameState } from './state/GameState';
 import { matchWorldOf } from './state/__fixtures__/matchWorld';
 import { spawnMapStructures } from './state/__fixtures__/spawnMapStructures';
 import { isMinion, MARCHING_ONLY, run } from './__fixtures__/hordeMatches';
+import { countdownTicks } from './config/countdownTicks';
 
 /** The generated map's walkability grid, as the pipeline builds it. */
 const gridOf = (map: MapDefinition, config: GameConfig): WorldMap =>
@@ -134,7 +135,7 @@ const marchToObjectives = (numLanes: number) => {
   let offGround = 0;
   // The countdown holds every unit (DEC-88): the march starts when it ends.
   const ticks =
-    Math.round(config.match.countdownSeconds * config.tickRate) +
+    countdownTicks(config.match.countdownSeconds, config.tickRate) +
     MARCH_CAP_SECONDS * config.tickRate;
   for (let tick = 1; tick < ticks && arrived.size < goals.size; tick += 1) {
     simulation.step();
