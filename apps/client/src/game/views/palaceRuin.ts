@@ -1,5 +1,5 @@
 import type { RuinArtwork } from './ObjectRuinsView.types';
-import { RUIN_PALETTE as P } from './ruinMaterials';
+import { RUIN_GROUND, RUIN_PALETTE as P } from './ruinMaterials';
 import { WALL_RUIN } from './stoneRuins';
 import { TIMBER_RUIN } from './timberRuins';
 /** Authored palace remains, normalized to its footprint. */
@@ -25,6 +25,7 @@ export const PALACE_RUIN: RuinArtwork = {
         [0.58, 0.71],
       ],
     },
-    ...TIMBER_RUIN.pieces.slice(1),
+    // The palace already has WALL_RUIN's ground; take only the timber debris on top of it.
+    ...TIMBER_RUIN.pieces.filter((piece) => piece !== RUIN_GROUND),
   ],
 };
