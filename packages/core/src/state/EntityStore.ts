@@ -7,9 +7,8 @@ import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
-import { distanceToPath, distanceToSegment, isPointInPolygon } from '../utils/geometry';
+import { distance, distanceToPath, distanceToSegment, isPointInPolygon } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
-import { sqrt } from '../utils/deterministicMath';
 import type { Entity } from '../entities/Entity';
 import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
 
@@ -125,7 +124,8 @@ export class EntityStore {
   /**
    * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
    * two footprints (architecture 05 §10); a map object is measured to its footprint polygons, not
-   * its bounding circle. `false` when either is unknown or the attacker cannot attack.
+   * its bounding circle. `false` when either is unknown, either has no `Transform`, or the attacker
+   * cannot attack.
    */
   public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
     const attacker = this.entities.get(attackerId);
@@ -154,9 +154,7 @@ export class EntityStore {
         );
       });
     }
-    const dx = to.position.x - from.position.x;
-    const dy = to.position.y - from.position.y;
-    const gap = sqrt(dx * dx + dy * dy);
+    const gap = distance(from.position, to.position);
     return gap - from.radius - to.radius <= combat.attack.reach;
   }
 
