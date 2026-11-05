@@ -1,8 +1,8 @@
 /**
  * A minion's level and kills (game doc "Minion XP"): one level with two sources (DEC-168). Kills
- * earn a level every `killsPerLevel`; another source (the zone level-up, balancing.md "+1 minion
- * level (max 3)") adds levels with `gainLevels`, and a later kill never takes them back. Added by
- * `VeterancySystem` on a minion's first kill or level.
+ * earn a level every `killsPerLevel`; that level and any other source's (the zone level-up,
+ * balancing.md "+1 minion level (max 3)") are added with `gainLevels`, and a later kill never takes
+ * them back. Added by `VeterancySystem` on a minion's first kill or level.
  */
 export class Veterancy {
   private killsValue = 0;
@@ -20,12 +20,12 @@ export class Veterancy {
   }
 
   /**
-   * Counts one kill; every `killsPerLevel`-th kill (a whole number) gains a level, up to `maxLevel`.
-   * Returns whether this kill gained one.
+   * Counts one kill and returns whether it earns a level: every `killsPerLevel`-th kill (a whole
+   * number) does. The level itself comes from `gainLevels`, which keeps the cap.
    */
-  public recordKill(killsPerLevel: number, maxLevel: number): boolean {
+  public recordKill(killsPerLevel: number): boolean {
     this.killsValue += 1;
-    return this.killsValue % killsPerLevel === 0 && this.gainLevels(1, maxLevel) === 1;
+    return this.killsValue % killsPerLevel === 0;
   }
 
   /** Gains up to `levels` levels without passing `maxLevel`; returns how many it gained. */

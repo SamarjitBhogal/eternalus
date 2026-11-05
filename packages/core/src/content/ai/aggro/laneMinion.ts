@@ -1,6 +1,8 @@
 import type { HordeAggroRuleDefinition } from '../ai.types';
 
-const LEASH = 7.5; // TUNE: 11 §4.3's 700 units, scaled like the radius
+// TUNE: 11 §4.3's 700 units, scaled like the radius (7.5 m); owner 2026-11-05, +15% lane minions
+// only (DEC-193).
+const LEASH = 8.625;
 
 /**
  * The lane minion's aggro rules (architecture 11 §4.3): League's priority list, Dota's cooldown

@@ -143,18 +143,19 @@ export class Simulation {
       undefined,
       weaponSource,
     );
-    Simulation.spawnStructures(this.state, factory, structures, mapObjects);
+    const owners = Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
     if (mapObjects !== undefined) {
-      this.state.worldObjects = new WorldObjectStore(
-        mapObjects,
-        this.commandContext.factory,
-        this.state.entities,
-        MAP_OBJECT_DEFINITIONS,
-      );
+      this.state.worldObjects = new WorldObjectStore({
+        objects: mapObjects,
+        factory: this.commandContext.factory,
+        entities: this.state.entities,
+        definitions: MAP_OBJECT_DEFINITIONS,
+        owners,
+      });
       this.state.events.on('entity-removed', ({ entityId }) =>
         this.state.worldObjects?.removed(entityId),
       );
@@ -264,31 +265,37 @@ export class Simulation {
    * Builds the map's structures, in feature id order, before anything else spawns (architecture
    * 07 §1): every feature whose definition is a structure becomes that structure, with its team
    * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
-   * A structure whose feature has a blocking map object of the same id (a lane tower's fort) takes
-   * that object's footprints as its `Footprint` (DEC-185).
+   * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
+   * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
+   * DEC-185 D). A blocking such object (a fort) is the structure's body: it has no health of its
+   * own (one pool, DEC-185 B). Only towers share one pool (DEC-217 (13)): the palace's object does
+   * not block, and a gate's definition has no `hasMapFootprint`, so both keep their own health.
+   *
+   * @returns Map object id → the id of the structure it is the body of.
    */
   private static spawnStructures(
     state: GameState,
     factory: EntityFactory,
     structures: StructureSource,
     mapObjects: readonly MapObject[] = [],
-  ): void {
+  ): ReadonlyMap<string, string> {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
-    const solids = new Map(
-      mapObjects.filter(({ isBlocking }) => isBlocking).map((object) => [object.id, object]),
-    );
+    const bodies = new Map(mapObjects.map((object) => [object.id, object]));
+    const owners = new Map<string, string>();
     for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
-        const { kind } = structures.get(definitionId);
+        const { kind, hasMapFootprint } = structures.get(definitionId);
         const placement = { position, team, ...(laneId !== undefined && { laneId }) };
         const structure = factory.create(kind, definitionId, placement);
-        const body = solids.get(id);
+        const body = hasMapFootprint === true ? bodies.get(id) : undefined;
         if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
+        if (body?.isBlocking === true) owners.set(body.id, structure.id);
         state.entities.add(structure);
       }
     }
+    return owners;
   }
 
   /**

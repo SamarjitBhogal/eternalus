@@ -30,6 +30,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 10_000, // TUNE: balancing.md
       footprintRadius: footprintOf('stronghold'),
       breakability: { kind: 'always' },
+      hasMapFootprint: true, // DEC-185 D: melee at the palace wall is in reach
     },
     {
       id: 'spawner-tower',
@@ -38,6 +39,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 3_000, // TUNE: balancing.md
       footprintRadius: footprintOf('spawner-tower'),
       breakability: { kind: 'always' },
+      hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
     },
     {
       id: 'buff-tower',
@@ -46,6 +48,7 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       baseHealth: 2_500, // TUNE: balancing.md
       footprintRadius: footprintOf('buff-tower'),
       breakability: { kind: 'always' },
+      hasMapFootprint: true, // DEC-185: reach to the fort's walls; one pool, DEC-185 B
     },
     {
       id: 'gate',

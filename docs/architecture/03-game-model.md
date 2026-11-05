@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-05
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -177,7 +177,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                   | `DeathSystem`, `ProgressionSystem`, `Scoring`                      |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                 | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields) |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                 | `HordeSystem` (gate holding), views                                |
-| `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                     | `ProgressionSystem` (camp reward), `MatchDirector`                 |
+| `camp-cleared`                      | `{ entityId, team, killerId }`                         | `SpawnSystem`                     | `ProgressionSystem` (camp reward), `MatchDirector`                 |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                 | HUD, views                                                         |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                   | HUD, `MinimapView`                                                 |
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                   | `Scoring`, `MatchDirector`, `StatusEffectSystem`                   |

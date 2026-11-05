@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-05
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -106,6 +106,7 @@ that `SpatialHash` exposes on the state (see [10-physics](./10-physics.md)), thr
 // packages/core/src/ai/perception/Perception.types.ts (sketch)
 export type UnitFilter = {
   readonly hostileTo?: Team;
+  readonly neutralAttackersOf?: EntityId; // with hostileTo: also a neutral unit attacking this one (DEC-166)
   readonly kinds?: readonly EntityKind[];
   readonly aliveOnly?: boolean;
 };
@@ -155,9 +156,15 @@ tree (root `ActiveSelector`):
 1. `Survive`: health below `retreatHealthFraction` → move to the nearest allied tower or the
    Stronghold; use a defensive ability if it scores.
 2. `Fight`: a hostile unit inside `engageRadius` → the `UtilityScorer` picks target and action.
+   A neutral camp mob counts only while it attacks the bot; bot camp farming comes later
+   (DEC-166). An enemy that stands inside a tower is chased in, not waited for at the edge
+   (DEC-189).
 3. `Push`: advance with the lane's horde toward the next enemy structure; attack structures when
-   no units are in range.
+   no units are in range. The bot approaches a structure from the side that faces it (DEC-189).
 4. `Regroup`: return to the lane corridor.
+
+A bot whose chase of its target is stuck goes round on the A\* waypoint that stuck detection gives
+it (18 §5.2, DEC-193).
 
 Utility scoring (`ai/utility/`): `Consideration`s (distance, target health fraction, threat,
 cooldown ready, aether cost, allies nearby) return 0..1; a `UtilityScorer` combines them with
@@ -185,9 +192,17 @@ basic-attacks an allied Legend inside the radius becomes priority 1, and an enem
 horde-mate is in reach out to `callForHelpRadius` (DEC-144). The cooldown, after a leash break,
 leaves alone only the enemy that escaped (DEC-144 F).
 
+Each aggro profile names the one controller that reads it (`controller`), and a controller
+accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a horde minion's
+profile (`HordeAggroRuleDefinition`) adds `leashRadius` and `callForHelpRadius`, and a guard's or
+camp mob's (`GuardAggroRuleDefinition`) adds nothing, since its leash and its mates come from its
+post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content, except
+`ghostFirstWaveTicks`, turned into ticks with the match's tick rate where they are read.
+
 ```ts
 // packages/core/src/content/ai/aggro/lane-minion.ts (sketch)
 export const laneMinionAggro = {
+  controller: 'minion', // only MinionController reads it
   acquisitionRadius: 500, // TUNE: League/Dota reference; world units to be scaled
   priority: [
     'legend-attacking-ally-legend',
@@ -199,12 +214,12 @@ export const laneMinionAggro = {
     'lane-objective', // the horde's next standing structure (18 §6.2)
   ],
   reevaluateEveryTicks: 15, // TUNE
-  leashRadius: 700, // TUNE
-  leashGraceTicks: 90, // TUNE: owner DEC-144, 3 s of chase outside the leash before it breaks
-  aggroCooldownTicks: 90, // TUNE: Dota 3 s
-  callForHelpRadius: 700, // TUNE: owner DEC-144; the leash
+  leashRadius: 805, // TUNE: 700 × 1.15, DEC-193: +15 % for lane minions (laneMinion.ts `LEASH`)
+  leashGraceSeconds: 3, // TUNE: owner DEC-144, 3 s of chase outside the leash before it breaks
+  aggroCooldownSeconds: 3, // TUNE: Dota 3 s
+  callForHelpRadius: 805, // TUNE: owner DEC-144; the leash
   ghostFirstWaveTicks: 0, // 0 = off; League ghosts the first wave for 18–28 s
-} satisfies AggroRuleDefinition;
+} satisfies HordeAggroRuleDefinition;
 ```
 
 Ghosted first wave (**MVP-if-time**, `Recommendation:`): while `ghostFirstWaveTicks` runs after
@@ -286,12 +301,15 @@ error, highest weights; cadence every 3rd tick. `Recommendation:` the allied Rov
 | `boss`       | 3               | Few instances                                                           |
 
 All cadences are `TUNE` values in `content/ai/cadence.ts` (`Recommendation:` starting points).
-Staggering: a brain is due when `(tick + entityId) % cadence === 0`, which spreads 288 mobs and
+Staggering: a brain is due when `(tick + entityId) % cadence === 0`, which spreads the mobs and
 20 Legends across ticks instead of bunching them. Budget: `AiSystem` takes `maxDecisionsPerTick`
 (`TUNE`; `Recommendation:` 96, since 288 mobs / 5 plus Legends and turrets is about 70) and stops
 when it is spent; the round-robin cursor lives in `state.ai.cursor`, so deferral is deterministic
-and the skipped brains go first next tick. A decision is atomic and cheap: radius-bounded queries,
-no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
+and the skipped brains go first next tick. At the unit cap (`GameConfig.limits.maxUnitsPerTeam`
+per team, DEC-137, plus the camp mobs) more brains are in play than that estimate, so a deferred
+brain can wait up to `floor((brains − 1) / maxDecisionsPerTick)` ticks. The owner kept the budget;
+the guard leash tolerance covers the wait instead (DEC-181, 18 §7). A decision is atomic and
+cheap: radius-bounded queries, no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
 `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
 blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
 path cache in the brain is the next step if profiling shows the cost). Other heavy work (flow
@@ -380,8 +398,17 @@ work named:
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
   One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
   each blocked decision.
-- A brain's `profileId` names the controller's own content directly: an `AggroRuleDefinition`
-  (`content/ai/aggro/`) for `MinionController`, a `BotDifficultyDefinition`
+- The bot leaves also read the nav grid directly (`state.world.grid`). A bot sent to a point on
+  blocked ground (a tower's centre) stops at the edge of that ground on its side
+  (`BotMovement.approach`, the leaves' navigation in `ai/BotMovement.ts`). To fight an enemy on
+  blocked ground, or to push a structure, it goes by A\* to that edge and then straight in
+  (`closeIn`), so the collision system stops it at the real walls (DEC-189). While stuck
+  detection has a detour waypoint for it, a fighting or pushing bot heads there
+  (`EntityStore.detourWaypointOf`, DEC-193). A bot that already stands still sends no new halt
+  (`isHalted` in its memory).
+- A brain's `profileId` names the controller's own content directly: an aggro profile
+  (`content/ai/aggro/`) for `MinionController` and `GuardController`, each accepting only a profile
+  whose `controller` names it, and a `BotDifficultyDefinition`
   (`content/ai/difficulties/`) for `BotLegendController`. The `AiProfileDefinition` of §2, which
   would group aggro, cadence and difficulty under one id, arrives when a controller needs more
   than one of them. `AiSystem.assertRegistered` checks each definition's profile at construction.

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
@@ -20,6 +21,9 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
+import { Transform } from '../components/Transform';
+import { Entity } from '../entities/Entity';
+import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { SystemPipeline } from './SystemPipeline';
 import { loadWeapons } from '../content/weapons/loadWeapons';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
@@ -36,6 +40,22 @@ const newFactory = (): EntityFactory =>
     loadWeapons(createDefaultGameConfig().tickRate),
   );
 const PROGRESSION = { units: UNIT_DEFINITIONS, curves: loadLevelCurves(), xpSources: XP_SOURCES };
+
+/** A tower stand-in whose fort walls (x 50..52 and 68..70, y 10..30) give a box round the rift. */
+class Fort extends Entity {
+  public readonly kind = 'spawner-tower';
+  public readonly family = 'structure';
+  protected installComponents(): void {
+    const wall = (x0: number, x1: number) => [
+      { x: x0, y: 10 },
+      { x: x1, y: 10 },
+      { x: x1, y: 30 },
+      { x: x0, y: 30 },
+    ];
+    this.addComponent(new Transform({ x: 60, y: 20 }, 14));
+    this.addComponent(new Footprint([wall(50, 52), wall(68, 70)]));
+  }
+}
 
 describe('DefaultSystemPipeline', () => {
   it('moves, then removes the dead, then checks invariants, in that order', () => {
@@ -72,14 +92,19 @@ describe('DefaultSystemPipeline', () => {
     expect(logger.records).toEqual([]);
   });
 
-  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c))', () => {
+  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c)), stuck detection before steering (DEC-193)', () => {
     const logger = new MemoryLogger();
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
       space,
     });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
-    state.worldObjects = new WorldObjectStore([], factory, state.entities, MAP_OBJECT_DEFINITIONS);
+    state.worldObjects = new WorldObjectStore({
+      objects: [],
+      factory,
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
 
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
@@ -101,6 +126,7 @@ describe('DefaultSystemPipeline', () => {
       'movement',
       'collision',
       'space',
+      'stuck',
       'pathing',
       'combat',
       'map-destruction',
@@ -259,12 +285,12 @@ describe('DefaultSystemPipeline', () => {
         has: (id) => objects.has(id) || UNIT_DEFINITIONS.has(id),
         get: (id) => objects.get(id) ?? UNIT_DEFINITIONS.get(id),
       });
-      state.worldObjects = new WorldObjectStore(
-        [house],
+      state.worldObjects = new WorldObjectStore({
+        objects: [house],
         factory,
-        state.entities,
-        MAP_OBJECT_DEFINITIONS,
-      );
+        entities: state.entities,
+        definitions: MAP_OBJECT_DEFINITIONS,
+      });
       const world = state.world?.grid;
       for (const footprint of house.footprints) world?.stampFootprint(footprint);
       const pipeline = new DefaultSystemPipeline(
@@ -289,4 +315,58 @@ describe('DefaultSystemPipeline', () => {
       expect(reopened.includes(5 * (world?.cols ?? 0) + 9)).toBe(hasLanes);
     },
   );
+  it('gives steering the fort boxes of the structures standing when it is built, so a fallen tower keeps its box', () => {
+    const logger = new MemoryLogger();
+    const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
+      space,
+    });
+    const factory = newFactory();
+    const fort = new Fort('fort', 'spawner-tower');
+    fort.spawn(undefined);
+    state.entities.add(fort);
+    const pipeline = new DefaultSystemPipeline(
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
+      state,
+      PROGRESSION,
+      { factory, space, decide: [] },
+    );
+    // The tower falls before any chase; the grid still blocks the court (the rift, x 50..70).
+    state.entities.remove(fort.id, 'died');
+    state.advanceTick();
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 45, y: 20 },
+    });
+    const enemy = factory.create('light-mob', 'light-minion', {
+      team: 'dark',
+      position: { x: 58, y: 20 },
+    });
+    state.entities.add(minion);
+    state.entities.add(enemy);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [minion.id],
+      progress: 45,
+    });
+    state.hordes.add({
+      id: 'horde-2',
+      team: 'dark',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [enemy.id],
+      progress: 40,
+    });
+    state.entities.setAttackTarget(minion.id, enemy.id);
+
+    pipeline.run({ state, logger });
+
+    // Inside the fort's box the chase closes in over the court's blocked ground (owner 2026-11-04).
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+  });
 });

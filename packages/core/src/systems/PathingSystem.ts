@@ -1,6 +1,6 @@
+import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
-import { Footprint } from '../components/Footprint';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
@@ -13,24 +13,25 @@ import type {
 import type { LaneFlowFields } from '../map/LaneFlowFields';
 import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
-import { nearestPointOnPolygons } from '../utils/geometry';
 import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
+import type { PathingWorld } from './PathingSystem.types';
 import type { System, SystemContext } from './System.types';
 
 /**
- * Sets next tick's heading of every horde member and every guard (architecture 10 §9, 18 §5): it lays each
- * horde's formation out around its anchor (a member with an attack target chases it instead,
- * stopping at attack reach, and holding at blocked ground rather than following the lane flow
- * field, which leads to the lane's end, not to the target) and asks each mob's `MovementStrategy` how to reach its
- * slot, with neighbours from `state.space`. Runs after `SpaceSystem`, so it reads this tick's
- * positions. Allocates nothing per unit once its scratch has grown to the crowd.
+ * Sets next tick's heading of every horde member and every guard (architecture 10 §9, 18 §5): it
+ * lays each horde's formation out around its anchor (a member with an attack target chases it
+ * instead, stopping at attack reach, and holding at blocked ground rather than following the lane
+ * flow field, which leads to the lane's end, not to the target) and asks each mob's
+ * `MovementStrategy` how to reach its slot, with neighbours from `state.space`. Runs after
+ * `SpaceSystem`, so it reads this tick's positions. Allocates nothing per unit once its scratch has
+ * grown to the crowd.
  *
  * Slots are `formationSlot`'s (18 §5.1), by each formation's shape, counting every follower in
  * `memberIds` order.
  *
- * @remarks ponytail: a chase blocked by terrain holds; target-aware routing (an A* path to the
- * target) replaces that when chases need it.
+ * A chase that `StuckSystem` found stuck heads for its `ChaseWatch` waypoint instead, the A\* way
+ * round to its target (owner 2026-11-05, DEC-193), so blocked terrain holds it only until then.
  */
 export class PathingSystem implements System {
   public readonly name = 'pathing';
@@ -40,71 +41,75 @@ export class PathingSystem implements System {
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
   /** The last `chase`'s target blocked depth (`chase`). */
   private depth = 0;
-  /** The boxes of every structure's `Footprint`, read on first use. */
-  private forts: readonly Rect[] | null = null;
   private found = new Int32Array(0);
+  private readonly flowFields: LaneFlowFields | null;
+  private readonly forts: readonly Rect[];
 
   /**
    * @param strategies - Every movement strategy by id; a mob's `Movement.strategyId` picks one.
    * @param formations - Every formation, by id.
    * @param slotArrivalRadius - A mob this close to its formation slot is there.
-   * @param flowFields - The lane flow fields (06 §6), which this system also rebuilds within
-   *   `config.map.flowFieldCellBudget` each tick; without them mobs steer straight to their targets.
+   * @param world - The lane flow fields and the fort boxes (`PathingWorld`); none of either by
+   *   default.
    */
   public constructor(
     private readonly strategies: StrategyRegistry['movement'],
     private readonly formations: Readonly<Record<string, FormationDefinition>>,
     private readonly slotArrivalRadius: number,
-    private readonly flowFields: LaneFlowFields | null = null,
-  ) {}
+    { flowFields = null, forts = [] }: PathingWorld = {},
+  ) {
+    this.flowFields = flowFields;
+    this.forts = forts;
+  }
 
   /**
    * Points `target` at the unit `memberId` attacks (18 §5.2, engaging) and returns the distance
-   * from it at which the target is in reach; `undefined` when it attacks nothing. A target with a
-   * `Footprint` (a lane tower's fort) is aimed at its outline's nearest point, with reach measured
-   * as `EntityStore.isInReach` measures it (DEC-185). For it, and for a unit standing inside a
-   * fort's box, `depth` is how far the blocked nav ground under the target reaches back toward the
-   * attacker: the grid blocks a fort's whole court, but its walls stop no one at the doorways
-   * (owner 2026-11-04: units may enter towers). Otherwise `depth` is 0.
+   * from it at which the target is in reach; `undefined` when it attacks nothing. The target point
+   * is `EntityStore.aimPointOf`'s, the one `isInReach` measures to: on the outline of a target that
+   * has one (a map object; a lane tower's fort or the Stronghold's palace, DEC-185), else its
+   * centre. For an outline, and for a unit standing inside a fort's box, `depth` is how far the
+   * blocked nav ground under the target reaches back toward the attacker: the grid blocks a fort's
+   * whole court, but its walls stop no one at the doorways (owner 2026-11-04: units may enter
+   * towers). Otherwise `depth` is 0. A stuck chase's detour waypoint (DEC-193) replaces the
+   * target, reached like a slot.
    */
   private chase(state: SystemContext['state'], memberId: string): number | undefined {
     const attacker = state.entities.get(memberId);
     const combat = attacker?.findComponent(Combat);
     const targetId = combat?.targetId;
     const self = attacker?.findComponent(Transform);
-    const goal = targetId == null ? undefined : state.entities.get(targetId);
-    const other = goal?.findComponent(Transform);
+    const other =
+      targetId == null ? undefined : state.entities.get(targetId)?.findComponent(Transform);
     this.depth = 0;
-    if (combat === undefined || self === undefined || other === undefined) {
+    if (combat === undefined || self === undefined || targetId == null || other === undefined) {
       return undefined;
     }
-    const footprint = goal?.findComponent(Footprint);
+    const way = attacker?.findComponent(ChaseWatch)?.waypoint;
+    if (way != null) {
+      this.target.x = way.x;
+      this.target.y = way.y;
+      return this.slotArrivalRadius;
+    }
+    if (!state.entities.aimPointOf(targetId, self.position, this.target)) {
+      return undefined;
+    }
     const { x, y } = self.position;
     const grid = state.world?.grid;
-    if (footprint !== undefined) {
-      nearestPointOnPolygons(self.position, footprint.polygons, this.target);
+    if (state.entities.outlineOf(targetId) !== undefined) {
       this.depth = grid?.blockedRun(this.target.x, this.target.y, x, y) ?? 0;
       return self.radius + combat.attack.reach;
     }
-    this.target.x = other.position.x;
-    this.target.y = other.position.y;
-    if (grid !== undefined && this.isInsideFort(state, other.position)) {
+    if (grid !== undefined && this.isInsideFort(other.position)) {
       this.depth = grid.blockedRun(this.target.x, this.target.y, x, y);
     }
     return self.radius + other.radius + combat.attack.reach;
   }
 
-  /** Whether `point` lies in the box of a structure's `Footprint` (a lane tower's fort). */
-  private isInsideFort(state: SystemContext['state'], { x, y }: Vec2): boolean {
-    if (this.forts === null) {
-      // Structures stand from match start and never move, so their boxes are read once.
-      const forts: Rect[] = [];
-      state.entities.forEach((entity) => {
-        const box = entity.findComponent(Footprint)?.bounds;
-        if (box !== undefined) forts.push(box);
-      });
-      this.forts = forts;
-    }
+  /**
+   * Whether `point` lies in a fort box (`PathingWorld.forts`: a lane tower's fort, the palace,
+   * DEC-217 (16)).
+   */
+  private isInsideFort({ x, y }: Vec2): boolean {
     return this.forts.some(
       (box) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height,
     );

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { ChaseWatch } from '../components/ChaseWatch';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
+import { Entity } from '../entities/Entity';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { AStarPathfinder } from '../map/AStarPathfinder';
 import { SpaceIndex } from '../physics/SpaceIndex';
@@ -64,6 +66,17 @@ const turnAt = (
     destination: null,
   };
 };
+
+/** A bot Legend stand-in that `StuckSystem` found stuck and sent toward (47.5, 32.5). */
+class StuckBot extends Entity {
+  public readonly kind = 'warrior';
+  public readonly family = 'legend';
+  protected installComponents(): void {
+    const watch = new ChaseWatch();
+    watch.headFor(47.5, 32.5, 13, 0);
+    this.addComponent(watch);
+  }
+}
 
 describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
   it('heads for the pathfinder’s waypoint when it gives one', () => {
@@ -188,5 +201,47 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
 
     expect(turn.next.targetId).toBeNull();
     expect(turn.next.lane).toBe('lane-0');
+  });
+
+  it('heads for its detour waypoint when stuck on the way, in a fight and a siege, instead of pressing on (DEC-193)', () => {
+    const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+    space.begin(1);
+    space.add('enemy', 80, 20);
+    space.commit();
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
+      space,
+      paths: STUB_PATHS,
+    });
+    const bot = new StuckBot('bot', 'warrior');
+    bot.spawn({});
+    state.entities.add(bot);
+    const at = (position: { x: number; y: number }): BotTurn => ({
+      ...turnAt(position, true),
+      state,
+    });
+    const lastMove = (turn: BotTurn) =>
+      turn.commands.filter((command) => command.type === 'move').at(-1)?.direction;
+    const fighter = { ...at({ x: 46, y: 20 }), enemy: 'enemy' };
+    const sieger = {
+      ...at({ x: 46, y: 20 }),
+      objective: {
+        id: 'tower',
+        kind: 'spawner-tower',
+        team: 'dark' as const,
+        lane: 'lane-0',
+        x: 60,
+        y: 20,
+        radius: 5,
+        startingHealth: 3000,
+        progress: 60,
+        frontProgress: 55,
+        isBreakable: true,
+      },
+    };
+
+    expect(leaves.fight(fighter)).toBe('running');
+    expect(lastMove(fighter)).toEqual({ x: 1.5, y: 12.5 });
+    expect(leaves.siege(sieger)).toBe('running');
+    expect(lastMove(sieger)).toEqual({ x: 1.5, y: 12.5 });
   });
 });

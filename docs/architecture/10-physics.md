@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-05
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -223,7 +223,8 @@ Breakability changes at runtime through `StructureSystem` (`07` §3), never in p
 
 ## 9. Steering and pathing interplay
 
-Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSystem`.
+Order in `SystemPipeline`: `MovementSystem` → `CollisionSystem` → `SpaceSystem` → `StuckSystem` →
+`PathingSystem` (DEC-121 (c): every later reader sees resolved positions).
 
 - `PathingSystem` computes **next tick's** `desiredVelocity` from the positions just integrated:
   flow-field follow (bilinear interpolation of the four surrounding field vectors × `maxSpeed`),
@@ -231,7 +232,10 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   the goal, combined by priority (wall avoidance, then separation, then a horde member's
   formation slot ([18](18-minion-system.md) §5), then flow) and truncated to
   `maxSpeed`. Legends (bots and click-to-move) use A* with an octile heuristic and string pulling
-  on the same `WorldMap` grid; camp guards use seek/arrival inside their leash.
+  on the same `WorldMap` grid; camp guards use seek/arrival inside their leash. A mob or bot
+  Legend whose chase of its target is stuck follows A\* waypoints on that grid round the
+  obstacle; `StuckSystem` finds it stuck and plans the waypoints ([18](18-minion-system.md) §5.2,
+  DEC-193).
 - The one-tick latency between deciding and integrating is deliberate: it removes any ordering
   dependency between steering and integration (both read last tick's state), matches the "commands
   apply next tick" rule, and is invisible at 30 ticks/s.

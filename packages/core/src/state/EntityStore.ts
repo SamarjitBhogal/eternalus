@@ -1,3 +1,4 @@
+import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
@@ -8,9 +9,10 @@ import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
-import { distanceToPath, distanceToSegment, isPointInPolygon } from '../utils/geometry';
-import type { Vec2 } from '../utils/geometry.types';
+import { distance, isPointInPolygon, nearestPointOnPolygons } from '../utils/geometry';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 import { length, sub } from '../utils/vec2';
+import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
 import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
 
@@ -24,6 +26,8 @@ export class EntityStore {
   private readonly removals: RemovalRecord[] = [];
   private added = 0;
   private sizeAtStart = 0;
+  /** Scratch for `isInReach`'s aim point. */
+  private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /** Number of live entities. */
   public get size(): number {
@@ -125,41 +129,67 @@ export class EntityStore {
 
   /**
    * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
-   * two footprints (architecture 05 §10); a map object, or a structure with a `Footprint` (a lane
-   * tower's fort, DEC-185), is measured to its polygons, not its bounding circle. `false` when
-   * either is unknown or the attacker cannot attack.
+   * two footprints (architecture 05 §10) to the point `aimPointOf` gives: on the target's outline
+   * when it has one (`outlineOf`: a map object, or a lane tower's fort, DEC-185), standing inside
+   * an outline counting as in reach; else to its collider circle. `false` when either is unknown
+   * or the attacker cannot attack.
    */
   public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
     const attacker = this.entities.get(attackerId);
-    const target = this.entities.get(targetId);
     const combat = attacker?.findComponent(Combat);
     const from = attacker?.findComponent(Transform);
-    const to = target?.findComponent(Transform);
-    if (combat === undefined || from === undefined || to === undefined) {
+    const to = this.entities.get(targetId)?.findComponent(Transform);
+    if (
+      combat === undefined ||
+      from === undefined ||
+      to === undefined ||
+      !this.aimPointOf(targetId, from.position, this.aim)
+    ) {
       return false;
     }
-    const shapes =
-      target?.findComponent(MapObjectBody)?.object.footprints ??
-      target?.findComponent(Footprint)?.polygons;
-    if (shapes !== undefined) {
-      const reach = from.radius + combat.attack.reach;
-      return shapes.some((shape) => {
-        const first = shape[0];
-        const last = shape.at(-1);
-        // A shape without corners is never in reach (`MapObjectBuilder` rejects one anyway).
-        return (
-          first !== undefined &&
-          last !== undefined &&
-          (isPointInPolygon(from.position, shape) ||
-            Math.min(
-              distanceToPath(from.position, shape),
-              distanceToSegment(from.position, last, first),
-            ) <= reach)
-        );
-      });
+    const outline = this.outlineOf(targetId);
+    if (outline === undefined) {
+      const gap = length(sub(this.aim, from.position));
+      return gap - from.radius - to.radius <= combat.attack.reach;
     }
-    const gap = length(sub(to.position, from.position));
-    return gap - from.radius - to.radius <= combat.attack.reach;
+    return (
+      distance(from.position, this.aim) <= from.radius + combat.attack.reach ||
+      outline.some((shape) => isPointInPolygon(from.position, shape))
+    );
+  }
+
+  /**
+   * The outlines attack reach to `id` is measured to and a chase of it aims at: its map object's
+   * footprints, else its structure `Footprint`'s polygons (a lane tower's fort, the Stronghold's
+   * palace, DEC-185). `undefined` for a body that is only its collider circle, or an unknown id.
+   */
+  public outlineOf(id: EntityId): readonly Polygon[] | undefined {
+    const entity = this.entities.get(id);
+    return (
+      entity?.findComponent(MapObjectBody)?.object.footprints ??
+      entity?.findComponent(Footprint)?.polygons
+    );
+  }
+
+  /**
+   * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
+   * chase heads for (`StuckSystem`, `PathingSystem`): the point of its outline (`outlineOf`)
+   * nearest `from`, else its centre (reach then also spans its collider radius). A unit that
+   * damages a building can face this point (DEC-216 (11)). `false`, leaving `out` as it was, when
+   * the target is unknown, has no position, or its outline has no corners.
+   */
+  public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): boolean {
+    const outline = this.outlineOf(targetId);
+    if (outline !== undefined) {
+      return nearestPointOnPolygons(from, outline, out) !== Number.POSITIVE_INFINITY;
+    }
+    const at = this.entities.get(targetId)?.findComponent(Transform)?.position;
+    if (at === undefined) {
+      return false;
+    }
+    out.x = at.x;
+    out.y = at.y;
+    return true;
   }
 
   /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */
@@ -188,6 +218,14 @@ export class EntityStore {
    */
   public isDeploying(id: EntityId): boolean {
     return this.entities.get(id)?.hasComponent(Deploying) === true;
+  }
+
+  /**
+   * Where the entity, stuck on its way to its attack target, heads to go round (`ChaseWatch`,
+   * DEC-193); `null` when it is not detouring, has no waypoint, or is unknown.
+   */
+  public detourWaypointOf(id: EntityId): Vec2 | null {
+    return this.entities.get(id)?.findComponent(ChaseWatch)?.waypoint ?? null;
   }
 
   /** Whether the entity exists and has health left (`false` for anything without `Health`). */

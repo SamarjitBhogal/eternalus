@@ -5,7 +5,11 @@ import type { Controller, Decision, DecisionInput } from './Controller.types';
 import { decideLeashed } from './decideLeashed';
 import { GUARD_STATES } from './GuardController.constants';
 import { LeashBehaviour } from './LeashBehaviour';
-import type { LeashControllerContent, LeashRules } from './LeashBehaviour.types';
+import type {
+  LeashControllerContent,
+  LeashDecisionParts,
+  LeashRules,
+} from './LeashBehaviour.types';
 
 /**
  * Drives a leashed mob on a guard post (architecture 18 §7, §7.1, 11 §4.4): a tower guard or a
@@ -21,6 +25,17 @@ import type { LeashControllerContent, LeashRules } from './LeashBehaviour.types'
 export class GuardController implements Controller {
   public readonly id = 'guard';
   private readonly behaviour: LeashBehaviour;
+  /** What `decideLeashed` reads from this controller, built once (DEC-168 B1, critic A BTD 4). */
+  private readonly parts: LeashDecisionParts<'holding', GuardAggroRuleDefinition> = {
+    controllerId: this.id,
+    profileOf: (profileId) => this.profileOf(profileId),
+    states: GUARD_STATES,
+    idle: 'holding',
+    situate: (state, entityId) => {
+      const post = state.guards.slotOf(entityId);
+      return post ? { rules: GuardController.rulesFor(post), objective: null } : null;
+    },
+  };
 
   /** @param content - Aggro profiles and kind classes; the controller holds none. */
   public constructor(private readonly content: LeashControllerContent) {
@@ -38,16 +53,7 @@ export class GuardController implements Controller {
    * @throws Error when the brain names no guard aggro profile (a content error).
    */
   public decide(input: DecisionInput): Decision {
-    return decideLeashed(input, this.behaviour, {
-      controllerId: this.id,
-      profileOf: (profileId) => this.profileOf(profileId),
-      states: GUARD_STATES,
-      idle: 'holding',
-      situate: (state, entityId) => {
-        const post = state.guards.slotOf(entityId);
-        return post ? { rules: GuardController.rulesFor(post), objective: null } : null;
-      },
-    });
+    return decideLeashed(input, this.behaviour, this.parts);
   }
 
   /** The guard aggro profile `profileId` names, or `undefined` (AI56-F9). */

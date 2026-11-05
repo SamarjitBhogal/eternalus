@@ -11,13 +11,12 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) or a
- * tower guard (DEC-165) that kills a lane minion or a tower guard counts the kill in its
- * `Veterancy`; each level it gains (`gainLevels`) raises its max health by `healthPerLevel` of its
- * base health (healing by the same) and adds a stack of the veteran status. Every
- * `aura.everySeconds`, each unit with a level gives the aura status to the other friendly horde
- * minions and tower guards (DEC-165) within `aura.radius`. Kills come from `entity-died`, counted
- * on this system's pass; it runs after every system that deals damage and
- * before `DeathSystem`.
+ * tower guard (DEC-165) that kills a lane minion, a tower guard or a camp mob counts the kill in
+ * its `Veterancy`; each level it gains raises its max health by `healthPerLevel` of its base
+ * health (healing by the same) and adds a stack of the veteran status. Every `aura.everySeconds`,
+ * each unit with a level gives the aura status to the other friendly horde minions and tower
+ * guards (DEC-165) within `aura.radius`. Kills come from `entity-died`, counted on this system's
+ * pass; it runs after every system that deals damage and before `DeathSystem`.
  */
 export class VeterancySystem implements System {
   public readonly name = 'veterancy';
@@ -54,22 +53,6 @@ export class VeterancySystem implements System {
     }
   }
 
-  /**
-   * Gives `entityId` up to `levels` minion levels, never past the cap, each with its effects: max
-   * health `healthPerLevel` of base health higher (healed by the same) and a veteran stack. The one
-   * way in for every level source (DEC-168): this system's kills, and the zone level-up
-   * (balancing.md "+1 minion level (max 3)") once capture points emit it. Returns the levels gained.
-   */
-  public gainLevels(state: GameState, entityId: EntityId, levels: number): number {
-    const entity = state.entities.get(entityId);
-    if (entity === undefined || !state.entities.isAlive(entityId)) {
-      return 0;
-    }
-    const gained = VeterancySystem.veterancyOf(entity).gainLevels(levels, this.veterancy.maxLevel);
-    this.applyLevels(state, entity, gained);
-    return gained;
-  }
-
   private countKill(state: GameState, killerId: EntityId, victimId: EntityId): void {
     const killer = state.entities.get(killerId);
     // "A minion that kills another minion" (game doc); DEC-165: the victim must be a lane minion
@@ -83,19 +66,26 @@ export class VeterancySystem implements System {
     ) {
       return;
     }
-    const { killsPerLevel, maxLevel } = this.veterancy;
-    if (VeterancySystem.veterancyOf(killer).recordKill(killsPerLevel, maxLevel)) {
-      this.applyLevels(state, killer, 1);
+    if (VeterancySystem.veterancyOf(killer).recordKill(this.veterancy.killsPerLevel)) {
+      this.gainLevels(state, killer, 1);
     }
   }
 
-  private applyLevels(state: GameState, entity: Entity, levels: number): void {
+  /**
+   * Gives `entity` up to `levels` minion levels, never past the cap, each with its effects: max
+   * health `healthPerLevel` of base health higher (healed by the same) and a veteran stack. The one
+   * way in for every level source (DEC-168): this system's kills now; the zone level-up
+   * (balancing.md "+1 minion level (max 3)") is to reach it through a typed event once capture
+   * points emit one, never by calling this system.
+   */
+  private gainLevels(state: GameState, entity: Entity, levels: number): void {
+    const gained = VeterancySystem.veterancyOf(entity).gainLevels(levels, this.veterancy.maxLevel);
     const definition = this.units.get(entity.definitionId);
     const health = entity.findComponent(Health);
     if (!MOB_KINDS.has(definition) || health === undefined) {
       return;
     }
-    for (let level = 0; level < levels; level += 1) {
+    for (let level = 0; level < gained; level += 1) {
       health.raiseMaxAndHeal(definition.baseHealth * this.veterancy.healthPerLevel);
       this.statuses.apply(state, entity.id, this.veterancy.statusId, entity.id);
     }
