@@ -52,6 +52,7 @@ const turnAt = (
     next: memory,
     commands: [],
     enemy: null,
+    objective: null,
     destination: null,
   };
 };

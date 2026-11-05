@@ -5,6 +5,7 @@ import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
+import { Veterancy } from '../components/Veterancy';
 import { StatusEffects } from '../components/StatusEffects';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
@@ -53,6 +54,22 @@ export class StateHasher {
       });
       parts.push(['hordes', ...hordes]);
     }
+    // Guard posts are appended only once one exists, for the same reason.
+    if (state.guards.size > 0) {
+      const posts: unknown[] = [];
+      state.guards.forEach(({ id, guardId, respawnAtTick }) => {
+        posts.push([id, guardId, respawnAtTick]);
+      });
+      parts.push(['guards', ...posts]);
+    }
+    // Ally damage (DEC-89) is appended only while some is counted, for the same reason.
+    if (state.allyDamage.size > 0) {
+      const tallies: unknown[] = [];
+      state.allyDamage.forEach((team, lane, amount) => {
+        tallies.push([team, lane, amount]);
+      });
+      parts.push(['allyDamage', ...tallies]);
+    }
     // Lost towers are appended only once a lane has one, for the same reason.
     const lost = (['light', 'dark'] as const).flatMap((team) =>
       Object.keys(state.teams[team].towersLostByLane)
@@ -100,7 +117,12 @@ export class StateHasher {
     }
     const collider = entity.findComponent(Collider);
     if (collider !== undefined) {
-      fields.push(['collider', collider.isEnabled]);
+      // Only an unbreakable collider adds a field, so states without walls hash as before.
+      fields.push(
+        collider.isUnbreakable
+          ? ['collider', collider.isEnabled, 'unbreakable']
+          : ['collider', collider.isEnabled],
+      );
     }
     const combat = entity.findComponent(Combat);
     if (combat !== undefined && (combat.targetId !== null || combat.readyAtTick > 0)) {
@@ -140,6 +162,10 @@ export class StateHasher {
         capture.reachedBy('dark'),
         capture.reachedBy('neutral'),
       ]);
+    }
+    const veterancy = entity.findComponent(Veterancy);
+    if (veterancy !== undefined) {
+      fields.push(['veterancy', veterancy.kills, veterancy.level]);
     }
     const progression = entity.findComponent(Progression);
     if (progression !== undefined) {

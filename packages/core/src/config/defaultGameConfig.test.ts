@@ -14,7 +14,7 @@ describe('createDefaultGameConfig', () => {
       cornerCamps: 4,
     });
     expect(config.match.hordeSizes).toEqual({ light: 16, medium: 8, heavy: 4 });
-    expect(config.limits).toEqual({ maxLegendsPerTeam: 10, maxUnitsPerTeam: 144 });
+    expect(config.limits).toEqual({ maxLegendsPerTeam: 10, maxUnitsPerTeam: 300 });
     expect(config.match.capturePoints).toEqual({
       checkpoints: 3,
       captureSeconds: 12,

@@ -64,6 +64,32 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     expect(runs[0]?.hash).toBe(runs[1]?.hash);
   });
 
+  it('hits the enemy structures on its lane once its horde reaches them (11 §4.2 Push)', () => {
+    const simulation = match(laners('light', 2));
+    const structures = new Set(
+      simulation
+        .snapshot()
+        .entities.filter(({ family, team }) => family === 'structure' && team === 'dark')
+        .map(({ id }) => id),
+    );
+    const bots = new Set(
+      simulation
+        .snapshot()
+        .entities.filter(({ kind }) => kind === 'warrior')
+        .map(({ id }) => id),
+    );
+    let botHits = 0;
+    simulation.on('damage-applied', ({ targetId, source }) => {
+      botHits += structures.has(targetId) && bots.has(source.attackerId ?? '') ? 1 : 0;
+    });
+
+    for (let tick = 0; tick < 90 * 30; tick += 1) {
+      simulation.step();
+    }
+
+    expect(botHits).toBeGreaterThan(0);
+  });
+
   it('refuses a roster without a map, laners that do not fit, or a difficulty that does not exist', () => {
     expect(() => match(laners('light', 1), false)).toThrow('A roster needs a map');
     // Two lanes of `legendsPerLane` 3 hold six laners a team.

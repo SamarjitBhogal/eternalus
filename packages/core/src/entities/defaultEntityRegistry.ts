@@ -7,6 +7,11 @@ import { LightMob } from './mobs/LightMob';
 import { MediumMob } from './mobs/MediumMob';
 import { Obstacle } from './Obstacle';
 import { Projectile } from './Projectile';
+import { BuffTower } from './structures/BuffTower';
+import { Camp } from './structures/Camp';
+import { Gate } from './structures/Gate';
+import { SpawnerTower } from './structures/SpawnerTower';
+import { Stronghold } from './structures/Stronghold';
 import { CapturePoint } from './zones/CapturePoint';
 
 /**
@@ -23,6 +28,11 @@ export const createDefaultEntityRegistry = (): EntityRegistry => {
   registry.register('heavy-mob', HeavyMob);
   registry.register('obstacle', Obstacle);
   registry.register('projectile', Projectile);
+  registry.register('stronghold', Stronghold);
+  registry.register('spawner-tower', SpawnerTower);
+  registry.register('buff-tower', BuffTower);
+  registry.register('gate', Gate);
+  registry.register('camp', Camp);
   registry.register('capture-point', CapturePoint);
   return registry;
 };
