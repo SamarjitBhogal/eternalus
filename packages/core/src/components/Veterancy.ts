@@ -2,7 +2,8 @@
  * A minion's level and kills (game doc "Minion XP"): one level with two sources (DEC-168). Kills
  * earn a level every `killsPerLevel`; that level and any other source's (the zone level-up,
  * balancing.md "+1 minion level (max 3)") are added with `gainLevels`, and a later kill never takes
- * them back. Added by `VeterancySystem` on a minion's first kill or level.
+ * them back. Added by `VeterancySystem` on a minion's first kill or level. Other level sources go
+ * through `VeterancySystem` (a typed event later), not this component, so the level's effects apply.
  */
 export class Veterancy {
   private killsValue = 0;
