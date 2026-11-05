@@ -4813,6 +4813,88 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: the owner's call on the two remaining M4/M5a stand-ins (strength by the field's
   distance; a wall-avoidance term now that `CollisionSystem` exists).
 
+### 2026-11-02 — Phase 3 / minion M4 test — chore/minion-full-march-test — SamarjitBhogal + Claude Code
+
+- What was done: restored the full-match march test commented out at the owner's request on
+  2026-10-30 (PR #39: 530 s, over 100 s on CI under coverage). Since M2c a horde holds at its first
+  enemy objective, and march-only hordes cannot attack, so "reach the enemy end" cannot pass; the
+  test checks sprint 3.1's metric for the first objective instead: for 3 and 5 lanes (seed 1),
+  every opening mob (full size, counted) comes within 15 m along its lane of its first enemy
+  objective's gather point (18 §6.2), with under 1 % of samples off walkable ground and no
+  warnings. Only the opening hordes march (long countdown); the loop stops once every mob arrives
+  and samples once a second; 1.4–2.6 s locally. Critic round 1 blocked "arrived" judged on horde
+  anchors (which move whether or not mobs follow); it now judges each mob (at 1 m only 6 of 96
+  arrive, so it measures mobs). A missing objective throws. Plan §3 row and INBOX item for the
+  redefined M4 done-when.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 973 passed (973)"; client "Tests 434 passed (434)"; "✓ built in 156ms"; "Documentation
+  check passed."
+- Next step: critic round 2, then a draft PR into `phase/3-sprint-3-work` after #58.
+
+### 2026-11-04 — Phase 3 / minion stack merge — chore/minion-full-march-test — sholtzman + Claude Code
+
+- What was done: #56, #57, #58 and #66 merged into `phase/3-sprint-3-work` (8e058d8) after an
+  independent audit with no merge-blockers. Merged `phase/3-sprint-3-work` into this branch (#67)
+  and resolved its two docs conflicts with #66: this log keeps all three 2026-11-02 entries in
+  commit order; minion plan §3 takes #66's rows (no "flow field dirty" row, "Bot laners never
+  cast", the straight-last-leg row) and adds this branch's M4 done-when row.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
+
+### 2026-11-04 — Phase 3 / horde steering deadlock — fix/horde-guard-deadlock — sholtzman + Claude Code
+
+- What was done: a unit whose pull toward its target is cancelled by separation no longer stalls
+  for good. Root cause: `addSeparation` zeroed any sum shorter than `minSteer`, so two units that
+  met head-on (one extra entity before the first wave put the light lane-0 leader on its light
+  guard's post at (76, 20), the guard 0.995 ahead and walking back to it) each had a pull of 1
+  against a push of about 1.21; both nets fell to 0.21 and both stood still from tick 634 to past
+  tick 1,800. Now, when the push cancels a pull, the unit steps aside: a quarter turn from the
+  pull, to the side the push leans to, else always the same side, so two units meeting head-on
+  step to opposite sides. A unit with no pull still settles to zero. Shared by
+  `LaneFollowMovementStrategy` and `LeashedChaseMovementStrategy`; no new tuning number. Tests,
+  both red first: `LaneFollowMovementStrategy.test` "steps aside, never stalls, …" ("expected 0
+  to be greater than or equal to 0.25") and the structures scenario with one extra entity
+  ("expected 80.50056128703002 to be greater than 111"). Hash tests compare runs, none pins a
+  literal; all pass.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 249ms";
+  "Documentation check passed."
+- Next step: pre-PR gate, then PR into phase/3; unblocks #64.
+
+### 2026-11-04 — Phase 3 / horde steering deadlock, critic round 1 — fix/horde-guard-deadlock — sholtzman + Claude Code
+
+- What was done: the critic (request-changes) found that no test pinned the "side the push leans
+  to" rule (hard-coding one side still passed 1058/1058) and that its probe measured this rule as
+  the main source of the new shuffling: 16 of 20 wedge layouts reversed almost every tick, against
+  4 of 20 with a fixed side. The side step is now always a quarter turn to the left of the pull.
+  Two units meeting head-on still step to opposite sides in world terms. New test
+  `LaneFollowMovementStrategy.test` "steps to the left of its pull, whichever way the push that
+  cancels it leans", red first with the lean rule put back ("expected { x: +0, y: -1 } to deeply
+  equal { x: +0, y: 1 }"). A `ponytail:` note names the ceiling (a crowd pressed into a gap can
+  shuffle) and the upgrade (10 §9 `AvoidanceStrategy`). Doc 18 §5.2 states the rule. The
+  critic's whole-match probe, reversals over 120° per minion-minute: two-lane fight 240 s, 59.1
+  before the fix and 68.3 with the fixed side; full match 360 s, 27.9 before and 35.4 with the
+  fixed side. Remaining shuffle is an owner acceptance item.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 1059 passed (1059)"; client "Tests 1736 passed (1736)"; "✓ built in 222ms";
+  "Documentation check passed." This line was filled in after that run (docs-only).
+- Next step: critic re-check of this round, then PR into phase/3; unblocks #64.
+
+### 2026-11-04 — Phase 3 / horde steering deadlock, critic round 2 — fix/horde-guard-deadlock — sholtzman + Claude Code
+
+- What was done: the critic re-check approved (no blockers) and found one error in the round-1
+  wording. **Correction to the round-1 entry above:** the side step is not "to the left of the
+  pull". World +y is south, so a pull east steps south: a quarter turn to the unit's right,
+  clockwise on screen. The behaviour was right; only the stated direction was wrong. Doc 18 §5.2,
+  the `addSeparation` TSDoc and the test name now say "to the same side of its pull every time",
+  with no direction. Test nits applied: the neighbours are named by their side
+  (`neighbourSouth`/`neighbourNorth`), and the offset comes from `minSteer`, so retuning it keeps
+  the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
+  (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
+  acceptance; 10 §9 already allows it for the MVP.
+
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/capture-points — Aryan Walanj + Claude
 
 - What was done: reworked PR #49 on `phase/2-sprint-2-work` per the architecture review. Capture

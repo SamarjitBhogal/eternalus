@@ -65,6 +65,57 @@ describe('LaneFollowMovementStrategy', () => {
     expect(strategy.desiredVelocity(0, context)).toEqual({ x: 0, y: 0 });
   });
 
+  it('steps aside, never stalls, when a unit ahead pushes back as hard as its slot pulls', () => {
+    const { separationRadius: radius, separationWeight: weight, minSteer } = HORDE_STEERING;
+    // At this distance the push, weight × (radius / apart − 1), is exactly 1: the unit pull.
+    const apart = (weight * radius) / (1 + weight);
+    const ahead = contextOf(
+      [
+        [10, 10],
+        [10 + apart, 10],
+      ],
+      { x: 40, y: 10 },
+    );
+    // Two units meeting head-on, each walking toward a point behind the other.
+    const backward = contextOf(
+      [
+        [10 + apart, 10],
+        [10, 10],
+      ],
+      { x: 0, y: 10 },
+    );
+
+    const aside = { ...strategy.desiredVelocity(0, ahead) };
+    const otherAside = { ...strategy.desiredVelocity(0, backward) };
+
+    expect(Math.hypot(aside.x, aside.y)).toBeGreaterThanOrEqual(minSteer);
+    expect(Math.abs(aside.y)).toBeGreaterThan(Math.abs(aside.x));
+    // Opposite sides, so the two pass each other instead of stepping aside together.
+    expect(Math.sign(aside.y)).toBe(-Math.sign(otherAside.y));
+  });
+
+  it('steps to the same side of its pull, whichever way the push that cancels it leans', () => {
+    const { separationRadius: radius, separationWeight: weight, minSteer } = HORDE_STEERING;
+    // About a unit push, from a neighbour a little south or north of the line to the slot; the
+    // steer left over is about minSteer / 2, so the side step always applies.
+    const apart = (weight * radius) / (1 + weight);
+    const offset = (apart * minSteer) / 2;
+    const blockedFrom = (offsetY: number) =>
+      contextOf(
+        [
+          [10, 10],
+          [10 + apart, 10 + offsetY],
+        ],
+        { x: 40, y: 10 },
+      );
+
+    const neighbourSouth = { ...strategy.desiredVelocity(0, blockedFrom(offset)) };
+    const neighbourNorth = { ...strategy.desiredVelocity(0, blockedFrom(-offset)) };
+
+    expect(neighbourSouth).toEqual({ x: 0, y: 1 });
+    expect(neighbourNorth).toEqual({ x: 0, y: 1 });
+  });
+
   it('stops at the context’s arrival radius, such as attack reach while chasing', () => {
     const context = { ...contextOf([[0, 0]], { x: 2, y: 0 }), arrivalRadius: 2.5 };
 
