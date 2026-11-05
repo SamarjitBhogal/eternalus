@@ -5039,3 +5039,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1096 passed (1096)"; client "Tests 1771 passed (1771)"; "✓ built in 283ms";
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: critic round 2, then ponytail review, then the PR after #77.
+
+### 2026-11-05 — Phase 3 / unit facing chevron, critic round 2 — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: critic round 2 approved (0 blockers). Its fixes: `isInReach` uses
+  `geometry.distance` and its TSDoc names the missing-`Transform` case (`f5f0aaf`); the
+  `EntityLayer.turn` TSDoc and 08 §8 say opposite facings snap at the midpoint (`a9601db`,
+  `5643c3b`); 15 §3 names the facing length check, 10 cites DEC-192 and no longer limits the turn
+  lerp to the client, 04 §3 names the `cannot-attack` exception, and the open INBOX item has (3) the
+  `UnitView` better-than-design item (`5643c3b`). Correction to the entry above: the round 1 fixes
+  it calls uncommitted are commit `6043999`.
+- Checks run: `npm run check` on HEAD `5643c3b` (clean tree) → `exit 0`: "All matched files use
+  Prettier code style!"; core "Tests 1096 passed (1096)"; client "Tests 1771 passed (1771)"; "✓
+  built in 275ms"; "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: ponytail review, then the PR after #77 merges.
