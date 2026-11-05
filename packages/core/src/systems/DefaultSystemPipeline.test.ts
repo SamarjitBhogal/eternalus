@@ -72,7 +72,7 @@ describe('DefaultSystemPipeline', () => {
     expect(logger.records).toEqual([]);
   });
 
-  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c))', () => {
+  it('runs the horde systems in the order of architecture 10 §9, 11 §3 and 18 §3.2, collision right after movement (DEC-121 (c)), stuck detection before steering (DEC-193)', () => {
     const logger = new MemoryLogger();
     const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
@@ -101,6 +101,7 @@ describe('DefaultSystemPipeline', () => {
       'movement',
       'collision',
       'space',
+      'stuck',
       'pathing',
       'combat',
       'map-destruction',

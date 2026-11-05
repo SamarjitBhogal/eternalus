@@ -1,6 +1,7 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
+import { STUCK_DETECTION } from '../content/ai/stuckDetection';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
@@ -29,6 +30,7 @@ import type { ProgressionContent } from './ProgressionSystem.types';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
+import { StuckSystem } from './StuckSystem';
 import { VeterancySystem } from './VeterancySystem';
 import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
@@ -40,7 +42,7 @@ import { SystemPipeline } from './SystemPipeline';
 /**
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
- * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
+ * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction, progression (kill XP),
  * minion veterancy, structure losses and breakability, spawning, enraging, death, then invariants
  * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
@@ -116,6 +118,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
         ? []
         : [
             ...(hordes.space === null ? [] : [new SpaceSystem(hordes.space)]),
+            new StuckSystem(STUCK_DETECTION),
             new PathingSystem(
               createDefaultStrategyRegistry().movement,
               FORMATIONS,

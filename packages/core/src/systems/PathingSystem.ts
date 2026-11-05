@@ -1,3 +1,4 @@
+import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
 import { Footprint } from '../components/Footprint';
@@ -29,8 +30,8 @@ import type { System, SystemContext } from './System.types';
  * Slots are `formationSlot`'s (18 §5.1), by each formation's shape, counting every follower in
  * `memberIds` order.
  *
- * @remarks ponytail: a chase blocked by terrain holds; target-aware routing (an A* path to the
- * target) replaces that when chases need it.
+ * A chase that `StuckSystem` found stuck heads for its `ChaseWatch` waypoint instead, the A\* way
+ * round to its target (owner 2026-11-05, DEC-193), so blocked terrain holds it only until then.
  */
 export class PathingSystem implements System {
   public readonly name = 'pathing';
@@ -61,11 +62,12 @@ export class PathingSystem implements System {
   /**
    * Points `target` at the unit `memberId` attacks (18 §5.2, engaging) and returns the distance
    * from it at which the target is in reach; `undefined` when it attacks nothing. A target with a
-   * `Footprint` (a lane tower's fort) is aimed at its outline's nearest point, with reach measured
+   * `Footprint` (a lane tower's fort, the Stronghold's palace) is aimed at its outline's nearest point, with reach measured
    * as `EntityStore.isInReach` measures it (DEC-185). For it, and for a unit standing inside a
    * fort's box, `depth` is how far the blocked nav ground under the target reaches back toward the
    * attacker: the grid blocks a fort's whole court, but its walls stop no one at the doorways
-   * (owner 2026-11-04: units may enter towers). Otherwise `depth` is 0.
+   * (owner 2026-11-04: units may enter towers). Otherwise `depth` is 0. A stuck chase's detour
+   * waypoint (DEC-193) replaces the target, reached like a slot.
    */
   private chase(state: SystemContext['state'], memberId: string): number | undefined {
     const attacker = state.entities.get(memberId);
@@ -77,6 +79,12 @@ export class PathingSystem implements System {
     this.depth = 0;
     if (combat === undefined || self === undefined || other === undefined) {
       return undefined;
+    }
+    const way = attacker?.findComponent(ChaseWatch)?.waypoint;
+    if (way != null) {
+      this.target.x = way.x;
+      this.target.y = way.y;
+      return this.slotArrivalRadius;
     }
     const footprint = goal?.findComponent(Footprint);
     const { x, y } = self.position;
@@ -94,7 +102,7 @@ export class PathingSystem implements System {
     return self.radius + other.radius + combat.attack.reach;
   }
 
-  /** Whether `point` lies in the box of a structure's `Footprint` (a lane tower's fort). */
+  /** Whether `point` lies in the box of a structure's `Footprint` (a lane tower's fort, the palace). */
   private isInsideFort(state: SystemContext['state'], { x, y }: Vec2): boolean {
     if (this.forts === null) {
       // Structures stand from match start and never move, so their boxes are read once.

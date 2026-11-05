@@ -1,3 +1,4 @@
+import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
@@ -188,6 +189,14 @@ export class EntityStore {
    */
   public isDeploying(id: EntityId): boolean {
     return this.entities.get(id)?.hasComponent(Deploying) === true;
+  }
+
+  /**
+   * Where the entity, stuck on its way to its attack target, heads to go round (`ChaseWatch`,
+   * DEC-193); `null` when it is not detouring, has no waypoint, or is unknown.
+   */
+  public detourWaypointOf(id: EntityId): Vec2 | null {
+    return this.entities.get(id)?.findComponent(ChaseWatch)?.waypoint ?? null;
   }
 
   /** Whether the entity exists and has health left (`false` for anything without `Health`). */

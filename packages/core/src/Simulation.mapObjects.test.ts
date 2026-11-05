@@ -168,7 +168,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
     },
   );
 
-  it("gives each lane tower its fort's footprint as its Footprint, and the Stronghold none (DEC-185)", () => {
+  it("gives each lane tower its fort's footprint as its Footprint, the Stronghold its palace outline, and a gate none (DEC-185, D)", () => {
     const config = createDefaultGameConfig();
     const map = new MapGenerator().generate(config, 1);
     const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
@@ -193,7 +193,87 @@ describe('Simulation with a roster and map objects (as the client builds a match
     expect(fort).toBe(12);
     expect(shapes.get('spawner-tower')).toBe(fort);
     expect(shapes.get('buff-tower')).toBe(fort);
-    expect(shapes.get('stronghold')).toBe(0);
+    expect(shapes.get('stronghold')).toBe(
+      mapObjects.find(({ kind }) => kind === 'stronghold')?.footprints.length,
+    );
+    expect(shapes.get('stronghold')).toBeGreaterThan(0);
+    expect(shapes.get('gate')).toBe(0);
+  });
+
+  it('puts a melee Legend at the outside of the palace wall in reach of its Stronghold, past its 40 m circle (DEC-185 D)', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const centre = map.features.find(
+      ({ kind, team }) => kind === 'stronghold' && team === 'light',
+    )?.position;
+    const outline = mapObjects.find(({ id }) => id === 'light-stronghold')?.footprints[0] ?? [];
+    // The palace corner farthest from the centre, and a point 0.6 m out from it.
+    const gap = ({ x, y }: Vec2): number => Math.hypot(x - (centre?.x ?? 0), y - (centre?.y ?? 0));
+    const corner = outline.reduce((far, point) => (gap(point) > gap(far) ? point : far));
+    const out = 0.6 / gap(corner);
+    const at = {
+      x: corner.x + (corner.x - (centre?.x ?? 0)) * out,
+      y: corner.y + (corner.y - (centre?.y ?? 0)) * out,
+    };
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'warrior',
+      definitionId: 'warrior',
+      team: 'dark',
+      at,
+      count: 1,
+    });
+    simulation.step();
+    const { entities } = (simulation as unknown as { readonly state: GameState }).state;
+    const ids = simulation.snapshot().entities;
+    const legend = ids.find(({ definitionId }) => definitionId === 'warrior')?.id ?? '';
+    const stronghold = ids.find(({ kind, team }) => kind === 'stronghold' && team === 'light');
+
+    expect(gap(at)).toBeGreaterThan((stronghold?.transform?.radius ?? 0) + 5);
+    expect(entities.isInReach(legend, stronghold?.id ?? '')).toBe(true);
+  });
+
+  it("makes each lane tower's fort map object the tower's body: one health pool, no entity of its own (DEC-185 B)", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const snapshot = simulation.snapshot();
+    const towers = laneTowers(map);
+    const bodies = towers.map(({ id, position }) => {
+      const tower = snapshot.entities.find(
+        ({ family, transform }) =>
+          family === 'structure' && transform?.x === position.x && transform.y === position.y,
+      );
+      const fort = snapshot.mapObjects?.find((object) => object.id === id);
+      return { tower: tower?.id, health: tower?.health, fort };
+    });
+
+    expect(towers.length).toBeGreaterThan(0);
+    for (const { tower, health, fort } of bodies) {
+      expect(tower).toBeDefined();
+      expect(fort).toMatchObject({ entityId: tower, isDestroyed: false });
+      expect(fort?.health).toEqual({ current: health?.current, max: health?.max });
+    }
+    expect(
+      snapshot.entities.filter(({ definitionId }) =>
+        ['map-object-spawner-tower', 'map-object-buff-tower'].includes(definitionId),
+      ),
+    ).toEqual([]);
   });
 
   it('lets a light horde sent at an enemy spawner tower on the generated map hit it within a minute (DEC-185, playtest 2026-11-04)', () => {

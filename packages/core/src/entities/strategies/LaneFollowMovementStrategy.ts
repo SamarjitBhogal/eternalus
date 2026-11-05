@@ -22,7 +22,7 @@ import type { FlowQuery, MovementContext, MovementStrategy } from './MovementStr
  *
  * @remarks ponytail: no wall avoidance term yet (it arrives with `CollisionSystem`, 10 §8), so the
  * wall turn reads the grid's axes, not the contact normal. A chase blocked by terrain holds until
- * target-aware routing (an A* path to the target) lets it go round.
+ * `StuckSystem` finds it stuck; `PathingSystem` then gives it an A\* waypoint round (DEC-193).
  */
 export class LaneFollowMovementStrategy implements MovementStrategy {
   /** @param profile - Distances and weights; the strategy holds no numbers of its own. */

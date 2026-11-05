@@ -136,7 +136,7 @@ describe('LeashBehaviour', () => {
   it('engaging: chases a target that leaves the leash for the grace, then breaks (DEC-144 E: distance, then time)', () => {
     const { add, decide, advance, moveTo } = setUp();
     const self = add('light', 50);
-    // 10 from where it was taken: outside the 7.5 leash, and out of reach.
+    // 10 from where it was taken: outside the 8.625 leash, and out of reach.
     const target = add('dark', 60);
     advance(5);
 
@@ -212,7 +212,7 @@ describe('LeashBehaviour', () => {
     const inside = decide(self, taken.memory);
     expect(inside).toMatchObject({ commands: [], memory: taken.memory });
 
-    moveTo(legend, 60); // 10 from the anchor: outside the 7.5 leash, 4 from the mob
+    moveTo(legend, 60); // 10 from the anchor: outside the 8.625 leash, 4 from the mob
     moveTo(self, 56);
     advance(5);
     const outside = decide(self, inside.memory);
@@ -235,7 +235,7 @@ describe('LeashBehaviour', () => {
     const self = add('light', 50);
     const mate = add('light', 56);
     const outsider = add('light', 58);
-    // 7 away: past the 5.4 reach, inside the 7.5 call for help.
+    // 7 away: past the 5.4 reach, inside the 8.625 call for help.
     const enemy = add('dark', 57);
     state.hordes.add({
       id: 'horde-1',
@@ -289,7 +289,7 @@ describe('LeashBehaviour', () => {
   it('marching in its cooldown: does not take back an escaped Legend that keeps hitting it from outside the old leash (DEC-160)', () => {
     const { state, add, decide } = setUp();
     const self = add('light', 50);
-    // 13 m from the old anchor (40, 20), past the 7.5 m leash, but in reach of where the mob stands.
+    // 13 m from the old anchor (40, 20), past the 8.625 m leash, but in reach of where the mob stands.
     const kiter = add('dark', 53, 20, 'warrior', 'warrior');
     state.entities.setAttackTarget(kiter, self);
 

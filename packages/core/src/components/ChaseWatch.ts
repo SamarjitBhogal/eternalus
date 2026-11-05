@@ -1,0 +1,84 @@
+import type { Vec2 } from '../utils/geometry.types';
+
+/** The stuck rule in ticks, as `ChaseWatch.observe` reads it. */
+type StuckWindow = {
+  readonly windowTicks: number;
+  readonly minProgress: number;
+};
+
+/**
+ * How a unit's chase of its attack target is going (owner 2026-11-05, DEC-193): the closest it has
+ * come, since its last progress, to the point it heads for (its target, or its detour waypoint
+ * once it was stuck), and that waypoint. `StuckSystem` adds, updates and removes it;
+ * `PathingSystem` and the bot Legends steer to `waypoint` while there is one.
+ */
+export class ChaseWatch {
+  private watchedId: string | null = null;
+
+  private closest = 0;
+
+  private sinceTick = 0;
+
+  private readonly way = { x: 0, y: 0 };
+
+  private hasWay = false;
+
+  /** The point the detour heads for next, or `null` when the unit chases straight. */
+  public get waypoint(): Vec2 | null {
+    return this.hasWay ? this.way : null;
+  }
+
+  /** The fields that change the unit's future, for `StateHasher`. */
+  public get fields(): readonly (string | number | boolean | null)[] {
+    return [this.watchedId, this.closest, this.sinceTick, this.hasWay, this.way.x, this.way.y];
+  }
+
+  /**
+   * Records this tick's `gap` to what the unit heads for (its waypoint while it has one, else the
+   * point of `targetId` it aims at) and returns `true` when it is stuck: no `minProgress` closer
+   * for `windowTicks`; a fresh window then starts. A new target or being in reach drops the
+   * waypoint and starts a fresh window too.
+   */
+  public observe(
+    targetId: string,
+    gap: number,
+    isInReach: boolean,
+    tick: number,
+    rule: StuckWindow,
+  ): boolean {
+    if (targetId !== this.watchedId || isInReach) {
+      this.watchedId = targetId;
+      this.hasWay = false;
+      this.restart(gap, tick);
+      return false;
+    }
+    if (gap <= this.closest - rule.minProgress) {
+      this.restart(gap, tick);
+      return false;
+    }
+    if (tick - this.sinceTick < rule.windowTicks) {
+      return false;
+    }
+    this.restart(gap, tick);
+    return true;
+  }
+
+  /** Heads the detour for `(x, y)`, `gap` away, judging progress toward it from `tick`. */
+  public headFor(x: number, y: number, gap: number, tick: number): void {
+    this.way.x = x;
+    this.way.y = y;
+    this.hasWay = true;
+    this.restart(gap, tick);
+  }
+
+  /** Drops the waypoint: the unit chases straight again, `gap` from its target at `tick`. */
+  public dropWaypoint(gap: number, tick: number): void {
+    this.hasWay = false;
+    this.restart(gap, tick);
+  }
+
+  private restart(gap: number, tick: number): void {
+    this.closest = gap;
+    this.sinceTick = tick;
+  }
+}

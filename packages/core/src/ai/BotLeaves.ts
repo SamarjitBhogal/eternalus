@@ -132,7 +132,8 @@ export class BotLeaves {
   /**
    * Attacks `turn.enemy`, may cast at it, and closes in until it is in reach. An enemy on ground
    * the nav grid blocks (inside a tower's fort court) is closed in on as a siege closes in, so the
-   * bot follows it inside instead of waiting at the edge (DEC-189).
+   * bot follows it inside instead of waiting at the edge (DEC-189). A bot stuck on the way goes
+   * round (`goRound`, DEC-193).
    */
   public fight(turn: BotTurn): BtStatus {
     const { state, id, enemy } = turn;
@@ -143,6 +144,9 @@ export class BotLeaves {
     const isHolding = BotLeaves.attackAndHold(turn, enemy, state.entities.isInReach(id, enemy));
     this.mayCast(turn, enemy, at);
     if (isHolding) {
+      return 'running';
+    }
+    if (BotLeaves.goRound(turn)) {
       return 'running';
     }
     const isOnOpenGround = state.world?.grid.isWalkableAt(at.x, at.y) ?? true;
@@ -177,17 +181,33 @@ export class BotLeaves {
    * Attacks `turn.objective` (11 §4.2 `Push`): A\* to the edge of its footprint on the bot's side
    * (from its collider radius), then straight at it for the last step, holding once it is in
    * reach (B66-F1, `closeIn`). The edge faces the bot, so a Stronghold behind its wall ring is
-   * reached through the ring's gate instead of leaned on from outside.
+   * reached through the ring's gate instead of leaned on from outside. A bot stuck on the way goes
+   * round (`goRound`, DEC-193).
    */
   public siege(turn: BotTurn): BtStatus {
     const { state, id, objective } = turn;
     if (objective === null) {
       return 'failure';
     }
-    if (BotLeaves.attackAndHold(turn, objective.id, state.entities.isInReach(id, objective.id))) {
+    const isInReach = state.entities.isInReach(id, objective.id);
+    if (BotLeaves.attackAndHold(turn, objective.id, isInReach) || BotLeaves.goRound(turn)) {
       return 'running';
     }
     return this.closeIn(turn, objective, objective.radius);
+  }
+
+  /**
+   * Heads the bot for its detour waypoint while the stuck detection has one for it (`StuckSystem`,
+   * owner 2026-11-05, DEC-193): the A\* way round to its attack target, so it does not press a wall
+   * forever. Returns whether it did.
+   */
+  private static goRound(turn: BotTurn): boolean {
+    const way = turn.state.entities.detourWaypointOf(turn.id);
+    if (way === null) {
+      return false;
+    }
+    BotLeaves.steer(turn, { x: way.x - turn.position.x, y: way.y - turn.position.y });
+    return true;
   }
 
   /** Finds the anchor of the most advanced allied horde on `lane`. */

@@ -125,6 +125,19 @@ export type GuardAggroRuleDefinition = AggroRuleDefinition & { readonly controll
 /** Any aggro profile; `controller` names the one controller that may read it (AI56-F9). */
 export type AggroProfileDefinition = HordeAggroRuleDefinition | GuardAggroRuleDefinition;
 
+/**
+ * When a unit chasing its attack target counts as stuck, and how it then goes round (owner
+ * 2026-11-05, DEC-193): a mob or bot Legend that has not come `minProgress` closer to its target
+ * (or to its detour waypoint) for `windowSeconds`, and is not in reach, follows the nav grid's A\*
+ * path to it instead of pressing on in a straight line. Metres and seconds.
+ */
+export type StuckDetectionRule = {
+  readonly windowSeconds: number;
+  readonly minProgress: number;
+  /** A detouring unit this close to its waypoint asks A\* for the next one. */
+  readonly waypointRadius: number;
+};
+
 /** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */
 export type AiMemory = Readonly<Record<string, string | number | boolean | null>>;
 
