@@ -16,6 +16,29 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion follow-ups: 12 better-than-design items for the tidy PR (critics A and B on
+      `fix/minion-stack-followups`, 2026-11-05; DEC-219 (d)) — sign-off per item.** Built on that
+      branch: leash decision parts built once (A4), one outline and aim rule (B1), `BotLeaves`
+      split (A8, also a should-fix). Not built, proposed for the tidy PR after the playtest PRs
+      (DEC-218): (A1) zone and other level sources raise minion levels through an event
+      (`minion-levels-granted`), not a call to `VeterancySystem`; (A2) levelling is plan data
+      (`GuardPlanDefinition.levels`): today zone defenders on non-neutral posts would level with
+      no owner decision; (A3) a breakability rule names what it counts
+      (`{ kind: 'allied-structures-down', structureKind: 'buff-tower', fraction }`) and its
+      evaluators move out of `content/`; (A5) `ghostFirstWaveTicks` becomes
+      `ghostFirstWaveSeconds` like the other durations; (A6) `Simulation` composes
+      `AllyDamageTally` (`GameState.ts` drops the reference today); (A7) "camp cleared" comes from
+      plan data, not from the group respawn rule; (B2) one guard-leash test helper instead of
+      three copies (`GuardController`, `GuardWithinLeashInvariant`, `StuckSystem`); (B3) content
+      says `mapBody?: 'outline' | 'body'` instead of `hasMapFootprint` plus `isBlocking`, and
+      that decides the pool; (B4) docs 07 §1 and 04 §3 adopt footprint polygons over one
+      `ConvexPolygon` collider; (B5) spawn placement passes the footprint so
+      `Structure.installComponents` adds it; (B6) stuck detection watches units that can move (a
+      capability), not units with a `ControllerBinding`; (B7) a dead-end waypoint within
+      `waypointRadius` is dropped (inferred, not measured). Full findings:
+      `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r1.md`.
+      Approve all, approve some, or say no.
+
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
       cannot pass as written since M2c: a horde holds at its next standing objective, and the

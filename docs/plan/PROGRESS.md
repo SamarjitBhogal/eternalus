@@ -5035,3 +5035,14 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   and `fix/minion-stack-followups`.
 - Checks run: `npx prettier --check` and `npm run docs:check` on the changed docs (docs-only).
 - Next step: build DEC-215 to DEC-217 on their branches; confirm the DEC-217 (12) wall reading.
+
+### 2026-11-05 — Phase 3 / owner answers DEC-219, two DEC pointers, follow-ups INBOX item — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: the owner answered four questions through the question dialog. DEC-219 records
+  them: the fort wall that took the killing hit falls with its tower (confirms DEC-217 (12)), the
+  guard refill counters count attempts, veteran and rallied combine as built, and DEC-217 is built
+  on its own branch after `fix/minion-stack-followups`. DEC-165 now points to doc 18
+  "Implementation status" (was §9, the tests section) and DEC-181 to doc 18 §7 (was §7.1). A new
+  INBOX item lists the 12 better-than-design items from the follow-ups critics for sign-off.
+- Checks run: `npx prettier --check` and `npm run docs:check` (docs-only).
+- Next step: build DEC-217 (12), (15), (17) on a new branch after the follow-ups PR.
