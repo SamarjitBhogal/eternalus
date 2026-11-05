@@ -11,7 +11,7 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) or a
- * tower guard (DEC-165) that kills a lane minion or a tower guard counts the kill in its
+ * tower guard (DEC-165) that kills a lane minion, a tower guard or a camp mob counts the kill in its
  * `Veterancy`; each level it gains (`gainLevels`) raises its max health by `healthPerLevel` of its
  * base health (healing by the same) and adds a stack of the veteran status. Every
  * `aura.everySeconds`, each unit with a level gives the aura status to the other friendly horde
