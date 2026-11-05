@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-05
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -5002,3 +5002,47 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
   (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
   acceptance; 10 §9 already allows it for the MVP.
+
+### 2026-11-04 — Phase 3 / owner rulings of 2026-11-04 — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answers of 2026-11-04 in the decisions log (two batches):
+  DEC-160 to DEC-169, DEC-180 and DEC-181 (minion-stack follow-ups; DEC-160 and DEC-165 carry
+  their same-day amendments) and DEC-182 to DEC-189 (playtest fixes; DEC-188 lists three defaults
+  to confirm). DEC-170 to DEC-179 are other sessions' and are not written. `INBOX.md`: the M4
+  done-when item is answered (DEC-167); answers added under Minion M6, M5b, M3, the unit-cap item
+  and HC-Q6. Minion plan: phase M9 (crowd avoidance, DEC-180) and a stand-in row; the healing
+  stand-in row names DEC-188. Phase 4 sprint 4.4: the weapon hit model (DEC-184). No design text in
+  `docs/architecture/` is edited: it goes with each code PR. Second pass (2026-11-05): critic r1 fixes
+  (camp-mob wording in DEC-165 and DEC-166 marked "as built"; DEC-168 list of B2 to B9 corrected
+  against the audit); DEC-183, DEC-185, DEC-186, DEC-187 and DEC-188 amended with the owner's
+  answers of 2026-11-05; new batch DEC-190 to DEC-193 (XP rework, sign-offs, facing chevron, stuck
+  units and leash); `INBOX.md`: the deferred walkable-walls item. Open: the audit's items B3 and
+  B5 have no named owner in the runner reports. The owner answered the DEC-193 leash question
+  ("Lane minions only") and three minimap defaults (DEC-187) on 2026-11-05.
+- Checks run (`npm run check`, 2026-11-05, log `eternalus-agent-work/playtest-2026-11-04/check-rulings-r2.log`):
+  `All matched files use Prettier code style!`; core `Tests  1079 passed (1079)`; client
+  `Tests  1754 passed (1754)`; `✓ built in 311ms`; `Documentation check passed.`; `exit 0`.
+- Next step: the code PRs (`fix/minion-stack-followups`, `fix/click-attack-units`,
+  `feat/local-minimap`, `feat/structure-xp`, `feat/out-of-combat-heal`) update the architecture
+  docs and cite these DEC numbers.
+
+### 2026-11-05 — Phase 3 / owner answers from the decision page — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: the owner answered 22 open calls (heal, facing, tower access, better-than-design
+  B1 to B5) on a decision page. The answers are DEC-215 to DEC-218 in the owner decisions log; his
+  words are verbatim in `eternalus-agent-work/playtest-2026-11-04/OWNER-ANSWERS.md` ("Round 3").
+  No code changes here: the code follows on `feat/out-of-combat-heal`, `feat/unit-facing-chevron`
+  and `fix/minion-stack-followups`.
+- Checks run: `npx prettier --check` and `npm run docs:check` on the changed docs (docs-only).
+- Next step: build DEC-215 to DEC-217 on their branches; confirm the DEC-217 (12) wall reading.
+
+### 2026-11-05 — Phase 3 / owner answers DEC-219, two DEC pointers, follow-ups INBOX item — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: the owner answered four questions through the question dialog. DEC-219 records
+  them: the fort wall that took the killing hit falls with its tower (confirms DEC-217 (12)), the
+  guard refill counters count attempts, veteran and rallied combine as built, and DEC-217 is built
+  on its own branch after `fix/minion-stack-followups`. DEC-165 now points to doc 18
+  "Implementation status" (was §9, the tests section) and DEC-181 to doc 18 §7 (was §7.1). A new
+  INBOX item lists the 12 better-than-design items from the follow-ups critics for sign-off.
+- Checks run: `npx prettier --check` and `npm run docs:check` (docs-only).
+- Next step: build DEC-217 (12), (15), (17) on a new branch after the follow-ups PR.
