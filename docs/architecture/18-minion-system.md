@@ -390,7 +390,11 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   and wall avoidance**, then **separation from all neighbours** (through `SpatialHash`,
   [10 §5](10-physics.md#5-broad-phase-spatialhash), id-ordered), then the strategy's target, then
   the lane flow field when the straight line to the slot is blocked (MS-19); a march the field
-  cannot route there holds. An engaging mob on walkable ground never follows the lane field,
+  cannot route there holds. Separation alone never stalls a mob that is still pulled toward its
+  target: when the push cancels the pull (a unit ahead that does not give way), the mob steps a
+  quarter turn to the same side of its pull every time, so two mobs that meet head-on pass; a mob with no pull
+  settles. A crowd pressed into a gap may shuffle; 10 §9's `AvoidanceStrategy` is the upgrade if
+  playtests show it. An engaging mob on walkable ground never follows the lane field,
   which leads to the lane's end rather than to its target: where the line to its target is
   blocked it holds, keeping obstacle avoidance first. The final heading, separation
   included, is checked the same way, so no push steers a mob onto unwalkable ground: a heading
