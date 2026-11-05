@@ -5022,3 +5022,20 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   and `docs:check` were re-run after it.
 - Next step: add the DEC rows (DEC-187 text "Legends and all mobs", the G1 outline answer),
   merge the sibling `unit-facing-chevron` work, then the pre-PR gate.
+
+### 2026-11-05 — Phase 3 / playtest fixes: unit facing chevron — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: units keep a facing and show it with a gold chevron (DEC-192), main view only.
+  Commit `3f4bd38`: `Transform.facing` (a unit vector), `MovementSystem` turns along the velocity,
+  `CombatSystem` turns to a target in reach, the snapshot carries the facing, the views draw the
+  chevron, `EntityLayer` blends it between ticks. Critic round 1 fixes (this round, uncommitted):
+  `Transform.lookAt(point)` replaces the scratch vector in `CombatSystem`; `isInReach` no longer
+  allocates for a unit target; `finite-transforms` also checks the facing (unit length, tolerance in
+  `FiniteTransformsInvariant.constants.ts`); new tests for `lookAt`, a steered attacker, a
+  `cannot-attack` unit and a map-object target, each seen red first. Docs: architecture 03, 04 §3
+  (the facing rules), 06 §8, 08 §8 and 10 §10 follow the code. INBOX has one open item with two
+  owner questions (start facing, ring colour).
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1096 passed (1096)"; client "Tests 1771 passed (1771)"; "✓ built in 283ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: critic round 2, then ponytail review, then the PR after #77.

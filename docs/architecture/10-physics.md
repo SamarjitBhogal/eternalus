@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-05
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -251,6 +251,8 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   `packages/core`).
 - Steering and aiming work with vectors, never angles: facing is a unit vector, rotation is a
   2 × 2 multiply, "turn toward" is a normalised lerp. `atan2` is for display only (client side).
+  Core turns a unit at once (`Transform.face`, `Transform.lookAt`); the normalised lerp is client
+  drawing between two ticks and changes no state.
 - Fixed iteration order everywhere: entities in store (creation) order (DEC-20), hash query results
   sorted by id, pairs `(a < b)`, comparators that tie-break by id, no `Map` iteration in hot paths.
 - No `Math.random` in physics; the only randomness (jitter for coincident

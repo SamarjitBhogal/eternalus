@@ -245,8 +245,10 @@ flowchart LR
 - `ViewRegistry` (Registry pattern) maps entity `kind` → `EntityView`; `DefaultEntityView` draws
   a definition sprite for kinds without a bespoke view. Views read snapshots through `import type`
   only and never mutate state (rule 6).
-- Interpolation: views draw `prev + (current - prev) × alpha` for position and facing; entities
-  that appeared this tick draw at `current` (no ghost from the origin).
+- Interpolation: views draw `prev + (current - prev) × alpha` for position. The facing uses the
+  same blend, scaled back to length 1 (`EntityLayer.turn`), and takes `current` when the two
+  facings are opposite. Entities that appeared this tick draw at `current` (no ghost from the
+  origin).
 - `MinimapView` runs at a lower cadence into the `'minimap'` layer (`06-map-and-minimap.md` §8).
 
 ## 9. Performance budget and how it is measured
