@@ -5,6 +5,7 @@ import type { BridgeEventMap } from '../bridge/events';
 import { isSelectableClass } from '../bridge/selectionRules';
 import { TypedEventBus } from '../bridge/TypedEventBus';
 import { MemoryReportWriter } from '../data/logging/MemoryReportWriter';
+import { withPlayer } from './__fixtures__/withPlayer';
 import { firstAvailableSpecId, shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { DeviceIntentSource } from './DeviceIntentSource';
 import { Camera } from './engine/Camera';
@@ -21,8 +22,9 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.co
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { MatchViewport } from './MatchViewport.types';
+import { prepareMatchWorld } from './prepareMatchWorld';
+import { withPlayerTeam } from './withPlayerTeam';
 import type { MatchFactory } from './SessionController.types';
-import { seatedConfig } from './seatedConfig';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
 import { flushMicrotasks, testReporter, testSession } from './testSessionDeps';
 
@@ -59,9 +61,11 @@ describe('SessionController with the real match, end to end', () => {
       const document = new FakeBrowserTarget();
       const scheduler = new FakeFrameScheduler();
       const simulation = new Simulation({
-        config: seatedConfig(CONFIG, request.world.map, request.player),
+        config: withPlayerTeam(CONFIG, request.setup.playerTeam),
+        roster: request.roster.filter(({ pilot }) => pilot === 'human'),
         seed: request.setup.seed,
         logger: new NullLogger(),
+        map: request.world.map,
       });
       const unsubscribed: number[] = [];
       const subscribe = simulation.on.bind(simulation);
@@ -86,7 +90,6 @@ describe('SessionController with the real match, end to end', () => {
         renderer,
         camera,
         input: new DeviceIntentSource([keyboard, mouse], mapper),
-        player: request.player,
         logger: new NullLogger(),
         onCrash: request.onCrash,
         bridge: {
@@ -245,7 +248,7 @@ describe('SessionController with the real match, end to end', () => {
 
     expect(first?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(first, firstCanvas)).toBe(0);
-    // The match makes no simulation subscription of its own (core spawns the player from the seat).
+    // The match makes no simulation subscription of its own (core spawns the player from the roster).
     expect(first?.unsubscribed).toEqual([]);
     expect(session.bus.listenerCount()).toBe(busWithOne);
 
@@ -258,14 +261,14 @@ describe('SessionController with the real match, end to end', () => {
 
   it('spawns every selectable class of the shipped catalogue as a Legend', () => {
     const selectable = shippedCatalogue().load().legendClasses.filter(isSelectableClass);
+    const { map } = prepareMatchWorld(CONFIG, 1);
     expect(selectable.length).toBeGreaterThan(0);
     for (const { classId } of selectable) {
       const simulation = new Simulation({
-        config: createDefaultGameConfig({
-          match: { seat: { definitionId: classId, at: { x: 10, y: 10 } } },
-        }),
+        ...withPlayer(CONFIG, { legend: classId, team: 'light' }),
         seed: 1,
         logger: new NullLogger(),
+        map,
       });
       const { match, entities } = simulation.snapshot();
       const kinds = entities

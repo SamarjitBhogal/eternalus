@@ -93,6 +93,8 @@ export type { ScheduledMark } from './state/MatchState.types';
 export type { LegendStats, TeamStats } from './state/ScoringState.types';
 export type { EntitySnapshot, MatchSnapshot, Snapshot } from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
+// DEC-178: the client uses core's "other team" rule instead of a copy.
+export { opponentOf } from './teams/playableTeams';
 export type { PlayableTeam, Team } from './teams/teams.types';
 export { isPointInPolygon } from './utils/geometry';
 export type { Polygon, Rect, Vec2 } from './utils/geometry.types';

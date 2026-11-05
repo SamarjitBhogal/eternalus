@@ -6,6 +6,7 @@ import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { MapDefinition, MapFeature } from './content/maps/maps.types';
 import { SPAWN_WAVES } from './content/structures/spawnWaves';
+import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
@@ -17,17 +18,25 @@ import { LaneRoutes } from './state/LaneRoutes';
 import type { PlayableTeam } from './teams/teams.types';
 import { isPointInPolygon } from './utils/geometry';
 import type { Vec2 } from './utils/geometry.types';
+import { countdownTicks } from './config/countdownTicks';
 
 /** Both teams' bots as the client composes them: laners plus a Rover that starts in its palace. */
 const roster = (legendsPerTeam: number): RosterSlot[] =>
   (['light', 'dark'] as const).flatMap((team) => [
     ...Array.from({ length: legendsPerTeam - 1 }, () => ({
+      pilot: 'bot' as const,
       team,
       definitionId: 'warrior',
       role: 'laner' as const,
       difficulty: 'normal',
     })),
-    { team, definitionId: 'warrior', role: 'rover' as const, difficulty: 'rover' },
+    {
+      pilot: 'bot' as const,
+      team,
+      definitionId: 'warrior',
+      role: 'rover' as const,
+      difficulty: 'rover',
+    },
   ]);
 
 /** A team's lane tower: a SpawnerTower or BuffTower on its own lane. */
@@ -122,8 +131,8 @@ describe('Simulation with a roster and map objects (as the client builds a match
       const towers = laneTowers(map);
       // The opening hordes leave at tick 0 and the countdown holds every unit (DEC-88); every
       // horde after it is one tower's.
-      const countdownTicks = Math.round(config.match.countdownSeconds * config.tickRate);
-      for (let tick = 0; tick < countdownTicks; tick += 1) {
+      const countdownEnd = countdownTicks(config.match.countdownSeconds, config.tickRate);
+      for (let tick = 0; tick < countdownEnd; tick += 1) {
         simulation.step();
       }
       const sent: { readonly tower: LaneTower; readonly memberIds: readonly string[] }[] = [];
@@ -285,4 +294,63 @@ describe('Simulation with a roster and map objects (as the client builds a match
       `${targets[1] ?? ''}:invalid-target`,
     ]);
   });
+
+  // Fort walls reach past a tower's collider, so the plain guard ring lands in them (seeds 1, 2:
+  // 35 guards); one spawner-tower post per team is blocked straight out to past its leash.
+  it.each([1, 2])(
+    'stands every tower guard clear of map objects and inside its leash (seed %i)',
+    (seed) => {
+      const config = createDefaultGameConfig();
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+        debug: TEST_DEBUG_CONFIG,
+      });
+
+      // Every invariant, every tick, throwing: `no-map-object-overlap` and `guard-within-leash`.
+      expect(() => {
+        for (let tick = 0; tick < 2; tick += 1) {
+          simulation.step();
+        }
+      }).not.toThrow();
+      const guards = simulation
+        .snapshot()
+        .entities.filter(({ definitionId }) => definitionId.endsWith('-guard'));
+      expect(guards.length).toBeGreaterThan(0);
+    },
+  );
+
+  // A camp's fire blocks its posts and, on the coarse nav grid, its whole leash (seed 1: two
+  // mirrored camps); the camp mobs must still stand clear of it.
+  it.each([1, 2])(
+    'stands every camp mob clear of map objects once camps fill (seed %i)',
+    (seed) => {
+      const config = createDefaultGameConfig({ match: { countdownSeconds: 1 } });
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+        debug: TEST_DEBUG_CONFIG,
+      });
+
+      expect(() => {
+        for (let tick = 0; tick < config.tickRate + 3; tick += 1) {
+          simulation.step();
+        }
+      }).not.toThrow();
+      const campMobs = simulation
+        .snapshot()
+        .entities.filter(({ definitionId }) => definitionId.endsWith('-camp-mob'));
+      expect(campMobs.length).toBeGreaterThan(0);
+    },
+  );
 });

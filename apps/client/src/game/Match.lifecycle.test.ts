@@ -12,15 +12,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap, MatchClock } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.constants';
-import type { MatchDeps, PlayerChoice, PreparedWorld } from './Match.types';
+import type { MatchDeps, PreparedWorld } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { seatedConfig } from './seatedConfig';
 
 const CONFIG = createDefaultGameConfig();
 const TICK_MS = MS_PER_SECOND / CONFIG.tickRate;
@@ -50,9 +50,10 @@ function matchDeps(
   const clocks: MatchClock[] = [];
   bus.on('match-clock', (clock) => clocks.push(clock));
   const simulation = new Simulation({
-    config: seatedConfig(CONFIG, world.map, player),
+    ...withPlayer(CONFIG, player),
     seed: 1,
     logger: simulationLogger,
+    map: world.map,
   });
   const unsubscribes = { count: 0 };
   const subscribe = simulation.on.bind(simulation);
@@ -71,7 +72,6 @@ function matchDeps(
     renderer: new RecordingRenderer(),
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: { read: () => STILL },
-    player,
     logger: new NullLogger(),
     onCrash: vi.fn<MatchDeps['onCrash']>(),
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
@@ -95,40 +95,44 @@ function build(world?: PreparedWorld) {
 }
 
 describe('Match lifecycle', () => {
-  it('refuses a map without a stronghold for the player team', () => {
+  it('cannot be built on a map without a Stronghold for the player team: its simulation throws first', () => {
     const world = prepareMatchWorld(CONFIG, 1);
     const { map } = world;
     const withoutLight = {
       ...map,
       features: map.features.filter((feature) => feature.team !== 'light'),
     };
-    const { deps, on } = matchDeps({ ...world, map: withoutLight });
 
-    expect(() => new Match({ ...deps, player: WARRIOR })).toThrow(
-      `Map "${map.id}" has no light stronghold`,
+    // Core spawns the human slot, a Rover, at its team's Stronghold, so no simulation exists to build on.
+    expect(() => matchDeps({ ...world, map: withoutLight }, WARRIOR)).toThrow(
+      "The map has no light Stronghold for the human's Legend.",
     );
-    expect(on).not.toHaveBeenCalled();
   });
 
-  it('logs ERROR core.match naming the class id and the reason when the seat cannot spawn, and has no player', () => {
+  it('logs ERROR core.match naming the class id and the reason when the human slot cannot spawn, and has no player', () => {
     const logger = new MemoryLogger();
     const stale: PlayerChoice = { legend: 'stale-class', team: 'dark' };
     const world = prepareMatchWorld(CONFIG, 1);
     const { deps } = matchDeps(world, stale, logger);
     const match = new Match(deps);
+    const { map } = world;
+    const view = deps.camera.visibleArea(map.width, map.height);
 
     match.tick();
 
     const errors = logger.records.filter((record) => record.severityText === 'ERROR');
     expect(errors.map(({ scope, attributes }) => [scope, attributes])).toEqual([
-      ['core.match', { definitionId: 'stale-class', reason: 'unknown-kind' }],
+      ['core.match', { definitionId: 'stale-class', reason: 'unknown-definition' }],
     ]);
     expect(errors[0]?.body).toContain('"stale-class"');
-    expect(errors[0]?.body).toContain('unknown-kind');
+    expect(errors[0]?.body).toContain('unknown-definition');
     expect(match.playerEntityId).toBeNull();
+    // With no Legend to follow, the camera starts on the middle of the map.
+    expect(view.x + view.width / 2).toBeCloseTo(map.width / 2);
+    expect(view.y + view.height / 2).toBeCloseTo(map.height / 2);
   });
 
-  it('logs no error when the seat spawns, nor for a rejected command that is not the seat', () => {
+  it('logs no error when the human slot spawns, nor for a rejected command that is not the human slot', () => {
     const logger = new MemoryLogger();
     const { deps } = matchDeps(undefined, PLAYER, logger);
     const match = new Match(deps);
@@ -147,24 +151,28 @@ describe('Match lifecycle', () => {
     expect(logger.records.filter((record) => record.severityText === 'ERROR')).toEqual([]);
   });
 
-  // DEC-149 (7): the player's Legend is the one core spawns from the seat (A19), never a roster bot
-  // of the same class and team. Core reports its id, so `Match` knows it before any tick.
+  // DEC-149 (7): the player's Legend is the one core spawns from the roster's human slot, never a
+  // bot of the same class and team. Core reports its id, so `Match` knows it before any tick.
   it('adopts its own spawn, never a roster bot of the same class and team (DEC-149)', () => {
     const world = prepareMatchWorld(CONFIG, 1);
-    const roster: readonly RosterSlot[] = [
-      { team: PLAYER.team, definitionId: PLAYER.legend, role: 'laner', difficulty: 'normal' },
-    ];
+    const bot: RosterSlot = {
+      pilot: 'bot',
+      team: PLAYER.team,
+      definitionId: PLAYER.legend,
+      role: 'laner',
+      difficulty: 'normal',
+    };
     const { map, mapObjects } = world;
-    const simulationOf = (config: GameConfig) =>
-      new Simulation({ config, seed: 1, logger: new NullLogger(), map, mapObjects, roster });
+    const simulationOf = (options: { config: GameConfig; roster: readonly RosterSlot[] }) =>
+      new Simulation({ ...options, seed: 1, logger: new NullLogger(), map, mapObjects });
     const twinIds = (simulation: Simulation) =>
       simulation
         .snapshot()
         .entities.filter(({ kind, team }) => kind === PLAYER.legend && team === PLAYER.team)
         .map(({ id }) => id);
-    // The same build without the seat spawns the roster bot alone, so this is the bot's id.
-    const bots = twinIds(simulationOf(CONFIG));
-    const simulation = simulationOf(seatedConfig(CONFIG, map, PLAYER));
+    // The same build without the human slot spawns the roster bot alone, so this is the bot's id.
+    const bots = twinIds(simulationOf({ config: CONFIG, roster: [bot] }));
+    const simulation = simulationOf(withPlayer(CONFIG, PLAYER, [bot]));
     const match = new Match({ ...matchDeps(world).deps, simulation });
     const twins = twinIds(simulation);
 
@@ -216,7 +224,7 @@ describe('Match lifecycle', () => {
     const play = (): number => {
       let move = { x: 1, y: 0 };
       const input = { read: (): InputIntent => ({ move, aim: null, triggered: [] }) };
-      const match = new Match({ ...matchDeps().deps, input, player: WARRIOR });
+      const match = new Match({ ...matchDeps().deps, input });
       match.resize(1280, 720, 1);
       for (let tick = 0; tick < 300; tick += 1) {
         move = tick < 150 ? { x: 1, y: 0 } : { x: 0, y: 1 };
@@ -272,7 +280,7 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    // The match subscribes to nothing (core spawns the player from the seat), so nothing to drop.
+    // The match subscribes to nothing (core spawns the player from the roster), so nothing to drop.
     expect(on).not.toHaveBeenCalled();
     expect(unsubscribes.count).toBe(0);
   });

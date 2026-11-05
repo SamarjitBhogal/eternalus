@@ -1,4 +1,4 @@
-import type { BotRosterDefinition } from '@eternalus/core';
+import { opponentOf, type BotRosterDefinition } from '@eternalus/core';
 
 import type { PlayableTeam } from '../../bridge/domain.types';
 import type { LegendClassCard } from '../../bridge/catalogue.types';
@@ -59,6 +59,10 @@ export function buildMatchSetup(inputs: {
       };
     });
   const playerTeam: PlayableTeam = rng.nextInt(2) === 0 ? 'light' : 'dark';
-  const enemyTeam: PlayableTeam = playerTeam === 'light' ? 'dark' : 'light';
-  return { seed, playerTeam, allies: roster(playerTeam, true), enemies: roster(enemyTeam, false) };
+  return {
+    seed,
+    playerTeam,
+    allies: roster(playerTeam, true),
+    enemies: roster(opponentOf(playerTeam), false),
+  };
 }

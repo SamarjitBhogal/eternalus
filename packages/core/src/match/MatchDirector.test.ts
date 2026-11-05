@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { MatchPhase } from '../config/matchPhases';
-import { MATCH_PHASES } from '../config/matchPhases';
+import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { MemoryLogger } from '../diagnostics/MemoryLogger';
 import type { GameEventMap } from '../state/GameEvents.types';
 import { GameState } from '../state/GameState';
@@ -14,6 +14,7 @@ import { createDefaultTimelineActions } from './defaultTimelineActions';
 import type { DirectorContext } from './DirectorContext.types';
 import { MatchDirector } from './MatchDirector';
 import type { MatchPhaseRegistry, MatchPhaseState } from './MatchPhaseState.types';
+import type { MatchDirectorOptions } from './MatchDirector.types';
 import { MatchTimeline } from './MatchTimeline';
 import type { ResolvedTimelineEntry } from './MatchTimeline.types';
 import type { Scoring } from './Scoring';
@@ -79,11 +80,15 @@ const setUp = (
     conditions = [],
     config = createDefaultGameConfig(),
     scoring = () => ({ fold: () => undefined }),
+    hasher = new StateHasher(),
+    terminal = TERMINAL_MATCH_PHASES,
   }: {
     readonly conditions?: readonly VictoryCondition[];
     readonly config?: GameConfig;
     /** Builds the scoring double from the phase log. */
     readonly scoring?: (log: string[]) => Pick<Scoring, 'fold'>;
+    readonly hasher?: MatchDirectorOptions['hasher'];
+    readonly terminal?: readonly MatchPhase[];
   } = {},
 ) => {
   const log: string[] = [];
@@ -105,6 +110,8 @@ const setUp = (
     timeline,
     actions: createDefaultTimelineActions(),
     order: MATCH_PHASES,
+    terminal,
+    hasher,
     debug: { throwOnViolation },
     logger,
     conditions,
@@ -352,11 +359,31 @@ describe('MatchDirector', () => {
       expect(state.match.result?.teams).toEqual({ light: { score: 15 }, dark: { score: 0 } });
     });
 
+    it('takes finalHash from the injected hasher', () => {
+      const { state, stepTo } = setUp(FAKE_TIMELINE, true, {
+        conditions: [new ScriptedCondition(LIGHT_WINS)],
+        hasher: { hash: () => 0xfeed },
+      });
+
+      stepTo(12);
+
+      expect(state.match.result?.finalHash).toBe(0xfeed);
+    });
+
+    it('treats only the injected terminal phases as terminal', () => {
+      const { state, stepTo } = setUp([enter('after', 1, 'defeat')], true, { terminal: [] });
+      state.match.setPhase('victory');
+
+      stepTo(1);
+
+      expect(state.match.phase).toBe('defeat');
+    });
+
     it('marks a match with a human Legend as hadHuman', () => {
       const { state, stepTo } = setUp(FAKE_TIMELINE, true, {
         conditions: [new ScriptedCondition(LIGHT_WINS)],
       });
-      state.match.humanLegendId = 'entity-1';
+      state.match.seatHuman('entity-1');
 
       stepTo(12);
 
@@ -427,7 +454,7 @@ describe('MatchDirector', () => {
       'throws on any move out of %s, even one forward in the phase order',
       (terminal) => {
         const { log, state, stepTo } = setUp([enter('after', 1, 'defeat')]);
-        state.setPhase(terminal);
+        state.match.setPhase(terminal);
 
         expect(() => {
           stepTo(1);
@@ -441,7 +468,7 @@ describe('MatchDirector', () => {
 
     it('with throwOnViolation off, logs a move out of a terminal phase and skips it', () => {
       const { state, stepTo, logger } = setUp([enter('after', 1, 'defeat')], false);
-      state.setPhase('victory');
+      state.match.setPhase('victory');
 
       stepTo(2);
 

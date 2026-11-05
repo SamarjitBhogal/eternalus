@@ -2,6 +2,7 @@ import type { Command } from '../commands/Command.types';
 import type { BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { LaneObjective } from '../state/LaneStructures.types';
 import type { PlayableTeam } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
 import type { SeededRandom } from '../utils/SeededRandom';
@@ -45,6 +46,8 @@ export type BotTurn = {
   readonly commands: Command[];
   /** The enemy `Fight` chose, once its condition found one. */
   enemy: EntityId | null;
+  /** The enemy structure `Push` attacks, once its condition found one in reach of the lane. */
+  objective: LaneObjective | null;
   /** Where a moving branch goes, once its condition found the way. */
   destination: Vec2 | null;
 };

@@ -20,7 +20,7 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Matc
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
-import { seatedConfig } from './seatedConfig';
+import { withPlayerTeam } from './withPlayerTeam';
 import type { SettingsController } from './settings/SettingsController';
 import type { MatchFactory } from './SessionController.types';
 
@@ -68,22 +68,23 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
 /**
  * The browser match factory `main.tsx` binds (13 §10; 13 §2's injected `createMatch`). Each call
  * builds the adapters (renderer, camera, devices, mapper, logger, frame scheduler), a fresh
- * `Simulation(setup.seed)` on `request.world`'s map and map objects with the setup's bots as its
- * roster, the `Match` on the same world and its `MatchHost`, then starts the host, which owns
- * everything from then on. The match log records the seed first.
+ * `Simulation(setup.seed)` on `request.world`'s map and map objects with `request.roster` (the
+ * setup's bots and the player's human slot) as its roster, the `Match` on the same world and its
+ * `MatchHost`, then starts the host, which owns everything from then on. The match log records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
     const { window, gameConfig, settings } = deps;
-    // The seat needs the team's stronghold: a map without one fails here, before anything is built.
-    const config = seatedConfig(gameConfig, request.world.map, request.player);
+    // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
+    // without one throws in `Simulation`, below.
+    const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
     const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');
     }
-    // The match points the camera at the player's spawn, so its start point does not matter.
+    // The match points the camera at the player's Legend, so its start point does not matter.
     const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
     const ring = new RingBufferSink(LOG_RING_CAPACITY);
     const logger = createMatchLogger(deps, ring);
@@ -112,7 +113,6 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         renderer,
         camera,
         input,
-        player: request.player,
         logger,
         onCrash: request.onCrash,
         bridge: {

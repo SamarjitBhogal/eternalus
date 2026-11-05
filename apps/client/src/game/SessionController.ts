@@ -19,7 +19,7 @@ import type {
   SessionControllerDeps,
   SessionState,
 } from './SessionController.types';
-import { botRosterSlots } from './session/botRosterSlots';
+import { rosterSlots } from './session/rosterSlots';
 import { buildMatchSetup } from './session/buildMatchSetup';
 import { fillRosters } from './session/fillRosters';
 import { IllegalSessionTransition } from './session/IllegalSessionTransition';
@@ -237,9 +237,8 @@ export class SessionController {
       {
         setup: { ...setup, ...rosters },
         world,
-        player: { legend: selection.classId, team: setup.playerTeam },
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
-        roster: botRosterSlots(rosters, this.context.catalogue.botRoster.difficulties),
+        roster: rosterSlots(rosters, this.context.catalogue.botRoster.difficulties),
         onCrash,
       },
       viewport,

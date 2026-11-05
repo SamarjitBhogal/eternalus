@@ -4,15 +4,21 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-04
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
     'packages/core/src/match/**',
     'packages/core/src/config/matchPhases.ts',
+    'packages/core/src/config/countdownTicks.ts',
     'packages/core/src/config/MatchTimelineEntry.types.ts',
     'packages/core/src/config/timelineMarkTick.ts',
+    'packages/core/src/config/VictoryConditionId.types.ts',
     'packages/core/src/state/MatchState.types.ts',
+    'packages/core/src/state/MatchRecord.ts',
+    'packages/core/src/state/MatchResult.types.ts',
+    'packages/core/src/components/WinObjective.ts',
+    'packages/core/src/diagnostics/invariants/PhaseMonotonicInvariant.ts',
     'packages/core/src/systems/MatchDirectorSystem.ts',
   ]
 related:
@@ -84,10 +90,10 @@ strictly forward; `victory` and `defeat` are terminal.
 | Phase                | Enters when                                                                                                                                             | What happens and who owns it                                                                                                                                                                                                                                                                                                                                                                                                                                         | Status                              |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `countdown`          | tick 0                                                                                                                                                  | At load-in `SpawnSystem` spawns one light horde of `hordeSizes.light` per lane (`map.numLanes`) per team at the lane's base ([18](18-minion-system.md) §3.1, MS-30). No tower spawns (FR-003): every wave's clock starts when the countdown ends (`07` §6). `CountdownPhase` sets `MatchState.isIdleHeld`: every unit is idle and can only turn (no walking, attacks, casts); spawns go on, camps spawn (DEC-81, DEC-84, DEC-88). The director spawns nothing.       | **MVP**                             |
-| `early-game`         | `countdownSeconds` elapsed (`TUNE` 10 s, requirements doc)                                                                                              | Towers spawn a horde every `hordeSpawnIntervalSeconds` (`TUNE` 60 s) and forest camps activate after their cooldown: both are `Spawner` data consumed by `SpawnSystem`, not director logic.                                                                                                                                                                                                                                                                          | **MVP**                             |
+| `early-game`         | `countdownSeconds` elapsed (the value lives in `config/defaultGameConfig.ts`)                                                                           | Towers spawn a horde every `hordeSpawnIntervalSeconds` (`TUNE` 60 s) and forest camps activate after their cooldown: both are `Spawner` data consumed by `SpawnSystem`, not director logic.                                                                                                                                                                                                                                                                          | **MVP**                             |
 | `quarter-mark`       | fraction 0.25 of `plannedMatchSeconds` (game doc "quarter mark")                                                                                        | The `spawn-mini-bosses` action emits one `spawn-requested` per outer-lane `CapturePoint` with the mini-boss table (boss plus support mobs); `CaptureSystem` sets `Capturable.lockedBy` while the boss lives (`07` §7).                                                                                                                                                                                                                                               | **MVP** (mini-boss is MVP, DISC-63) |
 | `mid-game`           | fraction 0.5 (game doc "mid-game")                                                                                                                      | The `summon-greater-boss` action asks the `Cathedral` spawner for the `greater-boss`; `SpawnSystem` fulfils it and emits `boss-summoned`. `state.match.atmosphere` becomes `eternal` (views spread the change outward from the Cathedral by ticks elapsed). `StatusEffectSystem` applies `empowered` to camp units on `phase-changed`; corner camps' side waves start (`SpawnWave.afterPhase: 'mid-game'`, **Recommendation:** a new optional field on `07`'s type). | **MVP-if-time** (with the boss)     |
-| `end-game`           | fraction 0.75, or the first `structure-breakability-changed` that makes a Stronghold wall breakable, whichever is first (**Recommendation:** no source) | Announcer and music only in the MVP; the extension point for late-game rules (score cap, reinforcement waves).                                                                                                                                                                                                                                                                                                                                                       | **MVP** (as a marker)               |
+| `end-game`           | fraction 0.75 (DEC-175), or the first `structure-breakability-changed` that makes a Stronghold wall breakable if sooner (**Recommendation:** no source) | Announcer and music only in the MVP; the extension point for late-game rules (score cap, reinforcement waves).                                                                                                                                                                                                                                                                                                                                                       | **MVP** (as a marker)               |
 | `victory` / `defeat` | a `VictoryCondition` returns a verdict (§6)                                                                                                             | Terminal. `state.match.result` is built, `match-ended { result }` is emitted, the director goes inert. `victory` when `result.winner === state.match.playerTeam`, otherwise `defeat`; a draw (`winner: null`) enters `defeat` and the results screen says so (**Recommendation:** a `draw` phase is one class and one literal if wanted).                                                                                                                            | **MVP**                             |
 
 The reference doc's shorthand `countdown → open → quarter → midgame → … → results` maps onto
@@ -123,7 +129,7 @@ export type MatchTimelineEntry = {
 | `countdown-over`               | `atTick: countdownTicks` | `enter-phase early-game`                                   | requirements doc; DEC-81, DEC-84            |
 | `quarter-mark`                 | `atFraction: 0.25`       | `enter-phase quarter-mark`, then `spawn-mini-bosses outer` | game doc ("quarter mark of the game")       |
 | `mid-game`                     | `atFraction: 0.5`        | `enter-phase mid-game`, then `summon-greater-boss`         | game doc (gem explodes mid-game)            |
-| `end-game`                     | `atFraction: 0.75`       | `enter-phase end-game`                                     | **Recommendation:** no source               |
+| `end-game`                     | `atFraction: 0.75`       | `enter-phase end-game`                                     | the owner's ruling, DEC-175                 |
 | `plannedMatchSeconds`          | `defaultGameConfig.ts`   | the denominator of every fraction                          | DEC-13, DEC-81 (planning length, not a cap) |
 
 `GameConfig` gains `plannedMatchSeconds` (the reference doc calls it `matchLengthTicks`; seconds
@@ -149,8 +155,8 @@ every skipped entry in order, so the world after a jump equals the world after w
 // Sketch: packages/core/src/match/MatchDirector.ts
 export class MatchDirector {
   // MatchDirectorOptions: phases (defaultMatchPhases.ts), timeline (entries sorted by tick),
-  // actions, order (MATCH_PHASES), debug, logger, conditions (defaultVictoryConditions.ts)
-  // and scoring. One object, so a new part does not change every caller.
+  // actions, order (MATCH_PHASES), terminal (TERMINAL_MATCH_PHASES), hasher (finalHash), debug,
+  // logger, conditions (defaultVictoryConditions.ts) and scoring. One object, so a new part does not change every caller.
   public constructor(private readonly options: MatchDirectorOptions) {}
 
   /** Once, before tick 0: enters the first phase with no 'phase-changed', so its rules cover tick 0. */
@@ -172,27 +178,27 @@ export class MatchDirector {
     const from = ctx.state.match.phase;
     assertForward(from, to); // a backwards transition is a bug: throws in tests, logs in the browser
     this.options.phases[from].exit(ctx);
-    ctx.state.setPhase(to); // the only writer of the phase: emits 'phase-changed' { from, to }, stamps phaseEnteredTick
+    ctx.state.match.setPhase(to); // the only writer of the phase: emits 'phase-changed' { from, to }, stamps phaseEnteredTick
     this.options.phases[to].enter(ctx);
   }
 }
 ```
 
 ```ts
-// Sketch: packages/core/src/state/MatchState.types.ts — the director's memory, all plain data
-export type MatchState = {
-  readonly phase: MatchPhase; // written only by GameState.setPhase
+// Sketch: packages/core/src/state/MatchState.types.ts — the director's memory, all plain data; GameState.match is a MatchRecord holding it (03 §2, DEC-177)
+export interface MatchState {
+  readonly phase: MatchPhase; // written only by MatchRecord.setPhase
   readonly phaseEnteredTick: number;
-  timelineCursor: number; // index of the next unfired entry
+  readonly timelineCursor: number; // index of the next unfired entry; written only by MatchRecord.advanceTimeline (DEC-172)
   readonly schedule: readonly { readonly entryId: string; readonly tick: number }[]; // every entry's resolved tick, in firing order; taken from config, so not hashed
-  isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88)
+  readonly isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88); written only by MatchRecord.holdIdle
   readonly playerTeam: PlayableTeam; // chosen at match creation, also in sim mode
-  humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); spectatedLegendId beside it
+  readonly humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); the roster's human slot (DEC-173), set once by MatchRecord.seatHuman; spectatedLegendId beside it
   atmosphere:
     'calm' | { readonly kind: 'eternal'; readonly originId: EntityId; readonly sinceTick: number };
   scoring: ScoringState;
-  result: MatchResult | null;
-};
+  readonly result: MatchResult | null; // set once by MatchRecord.endMatch
+}
 ```
 
 A phase entered at tick T takes effect from step T+1, so the countdown holds steps 0 to T. A
@@ -250,10 +256,10 @@ export interface VictoryCondition {
 }
 ```
 
-| Condition                | Rule                                                                                                                                                                                     | Status  |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `ObjectiveLostCondition` | listens to `entity-died`; when the victim carries `WinObjective` and its team has no other live objective, the other team wins; both teams on one tick → draw (ADR 0021, DEC-71, DEC-77) | **MVP** |
-| `ForfeitCondition`       | the `forfeit` command from the pause or results UI → `aborted`, no winner                                                                                                                | **MVP** |
+| Condition                | Rule                                                                                                                                                                                     | Status            |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `ObjectiveLostCondition` | listens to `entity-died`; when the victim carries `WinObjective` and its team has no other live objective, the other team wins; both teams on one tick → draw (ADR 0021, DEC-71, DEC-77) | **MVP**           |
+| `ForfeitCondition`       | the `forfeit` command from the pause or results UI → `aborted`, no winner                                                                                                                | post-MVP (DEC-77) |
 
 Conditions are checked in registry order (`defaultVictoryConditions.ts`) and the first verdict
 wins. `end()` builds the `MatchResult` (§10), stores it in `state.match.result`, transitions to
@@ -382,7 +388,7 @@ quarter-mark`), a stub `GameState` stepped to tick 25; assert the `phase-changed
 - `scenarios/fullMatch.test.ts`: a **full bot-versus-bot replay** through
   `runSimMatch({ seed, config, content, profiles, maxTicks, assertLevel: 'heavy' })`
   ([15-diagnostics-and-runtime-testing.md](15-diagnostics-and-runtime-testing.md) §8): the match
-  reaches `victory` or `defeat` before `maxTicks` (`TUNE` 81,000 = `maxMatchSeconds`) with zero
+  reaches `victory` or `defeat` before `maxTicks` (a bound the test passes; the game has no time limit, DEC-81) with zero
   invariant violations, two runs give deep-equal `MatchResult`s, and the committed golden replay
   `__fixtures__/full-match-seed-7.replay.json` reproduces its checkpoint hashes.
 
@@ -413,19 +419,25 @@ Victory and the result (GL-2, core) are built: the `VictoryCondition` contract
 `applyCommand` refuses every command with `command-rejected` reason `match-ended` (FR-002); the
 systems keep stepping.
 
-The human's seat is built: `MatchConfig.seat` (`{ definitionId, at }`, `null` in sim mode; its team
-is `playerTeam`). When the match is built, `Simulation` spawns the seat's Legend through the
-`dev-spawn` handler, without a command (the config rebuilds it in a replay), and sets
-`state.match.humanLegendId`; `Snapshot.match.humanLegendId` carries it (not hashed). A failed spawn
-logs ERROR `core.match` and leaves it `null`. Until the map option gives core the map, `at` is the
-client's spawn point.
+The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
+at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it
+the Rover role (DISC-51), so core spawns it at `playerTeam`'s Stronghold from the map, with the
+other Rovers in roster order and with no controller. No command is involved, and the replay setup
+records the roster, so a replay rebuilds the human's Legend from it. Core sets
+`state.match.humanLegendId` (`MatchRecord.seatHuman`); `Snapshot.match.humanLegendId` carries it (not
+hashed). An unknown definition id, or one that is not a Legend, logs ERROR `core.match`, spawns
+nothing and leaves `humanLegendId` `null`; the match plays on, because the class comes from saved
+data and can be stale (ADR 0023). A second human slot, or a human slot off `playerTeam`, throws, as
+a bad bot slot does. The roster's size check and the Unit-cap check count the human slot, even a
+refused one.
 
 Scoring (GL-4) is built: `match/Scoring.ts`, `state/ScoringState.types.ts` (`LegendStats`,
 `TeamStats`, `ScoringState`), `content/match/scoring.ts` (`SCORING_WEIGHTS`,
 `ASSIST_WINDOW_SECONDS`) and `MobKind` in `content/mobs/mobs.types.ts`. `Simulation` passes the
 content values into `createDefaultMatchDirector` and builds the director, and with it `Scoring`,
-before the seat spawns, so the seat's Legend has a row from the fold of tick 0. The director folds after the phase update
-and before the victory check, and `end()` copies the rows and team totals into `MatchResult`.
+before the roster spawns, so every roster Legend, the human's among them, has a row from the fold
+of tick 0. The director folds after the phase update and before the victory check, and `end()`
+copies the rows and team totals into `MatchResult`.
 `ScoringState` joins the state hash once it differs from the empty state (DEC-113 (8)), so the
 golden replay is unchanged. A row is registered from `entity-spawned`. The assist store keeps one
 entry per Legend and victim pair (at most the square of the Legend count) and drops a victim's entries at its

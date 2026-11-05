@@ -88,7 +88,7 @@ describe('validateGameConfig', () => {
     ['tickRate', { tickRate: 60 }],
     ['limits.maxLegendsPerTeam', { limits: { maxLegendsPerTeam: 11 } }],
     ['limits.maxLegendsPerTeam', { limits: { maxLegendsPerTeam: 0 } }],
-    ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 145 } }],
+    ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 301 } }],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 1.5 } }],
     ['map.numLanes', { map: { numLanes: 0 } }],
     ['map.numLanes', { map: { numLanes: 4 } }],
@@ -118,7 +118,7 @@ describe('validateGameConfig', () => {
     ['match.plannedMatchSeconds', { match: { plannedMatchSeconds: 0 } }],
     ['match.countdownSeconds', { match: { countdownSeconds: 1801 } }],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 47 } }],
-    ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 49 } } }],
+    ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 101 } } }],
   ])('rejects a bad %s', (path, overrides) => {
     expect(failurePath(overrides)).toBe(path);
   });
@@ -147,47 +147,6 @@ describe('validateGameConfig', () => {
       );
     },
   );
-
-  it.each([
-    null,
-    { definitionId: 'warrior', at: { x: 0, y: 0 } },
-    { definitionId: 'x', at: { x: 1600, y: 900 } },
-  ])('accepts a seat of null or a Legend inside the world (%j)', (seat) => {
-    expect(failurePath({ match: { seat } })).toBeNull();
-  });
-
-  it.each([undefined, 'warrior', { at: { x: 1, y: 1 } }, { definitionId: '', at: { x: 1, y: 1 } }])(
-    'rejects a seat that is not null or a Legend id with a point (%j)',
-    (seat) => {
-      const config = createDefaultGameConfig();
-      expect(() => validateGameConfig({ ...config, match: { ...config.match, seat } })).toThrow(
-        new ConfigValidationError(
-          'match.seat',
-          'must be null or { definitionId: a non-empty string, at: a point }',
-        ),
-      );
-    },
-  );
-
-  it.each([
-    { x: -1, y: 10 },
-    { x: 10, y: -0.5 },
-    { x: 1600.5, y: 10 },
-    { x: 10, y: 900.5 },
-    { x: Number.NaN, y: 10 },
-    { x: 10, y: Infinity },
-    { x: '10', y: 10 },
-    { y: 10 },
-  ])('rejects a seat outside the world or not finite (%j)', (at) => {
-    const config = createDefaultGameConfig();
-    const seat = { definitionId: 'warrior', at };
-    expect(() => validateGameConfig({ ...config, match: { ...config.match, seat } })).toThrow(
-      new ConfigValidationError(
-        'match.seat',
-        'its point must be a finite point inside the world (map.worldWidth x map.worldHeight)',
-      ),
-    );
-  });
 
   it('rejects a config with a missing section', () => {
     expect(() => validateGameConfig(withoutKey(createDefaultGameConfig(), 'match'))).toThrow(

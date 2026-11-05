@@ -16,7 +16,6 @@ import { MatchBridge } from './MatchBridge';
 import { MatchCamera } from './MatchCamera';
 import { MatchViewControls } from './MatchViewControls';
 import { PlayerCommands } from './PlayerCommands';
-import { strongholdOf } from './seatedConfig';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
 import { MapView } from './views/MapView';
@@ -31,7 +30,7 @@ import { WorldObjectsView } from './views/WorldObjectsView';
  * turns the player's intent into commands (`PlayerCommands`), steps the simulation and keeps the
  * last two snapshots; each frame follows the player with the camera and draws the scene and the
  * minimap (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's
- * stronghold by core from the config's seat. Which part of the world is shown (the following
+ * Stronghold by core from the roster's human slot. Which part of the world is shown (the following
  * camera, or the free view that dragging and the overview switch to) is `MatchCamera`'s. Buildings
  * stay in the same world scene: `BuildingRoofs` cuts away the roof of the building the player's
  * Legend stands in (DEC-143) and those the developer explorer opens, and the views draw those
@@ -68,15 +67,12 @@ export class Match implements LoopTarget {
 
   /**
    * Creates the match, takes the player's Legend from the simulation's snapshot (core spawned it
-   * from the config's seat) and points the camera at the spawn point.
-   *
-   * @throws Error when the map has no stronghold for the player's team.
+   * from the roster's human slot) and points the camera at it; with no Legend (the human slot
+   * named no Legend definition), at the middle of the map.
    */
   public constructor(private readonly deps: MatchDeps) {
-    const { simulation, world, tickRate, scheduler, camera, player, logger, bridge, input } = deps;
+    const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;
     const { map, presentation, mapObjects } = world;
-    // Find the spawn point first: if the map has none, nothing has been subscribed yet.
-    const spawnPoint = strongholdOf(map, player.team);
     this.entities = new EntityLayer(
       createDefaultViewRegistry((kind) => {
         logger.log(
@@ -119,7 +115,7 @@ export class Match implements LoopTarget {
       playerId: this.playerId,
       mapObjects: () => this.current.mapObjects ?? [],
     });
-    camera.lookAt(spawnPoint);
+    camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
   }
 
   /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
