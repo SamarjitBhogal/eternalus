@@ -45,7 +45,7 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
  * Each structure's guards, keyed by structure definition id (architecture 07 §6, 18 §7). Counts are balancing.md's
  * `Recommendation:` (SpawnerTower 4 light, BuffTower 6 medium, Stronghold 6 light ranged + 2 heavy
  * melee, minus 2 light per lost SpawnerTower). Ranged attacks wait for projectiles (sprint 2.3),
- * so the Stronghold's light guards fight in melee for now. Camps follow.
+ * so the Stronghold's light guards fight in melee for now. The forest camps' groups follow.
  */
 export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
   'spawner-tower': {

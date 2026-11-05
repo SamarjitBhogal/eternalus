@@ -251,7 +251,7 @@ export class Simulation {
   /**
    * Builds the map's structures, in feature id order, before anything else spawns (architecture
    * 07 §1): every feature whose definition is a structure becomes that structure, with its team
-   * and lane. Features without a structure definition (walls, turrets, camps) stay map data.
+   * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
    */
   private static spawnStructures(state: GameState, factory: EntityFactory): void {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
