@@ -94,10 +94,12 @@ describe('LaneFollowMovementStrategy', () => {
     expect(Math.sign(aside.y)).toBe(-Math.sign(otherAside.y));
   });
 
-  it('steps to the left of its pull, whichever way the push that cancels it leans', () => {
-    const { separationRadius: radius, separationWeight: weight } = HORDE_STEERING;
-    // About a unit push, from a neighbour a little above or below the line to the slot.
+  it('steps to the same side of its pull, whichever way the push that cancels it leans', () => {
+    const { separationRadius: radius, separationWeight: weight, minSteer } = HORDE_STEERING;
+    // About a unit push, from a neighbour a little south or north of the line to the slot; the
+    // steer left over is about minSteer / 2, so the side step always applies.
     const apart = (weight * radius) / (1 + weight);
+    const offset = (apart * minSteer) / 2;
     const blockedFrom = (offsetY: number) =>
       contextOf(
         [
@@ -107,11 +109,11 @@ describe('LaneFollowMovementStrategy', () => {
         { x: 40, y: 10 },
       );
 
-    const pushedDown = { ...strategy.desiredVelocity(0, blockedFrom(0.1)) };
-    const pushedUp = { ...strategy.desiredVelocity(0, blockedFrom(-0.1)) };
+    const neighbourSouth = { ...strategy.desiredVelocity(0, blockedFrom(offset)) };
+    const neighbourNorth = { ...strategy.desiredVelocity(0, blockedFrom(-offset)) };
 
-    expect(pushedDown).toEqual({ x: 0, y: 1 });
-    expect(pushedUp).toEqual({ x: 0, y: 1 });
+    expect(neighbourSouth).toEqual({ x: 0, y: 1 });
+    expect(neighbourNorth).toEqual({ x: 0, y: 1 });
   });
 
   it('stops at the context’s arrival radius, such as attack reach while chasing', () => {

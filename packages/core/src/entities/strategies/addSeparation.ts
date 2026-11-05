@@ -8,8 +8,8 @@ import type { MovementContext } from './MovementStrategy.types';
  * MS-19): weighted 1/r, shifted to reach 0 at the radius. A result shorter than `minSteer` is none
  * when `out` held no pull, so a settled crowd stands still. When the push cancels a pull (a unit
  * ahead that does not give way), the unit steps aside instead of stalling for good: a quarter turn
- * to the left of the pull, always the same side, so two units that meet head-on step to opposite
- * sides and pass. Shared by the movement strategies; allocates nothing.
+ * to the same side of the pull every time, so two units that meet head-on step to opposite sides
+ * and pass. Shared by the movement strategies; allocates nothing.
  */
 export const addSeparation = (
   self: number,

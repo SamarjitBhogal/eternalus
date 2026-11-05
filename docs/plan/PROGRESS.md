@@ -4881,3 +4881,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1059 passed (1059)"; client "Tests 1736 passed (1736)"; "✓ built in 222ms";
   "Documentation check passed." This line was filled in after that run (docs-only).
 - Next step: critic re-check of this round, then PR into phase/3; unblocks #64.
+
+### 2026-11-04 — Phase 3 / horde steering deadlock, critic round 2 — fix/horde-guard-deadlock — sholtzman + Claude Code
+
+- What was done: the critic re-check approved (no blockers) and found one error in the round-1
+  wording. **Correction to the round-1 entry above:** the side step is not "to the left of the
+  pull". World +y is south, so a pull east steps south: a quarter turn to the unit's right,
+  clockwise on screen. The behaviour was right; only the stated direction was wrong. Doc 18 §5.2,
+  the `addSeparation` TSDoc and the test name now say "to the same side of its pull every time",
+  with no direction. Test nits applied: the neighbours are named by their side
+  (`neighbourSouth`/`neighbourNorth`), and the offset comes from `minSteer`, so retuning it keeps
+  the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
+  (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
+  acceptance; 10 §9 already allows it for the MVP.
