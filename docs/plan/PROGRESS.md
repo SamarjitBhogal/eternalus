@@ -4927,3 +4927,14 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
+
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 base sync — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: pushed 32eefbf; the base had moved to f40811f (#56, #57, #58, #66, #67, the
+  minion stack), so `origin/phase/3-sprint-3-work` was merged again (1e33263). Only this file
+  conflicted; both sides kept. Re-ran #56's soak probe (cap 300, bots, 900 s) on 1e33263 and on
+  f40811f: the gameplay output is identical (skipped 0 % / 0 %, deaths 1639, non-INFO 0); step
+  times overlap over three runs each (mean 0.62–0.76 ms both; worst-tick spikes on both).
+- Checks run: `npm run check` on 1e33263 → EXIT=0; core "Tests 1076 passed (1076)", client
+  "Tests 1754 passed (1754)", "Documentation check passed."
+- Next step: push, approve #69; after #64 merges, re-run #64's zone tests.
