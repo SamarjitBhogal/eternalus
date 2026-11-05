@@ -168,7 +168,11 @@ export class Match implements LoopTarget {
    */
   public tick(): void {
     if (this.playerId !== null) {
-      const isMoving = this.commands.apply(this.playerId, this.current.mapObjects ?? []);
+      const isMoving = this.commands.apply(
+        this.playerId,
+        this.current.mapObjects ?? [],
+        this.current.entities,
+      );
       if (isMoving) {
         this.camera.playerMoved();
       }
@@ -240,12 +244,18 @@ export class Match implements LoopTarget {
 
   /**
    * The explorer's plain click that is no roof click (DEC-150): the player's Legend attacks the
-   * living map object under the screen point (device pixels), once; no Legend, no attack.
+   * living enemy unit, else map object, under the screen point (device pixels), once; no Legend,
+   * no attack.
    */
   public attackAt(screenX: number, screenY: number): void {
     if (this.playerId === null) return;
     const point = this.camera.worldAt(screenX, screenY);
-    this.commands.attackAt(this.playerId, point, this.current.mapObjects ?? []);
+    this.commands.attackAt(
+      this.playerId,
+      point,
+      this.current.mapObjects ?? [],
+      this.current.entities,
+    );
   }
 
   /**

@@ -1,5 +1,6 @@
 import {
   type EntityId,
+  type EntitySnapshot,
   findMapObjectAt,
   type MapObject,
   type MapObjectSnapshot,
@@ -7,17 +8,18 @@ import {
   type Vec2,
 } from '@eternalus/core';
 
+import { findUnitAt } from './findUnitAt';
 import type { Projection } from './engine/input/Projection.types';
 import type { IntentSource } from './Match.types';
 
 /**
  * Turns the player's intent into commands for the player's Legend, once a tick (`Match.tick`):
- * `move` or `stop` only when the movement axes change, and `attack-target` once per map object the
- * held attack button aims at. A press the canvas gestures own is no held attack
- * (`setPointerClaimed`; 06 §10, attack and roof input arbitration): with the developer explorer
- * shown that is every press, and a plain click attacks once on its release instead (`attackAt`,
- * DEC-150). It only turns input into commands: `apply` tells `Match` whether the player moves, and
- * `Match` tells the camera (DEC-151).
+ * `move` or `stop` only when the movement axes change, and `attack-target` once per target the
+ * held attack button aims at (a living enemy unit under the cursor first, else a map object). A
+ * press the canvas gestures own is no held attack (`setPointerClaimed`; 06 §10, attack and roof
+ * input arbitration): with the developer explorer shown that is every press, and a plain click
+ * attacks once on its release instead (`attackAt`, DEC-150). It only turns input into commands:
+ * `apply` tells `Match` whether the player moves, and `Match` tells the camera (DEC-151).
  */
 export class PlayerCommands {
   private lastMove: Vec2 = { x: 0, y: 0 };
@@ -50,14 +52,18 @@ export class PlayerCommands {
 
   /**
    * Reads this tick's intent and queues its commands for the Legend `actorId`. `states` are the
-   * latest snapshot's map objects: only a living one can be the attack target.
+   * latest snapshot's map objects and `entities` its units: only a living one can be the target.
    *
    * @returns Whether the player's movement input is non-zero this tick.
    */
-  public apply(actorId: EntityId, states: readonly MapObjectSnapshot[]): boolean {
+  public apply(
+    actorId: EntityId,
+    states: readonly MapObjectSnapshot[],
+    entities: readonly EntitySnapshot[],
+  ): boolean {
     const { move, isAttacking, aim } = this.input.read(this.camera);
     const attackAim = isAttacking === true && !this.isPointerClaimed ? aim : null;
-    this.applyAttack(actorId, attackAim, states);
+    this.applyAttack(actorId, attackAim, states, entities);
     const isMoving = move.x !== 0 || move.y !== 0;
     if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
       return isMoving;
@@ -75,12 +81,17 @@ export class PlayerCommands {
 
   /**
    * The developer explorer's plain click (DEC-150): queues one `attack-target` for the Legend
-   * `actorId` on the map object under `point` (world units). `states` are the latest snapshot's map
-   * objects: only a living one can be the target, so open ground or a destroyed object queues
-   * nothing.
+   * `actorId` on the living enemy unit under `point` (world units), else on the map object there.
+   * `states` and `entities` are the latest snapshot's map objects and units: open ground, a
+   * destroyed object or a dead unit queues nothing.
    */
-  public attackAt(actorId: EntityId, point: Vec2, states: readonly MapObjectSnapshot[]): void {
-    const targetId = findMapObjectAt(this.mapObjects, states, point);
+  public attackAt(
+    actorId: EntityId,
+    point: Vec2,
+    states: readonly MapObjectSnapshot[],
+    entities: readonly EntitySnapshot[],
+  ): void {
+    const targetId = this.targetAt(actorId, point, states, entities);
     if (targetId !== null) {
       this.simulation.enqueueCommand({ type: 'attack-target', actorId, targetId });
     }
@@ -94,11 +105,22 @@ export class PlayerCommands {
     actorId: EntityId,
     aim: Vec2 | null,
     states: readonly MapObjectSnapshot[],
+    entities: readonly EntitySnapshot[],
   ): void {
-    const targetId = aim === null ? null : findMapObjectAt(this.mapObjects, states, aim);
+    const targetId = aim === null ? null : this.targetAt(actorId, aim, states, entities);
     if (targetId !== null && targetId !== this.attackTargetId) {
       this.simulation.enqueueCommand({ type: 'attack-target', actorId, targetId });
     }
     this.attackTargetId = targetId;
+  }
+
+  /** The unit under `point`, else the map object there: a unit is drawn on top of a building. */
+  private targetAt(
+    actorId: EntityId,
+    point: Vec2,
+    states: readonly MapObjectSnapshot[],
+    entities: readonly EntitySnapshot[],
+  ): EntityId | null {
+    return findUnitAt(entities, actorId, point) ?? findMapObjectAt(this.mapObjects, states, point);
   }
 }
