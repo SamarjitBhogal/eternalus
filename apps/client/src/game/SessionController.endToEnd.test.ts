@@ -23,6 +23,7 @@ import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
+import { withPlayerTeam } from './withPlayerTeam';
 import type { MatchFactory } from './SessionController.types';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
 import { flushMicrotasks, testReporter, testSession } from './testSessionDeps';
@@ -60,7 +61,8 @@ describe('SessionController with the real match, end to end', () => {
       const document = new FakeBrowserTarget();
       const scheduler = new FakeFrameScheduler();
       const simulation = new Simulation({
-        ...withPlayer(CONFIG, request.player),
+        config: withPlayerTeam(CONFIG, request.setup.playerTeam),
+        roster: request.roster.filter(({ pilot }) => pilot === 'human'),
         seed: request.setup.seed,
         logger: new NullLogger(),
         map: request.world.map,

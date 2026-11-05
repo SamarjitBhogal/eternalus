@@ -60,7 +60,6 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     onCrash: MatchRequest['onCrash'] = () => undefined,
   ): MatchRequest => ({
     setup: { seed: SEED, playerTeam: 'dark', allies: [], enemies: [] },
-    player: { legend: 'sentinel', team: 'dark' },
     world,
     captureKinds: ['capture-point', 'cathedral'],
     roster: [PLAYER_SLOT],

@@ -1,12 +1,10 @@
-import type { GameConfig } from '@eternalus/core';
-
-import type { PlayerChoice } from './Match.types';
+import type { GameConfig, PlayableTeam } from '@eternalus/core';
 
 /**
- * `config` played for the player's team (`match.playerTeam`). The player's Legend is the roster's
- * human slot (`rosterSlots`), which core spawns on that team. Returns a new config; `config` is
- * frozen.
+ * `config` played for `team` (`match.playerTeam`, from the setup). The player's Legend is the
+ * roster's human slot (`rosterSlots`), which core spawns on that team. Returns a new config;
+ * `config` is frozen.
  */
-export function seatedConfig(config: GameConfig, player: Pick<PlayerChoice, 'team'>): GameConfig {
-  return { ...config, match: { ...config.match, playerTeam: player.team } };
+export function withPlayerTeam(config: GameConfig, team: PlayableTeam): GameConfig {
+  return { ...config, match: { ...config.match, playerTeam: team } };
 }

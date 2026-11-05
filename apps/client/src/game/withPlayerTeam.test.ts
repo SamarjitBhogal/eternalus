@@ -1,17 +1,17 @@
 import { createDefaultGameConfig } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
-import { seatedConfig } from './seatedConfig';
+import { withPlayerTeam } from './withPlayerTeam';
 
 const CONFIG = createDefaultGameConfig();
 
-describe('seatedConfig', () => {
+describe('withPlayerTeam', () => {
   it("sets the player's team, as a new config, and nothing else", () => {
-    const seated = seatedConfig(CONFIG, { team: 'dark' });
+    const played = withPlayerTeam(CONFIG, 'dark');
 
-    expect(seated.match.playerTeam).toBe('dark');
-    expect(seated).toEqual({ ...CONFIG, match: { ...CONFIG.match, playerTeam: 'dark' } });
-    expect(seated.map).toBe(CONFIG.map);
+    expect(played.match.playerTeam).toBe('dark');
+    expect(played).toEqual({ ...CONFIG, match: { ...CONFIG.match, playerTeam: 'dark' } });
+    expect(played.map).toBe(CONFIG.map);
     expect(CONFIG.match.playerTeam).toBe('light');
   });
 });

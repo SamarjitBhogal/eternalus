@@ -20,7 +20,7 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, LOG_RING_CAPACITY } from './Matc
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { MatchHost } from './MatchHost';
 import type { HostDocument, HostWindow } from './MatchHost.types';
-import { seatedConfig } from './seatedConfig';
+import { withPlayerTeam } from './withPlayerTeam';
 import type { SettingsController } from './settings/SettingsController';
 import type { MatchFactory } from './SessionController.types';
 
@@ -79,7 +79,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
     const { window, gameConfig, settings } = deps;
     // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
     // without one throws in `Simulation`, below.
-    const config = seatedConfig(gameConfig, request.player);
+    const config = withPlayerTeam(gameConfig, request.setup.playerTeam);
     const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
     if (renderer === null) {
       throw new Error('This browser cannot draw on a 2D canvas.');

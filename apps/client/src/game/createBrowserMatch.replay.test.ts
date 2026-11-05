@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { seatedConfig } from './seatedConfig';
+import { withPlayerTeam } from './withPlayerTeam';
 import { buildMatchSetup } from './session/buildMatchSetup';
 import { createRosterRng } from './session/createRosterRng';
 import { fillRosters } from './session/fillRosters';
@@ -46,7 +46,7 @@ function buildBrowserMatch(): { simulation: Simulation; move: Command } {
   });
   const world = prepareMatchWorld(config, SEED);
   const simulation = new Simulation({
-    config: seatedConfig(config, { team: draft.playerTeam }),
+    config: withPlayerTeam(config, draft.playerTeam),
     seed: SEED,
     logger: new NullLogger(),
     map: world.map,

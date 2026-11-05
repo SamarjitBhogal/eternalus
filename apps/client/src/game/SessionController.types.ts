@@ -17,15 +17,14 @@ import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { ResourceController } from '../data/resources/ResourceController';
 import type { CatalogueSource } from './content/CatalogueSource.types';
 import type { SessionClock } from './engine/time/SessionClock.types';
-import type { MatchCrash, PlayerChoice, PreparedWorld } from './Match.types';
+import type { MatchCrash, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import type { Rng } from './session/Rng.types';
 
 /** What the session hands the match factory (architecture 13 §2 `createMatch(setup)`). */
 export type MatchRequest = {
+  /** The setup with its rosters; `setup.playerTeam` is the player's team (HC-F4). */
   readonly setup: MatchSetupDraft;
-  /** The player's class and team, from the selection and the setup (HC-F4). */
-  readonly player: PlayerChoice;
   /** The world prepared in `match-loading`; every Match built on it shares it and never changes it. */
   readonly world: PreparedWorld;
   /** Map-feature kinds the HUD lists as capture points: `catalogue.hud.objectiveKinds` (one list). */
