@@ -205,7 +205,7 @@ describe('VeterancySystem', () => {
     expect(statusesOf(campMob)).toEqual([]);
   });
 
-  it('counts a killed tower guard as a kill, but not a killed camp mob (DEC-165)', () => {
+  it('counts a killed tower guard and a killed camp mob as kills (DEC-165, owner 2026-11-04)', () => {
     const { guard, killer, state, step } = setUp();
     const died = (entityId: string) => {
       state.events.emit('entity-died', {
@@ -215,12 +215,11 @@ describe('VeterancySystem', () => {
     };
     const towerGuard = guard('light', 'light-guard');
     const campMob = guard('neutral', 'light-camp-mob');
-    died(campMob.id);
     died(towerGuard.id);
     step();
     expect(killer.getComponent(Veterancy).level).toBe(0);
 
-    died(towerGuard.id);
+    died(campMob.id);
     step();
 
     expect(killer.getComponent(Veterancy).level).toBe(1);
