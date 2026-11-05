@@ -79,7 +79,12 @@ describe('DefaultSystemPipeline', () => {
       space,
     });
     const factory = new EntityFactory(createDefaultEntityRegistry(), UNIT_DEFINITIONS);
-    state.worldObjects = new WorldObjectStore([], factory, state.entities, MAP_OBJECT_DEFINITIONS);
+    state.worldObjects = new WorldObjectStore({
+      objects: [],
+      factory,
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
 
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
@@ -259,12 +264,12 @@ describe('DefaultSystemPipeline', () => {
         has: (id) => objects.has(id) || UNIT_DEFINITIONS.has(id),
         get: (id) => objects.get(id) ?? UNIT_DEFINITIONS.get(id),
       });
-      state.worldObjects = new WorldObjectStore(
-        [house],
+      state.worldObjects = new WorldObjectStore({
+        objects: [house],
         factory,
-        state.entities,
-        MAP_OBJECT_DEFINITIONS,
-      );
+        entities: state.entities,
+        definitions: MAP_OBJECT_DEFINITIONS,
+      });
       const world = state.world?.grid;
       for (const footprint of house.footprints) world?.stampFootprint(footprint);
       const pipeline = new DefaultSystemPipeline(

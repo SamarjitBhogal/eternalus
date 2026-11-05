@@ -149,13 +149,13 @@ export class Simulation {
     if (mapObjects !== undefined && map === undefined)
       throw new Error('Map objects require a generated map');
     if (mapObjects !== undefined) {
-      this.state.worldObjects = new WorldObjectStore(
-        mapObjects,
-        this.commandContext.factory,
-        this.state.entities,
-        MAP_OBJECT_DEFINITIONS,
+      this.state.worldObjects = new WorldObjectStore({
+        objects: mapObjects,
+        factory: this.commandContext.factory,
+        entities: this.state.entities,
+        definitions: MAP_OBJECT_DEFINITIONS,
         owners,
-      );
+      });
       this.state.events.on('entity-removed', ({ entityId }) =>
         this.state.worldObjects?.removed(entityId),
       );

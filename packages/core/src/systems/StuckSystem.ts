@@ -39,6 +39,7 @@ export class StuckSystem implements System {
   public update({ state }: SystemContext): void {
     const { tickRate } = state.config;
     const window = {
+      tick: state.tick,
       windowTicks: Math.round(this.rule.windowSeconds * tickRate),
       minProgress: this.rule.minProgress,
     };
@@ -64,7 +65,7 @@ export class StuckSystem implements System {
       }
       const isInReach = state.entities.isInReach(entity.id, targetId);
       const gap = distance(self.position, watch.waypoint ?? this.aim);
-      const isStuck = watch.observe(targetId, gap, isInReach, state.tick, window);
+      const isStuck = watch.observe(targetId, gap, isInReach, window);
       const isAtWaypoint = watch.waypoint !== null && gap <= this.rule.waypointRadius;
       if (isStuck || isAtWaypoint) {
         this.plan(state, entity, watch, self.position);

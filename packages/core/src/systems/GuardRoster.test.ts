@@ -433,12 +433,12 @@ describe('GuardRoster', () => {
       { x: position.x + half, y: position.y + half },
       { x: position.x - half, y: position.y + half },
     ];
-    state.worldObjects = new WorldObjectStore(
-      [{ id: 'block', kind: 'furniture', isBlocking: true, footprints: [square] }],
+    state.worldObjects = new WorldObjectStore({
+      objects: [{ id: 'block', kind: 'furniture', isBlocking: true, footprints: [square] }],
       factory,
-      state.entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     const base = GUARD_PLANS['spawner-tower'];
     if (base === undefined) {
       throw new Error('no spawner-tower guard plan');
@@ -485,12 +485,14 @@ describe('GuardRoster', () => {
     // The object covers the posts; the grid is blocked out past the leash edge, as a footprint
     // stamped onto coarse cells is.
     state.world?.grid.stampFootprint(square(radius + 10));
-    state.worldObjects = new WorldObjectStore(
-      [{ id: 'block', kind: 'furniture', isBlocking: true, footprints: [square(radius + 3)] }],
+    state.worldObjects = new WorldObjectStore({
+      objects: [
+        { id: 'block', kind: 'furniture', isBlocking: true, footprints: [square(radius + 3)] },
+      ],
       factory,
-      state.entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      entities: state.entities,
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     const base = GUARD_PLANS['spawner-tower'];
     if (base === undefined) {
       throw new Error('no spawner-tower guard plan');

@@ -24,12 +24,12 @@ describe('WorldObjectStore', () => {
         return definition;
       },
     });
-    const world = new WorldObjectStore(
-      [{ id: 'house', kind: 'house', isBlocking: true, footprints: [[{ x: 0, y: 0 }]] }],
+    const world = new WorldObjectStore({
+      objects: [{ id: 'house', kind: 'house', isBlocking: true, footprints: [[{ x: 0, y: 0 }]] }],
       factory,
-      new EntityStore(),
+      entities: new EntityStore(),
       definitions,
-    );
+    });
     expect(world.snapshot()[0]?.health).toEqual({ current: 275, max: 275 });
   });
 
@@ -59,12 +59,12 @@ describe('WorldObjectStore', () => {
         ],
       ],
     };
-    const world = new WorldObjectStore(
-      [object, { ...object, id: 'mountain', kind: 'terrain' }],
+    const world = new WorldObjectStore({
+      objects: [object, { ...object, id: 'mountain', kind: 'terrain' }],
       factory,
       entities,
-      MAP_OBJECT_DEFINITIONS,
-    );
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
     const house = world.snapshot()[0];
     expect(house?.health).toEqual({ current: 100, max: 100 });
     expect(world.snapshot()[1]?.health).toBeNull();
@@ -113,13 +113,13 @@ describe('WorldObjectStore', () => {
         ],
       ],
     };
-    const world = new WorldObjectStore(
-      [fort],
+    const world = new WorldObjectStore({
+      objects: [fort],
       factory,
       entities,
-      MAP_OBJECT_DEFINITIONS,
-      new Map([['fort', tower.id]]),
-    );
+      definitions: MAP_OBJECT_DEFINITIONS,
+      owners: new Map([['fort', tower.id]]),
+    });
 
     // No entity of its own: the fort's record is the tower and its pool.
     expect(entities.size).toBe(1);

@@ -1,11 +1,8 @@
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { TeamMembership } from '../components/TeamMembership';
-import type { MapObject, MapObjectKind, MapObjectSnapshot } from '../content/maps/mapObjects.types';
-import type { ObstacleDefinition } from '../content/obstacles/obstacles.types';
-import type { EntityFactory } from '../entities/EntityFactory';
-import type { EntityStore } from './EntityStore';
-import type { WorldObjectRecord } from './WorldObjectStore.types';
+import type { MapObject, MapObjectSnapshot } from '../content/maps/mapObjects.types';
+import type { WorldObjectRecord, WorldObjectStoreOptions } from './WorldObjectStore.types';
 import type { Vec2 } from '../utils/geometry.types';
 import { doesCircleOverlapPolygon, isCircleInsidePolygon } from '../utils/circlePolygon';
 
@@ -23,15 +20,15 @@ export class WorldObjectStore {
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
    * DEC-185 B: a lane tower's fort map object), so a hit on it is a hit on the structure.
    *
-   * @param owners - Map object id → the id of the structure in `entities` the object is the body of.
+   * @param options - The objects, how to spawn them, and the structures some of them are bodies of.
    */
-  public constructor(
-    objects: readonly MapObject[],
-    factory: EntityFactory,
-    entities: EntityStore,
-    definitions: Readonly<Record<MapObjectKind, ObstacleDefinition>>,
-    owners: ReadonlyMap<string, string> = new Map(),
-  ) {
+  public constructor({
+    objects,
+    factory,
+    entities,
+    definitions,
+    owners = new Map(),
+  }: WorldObjectStoreOptions) {
     for (const object of objects) {
       const definition = definitions[object.kind];
       const owner = entities.get(owners.get(object.id) ?? '');

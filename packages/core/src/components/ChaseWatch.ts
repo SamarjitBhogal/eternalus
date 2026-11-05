@@ -1,15 +1,11 @@
 import type { Vec2 } from '../utils/geometry.types';
-
-/** The stuck rule in ticks, as `ChaseWatch.observe` reads it. */
-type StuckWindow = {
-  readonly windowTicks: number;
-  readonly minProgress: number;
-};
+import type { StuckWindow } from './ChaseWatch.types';
 
 /**
- * How a unit's chase of its attack target is going (owner 2026-11-05, DEC-193): the closest it has
- * come, since its last progress, to the point it heads for (its target, or its detour waypoint
- * once it was stuck), and that waypoint. `StuckSystem` adds, updates and removes it;
+ * How a unit's chase of its attack target is going (owner 2026-11-05, DEC-193): its gap to the
+ * point it heads for (its target, or its detour waypoint once it was stuck) when its current window
+ * started (its last progress, new target, waypoint or stuck call), when that was, and the
+ * waypoint. `StuckSystem` adds, updates and removes it;
  * `PathingSystem` and the bot Legends steer to `waypoint` while there is one.
  */
 export class ChaseWatch {
@@ -34,29 +30,24 @@ export class ChaseWatch {
   }
 
   /**
-   * Records this tick's `gap` to what the unit heads for (its waypoint while it has one, else the
-   * point of `targetId` it aims at) and returns `true` when it is stuck: no `minProgress` closer
-   * for `windowTicks`; a fresh window then starts. A new target or being in reach drops the
+   * Records `window.tick`'s `gap` to what the unit heads for (its waypoint while it has one, else
+   * the point of `targetId` it aims at) and returns `true` when it is stuck: no `minProgress`
+   * closer for `windowTicks`; a fresh window then starts. A new target or being in reach drops the
    * waypoint and starts a fresh window too.
    */
-  public observe(
-    targetId: string,
-    gap: number,
-    isInReach: boolean,
-    tick: number,
-    rule: StuckWindow,
-  ): boolean {
+  public observe(targetId: string, gap: number, isInReach: boolean, window: StuckWindow): boolean {
+    const { tick } = window;
     if (targetId !== this.watchedId || isInReach) {
       this.watchedId = targetId;
       this.hasWay = false;
       this.restart(gap, tick);
       return false;
     }
-    if (gap <= this.closest - rule.minProgress) {
+    if (gap <= this.closest - window.minProgress) {
       this.restart(gap, tick);
       return false;
     }
-    if (tick - this.sinceTick < rule.windowTicks) {
+    if (tick - this.sinceTick < window.windowTicks) {
       return false;
     }
     this.restart(gap, tick);
