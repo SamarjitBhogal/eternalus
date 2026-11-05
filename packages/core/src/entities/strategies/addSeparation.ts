@@ -8,8 +8,8 @@ import type { MovementContext } from './MovementStrategy.types';
  * MS-19): weighted 1/r, shifted to reach 0 at the radius. A result shorter than `minSteer` is none
  * when `out` held no pull, so a settled crowd stands still. When the push cancels a pull (a unit
  * ahead that does not give way), the unit steps aside instead of stalling for good: a quarter turn
- * from the pull, to the side the push leans to, else always the same side, so two units that meet
- * head-on step to opposite sides and pass. Shared by the movement strategies; allocates nothing.
+ * to the left of the pull, always the same side, so two units that meet head-on step to opposite
+ * sides and pass. Shared by the movement strategies; allocates nothing.
  */
 export const addSeparation = (
   self: number,
@@ -39,9 +39,10 @@ export const addSeparation = (
   if (length(out) >= minSteer) {
     return;
   }
-  // The pull's perpendicular, signed by the side of the pull the leftover push points to; no pull
-  // gives exactly (0, 0), never -0.
-  const side = pullX * out.y - pullY * out.x < 0 ? -1 : 1;
-  out.x = pullY === 0 ? 0 : -side * pullY;
-  out.y = pullX === 0 ? 0 : side * pullX;
+  // ponytail: memoryless side step, so a unit pressed into a gap can shuffle in place; the upgrade
+  // is the AvoidanceStrategy of 10 §9 (ORCA). The side is fixed, not the way the push leans: the
+  // lean flips tick to tick in a crowd, so more units shuffle. No pull gives exactly (0, 0), never
+  // -0.
+  out.x = pullY === 0 ? 0 : -pullY;
+  out.y = pullX === 0 ? 0 : pullX;
 };

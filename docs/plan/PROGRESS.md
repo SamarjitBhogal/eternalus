@@ -4862,3 +4862,22 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 249ms";
   "Documentation check passed."
 - Next step: pre-PR gate, then PR into phase/3; unblocks #64.
+
+### 2026-11-04 — Phase 3 / horde steering deadlock, critic round 1 — fix/horde-guard-deadlock — sholtzman + Claude Code
+
+- What was done: the critic (request-changes) found that no test pinned the "side the push leans
+  to" rule (hard-coding one side still passed 1058/1058) and that its probe measured this rule as
+  the main source of the new shuffling: 16 of 20 wedge layouts reversed almost every tick, against
+  4 of 20 with a fixed side. The side step is now always a quarter turn to the left of the pull.
+  Two units meeting head-on still step to opposite sides in world terms. New test
+  `LaneFollowMovementStrategy.test` "steps to the left of its pull, whichever way the push that
+  cancels it leans", red first with the lean rule put back ("expected { x: +0, y: -1 } to deeply
+  equal { x: +0, y: 1 }"). A `ponytail:` note names the ceiling (a crowd pressed into a gap can
+  shuffle) and the upgrade (10 §9 `AvoidanceStrategy`). Doc 18 §5.2 states the rule. The
+  critic's whole-match probe, reversals over 120° per minion-minute: two-lane fight 240 s, 59.1
+  before the fix and 68.3 with the fixed side; full match 360 s, 27.9 before and 35.4 with the
+  fixed side. Remaining shuffle is an owner acceptance item.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 1059 passed (1059)"; client "Tests 1736 passed (1736)"; "✓ built in 222ms";
+  "Documentation check passed." This line was filled in after that run (docs-only).
+- Next step: critic re-check of this round, then PR into phase/3; unblocks #64.

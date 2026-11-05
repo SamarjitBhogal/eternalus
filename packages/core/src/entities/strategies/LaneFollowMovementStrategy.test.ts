@@ -94,6 +94,26 @@ describe('LaneFollowMovementStrategy', () => {
     expect(Math.sign(aside.y)).toBe(-Math.sign(otherAside.y));
   });
 
+  it('steps to the left of its pull, whichever way the push that cancels it leans', () => {
+    const { separationRadius: radius, separationWeight: weight } = HORDE_STEERING;
+    // About a unit push, from a neighbour a little above or below the line to the slot.
+    const apart = (weight * radius) / (1 + weight);
+    const blockedFrom = (offsetY: number) =>
+      contextOf(
+        [
+          [10, 10],
+          [10 + apart, 10 + offsetY],
+        ],
+        { x: 40, y: 10 },
+      );
+
+    const pushedDown = { ...strategy.desiredVelocity(0, blockedFrom(0.1)) };
+    const pushedUp = { ...strategy.desiredVelocity(0, blockedFrom(-0.1)) };
+
+    expect(pushedDown).toEqual({ x: 0, y: 1 });
+    expect(pushedUp).toEqual({ x: 0, y: 1 });
+  });
+
   it('stops at the context’s arrival radius, such as attack reach while chasing', () => {
     const context = { ...contextOf([[0, 0]], { x: 2, y: 0 }), arrivalRadius: 2.5 };
 
