@@ -132,11 +132,13 @@ checks every post. Checkpoint defenders wait for `CaptureSystem` (PR #64) to rea
 branch. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and
-`StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower or
-the Stronghold aims at its `Footprint` (07 §13), so minions that target a tower now reach its fort
-wall and hit it (DEC-185). The nav grid still blocks a tower's whole court: hordes never path
-through a court, and an A\* way to a unit inside one ends on the open ground nearest it (DEC-185
-(A)). The pull requests and interim stand-ins are in the [minion system
+`StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower,
+the Stronghold or a gate aims at its `Footprint` (07 §13), so minions that target a tower now
+reach its fort wall and hit it (DEC-185), and reach to a gate is measured to its polygon (DEC-217
+(17)). The nav grid still blocks a standing tower's whole court: hordes never path through a
+court, and an A\* way to a unit inside one ends on the open ground nearest it (DEC-185 (A)); the
+routes out of a court (DEC-217 (15)) are not built yet. A fallen tower's court opens; its walls
+but the one that took the killing hit stand until destroyed (DEC-217 (12), 07 §13). The pull requests and interim stand-ins are in the [minion system
 plan](../plan/minion-system-plan.md) §2–§3.
 
 ## 1. Decisions
@@ -427,7 +429,7 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   which `PathingSystem` steers it to (DEC-193, DEC-217 (14); the numbers, with the cap on A\*
   plans a tick, are `STUCK_DETECTION` in `content/ai/stuckDetection.ts`). A chase of a target
   with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
-  Stronghold's palace, 07 §13) aims at the nearest point of its outline, the point attack reach
+  Stronghold's palace, a gate, 07 §13) aims at the nearest point of its outline, the point attack reach
   is measured to (`EntityStore.aimPointOf`). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court)
   never holds or turns a chase: the mob closes in until collision stops it at a wall, in reach
