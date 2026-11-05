@@ -1,7 +1,8 @@
 import type { MatchTimeline } from './MatchTimeline';
 import type { MatchDirectorOptions } from './MatchDirector.types';
 import type { GameState } from '../state/GameState';
-import { MATCH_PHASES } from '../config/matchPhases';
+import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
+import { StateHasher } from '../state/StateHasher';
 import { createDefaultMatchPhases } from './defaultMatchPhases';
 import { createDefaultTimelineActions } from './defaultTimelineActions';
 import { createDefaultVictoryConditions } from './defaultVictoryConditions';
@@ -33,6 +34,8 @@ export const createDefaultMatchDirector = ({
     timeline,
     actions: createDefaultTimelineActions(),
     order: MATCH_PHASES,
+    terminal: TERMINAL_MATCH_PHASES,
+    hasher: new StateHasher(),
     debug,
     logger,
     conditions: createDefaultVictoryConditions(state),

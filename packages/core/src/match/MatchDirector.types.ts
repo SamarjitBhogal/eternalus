@@ -1,6 +1,7 @@
 import type { MatchPhase } from '../config/matchPhases';
 import type { DebugConfig } from '../diagnostics/InvariantRunner.types';
 import type { Logger } from '../diagnostics/Logger.types';
+import type { StateHasher } from '../state/StateHasher';
 import type { MatchPhaseRegistry } from './MatchPhaseState.types';
 import type { MatchTimeline } from './MatchTimeline';
 import type { TimelineActionRegistry } from './TimelineActionRegistry.types';
@@ -16,6 +17,10 @@ export type MatchDirectorOptions = {
   readonly actions: TimelineActionRegistry;
   /** The phase order transitions follow (`MATCH_PHASES`). */
   readonly order: readonly MatchPhase[];
+  /** The phases a match never leaves (`TERMINAL_MATCH_PHASES`); any move out of one is a bug. */
+  readonly terminal: readonly MatchPhase[];
+  /** Hashes the state for `MatchResult.finalHash` (a `StateHasher`). */
+  readonly hasher: Pick<StateHasher, 'hash'>;
   /** A move that is not forward is a bug: it throws when set (tests), else it is logged (browser). */
   readonly debug: Pick<DebugConfig, 'throwOnViolation'>;
   /** Where a skipped move is reported when `debug.throwOnViolation` is off. */
