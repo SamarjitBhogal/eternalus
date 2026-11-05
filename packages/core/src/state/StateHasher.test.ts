@@ -123,7 +123,7 @@ describe('StateHasher', () => {
     soldier.addComponent(veterancy);
     const before = hasher.hash(state);
 
-    veterancy.recordKill(2, 3);
+    veterancy.recordKill(2);
 
     expect(hasher.hash(state)).not.toBe(before);
   });
