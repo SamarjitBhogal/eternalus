@@ -96,7 +96,8 @@ export class WorldObjectStore {
       if (
         !object.isBlocking ||
         this.destroyed.has(object.id) ||
-        // A structure's fort outlives the structure (`removed`), so only an object's own death counts.
+        // A structure's fort outlives the structure (`removed`), so only an object's own death
+        // counts.
         (health?.isDead === true && !this.owned.has(entityId ?? '')) ||
         object.passages?.some((shape) => isCircleInsidePolygon(point, radius, shape)) === true
       )

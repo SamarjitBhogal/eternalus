@@ -6,10 +6,11 @@ import type {
 import { StatusEffectRuntime } from './StatusEffectRuntime';
 
 /**
- * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier
- * per stat (each modifier's `value` once per stack, `StatModifier`) and the set of flags, recomputed whenever the
- * list changes, so every reader asks one question per tick. An entity without this component is
- * immune to statuses (structures). Ids are plain strings (`components/` may not import `state/`).
+ * The statuses on an entity (architecture 05 section 8) and what they add up to: one multiplier per
+ * stat (each modifier's `value` once per stack, `StatModifier`) and the set of flags, recomputed
+ * whenever the list changes, so every reader asks one question per tick. An entity without this
+ * component is immune to statuses (structures). Ids are plain strings (`components/` may not import
+ * `state/`).
  */
 export class StatusEffects {
   private readonly activeList: StatusEffectRuntime[] = [];
@@ -46,8 +47,8 @@ export class StatusEffects {
 
   /**
    * Removes the status `statusId` now, whatever its timer (an aura left, a hold released). Returns
-   * whether it was active. Use `combat/StatusEffectApplier.remove`, which also emits the event.
-   * Not from inside a loop over `active` (a listener during `StatusEffectSystem`'s pass): it splices.
+   * whether it was active. Use `combat/StatusEffectApplier.remove`, which also emits the event. Not
+   * from inside a loop over `active` (a listener during `StatusEffectSystem`'s pass): it splices.
    */
   public remove(statusId: string): boolean {
     const status = this.find(statusId);

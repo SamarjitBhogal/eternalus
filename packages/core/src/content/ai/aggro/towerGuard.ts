@@ -10,7 +10,8 @@ import type { GuardAggroRuleDefinition } from '../ai.types';
 export const TOWER_GUARD_AGGRO = {
   id: 'tower-guard',
   controller: 'guard',
-  // TUNE: the leash less the post gap, so a guard at an unmoved post acquires only what it may chase.
+  // TUNE: the leash less the post gap, so a guard at an unmoved post acquires only what it may
+  // chase.
   acquisitionRadius: GUARD_LEASH.tower - GUARD_LEASH.postGap,
   priority: [
     'legend-attacking-ally-legend',

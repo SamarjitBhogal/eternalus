@@ -12,8 +12,9 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Keeps the structures' lifecycle (architecture 07 §3, §8, §11): announces each structure that
- * died this tick with `structure-destroyed` (its kind, team and lane), and re-evaluates every structure's `BreakabilityRule`, flipping
- * `Collider.isUnbreakable` and emitting `structure-breakability-changed` when it changes. Runs
+ * died this tick with `structure-destroyed` (its kind, team and lane), and re-evaluates every
+ * structure's `BreakabilityRule`, flipping `Collider.isUnbreakable` and emitting
+ * `structure-breakability-changed` when it changes. Runs
  * after every system that deals damage and before `DeathSystem`, so the dead are still in the
  * store when they are announced. Never calls another system: the effects of a loss are listeners.
  */

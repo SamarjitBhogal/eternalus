@@ -7,22 +7,23 @@ import { addSeparation } from './addSeparation';
 import type { FlowQuery, MovementContext, MovementStrategy } from './MovementStrategy.types';
 
 /**
- * How a lane-horde mob steers (architecture 18 §5.2): toward its target (its formation slot, or
- * the unit it chases) until it is within the context's `arrivalRadius`, plus separation from every
+ * How a lane-horde mob steers (architecture 18 §5.2): toward its target (its formation slot, or the
+ * unit it chases) until it is within the context's `arrivalRadius`, plus separation from every
  * neighbour (10 §9, MS-19). While the next `blockedLookAhead` of the straight line to the target
  * crosses unwalkable ground, a marching mob follows the lane's flow field instead; a chasing mob,
  * or a march the field cannot route, holds there. A chase standing on unwalkable ground (a member
- * spawned inside its structure's footprint) follows the field out like a march (MS-31, DEC-126). A final heading (separation included) that
- * would take a mob onto unwalkable ground turns along the wall instead: the mob faces and walks
- * the open axis of its heading. A chase with no open axis holds; a march keeps its heading, and
- * the wall cells' field leads it back out (10 §9). A chase checks both only up to its target's
- * own blocked ground (`targetBlockedDepth`, a tower's fort cells), so it closes in until the
- * collision system stops it at the fort, in reach (DEC-185). Stateless: it reads the context's
- * buffers, writes `context.out` and allocates nothing.
+ * spawned inside its structure's footprint) follows the field out like a march (MS-31, DEC-126). A
+ * final heading (separation included) that would take a mob onto unwalkable ground turns along the
+ * wall instead: the mob faces and walks the open axis of its heading. A chase with no open axis
+ * holds; a march keeps its heading, and the wall cells' field leads it back out (10 §9). A chase
+ * checks both only up to its target's own blocked ground (`targetBlockedDepth`, a tower's fort
+ * cells), so it closes in until the collision system stops it at the fort, in reach (DEC-185).
+ * Stateless: it reads the context's buffers, writes `context.out` and allocates nothing.
  *
  * @remarks ponytail: no wall avoidance term yet (it arrives with `CollisionSystem`, 10 §8), so the
  * wall turn reads the grid's axes, not the contact normal. A chase blocked by terrain holds until
- * `StuckSystem` finds it stuck; `PathingSystem` then gives it an A\* waypoint round (DEC-193).
+ * `StuckSystem` finds it stuck and plans it an A\* waypoint round, which `PathingSystem` then
+ * steers it to (DEC-193).
  */
 export class LaneFollowMovementStrategy implements MovementStrategy {
   /** @param profile - Distances and weights; the strategy holds no numbers of its own. */
