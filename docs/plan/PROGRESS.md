@@ -4812,3 +4812,23 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run docs:check` and Prettier; docs-only change.
 - Next step: the owner's call on the two remaining M4/M5a stand-ins (strength by the field's
   distance; a wall-avoidance term now that `CollisionSystem` exists).
+
+### 2026-11-04 — Phase 3 / horde steering deadlock — fix/horde-guard-deadlock — Sam Holtzman + Claude Code
+
+- What was done: a unit whose pull toward its target is cancelled by separation no longer stalls
+  for good. Root cause: `addSeparation` zeroed any sum shorter than `minSteer`, so two units that
+  met head-on (one extra entity before the first wave put the light lane-0 leader on its light
+  guard's post at (76, 20), the guard 0.995 ahead and walking back to it) each had a pull of 1
+  against a push of about 1.21; both nets fell to 0.21 and both stood still from tick 634 to past
+  tick 1,800. Now, when the push cancels a pull, the unit steps aside: a quarter turn from the
+  pull, to the side the push leans to, else always the same side, so two units meeting head-on
+  step to opposite sides. A unit with no pull still settles to zero. Shared by
+  `LaneFollowMovementStrategy` and `LeashedChaseMovementStrategy`; no new tuning number. Tests,
+  both red first: `LaneFollowMovementStrategy.test` "steps aside, never stalls, …" ("expected 0
+  to be greater than or equal to 0.25") and the structures scenario with one extra entity
+  ("expected 80.50056128703002 to be greater than 111"). Hash tests compare runs, none pins a
+  literal; all pass.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 249ms";
+  "Documentation check passed."
+- Next step: pre-PR gate, then PR into phase/3; unblocks #64.
