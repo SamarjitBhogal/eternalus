@@ -48,7 +48,7 @@ export const MAP_OBJECT_DEFINITIONS = Object.fromEntries(
  * keeps when its tower falls (DEC-217 (12), DEC-219 (a); owner: "the fort walls have half-health
  * unless that wall was what was attacked to destroy the tower").
  */
-export const RUINED_FORT_WALL_HEALTH_FRACTION = 0.5; // TUNE: DEC-217 (12), DEC-219 (a)
+const RUINED_FORT_WALL_HEALTH_FRACTION = 0.5; // TUNE: DEC-217 (12), DEC-219 (a)
 
 /**
  * What a standing wall of a lane tower's fort becomes when its tower falls: scenery that blocks
