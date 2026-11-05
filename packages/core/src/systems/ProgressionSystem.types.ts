@@ -5,7 +5,7 @@ import type {
 } from '../content/progression/progression.types';
 import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityId } from '../state/EntityStore.types';
-import type { Team } from '../teams/teams.types';
+import type { PlayableTeam, Team } from '../teams/teams.types';
 
 /** The content `ProgressionSystem` prices kills and levels with, injected (AGENTS rule 11). */
 export type ProgressionContent = {
@@ -17,9 +17,20 @@ export type ProgressionContent = {
 };
 
 /** One kill waiting for this system's pass. */
-export type Award = {
+type KillAward = {
   readonly killerId: EntityId;
   readonly victimId: EntityId;
   readonly victimTeam: Team;
   readonly xp: number;
 };
+
+/** One destroyed structure: `xp` for every Legend of `team`, the team that destroyed it. */
+type StructureAward = {
+  readonly team: PlayableTeam;
+  readonly victimId: EntityId;
+  readonly victimTeam: PlayableTeam;
+  readonly xp: number;
+};
+
+/** One award waiting for this system's pass. */
+export type Award = KillAward | StructureAward;

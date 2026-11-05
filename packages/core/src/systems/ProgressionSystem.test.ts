@@ -25,7 +25,7 @@ const UNITS = loadDefaultContent(CONFIG.tickRate);
 const CURVES = new ContentCatalogue<LevelCurveDefinition>([
   { id: 'legend', cap: 4, xpToNext: [100, 150, 200] },
 ]);
-const XP_SOURCES = { legendKill: { base: 150, perVictimLevel: 25 } };
+const XP_SOURCES = { legendKill: { base: 150, perVictimLevel: 25 }, structureDestroyed: 300 };
 
 const setUp = () => {
   const state = new GameState(CONFIG, 1);
@@ -63,7 +63,10 @@ const setUp = () => {
       .recentEvents()
       .filter((event) => event.type === type)
       .map((event) => event.payload);
-  return { state, spawn, kill, run, payloads };
+  const destroyStructure = (team: Team, kind = 'spawner-tower') => {
+    state.events.emit('structure-destroyed', { entityId: 'entity-gone', kind, team, lane: null });
+  };
+  return { state, spawn, kill, run, payloads, destroyStructure };
 };
 
 describe('ProgressionSystem', () => {
@@ -191,5 +194,67 @@ describe('ProgressionSystem', () => {
     };
 
     expect(hash()).toBe(hash());
+  });
+
+  describe('structure destroyed (DEC-186)', () => {
+    it('gives every Legend of the destroying team 300 XP, none to the other team', () => {
+      const { spawn, run, payloads, destroyStructure } = setUp();
+      const lights = [spawn('warrior', 'warrior', 'light'), spawn('magus', 'magus', 'light')];
+      const dark = spawn('warrior', 'warrior', 'dark');
+
+      destroyStructure('dark');
+      run();
+
+      expect(lights.map((l) => l.getComponent(Progression).xp)).toEqual([300, 300]);
+      expect(dark.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual(
+        lights.map((l) => ({
+          entityId: l.id,
+          amount: 300,
+          victimId: 'entity-gone',
+          victimTeam: 'dark',
+          cause: 'structure-destroyed',
+        })),
+      );
+    });
+
+    it('pays a level-up from it, and skips minions and the destroyed side', () => {
+      const { spawn, run, payloads, destroyStructure } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+      const minion = spawn('light-mob', 'light-minion', 'light');
+
+      destroyStructure('dark');
+      run();
+
+      // 300 XP on the test curve [100, 150, 200]: levels 2 (100) and 3 (250).
+      expect(warrior.getComponent(Progression)).toMatchObject({ xp: 300, level: 3 });
+      expect(minion.findComponent(Progression)).toBeUndefined();
+      expect(payloads('level-up')).toEqual([
+        { entityId: warrior.id, level: 2 },
+        { entityId: warrior.id, level: 3 },
+      ]);
+    });
+
+    it('pays nothing for a neutral structure', () => {
+      const { spawn, run, payloads, destroyStructure } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+
+      destroyStructure('neutral', 'camp');
+      run();
+
+      expect(warrior.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
+    });
+
+    it('pays nothing for a destroyed building (a map object emits no structure event)', () => {
+      const { spawn, kill, run, payloads } = setUp();
+      const warrior = spawn('warrior', 'warrior', 'light');
+
+      kill(warrior, spawn('light-mob', 'training-dummy', 'dark'));
+      run();
+
+      expect(warrior.getComponent(Progression).xp).toBe(0);
+      expect(payloads('xp-gained')).toEqual([]);
+    });
   });
 });
