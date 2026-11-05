@@ -5053,3 +5053,25 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   Prettier code style!"; core "Tests 1096 passed (1096)"; client "Tests 1771 passed (1771)"; "✓
   built in 275ms"; "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: ponytail review, then the PR after #77 merges.
+
+### 2026-11-05 — Phase 3 / unit start facing (DEC-216 (6)) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: before its first move or attack, a unit faces toward the enemy Stronghold, and a
+  guard faces out from the centre of its home (DEC-216 (6)). The spawn gives the facing in
+  `Placement.facing`; `SpawnContextReader.placed` reads it and `Unit` turns its new `Transform` to
+  it. `MatchWorld.startFacing(team, position)` is the one place that decides "toward the enemy
+  Stronghold"; `Simulation.spawnBot` (roster laners and Rovers), `DevSpawnHandler` (the player and
+  developer spawns) and `SpawnSystem.spawnHorde` (lane minions, opening and developer hordes) use
+  it; `GuardRoster` faces each guard (tower, Stronghold and camp posts) along post minus home.
+  `INITIAL_FACING` stays as the fallback for a unit given no start facing (neutral non-guard, no
+  map) and for structures; its `TUNE` note is gone. Verified as built, no change: (7) turn to a
+  target in reach also between hits, a stunned unit does not turn (new `MovementSystem` test pins
+  the movement half); (8) the base arc; (9) one gold `#d9a93a` for every unit; (10) disc and ring.
+  New tests, each seen red first by a deliberate break: `MatchWorld`, `SpawnContextReader`,
+  `Unit`, `DevSpawnHandler`, `SpawnSystem`, `GuardRoster`, `Simulation.bots` (with a same-hash
+  check), `MovementSystem`. Docs: 04 §3 states the start facing; INBOX's chevron item is answered.
+  (11) is not built.
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1105 passed (1105)"; client "Tests 1771 passed (1771)"; "✓ built in 251ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: (11) face the hit spot after fix/minion-stack-followups lands its aim helper.

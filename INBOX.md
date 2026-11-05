@@ -16,7 +16,7 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
+- [x] **Unit facing chevron (DEC-192, feat/unit-facing-chevron, 2026-11-05) — two questions, one
       better-than-design item.**
       (1) Start facing: a unit faces east (`INITIAL_FACING` in `Transform.constants.ts`) until it
       first moves or attacks. Guards, camp mobs and Legends in the countdown show east, and ability
@@ -29,6 +29,12 @@ Reply inline (`Decision: …`).
       chevron. An abstract `UnitView extends DefaultEntityView` with an abstract outline, or a
       `FacingChevronView` decorator, would hold it once. Recommendation: build it in one tidy PR
       after the playtest PRs merge. Approve, or say no.
+  - Answered 2026-11-05 (the decision page, DEC-216 and DEC-218): (1) toward the enemy
+    Stronghold; a guard faces out from the centre of its home (DEC-216 (6)). Built on
+    `feat/unit-facing-chevron`: the spawn's `Placement.facing`, from `MatchWorld.startFacing` and
+    the guard roster; `INITIAL_FACING` stays as the fallback for a unit given none. (2) Keep the
+    disc and ring as built (DEC-216 (10)). (3) Approved; built in the tidy PR after the playtest
+    PRs merge (DEC-218 B5).
 
 - [ ] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
