@@ -6,6 +6,7 @@ import type { Entity } from '../entities/Entity';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
+import { countdownEndTick } from '../state/countdownEndTick';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { HordeRequest } from '../state/HordeRequest.types';
@@ -76,7 +77,7 @@ export class SpawnSystem implements System {
     });
     this.spawners = spawners.sort((a, b) => compareById(a.id, b.id));
     const { tickRate } = state.config;
-    const countdownTicks = Math.round(state.config.match.countdownSeconds * tickRate);
+    const countdownTicks = countdownEndTick(state.config);
     this.scheduled = this.spawners.flatMap((spawner) =>
       (plan.waves[spawner.kind] ?? []).map((wave) => ({
         spawner,

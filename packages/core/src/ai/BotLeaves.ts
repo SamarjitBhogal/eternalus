@@ -109,11 +109,15 @@ export class BotLeaves {
     return this.moveTo(turn, best.position);
   }
 
-  /** Picks the enemy in `engageRadius` the utility scorer likes best. */
+  /**
+   * Picks the enemy in `engageRadius` the utility scorer likes best: an enemy unit, or a camp mob
+   * attacking the bot (DEC-166; it never farms a camp that leaves it alone).
+   */
   public findEnemy(turn: BotTurn): boolean {
-    const { state, team, position, difficulty, perception } = turn;
+    const { state, id, team, position, difficulty, perception } = turn;
     const enemies = perception.unitsWithin(position, difficulty.engageRadius, {
       hostileTo: team,
+      neutralAttackersOf: id,
       aliveOnly: true,
     });
     turn.enemy = this.scorerFor(difficulty).best(enemies, (enemy) => {
