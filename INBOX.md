@@ -307,8 +307,8 @@ Reply inline (`Decision: …`).
       cliffs for now. please document that the shield arc should combine with the original wall
       idea to allow for walkable walls in further sprints but that is deferred for now". "Walls"
       here means the outer shield arc (PR #69, DEC-158). Nothing to build now. A later sprint
-      combines the shield arc with the original wall idea so that units can walk on the walls;
-      that needs a height layer in physics and map design. When it is built, the Stronghold heal
+      combines the shield arc with the original wall idea so that units can walk on the walls
+      (agent note: that needs a height layer in physics and map design). When it is built, the Stronghold heal
       zone is reviewed again (DEC-188).
 - [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
       `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
