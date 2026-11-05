@@ -1,9 +1,39 @@
 import { describe, expect, it } from 'vitest';
 
+import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { GUARD_PLANS } from './content/structures/guardPlans';
+import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
+import { MemoryLogger } from './diagnostics/MemoryLogger';
+import { MapGenerator } from './map/MapGenerator';
+import { Simulation } from './Simulation';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 import { isMinion, match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatches';
 
 describe('Simulation structures', () => {
+  it('fills the generated map’s forest camps when the countdown ends (18 §7.1)', () => {
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 1 } });
+    const map = new MapGenerator().generate(config, 1);
+    const logger = new MemoryLogger();
+    const simulation = new Simulation({ config, seed: 1, logger, debug: TEST_DEBUG_CONFIG, map });
+    const campMobs = () =>
+      simulation
+        .snapshot()
+        .entities.filter(({ definitionId }) => definitionId.endsWith('-camp-mob'));
+
+    run(simulation, config.tickRate);
+    expect(campMobs()).toEqual([]);
+
+    run(simulation, 2);
+    const smallestCamp = Math.min(
+      ...Object.entries(GUARD_PLANS)
+        .filter(([id]) => id.startsWith('forest-camp-'))
+        .map(([, { table }]) => table.reduce((sum, { count }) => sum + count, 0)),
+    );
+    expect(campMobs().length).toBeGreaterThanOrEqual(2 * config.map.campsPerSide * smallestCamp);
+    expect(campMobs().every(({ team }) => team === 'neutral')).toBe(true);
+    expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
+  });
+
   it('sends tower guards after an enemy that walks in, then back to their posts (18 §7)', () => {
     const { simulation, logger } = match(STRONGHOLDS_ONLY);
     simulation.step();

@@ -4347,6 +4347,23 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   passed."
 - Next step: M6.
 
+### 2026-10-30 — Phase 2 / sprint 2.2 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: minion plan M6, forest camps. `Camp` structure and three forest-camp definitions;
+  light, medium and heavy camp mobs and the `camp-mob` aggro profile; camp groups as `group` guard
+  plans activated at the countdown's end (balancing.md compositions, 6 m leash, 120 s group
+  respawn); `GuardRoster` emits `camp-cleared` (new in doc 03's catalogue); guard plans are looked
+  up by structure definition id; posts may be neutral and skip the unit cap. Checkpoint defenders
+  not built: `CaptureSystem` is only on PR #49, which conflicts with the minion stack (INBOX).
+  INBOX notes record the two earlier minion items as applied by their `Recommendation:`s.
+- Pre-PR gate: critic round 1 had one blocker (no test of a neutral camp mob through
+  `GuardController`), now tested with a camp-post leash invariant case; doc 15's leash row covers
+  camp mobs; the one-way aggro between neutral and team units is an INBOX question. Ponytail: lean.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core "Tests
+  768 passed (768)"; client "Tests 416 passed (416)"; "✓ built in 144ms"; "Documentation check
+  passed."
+- Next step: the owner's INBOX answers; checkpoint defenders once PR #49 lands.
+
 ### 2026-10-30 — Phase 2 / sprint 2.2 — fix/struggling-lane-signals (on PR #56) — Claude Code for sholtzman
 
 - What was done: the owner's most-struggling lane (DEC-89) in `assessLanes`. The three terms are
@@ -4723,3 +4740,47 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   947 passed (947)"; client "Tests 1735 passed (1735)"; "Documentation check passed."
 - Next step: merge PR #68 with a merge commit once CI passes; #56, #57 and #58 resolve the
   conflicts with it.
+
+### 2026-11-02 — Phase 3 / minion M6 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: brought #58 onto #57's head (M5b on M2c on `phase/3-sprint-3-work`) in three
+  merges (`1c023a6`, `08dd3fc` and this one). Conflicts, both sides kept: `GuardRoster` (M6's camp
+  plans by definition id, first fill tick, neutral cap exemption and `camp-cleared`, with DEC-138's
+  clear posts and the cheap-checks-first refill), `SpawnSystem`'s guard-plan validation, M2c's
+  split of `Simulation.hordes.test` (M6's camp test moved to `Simulation.structures.test`), docs
+  15, 18 and the plan (CaptureSystem is now PR #64), INBOX (the owner's newer answers; M6's two
+  agent notes dropped, superseded by DEC-89 and the 2026-10-29 decision; the M6 item now names
+  PR #64) and this file. After the merge: camp mobs' `movement` became `movementProfile`; two tests build
+  `GameState` from `matchWorldOf`; the removed `initialHordesPerTeam` is dropped. The merge probe
+  (seeds 1, 2, 360 s, bots, map objects, every invariant) found camp mobs inside camp fires; fixed
+  on #56 (body-radius step, then an objects-only second pass) and merged in. New test: every camp
+  mob clear of map objects once camps fill, seeds 1 and 2 (seed 1 red before). Probe after: 0
+  violations, 5.6–6.5 ms per tick (dev laptop).
+- Critic: PASS, no blockers; its should-fix (the INBOX item's PR #49) and nits applied.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 971 passed (971)"; client "Tests 434 passed (434)"; "✓ built in 218ms"; "Documentation
+  check passed."
+- Next step: push #58, retarget it to `phase/3-sprint-3-work`. Checkpoint defenders wait for #64.
+
+### 2026-11-02 — Phase 3 / minion M6 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: CodeRabbit's two #58 threads. Doc 07's status note no longer lists camps as not
+  built (M6 adds `Camp`). Not changed: the 2026-10-30 M6 entry's four bullets, since pushed
+  entries are never rewritten (OG-12); new entries keep the three-bullet shape.
+- Checks run: `npm run docs:check` and Prettier on the two docs; docs-only change.
+- Next step: merge #56, #57, #58 in order.
+
+### 2026-11-02 — Phase 3 / minion soak — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
+
+- What was done: the minion plan's done-when soak on #58's head (`816c238`), a throwaway probe,
+  not committed: seeds 1 and 2, 3 lanes, 600 s, bot rosters, map objects. With every invariant
+  once a second: 0 violations (`guard-within-leash` for tower guards and camp mobs, map-object
+  overlap, horde membership), 0 guard posts refilled after their due tick, 0 % of 496 horde units
+  skipped per team, at most 284 / 250 units on a team (cap 300). Tick time at the release
+  invariant level (developer laptop, not the reference laptop): seed 1 p50 1.58, p95 3.35, p99
+  4.00, max 10.99 ms (4 of 18,000 ticks over 8 ms); seed 2 p50 1.44, p95 2.61, p99 3.13, max
+  7.92 ms. With heavy invariants every 30 ticks, those ticks cost 160 to 360 ms, so heavy-level
+  soaks run slowly. No tower fell and no camp was cleared in 600 s on the generated map: hordes
+  march about 1.5 km and bots never attack structures or camps (minion plan §3).
+- Checks run: the probe above; docs-only change, `npm run docs:check` passes.
+- Next step: bot laners attack structures (the M3 stand-in), on a branch from #58's head.

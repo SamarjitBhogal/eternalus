@@ -16,6 +16,23 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
+      checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
+      which is only on PR #64 (`feat/capture-points-v2`, open; #49 was closed), not yet on the
+      phase branch. Once #64 is on the phase branch,
+      defenders are a guard plan per checkpoint asked for by `CaptureSystem`. Recommendations
+      ready for then: the leash is the zone's radius; defenders at an unowned point are neutral
+      (doc 18 §10, item 4). (2) **Camps as built:** inactive until the countdown ends; light 4
+      light, medium 2 medium + 2 light, heavy 1 heavy + 2 medium (balancing.md); 6 m leash; the
+      whole group respawns 120 s after its last mob dies, and `camp-cleared` fires then. A camp
+      never stays gone. Camp mobs use the minion stats and `xpValue` of their class (no reference
+      gives them their own); the 50 XP clear bonus waits for `ProgressionSystem`. (3) **One-way
+      aggro (needs your decision):** `Perception` never offers neutral units as targets, so lane
+      minions, guards and bots ignore camp mobs, while camp mobs attack light and dark units within
+      4 m of their posts. A horde passing a camp near its lane would take hits and not fight back.
+      Should lane minions fight camp mobs that attack them, or ignore camps entirely (then camp
+      mobs should not attack minions either)? Approve, or say what to change.
+
 - [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
       blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
       or ranged `AttackStrategy` exists until sprint 2.3) and numbers no reference gives ("higher

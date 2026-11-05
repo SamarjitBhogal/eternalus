@@ -66,6 +66,8 @@ export type GameEventMap = {
     readonly isBreakable: boolean;
     readonly lane: string | null;
   };
+  /** A camp's whole group is dead (18 §7.1); the group comes back after its respawn time. */
+  readonly 'camp-cleared': { readonly entityId: EntityId };
   readonly 'shield-bars-changed': {
     readonly entityId: EntityId;
     readonly bars: readonly ShieldBar[];
