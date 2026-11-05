@@ -19,7 +19,7 @@ const PLAYER: EntitySnapshot = {
   family: 'legend',
   definitionId: 'magus',
   team: 'light',
-  transform: { x: 1, y: 2, radius: 0.5 },
+  transform: { x: 1, y: 2, radius: 0.5, facing: { x: 1, y: 0 } },
   health: { current: 600, max: 600 },
 };
 

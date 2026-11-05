@@ -338,6 +338,7 @@ the middle shows the centre. Everything is clipped to the HUD ring. The owner se
   near-black for Dark, grey for neutral, 1.5 px (DEC-187, owner-accepted 2026-11-05). A unit up to
   about 6 world units past the radius shows at the ring edge. The dot sizes are TUNE values in
   `entityViews.constants.ts`.
+- The facing chevron (DEC-192) is drawn in the main view only. The minimap never shows it.
 - Feature glyphs stay on the definition: every structure and obstacle definition may declare a
   `minimapGlyph`, and the map layers draw it. Team colour comes from the entity's `team`, not from
   the glyph.

@@ -1,6 +1,7 @@
 import { Combat } from '../components/Combat';
 import { Health } from '../components/Health';
 import { StatusEffects } from '../components/StatusEffects';
+import { Transform } from '../components/Transform';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
@@ -8,9 +9,10 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Lands the attacks of every unit with a target (architecture 05 §10): when the target is in reach
- * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A dead
- * or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the cooldown
- * (`attackSpeed`). Getting into reach is the controller's job (moving), not this system's.
+ * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A unit
+ * with a target in reach faces it every tick, after `MovementSystem`, so attacking outranks moving
+ * (DEC-192). A dead or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the
+ * cooldown (`attackSpeed`). Getting into reach is the controller's job (moving), not this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
@@ -41,7 +43,11 @@ export class CombatSystem implements System {
       if (statuses?.has('cannot-attack') === true) {
         return;
       }
-      if (!combat.canAttack(state.tick) || !state.entities.isInReach(attacker.id, target.id)) {
+      if (!state.entities.isInReach(attacker.id, target.id)) {
+        return;
+      }
+      attacker.getComponent(Transform).lookAt(target.getComponent(Transform).position);
+      if (!combat.canAttack(state.tick)) {
         return;
       }
 

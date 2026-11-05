@@ -15,7 +15,13 @@ export type EntitySnapshot = {
   readonly family: string;
   readonly definitionId: string;
   readonly team: Team | null;
-  readonly transform: { readonly x: number; readonly y: number; readonly radius: number } | null;
+  /** `facing` is a unit vector (DEC-192); the client interpolates it like the position. */
+  readonly transform: {
+    readonly x: number;
+    readonly y: number;
+    readonly radius: number;
+    readonly facing: { readonly x: number; readonly y: number };
+  } | null;
   readonly health: { readonly current: number; readonly max: number } | null;
 };
 

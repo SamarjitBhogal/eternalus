@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-05
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -230,7 +230,7 @@ export type EntitySnapshot = {
     readonly x: number;
     readonly y: number;
     readonly radius: number;
-    readonly facing: number;
+    readonly facing: { readonly x: number; readonly y: number }; // unit vector (10 §10)
   } | null;
   readonly health: {
     readonly current: number;
@@ -244,7 +244,7 @@ export type EntitySnapshot = {
 
 `Match` keeps the two latest snapshots (`previous`, `current`); `SceneView.draw(previous, current,
 alpha)` pairs the entities of both by id (both arrays are in store order; an entity spawned or
-removed between them is in one only) and lerps positions (the research's "two positions per
+removed between them is in one only) and lerps positions and facings (the research's "two positions per
 entity, stored in the snapshot, never in the entity"). `mapRevision` lets `TerrainView` and
 `MinimapView` rebuild their cached layers only when terrain changed (Dirty Flag).
 
@@ -445,7 +445,7 @@ each closed by the session or phase named:
 - `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `phase`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
   and `EntitySnapshot` its identity, `team`, `transform`
-  (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
+  (`x`, `y`, `radius`, `facing`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
   `state/GameState.types.ts` and stays `countdown` until `match/` exists (phase 4).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow

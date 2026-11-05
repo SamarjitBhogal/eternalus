@@ -5022,3 +5022,34 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   and `docs:check` were re-run after it.
 - Next step: add the DEC rows (DEC-187 text "Legends and all mobs", the G1 outline answer),
   merge the sibling `unit-facing-chevron` work, then the pre-PR gate.
+
+### 2026-11-05 — Phase 3 / playtest fixes: unit facing chevron — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: units keep a facing and show it with a gold chevron (DEC-192), main view only.
+  Commit `3f4bd38`: `Transform.facing` (a unit vector), `MovementSystem` turns along the velocity,
+  `CombatSystem` turns to a target in reach, the snapshot carries the facing, the views draw the
+  chevron, `EntityLayer` blends it between ticks. Critic round 1 fixes (this round, uncommitted):
+  `Transform.lookAt(point)` replaces the scratch vector in `CombatSystem`; `isInReach` no longer
+  allocates for a unit target; `finite-transforms` also checks the facing (unit length, tolerance in
+  `FiniteTransformsInvariant.constants.ts`); new tests for `lookAt`, a steered attacker, a
+  `cannot-attack` unit and a map-object target, each seen red first. Docs: architecture 03, 04 §3
+  (the facing rules), 06 §8, 08 §8 and 10 §10 follow the code. INBOX has one open item with two
+  owner questions (start facing, ring colour).
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1096 passed (1096)"; client "Tests 1771 passed (1771)"; "✓ built in 283ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: critic round 2, then ponytail review, then the PR after #77.
+
+### 2026-11-05 — Phase 3 / unit facing chevron, critic round 2 — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: critic round 2 approved (0 blockers). Its fixes: `isInReach` uses
+  `geometry.distance` and its TSDoc names the missing-`Transform` case (`f5f0aaf`); the
+  `EntityLayer.turn` TSDoc and 08 §8 say opposite facings snap at the midpoint (`a9601db`,
+  `5643c3b`); 15 §3 names the facing length check, 10 cites DEC-192 and no longer limits the turn
+  lerp to the client, 04 §3 names the `cannot-attack` exception, and the open INBOX item has (3) the
+  `UnitView` better-than-design item (`5643c3b`). Correction to the entry above: the round 1 fixes
+  it calls uncommitted are commit `6043999`.
+- Checks run: `npm run check` on HEAD `5643c3b` (clean tree) → `exit 0`: "All matched files use
+  Prettier code style!"; core "Tests 1096 passed (1096)"; client "Tests 1771 passed (1771)"; "✓
+  built in 275ms"; "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: ponytail review, then the PR after #77 merges.

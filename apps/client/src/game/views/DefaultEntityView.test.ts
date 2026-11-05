@@ -12,18 +12,20 @@ const dummy = (team: EntitySnapshot['team']): EntitySnapshot => ({
   family: 'mob',
   definitionId: 'training-dummy',
   team,
-  transform: { x: 10, y: 20, radius: 0.4 },
+  transform: { x: 10, y: 20, radius: 0.4, facing: { x: 1, y: 0 } },
   health: { current: 100, max: 100 },
 });
 
 const AT = { x: 10, y: 20 };
+
+const EAST = { x: 1, y: 0 };
 
 describe('DefaultEntityView', () => {
   it('draws a disc of its footprint in its team colour', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().draw(
-      { entity: dummy('dark'), position: AT, isFocused: false },
+      { entity: dummy('dark'), position: AT, facing: EAST, isFocused: false },
       renderer,
     );
 
@@ -36,7 +38,7 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().draw(
-      { entity: dummy('light'), position: AT, isFocused: true },
+      { entity: dummy('light'), position: AT, facing: EAST, isFocused: true },
       renderer,
     );
 
@@ -48,8 +50,8 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
     const view = new DefaultEntityView();
 
-    view.draw({ entity: dummy('neutral'), position: AT, isFocused: false }, renderer);
-    view.draw({ entity: dummy(null), position: AT, isFocused: false }, renderer);
+    view.draw({ entity: dummy('neutral'), position: AT, facing: EAST, isFocused: false }, renderer);
+    view.draw({ entity: dummy(null), position: AT, facing: EAST, isFocused: false }, renderer);
 
     expect(renderer.calls).toEqual([
       { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: 0.8 }, AT, NEUTRAL_ENTITY_COLOR] },
@@ -61,7 +63,7 @@ describe('DefaultEntityView', () => {
     const renderer = new RecordingRenderer();
 
     new DefaultEntityView().drawMinimap(
-      { entity: dummy('dark'), position: AT, isFocused: false },
+      { entity: dummy('dark'), position: AT, facing: EAST, isFocused: false },
       renderer,
     );
 

@@ -5,6 +5,7 @@ import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
+import { Transform } from '../components/Transform';
 import { Progression } from '../components/Progression';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
@@ -94,6 +95,7 @@ describe('DefaultSystemPipeline', () => {
     );
 
     // Collision resolves positions before the index, steering, combat and next tick's AI read them.
+    // Combat runs after movement, so a unit with a target in reach faces it, not its own way (DEC-192).
     expect(pipeline.names).toEqual([
       'ai',
       'hordes',
@@ -140,6 +142,35 @@ describe('DefaultSystemPipeline', () => {
     pipeline.run({ state, logger });
 
     expect(state.entities.has(victim.id)).toBe(false);
+    expect(logger.records).toEqual([]);
+  });
+
+  it('turns a steered attacker to its target in reach, not along its movement (DEC-192)', () => {
+    const logger = new MemoryLogger();
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const pipeline = new DefaultSystemPipeline(
+      new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),
+      state,
+      PROGRESSION,
+    );
+    const factory = newFactory();
+    const warrior = factory.create('warrior', 'warrior', {
+      position: { x: 0, y: 0 },
+      team: 'light',
+    });
+    const dummy = factory.create('light-mob', 'training-dummy', {
+      position: { x: -1, y: 0 },
+      team: 'dark',
+    });
+    state.entities.add(warrior);
+    state.entities.add(dummy);
+    state.entities.setAttackTarget(warrior.id, dummy.id);
+    warrior.getComponent(Movement).steer({ x: 0, y: 1 });
+
+    pipeline.run({ state, logger });
+
+    expect(warrior.getComponent(Movement).velocity.y).toBeGreaterThan(0);
+    expect(warrior.getComponent(Transform).facing.x).toBeLessThan(-0.99);
     expect(logger.records).toEqual([]);
   });
 

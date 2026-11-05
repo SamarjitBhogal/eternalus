@@ -135,9 +135,17 @@ registries. Components are looked up by class (`entity.get(Health)`), never by s
 Components are classes with private state and methods; systems call the methods, never poke the
 fields. Each component guards its own invariants so a bug shows up where it happens.
 
+`Transform` also owns the facing rules (DEC-192). The facing is a unit vector; it starts as
+`INITIAL_FACING` (`Transform.constants.ts`) until the first turn. It follows the direction of the
+velocity (`MovementSystem`). A unit with an attack target in reach faces the target instead, as
+`CombatSystem` runs after `MovementSystem`, unless a status stops its attacks (`cannot-attack`). A zero direction, and a point equal to the unit's own
+position, keep the facing. Core turns at once. The client blends the facing between two ticks
+([08 §8](08-game-engine.md)). The invariant `finite-transforms` checks the position and the
+facing ([15 §3](15-diagnostics-and-runtime-testing.md)).
+
 | Component       | Encapsulated state                                                               | Invariants it guards                                                     | Key methods                                                                                       |
 | --------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `Transform`     | `position: Vec2`, `facing`, `radius`                                             | position finite                                                          | `moveBy`, `lookAt`                                                                                |
+| `Transform`     | `position: Vec2`, `facing`, `radius`                                             | position finite; facing is a unit vector                                 | `moveBy`, `moveTo`, `face(direction)`, `lookAt(point)`                                            |
 | `Health`        | `base`, `current`, `shieldBars: ShieldBar[]` (one per living allied `BuffTower`) | `0 <= current <= base`; bars drain before base; bar count ≤ towers alive | `applyDamage(amount, source)`, `heal`, `addShieldBar(sourceId, max)`, `removeShieldBar(sourceId)` |
 | `Movement`      | `speed`, `maxSpeed`, `acceleration`, `mass`, `velocity: Vec2`                    | `0 <= speed <= maxSpeed`; mass > 0                                       | `accelerateToward`, `applyImpulse` (knockback), `stop`                                            |
 | `Combat`        | `weaponId`, `attackStrategy`, `targetingStrategy`, `targetId`, `cooldownTicks`   | cooldown never negative                                                  | `canAttack(tick)`, `setTarget`, `beginAttack`                                                     |
