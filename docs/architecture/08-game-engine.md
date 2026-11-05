@@ -302,8 +302,8 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
 - (2026-11-04, `feat/match-director`) The split is built: `MatchViewControls` holds the canvas
   gestures (camera, minimap look-at, roofs, attack on click), and `Match.ts` has 214 lines. The
   player's Legend comes from `Snapshot.match.humanLegendId`, which core sets when it spawns the
-  human's seat ([12](12-game-story-and-match-director.md) §13). `Match` no longer adopts the
-  first spawn of the player's class and team.
+  roster's human slot (DEC-173, [12](12-game-story-and-match-director.md) §13). `Match` no longer
+  adopts the first spawn of the player's class and team.
 
 ## Related
 

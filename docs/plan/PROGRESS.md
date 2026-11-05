@@ -5141,3 +5141,29 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check`, log `md-r1-fixes-check-2026-11-04.log` in
   `eternalus-agent-work/game-loop-plan/` (result in the commit message).
 - Next step: critic round 2 (base `8e058d8`), ponytail, re-check, the PR into phase/3.
+
+### 2026-11-04 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / the owner's calls on critic round 1 (DEC-170 to DEC-176) and PR #72 — feat/match-director — sholtzman + Claude Code
+
+- What: built the owner's answers on the round-1 decision page (`INBOX.md` HC-Q35 to HC-Q41;
+  verbatim in `eternalus-agent-work/game-loop-plan/owner-answers-2026-11-04-match-director-calls.md`).
+  - DEC-170 (B1): `config/countdownTicks.ts`, used by every copy of the countdown-end formula.
+  - DEC-171 (C1): `teams/playableTeams.ts` (`PLAYABLE_TEAMS`, `isPlayableTeam`, `opponentOf`).
+  - DEC-172 (C2): `GameState.match` is read-only; `holdIdle`, `endMatch`, `seatHuman` and
+    `advanceTimeline` write it.
+  - DEC-173 (A2): the human's Legend is the roster's `human` slot (`RosterSlot.pilot`);
+    `MatchConfig.seat` is gone; the client's `botRosterSlots` is `rosterSlots`.
+  - DEC-174 (C3): `DefaultInvariantRunner` takes `DefaultInvariantRunnerOptions`.
+  - DEC-175 (D1): the `end-game` mark 0.75 is the owner's ruling, cited at the value and in 12.
+  - DEC-176 (E1): FR-006 states the built phases, `phase-changed` and the 30-minute length.
+  - Merged PR #72 (`fix/horde-guard-deadlock`, 67c0001): the side step when separation cancels a
+    pull. Our own side-step patch is dropped for it.
+  - Docs: the decisions-log batch; architecture 02, 03, 08, 11 §7, 12, 15 §7, 18 §8 for A2;
+    requirements FR-006; INBOX HC-Q35 and HC-Q39 to HC-Q41 answered, HC-Q42 new (DEC-80's
+    Citadel spawn against the as-built lane start). The plan's A19 and §4.5 amendment note is on
+    `docs/game-loop-and-results-plan` (#71, a945743).
+- Fail-first breaks: `md-r2-breaks.md`, `md-a2-breaks.md` (20 breaks) and `md-c3-breaks.md`, all
+  in `eternalus-agent-work/game-loop-plan/`; every file restored and compared with `cmp`.
+- Checks run: `npm run check`, log `md-owner-calls-check-2026-11-04.log` in
+  `eternalus-agent-work/game-loop-plan/` (result in the commit message).
+- Next step: critic round 2 (base `f40811f`), ponytail, re-check, the PR into phase/3 after #71
+  and #72.

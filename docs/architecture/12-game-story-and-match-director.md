@@ -91,7 +91,7 @@ strictly forward; `victory` and `defeat` are terminal.
 | `early-game`         | `countdownSeconds` elapsed (the value lives in `config/defaultGameConfig.ts`)                                                                           | Towers spawn a horde every `hordeSpawnIntervalSeconds` (`TUNE` 60 s) and forest camps activate after their cooldown: both are `Spawner` data consumed by `SpawnSystem`, not director logic.                                                                                                                                                                                                                                                                          | **MVP**                             |
 | `quarter-mark`       | fraction 0.25 of `plannedMatchSeconds` (game doc "quarter mark")                                                                                        | The `spawn-mini-bosses` action emits one `spawn-requested` per outer-lane `CapturePoint` with the mini-boss table (boss plus support mobs); `CaptureSystem` sets `Capturable.lockedBy` while the boss lives (`07` §7).                                                                                                                                                                                                                                               | **MVP** (mini-boss is MVP, DISC-63) |
 | `mid-game`           | fraction 0.5 (game doc "mid-game")                                                                                                                      | The `summon-greater-boss` action asks the `Cathedral` spawner for the `greater-boss`; `SpawnSystem` fulfils it and emits `boss-summoned`. `state.match.atmosphere` becomes `eternal` (views spread the change outward from the Cathedral by ticks elapsed). `StatusEffectSystem` applies `empowered` to camp units on `phase-changed`; corner camps' side waves start (`SpawnWave.afterPhase: 'mid-game'`, **Recommendation:** a new optional field on `07`'s type). | **MVP-if-time** (with the boss)     |
-| `end-game`           | fraction 0.75, or the first `structure-breakability-changed` that makes a Stronghold wall breakable, whichever is first (**Recommendation:** no source) | Announcer and music only in the MVP; the extension point for late-game rules (score cap, reinforcement waves).                                                                                                                                                                                                                                                                                                                                                       | **MVP** (as a marker)               |
+| `end-game`           | fraction 0.75 (DEC-175), or the first `structure-breakability-changed` that makes a Stronghold wall breakable if sooner (**Recommendation:** no source) | Announcer and music only in the MVP; the extension point for late-game rules (score cap, reinforcement waves).                                                                                                                                                                                                                                                                                                                                                       | **MVP** (as a marker)               |
 | `victory` / `defeat` | a `VictoryCondition` returns a verdict (§6)                                                                                                             | Terminal. `state.match.result` is built, `match-ended { result }` is emitted, the director goes inert. `victory` when `result.winner === state.match.playerTeam`, otherwise `defeat`; a draw (`winner: null`) enters `defeat` and the results screen says so (**Recommendation:** a `draw` phase is one class and one literal if wanted).                                                                                                                            | **MVP**                             |
 
 The reference doc's shorthand `countdown → open → quarter → midgame → … → results` maps onto
@@ -127,7 +127,7 @@ export type MatchTimelineEntry = {
 | `countdown-over`               | `atTick: countdownTicks` | `enter-phase early-game`                                   | requirements doc; DEC-81, DEC-84            |
 | `quarter-mark`                 | `atFraction: 0.25`       | `enter-phase quarter-mark`, then `spawn-mini-bosses outer` | game doc ("quarter mark of the game")       |
 | `mid-game`                     | `atFraction: 0.5`        | `enter-phase mid-game`, then `summon-greater-boss`         | game doc (gem explodes mid-game)            |
-| `end-game`                     | `atFraction: 0.75`       | `enter-phase end-game`                                     | **Recommendation:** no source               |
+| `end-game`                     | `atFraction: 0.75`       | `enter-phase end-game`                                     | the owner's ruling, DEC-175                 |
 | `plannedMatchSeconds`          | `defaultGameConfig.ts`   | the denominator of every fraction                          | DEC-13, DEC-81 (planning length, not a cap) |
 
 `GameConfig` gains `plannedMatchSeconds` (the reference doc calls it `matchLengthTicks`; seconds
@@ -191,7 +191,7 @@ export type MatchState = {
   readonly schedule: readonly { readonly entryId: string; readonly tick: number }[]; // every entry's resolved tick, in firing order; taken from config, so not hashed
   readonly isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88); written only by GameState.holdIdle
   readonly playerTeam: PlayableTeam; // chosen at match creation, also in sim mode
-  readonly humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); set once by GameState.seatHuman; spectatedLegendId beside it
+  readonly humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); the roster's human slot (DEC-173), set once by GameState.seatHuman; spectatedLegendId beside it
   atmosphere:
     'calm' | { readonly kind: 'eternal'; readonly originId: EntityId; readonly sinceTick: number };
   scoring: ScoringState;
@@ -412,14 +412,17 @@ Victory and the result (GL-2, core) are built: the `VictoryCondition` contract
 `applyCommand` refuses every command with `command-rejected` reason `match-ended` (FR-002); the
 systems keep stepping.
 
-The human's seat works like this: `MatchConfig.seat` is `{ definitionId } | null` (`null` in sim mode;
-its team is `playerTeam`). It has no spawn point. When the match is built, core spawns the human's
-Legend at `playerTeam`'s Stronghold from the map, through the same Legend spawn path as the bot
-roster, after the roster. No command is involved, so a replay rebuilds the seat from the config.
-Core sets `state.match.humanLegendId`; `Snapshot.match.humanLegendId` carries it (not hashed). An
-unknown definition id, or one that is not a Legend, logs ERROR `core.match` and leaves
-`humanLegendId` `null`. A seat with no map throws, as a roster does. The roster's size check and
-the Unit-cap check count the seat.
+The human's Legend works like this (DEC-173): it is the roster's `human` slot (`RosterSlot.pilot`),
+at most one per roster and on `playerTeam`; a roster without one is sim mode. The client gives it
+the Rover role (DISC-51), so core spawns it at `playerTeam`'s Stronghold from the map, with the
+other Rovers in roster order and with no controller. No command is involved, and the replay setup
+records the roster, so a replay rebuilds the human's Legend from it. Core sets
+`state.match.humanLegendId` (`GameState.seatHuman`); `Snapshot.match.humanLegendId` carries it (not
+hashed). An unknown definition id, or one that is not a Legend, logs ERROR `core.match`, spawns
+nothing and leaves `humanLegendId` `null`; the match plays on, because the class comes from saved
+data and can be stale (ADR 0023). A second human slot, or a human slot off `playerTeam`, throws, as
+a bad bot slot does. The roster's size check and the Unit-cap check count the human slot, even a
+refused one.
 
 Not built yet: `atmosphere` and `scoring` in `MatchState`; an entity that carries `WinObjective` (the
 sovereign); `MatchResult.legends` and `teams` (with `Scoring`), `timeline` and `achievements`

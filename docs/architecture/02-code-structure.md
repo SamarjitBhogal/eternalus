@@ -84,7 +84,7 @@ core/src/
 Of `diagnostics/`, `match/` uses only the `Logger` port, `makeLogRecord` and `DebugConfig`, as
 `systems/` do, so `diagnostics/` never imports `match/` ([12](12-game-story-and-match-director.md) §1).
 
-`config/` holds some ids that it cannot type, such as `seat.definitionId`. They stay plain strings
+`config/` holds some ids that it cannot type, such as `map.presetId`. They stay plain strings
 there, and the code that sees content checks them against it.
 
 ## 3. `apps/client/src/` (L4, L3 and L1)
@@ -355,7 +355,8 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
 - **Merge of the phase branch and roofs (2026-11-02).** With the phase branch's buildings (#30),
   `game/prepareMatchWorld.ts` builds the map's presentation and map objects once, and
   `createBrowserMatch.ts` hands the map, the map objects and `request.roster` to the `Simulation`
-  (`SessionController.createMatch` builds that roster with `game/session/botRosterSlots.ts`);
+  (`SessionController.createMatch` builds that roster with `game/session/botRosterSlots.ts`,
+  renamed `rosterSlots.ts` by DEC-173);
   `#30`'s `useMatch.ts` changes did not return (DEC-50). The cathedral interior scene, its camera paths and the "Leave cathedral"
   control are gone. New is `game/BuildingRoofs.ts`, the one owner of roof cutaways: the
   player's building and the developer explorer's clicks (DEC-143; [06](06-map-and-minimap.md)

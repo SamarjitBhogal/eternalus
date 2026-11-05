@@ -1876,8 +1876,11 @@ Reply inline (`Decision: …`).
     the nine members; `Match` builds it and exposes it as `controls`, and `MatchHost` gives
     `match.controls` to `CanvasPointerControls`. Architecture 06 §10 names the new owner. (a) and
     (b) stay where they were noted.
-- [ ] **HC-Q35 — The human's Legend: shared spawn path, or a roster slot (match-director critic, better than the design; DEC-139).** Spawn the human through one Legend spawn path shared with the bot roster (built as plan A19, with the seat as `{ definitionId }`), or record the human as a `player` slot of the roster? Recommendation: the shared path; the roster option changes plan A19.
+- [x] **HC-Q35 — The human's Legend: shared spawn path, or a roster slot (match-director critic, better than the design; DEC-139).** Spawn the human through one Legend spawn path shared with the bot roster (built as plan A19, with the seat as `{ definitionId }`), or record the human as a `player` slot of the roster? Recommendation: the shared path; the roster option changes plan A19.
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-173): A1, with the note to accept it only if a critique finds it as
+    good as or better; the critic found A2 better, and the owner then chose "Keep A2" in chat. Built
+    on `feat/match-director`: `RosterSlot.pilot` (`'bot'` or `'human'`); `MatchConfig.seat` removed.
 - [x] **HC-Q36 — The countdown-end tick: one helper, or one mark kind (match-director critic, better than the design; DEC-139).** Keep `Math.round(countdownSeconds * tickRate)` in three production files behind a `countdownTicks` helper in `config/`, or add an at-countdown-end mark kind to the timeline so `countdownSeconds` is the one source? The two critic runs preferred different options; see the decision page.
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
   - Answered 2026-11-04 (DEC-170): "One helper" (B1). Built on `feat/match-director`:
@@ -1890,12 +1893,16 @@ Reply inline (`Decision: …`).
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
   - Answered 2026-11-04 (DEC-172): "Build in this PR". Built on `feat/match-director`: the
     writers `holdIdle`, `endMatch`, `seatHuman` and `advanceTimeline` on `GameState`.
-- [ ] **HC-Q39 — `DefaultInvariantRunner` takes an options object (match-director critic, better than the design; DEC-139).** Replace the five positional constructor arguments of `DefaultInvariantRunner` with an options object, as DEC-113 (4) did for `MatchDirector`?
+- [x] **HC-Q39 — `DefaultInvariantRunner` takes an options object (match-director critic, better than the design; DEC-139).** Replace the five positional constructor arguments of `DefaultInvariantRunner` with an options object, as DEC-113 (4) did for `MatchDirector`?
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
-- [ ] **HC-Q40 — The `end-game` mark 0.75 has no source (match-director critic).** The default timeline enters `end-game` at 0.75 of the planned length (`config/defaultGameConfig.ts`), and architecture 12 §3 calls it a recommendation with no source. Keep 0.75, give a source, or change it?
+  - Answered 2026-11-04 (DEC-174): "Build in this PR". Done on `feat/match-director`: `DefaultInvariantRunnerOptions`.
+- [x] **HC-Q40 — The `end-game` mark 0.75 has no source (match-director critic).** The default timeline enters `end-game` at 0.75 of the planned length (`config/defaultGameConfig.ts`), and architecture 12 §3 calls it a recommendation with no source. Keep 0.75, give a source, or change it?
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
-- [ ] **HC-Q41 — FR-006 wording (match-director critic).** FR-006 still names `match-phase-changed`, the phases "late → ended" and a "20-minute timeline"; the built director has the event `phase-changed`, the phases of architecture 12 §2, and a 1800 s planned length. What wording do you want for the statement and its acceptance example?
+  - Answered 2026-11-04 (DEC-175): "Keep 0.75 as your ruling" (D1). Done on `feat/match-director`: the `end-game` mark cites DEC-175.
+- [x] **HC-Q41 — FR-006 wording (match-director critic).** FR-006 still names `match-phase-changed`, the phases "late → ended" and a "20-minute timeline"; the built director has the event `phase-changed`, the phases of architecture 12 §2, and a 1800 s planned length. What wording do you want for the statement and its acceptance example?
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-176): "Use the proposed wording" (E1). Done on `feat/match-director`: FR-006 in requirements 06.
+- [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
       (`spawnRoster`, `spawnRovers`, `spawnBot`, `buildWorld`, `createControllers`,

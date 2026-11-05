@@ -176,7 +176,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 
 | Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                       |
 | ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for the seat | `SnapshotSystem`, views                                                 |
+| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views                                                 |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                             |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro)                       |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition` |
@@ -349,7 +349,7 @@ export type Replay = ReplaySetup & {
 ```
 
 A replay is self-contained: its setup (seed, config and, when the match had them, the generated
-map, the map objects and the bot roster), the command log and the versions. The setup is plain
+map, the map objects and the whole roster), the command log and the versions. The setup is plain
 data and `exportReplay()` copies it from the options the match was built with, so a replay
 reproduces a match whose world the client prepared (the roster can depend on the player's pick)
 without the code that prepared it. `runReplay(replay, createTarget)` builds a fresh `Simulation`

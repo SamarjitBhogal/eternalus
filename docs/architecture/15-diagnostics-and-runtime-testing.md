@@ -4,7 +4,7 @@ description: Testing while the game is running - the Invariant interface and the
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-04
 tags: [architecture, diagnostics, invariants, logging, performance, replays, soak-tests, testing]
 paths: ['packages/core/src/diagnostics/**']
 related:
@@ -275,7 +275,7 @@ headless bench (`npm run bench`, plan Phase 1) injects a `Profiler` backed by `p
 ## 7. Replay-hash regression tests
 
 A replay is its setup (seed, `GameConfig` and, when the match had them, the map, the map objects
-and the bot roster) + versions + the externally enqueued commands + checkpoint
+and the roster) + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
 Recording captures every command that enters through `Simulation.enqueueCommand` and a
 `StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is

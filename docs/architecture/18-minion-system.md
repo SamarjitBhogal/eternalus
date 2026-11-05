@@ -537,15 +537,16 @@ The laner behaviour tree, its utility scoring and difficulty data stay in doc
 where it comes from.
 
 - At match setup each team's lanes are filled in `MapLane.index` order up to
-  `GameConfig.match.legendsPerLane`. The human's Legend counts against the lane it starts on. Bot
-  laners are placed in roster order (the order match setup lists them; ids sort as strings, so
-  `entity-10` would come before `entity-9`) into the lane with the fewest Legends, lowest index
-  first.
-- The Rover (`RoverController`, 11 §4.7) takes no lane.
+  `GameConfig.match.legendsPerLane`. The human's Legend is a roster slot like the bots' (DEC-173)
+  and follows the same rule. Laners are placed in roster order (the order match setup lists
+  them; ids sort as strings, so `entity-10` would come before `entity-9`) into the lane with the
+  fewest Legends, lowest index first.
+- A Rover takes no lane: the bot Rover (`RoverController`, 11 §4.7), and the human's Legend, which
+  the client gives the Rover role (DISC-51).
 - The bot difficulty each role plays (lane bots `normal`, the Rover `rover`) is the bot roster's
   `difficulties` field in core `content/teams/botRoster.ts`, checked against the loaded bot
   difficulties at content load by `content/validation/BotRosterDifficultyRule.ts` (DEC-149).
-  `game/session/botRosterSlots.ts` takes it per bot role from the session's injected catalogue; the
+  `game/session/rosterSlots.ts` takes it per bot role from the session's injected catalogue; the
   client's `contentSlice` default holds empty placeholders only.
 - The lane is stored as the `MapLane.id` in the bot-Legend `AiMemory` (11 §2) and does not change
   during the match.
