@@ -5025,3 +5025,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: the code PRs (`fix/minion-stack-followups`, `fix/click-attack-units`,
   `feat/local-minimap`, `feat/structure-xp`, `feat/out-of-combat-heal`) update the architecture
   docs and cite these DEC numbers.
+
+### 2026-11-05 — Phase 3 / owner answers from the decision page — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: the owner answered 22 open calls (heal, facing, tower access, better-than-design
+  B1 to B5) on a decision page. The answers are DEC-215 to DEC-218 in the owner decisions log; his
+  words are verbatim in `eternalus-agent-work/playtest-2026-11-04/OWNER-ANSWERS.md` ("Round 3").
+  No code changes here: the code follows on `feat/out-of-combat-heal`, `feat/unit-facing-chevron`
+  and `fix/minion-stack-followups`.
+- Checks run: `npx prettier --check` and `npm run docs:check` on the changed docs (docs-only).
+- Next step: build DEC-215 to DEC-217 on their branches; confirm the DEC-217 (12) wall reading.
