@@ -6,7 +6,8 @@ import type { Polygon, Rect } from '../utils/geometry.types';
  * (07 §1, the definition's `hasMapFootprint`). Attack reach to the structure is measured to these
  * outlines instead of its collider circle, so a melee hit on the fort is a hit on the tower
  * (DEC-185) and melee at the palace wall reaches the Stronghold (DEC-185 D); a chase closes on
- * their nearest point, and a horde spawned inside walks out past `bounds` (DEC-133).
+ * their nearest point (`EntityStore.aimPointOf`). Its `bounds` is the fort box that tells a chase
+ * which units stand inside a fort (`PathingWorld.forts`; the palace box counts, DEC-217 (16)).
  */
 export class Footprint {
   /** The box around every polygon. */

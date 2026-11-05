@@ -268,7 +268,8 @@ export class Simulation {
    * A structure whose definition `hasMapFootprint` takes the footprints of its feature's map object
    * of the same id as its `Footprint` (a lane tower's fort, DEC-185; the Stronghold's palace,
    * DEC-185 D). A blocking such object (a fort) is the structure's body: it has no health of its
-   * own (one pool, DEC-185 B).
+   * own (one pool, DEC-185 B). Only towers share one pool (DEC-217 (13)): the palace's object does
+   * not block, and a gate's definition has no `hasMapFootprint`, so both keep their own health.
    *
    * @returns Map object id → the id of the structure it is the body of.
    */

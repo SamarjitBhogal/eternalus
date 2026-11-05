@@ -18,7 +18,8 @@ export class WorldObjectStore {
   /**
    * Spawns physical objects through the existing registry/factory; terrain has no health entity.
    * An object named in `owners` gets no entity of its own: its health is its structure's (one pool,
-   * DEC-185 B: a lane tower's fort map object), so a hit on it is a hit on the structure.
+   * DEC-185 B: a lane tower's fort map object; only towers, DEC-217 (13)), so a hit on it is a hit
+   * on the structure.
    *
    * @param options - The objects, how to spawn them, and the structures some of them are bodies of.
    */
