@@ -54,10 +54,10 @@ const ringArcs = (gateAngles: readonly number[], ring: MapLayout['wallRing']): A
   const gates = gateAngles
     .map((angle, laneIndex) => ({ angle, laneIndex }))
     .sort((a, b) => a.angle - b.angle);
-  const gaps = gates.map((gate, index) => {
-    const next = gates[(index + 1) % gates.length] ?? gate;
-    return next.angle - gate.angle + (index === gates.length - 1 ? 2 * Math.PI : 0);
-  });
+  // Neighbour gaps only: the arc is open at the rear (DEC-159). With one gate there is no gap.
+  const gaps = gates
+    .slice(1)
+    .map((gate, index) => gate.angle - (gates[index]?.angle ?? gate.angle));
   const halfGate = Math.min(
     (ring.gateArcDegrees * RADIANS_PER_DEGREE) / 2,
     Math.min(...gaps) * MAX_GATE_SHARE_OF_GAP,

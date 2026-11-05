@@ -37,4 +37,12 @@ describe('strongholdRing', () => {
       'Missing generated wall ring',
     );
   });
+  it('rejects a stronghold with no generated wall boundary instead of inferring it from its walls', () => {
+    const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
+    const feature = map.features.find((entry) => entry.kind === 'stronghold');
+    if (feature === undefined) throw new Error('Missing stronghold');
+    const { wallBoundary, ...bare } = feature;
+    expect(wallBoundary).toBeDefined();
+    expect(() => strongholdRing(map, bare)).toThrow('Missing generated wall boundary');
+  });
 });
