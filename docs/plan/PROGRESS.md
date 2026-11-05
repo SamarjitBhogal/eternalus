@@ -5075,3 +5075,34 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "exit 0". Each new test was seen red with its fix broken on purpose. This line was filled in
   after that run (docs-only); `prettier --check` and `docs:check` were re-run on it.
 - Next step: critic re-check of this round, ponytail, then the PR into phase/3 after #75 merges.
+
+### 2026-11-05 — Phase 3 / tower ruins and gate reach (DEC-217 (12), (15), (17)) — feat/tower-ruins-and-routes — sholtzman + Claude Code
+
+- What was done: on `feat/tower-ruins-and-routes` (from `fix/minion-stack-followups` at
+  `ebedddb`), DEC-217 (12) with DEC-219 (a), and DEC-217 (17). DEC-217 (15) is not built (see
+  below). One line per commit:
+  - `af76b90`: reach to a gate is measured to its polygon (`hasMapFootprint` on the gate,
+    DEC-217 (17)); the gate's map object does not block, so the gate keeps its own health
+    (DEC-217 (13)); the new content flag `hasFortBox` keeps a gate's box out of the chase rule's
+    fort boxes (towers and the palace keep theirs, DEC-217 (16)).
+  - `6ae13ac`: a lane tower's fort walls are each their own `wall` map object `partOf` the tower;
+    when the tower dies, its own object and the wall that took the killing hit fall (none when
+    the keep was nearer the killer), and each other wall stands as teamless scenery at half a
+    wall's health (`RUINED_FORT_WALL_DEFINITION`, TUNE, DEC-217 (12), DEC-219 (a)) and blocks
+    until it falls on its own. The grid reopens what fell, the court's ground included.
+  - `b0053f9`: architecture 07 (Implementation status) and 18 (status note, §5.2) for the above.
+  - `a4a76df`: the ruined-wall fraction is module-private (knip).
+- Not built: DEC-217 (15), the routes out of a standing tower's court. A grid-only fix (court
+  ground that A\* may cross, a way out through the doorways for mobs and guards) works on 2 m test
+  cells, but on the 5 m nav cells almost every cell inside a court touches a wall or the keep, so
+  A\* still snaps a unit there to the open ground behind the nearest wall. The work in progress is
+  saved as a patch and a stash (`eternalus-agent-work/tower-ruins-and-routes/`); the options go to
+  the orchestrator.
+- Checks run: `npm run check` at `a4a76df` → exit 0 (log `check-final.log` in
+  `eternalus-agent-work/tower-ruins-and-routes/`): "All matched files use Prettier code style!";
+  core "Tests 1163 passed (1163)"; client "Tests 1754 passed (1754)"; "✓ built in 581ms";
+  "Documentation check passed."; "check exit 0". Each new test was seen red with its fix broken
+  on purpose. This line was filled in after that run (docs-only); `prettier --check` and
+  `docs:check` were re-run on it.
+- Next step: an owner or orchestrator decision on (15), then the critic, ponytail and the PR
+  after `fix/minion-stack-followups` and #75 merge.
