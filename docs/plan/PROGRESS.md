@@ -5012,3 +5012,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   can expose; #64 is not pushed until it is fixed.
 - Next step: the owner chooses where the guard deadlock is fixed (phase 3 PR or #64). Then
   `npm run check` again, the push, and Samarjit's re-review on base `phase/3-sprint-3-work`.
+
+### 2026-11-04 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64), merge 2 — sholtzman + Claude Code
+
+- What was done: the owner chose a separate phase 3 PR for the guard deadlock in the entry above.
+  That PR, #72, landed in `phase/3-sprint-3-work` at `c9de1a9` together with #67. `4f7c302` merges
+  that head into this branch. Only `PROGRESS.md` conflicted; both sides' entries are kept.
+- Checks run: `npm run check` on `4f7c302`: `EXIT 0`: core "Tests 1112 passed (1112)"; client
+  "Tests 1745 passed (1745)"; "✓ built in 297ms"; "Documentation check passed.". The test that
+  failed in the entry above now passes.
+- Next step: push to #64 with base `phase/3-sprint-3-work`, then Samarjit's re-review.
