@@ -4,6 +4,7 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
+import { AStarPathfinder } from '../map/AStarPathfinder';
 import type { PathQuery } from '../state/PathQuery.types';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
@@ -39,7 +40,13 @@ const turnAt = (
   const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(BLOCKED_LANE_MAP), {
     paths: withPaths ? paths : null,
   });
-  const memory = { lane: 'lane-0', isRetreating: false, targetId: null, nextCastTick: 0 };
+  const memory = {
+    lane: 'lane-0',
+    isRetreating: false,
+    targetId: null,
+    nextCastTick: 0,
+    isHalted: false,
+  };
   return {
     state,
     id: 'bot',
@@ -81,6 +88,47 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
 
     expect(leaves.moveTo(turn, { x: 80, y: 20 })).toBe('failure');
     expect(turn.commands).toEqual([{ type: 'stop', actorId: 'bot' }]);
+  });
+
+  it('halts at the near edge of blocked ground it is sent into, instead of turning back and forth at the cell A* snaps to (playtest 2026-11-04)', () => {
+    // The rift block (x 50..70, y 10..30) stands in for a tower footprint; its middle for the
+    // tower's centre, the point a retreating bot is sent to.
+    const world = matchWorldOf(BLOCKED_LANE_MAP);
+    const { pathMaxExpansions, pathSnapCells } = createDefaultGameConfig().map;
+    const state = new GameState(createDefaultGameConfig(), 1, world, {
+      paths: new AStarPathfinder(world.grid, {
+        maxExpansions: pathMaxExpansions,
+        snapCells: pathSnapCells,
+      }),
+    });
+    // One decision's travel: a `move` holds a Warrior's 6 m/s top speed for 6 ticks.
+    const STRIDE = 1.2;
+    let position = { x: 30, y: 20 };
+    let memory = turnAt(position, true).memory;
+    const headings: { x: number; y: number }[] = [];
+    for (let decision = 0; decision < 120; decision += 1) {
+      const turn = { ...turnAt(position, true), state, position, memory, next: memory };
+      leaves.moveTo(turn, { x: 60, y: 20 });
+      const move = turn.commands.find((command) => command.type === 'move');
+      if (move !== undefined) {
+        const { x, y } = move.direction;
+        const length = Math.hypot(x, y);
+        headings.push(length === 0 ? { x: 0, y: 0 } : { x: x / length, y: y / length });
+      }
+      const heading = headings.at(-1) ?? { x: 0, y: 0 };
+      position = { x: position.x + heading.x * STRIDE, y: position.y + heading.y * STRIDE };
+      memory = turn.next;
+    }
+
+    const reversals = headings.filter((heading, index) => {
+      const before = headings[index - 1];
+      return before !== undefined && heading.x * before.x + heading.y * before.y < 0;
+    });
+    expect(reversals).toEqual([]);
+    expect(headings.at(-1)).toEqual({ x: 0, y: 0 });
+    // Standing on open ground in front of the block, on the bot's side of it.
+    expect(position.x).toBeGreaterThan(43);
+    expect(position.x).toBeLessThan(50);
   });
 
   it('forgets the remembered target when the pathfinder finds no way, since the stop cleared it', () => {
