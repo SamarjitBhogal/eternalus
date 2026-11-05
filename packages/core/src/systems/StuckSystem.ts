@@ -2,13 +2,11 @@ import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
-import { Footprint } from '../components/Footprint';
-import { MapObjectBody } from '../components/MapObjectBody';
 import { Transform } from '../components/Transform';
 import type { StuckDetectionRule } from '../content/ai/ai.types';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
-import { distance, nearestPointOnPolygons } from '../utils/geometry';
+import { distance } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { System, SystemContext } from './System.types';
@@ -16,8 +14,8 @@ import type { System, SystemContext } from './System.types';
 /**
  * Finds the AI units stuck on their way to their attack target and plans their way round (owner
  * 2026-11-05, DEC-193): every mob and bot Legend with a target keeps a `ChaseWatch` of how close it
- * has come to what it heads for: the point of its target it aims at (a structure's `Footprint`
- * outline, else its centre, as `PathingSystem` aims), or its detour waypoint. One that has not come
+ * has come to what it heads for: the point of its target it aims at (`EntityStore.aimPointOf`, as
+ * `PathingSystem` aims), or its detour waypoint. One that has not come
  * `minProgress` closer in `windowSeconds`, and is not in reach, is stuck: it heads for the A\*
  * waypoint toward that point over the nav grid (`state.paths`), and asks again each time it comes
  * within `waypointRadius` of it or is stuck on the way. A clear straight line, no way, or (for a
@@ -46,14 +44,12 @@ export class StuckSystem implements System {
     state.entities.forEach((entity) => {
       const targetId = entity.findComponent(Combat)?.targetId ?? null;
       const self = entity.findComponent(Transform);
-      const goal = targetId === null ? undefined : state.entities.get(targetId);
       if (
         targetId === null ||
         self === undefined ||
-        goal === undefined ||
         !entity.hasComponent(ControllerBinding) ||
         entity.hasComponent(Deploying) ||
-        !this.aimAt(self.position, goal)
+        !state.entities.aimPointOf(targetId, self.position, this.aim)
       ) {
         entity.removeComponent(ChaseWatch);
         return;
@@ -71,27 +67,6 @@ export class StuckSystem implements System {
         this.plan(state, entity, watch, self.position);
       }
     });
-  }
-
-  /**
-   * Points `aim` where a chase of `goal` heads (`PathingSystem.chase`): the nearest point of its
-   * outline when it has one, else its centre. `false` when `goal` has no position.
-   */
-  private aimAt(from: Vec2, goal: Entity): boolean {
-    const outline =
-      goal.findComponent(MapObjectBody)?.object.footprints ??
-      goal.findComponent(Footprint)?.polygons;
-    if (outline !== undefined) {
-      nearestPointOnPolygons(from, outline, this.aim);
-      return true;
-    }
-    const at = goal.findComponent(Transform)?.position;
-    if (at === undefined) {
-      return false;
-    }
-    this.aim.x = at.x;
-    this.aim.y = at.y;
-    return true;
   }
 
   /**

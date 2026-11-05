@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Footprint } from '../components/Footprint';
+import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -30,6 +31,22 @@ class Fort extends Entity {
     };
     this.addComponent(new Transform(at, 14));
     this.addComponent(new Footprint(polygons));
+  }
+}
+
+/** A breakable map object stand-in (a house): a 0.5 m collider circle and its `MapObjectBody`. */
+class House extends Entity {
+  public readonly kind = 'obstacle';
+  public readonly family = 'obstacle';
+  protected installComponents(context: unknown): void {
+    const { at, polygon } = context as {
+      at: { x: number; y: number };
+      polygon: readonly { x: number; y: number }[];
+    };
+    this.addComponent(new Transform(at, 0.5));
+    this.addComponent(
+      new MapObjectBody({ id: 'house', kind: 'house', isBlocking: true, footprints: [polygon] }),
+    );
   }
 }
 
@@ -131,6 +148,51 @@ describe('PathingSystem', () => {
     minion.getComponent(Transform).moveTo({ x: 83.2, y: 22 });
     update();
     expect(state.entities.isInReach(minion.id, tower.id)).toBe(true);
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
+  });
+
+  it('chases a map object to the outline point reach is measured to, not its centre (one aim rule)', () => {
+    const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
+    const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP), {
+      space,
+    });
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const minion = factory.create('light-mob', 'light-minion', {
+      team: 'light',
+      position: { x: 70, y: 22 },
+    });
+    // The house's west wall runs along x 84, 1.6 m from its centre at (85.6, 20).
+    const house = new House('house', 'map-object-house');
+    house.spawn({ at: { x: 85.6, y: 20 }, polygon: box(84, 4, 87.2, 36) });
+    state.entities.add(minion);
+    state.entities.add(house);
+    state.hordes.add({
+      id: 'horde-1',
+      team: 'light',
+      weightClass: 'light',
+      lane: 'lane-0',
+      formationId: 'ranks',
+      memberIds: [minion.id],
+      progress: 40,
+    });
+    state.entities.setAttackTarget(minion.id, house.id);
+    const system = new PathingSystem(STRATEGIES, FORMATIONS, HORDE_STEERING.slotArrivalRadius);
+    const update = () => {
+      space.begin(state.entities.size);
+      space.add(minion.id, minion.getComponent(Transform).position.x, 22);
+      space.commit();
+      system.update({ state, logger });
+    };
+
+    // Straight at the wall's nearest point (84, 22), not at the centre (85.6, 20).
+    update();
+    expect(minion.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+
+    // 0.8 m from the wall, 2.4 m from the centre: in reach (0.4 m radius + 1.5 m reach to the
+    // outline), so it holds, where a chase of the centre would still close in.
+    minion.getComponent(Transform).moveTo({ x: 83.2, y: 22 });
+    update();
+    expect(state.entities.isInReach(minion.id, house.id)).toBe(true);
     expect(minion.getComponent(Movement).heading).toEqual({ x: 0, y: 0 });
   });
 

@@ -317,4 +317,38 @@ describe('EntityStore', () => {
     expect(store.isInReach(pressed, tower.id)).toBe(true);
     expect(store.isInReach(off, tower.id)).toBe(false);
   });
+
+  it('aims at the outline point nearest the attacker, else at the centre, as reach measures (one aim rule)', () => {
+    const store = new EntityStore();
+    const square = [
+      { x: 10, y: -5 },
+      { x: 20, y: -5 },
+      { x: 20, y: 5 },
+      { x: 10, y: 5 },
+    ];
+    const house = new Dummy('house', 'house-definition');
+    house.addComponent(new Transform({ x: 15, y: 0 }, 0.5));
+    house.addComponent(
+      new MapObjectBody({ id: 'house', kind: 'house', isBlocking: true, footprints: [square] }),
+    );
+    const tower = new Dummy('tower', 'tower-definition');
+    tower.addComponent(new Transform({ x: 45, y: 0 }, 14));
+    tower.addComponent(new Footprint([square.map(({ x, y }) => ({ x: x + 30, y }))]));
+    const round = new Dummy('round', 'round-definition');
+    round.addComponent(new Transform({ x: -7, y: 3 }, 1));
+    store.add(house);
+    store.add(tower);
+    store.add(round);
+    const aim = { x: 0, y: 0 };
+    const aimAt = (id: string, from: { x: number; y: number }) =>
+      store.aimPointOf(id, from, aim) ? { ...aim } : null;
+
+    expect(store.outlineOf('house')).toEqual([square]);
+    expect(store.outlineOf('tower')).toHaveLength(1);
+    expect(store.outlineOf('round')).toBeUndefined();
+    expect(aimAt('house', { x: 0, y: 2 })).toEqual({ x: 10, y: 2 });
+    expect(aimAt('tower', { x: 60, y: 9 })).toEqual({ x: 50, y: 5 });
+    expect(aimAt('round', { x: 0, y: 0 })).toEqual({ x: -7, y: 3 });
+    expect(aimAt('nobody', { x: 0, y: 0 })).toBeNull();
+  });
 });
