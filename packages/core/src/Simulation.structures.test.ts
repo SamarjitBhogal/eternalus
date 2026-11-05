@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { ContentCatalogue } from './content/ContentCatalogue';
 import { GUARD_PLANS } from './content/structures/guardPlans';
+import { STRUCTURE_DEFINITIONS } from './content/structures/structureCatalogue';
+import type { StructureDefinition } from './content/structures/structures.types';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
 import { MapGenerator } from './map/MapGenerator';
@@ -108,5 +111,26 @@ describe('Simulation structures', () => {
       { id: 'entity-5', kind: 'stronghold', team: 'dark' },
       { id: 'entity-6', kind: 'stronghold', team: 'light' },
     ]);
+  });
+
+  it('builds the structures from the definitions it is given, not a fixed set (B8)', () => {
+    const catalogue = new ContentCatalogue<StructureDefinition>(
+      STRUCTURE_DEFINITIONS.all().map((definition) =>
+        definition.id === 'stronghold' ? { ...definition, baseHealth: 123 } : definition,
+      ),
+    );
+    const simulation = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new MemoryLogger(),
+      debug: TEST_DEBUG_CONFIG,
+      map: TWO_LANE_MAP,
+      structures: catalogue,
+    });
+
+    const strongholds = simulation.snapshot().entities.filter(({ kind }) => kind === 'stronghold');
+
+    expect(strongholds).toHaveLength(2);
+    expect(strongholds.every(({ health }) => health?.max === 123)).toBe(true);
   });
 });

@@ -49,7 +49,13 @@ import { GameState } from './state/GameState';
 import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
-import type { Replay, ReplaySetup, RosterSlot, SimulationOptions } from './Simulation.types';
+import type {
+  Replay,
+  ReplaySetup,
+  RosterSlot,
+  SimulationOptions,
+  StructureSource,
+} from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
 import { WorldMap } from './map/WorldMap';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
@@ -105,6 +111,7 @@ export class Simulation {
     levelCurves,
     roster = [],
     weapons,
+    structures = STRUCTURE_DEFINITIONS,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
     this.setup = {
@@ -131,11 +138,11 @@ export class Simulation {
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
       createDefaultEntityRegistry(),
-      Simulation.withStructures(definitions),
+      Simulation.withStructures(definitions, structures),
       undefined,
       weaponSource,
     );
-    Simulation.spawnStructures(this.state, factory);
+    Simulation.spawnStructures(this.state, factory, structures);
     this.state.indexStructures();
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
@@ -172,6 +179,7 @@ export class Simulation {
                 }),
               ],
             },
+            structures,
           )
         : new SystemPipeline(systems);
     this.state.events.on('command-rejected', ({ command, reason }) => {
@@ -241,10 +249,13 @@ export class Simulation {
   }
 
   /** `units` plus the structure definitions, so one factory builds both (architecture 04 §6). */
-  private static withStructures(units: DefinitionSource): DefinitionSource {
+  private static withStructures(
+    units: DefinitionSource,
+    structures: StructureSource,
+  ): DefinitionSource {
     return {
-      has: (id) => units.has(id) || STRUCTURE_DEFINITIONS.has(id),
-      get: (id) => (units.has(id) ? units.get(id) : STRUCTURE_DEFINITIONS.get(id)),
+      has: (id) => units.has(id) || structures.has(id),
+      get: (id) => (units.has(id) ? units.get(id) : structures.get(id)),
     };
   }
 
@@ -253,13 +264,17 @@ export class Simulation {
    * 07 §1): every feature whose definition is a structure becomes that structure, with its team
    * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
    */
-  private static spawnStructures(state: GameState, factory: EntityFactory): void {
+  private static spawnStructures(
+    state: GameState,
+    factory: EntityFactory,
+    structures: StructureSource,
+  ): void {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
     for (const { definitionId, position, team, laneId } of features) {
-      if (STRUCTURE_DEFINITIONS.has(definitionId)) {
-        const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
+      if (structures.has(definitionId)) {
+        const { kind } = structures.get(definitionId);
         const placement = { position, team, ...(laneId !== undefined && { laneId }) };
         state.entities.add(factory.create(kind, definitionId, placement));
       }
@@ -465,7 +480,7 @@ export class Simulation {
   private static createControllers(): ControllerRegistry {
     const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
     return createDefaultControllerRegistry({
-      minion: { aggro: AGGRO_RULES, classOf: unitClassOf },
+      leash: { aggro: AGGRO_RULES, classOf: unitClassOf },
       botLegend: bots,
       rover: {
         ...bots,

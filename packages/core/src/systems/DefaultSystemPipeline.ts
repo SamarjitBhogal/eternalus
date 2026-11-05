@@ -8,6 +8,8 @@ import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
+import type { ContentCatalogue } from '../content/ContentCatalogue';
+import type { StructureDefinition } from '../content/structures/structures.types';
 import type { InvariantRunner } from '../diagnostics/InvariantRunner';
 import type { EntityFactory } from '../entities/EntityFactory';
 import type { SpaceIndex } from '../physics/SpaceIndex';
@@ -55,6 +57,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
    * @param progression - The content kills are priced and levels applied with, injected.
    * @param hordes - The factory (and its definitions), neighbour index and AI the horde systems
    *   (architecture 11, 18) need; without them nothing decides, marches, steers or spawns on lanes.
+   * @param structures - Where each structure's definition, and so its breakability rule, is looked
+   *   up; `Simulation` injects the one set it builds the structures from.
    */
   public constructor(
     invariants: InvariantRunner,
@@ -68,6 +72,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       readonly decide: readonly System[];
       readonly collisions?: readonly System[];
     },
+    structures: Pick<ContentCatalogue<StructureDefinition>, 'get'> = STRUCTURE_DEFINITIONS,
   ) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
@@ -123,7 +128,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
       new VeterancySystem(state, statuses, progression.units, MINION_VETERANCY),
-      new StructureSystem(STRUCTURE_DEFINITIONS),
+      new StructureSystem(structures),
       ...(hordes === undefined
         ? []
         : [
