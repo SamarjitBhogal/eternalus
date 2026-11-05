@@ -77,22 +77,37 @@ describe('Simulation structures', () => {
     expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
   });
 
-  it('holds a horde that cannot fight in front of the first enemy tower on its lane (18 §6.2)', () => {
-    const { simulation } = match(TWO_LANE_MAP, 1, true);
+  // One more entity before the first wave shifts every id after it, so the lane-0 leader meets
+  // a light guard head-on on the lane's centre line; it must step round it, not stall (10 §9).
+  it.each([0, 1])(
+    'holds a horde that cannot fight in front of the first enemy tower on its lane, with %i extra entities (18 §6.2)',
+    (extra) => {
+      const { simulation } = match(TWO_LANE_MAP, 1, true);
+      if (extra > 0) {
+        simulation.enqueueCommand({
+          type: 'dev-spawn',
+          kind: 'light-mob',
+          definitionId: 'training-dummy',
+          team: 'dark',
+          at: { x: 100, y: 55 },
+          count: extra,
+        });
+      }
 
-    run(simulation, 60 * 30);
+      run(simulation, 60 * 30);
 
-    // Dark's lane-0 SpawnerTower stands at x 140 with radius 14: Light's lane-0 horde gathers
-    // in front of x 126, in ranks no deeper than 8.
-    const lightLane0 = simulation
-      .snapshot()
-      .entities.filter((entity) => isMinion(entity) && entity.team === 'light')
-      .filter(({ transform }) => (transform?.y ?? 0) < 30)
-      .map(({ transform }) => transform?.x ?? 0);
-    expect(lightLane0.length).toBeGreaterThan(0);
-    expect(Math.max(...lightLane0)).toBeLessThan(126);
-    expect(Math.min(...lightLane0)).toBeGreaterThan(126 - 15);
-  });
+      // Dark's lane-0 SpawnerTower stands at x 140 with radius 14: Light's lane-0 horde gathers
+      // in front of x 126, in ranks no deeper than 8.
+      const lightLane0 = simulation
+        .snapshot()
+        .entities.filter((entity) => isMinion(entity) && entity.team === 'light')
+        .filter(({ transform }) => (transform?.y ?? 0) < 30)
+        .map(({ transform }) => transform?.x ?? 0);
+      expect(lightLane0.length).toBeGreaterThan(0);
+      expect(Math.max(...lightLane0)).toBeLessThan(126);
+      expect(Math.min(...lightLane0)).toBeGreaterThan(126 - 15);
+    },
+  );
 
   it('builds every lane structure of the map before anything else spawns', () => {
     const { simulation } = match(TWO_LANE_MAP);

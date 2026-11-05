@@ -27,7 +27,10 @@ export type HordeSteeringProfile = {
   readonly blockedLookAhead: number;
   /** Push at half `separationRadius`; it scales as 1/distance, shifted to 0 at the radius (10 §9). */
   readonly separationWeight: number;
-  /** A combined steer shorter than this counts as none, so a settled horde stands still. */
+  /**
+   * A combined steer shorter than this counts as none, so a settled horde stands still. A mob whose
+   * pull toward its target separation cancels this way steps aside instead (`addSeparation`).
+   */
   readonly minSteer: number;
   /** The formation anchor advances at this fraction of the slowest member's top speed. */
   readonly marchSpeedFactor: number;
