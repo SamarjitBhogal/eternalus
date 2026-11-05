@@ -1,10 +1,8 @@
 import type { TimelineAction, TimelineActionKind } from '../config/MatchTimelineEntry.types';
 import type { MatchPhase } from '../config/matchPhases';
-import { TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { makeLogRecord } from '../diagnostics/makeLogRecord';
 import type { GameState } from '../state/GameState';
 import type { MatchResult, Verdict } from '../state/MatchResult.types';
-import { StateHasher } from '../state/StateHasher';
 import { canonicalJson } from '../utils/canonicalJson';
 import { fnv1a } from '../utils/fnv1a';
 import type { DirectorContext } from './DirectorContext.types';
@@ -18,11 +16,9 @@ import type { MatchDirectorOptions } from './MatchDirector.types';
  * win never changes this class.
  */
 export class MatchDirector {
-  private readonly hasher = new StateHasher();
-
   /**
-   * @param options - The phases, timeline, actions, phase order and victory conditions, plus the
-   *   debug setting and logger.
+   * @param options - The phases, timeline, actions, phase order, terminal phases, victory
+   *   conditions and state hasher, plus the debug setting and logger.
    */
   public constructor(private readonly options: MatchDirectorOptions) {}
 
@@ -71,7 +67,7 @@ export class MatchDirector {
    * `victory` when the winner is `state.match.playerTeam`, else `defeat` (a draw too, 12 §2),
    * then emits `match-ended` with the stored result.
    *
-   * - `finalHash` is the `StateHasher` hash of the state on the ending tick, after that tick's
+   * - `finalHash` is the injected `hasher`'s hash (a `StateHasher`) of the state on the ending tick, after that tick's
    *   systems and timeline entries, taken before the result is stored and the terminal phase is
    *   entered. It is not `ReplayOutcome.finalHash` (the hash after a replay's last tick).
    * - `durationTicks` is `state.tick + 1`: the ticks the match ran from tick 0, the countdown and
@@ -93,9 +89,9 @@ export class MatchDirector {
       configHash: fnv1a(canonicalJson(state.config)),
       legends: legends.map((row) => ({ ...row })),
       teams: { light: { ...teams.light }, dark: { ...teams.dark } },
-      finalHash: this.hasher.hash(state),
+      finalHash: this.options.hasher.hash(state),
     };
-    match.result = result;
+    state.match.endMatch(result);
     this.transition(verdict.winner === match.playerTeam ? 'victory' : 'defeat', context);
     state.events.emit('match-ended', { result });
   }
@@ -106,7 +102,7 @@ export class MatchDirector {
     let entry = entries[match.timelineCursor];
     while (entry !== undefined && entry.tick <= context.state.tick) {
       // Advance first, so an entry never fires twice, even when its action throws.
-      match.timelineCursor += 1;
+      context.state.match.advanceTimeline();
       this.run(entry.action, context);
       entry = entries[match.timelineCursor];
     }
@@ -117,23 +113,23 @@ export class MatchDirector {
   }
 
   private transition(to: MatchPhase, context: DirectorContext): void {
-    const { phases, order } = this.options;
+    const { phases, order, terminal } = this.options;
     const { state } = context;
     const from = state.match.phase;
-    if (TERMINAL_MATCH_PHASES.includes(from) || order.indexOf(to) <= order.indexOf(from)) {
+    if (terminal.includes(from) || order.indexOf(to) <= order.indexOf(from)) {
       // A backwards (or repeated) phase, or any move out of a terminal one, is a bug: validation
       // keeps it out of the timeline, and the director does nothing after the end.
       this.rejectMove(from, to, state);
       return;
     }
     phases[from].exit(context);
-    state.setPhase(to);
+    state.match.setPhase(to);
     phases[to].enter(context);
   }
 
   /** Throws in tests; in the browser, logs the bug and leaves the phase as it is. */
   private rejectMove(from: MatchPhase, to: MatchPhase, state: GameState): void {
-    const reason = TERMINAL_MATCH_PHASES.includes(from)
+    const reason = this.options.terminal.includes(from)
       ? `"${from}" is terminal`
       : 'phases only move forward';
     const message = `The match cannot move from phase "${from}" to "${to}": ${reason}.`;

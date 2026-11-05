@@ -9,16 +9,16 @@ import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import type { WorldRect } from './engine/render/Renderer.types';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
-import type { IntentSource, PlayerChoice } from './Match.types';
+import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { seatedConfig } from './seatedConfig';
 
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 const SCREEN = { width: 1280, height: 720 };
@@ -41,9 +41,10 @@ const setUp = () => {
   const input = new ScriptedIntent();
   const match = new Match({
     simulation: new Simulation({
-      config: seatedConfig(config, world.map, PLAYER),
+      ...withPlayer(config, PLAYER),
       seed: 1,
       logger: new NullLogger(),
+      map: world.map,
     }),
     world,
     tickRate: config.tickRate,
@@ -51,7 +52,6 @@ const setUp = () => {
     renderer,
     camera,
     input,
-    player: PLAYER,
     logger: new NullLogger(),
     onCrash: () => undefined,
     onEnded: () => undefined,

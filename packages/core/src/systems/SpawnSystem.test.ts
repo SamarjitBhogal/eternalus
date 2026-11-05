@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
-
 import { Deploying } from '../components/Deploying';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
-
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
-import type { DeepPartial, GameConfig } from '../config/GameConfig.types';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
-import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
 import { NullLogger } from '../diagnostics/NullLogger';
@@ -15,70 +11,21 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { GameState } from '../state/GameState';
+import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
-import type { GameEventMap } from '../state/GameEvents.types';
-import { StateHasher } from '../state/StateHasher';
-import { SpawnSystem } from './SpawnSystem';
+import { Unit } from '../entities/Unit';
 import type { Vec2 } from '../utils/geometry.types';
 import type { SpawnPlan } from './SpawnSystem.types';
-
-const TICK_RATE = 30;
-
-const newSystem = (
-  state: GameState,
-  factory: EntityFactory,
-  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>> = {},
-) =>
-  new SpawnSystem(state, factory, {
-    definitions: loadDefaultContent(TICK_RATE),
-    openingWave: plan.openingWave ?? OPENING_WAVE,
-    waves: plan.waves ?? SPAWN_WAVES,
-    steering: HORDE_STEERING,
-    weights: LANE_ASSESSMENT_WEIGHTS,
-    formationId: 'ranks',
-  });
-
-/** The opening wave sent by a structure kind the test map does not have, so no opening hordes. */
-const NO_OPENING = { ...OPENING_WAVE, source: 'camp' } as const;
-
-const setUp = (
-  overrides: DeepPartial<GameConfig> = {},
-  plan: Partial<Pick<SpawnPlan, 'openingWave' | 'waves'>> = {},
-) => {
-  const config = createDefaultGameConfig({
-    match: overrides.match ?? {},
-    limits: overrides.limits ?? {},
-  });
-  const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP));
-  const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
-  const system = newSystem(state, factory, plan);
-  const spawned: GameEventMap['horde-spawned'][] = [];
-  const timeline: string[] = [];
-  state.events.on('horde-spawned', (horde) => {
-    spawned.push(horde);
-    timeline.push(
-      `${String(state.tick)} ${horde.team} ${horde.lane} ${String(horde.memberIds.length)}`,
-    );
-  });
-  /** Runs the system for every tick up to and including `last`. */
-  const runTo = (last: number) => {
-    while (state.tick <= last) {
-      system.update({ state, logger: new NullLogger() });
-      state.advanceTick();
-    }
-  };
-  return { state, spawned, timeline, runTo };
-};
-
-const summary = (hordes: readonly GameEventMap['horde-spawned'][]) =>
-  hordes.map(({ team, lane, memberIds }) => `${team} ${lane} ${String(memberIds.length)}`);
-
-/** The tick the countdown ends, when every wave clock starts (DEC-87). */
-const COUNTDOWN = Math.round(createDefaultGameConfig().match.countdownSeconds * TICK_RATE);
-/** The first heavy, light and medium waves: 180, 200 and 230 s after the countdown (DEC-87, DEC-127). */
-const LIGHT = COUNTDOWN + 200 * TICK_RATE;
-const MEDIUM = COUNTDOWN + 230 * TICK_RATE;
-const HEAVY = COUNTDOWN + 180 * TICK_RATE;
+import {
+  newSystem,
+  NO_OPENING,
+  setUp,
+  summary,
+  LIGHT,
+  MEDIUM,
+  HEAVY,
+  TICK_RATE,
+} from './__fixtures__/spawnSystemSetup';
 
 describe('SpawnSystem', () => {
   it('sends one opening light horde per lane from each Stronghold at tick 0, from the lane base', () => {
@@ -111,83 +58,6 @@ describe('SpawnSystem', () => {
     const progress: number[] = [];
     state.hordes.forEach((horde) => progress.push(horde.progress));
     expect(progress).toEqual([0, 0, 0, 0]);
-  });
-
-  it('starts every wave clock at the countdown end: first waves at 180, 200 and 230 s, then each interval', () => {
-    const { timeline, runTo } = setUp({}, { openingWave: NO_OPENING });
-
-    runTo(HEAVY - 1);
-    expect(timeline).toEqual([]);
-
-    const at = (seconds: number) => String(COUNTDOWN + seconds * TICK_RATE);
-    runTo(COUNTDOWN + 320 * TICK_RATE);
-    // Heavies every 90 s from 180 s, lights every 60 s from 200 s, mediums every 60 s from 230 s.
-    // Spawner id order within a tick: buff, spawner, then Stronghold, Dark before Light. The
-    // heavy horde takes the worst lane: every lane ties at the start, so the middle (lane-1).
-    expect(timeline).toEqual([
-      `${at(180)} dark lane-1 4`,
-      `${at(180)} light lane-1 4`,
-      `${at(200)} dark lane-0 16`,
-      `${at(200)} light lane-0 16`,
-      `${at(230)} dark lane-1 8`,
-      `${at(230)} light lane-1 8`,
-      `${at(260)} dark lane-0 16`,
-      `${at(260)} light lane-0 16`,
-      `${at(270)} dark lane-1 4`,
-      `${at(270)} light lane-1 4`,
-      `${at(290)} dark lane-1 8`,
-      `${at(290)} light lane-1 8`,
-      `${at(320)} dark lane-0 16`,
-      `${at(320)} light lane-0 16`,
-    ]);
-  });
-
-  it('waits for the countdown: a longer countdown moves every first wave by the same time', () => {
-    const { timeline, runTo } = setUp(
-      { match: { countdownSeconds: 600 } },
-      { openingWave: NO_OPENING },
-    );
-    const firstHeavy = (600 + 180) * TICK_RATE;
-
-    runTo(firstHeavy - 1);
-    expect(timeline).toEqual([]);
-
-    runTo(firstHeavy);
-    expect(timeline).toEqual([
-      `${String(firstHeavy)} dark lane-1 4`,
-      `${String(firstHeavy)} light lane-1 4`,
-    ]);
-  });
-
-  it('sends a wave due at tick 0 along with the opening hordes', () => {
-    const atOnce = {
-      'spawner-tower': [
-        {
-          mobId: 'light-minion',
-          weightClass: 'light',
-          firstAtSeconds: 0,
-          everySeconds: 60,
-          lane: 'own-lane',
-        },
-      ],
-    } as const;
-    const { spawned, runTo } = setUp({ match: { countdownSeconds: 0 } }, { waves: atOnce });
-
-    runTo(0);
-
-    // Four opening hordes (two lanes, two teams), then each team's SpawnerTower wave on lane-0.
-    expect(summary(spawned)).toHaveLength(6);
-    expect(summary(spawned).slice(4)).toEqual(['dark lane-0 16', 'light lane-0 16']);
-  });
-
-  it('spawns the same hordes the same way twice: the same state hash at the first heavy wave', () => {
-    const hashes = [1, 2].map(() => {
-      const { state, runTo } = setUp();
-      runTo(HEAVY);
-      return new StateHasher().hash(state);
-    });
-
-    expect(hashes[0]).toBe(hashes[1]);
   });
 
   it('spawns only the members that fit under the unit cap and counts the rest', () => {
@@ -233,7 +103,9 @@ describe('SpawnSystem', () => {
 
     runTo(0);
 
-    expect(state.entities.size).toBe(64);
+    expect(
+      state.entities.countOnTeam('light', Unit) + state.entities.countOnTeam('dark', Unit),
+    ).toBe(64);
     expect(orphans).toEqual([]);
   });
 
@@ -410,8 +282,49 @@ describe('SpawnSystem', () => {
     ],
   ])('rejects a plan with %s when it is built', (_, plan, message) => {
     const state = new GameState(createDefaultGameConfig(), 1, matchWorldOf(TWO_LANE_MAP));
+    spawnMapStructures(state);
     const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(TICK_RATE));
 
     expect(() => newSystem(state, factory, plan)).toThrow(message);
+  });
+
+  it('sends the heavy horde down the lane its allies were hurt on, then clears that team’s tally (DEC-89)', () => {
+    const { state, spawned, runTo } = setUp({}, { openingWave: NO_OPENING });
+    // Dark's Stronghold is down, so only Light sends a heavy horde and only Light's tally clears.
+    state.entities.forEach((entity) => {
+      if (entity.kind === 'stronghold' && state.entities.teamOf(entity.id) === 'dark') {
+        entity.getComponent(Health).applyDamage(1e6);
+      }
+    });
+    state.allyDamage.add('light', 'lane-0', 40);
+    state.allyDamage.add('dark', 'lane-1', 25);
+
+    runTo(HEAVY);
+
+    const heavies = spawned.filter(({ memberIds }) => memberIds.length === 4);
+    // Without the tally Light would tie on both lanes and take the middle one, lane-1.
+    expect(summary(heavies)).toEqual(['light lane-0 4']);
+    expect(state.allyDamage.share('light', 'lane-0')).toBe(0);
+    expect(state.allyDamage.share('dark', 'lane-1')).toBe(1);
+  });
+
+  it('stops a destroyed tower’s waves', () => {
+    const { state, runTo } = setUp({}, { openingWave: NO_OPENING });
+    state.entities.forEach((entity) => {
+      if (entity.kind === 'spawner-tower' && state.entities.teamOf(entity.id) === 'dark') {
+        entity.getComponent(Health).applyDamage(1e6);
+      }
+    });
+
+    runTo(LIGHT);
+
+    // Only the SpawnerTowers send light hordes once the opening wave is off.
+    const light: string[] = [];
+    state.hordes.forEach(({ team, weightClass }) => {
+      if (weightClass === 'light') {
+        light.push(team);
+      }
+    });
+    expect(light).toEqual(['light']);
   });
 });

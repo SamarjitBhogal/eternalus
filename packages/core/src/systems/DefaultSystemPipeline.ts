@@ -23,6 +23,11 @@ import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
+import { StructureSystem } from './StructureSystem';
+import { VeterancySystem } from './VeterancySystem';
+import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
+import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
+import { GUARD_PLANS } from '../content/structures/guardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
 import { SystemPipeline } from './SystemPipeline';
 
@@ -30,8 +35,9 @@ import { SystemPipeline } from './SystemPipeline';
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
- * spawning, enraging, death, the match director, then invariants last. This is the one place a system is added, at its position
- * in the tick (architecture 02 §9).
+ * minion veterancy, structure losses and breakability, spawning, enraging, death, the match
+ * director, then invariants last. This is the one place a system is added, at its position in the
+ * tick (architecture 02 §9).
  * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
  * effects loaded for this match's config) and hands them to the systems that need them, so a damage
  * step applies to every hit and every status event comes from one place.
@@ -79,9 +85,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
       });
     }
     super([
-      ...(hordes === undefined
-        ? []
-        : [...hordes.decide, new HordeSystem(state, HORDE_STEERING.marchSpeedFactor)]),
+      ...(hordes === undefined ? [] : [...hordes.decide, new HordeSystem(state, HORDE_STEERING)]),
       new StatusEffectSystem(damage, statuses),
       new MovementSystem(),
       ...(hordes?.collisions ?? []),
@@ -100,6 +104,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
       ...(state.worldObjects === undefined ? [] : [new MapDestructionSystem(state, damage)]),
       // Every system that deals damage runs before this one, so a kill is awarded in its own tick.
       new ProgressionSystem(state, progression),
+      new VeterancySystem(state, statuses, progression.units, MINION_VETERANCY),
+      new StructureSystem(STRUCTURE_DEFINITIONS),
       ...(hordes === undefined
         ? []
         : [
@@ -110,6 +116,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
               steering: HORDE_STEERING,
               weights: LANE_ASSESSMENT_WEIGHTS,
               formationId: RANKS_FORMATION.id,
+              guards: GUARD_PLANS,
             }),
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),

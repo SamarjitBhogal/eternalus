@@ -107,7 +107,7 @@ describe('Scoring', () => {
       const { state, legend, endTick, rowOf } = setUp();
       const human = legend('light');
       const bot = legend('light');
-      state.match.humanLegendId = human;
+      state.match.seatHuman(human);
 
       endTick();
 
@@ -455,7 +455,7 @@ describe('Scoring', () => {
     const killer = legend('light');
     const victim = legend('dark');
     endTick();
-    state.match.result = {
+    state.match.endMatch({
       winner: 'light',
       condition: 'objective-lost',
       playerTeam: 'light',
@@ -466,7 +466,7 @@ describe('Scoring', () => {
       legends: [],
       teams: { light: { score: 0 }, dark: { score: 0 } },
       finalHash: 0,
-    };
+    });
     const late = legend('light');
 
     kill(killer, victim);

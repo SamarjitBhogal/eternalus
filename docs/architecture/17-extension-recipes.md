@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-04
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [

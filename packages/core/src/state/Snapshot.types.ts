@@ -27,7 +27,7 @@ export type MatchSnapshot = {
   readonly phaseEnteredTick: number;
   /** The unfired timeline entries in tick order; empty after the last one. */
   readonly upcoming: readonly ScheduledMark[];
-  /** The human's Legend; `null` in sim mode, or when the seat's spawn failed. */
+  /** The human's Legend; `null` in sim mode, or when the human slot names no Legend definition. */
   readonly humanLegendId: EntityId | null;
 };
 

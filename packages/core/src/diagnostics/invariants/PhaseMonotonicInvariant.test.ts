@@ -14,18 +14,18 @@ const setUp = () => {
 describe('PhaseMonotonicInvariant', () => {
   it('holds while the match moves forward, phases skipped or not', () => {
     const { state, check } = setUp();
-    state.setPhase('early-game');
-    state.setPhase('mid-game');
+    state.match.setPhase('early-game');
+    state.match.setPhase('mid-game');
 
     expect(check()).toEqual([]);
   });
 
   it('flags a move back to an earlier phase, deliberately triggered', () => {
     const { state, check } = setUp();
-    state.setPhase('mid-game');
+    state.match.setPhase('mid-game');
     state.advanceTick();
 
-    state.setPhase('early-game');
+    state.match.setPhase('early-game');
 
     expect(check()).toEqual([
       {
@@ -40,10 +40,10 @@ describe('PhaseMonotonicInvariant', () => {
 
   it('flags a move out of a terminal phase, though victory -> defeat is forward in the order', () => {
     const { state, check } = setUp();
-    state.setPhase('victory');
+    state.match.setPhase('victory');
     state.advanceTick();
 
-    state.setPhase('defeat');
+    state.match.setPhase('defeat');
 
     expect(check()).toEqual([
       {
@@ -59,7 +59,7 @@ describe('PhaseMonotonicInvariant', () => {
   it('flags a move into the phase the match is already in', () => {
     const { state, check } = setUp();
 
-    state.setPhase('countdown');
+    state.match.setPhase('countdown');
 
     expect(check().map(({ message }) => message)).toEqual([
       'The match phase moved from "countdown" to "countdown", which is not forward.',
@@ -68,8 +68,8 @@ describe('PhaseMonotonicInvariant', () => {
 
   it("reads only this tick's changes: a bad move is reported on its own tick", () => {
     const { state, check } = setUp();
-    state.setPhase('early-game');
-    state.setPhase('countdown');
+    state.match.setPhase('early-game');
+    state.match.setPhase('countdown');
     expect(check()).toHaveLength(1);
 
     state.advanceTick();

@@ -55,7 +55,7 @@ describe('applyCommand', () => {
         },
       },
     };
-    ctx.state.match.result = {
+    ctx.state.match.endMatch({
       winner: 'light',
       condition: 'objective-lost',
       playerTeam: 'light',
@@ -66,7 +66,7 @@ describe('applyCommand', () => {
       legends: [],
       teams: { light: { score: 0 }, dark: { score: 0 } },
       finalHash: 0,
-    };
+    });
     const rejected: unknown[] = [];
     ctx.state.events.on('command-rejected', (payload) => rejected.push(payload));
     const command = { type: 'stop', actorId: 'entity-3' } as const;

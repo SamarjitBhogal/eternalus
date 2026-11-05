@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Command } from './commands/Command.types';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
-import type { GameConfig } from './config/GameConfig.types';
 import { NullLogger } from './diagnostics/NullLogger';
 import { recordReplay, runReplay } from './diagnostics/replay';
 import { Scoring } from './match/Scoring';
@@ -11,12 +10,19 @@ import type { GameState } from './state/GameState';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
 import { Simulation } from './Simulation';
+import type { ReplaySetup } from './Simulation.types';
 
-const AT = { x: 40, y: 50 };
-/** A light warrior in the seat and a 0 s countdown: step 0 is held, attacks land from step 1. */
-const CONFIG = createDefaultGameConfig({
-  match: { countdownSeconds: 0, seat: { definitionId: 'warrior', at: AT } },
-});
+/** The light Stronghold of the two-lane map, where the human's Legend (a Rover) spawns. */
+const AT = { x: 10, y: 30 };
+/** A 0 s countdown: step 0 is held, attacks land from step 1. */
+const CONFIG = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
+/** The two-lane map with a light warrior in the human's slot (light is the default player team). */
+const SETUP: ReplaySetup = {
+  config: CONFIG,
+  seed: 3,
+  map: TWO_LANE_MAP,
+  roster: [{ pilot: 'human', team: 'light', definitionId: 'warrior', role: 'rover' }],
+};
 /** Far past the three hits a warrior needs for a training dummy. */
 const TICKS = 120;
 
@@ -29,7 +35,7 @@ const SPAWN_DUMMY: Command = {
   count: 1,
 };
 
-/** The seat attacks the dummy once it is in the snapshot. */
+/** The human's Legend attacks the dummy once it is in the snapshot. */
 const attackDummy = ({ match, entities }: Snapshot): Command[] => {
   const dummy = entities.find((entity) => entity.definitionId === 'training-dummy');
   return match.humanLegendId === null || dummy === undefined
@@ -41,16 +47,15 @@ const attackDummy = ({ match, entities }: Snapshot): Command[] => {
 const commandsFor = (tick: number, snapshot: Snapshot): readonly Command[] =>
   tick === 0 ? [SPAWN_DUMMY] : tick === 1 ? attackDummy(snapshot) : [];
 
-const createTarget = (config: GameConfig, seed: number) =>
-  new Simulation({ config, seed, logger: new NullLogger() });
+const createTarget = (setup: ReplaySetup) => new Simulation({ ...setup, logger: new NullLogger() });
 
 /**
- * A seated `Simulation` and the state its director folds scoring into. `Simulation` keeps its
+ * A `Simulation` with a human and the state its director folds scoring into. `Simulation` keeps its
  * state private, so the test reads it from the first call of a spy on `Scoring.fold`.
  */
 const build = () => {
   const fold = vi.spyOn(Scoring.prototype, 'fold');
-  const sim = createTarget(CONFIG, 3);
+  const sim = createTarget(SETUP);
   const foldedState = (): GameState => {
     const state = fold.mock.calls[0]?.[0].state;
     if (state === undefined) {
@@ -75,7 +80,7 @@ afterEach(() => {
 });
 
 describe('Simulation: scoring', () => {
-  it("gives the seat's Legend a human row in the fold of tick 0 (the director is built first)", () => {
+  it("gives the human's Legend a human row in the fold of tick 0 (the director is built first)", () => {
     const { sim, fold, foldedState } = build();
 
     sim.step();
@@ -105,7 +110,15 @@ describe('Simulation: scoring', () => {
       seed: 1,
       logger: new NullLogger(),
       map: TWO_LANE_MAP,
-      roster: [{ team: 'dark', definitionId: 'warrior', role: 'laner', difficulty: 'normal' }],
+      roster: [
+        {
+          pilot: 'bot',
+          team: 'dark',
+          definitionId: 'warrior',
+          role: 'laner',
+          difficulty: 'normal',
+        },
+      ],
     });
 
     sim.step();
@@ -127,21 +140,22 @@ describe('Simulation: scoring', () => {
 
     playOut();
 
-    expect(sim.snapshot().entities.map((entity) => entity.family)).toEqual(['legend']);
+    const dummies = sim
+      .snapshot()
+      .entities.filter(({ definitionId }) => definitionId === 'training-dummy');
+    expect(dummies).toEqual([]);
     expect(foldedState().match.scoring.legends[0]).toMatchObject({ minionKills: 1, score: 1 });
     expect(foldedState().match.scoring.teams).toEqual({ light: { score: 1 }, dark: { score: 0 } });
   });
 
   it('is deterministic with scoring in the hash: a replay reproduces every checkpoint', () => {
-    const fromSetup = ({ config, seed }: { config: GameConfig; seed: number }) =>
-      createTarget(config, seed);
     const replay = recordReplay(
-      { config: CONFIG, seed: 3 },
+      SETUP,
       { ticks: TICKS, checkpointEvery: 10, commandsFor },
-      fromSetup,
+      createTarget,
     );
 
-    expect(runReplay(replay, fromSetup).firstDivergence).toBeNull();
+    expect(runReplay(replay, createTarget).firstDivergence).toBeNull();
   });
 
   it('hashes the scoring: a changed score changes the hash', () => {

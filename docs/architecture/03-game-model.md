@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-04
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -64,10 +64,20 @@ export class GameState {
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
 
+  public readonly match: MatchRecord; // the director's memory (12 §4) and its only writers (DEC-177); `phase` is `match.phase`
+
   public get tick(): number;
-  public get match(): MatchState; // the director's memory (12 §4); `phase` is `match.phase`
   public advanceTick(): void; // called once per step(), by Simulation only
-  public setPhase(next: MatchPhase): void; // called by MatchDirector only; stamps `match.phaseEnteredTick`, emits 'phase-changed'
+}
+
+// Sketch: packages/core/src/state/MatchRecord.ts — GameState.match (DEC-177)
+export class MatchRecord implements MatchState {
+  // the MatchState fields (12 §4) as read-only getters; only these five write them (DEC-172)
+  public setPhase(next: MatchPhase): void; // MatchDirector only; stamps `phaseEnteredTick`, emits 'phase-changed'
+  public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88)
+  public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
+  public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
+  public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
 }
 ```
 
@@ -172,15 +182,17 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 
 | Event                               | Payload                                                | Emitted by                                                      | Typical listeners                                                                        |
 | ----------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for the seat | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                    |
+| `entity-spawned`                    | `{ entityId, kind, team }`                             | `EntityFactory` via `SpawnSystem`, or `Simulation` for a roster | `SnapshotSystem`, views, `Scoring` (a row per Legend)                                    |
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                              |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage) |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                  |
 | `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields)                       |
+| `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                                      |
+| `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                                       |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                               |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                                       |
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `Scoring`, `MatchDirector`, `StatusEffectSystem`                                         |
-| `phase-changed`                     | `{ from, to }`                                         | `MatchDirectorSystem`                                           | `SpawnSystem`, `Announcer`                                                               |
+| `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                                              |
 | `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                                  |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                                 |
 | `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                  | views, HUD                                                                               |
@@ -343,7 +355,7 @@ export type Replay = ReplaySetup & {
 ```
 
 A replay is self-contained: its setup (seed, config and, when the match had them, the generated
-map, the map objects and the bot roster), the command log and the versions. The setup is plain
+map, the map objects and the whole roster), the command log and the versions. The setup is plain
 data and `exportReplay()` copies it from the options the match was built with, so a replay
 reproduces a match whose world the client prepared (the roster can depend on the player's pick)
 without the code that prepared it. `runReplay(replay, createTarget)` builds a fresh `Simulation`

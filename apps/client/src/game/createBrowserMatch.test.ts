@@ -1,4 +1,9 @@
-import { createDefaultGameConfig, type LogRecord, Simulation } from '@eternalus/core';
+import {
+  createDefaultGameConfig,
+  type LogRecord,
+  type RosterSlot,
+  Simulation,
+} from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { matchResultFixture } from '../bridge/__fixtures__/matchResultFixtures';
@@ -9,7 +14,6 @@ import type { LogSink } from '../data/logging/LogSink.types';
 import { RingBufferSink } from '../data/logging/RingBufferSink';
 import { shippedCatalogue } from './content/__fixtures__/shippedCatalogue';
 import { createBrowserMatch } from './createBrowserMatch';
-import { botRosterSlots } from './session/botRosterSlots';
 import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
@@ -18,9 +22,17 @@ import type { PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import type { MatchRequest } from './SessionController.types';
+import { rosterSlots } from './session/rosterSlots';
 
 const CONFIG = createDefaultGameConfig();
 const SEED = 3;
+/** The player's slot of the requests below: a dark Sentinel, the dark team's Rover. */
+const PLAYER_SLOT: RosterSlot = {
+  pilot: 'human',
+  team: 'dark',
+  definitionId: 'sentinel',
+  role: 'rover',
+};
 
 function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []) {
   const window = new FakeBrowserTarget();
@@ -50,10 +62,9 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
     onEnded: MatchRequest['onEnded'] = () => undefined,
   ): MatchRequest => ({
     setup: { seed: SEED, playerTeam: 'dark', allies: [], enemies: [] },
-    player: { legend: 'sentinel', team: 'dark' },
     world,
     captureKinds: ['capture-point', 'cathedral'],
-    roster: [],
+    roster: [PLAYER_SLOT],
     onCrash,
     onEnded,
   });
@@ -73,14 +84,17 @@ describe('createBrowserMatch', () => {
     expect(window.pendingFrames).toBe(0);
   });
 
-  it('rethrows what Match threw and leaves nothing behind', () => {
+  it('rethrows what the simulation threw and leaves nothing behind', () => {
     const { window, factory, viewport, request, listeners } = setUp();
     const world = prepareMatchWorld(CONFIG, SEED);
     const withoutDark = {
       ...world,
       map: { ...world.map, features: world.map.features.filter((f) => f.team !== 'dark') },
     };
-    expect(() => factory(request(withoutDark), viewport)).toThrow('has no dark stronghold');
+    // Core spawns the dark human slot, a Rover, at the dark Stronghold, so the map without one throws.
+    expect(() => factory(request(withoutDark), viewport)).toThrow(
+      "The map has no dark Stronghold for the human's Legend.",
+    );
     expect(listeners()).toBe(0);
     expect(window.pendingFrames).toBe(0);
   });
@@ -139,8 +153,8 @@ describe('createBrowserMatch', () => {
   });
 
   it("gives the simulation's replay and history and the match's TRACE ring as evidence (ADR 0025 §3)", () => {
-    // The seat's ERROR comes while the match is built, before `evidence()` can be read, so the ring
-    // is watched at its own `write`.
+    // The human slot's ERROR comes while the match is built, before `evidence()` can be read, so
+    // the ring is watched at its own `write`.
     const ringWrites = vi.spyOn(RingBufferSink.prototype, 'write');
     const atPageSink: { record: LogRecord; lastInRing: LogRecord | undefined }[] = [];
     const pageSink: LogSink = {
@@ -149,8 +163,9 @@ describe('createBrowserMatch', () => {
       },
     };
     const { window, factory, viewport, request } = setUp(undefined, [pageSink]);
-    // A class with no definition: core cannot spawn the seat (ERROR core.match, A19).
-    const stale: MatchRequest = { ...request(), player: { legend: 'stale-class', team: 'dark' } };
+    // A class with no definition: core cannot spawn the human slot (ERROR core.match).
+    const staleSlot: RosterSlot = { ...PLAYER_SLOT, definitionId: 'stale-class' };
+    const stale: MatchRequest = { ...request(), roster: [staleSlot] };
 
     const running = factory(stale, viewport);
     window.runFrame(0);
@@ -161,14 +176,14 @@ describe('createBrowserMatch', () => {
     expect(match.tick).toBe(1);
     expect(running.currentTick()).toBe(1);
     expect(match.replay.seed).toBe(SEED);
-    // The seat is config, so the replay rebuilds it and queues no command for it (A19); the setup
-    // has no bots and the seat has no Legend, so nothing else is queued either.
-    expect(match.replay.config.match.seat?.definitionId).toBe('stale-class');
+    // The human slot is roster setup, so the replay rebuilds it and queues no command for it; the
+    // roster has no bots and the human slot has no Legend, so nothing else is queued either.
+    expect(match.replay.roster).toEqual([staleSlot]);
     expect(match.replay.commands).toEqual([]);
     expect(match.recentCommands).toEqual([]);
     expect(match.replay.checkpoints.map(({ tick }) => tick)).toEqual([0]);
     expect(match.recentEvents.length).toBeGreaterThan(0);
-    // The match seed first, then the seat that did not spawn.
+    // The match seed first, then the human slot that did not spawn.
     expect(logTail.map(({ severityText, scope }) => [severityText, scope])).toEqual([
       ['INFO', 'client.match'],
       ['ERROR', 'core.match'],
@@ -179,7 +194,7 @@ describe('createBrowserMatch', () => {
     expect(atPageSink[0]?.lastInRing).toBe(atPageSink[0]?.record);
   });
 
-  it("plays on the world's map with the setup's bots as the simulation's roster (18 §8)", () => {
+  it("plays on the world's map with the request's roster, bots and human slot, as the simulation's (18 §8)", () => {
     const { factory, viewport, request } = setUp();
     const bot = (index: number, classId: 'magus' | 'warrior'): RosterEntry => ({
       legendId: `light-${String(index + 1)}`,
@@ -196,10 +211,10 @@ describe('createBrowserMatch', () => {
     const withBots: MatchRequest = {
       ...base,
       setup: { ...base.setup, enemies },
-      roster: botRosterSlots(
-        { allies: [], enemies },
-        shippedCatalogue().load().botRoster.difficulties,
-      ),
+      roster: [
+        PLAYER_SLOT,
+        ...rosterSlots({ allies: [], enemies }, shippedCatalogue().load().botRoster.difficulties),
+      ],
     };
 
     const running = factory(withBots, viewport);
@@ -209,11 +224,12 @@ describe('createBrowserMatch', () => {
         event.type === 'entity-spawned' ? [[event.payload.kind, event.payload.team]] : [],
       );
 
-    // Core spawns the lane bots first, then the Rovers at their Stronghold, then the seat (A19).
+    // Core spawns the lane bots first, then the Rovers at their Stronghold in roster order: the
+    // human slot first, then the bot Rover.
     expect(spawned).toEqual([
       ['warrior', 'light'],
-      ['magus', 'light'],
       ['sentinel', 'dark'],
+      ['magus', 'light'],
     ]);
     running.destroy();
   });

@@ -76,13 +76,13 @@ const setUp = () => {
 /** The whole default tick of `state` as one system, so `run` can drive it. */
 const tickPipeline = (state: GameState): System => {
   const pipeline = new DefaultSystemPipeline({
-    invariants: new DefaultInvariantRunner(
-      RELEASE_DEBUG_CONFIG,
-      new NullLogger(),
-      loadLevelCurves(),
-      MATCH_PHASES,
-      TERMINAL_MATCH_PHASES,
-    ),
+    invariants: new DefaultInvariantRunner({
+      debug: RELEASE_DEBUG_CONFIG,
+      logger: new NullLogger(),
+      curves: loadLevelCurves(),
+      phaseOrder: MATCH_PHASES,
+      terminalPhases: TERMINAL_MATCH_PHASES,
+    }),
     state,
     progression: {
       units: loadDefaultContent(CONFIG.tickRate),

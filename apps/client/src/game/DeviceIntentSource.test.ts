@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import type { InputDevice, MutableInputSnapshot } from './engine/input/InputDevice.types';
@@ -15,9 +16,7 @@ import { DeviceIntentSource } from './DeviceIntentSource';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
-import type { PlayerChoice } from './Match.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { seatedConfig } from './seatedConfig';
 
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 const IDENTITY: Projection = { screenToWorld: (point) => point };
@@ -94,9 +93,10 @@ describe('Player scenario: walking with the keyboard', () => {
     const world = prepareMatchWorld(config, 1);
     const match = new Match({
       simulation: new Simulation({
-        config: seatedConfig(config, world.map, PLAYER),
+        ...withPlayer(config, PLAYER),
         seed: 1,
         logger: new NullLogger(),
+        map: world.map,
       }),
       world,
       tickRate: config.tickRate,
@@ -104,7 +104,6 @@ describe('Player scenario: walking with the keyboard', () => {
       renderer: new RecordingRenderer(),
       camera: new Camera({ x: 0, y: 0 }, 64, 36),
       input,
-      player: PLAYER,
       logger: new MemoryLogger(),
       onCrash: () => undefined,
       onEnded: () => undefined,

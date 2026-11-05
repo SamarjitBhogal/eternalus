@@ -6,6 +6,7 @@ import {
 } from './GameConfig.constants';
 import type { DeepPartial, GameConfig, MatchConfig } from './GameConfig.types';
 import type { MatchTimelineEntry } from './MatchTimelineEntry.types';
+import { countdownTicks } from './countdownTicks';
 
 /** MVP defaults (architecture 03 §10, requirements doc MVP list, integration contract §2.2). */
 const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
@@ -38,7 +39,6 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
     plannedMatchSeconds: 1800, // TUNE: DEC-13's 30 minutes; a planning length, not a cap (owner 2026-10-28)
     // A placeholder: the client sets it from the player's setup; a sim-mode caller may set either side (12 §4).
     playerTeam: 'light',
-    seat: null, // sim mode: no human; the client sets it from the player's setup
   },
   limits: {
     maxLegendsPerTeam: MAX_LEGENDS_PER_TEAM,
@@ -62,7 +62,7 @@ const defaultTimeline = (countdownTicks: number): readonly MatchTimelineEntry[] 
   },
   // TUNE: game doc, the gem explodes mid-game
   { id: 'mid-game', at: { atFraction: 0.5 }, action: { kind: 'enter-phase', phase: 'mid-game' } },
-  // TUNE: Recommendation, no source (12 §3)
+  // TUNE: the owner's ruling, DEC-175 (no reference doc gives a fraction)
   { id: 'end-game', at: { atFraction: 0.75 }, action: { kind: 'enter-phase', phase: 'end-game' } },
 ];
 
@@ -85,7 +85,7 @@ export const createDefaultGameConfig = (overrides: DeepPartial<GameConfig> = {})
       ...match,
       ...matchOverrides,
       hordeSizes: { ...match.hordeSizes, ...matchOverrides.hordeSizes },
-      timeline: [...(timeline ?? defaultTimeline(Math.round(countdownSeconds * tickRate)))],
+      timeline: [...(timeline ?? defaultTimeline(countdownTicks(countdownSeconds, tickRate)))],
     },
     limits: { ...limits, ...overrides.limits },
   });

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { WorldObjectsView } from './WorldObjectsView';
 import { OBJECT_DRAWING as S } from './WorldObjectsView.constants';
+import { RUIN_PALETTE } from './ruinMaterials';
 const HOUSE: MapObject = {
   id: 'house',
   kind: 'house',
@@ -38,9 +39,37 @@ describe('WorldObjectsView', () => {
     view.draw(renderer, AREA);
     expect(view.isDestroyed('house')).toBe(true);
     expect(view.revision).toBe(1);
-    expect(renderer.calls).toHaveLength(5);
+    const ruinColors = renderer.calls.flatMap((call) =>
+      call.op === 'fillPolygon' ? [call.args[1]] : [],
+    );
+    expect(ruinColors).toContain(RUIN_PALETTE.flame);
+    expect(ruinColors).toContain(RUIN_PALETTE.smoke);
+    expect(ruinColors).not.toContain(S.barHealth);
     view.show([{ ...STATE, isDestroyed: true }]);
     expect(view.revision).toBe(1);
+  });
+  it('keeps a fallen log visible when its original trunk footprint is offscreen', () => {
+    const tree = {
+      ...HOUSE,
+      kind: 'tree' as const,
+      footprints: [
+        [
+          { x: 0, y: 0 },
+          { x: 3, y: 0 },
+          { x: 3, y: 10 },
+          { x: 0, y: 10 },
+        ],
+      ],
+    };
+    const view = new WorldObjectsView([tree]);
+    const renderer = new RecordingRenderer();
+    view.show([{ ...STATE, isDestroyed: true }]);
+    view.draw(renderer, { x: 10, y: 0, width: 10, height: 10 });
+    expect(
+      renderer.calls.some(
+        (call) => call.op === 'fillPolygon' && call.args[1] === RUIN_PALETTE.cutWood,
+      ),
+    ).toBe(true);
   });
   it('culls offscreen objects, hides interior bars under roofs and omits indestructible health bars', () => {
     const roofs = new Set<string>();

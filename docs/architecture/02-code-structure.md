@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-04
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -41,11 +41,11 @@ exists today; the map slice's interim pieces are in
 core/src/
   index.ts             public API (the only import surface)
   Simulation.ts        facade: enqueueCommand(), step(), snapshot(), on(), hash()
-  config/              GameConfig + validateGameConfig() + createDefaultGameConfig(), MATCH_PHASES, MatchTimelineEntry types, VictoryConditionId
+  config/              GameConfig + validateGameConfig() + createDefaultGameConfig(), countdownTicks(), MATCH_PHASES, MatchTimelineEntry types, VictoryConditionId
   content/             Type Object definitions by kebab-case ID, one subfolder per family
   utils/               Vec2, geometry, SeededRandom, deterministicMath, fnv1a, IdGenerator, RingBuffer
-  teams/               PlayableTeam, Team (shared by every layer; contract §2.2, 2026-10-03)
-  state/               GameState, EntityStore, GameEvents, Snapshot types, MatchResult, ScoringState, StateHasher
+  teams/               PlayableTeam, Team, PLAYABLE_TEAMS, isPlayableTeam(), opponentOf() (shared by every layer; contract §2.2, 2026-10-03)
+  state/               GameState, MatchRecord, EntityStore, GameEvents, Snapshot types, MatchResult, ScoringState, StateHasher
   commands/            Command union, CommandQueue, applyCommand() and its handler registry
   entities/            Entity root + families, EntityFactory, EntityRegistry, strategies, ProjectilePool
   components/          Transform, Health, Movement, Combat, Abilities, Progression, Team, Collider, StatusEffects (+ StatusEffectRuntime), ...
@@ -63,26 +63,32 @@ core/src/
 | Folder          | Responsibility                                                                                            | May import                                                                                  | Key classes and files                                                                                                                                                                                                            |
 | --------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `utils/`        | Generic, pure helpers with no game vocabulary                                                             | `utils/`                                                                                    | `Vec2`, `vec2.ts` (immutable and in-place forms), `geometry.ts`, `SeededRandom` (implements `Rng`), `deterministicMath.ts`, `fnv1a.ts`, `IdGenerator`, `RingBuffer`                                                              |
-| `teams/`        | The team vocabulary every layer shares                                                                    | nothing                                                                                     | `teams.types.ts` (`PlayableTeam`, `Team`)                                                                                                                                                                                        |
-| `config/`       | The world and match parameters, their defaults and validation                                             | `utils/`, `teams/` (types)                                                                  | `GameConfig` (type), `validateGameConfig()`, `createDefaultGameConfig()`, `matchPhases.ts` (`MATCH_PHASES`, `MatchPhase`), `MatchTimelineEntry.types.ts`, `timelineMarkTick.ts`, `VictoryConditionId.types.ts`                   |
+| `teams/`        | The team vocabulary every layer shares                                                                    | nothing                                                                                     | `teams.types.ts` (`PlayableTeam`, `Team`), `playableTeams.ts` (`PLAYABLE_TEAMS`, `isPlayableTeam()`, `opponentOf()`)                                                                                                             |
+| `config/`       | The world and match parameters, their defaults and validation                                             | `utils/`, `teams/`                                                                          | `GameConfig`, `validateGameConfig()`, `createDefaultGameConfig()`, `matchPhases.ts` (`MATCH_PHASES`), `MatchTimelineEntry.types.ts`, `timelineMarkTick.ts`, `countdownTicks.ts`, `VictoryConditionId.types.ts`                   |
 | `content/`      | Immutable definitions keyed by ID; `ContentCatalogue` resolves `extends` and validates cross-references   | `content/`, `utils/`, `teams/` and `config/` (types)                                        | `ContentCatalogue`, `validateContent()`, `legends/`, `mobs/`, `bosses/`, `structures/`, `abilities/`, `weapons/`, `artifacts/`, `status-effects/`, `obstacles/`, `maps/`, `ai/profiles/`, `narrative/`, `progression/`, `match/` |
 | `components/`   | State owned by entities plus the small invariants that guard it                                           | `utils/`, `content/` and `teams/` (types)                                                   | `Transform`, `Health`, `Movement`, `Combat`, `Abilities`, `Progression`, `Team`, `Collider`, `StatusEffects` (+ `StatusEffectRuntime`), `Carry`, `Loadout`, `Vision`, `Spawner`, `Capturable`                                    |
 | `physics/`      | Shapes, broad and narrow phase, sweeps, kinematics; no entity knowledge                                   | `utils/`, `components/` (types)                                                             | `SpatialHash`, `Circle`, `ConvexPolygon`, `sat.ts`, `sweptTests.ts`, `Kinematics`, `CollisionResolver`                                                                                                                           |
 | `entities/`     | Identity and lifecycle: the family classes, factories, registries and strategy catalogues                 | `components/`, `content/`, `utils/`, `state/` (types), `physics/` (shapes)                  | `Entity`, `Unit`, `Legend`, `Mob`, `Boss`, `Structure`, `Zone`, `Obstacle`, `Projectile`, `EntityFactory`, `EntityRegistry`, `StrategyRegistry`, `ProjectilePool`                                                                |
-| `state/`        | The aggregate root, the event channel, snapshot DTOs and hashing                                          | `utils/`, `config/` (types), `content/` (types), `components/`, `entities/`, `map/` (types) | `GameState`, `MatchWorld`, `EntityStore`, `GameEvents`, `GameEventMap`, `Snapshot.types.ts`, `MatchResult.types.ts`, `ScoringState.types.ts`, `StateHasher`                                                                      |
+| `state/`        | The aggregate root, the event channel, snapshot DTOs and hashing                                          | `utils/`, `config/` (types), `content/` (types), `components/`, `entities/`, `map/` (types) | `GameState`, `MatchRecord`, `MatchWorld`, `EntityStore`, `GameEvents`, `GameEventMap`, `Snapshot.types.ts`, `MatchResult.types.ts`, `ScoringState.types.ts`, `StateHasher`                                                       |
 | `commands/`     | Everything a player, bot or developer menu can ask for, and how it is applied                             | `state/`, `entities/`, `utils/`                                                             | `Command.types.ts`, `CommandQueue`, `applyCommand.ts`, `CommandHandler.types.ts`, `handlers/*Handler.ts`, `defaultCommandHandlers.ts`                                                                                            |
 | `map/`          | Config + seed → `MapDefinition`; the runtime `WorldMap` with cost grid and flow fields                    | `config/`, `content/`, `teams/`, `utils/`, `physics/`                                       | `MapGenerator`, `MapBuilder`, `WorldMap`, `LaneGeometry`, `symmetry.ts` (map types in `content/maps/maps.types.ts`)                                                                                                              |
 | `combat/`       | Damage resolution, death causes, applying statuses                                                        | `components/`, `content/`, `state/`, `utils/`                                               | `DamagePipeline`, `DamagePipeline.types.ts`, `DamageStep.types.ts`, `<Name>Step.ts`, `defaultDamageSteps.ts`, `DeathResolver`                                                                                                    |
 | `abilities/`    | Ability behaviour built from effect and restriction strategies                                            | `combat/`, `components/`, `content/`, `state/`, `utils/`                                    | `Ability`, `AbilityRuntime`, `effects/*Effect.ts`, `restrictions/*Restriction.ts`, `AbilityRegistry`, `defaultAbilityRegistry.ts`                                                                                                |
 | `loadout/`      | The loadout model and its validation against content                                                      | `content/`, `utils/`                                                                        | `Loadout.types.ts`, `validateLoadout.ts`, `autoBuildLoadout.ts`                                                                                                                                                                  |
-| `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                   | `state/` (read), `commands/`, `content/` and `teams/` (types), `utils/`                     | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                            |
+| `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                   | `state/` (read), `commands/`, `config/`, `content/` (types), `teams/`, `utils/`             | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                            |
 | `match/`        | Phases, timeline, scoring, victory                                                                        | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types, some `diagnostics/`  | `MatchDirector`, `phases/*Phase.ts`, `MatchTimeline`, `Scoring`, `VictoryCondition.types.ts`, `defaultVictoryConditions.ts`                                                                                                      |
 | `diagnostics/`  | Invariants, the runner, the `Logger` port, diagnostic event types, the replay and property-test harnesses | `state/`, `utils/`; types of `commands/` and `config/` (DEC-20)                             | `Invariant`, `InvariantRunner`, `invariants/*Invariant.ts`, `Logger.types.ts`, `DiagnosticEvent.types.ts`, `replay.ts`, `Replay.types.ts`, `randomCommands.ts`                                                                   |
 | `systems/`      | Per-tick logic; one class per system; the ordered pipeline                                                | Everything below it except another system                                                   | `System`, `SystemContext.types.ts`, `SystemPipeline`, `defaultSystemPipeline.ts`, `*System.ts`                                                                                                                                   |
 | `Simulation.ts` | Composes the above; the only thing the client drives                                                      | Everything                                                                                  | `Simulation`                                                                                                                                                                                                                     |
 
+Every folder may import `teams/`, which imports nothing (DEC-171), whether or not its "May
+import" cell names it.
+
 Of `diagnostics/`, `match/` uses only the `Logger` port, `makeLogRecord` and `DebugConfig`, as
 `systems/` do, so `diagnostics/` never imports `match/` ([12](12-game-story-and-match-director.md) §1).
+
+`config/` holds some ids that it cannot type, such as `map.presetId`. They stay plain strings
+there, and the code that sees content checks them against it.
 
 ## 3. `apps/client/src/` (L4, L3 and L1)
 
@@ -355,7 +361,8 @@ text since 2026-10-28 (the owner approved them, `INBOX.md` HC-T1):
 - **Merge of the phase branch and roofs (2026-11-02).** With the phase branch's buildings (#30),
   `game/prepareMatchWorld.ts` builds the map's presentation and map objects once, and
   `createBrowserMatch.ts` hands the map, the map objects and `request.roster` to the `Simulation`
-  (`SessionController.createMatch` builds that roster with `game/session/botRosterSlots.ts`);
+  (`SessionController.createMatch` builds that roster with `game/session/botRosterSlots.ts`,
+  renamed `rosterSlots.ts` by DEC-173);
   `#30`'s `useMatch.ts` changes did not return (DEC-50). The cathedral interior scene, its camera paths and the "Leave cathedral"
   control are gone. New is `game/BuildingRoofs.ts`, the one owner of roof cutaways: the
   player's building and the developer explorer's clicks (DEC-143; [06](06-map-and-minimap.md)
