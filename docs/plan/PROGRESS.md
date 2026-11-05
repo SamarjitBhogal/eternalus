@@ -4449,3 +4449,20 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 
 - Next step: human playtest and review of the shield appearance. Changes remain uncommitted;
   no push or PR was performed.
+
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 review fix and pre-PR gate — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` 387a5fd (PR #68) into the PR branch (eb0e012).
+  Owner rulings DEC-158 (the Stronghold wall is a shield arc from cliff face to cliff face) and
+  DEC-159 (no closed-ring wall: `wallRing.frontArc` required; closed-ring branches and the tests
+  that covered only the closed ring removed; ring tests of gate order, chord, splitting, narrowing
+  and anchors ported to the arc). Seal test (each tip on its cliff corner); layout validation
+  rejects outer gates past ±90°; one `shieldReach` from `boundaryPoint`; `MapShieldBuilder` no
+  longer guesses vertex order; `strongholdRing` throws instead of inferring; palace ruins drop the
+  timber ground by identity. Each new or ported test was turned red by a deliberate break first.
+  Gate: critic r1 approve (S1–S4), r2 request-changes (narrowing test could not fail; fixed), r3
+  approve; ponytail: 1 cut taken (shared reach), 5 rejected with reasons in the PR review.
+- Checks run: `npm run check` on 95cc4a5 → EXIT=0; core "Tests 967 passed (967)", client
+  "Tests 1753 passed (1753)", "Documentation check passed."
+- Next step: push to `feat/buildings-and-map-objects` (remote head must still be 52c1297), approve
+  #69; after #56 and #64 merge, re-run #56's soak probe and #64's zone tests.
