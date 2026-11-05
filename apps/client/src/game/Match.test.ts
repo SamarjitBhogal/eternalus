@@ -220,11 +220,11 @@ describe('Match', () => {
     const attacks = () =>
       enqueue.mock.calls.filter(([command]) => command.type === 'attack-target');
     // No player Legend before the first tick: no attack.
-    match.attackAt(onHouse.x, onHouse.y);
+    match.clickAt(onHouse.x, onHouse.y);
     expect(attacks()).toEqual([]);
 
     match.tick();
-    match.attackAt(onHouse.x, onHouse.y);
+    match.clickAt(onHouse.x, onHouse.y);
 
     const targetId = match.snapshot.mapObjects?.find(({ id }) => id === house?.id)?.entityId;
     expect(targetId).toEqual(expect.any(String));
@@ -238,9 +238,9 @@ describe('Match', () => {
     const { match } = setUp();
     // The following camera initially centres on the light stronghold.
     expect(match.hasDeveloperRoofs).toBe(false);
-    expect(match.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.clickAt(640, 360)).toBe(true);
     expect(match.hasDeveloperRoofs).toBe(true);
-    expect(match.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.clickAt(640, 360)).toBe(true);
     expect(match.hasDeveloperRoofs).toBe(false);
     match.destroy();
   });
