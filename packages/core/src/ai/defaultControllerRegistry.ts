@@ -2,6 +2,7 @@ import type { ControllerId } from '../content/ai/ai.types';
 import { BotLegendController } from './BotLegendController';
 import type { BotLegendControllerContent } from './BotLegendController.types';
 import type { Controller } from './Controller.types';
+import { GuardController } from './GuardController';
 import { MinionController } from './MinionController';
 import type { MinionControllerContent } from './MinionController.types';
 import { RoverController } from './RoverController';
@@ -23,6 +24,7 @@ export const createDefaultControllerRegistry = (content: {
   readonly rover: RoverControllerContent;
 }): ControllerRegistry => ({
   minion: new MinionController(content.minion),
+  guard: new GuardController(content.minion),
   'bot-legend': new BotLegendController(content.botLegend),
   rover: new RoverController(content.rover),
 });

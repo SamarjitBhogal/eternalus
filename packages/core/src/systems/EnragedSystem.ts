@@ -11,9 +11,6 @@ import type { System, SystemContext } from './System.types';
  * later, for the rest of the match. It records the loss per team and lane in
  * `TeamState.towersLostByLane`, so it is hashed and replayed, and `MinionStrengthStep` reads the
  * same count (DISC-24's shift). Runs after `SpawnSystem`, so a horde spawned this tick is covered.
- *
- * @remarks ponytail: no structure can fall until structure entities exist (minion plan M2c), so
- * in a live match nothing emits `structure-destroyed` yet.
  */
 export class EnragedSystem implements System {
   public readonly name = 'enraged';

@@ -27,8 +27,7 @@ import { UtilityScorer } from './utility/UtilityScorer';
  *
  * @remarks ponytail: the human is the enemy Legend no controller drives, sensed through
  * `Perception` (Legends only) within `senseRadius`, wider than 11 §3's vision-sized queries, until
- * the match state names it (12 §4 `humanLegendId`); the lane scores stand in for structure health
- * per lane until structure entities exist (minion plan M2c); no `LaneAdvantage` push yet.
+ * the match state names it (12 §4 `humanLegendId`); no `LaneAdvantage` push yet.
  */
 export class RoverController implements Controller {
   public readonly id = 'rover';

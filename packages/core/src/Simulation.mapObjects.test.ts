@@ -6,6 +6,7 @@ import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
 import type { MapDefinition, MapFeature } from './content/maps/maps.types';
 import { SPAWN_WAVES } from './content/structures/spawnWaves';
+import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { NullLogger } from './diagnostics/NullLogger';
 import { MapGenerator } from './map/MapGenerator';
 import { MapObjectBuilder } from './map/MapObjectBuilder';
@@ -281,4 +282,34 @@ describe('Simulation with a roster and map objects (as the client builds a match
       `${targets[1] ?? ''}:invalid-target`,
     ]);
   });
+
+  // Fort walls reach past a tower's collider, so the plain guard ring lands in them (seeds 1, 2:
+  // 35 guards); one spawner-tower post per team is blocked straight out to past its leash.
+  it.each([1, 2])(
+    'stands every tower guard clear of map objects and inside its leash (seed %i)',
+    (seed) => {
+      const config = createDefaultGameConfig();
+      const map = new MapGenerator().generate(config, seed);
+      const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+      const simulation = new Simulation({
+        config,
+        seed,
+        logger: new NullLogger(),
+        map,
+        mapObjects,
+        debug: TEST_DEBUG_CONFIG,
+      });
+
+      // Every invariant, every tick, throwing: `no-map-object-overlap` and `guard-within-leash`.
+      expect(() => {
+        for (let tick = 0; tick < 2; tick += 1) {
+          simulation.step();
+        }
+      }).not.toThrow();
+      const guards = simulation
+        .snapshot()
+        .entities.filter(({ definitionId }) => definitionId.endsWith('-guard'));
+      expect(guards.length).toBeGreaterThan(0);
+    },
+  );
 });
