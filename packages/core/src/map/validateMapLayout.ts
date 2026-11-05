@@ -52,7 +52,7 @@ const layoutRules = (layout: MapLayout): readonly (readonly [boolean, string])[]
     ],
     [
       !(wallRing.exitArcDegrees / 2 + wallRing.gateArcDegrees / 2 <= 90),
-      'wallRing outer gates must end by ±90° so each shield tip meets its cliff (DEC-158)',
+      'wallRing.exitArcDegrees/2 + wallRing.gateArcDegrees/2 must be <= 90, so each shield tip meets its cliff (DEC-158)',
     ],
     [
       obstacles.choices.some((choice) => !(choice.weight > 0)),

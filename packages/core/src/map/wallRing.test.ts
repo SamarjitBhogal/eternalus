@@ -20,11 +20,10 @@ describe('buildWallRing', () => {
   it.each([1, 3, 5, 7])(
     'makes an open front arc with %i original lane gates, taller tips and no rear wall',
     (lanes) => {
-      const ring = RING;
       const exits = Array.from({ length: lanes }, (_, i) =>
         lanes === 1 ? 0 : ((-70 + (140 * i) / (lanes - 1)) * Math.PI) / 180,
       );
-      const built = buildWallRing(CENTRE, exits, ring);
+      const built = buildWallRing(CENTRE, exits, RING);
       expect(built.pieces.filter((piece) => piece.kind === 'gate')).toHaveLength(lanes);
       expect(built.vertices).toHaveLength(built.pieces.length + 1);
       expect(built.vertices[0]?.x).toBeCloseTo(0);
@@ -34,8 +33,8 @@ describe('buildWallRing', () => {
       expect(built.pieces.some((piece) => piece.footprint.length > 4)).toBe(true);
       for (const gate of built.pieces.filter((piece) => piece.kind === 'gate')) {
         const angle = exits[gate.laneIndex ?? 0] ?? 0;
-        expect(gate.position.x).toBeCloseTo(cos(angle) * ring.radius);
-        expect(gate.position.y).toBeCloseTo(sin(angle) * ring.radius);
+        expect(gate.position.x).toBeCloseTo(cos(angle) * RING.radius);
+        expect(gate.position.y).toBeCloseTo(sin(angle) * RING.radius);
       }
       for (const piece of built.pieces)
         for (const point of piece.footprint) {
@@ -90,11 +89,10 @@ describe('buildWallRing', () => {
   it('narrows gates that would overlap their neighbours', () => {
     const ring = buildWallRing(CENTRE, [0, 0.1], RING);
     const gates = ring.pieces.filter((piece) => piece.kind === 'gate');
-    const [first, second] = gates.map((gate) => gate.footprint);
 
-    // The gap between the gates is 0.1 rad; gates take at most 40% of it each side.
-    // Footprints run inner edge forward, then outer edge back: [2] is the first gate's outer
-    // end and [3] the second gate's outer start.
-    expect(first?.[2]?.x).toBeGreaterThan(second?.[3]?.x ?? Number.POSITIVE_INFINITY);
+    // The gap between the gates is 0.1 rad; each gate takes at most 40% of it on each side, so
+    // each spans 0.08 rad (not 24 degrees) and the two cannot overlap.
+    expect(gates).toHaveLength(2);
+    for (const gate of gates) expect(gate.width).toBeCloseTo(2 * RING.radius * sin(0.04));
   });
 });

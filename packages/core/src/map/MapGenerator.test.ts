@@ -417,6 +417,19 @@ describe('MapGenerator', () => {
     );
   });
 
+  it('lets the outer gates end exactly at the cliff corners, and not past them (DEC-158)', () => {
+    const at = (exitArcDegrees: number) =>
+      new MapGenerator({
+        layout: {
+          ...DEFAULT_MAP_LAYOUT,
+          wallRing: { ...DEFAULT_MAP_LAYOUT.wallRing, exitArcDegrees, gateArcDegrees: 24 },
+        },
+      }).generate({ map: DEFAULT_MAP_CONFIG }, SEED);
+
+    expect(() => at(156)).not.toThrow();
+    expect(() => at(157)).toThrow(/exitArcDegrees\/2 \+ wallRing\.gateArcDegrees\/2 must be <= 90/);
+  });
+
   it('allows a single lane when there are no camps', () => {
     const map = generate({ numLanes: 1, campsPerSide: 0 });
 
