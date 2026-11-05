@@ -107,10 +107,7 @@ export class Match implements LoopTarget {
       this.objects,
       this.entities,
     ]);
-    const centre = (): WorldPoint => {
-      const view = this.camera.visibleArea();
-      return this.livingPlayerAt() ?? { x: view.x + view.width / 2, y: view.y + view.height / 2 };
-    };
+    const centre = (): WorldPoint => this.miniMapCentre();
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
@@ -334,6 +331,12 @@ export class Match implements LoopTarget {
   private livingPlayerAt(): WorldPoint | null {
     const player = this.playerEntity();
     return isDead(player?.health ?? null) ? null : (player?.transform ?? null);
+  }
+
+  /** The minimap's centre: the living player's Legend, else the camera's centre (DEC-182). */
+  private miniMapCentre(): WorldPoint {
+    const view = this.camera.visibleArea();
+    return this.livingPlayerAt() ?? { x: view.x + view.width / 2, y: view.y + view.height / 2 };
   }
 
   /** The player's Legend in the latest snapshot; `undefined` before it spawns or once removed. */

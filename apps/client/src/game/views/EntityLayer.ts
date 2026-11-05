@@ -21,7 +21,7 @@ export class EntityLayer implements WorldLayer {
    */
   public constructor(
     private readonly views: ViewRegistry,
-    private readonly isDead: (health: EntitySnapshot['health']) => boolean = () => false,
+    private readonly isDead: (health: EntitySnapshot['health']) => boolean,
   ) {}
 
   /**
