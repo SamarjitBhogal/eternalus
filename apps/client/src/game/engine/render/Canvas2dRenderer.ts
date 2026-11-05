@@ -61,25 +61,6 @@ export class Canvas2dRenderer implements Renderer {
     this.pixelRatio = pixelRatio;
   }
 
-  /** Scales and centres a world of the given size so all of it is visible on screen. */
-  public fitWorld(worldWidth: number, worldHeight: number): void {
-    this.fitWorldInArea(worldWidth, worldHeight, {
-      x: 0,
-      y: 0,
-      width: this.screenWidth,
-      height: this.screenHeight,
-    });
-  }
-
-  /** Scales and centres a world of the given size inside one area of the screen. */
-  public fitWorldInArea(worldWidth: number, worldHeight: number, area: ScreenRect): void {
-    const scale = Math.min(area.width / worldWidth, area.height / worldHeight);
-    this.scaleX = scale;
-    this.scaleY = scale;
-    this.offsetX = area.x + (area.width - worldWidth * scale) / 2;
-    this.offsetY = area.y + (area.height - worldHeight * scale) / 2;
-  }
-
   /**
    * Shows one part of the world across the whole screen, or across `screenArea` when given,
    * like a zoomed-in camera. If the area is not the same shape as the screen (or `screenArea`),

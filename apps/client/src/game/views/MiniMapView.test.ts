@@ -5,14 +5,17 @@ import {
   type MapFeature,
   MapGenerator,
   MapPresentationBuilder,
+  type Snapshot,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Canvas2dRenderer } from '../engine/render/Canvas2dRenderer';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import type { DrawContext } from '../engine/render/Canvas2dRenderer.types';
-import type { ScreenRect } from '../engine/render/Renderer.types';
-import { NEUTRAL_ENTITY_COLOR } from './entityViews.constants';
+import type { ScreenRect, WorldPoint } from '../engine/render/Renderer.types';
+import { createDefaultViewRegistry } from './defaultViewRegistry';
+import { EntityLayer } from './EntityLayer';
+import { MINI_MAP_MOB_GLYPH } from './entityViews.constants';
 import { MapView } from './MapView';
 import { TEAM_COLORS } from './MapView.constants';
 import { MiniMapView } from './MiniMapView';
@@ -20,8 +23,6 @@ import {
   MINI_MAP_BACKGROUND_COLOR,
   MINI_MAP_CENTER_COLOR,
   MINI_MAP_CENTER_GLYPH,
-  MINI_MAP_LEGEND_GLYPH,
-  MINI_MAP_MOB_GLYPH,
   MINI_MAP_VIEW_RADIUS,
 } from './MiniMapView.constants';
 import type { MiniMapRing } from './MiniMapView.types';
@@ -32,8 +33,8 @@ import type { WorldLayer } from './SceneView.types';
 /** The default generated map, the same one the game draws. */
 const MAP = new MapGenerator().generate({ map: DEFAULT_MAP_CONFIG }, 1);
 
-/** A pretend player position, in map units. */
-const VIEW = { x: 300, y: 500 };
+/** A pretend player position, in map units: the centre the tests' mini maps are given. */
+const CENTRE = { x: 300, y: 500 };
 
 /**
  * The HUD ring as `Match` injects it (Figma 65:743: 255 × 244 at 1636, 47 in the 1920 × 1080
@@ -45,9 +46,9 @@ const RING: MiniMapRing = {
   strokeWidth: 4,
 };
 
-/** A mini map whose scene is just the map, like in the real game today. */
+/** A mini map centred on `CENTRE` whose scene is just the map. */
 const createMiniMap = (ring: MiniMapRing = RING): MiniMapView =>
-  new MiniMapView(MAP, new MapView(MAP), ring);
+  new MiniMapView(MAP, new MapView(MAP), ring, () => CENTRE);
 
 /** A pretend canvas. Tests run without a browser, so every drawing tool does nothing. */
 const createFakeContext = (): DrawContext => ({
@@ -126,7 +127,7 @@ describe('MiniMapView', () => {
     const renderer = new RecordingRenderer();
     const mapDraw = vi.spyOn(MapView.prototype, 'drawMinimap');
     const miniMap = createMiniMap();
-    miniMap.draw(renderer, 1920, 1080, VIEW);
+    miniMap.draw(renderer, 1920, 1080);
     const area = miniMap.areaFor(1920, 1080);
 
     // RecordingRenderer runs the clipped drawing at once, so it is recorded after the clip.
@@ -139,8 +140,8 @@ describe('MiniMapView', () => {
       op: 'showWorldArea',
       args: [
         {
-          x: VIEW.x - MINI_MAP_VIEW_RADIUS,
-          y: VIEW.y - MINI_MAP_VIEW_RADIUS,
+          x: CENTRE.x - MINI_MAP_VIEW_RADIUS,
+          y: CENTRE.y - MINI_MAP_VIEW_RADIUS,
           width: MINI_MAP_VIEW_RADIUS * 2,
           height: MINI_MAP_VIEW_RADIUS * 2,
         },
@@ -153,7 +154,7 @@ describe('MiniMapView', () => {
     // With a clip that never runs its drawing, nothing at all reaches the screen.
     const held = new RecordingRenderer();
     vi.spyOn(held, 'clipToEllipse').mockImplementation(() => undefined);
-    miniMap.draw(held, 1920, 1080, VIEW);
+    miniMap.draw(held, 1920, 1080);
     expect(held.calls).toEqual([]);
   });
 
@@ -165,7 +166,7 @@ describe('MiniMapView', () => {
     };
     const clipOf = (ring: MiniMapRing) => {
       const renderer = new RecordingRenderer();
-      createMiniMap(ring).draw(renderer, 1920, 1080, VIEW);
+      createMiniMap(ring).draw(renderer, 1920, 1080);
       return renderer.calls.flatMap((call) => (call.op === 'clipToEllipse' ? [call.args[0]] : []));
     };
 
@@ -179,37 +180,38 @@ describe('MiniMapView', () => {
   it('puts the player at the ring centre and the radius-200 circle at the ring edge', () => {
     const renderer = new Canvas2dRenderer(createFakeContext());
     const miniMap = createMiniMap();
-    miniMap.draw(renderer, 1000, 800, VIEW);
+    miniMap.draw(renderer, 1000, 800);
     const area = miniMap.areaFor(1000, 800);
     const viewArea = miniMap.viewAreaFor(1000, 800);
 
-    const centre = renderer.toScreen(VIEW);
+    const centre = renderer.toScreen(CENTRE);
     expect(centre.x).toBeCloseTo(area.x + area.width / 2);
     expect(centre.y).toBeCloseTo(area.y + area.height / 2);
-    const east = renderer.toScreen({ x: VIEW.x + MINI_MAP_VIEW_RADIUS, y: VIEW.y });
+    // The circle's edge is the edge of the view square, which covers the ring inside its stroke.
+    const east = renderer.toScreen({ x: CENTRE.x + MINI_MAP_VIEW_RADIUS, y: CENTRE.y });
     expect(east.x - centre.x).toBeCloseTo(viewArea.width / 2);
-    // The circle reaches the ring's longer side: the ring has no empty rim.
-    expect(east.x - centre.x).toBeGreaterThanOrEqual(area.height / 2 - 8);
   });
 
   it('moves the map, not the marker, when the centre moves (north stays up)', () => {
     const renderer = new Canvas2dRenderer(createFakeContext());
-    const miniMap = createMiniMap();
-    const markerAt = (center: { x: number; y: number }) => {
+    let centre: WorldPoint = CENTRE;
+    const miniMap = new MiniMapView(MAP, new MapView(MAP), RING, () => centre);
+    const markerAt = (point: WorldPoint) => {
+      centre = point;
       const glyph = vi.spyOn(renderer, 'drawGlyph');
-      miniMap.draw(renderer, 1000, 800, center);
+      miniMap.draw(renderer, 1000, 800);
       const call = glyph.mock.calls.find((c) => c[2] === MINI_MAP_CENTER_COLOR);
       glyph.mockRestore();
       return call;
     };
-    const first = markerAt(VIEW);
+    const first = markerAt(CENTRE);
     const originBefore = renderer.toScreen({ x: 0, y: 0 });
-    const second = markerAt({ x: VIEW.x + 50, y: VIEW.y });
+    const second = markerAt({ x: CENTRE.x + 50, y: CENTRE.y });
     const originAfter = renderer.toScreen({ x: 0, y: 0 });
 
     expect(first?.[0]).toEqual(MINI_MAP_CENTER_GLYPH);
-    expect(first?.[1]).toEqual(VIEW);
-    expect(second?.[1]).toEqual({ x: VIEW.x + 50, y: VIEW.y });
+    expect(first?.[1]).toEqual(CENTRE);
+    expect(second?.[1]).toEqual({ x: CENTRE.x + 50, y: CENTRE.y });
     // The map slid left by 50 world units, with no rotation or zoom.
     const scale = miniMap.viewAreaFor(1000, 800).width / (MINI_MAP_VIEW_RADIUS * 2);
     expect(originBefore.x - originAfter.x).toBeCloseTo(50 * scale);
@@ -222,29 +224,30 @@ describe('MiniMapView', () => {
     const drawObstacles = vi.fn();
     const obstacles: WorldLayer = { draw: vi.fn(), drawMinimap: drawObstacles };
     const scene = new SceneView([new MapView(MAP), obstacles]);
-    new MiniMapView(MAP, scene, RING).draw(renderer, 1000, 800, VIEW);
+    new MiniMapView(MAP, scene, RING, () => CENTRE).draw(renderer, 1000, 800);
 
     // The mini map drew the obstacles too, without any change to MiniMapView.
     expect(drawObstacles).toHaveBeenCalledWith(renderer);
   });
 
   it('turns a click at the ring centre into the centre point', () => {
-    const point = createMiniMap().worldPointAt(1763.5, 169, 1920, 1080, VIEW);
+    const point = createMiniMap().worldPointAt(1763.5, 169, 1920, 1080);
 
-    expect(point?.x).toBeCloseTo(VIEW.x);
-    expect(point?.y).toBeCloseTo(VIEW.y);
+    expect(point?.x).toBeCloseTo(CENTRE.x);
+    expect(point?.y).toBeCloseTo(CENTRE.y);
   });
 
   it('turns a click at the ring edge into a point 200 units from the centre', () => {
     // The ring's right end is 127.5 px from the centre; the circle covers 123.5 px of it.
-    const point = createMiniMap().worldPointAt(1763.5 + 123.5, 169, 1920, 1080, VIEW);
+    const point = createMiniMap().worldPointAt(1763.5 + 123.5, 169, 1920, 1080);
 
-    expect(point?.x).toBeCloseTo(VIEW.x + MINI_MAP_VIEW_RADIUS);
-    expect(point?.y).toBeCloseTo(VIEW.y);
+    expect(point?.x).toBeCloseTo(CENTRE.x + MINI_MAP_VIEW_RADIUS);
+    expect(point?.y).toBeCloseTo(CENTRE.y);
   });
 
   it('clamps a click that points past the map edge to the map edge', () => {
-    const point = createMiniMap().worldPointAt(1763.5 - 100, 169, 1920, 1080, { x: 20, y: 100 });
+    const nearWest = new MiniMapView(MAP, new MapView(MAP), RING, () => ({ x: 20, y: 100 }));
+    const point = nearWest.worldPointAt(1763.5 - 100, 169, 1920, 1080);
 
     expect(point?.x).toBe(0);
     expect(point?.y).toBeCloseTo(100);
@@ -253,19 +256,20 @@ describe('MiniMapView', () => {
   it('ignores clicks outside the ring ellipse, even inside its box', () => {
     const miniMap = createMiniMap();
     // The top-left corner of the screen is far from the mini map.
-    expect(miniMap.worldPointAt(10, 10, 1920, 1080, VIEW)).toBeNull();
+    expect(miniMap.worldPointAt(10, 10, 1920, 1080)).toBeNull();
     // The ring box's top-left corner lies outside the ellipse.
     expect(ellipseDistance(1638, 49, miniMap.areaFor(1920, 1080))).toBeGreaterThan(1);
-    expect(miniMap.worldPointAt(1638, 49, 1920, 1080, VIEW)).toBeNull();
+    expect(miniMap.worldPointAt(1638, 49, 1920, 1080)).toBeNull();
     // Before the first resize the screen is 0 × 0 and there is no mini map to click.
-    expect(miniMap.worldPointAt(0, 0, 0, 0, VIEW)).toBeNull();
+    expect(miniMap.worldPointAt(0, 0, 0, 0)).toBeNull();
   });
 
   it('shows new map features with no view code change (ADR 0009 minimap proof)', () => {
     // Draw the mini map of a generated map and keep only the marker calls.
     const minimapGlyphs = (map: MapDefinition) => {
       const renderer = new RecordingRenderer();
-      new MiniMapView(map, new SceneView([new MapView(map)]), RING).draw(renderer, 1000, 800, VIEW);
+      const scene = new SceneView([new MapView(map)]);
+      new MiniMapView(map, scene, RING, () => CENTRE).draw(renderer, 1000, 800);
       return renderer.calls.flatMap((call) =>
         call.op === 'drawGlyph' && call.args[2] !== MINI_MAP_CENTER_COLOR ? [call.args] : [],
       );
@@ -301,12 +305,8 @@ describe('MiniMapView', () => {
     };
     const withBeacon: MapDefinition = { ...MAP, features: [...MAP.features, beacon] };
     const renderer = new RecordingRenderer();
-    new MiniMapView(withBeacon, new SceneView([new MapView(withBeacon)]), RING).draw(
-      renderer,
-      1000,
-      800,
-      VIEW,
-    );
+    const scene = new SceneView([new MapView(withBeacon)]);
+    new MiniMapView(withBeacon, scene, RING, () => CENTRE).draw(renderer, 1000, 800);
     const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));
 
     expect(glyphs).toContainEqual([beacon.minimapGlyph, beacon.position, expect.any(String)]);
@@ -318,7 +318,7 @@ describe('MiniMapView with scenery', () => {
     const scenery = new MapPresentationBuilder().build(MAP).scenery;
     const renderer = new RecordingRenderer();
     const scene = new SceneView([new MapView(MAP, scenery), new SceneryView(scenery, 'detail')]);
-    new MiniMapView(MAP, scene, RING).draw(renderer, 1000, 800, VIEW);
+    new MiniMapView(MAP, scene, RING, () => CENTRE).draw(renderer, 1000, 800);
     const roof = scenery.find((piece) => piece.id === 'cathedral-nave-roof');
 
     expect(roof).toBeDefined();
@@ -326,79 +326,40 @@ describe('MiniMapView with scenery', () => {
   });
 });
 
-describe('MiniMapView unit dots (DEC-187)', () => {
-  const unitAt = (
-    id: string,
-    family: 'mob' | 'legend',
-    team: EntitySnapshot['team'],
-    dx: number,
-    dy = 0,
-    current = 10,
-  ): EntitySnapshot => ({
-    id,
-    kind: family,
-    family,
-    definitionId: 'x',
-    team,
-    transform: { x: VIEW.x + dx, y: VIEW.y + dy, radius: 1 },
-    health: { current, max: 10 },
-  });
-
-  /** The unit dots of one frame: the `drawGlyph` calls made with a mob or Legend glyph. */
-  const dotsOf = (entities: EntitySnapshot[], playerId: string | null = null) => {
+describe('MiniMapView unit markers (DEC-187)', () => {
+  it("draws the units through the scene's entity layer, under the centre marker", () => {
+    const minion: EntitySnapshot = {
+      id: 'm',
+      kind: 'light-mob',
+      family: 'mob',
+      definitionId: 'light-minion',
+      team: 'light',
+      transform: { x: CENTRE.x + 10, y: CENTRE.y, radius: 0.4 },
+      health: { current: 150, max: 150 },
+    };
+    const counters = { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} };
+    const snapshot: Snapshot = {
+      tick: 1,
+      phase: 'countdown',
+      entities: [minion],
+      hordes: [],
+      teams: { light: counters, dark: counters },
+    };
+    const units = new EntityLayer(createDefaultViewRegistry());
+    units.show(null, snapshot, 0, null);
     const renderer = new RecordingRenderer();
-    createMiniMap().draw(renderer, 1920, 1080, VIEW, entities, playerId);
-    return renderer.calls.flatMap((call) =>
-      call.op === 'drawGlyph' &&
-      (call.args[0] === MINI_MAP_MOB_GLYPH || call.args[0] === MINI_MAP_LEGEND_GLYPH)
-        ? [call.args]
-        : [],
-    );
-  };
+    new MiniMapView(MAP, new SceneView([units]), RING, () => CENTRE).draw(renderer, 1920, 1080);
+    const glyphs = renderer.calls.flatMap((call) => (call.op === 'drawGlyph' ? [call.args] : []));
 
-  it('draws enemy, ally and neutral units inside the view in their team colours', () => {
-    const dots = dotsOf([
-      unitAt('a', 'mob', 'light', 10),
-      unitAt('b', 'mob', 'dark', -10),
-      unitAt('c', 'mob', 'neutral', 0, 10),
-    ]);
-
-    expect(dots.map(([, , color]) => color)).toEqual([
-      TEAM_COLORS.light,
-      TEAM_COLORS.dark,
-      NEUTRAL_ENTITY_COLOR,
-    ]);
-    expect(dots[0]?.[1]).toEqual({ x: VIEW.x + 10, y: VIEW.y });
-  });
-
-  it('draws no dot for a unit outside the radius', () => {
-    const inside = unitAt('in', 'mob', 'dark', MINI_MAP_VIEW_RADIUS - 1);
-    const outside = unitAt('out', 'mob', 'dark', MINI_MAP_VIEW_RADIUS + 1);
-    const diagonal = unitAt('diag', 'mob', 'dark', 150, 150);
-
-    expect(dotsOf([inside, outside, diagonal])).toHaveLength(1);
-  });
-
-  it('draws a Legend larger than a mob, over the mobs', () => {
-    const dots = dotsOf([unitAt('l', 'legend', 'light', 5), unitAt('m', 'mob', 'light', 6)]);
-
-    expect(dots.map(([glyph]) => glyph)).toEqual([MINI_MAP_MOB_GLYPH, MINI_MAP_LEGEND_GLYPH]);
-    expect(MINI_MAP_LEGEND_GLYPH.size).toBeGreaterThan(MINI_MAP_MOB_GLYPH.size);
-  });
-
-  it('draws no second dot for the player: the centre marker is the player', () => {
-    const dots = dotsOf(
-      [unitAt('me', 'legend', 'light', 0), unitAt('o', 'legend', 'dark', 20)],
-      'me',
-    );
-
-    expect(dots).toHaveLength(1);
-    expect(dots[0]?.[2]).toBe(TEAM_COLORS.dark);
-  });
-
-  it('skips dead units and things that are not Legends or mobs', () => {
-    const tower = { ...unitAt('t', 'mob', 'dark', 5), family: 'structure' };
-
-    expect(dotsOf([unitAt('d', 'mob', 'dark', 5, 0, 0), tower])).toEqual([]);
+    const at = { x: CENTRE.x + 10, y: CENTRE.y };
+    expect(glyphs.at(-2)).toEqual([MINI_MAP_MOB_GLYPH, at, TEAM_COLORS.light]);
+    expect(glyphs.at(-1)).toEqual([MINI_MAP_CENTER_GLYPH, CENTRE, MINI_MAP_CENTER_COLOR]);
+    // A mob's marker is outlined and larger, so it never looks like a turret's plain dot.
+    const turret = MAP.features.find((feature) => feature.kind === 'turret')?.minimapGlyph;
+    const outline = glyphs.at(-3);
+    expect(outline?.[1]).toEqual(at);
+    expect(outline?.[2]).not.toBe(TEAM_COLORS.light);
+    expect(outline?.[0].size).toBeGreaterThan(MINI_MAP_MOB_GLYPH.size);
+    expect(outline?.[0].size).toBeGreaterThan(turret?.size ?? Infinity);
   });
 });

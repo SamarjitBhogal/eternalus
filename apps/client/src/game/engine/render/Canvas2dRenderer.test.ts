@@ -56,19 +56,22 @@ const createFakeContext = (): FakeContext => {
 };
 
 /**
- * A 1000 x 500 screen showing a 100 x 100 world. The world is square and the screen is wide,
- * so the scale is 5 (500 / 100) and there is a 250 px gap on the left ((1000 - 500) / 2).
+ * A 1000 x 500 screen showing a 100 x 100 world on the 500 x 500 square in its middle. The scale
+ * is 5 (500 / 100) and there is a 250 px gap on the left ((1000 - 500) / 2).
  * Most tests below use these numbers.
  */
 const createFittedRenderer = (context: DrawContext): Canvas2dRenderer => {
   const renderer = new Canvas2dRenderer(context);
   renderer.resize(1000, 500);
-  renderer.fitWorld(100, 100);
+  renderer.showWorldArea(
+    { x: 0, y: 0, width: 100, height: 100 },
+    { x: 250, y: 0, width: 500, height: 500 },
+  );
   return renderer;
 };
 
 describe('Canvas2dRenderer', () => {
-  it('scales and centres the world to fit the screen', () => {
+  it('scales and places the shown world in its area of the screen', () => {
     const renderer = createFittedRenderer(createFakeContext().context);
 
     // Top-left of the world lands after the 250 px gap.
@@ -187,15 +190,16 @@ describe('Canvas2dRenderer', () => {
     expect(spies.closePath).toHaveBeenCalledOnce();
   });
 
-  it('fits the world inside one area of the screen', () => {
+  it('shows a part of the world inside one area of the screen, like the mini map', () => {
     const renderer = createFittedRenderer(createFakeContext().context);
-    // Squeeze the world into a 200 x 100 box at (800, 300), like the mini map.
-    renderer.fitWorldInArea(100, 100, { x: 800, y: 300, width: 200, height: 100 });
+    renderer.showWorldArea(
+      { x: 20, y: 10, width: 200, height: 100 },
+      { x: 400, y: 100, width: 100, height: 50 },
+    );
 
-    // The square world fits the box's height (scale 1) and is centred in its width,
-    // so there is a 50 px gap on each side: it spans 850 to 950 across.
-    expect(renderer.toScreen({ x: 0, y: 0 })).toEqual({ x: 850, y: 300 });
-    expect(renderer.toScreen({ x: 100, y: 100 })).toEqual({ x: 950, y: 400 });
+    // The part's corners land on the area's corners.
+    expect(renderer.toScreen({ x: 20, y: 10 })).toEqual({ x: 400, y: 100 });
+    expect(renderer.toScreen({ x: 220, y: 110 })).toEqual({ x: 500, y: 150 });
   });
 
   it('fills and outlines rectangles given in screen pixels', () => {
@@ -252,17 +256,6 @@ describe('Canvas2dRenderer', () => {
     // fills the screen's bottom-right.
     expect(renderer.toScreen({ x: 20, y: 10 })).toEqual({ x: 0, y: 0 });
     expect(renderer.toScreen({ x: 220, y: 110 })).toEqual({ x: 1000, y: 500 });
-  });
-
-  it('can show a part of the world across one area of the screen', () => {
-    const renderer = createFittedRenderer(createFakeContext().context);
-    renderer.showWorldArea(
-      { x: 20, y: 10, width: 200, height: 100 },
-      { x: 400, y: 100, width: 100, height: 50 },
-    );
-
-    expect(renderer.toScreen({ x: 20, y: 10 })).toEqual({ x: 400, y: 100 });
-    expect(renderer.toScreen({ x: 220, y: 110 })).toEqual({ x: 500, y: 150 });
   });
 
   // NEW: checks the "tall, not wide" camera view.

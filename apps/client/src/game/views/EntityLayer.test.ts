@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
+import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
@@ -36,7 +37,35 @@ class SpyView implements EntityView {
   public draw(state: EntityDrawState): void {
     this.drawn.push(state);
   }
+
+  public drawMinimap(): void {
+    // The main-view tests below record `draw` only.
+  }
 }
+
+/** One entity of `family` at (x, 0) with `current` health. */
+const member = (id: string, family: string, x: number, current = 10): EntitySnapshot => ({
+  ...unit(id, x, 0),
+  kind: family,
+  family,
+  health: { current, max: 10 },
+});
+
+/** Every minimap glyph the layer draws with the shipped views: [glyph, x] in drawing order. */
+const minimapGlyphs = (layer: EntityLayer): [unknown, number][] => {
+  const renderer = new RecordingRenderer();
+  const asSceneLayer: WorldLayer = layer;
+  asSceneLayer.drawMinimap(renderer);
+  return renderer.calls.flatMap((call) =>
+    call.op === 'drawGlyph' ? [[call.args[0], call.args[1].x]] : [],
+  );
+};
+
+/** The unit markers among them (each also has an outline under it). */
+const minimapMarks = (layer: EntityLayer): [unknown, number][] =>
+  minimapGlyphs(layer).filter(
+    ([glyph]) => glyph === MINI_MAP_MOB_GLYPH || glyph === MINI_MAP_LEGEND_GLYPH,
+  );
 
 describe('EntityLayer', () => {
   it('interpolates positions between the last two snapshots by alpha', () => {
@@ -73,14 +102,38 @@ describe('EntityLayer', () => {
     ]);
   });
 
-  it('leaves the minimap alone (unit dots come from MiniMapView)', () => {
+  it('marks Legends and mobs on the minimap via their views, interpolated, Legends last', () => {
     const layer = new EntityLayer(createDefaultViewRegistry());
-    const renderer = new RecordingRenderer();
+    const legend = member('l', 'legend', 10);
 
-    layer.show(null, snapshot(1, [unit('a', 1, 1), unit('b', 2, 2)]), 0, null);
-    const asSceneLayer: WorldLayer = layer;
-    asSceneLayer.drawMinimap(renderer);
+    layer.show(
+      snapshot(1, [legend, member('m', 'mob', 0)]),
+      snapshot(2, [{ ...legend, transform: { x: 20, y: 0, radius: 0.5 } }, member('m', 'mob', 4)]),
+      0.5,
+      null,
+    );
 
-    expect(renderer.calls).toEqual([]);
+    expect(minimapMarks(layer)).toEqual([
+      [MINI_MAP_MOB_GLYPH, 2],
+      [MINI_MAP_LEGEND_GLYPH, 15],
+    ]);
+  });
+
+  it('marks no player, no dead (the injected rule), no structure, no boss on the minimap', () => {
+    // The injected rule, not one of the layer's own: here 7 health counts as dead.
+    const layer = new EntityLayer(createDefaultViewRegistry(), (health) => health?.current === 7);
+    const units = [
+      member('me', 'legend', 1),
+      member('dead', 'mob', 2, 7),
+      member('gate', 'structure', 3),
+      member('wyrm', 'boss', 4),
+      member('alive', 'mob', 5, 0),
+    ];
+
+    layer.show(null, snapshot(1, units), 0, 'me');
+
+    expect(minimapMarks(layer)).toEqual([[MINI_MAP_MOB_GLYPH, 5]]);
+    // Nothing else is drawn: only that mob's outline and dot.
+    expect(minimapGlyphs(layer).map(([, x]) => x)).toEqual([5, 5]);
   });
 });

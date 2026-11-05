@@ -8,19 +8,13 @@ export const MINI_MAP_BACKGROUND_COLOR = '#1b1813';
 // TUNE: owner 2026-11-04 (DEC-182)
 export const MINI_MAP_VIEW_RADIUS = 200;
 
-/** Marker at the middle of the mini map: the point the view is centred on (the player). */
+/**
+ * Marker at the middle of the mini map: the point the view is centred on (the player). DEC-182
+ * replaced the white view box with a centre marker (in place of HC-U1 note 1's red chevron).
+ */
+// TUNE: owner 2026-11-04 (DEC-182): a centre marker; its shape and size are provisional
 export const MINI_MAP_CENTER_GLYPH = { shape: 'ring', size: 10 } as const;
 
 /** Colour of the centre marker. */
+// TUNE: owner 2026-11-04 (DEC-182): the white marker that replaces the view box
 export const MINI_MAP_CENTER_COLOR = '#ffffff';
-
-/**
- * Marker of a living mob (lane minion, tower guard, camp mob) on the mini map, in CSS pixels.
- * Its colour is the team's (`TEAM_COLORS`, `NEUTRAL_ENTITY_COLOR`).
- */
-// TUNE: owner 2026-11-04 (DEC-187): what to draw; the size is provisional
-export const MINI_MAP_MOB_GLYPH = { shape: 'dot', size: 4 } as const;
-
-/** Marker of a living Legend on the mini map: clearly larger than a mob's. */
-// TUNE: owner 2026-11-04 (DEC-187): what to draw; the size is provisional
-export const MINI_MAP_LEGEND_GLYPH = { shape: 'dot', size: 9 } as const;

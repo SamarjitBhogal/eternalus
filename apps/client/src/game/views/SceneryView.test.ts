@@ -69,10 +69,8 @@ describe('SceneryView roof cutaways', () => {
     const scene = new SceneView([
       new SceneryView(PRESENTATION.scenery, 'detail', new Set(['light-stronghold'])),
     ]);
-    new MiniMapView(MAP_1, scene, HUD_MINIMAP_RING).draw(renderer, 1600, 900, {
-      x: MAP_1.width / 2,
-      y: MAP_1.height / 2,
-    });
+    const centre = { x: MAP_1.width / 2, y: MAP_1.height / 2 };
+    new MiniMapView(MAP_1, scene, HUD_MINIMAP_RING, () => centre).draw(renderer, 1600, 900);
     const throne = PRESENTATION.scenery.find((p) => p.id === 'light-palace-interior-throne-back');
     const roof = PRESENTATION.scenery.find((p) => p.id === 'light-stronghold-palace-roof');
     expect(throne).toBeDefined();

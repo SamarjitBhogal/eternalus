@@ -91,6 +91,7 @@ export class Match implements LoopTarget {
           ),
         );
       }),
+      isDead,
     );
     this.camera = new MatchCamera(camera, map);
     this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);
@@ -106,7 +107,11 @@ export class Match implements LoopTarget {
       this.objects,
       this.entities,
     ]);
-    this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING) };
+    const centre = (): WorldPoint => {
+      const view = this.camera.visibleArea();
+      return this.livingPlayerAt() ?? { x: view.x + view.width / 2, y: view.y + view.height / 2 };
+    };
+    this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
@@ -176,8 +181,7 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    const player = this.playerEntity();
-    this.roofs.playerAt(isDead(player?.health ?? null) ? null : (player?.transform ?? null));
+    this.roofs.playerAt(this.livingPlayerAt());
     this.bridge.afterTick(this.current, this.playerId);
   }
 
@@ -192,14 +196,7 @@ export class Match implements LoopTarget {
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
     scene.draw(renderer);
-    miniMap.draw(
-      renderer,
-      this.camera.screenWidth,
-      this.camera.screenHeight,
-      this.minimapCenter(),
-      this.current.entities,
-      this.playerId,
-    );
+    miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }
 
   /**
@@ -218,13 +215,7 @@ export class Match implements LoopTarget {
    */
   public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
     const { screenWidth, screenHeight } = this.camera;
-    const target = this.world.miniMap.worldPointAt(
-      screenX,
-      screenY,
-      screenWidth,
-      screenHeight,
-      this.minimapCenter(),
-    );
+    const target = this.world.miniMap.worldPointAt(screenX, screenY, screenWidth, screenHeight);
     if (target === null) {
       return false;
     }
@@ -337,16 +328,12 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * The world point at the middle of the minimap: the player's Legend while it lives, else the
-   * point the camera looks at (DEC-182).
+   * Where the player's Legend stands while it lives (the open roof and the minimap's centre);
+   * `null` before it spawns, once dead or gone. The minimap then centres on the camera (DEC-182).
    */
-  private minimapCenter(): WorldPoint {
+  private livingPlayerAt(): WorldPoint | null {
     const player = this.playerEntity();
-    if (player?.transform != null && !isDead(player.health)) {
-      return player.transform;
-    }
-    const view = this.camera.visibleArea();
-    return { x: view.x + view.width / 2, y: view.y + view.height / 2 };
+    return isDead(player?.health ?? null) ? null : (player?.transform ?? null);
   }
 
   /** The player's Legend in the latest snapshot; `undefined` before it spawns or once removed. */
