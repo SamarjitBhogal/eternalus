@@ -5,6 +5,7 @@ import { RETREAT_STRUCTURES } from '../content/ai/botLaner';
 import { NORMAL_BOT } from '../content/ai/difficulties/normal';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { AStarPathfinder } from '../map/AStarPathfinder';
+import { SpaceIndex } from '../physics/SpaceIndex';
 import type { PathQuery } from '../state/PathQuery.types';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
@@ -129,6 +130,54 @@ describe('BotLeaves.moveTo (A* for Legends, 10 §9)', () => {
     // Standing on open ground in front of the block, on the bot's side of it.
     expect(position.x).toBeGreaterThan(43);
     expect(position.x).toBeLessThan(50);
+  });
+
+  it('steps in from the edge of blocked ground toward an enemy or tower on it, and keeps stepping in once inside it, instead of halting or walking back out (DEC-189)', () => {
+    // The rift block (x 50..70, y 10..30) stands in for a fort's court, which the nav grid blocks
+    // though its doorways let a body in; the collision system stops the bot at real walls.
+    const world = matchWorldOf(BLOCKED_LANE_MAP);
+    const { pathMaxExpansions, pathSnapCells } = createDefaultGameConfig().map;
+    const space = new SpaceIndex(BLOCKED_LANE_MAP.width, BLOCKED_LANE_MAP.height, 2);
+    space.begin(1);
+    space.add('enemy', 55, 20);
+    space.commit();
+    const state = new GameState(createDefaultGameConfig(), 1, world, {
+      space,
+      paths: new AStarPathfinder(world.grid, {
+        maxExpansions: pathMaxExpansions,
+        snapCells: pathSnapCells,
+      }),
+    });
+    const at = (position: { x: number; y: number }): BotTurn => ({
+      ...turnAt(position, true),
+      state,
+    });
+    const lastMove = (turn: BotTurn) =>
+      turn.commands.filter((command) => command.type === 'move').at(-1)?.direction;
+    const fighter = { ...at({ x: 46, y: 20 }), enemy: 'enemy' };
+    const sieger = {
+      ...at({ x: 52, y: 20 }),
+      objective: {
+        id: 'tower',
+        kind: 'spawner-tower',
+        team: 'dark' as const,
+        lane: 'lane-0',
+        x: 60,
+        y: 20,
+        radius: 5,
+        startingHealth: 3000,
+        progress: 60,
+        frontProgress: 55,
+        isBreakable: true,
+      },
+    };
+
+    // At the open edge in front of the enemy: on toward it, not a halt.
+    expect(leaves.fight(fighter)).toBe('running');
+    expect(lastMove(fighter)).toEqual({ x: 9, y: 0 });
+    // Already inside the blocked ground: on toward the tower, not back out along A*.
+    expect(leaves.siege(sieger)).toBe('running');
+    expect(lastMove(sieger)).toEqual({ x: 8, y: 0 });
   });
 
   it('forgets the remembered target when the pathfinder finds no way, since the stop cleared it', () => {

@@ -1,5 +1,6 @@
 import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
+import { Footprint } from '../components/Footprint';
 import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
@@ -12,6 +13,8 @@ import type {
 import type { LaneFlowFields } from '../map/LaneFlowFields';
 import type { WorldMap } from '../map/WorldMap';
 import { formationSlot } from '../state/formationSlot';
+import { nearestPointOnPolygons } from '../utils/geometry';
+import type { Rect, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { System, SystemContext } from './System.types';
 
@@ -35,6 +38,10 @@ export class PathingSystem implements System {
   private readonly out: MutableVec2 = { x: 0, y: 0 };
   private readonly forward: MutableVec2 = { x: 0, y: 0 };
   private readonly anchor: MutableVec2 = { x: 0, y: 0 };
+  /** The last `chase`'s target blocked depth (`chase`). */
+  private depth = 0;
+  /** The boxes of every structure's `Footprint`, read on first use. */
+  private forts: readonly Rect[] | null = null;
   private found = new Int32Array(0);
 
   /**
@@ -53,21 +60,54 @@ export class PathingSystem implements System {
 
   /**
    * Points `target` at the unit `memberId` attacks (18 §5.2, engaging) and returns the distance
-   * between centres at which it is in reach; `undefined` when it attacks nothing.
+   * from it at which the target is in reach; `undefined` when it attacks nothing. A target with a
+   * `Footprint` (a lane tower's fort) is aimed at its outline's nearest point, with reach measured
+   * as `EntityStore.isInReach` measures it (DEC-185). For it, and for a unit standing inside a
+   * fort's box, `depth` is how far the blocked nav ground under the target reaches back toward the
+   * attacker: the grid blocks a fort's whole court, but its walls stop no one at the doorways
+   * (owner 2026-11-04: units may enter towers). Otherwise `depth` is 0.
    */
   private chase(state: SystemContext['state'], memberId: string): number | undefined {
     const attacker = state.entities.get(memberId);
     const combat = attacker?.findComponent(Combat);
     const targetId = combat?.targetId;
     const self = attacker?.findComponent(Transform);
-    const other =
-      targetId == null ? undefined : state.entities.get(targetId)?.findComponent(Transform);
+    const goal = targetId == null ? undefined : state.entities.get(targetId);
+    const other = goal?.findComponent(Transform);
+    this.depth = 0;
     if (combat === undefined || self === undefined || other === undefined) {
       return undefined;
     }
+    const footprint = goal?.findComponent(Footprint);
+    const { x, y } = self.position;
+    const grid = state.world?.grid;
+    if (footprint !== undefined) {
+      nearestPointOnPolygons(self.position, footprint.polygons, this.target);
+      this.depth = grid?.blockedRun(this.target.x, this.target.y, x, y) ?? 0;
+      return self.radius + combat.attack.reach;
+    }
     this.target.x = other.position.x;
     this.target.y = other.position.y;
+    if (grid !== undefined && this.isInsideFort(state, other.position)) {
+      this.depth = grid.blockedRun(this.target.x, this.target.y, x, y);
+    }
     return self.radius + other.radius + combat.attack.reach;
+  }
+
+  /** Whether `point` lies in the box of a structure's `Footprint` (a lane tower's fort). */
+  private isInsideFort(state: SystemContext['state'], { x, y }: Vec2): boolean {
+    if (this.forts === null) {
+      // Structures stand from match start and never move, so their boxes are read once.
+      const forts: Rect[] = [];
+      state.entities.forEach((entity) => {
+        const box = entity.findComponent(Footprint)?.bounds;
+        if (box !== undefined) forts.push(box);
+      });
+      this.forts = forts;
+    }
+    return this.forts.some(
+      (box) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height,
+    );
   }
 
   /**
@@ -86,6 +126,7 @@ export class PathingSystem implements System {
     const reach = this.chase(state, id);
     context.arrivalRadius = reach ?? this.slotArrivalRadius;
     context.isChasing = reach !== undefined;
+    context.targetBlockedDepth = this.depth;
     movement.steer(strategy.desiredVelocity(index, context));
   }
 
@@ -121,6 +162,7 @@ export class PathingSystem implements System {
     this.target.y = exit.y;
     context.arrivalRadius = this.slotArrivalRadius;
     context.isChasing = false;
+    context.targetBlockedDepth = 0;
     const { flow } = context;
     context.flow = null;
     // The strategy writes the heading into `this.out`, which the caller hands to the mob.

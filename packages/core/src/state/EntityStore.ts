@@ -1,6 +1,7 @@
 import { Combat } from '../components/Combat';
 import { ControllerBinding } from '../components/ControllerBinding';
 import { Deploying } from '../components/Deploying';
+import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { Movement } from '../components/Movement';
@@ -124,8 +125,9 @@ export class EntityStore {
 
   /**
    * Whether `targetId` is within `attackerId`'s attack reach, measured edge to edge between the
-   * two footprints (architecture 05 §10); a map object is measured to its footprint polygons, not
-   * its bounding circle. `false` when either is unknown or the attacker cannot attack.
+   * two footprints (architecture 05 §10); a map object, or a structure with a `Footprint` (a lane
+   * tower's fort, DEC-185), is measured to its polygons, not its bounding circle. `false` when
+   * either is unknown or the attacker cannot attack.
    */
   public isInReach(attackerId: EntityId, targetId: EntityId): boolean {
     const attacker = this.entities.get(attackerId);
@@ -136,10 +138,12 @@ export class EntityStore {
     if (combat === undefined || from === undefined || to === undefined) {
       return false;
     }
-    const object = target?.findComponent(MapObjectBody);
-    if (object !== undefined) {
+    const shapes =
+      target?.findComponent(MapObjectBody)?.object.footprints ??
+      target?.findComponent(Footprint)?.polygons;
+    if (shapes !== undefined) {
       const reach = from.radius + combat.attack.reach;
-      return object.object.footprints.some((shape) => {
+      return shapes.some((shape) => {
         const first = shape[0];
         const last = shape.at(-1);
         // A shape without corners is never in reach (`MapObjectBuilder` rejects one anyway).

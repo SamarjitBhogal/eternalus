@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Deploying } from './components/Deploying';
+import { Footprint } from './components/Footprint';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { DEFAULT_MAP_LAYOUT } from './content/maps/defaultMapLayout';
 import type { MapObject } from './content/maps/mapObjects.types';
@@ -166,6 +167,87 @@ describe('Simulation with a roster and map objects (as the client builds a match
       expect(notOut).toEqual([]);
     },
   );
+
+  it("gives each lane tower its fort's footprint as its Footprint, and the Stronghold none (DEC-185)", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      map,
+      mapObjects,
+    });
+    const { entities } = (simulation as unknown as { readonly state: GameState }).state;
+    const shapes = new Map<string, number>();
+    entities.forEach((entity) => {
+      if (entity.family === 'structure') {
+        const polygons = entity.findComponent(Footprint)?.polygons.length ?? 0;
+        shapes.set(entity.kind, Math.max(shapes.get(entity.kind) ?? 0, polygons));
+      }
+    });
+
+    // A fort is 12 blocks: 4 walls cut by doorways into 6, 4 corner towers and the keep.
+    const fort = mapObjects.find(({ kind }) => kind === 'spawner-tower')?.footprints.length;
+    expect(fort).toBe(12);
+    expect(shapes.get('spawner-tower')).toBe(fort);
+    expect(shapes.get('buff-tower')).toBe(fort);
+    expect(shapes.get('stronghold')).toBe(0);
+  });
+
+  it('lets a light horde sent at an enemy spawner tower on the generated map hit it within a minute (DEC-185, playtest 2026-11-04)', () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new NullLogger(),
+      // Every invariant, the heavy ones once a second, so the minute stays quick on CI.
+      debug: { ...TEST_DEBUG_CONFIG, heavyEvery: config.tickRate },
+      map,
+      mapObjects,
+    });
+    const routes = new LaneRoutes(map);
+    const tower = laneTowers(map).find(
+      ({ kind, team, laneId }) =>
+        kind === 'spawner-tower' && team === 'dark' && laneId === 'lane-1',
+    );
+    const lane = tower?.laneId ?? 'lane-1';
+    const at = routes.distanceAlong(lane, 'light', tower?.position ?? { x: 0, y: 0 });
+    const towerId =
+      simulation
+        .snapshot()
+        .entities.find(
+          ({ kind, transform }) =>
+            kind === 'spawner-tower' &&
+            transform?.x === tower?.position.x &&
+            transform?.y === tower?.position.y,
+        )?.id ?? '';
+    const minions = new Set<string>();
+    simulation.on('entity-spawned', ({ entityId, kind }) => {
+      if (kind === 'light-mob') minions.add(entityId);
+    });
+    let hits = 0;
+    simulation.on('damage-applied', ({ targetId, source }) => {
+      if (targetId === towerId && minions.has(source.attackerId ?? '')) hits += 1;
+    });
+    // 40 m up-lane of the tower, past its guards' posts.
+    simulation.enqueueCommand({
+      type: 'dev-spawn-mobs',
+      team: 'light',
+      definitionId: 'light-minion',
+      count: config.match.hordeSizes.light,
+      origin: { kind: 'lane', lane, t: (at - 40) / routes.length(lane) },
+    });
+    for (let tick = 0; tick < 60 * config.tickRate && hits === 0; tick += 1) {
+      simulation.step();
+    }
+
+    expect(towerId).not.toBe('');
+    expect(hits).toBeGreaterThan(0);
+  });
 
   it('blocks the walking grid under a blocking map object no map feature stands under (07 §10)', () => {
     const config = createDefaultGameConfig();

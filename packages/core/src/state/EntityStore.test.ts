@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { Deploying } from '../components/Deploying';
+import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { TeamMembership } from '../components/TeamMembership';
+import { Transform } from '../components/Transform';
 import type { Team } from '../teams/teams.types';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
@@ -280,5 +282,39 @@ describe('EntityStore', () => {
     expect(store.isInReach(minion.id, near)).toBe(true);
     expect(store.isInReach(minion.id, far)).toBe(false);
     expect(store.isInReach(minion.id, cornerless)).toBe(false);
+  });
+
+  it("measures reach to a structure with a Footprint from its fort's outline, not its circle (DEC-185)", () => {
+    const store = new EntityStore();
+    const factory = new EntityFactory(createDefaultEntityRegistry(), loadDefaultContent(30));
+    const tower = new Dummy('tower', 'tower-definition');
+    // The collider circle: 14 m around (30, 0). The fort's west wall: x 14..17.2.
+    tower.addComponent(new Transform({ x: 30, y: 0 }, 14));
+    tower.addComponent(
+      new Footprint([
+        [
+          { x: 14, y: -16 },
+          { x: 17.2, y: -16 },
+          { x: 17.2, y: 16 },
+          { x: 14, y: 16 },
+        ],
+      ]),
+    );
+    const minionAt = (x: number) => {
+      const minion = factory.create('light-mob', 'light-minion', {
+        team: 'dark',
+        position: { x, y: 0 },
+      });
+      store.add(minion);
+      return minion.id;
+    };
+    store.add(tower);
+    // Pressed on the wall, its 0.4 m radius off it: 16.4 m from the centre, 2 m edge to edge from
+    // the circle (past the 1.5 m reach), yet in reach of the wall. 2.5 m off the wall is not.
+    const pressed = minionAt(13.6);
+    const off = minionAt(11.5);
+
+    expect(store.isInReach(pressed, tower.id)).toBe(true);
+    expect(store.isInReach(off, tower.id)).toBe(false);
   });
 });

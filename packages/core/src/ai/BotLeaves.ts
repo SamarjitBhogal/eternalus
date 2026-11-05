@@ -129,7 +129,11 @@ export class BotLeaves {
     return turn.enemy !== null;
   }
 
-  /** Attacks `turn.enemy`, may cast at it, and closes in until it is in reach. */
+  /**
+   * Attacks `turn.enemy`, may cast at it, and closes in until it is in reach. An enemy on ground
+   * the nav grid blocks (inside a tower's fort court) is closed in on as a siege closes in, so the
+   * bot follows it inside instead of waiting at the edge (DEC-189).
+   */
   public fight(turn: BotTurn): BtStatus {
     const { state, id, enemy } = turn;
     const at = enemy === null ? undefined : BotLeaves.positionOf(state, enemy);
@@ -138,7 +142,11 @@ export class BotLeaves {
     }
     const isHolding = BotLeaves.attackAndHold(turn, enemy, state.entities.isInReach(id, enemy));
     this.mayCast(turn, enemy, at);
-    return isHolding ? 'running' : this.moveTo(turn, at);
+    if (isHolding) {
+      return 'running';
+    }
+    const isOnOpenGround = state.world?.grid.isWalkableAt(at.x, at.y) ?? true;
+    return isOnOpenGround ? this.moveTo(turn, at) : this.closeIn(turn, at, 0);
   }
 
   /**
@@ -167,26 +175,19 @@ export class BotLeaves {
 
   /**
    * Attacks `turn.objective` (11 §4.2 `Push`): A\* to the edge of its footprint on the bot's side
-   * (`approach` from its collider radius), then straight at it for the last step, holding once it
-   * is in reach (B66-F1). The edge faces the bot, so a Stronghold behind its wall ring is reached
-   * through the ring's gate instead of leaned on from outside.
+   * (from its collider radius), then straight at it for the last step, holding once it is in
+   * reach (B66-F1, `closeIn`). The edge faces the bot, so a Stronghold behind its wall ring is
+   * reached through the ring's gate instead of leaned on from outside.
    */
   public siege(turn: BotTurn): BtStatus {
-    const { state, id, position, objective } = turn;
+    const { state, id, objective } = turn;
     if (objective === null) {
       return 'failure';
     }
     if (BotLeaves.attackAndHold(turn, objective.id, state.entities.isInReach(id, objective.id))) {
       return 'running';
     }
-    const edge = BotLeaves.approach(turn, objective, objective.radius);
-    // Measured from the structure, so stepping in from the edge never sends the bot back out.
-    const isAtEdge =
-      sqrt(BotLeaves.gapSquared(position, objective)) <=
-      sqrt(BotLeaves.gapSquared(edge, objective)) + turn.difficulty.arrivalDistance;
-    return isAtEdge
-      ? BotLeaves.steer(turn, { x: objective.x - position.x, y: objective.y - position.y })
-      : this.moveTo(turn, edge);
+    return this.closeIn(turn, objective, objective.radius);
   }
 
   /** Finds the anchor of the most advanced allied horde on `lane`. */
@@ -301,6 +302,14 @@ export class BotLeaves {
    * of a tower's doorway (2026-11-04). `to` when no open ground lies between, or with no grid.
    */
   private static approach(turn: BotTurn, to: Vec2, clearance: number): Vec2 {
+    return BotLeaves.edgeOf(turn, to, clearance) ?? to;
+  }
+
+  /**
+   * `approach`'s open ground, or `null` when none lies between `to` and the bot: the bot then
+   * stands inside the blocked ground around `to` itself.
+   */
+  private static edgeOf(turn: BotTurn, to: Vec2, clearance: number): Vec2 | null {
     const grid = turn.state.world?.grid;
     const { position } = turn;
     const span = sqrt(BotLeaves.gapSquared(position, to));
@@ -317,7 +326,25 @@ export class BotLeaves {
         return { x, y };
       }
     }
-    return to;
+    return null;
+  }
+
+  /**
+   * Closes in on `to` on blocked nav ground: A\* to its edge on the bot's side (`edgeOf`, from
+   * `clearance` out), then straight at `to`. Measured from `to`, so stepping in from the edge never
+   * sends the bot back out; a bot already inside the blocked ground keeps stepping in, and the
+   * collision system stops it at the real walls (a fort's court is open, DEC-189).
+   */
+  private closeIn(turn: BotTurn, to: Vec2, clearance: number): BtStatus {
+    const { position } = turn;
+    const edge = BotLeaves.edgeOf(turn, to, clearance);
+    const isPastEdge =
+      edge === null ||
+      sqrt(BotLeaves.gapSquared(position, to)) <=
+        sqrt(BotLeaves.gapSquared(edge, to)) + turn.difficulty.arrivalDistance;
+    return isPastEdge
+      ? BotLeaves.steer(turn, { x: to.x - position.x, y: to.y - position.y })
+      : this.moveTo(turn, edge);
   }
 
   /** Casts its first ability at the enemy when the cast is due and the roll comes up (11 §4.2). */

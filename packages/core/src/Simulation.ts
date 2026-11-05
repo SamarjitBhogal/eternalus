@@ -8,6 +8,7 @@ import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
 import { CommandQueue } from './commands/CommandQueue';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
+import { Footprint } from './components/Footprint';
 import { validateGameConfig } from './config/validateGameConfig';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
@@ -142,7 +143,7 @@ export class Simulation {
       undefined,
       weaponSource,
     );
-    Simulation.spawnStructures(this.state, factory, structures);
+    Simulation.spawnStructures(this.state, factory, structures, mapObjects);
     this.state.indexStructures();
     this.commandContext = { state: this.state, factory };
     if (mapObjects !== undefined && map === undefined)
@@ -263,20 +264,29 @@ export class Simulation {
    * Builds the map's structures, in feature id order, before anything else spawns (architecture
    * 07 §1): every feature whose definition is a structure becomes that structure, with its team
    * and lane. Features without a structure definition (walls, turrets, corner camps) stay map data.
+   * A structure whose feature has a blocking map object of the same id (a lane tower's fort) takes
+   * that object's footprints as its `Footprint` (DEC-185).
    */
   private static spawnStructures(
     state: GameState,
     factory: EntityFactory,
     structures: StructureSource,
+    mapObjects: readonly MapObject[] = [],
   ): void {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
-    for (const { definitionId, position, team, laneId } of features) {
+    const solids = new Map(
+      mapObjects.filter(({ isBlocking }) => isBlocking).map((object) => [object.id, object]),
+    );
+    for (const { id, definitionId, position, team, laneId } of features) {
       if (structures.has(definitionId)) {
         const { kind } = structures.get(definitionId);
         const placement = { position, team, ...(laneId !== undefined && { laneId }) };
-        state.entities.add(factory.create(kind, definitionId, placement));
+        const structure = factory.create(kind, definitionId, placement);
+        const body = solids.get(id);
+        if (body !== undefined) structure.addComponent(new Footprint(body.footprints));
+        state.entities.add(structure);
       }
     }
   }
