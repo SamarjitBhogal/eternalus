@@ -5301,3 +5301,26 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/game-loop-plan/` (result in the commit message).
 - Next step: critic round 3 (the last) and ponytail on the delta, then the PR into phase/3 after
   #71; re-merge into `feat/match-scoring` and `feat/results-flow`.
+
+### 2026-11-05 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#69) and critic round 3 — feat/match-director — sholtzman + Claude Code
+
+- What: merged phase/3 `a58de03` (#69) into the branch (`1108596`); one conflict, the decisions
+  log's top, where both sides added a batch (all three kept, newest first). Ran the pre-PR critic's
+  round 3, the last: architecture critic approve, 0 blocker, 0 major, 0 minor, 8 nit
+  (`arch-review-md-pr-round-3.md`); ponytail on the round-3 delta, no cuts
+  (`ponytail-md-pr-round-3.md`). Fixed the nits:
+  - #2: `MatchState` is an `interface` (a class implements it; CONTRIBUTING), in code and the 12
+    §4 sketch. #3: the `Match.roofs` test docblock names the map it now uses. #4: `PlayerChoice`
+    moved from `Match.types.ts` to the `withPlayer` test fixture (no production reader). #5:
+    `defaultMatchPhases.test.ts` compares `MatchState`'s fields, not `MatchRecord`'s JSON.
+  - #6: DEC-177's Docs cell names 02 §2 and the 12 `paths`; the batch intro and DEC-179 say that
+    HC-Q45 had no recommendation (Q3's options had none marked). #7: this entry. #8: a PR note
+    (commit `ca2d8cc` is typed `refactor` but changes bot-slot behaviour and adds an export).
+  - #1 (better than the design): `INBOX.md` HC-Q46, who can reach the match writers; not built.
+- Fail-first breaks: `md-r3-breaks.md` in `eternalus-agent-work/game-loop-plan/`.
+- Checks run: `npm run check` on the merge `1108596` (log `md-r3-merge-check-2026-11-05.log`):
+  EXIT=0, core 224 files / 1231 tests, client 269 files / 1769 tests, docs check passed. After the
+  nit fixes: log `md-r3-fix-check-2026-11-05.log` (result in the commit message and the PR).
+- Next step: the PR into phase/3 (merges after #71, which must first take phase/3); re-merge into
+  `feat/match-scoring` and `feat/results-flow` (16 `state.<writer>(` calls become
+  `state.match.<writer>(`); tell Samarjit about the edits in his files.

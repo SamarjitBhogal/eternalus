@@ -186,7 +186,7 @@ export class MatchDirector {
 
 ```ts
 // Sketch: packages/core/src/state/MatchState.types.ts — the director's memory, all plain data; GameState.match is a MatchRecord holding it (03 §2, DEC-177)
-export type MatchState = {
+export interface MatchState {
   readonly phase: MatchPhase; // written only by MatchRecord.setPhase
   readonly phaseEnteredTick: number;
   readonly timelineCursor: number; // index of the next unfired entry; written only by MatchRecord.advanceTimeline (DEC-172)
@@ -198,7 +198,7 @@ export type MatchState = {
     'calm' | { readonly kind: 'eternal'; readonly originId: EntityId; readonly sinceTick: number };
   scoring: ScoringState;
   readonly result: MatchResult | null; // set once by MatchRecord.endMatch
-};
+}
 ```
 
 A phase entered at tick T takes effect from step T+1, so the countdown holds steps 0 to T. A
