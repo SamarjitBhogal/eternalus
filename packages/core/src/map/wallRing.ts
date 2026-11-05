@@ -40,6 +40,13 @@ const arcFootprint = (centre: Vec2, ring: MapLayout['wallRing'], arc: Arc): Poly
   return [...edge(inner), ...edge(outer).reverse()];
 };
 
+/**
+ * The outer face of a shield piece's footprint (`buildWallRing`, or its mirror), from the piece's
+ * start angle to its end: the second half of the polygon, which lists the inner edge first.
+ */
+export const outerFace = (footprint: Polygon): Polygon =>
+  footprint.slice(footprint.length / 2).reverse();
+
 const splitArc = (start: number, end: number, maxArc: number): Arc[] => {
   const count = Math.max(1, Math.ceil((end - start) / maxArc));
   const step = (end - start) / count;
