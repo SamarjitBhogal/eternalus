@@ -8,8 +8,6 @@ import type { ReplayOf } from '../Replay.types';
  * `config.match.timeline` was added on 2026-10-28, when `GameConfig` gained the field (the
  * default timeline for this config); the commands and checkpoints are as recorded.
  * `config.match.playerTeam` was added on 2026-10-30 with its default, `light`; it is not hashed.
- * `config.match.seat` was added on 2026-10-30 with its default, `null` (sim mode).
- * `config.match.seat` was removed on 2026-11-04, when the human became a roster slot (design A2).
  */
 export const WANDER_SEED_7: ReplayOf<{ readonly seed: number; readonly config: GameConfig }> = {
   seed: 7,

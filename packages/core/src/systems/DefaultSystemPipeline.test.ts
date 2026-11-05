@@ -284,7 +284,7 @@ describe('DefaultSystemPipeline', () => {
         update: (directed) => {
           seenByDirector.push(directed.entities.has(victim.id));
           // Not a forward move: the invariants, if they run after, throw on it this tick.
-          directed.setPhase('countdown');
+          directed.match.setPhase('countdown');
         },
       },
     });

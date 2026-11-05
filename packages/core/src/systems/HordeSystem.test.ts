@@ -161,12 +161,12 @@ describe('HordeSystem', () => {
   it('holds every anchor while the match holds units idle, and marches again after (DEC-88)', () => {
     const { state, system, addHorde } = setUp();
     const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
-    state.holdIdle(true);
+    state.match.holdIdle(true);
 
     system.update({ state, logger });
     expect(state.hordes.get(hordeId)?.progress).toBe(10);
 
-    state.holdIdle(false);
+    state.match.holdIdle(false);
     system.update({ state, logger });
     expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
   });

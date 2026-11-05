@@ -306,7 +306,7 @@ describe('MatchDirector', () => {
 
     it('treats only the injected terminal phases as terminal', () => {
       const { state, stepTo } = setUp([enter('after', 1, 'defeat')], true, { terminal: [] });
-      state.setPhase('victory');
+      state.match.setPhase('victory');
 
       stepTo(1);
 
@@ -317,7 +317,7 @@ describe('MatchDirector', () => {
       const { state, stepTo } = setUp(FAKE_TIMELINE, true, {
         conditions: [new ScriptedCondition(LIGHT_WINS)],
       });
-      state.seatHuman('entity-1');
+      state.match.seatHuman('entity-1');
 
       stepTo(12);
 
@@ -388,7 +388,7 @@ describe('MatchDirector', () => {
       'throws on any move out of %s, even one forward in the phase order',
       (terminal) => {
         const { log, state, stepTo } = setUp([enter('after', 1, 'defeat')]);
-        state.setPhase(terminal);
+        state.match.setPhase(terminal);
 
         expect(() => {
           stepTo(1);
@@ -402,7 +402,7 @@ describe('MatchDirector', () => {
 
     it('with throwOnViolation off, logs a move out of a terminal phase and skips it', () => {
       const { state, stepTo, logger } = setUp([enter('after', 1, 'defeat')], false);
-      state.setPhase('victory');
+      state.match.setPhase('victory');
 
       stepTo(2);
 

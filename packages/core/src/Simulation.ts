@@ -46,8 +46,7 @@ import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
-import type { EntityId } from './state/EntityStore.types';
-import type { DefinitionSource, Placement, WeaponSource } from './entities/EntityFactory.types';
+import type { DefinitionSource, WeaponSource } from './entities/EntityFactory.types';
 import { Legend } from './entities/Legend';
 import { Unit } from './entities/Unit';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
@@ -330,8 +329,8 @@ export class Simulation {
    *
    * @throws Error when there is a roster but no map, more than one human slot, a human slot off
    *   `playerTeam`, a team's slots do not fit under `legendsPerTeam` or the Unit cap, its laners do
-   *   not fit under `legendsPerLane`, or a bot's controller or difficulty does not exist (checked
-   *   before anything spawns).
+   *   not fit under `legendsPerLane`, or a bot's controller or difficulty does not exist or its
+   *   definition is not a Legend (checked before anything spawns).
    */
   private static spawnRoster(
     state: GameState,
@@ -364,8 +363,15 @@ export class Simulation {
       ),
       controllers,
     );
-    const refusal =
-      human === undefined ? null : Simulation.humanRefusal(factory, human.definitionId);
+    roster.forEach((slot, index) => {
+      const reason = slot.pilot === 'bot' ? Simulation.legendRefusal(factory, slot) : null;
+      if (reason !== null) {
+        throw new Error(
+          `Roster slot ${String(index)} (a ${slot.team} bot) cannot spawn "${slot.definitionId}": ${reason}.`,
+        );
+      }
+    });
+    const refusal = human === undefined ? null : Simulation.legendRefusal(factory, human);
     // A refused human slot still counts against the caps below, but takes no lane and no spawn.
     const spawning = refusal === null ? roster : roster.filter((slot) => slot !== human);
     const plans = Simulation.planLanes(
@@ -399,7 +405,8 @@ export class Simulation {
       });
     }
     for (const slot of spawning.filter(({ role }) => role === 'rover')) {
-      const position = Simulation.strongholdOf(state, slot.team, Simulation.roverName(slot));
+      const forWhom = slot.pilot === 'human' ? "the human's Legend" : `the ${slot.team} Rover`;
+      const position = Simulation.strongholdOf(state, slot.team, forWhom);
       Simulation.spawnSlot(state, factory, slot, position, {});
     }
   }
@@ -472,14 +479,10 @@ export class Simulation {
     return slot.role === 'rover' ? 'rover' : 'bot-legend';
   }
 
-  /** Who a Rover is, for the error when its team has no Stronghold. */
-  private static roverName(slot: RosterSlot): string {
-    return slot.pilot === 'human' ? "the human's Legend" : `the ${slot.team} Rover`;
-  }
-
   /**
-   * Spawns one roster slot's Legend at `position` on its team: a bot with its controller (whose
-   * brain starts with `memory`), the human with none, recorded as the human's Legend (DEC-172).
+   * Spawns one roster slot's Legend at `position` on its team and announces it: a bot with its
+   * controller (whose brain starts with `memory`), the human with none, recorded as the human's
+   * Legend (DEC-172).
    */
   private static spawnSlot(
     state: GameState,
@@ -488,7 +491,8 @@ export class Simulation {
     position: Vec2,
     memory: AiMemory,
   ): void {
-    const id = Simulation.spawnLegend(state, factory, slot, {
+    const { kind } = factory.definitions.get(slot.definitionId);
+    const entity = factory.create(kind, slot.definitionId, {
       position,
       team: slot.team,
       ...(slot.pilot === 'bot' && {
@@ -499,8 +503,14 @@ export class Simulation {
         },
       }),
     });
+    state.entities.add(entity);
+    state.events.emit('entity-spawned', {
+      entityId: entity.id,
+      kind: entity.kind,
+      team: slot.team,
+    });
     if (slot.pilot === 'human') {
-      state.seatHuman(id);
+      state.match.seatHuman(entity.id);
     }
   }
 
@@ -521,39 +531,18 @@ export class Simulation {
   }
 
   /**
-   * Why the human slot's `definitionId` cannot be the human's Legend: it names no definition, or
-   * one whose kind is not a Legend; `null` when it can.
+   * Why `slot`'s Legend cannot spawn: its `definitionId` names no definition, or one whose kind is
+   * not a Legend; `null` when it can. A bad bot slot throws; a bad human slot is logged (DEC-173).
    */
-  private static humanRefusal(
+  private static legendRefusal(
     factory: EntityFactory,
-    definitionId: string,
+    { definitionId }: RosterSlot,
   ): 'unknown-definition' | 'not-a-legend' | null {
     if (!factory.definitions.has(definitionId)) {
       return 'unknown-definition';
     }
     const { kind } = factory.definitions.get(definitionId);
     return factory.registry.get(kind)?.prototype instanceof Legend ? null : 'not-a-legend';
-  }
-
-  /**
-   * Spawns one Legend (a roster slot's) of the kind its definition names,
-   * announces it and returns its id.
-   */
-  private static spawnLegend(
-    state: GameState,
-    factory: EntityFactory,
-    { definitionId, team }: Pick<RosterSlot, 'definitionId' | 'team'>,
-    placement: Placement,
-  ): EntityId {
-    const { kind } = factory.definitions.get(definitionId);
-    const entity = factory.create(kind, definitionId, placement);
-    state.entities.add(entity);
-    state.events.emit('entity-spawned', {
-      entityId: entity.id,
-      kind: entity.kind,
-      team,
-    });
-    return entity.id;
   }
 
   /**

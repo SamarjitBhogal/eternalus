@@ -55,7 +55,7 @@ describe('applyCommand', () => {
         },
       },
     };
-    ctx.state.endMatch({
+    ctx.state.match.endMatch({
       winner: 'light',
       condition: 'objective-lost',
       playerTeam: 'light',

@@ -228,8 +228,10 @@ describe('Simulation: the human slot of the roster', () => {
   });
 
   it('counts the human slot in the roster’s legendsPerTeam and Unit cap checks, before anything spawns', () => {
-    const roster = [laner('light'), laner('light'), human('warrior', 'light')];
-    const withLimits = (limits: { legendsPerTeam?: number; maxUnitsPerTeam?: number }) =>
+    const withLimits = (
+      limits: { legendsPerTeam?: number; maxUnitsPerTeam?: number },
+      humanClass = 'warrior',
+    ) =>
       new Simulation({
         config: createDefaultGameConfig({
           match: {
@@ -246,7 +248,7 @@ describe('Simulation: the human slot of the roster', () => {
         seed: 5,
         logger: new NullLogger(),
         map: TWO_LANE_MAP,
-        roster,
+        roster: [laner('light'), laner('light'), human(humanClass, 'light')],
       });
 
     // Two light laners fit under either cap of two, but not with the human on the light team.
@@ -254,6 +256,13 @@ describe('Simulation: the human slot of the roster', () => {
       'The light roster has 3 Legends; match.legendsPerTeam allows 2.',
     );
     expect(() => withLimits({ maxUnitsPerTeam: 2 })).toThrow(
+      'The light roster would make 3 Units; limits.maxUnitsPerTeam allows 2.',
+    );
+    // A refused human slot (a stale class) still counts toward both caps (DEC-173).
+    expect(() => withLimits({ legendsPerTeam: 2 }, 'stale-class')).toThrow(
+      'The light roster has 3 Legends; match.legendsPerTeam allows 2.',
+    );
+    expect(() => withLimits({ maxUnitsPerTeam: 2 }, 'stale-class')).toThrow(
       'The light roster would make 3 Units; limits.maxUnitsPerTeam allows 2.',
     );
     // The human counts on its own team only: a dark human leaves the light count at two.

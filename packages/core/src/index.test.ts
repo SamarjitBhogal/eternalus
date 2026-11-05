@@ -23,6 +23,7 @@ describe('@eternalus/core public API', () => {
       'isPointInPolygon',
       'loadDisplayContent',
       'makeLogRecord',
+      'opponentOf',
       'runReplay',
       'validateGameConfig',
     ]);

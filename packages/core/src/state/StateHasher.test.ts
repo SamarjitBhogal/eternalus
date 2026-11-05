@@ -203,19 +203,19 @@ describe('StateHasher', () => {
     [
       'the phase',
       (state) => {
-        state.setPhase('early-game');
+        state.match.setPhase('early-game');
       },
     ],
     [
       'the timeline cursor',
       (state) => {
-        state.advanceTimeline();
+        state.match.advanceTimeline();
       },
     ],
     [
       'the idle hold',
       (state) => {
-        state.holdIdle(true);
+        state.match.holdIdle(true);
       },
     ],
   ])('changes when %s of the match changes', (_, change) => {
@@ -230,10 +230,10 @@ describe('StateHasher', () => {
   it('changes with the tick the phase was entered on', () => {
     const enteredFirst = new GameState(createDefaultGameConfig(), 1);
     const enteredLater = new GameState(createDefaultGameConfig(), 1);
-    enteredFirst.setPhase('early-game');
+    enteredFirst.match.setPhase('early-game');
     enteredFirst.advanceTick();
     enteredLater.advanceTick();
-    enteredLater.setPhase('early-game');
+    enteredLater.match.setPhase('early-game');
 
     expect(hasher.hash(enteredLater)).not.toBe(hasher.hash(enteredFirst));
   });
@@ -256,14 +256,14 @@ describe('StateHasher', () => {
       while (state.tick < fields.phaseEnteredTick) {
         state.advanceTick();
       }
-      state.setPhase(fields.phase);
+      state.match.setPhase(fields.phase);
       while (state.tick < 3) {
         state.advanceTick();
       }
       for (let mark = 0; mark < fields.timelineCursor; mark += 1) {
-        state.advanceTimeline();
+        state.match.advanceTimeline();
       }
-      state.holdIdle(fields.isIdleHeld);
+      state.match.holdIdle(fields.isIdleHeld);
       return state;
     };
 

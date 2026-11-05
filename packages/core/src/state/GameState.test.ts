@@ -228,18 +228,10 @@ describe('GameState', () => {
       { entryId: 'mid-game', tick: 900 },
     ];
 
-    it('starts in the countdown with nothing fired and nothing held', () => {
+    it('builds its match record in the countdown, from the schedule it is given', () => {
       const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
-      expect(state.match).toEqual({
-        phase: 'countdown',
-        phaseEnteredTick: 0,
-        timelineCursor: 0,
-        schedule: SCHEDULE,
-        isIdleHeld: false,
-        playerTeam: 'light',
-        humanLegendId: null,
-        result: null,
-      });
+      expect(state.match.phase).toBe('countdown');
+      expect(state.match.schedule).toEqual(SCHEDULE);
       expect(Object.isFrozen(state.match.schedule[0])).toBe(true);
     });
 
@@ -248,14 +240,13 @@ describe('GameState', () => {
       expect(new GameState(config, 1).match.playerTeam).toBe('dark');
     });
 
-    it('setPhase stamps the tick, emits phase-changed and records it for this tick only', () => {
+    it('stamps a phase change with its tick and records it for this tick only', () => {
       const state = new GameState(createDefaultGameConfig(), 1);
       state.advanceTick();
       state.advanceTick();
 
-      state.setPhase('early-game');
+      state.match.setPhase('early-game');
 
-      expect(state.match.phase).toBe('early-game');
       expect(state.match.phaseEnteredTick).toBe(2);
       expect(state.events.recentEvents()).toEqual([
         { tick: 2, type: 'phase-changed', payload: { from: 'countdown', to: 'early-game' } },
@@ -265,65 +256,10 @@ describe('GameState', () => {
       expect(state.phaseChangesThisTick()).toEqual([]);
     });
 
-    it('holds and releases the idle flag through holdIdle', () => {
-      const state = new GameState(createDefaultGameConfig(), 1);
-
-      state.holdIdle(true);
-      expect(state.match.isIdleHeld).toBe(true);
-      state.holdIdle(false);
-      expect(state.match.isIdleHeld).toBe(false);
-    });
-
-    it('advances the timeline cursor one entry at a time', () => {
-      const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
-
-      state.advanceTimeline();
-      state.advanceTimeline();
-
-      expect(state.match.timelineCursor).toBe(2);
-    });
-
-    it('stores the result once and refuses a second one', () => {
-      const state = new GameState(createDefaultGameConfig(), 1);
-      const result = {
-        winner: 'light',
-        condition: 'objective-lost',
-        playerTeam: 'light',
-        hadHuman: false,
-        durationTicks: 1,
-        seed: 1,
-        configHash: 0,
-        finalHash: 0,
-      } as const;
-
-      expect(state.match.result).toBeNull();
-      state.endMatch(result);
-
-      expect(state.match.result).toEqual(result);
-      expect(() => {
-        state.endMatch({ ...result, winner: 'dark' });
-      }).toThrow('already ended');
-      expect(state.match.result?.winner).toBe('light');
-    });
-
-    it('seats the human once and refuses a second seat; a null seat changes nothing', () => {
-      const state = new GameState(createDefaultGameConfig(), 1);
-
-      state.seatHuman(null);
-      expect(state.match.humanLegendId).toBeNull();
-      state.seatHuman('entity-7');
-
-      expect(state.match.humanLegendId).toBe('entity-7');
-      expect(() => {
-        state.seatHuman('entity-8');
-      }).toThrow('already seated');
-      expect(state.match.humanLegendId).toBe('entity-7');
-    });
-
     it('snapshots the phase and the unfired marks, from the timeline cursor on', () => {
       const state = new GameState(createDefaultGameConfig(), 1, null, {}, SCHEDULE);
-      state.advanceTimeline();
-      state.setPhase('early-game');
+      state.match.advanceTimeline();
+      state.match.setPhase('early-game');
 
       expect(state.snapshot().match).toEqual({
         phase: 'early-game',

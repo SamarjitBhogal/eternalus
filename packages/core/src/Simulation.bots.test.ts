@@ -126,6 +126,33 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     ).toThrow('AI profile "nightmare"');
   });
 
+  it.each([
+    ['an unknown id', 'stale-class', 'unknown-definition'],
+    ['a definition that is not a Legend', 'training-dummy', 'not-a-legend'],
+  ])(
+    'refuses a bot slot with %s, before any Legend spawns (DEC-173)',
+    (_case, definitionId, reason) => {
+      const emit = vi.spyOn(GameEvents.prototype, 'emit');
+      const bad: RosterSlot = {
+        pilot: 'bot',
+        team: 'dark',
+        definitionId,
+        role: 'laner',
+        difficulty: 'normal',
+      };
+
+      expect(() => match([...laners('light', 1), bad])).toThrow(
+        `Roster slot 1 (a dark bot) cannot spawn "${definitionId}": ${reason}.`,
+      );
+      // The valid light laner before it did not spawn either.
+      const spawned = emit.mock.calls.filter(([type]) => type === 'entity-spawned');
+      expect(spawned.map(([, payload]) => payload)).not.toContainEqual(
+        expect.objectContaining({ kind: 'warrior' }),
+      );
+      emit.mockRestore();
+    },
+  );
+
   it('builds the match director and the systems before the roster spawns, so they hear every bot (plan §4.4)', () => {
     const on = vi.spyOn(GameEvents.prototype, 'on');
     const emit = vi.spyOn(GameEvents.prototype, 'emit');

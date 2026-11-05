@@ -9,7 +9,6 @@ import { GameState } from '../state/GameState';
 import { CLASS_OF, controller, engagingOn, setUp } from './__fixtures__/minionControllerSetup';
 import { MinionController } from './MinionController';
 import { Perception } from './perception/Perception';
-import { countdownTicks } from '../config/countdownTicks';
 
 // The acquire and engage rules a minion shares with a guard: LeashBehaviour.test.ts.
 describe('MinionController', () => {
@@ -136,41 +135,50 @@ describe('MinionController', () => {
     expect(decision.memory).toMatchObject({ fsm: 'engaging', targetId: tower.id });
   });
 
-  it('ignores Legends during a ghosted first wave, and only then', () => {
-    const { state, add, advance } = setUp();
-    const ghosting = new MinionController({
-      aggro: { ghost: { ...LANE_MINION_AGGRO, id: 'ghost', ghostFirstWaveTicks: 30 } },
-      classOf: CLASS_OF,
-    });
-    const self = add('light', 50);
-    const legend = add('dark', 52, 20, 'warrior', 'warrior');
-    const space = state.space as SpaceIndex;
-    const decide = () => {
-      space.begin(state.entities.size);
-      state.entities.forEach((entity) => {
-        const { x, y } = entity.getComponent(Transform).position;
-        space.add(entity.id, x, y);
+  it.each([
+    // The countdown ends on a whole tick (DEC-170): 10 s = 300 ticks, 0.01 s rounds to 0, 0.25 s to 8.
+    [10, 330],
+    [0.01, 30],
+    [0.25, 38],
+  ])(
+    'ignores Legends during a ghosted first wave, and only then (countdown %s s: until tick %s)',
+    (countdownSeconds, until) => {
+      const { state, add, advance } = setUp(
+        createDefaultGameConfig({ match: { countdownSeconds } }),
+      );
+      const ghosting = new MinionController({
+        aggro: { ghost: { ...LANE_MINION_AGGRO, id: 'ghost', ghostFirstWaveTicks: 30 } },
+        classOf: CLASS_OF,
       });
-      space.commit();
-      return ghosting.decide({
-        state,
-        entityId: self,
-        perception: new Perception(state),
-        brain: {
-          controllerId: 'minion',
-          profileId: 'ghost',
-          memory: {},
-          rngState: { seed: 1, words: [1, 2, 3, 4] as const },
-        },
-      }).commands;
-    };
-    const until = countdownTicks(state.config.match.countdownSeconds, state.config.tickRate) + 30;
+      const self = add('light', 50);
+      const legend = add('dark', 52, 20, 'warrior', 'warrior');
+      const space = state.space as SpaceIndex;
+      const decide = () => {
+        space.begin(state.entities.size);
+        state.entities.forEach((entity) => {
+          const { x, y } = entity.getComponent(Transform).position;
+          space.add(entity.id, x, y);
+        });
+        space.commit();
+        return ghosting.decide({
+          state,
+          entityId: self,
+          perception: new Perception(state),
+          brain: {
+            controllerId: 'minion',
+            profileId: 'ghost',
+            memory: {},
+            rngState: { seed: 1, words: [1, 2, 3, 4] as const },
+          },
+        }).commands;
+      };
 
-    advance(until - 1);
-    expect(decide()).toEqual([]);
-    advance(1);
-    expect(decide()).toEqual([{ type: 'attack-target', actorId: self, targetId: legend }]);
-  });
+      advance(until - 1);
+      expect(decide()).toEqual([]);
+      advance(1);
+      expect(decide()).toEqual([{ type: 'attack-target', actorId: self, targetId: legend }]);
+    },
+  );
 
   it('knows its aggro profiles', () => {
     expect(controller.hasProfile('lane-minion')).toBe(true);
