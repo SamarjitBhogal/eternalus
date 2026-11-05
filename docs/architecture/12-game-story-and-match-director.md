@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-04
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -12,7 +12,11 @@ paths:
     'packages/core/src/config/matchPhases.ts',
     'packages/core/src/config/MatchTimelineEntry.types.ts',
     'packages/core/src/config/timelineMarkTick.ts',
+    'packages/core/src/config/VictoryConditionId.types.ts',
     'packages/core/src/state/MatchState.types.ts',
+    'packages/core/src/state/MatchResult.types.ts',
+    'packages/core/src/components/WinObjective.ts',
+    'packages/core/src/diagnostics/invariants/PhaseMonotonicInvariant.ts',
     'packages/core/src/systems/MatchDirectorSystem.ts',
   ]
 related:
@@ -84,7 +88,7 @@ strictly forward; `victory` and `defeat` are terminal.
 | Phase                | Enters when                                                                                                                                             | What happens and who owns it                                                                                                                                                                                                                                                                                                                                                                                                                                         | Status                              |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `countdown`          | tick 0                                                                                                                                                  | At load-in `SpawnSystem` spawns one light horde of `hordeSizes.light` per lane (`map.numLanes`) per team at the lane's base ([18](18-minion-system.md) §3.1, MS-30). No tower spawns (FR-003): every wave's clock starts when the countdown ends (`07` §6). `CountdownPhase` sets `MatchState.isIdleHeld`: every unit is idle and can only turn (no walking, attacks, casts); spawns go on, camps spawn (DEC-81, DEC-84, DEC-88). The director spawns nothing.       | **MVP**                             |
-| `early-game`         | `countdownSeconds` elapsed (`TUNE` 10 s, requirements doc)                                                                                              | Towers spawn a horde every `hordeSpawnIntervalSeconds` (`TUNE` 60 s) and forest camps activate after their cooldown: both are `Spawner` data consumed by `SpawnSystem`, not director logic.                                                                                                                                                                                                                                                                          | **MVP**                             |
+| `early-game`         | `countdownSeconds` elapsed (the value lives in `config/defaultGameConfig.ts`)                                                                           | Towers spawn a horde every `hordeSpawnIntervalSeconds` (`TUNE` 60 s) and forest camps activate after their cooldown: both are `Spawner` data consumed by `SpawnSystem`, not director logic.                                                                                                                                                                                                                                                                          | **MVP**                             |
 | `quarter-mark`       | fraction 0.25 of `plannedMatchSeconds` (game doc "quarter mark")                                                                                        | The `spawn-mini-bosses` action emits one `spawn-requested` per outer-lane `CapturePoint` with the mini-boss table (boss plus support mobs); `CaptureSystem` sets `Capturable.lockedBy` while the boss lives (`07` §7).                                                                                                                                                                                                                                               | **MVP** (mini-boss is MVP, DISC-63) |
 | `mid-game`           | fraction 0.5 (game doc "mid-game")                                                                                                                      | The `summon-greater-boss` action asks the `Cathedral` spawner for the `greater-boss`; `SpawnSystem` fulfils it and emits `boss-summoned`. `state.match.atmosphere` becomes `eternal` (views spread the change outward from the Cathedral by ticks elapsed). `StatusEffectSystem` applies `empowered` to camp units on `phase-changed`; corner camps' side waves start (`SpawnWave.afterPhase: 'mid-game'`, **Recommendation:** a new optional field on `07`'s type). | **MVP-if-time** (with the boss)     |
 | `end-game`           | fraction 0.75, or the first `structure-breakability-changed` that makes a Stronghold wall breakable, whichever is first (**Recommendation:** no source) | Announcer and music only in the MVP; the extension point for late-game rules (score cap, reinforcement waves).                                                                                                                                                                                                                                                                                                                                                       | **MVP** (as a marker)               |
@@ -245,10 +249,10 @@ export interface VictoryCondition {
 }
 ```
 
-| Condition                | Rule                                                                                                                                                                                     | Status  |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `ObjectiveLostCondition` | listens to `entity-died`; when the victim carries `WinObjective` and its team has no other live objective, the other team wins; both teams on one tick → draw (ADR 0021, DEC-71, DEC-77) | **MVP** |
-| `ForfeitCondition`       | the `forfeit` command from the pause or results UI → `aborted`, no winner                                                                                                                | **MVP** |
+| Condition                | Rule                                                                                                                                                                                     | Status            |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `ObjectiveLostCondition` | listens to `entity-died`; when the victim carries `WinObjective` and its team has no other live objective, the other team wins; both teams on one tick → draw (ADR 0021, DEC-71, DEC-77) | **MVP**           |
+| `ForfeitCondition`       | the `forfeit` command from the pause or results UI → `aborted`, no winner                                                                                                                | post-MVP (DEC-77) |
 
 Conditions are checked in registry order (`defaultVictoryConditions.ts`) and the first verdict
 wins. `end()` builds the `MatchResult` (§10), stores it in `state.match.result`, transitions to
@@ -377,7 +381,7 @@ quarter-mark`), a stub `GameState` stepped to tick 25; assert the `phase-changed
 - `scenarios/fullMatch.test.ts`: a **full bot-versus-bot replay** through
   `runSimMatch({ seed, config, content, profiles, maxTicks, assertLevel: 'heavy' })`
   ([15-diagnostics-and-runtime-testing.md](15-diagnostics-and-runtime-testing.md) §8): the match
-  reaches `victory` or `defeat` before `maxTicks` (`TUNE` 81,000 = `maxMatchSeconds`) with zero
+  reaches `victory` or `defeat` before `maxTicks` (a bound the test passes; the game has no time limit, DEC-81) with zero
   invariant violations, two runs give deep-equal `MatchResult`s, and the committed golden replay
   `__fixtures__/full-match-seed-7.replay.json` reproduces its checkpoint hashes.
 
@@ -408,12 +412,14 @@ Victory and the result (GL-2, core) are built: the `VictoryCondition` contract
 `applyCommand` refuses every command with `command-rejected` reason `match-ended` (FR-002); the
 systems keep stepping.
 
-The human's seat is built: `MatchConfig.seat` (`{ definitionId, at }`, `null` in sim mode; its team
-is `playerTeam`). When the match is built, `Simulation` spawns the seat's Legend through the
-`dev-spawn` handler, without a command (the config rebuilds it in a replay), and sets
-`state.match.humanLegendId`; `Snapshot.match.humanLegendId` carries it (not hashed). A failed spawn
-logs ERROR `core.match` and leaves it `null`. Until the map option gives core the map, `at` is the
-client's spawn point.
+The human's seat works like this: `MatchConfig.seat` is `{ definitionId } | null` (`null` in sim mode;
+its team is `playerTeam`). It has no spawn point. When the match is built, core spawns the human's
+Legend at `playerTeam`'s Stronghold from the map, through the same Legend spawn path as the bot
+roster, after the roster. No command is involved, so a replay rebuilds the seat from the config.
+Core sets `state.match.humanLegendId`; `Snapshot.match.humanLegendId` carries it (not hashed). An
+unknown definition id, or one that is not a Legend, logs ERROR `core.match` and leaves
+`humanLegendId` `null`. A seat with no map throws, as a roster does. The roster's size check and
+the Unit-cap check count the seat.
 
 Not built yet: `atmosphere` and `scoring` in `MatchState`; an entity that carries `WinObjective` (the
 sovereign); `MatchResult.legends` and `teams` (with `Scoring`), `timeline` and `achievements`

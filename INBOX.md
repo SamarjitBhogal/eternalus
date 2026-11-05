@@ -1824,6 +1824,10 @@ Reply inline (`Decision: …`).
     `2aa9651`: `Match` reads `MatchState.humanLegendId`), which reaches the phase branch after the
     HUD PR. Until then a test pins the interim adoption (`Match.lifecycle.test.ts`, "adopts its own spawn, never a roster bot
     of the same class and team"; `99563b4`).
+  - 2026-11-04, built on `feat/match-director`: core sets `MatchState.humanLegendId` when it
+    spawns the human's seat, and `Match` reads it from `Snapshot.match.humanLegendId`. The
+    adopt-the-first-spawn interim is gone from `Match.ts`. The canvas gestures moved to
+    `MatchViewControls` (HC-S6).
 - [x] **HC-Q33 — Critic loop 2 of the HUD PR: replay size, three code tidies and the explorer's
       left button (2026-11-02).** (1) A crash report's replay holds the whole generated map and
       map objects (about 0.5 MB; cap 16 MB): keep that, or keep only the roster and generate the
@@ -1862,6 +1866,20 @@ Reply inline (`Decision: …`).
     the nine members; `Match` builds it and exposes it as `controls`, and `MatchHost` gives
     `match.controls` to `CanvasPointerControls`. Architecture 06 §10 names the new owner. (a) and
     (b) stay where they were noted.
+- [ ] **HC-Q35 — The human's Legend: shared spawn path, or a roster slot (match-director critic, better than the design; DEC-139).** Spawn the human through one Legend spawn path shared with the bot roster (built as plan A19, with the seat as `{ definitionId }`), or record the human as a `player` slot of the roster? Recommendation: the shared path; the roster option changes plan A19.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+- [ ] **HC-Q36 — The countdown-end tick: one helper, or one mark kind (match-director critic, better than the design; DEC-139).** Keep `Math.round(countdownSeconds * tickRate)` in three production files behind a `countdownTicks` helper in `config/`, or add an at-countdown-end mark kind to the timeline so `countdownSeconds` is the one source? The two critic runs preferred different options; see the decision page.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+- [ ] **HC-Q37 — Team helpers in `teams/` (match-director critic, better than the design; DEC-139).** Add value helpers (`PLAYABLE_TEAMS`, `isPlayableTeam`, the opposing team) to `teams/`, which holds types only today? It repeats the same two literals in five places now, and it changes the architecture 02 §2 row for `teams/`.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+- [ ] **HC-Q38 — `GameState.match` read-only, with narrow writers (match-director critic, better than the design; DEC-139).** Expose `GameState.match` as read-only and add narrow writers (`holdIdle`, `endMatch`, `seatHuman`, `advanceTimeline`), as `setPhase` already is for the phase (DEC-84 (6))? Today any system can set `match.result` or `isIdleHeld`.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+- [ ] **HC-Q39 — `DefaultInvariantRunner` takes an options object (match-director critic, better than the design; DEC-139).** Replace the five positional constructor arguments of `DefaultInvariantRunner` with an options object, as DEC-113 (4) did for `MatchDirector`?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+- [ ] **HC-Q40 — The `end-game` mark 0.75 has no source (match-director critic).** The default timeline enters `end-game` at 0.75 of the planned length (`config/defaultGameConfig.ts`), and architecture 12 §3 calls it a recommendation with no source. Keep 0.75, give a source, or change it?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+- [ ] **HC-Q41 — FR-006 wording (match-director critic).** FR-006 still names `match-phase-changed`, the phases "late → ended" and a "20-minute timeline"; the built director has the event `phase-changed`, the phases of architecture 12 §2, and a 1800 s planned length. What wording do you want for the statement and its acceptance example?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
       (`spawnRoster`, `spawnRovers`, `spawnBot`, `buildWorld`, `createControllers`,
@@ -1870,6 +1888,21 @@ Reply inline (`Decision: …`).
       merge. `SessionController.ts` (327 lines): its asset loading (`loadAssets`,
       `releaseAssets`, `publishLoaded`, `publishProgress`) is the part to move out. Nothing to
       answer unless you want it sooner.
+- [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
+      critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
+      least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count
+      any entry. When `spawn-sovereigns` lands (a tick-0 entry), filter by action kind, or the
+      default config becomes invalid. Nothing to answer.
+- [ ] **HC-S9 — Scheduled with GL-3: command logging after the end (match-director critic).**
+      Once the match has ended, every bot and human command logs INFO `core.commands` during
+      the 5 s run-on (DEC-92). That can flood the client's TRACE ring, which is the error-report
+      evidence. Decide the log level or a one-line summary when GL-3 builds the end. Nothing to
+      answer.
+- [ ] **HC-S10 — Scheduled with GL-3: the FR-002 acceptance test through `Simulation`
+      (match-director critic).** The FR-002 test ("kills a King at tick T, receives `match-ended`
+      and a `MatchResult` at tick T, no further commands") runs on a test entity with
+      `WinObjective` today, because no shipped kind has the component. Add the test through
+      `Simulation` when GL-3 gives the sovereign the component. Nothing to answer.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).

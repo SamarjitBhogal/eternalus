@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-04
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -83,6 +83,9 @@ core/src/
 
 Of `diagnostics/`, `match/` uses only the `Logger` port, `makeLogRecord` and `DebugConfig`, as
 `systems/` do, so `diagnostics/` never imports `match/` ([12](12-game-story-and-match-director.md) §1).
+
+`config/` holds some ids that it cannot type, such as `seat.definitionId`. They stay plain strings
+there, and the code that sees content checks them against it.
 
 ## 3. `apps/client/src/` (L4, L3 and L1)
 

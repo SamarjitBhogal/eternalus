@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-04
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -249,7 +249,7 @@ lane lengths and the per-lane structure lists come from `state.world` (03 §2),
 and the weights are a parameter, so it imports only `state/` and content types (which `state/`
 may import); a caller in `match/` types its weights by `assessLanes`' parameter. It lives there so both of its consumers can reach it: `SpawnSystem`
 (`systems/`, the Stronghold's scheduled heavy horde, DISC-10) and the corner-camp boss reward wave
-(`match/`, doc 12 §7), which 02 §2 allows to import only `state/`, `config/` and `utils/`; a `match/` caller receives its
+(`match/`, doc 12 §7), whose allowed imports are listed in 02 §2; a `match/` caller receives its
 weights from the composition root (`Simulation`), never by importing `content/`.
 
 Every term runs from 0 (best) to 1 (worst) and is computed per lane from the team's point of view:

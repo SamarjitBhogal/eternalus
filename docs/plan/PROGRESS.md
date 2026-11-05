@@ -5029,3 +5029,33 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: see the commit's check log, `md-phase3-merge-check-2-2026-11-04.log` in
   `eternalus-agent-work/game-loop-plan/`.
 - Next step: the round-1 critic fixes (`critic-log.md`, "match-director pre-PR gate").
+
+### 2026-11-04 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / pre-PR critic round 1 fixes — feat/match-director — sholtzman + Claude Code
+
+- What: built the "Fix" rows of the round-1 triage (`critic-log.md`, "match-director pre-PR
+  gate"; reports `arch-review-md-pr-round-1.md` and `-1b.md` in
+  `eternalus-agent-work/game-loop-plan/`).
+  - Blocker (plan A19's stand-in removal condition was met): `MatchConfig.seat` is
+    `{ definitionId } | null`. Core spawns the human's Legend at `playerTeam`'s Stronghold through
+    `Simulation.spawnLegend` (the roster, Rovers and seat share it), after the roster. An unknown or
+    non-Legend definition logs ERROR `core.match` (reason `unknown-definition` or `not-a-legend`)
+    and leaves `humanLegendId` `null`. A seat with no map throws, and the roster's size and Unit-cap
+    checks count the seat. The client's `seatedConfig` sends only the definition id; `Match` points
+    the camera at the seat Legend, or at the middle of the map when there is none.
+  - The director and the systems are built before the roster spawns (the same move as
+    `feat/match-scoring` `ad2e8e7`).
+  - `MatchDirector` takes its hasher and its terminal phases through `MatchDirectorOptions`.
+  - `MatchViewControls.test.ts`: 12 tests, one or more per member.
+  - Docs: the win rule in reference 00, 03 and 04 (the King's death ends the match, ADR 0021);
+    03 `phase-changed` row; 08 dated note; 11 §7 and 12 §13 (the seat); 12 `paths`, `ForfeitCondition`
+    post-MVP, `early-game` row, §12; 02 §2 sentence; 18 §3.3 pointer; FR-002 and FR-003; INBOX
+    HC-Q35 to HC-Q41 (owner calls A to E, decision page linked) and HC-S8 to HC-S10 (GL-3 items);
+    dated notes on HC-Q32 and DEC-149.
+- Fail-first breaks: every new or changed test went red against a deliberate break, then the file
+  was restored and compared with `cmp`. The red lines are in the agent reports (session ee12bd59).
+  Removed tests whose subject is gone: the client `strongholdOf` block and "rejects a seat outside
+  the world".
+- Not done: `MatchDeps.player` is now unused by `Match` (left for the critic round 2 or ponytail).
+- Checks run: `npm run check`, log `md-r1-fixes-check-2026-11-04.log` in
+  `eternalus-agent-work/game-loop-plan/` (result in the commit message).
+- Next step: critic round 2 (base `8e058d8`), ponytail, re-check, the PR into phase/3.

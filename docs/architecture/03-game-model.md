@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-04
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -182,7 +182,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                              |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                      |
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `Scoring`, `MatchDirector`, `StatusEffectSystem`                        |
-| `phase-changed`                     | `{ from, to }`                                         | `MatchDirectorSystem`                                           | `SpawnSystem`, `Announcer`                                              |
+| `phase-changed`                     | `{ from, to }`                                         | `GameState.setPhase` (called by `MatchDirector`)                | `Announcer`                                                             |
 | `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                 |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                |
 | `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                  | views, HUD                                                              |
