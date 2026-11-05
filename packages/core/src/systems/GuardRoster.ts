@@ -114,9 +114,12 @@ export class GuardRoster {
         return;
       }
       const { kind } = this.definitions.get(slot.mobId);
+      // On guard: faces out from the centre of its home until it first moves or attacks
+      // (DEC-216 (6)).
       const guard = this.factory.create(kind, slot.mobId, {
         team: slot.team,
         position: { x: slot.postX, y: slot.postY },
+        facing: { x: slot.postX - slot.homeX, y: slot.postY - slot.homeY },
       });
       state.entities.add(guard);
       state.guards.fill(index, guard.id);

@@ -40,8 +40,9 @@ export class Transform {
   }
 
   /**
-   * The direction the entity faces, a unit vector: `INITIAL_FACING` until it first turns. Read it,
-   * but do not keep it: turns update it in place.
+   * The direction the entity faces, a unit vector: `INITIAL_FACING` until it first turns (a unit's
+   * spawn turns it to its start facing, DEC-216 (6)). Read it, but do not keep it: turns update it
+   * in place.
    */
   public get facing(): Vec2 {
     return this.currentFacing;

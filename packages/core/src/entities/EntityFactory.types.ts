@@ -34,6 +34,11 @@ export type Placement = {
   readonly laneId?: string;
   /** A controller for this entity alone, in place of its definition's (a bot Legend). */
   readonly controller?: ControllerSpawn;
+  /**
+   * The direction a unit faces until it first moves or attacks, of any length (DEC-216 (6)). A
+   * unit given none, or a zero one, starts at `INITIAL_FACING`.
+   */
+  readonly facing?: Vec2;
 };
 
 /**

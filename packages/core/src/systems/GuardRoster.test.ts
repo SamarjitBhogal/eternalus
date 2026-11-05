@@ -62,6 +62,25 @@ describe('GuardRoster', () => {
     });
   });
 
+  it('faces every guard out from the centre of its home, on guard (DEC-216 (6))', () => {
+    const { state, step } = guarded();
+    let guards = 0;
+
+    step();
+
+    state.guards.forEach(({ guardId, postX, postY, homeX, homeY }) => {
+      const guard = guardId === null ? undefined : state.entities.get(guardId);
+      if (guard === undefined) throw new Error('every post has its guard after the first tick');
+      const length = Math.hypot(postX - homeX, postY - homeY);
+      const { facing } = guard.getComponent(Transform);
+      expect(facing.x).toBeCloseTo((postX - homeX) / length, 9);
+      expect(facing.y).toBeCloseTo((postY - homeY) / length, 9);
+      guards += 1;
+    });
+    // Two Strongholds (8 each), two SpawnerTowers (4 each) and two BuffTowers (6 each).
+    expect(guards).toBe(36);
+  });
+
   it('respawns a dead guard after the respawn time, only while its structure stands', () => {
     const { state, step, guardsOf } = guarded();
     step();

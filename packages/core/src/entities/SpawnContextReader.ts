@@ -42,15 +42,17 @@ export class SpawnContextReader {
   }
 
   /**
-   * Reads a context with a definition, a position and a team.
+   * Reads a context with a definition, a position and a team, and its controller and start facing
+   * when it gives them.
    *
-   * @throws Error when `positioned` would, or the team is not light, dark or neutral.
+   * @throws Error when `positioned` would, the team is not light, dark or neutral, or the context
+   *   gives a facing that is not a vector.
    */
   public placed<Definition extends DefinitionRef>(
     context: unknown,
   ): PlacedSpawnContext<Definition> {
     const positioned = this.positioned<Definition>(context);
-    const { team: candidate } = SpawnContextReader.fields(context);
+    const { team: candidate, facing } = SpawnContextReader.fields(context);
     const team = SPAWNABLE_TEAMS.find((spawnable) => spawnable === candidate);
 
     if (team === undefined) {
@@ -58,9 +60,18 @@ export class SpawnContextReader {
         `Entity "${this.entity.id}" needs a spawn context with a team (light, dark or neutral).`,
       );
     }
+    if (facing !== undefined && !SpawnContextReader.isObject(facing)) {
+      throw new Error(`Entity "${this.entity.id}" was given a spawn facing that is not a vector.`);
+    }
 
     const controller = this.controllerOf(SpawnContextReader.fields(context).controller);
-    return controller === undefined ? { ...positioned, team } : { ...positioned, team, controller };
+    // Safe: the facing is an object; Transform rejects one that is not a finite vector.
+    return {
+      ...positioned,
+      team,
+      ...(controller !== undefined && { controller }),
+      ...(facing !== undefined && { facing: facing as Vec2 }),
+    };
   }
 
   /**

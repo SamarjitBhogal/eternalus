@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { NullLogger } from '../diagnostics/NullLogger';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { Entity } from '../entities/Entity';
@@ -99,6 +101,23 @@ describe('MovementSystem', () => {
 
     expect(movement.speed).toBe(0);
     expect(dummy.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('does not turn a stunned unit that is steered, nor one stunned while moving (DEC-216 (7))', () => {
+    const { context, dummy } = setUp();
+    const movement = dummy.getComponent(Movement);
+    const transform = dummy.getComponent(Transform);
+    const system = new MovementSystem();
+    movement.steer({ x: 0, y: -1 });
+    system.update(context);
+    const stun = loadStatusEffects(createDefaultGameConfig().tickRate, 2).get('stun');
+
+    dummy.getComponent(StatusEffects).apply(stun, null, 0);
+    movement.steer({ x: -1, y: 0 });
+    system.update(context);
+
+    expect(movement.speed).toBe(0);
+    expect(transform.facing).toEqual({ x: 0, y: -1 });
   });
 
   it('leaves entities without Movement where they are', () => {

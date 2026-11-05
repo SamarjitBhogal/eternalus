@@ -112,7 +112,8 @@ export class StateHasher {
         ...health.shields.flatMap((bar) => [bar.sourceId, bar.current, bar.max]),
       ]);
     }
-    // Only a turned entity adds its facing (DEC-192), so unturned ones hash as before.
+    // Only a facing other than INITIAL_FACING is added (a turn, DEC-192, or a start facing,
+    // DEC-216 (6)), so entities that keep it hash as before.
     if (
       transform !== undefined &&
       (transform.facing.x !== INITIAL_FACING.x || transform.facing.y !== INITIAL_FACING.y)

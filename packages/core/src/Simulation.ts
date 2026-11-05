@@ -400,7 +400,10 @@ export class Simulation {
     }
   }
 
-  /** Spawns one bot Legend of the roster and announces it. */
+  /**
+   * Spawns one bot Legend of the roster, facing the enemy Stronghold (DEC-216 (6)), and announces
+   * it.
+   */
   private static spawnBot(
     state: GameState,
     factory: EntityFactory,
@@ -408,7 +411,11 @@ export class Simulation {
     placement: Placement,
   ): void {
     const { kind } = factory.definitions.get(slot.definitionId);
-    const entity = factory.create(kind, slot.definitionId, placement);
+    const facing = state.world?.startFacing(slot.team, placement.position);
+    const entity = factory.create(kind, slot.definitionId, {
+      ...placement,
+      ...(facing !== undefined && { facing }),
+    });
     state.entities.add(entity);
     state.events.emit('entity-spawned', {
       entityId: entity.id,

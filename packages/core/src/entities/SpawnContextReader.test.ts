@@ -79,6 +79,21 @@ describe('SpawnContextReader', () => {
     }
   });
 
+  it('reads the spawn’s start facing, and refuses one that is not a vector (DEC-216 (6))', () => {
+    const base = { definition: DEFINITION, position: POSITION, team: 'light' };
+
+    expect(reader.placed<typeof DEFINITION>({ ...base, facing: { x: 0, y: -2 } }).facing).toEqual({
+      x: 0,
+      y: -2,
+    });
+    expect(reader.placed<typeof DEFINITION>(base)).not.toHaveProperty('facing');
+    for (const bad of ['east', 1, null]) {
+      expect(() => reader.placed<typeof DEFINITION>({ ...base, facing: bad })).toThrow(
+        'Entity "entity-1" was given a spawn facing that is not a vector.',
+      );
+    }
+  });
+
   it('reads the weapon source only when it has has() and get()', () => {
     const weapons = { has: () => false, get: () => undefined };
 
