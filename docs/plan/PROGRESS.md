@@ -5075,3 +5075,38 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "exit 0". Each new test was seen red with its fix broken on purpose. This line was filled in
   after that run (docs-only); `prettier --check` and `docs:check` were re-run on it.
 - Next step: critic re-check of this round, ponytail, then the PR into phase/3 after #75 merges.
+
+### 2026-11-05 — Phase 3 / out-of-combat healing, owner answers DEC-215 — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: the owner-approved merge of `fix/minion-stack-followups` (`ebedddb`) into this
+  branch (`e3903e0`; one conflict, the `DefaultSystemPipeline` TSDoc: both sides' system lists
+  kept), then DEC-215 (amends DEC-188) built on what `322df60` built:
+  - `07d0dd0`: `systems/HealingZones.ts`, one strategy per `HealingZoneShape`. `fort-box` is the
+    box round a lane tower's fort walls (its `Footprint` box), court and gateways in (4).
+    `stronghold-interior` is what the shield arc and the cliffs enclose less the ground of the
+    shield's wall segments, gates and turrets: on the wall, on a turret and the turret tips past
+    the ends of the arc are outside (2), (5). No overlap rule: a test over the generated maps for
+    1, 3, 5 and 7 lanes checks that no two zones overlap (1); the "largest bonus counts" test
+    went with the rule. Only hits on the Stronghold itself count as an attack on it (2), and a
+    unit is in a zone by its centre point (3): each has a test. Zone shapes renamed
+    (`fort-outline` → `fort-box`, `shield-enclosure` → `stronghold-interior`); DEC-215 (2) cited
+    at `structureQuietSeconds`.
+  - `5f4c76e`: architecture 04 §5 (healing content, zone shapes, no-overlap property), 18 §3.2
+    (`OutOfCombatHealingSystem` in the pipeline), `balancing.md` (healing values and zones) and
+    the minion plan §3 stand-in "nothing heals a retreated bot" (built).
+- Fail-first: each new test was seen red with its rule broken on purpose, then restored: the
+  322df60 Stronghold zone (shield ground in) → the walls, gates and turrets tests (both teams)
+  and the on-the-wall system test red; a fort box 400 m wider → the overlap test red for 1, 3, 5
+  and 7 lanes; the court only (box less the wall thickness) → the gateway tests red; any hit on
+  the structure's team counted → the shield-hit test red; the body's edge counted (+0.4 m) → the
+  centre-point test red.
+- Found, not built: the generated map overlaps the forts of two towers of one kind on a lane
+  (`spawnTowersPerLane` or `buffTowersPerLane` ≥ 2: boxes 32 m wide, towers 28 to 38 m apart);
+  the default (1 + 1) is clear. No Legend heal source exists in core yet, so DEC-215 (1)
+  stacking is "nothing blocks it": this heal only adds to health and heals do not reset combat.
+- Checks run: `npm run check` at `5f4c76e` → exit 0: "All matched files use Prettier code
+  style!"; core "Tests 1191 passed (1191)"; client "Tests 1754 passed (1754)"; "✓ built in
+  259ms"; "Documentation check passed.". This entry was added after that run (docs-only);
+  `prettier --check` and `docs:check` were re-run on it.
+- Next step: owner answers to the open questions (blocked hits on an unbreakable structure;
+  gates of the Stronghold shield), then the critic and ponytail gate, then the PR.
