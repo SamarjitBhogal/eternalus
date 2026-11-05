@@ -1,8 +1,8 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
-import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
+import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
 import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import { FORMATIONS } from '../content/mobs/formations/formations';
 import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
@@ -41,11 +41,12 @@ import { SystemPipeline } from './SystemPipeline';
  * The tick's systems in their fixed order (architecture 10 §9, 11 §1, 18 §3.2): the AI, horde
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, steering, combat, map destruction, progression (kill XP),
- * minion veterancy, structure losses and breakability, spawning, enraging, out-of-combat healing (DEC-188), death, then invariants
- * last. This is the one place a system is added, at its position in the tick (architecture 02 §9).
- * It builds the match's one `DamagePipeline` and one `StatusEffectApplier` (with the status
- * effects loaded for this match's config) and hands them to the systems that need them, so a damage
- * step applies to every hit and every status event comes from one place.
+ * minion veterancy, structure losses and breakability, spawning, enraging, out-of-combat healing
+ * (DEC-188), death, then invariants last. This is the one place a system is added, at its
+ * position in the tick (architecture 02 §9). It builds the match's one `DamagePipeline` and one
+ * `StatusEffectApplier` (with the status effects loaded for this match's config) and hands them to
+ * the systems that need them, so a damage step applies to every hit and every status event comes
+ * from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /**

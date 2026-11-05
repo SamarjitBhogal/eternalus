@@ -24,8 +24,7 @@ import type { Controller, Decision, DecisionInput } from './Controller.types';
  * routed around obstacles by A\*. Stateless: its lane, retreat flag, target and cast timer live in
  * the brain it returns, and its rolls advance the brain's own RNG stream.
  *
- * @remarks ponytail: casts go nowhere until abilities land (Phase 4); nothing heals a retreated
- * bot yet, so it rejoins only once something restores its health.
+ * @remarks ponytail: casts go nowhere until abilities land (Phase 4).
  */
 export class BotLegendController implements Controller {
   public readonly id = 'bot-legend';
