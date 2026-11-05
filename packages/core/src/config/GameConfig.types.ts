@@ -45,15 +45,10 @@ export type MatchConfig = {
   readonly timeline: readonly MatchTimelineEntry[];
   /**
    * The team the match is played for (architecture 12 §4: chosen at match creation); in sim mode,
-   * the spectated team. A verdict for it enters `victory`, any other verdict `defeat`.
+   * the spectated team. A verdict for it enters `victory`, any other verdict `defeat`. The roster's
+   * human slot, when there is one, plays for it (`Simulation` checks).
    */
   readonly playerTeam: PlayableTeam;
-  /**
-   * The human's seat (plan A19): the Legend the human plays, spawned for `playerTeam` at its
-   * Stronghold when the match is built, so a seat needs the map; `null` in sim mode (no human).
-   * `definitionId` is the Legend definition, named as in a roster slot.
-   */
-  readonly seat: { readonly definitionId: string } | null;
 };
 
 /** Per-team caps the developer menu and spawners must respect. */

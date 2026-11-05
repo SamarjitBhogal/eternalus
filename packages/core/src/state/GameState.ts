@@ -217,7 +217,7 @@ export class GameState {
 
   /**
    * Records the human's Legend. Called by `Simulation` only, once, when the match is built; a
-   * second call throws. `null` records that the seat has no Legend and changes nothing.
+   * second call throws. `null` records that the human has no Legend and changes nothing.
    */
   public seatHuman(legendId: EntityId | null): void {
     if (this.matchState.humanLegendId !== null) {

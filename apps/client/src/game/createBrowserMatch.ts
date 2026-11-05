@@ -68,16 +68,17 @@ function readEvidence(simulation: Simulation, ring: RingBufferSink): MatchEviden
 /**
  * The browser match factory `main.tsx` binds (13 §10; 13 §2's injected `createMatch`). Each call
  * builds the adapters (renderer, camera, devices, mapper, logger, frame scheduler), a fresh
- * `Simulation(setup.seed)` on `request.world`'s map and map objects with the setup's bots as its
- * roster, the `Match` on the same world and its `MatchHost`, then starts the host, which owns
- * everything from then on. The match log records the seed first.
+ * `Simulation(setup.seed)` on `request.world`'s map and map objects with `request.roster` (the
+ * setup's bots and the player's human slot) as its roster, the `Match` on the same world and its
+ * `MatchHost`, then starts the host, which owns everything from then on. The match log records the seed first.
  * @throws What the renderer or `Match` threw, after destroying every adapter already built
  *   (0 listeners, 0 pending frames).
  */
 export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
   return (request, viewport) => {
     const { window, gameConfig, settings } = deps;
-    // Core spawns the seat at the team's Stronghold: a map without one throws in `Simulation`, below.
+    // Core spawns the roster's human slot, the player's Rover, at the team's Stronghold: a map
+    // without one throws in `Simulation`, below.
     const config = seatedConfig(gameConfig, request.player);
     const renderer = Canvas2dRenderer.fromCanvas(viewport.canvas);
     if (renderer === null) {
@@ -112,7 +113,6 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         renderer,
         camera,
         input,
-        player: request.player,
         logger,
         onCrash: request.onCrash,
         bridge: {

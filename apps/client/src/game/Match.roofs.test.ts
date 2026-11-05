@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import type { WorldRect } from './engine/render/Renderer.types';
@@ -20,7 +21,6 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource, PlayerChoice } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { seatedConfig } from './seatedConfig';
 
 const SCREEN = { width: 1280, height: 720 };
 /** The most ticks the walk-out test waits for the Legend to leave its Stronghold (60 s). */
@@ -44,7 +44,7 @@ const setUp = () => {
   const world = prepareMatchWorld(config, 1);
   const player: PlayerChoice = { legend: 'warrior', team: 'light' };
   const simulation = new Simulation({
-    config: seatedConfig(config, player),
+    ...withPlayer(config, player),
     seed: 1,
     logger: new NullLogger(),
     map: world.map,
@@ -59,7 +59,6 @@ const setUp = () => {
     renderer,
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input,
-    player,
     logger: new NullLogger(),
     onCrash: () => undefined,
     bridge: {

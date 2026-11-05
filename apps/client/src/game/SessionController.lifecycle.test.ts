@@ -14,7 +14,7 @@ import type {
   SessionControllerDeps,
 } from './SessionController.types';
 import { createRosterRng } from './session/createRosterRng';
-import { botRosterSlots } from './session/botRosterSlots';
+import { rosterSlots } from './session/rosterSlots';
 import { createDefaultSessionStates } from './session/defaultSessionStates';
 import { MatchState } from './session/states/MatchState';
 import { REVEAL_COUNTDOWN_MS, SELECT_COUNTDOWN_MS } from './session/sessionTiming.constants';
@@ -160,13 +160,20 @@ describe('SessionController match lifetime', () => {
     expect(request?.roster).not.toHaveLength(0);
     const { difficulties } = shippedCatalogue().load().botRoster;
     expect(request?.roster).toEqual(
-      botRosterSlots(
+      rosterSlots(
         { allies: request?.setup.allies ?? [], enemies: request?.setup.enemies ?? [] },
         difficulties,
       ),
     );
-    // Each slot's difficulty is its role's, read from the catalogue, not from the helper alone.
-    for (const slot of request?.roster ?? []) {
+    // The player is the one human slot, on their team; each bot slot's difficulty is its role's,
+    // read from the catalogue, not from the helper alone.
+    const roster = request?.roster ?? [];
+    expect(roster.filter(({ pilot }) => pilot === 'human')).toEqual([
+      { pilot: 'human', team: request?.player.team, definitionId: 'magus', role: 'rover' },
+    ]);
+    const bots = roster.flatMap((slot) => (slot.pilot === 'bot' ? [slot] : []));
+    expect(bots).toHaveLength(roster.length - 1);
+    for (const slot of bots) {
       expect(slot.difficulty).toEqual(difficulties[slot.role]);
     }
     expect(difficulties.rover).not.toEqual(difficulties.laner);

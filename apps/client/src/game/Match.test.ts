@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BridgeEventMap } from '../bridge/events';
 import { MINI_MAP_DESIGN_FRAME, MINI_MAP_RING } from '../bridge/minimapRing';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
@@ -21,7 +22,6 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource, PlayerChoice } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { seatedConfig } from './seatedConfig';
 import { FOCUS_RING_COLOR } from './views/entityViews.constants';
 
 const SEED = 1;
@@ -59,7 +59,7 @@ class ScriptedIntent implements IntentSource {
 /** Where a test `Simulation` finds definitions, when a test needs kinds the shipped content lacks. */
 type Content = NonNullable<ConstructorParameters<typeof Simulation>[0]['content']>;
 
-/** A rock (kind `obstacle`, which has no view of its own), alone: no seat plays on it. */
+/** A rock (kind `obstacle`, which has no view of its own), alone: no human slot plays on it. */
 const CONTENT_WITH_A_ROCK: Content = (() => {
   const definitions = [
     {
@@ -87,10 +87,11 @@ const CONTENT_WITH_A_ROCK: Content = (() => {
 })();
 
 /**
- * A match on seed 1's prepared world, with `PLAYER` seated on the world's map (core spawns the
- * seat at its Stronghold, and the map's hordes and guards spawn too); the simulation gets the
- * world's map objects only `withMapObjects`. With `content`, which lacks the mobs the map's
- * structures spawn, it plays in sim mode instead: no map, so no seat (a seat needs the map).
+ * A match on seed 1's prepared world, with `PLAYER` the roster's human slot on the world's map
+ * (core spawns the human slot at its Stronghold, and the map's hordes and guards spawn too); the
+ * simulation gets the world's map objects only `withMapObjects`. With `content`, which lacks the
+ * mobs the map's structures spawn, it plays in sim mode instead: no map, so no roster (a roster
+ * needs the map).
  */
 const setUp = (content?: Content, withMapObjects = false) => {
   // No countdown: core's countdown holds all movement, and these tests walk from the start.
@@ -101,7 +102,7 @@ const setUp = (content?: Content, withMapObjects = false) => {
     seed: SEED,
     logger: new NullLogger(),
     ...(content === undefined
-      ? { config: seatedConfig(config, PLAYER), map: generated }
+      ? { ...withPlayer(config, PLAYER), map: generated }
       : { config, content }),
     ...(withMapObjects ? { mapObjects: world.mapObjects } : {}),
   });
@@ -118,7 +119,6 @@ const setUp = (content?: Content, withMapObjects = false) => {
     renderer,
     camera,
     input,
-    player: PLAYER,
     logger,
     onCrash: () => undefined,
     // A bus nobody listens to, at the shipped cadence.
@@ -240,7 +240,7 @@ describe('Match', () => {
     expect(player?.transform).toMatchObject(lightStronghold?.position ?? {});
   });
 
-  it("points the camera at the seat's Legend from construction, before any tick or frame", () => {
+  it("points the camera at the human slot's Legend from construction, before any tick or frame", () => {
     const { match, camera, map } = setUp();
     const player = match.snapshot.entities.find((entity) => entity.id === match.playerEntityId);
     if (player?.transform == null) throw new Error('Missing player');

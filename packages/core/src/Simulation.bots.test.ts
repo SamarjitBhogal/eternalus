@@ -13,6 +13,7 @@ import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
 
 const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
   Array.from({ length: count }, () => ({
+    pilot: 'bot',
     team,
     definitionId: 'warrior',
     role: 'laner',
@@ -113,7 +114,15 @@ describe('Simulation with bot laners (minion plan M3)', () => {
         }),
     ).toThrow('limits.maxUnitsPerTeam allows 1');
     expect(() =>
-      match([{ team: 'light', definitionId: 'warrior', role: 'laner', difficulty: 'nightmare' }]),
+      match([
+        {
+          pilot: 'bot',
+          team: 'light',
+          definitionId: 'warrior',
+          role: 'laner',
+          difficulty: 'nightmare',
+        },
+      ]),
     ).toThrow('AI profile "nightmare"');
   });
 
@@ -136,7 +145,7 @@ describe('Simulation with bot laners (minion plan M3)', () => {
 
   it('spawns a Rover at its Stronghold with no lane, playing the Rover tree (M8)', () => {
     const simulation = match([
-      { team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
+      { pilot: 'bot', team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
     ]);
 
     const rover = simulation
@@ -145,7 +154,15 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     // The dark Stronghold of the two-lane map stands at (190, 30).
     expect(rover?.transform).toMatchObject({ x: 190, y: 30 });
     expect(() =>
-      match([{ team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'nightmare' }]),
+      match([
+        {
+          pilot: 'bot',
+          team: 'dark',
+          definitionId: 'warrior',
+          role: 'rover',
+          difficulty: 'nightmare',
+        },
+      ]),
     ).toThrow('AI profile "nightmare"');
   });
 
@@ -153,7 +170,7 @@ describe('Simulation with bot laners (minion plan M3)', () => {
     const roster: RosterSlot[] = [
       ...laners('light', 2),
       ...laners('dark', 2),
-      { team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
+      { pilot: 'bot', team: 'dark', definitionId: 'warrior', role: 'rover', difficulty: 'rover' },
     ];
     const runs = [1, 2].map(() => {
       const logger = new MemoryLogger();
@@ -193,7 +210,13 @@ describe('Simulation with bot laners (minion plan M3)', () => {
       map: TWO_LANE_MAP,
       content: new ContentCatalogue([...defaults.all(), veteran]),
       roster: [
-        { team: 'light', definitionId: 'warrior-veteran', role: 'laner', difficulty: 'normal' },
+        {
+          pilot: 'bot',
+          team: 'light',
+          definitionId: 'warrior-veteran',
+          role: 'laner',
+          difficulty: 'normal',
+        },
       ],
     });
 

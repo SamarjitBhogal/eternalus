@@ -119,6 +119,7 @@ describe('Simulation with lane hordes (architecture 18, M1)', () => {
     const map = new MapGenerator().generate(config, 1);
     const roster = (['light', 'dark'] as const).flatMap((team) =>
       Array.from({ length: config.match.legendsPerTeam - 1 }, () => ({
+        pilot: 'bot' as const,
         team,
         definitionId: 'warrior',
         role: 'laner' as const,

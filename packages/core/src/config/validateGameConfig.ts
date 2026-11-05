@@ -159,13 +159,6 @@ const RULES: readonly Rule[] = [
     isValid: isPlayableTeam,
   },
   {
-    path: 'match.seat',
-    rule: 'must be null or { definitionId: a non-empty string }',
-    isValid: (value) =>
-      value === null ||
-      (isRecord(value) && typeof value.definitionId === 'string' && value.definitionId !== ''),
-  },
-  {
     path: 'match.countdownSeconds',
     rule: 'must not exceed match.plannedMatchSeconds (the countdown is part of the planned match)',
     isValid: (value, config) =>

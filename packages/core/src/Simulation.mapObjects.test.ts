@@ -24,12 +24,19 @@ import { countdownTicks } from './config/countdownTicks';
 const roster = (legendsPerTeam: number): RosterSlot[] =>
   (['light', 'dark'] as const).flatMap((team) => [
     ...Array.from({ length: legendsPerTeam - 1 }, () => ({
+      pilot: 'bot' as const,
       team,
       definitionId: 'warrior',
       role: 'laner' as const,
       difficulty: 'normal',
     })),
-    { team, definitionId: 'warrior', role: 'rover' as const, difficulty: 'rover' },
+    {
+      pilot: 'bot' as const,
+      team,
+      definitionId: 'warrior',
+      role: 'rover' as const,
+      difficulty: 'rover',
+    },
   ]);
 
 /** A team's lane tower: a SpawnerTower or BuffTower on its own lane. */

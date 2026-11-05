@@ -1,4 +1,5 @@
 import { AiSystem } from './ai/AiSystem';
+import type { AiMemory } from './content/ai/ai.types';
 import {
   createDefaultControllerRegistry,
   type ControllerRegistry,
@@ -195,8 +196,7 @@ export class Simulation {
     } else {
       this.pipeline = new SystemPipeline(systems);
     }
-    Simulation.spawnRoster(this.state, factory, roster, controllers);
-    this.seatHuman(logger);
+    Simulation.spawnRoster(this.state, factory, roster, controllers, logger);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
         makeLogRecord('INFO', 'core.commands', `Rejected ${command.type}: ${reason}`, {
@@ -206,48 +206,6 @@ export class Simulation {
       );
     });
     this.recordCheckpoint();
-  }
-
-  /**
-   * Spawns the human's Legend from `config.match.seat` at `playerTeam`'s Stronghold, after the
-   * roster and with no controller (a human plays it), through the roster's `spawnLegend`, and
-   * records its id in `state.match.humanLegendId`. The seat is config, so nothing is queued or
-   * recorded: a replay rebuilds it. A definition that does not exist or is not a Legend logs ERROR
-   * `core.match` and leaves the id `null`; the match runs on without a human.
-   *
-   * @throws Error when there is a seat but no map, or the map has no Stronghold for `playerTeam`.
-   */
-  private seatHuman(logger: Logger): void {
-    const { seat, playerTeam } = this.state.config.match;
-    if (seat === null) {
-      return;
-    }
-    if (this.state.world === null) {
-      throw new Error("A seat needs a map: the human's Legend spawns at its team's Stronghold.");
-    }
-    const position = Simulation.strongholdOf(this.state, playerTeam, "the human's Legend");
-    const { definitionId } = seat;
-    const { factory } = this.commandContext;
-    const reason = Simulation.seatRefusal(factory, definitionId);
-    if (reason === null) {
-      this.state.seatHuman(
-        Simulation.spawnLegend(
-          this.state,
-          factory,
-          { definitionId, team: playerTeam },
-          { position, team: playerTeam },
-        ),
-      );
-      return;
-    }
-    logger.log(
-      makeLogRecord(
-        'ERROR',
-        'core.match',
-        `The human's Legend "${seat.definitionId}" did not spawn: ${reason}.`,
-        { attributes: { definitionId: seat.definitionId, reason } },
-      ),
-    );
   }
 
   /** Number of ticks completed. */
@@ -360,52 +318,116 @@ export class Simulation {
   }
 
   /**
-   * Spawns the bot Legends (architecture 18 §8, MS-20): each team's laners, in roster order, go
-   * to the lane with the fewest Legends, lowest index first, and stand in ranks behind their own
-   * end of it, with the lane in their brain's memory; Rovers start at their Stronghold. Runs once
-   * the match director exists, so its listeners hear every `entity-spawned` (plan §4.4).
+   * Spawns the roster's Legends (architecture 18 §8, MS-20): each team's laners, in roster order,
+   * go to the lane with the fewest Legends, lowest index first, and stand in ranks behind their own
+   * end of it; Rovers start at their Stronghold. A bot gets its controller (a laner's with the lane
+   * in its brain's memory); the human slot gets none (a human plays it), and its Legend's id goes
+   * to `state.match.humanLegendId`. Runs once the match director exists, so its listeners hear
+   * every `entity-spawned` (plan §4.4). The roster is setup, so nothing is queued or recorded: a
+   * replay rebuilds it. A human slot whose definition does not exist or is not a Legend logs ERROR
+   * `core.match` and does not spawn, and the match runs on without a human: the class comes from
+   * saved data and can be stale (ADR 0023).
    *
-   * @throws Error when there are bots but no map, a team's Legends (the human's seat counts on
-   *   `playerTeam`) do not fit under `legendsPerTeam` or the Unit cap, its laners do not fit under
-   *   `legendsPerLane`, or a bot's controller or difficulty does not exist (checked before
-   *   anything spawns).
+   * @throws Error when there is a roster but no map, more than one human slot, a human slot off
+   *   `playerTeam`, a team's slots do not fit under `legendsPerTeam` or the Unit cap, its laners do
+   *   not fit under `legendsPerLane`, or a bot's controller or difficulty does not exist (checked
+   *   before anything spawns).
    */
   private static spawnRoster(
     state: GameState,
     factory: EntityFactory,
     roster: readonly RosterSlot[],
     controllers: ControllerRegistry,
+    logger: Logger,
   ): void {
     if (roster.length === 0) {
       return;
     }
     const routes = state.world?.routes ?? null;
     if (routes === null) {
-      throw new Error('A roster needs a map: bot Legends play its lanes.');
+      throw new Error(
+        'A roster needs a map: its Legends spawn on its lanes and at its Strongholds.',
+      );
     }
-    const controllerOf = (slot: RosterSlot) => (slot.role === 'rover' ? 'rover' : 'bot-legend');
+    const human = Simulation.humanSlotOf(roster, state.config.match.playerTeam);
     AiSystem.assertRegistered(
-      roster.map((slot, index) => ({
-        id: `roster slot ${String(index)}`,
-        controller: controllerOf(slot),
-        aiProfile: slot.difficulty,
-      })),
+      roster.flatMap((slot, index) =>
+        slot.pilot === 'bot'
+          ? [
+              {
+                id: `roster slot ${String(index)}`,
+                controller: Simulation.controllerOf(slot),
+                aiProfile: slot.difficulty,
+              },
+            ]
+          : [],
+      ),
       controllers,
     );
-    const laneIds = routes.lanes.map(({ id }) => id);
+    const refusal =
+      human === undefined ? null : Simulation.humanRefusal(factory, human.definitionId);
+    // A refused human slot still counts against the caps below, but takes no lane and no spawn.
+    const spawning = refusal === null ? roster : roster.filter((slot) => slot !== human);
+    const plans = Simulation.planLanes(
+      state,
+      roster,
+      spawning,
+      routes.lanes.map(({ id }) => id),
+    );
+    if (human !== undefined && refusal !== null) {
+      logger.log(
+        makeLogRecord(
+          'ERROR',
+          'core.match',
+          `The human's Legend "${human.definitionId}" did not spawn: ${refusal}.`,
+          { attributes: { definitionId: human.definitionId, reason: refusal } },
+        ),
+      );
+    }
     const anchor = { x: 0, y: 0 };
     const forward = { x: 0, y: 0 };
     const at = { x: 0, y: 0 };
-    // Every lane is assigned before anything spawns, so a roster that does not fit spawns nothing.
-    const { legendsPerTeam, seat, playerTeam } = state.config.match;
+    for (const { team, laners, lanes } of plans) {
+      const placed = new Map<string, number>();
+      laners.forEach((slot, index) => {
+        const lane = lanes[index] ?? '';
+        const follower = placed.get(lane) ?? 0;
+        placed.set(lane, follower + 1);
+        routes.pose(lane, team, 0, anchor, forward);
+        formationSlot(anchor, forward, follower, RANKS_FORMATION, at);
+        Simulation.spawnSlot(state, factory, slot, { x: at.x, y: at.y }, { lane });
+      });
+    }
+    for (const slot of spawning.filter(({ role }) => role === 'rover')) {
+      const position = Simulation.strongholdOf(state, slot.team, Simulation.roverName(slot));
+      Simulation.spawnSlot(state, factory, slot, position, {});
+    }
+  }
+
+  /**
+   * Each team's laners (of `spawning`) and the lane of each, in `PLAYABLE_TEAMS` order. Every lane
+   * is assigned before anything spawns, so a roster that does not fit spawns nothing.
+   *
+   * @throws Error when a team's slots (all of `roster`) do not fit under `legendsPerTeam` or the
+   *   Unit cap, or its laners do not fit under `legendsPerLane`.
+   */
+  private static planLanes(
+    state: GameState,
+    roster: readonly RosterSlot[],
+    spawning: readonly RosterSlot[],
+    laneIds: readonly string[],
+  ): readonly {
+    readonly team: PlayableTeam;
+    readonly laners: readonly RosterSlot[];
+    readonly lanes: readonly string[];
+  }[] {
+    const { legendsPerTeam, legendsPerLane } = state.config.match;
     const { maxUnitsPerTeam } = state.config.limits;
-    const plans = PLAYABLE_TEAMS.map((team) => {
-      // The human's Legend joins `playerTeam` after the roster (`seatHuman`), so it counts here.
-      const isSeated = seat !== null && team === playerTeam;
-      const size = roster.filter((slot) => slot.team === team).length + (isSeated ? 1 : 0);
+    return PLAYABLE_TEAMS.map((team) => {
+      const size = roster.filter((slot) => slot.team === team).length;
       if (size > legendsPerTeam) {
         throw new Error(
-          `The ${team} roster has ${String(size)} Legends${isSeated ? ' with the seat' : ''}; match.legendsPerTeam allows ${String(legendsPerTeam)}.`,
+          `The ${team} roster has ${String(size)} Legends; match.legendsPerTeam allows ${String(legendsPerTeam)}.`,
         );
       }
       // Legends are Units, so the roster also fits under the Unit cap (as dev spawns do).
@@ -415,56 +437,76 @@ export class Simulation {
           `The ${team} roster would make ${String(units)} Units; limits.maxUnitsPerTeam allows ${String(maxUnitsPerTeam)}.`,
         );
       }
-      const laners = roster.filter((slot) => slot.team === team && slot.role === 'laner');
-      return {
-        team,
-        laners,
-        lanes: assignLanes(laners.length, laneIds, state.config.match.legendsPerLane),
-      };
+      const laners = spawning.filter((slot) => slot.team === team && slot.role === 'laner');
+      return { team, laners, lanes: assignLanes(laners.length, laneIds, legendsPerLane) };
     });
-    for (const { team, laners, lanes } of plans) {
-      const placed = new Map<string, number>();
-      laners.forEach((slot, index) => {
-        const lane = lanes[index] ?? '';
-        const follower = placed.get(lane) ?? 0;
-        placed.set(lane, follower + 1);
-        routes.pose(lane, team, 0, anchor, forward);
-        formationSlot(anchor, forward, follower, RANKS_FORMATION, at);
-        Simulation.spawnLegend(state, factory, slot, {
-          position: { x: at.x, y: at.y },
-          team,
-          controller: {
-            controllerId: controllerOf(slot),
-            profileId: slot.difficulty,
-            memory: { lane },
-          },
-        });
-      });
-    }
-    Simulation.spawnRovers(state, factory, roster);
   }
 
   /**
-   * Spawns the roster's Rovers at their team's Stronghold (11 §4.7): they take no lane (MS-20).
+   * The roster's human slot; `undefined` in sim mode (no human).
    *
-   * @throws Error when a Rover's team has no Stronghold on the map.
+   * @throws Error when the roster has more than one human slot, or its human slot is not on
+   *   `playerTeam`.
    */
-  private static spawnRovers(
+  private static humanSlotOf(
+    roster: readonly RosterSlot[],
+    playerTeam: PlayableTeam,
+  ): RosterSlot | undefined {
+    const humans = roster.filter(({ pilot }) => pilot === 'human');
+    if (humans.length > 1) {
+      throw new Error(
+        `The roster has ${String(humans.length)} human slots; a match has at most one human.`,
+      );
+    }
+    const [human] = humans;
+    if (human !== undefined && human.team !== playerTeam) {
+      throw new Error(
+        `The roster's human slot is on the ${human.team} team; match.playerTeam is ${playerTeam}.`,
+      );
+    }
+    return human;
+  }
+
+  /** The controller a bot of `slot`'s role plays with: a Rover's or a lane bot's. */
+  private static controllerOf(slot: RosterSlot): 'rover' | 'bot-legend' {
+    return slot.role === 'rover' ? 'rover' : 'bot-legend';
+  }
+
+  /** Who a Rover is, for the error when its team has no Stronghold. */
+  private static roverName(slot: RosterSlot): string {
+    return slot.pilot === 'human' ? "the human's Legend" : `the ${slot.team} Rover`;
+  }
+
+  /**
+   * Spawns one roster slot's Legend at `position` on its team: a bot with its controller (whose
+   * brain starts with `memory`), the human with none, recorded as the human's Legend (DEC-172).
+   */
+  private static spawnSlot(
     state: GameState,
     factory: EntityFactory,
-    roster: readonly RosterSlot[],
+    slot: RosterSlot,
+    position: Vec2,
+    memory: AiMemory,
   ): void {
-    for (const slot of roster.filter(({ role }) => role === 'rover')) {
-      Simulation.spawnLegend(state, factory, slot, {
-        position: Simulation.strongholdOf(state, slot.team, `the ${slot.team} Rover`),
-        team: slot.team,
-        controller: { controllerId: 'rover', profileId: slot.difficulty, memory: {} },
-      });
+    const id = Simulation.spawnLegend(state, factory, slot, {
+      position,
+      team: slot.team,
+      ...(slot.pilot === 'bot' && {
+        controller: {
+          controllerId: Simulation.controllerOf(slot),
+          profileId: slot.difficulty,
+          memory,
+        },
+      }),
+    });
+    if (slot.pilot === 'human') {
+      state.seatHuman(id);
     }
   }
 
   /**
-   * Where `team`'s Stronghold stands on the map: where its Rovers and the human's Legend start.
+   * Where `team`'s Stronghold stands on the map: where its Rovers (the human's Legend among them)
+   * start.
    *
    * @throws Error naming `forWhom` when the map has no Stronghold for `team`.
    */
@@ -479,10 +521,10 @@ export class Simulation {
   }
 
   /**
-   * Why the seat's `definitionId` cannot be the human's Legend: it names no definition, or one
-   * whose kind is not a Legend; `null` when it can.
+   * Why the human slot's `definitionId` cannot be the human's Legend: it names no definition, or
+   * one whose kind is not a Legend; `null` when it can.
    */
-  private static seatRefusal(
+  private static humanRefusal(
     factory: EntityFactory,
     definitionId: string,
   ): 'unknown-definition' | 'not-a-legend' | null {
@@ -494,7 +536,7 @@ export class Simulation {
   }
 
   /**
-   * Spawns one Legend (a roster bot or the human's seat) of the kind its definition names,
+   * Spawns one Legend (a roster slot's) of the kind its definition names,
    * announces it and returns its id.
    */
   private static spawnLegend(

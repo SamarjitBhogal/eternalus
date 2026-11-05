@@ -30,7 +30,7 @@ import { WorldObjectsView } from './views/WorldObjectsView';
  * turns the player's intent into commands (`PlayerCommands`), steps the simulation and keeps the
  * last two snapshots; each frame follows the player with the camera and draws the scene and the
  * minimap (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's
- * Stronghold by core from the config's seat. Which part of the world is shown (the following
+ * Stronghold by core from the roster's human slot. Which part of the world is shown (the following
  * camera, or the free view that dragging and the overview switch to) is `MatchCamera`'s. Buildings
  * stay in the same world scene: `BuildingRoofs` cuts away the roof of the building the player's
  * Legend stands in (DEC-143) and those the developer explorer opens, and the views draw those
@@ -67,8 +67,8 @@ export class Match implements LoopTarget {
 
   /**
    * Creates the match, takes the player's Legend from the simulation's snapshot (core spawned it
-   * from the config's seat) and points the camera at it; with no Legend (the seat named no Legend
-   * definition), at the middle of the map.
+   * from the roster's human slot) and points the camera at it; with no Legend (the human slot
+   * named no Legend definition), at the middle of the map.
    */
   public constructor(private readonly deps: MatchDeps) {
     const { simulation, world, tickRate, scheduler, camera, logger, bridge, input } = deps;

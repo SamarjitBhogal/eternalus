@@ -148,26 +148,6 @@ describe('validateGameConfig', () => {
     },
   );
 
-  it.each([null, { definitionId: 'warrior' }, { definitionId: 'x' }])(
-    'accepts a seat of null or a Legend id (%j)',
-    (seat) => {
-      expect(failurePath({ match: { seat } })).toBeNull();
-    },
-  );
-
-  it.each([undefined, 'warrior', {}, { definitionId: '' }, { definitionId: 7 }])(
-    'rejects a seat that is not null or a Legend id (%j)',
-    (seat) => {
-      const config = createDefaultGameConfig();
-      expect(() => validateGameConfig({ ...config, match: { ...config.match, seat } })).toThrow(
-        new ConfigValidationError(
-          'match.seat',
-          'must be null or { definitionId: a non-empty string }',
-        ),
-      );
-    },
-  );
-
   it('rejects a config with a missing section', () => {
     expect(() => validateGameConfig(withoutKey(createDefaultGameConfig(), 'match'))).toThrow(
       new ConfigValidationError(

@@ -73,7 +73,6 @@ export type MatchDeps = {
   readonly renderer: Renderer;
   readonly camera: Camera;
   readonly input: IntentSource;
-  readonly player: PlayerChoice;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
   readonly logger: Logger;
   /** Called once when the game loop stops because a tick or a frame threw (DEC-106). */

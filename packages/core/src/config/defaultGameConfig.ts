@@ -39,7 +39,6 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
     plannedMatchSeconds: 1800, // TUNE: DEC-13's 30 minutes; a planning length, not a cap (owner 2026-10-28)
     // A placeholder: the client sets it from the player's setup; a sim-mode caller may set either side (12 §4).
     playerTeam: 'light',
-    seat: null, // sim mode: no human; the client sets it from the player's setup
   },
   limits: {
     maxLegendsPerTeam: MAX_LEGENDS_PER_TEAM,

@@ -31,9 +31,9 @@ export type MatchState = {
   /** The team the match is played (or spectated) for, from `config.match.playerTeam`. */
   readonly playerTeam: PlayableTeam;
   /**
-   * The human's Legend; `null` in sim mode (11 §7), and when the seat names no Legend definition.
-   * Set once, only through `GameState.seatHuman`, by `Simulation` from `config.match.seat`, when
-   * the match is built.
+   * The human's Legend; `null` in sim mode (11 §7: no human slot in the roster), and when the
+   * human slot names no Legend definition. Set once, only through `GameState.seatHuman`, by
+   * `Simulation` from the roster's human slot, when the match is built.
    */
   readonly humanLegendId: EntityId | null;
   /**
