@@ -90,12 +90,13 @@ export class PathingSystem implements System {
       this.target.y = way.y;
       return this.slotArrivalRadius;
     }
-    if (!state.entities.aimPointOf(targetId, self.position, this.target)) {
+    const aimed = state.entities.aimPointOf(targetId, self.position, this.target);
+    if (aimed === null) {
       return undefined;
     }
     const { x, y } = self.position;
     const grid = state.world?.grid;
-    if (state.entities.outlineOf(targetId) !== undefined) {
+    if (aimed !== 'centre') {
       this.depth = grid?.blockedRun(this.target.x, this.target.y, x, y) ?? 0;
       return self.radius + combat.attack.reach;
     }
