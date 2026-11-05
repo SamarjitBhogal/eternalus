@@ -4842,3 +4842,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1056 passed (1056)"; client "Tests 1736 passed (1736)"; "✓ built in 390ms";
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
+
+### 2026-11-05 — Phase 3 / Legend XP rework docs — feat/structure-xp — sholtzman + Claude Code
+
+- What was done: docs follow the XP rework (DEC-186 structure XP for every Legend on the
+  destroying team; DEC-190 new curve, Legend kill and structure numbers; not final). INBOX
+  income-estimate item marked superseded plus a new update; `balancing.md` XP recommendations
+  marked superseded with a pointer; architecture 05 §20 status note and phase 4 plan status
+  updated. The DEC-186 and DEC-190 rows are on the docs branch, not this one.
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1065 passed (1065)"; client "Tests 1736 passed (1736)"; "✓ built in 284ms";
+  "Documentation check passed." Log: `eternalus-agent-work/xp-rework/check-xp-docs.log`. This
+  entry was added before that run.
+- Next step: add the DEC rows on the docs branch; build "pay on respawn" with GL-12.

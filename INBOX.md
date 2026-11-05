@@ -162,7 +162,7 @@ Reply inline (`Decision: …`).
       values, also for you to confirm: level cap 10, `xpToNext = 100 + 50·(L−1)`, +8% base health
       and +10 aether per level, Legend kill 150 + 25 × victim level, minion kill 20 / 45 / 120.
   - Update after your PR #31 review (O1–O8): cap 50 (O6). **Income estimate to check:**
-    balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
+    **Superseded by DEC-190 (2026-11-05); see the update below.** balancing.md says its XP sources take an active Legend to 2,700 XP in 18–22 minutes, about
     135 XP/min (minions about 110 XP/min, the rest kills and objectives). Keeping that income and
     balancing.md's curve shape (growth = half the first step), the cap-50 curve is
     `xpToNext(L) = 4 + 2·(L − 1)`, 2,548 XP to level 50, reached around minute 19. Kills are
@@ -177,6 +177,16 @@ Reply inline (`Decision: …`).
     Legend, with the XP to the next level rising each level. Your choice of 2026-10-30: the resize
     waits for bot laners (PR #46). Measure the real XP per minute once bots fight in lanes, then
     size `content/progression/levelCurves.ts` to DEC-90.
+  - **Update 2026-11-05 (DEC-186, DEC-190):** the owner approved a new XP model that replaces the
+    income estimate above. Goal: a Legend with 10+ Legend kills and 100+ minion kills, on a team
+    that destroyed 4 towers, is about level 40 at 20 minutes, and no single kill or structure
+    gives several levels. The curve, the Legend kill formula and the structure XP are in
+    `content/progression/levelCurves.ts` and `xpSources.ts`; minion XP did not change. Every
+    Legend on the destroying team gets structure XP (DEC-186). **This is not final:** it can
+    change if the soak metric "Legend level at 10 and 20 minutes" shows that levelling does not
+    happen as the owner wants. A dead Legend gets no structure XP today. The owner ruled that
+    it is paid on respawn once respawn (GL-12) exists; a `ponytail:` note in
+    `ProgressionSystem.ts` marks the stand-in.
 
 - [ ] **DEC-15 — camp placement, still open after your answer** (the rule is recorded as DEC-15,
       2026-10-10). (1) Does the random, parity-checked placement also apply to the corner camps?
