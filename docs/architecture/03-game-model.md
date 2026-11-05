@@ -64,13 +64,19 @@ export class GameState {
   public readonly events: GameEvents;
   public readonly recentCommands: RingBuffer<TimedCommand>; // post-mortem context; recent events: events.recentEvents() (§4)
 
+  public readonly match: MatchRecord; // the director's memory (12 §4) and its only writers (DEC-177); `phase` is `match.phase`
+
   public get tick(): number;
-  public get match(): MatchState; // the director's memory (12 §4); `phase` is `match.phase`
   public advanceTick(): void; // called once per step(), by Simulation only
-  public setPhase(next: MatchPhase): void; // called by MatchDirector only; stamps `match.phaseEnteredTick`, emits 'phase-changed'
-  public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88); `match` is read-only, these four and setPhase write it (DEC-172)
+}
+
+// Sketch: packages/core/src/state/MatchRecord.ts — GameState.match (DEC-177)
+export class MatchRecord implements MatchState {
+  // the MatchState fields (12 §4) as read-only getters; only these five write them (DEC-172)
+  public setPhase(next: MatchPhase): void; // MatchDirector only; stamps `phaseEnteredTick`, emits 'phase-changed'
+  public holdIdle(isHeld: boolean): void; // the countdown phase only (DEC-88)
   public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
-  public seatHuman(legendId: EntityId | null): void; // Simulation only, once, when the match is built
+  public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
   public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
 }
 ```
@@ -186,7 +192,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                              |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                      |
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `Scoring`, `MatchDirector`, `StatusEffectSystem`                        |
-| `phase-changed`                     | `{ from, to }`                                         | `GameState.setPhase` (called by `MatchDirector`)                | `Announcer`                                                             |
+| `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                             |
 | `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                 |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                |
 | `status-applied`                    | `{ entityId, statusId, sourceId }`                     | `StatusEffectApplier` (DEC-41)                                  | views, HUD                                                              |

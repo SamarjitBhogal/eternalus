@@ -1835,7 +1835,7 @@ Reply inline (`Decision: …`).
     HUD PR. Until then a test pins the interim adoption (`Match.lifecycle.test.ts`, "adopts its own spawn, never a roster bot
     of the same class and team"; `99563b4`).
   - 2026-11-04, built on `feat/match-director`: core sets `MatchState.humanLegendId` when it
-    spawns the human's seat, and `Match` reads it from `Snapshot.match.humanLegendId`. The
+    spawns the roster's human slot, and `Match` reads it from `Snapshot.match.humanLegendId`. The
     adopt-the-first-spawn interim is gone from `Match.ts`. The canvas gestures moved to
     `MatchViewControls` (HC-S6).
 - [x] **HC-Q33 — Critic loop 2 of the HUD PR: replay size, three code tidies and the explorer's
@@ -1902,6 +1902,12 @@ Reply inline (`Decision: …`).
 - [x] **HC-Q41 — FR-006 wording (match-director critic).** FR-006 still names `match-phase-changed`, the phases "late → ended" and a "20-minute timeline"; the built director has the event `phase-changed`, the phases of architecture 12 §2, and a 1800 s planned length. What wording do you want for the statement and its acceptance example?
       Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
   - Answered 2026-11-04 (DEC-176): "Use the proposed wording" (E1). Done on `feat/match-director`: FR-006 in requirements 06.
+- [x] **HC-Q43 — Split a `MatchRecord` store out of `GameState` now, or schedule it (match-director critic, round 2).** `GameState.ts` is 349 lines, over the ~300-line guide, mostly from the match writers of DEC-172. Build a `MatchRecord` store in `state/` in this PR, or schedule the split with HC-S7?
+  - Answered 2026-11-04 in chat (DEC-177): "A: Build MatchRecord now". Done on `feat/match-director`: `state/MatchRecord.ts`; `GameState.match` is a `MatchRecord`.
+- [x] **HC-Q44 — Export `opponentOf` from core (match-director critic, round 2).** The client's `game/session/buildMatchSetup.ts` has its own one-line copy of the "other team" rule (DEC-171). Export `opponentOf` from `@eternalus/core` and use it, or leave the copy?
+  - Answered 2026-11-04 in chat (DEC-178): "A: Export opponentOf". Done on `feat/match-director`: core `index.ts`, used in `buildMatchSetup.ts`.
+- [x] **HC-Q45 — `check:quick` fails on agents' untracked probe tests (match-director, round 2).** In the main checkout, ESLint lints untracked `zz*Probe.test.ts` files that agent sessions left in `eternalus-agent-work/`. How do we fix it?
+  - Answered 2026-11-04 in chat (DEC-179): "A: Ignore eternalus-agent-work/". Done on `feat/match-director`: `eslint.config.js` `globalIgnores` and `.gitignore`.
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
@@ -1911,6 +1917,11 @@ Reply inline (`Decision: …`).
       merge. `SessionController.ts` (327 lines): its asset loading (`loadAssets`,
       `releaseAssets`, `publishLoaded`, `publishProgress`) is the part to move out. Nothing to
       answer unless you want it sooner.
+  - 2026-11-04 (match-director critic round 2, #4): on `feat/match-director`, `Simulation.ts` is
+    618 lines; `spawnRovers` and `spawnBot` are gone. Its roster helpers (`spawnRoster`,
+    `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
+    are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
+    merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
 - [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
       critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
       least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count

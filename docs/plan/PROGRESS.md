@@ -5167,3 +5167,29 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/game-loop-plan/` (result in the commit message).
 - Next step: critic round 2 (base `f40811f`), ponytail, re-check, the PR into phase/3 after #71
   and #72.
+
+### 2026-11-04 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / critic round 2 fixes and the owner's calls (DEC-177 to DEC-179) — feat/match-director — sholtzman + Claude Code
+
+- What: fixed the round-2 critic findings (`arch-review-md-pr-round-2.md`: approve, 0 blocker,
+  5 minor, 10 nit) and built the owner's three answers (`INBOX.md` HC-Q43 to HC-Q45; verbatim in
+  `eternalus-agent-work/game-loop-plan/owner-answers-2026-11-04-match-director-round-2.md`).
+  - DEC-177 (#3): `state/MatchRecord.ts` implements `MatchState` and holds the five match writers;
+    `GameState.match` is a `MatchRecord`, and callers write through `state.match`.
+  - DEC-178 (#15): core exports `opponentOf`; the client's `buildMatchSetup.ts` uses it.
+  - DEC-179: `eternalus-agent-work/` is in ESLint's `globalIgnores` and in `.gitignore`.
+  - #1: a bot slot whose definition is unknown or not a Legend throws before any Legend spawns
+    (`Simulation.legendRefusal`, shared with the human slot). #2: a test that a refused human
+    slot counts toward the caps. #5: `MatchRequest.player` is gone; `seatedConfig` is
+    `withPlayerTeam`. #9: `seatHuman` takes an `EntityId`. #14: the ghost-wave end is pinned at
+    three countdowns. Ponytail P1, P2: `spawnLegend` and `roverName` inlined.
+  - Docs (#4, #6 to #8, #10 to #13): HC-S7 dated note; 10 and 17 `last-reviewed`; 12 `paths`
+    and §4 options comment; 02 and the core `AGENTS.md` note that every folder may import
+    `teams/`; the `isIdleHeld` TSDoc names `HordeSystem`; HC-Q32 note and the `wanderSeed7`
+    fixture header; DEC-173's Docs cell; 03 §2 sketch for DEC-177. The decisions-log batch and
+    HC-Q43 to HC-Q45 answered.
+- Fail-first breaks: `md-r2fix-breaks.md` in `eternalus-agent-work/game-loop-plan/`; every source
+  restored.
+- Checks run: `npm run check`, log `md-r2fix-check-2026-11-04.log` in
+  `eternalus-agent-work/game-loop-plan/` (result in the commit message).
+- Next step: critic round 3 (the last) and ponytail on the delta, then the PR into phase/3 after
+  #71; re-merge into `feat/match-scoring` and `feat/results-flow`.

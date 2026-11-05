@@ -10,10 +10,12 @@ paths:
   [
     'packages/core/src/match/**',
     'packages/core/src/config/matchPhases.ts',
+    'packages/core/src/config/countdownTicks.ts',
     'packages/core/src/config/MatchTimelineEntry.types.ts',
     'packages/core/src/config/timelineMarkTick.ts',
     'packages/core/src/config/VictoryConditionId.types.ts',
     'packages/core/src/state/MatchState.types.ts',
+    'packages/core/src/state/MatchRecord.ts',
     'packages/core/src/state/MatchResult.types.ts',
     'packages/core/src/components/WinObjective.ts',
     'packages/core/src/diagnostics/invariants/PhaseMonotonicInvariant.ts',
@@ -153,8 +155,8 @@ every skipped entry in order, so the world after a jump equals the world after w
 // Sketch: packages/core/src/match/MatchDirector.ts
 export class MatchDirector {
   // MatchDirectorOptions: phases (defaultMatchPhases.ts), timeline (entries sorted by tick),
-  // actions, order (MATCH_PHASES), debug, logger, conditions (defaultVictoryConditions.ts)
-  // and scoring. One object, so a new part does not change every caller.
+  // actions, order (MATCH_PHASES), terminal (TERMINAL_MATCH_PHASES), hasher (finalHash), debug,
+  // logger, conditions (defaultVictoryConditions.ts) and scoring. One object, so a new part does not change every caller.
   public constructor(private readonly options: MatchDirectorOptions) {}
 
   /** Once, before tick 0: enters the first phase with no 'phase-changed', so its rules cover tick 0. */
@@ -176,26 +178,26 @@ export class MatchDirector {
     const from = ctx.state.match.phase;
     assertForward(from, to); // a backwards transition is a bug: throws in tests, logs in the browser
     this.options.phases[from].exit(ctx);
-    ctx.state.setPhase(to); // the only writer of the phase: emits 'phase-changed' { from, to }, stamps phaseEnteredTick
+    ctx.state.match.setPhase(to); // the only writer of the phase: emits 'phase-changed' { from, to }, stamps phaseEnteredTick
     this.options.phases[to].enter(ctx);
   }
 }
 ```
 
 ```ts
-// Sketch: packages/core/src/state/MatchState.types.ts — the director's memory, all plain data
+// Sketch: packages/core/src/state/MatchState.types.ts — the director's memory, all plain data; GameState.match is a MatchRecord holding it (03 §2, DEC-177)
 export type MatchState = {
-  readonly phase: MatchPhase; // written only by GameState.setPhase
+  readonly phase: MatchPhase; // written only by MatchRecord.setPhase
   readonly phaseEnteredTick: number;
-  readonly timelineCursor: number; // index of the next unfired entry; written only by GameState.advanceTimeline (DEC-172)
+  readonly timelineCursor: number; // index of the next unfired entry; written only by MatchRecord.advanceTimeline (DEC-172)
   readonly schedule: readonly { readonly entryId: string; readonly tick: number }[]; // every entry's resolved tick, in firing order; taken from config, so not hashed
-  readonly isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88); written only by GameState.holdIdle
+  readonly isIdleHeld: boolean; // the countdown freeze: while true every unit is idle and can only turn (DEC-88); written only by MatchRecord.holdIdle
   readonly playerTeam: PlayableTeam; // chosen at match creation, also in sim mode
-  readonly humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); the roster's human slot (DEC-173), set once by GameState.seatHuman; spectatedLegendId beside it
+  readonly humanLegendId: EntityId | null; // null = sim mode (11-game-ai.md §7); the roster's human slot (DEC-173), set once by MatchRecord.seatHuman; spectatedLegendId beside it
   atmosphere:
     'calm' | { readonly kind: 'eternal'; readonly originId: EntityId; readonly sinceTick: number };
   scoring: ScoringState;
-  readonly result: MatchResult | null; // set once by GameState.endMatch
+  readonly result: MatchResult | null; // set once by MatchRecord.endMatch
 };
 ```
 
@@ -417,7 +419,7 @@ at most one per roster and on `playerTeam`; a roster without one is sim mode. Th
 the Rover role (DISC-51), so core spawns it at `playerTeam`'s Stronghold from the map, with the
 other Rovers in roster order and with no controller. No command is involved, and the replay setup
 records the roster, so a replay rebuilds the human's Legend from it. Core sets
-`state.match.humanLegendId` (`GameState.seatHuman`); `Snapshot.match.humanLegendId` carries it (not
+`state.match.humanLegendId` (`MatchRecord.seatHuman`); `Snapshot.match.humanLegendId` carries it (not
 hashed). An unknown definition id, or one that is not a Legend, logs ERROR `core.match`, spawns
 nothing and leaves `humanLegendId` `null`; the match plays on, because the class comes from saved
 data and can be stale (ADR 0023). A second human slot, or a human slot off `playerTeam`, throws, as
