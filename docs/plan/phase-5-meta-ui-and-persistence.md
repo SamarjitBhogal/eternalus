@@ -4,7 +4,7 @@ description: Sprint checklists for the persistence layer (IndexedDB behind Persi
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-02
 tags: [plan, phase-5, persistence, resources, ui, settings, keybindings, developer-menu]
 paths: ['apps/client/src/data/**', 'apps/client/src/ui/**', 'apps/client/src/game/input/**']
 related:
@@ -198,6 +198,13 @@ Owner: _ (UI owner + one client-lane reviewer). Week 9. Depends on 5.1, Phase 1 
       gains; reduced motion; storage status: persisted flag and `estimate()`; export/import
       buttons from 5.1). Owner: _. Test: a slider change reaches a fake `AudioOutput`; the storage
       panel shows the fake estimate. Done when: each settings group is one DTO with a migration path.
+- [ ] **Minimap visibility setting and its M key** (DEC-147; `INBOX.md` HC-Q19, HC-Q31: the
+      `minimapVisible` setting of architecture 13 §3, on by default, saved with the settings; the
+      Settings screen's existing "Toggle minimap" row; the `toggle-minimap` action (M) shows or
+      hides the minimap in a match; the developer flag never hides it, DEC-143). Owner: _. Test:
+      a new profile shows the minimap; M hides it and shows it again; the choice survives a
+      reload; a hidden minimap takes no click. Done when: M has a handler and the setting is part
+      of the settings DTO.
 
 **Success metric:** the W → Up Arrow and Z → mouse side button scenarios pass as automated tests
 and a reviewer reproduces each in the browser in under 30 s; 100% of prompts render from bindings.
@@ -215,6 +222,14 @@ and 3.8 (sim mode), Phase 2 sprint 2.7 (spawn origins), Phase 1 sprint 1.5 (`Dev
       Test: a finished sim-mode match writes one history row, one replay and the profile update
       atomically; the stored replay reproduces the final `StateHasher` hash in the core replay
       harness. Done when: the results screen is a pure view of the DTO; one replay format exists.
+  - 2026-11-02 (DEC-152): today a crash report's replay holds the generated map and map objects
+    inline. When this store is designed, choose again whether a stored replay holds the world or
+    generates it again from config and seed (which needs the versions guard).
+  - 2026-11-02 (HUD PR critic loop 3, BD-C; `INBOX.md` HC-S6): consider nesting the setup in
+    the replay, `ReplayOf<S> = { setup: S; commands; checkpoints }`, instead of spreading its
+    fields (`Replay.types.ts` today): the replay factory then gets only the setup, and a schema
+    version has a place. It changes the crash-report JSON, the fixtures, `exportReplay` and
+    architecture 03 §9 and 15 §7.
 - [ ] **`DeveloperMenu` complete** (enabled by `?dev=1` or a persisted settings toggle, opened
       in-game by a rebindable `dev-menu-toggle` action: add/remove Legends with class and team
       pickers (≤ 10 per team); spawn mobs from origin points, i.e. Stronghold gates, tower slots
@@ -262,7 +277,7 @@ passes the keyboard-only walk.
 3. Architecture docs 13 and 14 match the code, or an ADR records the deviation; the IndexedDB
    test-fake decision is recorded; the profile screen's themed name is decided (INBOX OQ-15) or
    still visibly marked "(themed name pending)".
-4. Phase PR approved (sholtzman + sim lane lead), CI green on three OSes, merged by SamarjitBhogal.
+4. Phase PR approved (sholtzman + sim lane lead), CI green on Linux and Windows, merged by SamarjitBhogal.
 
 ## Demo script
 

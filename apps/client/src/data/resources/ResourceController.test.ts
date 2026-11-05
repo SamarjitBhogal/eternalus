@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AssetFile, AssetManifestEntry } from './AssetManifest.types';
+import { isReportedSilently } from '../logging/__fixtures__/errorReports';
 import { FakeAssetLoader } from './loaders/FakeAssetLoader';
 import { ResourceController } from './ResourceController';
 import type { LoadProgress, ResourceControllerDeps } from './ResourceController.types';
@@ -128,6 +129,7 @@ describe('ResourceController', () => {
     const outcome = await load;
 
     expect(outcome.failed).toEqual(['img-b']);
+    expect(isReportedSilently('client.resources', warnings[0]?.body ?? '')).toBe(true);
     expect(warnings).toEqual([
       {
         body: 'asset failed',
@@ -157,6 +159,7 @@ describe('ResourceController', () => {
     const outcome = await load;
 
     expect(outcome.failed).toEqual([]);
+    expect(isReportedSilently('client.resources', warnings[0]?.body ?? '')).toBe(true);
     expect(warnings).toEqual([
       {
         body: 'asset rendition failed',

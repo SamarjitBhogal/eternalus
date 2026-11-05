@@ -1,12 +1,9 @@
 import type { Command } from '../commands/Command.types';
-import type { GameConfig } from '../config/GameConfig.types';
 import type { Snapshot } from '../state/Snapshot.types';
-import type { Replay, ReplayOutcome, ReplayTargetFactory } from './Replay.types';
+import type { ReplayOf, ReplayOutcome, ReplayTargetFactoryOf } from './Replay.types';
 
 /** What to record: the match setup and how long to run it. */
 type RecordingPlan = {
-  readonly config: GameConfig;
-  readonly seed: number;
   readonly ticks: number;
   /** A checkpoint every this many ticks, plus one at the end. */
   readonly checkpointEvery: number;
@@ -14,39 +11,53 @@ type RecordingPlan = {
   readonly commandsFor: (tick: number, snapshot: Snapshot) => readonly Command[];
 };
 
-/** Runs a match from `plan` on a fresh target and records it as a `Replay`. */
-export const recordReplay = (plan: RecordingPlan, createTarget: ReplayTargetFactory): Replay => {
-  const target = createTarget(plan.config, plan.seed);
+/**
+ * Runs a match built from `setup` on a fresh target, as `plan` says, and records it as a `Replay`:
+ * the setup, unchanged, beside the commands and checkpoints.
+ */
+export const recordReplay = <S extends object>(
+  setup: S,
+  plan: RecordingPlan,
+  createTarget: ReplayTargetFactoryOf<S>,
+): ReplayOf<S> => {
+  const { ticks, checkpointEvery, commandsFor } = plan;
+  const target = createTarget(setup);
   const commands: { tick: number; command: Command }[] = [];
   const checkpoints: { tick: number; hash: number }[] = [];
-  for (let tick = 0; tick < plan.ticks; tick += 1) {
-    if (tick % plan.checkpointEvery === 0) {
+  for (let tick = 0; tick < ticks; tick += 1) {
+    if (tick % checkpointEvery === 0) {
       checkpoints.push({ tick, hash: target.hash() });
     }
-    for (const command of plan.commandsFor(tick, target.snapshot())) {
+    for (const command of commandsFor(tick, target.snapshot())) {
       commands.push({ tick, command });
       target.enqueueCommand(command);
     }
     target.step();
   }
-  checkpoints.push({ tick: plan.ticks, hash: target.hash() });
-  return { seed: plan.seed, config: plan.config, commands, checkpoints };
+  checkpoints.push({ tick: ticks, hash: target.hash() });
+  return { ...setup, commands, checkpoints };
 };
 
 /**
  * Plays `replay` on a fresh target, feeding each command before the step of its tick, and
- * compares the hash at every checkpoint. Stops at the first divergence.
+ * compares the hash at every checkpoint. Stops at the first divergence. `createTarget` receives
+ * the replay itself, commands and checkpoints too: the factory must build from its setup fields
+ * only.
  */
-export const runReplay = (replay: Replay, createTarget: ReplayTargetFactory): ReplayOutcome => {
-  const target = createTarget(replay.config, replay.seed);
+export const runReplay = <S extends object>(
+  replay: ReplayOf<S>,
+  createTarget: ReplayTargetFactoryOf<S>,
+): ReplayOutcome => {
+  const { commands, checkpoints } = replay;
+  const target = createTarget(replay);
   let next = 0;
-  for (const checkpoint of replay.checkpoints) {
+  for (const checkpoint of checkpoints) {
     while (target.tick < checkpoint.tick) {
-      let entry = replay.commands[next];
+      let entry = commands[next];
       while (entry !== undefined && entry.tick <= target.tick) {
         target.enqueueCommand(entry.command);
         next += 1;
-        entry = replay.commands[next];
+        entry = commands[next];
       }
       target.step();
     }

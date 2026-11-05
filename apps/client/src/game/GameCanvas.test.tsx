@@ -7,12 +7,11 @@ import type { GameCanvasLabels } from './GameCanvas.types';
 /** The labels `main.tsx` passes (`STRINGS.viewport`; `game/` never imports `ui/`). */
 const LABELS: GameCanvasLabels = {
   canvas: 'Battlefield',
-  leaveCathedral: 'Leave cathedral',
   explorer: {
-    canvas: 'Drag to explore, scroll to zoom, click the cathedral to enter',
-    worldHint: 'Drag to explore · Scroll to zoom · Click cathedral to enter',
-    interiorHint: 'Drag to explore · Scroll to zoom · Explore the sanctuary',
+    canvas: 'Drag to explore, scroll to zoom, click a building to toggle its roof',
+    hint: 'Drag to explore · Scroll to zoom · Click a building to toggle its roof',
     overview: 'World overview',
+    restoreRoofs: 'Restore roofs & overview',
     legend: { stronghold: (teamName) => `${teamName} stronghold`, camps: 'Neutral camps' },
   },
 };
@@ -36,7 +35,6 @@ describe('GameCanvas', () => {
     expect(html).toContain('aria-label="Battlefield"');
     expect(html).not.toContain('World overview');
     expect(html).not.toContain('Lux stronghold');
-    expect(html).not.toContain('Leave cathedral');
   });
 
   it('shows the explorer toolbar and the map legend with the developer flag', () => {

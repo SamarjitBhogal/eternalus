@@ -71,3 +71,28 @@ describe('STRINGS.settings templates', () => {
     expect(STRINGS.settings.resetLabel('Sprint')).toBe('Reset Sprint to default');
   });
 });
+
+describe('STRINGS.crashReportPopup', () => {
+  it('holds the owner’s words (DEC-106, DEC-124 (b), (c))', () => {
+    const { crashReportPopup: popup } = STRINGS;
+
+    expect(popup).toMatchObject({
+      matchMessage: 'The match stopped because of an error.',
+      screenMessage: 'The screen stopped because of an error.',
+      notePrompt: 'What were you doing when it happened? (optional)',
+      saveNote: 'Save note and return to menu',
+      returnToMenu: 'Return to menu',
+      copyMessage: 'The report could not be saved. Copy it and send it to the team.',
+      saving: 'Saving the note and report...',
+      noteNotSavedMessage:
+        'The report was saved, but the note was not. Copy the note and send it to the team via the shared Discord channel.',
+      copyReport: 'Copy report',
+    });
+    expect(popup.saved('logs/errors/a.json')).toBe('The report was saved as logs/errors/a.json.');
+  });
+
+  it('leaves the crash reasons to the popup: they have no banner', () => {
+    expect(Object.keys(STRINGS.reasonBanners)).not.toContain('match-crashed');
+    expect(Object.keys(STRINGS.reasonBanners)).not.toContain('screen-crashed');
+  });
+});

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { fakeMatchEvidence } from '../data/logging/__fixtures__/errorReports';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import { KeyboardDevice } from './engine/input/KeyboardDevice';
 import { MouseDevice } from './engine/input/MouseDevice';
@@ -32,12 +33,17 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     destroy: vi.fn(() => log.push('match.destroy')),
     resize: vi.fn(),
     setPaused: vi.fn(),
-    lookAtMinimapPoint: vi.fn(() => false),
-    panBy: vi.fn(),
-    zoomBy: vi.fn(),
-    enterAt: vi.fn(() => false),
-    overview: vi.fn(),
-    leaveInterior: vi.fn(),
+    controls: {
+      lookAtMinimapPoint: vi.fn(() => false),
+      panBy: vi.fn(),
+      zoomBy: vi.fn(),
+      toggleRoofAt: vi.fn(() => false),
+      attackAt: vi.fn(),
+      hasDeveloperRoofs: false,
+      overview: vi.fn(),
+      leaveExplorer: vi.fn(),
+      setPointerClaimed: vi.fn(),
+    },
   };
   const input = { releaseAll: vi.fn() };
   // The real key lookup over the default bindings, so DEC-105's hotkey is the shipped chord.
@@ -46,10 +52,10 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
   const adapters = ['renderer', 'camera'].map((name) => ({
     destroy: vi.fn(() => log.push(`${name}.destroy`)),
   }));
+  const evidence = fakeMatchEvidence();
   const chrome = {
-    onInteriorChanged: vi.fn(),
+    onDeveloperRoofsChanged: vi.fn(),
     onExplorerChanged: vi.fn(),
-    setLeaveInterior: vi.fn(),
     setOverview: vi.fn(),
   };
   const host = new MatchHost({
@@ -63,11 +69,14 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     bus,
     mapper,
     adapters,
+    evidence: () => evidence,
+    currentTick: () => 17,
   });
   const listeners = (): number =>
     window.listenerCount() + document.listenerCount() + canvas.listenerCount();
   return {
     host,
+    evidence,
     window,
     document,
     canvas,
@@ -192,5 +201,21 @@ describe('MatchHost', () => {
     }).toThrow('start failed');
     expect(listeners()).toBe(0);
     expect(log).toEqual(['match.start', 'match.destroy', 'renderer.destroy', 'camera.destroy']);
+  });
+
+  it('answers currentTick() with the simulation tick', () => {
+    const { host } = setUp();
+
+    expect(host.currentTick()).toBe(17);
+  });
+
+  it("answers evidence() with its match's evidence, also once destroyed (ADR 0025 §3)", () => {
+    const { host, evidence } = setUp();
+    host.start();
+    expect(host.evidence()).toBe(evidence);
+
+    host.destroy();
+
+    expect(host.evidence()).toBe(evidence);
   });
 });

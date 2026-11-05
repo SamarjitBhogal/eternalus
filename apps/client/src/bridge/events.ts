@@ -7,6 +7,7 @@ import type { MatchResult } from '@eternalus/core';
 
 import type { InputAction, InputChord } from './Binding.types';
 import type { AssetId, DisplayCatalogue, RasterBox } from './catalogue.types';
+import type { CrashReportState } from './CrashReport.types';
 import type { LegendClassId, PlayableTeam } from './domain.types';
 import type {
   Announcement,
@@ -62,7 +63,18 @@ export type UiIntent =
     }
   /** `action: null` resets every binding. */
   | { readonly kind: 'reset-bindings'; readonly action: InputAction | null }
-  | { readonly kind: 'update-settings'; readonly patch: SettingsPatch };
+  | { readonly kind: 'update-settings'; readonly patch: SettingsPatch }
+  /** A screen threw while rendering (`ErrorBoundary`, ADR 0025 §5); all plain strings. */
+  | {
+      readonly kind: 'report-screen-crash';
+      readonly screen: string;
+      readonly message: string;
+      readonly stack: string;
+      readonly componentStack: string;
+    }
+  /** The player's note on a crash (the crash popup, DEC-106). */
+  | { readonly kind: 'save-crash-note'; readonly note: string }
+  | { readonly kind: 'dismiss-crash-report' };
 
 /** One Legend shown on the selection and loading screens, built before the simulation exists. */
 export type RosterEntry = {
@@ -79,10 +91,16 @@ export type RosterEntry = {
 
 /**
  * Why a phase was entered (audit AS-13: a union, so a typo cannot silently drop a banner);
- * `match-crashed`: the running match's game loop stopped on a throw (DEC-106).
+ * `match-crashed`: the running match stopped on a throw (DEC-106); `screen-crashed`: a screen
+ * outside a match did (DEC-124 (b)). Both open the crash popup.
  */
 export type SessionReason =
-  'select-timeout' | 'cancelled' | 'match-failed' | 'match-crashed' | 'load-failed';
+  | 'select-timeout'
+  | 'cancelled'
+  | 'match-failed'
+  | 'match-crashed'
+  | 'screen-crashed'
+  | 'load-failed';
 
 /**
  * When assets load (13 §2): `selection` holds what both class layouts and the Legend step show, the
@@ -157,6 +175,8 @@ export type BridgeEventMap = {
   'session-phase': { readonly phase: SessionPhase; readonly reason: SessionReason | null };
   'menu-route': { readonly route: MenuRoute };
   overlay: { readonly overlay: Overlay | null };
+  /** The crash popup's state; `null` closes it. */
+  'crash-report': CrashReportState | null;
   'content-catalogue': DisplayCatalogue;
   'loading-progress': LoadingProgress;
   /** `null` clears the setup (back to the menu). */

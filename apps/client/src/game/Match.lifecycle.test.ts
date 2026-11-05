@@ -1,9 +1,11 @@
 import {
   createDefaultGameConfig,
+  type GameConfig,
   type InputIntent,
   type Logger,
   MemoryLogger,
   NullLogger,
+  type RosterSlot,
   Simulation,
 } from '@eternalus/core';
 import { describe, expect, it, vi } from 'vitest';
@@ -145,6 +147,32 @@ describe('Match lifecycle', () => {
 
     expect(match.playerEntityId).not.toBeNull();
     expect(logger.records.filter((record) => record.severityText === 'ERROR')).toEqual([]);
+  });
+
+  // DEC-149 (7): the player's Legend is the one core spawns from the seat (A19), never a roster bot
+  // of the same class and team. Core reports its id, so `Match` knows it before any tick.
+  it('adopts its own spawn, never a roster bot of the same class and team (DEC-149)', () => {
+    const world = prepareMatchWorld(CONFIG, 1);
+    const roster: readonly RosterSlot[] = [
+      { team: PLAYER.team, definitionId: PLAYER.legend, role: 'laner', difficulty: 'normal' },
+    ];
+    const { map, mapObjects } = world;
+    const simulationOf = (config: GameConfig) =>
+      new Simulation({ config, seed: 1, logger: new NullLogger(), map, mapObjects, roster });
+    const twinIds = (simulation: Simulation) =>
+      simulation
+        .snapshot()
+        .entities.filter(({ kind, team }) => kind === PLAYER.legend && team === PLAYER.team)
+        .map(({ id }) => id);
+    // The same build without the seat spawns the roster bot alone, so this is the bot's id.
+    const bots = twinIds(simulationOf(CONFIG));
+    const simulation = simulationOf(seatedConfig(CONFIG, map, PLAYER));
+    const match = new Match({ ...matchDeps(world).deps, simulation });
+    const twins = twinIds(simulation);
+
+    expect(bots).toHaveLength(1);
+    expect(twins).toHaveLength(2);
+    expect(twins.filter((id) => id !== match.playerEntityId)).toEqual(bots);
   });
 
   it('hands a throw from a tick to onCrash with the tick, and its loop stops (DEC-106)', () => {

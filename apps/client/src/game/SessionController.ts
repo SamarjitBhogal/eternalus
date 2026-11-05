@@ -9,6 +9,7 @@ import type {
   SessionPhase,
   SessionReason,
 } from '../bridge/events';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import type { MatchCrash, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { SESSION_TRANSITIONS } from './SessionController.constants';
@@ -18,9 +19,11 @@ import type {
   SessionControllerDeps,
   SessionState,
 } from './SessionController.types';
+import { botRosterSlots } from './session/botRosterSlots';
 import { buildMatchSetup } from './session/buildMatchSetup';
 import { fillRosters } from './session/fillRosters';
 import { IllegalSessionTransition } from './session/IllegalSessionTransition';
+import { SessionCrashes } from './session/SessionCrashes';
 
 /**
  * Owns the session phase machine (architecture 13 §2): boot → menu → loading → character-select
@@ -40,9 +43,17 @@ export class SessionController {
   private readonly publishedGroups = new Set<AssetGroup>();
   private stopListening = (): void => undefined;
   private readonly context: SessionContext;
+  private readonly crashes: SessionCrashes;
 
   /** Loads the content catalogue; nothing runs until `start()`. */
   public constructor(private readonly deps: SessionControllerDeps) {
+    this.crashes = new SessionCrashes(deps, {
+      phase: () => this.current?.phase ?? null,
+      seed: () => this.setup?.seed ?? null,
+      matchTick: () => this.current?.matchTick?.() ?? null,
+      transition: this.transition.bind(this),
+      crashToMenu: this.crashToMenu.bind(this),
+    });
     this.context = {
       bus: deps.bus,
       clock: deps.clock,
@@ -82,18 +93,8 @@ export class SessionController {
         this.logError('The match could not start.', { error: String(error) });
         this.transition('menu', 'match-failed');
       },
-      endCrashedMatch: ({ error, tick }) => {
-        const stack = error instanceof Error ? (error.stack ?? null) : null;
-        const attributes = { error: String(error), stack, seed: this.setup?.seed ?? null };
-        this.deps.logger.log(
-          makeLogRecord('FATAL', 'client.session', 'The match stopped because of an error.', {
-            tick,
-            attributes,
-          }),
-        );
-        // ponytail: a menu banner only (DEC-106 interim); build-plan step 12 replaces it with ADR
-        // 0025's report note popup and ErrorBoundary once the owner accepts that ADR.
-        this.transition('menu', 'match-crashed');
+      endCrashedMatch: (crash) => {
+        this.crashes.endCrashedMatch(crash);
       },
       loadAssets: (groups, onReady, onFailed) => this.loadAssets(groups, onReady, onFailed),
       releaseAssets: (group) => {
@@ -114,6 +115,7 @@ export class SessionController {
     if (this.current !== null) throw new Error('SessionController is already started');
     this.deps.themeRoot.dataset.contrast = this.context.catalogue.contrastMode;
     this.stopListening = this.deps.bus.on('ui-intent', (intent) => {
+      this.crashes.handleIntent(intent);
       this.current?.handleIntent?.(intent, this.context);
     });
     this.enter('boot', null);
@@ -130,6 +132,11 @@ export class SessionController {
     delete this.deps.themeRoot.dataset.contrast;
   }
 
+  /** The running match's evidence for an error report, or `null` outside a match (ADR 0025 §3). */
+  public matchEvidence(): MatchEvidence | null {
+    return this.current?.matchEvidence?.() ?? null;
+  }
+
   /**
    * `GameCanvas` calls this when its canvas mounts (architecture 13 §1); call the returned
    * function when it unmounts. Outside `match` it does nothing and returns a no-op.
@@ -138,6 +145,20 @@ export class SessionController {
     const state = this.current;
     if (state?.attachViewport === undefined) return () => undefined;
     return state.attachViewport(viewport, this.context);
+  }
+
+  /**
+   * The screen-crash exit (DEC-149; DEC-141 for `pre-launch`): leaves any phase but `menu` for
+   * `menu` with `reason`, outside `SESSION_TRANSITIONS`, so no intent can use it. `match` crashes
+   * through `crashMatch`, not this method. Runs the phase's exit hook as every move does. Only
+   * the screen-crash path calls it, through `SessionCrashes`.
+   */
+  private crashToMenu(reason: SessionReason): void {
+    const from = this.current;
+    if (from === null) throw new Error("Session is not running; cannot enter 'menu'");
+    if (from.phase === 'menu') throw new IllegalSessionTransition('menu', 'menu');
+    from.exit?.(this.context);
+    this.enter('menu', reason);
   }
 
   private transition(to: SessionPhase, reason: SessionReason | null): void {
@@ -222,6 +243,7 @@ export class SessionController {
         world,
         player: { legend: selection.classId, team: setup.playerTeam },
         captureKinds: this.context.catalogue.hud.objectiveKinds.map(({ kind }) => kind),
+        roster: botRosterSlots(rosters, this.context.catalogue.botRoster.difficulties),
         onCrash,
         onEnded,
       },

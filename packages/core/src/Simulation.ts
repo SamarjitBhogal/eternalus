@@ -1,5 +1,8 @@
 import { AiSystem } from './ai/AiSystem';
-import { FollowLeaderController } from './ai/FollowLeaderController';
+import {
+  createDefaultControllerRegistry,
+  type ControllerRegistry,
+} from './ai/defaultControllerRegistry';
 import { applyCommand } from './commands/applyCommand';
 import type { Command } from './commands/Command.types';
 import type { CommandContext, CommandHandlers } from './commands/CommandHandler.types';
@@ -7,28 +10,58 @@ import { CommandQueue } from './commands/CommandQueue';
 import { createDefaultCommandHandlers } from './commands/defaultCommandHandlers';
 import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from './config/matchPhases';
 import { validateGameConfig } from './config/validateGameConfig';
-import { FOLLOW_LEADER_PROFILE } from './content/ai/followLeaderProfile';
 import { ASSIST_WINDOW_SECONDS, SCORING_WEIGHTS } from './content/match/scoring';
 import { DefaultInvariantRunner } from './diagnostics/DefaultInvariantRunner';
 import { RELEASE_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
-import type { Logger } from './diagnostics/Logger.types';
+import type { LogContext, Logger } from './diagnostics/Logger.types';
 import { makeLogRecord } from './diagnostics/makeLogRecord';
+import { recentContext } from './diagnostics/recentContext';
+import { REPLAY_CHECKPOINT_EVERY } from './diagnostics/Replay.constants';
+import { AGGRO_RULES } from './content/ai/aggro/aggroRules';
+import { AI_CADENCE } from './content/ai/cadence';
+import { LANE_ASSESSMENT_WEIGHTS } from './content/ai/laneAssessmentWeights';
+import { ROVER_TACTICS } from './content/ai/rover';
+import { LEGEND_KIND_IDS } from './content/legends/legendKinds';
+import type { MapDefinition } from './content/maps/maps.types';
+import type { MapObject } from './content/maps/mapObjects.types';
+import type { GameConfig } from './config/GameConfig.types';
+import { AStarPathfinder } from './map/AStarPathfinder';
+import { RETREAT_STRUCTURES } from './content/ai/botLaner';
+import { BOT_DIFFICULTIES } from './content/ai/difficulties/botDifficulties';
+import { RANKS_FORMATION } from './content/mobs/formations/ranks';
+import { assignLanes } from './state/assignLanes';
+import { formationSlot } from './state/formationSlot';
+import { unitClassOf } from './content/ai/unitClasses';
+import { FORMATIONS } from './content/mobs/formations/formations';
+import { SPACE_CELL_SIZE } from './content/ai/hordeSteering';
+import type { ContentCatalogue } from './content/ContentCatalogue';
 import { loadDefaultContent } from './content/loadDefaultContent';
+import { MAP_FEATURE_DEFINITIONS } from './content/maps/mapFeatureDefinitions';
+import type { LevelCurveDefinition } from './content/progression/progression.types';
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
+import { loadWeapons } from './content/weapons/loadWeapons';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
 import { MatchTimeline } from './match/MatchTimeline';
 import type { EntityId } from './state/EntityStore.types';
+import type { DefinitionSource, Placement, WeaponSource } from './entities/EntityFactory.types';
+import { Unit } from './entities/Unit';
 import type { GameEventHandler, GameEventType, Unsubscribe } from './state/GameEvents.types';
 import { GameState } from './state/GameState';
+import { MatchWorld } from './state/MatchWorld';
 import type { Snapshot } from './state/Snapshot.types';
 import { StateHasher } from './state/StateHasher';
-import type { SimulationOptions } from './Simulation.types';
+import type { Replay, ReplaySetup, RosterSlot, SimulationOptions } from './Simulation.types';
+import { SpaceIndex } from './physics/SpaceIndex';
+import { WorldMap } from './map/WorldMap';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
+import { WorldObjectStore } from './state/WorldObjectStore';
+import { MAP_OBJECT_DEFINITIONS } from './content/maps/mapObjectDefinitions';
+import { CollisionSystem } from './systems/CollisionSystem';
 
 /**
  * The deterministic simulation of one match, and the only thing the client drives
@@ -38,12 +71,27 @@ import { SystemPipeline } from './systems/SystemPipeline';
  */
 export class Simulation {
   private readonly state: GameState;
-  private readonly queue = new CommandQueue();
+  /** Commands the bots queued during the last step (`AiSystem`). A replay regenerates them. */
+  private readonly botQueue = new CommandQueue();
+  /** Commands from `enqueueCommand` (player, developer menu). Each one enters the replay log. */
+  private readonly externalQueue = new CommandQueue();
   private readonly handlers: CommandHandlers = createDefaultCommandHandlers();
   private readonly commandContext: CommandContext;
   private readonly systemContext: SystemContext;
   private readonly pipeline: SystemPipeline;
   private readonly hasher = new StateHasher();
+  /**
+   * Every command from `enqueueCommand`, with the tick it applied in (ADR 0025 §4, DEC-156). Not
+   * hashed.
+   */
+  private readonly commandLog: Replay['commands'][number][] = [];
+  /** `hash()` at tick 0 and every `REPLAY_CHECKPOINT_EVERY` ticks, ascending. Not hashed. */
+  private readonly checkpoints: Replay['checkpoints'][number][] = [];
+  /**
+   * What the match was built with, copied into every exported replay. A crash report's replay
+   * keeps the generated map and map objects inline (DEC-152); revisit at the Phase 5 replay store.
+   */
+  private readonly setup: ReplaySetup;
 
   /**
    * Creates a match from its options (architecture 03 §6).
@@ -57,23 +105,62 @@ export class Simulation {
     systems,
     debug = RELEASE_DEBUG_CONFIG,
     content,
+    map,
+    mapObjects,
     levelCurves,
+    roster = [],
+    weapons,
   }: SimulationOptions) {
     const validConfig = validateGameConfig(config);
     const timeline = MatchTimeline.resolve(validConfig);
-    // Without the default pipeline no director runs, so no mark would ever fire: list none.
-    this.state = new GameState(validConfig, seed, systems === undefined ? timeline.schedule() : []);
-    const curves = levelCurves ?? loadLevelCurves();
-    const units = content ?? loadDefaultContent(this.state.config.tickRate, curves);
-    this.commandContext = {
-      state: this.state,
-      factory: new EntityFactory(createDefaultEntityRegistry(), units),
+    this.setup = {
+      seed,
+      config: validConfig,
+      ...(map === undefined ? {} : { map }),
+      ...(mapObjects === undefined ? {} : { mapObjects }),
+      ...(roster.length === 0 ? {} : { roster }),
     };
+    const { space, world, paths } = Simulation.buildWorld(map, validConfig, mapObjects);
+    // Without the default pipeline no director runs, so no mark would ever fire: list none.
+    const schedule = systems === undefined ? timeline.schedule() : [];
+    this.state = new GameState(validConfig, seed, world, { space, paths }, schedule);
+    const { tickRate } = this.state.config;
+    const curves = levelCurves ?? loadLevelCurves();
+    const weaponSource = weapons ?? loadWeapons(tickRate);
+    const controllers = Simulation.createControllers();
+    const units = content ?? Simulation.defaultContent(tickRate, curves, controllers, weaponSource);
+    const objectsById = new Map(
+      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+    );
+    const definitions = {
+      has: (id: string): boolean => objectsById.has(id) || units.has(id),
+      get: (id: string) => objectsById.get(id) ?? units.get(id),
+    };
+    // One factory for commands and spawning, so entity ids come from one counter.
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      definitions,
+      undefined,
+      weaponSource,
+    );
+    this.commandContext = { state: this.state, factory };
+    if (mapObjects !== undefined && map === undefined)
+      throw new Error('Map objects require a generated map');
+    if (mapObjects !== undefined) {
+      this.state.worldObjects = new WorldObjectStore(
+        mapObjects,
+        this.commandContext.factory,
+        this.state.entities,
+        MAP_OBJECT_DEFINITIONS,
+      );
+      this.state.events.on('entity-removed', ({ entityId }) =>
+        this.state.worldObjects?.removed(entityId),
+      );
+    }
     this.systemContext = { state: this.state, logger };
-    // PROTOTYPE(PROTO-01) TEMPORARY: replace this hand-built controller list with
-    // `ai/defaultControllerRegistry.ts` (11 §2) and `FollowLeaderController` with `MinionController`.
     if (systems === undefined) {
-      // Before the seat spawns (`seatHuman`), so `Scoring` hears its Legend's `entity-spawned`.
+      // Before any Legend spawns (`spawnRoster`, `seatHuman`), so `Scoring` hears each one's
+      // `entity-spawned` and gives it a row.
       const director = createDefaultMatchDirector({
         state: this.state,
         timeline,
@@ -92,16 +179,25 @@ export class Simulation {
         state: this.state,
         progression: { units, curves, xpSources: XP_SOURCES },
         director,
-        decide: [
-          new AiSystem([new FollowLeaderController(FOLLOW_LEADER_PROFILE)], (command) => {
-            this.queue.enqueue(command);
-          }),
-        ],
+        hordes: {
+          factory,
+          space,
+          collisions:
+            map === undefined || mapObjects === undefined
+              ? []
+              : [new CollisionSystem(map, mapObjects)],
+          decide: [
+            new AiSystem(this.state, controllers, AI_CADENCE, (command) => {
+              this.botQueue.enqueue(command);
+            }),
+          ],
+        },
       });
       director.start(this.state);
     } else {
       this.pipeline = new SystemPipeline(systems);
     }
+    Simulation.spawnRoster(this.state, factory, roster, controllers);
     this.seatHuman(logger);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
@@ -111,6 +207,7 @@ export class Simulation {
         }),
       );
     });
+    this.recordCheckpoint();
   }
 
   /**
@@ -161,22 +258,38 @@ export class Simulation {
     return this.state.tick;
   }
 
-  /** Queues `command`; it is applied at the start of the next `step()`. */
+  /**
+   * Queues `command`; it is applied at the start of the next `step()`, which also enters it in the
+   * replay's command log. Bot commands bypass this method, so they stay out of the log: a replay
+   * regenerates them from the seed.
+   */
   public enqueueCommand(command: Command): void {
-    this.queue.enqueue(command);
+    this.externalQueue.enqueue(command);
   }
 
   /**
-   * Advances exactly one tick: records and applies the queued commands in order, runs the systems
-   * in order, counts the tick and emits `tick-completed`.
+   * Advances exactly one tick: applies the bots' queued commands, then the external ones (each
+   * logged with this tick), each in queue order; runs the systems in order, counts the tick, records
+   * a replay checkpoint every `REPLAY_CHECKPOINT_EVERY` ticks and emits `tick-completed`. A replay
+   * feeds the external commands before the step, after the bots queued theirs, and this order is
+   * the one it reproduces, also for a command enqueued during a step (DEC-156). A command enqueued
+   * while these apply waits for the next step.
    */
   public step(): void {
-    for (const command of this.queue.drain()) {
-      this.state.recordCommand(command);
-      applyCommand(command, this.handlers, this.commandContext);
+    const decided = this.botQueue.drain();
+    const external = this.externalQueue.drain();
+    for (const command of decided) {
+      this.apply(command);
+    }
+    for (const command of external) {
+      this.commandLog.push({ tick: this.state.tick, command });
+      this.apply(command);
     }
     this.pipeline.run(this.systemContext);
     this.state.advanceTick();
+    if (this.state.tick % REPLAY_CHECKPOINT_EVERY === 0) {
+      this.recordCheckpoint();
+    }
     this.state.events.emit('tick-completed', { tick: this.state.tick });
   }
 
@@ -193,5 +306,227 @@ export class Simulation {
   /** A 32-bit fingerprint of the current state; equal runs give equal hashes. */
   public hash(): number {
     return this.hasher.hash(this.state);
+  }
+
+  /**
+   * The match so far as a `Replay` (architecture 03 §6, ADR 0025 §4): what it was built with (seed,
+   * config, and the map, map objects and roster when it had them), a copy of the command log and
+   * the checkpoints recorded so far. Plain data. It does not hash now: after a throw inside
+   * `step()` the state holds half a tick, and that hash cannot be reproduced.
+   */
+  public exportReplay(): Replay {
+    return {
+      ...this.setup,
+      commands: [...this.commandLog],
+      checkpoints: [...this.checkpoints],
+    };
+  }
+
+  /** The last applied commands (players' and bots') and the last events, oldest first (15 §5). */
+  public recentContext(): LogContext {
+    return recentContext(this.state);
+  }
+
+  private apply(command: Command): void {
+    this.state.recordCommand(command);
+    applyCommand(command, this.handlers, this.commandContext);
+  }
+
+  private recordCheckpoint(): void {
+    this.checkpoints.push({ tick: this.state.tick, hash: this.hash() });
+  }
+
+  /**
+   * Spawns the bot Legends (architecture 18 §8, MS-20): each team's laners, in roster order, go
+   * to the lane with the fewest Legends, lowest index first, and stand in ranks behind their own
+   * end of it, with the lane in their brain's memory; Rovers start at their Stronghold.
+   *
+   * @throws Error when there are bots but no map, a team's laners do not fit under
+   *   `legendsPerLane`, or a bot's controller or difficulty does not exist (checked before
+   *   anything spawns).
+   */
+  private static spawnRoster(
+    state: GameState,
+    factory: EntityFactory,
+    roster: readonly RosterSlot[],
+    controllers: ControllerRegistry,
+  ): void {
+    if (roster.length === 0) {
+      return;
+    }
+    const routes = state.world?.routes ?? null;
+    if (routes === null) {
+      throw new Error('A roster needs a map: bot Legends play its lanes.');
+    }
+    const controllerOf = (slot: RosterSlot) => (slot.role === 'rover' ? 'rover' : 'bot-legend');
+    AiSystem.assertRegistered(
+      roster.map((slot, index) => ({
+        id: `roster slot ${String(index)}`,
+        controller: controllerOf(slot),
+        aiProfile: slot.difficulty,
+      })),
+      controllers,
+    );
+    const laneIds = routes.lanes.map(({ id }) => id);
+    const anchor = { x: 0, y: 0 };
+    const forward = { x: 0, y: 0 };
+    const at = { x: 0, y: 0 };
+    // Every lane is assigned before anything spawns, so a roster that does not fit spawns nothing.
+    const { legendsPerTeam } = state.config.match;
+    const { maxUnitsPerTeam } = state.config.limits;
+    const plans = (['light', 'dark'] as const).map((team) => {
+      const size = roster.filter((slot) => slot.team === team).length;
+      if (size > legendsPerTeam) {
+        throw new Error(
+          `The ${team} roster has ${String(size)} Legends; match.legendsPerTeam allows ${String(legendsPerTeam)}.`,
+        );
+      }
+      // Legends are Units, so the roster also fits under the Unit cap (as dev spawns do).
+      const units = state.entities.countOnTeam(team, Unit) + size;
+      if (units > maxUnitsPerTeam) {
+        throw new Error(
+          `The ${team} roster would make ${String(units)} Units; limits.maxUnitsPerTeam allows ${String(maxUnitsPerTeam)}.`,
+        );
+      }
+      const laners = roster.filter((slot) => slot.team === team && slot.role === 'laner');
+      return {
+        team,
+        laners,
+        lanes: assignLanes(laners.length, laneIds, state.config.match.legendsPerLane),
+      };
+    });
+    for (const { team, laners, lanes } of plans) {
+      const placed = new Map<string, number>();
+      laners.forEach((slot, index) => {
+        const lane = lanes[index] ?? '';
+        const follower = placed.get(lane) ?? 0;
+        placed.set(lane, follower + 1);
+        routes.pose(lane, team, 0, anchor, forward);
+        formationSlot(anchor, forward, follower, RANKS_FORMATION, at);
+        Simulation.spawnBot(state, factory, slot, {
+          position: { x: at.x, y: at.y },
+          team,
+          controller: {
+            controllerId: controllerOf(slot),
+            profileId: slot.difficulty,
+            memory: { lane },
+          },
+        });
+      });
+    }
+    Simulation.spawnRovers(state, factory, roster);
+  }
+
+  /**
+   * Spawns the roster's Rovers at their team's Stronghold (11 §4.7): they take no lane (MS-20).
+   *
+   * @throws Error when a Rover's team has no Stronghold on the map.
+   */
+  private static spawnRovers(
+    state: GameState,
+    factory: EntityFactory,
+    roster: readonly RosterSlot[],
+  ): void {
+    for (const slot of roster.filter(({ role }) => role === 'rover')) {
+      const stronghold = state.world?.definition.features.find(
+        ({ kind, team }) => kind === 'stronghold' && team === slot.team,
+      );
+      if (stronghold === undefined) {
+        throw new Error(`The map has no ${slot.team} Stronghold for the ${slot.team} Rover.`);
+      }
+      Simulation.spawnBot(state, factory, slot, {
+        position: { x: stronghold.position.x, y: stronghold.position.y },
+        team: slot.team,
+        controller: { controllerId: 'rover', profileId: slot.difficulty, memory: {} },
+      });
+    }
+  }
+
+  /** Spawns one bot Legend of the roster and announces it. */
+  private static spawnBot(
+    state: GameState,
+    factory: EntityFactory,
+    slot: RosterSlot,
+    placement: Placement,
+  ): void {
+    const { kind } = factory.definitions.get(slot.definitionId);
+    const entity = factory.create(kind, slot.definitionId, placement);
+    state.entities.add(entity);
+    state.events.emit('entity-spawned', {
+      entityId: entity.id,
+      kind: entity.kind,
+      team: slot.team,
+    });
+  }
+
+  /**
+   * The map's spatial pieces: the match world (its one walkability grid shared by the lane flow
+   * fields and A\* for Legends), the neighbour index and A\*. All `null` without a map. With
+   * `mapObjects`, the grid also blocks what the collision system blocks (06 §6): every blocking
+   * object's footprints, minus its passages. A feature whose object is walkable (a Stronghold's
+   * floor, whose walls and furniture are objects of their own) is not stamped; other blocking
+   * features keep their stamp, which also fills a tower's hollow core so no path ends in a pocket
+   * the walls close off.
+   */
+  private static buildWorld(
+    map: MapDefinition | undefined,
+    config: GameConfig,
+    mapObjects: readonly MapObject[] = [],
+  ): {
+    readonly space: SpaceIndex | null;
+    readonly world: MatchWorld | null;
+    readonly paths: AStarPathfinder | null;
+  } {
+    if (map === undefined) {
+      return { space: null, world: null, paths: null };
+    }
+    const walkable = new Set(
+      mapObjects.filter(({ isBlocking }) => !isBlocking).map(({ id }) => id),
+    );
+    const grid = WorldMap.fromDefinition(
+      { ...map, features: map.features.filter(({ id }) => !walkable.has(id)) },
+      config.map.navCellSize,
+      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+    );
+    for (const object of mapObjects.filter(({ isBlocking }) => isBlocking)) {
+      for (const footprint of object.footprints) {
+        grid.stampFootprint(footprint, object.passages);
+      }
+    }
+    return {
+      space: new SpaceIndex(map.width, map.height, SPACE_CELL_SIZE),
+      world: new MatchWorld(map, grid),
+      paths: new AStarPathfinder(grid, {
+        maxExpansions: config.map.pathMaxExpansions,
+        snapCells: config.map.pathSnapCells,
+      }),
+    };
+  }
+
+  /** Every controller, with the shipped content it reads (architecture 11 §2). */
+  private static createControllers(): ControllerRegistry {
+    const bots = { difficulties: BOT_DIFFICULTIES, retreatTo: RETREAT_STRUCTURES };
+    return createDefaultControllerRegistry({
+      minion: { aggro: AGGRO_RULES, formations: FORMATIONS, classOf: unitClassOf },
+      botLegend: bots,
+      rover: {
+        ...bots,
+        tactics: ROVER_TACTICS,
+        legendKinds: LEGEND_KIND_IDS,
+        laneWeights: LANE_ASSESSMENT_WEIGHTS,
+      },
+    });
+  }
+
+  /** The shipped content, checked against the controllers before the match starts. */
+  private static defaultContent(
+    tickRate: number,
+    curves: Pick<ContentCatalogue<LevelCurveDefinition>, 'has'>,
+    controllers: ControllerRegistry,
+    weapons: WeaponSource,
+  ): DefinitionSource {
+    const catalogue = loadDefaultContent(tickRate, curves, weapons);
+    AiSystem.assertRegistered(catalogue.all(), controllers);
+    return catalogue;
   }
 }

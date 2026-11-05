@@ -44,7 +44,23 @@ describe('connectBusToStore', () => {
       reason: 'select-timeout',
       menuRoute: 'about',
       overlay: 'pause',
+      crashReport: null,
     });
+  });
+
+  it('copies the crash popup state into the session slice, and closes it with null', () => {
+    const { bus, store } = connected();
+    const saved = {
+      stage: 'saved',
+      file: 'logs/errors/a.json',
+      noteLimit: 5,
+      cause: 'match',
+      crashNumber: 1,
+    } as const;
+    bus.emit('crash-report', saved);
+    expect(store.getState().session.crashReport).toEqual(saved);
+    bus.emit('crash-report', null);
+    expect(store.getState().session.crashReport).toBeNull();
   });
 
   it('copies content and loading progress', () => {
@@ -61,7 +77,12 @@ describe('connectBusToStore', () => {
       contrastMode: 'minimums',
       hud: TEST_HUD_CATALOGUE,
       teamNames: { light: 'Lux', dark: 'Umbra' },
-      botRoster: { id: 'test', laners: ['warrior'], enemyRover: 'mirror-player' },
+      botRoster: {
+        id: 'test',
+        laners: ['warrior'],
+        enemyRover: 'mirror-player',
+        difficulties: { laner: 'normal', rover: 'rover' },
+      },
       verdictLines: {},
       sovereignNames: { light: 'Queen', dark: 'Tyrant' },
     };

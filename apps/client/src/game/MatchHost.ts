@@ -1,4 +1,5 @@
 import type { InputAction } from '../bridge/Binding.types';
+import type { MatchEvidence } from '../data/logging/ErrorReport.types';
 import { CanvasPointerControls } from './CanvasPointerControls';
 import type { MatchHostDeps } from './MatchHost.types';
 import type { RunningMatch } from './SessionController.types';
@@ -33,7 +34,10 @@ export class MatchHost implements RunningMatch {
 
   /** Creates the host; nothing listens until `start()`. */
   public constructor(private readonly deps: MatchHostDeps) {
-    this.pointer = new CanvasPointerControls({ match: deps.match, viewport: deps.viewport });
+    this.pointer = new CanvasPointerControls({
+      controls: deps.match.controls,
+      viewport: deps.viewport,
+    });
   }
 
   /**
@@ -70,6 +74,16 @@ export class MatchHost implements RunningMatch {
     if (isPaused) {
       this.releaseInput();
     }
+  }
+
+  /** What an error report needs from the match (ADR 0025 §3), as `createBrowserMatch` reads it. */
+  public evidence(): MatchEvidence {
+    return this.deps.evidence();
+  }
+
+  /** Ticks the simulation has completed. */
+  public currentTick(): number {
+    return this.deps.currentTick();
   }
 
   /** Removes every listener, detaches the devices, destroys the match, then its adapters. Safe twice. */

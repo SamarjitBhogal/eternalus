@@ -69,10 +69,11 @@ describe('Simulation: the human seat', () => {
   });
 
   it('reproduces its hashes in a replay of a config with a seat, which needs no recorded command', () => {
-    const createTarget = (config: GameConfig, seed: number) =>
+    const createTarget = ({ config, seed }: { config: GameConfig; seed: number }) =>
       new Simulation({ config, seed, logger: new NullLogger() });
     const replay = recordReplay(
-      { config: seatedConfig(), seed: 5, ticks: 40, checkpointEvery: 10, commandsFor: () => [] },
+      { config: seatedConfig(), seed: 5 },
+      { ticks: 40, checkpointEvery: 10, commandsFor: () => [] },
       createTarget,
     );
 

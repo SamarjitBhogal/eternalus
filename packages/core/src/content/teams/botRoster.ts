@@ -10,6 +10,7 @@ import type { BotRosterDefinition } from './botRoster.types';
  *   grouping the classes gives each lane one of each class (pinned in `botRoster.test.ts`).
  * - The enemy team's tenth member is its Rover, which copies the player's class and Legend
  *   (DEC-61; the Legend copy is DEC-61's `Recommendation:`).
+ * - Lane bots play the `normal` bot, the Rover the hard `rover` bot (DEC-149).
  */
 export const BOT_ROSTER = {
   id: 'standard',
@@ -25,4 +26,5 @@ export const BOT_ROSTER = {
     'magus',
   ],
   enemyRover: 'mirror-player',
+  difficulties: { laner: 'normal', rover: 'rover' },
 } as const satisfies BotRosterDefinition;

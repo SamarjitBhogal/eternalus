@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-31
+last-reviewed: 2026-11-02
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -63,6 +63,7 @@ requestAnimationFrame(t)
 export interface LoopTarget {
   tick(): void;
   render(alpha: number): void;
+  crashed(error: unknown): void; // `tick` or `render` threw: the loop has stopped for good; called once
 }
 export type GameLoopOptions = {
   readonly tickMs: number; // 1000 / 30 (D9)
@@ -289,13 +290,15 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   frame scheduler, devices, the simulation's logger) are built by `game/createBrowserMatch.ts`,
   the match factory that only `main.tsx` binds, and `MatchHost` owns the window, document and
   canvas listeners, the devices and the ordered teardown.
-- The tick reads the intent source (`input.read`), enqueues `move` or `stop`, steps the
-  simulation, swaps the snapshots and lets `MatchBridge` publish; there is no `devices.poll()`
-  or `inputMapper.map` step and no `PerfMonitor` yet.
+- The tick has `PlayerCommands` read the intent source (`input.read`) and enqueue `move`, `stop`
+  or `attack-target`, steps the simulation, swaps the snapshots and lets `MatchBridge`
+  publish; there is no `devices.poll()` or `inputMapper.map` step and no `PerfMonitor` yet.
 - The minimap is drawn into the main canvas, clipped to the HUD's ring
   ([06](06-map-and-minimap.md) §10), not into a separate `'minimap'` layer.
 - `Match.ts` has 335 lines (`wc -l` at `fcc7c85`), over the ~300-line guideline; a camera or
-  explorer collaborator is the split if it grows.
+  explorer collaborator is the split if it grows. (2026-11-02: it had grown to 364; the
+  player-intent code moved to `PlayerCommands` (the ~300-line rule, `AGENTS.md`), which leaves
+  328.)
 
 Game-loop plan GL-5 (`feat/results-flow`): `Match.tick` calls the factory's `onEnded` once, after
 the tick on which `MatchBridge` publishes `match-ended`; the world keeps running (DEC-92) until

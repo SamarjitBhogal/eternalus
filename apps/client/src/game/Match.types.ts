@@ -1,10 +1,10 @@
 import type {
-  CathedralInterior,
   InputIntent,
   Logger,
-  MapDecoration,
   MapDefinition,
   MapFeatureKind,
+  MapObject,
+  MapPresentation,
   PlayableTeam,
   Simulation,
 } from '@eternalus/core';
@@ -42,10 +42,16 @@ export type PlayerChoice = {
  */
 export type PreparedWorld = {
   readonly map: MapDefinition;
-  /** `MapSceneryBuilder`'s presentation polygons for `map`. */
-  readonly scenery: readonly MapDecoration[];
-  /** The cathedral's explorable interior, or `null` when the map has no cathedral. */
-  readonly interior: CathedralInterior | null;
+  /**
+   * `MapPresentationBuilder`'s output for `map`: the scenery polygons and the building footprints
+   * whose roofs can be cut away.
+   */
+  readonly presentation: MapPresentation;
+  /**
+   * `MapObjectBuilder`'s map objects for `map` (walls, furniture, doors): the simulation collides
+   * with and damages them, the views draw them. One build, so both use the same ids.
+   */
+  readonly mapObjects: readonly MapObject[];
 };
 
 /** A match whose game loop stopped because a tick or a frame threw (DEC-106). */
@@ -59,7 +65,7 @@ export type MatchCrash = {
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
   readonly simulation: Simulation;
-  /** The world the simulation plays on (`map`) and the views draw (`scenery`, `interior`). */
+  /** The world the simulation plays on (`map`, `mapObjects`) and the views draw. */
   readonly world: PreparedWorld;
   /** Ticks per second (`GameConfig.tickRate`). */
   readonly tickRate: number;

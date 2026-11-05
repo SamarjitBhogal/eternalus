@@ -11,9 +11,8 @@ import { MatchState } from './MatchState';
 const VIEWPORT: MatchViewport = {
   canvas: new FakeViewportCanvas(),
   chrome: {
-    onInteriorChanged: vi.fn(),
+    onDeveloperRoofsChanged: vi.fn(),
     onExplorerChanged: vi.fn(),
-    setLeaveInterior: vi.fn(),
     setOverview: vi.fn(),
   },
   isExplorerShown: false,
@@ -163,5 +162,28 @@ describe('MatchState', () => {
     const { context, state } = setUp();
     state.handleIntent({ kind: 'leave-match' }, context);
     expect(context.calls.transition).toEqual([['menu']]);
+  });
+
+  it("gives the running match's evidence, and null without a match (ADR 0025 §3)", () => {
+    const { context, handles, state } = setUp();
+    expect(state.matchEvidence()).toBeNull();
+
+    state.attachViewport(VIEWPORT, context);
+    const detach = state.attachViewport(VIEWPORT, context);
+    expect(state.matchEvidence()).toBe(handles[1]?.evidence());
+
+    detach();
+    expect(state.matchEvidence()).toBeNull();
+  });
+
+  it("gives the running match's tick, and null without a match", () => {
+    const { context, handles, state } = setUp();
+    expect(state.matchTick()).toBeNull();
+
+    const detach = state.attachViewport(VIEWPORT, context);
+    expect(state.matchTick()).toBe(handles[0]?.currentTick());
+
+    detach();
+    expect(state.matchTick()).toBeNull();
   });
 });

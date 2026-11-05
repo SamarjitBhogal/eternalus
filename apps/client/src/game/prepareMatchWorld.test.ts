@@ -18,10 +18,11 @@ describe('prepareMatchWorld', () => {
     expect(two.map).not.toEqual(one.map);
   });
 
-  it('includes the scenery and the cathedral interior of the default config', () => {
+  it('includes the scenery, the buildings and the map objects of the default config', () => {
     const world = prepareMatchWorld(CONFIG, 1);
-    expect(world.scenery.length).toBeGreaterThan(0);
-    expect(world.interior).not.toBeNull();
+    expect(world.presentation.scenery.length).toBeGreaterThan(0);
+    expect(world.presentation.buildings.map(({ id }) => id)).toContain('cathedral-lane-1');
+    expect(world.mapObjects.length).toBeGreaterThan(0);
   });
 
   it('builds for the largest seed crypto can draw', () => {

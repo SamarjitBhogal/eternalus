@@ -1,17 +1,21 @@
-import { type EntityId, makeLogRecord, type Snapshot, type Vec2 } from '@eternalus/core';
+import { type EntityId, type EntitySnapshot, makeLogRecord, type Snapshot } from '@eternalus/core';
 
+import { isDead } from '../bridge/selectors/isDead';
+import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
+import type { WorldRect } from './engine/render/Renderer.types';
 import {
   BACKGROUND_COLOR,
   HUD_MINIMAP_RING,
   MAX_TICKS_PER_FRAME,
-  PROTOTYPE_ESCORT,
   MS_PER_SECOND,
 } from './Match.constants';
 import type { MatchDeps } from './Match.types';
 import { MatchBridge } from './MatchBridge';
 import { MatchCamera } from './MatchCamera';
+import { MatchViewControls } from './MatchViewControls';
+import { PlayerCommands } from './PlayerCommands';
 import { strongholdOf } from './seatedConfig';
 import { createDefaultViewRegistry } from './views/defaultViewRegistry';
 import { EntityLayer } from './views/EntityLayer';
@@ -19,27 +23,37 @@ import { MapView } from './views/MapView';
 import { MiniMapView } from './views/MiniMapView';
 import { SceneryView } from './views/SceneryView';
 import { SceneView } from './views/SceneView';
+import { WorldObjectsView } from './views/WorldObjectsView';
 
 /**
- * The composition root of one match (architecture 08 §7): it wires the simulation, the game
- * loop, the renderer, the camera, the player's intent and the views, and owns their lifetime.
- * Each tick turns the player's intent into commands, steps the simulation and keeps the last two
- * snapshots; each frame follows the player with the camera and draws the scene and the minimap
- * (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's stronghold
- * by core from the config's seat. Which part of the world is shown (the following camera, or the free view that
- * dragging, the overview and the cathedral interior switch to) is `MatchCamera`'s. The world
- * (map, scenery, interior) arrives prepared (06 §1); its `MatchBridge` publishes to the UI.
+ * The composition root of one match (architecture 08 §7): it wires the simulation, the game loop,
+ * the renderer, the camera, the player's intent and the views, and owns their lifetime. Each tick
+ * turns the player's intent into commands (`PlayerCommands`), steps the simulation and keeps the
+ * last two snapshots; each frame follows the player with the camera and draws the scene and the
+ * minimap (inside the HUD ring). The player's Legend is the simulation's, spawned at its team's
+ * stronghold by core from the config's seat. Which part of the world is shown (the following
+ * camera, or the free view that dragging and the overview switch to) is `MatchCamera`'s. Buildings
+ * stay in the same world scene: `BuildingRoofs` cuts away the roof of the building the player's
+ * Legend stands in (DEC-143) and those the developer explorer opens, and the views draw those
+ * interiors in place. The minimap is player HUD, drawn every frame whatever the developer flag
+ * (DEC-143). The world (map, presentation, map objects) arrives prepared (06 §1); its `MatchBridge`
+ * publishes to the UI. The canvas gestures act through its `controls` (`MatchViewControls`).
  */
 export class Match implements LoopTarget {
   private readonly loop: GameLoop;
 
   private readonly entities: EntityLayer;
 
+  /** The map objects (walls, furniture, doors) and their destroyed state, drawn in the scene. */
+  private readonly objects: WorldObjectsView;
+
   private readonly world: { readonly scene: SceneView; readonly miniMap: MiniMapView };
 
-  private readonly interior: { readonly scene: SceneView; readonly miniMap: MiniMapView } | null;
-
   private readonly camera: MatchCamera;
+
+  private readonly roofs: BuildingRoofs;
+
+  private readonly commands: PlayerCommands;
 
   private readonly bridge: MatchBridge;
 
@@ -49,7 +63,8 @@ export class Match implements LoopTarget {
 
   private readonly playerId: EntityId | null;
 
-  private lastMove: Vec2 = { x: 0, y: 0 };
+  /** What the canvas gestures do to this match: camera, minimap, roofs, explorer attack. */
+  public readonly controls: MatchViewControls;
 
   /**
    * Creates the match, takes the player's Legend from the simulation's snapshot (core spawned it
@@ -58,8 +73,8 @@ export class Match implements LoopTarget {
    * @throws Error when the map has no stronghold for the player's team.
    */
   public constructor(private readonly deps: MatchDeps) {
-    const { simulation, world, tickRate, scheduler, camera, player, logger, bridge } = deps;
-    const { map, scenery, interior } = world;
+    const { simulation, world, tickRate, scheduler, camera, player, logger, bridge, input } = deps;
+    const { map, presentation, mapObjects } = world;
     // Find the spawn point first: if the map has none, nothing has been subscribed yet.
     const spawnPoint = strongholdOf(map, player.team);
     this.entities = new EntityLayer(
@@ -73,25 +88,21 @@ export class Match implements LoopTarget {
         );
       }),
     );
+    this.camera = new MatchCamera(camera, map);
+    this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);
+    const { scenery, buildings } = presentation;
+    this.roofs = new BuildingRoofs(buildings);
+    const { hidden: hiddenRoofs } = this.roofs;
+    const shown = (): WorldRect => this.camera.visibleArea();
+    this.objects = new WorldObjectsView(mapObjects, hiddenRoofs, shown);
+    const { isDestroyed } = this.objects;
     const scene = new SceneView([
-      new MapView(map, scenery),
-      new SceneryView(scenery, 'detail'),
+      new MapView(map, scenery, hiddenRoofs, shown, buildings, isDestroyed),
+      new SceneryView(scenery, 'detail', hiddenRoofs, shown, isDestroyed),
+      this.objects,
       this.entities,
     ]);
     this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING) };
-    this.camera = new MatchCamera(camera, map, interior);
-    if (interior === null) {
-      this.interior = null;
-    } else {
-      const inside = new SceneView([
-        new MapView(interior.map, interior.scenery),
-        new SceneryView(interior.scenery, 'detail'),
-      ]);
-      this.interior = {
-        scene: inside,
-        miniMap: new MiniMapView(interior.map, inside, HUD_MINIMAP_RING),
-      };
-    }
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
@@ -103,21 +114,22 @@ export class Match implements LoopTarget {
       map,
       onMatchEnded: (handler) => simulation.on('match-ended', handler),
     });
-    // PROTOTYPE(PROTO-01) TEMPORARY: demo escort; delete with `spawnEscort`.
-    Match.spawnEscort(simulation, player.team, spawnPoint);
     this.current = simulation.snapshot();
     this.playerId = this.current.match.humanLegendId;
+    this.controls = new MatchViewControls({
+      camera: this.camera,
+      roofs: this.roofs,
+      commands: this.commands,
+      miniMap: this.world.miniMap,
+      playerId: this.playerId,
+      mapObjects: () => this.current.mapObjects ?? [],
+    });
     camera.lookAt(spawnPoint);
   }
 
   /** The id of the player's Legend; known from construction, `null` when its spawn failed. */
   public get playerEntityId(): EntityId | null {
     return this.playerId;
-  }
-
-  /** Whether the view is inside the cathedral. */
-  public get isInterior(): boolean {
-    return this.camera.isInterior;
   }
 
   /** The latest snapshot. */
@@ -150,14 +162,24 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * One tick: the player's intent becomes commands, then the simulation steps and the bridge
-   * publishes. After the tick that ended the match, tells the owner once (`onEnded`).
+   * One tick: the player's intent becomes commands (and moving input sends the camera back to
+   * following), the simulation steps, and the roof of the building the player's Legend now stands
+   * in opens. A dead Legend (`isDead`, or gone from the snapshot) stands in no building, so its
+   * roof closes (DEC-143, DEC-149). After the tick that ended the match, tells the owner once
+   * (`onEnded`).
    */
   public tick(): void {
-    this.applyIntent();
+    if (this.playerId !== null) {
+      const isMoving = this.commands.apply(this.playerId, this.current.mapObjects ?? []);
+      if (isMoving) {
+        this.camera.playerMoved();
+      }
+    }
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
+    const player = this.playerEntity();
+    this.roofs.playerAt(isDead(player?.health ?? null) ? null : (player?.transform ?? null));
     if (this.bridge.afterTick(this.current, this.playerId)) {
       this.deps.onEnded();
     }
@@ -166,13 +188,13 @@ export class Match implements LoopTarget {
   /** One frame: the camera follows the player, then the scene and the minimap are drawn. */
   public render(alpha: number): void {
     const { renderer } = this.deps;
-    const player = this.current.entities.find((entity) => entity.id === this.playerId);
-    this.camera.follow(player?.transform ?? null);
+    this.camera.follow(this.playerEntity()?.transform ?? null);
     const view = this.camera.visibleArea();
-    const { scene, miniMap } = this.views;
+    const { scene, miniMap } = this.world;
     renderer.clear(BACKGROUND_COLOR);
     renderer.showWorldArea(view);
     this.entities.show(this.previous, this.current, alpha, this.playerId);
+    this.objects.show(this.current.mapObjects ?? []);
     scene.draw(renderer);
     miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight, view);
   }
@@ -186,54 +208,6 @@ export class Match implements LoopTarget {
   }
 
   /**
-   * Moves the camera to the world point under a minimap click and stops following the player
-   * until the player moves again.
-   *
-   * @returns Whether the click was on the minimap.
-   */
-  public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
-    const { screenWidth, screenHeight } = this.camera;
-    const target = this.views.miniMap.worldPointAt(screenX, screenY, screenWidth, screenHeight);
-    if (target === null) {
-      return false;
-    }
-    this.camera.lookAt(target);
-    return true;
-  }
-
-  /** Drags the view by a screen offset (device pixels), switching to the free view. */
-  public panBy(screenDx: number, screenDy: number): void {
-    this.camera.panBy(screenDx, screenDy);
-  }
-
-  /** Zooms whichever view is on screen; `factor` above 1 zooms in. */
-  public zoomBy(factor: number): void {
-    this.camera.zoomBy(factor);
-  }
-
-  /**
-   * Enters the cathedral when the screen point (device pixels) is on it.
-   *
-   * @returns Whether the view moved inside.
-   */
-  public enterAt(screenX: number, screenY: number): boolean {
-    return this.camera.enterAt(screenX, screenY);
-  }
-
-  /** Shows the whole battlefield in the free view, leaving the cathedral if inside. */
-  public overview(): void {
-    this.camera.overview();
-  }
-
-  /**
-   * Leaves the cathedral interior and returns the camera to following the player (DEC-32 keeps the
-   * interior in normal play; CD-22).
-   */
-  public leaveInterior(): void {
-    this.camera.leaveInterior();
-  }
-
-  /**
    * Stops the loop and the bridge's listener. The renderer and camera are injected, so their
    * owner (`MatchHost`) destroys them.
    */
@@ -242,56 +216,8 @@ export class Match implements LoopTarget {
     this.bridge.destroy();
   }
 
-  private applyIntent(): void {
-    if (this.playerId === null) {
-      return;
-    }
-    const { move } = this.deps.input.read(this.camera);
-    const isMoving = move.x !== 0 || move.y !== 0;
-    if (isMoving) {
-      this.camera.playerMoved();
-    }
-    if (move.x === this.lastMove.x && move.y === this.lastMove.y) {
-      return;
-    }
-    this.deps.simulation.enqueueCommand(
-      isMoving
-        ? { type: 'move', actorId: this.playerId, direction: move }
-        : { type: 'stop', actorId: this.playerId },
-    );
-    this.lastMove = move;
-  }
-
-  /** The scene and minimap on screen: the cathedral's inside it, the battlefield's otherwise. */
-  private get views(): { readonly scene: SceneView; readonly miniMap: MiniMapView } {
-    return this.camera.isInterior && this.interior !== null ? this.interior : this.world;
-  }
-
-  /**
-   * PROTOTYPE(PROTO-01) TEMPORARY: demo code; `SpawnSystem` replaces it.
-   *
-   * Prototype (2026-10-08, demo): queues the escort minions in a ring around `center`, one spawn
-   * each so they start apart. Phase 2's `SpawnSystem` replaces this.
-   */
-  private static spawnEscort(
-    simulation: MatchDeps['simulation'],
-    team: MatchDeps['player']['team'],
-    center: Vec2,
-  ): void {
-    const { definitionId, kind, count, spawnRadius } = PROTOTYPE_ESCORT;
-    for (let index = 0; index < count; index += 1) {
-      const angle = (2 * Math.PI * index) / count;
-      simulation.enqueueCommand({
-        type: 'dev-spawn',
-        kind,
-        definitionId,
-        team,
-        at: {
-          x: center.x + spawnRadius * Math.cos(angle),
-          y: center.y + spawnRadius * Math.sin(angle),
-        },
-        count: 1,
-      });
-    }
+  /** The player's Legend in the latest snapshot; `undefined` before it spawns or once removed. */
+  private playerEntity(): EntitySnapshot | undefined {
+    return this.current.entities.find((entity) => entity.id === this.playerId);
   }
 }
