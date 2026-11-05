@@ -18,6 +18,7 @@ import type { AiMemory } from '../state/AiState.types';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
+import type { Team } from '../teams/teams.types';
 import { BotLegendController } from './BotLegendController';
 import { Perception } from './perception/Perception';
 
@@ -43,13 +44,7 @@ const setUp = (at = { x: 60, y: 20 }) => {
     loadWeapons(30),
   );
   const perception = new Perception(state);
-  const add = (
-    team: 'light' | 'dark',
-    x: number,
-    y = 20,
-    kind = 'light-mob',
-    id = 'light-minion',
-  ) => {
+  const add = (team: Team, x: number, y = 20, kind = 'light-mob', id = 'light-minion') => {
     const entity = factory.create(kind, id, { team, position: { x, y } });
     state.entities.add(entity);
     return entity.id;
@@ -144,6 +139,20 @@ describe('BotLegendController (laner tree, 11 §4.2)', () => {
     state.entities.get(near)?.getComponent(Transform).moveTo({ x: 61, y: 20 });
     expect(decide({ lane: 'lane-0', targetId: near }, 'never-casts').commands).toEqual([
       { type: 'move', actorId: bot, direction: { x: 0, y: 0 } },
+    ]);
+  });
+
+  it('Fight: fights back against a camp mob that attacks it, and never farms one that leaves it alone (DEC-166)', () => {
+    const { state, bot, add, decide } = setUp();
+    const camp = add('neutral', 64, 20, 'light-mob', 'light-camp-mob');
+    const attack = { type: 'attack-target', actorId: bot, targetId: camp };
+
+    expect(decide({ lane: 'lane-0' }, 'never-casts').commands).not.toContainEqual(attack);
+
+    state.entities.setAttackTarget(camp, bot);
+    expect(decide({ lane: 'lane-0' }, 'never-casts').commands).toEqual([
+      attack,
+      { type: 'move', actorId: bot, direction: { x: 4, y: 0 } },
     ]);
   });
 

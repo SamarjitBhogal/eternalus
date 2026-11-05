@@ -3,8 +3,8 @@ import { BotLegendController } from './BotLegendController';
 import type { BotLegendControllerContent } from './BotLegendController.types';
 import type { Controller } from './Controller.types';
 import { GuardController } from './GuardController';
+import type { LeashControllerContent } from './LeashBehaviour.types';
 import { MinionController } from './MinionController';
-import type { MinionControllerContent } from './MinionController.types';
 import { RoverController } from './RoverController';
 import type { RoverControllerContent } from './RoverController.types';
 
@@ -19,7 +19,8 @@ export type ControllerRegistry = Readonly<Partial<Record<ControllerId, Controlle
  * missing id does not compile) once the last one lands.
  */
 export const createDefaultControllerRegistry = (content: {
-  readonly minion: MinionControllerContent;
+  /** The leashed mobs' content: minions and guards each accept only their own aggro profiles. */
+  readonly minion: LeashControllerContent;
   readonly botLegend: BotLegendControllerContent;
   readonly rover: RoverControllerContent;
 }): ControllerRegistry => ({

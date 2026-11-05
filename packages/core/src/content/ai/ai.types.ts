@@ -73,8 +73,9 @@ export type AggroPriority =
   | 'lane-objective';
 
 /**
- * How a minion picks and keeps targets (architecture 11 §4.3, 18 §6.1): an AI profile, named by a
- * unit definition's `aiProfile`. Distances are metres, durations ticks.
+ * How a leashed mob picks and keeps targets (architecture 11 §4.3, 18 §6.1, §7): the fields
+ * `LeashBehaviour` reads for minions and guards alike. Distances are metres; durations are seconds,
+ * converted with the match's tick rate where they are read, except `ghostFirstWaveTicks`.
  */
 export type AggroRuleDefinition = {
   readonly id: string;
@@ -83,23 +84,12 @@ export type AggroRuleDefinition = {
   /** Best first; an enemy that matches no entry is never acquired. */
   readonly priority: readonly AggroPriority[];
   /**
-   * A mob fights only a target this close to where it took it (MS-36, DEC-144). A guard's leash
-   * is its guard plan's, measured from its structure's edge.
-   */
-  readonly leashRadius: number;
-  /**
-   * A target outside the leash is chased this many ticks, then dropped; back inside sooner, it is
+   * A target outside the leash is chased this long, then dropped; back inside sooner, it is
    * fought on. 0 drops it at once (DEC-144 E).
    */
-  readonly leashGraceTicks: number;
-  /** For this many ticks after a leash breaks, the mob leaves alone the enemy that escaped. */
-  readonly aggroCooldownTicks: number;
-  /**
-   * An enemy this close that attacks a horde-mate may be acquired too ("call for help"). The
-   * leash still applies, so a value above `leashRadius` acts as `leashRadius`. Guards ignore it:
-   * they answer a fellow guard anywhere in their circle.
-   */
-  readonly callForHelpRadius: number;
+  readonly leashGraceSeconds: number;
+  /** For this long after a leash breaks, the mob leaves alone the enemy that escaped. */
+  readonly aggroCooldownSeconds: number;
   /**
    * The ghosted first wave (11 §4.3, MVP-if-time): for this many ticks after the countdown, and
    * during it, Legends match no priority entry, so the opening hordes meet before a Legend can bait
@@ -107,6 +97,30 @@ export type AggroRuleDefinition = {
    */
   readonly ghostFirstWaveTicks: number;
 };
+
+/**
+ * A horde minion's aggro profile (18 §6.1): its leash is a circle around where it took its target,
+ * and it answers its horde-mates' calls for help. Only `MinionController` reads it.
+ */
+export type HordeAggroRuleDefinition = AggroRuleDefinition & {
+  readonly controller: 'minion';
+  /** A mob fights only a target this close to where it took it (MS-36, DEC-144). */
+  readonly leashRadius: number;
+  /**
+   * An enemy this close that attacks a horde-mate may be acquired too ("call for help"). The
+   * leash still applies, so a value above `leashRadius` acts as `leashRadius`.
+   */
+  readonly callForHelpRadius: number;
+};
+
+/**
+ * A guard's aggro profile (18 §7): its leash and its mates come from its post's guard plan, so it
+ * adds nothing to the shared fields. Only `GuardController` reads it.
+ */
+export type GuardAggroRuleDefinition = AggroRuleDefinition & { readonly controller: 'guard' };
+
+/** Any aggro profile; `controller` names the one controller that may read it (AI56-F9). */
+export type AggroProfileDefinition = HordeAggroRuleDefinition | GuardAggroRuleDefinition;
 
 /** A controller's plain-data memory between decisions: FSM state, target, timers (11 §2). */
 export type AiMemory = Readonly<Record<string, string | number | boolean | null>>;

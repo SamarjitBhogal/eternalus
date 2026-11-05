@@ -6,9 +6,38 @@ import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { LANE_MINION_AGGRO } from '../content/ai/aggro/laneMinion';
 import type { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
+import { AiSystem } from './AiSystem';
 import { CLASS_OF, controller, engagingOn, setUp } from './__fixtures__/minionControllerSetup';
 import { MinionController } from './MinionController';
 import { Perception } from './perception/Perception';
+
+/** A lane minion whose first wave ghosts for 30 ticks. */
+const ghosting = new MinionController({
+  aggro: { ghost: { ...LANE_MINION_AGGRO, id: 'ghost', ghostFirstWaveTicks: 30 } },
+  classOf: CLASS_OF,
+});
+
+/** `self`'s commands from `ghosting`, after indexing every unit. */
+const decideAsGhost = (state: GameState, self: string) => {
+  const space = state.space as SpaceIndex;
+  space.begin(state.entities.size);
+  state.entities.forEach((entity) => {
+    const { x, y } = entity.getComponent(Transform).position;
+    space.add(entity.id, x, y);
+  });
+  space.commit();
+  return ghosting.decide({
+    state,
+    entityId: self,
+    perception: new Perception(state),
+    brain: {
+      controllerId: 'minion',
+      profileId: 'ghost',
+      memory: {},
+      rngState: { seed: 1, words: [1, 2, 3, 4] as const },
+    },
+  }).commands;
+};
 
 // The acquire and engage rules a minion shares with a guard: LeashBehaviour.test.ts.
 describe('MinionController', () => {
@@ -47,10 +76,12 @@ describe('MinionController', () => {
       progress: 40,
     });
     advance(3);
+    // Alive, and out of reach: a brain drops an escaped enemy that is no longer alive (AI56-F3).
+    const escaped = add('dark', 200);
 
     expect(
-      decide(leader, { fsm: 'returning', cooldownUntilTick: 7, escapedId: 'escaped' }).memory,
-    ).toMatchObject({ fsm: 'marching', cooldownUntilTick: 7, escapedId: 'escaped' });
+      decide(leader, { fsm: 'returning', cooldownUntilTick: 7, escapedId: escaped }).memory,
+    ).toMatchObject({ fsm: 'marching', cooldownUntilTick: 7, escapedId: escaped });
     expect(decide(loner, { fsm: 'returning' }).memory).toMatchObject({ fsm: 'marching' });
     const stray = add('light', 100);
     expect(decide(stray, { fsm: 'returning' }).memory).toMatchObject({ fsm: 'marching' });
@@ -137,32 +168,9 @@ describe('MinionController', () => {
 
   it('ignores Legends during a ghosted first wave, and only then', () => {
     const { state, add, advance } = setUp();
-    const ghosting = new MinionController({
-      aggro: { ghost: { ...LANE_MINION_AGGRO, id: 'ghost', ghostFirstWaveTicks: 30 } },
-      classOf: CLASS_OF,
-    });
     const self = add('light', 50);
     const legend = add('dark', 52, 20, 'warrior', 'warrior');
-    const space = state.space as SpaceIndex;
-    const decide = () => {
-      space.begin(state.entities.size);
-      state.entities.forEach((entity) => {
-        const { x, y } = entity.getComponent(Transform).position;
-        space.add(entity.id, x, y);
-      });
-      space.commit();
-      return ghosting.decide({
-        state,
-        entityId: self,
-        perception: new Perception(state),
-        brain: {
-          controllerId: 'minion',
-          profileId: 'ghost',
-          memory: {},
-          rngState: { seed: 1, words: [1, 2, 3, 4] as const },
-        },
-      }).commands;
-    };
+    const decide = () => decideAsGhost(state, self);
     const until = state.config.match.countdownSeconds * state.config.tickRate + 30;
 
     advance(until - 1);
@@ -171,15 +179,43 @@ describe('MinionController', () => {
     expect(decide()).toEqual([{ type: 'attack-target', actorId: self, targetId: legend }]);
   });
 
-  it('knows its aggro profiles', () => {
-    expect(controller.hasProfile('lane-minion')).toBe(true);
-    expect(controller.hasProfile('minion')).toBe(false);
+  it('counts the ghosted first wave from the countdown’s end rounded to a tick, as the wave clocks do (X57-F7)', () => {
+    const config = createDefaultGameConfig();
+    // 0.04 s is 1.2 ticks: the wave clocks start at tick 1, so a 30-tick ghost ends at tick 31.
+    const { state, add, advance } = setUp({
+      ...config,
+      match: { ...config.match, countdownSeconds: 0.04 },
+    });
+    const self = add('light', 50);
+    const legend = add('dark', 52, 20, 'warrior', 'warrior');
+
+    advance(30);
+    expect(decideAsGhost(state, self)).toEqual([]);
+    advance(1);
+    expect(decideAsGhost(state, self)).toEqual([
+      { type: 'attack-target', actorId: self, targetId: legend },
+    ]);
   });
 
-  it('throws on an aggro profile that does not exist', () => {
+  it('knows its aggro profiles, and only its own: a minion naming a guard profile fails validation (AI56-F9)', () => {
+    expect(controller.hasProfile('lane-minion')).toBe(true);
+    expect(controller.hasProfile('minion')).toBe(false);
+    expect(controller.hasProfile('tower-guard')).toBe(false);
+    expect(() => {
+      AiSystem.assertRegistered(
+        [{ id: 'confused-minion', controller: 'minion', aiProfile: 'tower-guard' }],
+        { minion: controller },
+      );
+    }).toThrow('names AI profile "tower-guard", which controller "minion" does not have');
+  });
+
+  it('throws on an aggro profile that does not exist, or is a guard’s', () => {
     const { add, decide } = setUp();
     const self = add('light', 50);
 
     expect(() => decide(self, {}, 'no-such-profile')).toThrow('aggro profile "no-such-profile"');
+    expect(() => decide(self, {}, 'camp-mob')).toThrow(
+      'names aggro profile "camp-mob", which controller "minion" does not have',
+    );
   });
 });
