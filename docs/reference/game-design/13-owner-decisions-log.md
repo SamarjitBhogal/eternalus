@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-05
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-05 (the owner's call on the match director's critic round 3, `feat/match-director`)
+
+The owner's answer of 2026-11-05 on one better-than-design finding of the match director's pre-PR
+critic, round 3 (`INBOX.md` HC-Q46), asked in chat. The stored answer is kept verbatim outside the
+repository, in `eternalus-agent-work/game-loop-plan/owner-answers-2026-11-05-hc-q46.md`. The owner
+took the agent's recommendation.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Docs                                                                                               |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| DEC-210 | **Only the match code gets the match writers: the public `GameState.match` is the read-only `MatchState`** (answers `INBOX.md` HC-Q46; narrows DEC-177, enforces DEC-172's "one caller each"). Asked: `GameState.match` is a `MatchRecord`, so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers, and only review keeps each writer to its one caller. The options were (a) type the public `GameState.match` as `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation`, (b) an ESLint rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests, or (c) leave it to review. The owner chose "(a) Read-only type". So: the compiler, not review, stops other callers. Scheduled: its own PR from the phase branch after the match-director PR merges, together with the HC-S7 split of `Simulation.ts`; not built in the match-director PR. | Architecture 03 §2 (`GameState` and `MatchRecord` sketch) and 12 §4, when built; `INBOX.md` HC-Q46 |
 
 ## Batch 2026-11-04, round 2 (the owner's calls on the match director's critic round 2, `feat/match-director`)
 
