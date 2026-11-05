@@ -19,20 +19,7 @@ import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { PathingSystem } from './PathingSystem';
 import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
 import { Entity } from '../entities/Entity';
-
-/** A tower stand-in: a 14 m collider circle and, when given, a fort `Footprint`. */
-class Fort extends Entity {
-  public readonly kind = 'spawner-tower';
-  public readonly family = 'structure';
-  protected installComponents(context: unknown): void {
-    const { at, polygons } = context as {
-      at: { x: number; y: number };
-      polygons: readonly (readonly { x: number; y: number }[])[];
-    };
-    this.addComponent(new Transform(at, 14));
-    this.addComponent(new Footprint(polygons));
-  }
-}
+import { Fort } from './__fixtures__/Fort';
 
 /** A breakable map object stand-in (a house): a 0.5 m collider circle and its `MapObjectBody`. */
 class House extends Entity {
