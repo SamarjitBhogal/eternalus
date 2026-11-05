@@ -297,6 +297,31 @@ describe('Match', () => {
     ).toBe(true);
   });
 
+  it('centres the minimap on the player and keeps it there as the player moves (DEC-182)', () => {
+    const { match, renderer, input } = setUp();
+    const minimapCentre = () => {
+      const call = renderer.calls.findLast(
+        (c) => c.op === 'showWorldArea' && c.args[1] !== undefined,
+      );
+      const view = call?.op === 'showWorldArea' ? call.args[0] : undefined;
+      return {
+        x: (view?.x ?? 0) + (view?.width ?? 0) / 2,
+        y: (view?.y ?? 0) + (view?.height ?? 0) / 2,
+      };
+    };
+    match.tick();
+    match.render(0);
+    const before = minimapCentre();
+    input.move = { x: 1, y: 0 };
+    for (let tick = 0; tick < 10; tick += 1) match.tick();
+    match.render(0);
+    const after = minimapCentre();
+
+    expect(before.x).toBeCloseTo(playerX(match) - (after.x - before.x));
+    expect(after.x).toBeCloseTo(playerX(match));
+    expect(after.x).toBeGreaterThan(before.x);
+  });
+
   it('stops following the player after a minimap click, until the player moves again', () => {
     const { match, camera, input, map } = setUp();
     match.tick();
@@ -306,9 +331,10 @@ describe('Match', () => {
     match.render(0);
 
     expect(clickedMinimap).toBe(true);
-    // The ring's centre is the map's centre.
-    expect(lookedAt.x + lookedAt.width / 2).toBeCloseTo(map.width / 2);
-    expect(lookedAt.y + lookedAt.height / 2).toBeCloseTo(map.height / 2);
+    // The ring's centre is the player's position (DEC-182): the same view as looking at them.
+    const player = match.snapshot.entities.find((entity) => entity.id === match.playerEntityId);
+    camera.lookAt({ x: player?.transform?.x ?? Number.NaN, y: player?.transform?.y ?? Number.NaN });
+    expect(lookedAt).toEqual(camera.visibleArea(map.width, map.height));
     expect(camera.visibleArea(map.width, map.height)).toEqual(lookedAt);
     expect(match.lookAtMinimapPoint(1, 1)).toBe(false);
 

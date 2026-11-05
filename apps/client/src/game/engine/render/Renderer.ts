@@ -12,8 +12,11 @@ export interface Renderer {
   fitWorld(worldWidth: number, worldHeight: number): void;
   /** Scales and centres a world of the given size inside one area of the screen. */
   fitWorldInArea(worldWidth: number, worldHeight: number, area: ScreenRect): void;
-  /** Shows one part of the world across the whole screen, like a zoomed-in camera. */
-  showWorldArea(view: WorldRect): void;
+  /**
+   * Shows one part of the world across the whole screen (or across `screenArea` when given),
+   * like a zoomed-in camera.
+   */
+  showWorldArea(view: WorldRect, screenArea?: ScreenRect): void;
   /** Fills the whole screen with one colour. */
   clear(color: string): void;
   /** Fills a rectangle given in screen pixels. */

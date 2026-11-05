@@ -1,8 +1,15 @@
 /** Colour of the panel behind the mini map, inside the ring. */
 export const MINI_MAP_BACKGROUND_COLOR = '#1b1813';
 
-/** Colour of the box that shows which part of the map the main view is looking at. */
-export const MINI_MAP_VIEW_BOX_COLOR = '#ffffff';
+/**
+ * World units from the player to the edge of the mini map: the circle of this radius around the
+ * player fills the ring.
+ */
+// TUNE: owner 2026-11-04 (DEC-182)
+export const MINI_MAP_VIEW_RADIUS = 200;
 
-/** Width of the view box outline in screen pixels. */
-export const MINI_MAP_VIEW_BOX_WIDTH = 2;
+/** Marker at the middle of the mini map: the point the view is centred on (the player). */
+export const MINI_MAP_CENTER_GLYPH = { shape: 'ring', size: 10 } as const;
+
+/** Colour of the centre marker. */
+export const MINI_MAP_CENTER_COLOR = '#ffffff';

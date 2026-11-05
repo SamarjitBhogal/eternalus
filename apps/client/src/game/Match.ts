@@ -12,7 +12,7 @@ import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
-import type { WorldRect } from './engine/render/Renderer.types';
+import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
 import {
   BACKGROUND_COLOR,
   HUD_MINIMAP_RING,
@@ -192,7 +192,7 @@ export class Match implements LoopTarget {
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
     scene.draw(renderer);
-    miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight, view);
+    miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight, this.minimapCenter());
   }
 
   /**
@@ -211,7 +211,13 @@ export class Match implements LoopTarget {
    */
   public lookAtMinimapPoint(screenX: number, screenY: number): boolean {
     const { screenWidth, screenHeight } = this.camera;
-    const target = this.world.miniMap.worldPointAt(screenX, screenY, screenWidth, screenHeight);
+    const target = this.world.miniMap.worldPointAt(
+      screenX,
+      screenY,
+      screenWidth,
+      screenHeight,
+      this.minimapCenter(),
+    );
     if (target === null) {
       return false;
     }
@@ -321,6 +327,19 @@ export class Match implements LoopTarget {
       stopSpawned();
       stopRejected();
     };
+  }
+
+  /**
+   * The world point at the middle of the minimap: the player's Legend while it lives, else the
+   * point the camera looks at (DEC-182).
+   */
+  private minimapCenter(): WorldPoint {
+    const player = this.playerEntity();
+    if (player?.transform != null && !isDead(player.health)) {
+      return player.transform;
+    }
+    const view = this.camera.visibleArea();
+    return { x: view.x + view.width / 2, y: view.y + view.height / 2 };
   }
 
   /** The player's Legend in the latest snapshot; `undefined` before it spawns or once removed. */

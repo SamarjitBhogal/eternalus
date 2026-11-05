@@ -70,10 +70,8 @@ describe('SceneryView roof cutaways', () => {
       new SceneryView(PRESENTATION.scenery, 'detail', new Set(['light-stronghold'])),
     ]);
     new MiniMapView(MAP_1, scene, HUD_MINIMAP_RING).draw(renderer, 1600, 900, {
-      x: 0,
-      y: 0,
-      width: MAP_1.width,
-      height: MAP_1.height,
+      x: MAP_1.width / 2,
+      y: MAP_1.height / 2,
     });
     const throne = PRESENTATION.scenery.find((p) => p.id === 'light-palace-interior-throne-back');
     const roof = PRESENTATION.scenery.find((p) => p.id === 'light-stronghold-palace-roof');

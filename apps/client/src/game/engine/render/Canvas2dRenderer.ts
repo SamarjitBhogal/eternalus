@@ -81,14 +81,18 @@ export class Canvas2dRenderer implements Renderer {
   }
 
   /**
-   * Shows one part of the world across the whole screen, like a zoomed-in camera. If the area
-   * is not the same shape as the screen, the world is stretched or squashed to fill it.
+   * Shows one part of the world across the whole screen, or across `screenArea` when given,
+   * like a zoomed-in camera. If the area is not the same shape as the screen (or `screenArea`),
+   * the world is stretched or squashed to fill it.
    */
-  public showWorldArea(view: WorldRect): void {
-    this.scaleX = this.screenWidth / view.width;
-    this.scaleY = this.screenHeight / view.height;
-    this.offsetX = -view.x * this.scaleX;
-    this.offsetY = -view.y * this.scaleY;
+  public showWorldArea(
+    view: WorldRect,
+    screenArea: ScreenRect = { x: 0, y: 0, width: this.screenWidth, height: this.screenHeight },
+  ): void {
+    this.scaleX = screenArea.width / view.width;
+    this.scaleY = screenArea.height / view.height;
+    this.offsetX = screenArea.x - view.x * this.scaleX;
+    this.offsetY = screenArea.y - view.y * this.scaleY;
   }
 
   /** Fills the whole screen with one colour. */

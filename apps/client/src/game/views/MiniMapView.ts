@@ -4,15 +4,17 @@ import type { Renderer } from '../engine/render/Renderer';
 import type { ScreenRect, WorldPoint, WorldRect } from '../engine/render/Renderer.types';
 import {
   MINI_MAP_BACKGROUND_COLOR,
-  MINI_MAP_VIEW_BOX_COLOR,
-  MINI_MAP_VIEW_BOX_WIDTH,
+  MINI_MAP_CENTER_COLOR,
+  MINI_MAP_CENTER_GLYPH,
+  MINI_MAP_VIEW_RADIUS,
 } from './MiniMapView.constants';
 import type { MiniMapRing } from './MiniMapView.types';
 import type { WorldLayer } from './SceneView.types';
 
 /**
- * Draws a small copy of the whole map inside the HUD's minimap ring (top right), with a box
- * showing which part the main view is looking at. Everything is clipped to the ring's ellipse;
+ * Draws a local view of the map inside the HUD's minimap ring (top right): the circle of
+ * `MINI_MAP_VIEW_RADIUS` world units around a centre point (the player), filling the ring, with
+ * north up and a marker at the middle. Everything is clipped to the ring's ellipse;
  * the ring itself is the DOM's (`MinimapPanel`), so no border is drawn here. It draws the same
  * scene as the main view (each layer's `drawMinimap`, which uses every feature's `minimapGlyph`),
  * so anything added to the scene or the map later shows up here automatically.
@@ -23,7 +25,7 @@ export class MiniMapView {
   private readonly ring: MiniMapRing;
 
   /**
-   * Creates a mini map that shows `scene` shrunk to fit the whole of `map`, inside `ring`
+   * Creates a mini map that shows `scene` around a point of `map`, inside `ring`
    * (injected by `Match`, 06 §10).
    */
   public constructor(map: MapDefinition, scene: WorldLayer, ring: MiniMapRing) {
@@ -45,36 +47,35 @@ export class MiniMapView {
   }
 
   /**
-   * Where the whole map is drawn: the largest rectangle with the map's shape that fits inside
-   * the ring's stroke, centred in the ring.
+   * Where the local view is drawn: the smallest square that covers the ring's inside (the ring's
+   * ellipse inset by its stroke), centred in the ring. The circle of `MINI_MAP_VIEW_RADIUS`
+   * world units around the player then fills the ring, with its edge just past the ring's
+   * shorter side.
    */
-  public mapAreaFor(screenWidth: number, screenHeight: number): ScreenRect {
+  public viewAreaFor(screenWidth: number, screenHeight: number): ScreenRect {
     const area = this.areaFor(screenWidth, screenHeight);
     const inset = this.ring.strokeWidth * this.scaleFor(screenWidth, screenHeight);
-    const radiusX = area.width / 2 - inset;
-    const radiusY = area.height / 2 - inset;
-    const aspect = this.map.width / this.map.height;
-    // The rectangle's corner touches the inner ellipse: (hw / rx)² + (hh / ry)² = 1, hw = aspect·hh.
-    const halfHeight = 1 / Math.hypot(aspect / radiusX, 1 / radiusY);
-    const halfWidth = aspect * halfHeight;
+    const side = Math.max(area.width, area.height) - inset * 2;
     return {
-      x: area.x + area.width / 2 - halfWidth,
-      y: area.y + area.height / 2 - halfHeight,
-      width: halfWidth * 2,
-      height: halfHeight * 2,
+      x: area.x + (area.width - side) / 2,
+      y: area.y + (area.height - side) / 2,
+      width: side,
+      height: side,
     };
   }
 
   /**
    * Turns a click on the screen into the map position it points at, or returns `null` if the
-   * click was outside the ring's ellipse. Points between the map and the ring clamp to the map's
-   * edge. Screen positions are in canvas pixels.
+   * click was outside the ring's ellipse. `center` is the world point shown at the ring's centre
+   * (as passed to `draw`). Points past the map's edge clamp to it. Screen positions are in canvas
+   * pixels.
    */
   public worldPointAt(
     screenX: number,
     screenY: number,
     screenWidth: number,
     screenHeight: number,
+    center: WorldPoint,
   ): WorldPoint | null {
     const area = this.areaFor(screenWidth, screenHeight);
     const radiusX = area.width / 2;
@@ -86,51 +87,44 @@ export class MiniMapView {
     if (!isInside) {
       return null;
     }
-    const mapArea = this.mapAreaFor(screenWidth, screenHeight);
+    const viewArea = this.viewAreaFor(screenWidth, screenHeight);
+    const worldPerPixel = (MINI_MAP_VIEW_RADIUS * 2) / viewArea.width;
     const clamp = (value: number, max: number): number => Math.max(0, Math.min(max, value));
     return {
-      x: clamp(((screenX - mapArea.x) / mapArea.width) * this.map.width, this.map.width),
-      y: clamp(((screenY - mapArea.y) / mapArea.height) * this.map.height, this.map.height),
+      x: clamp(center.x + (screenX - area.x - radiusX) * worldPerPixel, this.map.width),
+      y: clamp(center.y + (screenY - area.y - radiusY) * worldPerPixel, this.map.height),
     };
   }
 
   /**
-   * Draws the mini map on top of whatever is already on screen, clipped to the ring's ellipse.
-   * `view` is the part of the world the main view is showing, outlined as a box.
+   * Draws the mini map on top of whatever is already on screen, clipped to the ring's ellipse:
+   * the world within `MINI_MAP_VIEW_RADIUS` of `center` (north up), with a marker at the middle.
    */
   public draw(
     renderer: Renderer,
     screenWidth: number,
     screenHeight: number,
-    view: WorldRect,
+    center: WorldPoint,
   ): void {
     const area = this.areaFor(screenWidth, screenHeight);
-    const mapArea = this.mapAreaFor(screenWidth, screenHeight);
+    const viewArea = this.viewAreaFor(screenWidth, screenHeight);
     renderer.clipToEllipse(area, () => {
       renderer.fillScreenRect(area, MINI_MAP_BACKGROUND_COLOR);
-      renderer.fitWorldInArea(this.map.width, this.map.height, mapArea);
+      renderer.showWorldArea(MiniMapView.worldViewAround(center), viewArea);
       this.scene.drawMinimap(renderer);
-      this.drawViewBox(renderer, view);
+      renderer.drawGlyph(MINI_MAP_CENTER_GLYPH, center, MINI_MAP_CENTER_COLOR);
     });
   }
 
-  /** Outlines `view`, clamped to the map so it never reaches past the map's edge. */
-  private drawViewBox(renderer: Renderer, view: WorldRect): void {
-    const left = Math.max(0, view.x);
-    const top = Math.max(0, view.y);
-    const right = Math.min(this.map.width, view.x + view.width);
-    const bottom = Math.min(this.map.height, view.y + view.height);
-    renderer.strokePath(
-      [
-        { x: left, y: top },
-        { x: right, y: top },
-        { x: right, y: bottom },
-        { x: left, y: bottom },
-        { x: left, y: top },
-      ],
-      MINI_MAP_VIEW_BOX_COLOR,
-      MINI_MAP_VIEW_BOX_WIDTH,
-    );
+  /** The square of world units, side `2 · MINI_MAP_VIEW_RADIUS`, around `center`. */
+  private static worldViewAround(center: WorldPoint): WorldRect {
+    const side = MINI_MAP_VIEW_RADIUS * 2;
+    return {
+      x: center.x - MINI_MAP_VIEW_RADIUS,
+      y: center.y - MINI_MAP_VIEW_RADIUS,
+      width: side,
+      height: side,
+    };
   }
 
   /** Device pixels per design pixel: the ring scales with the smaller screen dimension. */

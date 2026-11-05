@@ -254,6 +254,17 @@ describe('Canvas2dRenderer', () => {
     expect(renderer.toScreen({ x: 220, y: 110 })).toEqual({ x: 1000, y: 500 });
   });
 
+  it('can show a part of the world across one area of the screen', () => {
+    const renderer = createFittedRenderer(createFakeContext().context);
+    renderer.showWorldArea(
+      { x: 20, y: 10, width: 200, height: 100 },
+      { x: 400, y: 100, width: 100, height: 50 },
+    );
+
+    expect(renderer.toScreen({ x: 20, y: 10 })).toEqual({ x: 400, y: 100 });
+    expect(renderer.toScreen({ x: 220, y: 110 })).toEqual({ x: 500, y: 150 });
+  });
+
   // NEW: checks the "tall, not wide" camera view.
   it('can show more height than width by scaling each direction separately', () => {
     const { context, spies } = createFakeContext();
