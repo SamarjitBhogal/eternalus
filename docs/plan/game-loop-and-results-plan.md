@@ -4,7 +4,7 @@ description: The build plan for the owner's game loop (match director, phases, c
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-04
 tags: [plan, match-director, scoring, victory, results, post-game, hud, session]
 related:
   - docs/architecture/12-game-story-and-match-director.md
@@ -280,8 +280,8 @@ export const SCORING_WEIGHTS = {
 - `end()` builds `MatchResult` (12 §10), stores it in `state.match.result`, enters `victory` or
   `defeat` for `playerTeam` and emits `match-ended`. The fields this plan fills: `winner`,
   `condition`, `playerTeam`, `hadHuman`, `durationTicks`, `seed`, `legends`, `teams`,
-  `finalHash`, `configHash`. `finalHash` is `StateHasher.hash(state)` (the value `Simulation.hash()`
-  returns), taken before the result is stored, so it does not hash itself. `configHash` is `fnv1a` (`utils/`) over the canonical config.
+  `finalHash`, `configHash`. `finalHash` is `StateHasher.hash(state)`
+  taken mid-tick, before the result is stored, so it does not hash itself. `configHash` is `fnv1a` (`utils/`) over the canonical config.
   `timeline` and `achievements` start as empty arrays and are filled by later work. DEC-113: each
   of the four lists joins `MatchResult` with the work that fills it, not as an empty list first.
 - Core inputs this needs (API change, called out in the PR, 02 §6): `MatchConfig`
