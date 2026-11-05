@@ -4938,3 +4938,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check` on 1e33263 → EXIT=0; core "Tests 1076 passed (1076)", client
   "Tests 1754 passed (1754)", "Documentation check passed."
 - Next step: push, approve #69; after #64 merges, re-run #64's zone tests.
+
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 review follow-up — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: Samarjit's review of 97d7263 (approve with S1–S3). S3: `MapFeature.wallBoundary`
+  no longer copies `frontArc` (nothing read it); the new test was red on the old code, and the
+  golden map hash changed only because of that field (adding it back gives the old hash). N2: the
+  missing-wall error says "wall arc". S1 (scoped title) and S2 (PR description with the gate
+  results) are PR metadata, set when this is pushed.
+- Checks run: `npm run check` → EXIT=0; core "Tests 1076 passed (1076)", client "Tests 1754
+  passed (1754)", "Documentation check passed."
+- Next step: push, set the PR title and description, squash-merge; after #64 merges, re-run #64's
+  zone tests.
