@@ -5148,3 +5148,22 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "exit 0". Each new test was seen red with its fix broken on purpose. This line was filled in
   after that run (docs-only); `prettier --check` and `docs:check` were re-run on it.
 - Next step: critic re-check of this round, ponytail, then the PR into phase/3 after #75 merges.
+
+### 2026-11-05 — Phase 3 / face the hit spot (DEC-216 (11)) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` (`ebedddb`, owner-approved) as `d56980f`,
+  which brings `EntityStore.outlineOf` and `aimPointOf`. Conflicts: `EntityStore.ts` (kept the
+  aim rule, with this branch's allocation-free `distance` and its "no `Transform`" TSDoc case),
+  `StateHasher.test.ts` (kept both new tests), the `DefaultSystemPipeline` TSDoc (both sentences),
+  this file (every entry); a duplicate `Transform` import in `DefaultSystemPipeline.test.ts`
+  was dropped. Then `925c08d`: `CombatSystem` turns an attacker in reach toward `aimPointOf`,
+  so a unit attacking a building faces the outline point nearest it, not the centre, and a unit
+  target's centre as before (DEC-216 (11)); one aim rule serves reach, chase and facing. The
+  map-object facing test now attacks a long wall off-centre, and a new test attacks a fort
+  `Footprint`; both were red (facing `(0.991, -0.132)` and `(0.981, -0.196)`, the centre
+  directions) with the old centre `lookAt` put back, green when restored. Architecture 04 §3
+  states the rule.
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1182 passed (1182)"; client "Tests 1771 passed (1771)"; "✓ built in 238ms";
+  "Documentation check passed." This entry was added after that run (docs-only).
+- Next step: critic and ponytail on PR #79, then push.

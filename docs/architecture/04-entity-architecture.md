@@ -143,7 +143,10 @@ and the guard roster faces each guard along its post. An entity given no start f
 unit that is no guard, a match without a map, a structure) starts as `INITIAL_FACING`
 (`Transform.constants.ts`). The facing follows the direction of the velocity (`MovementSystem`).
 A unit with an attack target in reach faces the target instead, as `CombatSystem` runs after
-`MovementSystem`, unless a status stops its attacks (`cannot-attack`). A zero direction, and a
+`MovementSystem`, unless a status stops its attacks (`cannot-attack`). It faces the spot where it
+deals damage: the point attack reach is measured to (`EntityStore.aimPointOf`), which is the point
+of a building's outline nearest the unit, not the building's centre, and a unit target's centre
+(DEC-216 (11)). One aim rule serves reach, chase and facing. A zero direction, and a
 point equal to the unit's own position, keep the facing. Core turns at once. The client blends the facing between two ticks
 ([08 §8](08-game-engine.md)). The invariant `finite-transforms` checks the position and the
 facing ([15 §3](15-diagnostics-and-runtime-testing.md)).
