@@ -1,5 +1,6 @@
 import {
   DEFAULT_MAP_CONFIG,
+  type EntitySnapshot,
   type MapDefinition,
   type MapFeature,
   MapGenerator,
@@ -11,12 +12,16 @@ import { Canvas2dRenderer } from '../engine/render/Canvas2dRenderer';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import type { DrawContext } from '../engine/render/Canvas2dRenderer.types';
 import type { ScreenRect } from '../engine/render/Renderer.types';
+import { NEUTRAL_ENTITY_COLOR } from './entityViews.constants';
 import { MapView } from './MapView';
+import { TEAM_COLORS } from './MapView.constants';
 import { MiniMapView } from './MiniMapView';
 import {
   MINI_MAP_BACKGROUND_COLOR,
   MINI_MAP_CENTER_COLOR,
   MINI_MAP_CENTER_GLYPH,
+  MINI_MAP_LEGEND_GLYPH,
+  MINI_MAP_MOB_GLYPH,
   MINI_MAP_VIEW_RADIUS,
 } from './MiniMapView.constants';
 import type { MiniMapRing } from './MiniMapView.types';
@@ -318,5 +323,82 @@ describe('MiniMapView with scenery', () => {
 
     expect(roof).toBeDefined();
     expect(renderer.calls).toContainEqual({ op: 'fillPolygon', args: [roof?.shape, roof?.color] });
+  });
+});
+
+describe('MiniMapView unit dots (DEC-187)', () => {
+  const unitAt = (
+    id: string,
+    family: 'mob' | 'legend',
+    team: EntitySnapshot['team'],
+    dx: number,
+    dy = 0,
+    current = 10,
+  ): EntitySnapshot => ({
+    id,
+    kind: family,
+    family,
+    definitionId: 'x',
+    team,
+    transform: { x: VIEW.x + dx, y: VIEW.y + dy, radius: 1 },
+    health: { current, max: 10 },
+  });
+
+  /** The unit dots of one frame: the `drawGlyph` calls made with a mob or Legend glyph. */
+  const dotsOf = (entities: EntitySnapshot[], playerId: string | null = null) => {
+    const renderer = new RecordingRenderer();
+    createMiniMap().draw(renderer, 1920, 1080, VIEW, entities, playerId);
+    return renderer.calls.flatMap((call) =>
+      call.op === 'drawGlyph' &&
+      (call.args[0] === MINI_MAP_MOB_GLYPH || call.args[0] === MINI_MAP_LEGEND_GLYPH)
+        ? [call.args]
+        : [],
+    );
+  };
+
+  it('draws enemy, ally and neutral units inside the view in their team colours', () => {
+    const dots = dotsOf([
+      unitAt('a', 'mob', 'light', 10),
+      unitAt('b', 'mob', 'dark', -10),
+      unitAt('c', 'mob', 'neutral', 0, 10),
+    ]);
+
+    expect(dots.map(([, , color]) => color)).toEqual([
+      TEAM_COLORS.light,
+      TEAM_COLORS.dark,
+      NEUTRAL_ENTITY_COLOR,
+    ]);
+    expect(dots[0]?.[1]).toEqual({ x: VIEW.x + 10, y: VIEW.y });
+  });
+
+  it('draws no dot for a unit outside the radius', () => {
+    const inside = unitAt('in', 'mob', 'dark', MINI_MAP_VIEW_RADIUS - 1);
+    const outside = unitAt('out', 'mob', 'dark', MINI_MAP_VIEW_RADIUS + 1);
+    const diagonal = unitAt('diag', 'mob', 'dark', 150, 150);
+
+    expect(dotsOf([inside, outside, diagonal])).toHaveLength(1);
+  });
+
+  it('draws a Legend larger than a mob, over the mobs', () => {
+    const dots = dotsOf([unitAt('l', 'legend', 'light', 5), unitAt('m', 'mob', 'light', 6)]);
+
+    expect(dots.map(([glyph]) => glyph)).toEqual([MINI_MAP_MOB_GLYPH, MINI_MAP_LEGEND_GLYPH]);
+    expect(MINI_MAP_LEGEND_GLYPH.size).toBeGreaterThan(MINI_MAP_MOB_GLYPH.size);
+  });
+
+  it('draws no second dot for the player: the centre marker is the player', () => {
+    const dots = dotsOf(
+      [unitAt('me', 'legend', 'light', 0), unitAt('o', 'legend', 'dark', 20)],
+      'me',
+    );
+
+    expect(dots).toHaveLength(1);
+    expect(dots[0]?.[2]).toBe(TEAM_COLORS.dark);
+  });
+
+  it('skips dead units and things that are not Legends or mobs', () => {
+    const tower = { ...unitAt('t', 'mob', 'dark', 5), family: 'structure' };
+
+    expect(dotsOf([unitAt('d', 'mob', 'dark', 5, 0, 0), tower])).toEqual([]);
   });
 });

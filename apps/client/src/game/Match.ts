@@ -192,7 +192,14 @@ export class Match implements LoopTarget {
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
     scene.draw(renderer);
-    miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight, this.minimapCenter());
+    miniMap.draw(
+      renderer,
+      this.camera.screenWidth,
+      this.camera.screenHeight,
+      this.minimapCenter(),
+      this.current.entities,
+      this.playerId,
+    );
   }
 
   /**

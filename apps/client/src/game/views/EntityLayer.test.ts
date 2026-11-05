@@ -73,7 +73,7 @@ describe('EntityLayer', () => {
     ]);
   });
 
-  it('leaves the minimap alone (entity markers belong to the minimap work)', () => {
+  it('leaves the minimap alone (unit dots come from MiniMapView)', () => {
     const layer = new EntityLayer(createDefaultViewRegistry());
     const renderer = new RecordingRenderer();
 

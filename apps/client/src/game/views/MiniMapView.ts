@@ -1,11 +1,15 @@
-import type { MapDefinition } from '@eternalus/core';
+import type { EntitySnapshot, MapDefinition } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import type { ScreenRect, WorldPoint, WorldRect } from '../engine/render/Renderer.types';
+import { NEUTRAL_ENTITY_COLOR } from './entityViews.constants';
+import { TEAM_COLORS } from './MapView.constants';
 import {
   MINI_MAP_BACKGROUND_COLOR,
   MINI_MAP_CENTER_COLOR,
   MINI_MAP_CENTER_GLYPH,
+  MINI_MAP_LEGEND_GLYPH,
+  MINI_MAP_MOB_GLYPH,
   MINI_MAP_VIEW_RADIUS,
 } from './MiniMapView.constants';
 import type { MiniMapRing } from './MiniMapView.types';
@@ -98,13 +102,17 @@ export class MiniMapView {
 
   /**
    * Draws the mini map on top of whatever is already on screen, clipped to the ring's ellipse:
-   * the world within `MINI_MAP_VIEW_RADIUS` of `center` (north up), with a marker at the middle.
+   * the world within `MINI_MAP_VIEW_RADIUS` of `center` (north up), the living Legends and mobs
+   * of `entities` inside that circle as team-coloured dots (Legends larger, on top), and a marker
+   * at the middle. The entity `playerId` has no dot: the centre marker is it (DEC-187).
    */
   public draw(
     renderer: Renderer,
     screenWidth: number,
     screenHeight: number,
     center: WorldPoint,
+    entities: readonly EntitySnapshot[] = [],
+    playerId: string | null = null,
   ): void {
     const area = this.areaFor(screenWidth, screenHeight);
     const viewArea = this.viewAreaFor(screenWidth, screenHeight);
@@ -112,8 +120,45 @@ export class MiniMapView {
       renderer.fillScreenRect(area, MINI_MAP_BACKGROUND_COLOR);
       renderer.showWorldArea(MiniMapView.worldViewAround(center), viewArea);
       this.scene.drawMinimap(renderer);
+      MiniMapView.drawUnits(renderer, center, entities, playerId);
       renderer.drawGlyph(MINI_MAP_CENTER_GLYPH, center, MINI_MAP_CENTER_COLOR);
     });
+  }
+
+  /** One pass: mobs first, then Legends over them. Skips the dead, the player and the far. */
+  private static drawUnits(
+    renderer: Renderer,
+    center: WorldPoint,
+    entities: readonly EntitySnapshot[],
+    playerId: string | null,
+  ): void {
+    const legends: EntitySnapshot[] = [];
+    for (const entity of entities) {
+      const { transform, health } = entity;
+      const isUnit = entity.family === 'mob' || entity.family === 'legend';
+      if (!isUnit || transform === null || entity.id === playerId) continue;
+      if (health !== null && health.current <= 0) continue;
+      if (Math.hypot(transform.x - center.x, transform.y - center.y) > MINI_MAP_VIEW_RADIUS) {
+        continue;
+      }
+      if (entity.family === 'legend') {
+        legends.push(entity);
+      } else {
+        MiniMapView.drawDot(renderer, entity, MINI_MAP_MOB_GLYPH);
+      }
+    }
+    for (const legend of legends) MiniMapView.drawDot(renderer, legend, MINI_MAP_LEGEND_GLYPH);
+  }
+
+  private static drawDot(
+    renderer: Renderer,
+    entity: EntitySnapshot,
+    glyph: typeof MINI_MAP_MOB_GLYPH | typeof MINI_MAP_LEGEND_GLYPH,
+  ): void {
+    const { team, transform } = entity;
+    if (transform === null) return;
+    const color = team === null || team === 'neutral' ? NEUTRAL_ENTITY_COLOR : TEAM_COLORS[team];
+    renderer.drawGlyph(glyph, { x: transform.x, y: transform.y }, color);
   }
 
   /** The square of world units, side `2 · MINI_MAP_VIEW_RADIUS`, around `center`. */

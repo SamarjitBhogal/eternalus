@@ -48,7 +48,7 @@ export class EntityLayer implements WorldLayer {
     }
   }
 
-  /** Draws nothing: entity markers on the minimap belong to the minimap work (SCRUM-151). */
+  /** Draws nothing: the minimap's unit dots come from `MiniMapView`, which reads the snapshot. */
   public drawMinimap(): void {
     // Intentionally empty; WorldLayer requires the method.
   }
