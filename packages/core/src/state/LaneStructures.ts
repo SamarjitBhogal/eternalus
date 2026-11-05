@@ -8,9 +8,7 @@ import { compareById } from '../utils/compareById';
 import type { EntityStore } from './EntityStore';
 import type { LaneObjective, LaneStructureEntry } from './LaneStructures.types';
 import type { LaneRoutes } from './LaneRoutes';
-
-const isPlayable = (team: string | undefined): team is PlayableTeam =>
-  team === 'light' || team === 'dark';
+import { opponentOf, PLAYABLE_TEAMS, isPlayableTeam } from '../teams/playableTeams';
 
 /**
  * The lane-order structures index (architecture 18 §6.2, 03 §2): every playable team's lane
@@ -32,8 +30,8 @@ export class LaneStructures {
     routes: LaneRoutes | null,
   ) {
     for (const lane of routes?.lanes ?? []) {
-      for (const attacker of ['light', 'dark'] as const) {
-        const defender = attacker === 'light' ? 'dark' : 'light';
+      for (const attacker of PLAYABLE_TEAMS) {
+        const defender = opponentOf(attacker);
         const end = routes?.length(lane.id) ?? 0;
         const placed = (entry: LaneStructureEntry) => {
           const progress =
@@ -66,7 +64,7 @@ export class LaneStructures {
       const team = entity.findComponent(TeamMembership)?.team;
       const transform = entity.findComponent(Transform);
       const health = entity.findComponent(Health);
-      if (!(entity instanceof Structure) || !isPlayable(team) || !transform || !health) {
+      if (!(entity instanceof Structure) || !isPlayableTeam(team) || !transform || !health) {
         return;
       }
       all.push({

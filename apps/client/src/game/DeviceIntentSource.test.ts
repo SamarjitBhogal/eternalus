@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import type { InputDevice, MutableInputSnapshot } from './engine/input/InputDevice.types';
@@ -17,6 +18,7 @@ import { PRESETS } from './input/keybindings';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
+const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 const IDENTITY: Projection = { screenToWorld: (point) => point };
 
 /** A device that always holds the same keys and counts its releases. */
@@ -85,17 +87,23 @@ describe('DeviceIntentSource', () => {
 
 describe('Player scenario: walking with the keyboard', () => {
   const startMatch = () => {
-    const config = createDefaultGameConfig();
+    // No countdown: core's countdown holds all movement, and this test walks from the start.
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 0 } });
     const { target, input } = setUp();
+    const world = prepareMatchWorld(config, 1);
     const match = new Match({
-      simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
-      world: prepareMatchWorld(config, 1),
+      simulation: new Simulation({
+        ...withPlayer(config, PLAYER),
+        seed: 1,
+        logger: new NullLogger(),
+        map: world.map,
+      }),
+      world,
       tickRate: config.tickRate,
       scheduler: new FakeFrameScheduler(),
       renderer: new RecordingRenderer(),
       camera: new Camera({ x: 0, y: 0 }, 64, 36),
       input,
-      player: { legend: 'warrior', team: 'light' },
       logger: new MemoryLogger(),
       onCrash: () => undefined,
       bridge: {

@@ -44,7 +44,7 @@ function setUp(isExplorerShown: boolean) {
     setPointerClaimed: vi.fn(),
   };
   const controls = new CanvasPointerControls({
-    match,
+    controls: match,
     viewport: { canvas, chrome, isExplorerShown },
   });
   controls.attach();

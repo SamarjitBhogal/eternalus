@@ -1834,6 +1834,10 @@ Reply inline (`Decision: …`).
     `2aa9651`: `Match` reads `MatchState.humanLegendId`), which reaches the phase branch after the
     HUD PR. Until then a test pins the interim adoption (`Match.lifecycle.test.ts`, "adopts its own spawn, never a roster bot
     of the same class and team"; `99563b4`).
+  - 2026-11-04, built on `feat/match-director`: core sets `MatchState.humanLegendId` when it
+    spawns the roster's human slot, and `Match` reads it from `Snapshot.match.humanLegendId`. The
+    adopt-the-first-spawn interim is gone from `Match.ts`. The canvas gestures moved to
+    `MatchViewControls` (HC-S6).
 - [x] **HC-Q33 — Critic loop 2 of the HUD PR: replay size, three code tidies and the explorer's
       left button (2026-11-02).** (1) A crash report's replay holds the whole generated map and
       map objects (about 0.5 MB; cap 16 MB): keep that, or keep only the roster and generate the
@@ -1856,7 +1860,7 @@ Reply inline (`Decision: …`).
     (Recommended)" (DEC-153, built on `feat/hud-plan-b6` in `5500a0c`). The re-check (one
     correctness critic on `eaa5f7c..dd41ca1`) approved with four nits: one doc wording fixed,
     three rejected with reasons in the PR changelog.
-- [ ] **HC-S6 — Better than the design, scheduled: `Match`'s pointer and explorer controls in their
+- [x] **HC-S6 — Better than the design, scheduled: `Match`'s pointer and explorer controls in their
       own class (HUD PR, critic loop 3, BD-B; DEC-139).** About 85 lines of `Match` only pass the
       canvas gestures through (`hasDeveloperRoofs`, `lookAtMinimapPoint`, `panBy`, `zoomBy`,
       `toggleRoofAt`, `attackAt`, `overview`, `leaveExplorer`, `setPointerClaimed`). A
@@ -1868,6 +1872,46 @@ Reply inline (`Decision: …`).
       instead of spreading it (noted on the Phase 5 replay task, with DEC-152); (b) a map validation rule
       against overlapping building footprints before #64's capture zones reuse `findBuildingAt`
       (told to the #64 lane; noted in the HUD PR).
+  - Built 2026-11-04 (`feat/match-director`, after the phase/3 merge): `MatchViewControls` holds
+    the nine members; `Match` builds it and exposes it as `controls`, and `MatchHost` gives
+    `match.controls` to `CanvasPointerControls`. Architecture 06 §10 names the new owner. (a) and
+    (b) stay where they were noted.
+- [x] **HC-Q35 — The human's Legend: shared spawn path, or a roster slot (match-director critic, better than the design; DEC-139).** Spawn the human through one Legend spawn path shared with the bot roster (built as plan A19, with the seat as `{ definitionId }`), or record the human as a `player` slot of the roster? Recommendation: the shared path; the roster option changes plan A19.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-173): A1, with the note to accept it only if a critique finds it as
+    good as or better; the critic found A2 better, and the owner then chose "Keep A2" in chat. Built
+    on `feat/match-director`: `RosterSlot.pilot` (`'bot'` or `'human'`); `MatchConfig.seat` removed.
+- [x] **HC-Q36 — The countdown-end tick: one helper, or one mark kind (match-director critic, better than the design; DEC-139).** Keep `Math.round(countdownSeconds * tickRate)` in three production files behind a `countdownTicks` helper in `config/`, or add an at-countdown-end mark kind to the timeline so `countdownSeconds` is the one source? The two critic runs preferred different options; see the decision page.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-170): "One helper" (B1). Built on `feat/match-director`:
+    `config/countdownTicks.ts`, used by every copy, including `ai/LeashBehaviour.ts`.
+- [x] **HC-Q37 — Team helpers in `teams/` (match-director critic, better than the design; DEC-139).** Add value helpers (`PLAYABLE_TEAMS`, `isPlayableTeam`, the opposing team) to `teams/`, which holds types only today? It repeats the same two literals in five places now, and it changes the architecture 02 §2 row for `teams/`.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-171): "Build in this PR". Built on `feat/match-director`:
+    `teams/playableTeams.ts` (`PLAYABLE_TEAMS`, `isPlayableTeam`, `opponentOf`).
+- [x] **HC-Q38 — `GameState.match` read-only, with narrow writers (match-director critic, better than the design; DEC-139).** Expose `GameState.match` as read-only and add narrow writers (`holdIdle`, `endMatch`, `seatHuman`, `advanceTimeline`), as `setPhase` already is for the phase (DEC-84 (6))? Today any system can set `match.result` or `isIdleHeld`.
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-172): "Build in this PR". Built on `feat/match-director`: the
+    writers `holdIdle`, `endMatch`, `seatHuman` and `advanceTimeline` on `GameState`.
+- [x] **HC-Q39 — `DefaultInvariantRunner` takes an options object (match-director critic, better than the design; DEC-139).** Replace the five positional constructor arguments of `DefaultInvariantRunner` with an options object, as DEC-113 (4) did for `MatchDirector`?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-174): "Build in this PR". Done on `feat/match-director`: `DefaultInvariantRunnerOptions`.
+- [x] **HC-Q40 — The `end-game` mark 0.75 has no source (match-director critic).** The default timeline enters `end-game` at 0.75 of the planned length (`config/defaultGameConfig.ts`), and architecture 12 §3 calls it a recommendation with no source. Keep 0.75, give a source, or change it?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-175): "Keep 0.75 as your ruling" (D1). Done on `feat/match-director`: the `end-game` mark cites DEC-175.
+- [x] **HC-Q41 — FR-006 wording (match-director critic).** FR-006 still names `match-phase-changed`, the phases "late → ended" and a "20-minute timeline"; the built director has the event `phase-changed`, the phases of architecture 12 §2, and a 1800 s planned length. What wording do you want for the statement and its acceptance example?
+      Decision page: https://claude.ai/artifact/Po84T8vMhsNaCARN5ATRVg
+  - Answered 2026-11-04 (DEC-176): "Use the proposed wording" (E1). Done on `feat/match-director`: FR-006 in requirements 06.
+- [x] **HC-Q43 — Split a `MatchRecord` store out of `GameState` now, or schedule it (match-director critic, round 2).** `GameState.ts` is 349 lines, over the ~300-line guide, mostly from the match writers of DEC-172. Build a `MatchRecord` store in `state/` in this PR, or schedule the split with HC-S7?
+  - Answered 2026-11-04 in chat (DEC-177): "A: Build MatchRecord now". Done on `feat/match-director`: `state/MatchRecord.ts`; `GameState.match` is a `MatchRecord`.
+- [x] **HC-Q44 — Export `opponentOf` from core (match-director critic, round 2).** The client's `game/session/buildMatchSetup.ts` has its own one-line copy of the "other team" rule (DEC-171). Export `opponentOf` from `@eternalus/core` and use it, or leave the copy?
+  - Answered 2026-11-04 in chat (DEC-178): "A: Export opponentOf". Done on `feat/match-director`: core `index.ts`, used in `buildMatchSetup.ts`.
+- [x] **HC-Q45 — `check:quick` fails on agents' untracked probe tests (match-director, round 2).** In the main checkout, ESLint lints untracked `zz*Probe.test.ts` files that agent sessions left in `eternalus-agent-work/`. How do we fix it?
+  - Answered 2026-11-04 in chat (DEC-179): "A: Ignore eternalus-agent-work/". Done on `feat/match-director`: `eslint.config.js` `globalIgnores` and `.gitignore`.
+- [ ] **HC-Q46 — Only the match code can reach the match writers (match-director critic round 3, better than the design; DEC-139).** `GameState.match` is a `MatchRecord` (DEC-177), so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers. Only review keeps DEC-172's "one caller each" (today the calls are only in `match/` and `Simulation.ts`). Options: (a) type the public `GameState.match` as the read-only `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation` (the compiler stops other callers; changes the 03 §2 sketch); (b) an ESLint `no-restricted-syntax` rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests; (c) leave it to review. Agent's recommendation: (a), in its own PR with the HC-S7 split, not in the match-director PR (its critic rounds are used up, and round 2 had the same exposure).
+  - Answered 2026-11-05 in chat (DEC-210): "(a) Read-only type". To build: its own PR from the phase
+    branch after the match-director PR (#74) merges, with the HC-S7 split.
+- [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
       (`spawnRoster`, `spawnRovers`, `spawnBot`, `buildWorld`, `createControllers`,
@@ -1876,6 +1920,26 @@ Reply inline (`Decision: …`).
       merge. `SessionController.ts` (327 lines): its asset loading (`loadAssets`,
       `releaseAssets`, `publishLoaded`, `publishProgress`) is the part to move out. Nothing to
       answer unless you want it sooner.
+  - 2026-11-04 (match-director critic round 2, #4): on `feat/match-director`, `Simulation.ts` is
+    618 lines; `spawnRovers` and `spawnBot` are gone. Its roster helpers (`spawnRoster`,
+    `planLanes`, `humanSlotOf`, `controllerOf`, `spawnSlot`, `strongholdOf`, `legendRefusal`)
+    are one responsibility: the split is a `RosterSpawner` class. #56, #57, #58, #66 and #67 have
+    merged; open PRs #64 and #32 still edit the file. `SessionController.ts` is 326 lines.
+- [ ] **HC-S8 — Scheduled with GL-3: filter the timeline rules by action kind (match-director
+      critic).** `validateGameConfig` reads every timeline entry as `enter-phase`: the rules "at
+      least one `enter-phase` entry" and "the first `enter-phase` entry ends the countdown" count
+      any entry. When `spawn-sovereigns` lands (a tick-0 entry), filter by action kind, or the
+      default config becomes invalid. Nothing to answer.
+- [ ] **HC-S9 — Scheduled with GL-3: command logging after the end (match-director critic).**
+      Once the match has ended, every bot and human command logs INFO `core.commands` during
+      the 5 s run-on (DEC-92). That can flood the client's TRACE ring, which is the error-report
+      evidence. Decide the log level or a one-line summary when GL-3 builds the end. Nothing to
+      answer.
+- [ ] **HC-S10 — Scheduled with GL-3: the FR-002 acceptance test through `Simulation`
+      (match-director critic).** The FR-002 test ("kills a King at tick T, receives `match-ended`
+      and a `MatchResult` at tick T, no further commands") runs on a test entity with
+      `WinObjective` today, because no shipped kind has the component. Add the test through
+      `Simulation` when GL-3 gives the sovereign the component. Nothing to answer.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).

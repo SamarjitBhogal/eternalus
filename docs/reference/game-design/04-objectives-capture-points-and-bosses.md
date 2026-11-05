@@ -4,7 +4,7 @@ description: How a match is scored and won, the capture points and their three c
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-11-04
 tags: [reference, game-design, objectives, capture-points, bosses, match-timeline]
 paths: ['packages/core/src/match/**']
 related:
@@ -28,7 +28,7 @@ From the game doc (all **MVP** unless marked):
 - Points of interest are areas of mutual capture. At the start of the game, no one owns them.
 - Teams gain points by capturing and holding points of interest, destroying or capturing enemy
   buildings, and getting kills.
-- **Destroying the enemy capital (Stronghold) wins the game.**
+- **Killing the enemy King (the sovereign) wins the game** (DEC-71, ADR 0021).
 - Capture points have three checkpoints (below).
 
 Points are a score, not a currency: there is no item shop (`06-abilities-and-progression.md`).
@@ -183,7 +183,7 @@ shockwave hits; whether a destroyed camp stays gone for the rest of the match.
 
 ## Win condition and match end
 
-- The match ends when a Stronghold is destroyed; the other team wins. `MatchDirector` moves
+- The match ends when a King dies (DEC-71, ADR 0021); the other team wins. `MatchDirector` moves
   to the `results` phase and produces a `MatchResult` (winner, score per team and per Legend,
   kills/assists, structures destroyed, captures) that the profile's match history stores
   (`11-mvp-scope.md`).
@@ -208,7 +208,7 @@ planned match length (30 minutes, DEC-13).
 | mid-game                        | Cathedral gem explodes; Eternal boss summoned; atmosphere change; camps buffed; corner waves every 4 min [game doc] |
 | boss spawns (trigger open)      | Corner crystals turn volatile [DEC-12]                                                                              |
 | every 5 min after a corner kill | Corner crystal respawns its mini-boss [game doc]                                                                    |
-| Stronghold destroyed            | Match ends [game doc]                                                                                               |
+| King dies                       | Match ends [DEC-71]                                                                                                 |
 
 ## Engineering notes
 
