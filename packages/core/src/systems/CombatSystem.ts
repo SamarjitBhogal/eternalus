@@ -5,17 +5,22 @@ import { Transform } from '../components/Transform';
 import type { DamagePipeline } from '../combat/DamagePipeline';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
+import type { MutableVec2 } from '../utils/vec2.types';
 import type { System, SystemContext } from './System.types';
 
 /**
  * Lands the attacks of every unit with a target (architecture 05 §10): when the target is in reach
  * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A unit
  * with a target in reach faces it every tick, after `MovementSystem`, so attacking outranks moving
- * (DEC-192). A dead or removed target clears. Statuses stop attacks (`cannot-attack`) and scale the
- * cooldown (`attackSpeed`). Getting into reach is the controller's job (moving), not this system's.
+ * (DEC-192): it faces the point reach is measured to (`EntityStore.aimPointOf`), a building's
+ * outline point nearest it or a unit's centre (DEC-216 (11)). A dead or removed target clears.
+ * Statuses stop attacks (`cannot-attack`) and scale the cooldown (`attackSpeed`). Getting into
+ * reach is the controller's job (moving), not this system's.
  */
 export class CombatSystem implements System {
   public readonly name = 'combat';
+  /** Scratch for the point the attacker faces. */
+  private readonly aim: MutableVec2 = { x: 0, y: 0 };
 
   /**
    * @param damage - The match's one damage pipeline, shared with every system that deals damage.
@@ -46,7 +51,11 @@ export class CombatSystem implements System {
       if (!state.entities.isInReach(attacker.id, target.id)) {
         return;
       }
-      attacker.getComponent(Transform).lookAt(target.getComponent(Transform).position);
+      // DEC-216 (11): face the spot the hit lands, the one aim rule reach is measured to.
+      const transform = attacker.getComponent(Transform);
+      if (state.entities.aimPointOf(target.id, transform.position, this.aim)) {
+        transform.lookAt(this.aim);
+      }
       if (!combat.canAttack(state.tick)) {
         return;
       }

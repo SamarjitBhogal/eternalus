@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Combat } from '../components/Combat';
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { MapObjectBody } from '../components/MapObjectBody';
 import { StatusEffects } from '../components/StatusEffects';
@@ -104,7 +105,7 @@ describe('CombatSystem', () => {
     expect(warrior.getComponent(Transform).facing).toEqual(INITIAL_FACING);
   });
 
-  it('turns toward the position of a map object it attacks', () => {
+  it('faces the nearest point of a long wall it attacks, not its centre (DEC-216 (11))', () => {
     const { state, warrior, context, attack } = setUp();
     const { house } = MAP_OBJECT_DEFINITIONS;
     const content = loadDefaultContent(CONFIG.tickRate);
@@ -117,13 +118,14 @@ describe('CombatSystem', () => {
       },
       new IdGenerator(100),
     );
-    const object = factory.create('obstacle', house.id, { position: { x: 0, y: -7 } });
-    // The footprint holds the attacker's own position, so the object is in reach.
+    // A wall x -5..35, y -3..-1, centred at (15, -2): its near edge is 1 m north of the attacker,
+    // inside reach, while its centre is far to the east.
+    const object = factory.create('obstacle', house.id, { position: { x: 15, y: -2 } });
     const footprint = [
-      { x: -2, y: 2 },
-      { x: 2, y: 2 },
-      { x: 2, y: -12 },
-      { x: -2, y: -12 },
+      { x: -5, y: -1 },
+      { x: 35, y: -1 },
+      { x: 35, y: -3 },
+      { x: -5, y: -3 },
     ];
     object.addComponent(
       new MapObjectBody({ id: 'house', kind: 'house', isBlocking: true, footprints: [footprint] }),
@@ -134,6 +136,29 @@ describe('CombatSystem', () => {
     new CombatSystem(new DamagePipeline()).update(context);
 
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
+  it('faces the nearest point of a fort it attacks, not the tower at its centre (DEC-216 (11))', () => {
+    const { warrior, spawn, context, attack } = setUp();
+    // A tower stand-in at (30, 0) whose fort's west wall (x 1..4, y -16..16) is 1 m east of the
+    // attacker: reach is measured to the wall, so the wall is what it faces.
+    const tower = spawn('light-mob', 'training-dummy', 30, 'dark');
+    tower.addComponent(
+      new Footprint([
+        [
+          { x: 1, y: -16 },
+          { x: 4, y: -16 },
+          { x: 4, y: 16 },
+          { x: 1, y: 16 },
+        ],
+      ]),
+    );
+    warrior.getComponent(Transform).moveTo({ x: 0, y: 6 });
+
+    attack(tower);
+    new CombatSystem(new DamagePipeline()).update(context);
+
+    expect(warrior.getComponent(Transform).facing).toEqual({ x: 1, y: 0 });
   });
 
   it('does not turn toward a target out of reach', () => {
