@@ -133,7 +133,7 @@ describe('GuardRoster', () => {
     expect(new Set([filled, vacated, later, refilled]).size).toBe(4);
   });
 
-  it('counts a refill the unit cap blocks once, when its post comes due, not on every tick it waits', () => {
+  it('counts every refill: a blocked one once, when its post comes due, not on every tick it waits, and each one that succeeds (DEC-169)', () => {
     const cap = 5;
     const { state, step } = guarded({ limits: { maxUnitsPerTeam: cap } });
     let lightPosts = 0;
@@ -141,6 +141,12 @@ describe('GuardRoster', () => {
       lightPosts += team === 'light' ? 1 : 0;
     });
     const blocked = lightPosts - cap;
+    // DEC-169: the `cap` refills that fit are requests met in full, so they count as requested
+    // with nothing suppressed; `later` is the refills after the first tick, `again` those blocked.
+    const asked = (later: number, again: number) => ({
+      unitsRequested: lightPosts + later,
+      unitsSuppressed: blocked + again,
+    });
     const counters = () => {
       const { unitsRequested, unitsSuppressed } = state.teams.light;
       return { unitsRequested, unitsSuppressed };
@@ -148,11 +154,11 @@ describe('GuardRoster', () => {
 
     step();
     expect(blocked).toBeGreaterThan(0);
-    expect(counters()).toEqual({ unitsRequested: blocked, unitsSuppressed: blocked });
+    expect(counters()).toEqual(asked(0, 0));
     for (let tick = 0; tick < 100; tick += 1) {
       step();
     }
-    expect(counters()).toEqual({ unitsRequested: blocked, unitsSuppressed: blocked });
+    expect(counters()).toEqual(asked(0, 0));
 
     // A dead guard frees one place, which a waiting post takes at once; when the dead guard's own
     // post comes due 120 s later, the cap is full again and that refill is counted, once.
@@ -165,13 +171,13 @@ describe('GuardRoster', () => {
     for (let tick = 0; tick < 120 * TICK_RATE; tick += 1) {
       step();
     }
-    expect(counters()).toEqual({ unitsRequested: blocked, unitsSuppressed: blocked });
+    expect(counters()).toEqual(asked(1, 0));
     step();
-    expect(counters()).toEqual({ unitsRequested: blocked + 1, unitsSuppressed: blocked + 1 });
+    expect(counters()).toEqual(asked(2, 1));
     for (let tick = 0; tick < 100; tick += 1) {
       step();
     }
-    expect(counters()).toEqual({ unitsRequested: blocked + 1, unitsSuppressed: blocked + 1 });
+    expect(counters()).toEqual(asked(2, 1));
   });
 
   it('empties the post of a guard that changes team, and refills it after the respawn time', () => {

@@ -4,6 +4,7 @@ import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
+import { countdownEndTick } from '../state/countdownEndTick';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
@@ -57,11 +58,7 @@ export class GuardRoster {
       if (plan === undefined || team === undefined || transform === undefined) {
         continue;
       }
-      const { countdownSeconds } = state.config.match;
-      const firstTick =
-        plan.activation === 'countdown-end'
-          ? Math.round(countdownSeconds * state.config.tickRate)
-          : 0;
+      const firstTick = plan.activation === 'countdown-end' ? countdownEndTick(state.config) : 0;
       const total = plan.table.reduce((sum, row) => sum + row.count, 0);
       const ring = transform.radius + plan.postGap;
       const edge = transform.radius + plan.leashRadius;
@@ -138,6 +135,10 @@ export class GuardRoster {
       });
       state.entities.add(guard);
       state.guards.fill(index, guard.id);
+      if (slot.team !== 'neutral') {
+        // DEC-169: a refill that succeeds counts too, so the suppressed share is blocked / all.
+        state.recordSpawnRequest(slot.team, 1, 1);
+      }
       state.events.emit('entity-spawned', { entityId: guard.id, kind, team: slot.team });
     });
   }

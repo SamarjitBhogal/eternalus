@@ -25,9 +25,10 @@ import type {
  * while the target attacks it: back inside, the target is fought on, else the leash breaks: the
  * mob emits one `stop` and rests again (with no target, its movement walks it back to its slot or
  * post), and for `aggroCooldownSeconds` it leaves alone the enemy that escaped (DEC-144 F) unless
- * that enemy attacks the mob or a mate. A dead target with no enemy left in reach leaves it
- * resting, with no cooldown. It never takes a candidate outside its leash, and `objective` ignores
- * the leash, since a structure cannot drag a mob away. During a ghosted first wave
+ * that enemy attacks the mob or a mate while inside the old anchor's leash (DEC-160). A dead
+ * target with no enemy left in reach leaves it resting, with no cooldown. It never takes a
+ * candidate outside its leash, and `objective` ignores the leash, since a structure cannot drag a
+ * mob away. During a ghosted first wave
  * (`ghostFirstWaveTicks`, 11 §4.3) Legends are never candidates. Controllers supply only what
  * differs (`LeashRules`). Pure, apart from one scratch point.
  */
@@ -207,8 +208,9 @@ export class LeashBehaviour {
    * `acquisitionRadius`, or within the rules' `helpRadius` when it attacks a mate, and only inside
    * a leash anchored here; a neutral unit counts only while it attacks this mob (DEC-166).
    * `escapingId`, the target outside the leash, is never taken again: the grace chases it, and only
-   * a switch moves the anchor (DEC-160). Unless it attacks this mob or a mate, the enemy that
-   * escaped is left alone in the cooldown (DEC-144 F).
+   * a switch moves the anchor (DEC-160). Unless it attacks this mob or a mate from inside the old
+   * anchor's leash (memory's `leashX/Y`, DEC-160), the enemy that escaped is left alone in the
+   * cooldown (DEC-144 F).
    */
   private acquire<Idle extends string, Rule extends AggroRuleDefinition>(
     situation: LeashSituation<Rule>,
@@ -236,7 +238,11 @@ export class LeashBehaviour {
       const gap = dx * dx + dy * dy;
       const victim = state.entities.attackTargetOf(candidate);
       const isHelpCall = victim !== null && rules.isMate(situation, victim);
-      const isLeftAlone = candidate === escapedId && victim !== id && !isHelpCall;
+      // DEC-160 (G2): in the cooldown the escaped enemy is taken back only while it attacks the mob
+      // or a mate and is still inside the old anchor's leash, so kiting never drags the mob.
+      const isLeftAlone =
+        candidate === escapedId &&
+        ((victim !== id && !isHelpCall) || rules.isOutsideLeash(situation, memory, this.point));
       if (
         (gap > reach && !isHelpCall) ||
         isLeftAlone ||

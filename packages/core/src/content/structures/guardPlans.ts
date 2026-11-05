@@ -1,18 +1,19 @@
+import { GUARD_LEASH } from './guardLeash';
 import type { GuardPlanDefinition } from './structures.types';
 
-const LEASH = 8; // TUNE: balancing.md "leash radius 8 m"
 const RESPAWN = 120; // TUNE: game doc "respawn every 2 minutes"
-const POST_GAP = 2; // TUNE: no reference value; just outside the footprint
 // TUNE: owner 2026-11-02 (DEC-144): one decision's walk (10 ticks at up to 3.5 m/s) plus the
 // farthest a guard stands from a target in reach (radii + reach, up to 0.8 + 1.25 + 1.5 = 3.55 m
-// for a heavy guard against a Sentinel); at most 4.5 m for one guard, so about 0.5 m of margin.
-// guardPlans.test.ts checks the sum against every guard and target in content.
-const TOLERANCE = 5;
+// for a heavy guard against a Sentinel); at most 4.5 m for one guard. DEC-181 (H2): widened from
+// 5 m to 5.5 m, since at the 300-unit cap a brain can wait up to 6 ticks more for its turn
+// (`AI_CADENCE.maxDecisionsPerTick`), up to 0.7 m more walking. guardPlans.test.ts checks the sum
+// against every guard and target in content.
+const TOLERANCE = 5.5;
 
 const CAMP = {
-  leashRadius: 6, // TUNE: balancing.md camp leash
+  leashRadius: GUARD_LEASH.camp,
   respawnSeconds: 120, // TUNE: balancing.md "a cleared camp respawns 120 s later"
-  postGap: POST_GAP,
+  postGap: GUARD_LEASH.postGap,
   leashTolerance: TOLERANCE,
   activation: 'countdown-end', // requirements doc: camps are inactive until the countdown ends
   respawn: 'group',
@@ -50,18 +51,18 @@ const CAMP_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
 export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
   'spawner-tower': {
     table: [{ mobId: 'light-guard', count: 4 }],
-    leashRadius: LEASH,
+    leashRadius: GUARD_LEASH.tower,
     respawnSeconds: RESPAWN,
-    postGap: POST_GAP,
+    postGap: GUARD_LEASH.postGap,
     leashTolerance: TOLERANCE,
     activation: 'match-start',
     respawn: 'each',
   },
   'buff-tower': {
     table: [{ mobId: 'medium-guard', count: 6 }],
-    leashRadius: LEASH,
+    leashRadius: GUARD_LEASH.tower,
     respawnSeconds: RESPAWN,
-    postGap: POST_GAP,
+    postGap: GUARD_LEASH.postGap,
     leashTolerance: TOLERANCE,
     activation: 'match-start',
     respawn: 'each',
@@ -71,9 +72,9 @@ export const GUARD_PLANS: Readonly<Record<string, GuardPlanDefinition>> = {
       { mobId: 'light-guard', count: 6, shrink: { perLost: 'spawner-tower', count: 2 } },
       { mobId: 'heavy-guard', count: 2 },
     ],
-    leashRadius: LEASH,
+    leashRadius: GUARD_LEASH.tower,
     respawnSeconds: RESPAWN,
-    postGap: POST_GAP,
+    postGap: GUARD_LEASH.postGap,
     leashTolerance: TOLERANCE,
     activation: 'match-start',
     respawn: 'each',

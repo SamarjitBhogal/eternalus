@@ -74,7 +74,13 @@ describe('LeashBehaviour', () => {
     const attacker = add('dark', 53, 20, 'warrior', 'warrior');
     state.entities.setAttackTarget(attacker, self);
 
-    const decision = decide(self, { fsm: 'marching', cooldownUntilTick: 5, escapedId: attacker });
+    const decision = decide(self, {
+      fsm: 'marching',
+      cooldownUntilTick: 5,
+      escapedId: attacker,
+      leashX: 50,
+      leashY: 20,
+    });
 
     expect(decision.commands).toEqual([
       { type: 'attack-target', actorId: self, targetId: attacker },
@@ -270,8 +276,52 @@ describe('LeashBehaviour', () => {
     const grace = engagingOn(legend, { leashX: 40, breakAtTick: 50 });
     expect(decide(self, grace)).toMatchObject({ commands: [], memory: grace });
     expect(
-      decide(self, { fsm: 'marching', cooldownUntilTick: 5, escapedId: legend }).commands,
+      decide(self, {
+        fsm: 'marching',
+        cooldownUntilTick: 5,
+        escapedId: legend,
+        leashX: 50,
+        leashY: 20,
+      }).commands,
     ).toEqual([{ type: 'attack-target', actorId: self, targetId: legend }]);
+  });
+
+  it('marching in its cooldown: does not take back an escaped Legend that keeps hitting it from outside the old leash (DEC-160)', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    // 13 m from the old anchor (40, 20), past the 7.5 m leash, but in reach of where the mob stands.
+    const kiter = add('dark', 53, 20, 'warrior', 'warrior');
+    state.entities.setAttackTarget(kiter, self);
+
+    const decision = decide(self, {
+      fsm: 'marching',
+      cooldownUntilTick: 5,
+      escapedId: kiter,
+      leashX: 40,
+      leashY: 20,
+    });
+
+    expect(decision.commands).toEqual([]);
+    expect(decision.memory).toMatchObject({ fsm: 'marching', targetId: null });
+  });
+
+  it('marching in its cooldown: takes back an escaped Legend that attacks it from inside the old leash (DEC-160)', () => {
+    const { state, add, decide } = setUp();
+    const self = add('light', 50);
+    const returned = add('dark', 53, 20, 'warrior', 'warrior');
+    state.entities.setAttackTarget(returned, self);
+
+    const decision = decide(self, {
+      fsm: 'marching',
+      cooldownUntilTick: 5,
+      escapedId: returned,
+      leashX: 46,
+      leashY: 20,
+    });
+
+    expect(decision.commands).toEqual([
+      { type: 'attack-target', actorId: self, targetId: returned },
+    ]);
   });
 
   it('engaging: takes the next enemy in range at once when its target dies (MS-36)', () => {

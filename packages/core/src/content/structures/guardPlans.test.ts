@@ -27,6 +27,30 @@ describe('GUARD_PLANS', () => {
     }
   });
 
+  it('covers a guard whose decision waits its turn at the unit cap, 16 ticks apart not 10 (DEC-181)', () => {
+    const { tickRate, limits } = createDefaultGameConfig();
+    // The cap's units on both teams plus up to 48 camp mobs (18 §7.1); each brain waits at most
+    // floor((brains - 1) / budget) ticks in the AI queue (AI56-F2).
+    const brains = 2 * limits.maxUnitsPerTeam + 48;
+    const wait = Math.floor((brains - 1) / AI_CADENCE.maxDecisionsPerTick);
+    const largestTarget = Math.max(
+      ...[...LEGEND_CLASSES.all(), ...MOB_DEFINITIONS.all()].map((unit) => unit.footprintRadius),
+    );
+    for (const plan of Object.values(GUARD_PLANS)) {
+      for (const { mobId } of plan.table) {
+        const guard = MOB_DEFINITIONS.get(mobId);
+        const ticks = AI_CADENCE.everyTicks.guard + wait;
+        const walk = (guard.movementProfile.maxSpeed * ticks) / tickRate;
+        const stance = guard.footprintRadius + largestTarget + (guard.attack?.reach ?? 0);
+
+        expect({ mobId, tolerance: plan.leashTolerance >= walk + stance }).toEqual({
+          mobId,
+          tolerance: true,
+        });
+      }
+    }
+  });
+
   it('keys every plan by a structure definition id, so no plan is silently left unused', () => {
     const unknown = Object.keys(GUARD_PLANS).filter((id) => !STRUCTURE_DEFINITIONS.has(id));
 

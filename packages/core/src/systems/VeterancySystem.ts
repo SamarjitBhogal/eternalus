@@ -11,11 +11,12 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Minion XP (game doc, MVP-if-time; architecture 18 MS-16): a lane minion (a horde member) or a
- * tower guard (DEC-165) that kills a lane minion counts the kill in its `Veterancy`; each level it
- * gains (`gainLevels`) raises its max health by `healthPerLevel` of its base health (healing by the
- * same) and adds a stack of the veteran status. Every `aura.everySeconds`, each unit with a level
- * gives the aura status to the other friendly horde minions within `aura.radius`. Kills come from
- * `entity-died`, counted on this system's pass; it runs after every system that deals damage and
+ * tower guard (DEC-165) that kills a lane minion or a tower guard counts the kill in its
+ * `Veterancy`; each level it gains (`gainLevels`) raises its max health by `healthPerLevel` of its
+ * base health (healing by the same) and adds a stack of the veteran status. Every
+ * `aura.everySeconds`, each unit with a level gives the aura status to the other friendly horde
+ * minions and tower guards (DEC-165) within `aura.radius`. Kills come from `entity-died`, counted
+ * on this system's pass; it runs after every system that deals damage and
  * before `DeathSystem`.
  */
 export class VeterancySystem implements System {
@@ -71,14 +72,14 @@ export class VeterancySystem implements System {
 
   private countKill(state: GameState, killerId: EntityId, victimId: EntityId): void {
     const killer = state.entities.get(killerId);
-    // "A minion that kills another minion" (game doc); DEC-165: only horde kills count, so the
-    // victim must be a lane minion still in its horde record this tick, never a guard or camp mob.
-    const isMinionKill = state.hordes.hordeOf(victimId) !== undefined;
+    // "A minion that kills another minion" (game doc); DEC-165: the victim must be a lane minion
+    // still in its horde record this tick, or a tower guard still on its post ("killing a guard is
+    // a kill"); never a camp mob.
     if (
       killer === undefined ||
-      !isMinionKill ||
+      !VeterancySystem.isLeveller(state, victimId) ||
       !state.entities.isAlive(killerId) ||
-      !VeterancySystem.canLevel(state, killerId)
+      !VeterancySystem.isLeveller(state, killerId)
     ) {
       return;
     }
@@ -100,8 +101,11 @@ export class VeterancySystem implements System {
     }
   }
 
-  /** DEC-165: lane minions and tower guards level from their kills; camp mobs (neutral posts) do not. */
-  private static canLevel(state: GameState, id: EntityId): boolean {
+  /**
+   * DEC-165: lane minions and tower guards level from their kills, are rallied by the aura, and
+   * count as a kill when killed; camp mobs (neutral posts) do none of the three.
+   */
+  private static isLeveller(state: GameState, id: EntityId): boolean {
     const post = state.guards.slotOf(id);
     return (
       state.hordes.hordeOf(id) !== undefined || (post !== undefined && post.team !== 'neutral')
@@ -146,7 +150,7 @@ export class VeterancySystem implements System {
         if (
           id !== entity.id &&
           state.entities.teamOf(id) === team &&
-          state.hordes.hordeOf(id) !== undefined
+          VeterancySystem.isLeveller(state, id)
         ) {
           this.statuses.apply(state, id, statusId, entity.id);
         }

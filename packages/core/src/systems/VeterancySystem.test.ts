@@ -193,6 +193,39 @@ describe('VeterancySystem', () => {
     expect(campMob.getComponent(Health).max).toBe(150);
   });
 
+  it('rallies a friendly tower guard in range of a levelled minion, but not a camp mob (DEC-165)', () => {
+    const { guard, kill, step } = setUp();
+    const towerGuard = guard('light', 'light-guard');
+    const campMob = guard('neutral', 'light-camp-mob');
+    kill();
+    kill();
+    step();
+
+    expect(statusesOf(towerGuard)).toContainEqual(['rallied', 1]);
+    expect(statusesOf(campMob)).toEqual([]);
+  });
+
+  it('counts a killed tower guard as a kill, but not a killed camp mob (DEC-165)', () => {
+    const { guard, killer, state, step } = setUp();
+    const died = (entityId: string) => {
+      state.events.emit('entity-died', {
+        entityId,
+        killer: { attackerId: killer.id, kind: 'weapon', definitionId: 'light-minion' },
+      });
+    };
+    const towerGuard = guard('light', 'light-guard');
+    const campMob = guard('neutral', 'light-camp-mob');
+    died(campMob.id);
+    died(towerGuard.id);
+    step();
+    expect(killer.getComponent(Veterancy).level).toBe(0);
+
+    died(towerGuard.id);
+    step();
+
+    expect(killer.getComponent(Veterancy).level).toBe(1);
+  });
+
   it('gains levels from another source with their effects, and the next kill keeps them', () => {
     const { state, system, killer, kill, step } = setUp();
 

@@ -11,8 +11,9 @@ export const AI_CADENCE = {
     turret: 2, // TUNE: predictive aim wants fresh velocity
     boss: 3, // TUNE:
   },
-  // TUNE: 11 §6's Recommendation, sized for 288 mobs (288 / 5 plus Legends ≈ 70). At the 300-unit
-  // cap (DEC-137) about 120 minion brains fall due per tick, so some wait: the queue is first in,
-  // first out, so a brain waits at most floor((brains - 1) / 96) ticks (AiSystem.test.ts).
+  // TUNE: 11 §6's Recommendation. At the 300-unit cap (DEC-137) about 650 brains (2 x 300 units
+  // plus camp mobs) are in play, so some wait: the queue is first in, first out, so a brain waits at
+  // most floor((brains - 1) / 96) ticks (AiSystem.test.ts). DEC-181 (H2): kept at 96; the guard
+  // `leashTolerance` is widened to cover the wait instead (guardPlans.test.ts).
   maxDecisionsPerTick: 96,
 } as const satisfies AiCadence;
