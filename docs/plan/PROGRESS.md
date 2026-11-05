@@ -5075,3 +5075,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "exit 0". Each new test was seen red with its fix broken on purpose. This line was filled in
   after that run (docs-only); `prettier --check` and `docs:check` were re-run on it.
 - Next step: critic re-check of this round, ponytail, then the PR into phase/3 after #75 merges.
+
+## 2026-11-05 · Phase 3 · fix/minion-stack-followups · critic r2 + ponytail r2 fixes
+
+- What: 11 §6 says `StuckSystem` is a second A\* consumer outside the decision budget (cap
+  `STUCK_DETECTION.maxPlansPerTick`, upgrade path a round-robin cursor); 11 §3 notes
+  `ghostFirstWaveTicks` is already in ticks; 18 lists a map object's cells as ground that never
+  holds a chase; stuck-detection comment says "progress toward what it heads for" (DEC-217 (14));
+  `Veterancy` TSDoc and its cap test comment say other level sources go through `VeterancySystem`;
+  "critic A BTD 4" became "DEC-219 (d)"; `EntityStore.aimPointOf` returns the outline, `'centre'`
+  or `null`, so `isInReach` and `PathingSystem` do not look the outline up twice; one shared
+  `Fort` test stand-in in `systems/__fixtures__/Fort.ts`; `BotMovement.approach` inlined into
+  `moveTo`.
+- Checks: `npm run check` after the last edit → exit 0: core "Tests  1155 passed (1155)"; client "Tests  1754 passed (1754)"; "✓ built in 299ms"; "Documentation check passed.". Two earlier runs hit 60 s test timeouts while the host load average was 35 (other agents' test runs); the same files passed alone and in the third full run.
+- Next step: critic r3 on this diff, then PR.

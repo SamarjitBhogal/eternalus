@@ -197,7 +197,7 @@ accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a ho
 profile (`HordeAggroRuleDefinition`) adds `leashRadius` and `callForHelpRadius`, and a guard's or
 camp mob's (`GuardAggroRuleDefinition`) adds nothing, since its leash and its mates come from its
 post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content, except
-`ghostFirstWaveTicks`, turned into ticks with the match's tick rate where they are read.
+`ghostFirstWaveTicks` (already in ticks), turned into ticks with the match's tick rate where they are read.
 
 ```ts
 // packages/core/src/content/ai/aggro/lane-minion.ts (sketch)
@@ -311,8 +311,10 @@ brain can wait up to `floor((brains − 1) / maxDecisionsPerTick)` ticks. The ow
 the guard leash tolerance covers the wait instead (DEC-181, 18 §7). A decision is atomic and
 cheap: radius-bounded queries, no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
 `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
-blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
-path cache in the brain is the next step if profiling shows the cost). Other heavy work (flow
+blocked, a bot's own planning costing inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
+path cache in the brain is the next step if profiling shows the cost). `StuckSystem` is a second A\* consumer, outside the decision budget, capped by
+`STUCK_DETECTION.maxPlansPerTick`; requests over the cap wait (`ChaseWatch.isPlanDue`), served in
+store order, and the upgrade path is a round-robin cursor. Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
