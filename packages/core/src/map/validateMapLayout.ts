@@ -41,15 +41,18 @@ const layoutRules = (layout: MapLayout): readonly (readonly [boolean, string])[]
     ],
     [!(wallRing.laneApron >= 0), 'wallRing.laneApron must be >= 0'],
     [
-      wallRing.frontArc !== undefined &&
-        !(
-          Number.isFinite(wallRing.frontArc.verticalScale) &&
-          wallRing.frontArc.verticalScale >= 1 &&
-          Number.isFinite(wallRing.frontArc.curveStepDegrees) &&
-          wallRing.frontArc.curveStepDegrees > 0 &&
-          wallRing.frontArc.curveStepDegrees <= wallRing.maxSegmentArcDegrees
-        ),
+      !(
+        Number.isFinite(wallRing.frontArc.verticalScale) &&
+        wallRing.frontArc.verticalScale >= 1 &&
+        Number.isFinite(wallRing.frontArc.curveStepDegrees) &&
+        wallRing.frontArc.curveStepDegrees > 0 &&
+        wallRing.frontArc.curveStepDegrees <= wallRing.maxSegmentArcDegrees
+      ),
       'wallRing.frontArc needs a finite verticalScale >= 1 and 0 < curveStepDegrees <= maxSegmentArcDegrees',
+    ],
+    [
+      !(wallRing.exitArcDegrees / 2 + wallRing.gateArcDegrees / 2 <= 90),
+      'wallRing outer gates must end by ±90° so each shield tip meets its cliff (DEC-158)',
     ],
     [
       obstacles.choices.some((choice) => !(choice.weight > 0)),

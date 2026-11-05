@@ -18,30 +18,26 @@ const boundaryPoint = (
   const unchanged = (ring.exitArcDegrees * RADIANS_PER_DEGREE) / 2;
   const t = Math.max(0, (Math.abs(angle) - unchanged) / (Math.PI / 2 - unchanged));
   const blend = t * t * (3 - 2 * t);
-  const scaleY = 1 + ((ring.frontArc?.verticalScale ?? 1) - 1) * blend;
+  const scaleY = 1 + (ring.frontArc.verticalScale - 1) * blend;
   return { x: point.x, y: centre.y + (point.y - centre.y) * scaleY };
 };
+
+/** How far north and south of the Stronghold centre the shield's outer tips (at ±90°) reach. */
+export const shieldReach = (ring: MapLayout['wallRing']): number =>
+  -boundaryPoint({ x: 0, y: 0 }, ring, ring.radius + ring.thickness / 2, -Math.PI / 2).y;
 
 const arcFootprint = (centre: Vec2, ring: MapLayout['wallRing'], arc: Arc): Polygon => {
   const inner = ring.radius - ring.thickness / 2;
   const outer = ring.radius + ring.thickness / 2;
-  if (ring.frontArc !== undefined) {
-    const count = Math.max(
-      1,
-      Math.ceil((arc.end - arc.start) / (ring.frontArc.curveStepDegrees * RADIANS_PER_DEGREE)),
+  const count = Math.max(
+    1,
+    Math.ceil((arc.end - arc.start) / (ring.frontArc.curveStepDegrees * RADIANS_PER_DEGREE)),
+  );
+  const edge = (radius: number) =>
+    Array.from({ length: count + 1 }, (_, i) =>
+      boundaryPoint(centre, ring, radius, arc.start + ((arc.end - arc.start) * i) / count),
     );
-    const edge = (radius: number) =>
-      Array.from({ length: count + 1 }, (_, i) =>
-        boundaryPoint(centre, ring, radius, arc.start + ((arc.end - arc.start) * i) / count),
-      );
-    return [...edge(inner), ...edge(outer).reverse()];
-  }
-  return [
-    polarPoint(centre, inner, arc.start),
-    polarPoint(centre, outer, arc.start),
-    polarPoint(centre, outer, arc.end),
-    polarPoint(centre, inner, arc.end),
-  ];
+  return [...edge(inner), ...edge(outer).reverse()];
 };
 
 const splitArc = (start: number, end: number, maxArc: number): Arc[] => {
@@ -53,7 +49,7 @@ const splitArc = (start: number, end: number, maxArc: number): Arc[] => {
   }));
 };
 
-/** Each gate's arc and the wall arcs after it, going clockwise around the ring. */
+/** Wall and gate arcs from -90° to +90°: the open shield runs from cliff to cliff (DEC-158). */
 const ringArcs = (gateAngles: readonly number[], ring: MapLayout['wallRing']): Arc[] => {
   const gates = gateAngles
     .map((angle, laneIndex) => ({ angle, laneIndex }))
@@ -66,34 +62,26 @@ const ringArcs = (gateAngles: readonly number[], ring: MapLayout['wallRing']): A
     (ring.gateArcDegrees * RADIANS_PER_DEGREE) / 2,
     Math.min(...gaps) * MAX_GATE_SHARE_OF_GAP,
   );
-  if (ring.frontArc !== undefined) {
-    const limit = Math.PI / 2;
-    let nextWall = -limit;
-    const arcs: Arc[] = [];
-    for (const gate of gates) {
-      const start = gate.angle - halfGate;
-      if (start > nextWall)
-        arcs.push(...splitArc(nextWall, start, ring.maxSegmentArcDegrees * RADIANS_PER_DEGREE));
-      arcs.push({ start, end: gate.angle + halfGate, laneIndex: gate.laneIndex });
-      nextWall = gate.angle + halfGate;
-    }
-    if (nextWall < limit)
-      arcs.push(...splitArc(nextWall, limit, ring.maxSegmentArcDegrees * RADIANS_PER_DEGREE));
-    return arcs;
+  const limit = Math.PI / 2;
+  let nextWall = -limit;
+  const arcs: Arc[] = [];
+  for (const gate of gates) {
+    const start = gate.angle - halfGate;
+    if (start > nextWall)
+      arcs.push(...splitArc(nextWall, start, ring.maxSegmentArcDegrees * RADIANS_PER_DEGREE));
+    arcs.push({ start, end: gate.angle + halfGate, laneIndex: gate.laneIndex });
+    nextWall = gate.angle + halfGate;
   }
-  return gates.flatMap((gate, index) => {
-    const nextStart = gate.angle + (gaps[index] ?? 0) - halfGate;
-    return [
-      { start: gate.angle - halfGate, end: gate.angle + halfGate, laneIndex: gate.laneIndex },
-      ...splitArc(gate.angle + halfGate, nextStart, ring.maxSegmentArcDegrees * RADIANS_PER_DEGREE),
-    ];
-  });
+  if (nextWall < limit)
+    arcs.push(...splitArc(nextWall, limit, ring.maxSegmentArcDegrees * RADIANS_PER_DEGREE));
+  return arcs;
 };
 
 /**
- * Builds a Light Stronghold's wall ring: one gate centred on each lane exit (`gateAngles[i]`
- * is lane `i`'s exit angle in radians), wall segments filling the rest, and the ring corners
- * where turrets stand. Gate count therefore always equals the lane count.
+ * Builds a Light Stronghold's shield wall, an open arc from -90° to +90° (DEC-158): one gate
+ * centred on each lane exit (`gateAngles[i]` is lane `i`'s exit angle in radians), wall
+ * segments filling the rest, and the corners where turrets stand, both tips included. Gate
+ * count therefore always equals the lane count.
  */
 export const buildWallRing = (
   centre: Vec2,
@@ -113,7 +101,6 @@ export const buildWallRing = (
   }));
   const vertices = arcs.map((arc) => boundaryPoint(centre, ring, ring.radius, arc.start));
   const last = arcs.at(-1);
-  if (ring.frontArc !== undefined && last !== undefined)
-    vertices.push(boundaryPoint(centre, ring, ring.radius, last.end));
+  if (last !== undefined) vertices.push(boundaryPoint(centre, ring, ring.radius, last.end));
   return { pieces, vertices };
 };

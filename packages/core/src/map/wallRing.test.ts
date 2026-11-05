@@ -12,6 +12,7 @@ const RING = {
   maxSegmentArcDegrees: 45,
   minGateOpening: 12,
   laneApron: 20,
+  frontArc: { verticalScale: 1.5, curveStepDegrees: 6 },
 };
 const CENTRE = { x: 0, y: 0 };
 
@@ -19,10 +20,7 @@ describe('buildWallRing', () => {
   it.each([1, 3, 5, 7])(
     'makes an open front arc with %i original lane gates, taller tips and no rear wall',
     (lanes) => {
-      const ring = {
-        ...RING,
-        frontArc: { verticalScale: 1.5, curveStepDegrees: 6 },
-      };
+      const ring = RING;
       const exits = Array.from({ length: lanes }, (_, i) =>
         lanes === 1 ? 0 : ((-70 + (140 * i) / (lanes - 1)) * Math.PI) / 180,
       );
@@ -67,12 +65,17 @@ describe('buildWallRing', () => {
     expect(gate?.width).toBeCloseTo(41.58, 2);
   });
 
-  it('has one corner per piece, all on the ring', () => {
+  it('has one corner per piece plus the far tip, on the ring inside the exit arc', () => {
     const ring = buildWallRing(CENTRE, [0], RING);
+    // Inside ±exitArcDegrees/2 the arc keeps the ring radius; only the tips stretch, and only
+    // in y (DEC-158), so x alone tells which corners are inside.
+    const edgeX = cos(((RING.exitArcDegrees / 2) * Math.PI) / 180) * RING.radius;
+    const front = ring.vertices.filter((vertex) => vertex.x >= edgeX - 1e-9);
 
-    expect(ring.vertices).toHaveLength(ring.pieces.length);
+    expect(ring.vertices).toHaveLength(ring.pieces.length + 1);
+    expect(front.length).toBeGreaterThan(0);
     expect(
-      ring.vertices.every((vertex) => Math.abs(distance(vertex, CENTRE) - RING.radius) < 1e-9),
+      front.every((vertex) => Math.abs(distance(vertex, CENTRE) - RING.radius) < 1e-9),
     ).toBe(true);
   });
 
@@ -80,8 +83,8 @@ describe('buildWallRing', () => {
     const ring = buildWallRing(CENTRE, [0], RING);
     const walls = ring.pieces.filter((piece) => piece.kind === 'wall-segment');
 
-    // 360 - 24 = 336 degrees of wall, at most 45 degrees each: 8 segments.
-    expect(walls).toHaveLength(8);
+    // 180 - 24 = 156 degrees of wall, 78 on each side of the gate, at most 45 each: 4 segments.
+    expect(walls).toHaveLength(4);
   });
 
   it('narrows gates that would overlap their neighbours', () => {
@@ -90,6 +93,8 @@ describe('buildWallRing', () => {
     const [first, second] = gates.map((gate) => gate.footprint);
 
     // The gap between the gates is 0.1 rad; gates take at most 40% of it each side.
-    expect(first?.[2]?.x).toBeGreaterThan(second?.[1]?.x ?? Number.POSITIVE_INFINITY);
+    // Footprints run inner edge forward, then outer edge back: [2] is the first gate's outer
+    // end and [3] the second gate's outer start.
+    expect(first?.[2]?.x).toBeGreaterThan(second?.[3]?.x ?? Number.POSITIVE_INFINITY);
   });
 });

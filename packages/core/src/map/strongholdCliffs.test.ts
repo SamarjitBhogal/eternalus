@@ -15,11 +15,6 @@ describe('strongholdCliffs', () => {
     expect(Math.max(...(terrain[0]?.shape.map((p) => p.y) ?? []))).toBeCloseTo(292.5);
     expect(Math.min(...(terrain[2]?.shape.map((p) => p.y) ?? []))).toBeCloseTo(607.5);
   });
-  it('adds no new cliffs for a closed circular legacy boundary', () => {
-    const { frontArc, ...wallRing } = DEFAULT_MAP_LAYOUT.wallRing;
-    expect(frontArc).toBeDefined();
-    expect(strongholdCliffs({ ...DEFAULT_MAP_LAYOUT, wallRing }, 1600, 900)).toEqual([]);
-  });
   it('meets every shield tip at its cliff corner, so the open rear stays sealed (DEC-158)', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
     for (const [team, edge] of [

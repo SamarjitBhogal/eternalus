@@ -128,8 +128,8 @@ export type MapLayout = {
     readonly buff: readonly [number, number];
   };
   readonly wallRing: {
-    /** Open, enemy-facing shield arc; omitted for a legacy closed circular ring. */
-    readonly frontArc?: { readonly verticalScale: number; readonly curveStepDegrees: number };
+    /** Open, enemy-facing shield arc from cliff to cliff (DEC-158; no closed ring, DEC-159). */
+    readonly frontArc: { readonly verticalScale: number; readonly curveStepDegrees: number };
     readonly radius: number;
     readonly thickness: number;
     /** The arc facing the enemy over which the gates are spread evenly (architecture 06 §3). */

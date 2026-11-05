@@ -60,9 +60,7 @@ export class MapBuilder {
         wallBoundary: {
           radius: this.input.layout.wallRing.radius,
           thickness: this.input.layout.wallRing.thickness,
-          ...(this.input.layout.wallRing.frontArc === undefined
-            ? {}
-            : { frontArc: this.input.layout.wallRing.frontArc }),
+          frontArc: this.input.layout.wallRing.frontArc,
         },
       },
       TEAM_SIDES,

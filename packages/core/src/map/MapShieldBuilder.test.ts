@@ -37,7 +37,7 @@ describe('MapShieldBuilder', () => {
     expect(map).toEqual(before);
   });
 
-  it('supports legacy quadrilateral panels and ignores unrelated or empty features', () => {
+  it('draws a four-corner panel in its arc vertex order and ignores unrelated or empty features', () => {
     const map = new MapGenerator().generate(createDefaultGameConfig(), 1);
     const wall = map.features.find((f) => f.kind === 'wall-segment');
     if (wall === undefined) throw new Error('Missing wall');
@@ -53,11 +53,12 @@ describe('MapShieldBuilder', () => {
       },
       { ...wall, id: 'empty', footprint: [] },
     ]);
+    // Arc order: inner edge forward, then outer edge back, so the glass is the panel as given.
     expect(art.find((p) => p.id === `${wall.id}-glass`)?.shape).toEqual([
       { x: 0, y: 0 },
-      { x: 0, y: 20 },
-      { x: 10, y: 20 },
       { x: 10, y: 0 },
+      { x: 10, y: 20 },
+      { x: 0, y: 20 },
     ]);
     expect(
       art.every((p) => p.shape.every((v) => Number.isFinite(v.x) && Number.isFinite(v.y))),

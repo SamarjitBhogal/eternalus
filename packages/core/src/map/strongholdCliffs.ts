@@ -1,5 +1,6 @@
 import type { MapLayout, MapTerrain } from '../content/maps/maps.types';
 import { mirrorPolygon } from './symmetry';
+import { shieldReach } from './wallRing';
 
 /** Joins an open front shield to the world edge through the mountains behind each base. */
 export const strongholdCliffs = (
@@ -7,9 +8,7 @@ export const strongholdCliffs = (
   width: number,
   height: number,
 ): readonly MapTerrain[] => {
-  const arc = layout.wallRing.frontArc;
-  if (arc === undefined) return [];
-  const reach = (layout.wallRing.radius + layout.wallRing.thickness / 2) * arc.verticalScale;
+  const reach = shieldReach(layout.wallRing);
   const north = Math.max(0, height / 2 - reach);
   const south = Math.min(height, height / 2 + reach);
   return [

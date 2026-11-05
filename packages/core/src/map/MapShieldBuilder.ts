@@ -35,24 +35,12 @@ export class MapShieldBuilder extends MapDecorationBuilder {
   /** Uses actual world polygons for the translucent panels, luminous seams, runes and emitters. */
   public build(features: readonly MapFeature[]): readonly MapDecoration[] {
     this.layer = 'ground';
-    const isCurved = features.some((feature) => feature.wallBoundary?.frontArc !== undefined);
     for (const feature of features) {
       const painter = this.painters[feature.kind];
       if (painter === undefined) continue;
       const first = this.pieces.length;
       this.beginObject(feature.id, painter.kind);
-      const shape = feature.footprint;
-      const [a, b, c, d] = shape ?? [];
-      painter.draw(
-        !isCurved &&
-          shape?.length === 4 &&
-          a !== undefined &&
-          b !== undefined &&
-          c !== undefined &&
-          d !== undefined
-          ? { ...feature, footprint: [a, d, c, b] }
-          : feature,
-      );
+      painter.draw(feature);
       for (let i = first; i < this.pieces.length; i++) {
         const piece = this.pieces[i];
         if (piece !== undefined) this.pieces[i] = { ...piece, replacesFeature: feature.id };

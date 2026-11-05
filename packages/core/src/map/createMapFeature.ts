@@ -37,12 +37,7 @@ export const createMapFeature = (
     ...(spec.wallBoundary === undefined
       ? {}
       : {
-          wallBoundary: {
-            ...spec.wallBoundary,
-            ...(spec.wallBoundary.frontArc === undefined
-              ? {}
-              : { frontArc: { ...spec.wallBoundary.frontArc } }),
-          },
+          wallBoundary: { ...spec.wallBoundary, frontArc: { ...spec.wallBoundary.frontArc } },
         }),
   };
 };

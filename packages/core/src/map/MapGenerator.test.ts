@@ -397,6 +397,10 @@ describe('MapGenerator', () => {
       },
     ],
     [
+      'an outer gate that ends past its cliff corner',
+      { wallRing: { ...DEFAULT_MAP_LAYOUT.wallRing, exitArcDegrees: 160 } },
+    ],
+    [
       'lane bends out of order',
       {
         laneProfile: [
@@ -429,9 +433,12 @@ describe('MapGenerator', () => {
     expect(Object.isFrozen(layout.wallRing.frontArc)).toBe(false);
   });
 
-  it('keeps the existing lanes, gates and tower anchors when the circular shield becomes a front arc', () => {
-    const { frontArc, ...wallRing } = DEFAULT_MAP_LAYOUT.wallRing;
-    expect(frontArc).toBeDefined();
+  it('keeps the lanes, gates and tower anchors when the shield tips stretch further', () => {
+    const wallRing = {
+      ...DEFAULT_MAP_LAYOUT.wallRing,
+      frontArc: { ...DEFAULT_MAP_LAYOUT.wallRing.frontArc, verticalScale: 1 },
+    };
+    expect(DEFAULT_MAP_LAYOUT.wallRing.frontArc.verticalScale).toBeGreaterThan(1);
     const oldMap = new MapGenerator({ layout: { ...DEFAULT_MAP_LAYOUT, wallRing } }).generate(
       { map: DEFAULT_MAP_CONFIG },
       SEED,

@@ -3,6 +3,7 @@ import type { Polygon } from '../utils/geometry.types';
 import { carveRift, defaultRiftProfile, defaultWestBounds } from './riftTerrain';
 import { mirrorPolygon } from './symmetry';
 import { strongholdCliffs } from './strongholdCliffs';
+import { shieldReach } from './wallRing';
 
 /** What the terrain step reads: the preset (if any), the layout, the world and the crossings. */
 export type TerrainInput = {
@@ -33,21 +34,16 @@ export const layOutTerrain = (input: TerrainInput): readonly MapTerrain[] => {
     preset?.westOutOfBounds.map((shape) =>
       shape.map((point) => ({ x: point.x * width, y: point.y * height })),
     ) ?? defaultWestBounds(layout.defaultCornerSize, height);
-  const shieldReach =
-    (layout.wallRing.radius + layout.wallRing.thickness / 2) *
-    (layout.wallRing.frontArc?.verticalScale ?? 1);
-  const fittedBounds =
-    layout.wallRing.frontArc === undefined
-      ? westBounds
-      : westBounds.map((shape) =>
-          shape.map((point) => ({
-            x: point.x,
-            y:
-              point.y < height / 2
-                ? Math.min(point.y, height / 2 - shieldReach)
-                : Math.max(point.y, height / 2 + shieldReach),
-          })),
-        );
+  const reach = shieldReach(layout.wallRing);
+  const fittedBounds = westBounds.map((shape) =>
+    shape.map((point) => ({
+      x: point.x,
+      y:
+        point.y < height / 2
+          ? Math.min(point.y, height / 2 - reach)
+          : Math.max(point.y, height / 2 + reach),
+    })),
+  );
   const bounds = fittedBounds.flatMap((shape, index): MapTerrain[] => [
     { id: `west-bounds-${String(index)}`, kind: 'out-of-bounds', shape },
     {
