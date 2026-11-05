@@ -5,11 +5,9 @@ import type {
   MapFeatureKind,
   MapObject,
   MapPresentation,
-  PlayableTeam,
   Simulation,
 } from '@eternalus/core';
 
-import type { LegendClassId } from '../bridge/domain.types';
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { Camera } from './engine/Camera';
@@ -25,16 +23,6 @@ export interface IntentSource {
   /** The player's intent for this tick; `projection` turns the pointer into a world point. */
   read(projection: Projection): InputIntent;
 }
-
-/**
- * Which Legend the player plays and on which team: the selection's class and the setup's team
- * (HC-F4). The Legend (sub-class) pick is setup data only and never reaches the match (DEC-49).
- */
-export type PlayerChoice = {
-  /** The class id, which is also the Legend's definition id in core content (`'magus'`). */
-  readonly legend: LegendClassId;
-  readonly team: PlayableTeam;
-};
 
 /**
  * A match's world, built once in `match-loading` from the setup's seed (architecture 06 §1).

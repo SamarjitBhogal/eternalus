@@ -11,14 +11,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
-import { withPlayer } from './__fixtures__/withPlayer';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import type { WorldRect } from './engine/render/Renderer.types';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
-import type { IntentSource, PlayerChoice } from './Match.types';
+import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
@@ -37,7 +37,7 @@ class ScriptedIntent implements IntentSource {
 
 /**
  * A match on seed 1's world whose player is a Light Warrior; it spawns at the Light Stronghold,
- * inside the Stronghold's building. No map in the simulation, so nothing blocks the walk out.
+ * inside the Stronghold's building, and walks out across seed 1's map.
  */
 const setUp = () => {
   const config = createDefaultGameConfig();

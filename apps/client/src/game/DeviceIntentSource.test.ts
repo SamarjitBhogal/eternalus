@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
-import { withPlayer } from './__fixtures__/withPlayer';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { fakeKeyEvent } from './engine/input/fakeKeyEvent';
 import type { InputDevice, MutableInputSnapshot } from './engine/input/InputDevice.types';
@@ -16,7 +16,6 @@ import { DeviceIntentSource } from './DeviceIntentSource';
 import { InputMapper } from './input/InputMapper';
 import { PRESETS } from './input/keybindings';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
-import type { PlayerChoice } from './Match.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };

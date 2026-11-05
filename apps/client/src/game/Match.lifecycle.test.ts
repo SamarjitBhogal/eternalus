@@ -12,13 +12,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap, MatchClock } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
-import { withPlayer } from './__fixtures__/withPlayer';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.constants';
-import type { MatchDeps, PlayerChoice, PreparedWorld } from './Match.types';
+import type { MatchDeps, PreparedWorld } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
