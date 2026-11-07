@@ -1,7 +1,9 @@
+import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { EntityId } from './EntityStore.types';
-import type { MatchPhase, TeamState } from './GameState.types';
+import type { TeamState } from './GameState.types';
 import type { Horde } from './Horde.types';
+import type { ScheduledMark } from './MatchState.types';
 import type { MapObjectSnapshot } from '../content/maps/mapObjects.types';
 
 /**
@@ -19,6 +21,16 @@ export type EntitySnapshot = {
   readonly health: { readonly current: number; readonly max: number } | null;
 };
 
+/** Where the match is in its timeline, for the HUD's phase and countdowns (plan §4.2). */
+export type MatchSnapshot = {
+  readonly phase: MatchPhase;
+  readonly phaseEnteredTick: number;
+  /** The unfired timeline entries in tick order; empty after the last one. */
+  readonly upcoming: readonly ScheduledMark[];
+  /** The human's Legend; `null` in sim mode, or when the human slot names no Legend definition. */
+  readonly humanLegendId: EntityId | null;
+};
+
 /** A lane horde as the client sees it (architecture 18 §4): the store's plain fields, copied. */
 export type HordeSnapshot = Horde;
 
@@ -33,7 +45,7 @@ type TeamSnapshot = TeamState;
 export type Snapshot = {
   readonly mapObjects?: readonly MapObjectSnapshot[];
   readonly tick: number;
-  readonly phase: MatchPhase;
+  readonly match: MatchSnapshot;
   /** In the store's insertion order. */
   readonly entities: readonly EntitySnapshot[];
   /** In creation order. */

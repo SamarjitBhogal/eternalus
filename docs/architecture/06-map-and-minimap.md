@@ -465,16 +465,17 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   the roof click. The roof click and its restore are the developer explorer's only
   (`CanvasPointerControls`), so they never close the player's roof, and the player walking out
   never closes a roof the developer opened. Hiding the explorer puts the developer's roofs back
-  and returns to the following camera at its base zoom (`Match.leaveExplorer`), so developer
-  state does not stay in normal play. A press the canvas gestures own (a minimap click, or any
-  press with the explorer shown) is claimed until its release (`Match.setPointerClaimed`), so the
-  held attack button does not act on it. With the explorer shown, a click (a press whose pointer
-  travels less than the click slop in total before its release) is resolved once at its release
-  point in this order (`Match.clickAt`, DEC-183): a living enemy unit there is attacked; else a
-  click that toggles a roof is a roof click; else the click attacks the map object there. A drag
-  does neither. When units overlap, the one drawn on top wins (DEC-183). The held attack button
-  aims the same way: a unit first, else a map object (`PlayerCommands`). A click on the building the player's Legend stands in toggles nothing
-  (its roof is already cut away), so it attacks (DEC-153). The owner selected "Allow attack"
+  and returns to the following camera at its base zoom (`MatchViewControls.leaveExplorer`), so
+  developer state does not stay in normal play. A press the canvas gestures own (a minimap click, or
+  any press with the explorer shown) is claimed until its release
+  (`MatchViewControls.setPointerClaimed`), so the held attack button does not act on it. With the
+  explorer shown, a click (a press whose pointer travels less than the click slop in total before
+  its release) is resolved once at its release point in this order (`MatchViewControls.clickAt`,
+  DEC-183): a living enemy unit there is attacked; else a click that toggles a roof is a roof
+  click; else the click attacks the map object there. A drag does neither. When units overlap, the
+  one drawn on top wins (DEC-183). The held attack button aims the same way: a unit first, else a
+  map object (`PlayerCommands`). A click on the building the player's Legend stands in toggles
+  nothing (its roof is already cut away), so it attacks (DEC-153). The owner selected "Allow attack"
   (option text: "A plain click on the world attacks even with the explorer shown; only drags and
   roof clicks are claimed."), DEC-150. This is the attack and roof input arbitration the
   2026-10-30 amendment gives this branch. View state only: the simulation and its determinism

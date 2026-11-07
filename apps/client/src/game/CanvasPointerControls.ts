@@ -13,8 +13,8 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
  * (DEC-143). A press these gestures own (a minimap click, or any press with the explorer) is
  * claimed until its release, so the held attack button does not act on it. With the explorer, a
  * click (a release within the click slop) that is no unit or roof click attacks once at the
- * release point (`Match.clickAt`: unit, roof, map object; DEC-150, DEC-183); a drag does neither
- * (06 §10). Positions arrive in CSS pixels and reach the match in device pixels.
+ * release point (`MatchViewControls.clickAt`: unit, roof, map object; DEC-150, DEC-183); a drag
+ * does neither (06 §10). Positions arrive in CSS pixels and reach the match in device pixels.
  */
 export class CanvasPointerControls {
   private press: { x: number; y: number; distance: number } | null = null;
@@ -61,7 +61,7 @@ export class CanvasPointerControls {
       this.attachExplorer();
     } else {
       this.detachExplorer();
-      this.deps.match.leaveExplorer();
+      this.deps.controls.leaveExplorer();
       chrome.onDeveloperRoofsChanged(false);
     }
     chrome.onExplorerChanged(this.isExplorerShown);
@@ -70,17 +70,17 @@ export class CanvasPointerControls {
   /** Forgets a press or drag in progress (focus lost, pointer cancelled). */
   public readonly cancelDrag = (): void => {
     this.press = null;
-    this.deps.match.setPointerClaimed(false);
+    this.deps.controls.setPointerClaimed(false);
   };
 
   private attachExplorer(): void {
-    const { match, viewport } = this.deps;
+    const { controls, viewport } = this.deps;
     const { canvas, chrome } = viewport;
     canvas.addEventListener('pointermove', this.onPointerMove);
     canvas.addEventListener('pointercancel', this.cancelDrag);
     canvas.addEventListener('wheel', this.onWheel, { passive: false });
     chrome.setOverview(() => {
-      match.overview();
+      controls.overview();
       chrome.onDeveloperRoofsChanged(false);
     });
   }
@@ -99,11 +99,11 @@ export class CanvasPointerControls {
       return;
     }
     const point = this.devicePoint(pointer);
-    const { match } = this.deps;
+    const { controls } = this.deps;
     // The claim comes from this press alone, so a press whose release never arrived leaves none.
-    const isOnMinimap = match.lookAtMinimapPoint(point.x, point.y);
+    const isOnMinimap = controls.lookAtMinimapPoint(point.x, point.y);
     // With the explorer the press may yet be a drag, so it never attacks while held (DEC-150).
-    match.setPointerClaimed(isOnMinimap || this.isExplorerShown);
+    controls.setPointerClaimed(isOnMinimap || this.isExplorerShown);
     if (isOnMinimap) {
       return;
     }
@@ -121,7 +121,7 @@ export class CanvasPointerControls {
     const { canvas } = this.deps.viewport;
     const dx = pointer.clientX - this.press.x;
     const dy = pointer.clientY - this.press.y;
-    this.deps.match.panBy(
+    this.deps.controls.panBy(
       dx * (canvas.width / canvas.clientWidth),
       dy * (canvas.height / canvas.clientHeight),
     );
@@ -136,7 +136,7 @@ export class CanvasPointerControls {
     const pointer = event as PointerEvent;
     const { press } = this;
     this.press = null;
-    this.deps.match.setPointerClaimed(false);
+    this.deps.controls.setPointerClaimed(false);
     const { canvas, chrome } = this.deps.viewport;
     if (canvas.hasPointerCapture(pointer.pointerId)) {
       canvas.releasePointerCapture(pointer.pointerId);
@@ -150,16 +150,16 @@ export class CanvasPointerControls {
       return;
     }
     const point = this.devicePoint(pointer);
-    const { match } = this.deps;
-    if (match.clickAt(point.x, point.y)) {
-      chrome.onDeveloperRoofsChanged(match.hasDeveloperRoofs);
+    const { controls } = this.deps;
+    if (controls.clickAt(point.x, point.y)) {
+      chrome.onDeveloperRoofsChanged(controls.hasDeveloperRoofs);
     }
   };
 
   private readonly onWheel = (event: Event): void => {
     const wheel = event as WheelEvent;
     wheel.preventDefault();
-    this.deps.match.zoomBy(Math.exp(-wheel.deltaY * EXPLORER_SETTINGS.wheelSensitivity));
+    this.deps.controls.zoomBy(Math.exp(-wheel.deltaY * EXPLORER_SETTINGS.wheelSensitivity));
   };
 
   /** A pointer position in the canvas's device pixels (the canvas may have more real pixels). */

@@ -13,26 +13,30 @@ Package-specific rules. The root `AGENTS.md` still applies.
 ## Folders
 
 **Today** core contains the simulation kernel (`config/`, `utils/`, `state/`, `commands/`,
-`diagnostics/`, `systems/` with the pipeline only, `Simulation.ts`), the first `components/` and
+`diagnostics/`, `systems/` with the pipeline only, `match/` (director kernel), `Simulation.ts`), the first `components/` and
 `entities/`, `teams/`, and the generated map (`map/`, `content/maps/`). The other folders below
 are the **planned** layout; create them as code is added.
 
-| Folder          | Holds                                                               | May import                                                       |
-| --------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `config/`       | `GameConfig`, `createDefaultGameConfig()`, `validateGameConfig()`   | `utils/`                                                         |
-| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs   | `content/`, `utils/` and `teams/` (types)                        |
-| `teams/`        | `PlayableTeam` and `Team`, shared by every layer                    | nothing                                                          |
-| `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers | `content/`, `teams/`, `utils/`                                   |
-| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants             | `utils/` only                                                    |
-| `components/`   | Data owned by entities (`Transform`, `Movement`)                    | `utils/`, `content/`, `teams/` (types)                           |
-| `entities/`     | `Entity` root class and factories                                   | `components/`, `content/`, ...                                   |
-| `commands/`     | `Command` union, `CommandQueue`, `applyCommand` + handler registry  | `state/`, `entities/`, `utils/`                                  |
-| `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher`  | lower layers                                                     |
-| `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams   | `state/`, `utils/`, types of `commands/` and `config/`           |
-| `systems/`      | Per-tick logic implementing `System`. Never import another system.  | everything except `ai/`                                          |
-| `ai/`           | Bot controllers: return a `Decision`, never mutate state.           | `state/`, `commands/`, `content/` and `teams/` (types), `utils/` |
-| `Simulation.ts` | Composes everything; the only thing the client drives               | everything                                                       |
+| Folder          | Holds                                                               | May import                                                            |
+| --------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `config/`       | `GameConfig`, defaults, validation, `MATCH_PHASES`, timeline types  | `utils/`, `teams/`                                                    |
+| `content/`      | Data only: tuning numbers, display names, keyed by kebab-case IDs   | `content/`, `utils/` and `teams/` (types)                             |
+| `teams/`        | `PlayableTeam`, `Team` and their helpers, shared by every layer     | nothing                                                               |
+| `map/`          | `MapGenerator`, `MapBuilder`, `WorldMap`, lane and symmetry helpers | `content/`, `teams/`, `utils/`                                        |
+| `utils/`        | Generic helpers: vector math, `SeededRandom`, constants             | `utils/` only                                                         |
+| `components/`   | Data owned by entities (`Transform`, `Movement`)                    | `utils/`, `content/`, `teams/` (types)                                |
+| `entities/`     | `Entity` root class and factories                                   | `components/`, `content/`, ...                                        |
+| `commands/`     | `Command` union, `CommandQueue`, `applyCommand` + handler registry  | `state/`, `entities/`, `utils/`                                       |
+| `state/`        | `GameState`, `EntityStore`, `GameEvents`, snapshots, `StateHasher`  | lower layers                                                          |
+| `diagnostics/`  | `Logger` port and doubles, replay harness, random command streams   | `state/`, `utils/`, types of `commands/` and `config/`                |
+| `match/`        | `MatchDirector`, `MatchTimeline`, phase classes, timeline actions   | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types |
+| `systems/`      | Per-tick logic implementing `System`. Never import another system.  | everything except `ai/`                                               |
+| `ai/`           | Bot controllers: return a `Decision`, never mutate state.           | `state/`, `commands/`, `config/`, `teams/`, `utils/`, content types   |
+| `Simulation.ts` | Composes everything; the only thing the client drives               | everything                                                            |
 
+Every folder may import `teams/` (it imports nothing; DEC-171), whether or not its row names it.
+`match/` also uses the `Logger` port, `makeLogRecord` and `DebugConfig` of `diagnostics/`, as
+`systems/` do, so `diagnostics/` never imports `match/`.
 These import rules are checked in review.
 
 ## Adding code

@@ -10,6 +10,7 @@ import { compareById } from '../utils/compareById';
 import { cos, sin } from '../utils/deterministicMath';
 import { WAITING_FOR_GROUP } from './GuardRoster.constants';
 import type { Vec2 } from '../utils/geometry.types';
+import { countdownTicks } from '../config/countdownTicks';
 
 /**
  * Runs every structure's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6): it lays out
@@ -51,7 +52,7 @@ export class GuardRoster {
       const { countdownSeconds } = state.config.match;
       const firstTick =
         plan.activation === 'countdown-end'
-          ? Math.round(countdownSeconds * state.config.tickRate)
+          ? countdownTicks(countdownSeconds, state.config.tickRate)
           : 0;
       const total = plan.table.reduce((sum, row) => sum + row.count, 0);
       const ring = transform.radius + plan.postGap;

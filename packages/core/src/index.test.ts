@@ -24,6 +24,7 @@ describe('@eternalus/core public API', () => {
       'isUnitFamily',
       'loadDisplayContent',
       'makeLogRecord',
+      'opponentOf',
       'runReplay',
       'validateGameConfig',
     ]);
@@ -58,7 +59,17 @@ describe('@eternalus/core public API', () => {
     sim.step();
     expect(sim.snapshot()).toEqual({
       tick: 1,
-      phase: 'countdown',
+      match: {
+        phase: 'countdown',
+        phaseEnteredTick: 0,
+        upcoming: [
+          { entryId: 'countdown-over', tick: 300 },
+          { entryId: 'quarter-mark', tick: 13_500 },
+          { entryId: 'mid-game', tick: 27_000 },
+          { entryId: 'end-game', tick: 40_500 },
+        ],
+        humanLegendId: null,
+      },
       entities: [],
       hordes: [],
       teams: {
