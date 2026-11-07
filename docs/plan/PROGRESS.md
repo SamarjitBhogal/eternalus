@@ -5174,3 +5174,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/playtest-rulings.check2.log`):
   EXIT=0, core 1079 passed, client 1754 passed, docs check passed.
 - Next step: push; PR #75 merges first.
+
+### 2026-11-07 — Phase 3 / playtest rulings, merge of phase/3 (PR #80) — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `ed10145` (PR #80). `INBOX.md` and
+  `docs/plan/PROGRESS.md` conflicted (both sides appended). `INBOX.md`: the item from PR #80
+  first, then the three items of this branch and its ticked M4 line. `PROGRESS.md`: every entry
+  kept, phase/3's first. This branch is the first link of a merge chain: #74, #78, #76 and #77
+  each merge the branch before them, so the five PRs merge in that order with no new conflicts.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-75-merge.log`): exit 0, Prettier passed, core
+  `Tests 1081 passed (1081)`, client `Tests 1754 passed (1754)`, docs check passed.
+- Next step: push; PR #75 merges first, then #74, #78, #76 and #77.
