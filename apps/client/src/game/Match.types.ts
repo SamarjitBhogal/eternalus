@@ -1,12 +1,17 @@
 import type {
   InputIntent,
-  LegendKind,
   Logger,
   MapDefinition,
+  MapFeatureKind,
+  MapObject,
+  MapPresentation,
   PlayableTeam,
   Simulation,
 } from '@eternalus/core';
 
+import type { LegendClassId } from '../bridge/domain.types';
+import type { BridgeEventMap } from '../bridge/events';
+import type { TypedEventBus } from '../bridge/TypedEventBus';
 import type { Camera } from './engine/Camera';
 import type { Projection } from './engine/input/Projection.types';
 import type { FrameScheduler } from './engine/loop/FrameScheduler.types';
@@ -21,17 +26,47 @@ export interface IntentSource {
   read(projection: Projection): InputIntent;
 }
 
-/** Which Legend the player plays and on which team. */
+/**
+ * Which Legend the player plays and on which team: the selection's class and the setup's team
+ * (HC-F4). The Legend (sub-class) pick is setup data only and never reaches the match (DEC-49).
+ */
 export type PlayerChoice = {
-  readonly legend: LegendKind;
+  /** The class id, which is also the Legend's definition id in core content (`'magus'`). */
+  readonly legend: LegendClassId;
   readonly team: PlayableTeam;
+};
+
+/**
+ * A match's world, built once in `match-loading` from the setup's seed (architecture 06 §1).
+ * Plain, never-mutated data: every `Match` built on it (StrictMode builds two) shares it.
+ */
+export type PreparedWorld = {
+  readonly map: MapDefinition;
+  /**
+   * `MapPresentationBuilder`'s output for `map`: the scenery polygons and the building footprints
+   * whose roofs can be cut away.
+   */
+  readonly presentation: MapPresentation;
+  /**
+   * `MapObjectBuilder`'s map objects for `map` (walls, furniture, doors): the simulation collides
+   * with and damages them, the views draw them. One build, so both use the same ids.
+   */
+  readonly mapObjects: readonly MapObject[];
+};
+
+/** A match whose game loop stopped because a tick or a frame threw (DEC-106). */
+export type MatchCrash = {
+  /** What the tick or the frame threw. */
+  readonly error: unknown;
+  /** The ticks the simulation had completed when it happened. */
+  readonly tick: number;
 };
 
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
   readonly simulation: Simulation;
-  /** The generated map the simulation plays on. */
-  readonly map: MapDefinition;
+  /** The world the simulation plays on (`map`, `mapObjects`) and the views draw. */
+  readonly world: PreparedWorld;
   /** Ticks per second (`GameConfig.tickRate`). */
   readonly tickRate: number;
   readonly scheduler: FrameScheduler;
@@ -41,4 +76,14 @@ export type MatchDeps = {
   readonly player: PlayerChoice;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
   readonly logger: Logger;
+  /** Called once when the game loop stops because a tick or a frame threw (DEC-106). */
+  readonly onCrash: (crash: MatchCrash) => void;
+  /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */
+  readonly bridge: {
+    readonly bus: TypedEventBus<BridgeEventMap>;
+    /** Ticks between `match-clock`/`hud-state` publishes (6 = 5 Hz at 30 TPS). */
+    readonly publishEveryTicks: number;
+    /** Map-feature kinds the HUD lists as capture points (`catalogue.hud.objectiveKinds`). */
+    readonly captureKinds: readonly MapFeatureKind[];
+  };
 };

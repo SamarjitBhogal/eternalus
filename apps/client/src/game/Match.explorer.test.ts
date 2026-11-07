@@ -1,13 +1,14 @@
 import {
   createDefaultGameConfig,
   type InputIntent,
-  MapGenerator,
   NullLogger,
   Simulation,
   type Vec2,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import type { BridgeEventMap } from '../bridge/events';
+import { TypedEventBus } from '../bridge/TypedEventBus';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import type { WorldRect } from './engine/render/Renderer.types';
@@ -15,6 +16,8 @@ import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
+import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
+import { prepareMatchWorld } from './prepareMatchWorld';
 
 const SCREEN = { width: 1280, height: 720 };
 
@@ -29,13 +32,14 @@ class ScriptedIntent implements IntentSource {
 
 const setUp = () => {
   const config = createDefaultGameConfig();
-  const map = new MapGenerator().generate(config, 1);
+  const world = prepareMatchWorld(config, 1);
+  const { map } = world;
   const renderer = new RecordingRenderer();
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const match = new Match({
     simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
-    map,
+    world,
     tickRate: config.tickRate,
     scheduler: new FakeFrameScheduler(),
     renderer,
@@ -43,6 +47,12 @@ const setUp = () => {
     input,
     player: { legend: 'warrior', team: 'light' },
     logger: new NullLogger(),
+    onCrash: () => undefined,
+    bridge: {
+      bus: new TypedEventBus<BridgeEventMap>(),
+      publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
+      captureKinds: [],
+    },
   });
   match.resize(SCREEN.width, SCREEN.height, 1);
   match.tick();
@@ -104,27 +114,42 @@ describe('Match free view', () => {
     expect(camera.zoom).toBe(2);
   });
 
-  it('enters the cathedral on a click on it, draws the interior and leaves on overview', () => {
+  it('leaves the explorer with every developer roof back and the following camera at base zoom', () => {
+    const { match, camera, shown, cathedral, toScreen } = setUp();
+    match.zoomBy(2);
+    match.overview();
+    const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, shown());
+    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+
+    match.leaveExplorer();
+
+    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(camera.zoom).toBe(1);
+    expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
+  });
+
+  it('toggles the cathedral roof in the same world and restores it on overview', () => {
     const { match, input, renderer, shown, cathedral, toScreen } = setUp();
     match.overview();
     const view = shown();
 
-    expect(match.enterAt(0, 0)).toBe(false);
+    expect(match.toggleRoofAt(0, 0)).toBe(false);
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, view);
-    expect(match.enterAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.isInterior).toBe(true);
+    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.hasDeveloperRoofs).toBe(true);
     const inside = shown();
-    expect(inside.height).toBeLessThanOrEqual(2200);
+    expect(inside).toEqual(view);
     expect(
       renderer.calls.some((call) => call.op === 'fillPolygon' && call.args[1] === '#938e7c'),
     ).toBe(true);
 
-    // Walking does not drop the player out of the cathedral view.
+    // Walking resumes player following while the roof remains open.
     input.move = { x: 1, y: 0 };
     match.tick();
-    expect(shown()).toEqual(inside);
+    expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
+    expect(match.hasDeveloperRoofs).toBe(true);
 
     match.overview();
-    expect(match.isInterior).toBe(false);
+    expect(match.hasDeveloperRoofs).toBe(false);
   });
 });

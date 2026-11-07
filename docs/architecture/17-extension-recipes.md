@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-11-02
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -73,13 +73,14 @@ R14 "new view" and R16 "new command".
 
 ### R1. Add a Legend class
 
-- **When:** a playable class whose behaviour no existing class has (`flying`, **post-MVP**,
+- **When:** a playable class whose behaviour no existing class has (`harbinger`, **post-MVP**,
   needs an altitude layer). Numbers, abilities or a skin alone: R2 or plain content.
   `Entity → Unit → Legend → <Name>` is the last allowed level (04 §9).
 - **Files:** `core/content/legends/<id>.ts` (`LegendDefinition` with `kind`, stats, ability
   ids, `pickUp`, `defaultLoadout`, `minimapGlyph`) + `legendCatalogue.ts` line; its abilities
   (R8); `core/entities/legends/<Name>.ts` (`extends Legend`, overrides `attachComponents`) +
-  `.test.ts`; a strategy if movement or pick-up is new (R13); sprites in `AssetManifest.ts`.
+  `.test.ts`; a strategy if movement or pick-up is new (R13); sprites in its asset group's manifest
+  file (concatenated by `AssetManifest.ts`).
 - **Registry line:** `core/entities/defaultEntityRegistry.ts`:
   `registry.register('<kind>', (id, def) => new <Name>(id, def));`
 - **Tests:** `legendCatalogue.test.ts`; the factory spawns it with the `Legend` component set;
@@ -88,9 +89,12 @@ R14 "new view" and R16 "new command".
 - **Skill:** `new-entity` · [04 §12](04-entity-architecture.md#12-worked-example-adding-a-fourth-legend-class).
   Untouched: every system, `LoadoutScreen`, `LegendView`, the minimap, keybindings, the store.
 
-### R2. Add a Legend specialization (post-MVP)
+### R2. Add a Legend specialization
 
-- **When:** Assassin/Knight/Paladin, Colossus, Necromancer/Druid/Mage, Hover/Strafe (D11): stat
+- **When:** a class gains a sub-class (Legend), or a sub-class gains its gameplay (D11; MVP scope,
+  ADR 0018, its phase open in `INBOX.md` HC-Q17). The roster is content
+  (`packages/core/src/content/legends/specs/`), and the MVP already ships each spec's display and
+  setup part (`loadDisplayContent()`, DEC-49); this recipe adds the gameplay: stat
   modifiers, ability overrides, a pick-up id and a skin the existing class consumes. Behaviour no
   strategy can express becomes a **sibling** kind under `Legend` (R1), never a fourth level.
 - **Files:** `core/content/legends/specs/<id>.ts` (`LegendSpecDefinition`; the folder is a
@@ -100,7 +104,7 @@ R14 "new view" and R16 "new command".
 - **Tests:** `validateContent()` accepts an empty spec (the Phase 4.1 done-when); a spec changes
   exactly the documented stat at spawn; a `LoadoutRule` rejects a spec of another class.
 - **Docs:** the backlog row moves into a phase doc; `01-classes-and-subclasses.md` status.
-- **Skill:** `new-content`, or `new-entity` for a sibling class · [04 §9](04-entity-architecture.md#9-sub-classes-and-specialisations-d11-post-mvp).
+- **Skill:** `new-content`, or `new-entity` for a sibling class · [04 §9](04-entity-architecture.md#9-sub-classes-and-specialisations-d11).
 
 ### R3. Add a mob type
 
@@ -113,7 +117,7 @@ R14 "new view" and R16 "new command".
 - **Tests:** content validation; a `SpawnSystem` scenario spawns a horde of it at the configured
   size; a `MinionController` scenario (attacks within N ticks); determinism.
 - **Docs:** `../reference/game-design/02-entities-and-units.md`; `TUNE` values in `balancing.md`.
-- **Skill:** `new-content` or `new-entity` · [04 §1](04-entity-architecture.md#1-the-family-tree), [11 §4.3](11-game-ai.md#43-minioncontroller-mvp).
+- **Skill:** `new-content` or `new-entity` · [04 §1](04-entity-architecture.md#1-the-family-tree), [11 §4.3](11-game-ai.md#43-minioncontroller-mvp), [18-minion-system](18-minion-system.md) §6.
 
 ### R4. Add a boss
 
@@ -204,8 +208,9 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 - **Files:** `core/content/status-effects/<camelId>.ts` (`StatusEffectDefinition`: `polarity`,
   `stacking`, `modifiers[]`, `flags[]`, `periodic`, `onExpire`) + `statusEffectCatalogue.ts` line.
 - **Registry line:** none. A new **stacking mode** is one `StatusStacking` member plus one `case`
-  in `StatusEffectRuntime.apply` (the one closed switch, 05 §8); a new **flag** or modifier
-  **stat** is one union member read by the component that owns the stat.
+  in `StatusEffectRuntime.reapply` (the one closed switch, 05 §8); a new **flag** or modifier
+  **stat** is one union member read by the component that owns the stat. Producers apply it
+  through the match's one `StatusEffectApplier` (DEC-41), never `StatusEffects` directly.
 - **Tests:** content validation (ids resolve); the table-driven stacking test if a mode was
   added; a scenario: apply, modifier table, `status-applied` / `status-expired`.
 - **Docs:** the status table in `../reference/suggestions/more-abilities.md` §7; reference 06.
@@ -270,12 +275,27 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 - **Files:** `core/entities/strategies/<Behaviour><Family>Strategy.ts` (stateless, shared; uses
   the context `Rng` and vectors, never angles) + `.test.ts`; the definition field that selects it
   by id (`definition.movement`, `weapon.attack`, `definition.pickUp`, `definition.targeting`).
-- **Registry line:** `core/entities/strategies/defaultStrategyRegistry.ts`:
-  `registry.register('<id>', new <Name>Strategy());`
+- **Registry line:** `core/entities/strategies/defaultStrategyRegistry.ts`: one entry in the
+  behaviour's record (`attack: { melee: new MeleeAttackStrategy(), <id>: new <Name>Strategy() }`)
+  plus the id in its union (`AttackStrategyId`); a missing entry does not compile.
 - **Tests:** a unit test with a stub state; the content test proves every strategy id used in
   content is registered; the calling system's tests do not change.
 - **Docs:** the table in 04 §4; naming in 02 §4.
 - **Skill:** `new-system` (step 4) or `new-entity` · [04 §4](04-entity-architecture.md#4-strategies-behaviour-that-varies-by-kind).
+
+### R13a. Add a damage rule
+
+- **When:** something changes every hit before it reaches `Health`: a status (`sundered`,
+  `enraged`), a structure multiplier, breakability, a resistance. Not for a new way of attacking
+  (R13) or for an effect that applies damage (it calls the pipeline).
+- **Files:** `core/combat/<Name>Step.ts` (implements `DamageStep`: `adjust(hit, state)` returns
+  the new amount, 0 blocks the hit; reads state through `state.entities`, numbers from content)
+  - `.test.ts`.
+- **Registry line:** `core/combat/defaultDamageSteps.ts`, at its position in the order.
+- **Tests:** the step alone with a small `GameState`; one `DamagePipeline` test if the order
+  matters.
+- **Docs:** 05 §9 (the step and its place in the order).
+- **Skill:** `new-system` · [05 §9](05-abilities-weapons-and-loadouts.md#9-combat-pipeline-combat).
 
 ## 5. Map and config (R14–R15)
 
@@ -405,7 +425,8 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
   ability needs nothing here.
 - **Files:** one id in `INPUT_ACTIONS` and one `DEFAULT_CHORDS` entry in
   `client/game/input/keybindings.ts` (13 §6.1, 09 §3); an `InputIntent` field set by `InputMapper.toIntent`
-  and read by `PlayerController` (or a `clientActions` case for a client-only action); the
+  and read by `PlayerController` (or a `clientActions` case for a client-only action on state `Match` owns, or one entry in
+  `MatchHost`'s one-shot table for a chord with modifiers, DEC-117); the
   prompt through `<KeyGlyph action="<id>"/>`. The settings screen lists actions from the same
   table, so rebinding needs no change.
 - **Registry line:** the `keybindings.ts` entry.
@@ -490,13 +511,15 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 
 ### R26. Rename a class or a display name
 
-- **When:** a placeholder is decided (`Warrior (formerly Assault)`, `Flying`, the bow) or a class
+- **When:** a placeholder is decided (a class or Legend display name, the bow) or a class
   name reads badly. Three different things: a display name, a class identifier, a content id.
 - **Files:** display name: the `displayName` line in the content file, nothing else. Class: an
   IDE rename of the symbol and its file, its imports and the `extends` clauses of subclasses.
-  Content id (`'warrior'`): **never** once used, because replays, loadouts and match history
-  reference it (a persistence migration plus new replay fixtures if the team insists;
-  `Recommendation:` do not).
+  Content id (`'warrior'`): **never** once a save or a release stores it, because replays,
+  loadouts and match history reference it (a persistence migration plus new replay fixtures if the
+  team insists; `Recommendation:` do not). Until saves or a release exist (none yet, ADR 0023),
+  renaming an id is a content refactor, and a reference it misses must fail the checks, never
+  silently.
 - **Registry line:** the one registry line that names the class (the rename tool updates it).
 - **Tests:** none new; `npm run check` (typecheck follows the imports, knip flags a stale export).
 - **Docs:** the pick in `../reference/suggestions/naming.md`; the "(rename pending)" note in the
@@ -520,21 +543,64 @@ controller support is R21 on the existing `GamepadDevice` adapter; first-person 
 Stop and report (the `new-entity` skill says so at its step 4) when a task makes you do any of
 the following. Each row is a missing seam; the fix is the seam, not the feature.
 
-| #   | Sign                                                                                                          | What it means                                       | The seam to use instead                                                                                                                          |
-| --- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A1  | A `switch` or `if` chain on `kind`, `family`, `classId`, `variant` or `team` in a system, view or controller  | Behaviour that varies by kind is not a strategy     | A `Strategy` chosen by a definition field (R13) or a registry (R14); the only closed switches are `applyCommand` and `StatusEffectRuntime.apply` |
-| A2  | Editing three files to add one variant                                                                        | The variant is code that should be data             | A content entry (R2, R3, R6, R9, R10) with at most one class and one registry line                                                               |
-| A3  | A number in gameplay code (`0.7`, `60`, `16`)                                                                 | Tuning or world shape hidden from the content tests | Content with `// TUNE:` (rule 11) or `GameConfig` (R15)                                                                                          |
-| A4  | A system importing or calling a sibling system                                                                | Hidden ordering coupling; the pipeline order lies   | A `GameEvent` (R17) plus a deferred pass in the listener; the order in `defaultSystemPipeline.ts`                                                |
-| A5  | `ui/` importing core values, `game/` or an entity class                                                       | Two sources of truth; React re-renders at 60 Hz     | A `Snapshot` field, a bridge event and a selector (R19)                                                                                          |
-| A6  | A second registry for the same concept (a `Map<kind, ...>` in a system, a list of classes in a view)          | The single place of change was duplicated           | The one registry of 02 §9; delete the copy                                                                                                       |
-| A7  | A fourth inheritance level (`Assassin extends Warrior`) or a subclass for a data-only difference              | Taxonomy used for behaviour                         | A sibling kind whose definition `extends` the parent's data (R2), a component (R12), a strategy (R13)                                            |
-| A8  | `new Warrior(...)` outside `defaultEntityRegistry.ts`; `new Canvas2dRenderer()` outside `Match` or `main.tsx` | The factory or the composition root was bypassed    | `EntityFactory.spawn` (R1–R7); constructor injection from the root (R25)                                                                         |
-| A9  | A cheat, test hook or bot that mutates state without a `Command`                                              | The replay log no longer replays                    | A `dev-*` command (R24) or a controller (R18)                                                                                                    |
-| A10 | `Math.random`, `Date`, timers or `Math.atan2` in core; an `onTick` method on an entity                        | Determinism or the system/entity split is broken    | The seeded `Rng`, tick counts, `deterministicMath.ts`; a component (R12) plus a system (R11)                                                     |
+| #   | Sign                                                                                                                                                                     | What it means                                       | The seam to use instead                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A1  | A `switch` or `if` chain on `kind`, `family`, `classId`, `variant` or `team` in a system, view or controller                                                             | Behaviour that varies by kind is not a strategy     | A `Strategy` chosen by a definition field (R13) or a registry (R14); the only closed switches are `applyCommand` and `StatusEffectRuntime.apply` |
+| A2  | Editing three files to add one variant                                                                                                                                   | The variant is code that should be data             | A content entry (R2, R3, R6, R9, R10) with at most one class and one registry line                                                               |
+| A3  | A number in gameplay code (`0.7`, `60`, `16`)                                                                                                                            | Tuning or world shape hidden from the content tests | Content with `// TUNE:` (rule 11) or `GameConfig` (R15)                                                                                          |
+| A4  | A system importing or calling a sibling system                                                                                                                           | Hidden ordering coupling; the pipeline order lies   | A `GameEvent` (R17) plus a deferred pass in the listener; the order in `defaultSystemPipeline.ts`                                                |
+| A5  | `ui/` importing core values, `game/` or an entity class                                                                                                                  | Two sources of truth; React re-renders at 60 Hz     | A `Snapshot` field, a bridge event and a selector (R19)                                                                                          |
+| A6  | A second registry for the same concept (a `Map<kind, ...>` in a system, a list of classes in a view)                                                                     | The single place of change was duplicated           | The one registry of 02 §9; delete the copy                                                                                                       |
+| A7  | A fourth inheritance level (`<Legend> extends <Class>`) or a subclass for a data-only difference                                                                         | Taxonomy used for behaviour                         | A sibling kind whose definition `extends` the parent's data (R2), a component (R12), a strategy (R13)                                            |
+| A8  | `new Warrior(...)` outside `defaultEntityRegistry.ts`; `new Canvas2dRenderer()` outside the composition root (`Match`, `main.tsx` or the match factory `main.tsx` binds) | The factory or the composition root was bypassed    | `EntityFactory.spawn` (R1–R7); constructor injection from the root (R25)                                                                         |
+| A9  | A cheat, test hook or bot that mutates state without a `Command`                                                                                                         | The replay log no longer replays                    | A `dev-*` command (R24) or a controller (R18)                                                                                                    |
+| A10 | `Math.random`, `Date`, timers or `Math.atan2` in core; an `onTick` method on an entity                                                                                   | Determinism or the system/entity split is broken    | The seeded `Rng`, tick counts, `deterministicMath.ts`; a component (R12) plus a system (R11)                                                     |
 
 The review checklists ask "what else changed?" for every PR
 ([../agents/checklists.md](../agents/checklists.md) §3); the recipe's expected diff is the answer.
+
+## 12. Implementation status
+
+HUD and character select (`feat/hud-and-character-select`, 2026-10-24). How the recipes touched by
+the branch are carried out today. The owner approved the recipe text on 2026-10-28 (`INBOX.md`
+HC-T1); R1's word for the locked class's id changes with that id's content rename (DEC-59):
+
+- **An asset** (R1's sprites, every image and font): one line in its group's file in
+  `apps/client/src/data/resources/` (`<group>Assets.ts`, concatenated by `AssetManifest.ts`) with
+  its `licence` and `source`, and the file in `apps/client/src/assets/<group>/`;
+  `AssetManifest.files.test.ts` checks the bytes and hashes ([14](14-persistence-and-resources.md)
+  §14).
+- **A Legend's display data** (R2): one `LegendSpecDefinition` in
+  `packages/core/src/content/legends/specs/` and its catalogue line, validated by the content
+  rules through `loadDisplayContent()`. It ships as display and setup data (DEC-49); sub-class
+  gameplay, R2's other part, is MVP scope, and the phase that builds it is open (ADR 0018;
+  `INBOX.md` HC-Q17).
+- **A screen or HUD element** (R19, R20, [13](13-game-interface.md) §9): a layout variant of one
+  of the owner's frames is one content value and one registry entry (DEC-52, DEC-53). A step of
+  the character-select screen (the locked view, DEC-60) is one entry of `SELECTION_STEPS` in
+  `CharacterSelectScreen`; View Details (DEC-103) is a component over a step (`ViewDetailsScreen`),
+  neither a `MenuRoute` nor a `SessionPhase`.
+- **A keybinding action** (R21): `view-details` (V, DEC-103) is one `InputAction` member in
+  `bridge/Binding.types.ts`, one `DEFAULT_CHORDS` entry (`INPUT_ACTIONS` is derived from its keys)
+  and one `ACTION_LABELS` entry in `ui/strings.ts`. It has no `clientActions` case, because only
+  the selection steps' prompts read it, in `ui/` ([13](13-game-interface.md) §6.2). R21's docs
+  step, the controls table of the controls reference, waits for the owner (`INBOX.md` HC-T1 T-188).
+  **Appended 2026-11-02:** the owner approved it (HC-T1, DEC-142); the controls reference's
+  default bindings table has the row.
+- **The bot roster**: the lane bots' classes and the enemy Rover's rule are core content
+  (`content/teams/botRoster.ts`, DEC-61, DEC-102), validated by `BotRosterClassRule` through
+  `loadDisplayContent()`. A new Rover rule is one `EnemyRoverRule` member and one entry in
+  `ENEMY_ROVER_RULES` (`game/session/fillRosters.ts`).
+- **Display names** (R26): the class display names, including the reserved flying class shown as
+  a locked card (DEC-48), the team names and the profile screen's display name are core content:
+  each class file's `displayName` in `packages/core/src/content/legends/`, a
+  `LockedClassDefinition` in `content/legends/locked/` (returned by `loadDisplayContent()` as
+  `lockedClasses`), `content/teams/teamDisplayNames.ts` and `content/profile/profileDisplayName.ts`.
+  The ids are unchanged; the client adds only the locked card's look
+  (`game/content/classPresentation.ts`).
+- **A8:** the renderer is created (`Canvas2dRenderer.fromCanvas`) in `game/createBrowserMatch.ts`,
+  the match factory bound only by `main.tsx` (DEC-50); it is still the composition root, so the
+  anti-recipe's intent holds.
 
 ## Related
 

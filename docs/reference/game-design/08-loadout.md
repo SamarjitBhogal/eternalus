@@ -4,7 +4,7 @@ description: The loadout slots a Legend carries, pre-game configuration with aut
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-28
 tags: [reference, game-design, loadout, profile]
 paths: ['packages/core/src/loadout/**', 'apps/client/src/ui/screens/LoadoutScreen*']
 related:
@@ -83,7 +83,7 @@ Status: **MVP-if-time** (the requirements doc asks only for pre-game configurati
   the loadout is one of its documents.
 - A saved loadout that references content that no longer exists (a renamed ID) is repaired by
   auto-build for the missing slot and logged, never crashed on. Content IDs are never renamed
-  once used (`AGENTS.md`), which keeps this rare.
+  once a save or a release stores them (`AGENTS.md`), which keeps this rare.
 
 Status: **MVP**.
 

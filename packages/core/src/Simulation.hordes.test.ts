@@ -1,0 +1,179 @@
+import { describe, expect, it } from 'vitest';
+
+import { createDefaultGameConfig } from './config/defaultGameConfig';
+import { OPENING_WAVE } from './content/structures/spawnWaves';
+import { MemoryLogger } from './diagnostics/MemoryLogger';
+import { MapGenerator } from './map/MapGenerator';
+import { Simulation } from './Simulation';
+import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
+import { isMinion, match, run, STRONGHOLDS_ONLY } from './__fixtures__/hordeMatches';
+
+describe('Simulation with lane hordes (architecture 18, M1)', () => {
+  it('walks every opening horde down its lane to the enemy end, invariants clean', () => {
+    const { simulation, logger, config } = match(STRONGHOLDS_ONLY, 1, true);
+    const spawned: string[] = [];
+    simulation.on('horde-spawned', ({ team, lane }) => spawned.push(`${team} ${lane}`));
+
+    // Lanes are 160 m long and light minions walk 3.5 m/s: about 46 s, so 60 s is plenty.
+    run(simulation, 60 * 30);
+
+    expect(spawned).toEqual(['dark lane-0', 'dark lane-1', 'light lane-0', 'light lane-1']);
+    const minions = simulation.snapshot().entities.filter(isMinion);
+    // Two teams, two lanes, one opening horde of `hordeSizes.light` each.
+    expect(minions).toHaveLength(2 * 2 * config.match.hordeSizes[OPENING_WAVE.weightClass]);
+    const near = (x: number) => (minion: (typeof minions)[number]) =>
+      Math.abs((minion.transform?.x ?? 0) - x) < 15;
+    expect(minions.filter(({ team }) => team === 'light').every(near(180))).toBe(true);
+    expect(minions.filter(({ team }) => team === 'dark').every(near(20))).toBe(true);
+    expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
+  });
+
+  it('marches in formation with no overlap beyond a tolerance', () => {
+    const { simulation } = match(TWO_LANE_MAP, 1, true);
+    // Light minions are 0.8 m across; forming up outside the gate may squeeze them by 0.2 m.
+    const diameter = 0.8;
+    const closest = (): number => {
+      const minions = simulation
+        .snapshot()
+        .entities.filter((entity) => isMinion(entity) && entity.team === 'light');
+      let best = Number.POSITIVE_INFINITY;
+      minions.forEach(({ transform: a }, index) => {
+        for (const { transform: b } of minions.slice(index + 1)) {
+          best = Math.min(best, Math.hypot((a?.x ?? 0) - (b?.x ?? 0), (a?.y ?? 0) - (b?.y ?? 0)));
+        }
+      });
+      return best;
+    };
+
+    const forming = [1, 2].map(() => {
+      run(simulation, 300);
+      return closest();
+    });
+    const marching = [3, 4, 5, 6].map(() => {
+      run(simulation, 300);
+      return closest();
+    });
+
+    expect(Math.min(...forming)).toBeGreaterThan(diameter - 0.2);
+    expect(Math.min(...marching)).toBeGreaterThan(diameter);
+  });
+
+  it('spawns a developer-menu horde on the named lane, clipped to the unit cap', () => {
+    const { simulation } = match(TWO_LANE_MAP);
+    const spawned: string[] = [];
+    simulation.on('horde-spawned', ({ team, lane, memberIds }) =>
+      spawned.push(`${team} ${lane} ${String(memberIds.length)}`),
+    );
+    simulation.step();
+    const cap = createDefaultGameConfig().limits.maxUnitsPerTeam;
+    // The opening hordes and the tower guards already hold part of the cap.
+    const held = simulation
+      .snapshot()
+      .entities.filter(({ family, team }) => family === 'mob' && team === 'light').length;
+
+    simulation.enqueueCommand({
+      type: 'dev-spawn-mobs',
+      team: 'light',
+      definitionId: 'heavy-minion',
+      count: cap,
+      origin: { kind: 'lane', lane: 'lane-1', t: 0.5 },
+    });
+    simulation.step();
+
+    expect(spawned.slice(4)).toEqual([`light lane-1 ${String(cap - held)}`]);
+  });
+
+  it('gives the same hash for the same seed and map, tick for tick', () => {
+    const first = match(TWO_LANE_MAP).simulation;
+    const second = match(TWO_LANE_MAP).simulation;
+    for (let checkpoint = 0; checkpoint < 6; checkpoint += 1) {
+      run(first, 100);
+      run(second, 100);
+      expect(first.hash()).toBe(second.hash());
+    }
+  });
+
+  it.each([
+    [3, 48],
+    [5, 80],
+  ])(
+    'spawns one opening horde per lane on the generated map: %i lanes, %i light mobs a team (FR-004)',
+    (numLanes, perTeam) => {
+      const config = createDefaultGameConfig({ map: { numLanes } });
+      const map = new MapGenerator().generate(config, 1);
+      const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map });
+
+      simulation.step();
+
+      const minions = simulation.snapshot().entities.filter(isMinion);
+      expect(minions.filter(({ team }) => team === 'light')).toHaveLength(perTeam);
+      expect(minions.filter(({ team }) => team === 'dark')).toHaveLength(perTeam);
+    },
+  );
+
+  it('marches every opening horde up its lane on the generated map, none held', () => {
+    // The opening hordes start at their lane's base by the Stronghold (MS-30); bot laners make the
+    // crowd realistic.
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const roster = (['light', 'dark'] as const).flatMap((team) =>
+      Array.from({ length: config.match.legendsPerTeam - 1 }, () => ({
+        team,
+        definitionId: 'warrior',
+        role: 'laner' as const,
+        difficulty: 'normal',
+      })),
+    );
+    const simulation = new Simulation({ config, seed: 1, logger: new MemoryLogger(), map, roster });
+    const minionsAt = () =>
+      new Map(
+        simulation
+          .snapshot()
+          .entities.filter(isMinion)
+          .map(({ id, transform }) => [id, transform]),
+      );
+
+    // 40 s after the countdown: on the way up the lane, before the first waves and
+    // any fight. Timed from the countdown's end, so a countdown that holds units still holds.
+    run(simulation, (config.match.countdownSeconds + 40) * config.tickRate);
+    const before = minionsAt();
+    run(simulation, config.tickRate);
+    const after = minionsAt();
+
+    expect(after.size).toBe(2 * config.map.numLanes * config.match.hordeSizes.light);
+    const held = [...after].filter(([id, to]) => {
+      const from = before.get(id);
+      return from == null || to == null || Math.hypot(to.x - from.x, to.y - from.y) < 1;
+    });
+    expect(held).toEqual([]);
+  });
+
+  it('fights when opposing hordes meet: kills on both sides, invariants clean (M2b)', () => {
+    const { simulation, logger } = match(TWO_LANE_MAP);
+    const alive = (team: string) =>
+      simulation.snapshot().entities.filter((entity) => isMinion(entity) && entity.team === team)
+        .length;
+
+    run(simulation, 60 * 30);
+
+    // The two opening hordes of each team; the first wave is 180 s after the countdown (DEC-87).
+    const opened = 2 * createDefaultGameConfig().match.hordeSizes.light;
+    expect(alive('light')).toBeLessThan(opened);
+    expect(alive('dark')).toBeLessThan(opened);
+    expect(logger.records.filter(({ severityText }) => severityText !== 'INFO')).toEqual([]);
+  });
+
+  it('fights the same way twice: the same seed gives the same hash, tick for tick (M2b)', () => {
+    const hashes = [1, 2].map(() => {
+      const { simulation } = match(TWO_LANE_MAP);
+      const seen: number[] = [];
+      for (let tick = 0; tick < 60 * 30; tick += 100) {
+        run(simulation, 100);
+        seen.push(simulation.hash());
+      }
+      return seen;
+    });
+
+    expect(hashes[0]).toEqual(hashes[1]);
+  });
+});

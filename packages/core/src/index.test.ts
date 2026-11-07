@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
+import { LEGEND_SPECS } from './content/legends/specs/legendSpecCatalogue';
 import * as core from './index';
 
 describe('@eternalus/core public API', () => {
   it('exports exactly the documented runtime values', () => {
     expect(Object.keys(core).sort()).toEqual([
-      'CathedralInteriorBuilder',
       'ConfigValidationError',
       'DEFAULT_MAP_CONFIG',
       'MapGenerator',
-      'MapSceneryBuilder',
+      'MapObjectBuilder',
+      'MapPresentationBuilder',
       'MemoryLogger',
       'NullLogger',
       'SEVERITY',
@@ -17,10 +18,20 @@ describe('@eternalus/core public API', () => {
       'Simulation',
       'StateHasher',
       'createDefaultGameConfig',
+      'findBuildingAt',
+      'findMapObjectAt',
+      'isPointInPolygon',
+      'loadDisplayContent',
       'makeLogRecord',
       'runReplay',
       'validateGameConfig',
     ]);
+  });
+
+  it('keeps the raw content catalogues internal: display content comes from loadDisplayContent', () => {
+    expect(Object.keys(core)).not.toContain('LEGEND_CLASSES');
+    expect(Object.keys(core)).not.toContain('LEGEND_SPECS');
+    expect(core.loadDisplayContent().specs).toEqual(LEGEND_SPECS.all());
   });
 
   it('generates the default map-1 from the default config', () => {
@@ -44,7 +55,16 @@ describe('@eternalus/core public API', () => {
       logger: new core.NullLogger(),
     });
     sim.step();
-    expect(sim.snapshot()).toEqual({ tick: 1, phase: 'countdown', entities: [] });
+    expect(sim.snapshot()).toEqual({
+      tick: 1,
+      phase: 'countdown',
+      entities: [],
+      hordes: [],
+      teams: {
+        light: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+        dark: { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} },
+      },
+    });
   });
 
   it('builds a default config that passes validation', () => {

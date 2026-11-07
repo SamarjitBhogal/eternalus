@@ -4,7 +4,7 @@ description: 2D top-down kinematics, momentum and knockback, carry weight, colli
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-30
 tags: [architecture, physics, collision, movement, determinism]
 paths:
   [
@@ -143,14 +143,17 @@ generator). `Zone`s have no collider.
 
 Uniform grid over the map, cell size = the largest unit diameter (from the radii above,
 TUNE) so a query touches only the 9 surrounding cells. Storage is dense typed arrays rebuilt every
-tick by counting sort (Muller's layout): `cellStart: Int32Array(cols × rows + 1)`,
-`entries: Int32Array(maxEntities)`; zero allocation after construction.
+tick by sorting the points by `cell × count + index`; a query binary-searches each covered row's
+run of cells. No per-cell array is kept, so a rebuild costs what the points cost (O(n log n)), never the
+`cols × rows` of the world, which on a generated map is hundreds of thousands of cells. A rebuild
+allocates one sorted view, plus a larger key buffer when the point count first passes the
+current capacity (grown once, then reused); queries never allocate.
 
 ```ts
 export class SpatialHash {
-  rebuild(positions: Float64Array, radii: Float32Array, count: number): void; // O(n)
+  rebuild(positions: Float64Array, radii: Float32Array, count: number): void; // O(n log n); radii planned (§12)
   queryCircle(x: number, y: number, r: number, out: Int32Array): number; // count; id-sorted
-  queryRect(rect: Rect, out: Int32Array): number;
+  queryRect(rect: Rect, out: Int32Array): number; // planned (§12)
 }
 // Polygons of structures, obstacles and walls; rebuilt only when terrain changes.
 export class StaticColliderIndex {}
@@ -225,7 +228,8 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
 - `PathingSystem` computes **next tick's** `desiredVelocity` from the positions just integrated:
   flow-field follow (bilinear interpolation of the four surrounding field vectors × `maxSpeed`),
   separation from neighbours found through `SpatialHash` (1/r weighted, id-sorted), arrival near
-  the goal, combined by priority (wall avoidance, then separation, then flow) and truncated to
+  the goal, combined by priority (wall avoidance, then separation, then a horde member's
+  formation slot ([18](18-minion-system.md) §5), then flow) and truncated to
   `maxSpeed`. Legends (bots and click-to-move) use A* with an octile heuristic and string pulling
   on the same `WorldMap` grid; camp guards use seek/arrival inside their leash.
 - The one-tick latency between deciding and integrating is deliberate: it removes any ordering
@@ -233,6 +237,9 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   apply next tick" rule, and is invisible at 30 ticks/s.
 - Steering only proposes; the resolver disposes. Units never accept a steering force that pushes
   them into a wall because step 1 of §8 always runs last on positions.
+- A lane's field also covers the blocked cells of its corridor: every one reachable from open
+  ground points the shortest way out, so a horde spawned inside its structure's footprint
+  ([18](18-minion-system.md) §3.2) or a unit pushed into a wall is led back to open ground (MS-31).
 - Flow fields rebuild time-sliced after terrain changes (`06-map-and-minimap.md` §6); ORCA is
   an optional `AvoidanceStrategy` if playtests show shuffling, not an MVP item.
 
@@ -269,6 +276,28 @@ Order in `SystemPipeline`: `MovementSystem` → `PathingSystem` → `CollisionSy
   both directions plus 20 Legends; zero anomalies; hash/field buffers are never reallocated
   (counters flat); p95 tick time recorded for the `08` budget table.
 - **Regression**: every replay-found bug adds a fixture (seed + commands + expected hashes).
+
+## 12. Implementation status
+
+`physics/SpatialHash` (minion plan M1, M2a) has §5's `rebuild` and an exact, ascending
+`queryCircle`, over points only: no radii and no `queryRect` yet.
+`physics/SpaceIndex` wraps it as `state.space` (11 §3), rebuilt by `SpaceSystem` after
+`MovementSystem`.
+
+Flow-field follow (§9, minion plan M4) is built for lane hordes: `LaneFollowMovementStrategy` takes
+the bilinear field direction instead of its slot while the next `blockedLookAhead` (content) of the
+straight line to the slot crosses an unwalkable cell, and a mob standing on unwalkable ground takes
+it whether it marches or chases (18 §5.2). There is no `CollisionSystem` and no wall-avoidance term
+yet; until they arrive, a heading that would enter unwalkable ground turns along its open grid axis
+(18 §5.2, MS-35), and the field's blocked corridor cells (§9) lead a unit that still enters one
+back out.
+
+**2026-10-27 (PR #30, map objects).** Map-enabled simulations built with `mapObjects` now have a
+`CollisionSystem`: it resolves moving circles against authored polygon footprints after movement. `StaticCollisionIndex` provides a grid broad phase;
+`CollisionResolver` sweeps edges and vertices and slides along contacts. Building entrances are
+gaps in the same wall geometry used for drawing. Bridge decks permit passage across terrain
+while retaining collision at their sides. Destroyed object IDs disable their static footprints.
+Unit-to-unit momentum, SAT and the remaining physics described above are still planned.
 
 ## Related
 

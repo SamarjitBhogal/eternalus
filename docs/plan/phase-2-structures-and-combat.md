@@ -4,7 +4,7 @@ description: Sprint checklists for the Structure family, layered shields, the da
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-06
+last-reviewed: 2026-11-02
 tags: [plan, phase-2, structures, combat, projectiles, spawning]
 paths:
   ['packages/core/src/combat/**', 'packages/core/src/entities/**', 'packages/core/src/systems/**']
@@ -33,7 +33,7 @@ in Phase 4. Every number below is `TUNE` from the game doc's "Stronghold Defense
 - **Branch:** `phase/2-structures-and-combat` (stacked on `phase/1-…` until it merges).
 - **Weeks:** 4–5 (2026-10-26 → 2026-11-06). Week 4: sprints 2.1, 2.2, 2.6, 2.8; week 5:
   sprints 2.3, 2.4, 2.5, 2.7, 2.9.
-- **Requirement areas served:** "FR: lanes & towers", "FR: strongholds & walls", "FR: capture
+- **Requirement areas served:** "FR: character select" (FR-119, the Legend pick; Track B carry-over), "FR: lanes & towers", "FR: strongholds & walls", "FR: capture
   points", "FR: hordes & spawning" (schedule), "FR: map & minimap" (structures on both), "FR:
   runtime monitoring & logging" (pass-through and unexplained-death checks), "NFR: no
   hardcoding" (ammo, multipliers and schedule in content).
@@ -86,6 +86,20 @@ Owner: _ (sim lane B). Week 4.
       projectiles; `TargetingStrategy` port with a nearest-enemy default). Owner: _. Test: a
       dummy attacks the nearest enemy within reach every `attackIntervalTicks`. Done when: the
       strategies are chosen from definitions.
+
+**Status (2026-10-16, PR #34, Claudio):** `DamagePipeline` (no damage types yet), `DamageStep`
+list with `FriendlyFireStep`, `Combat`, `CombatSystem` v1 (melee only, no `TargetingStrategy`) and
+the `attack-target` handler are built, and `DeathSystem` puts the killer on every `died` removal
+with the `no-death-without-killer` invariant (architecture 03 §2 keeps the cause `died` plus the
+killer, instead of new `RemovalCause` members). Status effects, ranged attacks and damage types are
+still open, so no box above is ticked yet.
+
+**Status (2026-10-16, PR #35, Claudio, SCRUM-228):** `StatusEffects` + `StatusEffectRuntime` +
+`StatusEffectSystem` with the six MVP statuses as content (loaded in ticks, `enraged`'s cap from
+config), `refresh` and `intensity` stacking, pooled instances, `StatusEffectApplier` (apply and
+remove), `StatusModifierStep` and `StatusStacksWithinMaxInvariant`; tests cover exact-tick expiry,
+stacking and pooling. FR-029 (aura debuff) is deferred to the BuffTower sprint: removal exists,
+the max-health stat does not. Open numbers and rules are in `INBOX.md`.
 
 **Success metric:** 100% of deaths in a 3,000-tick seeded skirmish (dummies vs dummies) carry a
 killer or a timeline cause; 0 negative-damage or out-of-range health values in invariants.
@@ -201,6 +215,18 @@ Owner: _ (client lane). Weeks 4–5.
 - [ ] **HUD `HealthBar` for the selected structure and `Announcer` events** (tower razed, point
       captured) via the bridge. Owner: _. Test: bridge events reach the store throttled. Done
       when: `ui/` still imports only `bridge/`.
+- [x] **HUD leave-interior control** (replaces the interim "Leave cathedral" button in
+      `game/GameCanvasChrome.tsx`, register CD-22: the bridge publishes whether the camera is
+      inside the cathedral interior, a `ui/hud/` control shows only then, styled from tokens, and
+      emits a `leave-interior` `UiIntent` that `Match` handles, per the architecture 13 §9
+      recipe). Owner: _. Test: the control renders only while the camera is inside and dispatches
+      `leave-interior`; `Match` returns to the following camera on the intent. Done when: `game/`
+      renders no normal-play control.
+      **Superseded 2026-11-02 (DEC-143):** the separate interior is gone (#30's same-world
+      buildings), and a building's roof opens while the player's Legend stands inside it, so
+      there is no interior state to leave and no control to build; `game/` renders no
+      normal-play control. Dropped by the owner on 2026-11-02 (DEC-148)
+      ([06](../architecture/06-map-and-minimap.md) §10).
 
 **Success metric:** every structure and obstacle kind renders on the map and minimap with 0
 kind-specific code outside `ViewRegistry` entries.
@@ -241,7 +267,7 @@ Owner: _ (each sprint adds its own; one person wires the soak). Week 5.
 3. Architecture doc 07 and reference doc 03 match the code, or an ADR records the deviation.
 4. Demo: a reviewer razes a SpawnerTower with debug damage, watches wall bars drop on the HUD
    and the minimap, opens a gate, fires a turret manually and captures a checkpoint.
-5. Phase PR approved (sholtzman + client lane lead), CI green on three OSes, merged by
+5. Phase PR approved (sholtzman + client lane lead), CI green on Linux and Windows, merged by
    SamarjitBhogal.
 
 ## Risks
@@ -260,6 +286,7 @@ Owner: _ (each sprint adds its own; one person wires the soak). Week 5.
 - [phase-1-simulation-kernel-and-world.md](phase-1-simulation-kernel-and-world.md)
 - [phase-3-minions-hordes-and-ai.md](phase-3-minions-hordes-and-ai.md)
 - [PROGRESS.md](PROGRESS.md)
+- [phase-2-architecture.md](phase-2-architecture.md)
 - [../architecture/07-structures-obstacles-and-destructibles.md](../architecture/07-structures-obstacles-and-destructibles.md)
 - [../architecture/10-physics.md](../architecture/10-physics.md)
 - [../architecture/15-diagnostics-and-runtime-testing.md](../architecture/15-diagnostics-and-runtime-testing.md)
