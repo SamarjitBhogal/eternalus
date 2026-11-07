@@ -161,7 +161,7 @@ describe('Match free view', () => {
   });
 });
 
-describe('Match.clickAt: unit, then roof, then map object (DEC-183, DEC-150)', () => {
+describe('MatchViewControls.clickAt: unit, then roof, then map object (DEC-183, DEC-150)', () => {
   /** Spawns a dark-team minion at `at`, ticks once, and returns its snapshot (id and position). */
   const spawnDarkMinion = (
     setup: ReturnType<typeof setUp>,
