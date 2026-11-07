@@ -46,7 +46,7 @@ export class SpawnContextReader {
    * when it gives them.
    *
    * @throws Error when `positioned` would, the team is not light, dark or neutral, or the context
-   *   gives a facing that is not a vector.
+   *   gives a facing that is not a finite vector.
    */
   public placed<Definition extends DefinitionRef>(
     context: unknown,
@@ -60,17 +60,18 @@ export class SpawnContextReader {
         `Entity "${this.entity.id}" needs a spawn context with a team (light, dark or neutral).`,
       );
     }
-    if (facing !== undefined && !SpawnContextReader.isObject(facing)) {
-      throw new Error(`Entity "${this.entity.id}" was given a spawn facing that is not a vector.`);
+    if (facing !== undefined && !SpawnContextReader.isFiniteVector(facing)) {
+      throw new Error(
+        `Entity "${this.entity.id}" was given a spawn facing that is not a finite vector.`,
+      );
     }
 
     const controller = this.controllerOf(SpawnContextReader.fields(context).controller);
-    // Safe: the facing is an object; Transform rejects one that is not a finite vector.
     return {
       ...positioned,
       team,
       ...(controller !== undefined && { controller }),
-      ...(facing !== undefined && { facing: facing as Vec2 }),
+      ...(facing !== undefined && { facing }),
     };
   }
 
@@ -120,5 +121,15 @@ export class SpawnContextReader {
 
   private static isObject(value: unknown): value is Readonly<Record<string, unknown>> {
     return typeof value === 'object' && value !== null;
+  }
+
+  private static isFiniteVector(value: unknown): value is Vec2 {
+    return (
+      SpawnContextReader.isObject(value) &&
+      typeof value.x === 'number' &&
+      typeof value.y === 'number' &&
+      Number.isFinite(value.x) &&
+      Number.isFinite(value.y)
+    );
   }
 }
