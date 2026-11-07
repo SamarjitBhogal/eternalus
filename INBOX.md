@@ -16,6 +16,16 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **`fix/blocking-at-bounds` critic (2026-11-05), better than the design — optional
+      follow-ups, no decision blocks the PR.** (1) Keep one box per footprint instead of one per
+      map object: a ring or multi-segment wall's box covers its whole court, so units inside it
+      still run the full shape test (not needed now: 125 ticks with map objects take 0.19 s).
+      (2) Three places still build the same box by hand and could call `boundsOf`
+      (`utils/geometry.ts`): `map/MapSceneryBuilder.ts`, `map/findMapObjectAt.ts` and
+      `map/WorldMap.ts` (a follow-up PR; no drive-by refactor here). (3) Doc 15's invariant
+      catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
+      doc-gardening fix. Approve which to schedule, or drop them.
+
 - [ ] **Minion follow-ups: 12 better-than-design items for the tidy PR (critics A and B on
       `fix/minion-stack-followups`, 2026-11-05; DEC-219 (d)) — sign-off per item.** Built on that
       branch: leash decision parts built once (A4), one outline and aim rule (B1), `BotLeaves`
