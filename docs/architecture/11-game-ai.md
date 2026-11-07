@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-06
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -196,8 +196,9 @@ Each aggro profile names the one controller that reads it (`controller`), and a 
 accepts only its own profiles. The shared fields are `AggroRuleDefinition`; a horde minion's
 profile (`HordeAggroRuleDefinition`) adds `leashRadius` and `callForHelpRadius`, and a guard's or
 camp mob's (`GuardAggroRuleDefinition`) adds nothing, since its leash and its mates come from its
-post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content, except
-`ghostFirstWaveTicks` (already in ticks), turned into ticks with the match's tick rate where they are read.
+post's guard plan (18 §7; DEC-168 B2). Durations are seconds in content and are turned into ticks
+with the match's tick rate where they are read; `ghostFirstWaveTicks` is the exception, already in
+ticks.
 
 ```ts
 // packages/core/src/content/ai/aggro/lane-minion.ts (sketch)
@@ -309,12 +310,14 @@ and the skipped brains go first next tick. At the unit cap (`GameConfig.limits.m
 per team, DEC-137, plus the camp mobs) more brains are in play than that estimate, so a deferred
 brain can wait up to `floor((brains − 1) / maxDecisionsPerTick)` ticks. The owner kept the budget;
 the guard leash tolerance covers the wait instead (DEC-181, 18 §7). A decision is atomic and
-cheap: radius-bounded queries, no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
-`move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
-blocked, a bot's own planning costing inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
-path cache in the brain is the next step if profiling shows the cost). `StuckSystem` is a second A\* consumer, outside the decision budget, capped by
-`STUCK_DETECTION.maxPlansPerTick`; requests over the cap wait (`ChaseWatch.isPlanDue`), served in
-store order, and the upgrade path is a round-robin cursor. Other heavy work (flow
+cheap: radius-bounded queries, no allocation in hot paths, scratch vectors reused. A bot's A\* is
+the exception: bots steer by `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves
+call when the straight line is blocked. Its cost is inside the decision budget, and
+`GameConfig.map.pathMaxExpansions` caps each search (a path cache in the brain is the next step if
+profiling shows the cost). `StuckSystem` is a second A\* consumer, outside the decision budget:
+`STUCK_DETECTION.maxPlansPerTick` caps its plans a tick, and `pathMaxExpansions` caps each plan.
+Requests over the cap wait (`ChaseWatch.isPlanDue`), served in store order; the upgrade path is a
+round-robin cursor. Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
@@ -402,7 +405,7 @@ work named:
   each blocked decision.
 - The bot leaves also read the nav grid directly (`state.world.grid`). A bot sent to a point on
   blocked ground (a tower's centre) stops at the edge of that ground on its side
-  (`BotMovement.approach`, the leaves' navigation in `ai/BotMovement.ts`). To fight an enemy on
+  (`BotMovement.moveTo`, the leaves' navigation in `ai/BotMovement.ts`). To fight an enemy on
   blocked ground, or to push a structure, it goes by A\* to that edge and then straight in
   (`closeIn`), so the collision system stops it at the real walls (DEC-189). While stuck
   detection has a detour waypoint for it, a fighting or pushing bot heads there

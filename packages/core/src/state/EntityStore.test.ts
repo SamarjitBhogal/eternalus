@@ -350,6 +350,10 @@ describe('EntityStore', () => {
     expect(aimAt('tower', { x: 60, y: 9 })).toEqual({ x: 50, y: 5 });
     expect(aimAt('round', { x: 0, y: 0 })).toEqual({ x: -7, y: 3 });
     expect(aimAt('nobody', { x: 0, y: 0 })).toBeNull();
+    expect(store.aimPointOf('house', { x: 0, y: 2 }, aim)).toBe(store.outlineOf('house'));
+    expect(store.aimPointOf('tower', { x: 60, y: 9 }, aim)).toBe(store.outlineOf('tower'));
+    expect(store.aimPointOf('round', { x: 0, y: 0 }, aim)).toBe('centre');
+    expect(store.aimPointOf('nobody', { x: 0, y: 0 }, aim)).toBeNull();
   });
 
   it('faces the aim point from outside an outline and the centre from inside it (DEC-220 (1))', () => {

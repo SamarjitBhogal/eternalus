@@ -138,8 +138,11 @@ export class EntityStore {
     const combat = attacker?.findComponent(Combat);
     const from = attacker?.findComponent(Transform);
     const to = this.entities.get(targetId)?.findComponent(Transform);
-    const aimed = from === undefined ? null : this.aimPointOf(targetId, from.position, this.aim);
-    if (combat === undefined || from === undefined || to === undefined || aimed === null) {
+    if (combat === undefined || from === undefined || to === undefined) {
+      return false;
+    }
+    const aimed = this.aimPointOf(targetId, from.position, this.aim);
+    if (aimed === null) {
       return false;
     }
     if (aimed === 'centre') {
