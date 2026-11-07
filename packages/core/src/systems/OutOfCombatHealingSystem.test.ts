@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Collider } from '../components/Collider';
+import { CombatClock } from '../components/CombatClock';
 import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
@@ -323,6 +324,19 @@ describe('OutOfCombatHealingSystem', () => {
 
     expect(gainAt(DELAY, camp)).toBeGreaterThan(0);
     expect(tower.current).toBe(before);
+  });
+
+  it("keeps each fight in a CombatClock: the target's both ticks, the attacker's active tick", () => {
+    const { minion, hit, tickTo } = setUp();
+    const attacker = minion();
+    const victim = minion('dark');
+    const bystander = minion();
+    tickTo(7);
+    hit(victim.id, attacker.id);
+
+    expect(victim.getComponent(CombatClock).fields).toEqual([7, 7]);
+    expect(attacker.getComponent(CombatClock).fields).toEqual([7, 0]);
+    expect(bystander.hasComponent(CombatClock)).toBe(false);
   });
 
   it('heals the same way twice: same setup, same hash', () => {

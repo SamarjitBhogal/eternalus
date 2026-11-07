@@ -1,6 +1,8 @@
+import { CombatClock } from '../components/CombatClock';
 import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
 import type { OutOfCombatHealing } from '../content/healing/outOfCombatHealing.types';
+import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
 import { HealingZones } from './HealingZones';
 import type { BonusZone } from './OutOfCombatHealingSystem.types';
@@ -9,7 +11,7 @@ import type { System, SystemContext } from './System.types';
 /**
  * Heals every living Legend and mob over time once it is out of combat (DEC-188, amended by
  * DEC-215). A unit is in combat from the tick it deals or takes damage (`damage-applied`, attacker
- * and target) until `delaySeconds` pass. Out of combat it regains a flat share of its max health
+ * and target, kept in its `CombatClock`) until `delaySeconds` pass. Out of combat it regains a flat share of its max health
  * per second. While its centre point is in the zone (`HealingZones`) of a living friendly
  * structure that `structureBonuses` lists and that has taken no damage for
  * `structureQuietSeconds`, that structure's bonus is added. Only hits on the structure itself
@@ -25,8 +27,6 @@ import type { System, SystemContext } from './System.types';
  */
 export class OutOfCombatHealingSystem implements System {
   public readonly name = 'out-of-combat-healing';
-  private readonly lastActive = new Map<string, number>();
-  private readonly lastHurt = new Map<string, number>();
   private readonly delayTicks: number;
   private readonly quietTicks: number;
   private readonly perTick: number;
@@ -48,15 +48,12 @@ export class OutOfCombatHealingSystem implements System {
     this.perTick = content.healthFractionPerSecond / this.tickRate;
     this.zones = new HealingZones(state.world?.definition);
     state.events.on('damage-applied', ({ targetId, source }) => {
-      this.lastActive.set(targetId, state.tick);
-      this.lastHurt.set(targetId, state.tick);
-      if (source.attackerId !== null) {
-        this.lastActive.set(source.attackerId, state.tick);
-      }
-    });
-    state.events.on('entity-removed', ({ entityId }) => {
-      this.lastActive.delete(entityId);
-      this.lastHurt.delete(entityId);
+      const target = state.entities.get(targetId);
+      if (target !== undefined) OutOfCombatHealingSystem.clockOf(target).recordHurt(state.tick);
+      const attacker =
+        source.attackerId === null ? undefined : state.entities.get(source.attackerId);
+      if (attacker !== undefined)
+        OutOfCombatHealingSystem.clockOf(attacker).recordDealt(state.tick);
     });
   }
 
@@ -72,7 +69,7 @@ export class OutOfCombatHealingSystem implements System {
         health === undefined ||
         health.isDead ||
         health.current >= health.max ||
-        state.tick - (this.lastActive.get(entity.id) ?? 0) < this.delayTicks
+        state.tick - (entity.findComponent(CombatClock)?.activeTick ?? 0) < this.delayTicks
       ) {
         return;
       }
@@ -95,7 +92,7 @@ export class OutOfCombatHealingSystem implements System {
       if (
         bonus === undefined ||
         entity.findComponent(Health)?.isDead !== false ||
-        state.tick - (this.lastHurt.get(entity.id) ?? 0) < this.quietTicks
+        state.tick - (entity.findComponent(CombatClock)?.hurtTick ?? 0) < this.quietTicks
       ) {
         return;
       }
@@ -106,5 +103,15 @@ export class OutOfCombatHealingSystem implements System {
       }
     });
     return zones;
+  }
+
+  /** The entity's `CombatClock`, added on its first fight (as `StuckSystem` adds `ChaseWatch`). */
+  private static clockOf(entity: Entity): CombatClock {
+    let clock = entity.findComponent(CombatClock);
+    if (clock === undefined) {
+      clock = new CombatClock();
+      entity.addComponent(clock);
+    }
+    return clock;
   }
 }

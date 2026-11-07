@@ -2,6 +2,7 @@ import { Aether } from '../components/Aether';
 import { ChaseWatch } from '../components/ChaseWatch';
 import { Collider } from '../components/Collider';
 import { Combat } from '../components/Combat';
+import { CombatClock } from '../components/CombatClock';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
@@ -160,6 +161,10 @@ export class StateHasher {
     const watch = entity.findComponent(ChaseWatch);
     if (watch !== undefined) {
       fields.push(['chase', ...watch.fields]);
+    }
+    const clock = entity.findComponent(CombatClock);
+    if (clock !== undefined) {
+      fields.push(['combat-clock', ...clock.fields]);
     }
     return fields;
   }
