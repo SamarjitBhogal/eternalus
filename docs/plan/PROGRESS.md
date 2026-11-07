@@ -5155,7 +5155,7 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 ## 2026-11-05 · Phase 3 · fix/minion-stack-followups · critic r2 + ponytail r2 fixes
 
 - What: 11 §6 says `StuckSystem` is a second A\* consumer outside the decision budget (cap
-  `STUCK_DETECTION.maxPlansPerTick`, upgrade path a round-robin cursor); 11 §3 notes
+  `STUCK_DETECTION.maxPlansPerTick`, upgrade path a round-robin cursor); 11 §4.3 notes
   `ghostFirstWaveTicks` is already in ticks; 18 lists a map object's cells as ground that never
   holds a chase; stuck-detection comment says "progress toward what it heads for" (DEC-217 (14));
   `Veterancy` TSDoc and its cap test comment say other level sources go through `VeterancySystem`;
