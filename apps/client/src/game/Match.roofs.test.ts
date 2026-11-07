@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import type { WorldRect } from './engine/render/Renderer.types';
@@ -36,12 +37,18 @@ class ScriptedIntent implements IntentSource {
 
 /**
  * A match on seed 1's world whose player is a Light Warrior; it spawns at the Light Stronghold,
- * inside the Stronghold's building. No map in the simulation, so nothing blocks the walk out.
+ * inside the Stronghold's building, and walks out across seed 1's map.
  */
 const setUp = () => {
   const config = createDefaultGameConfig();
   const world = prepareMatchWorld(config, 1);
-  const simulation = new Simulation({ config, seed: 1, logger: new NullLogger() });
+  const player: PlayerChoice = { legend: 'warrior', team: 'light' };
+  const simulation = new Simulation({
+    ...withPlayer(config, player),
+    seed: 1,
+    logger: new NullLogger(),
+    map: world.map,
+  });
   const renderer = new RecordingRenderer();
   const input = new ScriptedIntent();
   const match = new Match({
@@ -52,7 +59,6 @@ const setUp = () => {
     renderer,
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input,
-    player: { legend: 'warrior', team: 'light' },
     logger: new NullLogger(),
     onCrash: () => undefined,
     bridge: {
@@ -106,7 +112,7 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);
     const cathedral = roofsDrawn('cathedral-lane-1');
     expect(cathedral.drawn).toBe(cathedral.of);
-    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
   });
 
   it('puts the roof back when the Legend walks out of the building', () => {
@@ -177,24 +183,24 @@ describe("Match roofs: the player's building opens (DEC-143)", () => {
     match.tick();
     const onPlayer = toScreen(playerPosition() ?? { x: -1, y: -1 });
 
-    expect(match.toggleRoofAt(onPlayer.x, onPlayer.y)).toBe(false);
+    expect(match.controls.clickAt(onPlayer.x, onPlayer.y)).toBe(false);
 
-    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);
   });
 
   it("combines with the developer's roofs: the overview restores those, not the Legend's", () => {
     const { match, roofsDrawn, toScreen, cathedral: centre } = setUp();
     match.tick();
-    match.overview();
+    match.controls.overview();
     const onCathedral = toScreen(centre ?? { x: -1, y: -1 });
-    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.hasDeveloperRoofs).toBe(true);
+    expect(match.controls.clickAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.controls.hasDeveloperRoofs).toBe(true);
     expect(roofsDrawn('cathedral-lane-1').drawn).toBe(0);
 
-    match.overview();
+    match.controls.overview();
 
-    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
     const cathedral = roofsDrawn('cathedral-lane-1');
     expect(cathedral.drawn).toBe(cathedral.of);
     expect(roofsDrawn('light-stronghold').drawn).toBe(0);

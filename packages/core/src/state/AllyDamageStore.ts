@@ -1,4 +1,5 @@
 import type { PlayableTeam } from '../teams/teams.types';
+import { PLAYABLE_TEAMS } from '../teams/playableTeams';
 
 /**
  * Each playable team's ally damage per lane since that team's last Stronghold heavy wave (DEC-89,
@@ -42,7 +43,7 @@ export class AllyDamageStore {
 
   /** Every tally that holds damage, Light's first, each team's in the order its lanes were first hit. */
   public forEach(visit: (team: PlayableTeam, lane: string, amount: number) => void): void {
-    for (const team of ['light', 'dark'] as const) {
+    for (const team of PLAYABLE_TEAMS) {
       this.tallies[team].forEach((amount, lane) => {
         visit(team, lane, amount);
       });

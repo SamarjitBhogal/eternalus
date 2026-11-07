@@ -34,7 +34,9 @@ const createMatch = ({ config, seed }: ReplaySetup): Simulation =>
     logger: new NullLogger(),
     debug: TEST_DEBUG_CONFIG,
     map: new MapGenerator().generate(config, seed),
-    roster: [{ team: 'dark', definitionId: 'sentinel', role: 'laner', difficulty: 'normal' }],
+    roster: [
+      { pilot: 'bot', team: 'dark', definitionId: 'sentinel', role: 'laner', difficulty: 'normal' },
+    ],
   });
 
 const spawn = (kind: string, definitionId: string, at: Vec2): Command => ({
@@ -85,7 +87,7 @@ describe('Simulation replay export and recent context', () => {
 
     expect(exported.map).toBeDefined();
     expect(exported.roster).toEqual([
-      { team: 'dark', definitionId: 'sentinel', role: 'laner', difficulty: 'normal' },
+      { pilot: 'bot', team: 'dark', definitionId: 'sentinel', role: 'laner', difficulty: 'normal' },
     ]);
     expect(
       runReplay(
@@ -108,7 +110,15 @@ describe('Simulation replay export and recent context', () => {
     expect(exported).toEqual({
       ...recorded,
       map: new MapGenerator().generate(CONFIG, SEED),
-      roster: [{ team: 'dark', definitionId: 'sentinel', role: 'laner', difficulty: 'normal' }],
+      roster: [
+        {
+          pilot: 'bot',
+          team: 'dark',
+          definitionId: 'sentinel',
+          role: 'laner',
+          difficulty: 'normal',
+        },
+      ],
     });
     expect(runReplay(exported, createMatch)).toEqual({
       firstDivergence: null,

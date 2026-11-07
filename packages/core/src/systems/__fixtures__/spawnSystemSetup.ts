@@ -14,6 +14,7 @@ import { matchWorldOf } from '../../state/__fixtures__/matchWorld';
 import type { GameEventMap } from '../../state/GameEvents.types';
 import { SpawnSystem } from '../SpawnSystem';
 import type { SpawnPlan } from '../SpawnSystem.types';
+import { countdownTicks } from '../../config/countdownTicks';
 
 /** The simulation tick rate the fixtures use. */
 export const TICK_RATE = 30;
@@ -73,7 +74,10 @@ export const summary = (hordes: readonly GameEventMap['horde-spawned'][]) =>
   hordes.map(({ team, lane, memberIds }) => `${team} ${lane} ${String(memberIds.length)}`);
 
 /** The tick the countdown ends, when every wave clock starts (DEC-87). */
-export const COUNTDOWN = Math.round(createDefaultGameConfig().match.countdownSeconds * TICK_RATE);
+export const COUNTDOWN = countdownTicks(
+  createDefaultGameConfig().match.countdownSeconds,
+  TICK_RATE,
+);
 /** The first heavy, light and medium waves: 180, 200 and 230 s after the countdown (DEC-87, DEC-127). */
 export const LIGHT = COUNTDOWN + 200 * TICK_RATE;
 export const MEDIUM = COUNTDOWN + 230 * TICK_RATE;

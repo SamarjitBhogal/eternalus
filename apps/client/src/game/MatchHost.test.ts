@@ -33,15 +33,16 @@ function setUp(options: { readonly isStartThrowing?: boolean } = {}) {
     destroy: vi.fn(() => log.push('match.destroy')),
     resize: vi.fn(),
     setPaused: vi.fn(),
-    lookAtMinimapPoint: vi.fn(() => false),
-    panBy: vi.fn(),
-    zoomBy: vi.fn(),
-    toggleRoofAt: vi.fn(() => false),
-    attackAt: vi.fn(),
-    hasDeveloperRoofs: false,
-    overview: vi.fn(),
-    leaveExplorer: vi.fn(),
-    setPointerClaimed: vi.fn(),
+    controls: {
+      lookAtMinimapPoint: vi.fn(() => false),
+      panBy: vi.fn(),
+      zoomBy: vi.fn(),
+      clickAt: vi.fn(() => false),
+      hasDeveloperRoofs: false,
+      overview: vi.fn(),
+      leaveExplorer: vi.fn(),
+      setPointerClaimed: vi.fn(),
+    },
   };
   const input = { releaseAll: vi.fn() };
   // The real key lookup over the default bindings, so DEC-105's hotkey is the shipped chord.
