@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
+import { Footprint } from './components/Footprint';
+import { Health } from './components/Health';
 import { createDefaultGameConfig } from './config/defaultGameConfig';
 import { OUT_OF_COMBAT_HEALING } from './content/healing/outOfCombatHealing';
 import { TEST_DEBUG_CONFIG } from './diagnostics/InvariantRunner.constants';
 import { MemoryLogger } from './diagnostics/MemoryLogger';
+import { MapGenerator } from './map/MapGenerator';
+import { MapObjectBuilder } from './map/MapObjectBuilder';
+import { MapPresentationBuilder } from './map/MapPresentationBuilder';
 import { Simulation } from './Simulation';
 import type { RosterSlot } from './Simulation.types';
 import { TWO_LANE_MAP } from './state/__fixtures__/twoLaneMap';
+import type { GameState } from './state/GameState';
 
 const TICK_RATE = 30;
 
@@ -59,6 +65,56 @@ describe('Simulation with out-of-combat healing (DEC-188)', () => {
       );
     }
     expect(fightsAfterRejoin).toBeGreaterThan(0);
+  });
+
+  it("heals a hurt unit in its own team's fort box at the fort-box rate (generated map, DEC-215 (4))", () => {
+    const config = createDefaultGameConfig({ match: { countdownSeconds: 10 } });
+    const map = new MapGenerator().generate(config, 1);
+    const mapObjects = new MapObjectBuilder().build(map, new MapPresentationBuilder().build(map));
+    // No `TEST_DEBUG_CONFIG`: its invariants over the whole generated map cost about 20 s here.
+    const simulation = new Simulation({
+      config,
+      seed: 1,
+      logger: new MemoryLogger(),
+      map,
+      mapObjects,
+    });
+    const { state } = simulation as unknown as { readonly state: GameState };
+    const towers: { id: string; box: Footprint['bounds'] }[] = [];
+    state.entities.forEach((entity) => {
+      const box = entity.findComponent(Footprint)?.bounds;
+      if (entity.kind === 'spawner-tower' && state.entities.teamOf(entity.id) === 'light' && box) {
+        towers.push({ id: entity.id, box });
+      }
+    });
+    const fort = towers[0]?.box;
+    if (fort === undefined) throw new Error('no light spawner tower with a fort footprint');
+    // One metre into the fort's west gateway, a gap in its walls.
+    const spot = { x: fort.x + 1, y: fort.y + fort.height / 2 };
+    simulation.enqueueCommand({
+      type: 'dev-spawn',
+      kind: 'light-mob',
+      definitionId: 'training-dummy',
+      team: 'light',
+      at: spot,
+      count: 1,
+    });
+    const delay = OUT_OF_COMBAT_HEALING.delaySeconds * config.tickRate;
+    while (state.tick < delay) simulation.step();
+    let health: Health | undefined;
+    state.entities.forEach((entity) => {
+      if (entity.definitionId === 'training-dummy') health = entity.getComponent(Health);
+    });
+    if (health === undefined) throw new Error('no training dummy');
+    health.applyDamage(health.max / 2);
+    const before = health.current;
+
+    simulation.step();
+
+    const fortBonus = OUT_OF_COMBAT_HEALING.structureBonuses['spawner-tower']?.fractionPerSecond;
+    const rate = OUT_OF_COMBAT_HEALING.healthFractionPerSecond + (fortBonus ?? 0);
+    expect(fortBonus).toBeGreaterThan(0);
+    expect(health.current - before).toBeCloseTo((health.max * rate) / config.tickRate, 9);
   });
 
   it('plays out the same way twice: same seed, same hash', () => {
