@@ -5181,3 +5181,29 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1182 passed (1182)"; client "Tests 1771 passed (1771)"; "✓ built in 238ms";
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: critic and ponytail on PR #79, then push.
+
+### 2026-11-06 — Phase 3 / unit facing chevron, DEC-220 — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `7bc53a9` as `8ce35b0`
+  (`aimPointOf` returns the outline, `'centre'` or `null`). Conflicts: `EntityStore.isInReach`
+  (the `'centre'` branch with this branch's allocation-free `distance`),
+  `DefaultSystemPipeline.test.ts` (the shared `Fort` fixture, this branch's `Transform` import),
+  this file (both entries, the merged side first). Then the owner's answers of 2026-11-06:
+  `e1bc618` `EntityStore.facingPointOf`: an attacker inside a building's outline faces its
+  centre, else the aim point; reach and chase keep `aimPointOf` (DEC-220 (1)); the
+  inside-footprint `CombatSystem` test from before `925c08d` is back with the centre expectation.
+  `92ff77e`, `999bd86`: `GuardRoster`, 04 §3 and `INBOX.md` cite DEC-216 (6) for tower guards
+  and DEC-220 (2) for camp mobs; 04 §3 rewrapped. `7da91f1`: `PathingSystem` turns a guard at
+  its post with nothing to chase to face outward again (DEC-220 (3)); `state/guardOutward.ts`
+  holds the one outward rule that `GuardRoster` also uses. `a72561f`, `a380b19`: ponytail cuts
+  (shorter `INITIAL_FACING` doc, flat ternary in `MatchWorld.startFacing`; `SpawnContextReader`
+  checks a finite numeric `x` and `y` and drops the cast). `8716c98`: 04 §3 states DEC-220 (1)
+  and (3). Each new or changed behaviour test was red with the production code broken on purpose
+  and green when restored.
+- Checks run: `npm run check` at `8716c98` → `EXIT=0` (log `check-chevron-dec220.log` in
+  `eternalus-agent-work/playtest-2026-11-04/`): "All matched files use Prettier code style!";
+  core "Tests 1185 passed (1185)"; client "Tests 1771 passed (1771)"; "✓ built in 304ms";
+  "Documentation check passed." This entry was added after that run (docs-only); `prettier` and
+  `docs:check` were re-run on it.
+- Next step: critic and ponytail re-check of this round on PR #79; DEC-220 (4) (start-facing
+  port in `EntityFactory`, guard-plan `facesOutward` data) goes to a later tidy PR.
