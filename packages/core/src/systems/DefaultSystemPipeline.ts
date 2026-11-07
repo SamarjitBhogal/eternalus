@@ -84,11 +84,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
           );
     // Minion strength reads lane progress from the lane fields (05 §9, `balancing.md`).
     const damage = new DamagePipeline(
-      createDefaultDamageSteps(
-        flowFields === null
-          ? null
-          : (laneId, team, position) => flowFields.progress(laneId, team, position),
-      ),
+      createDefaultDamageSteps(flowFields?.progress.bind(flowFields) ?? null),
     );
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];

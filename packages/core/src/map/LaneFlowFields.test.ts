@@ -18,6 +18,7 @@ import { MapGenerator } from './MapGenerator';
 import { MapObjectBuilder } from './MapObjectBuilder';
 import { MapPresentationBuilder } from './MapPresentationBuilder';
 import { WorldMap } from './WorldMap';
+import { LaneRoutes } from '../state/LaneRoutes';
 
 const isBlocking = (definitionId: string): boolean =>
   MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false;
@@ -346,31 +347,87 @@ describe('LaneFlowFields', () => {
 
 describe('LaneFlowFields.progress', () => {
   const { map, fields } = THREE;
+  const routes = new LaneRoutes(map);
+  /** One diagonal step's cost over the lane's cost: the most a cell boundary can move `t`. */
+  const oneStep = (field: FlowField): number => 14 / (field.integration[field.start] ?? 1);
+  /** The largest gap measured between field and polyline `t` on the generated lanes was 1.4%. */
+  const POLYLINE_AGREEMENT = 0.02;
 
-  it('runs from 0 at the team’s own end of the lane to 1 at the enemy end, never falling', () => {
+  /** Points along `path`, eight per segment, with the polyline's own `t` for each. */
+  const samples = (laneId: string, team: 'light' | 'dark') => {
+    const length = routes.length(laneId);
+    const lane = map.lanes.find(({ id }) => id === laneId);
+    const path = team === 'light' ? (lane?.path ?? []) : [...(lane?.path ?? [])].reverse();
+    return path.slice(1).flatMap((b, index) => {
+      const a = path[index] ?? b;
+      return [1, 2, 3, 4, 5, 6, 7, 8].map((step) => {
+        const point = { x: a.x + ((b.x - a.x) * step) / 8, y: a.y + ((b.y - a.y) * step) / 8 };
+        return { point, polyline: routes.distanceAlong(laneId, team, point) / length };
+      });
+    });
+  };
+
+  it('runs from 0 at the team’s own lane end to 1 at the enemy end, never falling by more than one cell', () => {
     for (const lane of map.lanes) {
       for (const team of ['light', 'dark'] as const) {
+        const field = fields.field(lane.id, team);
         const path = team === 'light' ? lane.path : [...lane.path].reverse();
         const first = path[0];
         const last = path[path.length - 1];
-        if (first === undefined || last === undefined) throw new Error('empty lane');
-        expect(fields.progress(lane.id, team, first)).toBe(0);
-        expect(fields.progress(lane.id, team, last)).toBeCloseTo(1, 1);
-        let previous = 0;
-        for (let index = 1; index < path.length; index += 1) {
-          const a = path[index - 1];
-          const b = path[index];
-          if (a === undefined || b === undefined) continue;
-          for (let step = 1; step <= 8; step += 1) {
-            const point = { x: a.x + ((b.x - a.x) * step) / 8, y: a.y + ((b.y - a.y) * step) / 8 };
-            const t = fields.progress(lane.id, team, point);
-            if (t === null) continue;
-            expect(t).toBeGreaterThanOrEqual(previous - 0.02);
-            previous = Math.max(previous, t);
-          }
+        if (field === undefined || first === undefined || last === undefined) {
+          throw new Error(`lane ${lane.id} has no ${team} field`);
         }
-        expect(previous).toBeGreaterThan(0.9);
+        expect(fields.progress(lane.id, team, first)).toBe(0);
+        expect(fields.progress(lane.id, team, last)).toBeGreaterThanOrEqual(1 - oneStep(field));
+        let highest = 0;
+        let largestDrop = 0;
+        for (const { point } of samples(lane.id, team)) {
+          const t = fields.progress(lane.id, team, point) ?? highest;
+          largestDrop = Math.max(largestDrop, highest - t);
+          highest = Math.max(highest, t);
+        }
+        expect(largestDrop).toBeLessThanOrEqual(oneStep(field));
+        expect(highest).toBeGreaterThanOrEqual(1 - oneStep(field));
       }
+    }
+  });
+
+  it('agrees with the lane polyline within 2% wherever the field can say, so the curve keeps its balance', () => {
+    let largest = 0;
+    for (const lane of map.lanes) {
+      for (const team of ['light', 'dark'] as const) {
+        for (const { point, polyline } of samples(lane.id, team)) {
+          const t = fields.progress(lane.id, team, point);
+          if (t !== null) largest = Math.max(largest, Math.abs(t - polyline));
+        }
+      }
+    }
+    expect(largest).toBeLessThanOrEqual(POLYLINE_AGREEMENT);
+  });
+
+  it.each([
+    [3, THREE],
+    [5, FIVE],
+  ] as const)('gives Light and Dark the same progress at mirrored points: %i lanes', (_, world) => {
+    const { grid } = world;
+    for (const lane of world.map.lanes) {
+      const light = world.fields.field(lane.id, 'light');
+      const dark = world.fields.field(lane.id, 'dark');
+      if (light === undefined || dark === undefined) {
+        throw new Error(`lane ${lane.id} has no Light or Dark field`);
+      }
+      const row = Math.floor(light.start / grid.cols);
+      expect(dark.start).toBe(row * grid.cols + (grid.cols - 1 - (light.start % grid.cols)));
+      // The first cell centre whose mirrored twin reads differently, or -1 (one expect per lane).
+      let mismatch = -1;
+      for (let cell = 0; cell < light.mask.length && mismatch === -1; cell += 1) {
+        const col = cell % grid.cols;
+        const y = (Math.floor(cell / grid.cols) + 0.5) * grid.cellSize;
+        const here = light.progressAt({ x: (col + 0.5) * grid.cellSize, y });
+        const twin = dark.progressAt({ x: (grid.cols - col - 0.5) * grid.cellSize, y });
+        if (here !== twin) mismatch = cell;
+      }
+      expect(mismatch, `first non-mirrored cell in ${lane.id}`).toBe(-1);
     }
   });
 

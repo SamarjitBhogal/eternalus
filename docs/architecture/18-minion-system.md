@@ -99,8 +99,9 @@ spawn's own controller and starting memory (`Placement.controller`, holding the 
 Pull request M5a adds the MVP minion modifiers (MS-16): `MinionStrengthStep` in the damage steps
 (strength by distance, floored at base stats per DISC-24, its base-stat point moving toward the
 enemy for each lane tower the enemy has lost there; lane progress is the path cost on the lane's
-flow field, `LaneFlowFields.progress` injected through the `LaneProgressOf` port, with the lane
-polyline as the fallback off the corridor) and `EnragedSystem`, its own system right after
+flow field, gate to gate as the polyline measured it (`balancing.md` words it Stronghold to
+Stronghold), through `LaneFlowFields.progress` injected as the `LaneProgressOf` port, with the
+lane polyline as the fallback off the corridor) and `EnragedSystem`, its own system right after
 `SpawnSystem` (one `enraged` stack per lost SpawnerTower or BuffTower on the lane; the losses are
 kept per team and lane in `TeamState.towersLostByLane`, which the strength step reads too). The
 damage pipeline (`combat/DamagePipeline`) is built. Pull request `feat/minion-structures` adds the

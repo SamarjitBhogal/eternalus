@@ -13,9 +13,9 @@ import type { LaneProgressOf } from './MinionStrengthStep.types';
  * each lane tower the enemy has lost on that lane (DISC-24), up to `maxBasePoint`. Health never
  * rescales, so a health bar never jumps. Anything outside a horde (Legends included) is 1.
  *
- * `t` is measured by path cost on the lane's flow field (`balancing.md`), through the injected
- * `LaneProgressOf`; where the field cannot say (no field, or a unit off its corridor), `t` falls
- * back to the nearest point of the lane polyline.
+ * `t` is measured by path cost on the lane's flow field (`balancing.md`), gate to gate, through
+ * the injected `LaneProgressOf`; where the field cannot say (no field, or a unit off its corridor),
+ * `t` falls back to the nearest point of the lane polyline.
  */
 export class MinionStrengthStep implements DamageStep {
   public readonly name = 'minion-strength';

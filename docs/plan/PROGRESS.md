@@ -5145,11 +5145,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - What was done: `MinionStrengthStep` measures a horde member's lane progress `t` by path cost on
   its lane's flow field, as `balancing.md` recommends, instead of along the lane polyline. The step
   reads it through a `LaneProgressOf` port (`combat/` may not import `map/`, 02 §2);
-  `LaneFlowFields.progress` implements it (0 at the team's own end, 1 at the enemy end, `null` off
-  the corridor) on the new `FlowField.costAt`, and `DefaultSystemPipeline` wires it into the damage
-  steps. Off the corridor the step falls back to the polyline. On the generated 3-lane map the two
-  agree within 0.5% along the lanes, so the curve's balance does not move. Minion plan: the
+  `LaneFlowFields.progress` implements it through the new `FlowField.progressAt` and `costAt`, and
+  `DefaultSystemPipeline` wires it into the damage steps. `t` keeps the polyline's reference
+  points, gate to gate (0 at the team's own lane end, 1 at the enemy end), not Stronghold to
+  Stronghold as `balancing.md` words it, so the curve's base-stat points keep their meaning. Each
+  field stores its own start cell, nudged off cell edges like the goal, so Light and Dark read the
+  same progress at mirrored points (tested cell by cell). Off the corridor the step falls back to
+  the polyline. The field and the polyline agree within 2% along the generated lanes (largest
+  measured 1.4%; a test holds the bound), so the curve's balance barely moves. Minion plan: the
   polyline stand-in row is removed; doc 18 Implementation status names the port.
-- Checks run: `npm run check` passed: core `Tests  1082 passed (1082)`, client
+- Checks run: `npm run check` passed: core `Tests  1086 passed (1086)`, client
   `Tests  1754 passed (1754)`, `Documentation check passed.`
 - Next step: the unit-cap performance check and the bot path cache, on their own branches.
