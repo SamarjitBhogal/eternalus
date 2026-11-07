@@ -129,8 +129,9 @@ export class GuardRoster {
         return;
       }
       const { kind } = this.definitions.get(slot.mobId);
-      // On guard: faces out from the centre of its home until it first moves or attacks
-      // (DEC-216 (6)).
+      // On guard, until it first moves or attacks: a tower guard (the Stronghold's too, doc 18's
+      // entity legend) faces out from its home's centre (DEC-216 (6)), a camp mob out from the
+      // camp centre (DEC-220 (2)).
       const guard = this.factory.create(kind, slot.mobId, {
         team: slot.team,
         position: { x: slot.postX, y: slot.postY },
