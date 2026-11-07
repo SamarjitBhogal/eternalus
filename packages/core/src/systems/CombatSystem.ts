@@ -53,7 +53,7 @@ export class CombatSystem implements System {
       }
       // DEC-216 (11): face the spot the hit lands, the one aim rule reach is measured to.
       const transform = attacker.getComponent(Transform);
-      if (state.entities.aimPointOf(target.id, transform.position, this.aim)) {
+      if (state.entities.aimPointOf(target.id, transform.position, this.aim) !== null) {
         transform.lookAt(this.aim);
       }
       if (!combat.canAttack(state.tick)) {

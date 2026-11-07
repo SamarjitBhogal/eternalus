@@ -138,22 +138,17 @@ export class EntityStore {
     const combat = attacker?.findComponent(Combat);
     const from = attacker?.findComponent(Transform);
     const to = this.entities.get(targetId)?.findComponent(Transform);
-    if (
-      combat === undefined ||
-      from === undefined ||
-      to === undefined ||
-      !this.aimPointOf(targetId, from.position, this.aim)
-    ) {
+    const aimed = from === undefined ? null : this.aimPointOf(targetId, from.position, this.aim);
+    if (combat === undefined || from === undefined || to === undefined || aimed === null) {
       return false;
     }
-    const outline = this.outlineOf(targetId);
-    if (outline === undefined) {
+    if (aimed === 'centre') {
       const gap = distance(from.position, this.aim);
       return gap - from.radius - to.radius <= combat.attack.reach;
     }
     return (
       distance(from.position, this.aim) <= from.radius + combat.attack.reach ||
-      outline.some((shape) => isPointInPolygon(from.position, shape))
+      aimed.some((shape) => isPointInPolygon(from.position, shape))
     );
   }
 
@@ -174,21 +169,28 @@ export class EntityStore {
    * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
    * chase heads for (`StuckSystem`, `PathingSystem`): the point of its outline (`outlineOf`)
    * nearest `from`, else its centre (reach then also spans its collider radius). A unit that
-   * damages a building can face this point (DEC-216 (11)). `false`, leaving `out` as it was, when
-   * the target is unknown, has no position, or its outline has no corners.
+   * damages a building can face this point (DEC-216 (11)). Returns what it aimed at: the outline
+   * (so a caller needs no second `outlineOf`), `'centre'`, or `null`, leaving `out` as it was,
+   * when the target is unknown, has no position, or its outline has no corners.
    */
-  public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): boolean {
+  public aimPointOf(
+    targetId: EntityId,
+    from: Vec2,
+    out: MutableVec2,
+  ): readonly Polygon[] | 'centre' | null {
     const outline = this.outlineOf(targetId);
     if (outline !== undefined) {
-      return nearestPointOnPolygons(from, outline, out) !== Number.POSITIVE_INFINITY;
+      return nearestPointOnPolygons(from, outline, out) === Number.POSITIVE_INFINITY
+        ? null
+        : outline;
     }
     const at = this.entities.get(targetId)?.findComponent(Transform)?.position;
     if (at === undefined) {
-      return false;
+      return null;
     }
     out.x = at.x;
     out.y = at.y;
-    return true;
+    return 'centre';
   }
 
   /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */
