@@ -8,6 +8,7 @@ import { countdownEndTick } from '../state/countdownEndTick';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
+import { guardOutward } from '../state/guardOutward';
 import { compareById } from '../utils/compareById';
 import { cos, sin } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
@@ -135,7 +136,7 @@ export class GuardRoster {
       const guard = this.factory.create(kind, slot.mobId, {
         team: slot.team,
         position: { x: slot.postX, y: slot.postY },
-        facing: { x: slot.postX - slot.homeX, y: slot.postY - slot.homeY },
+        facing: guardOutward(slot, { x: 0, y: 0 }),
       });
       state.entities.add(guard);
       state.guards.fill(index, guard.id);

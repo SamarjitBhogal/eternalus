@@ -10,6 +10,7 @@ import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
 import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
+import { MovementSystem } from './MovementSystem';
 import { PathingSystem } from './PathingSystem';
 import { FORMATIONS, logger, STRATEGIES } from './__fixtures__/pathingSystemSetup';
 
@@ -77,6 +78,35 @@ describe('PathingSystem', () => {
       step();
 
       expect(guard.getComponent(Movement).heading).toEqual({ x: 1, y: 0 });
+    });
+
+    it('turns a guard pulled off its post to face outward once it is back (DEC-220 (3))', () => {
+      const { state, guard, add, step } = guarded();
+      const transform = guard.getComponent(Transform);
+      // At its post (60, 30); its home's centre (60, 40) puts outward at (0, -1).
+      transform.moveTo({ x: 60, y: 30 });
+      const enemy = add('dark', 66, 30, 'light-minion');
+      const movement = new MovementSystem();
+      // The pipeline's order: movement, then pathing.
+      const tick = (count: number) => {
+        for (let i = 0; i < count; i += 1) {
+          movement.update({ state, logger });
+          step();
+        }
+      };
+      state.entities.setAttackTarget(guard.id, enemy.id);
+      tick(30);
+      expect(transform.position.x).toBeGreaterThan(62);
+
+      state.entities.clearAttackTarget(guard.id);
+      tick(3);
+      expect(transform.facing.x).toBeLessThan(-0.99);
+
+      tick(300);
+      const { x, y } = transform.position;
+      expect(Math.hypot(x - 60, y - 30)).toBeLessThanOrEqual(HORDE_STEERING.slotArrivalRadius);
+      expect(transform.facing.x).toBeCloseTo(0, 9);
+      expect(transform.facing.y).toBeCloseTo(-1, 9);
     });
   });
 });
