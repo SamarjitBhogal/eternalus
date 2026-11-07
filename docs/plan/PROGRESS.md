@@ -5003,6 +5003,82 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
   acceptance; 10 §9 already allows it for the MVP.
 
+### 2026-10-28 — Sprint 2/3 planning — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: wrote `docs/plan/game-loop-and-results-plan.md` (status draft, proposed) for
+  the owner's game loop, the 30 s win/lose screen and the stretch post-game screen. Five readers
+  mapped core, client, requirements, parallel PRs and architecture; one planner drafted; three
+  independent critics (architecture, correctness, ponytail) and a reviser ran three rounds
+  (39, 24 and 17 findings; 1 blocker and 15 majors in all, every finding applied or rejected
+  with a reason, log in `eternalus-agent-work/game-loop-plan/critic-log.md`). The orchestrator
+  checked the two round-3 majors (construction-time scoring rows, replayable human seat)
+  against `11-game-ai.md:280`, `GameConfig.types.ts:49` and `GameEvents.ts:12`. The plan
+  decides architectural choices A1–A19 and routes 11 product questions (GL-Q1–Q19, some IDs
+  retired) to the owner. No architecture doc, ADR or INBOX item was edited; `docs/README.md`
+  index regenerated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 619 passed (619)"; client "Tests 1360 passed (1360)"; "✓ built in 207ms";
+  "Documentation check passed."
+- Next step: the owner answers GL-Q1, Q2, Q3 and Q10 first (they block GL-3 and GL-0); GL-1
+  (director kernel) can start now on `feat/match-director`.
+
+### 2026-10-28 — Sprint 2/3 planning (GL-0) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: recorded the owner's answers to every GL-Q (chat, 2026-10-28). Plan §5c quotes
+  them and wins over older plan text; §1, §2, §4.3, §5a A3/A4, §6, §7 (GL-0 to GL-4, GL-7, new
+  GL-12 respawn, GL-13 names, GL-14 code rename) and §9 follow them. Decisions log batch
+  DEC-71 to DEC-82; ADR 0021 (draft, proposed: the sovereign is the win objective, a generic
+  `ObjectiveLostCondition`, no time limit, family `sovereign`); one INBOX item with the six
+  points left open (gem look, verdict lines, rename timing, bonus against Host units, code-name
+  veto, accept ADR 0021 and the §6 edits). GL-0 ran on this plan's branch, not on a separate
+  one. GL-1 (`feat/match-director`) started in its own worktree.
+- Checks run: `npm run docs:index`; `npm run docs:check`; Prettier on the changed docs.
+- Next step: GL-1's result and its critic; GL-2 after GL-1.
+
+### 2026-10-29 — Sprint 2/3 planning (GL-0 close-out) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: the owner accepted the six open points, ADR 0021 and the plan §6 edits ("all
+  accepted. continue"): DEC-83; ADR 0021 accepted (frontmatter `active`); ADR 0006 Status line
+  "amended by 0021"; the INBOX item moved to Done; plan §5c settled. The critic round over GL-0
+  and GL-1 (architecture reviewer, correctness and ponytail critics) led to these fixes here:
+  GL-Q12 quoted in full, and the team total and FR-007 points marked as defaults, not rulings;
+  "Capture points: Aryan" removed (the owner named no one); the "accepts that gap" reading of
+  GL-Q3 (a) marked as the plan's; ADR 0021 places BuffTower immunity in a 05 §9 `DamageStep`;
+  plan §6 gains a "Lands with" column and rows for 03, 04 §2, 05 §9, 10 §2, 12 §3/§8 and 15;
+  stale `spawn-kings`/`king-slain` and the old free-number note fixed. A new INBOX item holds
+  the five points the round raised (attacks during the countdown, team total, capture-points
+  owner, tower-wave start, four better-than-design items). Rejected: "the INBOX item never
+  existed" (it was uncommitted at INBOX.md:19; its text is kept verbatim in
+  `eternalus-agent-work/game-loop-plan/owner-answers-2026-10-28.md`).
+- Checks run: `npm run docs:index`; `npm run docs:check` → "Documentation check passed.";
+  Prettier on the changed docs → "All matched files use Prettier code style!".
+- Next step: GL-1's fixes and design-doc edits on `feat/match-director`; then GL-2.
+
+### 2026-10-30 — Sprint 2/3 planning (DEC-88) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What: logged DEC-88 in the owner decisions log (new batch 2026-10-30, above DEC-84's batch).
+  During the countdown every unit is idle and can only turn; nothing walks, dashes, is knocked
+  back, attacks or casts; spawns go on. It amends DEC-84 (1). The owner's words are quoted from
+  chat and from his spawn-timeline page notes; verbatim with the question:
+  `eternalus-agent-work/game-loop-plan/owner-answers-2026-10-28.md`, last section. The code and
+  the FR-003 / architecture 12 edits are on `feat/match-director`.
+- Checks run: Prettier on the decisions log → no change to other tables (diff stat +54 −1);
+  `npm run docs:check` → "Documentation check passed."
+- Next step: this branch (DEC-71 to DEC-84, DEC-88) merges before the GL branches.
+
+### 2026-10-31 — Sprint 2/3 planning (GL-3 prep: the spawn request) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What: INBOX item GL-Q22 (Samarjit agrees the sovereign's `spawn-requested` shape before GL-3
+  starts). The owner chose to post the ask on PR #56 (posted, issue comment 6549022784, against
+  #56 `f2b264a` and #63 `03cd1a7`) and approved fixing the structures doc (07) §6 to match the
+  match director doc (12) §2: logged as DEC-136, which also covers 07 §11's event list. Plan §6's
+  GL-3 spawn row now names 07 §6 and §11. The draft:
+  `eternalus-agent-work/game-loop-plan/gl3-spawn-request-draft.md`; verbatim answers:
+  `owner-answers-2026-10-28.md`, last section.
+- Checks run: `git grep spawn-requested` over `packages` on ten refs → no match (the plan's §4.3
+  already says M1 has no such path); Prettier on the changed docs; `npm run docs:check`.
+- Next step: record Samarjit's answer in GL-Q22; GL-3 starts after M1 (#63) merges.
+
 ### 2026-10-28 — Game loop plan GL-1 (Phase 3 sprint 3.5, pulled forward) / the match director kernel — feat/match-director — sholtzman + Claude Code
 
 - What: built GL-1 of the game loop and results plan (its §4.1, §4.2, A1, A2, A14) with the
@@ -5324,3 +5400,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: the PR into phase/3 (merges after #71, which must first take phase/3); re-merge into
   `feat/match-scoring` and `feat/results-flow` (16 `state.<writer>(` calls become
   `state.match.<writer>(`); tell Samarjit about the edits in his files.
+
+### 2026-11-06 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#71) for PR #74 — feat/match-director — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2dc2b35` (PR #71, the game loop and
+  results plan, merged 2026-11-07 UTC) into this branch, so PR #74 is no longer conflicting. One
+  conflict, in this file: both sides appended entries. Kept every entry, phase/3's first, so this
+  branch's diff to phase/3 stays a pure append. Git merged `INBOX.md`, the owner decisions log,
+  `docs/README.md` and ADR 0006 without conflict. No DEC id appears twice in the merged log. The
+  duplicate ADR numbers 0018 and 0019 were already on `a58de03`; this merge did not add them.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/match-director/md-merge-2dc2b35-check-2026-11-06.log`): EXIT=0, core 224
+  files / 1231 tests, client 269 files / 1769 tests, docs check passed.
+- Next step: push; PR #74 into phase/3.
