@@ -168,8 +168,8 @@ export class EntityStore {
   /**
    * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
    * chase heads for (`StuckSystem`, `PathingSystem`): the point of its outline (`outlineOf`)
-   * nearest `from`, else its centre (reach then also spans its collider radius). A unit that
-   * damages a building can face this point (DEC-216 (11)). Returns what it aimed at: the outline
+   * nearest `from`, else its centre (reach then also spans its collider radius). An attacker
+   * faces it from outside an outline (`facingPointOf`). Returns what it aimed at: the outline
    * (so a caller needs no second `outlineOf`), `'centre'`, or `null`, leaving `out` as it was,
    * when the target is unknown, has no position, or its outline has no corners.
    */
@@ -191,6 +191,27 @@ export class EntityStore {
     out.x = at.x;
     out.y = at.y;
     return 'centre';
+  }
+
+  /**
+   * Writes into `out` the point `attackerId` faces while it attacks `targetId`: the aim point
+   * (`aimPointOf`, DEC-216 (11)), except that an attacker standing inside the target's outline
+   * faces the target's centre, not the nearest edge behind it (DEC-220 (1)). Reach and chase keep
+   * `aimPointOf`. `false`, leaving `out` as it was, when either has no position or the target
+   * has no aim point.
+   */
+  public facingPointOf(attackerId: EntityId, targetId: EntityId, out: MutableVec2): boolean {
+    const from = this.entities.get(attackerId)?.findComponent(Transform)?.position;
+    const centre = this.entities.get(targetId)?.findComponent(Transform)?.position;
+    if (from === undefined || centre === undefined) {
+      return false;
+    }
+    const aimed = this.aimPointOf(targetId, from, out);
+    if (aimed !== 'centre' && aimed?.some((shape) => isPointInPolygon(from, shape)) === true) {
+      out.x = centre.x;
+      out.y = centre.y;
+    }
+    return aimed !== null;
   }
 
   /** The entity's attack target, or `null` when it has none, cannot attack or is unknown. */

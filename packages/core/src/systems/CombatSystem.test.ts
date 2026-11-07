@@ -138,6 +138,39 @@ describe('CombatSystem', () => {
     expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
   });
 
+  it('faces the centre of a map object it attacks from inside its footprint (DEC-220 (1))', () => {
+    const { state, warrior, context, attack } = setUp();
+    const { house } = MAP_OBJECT_DEFINITIONS;
+    const content = loadDefaultContent(CONFIG.tickRate);
+    // Ids start after the Warrior's, so the object does not clash with it.
+    const factory = new EntityFactory(
+      createDefaultEntityRegistry(),
+      {
+        has: (id) => id === house.id || content.has(id),
+        get: (id) => (id === house.id ? house : content.get(id)),
+      },
+      new IdGenerator(100),
+    );
+    const object = factory.create('obstacle', house.id, { position: { x: 0, y: -7 } });
+    // The footprint holds the attacker's own position, so the object is in reach; its nearest
+    // edge (y = 2) is behind the attacker, its centre (0, -7) ahead.
+    const footprint = [
+      { x: -2, y: 2 },
+      { x: 2, y: 2 },
+      { x: 2, y: -12 },
+      { x: -2, y: -12 },
+    ];
+    object.addComponent(
+      new MapObjectBody({ id: 'house', kind: 'house', isBlocking: true, footprints: [footprint] }),
+    );
+    state.entities.add(object);
+
+    expect(attack(object)).toBe(true);
+    new CombatSystem(new DamagePipeline()).update(context);
+
+    expect(warrior.getComponent(Transform).facing).toEqual({ x: 0, y: -1 });
+  });
+
   it('faces the nearest point of a fort it attacks, not the tower at its centre (DEC-216 (11))', () => {
     const { warrior, spawn, context, attack } = setUp();
     // A tower stand-in at (30, 0) whose fort's west wall (x 1..4, y -16..16) is 1 m east of the

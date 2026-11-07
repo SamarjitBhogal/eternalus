@@ -12,8 +12,9 @@ import type { System, SystemContext } from './System.types';
  * Lands the attacks of every unit with a target (architecture 05 §10): when the target is in reach
  * and the attack is off cooldown, the attack's strategy hits it through the damage pipeline. A unit
  * with a target in reach faces it every tick, after `MovementSystem`, so attacking outranks moving
- * (DEC-192): it faces the point reach is measured to (`EntityStore.aimPointOf`), a building's
- * outline point nearest it or a unit's centre (DEC-216 (11)). A dead or removed target clears.
+ * (DEC-192): it faces `EntityStore.facingPointOf`, a building's outline point nearest it or a
+ * unit's centre (DEC-216 (11)), or a building's centre from inside its outline (DEC-220 (1)). A
+ * dead or removed target clears.
  * Statuses stop attacks (`cannot-attack`) and scale the cooldown (`attackSpeed`). Getting into
  * reach is the controller's job (moving), not this system's.
  */
@@ -51,10 +52,8 @@ export class CombatSystem implements System {
       if (!state.entities.isInReach(attacker.id, target.id)) {
         return;
       }
-      // DEC-216 (11): face the spot the hit lands, the one aim rule reach is measured to.
-      const transform = attacker.getComponent(Transform);
-      if (state.entities.aimPointOf(target.id, transform.position, this.aim) !== null) {
-        transform.lookAt(this.aim);
+      if (state.entities.facingPointOf(attacker.id, target.id, this.aim)) {
+        attacker.getComponent(Transform).lookAt(this.aim);
       }
       if (!combat.canAttack(state.tick)) {
         return;

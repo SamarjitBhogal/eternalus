@@ -351,4 +351,43 @@ describe('EntityStore', () => {
     expect(aimAt('round', { x: 0, y: 0 })).toEqual({ x: -7, y: 3 });
     expect(aimAt('nobody', { x: 0, y: 0 })).toBeNull();
   });
+
+  it('faces the aim point from outside an outline and the centre from inside it (DEC-220 (1))', () => {
+    const store = new EntityStore();
+    const at = (id: string, x: number, y: number): Dummy => {
+      const entity = new Dummy(id, `${id}-definition`);
+      entity.addComponent(new Transform({ x, y }, 0.5));
+      store.add(entity);
+      return entity;
+    };
+    at('house', 15, 0).addComponent(
+      new MapObjectBody({
+        id: 'house',
+        kind: 'house',
+        isBlocking: true,
+        footprints: [
+          [
+            { x: 10, y: -5 },
+            { x: 20, y: -5 },
+            { x: 20, y: 5 },
+            { x: 10, y: 5 },
+          ],
+        ],
+      }),
+    );
+    at('outside', 0, 2);
+    at('inside', 11, 4);
+    at('round', -7, 3);
+    store.add(new Dummy('nowhere', 'nowhere-definition'));
+    const out = { x: 0, y: 0 };
+    const faceAt = (attackerId: string, targetId: string) =>
+      store.facingPointOf(attackerId, targetId, out) ? { ...out } : null;
+
+    expect(faceAt('outside', 'house')).toEqual({ x: 10, y: 2 });
+    expect(faceAt('inside', 'house')).toEqual({ x: 15, y: 0 });
+    expect(faceAt('outside', 'round')).toEqual({ x: -7, y: 3 });
+    expect(faceAt('nowhere', 'house')).toBeNull();
+    expect(faceAt('outside', 'nowhere')).toBeNull();
+    expect(faceAt('outside', 'nobody')).toBeNull();
+  });
 });
