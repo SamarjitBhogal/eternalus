@@ -4,7 +4,7 @@ description: The Eternalus MVP roadmap; read this to know which phase we are in,
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-07
 tags: [plan, roadmap, sprints, metrics]
 related:
   [
@@ -162,20 +162,20 @@ generated map, determinism and the developer menu are the requirements' non-nego
 Targets are project-level; the phase docs say when each is first measured. Numbers marked
 `Recommendation:` were set by the architect, not by the source documents.
 
-| Metric                            | Target                                                                                                     | Measured by                                                     | First gate | Status (2026-09-30) |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------- | ------------------- |
-| Determinism replay test           | Same seed + command log → identical `StateHasher` hash every 100 ticks, 10 seeds × 3000 ticks              | `npm run test` (replay fixtures in core)                        | Phase 1    | not started         |
-| Simulation tick time              | ≤ 8 ms per tick at 30 TPS with 144 units/team + 20 Legends on the reference dev laptop (`Recommendation:`) | `PerfOverlay` histogram; headless bench in `npm run bench` (P3) | Phase 3    | not started         |
-| Render frame rate                 | 60 fps: median frame ≤ 16.7 ms, no frame > 50 ms during a 60 s match segment (`Recommendation:`)           | `PerfOverlay` + long-animation-frame observer                   | Phase 1    | not started         |
-| Coverage thresholds               | core ≥ 80% now → 85% end of Phase 2 → 90% end of Phase 6; client ≥ 45/50% now → 55% P1 → 65% P5 → 70% P6   | `npm run test:coverage` (ratchet, only goes up)                 | Every PR   | core 80, client 45  |
-| Lint                              | Zero warnings, zero `eslint-disable` without a named rule and reason                                       | `npm run lint`                                                  | Every PR   | green               |
-| Docs check                        | Frontmatter valid on every `docs/**/*.md`, relative links resolve, index in sync                           | `npm run check` (docs step)                                     | Phase 0    | in this PR          |
-| Open invariant violations in soak | 0 violations in a 10-minute headless soak (18,000 ticks) with all invariants at `heavy`                    | `npm run test:soak`                                             | Phase 2    | not started         |
-| Team-agreed design walkthrough    | Held, minutes in [PROGRESS.md](PROGRESS.md), every INBOX decision answered or scheduled                    | Meeting                                                         | Phase 0    | scheduled           |
-| Config-driven map                 | `numLanes` 3→5 and tower counts regenerate map, nav grid, flow fields and minimap in tests, no code change | `MapGenerator` + `MinimapView` tests                            | Phase 1    | not started         |
-| Bot-vs-bot match                  | Sim mode match (no human) reaches a `MatchResult` within the timeline cap, deterministic                   | `npm run test:soak`                                             | Phase 3    | not started         |
-| Persistence contract              | Same repository test suite passes on `MemoryStorageAdapter` and an IndexedDB fake                          | `npm run test` (client)                                         | Phase 5    | not started         |
-| Release                           | `v0.1.0-mvp` tag on green `main`; demo script runs start to finish                                         | CI + demo rehearsal                                             | Phase 6    | not started         |
+| Metric                            | Target                                                                                                     | Measured by                                                     | First gate | Status (2026-09-30)                                    |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------- | ------------------------------------------------------ |
+| Determinism replay test           | Same seed + command log → identical `StateHasher` hash every 100 ticks, 10 seeds × 3000 ticks              | `npm run test` (replay fixtures in core)                        | Phase 1    | not started                                            |
+| Simulation tick time              | ≤ 8 ms per tick at 30 TPS with 144 units/team + 20 Legends on the reference dev laptop (`Recommendation:`) | `PerfOverlay` histogram; headless bench in `npm run bench` (P3) | Phase 3    | measured 2026-11-07: p95 8–12 ms, miss (`PROGRESS.md`) |
+| Render frame rate                 | 60 fps: median frame ≤ 16.7 ms, no frame > 50 ms during a 60 s match segment (`Recommendation:`)           | `PerfOverlay` + long-animation-frame observer                   | Phase 1    | not started                                            |
+| Coverage thresholds               | core ≥ 80% now → 85% end of Phase 2 → 90% end of Phase 6; client ≥ 45/50% now → 55% P1 → 65% P5 → 70% P6   | `npm run test:coverage` (ratchet, only goes up)                 | Every PR   | core 80, client 45                                     |
+| Lint                              | Zero warnings, zero `eslint-disable` without a named rule and reason                                       | `npm run lint`                                                  | Every PR   | green                                                  |
+| Docs check                        | Frontmatter valid on every `docs/**/*.md`, relative links resolve, index in sync                           | `npm run check` (docs step)                                     | Phase 0    | in this PR                                             |
+| Open invariant violations in soak | 0 violations in a 10-minute headless soak (18,000 ticks) with all invariants at `heavy`                    | `npm run test:soak`                                             | Phase 2    | not started                                            |
+| Team-agreed design walkthrough    | Held, minutes in [PROGRESS.md](PROGRESS.md), every INBOX decision answered or scheduled                    | Meeting                                                         | Phase 0    | scheduled                                              |
+| Config-driven map                 | `numLanes` 3→5 and tower counts regenerate map, nav grid, flow fields and minimap in tests, no code change | `MapGenerator` + `MinimapView` tests                            | Phase 1    | not started                                            |
+| Bot-vs-bot match                  | Sim mode match (no human) reaches a `MatchResult` within the timeline cap, deterministic                   | `npm run test:soak`                                             | Phase 3    | not started                                            |
+| Persistence contract              | Same repository test suite passes on `MemoryStorageAdapter` and an IndexedDB fake                          | `npm run test` (client)                                         | Phase 5    | not started                                            |
+| Release                           | `v0.1.0-mvp` tag on green `main`; demo script runs start to finish                                         | CI + demo rehearsal                                             | Phase 6    | not started                                            |
 
 ## 6. Roles per phase
 

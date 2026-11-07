@@ -5147,9 +5147,12 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   API, and Node cannot resolve core's extensionless imports), builds a generated 3-lane match with
   every bot Legend (9 laners and the Rover per team), fills each team to 144 mobs, then to the
   cap, with light-minion hordes at 45% and 55% of every lane so they fight, and times 900 ticks
-  after 60 warm-up ticks. It prints p50, p95 and max; it asserts nothing and is not part of
-  `npm run check`. Doc 15 Implementation status and the README command list name it.
-- Measured (Node 24.21, AMD Ryzen AI 9 HX 370, three runs):
+  after 60 warm-up ticks. It prints p50, p95 and max and asserts no time; it fails only when a
+  case cannot be filled. It is not part of `npm run check` or CI. Doc 15 Implementation status,
+  the Phase 1 bench item, the plan README metric and the README command list name it.
+- Measured (Node 24.21, AMD Ryzen AI 9 HX 370, three runs; these first runs filled 146 mobs per
+  team for the 144 case, and a rerun after the critic's exact-fill fix gave p95 11.4 ms at 144 and
+  12.1 ms at 290):
   - 144 mobs per team + 10 Legends each: p50 1.9 to 2.7 ms, p95 8.0 to 11.4 ms, max 17.5 to
     19.4 ms.
   - 290 mobs per team (the 300-unit cap with the Legends) + 10 Legends each: p50 2.0 to 2.9 ms,

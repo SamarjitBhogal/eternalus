@@ -20,7 +20,8 @@ Reply inline (`Decision: …`).
       information, one question.** The new `npm run bench` (a 3-lane match with 144, then 290 mobs
       per team, 10 bot Legends per team, hordes fighting) measured p50 2 to 3 ms but p95 8 to 12 ms,
       max up to 26 ms, against the plan's p95 ≤ 8 ms. Pathing plus steering is about 0.6 ms p95,
-      inside its 2.5 ms share. The spikes are the bot laners' decisions (0.45 ms each on average,
+      inside its 2.5 ms share, and the spikes are the bot laners' decisions (both from a one-off probe,
+      not committed) (0.45 ms each on average,
       up to 6.9 ms), which run A\* again on every blocked decision (minion plan §3, M8 stand-in);
       the bot path cache is being built next on its own branch. `maxDecisionsPerTick` 96 held:
       about 88 decisions were due per tick at the cap (DEC-181). Question: the targets name "the
