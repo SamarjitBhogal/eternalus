@@ -5568,3 +5568,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/structure-xp.check.log`): EXIT=0, core
   1089 passed, client 1754 passed, docs check passed.
 - Next step: push.
+
+### 2026-11-07 — Phase 3 / structure XP, merge of feat/match-director (PR #74) — feat/structure-xp — sholtzman + Claude Code
+
+- What was done: merged `feat/match-director` (PR #74, which holds #75 and phase/3 at `ed10145`),
+  so this PR merges after #74 with no conflicts (merge chain #75, #74, #78, #76, #77).
+  `docs/plan/PROGRESS.md` and the phase 4 plan conflicted; the plan keeps both sides (this
+  branch's DEC-184 hit model note and #74's structure XP status). One semantic conflict: the
+  DEC-186 test in `DefaultSystemPipeline.test.ts` now builds the pipeline and the runner from
+  options objects (#74, DEC-174). The review nit on #78 is in the same merge commit:
+  `ProgressionSystem` finds the structure XP team with `opponentOf` (DEC-171).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-78-merge.log`): exit 0, Prettier passed, core
+  `Tests 1243 passed (1243)`, client `Tests 1769 passed (1769)`, docs check passed.
+- Next step: push; PR #78 merges after #74.
