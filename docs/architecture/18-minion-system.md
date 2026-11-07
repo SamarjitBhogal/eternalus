@@ -429,7 +429,8 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
   Stronghold's palace, 07 §13) aims at the nearest point of its outline, the point attack reach
   is measured to (`EntityStore.aimPointOf`). The blocked
-  ground under the target (a fort's cells, under the structure or under a unit inside its court)
+  ground under the target (a fort's cells, under the structure or under a unit inside its court,
+  or a map object's cells)
   never holds or turns a chase: the mob closes in until collision stops it at a wall, in reach
   (DEC-185). A
   mob standing on unwalkable ground, such as a horde member spawned inside its structure's

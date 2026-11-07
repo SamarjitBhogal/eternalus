@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TEST_DEBUG_CONFIG } from '../diagnostics/InvariantRunner.constants';
 
 import { DamagePipeline } from '../combat/DamagePipeline';
-import { Footprint } from '../components/Footprint';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
 import { Progression } from '../components/Progression';
@@ -21,8 +20,7 @@ import { SpaceIndex } from '../physics/SpaceIndex';
 import { GameState } from '../state/GameState';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { DefaultSystemPipeline } from './DefaultSystemPipeline';
-import { Transform } from '../components/Transform';
-import { Entity } from '../entities/Entity';
+import { Fort } from './__fixtures__/Fort';
 import { BLOCKED_LANE_MAP } from '../map/__fixtures__/blockedLaneMap';
 import { SystemPipeline } from './SystemPipeline';
 import { loadWeapons } from '../content/weapons/loadWeapons';
@@ -40,22 +38,6 @@ const newFactory = (): EntityFactory =>
     loadWeapons(createDefaultGameConfig().tickRate),
   );
 const PROGRESSION = { units: UNIT_DEFINITIONS, curves: loadLevelCurves(), xpSources: XP_SOURCES };
-
-/** A tower stand-in whose fort walls (x 50..52 and 68..70, y 10..30) give a box round the rift. */
-class Fort extends Entity {
-  public readonly kind = 'spawner-tower';
-  public readonly family = 'structure';
-  protected installComponents(): void {
-    const wall = (x0: number, x1: number) => [
-      { x: x0, y: 10 },
-      { x: x1, y: 10 },
-      { x: x1, y: 30 },
-      { x: x0, y: 30 },
-    ];
-    this.addComponent(new Transform({ x: 60, y: 20 }, 14));
-    this.addComponent(new Footprint([wall(50, 52), wall(68, 70)]));
-  }
-}
 
 describe('DefaultSystemPipeline', () => {
   it('moves, then removes the dead, then checks invariants, in that order', () => {
@@ -323,7 +305,24 @@ describe('DefaultSystemPipeline', () => {
     });
     const factory = newFactory();
     const fort = new Fort('fort', 'spawner-tower');
-    fort.spawn(undefined);
+    // The fort's walls (x 50..52 and 68..70, y 10..30) give a box round the rift.
+    fort.spawn({
+      at: { x: 60, y: 20 },
+      polygons: [
+        [
+          { x: 50, y: 10 },
+          { x: 52, y: 10 },
+          { x: 52, y: 30 },
+          { x: 50, y: 30 },
+        ],
+        [
+          { x: 68, y: 10 },
+          { x: 70, y: 10 },
+          { x: 70, y: 30 },
+          { x: 68, y: 30 },
+        ],
+      ],
+    });
     state.entities.add(fort);
     const pipeline = new DefaultSystemPipeline(
       new DefaultInvariantRunner(TEST_DEBUG_CONFIG, logger, PROGRESSION.curves),

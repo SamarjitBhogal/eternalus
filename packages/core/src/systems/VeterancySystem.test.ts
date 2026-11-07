@@ -248,7 +248,7 @@ describe('VeterancySystem', () => {
 
   it('levels from kills on top of the levels it has from another source, never past the cap (DEC-168)', () => {
     const { killer, kill, step } = setUp();
-    // Two levels from another source (the zone level-up): the component holds them.
+    // Levels set outside the system (no effects); only the cap is under test.
     const veterancy = new Veterancy();
     veterancy.gainLevels(2, MINION_VETERANCY.maxLevel);
     killer.addComponent(veterancy);
