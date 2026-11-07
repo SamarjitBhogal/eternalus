@@ -5245,3 +5245,53 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.8c9b99f2.check.log`): EXIT=0, core
   1191 passed, client 1754 passed, docs check passed.
 - Next step: push.
+
+### 2026-11-07 — Phase 3 / out-of-combat healing, critic r1 fixes — sholtzman + Claude Code
+
+- Branch: `feat/out-of-combat-heal`, from `568298b`. Critic r1 report:
+  `eternalus-agent-work/playtest-2026-11-04/critic-heal-r1.md` (1 blocker, 3 should-fix, 6 nits).
+- Not recorded before (critic nit): DEC-188 r1 `2855104` (2 % of max health a second after 10 s
+  without dealing or taking damage; +10 points near a quiet friendly spawner or buff tower) and
+  r2 `322df60` (Stronghold +15 points; one zone strategy per shape; `map/strongholdEnclosure.ts`
+  and `outerFace` in `map/wallRing.ts`).
+- What was done:
+  - `595b80e` (blocker): the combat clocks leave the system's private Maps for a new `CombatClock`
+    component (last tick the entity dealt or took damage, last tick it took damage). The
+    `damage-applied` handler adds it lazily (as `StuckSystem` adds `ChaseWatch`): target both
+    ticks, attacker the active tick. `StateHasher` appends `combat-clock` only when present. The
+    `entity-removed` listener went: `Entity.retire` clears every component, and each
+    `EntityStore.add` caller adds a new entity from `EntityFactory.create` with a fresh id.
+  - `66a7922`: two INBOX items, the heal rules Q-D to Q-H and the critic's better-than-design
+    items (2) to (6), for owner sign-off (DEC-139).
+  - `76eee31`: architecture 04 `paths:` cover `OutOfCombatHealingSystem*` and `HealingZones*`.
+  - `498c816`: `spawnMapStructures` gives a `Footprint` where `Simulation.spawnStructures` does
+    (`hasMapFootprint`); new Simulation test on a generated map: a hurt unit in its own fort's
+    gateway heals at the base plus fort-box rate, both read from content.
+  - `907ecb7`: `structureBonuses` keyed by `StructureKind`, looked up only for `Structure`
+    entities; `Simulation.healing.test` reads `config.tickRate` and `NORMAL_BOT`; the shield-hit
+    `WorldObjectStore` setup moved to the fixture `state/__fixtures__/spawnWorldObjects.ts`.
+  - `b09bae3`: 06 shield-arc section names `strongholdEnclosure` and `outerFace`; the phase 3
+    plan's bot-heal remark points to DEC-188 and `OutOfCombatHealingSystem`.
+- Fail-first (each break restored after; red test, then its message):
+  - clock hash line cut to `['combat-clock']` → "StateHasher > changes with a combat clock and
+    with each of its ticks (DEC-188)": "expected 3782004600 not to be 3782004600".
+  - attacker's `recordDealt` call dropped → "OutOfCombatHealingSystem > restarts the delay when
+    the unit deals damage": "expected 0.09999999999999432 to be +0".
+  - `recordHurt` no longer sets the hurt tick → 5 red, among them "CombatClock > moves both clocks
+    when the entity takes damage" ("expected +0 to be 40") and "OutOfCombatHealingSystem > keeps
+    each fight in a CombatClock: …" ("expected [ 7, +0 ] to deeply equal [ 7, 7 ]").
+  - `fort-box` `contains` always false → "Simulation with out-of-combat healing (DEC-188) > heals
+    a hurt unit in its own team's fort box at the fort-box rate (generated map, DEC-215 (4))":
+    "expected 0.06666666666666998 to be close to 0.4000000000000001".
+- Goldens: no recorded hash changed. `diagnostics/replay.test.ts` (`WANDER_SEED_7`) and
+  `map/MapGenerator.test.ts` pass unchanged.
+- Checks run: `npm run check:quick` → exit 0 (also on every commit hook). `npx vitest run` on 18
+  touched and neighbouring core files → "Tests 187 passed (187)"; `MapGenerator` and
+  `CombatClock` → "Tests 64 passed (64)". `npm run docs:check` → "Documentation check passed.".
+  `npx prettier --check` on changed files → "All matched files use Prettier code style!". The full
+  `npm run check` was not run here (the orchestrator runs it).
+- Open for the owner: Q-D to Q-H (INBOX, each stays as built until answered) and the critic's
+  better-than-design items (2) to (6).
+- Not done: `phase/3` moved to `ed101458` (#80 merged) and conflicts with this branch in
+  `WorldObjectStore` and `geometry.ts`; not merged here, by instruction.
+- Next step: critic r2.
