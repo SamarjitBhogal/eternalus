@@ -5155,7 +5155,7 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 ## 2026-11-05 · Phase 3 · fix/minion-stack-followups · critic r2 + ponytail r2 fixes
 
 - What: 11 §6 says `StuckSystem` is a second A\* consumer outside the decision budget (cap
-  `STUCK_DETECTION.maxPlansPerTick`, upgrade path a round-robin cursor); 11 §3 notes
+  `STUCK_DETECTION.maxPlansPerTick`, upgrade path a round-robin cursor); 11 §4.3 notes
   `ghostFirstWaveTicks` is already in ticks; 18 lists a map object's cells as ground that never
   holds a chase; stuck-detection comment says "progress toward what it heads for" (DEC-217 (14));
   `Veterancy` TSDoc and its cap test comment say other level sources go through `VeterancySystem`;
@@ -5175,6 +5175,21 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/minion-stack-followups.check.log`): EXIT=0, core
   1155 passed, client 1754 passed, docs check passed.
 - Next step: push.
+
+### 2026-11-06 — Phase 3 / minion-stack follow-ups, critic round 3 fixes — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: critic round 3 (the owner's last loop) on `ebedddb..7bc53a9`: APPROVE, 0
+  blockers, 2 should-fix, 7 nits (`critic-followups-r3.md` in the audit's runner-reports). All
+  fixed in `53c2bd6` and `c01edc8`: 11 §10 names `BotMovement.moveTo`; `edgeOf`'s TSDoc says it
+  returns `to` with no grid; 11 §4.3 and §5 wording; the r2 entry points to 11 §4.3; `isInReach`
+  checks before it aims; `StuckSystem` tests `aimPointOf` against `null`; the Fort fixture's
+  context type uses `Vec2` and `Polygon`; long comment lines re-wrapped. A test now pins what
+  `aimPointOf` returns; two breaks turned it red (a copied outline; `[]` for `'centre'`).
+- Checks run: `npm run check` at `c01edc8` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/minion-stack-followups.check2.log`):
+  EXIT=0, core 1155 passed, client 1754 passed, docs check passed.
+- Next step: open the PR into phase/3 after #75; merge this head into the heal, chevron and
+  tower-ruins branches.
 
 ### 2026-11-05 — Phase 3 / out-of-combat healing, owner answers DEC-215 — feat/out-of-combat-heal — sholtzman + Claude Code
 
@@ -5218,5 +5233,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   side was removed (`git diff` against both parents shows only additions).
 - Checks run: `npm run check` on the merge (log
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/out-of-combat-heal.check.log`): EXIT=0, core
+  1191 passed, client 1754 passed, docs check passed.
+- Next step: push.
+
+### 2026-11-07 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (critic r3 fixes, PR #85) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `8c9b99f2` at `8c9b99f2` (fix/minion-stack-followups (critic r3 fixes, PR #85)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.8c9b99f2.check.log`): EXIT=0, core
   1191 passed, client 1754 passed, docs check passed.
 - Next step: push.
