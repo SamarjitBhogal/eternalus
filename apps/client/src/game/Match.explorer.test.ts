@@ -217,5 +217,7 @@ describe('Match.clickAt: unit, then roof, then map object (DEC-183, DEC-150)', (
     const roofSpot = toScreen({ x: minion.x + 5, y: minion.y + 5 }, shown());
     expect(match.controls.clickAt(roofSpot.x, roofSpot.y)).toBe(true);
     expect(match.controls.hasDeveloperRoofs).toBe(true);
+    // The roof click queues no attack-target: still only the one on the minion.
+    expect(enqueue).toHaveBeenCalledTimes(1);
   });
 });

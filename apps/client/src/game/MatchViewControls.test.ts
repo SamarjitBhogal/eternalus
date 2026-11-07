@@ -169,8 +169,8 @@ describe('MatchViewControls', () => {
     expect(view.visibleArea().width).toBeCloseTo(before.width / 2);
   });
 
-  it('clickAt cuts away the roof under the point and puts it back on a second click', () => {
-    const { roofs, controls } = setUp();
+  it('clickAt cuts away the roof under the point and puts it back, attacking nothing (DEC-150)', () => {
+    const { roofs, controls, sent } = setUp();
     expect(controls.hasDeveloperRoofs).toBe(false);
 
     expect(controls.clickAt(CENTER.x, CENTER.y)).toBe(true);
@@ -180,6 +180,8 @@ describe('MatchViewControls', () => {
     expect(controls.clickAt(CENTER.x, CENTER.y)).toBe(true);
     expect([...roofs.hidden]).toEqual([]);
     expect(controls.hasDeveloperRoofs).toBe(false);
+    // The house under the roof is not attacked: a roof click is no attack.
+    expect(sent()).toEqual([]);
   });
 
   it('clickAt does nothing on open ground and does not move the view', () => {
