@@ -8,6 +8,7 @@ import type { LevelScalingDefinition } from '../content/progression/progression.
 import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
+import { opponentOf } from '../teams/playableTeams';
 import type { System, SystemContext } from './System.types';
 import type { Award, ProgressionContent } from './ProgressionSystem.types';
 
@@ -56,7 +57,7 @@ export class ProgressionSystem implements System {
       if (team !== 'neutral') {
         this.pending.push({
           kind: 'structure-destroyed',
-          team: team === 'light' ? 'dark' : 'light',
+          team: opponentOf(team),
           victimId: entityId,
           victimTeam: team,
           xp: content.xpSources.structureDestroyed,

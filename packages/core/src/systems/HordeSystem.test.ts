@@ -158,6 +158,19 @@ describe('HordeSystem', () => {
     expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
   });
 
+  it('holds every anchor while the match holds units idle, and marches again after (DEC-88)', () => {
+    const { state, system, addHorde } = setUp();
+    const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
+    state.match.holdIdle(true);
+
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBe(10);
+
+    state.match.holdIdle(false);
+    system.update({ state, logger });
+    expect(state.hordes.get(hordeId)?.progress).toBeGreaterThan(10);
+  });
+
   it('leaves the anchor where it is without a map', () => {
     const { state, system, addHorde } = setUp(null);
     const { hordeId } = addHorde([['light-mob', 'light-minion']], 10);
