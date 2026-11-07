@@ -1,11 +1,13 @@
 import type { AiMemory, BotDifficultyDefinition } from '../content/ai/ai.types';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
+import type { PathQuery } from '../state/PathQuery.types';
 import { compareById } from '../utils/compareById';
 import { sqrt } from '../utils/deterministicMath';
 import type { Vec2 } from '../utils/geometry.types';
 import { SeededRandom } from '../utils/SeededRandom';
 import type { MutableVec2 } from '../utils/vec2.types';
+import { NO_PATH } from './BotLeaves.constants';
 import type { BtStatus } from './bt/BtNode.types';
 import type { BotMemory, BotLegendControllerContent, BotTurn } from './BotLegendController.types';
 import type { Decision, DecisionInput } from './Controller.types';
@@ -244,6 +246,9 @@ export class BotLeaves {
    * One `move` toward `destination`, through the A\* waypoint when the straight line is blocked,
    * or a halt once within `arrivalDistance` of it. When the pathfinder finds no way, a `stop`, a
    * forgotten target and `failure`, so the bot does not lean on the obstruction and lower branches may run.
+   * The waypoint is cached in memory (11 §6) and reused instead of a new search while the
+   * destination stays within `arrivalDistance` of the cached one, the waypoint is not yet reached
+   * and the straight line to it is still clear.
    */
   public moveTo(turn: BotTurn, destination: Vec2 | null): BtStatus {
     if (destination === null) {
@@ -253,11 +258,20 @@ export class BotLeaves {
     const isThere =
       BotLeaves.gapSquared(turn.position, destination) <= arrivalDistance * arrivalDistance;
     const paths = turn.state.paths;
-    if (!isThere && paths !== null && !paths.waypoint(turn.position, destination, this.step)) {
-      // `stop` clears the live attack target, so memory forgets it too and a later fight re-targets.
-      turn.commands.push({ type: 'stop', actorId: turn.id });
-      turn.next = { ...turn.next, targetId: null };
-      return 'failure';
+    if (!isThere && paths !== null && !this.reuseStep(turn, destination, paths)) {
+      if (!paths.waypoint(turn.position, destination, this.step)) {
+        // `stop` clears the live attack target, so memory forgets it too and a later fight re-targets.
+        turn.commands.push({ type: 'stop', actorId: turn.id });
+        turn.next = { ...turn.next, targetId: null, ...NO_PATH };
+        return 'failure';
+      }
+      turn.next = {
+        ...turn.next,
+        pathGoalX: destination.x,
+        pathGoalY: destination.y,
+        pathStepX: this.step.x,
+        pathStepY: this.step.y,
+      };
     }
     const next = !isThere && paths !== null ? this.step : destination;
     turn.commands.push({
@@ -268,6 +282,26 @@ export class BotLeaves {
         : { x: next.x - turn.position.x, y: next.y - turn.position.y },
     });
     return 'running';
+  }
+
+  /**
+   * Writes the cached waypoint into `step` and returns `true` when it still serves `destination`:
+   * the destination is within `arrivalDistance` of the cached one, the waypoint is farther than
+   * that from the bot, and the straight line to it is clear.
+   */
+  private reuseStep(turn: BotTurn, destination: Vec2, paths: PathQuery): boolean {
+    const { pathGoalX, pathGoalY, pathStepX, pathStepY } = turn.memory;
+    if (pathGoalX === null || pathGoalY === null || pathStepX === null || pathStepY === null) {
+      return false;
+    }
+    const reach = turn.difficulty.arrivalDistance * turn.difficulty.arrivalDistance;
+    this.step.x = pathStepX;
+    this.step.y = pathStepY;
+    return (
+      BotLeaves.gapSquared({ x: pathGoalX, y: pathGoalY }, destination) <= reach &&
+      BotLeaves.gapSquared(turn.position, this.step) > reach &&
+      paths.isLineClear(turn.position, this.step)
+    );
   }
 
   /** Casts its first ability at the enemy when the cast is due and the roll comes up (11 §4.2). */
@@ -318,6 +352,10 @@ export class BotLeaves {
       isRetreating: memory.isRetreating === true,
       targetId: typeof memory.targetId === 'string' ? memory.targetId : null,
       nextCastTick: typeof memory.nextCastTick === 'number' ? memory.nextCastTick : 0,
+      pathGoalX: typeof memory.pathGoalX === 'number' ? memory.pathGoalX : null,
+      pathGoalY: typeof memory.pathGoalY === 'number' ? memory.pathGoalY : null,
+      pathStepX: typeof memory.pathStepX === 'number' ? memory.pathStepX : null,
+      pathStepY: typeof memory.pathStepY === 'number' ? memory.pathStepY : null,
     };
   }
 }

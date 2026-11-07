@@ -4,7 +4,7 @@ description: The build plan for the minion system of architecture doc 18 and eve
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-06
+last-reviewed: 2026-11-07
 tags: [plan, minions, hordes, guards, camps, bots, spawning, ai]
 related:
   - docs/architecture/18-minion-system.md
@@ -143,7 +143,7 @@ Each stand-in is removed by the phase named.
 | The client's match passes a placeholder roster (every Legend but each Rover a bot laner)                                                                                                                                        | M3      | session E's match setup rosters                                     |
 | The human is always their team's Rover (DISC-51), so no lane counts a human laner (`assignLanes`' `occupied` is unwired)                                                                                                        | M3      | sim and developer mode (sprint 3.8)                                 |
 | The Rover finds the human (the enemy Legend no controller drives) with a map-wide Legend query, past 11 §3's radii                                                                                                              | M8      | the match state's `humanLegendId` (12 §4; `Snapshot.match`, PR #74) |
-| Bots cast `ability-1` and the cast is refused (`not-supported`); a bot runs A\* again on each blocked decision                                                                                                                  | M8      | Phase 4 abilities; a path cache in the brain                        |
+| Bots cast `ability-1` and the cast is refused (`not-supported`)                                                                                                                                                                 | M8      | Phase 4 abilities                                                   |
 | Minion strength measures lane progress along the lane polyline, not the flow-field distance `balancing.md` suggests                                                                                                             | M5a     | the lane's field (ready: M4 is merged)                              |
 | M4's done-when "hordes reach the enemy end" is tested as "every opening mob reaches its first enemy objective's gather point": since M2c a horde holds at a standing objective, and the march-only test hordes cannot attack it | M4      | a full-match march with fighting hordes (sprint 3.8 sim soak)       |
 

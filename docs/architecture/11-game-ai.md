@@ -4,7 +4,7 @@ description: How every non-player entity decides what to do (the Controller cont
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-07
 tags: [architecture, ai, bots, controllers, core]
 paths: ['packages/core/src/ai/**', 'packages/core/src/content/ai/**']
 related:
@@ -293,8 +293,10 @@ when it is spent; the round-robin cursor lives in `state.ai.cursor`, so deferral
 and the skipped brains go first next tick. A decision is atomic and cheap: radius-bounded queries,
 no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception: bots steer by
 `move` commands, so A\* is a `PathQuery` (`state.paths`) its leaves call when the straight line is
-blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions` (a
-path cache in the brain is the next step if profiling shows the cost). Other heavy work (flow
+blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions`. The
+brain caches the last search's destination and waypoint as plain memory and reuses the waypoint,
+without a new search, while the bot heads to the same place (within its `arrivalDistance`), has not
+reached the waypoint and still sees it in a straight line (`PathQuery.isLineClear`). Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
@@ -378,8 +380,10 @@ work named:
   stream, at most every `castIntervalTicks`; the cast handler refuses casts until abilities land
   (Phase 4), with no controller change needed then.
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
-  One `WorldMap` serves it and the lane flow fields. No path cache yet: a bot searches again on
-  each blocked decision.
+  One `WorldMap` serves it and the lane flow fields. The path cache (§6) is `BotMemory`'s
+  `pathGoalX`/`pathGoalY`/`pathStepX`/`pathStepY` (`BotLeaves.moveTo`); `npm run bench` measured
+  the tick's p95 at the unit cap going from 8 to 12 ms without it to 3 to 4 ms with it (2026-11-07,
+  `PROGRESS.md`).
 - A brain's `profileId` names the controller's own content directly: an `AggroRuleDefinition`
   (`content/ai/aggro/`) for `MinionController`, a `BotDifficultyDefinition`
   (`content/ai/difficulties/`) for `BotLegendController`. The `AiProfileDefinition` of §2, which

@@ -55,6 +55,11 @@ export class AStarPathfinder {
     return this.foundCost;
   }
 
+  /** Whether a walker can go straight from `start` to `end` without crossing blocked ground. */
+  public isLineClear(start: Vec2, end: Vec2): boolean {
+    return this.grid.isLineClear(start.x, start.y, end.x, end.y);
+  }
+
   /**
    * Writes into `out` where a walker at `start` should head next to reach `goal`, and returns
    * whether there is a way. The goal itself when the straight line to it is clear.
