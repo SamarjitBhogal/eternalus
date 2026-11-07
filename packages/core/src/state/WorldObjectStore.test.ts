@@ -6,6 +6,22 @@ import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObject } from '../content/maps/mapObjects.types';
 import { Health } from '../components/Health';
+import type { Vec2 } from '../utils/geometry.types';
+
+/** A factory over every map-object definition, as the match builds it. */
+const fixtureFactory = (): EntityFactory => {
+  const definitions = new Map(
+    Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+  );
+  return new EntityFactory(createDefaultEntityRegistry(), {
+    has: (id) => definitions.has(id),
+    get: (id) => {
+      const definition = definitions.get(id);
+      if (definition === undefined) throw new Error('Unknown fixture');
+      return definition;
+    },
+  });
+};
 
 describe('WorldObjectStore', () => {
   it('uses injected content policy instead of global map-object defaults', () => {
@@ -34,17 +50,7 @@ describe('WorldObjectStore', () => {
   });
 
   it('keeps health on obstacle entities and retains destroyed state after retirement', () => {
-    const definitions = new Map(
-      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
-    );
-    const factory = new EntityFactory(createDefaultEntityRegistry(), {
-      has: (id) => definitions.has(id),
-      get: (id) => {
-        const definition = definitions.get(id);
-        if (definition === undefined) throw new Error('Unknown fixture');
-        return definition;
-      },
-    });
+    const factory = fixtureFactory();
     const entities = new EntityStore();
     const object: MapObject = {
       id: 'house',
@@ -85,17 +91,7 @@ describe('WorldObjectStore', () => {
   });
 
   it("makes a structure's own map object (a lane tower's fort) share its health, and leaves it standing with none once the structure is gone (DEC-185 B)", () => {
-    const definitions = new Map(
-      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
-    );
-    const factory = new EntityFactory(createDefaultEntityRegistry(), {
-      has: (id) => definitions.has(id),
-      get: (id) => {
-        const definition = definitions.get(id);
-        if (definition === undefined) throw new Error('Unknown fixture');
-        return definition;
-      },
-    });
+    const factory = fixtureFactory();
     const entities = new EntityStore();
     const tower = factory.create('obstacle', MAP_OBJECT_DEFINITIONS.rock.id, {
       position: { x: 5, y: 5 },
@@ -144,5 +140,39 @@ describe('WorldObjectStore', () => {
     });
     expect(world.blockingAt({ x: 7, y: 2 }, 0.5)).toBe('fort');
     expect(world.destroyedIds.has('fort')).toBe(false);
+  });
+
+  it('skips an object whose footprint box misses the circle, without testing its shape', () => {
+    let reads = 0;
+    const corner = (x: number, y: number): Vec2 => ({
+      get x() {
+        reads += 1;
+        return x;
+      },
+      get y() {
+        reads += 1;
+        return y;
+      },
+    });
+    const world = new WorldObjectStore({
+      objects: [
+        {
+          id: 'rock',
+          kind: 'terrain',
+          isBlocking: true,
+          footprints: [[corner(0, 0), corner(4, 0), corner(4, 4)]],
+        },
+      ],
+      factory: fixtureFactory(),
+      entities: new EntityStore(),
+      definitions: MAP_OBJECT_DEFINITIONS,
+    });
+    expect(world.blockingAt({ x: 2.5, y: 1 }, 0.5)).toBe('rock');
+    // Centre outside the box, circle across its edge: the box test counts the radius.
+    expect(world.blockingAt({ x: 2, y: -0.4 }, 0.5)).toBe('rock');
+
+    reads = 0;
+    expect(world.blockingAt({ x: 50, y: 50 }, 1)).toBeNull();
+    expect(reads).toBe(0);
   });
 });
