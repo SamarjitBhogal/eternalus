@@ -347,16 +347,16 @@ describe('LaneFlowFields', () => {
 
 describe('LaneFlowFields.progress', () => {
   const { map, fields } = THREE;
-  const routes = new LaneRoutes(map);
   /** One diagonal step's cost over the lane's cost: the most a cell boundary can move `t`. */
-  const oneStep = (field: FlowField): number => 14 / (field.integration[field.start] ?? 1);
-  /** The largest gap measured between field and polyline `t` on the generated lanes was 1.4%. */
+  const oneStep = (field: FlowField): number => stepCost(4) / (field.integration[field.start] ?? 1);
+  /** The largest gaps measured between field and polyline `t`: 1.4% (3 lanes), 1.6% (5 lanes). */
   const POLYLINE_AGREEMENT = 0.02;
 
   /** Points along `path`, eight per segment, with the polyline's own `t` for each. */
-  const samples = (laneId: string, team: 'light' | 'dark') => {
+  const samples = (world: typeof THREE, laneId: string, team: 'light' | 'dark') => {
+    const routes = new LaneRoutes(world.map);
     const length = routes.length(laneId);
-    const lane = map.lanes.find(({ id }) => id === laneId);
+    const lane = world.map.lanes.find(({ id }) => id === laneId);
     const path = team === 'light' ? (lane?.path ?? []) : [...(lane?.path ?? [])].reverse();
     return path.slice(1).flatMap((b, index) => {
       const a = path[index] ?? b;
@@ -381,7 +381,7 @@ describe('LaneFlowFields.progress', () => {
         expect(fields.progress(lane.id, team, last)).toBeGreaterThanOrEqual(1 - oneStep(field));
         let highest = 0;
         let largestDrop = 0;
-        for (const { point } of samples(lane.id, team)) {
+        for (const { point } of samples(THREE, lane.id, team)) {
           const t = fields.progress(lane.id, team, point) ?? highest;
           largestDrop = Math.max(largestDrop, highest - t);
           highest = Math.max(highest, t);
@@ -392,18 +392,24 @@ describe('LaneFlowFields.progress', () => {
     }
   });
 
-  it('agrees with the lane polyline within 2% wherever the field can say, so the curve keeps its balance', () => {
-    let largest = 0;
-    for (const lane of map.lanes) {
-      for (const team of ['light', 'dark'] as const) {
-        for (const { point, polyline } of samples(lane.id, team)) {
-          const t = fields.progress(lane.id, team, point);
-          if (t !== null) largest = Math.max(largest, Math.abs(t - polyline));
+  it.each([
+    [3, THREE],
+    [5, FIVE],
+  ] as const)(
+    'agrees with the lane polyline within 2%% wherever the field can say: %i lanes',
+    (_, world) => {
+      let largest = 0;
+      for (const lane of world.map.lanes) {
+        for (const team of ['light', 'dark'] as const) {
+          for (const { point, polyline } of samples(world, lane.id, team)) {
+            const t = world.fields.progress(lane.id, team, point);
+            if (t !== null) largest = Math.max(largest, Math.abs(t - polyline));
+          }
         }
       }
-    }
-    expect(largest).toBeLessThanOrEqual(POLYLINE_AGREEMENT);
-  });
+      expect(largest).toBeLessThanOrEqual(POLYLINE_AGREEMENT);
+    },
+  );
 
   it.each([
     [3, THREE],

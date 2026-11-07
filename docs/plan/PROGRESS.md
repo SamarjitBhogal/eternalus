@@ -5152,8 +5152,9 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   field stores its own start cell, nudged off cell edges like the goal, so Light and Dark read the
   same progress at mirrored points (tested cell by cell). Off the corridor the step falls back to
   the polyline. The field and the polyline agree within 2% along the generated lanes (largest
-  measured 1.4%; a test holds the bound), so the curve's balance barely moves. Minion plan: the
-  polyline stand-in row is removed; doc 18 Implementation status names the port.
-- Checks run: `npm run check` passed: core `Tests  1086 passed (1086)`, client
+  measured 1.4% with 3 lanes, 1.6% with 5; a test holds the bound for both), so the curve's
+  balance barely moves. Minion plan: the polyline stand-in row is removed; doc 18
+  Implementation status names the port.
+- Checks run: `npm run check` passed: core `Tests  1087 passed (1087)`, client
   `Tests  1754 passed (1754)`, `Documentation check passed.`
 - Next step: the unit-cap performance check and the bot path cache, on their own branches.
