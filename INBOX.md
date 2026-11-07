@@ -38,6 +38,38 @@ Reply inline (`Decision: …`).
       `waypointRadius` is dropped (inferred, not measured). Full findings:
       `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r1.md`.
       Approve all, approve some, or say no.
+- [ ] **More better-than-design items for the tidy PR (DEC-218), found 2026-11-05 and 2026-11-06
+      on the follow-ups, chevron, heal and tower-ruins branches — sign-off per item.** Not built.
+      Follow-ups critic round 2: (C1) `DefaultSystemPipeline.fortBoxesOf` reads the store when
+      the pipeline is built (an order coupling); `Simulation.spawnStructures` returns the static
+      fort boxes, or `MatchWorld` keeps them, so a dev-spawned tower gets a box too; (C2) the
+      per-tick A\* plan budget uses the AI round-robin cursor (`state.ai.cursor`) instead of store
+      order (the follow-ups runner proposed the same); (C3) only `VeterancySystem` adds levels:
+      `Veterancy.gainLevels` is still public. Follow-ups runner: (R1) `GuardController` builds
+      the per-post leash rules and closures on each decision; it can read the post from the
+      situation (one field); (R3) `PathingSystem` takes one options object; (R4) the `moveTo` tests
+      move to `BotMovement.test.ts`. Chevron critic round 3: item 1 is DEC-220 (4) (a start-facing
+      port for `EntityFactory`, guard-plan data `facesOutward`); (V2) `MatchWorld.strongholdOf(team)`
+      reuses the strongholds map and replaces the second lookup and throw in the Rover spawn in
+      `Simulation`; (V3) one reach-and-aim query (`EntityStore.reachAimOf(attackerId, targetId,
+    out)`), because `CombatSystem` looks up the aim point twice for an attacker in reach. For
+      DEC-218 (B4): a fifth copy of the opposing-team rule is in `MatchWorld.startFacing` (it
+      maps `neutral` to no team). Tower ruins (DEC-217): (T1) one body relation with a data field
+      (collapse or ruin) instead of `buildingId` (collapses through `MapDestructionSystem`) and
+      `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
+      what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
+      copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
+      `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
+      `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
+      approve some, or say no.
+- [ ] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
+      Found on `feat/out-of-combat-heal` (2026-11-05). With `spawnTowersPerLane` or
+      `buffTowersPerLane` at 2 or more, the generator puts towers of one kind 28 to 38 m apart,
+      but a fort box is 32 m wide. The forts and their heal zones then overlap, and DEC-215 (1)
+      says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
+      the heal-zone overlap test covers only the default. Fix the generator now (towers of one
+      kind at least one fort box apart), or with the map work? Decision: …
 
 - [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"

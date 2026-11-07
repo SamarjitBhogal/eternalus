@@ -5046,3 +5046,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   INBOX item lists the 12 better-than-design items from the follow-ups critics for sign-off.
 - Checks run: `npx prettier --check` and `npm run docs:check` (docs-only).
 - Next step: build DEC-217 (12), (15), (17) on a new branch after the follow-ups PR.
+
+### 2026-11-06 — Phase 3 / owner answers DEC-220, DEC-217 (14) wording, tidy-PR and map INBOX items — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: the owner decisions log has a new batch with DEC-220 (the owner's 2026-11-06
+  answers to the chevron critic's round 3: a unit inside a building's outline faces its centre,
+  camp mobs face out from the camp centre, a guard back at its post faces outward again, the
+  start-facing port goes to the tidy PR). DEC-217 (14) now says "makes less than 1 m of progress
+  toward where it heads in 2 s", the owner's option (a); the batch intro records the correction.
+  `INBOX.md` has two new items: the better-than-design items found on the follow-ups, chevron,
+  heal and tower-ruins branches (for the tidy PR, DEC-218), and the fort overlap that the map
+  generator makes with two or more towers of one kind per lane.
+- Checks run: Prettier and `npm run docs:check` on the changed docs; the full `npm run check`
+  runs on the phase/3 merge that follows this entry.
+- Next step: merge phase/3 (#71) into this branch; push; PR #75 merges first (merge order).
