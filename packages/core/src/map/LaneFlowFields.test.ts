@@ -343,3 +343,41 @@ describe('LaneFlowFields', () => {
     expect(fields.rebuildDirty(100)).toBe(0);
   });
 });
+
+describe('LaneFlowFields.progress', () => {
+  const { map, fields } = THREE;
+
+  it('runs from 0 at the team’s own end of the lane to 1 at the enemy end, never falling', () => {
+    for (const lane of map.lanes) {
+      for (const team of ['light', 'dark'] as const) {
+        const path = team === 'light' ? lane.path : [...lane.path].reverse();
+        const first = path[0];
+        const last = path[path.length - 1];
+        if (first === undefined || last === undefined) throw new Error('empty lane');
+        expect(fields.progress(lane.id, team, first)).toBe(0);
+        expect(fields.progress(lane.id, team, last)).toBeCloseTo(1, 1);
+        let previous = 0;
+        for (let index = 1; index < path.length; index += 1) {
+          const a = path[index - 1];
+          const b = path[index];
+          if (a === undefined || b === undefined) continue;
+          for (let step = 1; step <= 8; step += 1) {
+            const point = { x: a.x + ((b.x - a.x) * step) / 8, y: a.y + ((b.y - a.y) * step) / 8 };
+            const t = fields.progress(lane.id, team, point);
+            if (t === null) continue;
+            expect(t).toBeGreaterThanOrEqual(previous - 0.02);
+            previous = Math.max(previous, t);
+          }
+        }
+        expect(previous).toBeGreaterThan(0.9);
+      }
+    }
+  });
+
+  it('cannot say for an unknown lane or a point outside the world', () => {
+    const lane = map.lanes[0];
+    if (lane === undefined) throw new Error('no lane');
+    expect(fields.progress('no-such-lane', 'light', lane.path[0] ?? { x: 0, y: 0 })).toBeNull();
+    expect(fields.progress(lane.id, 'light', { x: -100, y: -100 })).toBeNull();
+  });
+});

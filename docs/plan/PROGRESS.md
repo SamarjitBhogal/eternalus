@@ -5139,3 +5139,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   minor items and four nits are applied.
 - Next step: the owner answers the `INBOX.md` item; M6b and M10 start when PR #64 merges; the
   unit-cap performance check can start now.
+
+### 2026-11-07 — Phase 3 / minion strength by flow-field distance (M5a stand-in) — feat/minion-strength-flow-field — SamarjitBhogal + Claude Code
+
+- What was done: `MinionStrengthStep` measures a horde member's lane progress `t` by path cost on
+  its lane's flow field, as `balancing.md` recommends, instead of along the lane polyline. The step
+  reads it through a `LaneProgressOf` port (`combat/` may not import `map/`, 02 §2);
+  `LaneFlowFields.progress` implements it (0 at the team's own end, 1 at the enemy end, `null` off
+  the corridor) on the new `FlowField.costAt`, and `DefaultSystemPipeline` wires it into the damage
+  steps. Off the corridor the step falls back to the polyline. On the generated 3-lane map the two
+  agree within 0.5% along the lanes, so the curve's balance does not move. Minion plan: the
+  polyline stand-in row is removed; doc 18 Implementation status names the port.
+- Checks run: `npm run check` passed: core `Tests  1082 passed (1082)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the unit-cap performance check and the bot path cache, on their own branches.

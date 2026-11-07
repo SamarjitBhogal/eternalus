@@ -1,4 +1,5 @@
 import { DamagePipeline } from '../combat/DamagePipeline';
+import { createDefaultDamageSteps } from '../combat/defaultDamageSteps';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
 import { LANE_ASSESSMENT_WEIGHTS } from '../content/ai/laneAssessmentWeights';
@@ -70,7 +71,6 @@ export class DefaultSystemPipeline extends SystemPipeline {
     },
   ) {
     const { tickRate, map } = state.config;
-    const damage = new DamagePipeline();
     const statuses = new StatusEffectApplier(
       loadStatusEffects(tickRate, map.spawnTowersPerLane + map.buffTowersPerLane),
     );
@@ -82,6 +82,14 @@ export class DefaultSystemPipeline extends SystemPipeline {
             state.world.definition,
             map.flowFieldCorridorHalfWidth,
           );
+    // Minion strength reads lane progress from the lane fields (05 §9, `balancing.md`).
+    const damage = new DamagePipeline(
+      createDefaultDamageSteps(
+        flowFields === null
+          ? null
+          : (laneId, team, position) => flowFields.progress(laneId, team, position),
+      ),
+    );
     const world = state.world?.grid ?? null;
     const features = state.world?.definition.features ?? [];
     if (world !== null && state.worldObjects !== undefined) {

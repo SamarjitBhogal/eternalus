@@ -1,5 +1,6 @@
 import type { PlayableTeam } from '../teams/teams.types';
 import { sqrt } from '../utils/deterministicMath';
+import type { Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import { DIRECTION_XS, DIRECTION_YS, NO_DIRECTION, UNREACHED } from './FlowField.constants';
 import type { WorldMap } from './WorldMap';
@@ -48,6 +49,17 @@ export class FlowField {
   /** The direction index to step in per cell (`NO_DIRECTION` when there is none). */
   public get direction(): Int8Array {
     return this.directionCells;
+  }
+
+  /** Path cost to the goal of the cell under `point` (`UNREACHED` outside the world or the fill). */
+  public costAt(point: Vec2): number {
+    const { cellSize, cols, rows } = this.grid;
+    const col = Math.floor(point.x / cellSize);
+    const row = Math.floor(point.y / cellSize);
+    if (col < 0 || row < 0 || col >= cols || row >= rows) {
+      return UNREACHED;
+    }
+    return this.integrationCells[row * cols + col] ?? UNREACHED;
   }
 
   /** Whether the field may route through `cell`: in the corridor and walkable now. */

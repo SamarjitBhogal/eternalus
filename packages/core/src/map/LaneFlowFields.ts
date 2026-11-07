@@ -3,6 +3,7 @@ import type { PlayableTeam } from '../teams/teams.types';
 import { distance, distanceToPath } from '../utils/geometry';
 import type { Vec2 } from '../utils/geometry.types';
 import { FlowField } from './FlowField';
+import { UNREACHED } from './FlowField.constants';
 import { FlowFieldBuilder } from './FlowFieldBuilder';
 import type { WorldMap } from './WorldMap';
 import { CELL_EDGE_SLACK } from './WorldMap.constants';
@@ -20,6 +21,8 @@ export class LaneFlowFields {
   /** Every field, by lane index, Light before Dark. */
   public readonly fields: readonly FlowField[];
   private readonly byLane = new Map<string, Readonly<Record<PlayableTeam, FlowField>>>();
+  /** Each lane's own end per team: where the team's walk starts (progress 0). */
+  private readonly starts = new Map<string, Readonly<Record<PlayableTeam, Vec2>>>();
   private readonly builder: FlowFieldBuilder;
   private readonly queue: FlowField[] = [];
 
@@ -37,6 +40,8 @@ export class LaneFlowFields {
       const light = LaneFlowFields.fieldOf(grid, map, lane, 'light', corridorHalfWidth);
       const dark = LaneFlowFields.fieldOf(grid, map, lane, 'dark', corridorHalfWidth);
       this.byLane.set(lane.id, { light, dark });
+      const first = lane.path[0] ?? { x: 0, y: 0 };
+      this.starts.set(lane.id, { light: first, dark: lane.path[lane.path.length - 1] ?? first });
       fields.push(light, dark);
     }
     this.fields = fields;
@@ -55,6 +60,26 @@ export class LaneFlowFields {
   /** The field `team` follows down `laneId`, or `undefined` for a lane the map does not have. */
   public field(laneId: string, team: PlayableTeam): FlowField | undefined {
     return this.byLane.get(laneId)?.[team];
+  }
+
+  /**
+   * How far `point` lies along lane `laneId` for `team`, by path cost on the team's field: 0 at
+   * the team's own end of the lane (and anywhere costlier, such as inside its Stronghold), 1 at the
+   * enemy end (`balancing.md`, minion strength by distance). `null` when there is no such lane, or
+   * the point or the lane's own end has no cost (off the corridor, or a cell the fill never reached).
+   */
+  public progress(laneId: string, team: PlayableTeam, point: Vec2): number | null {
+    const field = this.field(laneId, team);
+    const start = this.starts.get(laneId)?.[team];
+    if (field === undefined || start === undefined) {
+      return null;
+    }
+    const home = field.costAt(start);
+    const here = field.costAt(point);
+    if (home === UNREACHED || here === UNREACHED || home === 0) {
+      return null;
+    }
+    return Math.min(1, Math.max(0, 1 - here / home));
   }
 
   /**
