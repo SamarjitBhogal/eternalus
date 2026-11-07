@@ -5666,3 +5666,31 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/local-minimap.check.log`): EXIT=0, core
   1079 passed, client 1764 passed, docs check passed.
 - Next step: push.
+
+### 2026-11-07 — Phase 3 / playtest fixes: local minimap, review blocker and merge of fix/click-attack-units (PR #76) — feat/local-minimap — sholtzman + Claude Code
+
+- What was done: review blocker (DEC-187 (C), "a dot sits at the snapshot position"):
+  `EntityLayer.drawMinimap` drew the interpolated position; it now draws at `entity.transform`.
+  Then merged `fix/click-attack-units` (PR #76, which holds #78, #74, #75 and phase/3 at
+  `ed10145`), so this PR merges after #76 with no conflicts (merge chain #75, #74, #78, #76,
+  #77). #74 moved the minimap click from `Match` to `MatchViewControls`: the tests call
+  `match.controls.lookAtMinimapPoint`, and architecture 06 and 08 name
+  `MatchViewControls.lookAtMinimapPoint`. `MiniMapView` takes the centre (DEC-182), so the
+  `MatchViewControls` test passes the camera's focus; the DEC-187 minimap test builds its
+  snapshot with `Snapshot.match` (#74 replaced `Snapshot.phase`). `INBOX.md` keeps both notes on
+  HC-Q6 (4), #75's (2026-11-04) first.
+- Red proof: the `EntityLayer` minimap test was changed first to expect the snapshot positions 4
+  and 20 at an `alpha` between 0 and 1; it failed (received the interpolated 2 and 15), then
+  passed with the fix.
+- Critic loop (correctness and ponytail critics on this PR's diff over `fix/click-attack-units`,
+  two rounds; round 2 passed): `drawMinimap` skips an entity with no transform instead of falling
+  back to the interpolated position (`show()` already drops such entities); the TUNE notes of the
+  marker sizes and the outline width and colours cite the owner's acceptance (DEC-187 (C) and its
+  second round); doc 06 names `MatchViewControls.lookAtMinimapPoint`. Not changed: the centre
+  marker's size stays provisional (no DEC row accepts it).
+- Checks run: `npm run check` at `3d0a4b2` (log
+  `eternalus-agent-work/pr-merge-74-79/check-77-final.log`): exit 0, Prettier passed, core
+  `Tests 1245 passed (1245)`, client `Tests 1790 passed (1790)`, docs check passed. The head of
+  #76 (`f49ee99`, log `check-76-final.log`): exit 0, core `Tests 1245 passed (1245)`, client
+  `Tests 1780 passed (1780)`.
+- Next step: push; PR #77 merges after #76 once Samarjit re-approves; then #79 retargets.
