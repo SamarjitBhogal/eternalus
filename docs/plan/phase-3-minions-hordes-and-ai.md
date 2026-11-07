@@ -4,7 +4,7 @@ description: Sprint checklists for the Mob family, the Horde composite, flow-fie
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-03
+last-reviewed: 2026-11-07
 tags: [plan, phase-3, minions, hordes, ai, pathing, match-director]
 paths: ['packages/core/src/ai/**', 'packages/core/src/match/**', 'packages/core/src/map/**']
 related:

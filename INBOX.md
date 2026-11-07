@@ -2116,6 +2116,14 @@ Reply inline (`Decision: …`).
     (`strongholdCliffs`) or a side helper, not `x < width/2`.
   - (6) `zoneOf(shape, structure, team)`: the team comes from the structure; key the Stronghold
     interiors by feature id.
+  - Critic r2 (2026-11-07) adds: (7) `CombatClock.isQuietFor(tick, ticks)`, so the
+    out-of-combat test is written once (the system computes it twice; a bot Survive check, a HUD
+    cue or aether regen would copy it). (8) A `state/` tally that writes the clock, as
+    `AllyDamageTally` does, so "last fought" is a match fact and the heal system only reads it;
+    today the clock exists only when the heal system runs. (9) `Entity.ensureComponent(type,
+create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySystem`,
+    `OutOfCombatHealingSystem`). (10) One production map-object factory for `Simulation` and the
+    test fixtures (extends (4)).
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
