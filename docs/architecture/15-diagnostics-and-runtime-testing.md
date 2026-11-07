@@ -516,8 +516,8 @@ adapters, the dev-server plugin; `6db5713`), and the crash popup and the `ErrorB
 
 The headless bench is built as `npm run bench` (`scripts/bench/hordes.mjs`, 2026-11-07): it loads
 core through Vite's module runner, fills a generated match with lane hordes and every bot Legend,
-and prints p50, p95 and max tick time; it fails only when it cannot fill a case, and it does not
-run in CI yet. It times whole ticks only; per-system times wait for the `Profiler` port (§6),
+and prints p50, p95 and max tick time; CI runs it without a time assertion, and it fails only when
+it cannot fill a case. It times whole ticks only; per-system times wait for the `Profiler` port (§6),
 which is still not built. It measures lane hordes with bot Legends, not the Phase 1 plan's
 300-dummy case, whose p95 ≤ 4 ms target is still unmeasured.
 

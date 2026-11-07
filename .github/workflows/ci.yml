@@ -65,3 +65,8 @@ jobs:
 
       - name: Docs (frontmatter, links, index)
         run: npm run docs:check
+
+      # Not part of `npm run check`: the headless tick bench (plan Phase 1) runs so that a change to
+      # the core API it drives fails here. It prints times and never asserts them.
+      - name: Tick bench (no time assertion)
+        run: npm run bench

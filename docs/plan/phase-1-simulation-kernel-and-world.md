@@ -237,9 +237,8 @@ Owner: _ (client lane + one sim-lane reviewer). Week 3. Depends on 1.2 and 1.4.
 - [ ] **Headless bench `npm run bench`** (`Recommendation:` Node script in core: 300 dummies ×
       3,000 ticks, prints p50/p95 tick time). Owner: _. Test: the script runs in CI without
       asserting a time (times are asserted locally). Done when: the number is in PROGRESS.
-      Status (2026-11-07): `npm run bench` is built and measures lane hordes with bot Legends
-      (`PROGRESS.md`); it is not in CI yet, and the 300-dummy case and its 4 ms target are not
-      measured yet.
+      Status (2026-11-07): `npm run bench` is built, runs in CI and measures lane hordes with bot
+      Legends (`PROGRESS.md`); the 300-dummy case and its 4 ms target are not measured yet.
 - [x] **Coverage ratchet**: core 80 → 82, client 45/50 → 55/55 (`Recommendation:`). Owner: _.
       Test: `npm run test:coverage`. Done when: thresholds are committed in the same PR.
 

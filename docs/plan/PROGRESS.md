@@ -5148,7 +5148,8 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   every bot Legend (9 laners and the Rover per team), fills each team to 144 mobs, then to the
   cap, with light-minion hordes at 45% and 55% of every lane so they fight, and times 900 ticks
   after 60 warm-up ticks. It prints p50, p95 and max and asserts no time; it fails only when a
-  case cannot be filled. It is not part of `npm run check` or CI. Doc 15 Implementation status,
+  case cannot be filled. CI runs it as its own step (not part of `npm run check`), as the Phase 1
+  item asks; approved by SamarjitBhogal on 2026-11-07. Doc 15 Implementation status,
   the Phase 1 bench item, the plan README metric and the README command list name it.
 - Measured (Node 24.21, AMD Ryzen AI 9 HX 370, three runs; these first runs filled 146 mobs per
   team for the 144 case, and a rerun after the critic's exact-fill fix gave p95 11.4 ms at 144 and
