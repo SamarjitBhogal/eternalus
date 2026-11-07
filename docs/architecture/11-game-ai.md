@@ -298,8 +298,8 @@ brain caches the last search's destination and waypoint as plain memory and reus
 without a new search, while the bot heads to the same place (within its `arrivalDistance`), has not
 reached the waypoint, finds it still on the way (nearer than the destination) and still sees it in
 a straight line (`PathQuery.isLineClear`). A clear line to the destination caches nothing, so a
-moving destination is followed live; arriving, or a search that finds no way, clears the cache. Other heavy work (flow
-fields) belongs to `PathingSystem`, which time-slices its rebuilds
+moving destination is followed live; arriving, or a search that finds no way, clears the cache.
+Other heavy work (flow fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
 ## 7. Sim mode (MVP)
