@@ -600,6 +600,9 @@ Each segment remains an independent wall object with the same health and destruc
 Physical footprints follow the visible curve; gate positions and lane starts share the same
 profile while preserving the original lane and tower anchors. Generated strongholds carry copied `MapFeature.wallBoundary` dimensions, which palace
 placement reads instead of mistaking the taller shield's extent for a larger palace radius.
+`strongholdEnclosure` (`map/strongholdEnclosure.ts`) closes the arc with the cliffs into the
+ground they enclose, along the outer face of each wall segment and gate (`outerFace` in
+`map/wallRing.ts`); the Stronghold's heal zone is that ground less the shield's own (DEC-215).
 
 `MapShieldBuilder` dresses those exact polygons with translucent blue panels, luminous edges,
 seams, runes and emitter artwork for the existing turret features. `MapDecoration.replacesFeature`
