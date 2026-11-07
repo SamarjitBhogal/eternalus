@@ -11,6 +11,7 @@ paths:
     'packages/core/src/entities/**',
     'packages/core/src/components/**',
     'packages/core/src/content/**',
+    'packages/core/src/systems/{OutOfCombatHealing,HealingZones}*',
   ]
 related:
   [
