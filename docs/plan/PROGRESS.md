@@ -5232,3 +5232,23 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1745 passed (1745)"; "✓ built in 297ms"; "Documentation check passed.". The test that
   failed in the entry above now passes.
 - Next step: push to #64 with base `phase/3-sprint-3-work`, then Samarjit's re-review.
+
+### 2026-11-07 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64), merge 3 — sholtzman + Claude Code
+
+- Correction to the entry above: its check was green on this machine only. On CI, head `85e70d3`
+  failed on both runners (run 41979789406, from Samarjit's review): "counts a Legend anywhere on
+  its building floor, with map objects on as the game ships (DEC-145)" hit "Test timed out in
+  60000ms" (66222 ms on ubuntu-latest, 73035 ms on windows-latest); core "Tests 1 failed | 1111
+  passed (1112)".
+- What was done: the cause was phase 3's `NoMapObjectOverlapInvariant`, not this PR's code:
+  `WorldObjectStore.blockingAt` tested every map object's polygons for each moving unit, each tick.
+  #80 fixed that at the root in `phase/3-sprint-3-work` (`ed10145`); the test, its timeout and its
+  debug config are unchanged. `6729054` merges `ed10145` (#69, #71, #80) into this branch.
+  Conflicts: `06-map-and-minimap.md` `last-reviewed` (kept phase 3's later date) and this file
+  (both sides' entries kept).
+- Checks run: `Simulation.capture.test.ts` with coverage: the map-objects test took 1026 ms
+  (Samarjit measured 31.1 s at `85e70d3` on his machine; not re-measured on this machine).
+  `npm run check` on `6729054`: `exit=0`: core "Tests 1134 passed (1134)"; client "Tests 1763
+  passed (1763)"; "✓ built in 231ms"; "Documentation check passed.".
+- Next step: push to #64; this is done only when CI is green on both runners; then Samarjit's
+  re-review.
