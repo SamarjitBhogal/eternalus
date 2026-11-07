@@ -5607,3 +5607,25 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/pr-merge-74-79/check-78-merge.log`): exit 0, Prettier passed, core
   `Tests 1243 passed (1243)`, client `Tests 1769 passed (1769)`, docs check passed.
 - Next step: push; PR #78 merges after #74.
+
+### 2026-11-07 — Phase 3 / playtest fixes: click attack, merge of feat/structure-xp (PR #78) and review blocker — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: merged `feat/structure-xp` (PR #78, which holds #74, #75 and phase/3 at
+  `ed10145`), so this PR merges after #78 with no conflicts (merge chain #75, #74, #78, #76,
+  #77). #74 moved the canvas gestures from `Match` to `MatchViewControls`, so the click order of
+  this branch (unit, then roof, then map object; DEC-183, DEC-150) now lives in
+  `MatchViewControls.clickAt`. It replaces `toggleRoofAt` and `attackAt`; its `snapshot`
+  dependency gives the units and the map objects (was `mapObjects`). The tests call
+  `match.controls.clickAt`; architecture 06 §10 keeps both sides. The explorer tests find the
+  spawned dummy by `definitionId`, because #74 gives the test simulation the map and the map's
+  guard posts hold other dark light mobs. Review blocker (a roof click must queue no attack):
+  the `MatchViewControls` roof test puts a house under the roof and asserts that no
+  `attack-target` is queued; `Match.explorer.test.ts` asserts one command after the roof click.
+- Red proof: break = `clickAt` also calls `attackObjectAt` after it toggles a roof. The
+  `MatchViewControls` test "clickAt cuts away the roof under the point and puts it back,
+  attacking nothing (DEC-150)" went red. The new `Match.explorer.test.ts` assertion stays green
+  under that break, because nothing attackable is under that roof point; the unit test is the
+  guard.
+- Checks run: `npm run check:quick` exit 0 and the eight affected client test files pass; the
+  full `npm run check` follows on this entry.
+- Next step: full check; push; PR #76 merges after #78 once Samarjit re-approves.
