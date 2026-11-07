@@ -2085,6 +2085,37 @@ Reply inline (`Decision: …`).
   - Decision (2026-10-31): (1) "C1: INBOX + post on #56 (Recommended)": the comment goes on PR
     #56. (3) "Yes, match 12 (Recommended)": DEC-136, which also covers 07 §11's event list.
     **Open:** Samarjit's answer on #56. Tick this item when it is recorded here.
+- [ ] **Out-of-combat healing — five rules DEC-188 and DEC-215 leave open (2026-11-07,
+      `feat/out-of-combat-heal`, critic r1).** Each stays as built until you answer. Reply per
+      question (`Q-D: A`).
+  - **Q-D:** A blocked or zero-damage hit on a structure (an unbreakable gate or Stronghold):
+    does it mark that structure as under attack, which stops its heal bonus? (A) only hits that
+    deal damage **[built, recommended]**; (B) any attack.
+  - **Q-E:** The band in front of a Stronghold gate: (A) outside the heal zone **[built,
+    recommended]**; (B) inside it.
+  - **Q-F:** A human who hits an unbreakable gate or Stronghold deals no damage, so stays out of
+    combat and heals while attacking (bots and minions skip such targets). (A) keep as built
+    **[built]**; (B) any attack swing puts the attacker in combat.
+  - **Q-G:** Is a hit on the `stronghold` palace map object (its own entity, 10000 health) a hit
+    on "the Stronghold itself" (DEC-215 (2))? (A) no **[built]**; (B) yes.
+  - **Q-H:** The heal zone is read once from the map, so the ground of a destroyed shield wall
+    stays outside the zone. (A) keep **[built]**; (B) the ground joins the zone when the wall
+    falls.
+- [ ] **Out-of-combat healing — better than the design, not built, for sign-off (DEC-139;
+      2026-11-07, `feat/out-of-combat-heal`, critic r1 items (2) to (6)).** Approve each to
+      schedule it, or say no.
+  - (2) Inject `HealingZones` (or its shape strategies) from `DefaultSystemPipeline`; today
+    `OutOfCombatHealingSystem` builds it in its constructor.
+  - (3) Compute the fort boxes once and share them with `PathingSystem` (`fortBoxesOf`; INBOX
+    C1/H1 on PR #75, `docs/playtest-rulings`): `MatchWorld` keeps a box per structure id, and
+    `fort-box` stops building its outline each tick.
+  - (4) One structure-spawn function for `Simulation.spawnStructures` and the test fixture
+    `spawnMapStructures` (they already drifted once).
+  - (5) One list of shield kinds in `map/` (`HealingZones.SHIELD_KINDS` and the
+    `strongholdEnclosure` filter); take the rear edge from the cliff geometry
+    (`strongholdCliffs`) or a side helper, not `x < width/2`.
+  - (6) `zoneOf(shape, structure, team)`: the team comes from the structure; key the Stronghold
+    interiors by feature id.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
