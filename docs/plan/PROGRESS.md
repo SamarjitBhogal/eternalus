@@ -5175,3 +5175,18 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/minion-stack-followups.check.log`): EXIT=0, core
   1155 passed, client 1754 passed, docs check passed.
 - Next step: push.
+
+### 2026-11-06 — Phase 3 / minion-stack follow-ups, critic round 3 fixes — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: critic round 3 (the owner's last loop) on `ebedddb..7bc53a9`: APPROVE, 0
+  blockers, 2 should-fix, 7 nits (`critic-followups-r3.md` in the audit's runner-reports). All
+  fixed in `53c2bd6` and `c01edc8`: 11 §10 names `BotMovement.moveTo`; `edgeOf`'s TSDoc says it
+  returns `to` with no grid; 11 §4.3 and §5 wording; the r2 entry points to 11 §4.3; `isInReach`
+  checks before it aims; `StuckSystem` tests `aimPointOf` against `null`; the Fort fixture's
+  context type uses `Vec2` and `Polygon`; long comment lines re-wrapped. A test now pins what
+  `aimPointOf` returns; two breaks turned it red (a copied outline; `[]` for `'centre'`).
+- Checks run: `npm run check` at `c01edc8` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/minion-stack-followups.check2.log`):
+  EXIT=0, core 1155 passed, client 1754 passed, docs check passed.
+- Next step: open the PR into phase/3 after #75; merge this head into the heal, chevron and
+  tower-ruins branches.
