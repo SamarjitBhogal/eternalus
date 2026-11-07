@@ -5339,3 +5339,25 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   (log `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.8c9b99f2.check.log`:
   EXIT=0, core 1185 passed, client 1771 passed). `prettier --check` and `docs:check` passed here.
 - Next step: critic on the DEC-220 work, then push.
+
+### 2026-11-07 — Phase 3 / unit facing chevron, DEC-220 critic r1 fixes — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: the critic on the DEC-220 work (`git diff 8ce35b0 a83268c`, a new review cycle
+  for the new owner ruling; report `eternalus-agent-work/playtest-2026-11-04/critic-chevron-dec220-r1.md`)
+  gave CHANGES NEEDED, 0 blockers, 2 should-fix, 4 nits. Fixed in `2e47594`: a stunned guard
+  (`cannot-move`) at its post no longer turns outward (DEC-216 (7)); a test pins that a guard at
+  its post that chases keeps its facing; `guardOutward` has its co-located test. `d9834dd`: 04 §3
+  (stunned guard keeps its facing), 18 §7 (one line: `PathingSystem` turns a guard outward at its
+  post, pointing to 04 §3; doc 18's owner is told in the PR), INBOX item: does a fort's court
+  count as inside the building (DEC-220 (1))?, plus the critic's better-than-design items. Not
+  done: the `fix(core)` scope of `a380b19` (it would rewrite history).
+- Fail-first: dropping the `cannot-move` check turned "does not turn a stunned guard at its post
+  (DEC-216 (7))" red; dropping `!context.isChasing` turned "does not turn a guard outward at its
+  post while it chases a target" red; reversing `guardOutward` turned its test and the DEC-220 (3)
+  test red (each "expected … to deeply equal …"). Restored after each.
+- Checks run: `npm run check` at `d9834dd` (log
+  `eternalus-agent-work/playtest-2026-11-04/check-chevron-dec220-r1fix.log`): "All matched files
+  use Prettier code style!"; core "Tests 1188 passed (1188)"; client "Tests 1771 passed (1771)";
+  "✓ built in 245ms"; "Documentation check passed."; EXIT=0. This entry was added after it.
+- Next step: merge phase/3 `ed101458` (PR #80; conflicts in `WorldObjectStore` and `geometry.ts`)
+  through the follow-ups, then push; retarget PR #79 to phase/3 after #77 and #85 merge.
