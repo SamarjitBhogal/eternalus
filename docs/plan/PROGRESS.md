@@ -5052,11 +5052,14 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - What was done: audited `phase/3-sprint-3-work` and the open pull requests against the MVP scope
   for the minion system. Minion plan: new §1.2 (the gaps before the MVP, each with who builds it,
   its blocker and the next action); new phase M10 (zone level-up, designed in 07 §7 but scheduled
-  nowhere); M6 split into M6 (camps, merged) and M6b (checkpoint defenders, after PR #64); §3
+  nowhere); M6's pull request split into M6 (camps, merged) and M6b (checkpoint defenders, after PR #64); §3
   drops the built "straight-line bots" row and points the Rover and strength-by-distance rows at
   what now unblocks them. `INBOX.md`: one item (zone level-up numbers and OQ-47, the M6 defender
   sign-off, and pushing the unpushed follow-up branches). Stacked on `docs/playtest-rulings`
   (PR #75), which edits the same plan.
-- Checks run: see the pull request.
+- Checks run: `npm run check` passed (format, no-js, lint, typecheck, knip, coverage, build,
+  docs:check): core `Tests  1079 passed (1079)`, client `Tests  1754 passed (1754)`,
+  `Documentation check passed.` Critic (`architecture-reviewer`): approve, 0 blockers; its three
+  minor items and four nits are applied.
 - Next step: the owner answers the `INBOX.md` item; M6b and M10 start when PR #64 merges; the
   unit-cap performance check can start now.
