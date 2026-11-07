@@ -20,8 +20,9 @@ type TargetSnapshot = Pick<Snapshot, 'entities' | 'mapObjects'>;
  * held attack button aims at (a living enemy unit under the cursor first, else a map object). A
  * press the canvas gestures own is no held attack (`setPointerClaimed`; 06 §10, attack and roof
  * input arbitration): with the developer explorer shown that is every press, and a plain click
- * attacks once on its release instead (`Match.clickAt`, DEC-150). It only turns input into
- * commands: `apply` tells `Match` whether the player moves, and `Match` tells the camera (DEC-151).
+ * attacks once on its release instead (`MatchViewControls.clickAt`, DEC-150). It only turns input
+ * into commands: `apply` tells `Match` whether the player moves, and `Match` tells the camera
+ * (DEC-151).
  */
 export class PlayerCommands {
   private lastMove: Vec2 = { x: 0, y: 0 };
@@ -45,8 +46,8 @@ export class PlayerCommands {
   /**
    * Whether the canvas gestures own the main button's press (a minimap click, or any press while
    * the developer explorer is shown). While they do, the held button is no attack: one press is
-   * one action. With the explorer, a plain click attacks on its release through `Match.clickAt`
-   * (DEC-150).
+   * one action. With the explorer, a plain click attacks on its release through
+   * `MatchViewControls.clickAt` (DEC-150).
    */
   public setPointerClaimed(isClaimed: boolean): void {
     this.isPointerClaimed = isClaimed;
@@ -82,7 +83,7 @@ export class PlayerCommands {
    * the Legend `actorId` on the living enemy unit under `point` (world units). `snapshot` is the
    * latest one.
    *
-   * @returns Whether a unit was under the point; a unit wins over a roof (`Match.clickAt`).
+   * @returns Whether a unit was under the point; it wins over a roof (`MatchViewControls.clickAt`).
    */
   public attackUnitAt(actorId: EntityId, point: Vec2, snapshot: TargetSnapshot): boolean {
     const targetId = findUnitAt(snapshot.entities, actorId, point);

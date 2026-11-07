@@ -5567,6 +5567,7 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check` on the merge (log
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/structure-xp.check.log`): EXIT=0, core
   1089 passed, client 1754 passed, docs check passed.
+- Next step: push.
 
 ### 2026-11-05 — Phase 3 / playtest fixes: click attack — fix/click-attack-units — sholtzman + Claude Code
 
@@ -5626,6 +5627,12 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   attacking nothing (DEC-150)" went red. The new `Match.explorer.test.ts` assertion stays green
   under that break, because nothing attackable is under that roof point; the unit test is the
   guard.
+- Critic loop (correctness and ponytail critics on this PR's diff over `feat/structure-xp`): no
+  blockers. Fixed: the merge had dropped the line "Next step: push." from the structure-xp entry
+  of 2026-11-06 (restored); comments and a test label named `Match.clickAt`, now
+  `MatchViewControls.clickAt`. Not changed: `findUnitAt` treats every unit as an enemy when the
+  attacker is gone from the snapshot (a test pins it; core rejects the command, so no state
+  changes); `UNIT_FAMILIES` stays exported (its test reads it).
 - Checks run: `npm run check:quick` exit 0 and the eight affected client test files pass; the
   full `npm run check` follows on this entry.
 - Next step: full check; push; PR #76 merges after #78 once Samarjit re-approves.
