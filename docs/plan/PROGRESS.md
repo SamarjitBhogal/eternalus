@@ -5321,3 +5321,31 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Not done: `phase/3` moved to `ed101458` (#80 merged) and conflicts with this branch in
   `WorldObjectStore` and `geometry.ts`; not merged here, by instruction.
 - Next step: critic r2.
+
+### 2026-11-07 — Phase 3 / out-of-combat healing, critic r2, phase/3 merge, gate — sholtzman + Claude Code
+
+- Branch: `feat/out-of-combat-heal`. Critic r2 on `git diff 568298b ee1cf34`:
+  `eternalus-agent-work/playtest-2026-11-04/critic-heal-r2.md`: APPROVE, 0 blockers, 1
+  should-fix, 5 nits. Its own run of every `npm run check` step at `ee1cf34`: exit 0, core "Tests
+  1197 passed (1197)", client "Tests 1754 passed (1754)".
+- What was done:
+  - `e9ed6f4`: the 124-character TSDoc line rewrapped; braces on the two-line attacker `if`; the
+    generated-map fort-box test steps past both the heal delay and the structure quiet time; the
+    `spawnWorldObjects` TSDoc says it passes no `owners` (a fort object is its own entity there).
+  - `dfce925`: architecture 04 names `CombatClock` (the should-fix); `last-reviewed` 2026-11-07 on
+    04, 06 and the phase 3 plan; INBOX heal better-than-design item gains critic r2 items (7) to
+    (10).
+  - `3e8466b`: merge of `fix/minion-stack-followups` at `a5cf4e5` (phase/3 `ed10145`, #80, with
+    the reviewed resolution), no conflicts.
+- Fail-first (fort-box test): with `structureQuietSeconds` set to 20 on purpose, the old test was
+  red ("expected 0.06666666666666998 to be close to 0.4000000000000001") and the new one passed;
+  the value was restored.
+- Ponytail r2 on `git diff 568298b dfce925`
+  (`eternalus-agent-work/playtest-2026-11-04/ponytail-heal-r2.md`): no cuts. Ponytail r1's one
+  candidate (`HealingZone.outline`, read only by the zone-overlap test) is kept: that test checks
+  the DEC-215 (1) no-overlap property and reads it.
+- Checks run: `npm run check` at `3e8466b` → `EXIT=0`: core "Tests 1199 passed (1199)", client
+  "Tests 1754 passed (1754)", "Documentation check passed." This entry was added after that run
+  (docs-only).
+- Next step: open the PR (base `fix/minion-stack-followups` until #85 merges, then
+  `phase/3-sprint-3-work`); owner answers Q-D to Q-H and items (2) to (10).
