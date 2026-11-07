@@ -6,6 +6,7 @@ import type { GameConfig } from '../config/GameConfig.types';
 import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
 import type { MapDefinition, MapFeature, MapFeatureKind } from '../content/maps/maps.types';
 import type { Entity } from '../entities/Entity';
+import { Structure } from '../entities/structures/Structure';
 import { MapGenerator } from '../map/MapGenerator';
 import { MapObjectBuilder } from '../map/MapObjectBuilder';
 import { MapPresentationBuilder } from '../map/MapPresentationBuilder';
@@ -50,6 +51,7 @@ const structure = (state: GameState, kind: string, team: PlayableTeam): Entity =
 const zonesOf = (state: GameState, zones: HealingZones): [string, HealingZone][] => {
   const found: [string, HealingZone][] = [];
   state.entities.forEach((entity) => {
+    if (!(entity instanceof Structure)) return;
     const bonus = OUT_OF_COMBAT_HEALING.structureBonuses[entity.kind];
     const zone = bonus && zones.zoneOf(bonus.zone, entity, state.entities.teamOf(entity.id));
     if (zone !== undefined) found.push([entity.id, zone]);

@@ -7,7 +7,6 @@ import { Health } from '../components/Health';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { OUT_OF_COMBAT_HEALING } from '../content/healing/outOfCombatHealing';
 import { loadDefaultContent } from '../content/loadDefaultContent';
-import { MAP_OBJECT_DEFINITIONS } from '../content/maps/mapObjectDefinitions';
 import type { MapObjectKind } from '../content/maps/mapObjects.types';
 import type { MapFeature } from '../content/maps/maps.types';
 import { loadWeapons } from '../content/weapons/loadWeapons';
@@ -20,12 +19,11 @@ import { MapObjectBuilder } from '../map/MapObjectBuilder';
 import { MapPresentationBuilder } from '../map/MapPresentationBuilder';
 import { matchWorldOf } from '../state/__fixtures__/matchWorld';
 import { spawnMapStructures } from '../state/__fixtures__/spawnMapStructures';
+import { spawnWorldObjects } from '../state/__fixtures__/spawnWorldObjects';
 import { GameState } from '../state/GameState';
 import { StateHasher } from '../state/StateHasher';
-import { WorldObjectStore } from '../state/WorldObjectStore';
 import type { PlayableTeam, Team } from '../teams/teams.types';
 import type { Vec2 } from '../utils/geometry.types';
-import { IdGenerator } from '../utils/IdGenerator';
 import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 
 const logger = new NullLogger();
@@ -225,29 +223,10 @@ describe('OutOfCombatHealingSystem', () => {
 
   it("does not count hits on the Stronghold's walls, gates or turrets as an attack on it (DEC-215 (2))", () => {
     const { state, minion, wound, hit, gainAt, tickTo } = setUp();
-    const definitions = new Map(
-      Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
+    const shield = spawnWorldObjects(
+      state,
+      MAP_OBJECTS.filter(({ kind, team }) => team === 'light' && SHIELD_OBJECTS.includes(kind)),
     );
-    state.worldObjects = new WorldObjectStore({
-      objects: MAP_OBJECTS.filter(
-        ({ kind, team }) => team === 'light' && SHIELD_OBJECTS.includes(kind),
-      ),
-      factory: new EntityFactory(
-        createDefaultEntityRegistry(),
-        {
-          has: (id) => definitions.has(id),
-          get: (id) => {
-            const definition = definitions.get(id);
-            if (definition === undefined) throw new Error('no map object definition');
-            return definition;
-          },
-        },
-        new IdGenerator(2000),
-      ),
-      entities: state.entities,
-      definitions: MAP_OBJECT_DEFINITIONS,
-    });
-    const shield = state.worldObjects.snapshot().flatMap(({ entityId }) => entityId ?? []);
     const health = wound(minion('light', shieldInside('light', EDGE)));
     tickTo(DELAY - 5);
     for (const id of shield) hit(id, 'enemy');

@@ -1,3 +1,5 @@
+import type { StructureKind } from '../structures/structures.types';
+
 /**
  * Where a structure's healing bonus applies (DEC-188, DEC-215): `fort-box` is the box round a lane
  * tower's fort walls, the court and the gateways included (DEC-215 (4)); `stronghold-interior` is
@@ -29,5 +31,5 @@ export type OutOfCombatHealing = {
    * Keyed by structure kind; a kind without an entry gives no bonus. Two zones never overlap
    * (DEC-215 (1)), so a unit is in one zone at most.
    */
-  readonly structureBonuses: Readonly<Record<string, StructureHealingBonus>>;
+  readonly structureBonuses: Readonly<Partial<Record<StructureKind, StructureHealingBonus>>>;
 };

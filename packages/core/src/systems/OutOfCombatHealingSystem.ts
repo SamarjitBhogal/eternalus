@@ -3,6 +3,7 @@ import { Health } from '../components/Health';
 import { Transform } from '../components/Transform';
 import type { OutOfCombatHealing } from '../content/healing/outOfCombatHealing.types';
 import type { Entity } from '../entities/Entity';
+import { Structure } from '../entities/structures/Structure';
 import type { GameState } from '../state/GameState';
 import { HealingZones } from './HealingZones';
 import type { BonusZone } from './OutOfCombatHealingSystem.types';
@@ -88,6 +89,7 @@ export class OutOfCombatHealingSystem implements System {
   private quietZones(state: GameState): BonusZone[] {
     const zones: BonusZone[] = [];
     state.entities.forEach((entity) => {
+      if (!(entity instanceof Structure)) return;
       const bonus = this.content.structureBonuses[entity.kind];
       if (
         bonus === undefined ||
