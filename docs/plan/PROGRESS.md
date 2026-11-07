@@ -4,7 +4,7 @@ description: The running, append-only log of what was done, which checks ran and
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-10-30
+last-reviewed: 2026-11-05
 tags: [plan, progress, log]
 related: ['docs/plan/README.md', 'docs/agents/running-agents.md', 'docs/agents/checklists.md']
 ---
@@ -5078,6 +5078,102 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `git grep spawn-requested` over `packages` on ten refs → no match (the plan's §4.3
   already says M1 has no such path); Prettier on the changed docs; `npm run docs:check`.
 - Next step: record Samarjit's answer in GL-Q22; GL-3 starts after M1 (#63) merges.
+
+### 2026-11-05 — Phase 3 / map-object overlap check speed — fix/blocking-at-bounds — sholtzman + Claude Code
+
+- What was done: `WorldObjectStore.blockingAt` tested every map object's polygons for each unit,
+  and `NoMapObjectOverlapInvariant` calls it for every moving unit each tick. With the minion
+  stack's tower guards, a generated map with map objects (1080 entities) spent 8.8 s of 8.9 s in
+  that invariant over 125 ticks under `TEST_DEBUG_CONFIG`. On CI under coverage, PR #64's test
+  "counts a Legend anywhere on its building floor, with map objects on" took 66 s (ubuntu) and
+  73 s (windows) and timed out at 60 s. Each store record now keeps its footprints' box, and
+  `blockingAt` skips an object whose box misses the circle before any shape test; the result is
+  the same. The box helper moved out of `StaticCollisionIndex` to `utils/geometry.ts`
+  (`boundsOf`), and both use it. The same 125 ticks now take 0.19 s (invariant 91 ms).
+- Checks run: new test `WorldObjectStore.test.ts` "skips an object whose footprint box misses the
+  circle, without testing its shape" (footprint points count their reads). Red with the box test
+  removed ("expected 54 to be +0"), green with it. Its edge case (centre outside the box, circle
+  across the edge) is red with `radius` dropped from the box test ("expected null to be 'rock'").
+  `geometry.test.ts` covers `boundsOf`, including no points. `npm run check` before the gate:
+  `exit=0`: core "Tests 1080 passed (1080)"; client "Tests 1754 passed (1754)".
+- Pre-PR gate: critic approved, no blockers; it fuzzed the old and new `blockingAt` over 318k
+  cases with 0 differences. Applied: its two should-fix items (the edge case above, this check
+  result) and its nits (one `points` list, `boundsOf(points)` named for a point set, the
+  empty-input box documented and tested, one fixture factory in the store test, which is also
+  ponytail's two cuts). Its better-than-design items are in `INBOX.md`.
+- Re-check after the gate: `npm run check` `exit=0`: core "Tests 1081 passed (1081)"; client
+  "Tests 1754 passed (1754)"; "✓ built in 276ms"; "Documentation check passed.".
+- Next step: a PR into `phase/3-sprint-3-work`; after it merges, PR #64 merges phase 3 again.
+
+### 2026-11-04 — Phase 3 / owner rulings of 2026-11-04 — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: recorded the owner's answers of 2026-11-04 in the decisions log (two batches):
+  DEC-160 to DEC-169, DEC-180 and DEC-181 (minion-stack follow-ups; DEC-160 and DEC-165 carry
+  their same-day amendments) and DEC-182 to DEC-189 (playtest fixes; DEC-188 lists three defaults
+  to confirm). DEC-170 to DEC-179 are other sessions' and are not written. `INBOX.md`: the M4
+  done-when item is answered (DEC-167); answers added under Minion M6, M5b, M3, the unit-cap item
+  and HC-Q6. Minion plan: phase M9 (crowd avoidance, DEC-180) and a stand-in row; the healing
+  stand-in row names DEC-188. Phase 4 sprint 4.4: the weapon hit model (DEC-184). No design text in
+  `docs/architecture/` is edited: it goes with each code PR. Second pass (2026-11-05): critic r1 fixes
+  (camp-mob wording in DEC-165 and DEC-166 marked "as built"; DEC-168 list of B2 to B9 corrected
+  against the audit); DEC-183, DEC-185, DEC-186, DEC-187 and DEC-188 amended with the owner's
+  answers of 2026-11-05; new batch DEC-190 to DEC-193 (XP rework, sign-offs, facing chevron, stuck
+  units and leash); `INBOX.md`: the deferred walkable-walls item. Open: the audit's items B3 and
+  B5 have no named owner in the runner reports. The owner answered the DEC-193 leash question
+  ("Lane minions only") and three minimap defaults (DEC-187) on 2026-11-05.
+- Checks run (`npm run check`, 2026-11-05, log `eternalus-agent-work/playtest-2026-11-04/check-rulings-r2.log`):
+  `All matched files use Prettier code style!`; core `Tests  1079 passed (1079)`; client
+  `Tests  1754 passed (1754)`; `✓ built in 311ms`; `Documentation check passed.`; `exit 0`.
+- Next step: the code PRs (`fix/minion-stack-followups`, `fix/click-attack-units`,
+  `feat/local-minimap`, `feat/structure-xp`, `feat/out-of-combat-heal`) update the architecture
+  docs and cite these DEC numbers.
+
+### 2026-11-05 — Phase 3 / owner answers from the decision page — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: the owner answered 22 open calls (heal, facing, tower access, better-than-design
+  B1 to B5) on a decision page. The answers are DEC-215 to DEC-218 in the owner decisions log; his
+  words are verbatim in `eternalus-agent-work/playtest-2026-11-04/OWNER-ANSWERS.md` ("Round 3").
+  No code changes here: the code follows on `feat/out-of-combat-heal`, `feat/unit-facing-chevron`
+  and `fix/minion-stack-followups`.
+- Checks run: `npx prettier --check` and `npm run docs:check` on the changed docs (docs-only).
+- Next step: build DEC-215 to DEC-217 on their branches; confirm the DEC-217 (12) wall reading.
+
+### 2026-11-05 — Phase 3 / owner answers DEC-219, two DEC pointers, follow-ups INBOX item — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: the owner answered four questions through the question dialog. DEC-219 records
+  them: the fort wall that took the killing hit falls with its tower (confirms DEC-217 (12)), the
+  guard refill counters count attempts, veteran and rallied combine as built, and DEC-217 is built
+  on its own branch after `fix/minion-stack-followups`. DEC-165 now points to doc 18
+  "Implementation status" (was §9, the tests section) and DEC-181 to doc 18 §7 (was §7.1). A new
+  INBOX item lists the 12 better-than-design items from the follow-ups critics for sign-off.
+- Checks run: `npx prettier --check` and `npm run docs:check` (docs-only).
+- Next step: build DEC-217 (12), (15), (17) on a new branch after the follow-ups PR.
+
+### 2026-11-06 — Phase 3 / owner answers DEC-220, DEC-217 (14) wording, tidy-PR and map INBOX items — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: the owner decisions log has a new batch with DEC-220 (the owner's 2026-11-06
+  answers to the chevron critic's round 3: a unit inside a building's outline faces its centre,
+  camp mobs face out from the camp centre, a guard back at its post faces outward again, the
+  start-facing port goes to the tidy PR). DEC-217 (14) now says "makes less than 1 m of progress
+  toward where it heads in 2 s", the owner's option (a); the batch intro records the correction.
+  `INBOX.md` has two new items: the better-than-design items found on the follow-ups, chevron,
+  heal and tower-ruins branches (for the tidy PR, DEC-218), and the fort overlap that the map
+  generator makes with two or more towers of one kind per lane.
+- Checks run: Prettier and `npm run docs:check` on the changed docs; the full `npm run check`
+  runs on the phase/3 merge that follows this entry.
+- Next step: merge phase/3 (#71) into this branch; push; PR #75 merges first (merge order).
+
+### 2026-11-06 — Phase 3 / playtest rulings, merge of phase/3 (PR #71) — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2dc2b35` (PR #71). Only
+  `docs/plan/PROGRESS.md` conflicted (both sides appended entries); every entry is kept, phase/3's
+  first. The first check failed on Prettier: in the previous entry's INBOX text a code span broke
+  across two lines, and Prettier re-indented it on each pass. The span is now one word
+  (`EntityStore.reachAimOf`), wrapped at 100.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/playtest-rulings.check2.log`):
+  EXIT=0, core 1079 passed, client 1754 passed, docs check passed.
+- Next step: push; PR #75 merges first.
 
 ### 2026-10-28 — Game loop plan GL-1 (Phase 3 sprint 3.5, pulled forward) / the match director kernel — feat/match-director — sholtzman + Claude Code
 

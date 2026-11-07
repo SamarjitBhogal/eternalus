@@ -16,7 +16,71 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
-- [ ] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
+- [ ] **`fix/blocking-at-bounds` critic (2026-11-05), better than the design — optional
+      follow-ups, no decision blocks the PR.** (1) Keep one box per footprint instead of one per
+      map object: a ring or multi-segment wall's box covers its whole court, so units inside it
+      still run the full shape test (not needed now: 125 ticks with map objects take 0.19 s).
+      (2) Three places still build the same box by hand and could call `boundsOf`
+      (`utils/geometry.ts`): `map/MapSceneryBuilder.ts`, `map/findMapObjectAt.ts` and
+      `map/WorldMap.ts` (a follow-up PR; no drive-by refactor here). (3) Doc 15's invariant
+      catalogue does not list `NoMapObjectOverlapInvariant` (`no-map-object-overlap`); a
+      doc-gardening fix. Approve which to schedule, or drop them.
+
+- [ ] **Minion follow-ups: 12 better-than-design items for the tidy PR (critics A and B on
+      `fix/minion-stack-followups`, 2026-11-05; DEC-219 (d)) — sign-off per item.** Built on that
+      branch: leash decision parts built once (A4), one outline and aim rule (B1), `BotLeaves`
+      split (A8, also a should-fix). Not built, proposed for the tidy PR after the playtest PRs
+      (DEC-218): (A1) zone and other level sources raise minion levels through an event
+      (`minion-levels-granted`), not a call to `VeterancySystem`; (A2) levelling is plan data
+      (`GuardPlanDefinition.levels`): today zone defenders on non-neutral posts would level with
+      no owner decision; (A3) a breakability rule names what it counts
+      (`{ kind: 'allied-structures-down', structureKind: 'buff-tower', fraction }`) and its
+      evaluators move out of `content/`; (A5) `ghostFirstWaveTicks` becomes
+      `ghostFirstWaveSeconds` like the other durations; (A6) `Simulation` composes
+      `AllyDamageTally` (`GameState.ts` drops the reference today); (A7) "camp cleared" comes from
+      plan data, not from the group respawn rule; (B2) one guard-leash test helper instead of
+      three copies (`GuardController`, `GuardWithinLeashInvariant`, `StuckSystem`); (B3) content
+      says `mapBody?: 'outline' | 'body'` instead of `hasMapFootprint` plus `isBlocking`, and
+      that decides the pool; (B4) docs 07 §1 and 04 §3 adopt footprint polygons over one
+      `ConvexPolygon` collider; (B5) spawn placement passes the footprint so
+      `Structure.installComponents` adds it; (B6) stuck detection watches units that can move (a
+      capability), not units with a `ControllerBinding`; (B7) a dead-end waypoint within
+      `waypointRadius` is dropped (inferred, not measured). Full findings:
+      `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r1.md`.
+      Approve all, approve some, or say no.
+- [ ] **More better-than-design items for the tidy PR (DEC-218), found 2026-11-05 and 2026-11-06
+      on the follow-ups, chevron, heal and tower-ruins branches — sign-off per item.** Not built.
+      Follow-ups critic round 2: (C1) `DefaultSystemPipeline.fortBoxesOf` reads the store when
+      the pipeline is built (an order coupling); `Simulation.spawnStructures` returns the static
+      fort boxes, or `MatchWorld` keeps them, so a dev-spawned tower gets a box too; (C2) the
+      per-tick A\* plan budget uses the AI round-robin cursor (`state.ai.cursor`) instead of store
+      order (the follow-ups runner proposed the same); (C3) only `VeterancySystem` adds levels:
+      `Veterancy.gainLevels` is still public. Follow-ups runner: (R1) `GuardController` builds
+      the per-post leash rules and closures on each decision; it can read the post from the
+      situation (one field); (R3) `PathingSystem` takes one options object; (R4) the `moveTo` tests
+      move to `BotMovement.test.ts`. Chevron critic round 3: item 1 is DEC-220 (4) (a start-facing
+      port for `EntityFactory`, guard-plan data `facesOutward`); (V2) `MatchWorld.strongholdOf(team)`
+      reuses the strongholds map and replaces the second lookup and throw in the Rover spawn in
+      `Simulation`; (V3) one reach-and-aim query, `EntityStore.reachAimOf`, because
+      `CombatSystem` looks up the aim point twice for an attacker in reach. For DEC-218 (B4): a fifth copy of the opposing-team rule is in `MatchWorld.startFacing` (it
+      maps `neutral` to no team). Tower ruins (DEC-217): (T1) one body relation with a data field
+      (collapse or ruin) instead of `buildingId` (collapses through `MapDestructionSystem`) and
+      `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
+      what it needs explicitly. Heal (DEC-215): (H1) one point-in-box helper instead of three
+      copies (`PathingSystem.isInsideFort`, `geometry.doesPolygonOverlapRect`, `HealingZones`).
+      Full findings: `eternalus-agent-work/minion-stack-audit/reports/runner-reports/critic-followups-r2.md`,
+      `eternalus-agent-work/playtest-2026-11-04/critic-chevron-r3.md` and
+      `eternalus-agent-work/playtest-2026-11-04/session-2383bba1-reports.md`. Approve all,
+      approve some, or say no.
+- [ ] **Generated forts overlap when a lane has two or more towers of one kind (map generator).**
+      Found on `feat/out-of-combat-heal` (2026-11-05). With `spawnTowersPerLane` or
+      `buffTowersPerLane` at 2 or more, the generator puts towers of one kind 28 to 38 m apart,
+      but a fort box is 32 m wide. The forts and their heal zones then overlap, and DEC-215 (1)
+      says an overlap is a bug. The default (one tower of each kind per lane) has no overlap, and
+      the heal-zone overlap test covers only the default. Fix the generator now (towers of one
+      kind at least one fort box apart), or with the map work? Decision: …
+
+- [x] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
       cannot pass as written since M2c: a horde holds at its next standing objective, and the
       march-only test hordes cannot attack it. The full-match test you had commented out (PR #39,
@@ -25,6 +89,8 @@ Reply inline (`Decision: …`).
       (sprint 3.1's "reach the enemy SpawnerTower" metric). 1.4–2.6 s locally. The full march to
       the enemy end waits for the sprint 3.8 sim soak with fighting hordes. Approve, or say what to
       change.
+  - **Answered 2026-11-04 by DEC-167** (chat, B66-F5): the restored march test's "first enemy
+    objective" check is approved.
 
 - [ ] **Minion M6 (`feat/minion-m6-camps-defenders`, overnight 2026-10-30) — camps built,
       checkpoint defenders blocked.** (1) **Blocked:** checkpoint defenders need `CaptureSystem`,
@@ -42,6 +108,11 @@ Reply inline (`Decision: …`).
       4 m of their posts. A horde passing a camp near its lane would take hits and not fight back.
       Should lane minions fight camp mobs that attack them, or ignore camps entirely (then camp
       mobs should not attack minions either)? Approve, or say what to change.
+  - **Answered 2026-11-04 (items (2) and (3); item (1) stays open):** (3) by DEC-166: units fight
+    back against any neutral camp mob that attacks them; bot camp farming is not built now.
+    (2) by DEC-167: camps wake when the match countdown ends (no separate camp cooldown setting);
+    camp mobs keep the lane-minion stats and XP as tuning defaults. Camp-mob kills count toward
+    minion veterancy (DEC-165, amended 2026-11-04 evening).
 
 - [ ] **Minion M5b (`feat/minion-m5b-if-time`, overnight 2026-10-30) — built two of three, one
       blocked.** (1) **Tower Guardians are not built:** they need ranged attacks (no projectile
@@ -54,6 +125,10 @@ Reply inline (`Decision: …`).
       first wave** ships off (`ghostFirstWaveTicks: 0`, as 11 §4.3's sketch); League uses 18–28 s.
       Turn it on, and with what value? (4) Plan row M5 still lists Tower Guardians; they are
       deferred until you answer (1). Approve, or say what to change.
+  - **Answered 2026-11-04 (items (2) and (3); item (1) stays open):** (2) by DEC-164 and DEC-165:
+    veteran damage is additive, +10% per level; **tower guards level up too**; guards are rallied
+    too; a killed guard and a killed camp mob both count as kills; rally pulse 0.5 s and linger
+    1 s stay as tuning defaults. (3) by DEC-165: the ghosted first wave ships off.
 
 - [ ] **Unit cap 300 (DEC-137, PR #56, 2026-10-31) — doc wording to approve.** The code has
       `MAX_UNITS_PER_TEAM = 300` (the default and the validator's ceiling). These docs still say
@@ -68,6 +143,8 @@ Reply inline (`Decision: …`).
       / 5". Up to 600 mobs at a minion cadence of 5 is up to about 120 brains due per tick, so
       `AiSystem` would defer some each tick (estimate, not measured). Keep 96, or raise it? Approve,
       or say what to change.
+  - **Answered 2026-11-04 (open point (2) only; (1) and the doc wording stay open):** by DEC-181:
+    `maxDecisionsPerTick` stays 96; the guard leash tolerance widens to about 5.5 m.
 
 - [ ] **Enraged minions run faster than `maxSpeed` (PR #56, 2026-10-31) — doc wording to
       approve.** `balancing.md` gives `enraged` +10% move speed per stack, but docs 04 §3
@@ -251,6 +328,9 @@ Reply inline (`Decision: …`).
     agent's judgement, which the owner may correct later, so they stay as built. (2) Healing is
     out of the minion system's scope for now; the Phase 3 plan's laner test says so. (3)
     Accepted; doc 18 §8 says roster order (PR #46).
+  - **Update 2026-11-04 by DEC-188:** healing is now designed: Legends and minions heal 2% of max
+    health per second after 10 s out of combat, +10 points under a friendly tower that is not under
+    attack (`feat/out-of-combat-heal`). This replaces the "out of scope for now" answer to (2).
 - [ ] **Minion M8 — the neighbour grid's layout (better than the design, for sign-off).** Doc
       10 §5 stores `SpatialHash` as a counting sort over a per-cell `cellStart` array. On a
       generated map that array has hundreds of thousands of cells, and clearing and summing it
@@ -286,6 +366,14 @@ Reply inline (`Decision: …`).
       Deferred by the owner (chat, 2026-10-30) to `CollisionSystem` (10 §8–§9), marked with a
       `ponytail:` note on `isLineClear`. No unit collides with blocked ground today, so a bot
       clipping a corner has no visible effect.
+- [ ] **Walkable walls — deferred by the owner (2026-11-05, DEC-188).** The Stronghold heal zone is
+      inside the shield arc and the cliffs for now. The owner's words (verbatim): "inside arc +
+      cliffs for now. please document that the shield arc should combine with the original wall
+      idea to allow for walkable walls in further sprints but that is deferred for now". "Walls"
+      here means the outer shield arc (PR #69, DEC-158). Nothing to build now. A later sprint
+      combines the shield arc with the original wall idea so that units can walk on the walls
+      (agent note: that needs a height layer in physics and map design). When it is built, the Stronghold heal
+      zone is reviewed again (DEC-188).
 - [ ] **Minion M5a — strength by distance (DISC-24).** `balancing.md` proposes
       `m(t) = clamp(1 + 0.5 · (1 − 2t), 0.75, 1.5)`, which makes minions past mid-lane weaker
       than base. DISC-24 calls the curve "an addition on top of base stats", so M5a floors it
@@ -1355,6 +1443,9 @@ Reply inline (`Decision: …`).
     The eight defaults stay for now; your notes 1 (a local minimap view) and 2 (the gold glow only
     when an ability is ready; a red fill rising from the bottom) change default (4) and the cooldown
     look in Sprint 3.
+  - **Update 2026-11-04 by DEC-182:** default (4) is replaced by the local minimap view (400 world
+    units across, north up, clipped to the ring; `feat/local-minimap`). DEC-187: it shows Legends
+    and minions.
 - [ ] **HC-Q7 — Scope and docs questions from this branch.** (1) Your Figma art ships now (DEC-51),
       but 10-art-and-lore and 11-mvp-scope list "High-quality character art on the selection screen"
       as post-MVP, and the MVP requirements' FR-111 says that art "is not built"; the branch treats

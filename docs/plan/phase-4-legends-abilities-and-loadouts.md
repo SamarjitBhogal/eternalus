@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-29
+last-reviewed: 2026-11-04
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -140,7 +140,11 @@ Owner: _ (sim lane). Week 8.
 - [ ] **`AttackStrategy` implementations** (`melee`, `ranged-projectile`, `melee-with-ranged- flex`; heavy attack with cooldown for Wuuthrad and Lightbringer; parry as a status).
       Owner: _. Test: each named weapon's documented effect (bleed, protection reduction stacks,
       piercing, concussion, lightning stun) as a scenario. Done when: weapons select strategies
-      by id.
+      by id. **Hit model (DEC-184):** a weapon hits the whole area it reaches, not one target. A
+      melee weapon sweeps the area in front of the user, with a range set by the weapon's reach
+      (an arc where the weapon sweeps); a projectile weapon goes along the aim. Everything in that
+      area takes damage, so a minion and an object in one sweep are both hit. A click does not
+      need a target under the cursor.
 - [ ] **`ArtifactDefinition` content + gadget slots Z/C** (`TUNE`: Sentinel Mortar with impact
       and air-burst modes; Magus Soul Orb (pending) with Cast Forward and Follower; the second
       Sentinel artifact and the Warrior artifact per INBOX). Owner: _. Test: artifacts are
