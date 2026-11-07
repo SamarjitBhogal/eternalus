@@ -4741,6 +4741,91 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: merge PR #68 with a merge commit once CI passes; #56, #57 and #58 resolve the
   conflicts with it.
 
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — branch sync
+
+- What was done: fetched origin, fast-forwarded the local branch from 796f77d to its remote
+  head dd1a416, then to Phase 2 head e2c3e1e. Both updates were fast-forwards; no conflicts,
+  new merge commits or source edits were required. HEAD and origin/phase/2-sprint-2-work have
+  no commits unique to either side.
+- Checks run: npm run check passed (exit 0): formatting, no-JS, lint, typecheck, Knip,
+  coverage, build and documentation; core 887/887 tests and client 433/433 tests passed.
+  Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: continue work from the synchronized branch. This required progress entry is
+  uncommitted; no commit or push was performed.
+
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — map detail pass
+
+- What was done: added lane-facing cathedral side portals and steps, plus matching interior
+  thresholds and selection footprints, retaining the existing walkable wall openings. Roads now
+  use joined world-space surfaces, soft shoulders and restrained wear; explicit isLaneSurface
+  metadata removes the main view's overlaid fixed-pixel lane line while retaining minimap routes.
+  Replaced uniform rubble with cached artwork by object kind: stumps and fallen logs, burned house
+  shells, scattered rock shards, broken walls/towers, collapsed tents, furniture and gate timber,
+  and palace debris. Extended ruin bounds keep fallen logs visible. Fire is cosmetic and existing
+  destruction collision/snapshot behavior is preserved. Updated the map design amendment.
+- Checks run: npm run check:quick passed. Focused geometry and rendering regressions passed;
+  visually inspected a render sheet made from the actual views. An initial full run caught the
+  interior-fit test's old footprint expectation; updated it to cover and require all four authored
+  door thresholds, with no assertions removed. Final npm run check passed (exit 0): formatting,
+  no-JS, lint, typecheck, Knip, coverage, build and docs; 891 core and 450 client tests passed.
+  Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: human playtest and review of the visual changes. All changes remain uncommitted;
+  no push or PR was performed.
+
+### 2026-11-03 — Phase 2 / sprint 2 — feat/buildings-and-map-objects — front shield arc
+
+- What was done: replaced the complete outer stronghold ring with mirrored blue front arcs,
+  following the author's confirmed annotated outline. Preserved all original lane, gate and tower
+  anchor positions; taller tips join the rear mountain boundary. Shield panel artwork follows the
+  physical polygons, with translucent glass, luminous rims, runes and emitters. Artwork retains
+  segment destruction ownership, and the main view omits the replaced plain feature fills.
+  Added optional boundary metadata, validation, legacy closed-ring support and regressions for
+  geometry, presentation, anchor preservation and mountain containment. Updated the map design.
+- Checks run: npm run check:quick passed. Initial full tests caught shifted tower deployment
+  positions; corrected the geometry while keeping the existing deployment assertions unchanged.
+  Two default-worker runs then hit the unchanged roof-toolbar test's five-second startup timeout;
+  it passed in isolation. Final npm run check passed (exit 0) with VITEST_MAX_WORKERS=2:
+  formatting, no-JS, lint, typecheck, Knip, coverage, build and docs; 904 core and 451 client tests
+  passed. All timeouts, assertions and coverage thresholds remain unchanged. Visually inspected
+  a preview rendered from the actual map views. Verbatim final tail:
+
+  ```text
+  Checked 116 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: human playtest and review of the shield appearance. Changes remain uncommitted;
+  no push or PR was performed.
+
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 review fix and pre-PR gate — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` 387a5fd (PR #68) into the PR branch (eb0e012).
+  Owner rulings DEC-158 (the Stronghold wall is a shield arc from cliff face to cliff face) and
+  DEC-159 (no closed-ring wall: `wallRing.frontArc` required; closed-ring branches and the tests
+  that covered only the closed ring removed; ring tests of gate order, chord, splitting, narrowing
+  and anchors ported to the arc). Seal test (each tip on its cliff corner); layout validation
+  rejects outer gates past ±90°; one `shieldReach` from `boundaryPoint`; `MapShieldBuilder` no
+  longer guesses vertex order; `strongholdRing` throws instead of inferring; palace ruins drop the
+  timber ground by identity. Each new or ported test was turned red by a deliberate break first.
+  Gate: critic r1 approve (S1–S4), r2 request-changes (narrowing test could not fail; fixed), r3
+  approve; ponytail: 1 cut taken (shared reach), 5 rejected with reasons in the PR review.
+- Checks run: `npm run check` on 95cc4a5 → EXIT=0; core "Tests 967 passed (967)", client
+  "Tests 1753 passed (1753)", "Documentation check passed."
+- Next step: push to `feat/buildings-and-map-objects` (remote head must still be 52c1297), approve
+  #69; after #56 and #64 merge, re-run #56's soak probe and #64's zone tests.
+
 ### 2026-11-02 — Phase 3 / minion M6 — feat/minion-m6-camps-defenders — SamarjitBhogal + Claude Code
 
 - What was done: brought #58 onto #57's head (M5b on M2c on `phase/3-sprint-3-work`) in three
@@ -4843,6 +4928,29 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Documentation check passed." This entry was added after that run (docs-only).
 - Next step: merge #67, then `fix/minion-stack-followups` from `phase/3-sprint-3-work`.
 
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 base sync — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: pushed 32eefbf; the base had moved to f40811f (#56, #57, #58, #66, #67, the
+  minion stack), so `origin/phase/3-sprint-3-work` was merged again (1e33263). Only this file
+  conflicted; both sides kept. Re-ran #56's soak probe (cap 300, bots, 900 s) on 1e33263 and on
+  f40811f: the gameplay output is identical (skipped 0 % / 0 %, deaths 1639, non-INFO 0); step
+  times overlap over three runs each (mean 0.62–0.76 ms both; worst-tick spikes on both).
+- Checks run: `npm run check` on 1e33263 → EXIT=0; core "Tests 1076 passed (1076)", client
+  "Tests 1754 passed (1754)", "Documentation check passed."
+- Next step: push, approve #69; after #64 merges, re-run #64's zone tests.
+
+### 2026-11-04 — Phase 2 / course sprint 3 (phase/3-sprint-3-work), PR #69 review follow-up — fix/pr69-local → feat/buildings-and-map-objects — sholtzman + Claude Code
+
+- What was done: Samarjit's review of 97d7263 (approve with S1–S3). S3: `MapFeature.wallBoundary`
+  no longer copies `frontArc` (nothing read it); the new test was red on the old code, and the
+  golden map hash changed only because of that field (adding it back gives the old hash). N2: the
+  missing-wall error says "wall arc". S1 (scoped title) and S2 (PR description with the gate
+  results) are PR metadata, set when this is pushed.
+- Checks run: `npm run check` → EXIT=0; core "Tests 1076 passed (1076)", client "Tests 1754
+  passed (1754)", "Documentation check passed."
+- Next step: push, set the PR title and description, squash-merge; after #64 merges, re-run #64's
+  zone tests.
+
 ### 2026-11-04 — Phase 3 / horde steering deadlock — fix/horde-guard-deadlock — sholtzman + Claude Code
 
 - What was done: a unit whose pull toward its target is cancelled by separation no longer stalls
@@ -4894,6 +5002,108 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
   (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
   acceptance; 10 §9 already allows it for the MVP.
+
+### 2026-10-28 — Sprint 2/3 planning — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: wrote `docs/plan/game-loop-and-results-plan.md` (status draft, proposed) for
+  the owner's game loop, the 30 s win/lose screen and the stretch post-game screen. Five readers
+  mapped core, client, requirements, parallel PRs and architecture; one planner drafted; three
+  independent critics (architecture, correctness, ponytail) and a reviser ran three rounds
+  (39, 24 and 17 findings; 1 blocker and 15 majors in all, every finding applied or rejected
+  with a reason, log in `eternalus-agent-work/game-loop-plan/critic-log.md`). The orchestrator
+  checked the two round-3 majors (construction-time scoring rows, replayable human seat)
+  against `11-game-ai.md:280`, `GameConfig.types.ts:49` and `GameEvents.ts:12`. The plan
+  decides architectural choices A1–A19 and routes 11 product questions (GL-Q1–Q19, some IDs
+  retired) to the owner. No architecture doc, ADR or INBOX item was edited; `docs/README.md`
+  index regenerated.
+- Checks run: `npm run check` → `EXIT=0`: "All matched files use Prettier code style!"; core
+  "Tests 619 passed (619)"; client "Tests 1360 passed (1360)"; "✓ built in 207ms";
+  "Documentation check passed."
+- Next step: the owner answers GL-Q1, Q2, Q3 and Q10 first (they block GL-3 and GL-0); GL-1
+  (director kernel) can start now on `feat/match-director`.
+
+### 2026-10-28 — Sprint 2/3 planning (GL-0) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: recorded the owner's answers to every GL-Q (chat, 2026-10-28). Plan §5c quotes
+  them and wins over older plan text; §1, §2, §4.3, §5a A3/A4, §6, §7 (GL-0 to GL-4, GL-7, new
+  GL-12 respawn, GL-13 names, GL-14 code rename) and §9 follow them. Decisions log batch
+  DEC-71 to DEC-82; ADR 0021 (draft, proposed: the sovereign is the win objective, a generic
+  `ObjectiveLostCondition`, no time limit, family `sovereign`); one INBOX item with the six
+  points left open (gem look, verdict lines, rename timing, bonus against Host units, code-name
+  veto, accept ADR 0021 and the §6 edits). GL-0 ran on this plan's branch, not on a separate
+  one. GL-1 (`feat/match-director`) started in its own worktree.
+- Checks run: `npm run docs:index`; `npm run docs:check`; Prettier on the changed docs.
+- Next step: GL-1's result and its critic; GL-2 after GL-1.
+
+### 2026-10-29 — Sprint 2/3 planning (GL-0 close-out) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What was done: the owner accepted the six open points, ADR 0021 and the plan §6 edits ("all
+  accepted. continue"): DEC-83; ADR 0021 accepted (frontmatter `active`); ADR 0006 Status line
+  "amended by 0021"; the INBOX item moved to Done; plan §5c settled. The critic round over GL-0
+  and GL-1 (architecture reviewer, correctness and ponytail critics) led to these fixes here:
+  GL-Q12 quoted in full, and the team total and FR-007 points marked as defaults, not rulings;
+  "Capture points: Aryan" removed (the owner named no one); the "accepts that gap" reading of
+  GL-Q3 (a) marked as the plan's; ADR 0021 places BuffTower immunity in a 05 §9 `DamageStep`;
+  plan §6 gains a "Lands with" column and rows for 03, 04 §2, 05 §9, 10 §2, 12 §3/§8 and 15;
+  stale `spawn-kings`/`king-slain` and the old free-number note fixed. A new INBOX item holds
+  the five points the round raised (attacks during the countdown, team total, capture-points
+  owner, tower-wave start, four better-than-design items). Rejected: "the INBOX item never
+  existed" (it was uncommitted at INBOX.md:19; its text is kept verbatim in
+  `eternalus-agent-work/game-loop-plan/owner-answers-2026-10-28.md`).
+- Checks run: `npm run docs:index`; `npm run docs:check` → "Documentation check passed.";
+  Prettier on the changed docs → "All matched files use Prettier code style!".
+- Next step: GL-1's fixes and design-doc edits on `feat/match-director`; then GL-2.
+
+### 2026-10-30 — Sprint 2/3 planning (DEC-88) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What: logged DEC-88 in the owner decisions log (new batch 2026-10-30, above DEC-84's batch).
+  During the countdown every unit is idle and can only turn; nothing walks, dashes, is knocked
+  back, attacks or casts; spawns go on. It amends DEC-84 (1). The owner's words are quoted from
+  chat and from his spawn-timeline page notes; verbatim with the question:
+  `eternalus-agent-work/game-loop-plan/owner-answers-2026-10-28.md`, last section. The code and
+  the FR-003 / architecture 12 edits are on `feat/match-director`.
+- Checks run: Prettier on the decisions log → no change to other tables (diff stat +54 −1);
+  `npm run docs:check` → "Documentation check passed."
+- Next step: this branch (DEC-71 to DEC-84, DEC-88) merges before the GL branches.
+
+### 2026-10-31 — Sprint 2/3 planning (GL-3 prep: the spawn request) — docs/game-loop-and-results-plan — sholtzman + Claude Code
+
+- What: INBOX item GL-Q22 (Samarjit agrees the sovereign's `spawn-requested` shape before GL-3
+  starts). The owner chose to post the ask on PR #56 (posted, issue comment 6549022784, against
+  #56 `f2b264a` and #63 `03cd1a7`) and approved fixing the structures doc (07) §6 to match the
+  match director doc (12) §2: logged as DEC-136, which also covers 07 §11's event list. Plan §6's
+  GL-3 spawn row now names 07 §6 and §11. The draft:
+  `eternalus-agent-work/game-loop-plan/gl3-spawn-request-draft.md`; verbatim answers:
+  `owner-answers-2026-10-28.md`, last section.
+- Checks run: `git grep spawn-requested` over `packages` on ten refs → no match (the plan's §4.3
+  already says M1 has no such path); Prettier on the changed docs; `npm run docs:check`.
+- Next step: record Samarjit's answer in GL-Q22; GL-3 starts after M1 (#63) merges.
+
+### 2026-11-05 — Phase 3 / map-object overlap check speed — fix/blocking-at-bounds — sholtzman + Claude Code
+
+- What was done: `WorldObjectStore.blockingAt` tested every map object's polygons for each unit,
+  and `NoMapObjectOverlapInvariant` calls it for every moving unit each tick. With the minion
+  stack's tower guards, a generated map with map objects (1080 entities) spent 8.8 s of 8.9 s in
+  that invariant over 125 ticks under `TEST_DEBUG_CONFIG`. On CI under coverage, PR #64's test
+  "counts a Legend anywhere on its building floor, with map objects on" took 66 s (ubuntu) and
+  73 s (windows) and timed out at 60 s. Each store record now keeps its footprints' box, and
+  `blockingAt` skips an object whose box misses the circle before any shape test; the result is
+  the same. The box helper moved out of `StaticCollisionIndex` to `utils/geometry.ts`
+  (`boundsOf`), and both use it. The same 125 ticks now take 0.19 s (invariant 91 ms).
+- Checks run: new test `WorldObjectStore.test.ts` "skips an object whose footprint box misses the
+  circle, without testing its shape" (footprint points count their reads). Red with the box test
+  removed ("expected 54 to be +0"), green with it. Its edge case (centre outside the box, circle
+  across the edge) is red with `radius` dropped from the box test ("expected null to be 'rock'").
+  `geometry.test.ts` covers `boundsOf`, including no points. `npm run check` before the gate:
+  `exit=0`: core "Tests 1080 passed (1080)"; client "Tests 1754 passed (1754)".
+- Pre-PR gate: critic approved, no blockers; it fuzzed the old and new `blockingAt` over 318k
+  cases with 0 differences. Applied: its two should-fix items (the edge case above, this check
+  result) and its nits (one `points` list, `boundsOf(points)` named for a point set, the
+  empty-input box documented and tested, one fixture factory in the store test, which is also
+  ponytail's two cuts). Its better-than-design items are in `INBOX.md`.
+- Re-check after the gate: `npm run check` `exit=0`: core "Tests 1081 passed (1081)"; client
+  "Tests 1754 passed (1754)"; "✓ built in 276ms"; "Documentation check passed.".
+- Next step: a PR into `phase/3-sprint-3-work`; after it merges, PR #64 merges phase 3 again.
 
 ### 2026-10-30 — Phase 2 / sprint 2.2 — feat/capture-points — Aryan Walanj + Claude
 

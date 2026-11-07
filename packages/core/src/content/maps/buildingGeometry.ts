@@ -36,6 +36,8 @@ export const BUILDING_GEOMETRY = {
   fort: { capturePointSize: 88, wallDivisor: 10 },
   northDoor: { x: 788, y: 320, width: 24, height: 12 },
   southDoor: { x: 785, y: 541, width: 30, height: 12 },
+  westDoor: { x: 700, y: 437.5, width: 9, height: 30 },
+  eastDoor: { x: 891, y: 437.5, width: 9, height: 30 },
   stronghold: {
     ...STRONGHOLD_GEOMETRY,
     extent:

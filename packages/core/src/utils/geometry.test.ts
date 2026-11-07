@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  boundsOf,
   distance,
   doesPolygonOverlapRect,
   distanceToPath,
@@ -33,6 +34,16 @@ describe('geometry', () => {
     expect(hexagon.every((point) => Math.abs(distance(point, { x: 0, y: 0 }) - 5) < 1e-9)).toBe(
       true,
     );
+  });
+
+  it('boxes a set of points, and gives an empty box for no points', () => {
+    expect(boundsOf([{ x: 3, y: -1 }, ...SQUARE])).toEqual({ x: 0, y: -1, width: 10, height: 11 });
+    expect(boundsOf([])).toEqual({
+      x: Infinity,
+      y: Infinity,
+      width: -Infinity,
+      height: -Infinity,
+    });
   });
 
   it('tells whether a point is inside a polygon', () => {
