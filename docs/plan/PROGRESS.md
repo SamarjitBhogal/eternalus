@@ -5078,3 +5078,29 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `git grep spawn-requested` over `packages` on ten refs → no match (the plan's §4.3
   already says M1 has no such path); Prettier on the changed docs; `npm run docs:check`.
 - Next step: record Samarjit's answer in GL-Q22; GL-3 starts after M1 (#63) merges.
+
+### 2026-11-05 — Phase 3 / map-object overlap check speed — fix/blocking-at-bounds — sholtzman + Claude Code
+
+- What was done: `WorldObjectStore.blockingAt` tested every map object's polygons for each unit,
+  and `NoMapObjectOverlapInvariant` calls it for every moving unit each tick. With the minion
+  stack's tower guards, a generated map with map objects (1080 entities) spent 8.8 s of 8.9 s in
+  that invariant over 125 ticks under `TEST_DEBUG_CONFIG`. On CI under coverage, PR #64's test
+  "counts a Legend anywhere on its building floor, with map objects on" took 66 s (ubuntu) and
+  73 s (windows) and timed out at 60 s. Each store record now keeps its footprints' box, and
+  `blockingAt` skips an object whose box misses the circle before any shape test; the result is
+  the same. The box helper moved out of `StaticCollisionIndex` to `utils/geometry.ts`
+  (`boundsOf`), and both use it. The same 125 ticks now take 0.19 s (invariant 91 ms).
+- Checks run: new test `WorldObjectStore.test.ts` "skips an object whose footprint box misses the
+  circle, without testing its shape" (footprint points count their reads). Red with the box test
+  removed ("expected 54 to be +0"), green with it. Its edge case (centre outside the box, circle
+  across the edge) is red with `radius` dropped from the box test ("expected null to be 'rock'").
+  `geometry.test.ts` covers `boundsOf`, including no points. `npm run check` before the gate:
+  `exit=0`: core "Tests 1080 passed (1080)"; client "Tests 1754 passed (1754)".
+- Pre-PR gate: critic approved, no blockers; it fuzzed the old and new `blockingAt` over 318k
+  cases with 0 differences. Applied: its two should-fix items (the edge case above, this check
+  result) and its nits (one `points` list, `boundsOf(points)` named for a point set, the
+  empty-input box documented and tested, one fixture factory in the store test, which is also
+  ponytail's two cuts). Its better-than-design items are in `INBOX.md`.
+- Re-check after the gate: `npm run check` `exit=0`: core "Tests 1081 passed (1081)"; client
+  "Tests 1754 passed (1754)"; "✓ built in 276ms"; "Documentation check passed.".
+- Next step: a PR into `phase/3-sprint-3-work`; after it merges, PR #64 merges phase 3 again.
