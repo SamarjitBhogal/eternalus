@@ -37,8 +37,8 @@ export class MatchWorld {
    * for a neutral unit or a map without that Stronghold; a guard is faced by its post instead.
    */
   public startFacing(team: Team, position: Vec2): Vec2 | undefined {
-    const enemy = team === 'light' ? 'dark' : team === 'dark' ? 'light' : undefined;
-    const target = enemy === undefined ? undefined : this.strongholds.get(enemy);
+    const target =
+      team === 'neutral' ? undefined : this.strongholds.get(team === 'light' ? 'dark' : 'light');
     return target && { x: target.x - position.x, y: target.y - position.y };
   }
 }
