@@ -2,6 +2,7 @@ import { ChaseWatch } from '../components/ChaseWatch';
 import { Combat } from '../components/Combat';
 import { Deploying } from '../components/Deploying';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import type { FormationDefinition } from '../content/mobs/formations/formations.types';
 import type { StrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
@@ -257,7 +258,8 @@ export class PathingSystem implements System {
   /**
    * Steers every guard (18 §7) toward the unit it chases, or its post; never along a lane field.
    * A guard at its post with nothing to chase turns to face outward, on guard again after a chase
-   * or a leash return (DEC-220 (3)): at its post as the strategy's arrival counts it.
+   * or a leash return (DEC-220 (3)): at its post as the strategy's arrival counts it. A guard that
+   * cannot move (stunned) does not turn (DEC-216 (7)).
    */
   private steerGuards(
     state: SystemContext['state'],
@@ -285,7 +287,11 @@ export class PathingSystem implements System {
       this.steer(state, guard.id, index, movement, strategy, context);
       const dx = (positions[2 * index] ?? 0) - post.postX;
       const dy = (positions[2 * index + 1] ?? 0) - post.postY;
-      if (!context.isChasing && dx * dx + dy * dy <= this.slotArrivalRadius ** 2) {
+      if (
+        !context.isChasing &&
+        dx * dx + dy * dy <= this.slotArrivalRadius ** 2 &&
+        guard.findComponent(StatusEffects)?.has('cannot-move') !== true
+      ) {
         guard.findComponent(Transform)?.face(guardOutward(post, this.outward));
       }
     });

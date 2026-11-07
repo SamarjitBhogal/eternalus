@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Movement } from '../components/Movement';
+import { StatusEffects } from '../components/StatusEffects';
 import { Transform } from '../components/Transform';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { HORDE_STEERING } from '../content/ai/hordeSteering';
+import { INITIAL_FACING } from '../components/Transform.constants';
+import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { createDefaultEntityRegistry } from '../entities/defaultEntityRegistry';
 import { EntityFactory } from '../entities/EntityFactory';
 import { TWO_LANE_MAP } from '../state/__fixtures__/twoLaneMap';
@@ -107,6 +110,30 @@ describe('PathingSystem', () => {
       expect(Math.hypot(x - 60, y - 30)).toBeLessThanOrEqual(HORDE_STEERING.slotArrivalRadius);
       expect(transform.facing.x).toBeCloseTo(0, 9);
       expect(transform.facing.y).toBeCloseTo(-1, 9);
+    });
+
+    it('does not turn a guard outward at its post while it chases a target', () => {
+      const { add, guard, state, step } = guarded();
+      const transform = guard.getComponent(Transform);
+      transform.moveTo({ x: 60, y: 30 });
+      const enemy = add('dark', 66, 30, 'light-minion');
+      state.entities.setAttackTarget(guard.id, enemy.id);
+
+      step();
+
+      expect(transform.facing).toEqual(INITIAL_FACING);
+    });
+
+    it('does not turn a stunned guard at its post (DEC-216 (7))', () => {
+      const { state, guard, step } = guarded();
+      const transform = guard.getComponent(Transform);
+      transform.moveTo({ x: 60, y: 30 });
+      const stun = loadStatusEffects(state.config.tickRate, 2).get('stun');
+      guard.getComponent(StatusEffects).apply(stun, null, 0);
+
+      step();
+
+      expect(transform.facing).toEqual(INITIAL_FACING);
     });
   });
 });
