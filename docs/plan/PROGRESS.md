@@ -5175,6 +5175,18 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0, core 1079 passed, client 1754 passed, docs check passed.
 - Next step: push; PR #75 merges first.
 
+### 2026-11-07 — Phase 3 / playtest rulings, merge of phase/3 (PR #80) — docs/playtest-rulings — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `ed10145` (PR #80). `INBOX.md` and
+  `docs/plan/PROGRESS.md` conflicted (both sides appended). `INBOX.md`: the item from PR #80
+  first, then the three items of this branch and its ticked M4 line. `PROGRESS.md`: every entry
+  kept, phase/3's first. This branch is the first link of a merge chain: #74, #78, #76 and #77
+  each merge the branch before them, so the five PRs merge in that order with no new conflicts.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-75-merge.log`): exit 0, Prettier passed, core
+  `Tests 1081 passed (1081)`, client `Tests 1754 passed (1754)`, docs check passed.
+- Next step: push; PR #75 merges first, then #74, #78, #76 and #77.
+
 ### 2026-10-28 — Game loop plan GL-1 (Phase 3 sprint 3.5, pulled forward) / the match director kernel — feat/match-director — sholtzman + Claude Code
 
 - What: built GL-1 of the game loop and results plan (its §4.1, §4.2, A1, A2, A14) with the
@@ -5509,6 +5521,19 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/match-director/md-merge-2dc2b35-check-2026-11-06.log`): EXIT=0, core 224
   files / 1231 tests, client 269 files / 1769 tests, docs check passed.
 - Next step: push; PR #74 into phase/3.
+
+### 2026-11-07 — Game loop plan / match director, merge of docs/playtest-rulings (PR #75) — feat/match-director — sholtzman + Claude Code
+
+- What was done: merged `docs/playtest-rulings` (PR #75, which holds phase/3 at `ed10145`), so
+  this PR merges after #75 with no conflicts (merge chain #75, #74, #78, #76, #77).
+  `docs/plan/PROGRESS.md` and the owner decisions log conflicted. Decisions log: the batches of
+  both sides interleaved newest first (on the same date, #75's batch first); 195 DEC rows, every
+  number once; DEC-147 to DEC-149 keep this branch's text, which adds a "built" note to DEC-149.
+  `PROGRESS.md`: every entry kept, #75's first.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-74-merge.log`): exit 0, Prettier passed, core
+  `Tests 1233 passed (1233)`, client `Tests 1769 passed (1769)`, docs check passed.
+- Next step: push; PR #74 merges after #75.
 
 ### 2026-11-05 — Phase 3 / Legend XP rework (code and docs) — feat/structure-xp — sholtzman + Claude Code
 
