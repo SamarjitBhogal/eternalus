@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-07
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -540,7 +540,8 @@ and melee guards at the `Stronghold`, per the game doc) are Mobs owned by their 
   reaches); the minion's are its horde and `callForHelpRadius`.
 - Guards move with `LeashedChaseMovementStrategy` (04 §4; 10 §9's "seek/arrival inside their
   leash"): chase the target `PathingSystem` hands it (from `Combat.targetId`, §5.2) while one is
-  set, otherwise return to the post.
+  set, otherwise return to the post. Back at its post with nothing to chase, `PathingSystem` turns
+  the guard to face outward again (DEC-220 (3); the facing rules are in 04 §3).
 - `GuardWithinLeashInvariant` (15 §3) checks that no guard is farther than `leashRadius` plus a
   `TUNE` tolerance from its structure: the distance it can cover between two decisions, plus the
   farthest it stands from a target in reach, since a guard fighting a target at the circle's edge

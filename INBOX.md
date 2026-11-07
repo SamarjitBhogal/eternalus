@@ -38,6 +38,22 @@ Reply inline (`Decision: …`).
     disc and ring as built (DEC-216 (10)). (3) Approved; built in the tidy PR after the playtest
     PRs merge (DEC-218 B5).
 
+- [ ] **Unit facing chevron, DEC-220 critic (2026-11-07, `feat/unit-facing-chevron`) — one
+      question, three better-than-design items.**
+      (1) Fort court: a fort's outline is its walls and its keep, so its court is outside every
+      outline. A unit in the court that attacks the tower faces the nearest wall, which can be
+      behind it. DEC-220 (1) fixes this for a unit inside a building's outline (the palace). Does
+      the court count as "inside the building"? Options: (A) no, keep as built (the ruling's
+      words); (B) yes, a unit in the court faces the tower's centre.
+      Better than the design (critic, not built): (2) `EntityStore.isInReach` and
+      `facingPointOf` run the same "attacker inside the outline" test; one private helper would
+      hold it. (3) `EntityStore` keeps gaining target-geometry queries (`outlineOf`, `aimPointOf`,
+      `isInReach`, `facingPointOf`); a separate target-geometry query object would leave the store
+      a store. (4) `SpawnContextReader` checks the spawn facing with `isFiniteVector`; the position
+      could use the same check, and its last cast goes. The critic's fourth item (a guard's rest
+      facing as data, so `PathingSystem` writes no facing) joins the DEC-220 (4) tidy-PR item.
+      Approve each for the tidy PR (DEC-218), or say no.
+
 - [ ] **Minion M4 done-when, read for objectives (2026-11-02, `chore/minion-full-march-test`) — sign-off.**
       The plan's M4 check "hordes reach the enemy end with 0 stuck units for `numLanes` 3 and 5"
       cannot pass as written since M2c: a horde holds at its next standing objective, and the
