@@ -440,7 +440,7 @@ approved them, `INBOX.md` HC-T1), and this note gives the detail:
   text of this bullet ("the whole map inscribed in the ring", INBOX HC-Q6 (4)) is superseded by
   DEC-182.
 - Still interim toward §8: no `'minimap'` renderer layer and no lower redraw cadence. A minimap
-  click moves the camera through `Match`, with no `Command`.
+  click moves the camera through `MatchViewControls.lookAtMinimapPoint`, with no `Command`.
 - `MapExplorer` belongs to `MatchCamera`. The free camera (drag pan, wheel zoom), the overview,
   the roof click, the explorer toolbar and the map legend are developer tools: they show only
   while the developer explorer is shown (next bullet; DEC-32, DEC-105, DEC-143). Normal play has

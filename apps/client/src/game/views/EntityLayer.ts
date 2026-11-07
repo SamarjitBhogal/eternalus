@@ -66,8 +66,10 @@ export class EntityLayer implements WorldLayer {
       .map((state) => ({ state, view: this.views.viewFor(state.entity) }))
       .sort((a, b) => (a.view.minimapLayer ?? 0) - (b.view.minimapLayer ?? 0));
     for (const { state, view } of marked) {
-      const { x, y } = state.entity.transform ?? state.position;
-      view.drawMinimap({ ...state, position: { x, y } }, renderer);
+      const at = state.entity.transform;
+      if (at !== null) {
+        view.drawMinimap({ ...state, position: { x: at.x, y: at.y } }, renderer);
+      }
     }
   }
 

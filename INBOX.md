@@ -1457,7 +1457,6 @@ Reply inline (`Decision: …`).
   - **Update 2026-11-04 by DEC-182:** default (4) is replaced by the local minimap view (400 world
     units across, north up, clipped to the ring; `feat/local-minimap`). DEC-187: it shows Legends
     and minions.
-
   - Superseded 2026-11-05 (default (4) only; the answer above stays as written): the owner's local
     minimap ruling DEC-182 replaces "the whole map inscribed". The minimap shows the circle of 200
     world units around the player, north up, clipped to the ring, with a centre marker, and it
