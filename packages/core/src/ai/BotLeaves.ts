@@ -246,9 +246,8 @@ export class BotLeaves {
    * One `move` toward `destination`, through the A\* waypoint when the straight line is blocked,
    * or a halt once within `arrivalDistance` of it. When the pathfinder finds no way, a `stop`, a
    * forgotten target and `failure`, so the bot does not lean on the obstruction and lower branches may run.
-   * The waypoint is cached in memory (11 §6) and reused instead of a new search while the
-   * destination stays within `arrivalDistance` of the cached one, the waypoint is not yet reached
-   * and the straight line to it is still clear.
+   * A searched waypoint is cached in memory (11 §6) and reused instead of a new search while it
+   * still serves the destination (`reuseStep`); arriving, or a search that finds no way, clears it.
    */
   public moveTo(turn: BotTurn, destination: Vec2 | null): BtStatus {
     if (destination === null) {
@@ -265,13 +264,23 @@ export class BotLeaves {
         turn.next = { ...turn.next, targetId: null, ...NO_PATH };
         return 'failure';
       }
+      // A clear line gives the destination itself: nothing was searched, so nothing is cached and
+      // a moving destination (a chased enemy) is followed where it is now.
+      const isSearched = this.step.x !== destination.x || this.step.y !== destination.y;
       turn.next = {
         ...turn.next,
-        pathGoalX: destination.x,
-        pathGoalY: destination.y,
-        pathStepX: this.step.x,
-        pathStepY: this.step.y,
+        ...(isSearched
+          ? {
+              pathGoalX: destination.x,
+              pathGoalY: destination.y,
+              pathStepX: this.step.x,
+              pathStepY: this.step.y,
+            }
+          : NO_PATH),
       };
+    }
+    if (isThere) {
+      turn.next = { ...turn.next, ...NO_PATH };
     }
     const next = !isThere && paths !== null ? this.step : destination;
     turn.commands.push({
@@ -287,7 +296,8 @@ export class BotLeaves {
   /**
    * Writes the cached waypoint into `step` and returns `true` when it still serves `destination`:
    * the destination is within `arrivalDistance` of the cached one, the waypoint is farther than
-   * that from the bot, and the straight line to it is clear.
+   * that from the bot but nearer than the destination (still on the way, even after a shove), and
+   * the straight line to it is clear.
    */
   private reuseStep(turn: BotTurn, destination: Vec2, paths: PathQuery): boolean {
     const { pathGoalX, pathGoalY, pathStepX, pathStepY } = turn.memory;
@@ -300,6 +310,8 @@ export class BotLeaves {
     return (
       BotLeaves.gapSquared({ x: pathGoalX, y: pathGoalY }, destination) <= reach &&
       BotLeaves.gapSquared(turn.position, this.step) > reach &&
+      BotLeaves.gapSquared(turn.position, this.step) <
+        BotLeaves.gapSquared(turn.position, destination) &&
       paths.isLineClear(turn.position, this.step)
     );
   }

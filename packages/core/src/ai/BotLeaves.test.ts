@@ -174,4 +174,29 @@ describe('BotLeaves.moveTo path cache (11 §6)', () => {
     const lost = decide(NO_WAY, { x: 40, y: 20 }, { x: 10, y: 90 }, first.next);
     expect(lost.next).toMatchObject(NO_PATH);
   });
+
+  it('caches nothing when the line is clear, so a moving destination is followed where it is now', () => {
+    const { calls, paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 45, y: 20 });
+    expect(first.next).toMatchObject(NO_PATH);
+
+    const second = decide(paths, { x: 40, y: 20 }, { x: 45, y: 21 }, first.next);
+
+    expect(calls.searches).toBe(2);
+    expect(second.commands).toEqual([{ type: 'move', actorId: 'bot', direction: { x: 5, y: 1 } }]);
+  });
+
+  it('searches again when the cached waypoint is no longer on the way (the bot was shoved past it)', () => {
+    const { calls, paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    decide(paths, { x: 78, y: 22 }, { x: 80, y: 20 }, first.next);
+    expect(calls.searches).toBe(2);
+  });
+
+  it('forgets the path on arrival', () => {
+    const { paths } = counting();
+    const first = decide(paths, { x: 40, y: 20 }, { x: 80, y: 20 });
+    const there = decide(paths, { x: 80, y: 21 }, { x: 80, y: 20 }, first.next);
+    expect(there.next).toMatchObject(NO_PATH);
+  });
 });

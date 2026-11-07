@@ -296,7 +296,9 @@ no allocation in hot paths, scratch vectors reused. A bot's A\* is the exception
 blocked, its cost inside the decision budget and capped by `GameConfig.map.pathMaxExpansions`. The
 brain caches the last search's destination and waypoint as plain memory and reuses the waypoint,
 without a new search, while the bot heads to the same place (within its `arrivalDistance`), has not
-reached the waypoint and still sees it in a straight line (`PathQuery.isLineClear`). Other heavy work (flow
+reached the waypoint, finds it still on the way (nearer than the destination) and still sees it in
+a straight line (`PathQuery.isLineClear`). A clear line to the destination caches nothing, so a
+moving destination is followed live; arriving, or a search that finds no way, clears the cache. Other heavy work (flow
 fields) belongs to `PathingSystem`, which time-slices its rebuilds
 [research §3](../research/game-architecture-and-performance-research.md#3-pathfinding-and-movement-for-lane-minions-and-large-unit-counts).
 
@@ -381,9 +383,8 @@ work named:
   (Phase 4), with no controller change needed then.
 - A\* for Legends (M8, §6) is `map/AStarPathfinder` behind the `PathQuery` port (`state.paths`).
   One `WorldMap` serves it and the lane flow fields. The path cache (§6) is `BotMemory`'s
-  `pathGoalX`/`pathGoalY`/`pathStepX`/`pathStepY` (`BotLeaves.moveTo`); `npm run bench` measured
-  the tick's p95 at the unit cap going from 8 to 12 ms without it to 3 to 4 ms with it (2026-11-07,
-  `PROGRESS.md`).
+  `pathGoal*` and `pathStep*` fields (`BotLeaves.moveTo`); its measurements are in `PROGRESS.md`,
+  2026-11-07.
 - A brain's `profileId` names the controller's own content directly: an `AggroRuleDefinition`
   (`content/ai/aggro/`) for `MinionController`, a `BotDifficultyDefinition`
   (`content/ai/difficulties/`) for `BotLegendController`. The `AiProfileDefinition` of §2, which

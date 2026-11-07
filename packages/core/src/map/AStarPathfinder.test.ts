@@ -33,6 +33,12 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
     expect(out).toEqual({ x: 40, y: 20 });
   });
 
+  it('sees a straight line across open ground but not across the rift', () => {
+    const finder = new AStarPathfinder(riftGrid(), LIMITS);
+    expect(finder.isLineClear({ x: 10, y: 20 }, { x: 40, y: 20 })).toBe(true);
+    expect(finder.isLineClear({ x: 40, y: 20 }, { x: 80, y: 20 })).toBe(false);
+  });
+
   it('takes the shorter side of a stamped footprint, and goes straight again once it is cleared', () => {
     const grid = openGrid();
     grid.stampFootprint(OFF_CENTRE_WALL);

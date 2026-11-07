@@ -5146,17 +5146,20 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `pathGoalX`, `pathGoalY`, `pathStepX`, `pathStepY` (plain numbers, so the cache is hashed and
   replayed like the rest of the memory), and `BotLeaves.moveTo` reuses the cached waypoint without
   a search while the destination stays within the bot's `arrivalDistance` of the cached one, the
-  waypoint is not yet reached and the straight line to it is clear. `PathQuery` gains
+  waypoint is not yet reached but still nearer than the destination, and the straight line to it
+  is clear. Only a real search is cached: a clear line to the destination caches nothing, so a
+  chased enemy is followed where it is now; arriving clears the cache. `PathQuery` gains
   `isLineClear`, which `AStarPathfinder` implements on the `WorldMap`. A search that finds no way
-  clears the cache. Doc 11 §6 and its Implementation status describe it; the minion plan's
+  clears it too. Doc 11 §6 and its Implementation status describe it; the minion plan's
   "A\* again on each blocked decision" stand-in is removed.
 - Why: the `npm run bench` of `chore/minion-perf-check` measured tick p95 8 to 12 ms against the
   8 ms target, and a one-off probe (not committed) put almost all of it in the bot laners' A\*
   searches (3,010 searches, 1.9 s of 900 ticks, about one per bot decision).
-- Measured with that bench on this branch (three runs, same machine as that entry): 144 mobs per
-  team + 10 Legends each: p50 0.6 to 1.0 ms, p95 2.7 to 3.1 ms, max 14 to 16 ms; 290 mobs per
-  team + 10 Legends each: p50 1.2 to 1.6 ms, p95 3.2 to 4.3 ms, max 10 to 15 ms. The p95 target
-  (≤ 8 ms) now holds at both counts; single ticks still reach 10 to 16 ms.
-- Checks run: `npm run check` passed: core `Tests  1084 passed (1084)`, client
+- Measured with that bench (its exact-fill version) on this branch, three runs, same machine as
+  that entry: 144 mobs per team + 10 Legends each: p50 0.7 to 0.9 ms, p95 2.9 to 3.1 ms, max 15.7
+  to 17.2 ms; 290 mobs per team + 10 Legends each: p50 1.1 to 1.7 ms, p95 2.9 to 4.1 ms, max 9.7
+  to 14.7 ms. The p95 target (≤ 8 ms) now holds at both counts; single ticks still reach 10 to
+  17 ms.
+- Checks run: `npm run check` passed: core `Tests  1088 passed (1088)`, client
   `Tests  1754 passed (1754)`, `Documentation check passed.`
 - Next step: the remaining items of the minion plan §1.2 (M6b and M10 wait for PR #64).

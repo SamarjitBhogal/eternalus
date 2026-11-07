@@ -18,13 +18,13 @@ export type BotMemory = {
   readonly targetId: string | null;
   /** The first tick it may cast again. */
   readonly nextCastTick: number;
-  /**
-   * The path cache (11 §6): the destination of the last A\* search and the waypoint it gave, reused
-   * while the bot heads to the same place and the waypoint stays in sight; `null` when there is none.
-   */
+  /** Path cache (11 §6): x of the last A\* search's destination; `null` when none is cached. */
   readonly pathGoalX: number | null;
+  /** Path cache: y of the last A\* search's destination; `null` when none is cached. */
   readonly pathGoalY: number | null;
+  /** Path cache: x of the waypoint that search gave; `null` when none is cached. */
   readonly pathStepX: number | null;
+  /** Path cache: y of the waypoint that search gave; `null` when none is cached. */
   readonly pathStepY: number | null;
 };
 
