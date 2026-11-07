@@ -5099,6 +5099,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Next step: add the DEC rows (DEC-187 text "Legends and all mobs", the G1 outline answer),
   merge the sibling `unit-facing-chevron` work, then the pre-PR gate.
 
+### 2026-11-06 — Phase 3 / local minimap, merge of phase/3 (PR #71) — feat/local-minimap — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2dc2b35` (phase/3 (PR #71)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/local-minimap.check.log`): EXIT=0, core
+  1079 passed, client 1764 passed, docs check passed.
+- Next step: push.
+
 ### 2026-11-05 — Phase 3 / playtest fixes: unit facing chevron — feat/unit-facing-chevron — sholtzman + Claude Code
 
 - What was done: units keep a facing and show it with a gold chevron (DEC-192), main view only.
@@ -5318,3 +5328,14 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.8c9b99f2.check.log`): EXIT=0, core
   1185 passed, client 1771 passed, docs check passed.
 - Next step: push.
+
+### 2026-11-07 — Phase 3 / unit facing chevron, merge of feat/local-minimap (PR #79 base) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `feat/local-minimap` at `1b5ca57c` (its phase/3 PR #71 merge, the base of
+  PR #79). Only `docs/plan/PROGRESS.md` conflicted: git aligned two merge entries of the same shape,
+  so it was resolved by hand. The one entry only the local-minimap side had is placed first in the
+  block; no line of either side is lost (`git diff` against both parents shows only additions).
+- Checks run: the merge changes only this file against `e4a5fca5`, whose `npm run check` passed
+  (log `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.8c9b99f2.check.log`:
+  EXIT=0, core 1185 passed, client 1771 passed). `prettier --check` and `docs:check` passed here.
+- Next step: critic on the DEC-220 work, then push.
