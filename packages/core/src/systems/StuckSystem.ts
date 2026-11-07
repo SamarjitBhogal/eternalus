@@ -56,7 +56,7 @@ export class StuckSystem implements System {
         self === undefined ||
         !entity.hasComponent(ControllerBinding) ||
         entity.hasComponent(Deploying) ||
-        !state.entities.aimPointOf(targetId, self.position, this.aim)
+        state.entities.aimPointOf(targetId, self.position, this.aim) === null
       ) {
         entity.removeComponent(ChaseWatch);
         return;

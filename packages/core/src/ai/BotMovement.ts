@@ -123,8 +123,8 @@ export class BotMovement {
    * ground, and the near edge of the footprint on blocked ground. Without it, A\* snaps a blocked
    * goal to the nearest open cell, the bot never comes within `arrivalDistance` of `to`, and every
    * decision overshoots that cell's centre and turns back: the playtest's bots moving in and out
-   * of a tower's doorway (2026-11-04). `null` when no open ground lies between `to` and the bot
-   * (it then stands inside the blocked ground around `to` itself), or with no grid.
+   * of a tower's doorway (2026-11-04). `to` with no grid or when the bot stands on `to`; `null`
+   * when no open ground lies between `to` and the bot (it then stands inside the blocked ground).
    */
   private static edgeOf(turn: BotTurn, to: Vec2, clearance: number): Vec2 | null {
     const grid = turn.state.world?.grid;
