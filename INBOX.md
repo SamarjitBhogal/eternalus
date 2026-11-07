@@ -30,9 +30,11 @@ Reply inline (`Decision: …`).
       `FacingChevronView` decorator, would hold it once. Recommendation: build it in one tidy PR
       after the playtest PRs merge. Approve, or say no.
   - Answered 2026-11-05 (the decision page, DEC-216 and DEC-218): (1) toward the enemy
-    Stronghold; a guard faces out from the centre of its home (DEC-216 (6)). Built on
-    `feat/unit-facing-chevron`: the spawn's `Placement.facing`, from `MatchWorld.startFacing` and
-    the guard roster; `INITIAL_FACING` stays as the fallback for a unit given none. (2) Keep the
+    Stronghold; a tower guard (the Stronghold's too) faces out from the centre of its home
+    (DEC-216 (6)); a camp mob faces out from the camp centre (DEC-220 (2), answered 2026-11-06).
+    Built on `feat/unit-facing-chevron`: the spawn's `Placement.facing`, from
+    `MatchWorld.startFacing` and the guard roster; `INITIAL_FACING` stays as the fallback for a
+    unit given none. (2) Keep the
     disc and ring as built (DEC-216 (10)). (3) Approved; built in the tidy PR after the playtest
     PRs merge (DEC-218 B5).
 

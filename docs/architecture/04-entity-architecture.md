@@ -135,21 +135,23 @@ registries. Components are looked up by class (`entity.get(Health)`), never by s
 Components are classes with private state and methods; systems call the methods, never poke the
 fields. Each component guards its own invariants so a bug shows up where it happens.
 
-`Transform` also owns the facing rules (DEC-192). The facing is a unit vector. Until its first
-move or attack, a unit faces toward the enemy Stronghold, and a guard faces out from the centre
-of its home, on guard (DEC-216 (6)). The spawn gives this start facing in its `Placement`
-(`facing`): `MatchWorld.startFacing` decides "toward the enemy Stronghold" for every spawn path,
-and the guard roster faces each guard along its post. An entity given no start facing (a neutral
-unit that is no guard, a match without a map, a structure) starts as `INITIAL_FACING`
-(`Transform.constants.ts`). The facing follows the direction of the velocity (`MovementSystem`).
-A unit with an attack target in reach faces the target instead, as `CombatSystem` runs after
-`MovementSystem`, unless a status stops its attacks (`cannot-attack`). It faces the spot where it
-deals damage: the point attack reach is measured to (`EntityStore.aimPointOf`), which is the point
-of a building's outline nearest the unit, not the building's centre, and a unit target's centre
-(DEC-216 (11)). One aim rule serves reach, chase and facing. A zero direction, and a
-point equal to the unit's own position, keep the facing. Core turns at once. The client blends the facing between two ticks
-([08 §8](08-game-engine.md)). The invariant `finite-transforms` checks the position and the
-facing ([15 §3](15-diagnostics-and-runtime-testing.md)).
+`Transform` also owns the facing rules (DEC-192). The facing is a unit vector. Until its first move
+or attack, a unit faces toward the enemy Stronghold, and a tower guard (the Stronghold's too, doc
+[18](18-minion-system.md)'s entity legend) faces out from the centre of its home, on guard
+(DEC-216 (6)). A camp mob faces out from the camp centre (DEC-220 (2)). The spawn gives this start
+facing in its `Placement` (`facing`): `MatchWorld.startFacing` decides "toward the enemy Stronghold"
+for every spawn path, and the guard roster faces each guard along its post. An entity given no start
+facing (a neutral unit that is no guard, a match without a map, a structure) starts as
+`INITIAL_FACING` (`Transform.constants.ts`). The facing follows the direction of the velocity
+(`MovementSystem`). A unit with an attack target in reach faces the target instead, as
+`CombatSystem` runs after `MovementSystem`, unless a status stops its attacks (`cannot-attack`). It
+faces the spot where it deals damage: the point attack reach is measured to
+(`EntityStore.aimPointOf`), which is the point of a building's outline nearest the unit, not the
+building's centre, and a unit target's centre (DEC-216 (11)). One aim rule serves reach, chase and
+facing. A zero direction, and a point equal to the unit's own position, keep the facing. Core turns
+at once. The client blends the facing between two ticks ([08 §8](08-game-engine.md)). The invariant
+`finite-transforms` checks the position and the facing
+([15 §3](15-diagnostics-and-runtime-testing.md)).
 
 | Component       | Encapsulated state                                                               | Invariants it guards                                                     | Key methods                                                                                       |
 | --------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
