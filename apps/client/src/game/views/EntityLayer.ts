@@ -8,9 +8,10 @@ import type { ViewRegistry } from './ViewRegistry';
 
 /**
  * The scene layer that draws every entity of the latest snapshot through the `ViewRegistry`
- * (architecture 08 §8), in the main view and on the mini map (06 §8). Positions are interpolated
- * between the previous and current snapshot by `alpha`; an entity that appeared this tick draws
- * where it is (no ghost from the origin). It draws back to front by `y`.
+ * (architecture 08 §8), in the main view and on the mini map (06 §8). In the main view positions
+ * are interpolated between the previous and current snapshot by `alpha`; an entity that appeared
+ * this tick draws where it is (no ghost from the origin). It draws back to front by `y`. A mini map
+ * dot sits at the snapshot position (DEC-187 (C)).
  */
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
@@ -55,8 +56,9 @@ export class EntityLayer implements WorldLayer {
   }
 
   /**
-   * Draws each living entity's mini map marker through its view, except the player's own (the
-   * mini map's centre marker is the player, DEC-187). Views on a higher `minimapLayer` draw last.
+   * Draws each living entity's mini map marker through its view at its snapshot position, not the
+   * interpolated one (DEC-187 (C)), except the player's own (the mini map's centre marker is the
+   * player, DEC-187). Views on a higher `minimapLayer` draw last.
    */
   public drawMinimap(renderer: Renderer): void {
     const marked = this.states
@@ -64,7 +66,8 @@ export class EntityLayer implements WorldLayer {
       .map((state) => ({ state, view: this.views.viewFor(state.entity) }))
       .sort((a, b) => (a.view.minimapLayer ?? 0) - (b.view.minimapLayer ?? 0));
     for (const { state, view } of marked) {
-      view.drawMinimap(state, renderer);
+      const { x, y } = state.entity.transform ?? state.position;
+      view.drawMinimap({ ...state, position: { x, y } }, renderer);
     }
   }
 

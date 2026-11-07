@@ -102,7 +102,8 @@ describe('EntityLayer', () => {
     ]);
   });
 
-  it('marks Legends and mobs on the minimap via their views, interpolated, Legends last', () => {
+  it('marks Legends and mobs on the minimap at the snapshot position, Legends last', () => {
+    // DEC-187 (C): "a dot sits at the snapshot position", not the interpolated one.
     const layer = new EntityLayer(createDefaultViewRegistry(), () => false);
     const legend = member('l', 'legend', 10);
 
@@ -114,8 +115,8 @@ describe('EntityLayer', () => {
     );
 
     expect(minimapMarks(layer)).toEqual([
-      [MINI_MAP_MOB_GLYPH, 2],
-      [MINI_MAP_LEGEND_GLYPH, 15],
+      [MINI_MAP_MOB_GLYPH, 4],
+      [MINI_MAP_LEGEND_GLYPH, 20],
     ]);
   });
 
