@@ -108,8 +108,12 @@ describe('Simulation with out-of-combat healing (DEC-188)', () => {
       at: spot,
       count: 1,
     });
-    const delay = OUT_OF_COMBAT_HEALING.delaySeconds * TICK_RATE;
-    while (state.tick < delay) simulation.step();
+    // Past the unit's heal delay and the tower's quiet time, so both the base rate and the bonus
+    // apply.
+    const settled =
+      Math.max(OUT_OF_COMBAT_HEALING.delaySeconds, OUT_OF_COMBAT_HEALING.structureQuietSeconds) *
+      TICK_RATE;
+    while (state.tick < settled) simulation.step();
     let health: Health | undefined;
     state.entities.forEach((entity) => {
       if (entity.definitionId === 'training-dummy') health = entity.getComponent(Health);

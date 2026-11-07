@@ -12,9 +12,9 @@ import type { System, SystemContext } from './System.types';
 /**
  * Heals every living Legend and mob over time once it is out of combat (DEC-188, amended by
  * DEC-215). A unit is in combat from the tick it deals or takes damage (`damage-applied`, attacker
- * and target, kept in its `CombatClock`) until `delaySeconds` pass. Out of combat it regains a flat share of its max health
- * per second. While its centre point is in the zone (`HealingZones`) of a living friendly
- * structure that `structureBonuses` lists and that has taken no damage for
+ * and target, kept in its `CombatClock`) until `delaySeconds` pass. Out of combat it regains a flat
+ * share of its max health per second. While its centre point is in the zone (`HealingZones`) of a
+ * living friendly structure that `structureBonuses` lists and that has taken no damage for
  * `structureQuietSeconds`, that structure's bonus is added. Only hits on the structure itself
  * count: a hit on a Stronghold's walls, gates or turrets has its own target id (DEC-215 (2)).
  * Two zones never overlap (DEC-215 (1)), so the first zone that holds the unit gives its bonus.
@@ -53,8 +53,9 @@ export class OutOfCombatHealingSystem implements System {
       if (target !== undefined) OutOfCombatHealingSystem.clockOf(target).recordHurt(state.tick);
       const attacker =
         source.attackerId === null ? undefined : state.entities.get(source.attackerId);
-      if (attacker !== undefined)
+      if (attacker !== undefined) {
         OutOfCombatHealingSystem.clockOf(attacker).recordDealt(state.tick);
+      }
     });
   }
 

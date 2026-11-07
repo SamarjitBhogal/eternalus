@@ -9,7 +9,9 @@ import { WorldObjectStore } from '../WorldObjectStore';
 /**
  * Gives `state` a `WorldObjectStore` of `objects` with the default map object definitions, with
  * entity ids from 2001 up so they keep clear of `spawnMapStructures` (1001 up) and of the units a
- * test spawns. Returns the ids of the entities it made (one per object with health).
+ * test spawns. Returns the ids of the entities it made (one per object with health). It passes no
+ * `owners`, so a fort object becomes its own entity, not the body of its tower as in `Simulation`
+ * (one pool, DEC-185 B): give it no fort or tower objects that must share a pool.
  */
 export const spawnWorldObjects = (state: GameState, objects: readonly MapObject[]): string[] => {
   const definitions = new Map(
