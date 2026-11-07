@@ -16,6 +16,20 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Minion plan MVP gaps (2026-11-06, `docs/minion-plan-mvp-gaps`) — two answers, one
+      request.** The minion plan's new §1.2 lists what the minions still lack for the MVP.
+      (1) **Zone level-up** (reference 02, MVP) is designed in architecture 07 §7 but no plan
+      scheduled it; it is now minion plan phase M10, after PR #64. Open: which zones count, the
+      Cathedral only or all three central zones (OQ-47)? And the numbers: `balancing.md`'s
+      `Recommendation:` is +1 minion level for that lane's newly spawned minions after 90 s of
+      continuous ownership, at most 3, all lost with the zone. Approve, or give others.
+      (2) **Checkpoint defenders** (M6b) wait for PR #64. Sign off the recommendations of the
+      "Minion M6" item (1) now (the leash is the zone's radius; defenders at an unowned point are
+      neutral), so M6b can start when #64 lands. (3) **Request:** `fix/minion-stack-followups`
+      and `feat/out-of-combat-heal` carry many of your rulings (DEC-160 to DEC-169, DEC-181,
+      DEC-185, DEC-188, DEC-189, DEC-193, DEC-215, DEC-217, DEC-219) but are not on `origin`.
+      Please push them and open their pull requests.
+
 - [ ] **Minion follow-ups: 12 better-than-design items for the tidy PR (critics A and B on
       `fix/minion-stack-followups`, 2026-11-05; DEC-219 (d)) — sign-off per item.** Built on that
       branch: leash decision parts built once (A4), one outline and aim rule (B1), `BotLeaves`
