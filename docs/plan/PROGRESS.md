@@ -5521,3 +5521,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/match-director/md-merge-2dc2b35-check-2026-11-06.log`): EXIT=0, core 224
   files / 1231 tests, client 269 files / 1769 tests, docs check passed.
 - Next step: push; PR #74 into phase/3.
+
+### 2026-11-07 — Game loop plan / match director, merge of docs/playtest-rulings (PR #75) — feat/match-director — sholtzman + Claude Code
+
+- What was done: merged `docs/playtest-rulings` (PR #75, which holds phase/3 at `ed10145`), so
+  this PR merges after #75 with no conflicts (merge chain #75, #74, #78, #76, #77).
+  `docs/plan/PROGRESS.md` and the owner decisions log conflicted. Decisions log: the batches of
+  both sides interleaved newest first (on the same date, #75's batch first); 195 DEC rows, every
+  number once; DEC-147 to DEC-149 keep this branch's text, which adds a "built" note to DEC-149.
+  `PROGRESS.md`: every entry kept, #75's first.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-74-merge.log`): exit 0, Prettier passed, core
+  `Tests 1233 passed (1233)`, client `Tests 1769 passed (1769)`, docs check passed.
+- Next step: push; PR #74 merges after #75.
