@@ -51,9 +51,8 @@ Reply inline (`Decision: …`).
       move to `BotMovement.test.ts`. Chevron critic round 3: item 1 is DEC-220 (4) (a start-facing
       port for `EntityFactory`, guard-plan data `facesOutward`); (V2) `MatchWorld.strongholdOf(team)`
       reuses the strongholds map and replaces the second lookup and throw in the Rover spawn in
-      `Simulation`; (V3) one reach-and-aim query (`EntityStore.reachAimOf(attackerId, targetId,
-    out)`), because `CombatSystem` looks up the aim point twice for an attacker in reach. For
-      DEC-218 (B4): a fifth copy of the opposing-team rule is in `MatchWorld.startFacing` (it
+      `Simulation`; (V3) one reach-and-aim query, `EntityStore.reachAimOf`, because
+      `CombatSystem` looks up the aim point twice for an attacker in reach. For DEC-218 (B4): a fifth copy of the opposing-team rule is in `MatchWorld.startFacing` (it
       maps `neutral` to no team). Tower ruins (DEC-217): (T1) one body relation with a data field
       (collapse or ruin) instead of `buildingId` (collapses through `MapDestructionSystem`) and
       `partOf` (stays as ruins); (T2) `WorldObjectStore.spawn` gets only the definition id: pass
@@ -2147,6 +2146,26 @@ Reply inline (`Decision: …`).
       it. When projectiles land, decide: (a) drop the idea, or (b) build it (a guard follows past
       the circle by a set distance for a set time, then walks back; doc 18 §7, the guard aggro
       content and `guard-within-leash` change). Or say what to do.
+- [ ] **GL-Q22 — The sovereign's spawn request: Samarjit agrees its shape before GL-3 starts
+      (asked 2026-10-31; blocks GL-3; game-loop plan §4.3).** GL-3 spawns each team's sovereign
+      through `SpawnSystem`, which Samarjit owns with the minion system doc (18). No branch has
+      the `spawn-requested` event yet: today `SpawnSystem` takes requests only from the
+      `state.hordeRequests` queue (doc 18 §3.2, "queues one **horde request**"). The draft
+      (`eternalus-agent-work/game-loop-plan/gl3-spawn-request-draft.md`) adds one event,
+      `spawn-requested { team, definitionId, position }`. The `spawn-sovereigns` timeline action
+      emits it on tick 0, once per Citadel. `SpawnSystem` keeps the request and, in its next pass,
+      builds one unit through `EntityFactory`, counts it against the unit cap and announces it
+      with `entity-spawned`, so the sovereigns exist from tick 1. No horde record, no reply event.
+      (1) Post the draft's comment on PR #56 (Samarjit's M2c, which rewrites `SpawnSystem`'s
+      spawn points), or say where. (2) The agent records Samarjit's answer here and lands it in
+      doc 18 §3.2 with GL-3. (3) Your structures doc (07) §6 says "`SpawnSystem` walks every
+      `Spawner` in id order and emits `spawn-requested` events that `EntityFactory` fulfils",
+      but your match director doc (12) §2 says the director emits it and `SpawnSystem` fulfils
+      it. Approve that GL-3 changes the 07 sentence to match 12 (it is not in the edits you
+      accepted on 2026-10-29). **Recommendation:** post as drafted; approve (3).
+  - Decision (2026-10-31): (1) "C1: INBOX + post on #56 (Recommended)": the comment goes on PR
+    #56. (3) "Yes, match 12 (Recommended)": DEC-136, which also covers 07 §11's event list.
+    **Open:** Samarjit's answer on #56. Tick this item when it is recorded here.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 
@@ -2451,6 +2470,26 @@ Reply inline (`Decision: …`).
   rosters, the timeout popup, the locked view, the Ultimate / Abilities rows and View Details on
   every layout. HC-T1: 5 rows redrafted and 10 new (T-181 to T-190), 17 pending; register rows
   CD-39 to CD-46. Nothing is ticked: HC-Q5 keeps two open points.
+- 2026-10-29 — **Game loop: the GL-1 critic points closed** (the item "GL — points from the
+  GL-1 critic round"), recorded as DEC-84 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. Your answer in chat: "A: Default
+  accepted. B: Yes to bothdefault accepted. C: Aryan built capture points in PR 49. … D: this
+  should be in PR 38; however, the citadel host groups should spawn in at the start of the game,
+  1 per lane, at the base of their lane. … E. Sign-off on all." Attacks and casts work during the
+  countdown; each team's table shows its total and FR-007's points stay; Aryan builds capture
+  points; the tower-wave start stays in the minion code, and the opening Hosts wait at the base of
+  their lanes until the countdown ends; the countdown is 10 s; the four better-than-design GL-1
+  changes are signed off, and the match-director doc follows in the GL-1 PR. You also said to tell
+  Samarjit and Gurshaan about the game-loop changes that touch their code.
+- 2026-10-29 — **Game loop: the open points closed; ADR 0021 accepted** (the item "GL — what the
+  game-loop answers left open"), recorded as DEC-83 in
+  `docs/reference/game-design/13-owner-decisions-log.md`. Your answer in chat: "all accepted.
+  continue". Every default stands: the gem looks the same until it erupts (FR-112) for the MVP;
+  the three placeholder verdict lines; the Citadel/Acolyte/Host code rename after the minion stack
+  and the structure branch merge, before 2026-11-20; no bonus sovereign damage against Host units;
+  the code names `ObjectiveLostCondition`, `WinObjective`, `Sovereign` and `Monarch`. ADR 0021
+  (`docs/decisions/0021-sovereign-is-the-win-objective.md`) is accepted, and so are the plan §6
+  design-doc edits; each lands with the plan task that builds it.
 - 2026-10-29 — **Your answers to the build plan of `feat/hud-and-character-select`** (questions P1
   to P11 in three dialogs, and the enhancement review page in chat): recorded with your words as
   DEC-100 to DEC-108 in `docs/reference/game-design/13-owner-decisions-log.md` (numbering in its
