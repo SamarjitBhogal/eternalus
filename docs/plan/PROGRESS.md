@@ -5139,3 +5139,28 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   minor items and four nits are applied.
 - Next step: the owner answers the `INBOX.md` item; M6b and M10 start when PR #64 merges; the
   unit-cap performance check can start now.
+
+### 2026-11-07 — Phase 3 / unit-cap performance check (minion plan §1.2) — chore/minion-perf-check — SamarjitBhogal + Claude Code
+
+- What was done: `npm run bench` (`scripts/bench/hordes.mjs`), the headless tick bench of the Phase
+  1 plan in a minion form: it loads core through Vite's module runner (Vitest 5 has no `bench`
+  API, and Node cannot resolve core's extensionless imports), builds a generated 3-lane match with
+  every bot Legend (9 laners and the Rover per team), fills each team to 144 mobs, then to the
+  cap, with light-minion hordes at 45% and 55% of every lane so they fight, and times 900 ticks
+  after 60 warm-up ticks. It prints p50, p95 and max; it asserts nothing and is not part of
+  `npm run check`. Doc 15 Implementation status and the README command list name it.
+- Measured (Node 24.21, AMD Ryzen AI 9 HX 370, three runs):
+  - 144 mobs per team + 10 Legends each: p50 1.9 to 2.7 ms, p95 8.0 to 11.4 ms, max 17.5 to
+    19.4 ms.
+  - 290 mobs per team (the 300-unit cap with the Legends) + 10 Legends each: p50 2.0 to 2.9 ms,
+    p95 8.2 to 12.0 ms, max 18.2 to 26.1 ms.
+  - Over the plan's p95 ≤ 8 ms. A one-off probe timing each system and controller (not committed)
+    put the spikes in `ai` (p95 10.6 ms, max 24 ms at the cap): the `bot-legend` controller took
+    1.2 s of the 900 ticks (0.45 ms per decision, 166 decisions over 2 ms, max 6.9 ms), against
+    0.25 s for 76,550 minion decisions. Pathing p95 0.57 ms, the next system 0.23 ms. About 88
+    decisions were due per tick at the cap, under `maxDecisionsPerTick` 96 (DEC-181).
+- Dependency: `vite` 8.3.1 is now also a root devDependency (the client already had the same
+  version), so knip sees the script's import; approved by SamarjitBhogal on 2026-11-07.
+- Checks run: `npm run check` passed: core `Tests  1079 passed (1079)`, client
+  `Tests  1754 passed (1754)`, `Documentation check passed.`
+- Next step: the bot path cache (minion plan §3, M8 stand-in), then re-run `npm run bench`.

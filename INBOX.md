@@ -16,6 +16,16 @@ review comments under "Feedback". Answered decisions are recorded in
 Each item below lists only what your 2026-10-09 answer left open, with your answer kept under it.
 Reply inline (`Decision: …`).
 
+- [ ] **Tick time misses the 8 ms target (2026-11-07, `chore/minion-perf-check`) — for your
+      information, one question.** The new `npm run bench` (a 3-lane match with 144, then 290 mobs
+      per team, 10 bot Legends per team, hordes fighting) measured p50 2 to 3 ms but p95 8 to 12 ms,
+      max up to 26 ms, against the plan's p95 ≤ 8 ms. Pathing plus steering is about 0.6 ms p95,
+      inside its 2.5 ms share. The spikes are the bot laners' decisions (0.45 ms each on average,
+      up to 6.9 ms), which run A\* again on every blocked decision (minion plan §3, M8 stand-in);
+      the bot path cache is being built next on its own branch. `maxDecisionsPerTick` 96 held:
+      about 88 decisions were due per tick at the cap (DEC-181). Question: the targets name "the
+      reference dev laptop"; which machine is it? These numbers are from an AMD Ryzen AI 9 HX 370.
+
 - [ ] **Minion plan MVP gaps (2026-11-06, `docs/minion-plan-mvp-gaps`) — three answers.** The
       minion plan's new §1.2 lists what the minions still lack for the MVP. (1) **Zone level-up**
       (reference 02, MVP) is designed in architecture 07 §7 but no plan scheduled it; it is now
