@@ -6147,3 +6147,21 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "✓ built in 245ms"; "Documentation check passed."; EXIT=0. This entry was added after it.
 - Next step: merge phase/3 `ed101458` (PR #80; conflicts in `WorldObjectStore` and `geometry.ts`)
   through the follow-ups, then push; retarget PR #79 to phase/3 after #77 and #85 merge.
+
+### 2026-11-08 — Phase 3 / unit facing chevron, merge of feat/local-minimap after #64 (PR #79 base) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `feat/local-minimap` at `bf4a53ae` (PR #77 with #76 `f2574a90`, which
+  carries phase/3 `b02ef47e` with PR #64 capture points) in `d760cb16`. Conflicts kept both sides:
+  `EntityFactory.types` (`facing` and `area`), `StateHasher` (Capturable and ChaseWatch imports),
+  `DefaultSystemPipeline` (imports; class TSDoc lists stuck detection, capture points and the
+  DEC-192 note in array order), 03 (snapshot transform with `facing`, `area`, `capture`), 04
+  (facing rules; #64's re-laid entity table with this branch's Transform row), this file (every
+  entry of both sides). Test fixtures take `facing` and `area`/`capture`: `MatchBridge.test`,
+  `CapturePointView.test`, `facingChevron.test`.
+- Critic: `architecture-reviewer` on `git show --remerge-diff d760cb16` (report
+  `eternalus-agent-work/playtest-2026-11-04/critic-chevron-merge-bf4a53ae.md`): APPROVE, no findings.
+- Checks run: `npm run check` at `d760cb16` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/unit-facing-chevron.bf4a53ae.check.log`):
+  EXIT=0; core "Tests 1407 passed (1407)"; client "Tests 1806 passed (1806)"; "Documentation
+  check passed.". This entry was added after it.
+- Next step: push; retarget PR #79 to phase/3 after #77 merges.
