@@ -31,9 +31,9 @@ const MAX_TICKS = 30;
  * Builds the real per-tick systems and director (as `Simulation` does), with a light warrior
  * beside a dark training dummy that carries `WinObjective` and one hit point, the warrior told to
  * attack it. The warrior is announced with `entity-spawned`, as a spawn does, so it has a scoring
- * row. Steps until the match ends or `MAX_TICKS`.
+ * row. `prepare` runs before the first step. Steps until the match ends or `MAX_TICKS`.
  */
-const playOut = () => {
+const playOut = (prepare: (state: GameState) => void = () => undefined) => {
   const logger = new MemoryLogger();
   const timeline = MatchTimeline.resolve(CONFIG);
   const state = new GameState(CONFIG, 7, null, {}, timeline.schedule());
@@ -83,6 +83,7 @@ const playOut = () => {
   state.events.on('match-ended', () => {
     events.push(`${String(state.tick)}: match-ended`);
   });
+  prepare(state);
   while (state.match.result === null && state.tick < MAX_TICKS) {
     pipeline.run({ state, logger });
     state.advanceTick();
@@ -126,7 +127,27 @@ describe('losing the last win objective (scenario)', () => {
         score: 1,
       },
     ]);
-    expect(state.match.result?.teams).toEqual({ light: { score: 1 }, dark: { score: 0 } });
+    expect(state.match.result?.teams).toEqual({
+      light: { score: 1, structuresDestroyed: 0 },
+      dark: { score: 0, structuresDestroyed: 0 },
+    });
+  });
+
+  it("counts a fallen enemy structure in the result's team totals, not in a row (DEC-212)", () => {
+    const { state } = playOut(({ events }) => {
+      events.emit('structure-destroyed', {
+        entityId: 'entity-99',
+        kind: 'spawner-tower',
+        team: 'dark',
+        lane: null,
+      });
+    });
+
+    expect(state.match.result?.legends.map((row) => row.score)).toEqual([1]);
+    expect(state.match.result?.teams).toEqual({
+      light: { score: 6, structuresDestroyed: 1 },
+      dark: { score: 0, structuresDestroyed: 0 },
+    });
   });
 
   it('is deterministic: two runs give deep-equal results and equal hashes', () => {

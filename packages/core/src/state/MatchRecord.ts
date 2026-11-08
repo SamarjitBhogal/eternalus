@@ -1,23 +1,27 @@
 import type { MatchPhase } from '../config/matchPhases';
 import type { PlayableTeam } from '../teams/teams.types';
 import { deepFreeze } from '../utils/deepFreeze';
-import { createEmptyScoringState } from './emptyScoringState';
 import type { EntityId } from './EntityStore.types';
 import type { GameEvents } from './GameEvents';
 import type { MatchResult } from './MatchResult.types';
 import type { MatchState, ScheduledMark } from './MatchState.types';
+import { ScoreBook } from './ScoreBook';
 import type { ScoringState } from './ScoringState.types';
 
 /**
  * The match director's memory (architecture 12 §4), kept as `GameState.match` (DEC-177): the
  * read-only `MatchState` fields and the only writers that change them (DEC-172). Each writer has
- * one caller, named on it; the set-once writers throw on a second call.
+ * one caller, named on it; the set-once writers throw on a second call. The scoring data has its
+ * own writers: the `ScoreBook` this record holds (DEC-211).
  */
 export class MatchRecord implements MatchState {
   /** Every timeline entry's tick in firing order, frozen when the match is built. */
   public readonly schedule: readonly ScheduledMark[];
-  /** The Legends' rows and the teams' totals; `Scoring.fold` changes their counters in place (12 §5). */
-  public readonly scoring: ScoringState = createEmptyScoringState();
+  /**
+   * The scoring data's only writer (DEC-211, 12 §5). Written by `Scoring` only, in its fold;
+   * everyone else reads `scoring`.
+   */
+  public readonly scoreBook = new ScoreBook();
   private currentPhase: MatchPhase = 'countdown';
   private enteredTick = 0;
   private cursor = 0;
@@ -63,6 +67,11 @@ export class MatchRecord implements MatchState {
   /** The human's Legend; `null` in sim mode and when the human slot did not spawn. */
   public get humanLegendId(): EntityId | null {
     return this.humanId;
+  }
+
+  /** The Legends' rows and the teams' totals, read-only at every depth: the `ScoreBook`'s view. */
+  public get scoring(): ScoringState {
+    return this.scoreBook.view;
   }
 
   /** How the match ended; `null` until a verdict. */

@@ -221,25 +221,38 @@ describe('StateHasher', () => {
     [
       'the scoring (a Legend row)',
       (state) => {
-        state.match.scoring.legends.push({
+        state.match.scoreBook.addRow({
           entityId: 'entity-1',
           team: 'light',
           classId: 'warrior',
           controller: 'bot',
-          kills: 0,
-          deaths: 0,
-          assists: 0,
-          minionKills: 0,
-          neutralKills: 0,
-          structureDamage: 0,
-          score: 0,
         });
       },
     ],
     [
       'the scoring (a team total)',
       (state) => {
-        state.match.scoring.teams.dark.score = 4;
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 0,
+          points: 4,
+        });
+      },
+    ],
+    [
+      'the scoring (a team counter)',
+      (state) => {
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (a recent hit)',
+      (state) => {
+        state.match.scoreBook.recordHit('entity-2', 'entity-1', 0);
       },
     ],
   ])('changes when %s of the match changes', (_, change) => {

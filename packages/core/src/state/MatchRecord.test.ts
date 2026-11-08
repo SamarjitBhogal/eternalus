@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { GameEvents } from './GameEvents';
 import { MatchRecord } from './MatchRecord';
 import type { MatchResult } from './MatchResult.types';
+import type { MatchState } from './MatchState.types';
 
 const SCHEDULE = [
   { entryId: 'countdown-over', tick: 60 },
@@ -37,7 +38,14 @@ describe('MatchRecord', () => {
       isIdleHeld: false,
       playerTeam: 'light',
       humanLegendId: null,
-      scoring: { legends: [], teams: { light: { score: 0 }, dark: { score: 0 } }, recentHits: [] },
+      scoring: {
+        legends: [],
+        teams: {
+          light: { score: 0, structuresDestroyed: 0 },
+          dark: { score: 0, structuresDestroyed: 0 },
+        },
+        recentHits: [],
+      },
       result: null,
     });
     expect(Object.isFrozen(match.schedule[0])).toBe(true);
@@ -85,7 +93,10 @@ describe('MatchRecord', () => {
       seed: 1,
       configHash: 0,
       legends: [],
-      teams: { light: { score: 0 }, dark: { score: 0 } },
+      teams: {
+        light: { score: 0, structuresDestroyed: 0 },
+        dark: { score: 0, structuresDestroyed: 0 },
+      },
       finalHash: 0,
     };
 
@@ -108,5 +119,38 @@ describe('MatchRecord', () => {
       match.seatHuman('entity-8');
     }).toThrow('already seated');
     expect(match.humanLegendId).toBe('entity-7');
+  });
+
+  it("shows the ScoreBook's data as scoring, which MatchState readers cannot write (DEC-211)", () => {
+    const { match } = recordAt({ tick: 0 });
+    match.scoreBook.addRow({
+      entityId: 'entity-1',
+      team: 'light',
+      classId: 'warrior',
+      controller: 'bot',
+    });
+    const reader: MatchState = match;
+    /** Never called: each line compiles only if a reader could write the scoring. */
+    const writeThroughView = (): void => {
+      const { legends, teams, recentHits } = reader.scoring;
+      // @ts-expect-error -- the row list is read-only.
+      legends.length = 0;
+      for (const row of legends) {
+        // @ts-expect-error -- a row's counters are read-only.
+        row.kills = 9;
+      }
+      // @ts-expect-error -- a team's total is read-only.
+      teams.light.score = 99;
+      // @ts-expect-error -- a team's counter is read-only.
+      teams.dark.structuresDestroyed = 1;
+      for (const hit of recentHits) {
+        // @ts-expect-error -- a recent hit is read-only.
+        hit.tick = 0;
+      }
+    };
+
+    expect(reader.scoring).toBe(match.scoreBook.view);
+    expect(reader.scoring.legends).toHaveLength(1);
+    expect(writeThroughView).toBeTypeOf('function');
   });
 });
