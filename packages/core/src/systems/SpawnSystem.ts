@@ -6,7 +6,6 @@ import type { Entity } from '../entities/Entity';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
-import { countdownEndTick } from '../state/countdownEndTick';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { HordeRequest } from '../state/HordeRequest.types';
@@ -19,6 +18,8 @@ import type { Vec2 } from '../utils/geometry.types';
 import { GuardRoster } from './GuardRoster';
 import type { ScheduledWave, SpawnPlan } from './SpawnSystem.types';
 import type { System, SystemContext } from './System.types';
+import { countdownTicks } from '../config/countdownTicks';
+import { isPlayableTeam } from '../teams/playableTeams';
 
 /**
  * Spawns the lane hordes (architecture 18 §3): after the developer menu's queued requests
@@ -69,7 +70,7 @@ export class SpawnSystem implements System {
       const team = state.entities.teamOf(entity.id);
       if (
         entity instanceof Structure &&
-        (team === 'light' || team === 'dark') &&
+        isPlayableTeam(team) &&
         (entity.kind === plan.openingWave.source || plan.waves[entity.kind] !== undefined)
       ) {
         spawners.push(entity);
@@ -77,12 +78,12 @@ export class SpawnSystem implements System {
     });
     this.spawners = spawners.sort((a, b) => compareById(a.id, b.id));
     const { tickRate } = state.config;
-    const countdownTicks = countdownEndTick(state.config);
+    const countdownEnd = countdownTicks(state.config.match.countdownSeconds, tickRate);
     this.scheduled = this.spawners.flatMap((spawner) =>
       (plan.waves[spawner.kind] ?? []).map((wave) => ({
         spawner,
         wave,
-        firstTick: countdownTicks + Math.round(wave.firstAtSeconds * tickRate),
+        firstTick: countdownEnd + Math.round(wave.firstAtSeconds * tickRate),
         everyTicks: Math.round(wave.everySeconds * tickRate),
       })),
     );
@@ -194,9 +195,7 @@ export class SpawnSystem implements System {
   /** `spawner`'s playable team while it stands; `undefined` once it is destroyed. */
   private static standingTeam(state: GameState, spawner: Structure): PlayableTeam | undefined {
     const team = state.entities.teamOf(spawner.id);
-    return state.entities.isAlive(spawner.id) && (team === 'light' || team === 'dark')
-      ? team
-      : undefined;
+    return state.entities.isAlive(spawner.id) && isPlayableTeam(team) ? team : undefined;
   }
 
   /**

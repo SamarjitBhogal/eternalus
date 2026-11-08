@@ -129,8 +129,9 @@ canonical (`07` §11, `05` §16 and `12` §12 use them).
 | `CooldownAndAetherBoundsInvariant` (`cooldown-aether-bounds`)                          | tick           | error        | for every `AbilityRuntime`: `0 ≤ cooldownRemainingTicks ≤ cooldownTicks`; `0 ≤ aether ≤ maxAether`; ultimate charge `∈ [0, 1]` (formerly 05 §16's `AetherWithinBounds`, folded in)                                                                                                                                                                                                                           | 05 §6                       |
 | `SnapshotHashMatchesStateInvariant` (`snapshot-hash-matches-state`)                    | periodic       | fatal        | `StateHasher.hashSnapshot(snapshot)` over the canonical subset (tick, ids, positions, health, team, phase) equals `StateHasher.hash(state)` over the same subset: `SnapshotSystem` dropped or staled nothing; runs after the snapshot of the previous tick, so it lags by one                                                                                                                                | 03 §5, §9                   |
 | `TickAdvancedOnceInvariant` (`tick-advanced-once`)                                     | tick           | fatal        | the newest `tick-completed` in `recentEvents` carries `tick - 1` (the runner executes before `SnapshotSystem` and the emit) and the `CommandQueue` holds nothing stamped ≤ `tick` (drained)                                                                                                                                                                                                                  | research C1                 |
+| `PhaseMonotonicInvariant` (`phase-monotonic`)                                          | tick           | error        | every `phase-changed` of this tick moves the match forward in `MATCH_PHASES`, never back, never into the phase it is in, never out of a terminal phase                                                                                                                                                                                                                                                       | 12 §12                      |
 | `UniqueEntityIdsInvariant`, `DanglingReferencesInvariant`                              | tick, periodic | fatal, error | ids unique in the store; `Combat.targetId`, `Carry.carriedId`, `Spawner.guardIds`, brain targets and `Horde` members reference living entities or `null`                                                                                                                                                                                                                                                     | research C1                 |
-| Contributed by other docs                                                              | as listed      | as listed    | `PhaseMonotonicInvariant`, `BossIsNeutralInvariant`, `RewardTargetsAliveInvariant`, `SinglePlayerBrainInvariant` (12 §12); `NoCastWhileNotReadyInvariant`, `StatusStacksWithinMaxInvariant`, `UltimateNeverFillsPassivelyInvariant`, `LoadoutValidOnSpawnInvariant`, `LevelMatchesXpInvariant` (05 §16); `BreakabilityMatchesRuleInvariant`, `GateFootprintMatchesStateInvariant` (07 §11)                   | 05, 07, 12                  |
+| Contributed by other docs                                                              | as listed      | as listed    | `BossIsNeutralInvariant`, `RewardTargetsAliveInvariant`, `SinglePlayerBrainInvariant` (12 §12); `NoCastWhileNotReadyInvariant`, `StatusStacksWithinMaxInvariant`, `UltimateNeverFillsPassivelyInvariant`, `LoadoutValidOnSpawnInvariant`, `LevelMatchesXpInvariant` (05 §16); `BreakabilityMatchesRuleInvariant`, `GateFootprintMatchesStateInvariant` (07 §11)                                              | 05, 07, 12                  |
 
 Every invariant is **MVP**: it is the requirements doc's runtime monitoring. Everything a check
 needs is already in `GameState` (`entities.removedThisTick`, the `recentCommands` and
@@ -274,14 +275,15 @@ headless bench (`npm run bench`, plan Phase 1) injects a `Profiler` backed by `p
 ## 7. Replay-hash regression tests
 
 A replay is its setup (seed, `GameConfig` and, when the match had them, the map, the map objects
-and the bot roster) + versions + the externally enqueued commands + checkpoint
+and the roster) + versions + the externally enqueued commands + checkpoint
 hashes ([03](03-game-model.md) §9; [research C3](../research/persistence-input-diagnostics-research.md#c3-testing-a-running-game-properties-replays-golden-hashes-soak-tests)).
 Recording captures every command that enters through `Simulation.enqueueCommand` and a
 `StateHasher` checkpoint every `checkpointEvery` ticks (`TUNE` 100 in fixtures); the roster is
 part of the setup, and the bots' own commands are regenerated from it. `StateHasher` is FNV-1a
 32-bit (offset basis `0x811c9dc5`, prime `0x01000193`, `Math.imul`) over its own canonical
 serialisation: tick, phase, RNG state, then every entity in store order with its component
-fields ([03](03-game-model.md) §9).
+fields, then the other match fields once the match has left its initial state
+([03](03-game-model.md) §9).
 
 ```ts
 // packages/core/src/diagnostics/Replay.types.ts and replay.ts (DEC-20)

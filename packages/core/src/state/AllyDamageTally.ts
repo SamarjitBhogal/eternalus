@@ -1,4 +1,5 @@
 import { Transform } from '../components/Transform';
+import { isPlayableTeam, opponentOf } from '../teams/playableTeams';
 import type { EntityStore } from './EntityStore';
 import type { GameEvents } from './GameEvents';
 import type { GameEventMap } from './GameEvents.types';
@@ -38,9 +39,9 @@ export class AllyDamageTally {
     const position = victim?.findComponent(Transform)?.position;
     if (
       (victim?.family !== 'legend' && victim?.family !== 'mob') ||
-      (team !== 'light' && team !== 'dark') ||
+      !isPlayableTeam(team) ||
       source.attackerId === null ||
-      this.entities.teamOf(source.attackerId) !== (team === 'light' ? 'dark' : 'light') ||
+      this.entities.teamOf(source.attackerId) !== opponentOf(team) ||
       position === undefined
     ) {
       return;

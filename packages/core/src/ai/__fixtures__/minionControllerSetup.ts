@@ -1,5 +1,6 @@
 import { Transform } from '../../components/Transform';
 import { createDefaultGameConfig } from '../../config/defaultGameConfig';
+import type { GameConfig } from '../../config/GameConfig.types';
 import { AGGRO_RULES } from '../../content/ai/aggro/aggroRules';
 import { loadDefaultContent } from '../../content/loadDefaultContent';
 import { STRUCTURE_DEFINITIONS } from '../../content/structures/structureCatalogue';
@@ -30,7 +31,7 @@ export const controller = new MinionController({
  * A two-lane match (the default config unless given) with a space index: `add` places units, `decide` runs the controller for one
  * mob, `objective` gives a light horde a dark lane-0 structure to march on.
  */
-export const setUp = (config = createDefaultGameConfig()) => {
+export const setUp = (config: GameConfig = createDefaultGameConfig()) => {
   const space = new SpaceIndex(TWO_LANE_MAP.width, TWO_LANE_MAP.height, 2);
   const state = new GameState(config, 1, matchWorldOf(TWO_LANE_MAP), { space });
   const factory = new EntityFactory(

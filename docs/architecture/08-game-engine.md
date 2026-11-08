@@ -180,7 +180,7 @@ pixels, has no `Command`, and does not implement `Projection`. This is a better-
 change that the owner signed off (DEC-191); the critic ruled it acceptable. Its `worldAt` mirrors
 `MatchCamera.worldAt`, the internal method that the camera's `screenToWorld` wraps by multiplying
 with the pixel ratio. Nothing consumes the minimap as a `Projection`, and a minimap click reaches
-`Match.lookAtMinimapPoint` in device pixels. If an input driver ever needs the minimap as a
+`MatchViewControls.lookAtMinimapPoint` in device pixels. If an input driver ever needs the minimap as a
 `Projection`, add a `screenToWorld` adapter that multiplies by the pixel ratio. Culling is not
 shared: the minimap clips to the ring.
 
@@ -312,6 +312,11 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   explorer collaborator is the split if it grows. (2026-11-02: it had grown to 364; the
   player-intent code moved to `PlayerCommands` (the ~300-line rule, `AGENTS.md`), which leaves
   328.)
+- (2026-11-04, `feat/match-director`) The split is built: `MatchViewControls` holds the canvas
+  gestures (camera, minimap look-at, roofs, attack on click), and `Match.ts` has 214 lines. The
+  player's Legend comes from `Snapshot.match.humanLegendId`, which core sets when it spawns the
+  roster's human slot (DEC-173, [12](12-game-story-and-match-director.md) §13). `Match` no longer
+  adopts the first spawn of the player's class and team.
 
 ## Related
 

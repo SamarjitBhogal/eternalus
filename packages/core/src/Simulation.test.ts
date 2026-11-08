@@ -181,7 +181,8 @@ describe('Simulation', () => {
 
   it('runs the default pipeline when no systems are given: move commands move units', () => {
     const sim = new Simulation({
-      config: createDefaultGameConfig(),
+      // No countdown: the countdown holds all movement (match/phases/CountdownPhase.test.ts).
+      config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
       seed: 1,
       logger: new NullLogger(),
       debug: TEST_DEBUG_CONFIG,
@@ -205,7 +206,8 @@ describe('Simulation', () => {
   it('faces units by moving and attacking, the same for the same seed and commands (DEC-192)', () => {
     const run = (): { readonly hash: number; readonly facings: readonly (Vec2 | undefined)[] } => {
       const sim = new Simulation({
-        config: createDefaultGameConfig(),
+        // No countdown: the countdown holds all movement (match/phases/CountdownPhase.test.ts).
+        config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
         seed: 3,
         logger: new NullLogger(),
         debug: TEST_DEBUG_CONFIG,
@@ -243,6 +245,17 @@ describe('Simulation', () => {
     expect(mover?.y).toBeCloseTo(0.8);
     expect(attacker).toEqual({ x: -1, y: 0 });
     expect(run()).toEqual(first);
+  });
+
+  it('lists no upcoming timeline marks when custom systems run, since no director fires them', () => {
+    const withDirector = new Simulation({
+      config: createDefaultGameConfig(),
+      seed: 1,
+      logger: new NullLogger(),
+    });
+
+    expect(simulation().snapshot().match.upcoming).toEqual([]);
+    expect(withDirector.snapshot().match.upcoming).not.toEqual([]);
   });
 
   it('builds entities from the content it is given', () => {
