@@ -18,17 +18,25 @@ import { LaneRoutes } from './state/LaneRoutes';
 import type { PlayableTeam } from './teams/teams.types';
 import { isPointInPolygon } from './utils/geometry';
 import type { Vec2 } from './utils/geometry.types';
+import { countdownTicks } from './config/countdownTicks';
 
 /** Both teams' bots as the client composes them: laners plus a Rover that starts in its palace. */
 const roster = (legendsPerTeam: number): RosterSlot[] =>
   (['light', 'dark'] as const).flatMap((team) => [
     ...Array.from({ length: legendsPerTeam - 1 }, () => ({
+      pilot: 'bot' as const,
       team,
       definitionId: 'warrior',
       role: 'laner' as const,
       difficulty: 'normal',
     })),
-    { team, definitionId: 'warrior', role: 'rover' as const, difficulty: 'rover' },
+    {
+      pilot: 'bot' as const,
+      team,
+      definitionId: 'warrior',
+      role: 'rover' as const,
+      difficulty: 'rover',
+    },
   ]);
 
 /** A team's lane tower: a SpawnerTower or BuffTower on its own lane. */
@@ -121,8 +129,12 @@ describe('Simulation with a roster and map objects (as the client builds a match
       });
       const routes = new LaneRoutes(map);
       const towers = laneTowers(map);
-      // The opening hordes leave at tick 0; every horde after it is one tower's.
-      simulation.step();
+      // The opening hordes leave at tick 0 and the countdown holds every unit (DEC-88); every
+      // horde after it is one tower's.
+      const countdownEnd = countdownTicks(config.match.countdownSeconds, config.tickRate);
+      for (let tick = 0; tick < countdownEnd; tick += 1) {
+        simulation.step();
+      }
       const sent: { readonly tower: LaneTower; readonly memberIds: readonly string[] }[] = [];
       simulation.on('horde-spawned', ({ memberIds }) => {
         const tower = towers[sent.length];

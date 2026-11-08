@@ -4,7 +4,7 @@ description: The mini engine in apps/client/src/game/engine/ (GameLoop, FrameSch
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-04
 tags: [architecture, engine, rendering, game-loop, performance]
 paths:
   [
@@ -299,6 +299,11 @@ HUD and character select (`feat/hud-and-character-select`, 2026-10-26; DEC-50):
   explorer collaborator is the split if it grows. (2026-11-02: it had grown to 364; the
   player-intent code moved to `PlayerCommands` (the ~300-line rule, `AGENTS.md`), which leaves
   328.)
+- (2026-11-04, `feat/match-director`) The split is built: `MatchViewControls` holds the canvas
+  gestures (camera, minimap look-at, roofs, attack on click), and `Match.ts` has 214 lines. The
+  player's Legend comes from `Snapshot.match.humanLegendId`, which core sets when it spawns the
+  roster's human slot (DEC-173, [12](12-game-story-and-match-director.md) §13). `Match` no longer
+  adopts the first spawn of the player's class and team.
 
 ## Related
 

@@ -71,7 +71,7 @@ const siege = () => {
 const ambush = () => {
   const logger = new MemoryLogger();
   const simulation = new Simulation({
-    config: createDefaultGameConfig({ match: { countdownSeconds: 600 } }),
+    config: createDefaultGameConfig({ match: { countdownSeconds: 0 } }),
     seed: 1,
     logger,
     debug: TEST_DEBUG_CONFIG,
