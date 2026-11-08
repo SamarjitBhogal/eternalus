@@ -5730,3 +5730,25 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   passed (1763)"; "✓ built in 231ms"; "Documentation check passed.".
 - Next step: push to #64; this is done only when CI is green on both runners; then Samarjit's
   re-review.
+
+### 2026-11-08 — Phase 2 / sprint 2.2 — fix/pr64-local (PR #64), merge 4 — sholtzman + Claude Code
+
+- What was done: Samarjit approved `54b5c93` and CI was green on both runners, but #75, #74 (match
+  director) and #78 landed in `phase/3-sprint-3-work` first, so #64 no longer merged. `0e7d389`
+  merges `85b6781`. Fifteen files conflicted; each code conflict was both sides adding at one place,
+  and both were kept: `capturePoints` beside `timeline` and `playerTeam` in `MatchConfig` (merged
+  inside phase 3's `deepFreeze` build), `CaptureSystem` after `DeathSystem` and before
+  `MatchDirectorSystem`, `spawnZones` after `spawnRoster` (which phase 3 moved below the pipeline;
+  entity ids keep their order), and both sides' invariants, exports, validation rules, replay
+  fixture fields and tests. Docs: both sides' rows and notes kept (03 event table, FR-021 and
+  FR-031, DEC-149's two dated notes, `INBOX.md`). Phase 3's timeline rules then rejected the
+  capture tests' 600 s countdown (the quarter mark came first); the test config now also sets
+  `plannedMatchSeconds: 3600`, with no assertion changed.
+- Checks run: the merge drops no line of either side beyond the resolved conflict lines and table
+  padding (diffed against both sides and the merge base). No core code listens to
+  `entity-spawned`, so zones announcing after the pipeline is built changes nothing. First
+  `npm run check` on the merge: exit 1, the five capture tests ("match.timeline entries must be in
+  tick order"). After the test fix: `exit=0`: core "Tests 1296 passed (1296)"; client "Tests 1778
+  passed (1778)"; "✓ built in 275ms"; "Documentation check passed.".
+- Next step: push to #64; done only when CI is green on both runners; then Sam merges it and
+  PR-38-HELPER-25 merges phase 3 into #76 and #77.
