@@ -6047,3 +6047,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0, core "Tests 1361 passed (1361)", client "Tests 1769 passed (1769)", "Documentation check
   passed.".
 - Next step: critic, then push after #85; retarget #86 to phase/3 once #85 merges.
+
+### 2026-11-08 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 PR #64) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `8c5febc4` (it carries phase/3
+  `b02ef47e`, #64 capture points) in `835b6cc5`. `DefaultSystemPipeline`'s TSDoc lists out-of-combat
+  healing, death, capture points, the match director, then invariants, as the array runs them;
+  PROGRESS keeps every entry. Doc 18's pipeline positions add `CaptureSystem` after
+  `DeathSystem`.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.8c5febc4.check.log`):
+  EXIT=0, core "Tests 1414 passed (1414)", client "Tests 1778 passed (1778)", "Documentation check
+  passed.".
+- Next step: critic, push after #85; retarget #86 to phase/3 once #85 merges.
