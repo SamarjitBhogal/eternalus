@@ -5848,3 +5848,18 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   (docs-only).
 - Next step: open the PR (base `fix/minion-stack-followups` until #85 merges, then
   `phase/3-sprint-3-work`); owner answers Q-D to Q-H and items (2) to (10).
+
+### 2026-11-08 — Phase 3 / out-of-combat healing, merge of fix/minion-stack-followups (phase/3 PRs #75, #74, #78) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `3962ff8b` (it carries phase/3
+  `85b67816`) in `8b26d77b`. `DefaultSystemPipeline` keeps both new systems: out-of-combat
+  healing, death, the match director, then invariants. The minion plan's §3 loses the "nothing
+  heals a retreated bot" stand-in, as #75 asked for when this branch merges, and the "last leg"
+  row (#85). `Simulation.healing.test` slots take `pilot: 'bot'` (#74's `RosterSlot`). Doc 18's
+  pipeline positions name `MatchDirectorSystem` after `DeathSystem`, as the code runs it (#74 did
+  not add it there).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.3962ff8b.check.log`):
+  EXIT=0, core "Tests 1361 passed (1361)", client "Tests 1769 passed (1769)", "Documentation check
+  passed.".
+- Next step: critic, then push after #85; retarget #86 to phase/3 once #85 merges.
