@@ -4,7 +4,7 @@ description: How a match unfolds over time - the MatchDirector state machine ove
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-08
 tags: [architecture, match, timeline, phases, scoring, story, lore]
 paths:
   [
@@ -292,7 +292,8 @@ buildings later reuses `FormDefinition` plus one interaction class (D12, post-MV
 ## 8. Announcer and narrative hooks
 
 `MatchBridge` (`apps/client/src/game/MatchBridge.ts`, **Recommendation:** the class that owns all
-game → UI publishing so `Match` stays short) subscribes to `phase-changed`, `boss-summoned`,
+game → UI publishing so `Match` stays short) takes the simulation's event subscription
+(`Simulation.on`, DEC-213) and subscribes to `phase-changed`, `boss-summoned`,
 `structure-destroyed`, `entity-died` (Legends), `capture-point-owner-changed`, `form-applied`,
 `level-up` (the player) and `match-ended`, and publishes `announce { id, params, tick }` on the
 `TypedEventBus`; `matchSlice.announcements` queues them and the `Announcer` HUD (`13` §3) shows
@@ -455,10 +456,11 @@ sovereign, whose display name per team is in `content/sovereigns/sovereignDispla
 `loadDisplayContent()` returns both, and the client's results screen shows the line.
 `forfeit` and `aborted` have no lines yet (no condition produces them).
 
-Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity that carries `WinObjective` (the
-sovereign); `MatchResult.timeline` and `achievements` (with their producers); the other §5
-counters and `TeamStats` fields; a condition for `forfeit` or `aborted` (the ids exist); the
-timeline actions other than `enter-phase`; `dev-set-phase`; the announcer; the other invariants of §12.
+Not built yet: `atmosphere` in `MatchState`; the rest of `content/narrative/` (§9); an entity
+that carries `WinObjective` (the sovereign); `MatchResult.timeline` and `achievements` (with
+their producers); the other §5 counters and `TeamStats` fields; a condition for `forfeit` or
+`aborted` (the ids exist); the timeline actions other than `enter-phase`; `dev-set-phase`; the
+announcer; the other invariants of §12.
 
 ## Related
 

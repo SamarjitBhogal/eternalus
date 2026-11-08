@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-08
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -184,7 +184,8 @@ called out in the PR. Planned surface: `Simulation` and `SimulationOptions`; the
 `createDefaultGameConfig`; `ContentCatalogue` and `loadDefaultContent()` (read-only definitions for
 the loadout screen); `loadDisplayContent()` (the Legend and Legend-spec display data, validated
 through the content rules, and the map features' display names, for the selection screens and the
-HUD, and the bot roster, setup data the session builds the rosters from; DEC-49, DEC-61, DEC-102,
+HUD, the bot roster, setup data the session builds the rosters from, and the verdict lines and
+each team's sovereign name, for the results screen; DEC-49, DEC-61, DEC-74, DEC-83, DEC-102,
 ADR 0018); `Loadout`, `validateLoadout`, `autoBuildLoadout`; `PlayerController` and
 `InputIntent`; the `Logger` and `LogRecord` types; `DiagnosticEvent`; `Replay` and `runReplay`;
 `MapGenerator`, the `MapDefinition` types, `PlayableTeam` and `Team`
