@@ -5915,3 +5915,40 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Documentation check passed." (127 files).
 - Next step: the pre-PR gate for GL-4 and GL-5, then their PRs (GL-5 targets
   `feat/match-scoring` until GL-4 merges).
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 round 2: DEC-212, DEC-213 and the critic's nits — feat/results-flow — sholtzman + Claude Code
+
+- What: the owner's calls on the GL-5 critic, round 2 (DEC-213 B1, B2, B3, B5), the HUD
+  structure strip on the real structures (DEC-212), and the critic's nits V1 to V8 and V10.
+  - B1: `MatchBridge` takes the simulation's event subscription (`events: Pick<Simulation, 'on'>`)
+    and keeps one listener table (`match-ended` today); `destroy()` unsubscribes all of it.
+  - B2: `createMatch` and `MatchRequest` carry one `MatchObserver` (`crashed`, `ended`) in place of
+    the `onCrash` and `onEnded` callbacks.
+  - B3: the session countdowns are one record by kind, `matchSetupSlice.countdownsMs`, with one
+    action (`countdownChanged`) and one selector (`selectCountdownSeconds(state, kind)`). The record
+    stays in `matchSetupSlice`: the `match-setup` reset that clears it is that slice's, and moving
+    it would change no behaviour.
+  - B5: `match/defaultVictoryConditions.test.ts` checks that every default condition has verdict
+    lines.
+  - DEC-212: core puts each structure's map feature id on its placement, `Structure.mapFeatureId`
+    and `EntitySnapshot.mapFeatureId?` (not hashed; the golden replay is unchanged).
+    `MatchBridge` binds each strip tile to its structure in the snapshot before the first tick and
+    publishes the structure's live health, and `current` 0 once it is gone. Tiles: every
+    team-owned feature, as before; wall segments and turrets have no structure entity yet, so their
+    health stays `null` and the one Wall tile shows no data (a destroyed gate still marks it
+    destroyed, DEC-108).
+  - Nits: V5 `VerdictLineSet` is a local type, core exports only `VerdictLines`; V6
+    `bridge/selectors/matchTimeText.ts`; V4 the `DisplayContent` TSDoc and 02 §6; V1, V2, V3 in
+    13 §2 and §5; V7 the plan's GL-3 row; V8 12 §13 re-wrapped; V10 DEC-92's Changes column.
+  - Docs: architecture 02 §6, 03 §5, 07 §13, 08 (GL-5 note), 12 §8 and §13, 13 §2, §3, §5 and
+    §10, the plan's GL-3 row and DEC-92's row.
+- Fail-first breaks: 13, each recorded with its red message in
+  `eternalus-agent-work/game-loop-plan/gl5-r2-breaks.md` (B1 `destroy()`, B3 reducer and
+  `SessionCountdown`, B5 verdict lines, three core `mapFeatureId` breaks, five `MatchBridge` and
+  `Match` live-health breaks, V6 clamp). B1 to B3 are refactors: the existing tests stay green and
+  each changed assertion follows the designed change.
+- Checks run: `npm run check` → `EXIT=0` (`gl5-r2-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier passed; core "Tests 1287 passed (1287)",
+  statements 99.14 %; client "Tests 1827 passed (1827)", statements 96.95 %; "✓ built in 258ms";
+  "Documentation check passed." (127 files).
+- Next step: the pre-PR gate for GL-4 and GL-5 (critic, ponytail, re-check), then their PRs.
