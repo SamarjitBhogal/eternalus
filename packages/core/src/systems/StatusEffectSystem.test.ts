@@ -8,6 +8,7 @@ import { Transform } from '../components/Transform';
 import { DamagePipeline } from '../combat/DamagePipeline';
 import { StatusEffectApplier } from '../combat/StatusEffectApplier';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MATCH_PHASES, TERMINAL_MATCH_PHASES } from '../config/matchPhases';
 import { loadDefaultContent } from '../content/loadDefaultContent';
 import { loadLevelCurves } from '../content/progression/loadLevelCurves';
 import { XP_SOURCES } from '../content/progression/xpSources';
@@ -74,15 +75,23 @@ const setUp = () => {
 
 /** The whole default tick of `state` as one system, so `run` can drive it. */
 const tickPipeline = (state: GameState): System => {
-  const pipeline = new DefaultSystemPipeline(
-    new DefaultInvariantRunner(RELEASE_DEBUG_CONFIG, new NullLogger(), loadLevelCurves()),
+  const pipeline = new DefaultSystemPipeline({
+    invariants: new DefaultInvariantRunner({
+      debug: RELEASE_DEBUG_CONFIG,
+      logger: new NullLogger(),
+      curves: loadLevelCurves(),
+      phaseOrder: MATCH_PHASES,
+      terminalPhases: TERMINAL_MATCH_PHASES,
+    }),
     state,
-    {
+    progression: {
       units: loadDefaultContent(CONFIG.tickRate),
       curves: loadLevelCurves(),
       xpSources: XP_SOURCES,
     },
-  );
+    // Statuses are the subject here, not the match: no director moves the phase.
+    director: { update: () => undefined },
+  });
   return {
     name: 'tick',
     update: (context) => {

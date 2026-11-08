@@ -98,4 +98,5 @@ export type CommandRejectReason =
   | 'not-movable'
   | 'cannot-attack'
   | 'invalid-target'
-  | 'not-supported';
+  | 'not-supported'
+  | 'match-ended';

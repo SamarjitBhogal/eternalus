@@ -4,7 +4,6 @@ import type { DefinitionSource } from '../entities/EntityFactory.types';
 import type { EntityFactory } from '../entities/EntityFactory';
 import { Structure } from '../entities/structures/Structure';
 import { Unit } from '../entities/Unit';
-import { countdownEndTick } from '../state/countdownEndTick';
 import type { EntityId } from '../state/EntityStore.types';
 import type { GameState } from '../state/GameState';
 import type { GuardSlot } from '../state/GuardStore.types';
@@ -14,6 +13,7 @@ import type { Vec2 } from '../utils/geometry.types';
 import { EachGuardRespawn } from './EachGuardRespawn';
 import { GroupGuardRespawn } from './GroupGuardRespawn';
 import type { GuardRespawnRule } from './GuardRoster.types';
+import { countdownTicks } from '../config/countdownTicks';
 
 /**
  * Runs every structure's guard plan for `SpawnSystem` (architecture 18 §7, 07 §6): it lays out
@@ -58,7 +58,11 @@ export class GuardRoster {
       if (plan === undefined || team === undefined || transform === undefined) {
         continue;
       }
-      const firstTick = plan.activation === 'countdown-end' ? countdownEndTick(state.config) : 0;
+      const { countdownSeconds } = state.config.match;
+      const firstTick =
+        plan.activation === 'countdown-end'
+          ? countdownTicks(countdownSeconds, state.config.tickRate)
+          : 0;
       const total = plan.table.reduce((sum, row) => sum + row.count, 0);
       const ring = transform.radius + plan.postGap;
       const edge = transform.radius + plan.leashRadius;

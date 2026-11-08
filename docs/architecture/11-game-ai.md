@@ -323,8 +323,14 @@ fields) belongs to `PathingSystem`, which time-slices its rebuilds
 
 ## 7. Sim mode (MVP)
 
-`MatchConfig.humanLegendId: EntityId | null`. With `null`, every Legend gets `bot-legend` (or
-`rover`) and nobody reads input: the match plays itself. This is a first-class feature, not a
+The human is the roster's one `human` slot (a `RosterSlot` with `pilot: 'human'`,
+`Simulation.types.ts`; DEC-173), on `MatchConfig.playerTeam` (`config/GameConfig.types.ts`); the
+client gives it its team's Rover role (DISC-51). `state.match.humanLegendId: EntityId | null` is the
+Legend `Simulation` spawns for that slot when the match is built, from the same roster and by the
+same role rule as the bots (18 §8) but with no controller, so it needs the map. A human slot that
+names no Legend definition leaves `humanLegendId` `null` and logs an error; the match plays on.
+With no human slot, `humanLegendId` is `null` and every Legend gets `bot-legend` (or `rover`) and
+nobody reads input: the match plays itself. This is a first-class feature, not a
 debug hack. Soak tests ([15-diagnostics](./15-diagnostics-and-runtime-testing.md)) run sim mode
 headless in Node for thousands of ticks; balancing runs many seeds and compares `MatchResult`s;
 the developer menu's "remove/add user-controlled Legend" (requirements: "sim game") is a
