@@ -127,8 +127,8 @@ get no aura (DEC-165). Pull request M6 adds the forest camps: a `Camp`
 structure per camp feature, the camp groups in `content/structures/guardPlans.ts` (a `group` plan
 activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
-checks every post. Checkpoint defenders wait for `CaptureSystem` (PR #64) to reach the phase
-branch. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
+checks every post. Checkpoint defenders are not built yet, though `CaptureSystem` (PR #64) is
+merged. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower or

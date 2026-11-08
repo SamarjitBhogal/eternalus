@@ -1,3 +1,4 @@
+import { CaptureProgressBoundsInvariant } from './invariants/CaptureProgressBoundsInvariant';
 import { FiniteTransformsInvariant } from './invariants/FiniteTransformsInvariant';
 import { HealthWithinBoundsInvariant } from './invariants/HealthWithinBoundsInvariant';
 import { GuardWithinLeashInvariant } from './invariants/GuardWithinLeashInvariant';
@@ -32,6 +33,7 @@ export class DefaultInvariantRunner extends InvariantRunner {
         new GuardWithinLeashInvariant(),
         new LevelMatchesXpInvariant(curves),
         new StatusStacksWithinMaxInvariant(),
+        new CaptureProgressBoundsInvariant(),
         new PhaseMonotonicInvariant(phaseOrder, terminalPhases),
       ],
       debug,

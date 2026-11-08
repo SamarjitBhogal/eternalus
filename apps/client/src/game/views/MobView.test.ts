@@ -14,6 +14,8 @@ const MINION: EntitySnapshot = {
   team: 'light',
   transform: { x: 0, y: 0, radius: 0.4 },
   health: { current: 150, max: 150 },
+  area: null,
+  capture: null,
 };
 
 const AT = { x: 0, y: 0 };

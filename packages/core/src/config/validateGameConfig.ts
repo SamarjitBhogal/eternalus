@@ -154,6 +154,23 @@ const RULES: readonly Rule[] = [
   count('match.hordeSizes.heavy'),
   positive('match.plannedMatchSeconds'),
   {
+    path: 'match.capturePoints.checkpoints',
+    rule: 'must be a whole number >= 1',
+    isValid: (value) => isWhole(value, 1),
+  },
+  positive('match.capturePoints.captureSeconds'),
+  positive('match.capturePoints.revertSeconds'),
+  positive('match.capturePoints.maxMargin'),
+  positive('match.capturePoints.weights.legend'),
+  positive('match.capturePoints.weights.unit'),
+  {
+    path: 'match.capturePoints.weights.legend',
+    rule: 'must be more than match.capturePoints.weights.unit (a Legend outweighs any other unit, 07 §7)',
+    // Safe: both weights passed their own rules above.
+    isValid: (value, config) =>
+      (value as number) > (valueAt(config, 'match.capturePoints.weights.unit') as number),
+  },
+  {
     path: 'match.playerTeam',
     rule: "must be a playable team: 'light' or 'dark'",
     isValid: isPlayableTeam,
