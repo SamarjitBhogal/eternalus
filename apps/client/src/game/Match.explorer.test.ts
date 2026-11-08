@@ -53,8 +53,7 @@ const setUp = () => {
     camera,
     input,
     logger: new NullLogger(),
-    onCrash: () => undefined,
-    onEnded: () => undefined,
+    observer: { crashed: () => undefined, ended: () => undefined },
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),
       publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

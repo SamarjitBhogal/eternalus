@@ -156,8 +156,8 @@ export class Match implements LoopTarget {
    * One tick: the player's intent becomes commands (and moving input sends the camera back to
    * following), the simulation steps, and the roof of the building the player's Legend now stands
    * in opens. A dead Legend (`isDead`, or gone from the snapshot) stands in no building, so its
-   * roof closes (DEC-143, DEC-149). After the tick that ended the match, tells the owner once
-   * (`onEnded`).
+   * roof closes (DEC-143, DEC-149). After the tick that ended the match, tells the observer once
+   * (`ended`).
    */
   public tick(): void {
     if (this.playerId !== null) {
@@ -172,7 +172,7 @@ export class Match implements LoopTarget {
     const player = this.playerEntity();
     this.roofs.playerAt(isDead(player?.health ?? null) ? null : (player?.transform ?? null));
     if (this.bridge.afterTick(this.current, this.playerId)) {
-      this.deps.onEnded();
+      this.deps.observer.ended();
     }
   }
 
@@ -192,10 +192,10 @@ export class Match implements LoopTarget {
 
   /**
    * The game loop stopped because a tick or a frame threw: hands the error and the tick to the
-   * match's owner (`onCrash`), which ends the match (DEC-106).
+   * observer (`crashed`), whose owner ends the match (DEC-106).
    */
   public crashed(error: unknown): void {
-    this.deps.onCrash({ error, tick: this.deps.simulation.tick });
+    this.deps.observer.crashed({ error, tick: this.deps.simulation.tick });
   }
 
   /**

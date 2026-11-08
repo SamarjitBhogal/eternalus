@@ -38,15 +38,14 @@ export class MatchState implements SessionState {
     this.stop();
     let match: RunningMatch;
     try {
-      match = context.createMatch(
-        viewport,
-        (crash) => {
+      match = context.createMatch(viewport, {
+        crashed: (crash) => {
           if (this.running === match) context.endCrashedMatch(crash);
         },
-        () => {
+        ended: () => {
           if (this.running === match) this.scheduleResults(context);
         },
-      );
+      });
     } catch (error) {
       context.abortMatch(error);
       return () => undefined;

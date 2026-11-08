@@ -114,8 +114,7 @@ export function createBrowserMatch(deps: BrowserMatchDeps): MatchFactory {
         camera,
         input,
         logger,
-        onCrash: request.onCrash,
-        onEnded: request.onEnded,
+        observer: request.observer,
         bridge: {
           bus: deps.bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

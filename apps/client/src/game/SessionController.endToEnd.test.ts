@@ -91,8 +91,7 @@ describe('SessionController with the real match, end to end', () => {
         camera,
         input: new DeviceIntentSource([keyboard, mouse], mapper),
         logger: new NullLogger(),
-        onCrash: request.onCrash,
-        onEnded: request.onEnded,
+        observer: request.observer,
         bridge: {
           bus,
           publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

@@ -120,8 +120,7 @@ const setUp = (content?: Content, withMapObjects = false) => {
     camera,
     input,
     logger,
-    onCrash: () => undefined,
-    onEnded: () => undefined,
+    observer: { crashed: () => undefined, ended: () => undefined },
     // A bus nobody listens to, at the shipped cadence.
     bridge: {
       bus: new TypedEventBus<BridgeEventMap>(),

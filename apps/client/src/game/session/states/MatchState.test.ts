@@ -38,9 +38,11 @@ describe('MatchState', () => {
   it('builds the match on attach and destroys it on detach', () => {
     const { context, handles, state } = setUp();
     const detach = state.attachViewport(VIEWPORT, context);
-    expect(context.calls.createMatch).toEqual([
-      [VIEWPORT, expect.any(Function), expect.any(Function)],
-    ]);
+    const [call] = context.calls.createMatch;
+    expect(context.calls.createMatch).toHaveLength(1);
+    expect(call?.[0]).toBe(VIEWPORT);
+    expect(typeof call?.[1].crashed).toBe('function');
+    expect(typeof call?.[1].ended).toBe('function');
     detach();
     expect(handles[0]?.destroyCount).toBe(1);
   });
@@ -70,20 +72,20 @@ describe('MatchState', () => {
     const crash = { error: new Error('step failed'), tick: 7 };
     state.attachViewport(VIEWPORT, context);
     state.attachViewport(VIEWPORT, context);
-    const [replaced, running] = context.calls.createMatch.map(([, onCrash]) => onCrash);
+    const [replaced, running] = context.calls.createMatch.map(([, observer]) => observer);
 
-    replaced?.(crash);
+    replaced?.crashed(crash);
     expect(context.calls.endCrashedMatch).toEqual([]);
-    running?.(crash);
+    running?.crashed(crash);
     expect(context.calls.endCrashedMatch).toEqual([[crash]]);
   });
 
   it('moves to results RESULTS_DELAY_MS after the running match ends, the world running on (DEC-92)', () => {
     const { context, handles, state } = setUp();
     state.attachViewport(VIEWPORT, context);
-    const onEnded = context.calls.createMatch[0]?.[2];
+    const observer = context.calls.createMatch[0]?.[1];
 
-    onEnded?.();
+    observer?.ended();
     context.clock.advance(RESULTS_DELAY_MS - 1);
     expect(context.calls.transition).toEqual([]);
     expect(handles[0]?.destroyCount).toBe(0);
@@ -95,7 +97,7 @@ describe('MatchState', () => {
   it('moves to results on time while an overlay is open: the match is over (DEC-134)', () => {
     const { context, state } = setUp();
     state.attachViewport(VIEWPORT, context);
-    context.calls.createMatch[0]?.[2]();
+    context.calls.createMatch[0]?.[1].ended();
     state.handleIntent({ kind: 'open-overlay', overlay: 'pause' }, context);
 
     context.clock.advance(RESULTS_DELAY_MS);
@@ -107,12 +109,12 @@ describe('MatchState', () => {
     const { context, state } = setUp();
     state.attachViewport(VIEWPORT, context);
     state.attachViewport(VIEWPORT, context);
-    const [replaced, running] = context.calls.createMatch.map(([, , onEnded]) => onEnded);
+    const [replaced, running] = context.calls.createMatch.map(([, observer]) => observer);
 
-    replaced?.();
+    replaced?.ended();
     context.clock.advance(RESULTS_DELAY_MS);
     expect(context.calls.transition).toEqual([]);
-    running?.();
+    running?.ended();
     context.clock.advance(RESULTS_DELAY_MS);
     expect(context.calls.transition).toEqual([['results']]);
   });
@@ -120,10 +122,10 @@ describe('MatchState', () => {
   it('drops a pending move to results when the match stops first (leave-match, a new viewport)', () => {
     const { context, state } = setUp();
     state.attachViewport(VIEWPORT, context);
-    context.calls.createMatch[0]?.[2]();
+    context.calls.createMatch[0]?.[1].ended();
     state.exit(context);
     state.attachViewport(VIEWPORT, context);
-    context.calls.createMatch[1]?.[2]();
+    context.calls.createMatch[1]?.[1].ended();
     state.attachViewport(VIEWPORT, context);
 
     context.clock.advance(RESULTS_DELAY_MS);

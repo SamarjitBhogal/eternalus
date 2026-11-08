@@ -19,7 +19,7 @@ import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import { RecordingRenderer } from './engine/render/RecordingRenderer';
 import { Match } from './Match';
 import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH, MS_PER_SECOND } from './Match.constants';
-import type { MatchDeps, PreparedWorld } from './Match.types';
+import type { MatchObserver, PreparedWorld } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
@@ -74,8 +74,10 @@ function matchDeps(
     camera: new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT),
     input: { read: () => STILL },
     logger: new NullLogger(),
-    onCrash: vi.fn<MatchDeps['onCrash']>(),
-    onEnded: vi.fn<MatchDeps['onEnded']>(),
+    observer: {
+      crashed: vi.fn<MatchObserver['crashed']>(),
+      ended: vi.fn<MatchObserver['ended']>(),
+    },
     bridge: { bus, publishEveryTicks: HUD_PUBLISH_EVERY_TICKS, captureKinds: [] },
   };
   return { deps, clocks, on, unsubscribes };
@@ -183,7 +185,7 @@ describe('Match lifecycle', () => {
     expect(twins.filter((id) => id !== match.playerEntityId)).toEqual(bots);
   });
 
-  it('hands a throw from a tick to onCrash with the tick, and its loop stops (DEC-106)', () => {
+  it('hands a throw from a tick to the observer with the tick, and its loop stops (DEC-106)', () => {
     const { deps } = matchDeps();
     const match = new Match(deps);
     const error = new Error('step failed');
@@ -196,7 +198,7 @@ describe('Match lifecycle', () => {
 
     deps.scheduler.advance(TICK_MS);
 
-    expect(deps.onCrash.mock.calls).toEqual([[{ error, tick: 1 }]]);
+    expect(deps.observer.crashed.mock.calls).toEqual([[{ error, tick: 1 }]]);
     expect(deps.scheduler.hasPendingFrame).toBe(false);
   });
 
@@ -207,14 +209,14 @@ describe('Match lifecycle', () => {
     match.start();
     deps.scheduler.advance(0);
     deps.scheduler.advance(TICK_MS);
-    expect(deps.onEnded).not.toHaveBeenCalled();
+    expect(deps.observer.ended).not.toHaveBeenCalled();
 
     // Core emits `match-ended` inside the step; the bridge publishes it after that tick.
     ended?.({ result: matchResultFixture() });
-    expect(deps.onEnded).not.toHaveBeenCalled();
+    expect(deps.observer.ended).not.toHaveBeenCalled();
     deps.scheduler.runFrames(3, TICK_MS);
 
-    expect(deps.onEnded).toHaveBeenCalledTimes(1);
+    expect(deps.observer.ended).toHaveBeenCalledTimes(1);
     expect(deps.simulation.tick).toBe(4);
     expect(deps.scheduler.hasPendingFrame).toBe(true);
   });
@@ -230,7 +232,7 @@ describe('Match lifecycle', () => {
     match.destroy();
     deps.scheduler.runFrames(3, TICK_MS);
 
-    expect(deps.onEnded).not.toHaveBeenCalled();
+    expect(deps.observer.ended).not.toHaveBeenCalled();
   });
 
   it('runs whole ticks from the loop: 100 ms of frames is 3 ticks', () => {

@@ -284,7 +284,7 @@ describe('SessionController match lifetime', () => {
     const seed = session.store.getState().matchSetup.seed;
     const error = new Error('step failed');
 
-    session.createMatch.mock.calls[0]?.[0].onCrash({ error, tick: 42 });
+    session.createMatch.mock.calls[0]?.[0].observer.crashed({ error, tick: 42 });
 
     expect(session.controller.phase).toBe('menu');
     expect(session.store.getState().session.reason).toBe('match-crashed');
@@ -311,7 +311,7 @@ describe('SessionController match lifetime', () => {
       durationSeconds: 120,
     });
 
-    session.createMatch.mock.calls[0]?.[0].onEnded();
+    session.createMatch.mock.calls[0]?.[0].observer.ended();
     session.clock.advance(RESULTS_DELAY_MS - 1);
     expect(session.controller.phase).toBe('match');
     expect(session.handles[0]?.destroy).not.toHaveBeenCalled();

@@ -50,6 +50,21 @@ export type MatchCrash = {
   readonly tick: number;
 };
 
+/**
+ * Who hears one match's lifecycle (13 §2): one object with a method per event, as `LoopTarget`
+ * has `crashed`, so a new event is one method, not one more callback in every signature. Each
+ * method is called at most once.
+ */
+export interface MatchObserver {
+  /** The game loop stopped because a tick or a frame threw (DEC-106). */
+  crashed(crash: MatchCrash): void;
+  /**
+   * The match ended: called after the tick whose step ended it, once `match-ended` is published
+   * (game-loop plan §4.5, A8); the match keeps running until its owner destroys it (DEC-92).
+   */
+  ended(): void;
+}
+
 /** Everything a `Match` is wired from (architecture 08 §7). */
 export type MatchDeps = {
   readonly simulation: Simulation;
@@ -63,13 +78,8 @@ export type MatchDeps = {
   readonly input: IntentSource;
   /** Where client-side problems are reported (e.g. a kind drawn with the default view). */
   readonly logger: Logger;
-  /** Called once when the game loop stops because a tick or a frame threw (DEC-106). */
-  readonly onCrash: (crash: MatchCrash) => void;
-  /**
-   * Called once, after the tick whose step ended the match, once `match-ended` is published (game-
-   * loop plan §4.5, A8); the match keeps running until its owner destroys it (DEC-92).
-   */
-  readonly onEnded: () => void;
+  /** Hears the match crash or end (the request's observer). */
+  readonly observer: MatchObserver;
   /** Where the match's `MatchBridge` publishes, and what (architecture 08 §7). */
   readonly bridge: {
     readonly bus: TypedEventBus<BridgeEventMap>;

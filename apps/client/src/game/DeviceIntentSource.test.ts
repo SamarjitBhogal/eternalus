@@ -105,8 +105,7 @@ describe('Player scenario: walking with the keyboard', () => {
       camera: new Camera({ x: 0, y: 0 }, 64, 36),
       input,
       logger: new MemoryLogger(),
-      onCrash: () => undefined,
-      onEnded: () => undefined,
+      observer: { crashed: () => undefined, ended: () => undefined },
       bridge: {
         bus: new TypedEventBus<BridgeEventMap>(),
         publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,

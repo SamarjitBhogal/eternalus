@@ -18,7 +18,7 @@ import { FakeSessionClock } from './engine/time/FakeSessionClock';
 import { FakeBrowserTarget } from './FakeBrowserTarget';
 import { FakeViewportCanvas } from './FakeViewportCanvas';
 import { MS_PER_SECOND } from './Match.constants';
-import type { PreparedWorld } from './Match.types';
+import type { MatchObserver, PreparedWorld } from './Match.types';
 import type { MatchViewport } from './MatchViewport.types';
 import { prepareMatchWorld } from './prepareMatchWorld';
 import type { MatchRequest } from './SessionController.types';
@@ -58,15 +58,13 @@ function setUp(canvas = new FakeViewportCanvas(), sinks: readonly LogSink[] = []
   };
   const request = (
     world: PreparedWorld = prepareMatchWorld(CONFIG, SEED),
-    onCrash: MatchRequest['onCrash'] = () => undefined,
-    onEnded: MatchRequest['onEnded'] = () => undefined,
+    observer: MatchObserver = { crashed: () => undefined, ended: () => undefined },
   ): MatchRequest => ({
     setup: { seed: SEED, playerTeam: 'dark', allies: [], enemies: [] },
     world,
     captureKinds: ['capture-point', 'cathedral'],
     roster: [PLAYER_SLOT],
-    onCrash,
-    onEnded,
+    observer,
   });
   /** Every listener on the window, the document and the canvas. */
   const listeners = (): number =>
@@ -99,11 +97,11 @@ describe('createBrowserMatch', () => {
     expect(window.pendingFrames).toBe(0);
   });
 
-  it("hands a crash of the match's loop to the request's onCrash, with no frame left (DEC-106)", () => {
+  it("hands a crash of the match's loop to the request's observer, with no frame left (DEC-106)", () => {
     const { window, factory, viewport, request } = setUp();
-    const onCrash = vi.fn<MatchRequest['onCrash']>();
+    const crashed = vi.fn<MatchObserver['crashed']>();
     const error = new Error('step failed');
-    factory(request(undefined, onCrash), viewport);
+    factory(request(undefined, { crashed, ended: () => undefined }), viewport);
     window.runFrame(0);
     window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
     vi.spyOn(Simulation.prototype, 'step').mockImplementation(() => {
@@ -112,24 +110,24 @@ describe('createBrowserMatch', () => {
 
     window.runFrame((2 * MS_PER_SECOND) / CONFIG.tickRate);
 
-    expect(onCrash.mock.calls).toEqual([[{ error, tick: 1 }]]);
+    expect(crashed.mock.calls).toEqual([[{ error, tick: 1 }]]);
     expect(window.pendingFrames).toBe(0);
   });
 
-  it("tells the request's onEnded once, after the tick that ended the match", () => {
+  it("tells the request's observer once, after the tick that ended the match", () => {
     const { window, factory, viewport, request } = setUp();
-    const onEnded = vi.fn<MatchRequest['onEnded']>();
+    const ended = vi.fn<MatchObserver['ended']>();
     const on = vi.spyOn(Simulation.prototype, 'on');
-    factory(request(undefined, undefined, onEnded), viewport);
-    const ended = on.mock.calls.find(([type]) => type === 'match-ended')?.[1];
+    factory(request(undefined, { crashed: () => undefined, ended }), viewport);
+    const endMatch = on.mock.calls.find(([type]) => type === 'match-ended')?.[1];
     window.runFrame(0);
 
-    ended?.({ result: matchResultFixture() });
-    expect(onEnded).not.toHaveBeenCalled();
+    endMatch?.({ result: matchResultFixture() });
+    expect(ended).not.toHaveBeenCalled();
     window.runFrame(MS_PER_SECOND / CONFIG.tickRate);
     window.runFrame((2 * MS_PER_SECOND) / CONFIG.tickRate);
 
-    expect(onEnded).toHaveBeenCalledTimes(1);
+    expect(ended).toHaveBeenCalledTimes(1);
   });
 
   it("runs the requested Legend on the browser's frames and leaves nothing behind on destroy", () => {
