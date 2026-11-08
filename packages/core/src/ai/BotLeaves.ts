@@ -11,6 +11,7 @@ import { BotMovement } from './BotMovement';
 import type { Decision, DecisionInput } from './Controller.types';
 import { closeness, weakness } from './utility/considerations';
 import { UtilityScorer } from './utility/UtilityScorer';
+import { isPlayableTeam } from '../teams/playableTeams';
 
 /**
  * The conditions and actions every bot Legend tree is built from (architecture 11 §4.2):
@@ -48,7 +49,7 @@ export class BotLeaves {
     }
     const position = BotMovement.positionOf(state, entityId);
     const team = state.entities.teamOf(entityId);
-    if (position === undefined || (team !== 'light' && team !== 'dark')) {
+    if (position === undefined || !isPlayableTeam(team)) {
       return null;
     }
     const memory = BotLeaves.read(brain.memory);

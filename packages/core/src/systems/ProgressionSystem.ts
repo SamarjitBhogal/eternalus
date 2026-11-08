@@ -3,17 +3,20 @@ import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
 import { TeamMembership } from '../components/TeamMembership';
 import { LEGEND_KINDS } from '../content/legends/legendKinds';
+import type { LegendDefinition } from '../content/legends/legends.types';
 import type { LevelScalingDefinition } from '../content/progression/progression.types';
 import { MOB_KINDS } from '../content/mobs/mobKinds';
 import type { Entity } from '../entities/Entity';
 import type { GameState } from '../state/GameState';
+import { opponentOf } from '../teams/playableTeams';
 import type { System, SystemContext } from './System.types';
 import type { Award, ProgressionContent } from './ProgressionSystem.types';
 
 /**
  * Turns kills into XP and levels (architecture 05 §13). It listens to `entity-died`, prices the kill
  * while the victim is still in the store, and in its own pass gives the XP to the killer's
- * `Progression`. Self-kills and ally kills pay nothing (O5). Each level gained raises max health by
+ * `Progression`. A destroyed structure (`structure-destroyed`) pays every Legend of the opposing
+ * team (DEC-186). Self-kills and ally kills pay nothing (O5). Each level gained raises max health by
  * the class's share of its base health (O3) and max aether, heals and refills by the raise only
  * while the Legend is alive (O4), and emits `level-up`.
  */
@@ -45,30 +48,64 @@ export class ProgressionSystem implements System {
       }
       const xp = this.xpFor(victim);
       if (xp > 0) {
-        this.pending.push({ killerId, victimId: entityId, victimTeam, xp });
+        this.pending.push({ kind: 'kill', killerId, victimId: entityId, victimTeam, xp });
+      }
+    });
+    // DEC-186: a destroyed structure pays every Legend of the opposing playable team, whoever or
+    // whatever landed the last hit. Buildings are map objects, not structures: no event, no XP.
+    state.events.on('structure-destroyed', ({ entityId, team }) => {
+      if (team !== 'neutral') {
+        this.pending.push({
+          kind: 'structure-destroyed',
+          team: opponentOf(team),
+          victimId: entityId,
+          victimTeam: team,
+          xp: content.xpSources.structureDestroyed,
+        });
       }
     });
   }
 
-  /** Gives this tick's kill XP, in kill order, and applies each level gained. */
+  /** Gives this tick's XP, in the order it was earned, and applies each level gained. */
   public update({ state }: SystemContext): void {
     for (const award of this.pending.splice(0)) {
-      const killer = state.entities.get(award.killerId);
-      const progression = killer?.findComponent(Progression);
-      // TODO(claudiodh): O4 pays a Legend killed earlier, but `DeathSystem` still removes dead
-      // Legends, so its XP is dropped here; respawn (FR-051, SCRUM-178) must keep them in the store.
-      if (killer === undefined || progression === undefined) {
+      if (award.kind === 'kill') {
+        // TODO(claudiodh): O4 pays a Legend killed earlier, but `DeathSystem` still removes dead
+        // Legends, so its XP is dropped here; respawn (FR-051, SCRUM-178) must keep them in the
+        // store.
+        const killer = state.entities.get(award.killerId);
+        if (killer !== undefined) {
+          this.grant(killer, award, state);
+        }
         continue;
       }
-      const gained = this.award(killer, progression, award, state);
-      const definition = this.content.units.get(killer.definitionId);
-      const isLegend = LEGEND_KINDS.has(definition);
-      for (let step = gained - 1; step >= 0; step -= 1) {
-        if (isLegend) {
-          ProgressionSystem.levelUp(killer, definition.levelScaling, definition.baseHealth);
+      // Every Legend still in the store on the destroying team; a dead one is already removed.
+      // ponytail: stand-in removed by GL-12 (DEC-186, owner 2026-11-05: "pay on respawn"): a Legend
+      // dead when the structure falls must get its share when it respawns; respawn does not exist.
+      state.entities.forEach((entity) => {
+        if (
+          entity.findComponent(TeamMembership)?.team === award.team &&
+          this.legendOf(entity) !== undefined
+        ) {
+          this.grant(entity, award, state);
         }
-        state.events.emit('level-up', { entityId: killer.id, level: progression.level - step });
+      });
+    }
+  }
+
+  /** Awards `recipient` its XP and applies each level it gains; a non-leveller keeps the XP only. */
+  private grant(recipient: Entity, award: Award, state: GameState): void {
+    const progression = recipient.findComponent(Progression);
+    if (progression === undefined) {
+      return;
+    }
+    const gained = this.award(recipient, progression, award, state);
+    const definition = this.legendOf(recipient);
+    for (let step = gained - 1; step >= 0; step -= 1) {
+      if (definition !== undefined) {
+        ProgressionSystem.levelUp(recipient, definition.levelScaling, definition.baseHealth);
       }
+      state.events.emit('level-up', { entityId: recipient.id, level: progression.level - step });
     }
   }
 
@@ -84,8 +121,18 @@ export class ProgressionSystem implements System {
       amount: award.xp,
       victimId: award.victimId,
       victimTeam: award.victimTeam,
+      cause: award.kind,
     });
     return progression.addXp(award.xp, this.content.curves.get(progression.curveId));
+  }
+
+  /** The Legend definition of `entity`, or `undefined` for a mob or a structure. */
+  private legendOf(entity: Entity): LegendDefinition | undefined {
+    if (!this.content.units.has(entity.definitionId)) {
+      return undefined;
+    }
+    const definition = this.content.units.get(entity.definitionId);
+    return LEGEND_KINDS.has(definition) ? definition : undefined;
   }
 
   private xpFor(victim: Entity): number {

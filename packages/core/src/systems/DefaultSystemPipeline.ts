@@ -11,11 +11,6 @@ import { ENRAGING_STRUCTURES } from '../content/mobs/minionModifiers';
 import { RANKS_FORMATION } from '../content/mobs/formations/ranks';
 import { loadStatusEffects } from '../content/status-effects/loadStatusEffects';
 import { OPENING_WAVE, SPAWN_WAVES } from '../content/structures/spawnWaves';
-import type { ContentCatalogue } from '../content/ContentCatalogue';
-import type { StructureDefinition } from '../content/structures/structures.types';
-import type { InvariantRunner } from '../diagnostics/InvariantRunner';
-import type { EntityFactory } from '../entities/EntityFactory';
-import type { SpaceIndex } from '../physics/SpaceIndex';
 import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStrategyRegistry';
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
@@ -23,14 +18,15 @@ import type { Rect } from '../utils/geometry.types';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
+import type { DefaultSystemPipelineOptions } from './DefaultSystemPipeline.types';
 import { EnragedSystem } from './EnragedSystem';
 import { HordeSystem } from './HordeSystem';
 import { InvariantSystem } from './InvariantSystem';
+import { MatchDirectorSystem } from './MatchDirectorSystem';
 import { MovementSystem } from './MovementSystem';
 import { OutOfCombatHealingSystem } from './OutOfCombatHealingSystem';
 import { PathingSystem } from './PathingSystem';
 import { ProgressionSystem } from './ProgressionSystem';
-import type { ProgressionContent } from './ProgressionSystem.types';
 import { SpaceSystem } from './SpaceSystem';
 import { SpawnSystem } from './SpawnSystem';
 import { StructureSystem } from './StructureSystem';
@@ -40,7 +36,6 @@ import { MINION_VETERANCY } from '../content/mobs/minionVeterancy';
 import { STRUCTURE_DEFINITIONS } from '../content/structures/structureCatalogue';
 import { GUARD_PLANS } from '../content/structures/guardPlans';
 import { StatusEffectSystem } from './StatusEffectSystem';
-import type { System } from './System.types';
 import { SystemPipeline } from './SystemPipeline';
 
 /**
@@ -48,39 +43,22 @@ import { SystemPipeline } from './SystemPipeline';
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
  * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * out-of-combat healing (DEC-188), death, then invariants last. This is the one place a system is
- * added, at its position in the tick (architecture 02 §9). It builds the match's one
- * `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for this match's
- * config) and hands them to the systems that need them, so a damage step applies to every hit and
- * every status event comes from one place.
+ * out-of-combat healing (DEC-188), death, the match director, then invariants last. This is the
+ * one place a system is added, at its position in the tick (architecture 02 §9). It builds the
+ * match's one `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for
+ * this match's config) and hands them to the systems that need them, so a damage step applies to
+ * every hit and every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
-  /**
-   * Creates the pipeline.
-   *
-   * @param invariants - The runner the last system checks with.
-   * @param state - The match; its config sets the tick rate and lane structure count statuses load
-   *   with, and systems that listen to its events subscribe here.
-   * @param progression - The content kills are priced and levels applied with, injected.
-   * @param hordes - The factory (and its definitions), neighbour index and AI the horde systems
-   *   (architecture 11, 18) need; without them nothing decides, marches, steers or spawns on lanes.
-   * @param structures - Where each structure's definition, and so its breakability rule, is looked
-   *   up; `Simulation` injects the one set it builds the structures from.
-   */
-  public constructor(
-    invariants: InvariantRunner,
-    state: GameState,
-    progression: ProgressionContent,
-    hordes?: {
-      readonly factory: EntityFactory;
-      /** The index `state.space` exposes; `null` for a match without a map. */
-      readonly space: SpaceIndex | null;
-      /** Runs first: the AI, which `systems/` may not import, so `Simulation` composes it. */
-      readonly decide: readonly System[];
-      readonly collisions?: readonly System[];
-    },
-    structures: Pick<ContentCatalogue<StructureDefinition>, 'get'> = STRUCTURE_DEFINITIONS,
-  ) {
+  /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
+  public constructor({
+    invariants,
+    state,
+    progression,
+    director,
+    hordes,
+    structures = STRUCTURE_DEFINITIONS,
+  }: DefaultSystemPipelineOptions) {
     const { tickRate, map } = state.config;
     const damage = new DamagePipeline();
     const statuses = new StatusEffectApplier(
@@ -153,6 +131,8 @@ export class DefaultSystemPipeline extends SystemPipeline {
           ]),
       new OutOfCombatHealingSystem(state, OUT_OF_COMBAT_HEALING),
       new DeathSystem(),
+      // After death, so an objective lost this tick can end the match this tick (12 §1).
+      new MatchDirectorSystem(director),
       new InvariantSystem(invariants),
     ]);
   }

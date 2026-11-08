@@ -23,6 +23,7 @@ const laners = (team: 'light' | 'dark', count: number): RosterSlot[] =>
     team,
     definitionId: 'warrior',
     role: 'laner',
+    pilot: 'bot',
     difficulty: NORMAL_BOT.id,
   }));
 

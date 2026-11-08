@@ -205,9 +205,11 @@ Ultimate meter (`TUNE` "kills, assists and objective damage fill your ultimate; 
 xpToNext(L) = 100 + 50 · (L − 1)   for L = 1 … 9      cumulative XP to level 10 = 2,700
 ```
 
+**Superseded for the shipped game by DEC-190 (2026-11-05):** the cap is 50, with the curve in `content/progression/levelCurves.ts` and the sources in `content/progression/xpSources.ts`. Not final; the soak metric below can change it. The text below is the original cap-10 recommendation.
+
 Level cap 10 (options: 12 with the same formula, cumulative 3,850; 15, cumulative 5,950). Per level: +8% max health, +5% basic-attack damage, +4% ability potency, +10 max aether; cooldowns do not scale with level (capture points own that lever).
 
-XP sources (`Recommendation:`): minion kill 20 / 45 / 120 shared equally among allied Legends within 10 m, with the killer getting an unshared +25%; Legend kill 150 + 25 × victim level, assists (damage in the last 10 s) get half; structure destroyed 300 to every allied Legend; checkpoints 60 / 150 / 400 with the damage-biased local share; camp cleared: the mobs' XP + 50; mini-boss 500 team-wide; the Eternal 1,500 team-wide. A laner sharing sixteen light minions a minute earns about 110 XP/min from minions alone, so objectives and kills are what carry a Legend to level 10 in the 18–22 minute window; the soak metric "Legend level at 10 and 20 minutes" is the check.
+XP sources (`Recommendation:`; superseded in part by DEC-190 and DEC-186: Legend kill and structure XP are now in `xpSources.ts`, and every Legend on the destroying team gets structure XP): minion kill 20 / 45 / 120 shared equally among allied Legends within 10 m, with the killer getting an unshared +25%; Legend kill 150 + 25 × victim level, assists (damage in the last 10 s) get half; structure destroyed 300 to every allied Legend; checkpoints 60 / 150 / 400 with the damage-biased local share; camp cleared: the mobs' XP + 50; mini-boss 500 team-wide; the Eternal 1,500 team-wide. A laner sharing sixteen light minions a minute earns about 110 XP/min from minions alone, so objectives and kills are what carry a Legend to level 10 in the 18–22 minute window; the soak metric "Legend level at 10 and 20 minutes" is the check.
 
 ## Eternal (final-hit) stat multipliers — MVP
 
