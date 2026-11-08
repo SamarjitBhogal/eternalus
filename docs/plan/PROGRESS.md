@@ -5877,3 +5877,20 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   #76 (`f49ee99`, log `check-76-final.log`): exit 0, core `Tests 1245 passed (1245)`, client
   `Tests 1780 passed (1780)`.
 - Next step: push; PR #77 merges after #76 once Samarjit re-approves; then #79 retargets.
+
+### 2026-11-08 — Phase 3 / playtest fixes: local minimap, merge of fix/click-attack-units after PR #64 — feat/local-minimap — sholtzman + Claude Code
+
+- What was done: #75, #74, #78 and then #64 (capture zones) merged into phase/3; #76 merged
+  phase/3 `b02ef47`. Merged #76 `f2574a9` into this branch (`2954cd1`). #64 conflicts:
+  `entityViews.constants.ts` (both added constants at the end; #64's capture constants first,
+  then the minimap marker constants), `StructureView.test.ts` (this branch's gate fixture plus
+  #64's `area` and `capture`), architecture 07 §12 (#64's capture-point glyph wording, then
+  this branch's sentence that `MapView.drawMinimap` draws feature glyphs and only Legends and
+  mobs have entity markers), `PROGRESS.md` (append-only). Typecheck found one more fixture: the
+  DEC-187 minion in `MiniMapView.test.ts` sets `area` and `capture` to `null`. Line counts
+  (ours + theirs − base = merged): `PROGRESS.md` 5879, `entityViews.constants.ts` 80.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-77-post64.log`): exit 0, Prettier passed, core
+  `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs check passed.
+- Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
+  once Samarjit re-approves.
