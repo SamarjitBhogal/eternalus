@@ -42,6 +42,7 @@ import type { LevelCurveDefinition } from './content/progression/progression.typ
 import { loadLevelCurves } from './content/progression/loadLevelCurves';
 import { XP_SOURCES } from './content/progression/xpSources';
 import { loadWeapons } from './content/weapons/loadWeapons';
+import { ZONE_DEFINITIONS, ZONE_PLACEMENTS } from './content/zones/zoneCatalogue';
 import { createDefaultEntityRegistry } from './entities/defaultEntityRegistry';
 import { EntityFactory } from './entities/EntityFactory';
 import { createDefaultMatchDirector } from './match/defaultMatchDirector';
@@ -57,6 +58,7 @@ import { StateHasher } from './state/StateHasher';
 import type { Replay, ReplaySetup, RosterSlot, SimulationOptions } from './Simulation.types';
 import { SpaceIndex } from './physics/SpaceIndex';
 import { WorldMap } from './map/WorldMap';
+import { zoneAreaOf } from './map/zoneArea';
 import { DefaultSystemPipeline } from './systems/DefaultSystemPipeline';
 import type { SystemContext } from './systems/System.types';
 import { SystemPipeline } from './systems/SystemPipeline';
@@ -137,8 +139,11 @@ export class Simulation {
       Object.values(MAP_OBJECT_DEFINITIONS).map((definition) => [definition.id, definition]),
     );
     const definitions = {
-      has: (id: string): boolean => objectsById.has(id) || units.has(id),
-      get: (id: string) => objectsById.get(id) ?? units.get(id),
+      has: (id: string): boolean =>
+        objectsById.has(id) || ZONE_DEFINITIONS.has(id) || units.has(id),
+      get: (id: string) =>
+        objectsById.get(id) ??
+        (ZONE_DEFINITIONS.has(id) ? ZONE_DEFINITIONS.get(id) : units.get(id)),
     };
     // One factory for commands and spawning, so entity ids come from one counter.
     const factory = new EntityFactory(
@@ -196,6 +201,7 @@ export class Simulation {
       this.pipeline = new SystemPipeline(systems);
     }
     Simulation.spawnRoster(this.state, factory, roster, controllers, logger);
+    Simulation.spawnZones(this.state, factory);
     this.state.events.on('command-rejected', ({ command, reason }) => {
       logger.log(
         makeLogRecord('INFO', 'core.commands', `Rejected ${command.type}: ${reason}`, {
@@ -472,6 +478,33 @@ export class Simulation {
       );
     }
     return human;
+  }
+
+  /**
+   * Spawns one zone per map feature that places one (`ZONE_PLACEMENTS`): a capture point where
+   * each lane crosses the centre line, the middle one in the Cathedral (architecture 07 §7), each
+   * covering its building's floor (DEC-145 (a)). They come from the map alone, so a replay (seed,
+   * config and commands) rebuilds them.
+   */
+  private static spawnZones(state: GameState, factory: EntityFactory): void {
+    const map = state.world?.definition;
+    if (map === undefined) {
+      return;
+    }
+    for (const feature of map.features) {
+      const definitionId = ZONE_PLACEMENTS[feature.kind];
+      if (definitionId === undefined) {
+        continue;
+      }
+      const { kind } = factory.definitions.get(definitionId);
+      const entity = factory.create(kind, definitionId, {
+        position: feature.position,
+        team: feature.team,
+        area: zoneAreaOf(map, feature),
+      });
+      state.entities.add(entity);
+      state.events.emit('entity-spawned', { entityId: entity.id, kind, team: feature.team });
+    }
   }
 
   /** The controller a bot of `slot`'s role plays with: a Rover's or a lane bot's. */

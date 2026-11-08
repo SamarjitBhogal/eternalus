@@ -14,6 +14,8 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   team: null,
   transform: null,
   health: null,
+  area: null,
+  capture: null,
 });
 
 describe('ViewRegistry', () => {

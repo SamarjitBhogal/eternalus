@@ -39,6 +39,13 @@ const DEFAULT_GAME_CONFIG: Omit<GameConfig, 'match'> & {
     plannedMatchSeconds: 1800, // TUNE: DEC-13's 30 minutes; a planning length, not a cap (owner 2026-10-28)
     // A placeholder: the client sets it from the player's setup; a sim-mode caller may set either side (12 §4).
     playerTeam: 'light',
+    capturePoints: {
+      checkpoints: 3, // game doc: three checkpoints per capture point
+      captureSeconds: 12, // TUNE: placeholder (DEC-146)
+      revertSeconds: 20, // TUNE: placeholder (DEC-146)
+      maxMargin: 3, // TUNE: placeholder (DEC-146)
+      weights: { legend: 10, unit: 1 }, // TUNE: DEC-86
+    },
   },
   limits: {
     maxLegendsPerTeam: MAX_LEGENDS_PER_TEAM,
@@ -85,6 +92,11 @@ export const createDefaultGameConfig = (overrides: DeepPartial<GameConfig> = {})
       ...match,
       ...matchOverrides,
       hordeSizes: { ...match.hordeSizes, ...matchOverrides.hordeSizes },
+      capturePoints: {
+        ...match.capturePoints,
+        ...matchOverrides.capturePoints,
+        weights: { ...match.capturePoints.weights, ...matchOverrides.capturePoints?.weights },
+      },
       timeline: [...(timeline ?? defaultTimeline(countdownTicks(countdownSeconds, tickRate)))],
     },
     limits: { ...limits, ...overrides.limits },
