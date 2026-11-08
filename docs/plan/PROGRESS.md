@@ -5694,3 +5694,24 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0, core 1155 passed, client 1754 passed, docs check passed.
 - Next step: open the PR into phase/3 after #75; merge this head into the heal, chevron and
   tower-ruins branches.
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 (PRs #75, #74, #78) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `85b67816` (#75, #74, #78) in
+  `33037572`, resolved as the chevron merge `f115e35b` was (critic APPROVE): one countdown-end
+  helper, `config/countdownTicks` (DEC-170), so `state/countdownEndTick` and its test go and their
+  assertions move to `countdownTicks.test.ts`; `GameState` keeps #74's phase listener plus
+  `AllyDamageTally` (DEC-171); `DefaultSystemPipeline` and `Simulation` take #74's options object
+  plus this branch's injected `structures`; PROGRESS keeps every entry of both sides. With #75 on
+  the branch, two doc edits the follow-ups report left for later:
+  `minion-system-plan.md` M6 row says camps spawn and wake when the match countdown ends
+  (DEC-167, no camp cooldown of their own), and its §3 stand-in "a bot's last leg to a structure
+  goes straight at it" is removed (bots take A\* to the footprint edge since `67fb042`/`a83bf85`).
+  02, 17 and the glossary name the pipeline file `DefaultSystemPipeline.ts`, as it is spelled.
+- Checks run: `npm run check` on `33037572` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.85b67816.check.log`):
+  EXIT=0, core 1319 passed, client 1769 passed. After the doc edits (log
+  `merge-2026-11-07/minion-stack-followups.docs-2026-11-08.check.log`): EXIT=0, core
+  "Tests 1319 passed (1319)", client "Tests 1769 passed (1769)", "Documentation check passed.".
+- Next step: critic on the merge and the doc commit, then push; merge the new head into
+  `feat/out-of-combat-heal` (#86).
