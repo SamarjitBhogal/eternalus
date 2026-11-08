@@ -2042,6 +2042,10 @@ Reply inline (`Decision: …`).
       and a `MatchResult` at tick T, no further commands") runs on a test entity with
       `WinObjective` today, because no shipped kind has the component. Add the test through
       `Simulation` when GL-3 gives the sovereign the component. Nothing to answer.
+- [ ] **HC-S11 — Not chosen for GL-5: keep the `selection` assets on a rematch (GL-5 critic round
+      2, B4; DEC-213).** On a rematch, `ResultsState.exit` releases `selection` and `loading`
+      loads it again at once. Releasing it only on the routes to `menu` saves one reload; plan
+      §4.5 step 5 would change by one line. Low value. Nothing to answer unless you want it.
 - [ ] **HC-S1 — Suggestion, not built: countdown urgency.** At 10 s or less, a stronger glow, a
       1 Hz pulse and screen-reader lines at 10 and 5 s. If you want it, it comes back as a
       `creative` row: a data-selectable variant with your static original kept live (DEC-53).
