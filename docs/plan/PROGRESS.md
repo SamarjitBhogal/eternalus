@@ -5002,3 +5002,23 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
   (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
   acceptance; 10 §9 already allows it for the MVP.
+
+### 2026-11-06 — Phase 3 / sprint 3 — feat/buildings-and-map-objects — branch sync
+
+- What was done: fetched all remotes and fast-forwarded the branch from 52c12979 to its remote
+  head f134000a. Integrated origin/phase/3-sprint-3-work at a58de03c with an uncommitted merge;
+  no conflicts or source changes were needed because the Phase 3 commit contains the branch's
+  shield work. Before this progress entry, the working tree matched the Phase 3 source tree.
+  Restored exact lockfile dependencies after releasing a running Vite server's native-file lock;
+  downloaded the missing locked happy-dom archive directly and installed offline after npm's
+  network request stalled. No dependency manifests or lockfiles changed.
+- Checks run: npm run check passed (exit 0): formatting, no-JS, lint, typecheck, Knip, coverage,
+  build and documentation. Core 1079/1079 and client 1754/1754 tests passed. The build reported
+  its existing large-chunk advisory. Verbatim final tail:
+
+  ```text
+  Checked 125 Markdown files under docs/.
+  Documentation check passed.
+  ```
+
+- Next step: review and commit the pending Phase 3 merge. Nothing was committed or pushed.
