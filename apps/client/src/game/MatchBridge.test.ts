@@ -28,7 +28,7 @@ const PLAYER: EntitySnapshot = {
 
 const snapshotAt = (tick: number, entities: readonly EntitySnapshot[] = []): Snapshot => ({
   tick,
-  phase: 'early-game',
+  match: { phase: 'early-game', phaseEnteredTick: 0, upcoming: [], humanLegendId: null },
   entities,
   hordes: [],
   teams: {

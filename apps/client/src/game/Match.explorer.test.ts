@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { BridgeEventMap } from '../bridge/events';
 import { TypedEventBus } from '../bridge/TypedEventBus';
+import { type PlayerChoice, withPlayer } from './__fixtures__/withPlayer';
 import { Camera } from './engine/Camera';
 import { FakeFrameScheduler } from './engine/loop/FakeFrameScheduler';
 import type { WorldRect } from './engine/render/Renderer.types';
@@ -19,6 +20,7 @@ import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
 
+const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };
 const SCREEN = { width: 1280, height: 720 };
 
 /** An intent source the test steers by hand. */
@@ -38,14 +40,18 @@ const setUp = () => {
   const camera = new Camera({ x: 0, y: 0 }, FOLLOW_VIEW_WIDTH, FOLLOW_VIEW_HEIGHT);
   const input = new ScriptedIntent();
   const match = new Match({
-    simulation: new Simulation({ config, seed: 1, logger: new NullLogger() }),
+    simulation: new Simulation({
+      ...withPlayer(config, PLAYER),
+      seed: 1,
+      logger: new NullLogger(),
+      map: world.map,
+    }),
     world,
     tickRate: config.tickRate,
     scheduler: new FakeFrameScheduler(),
     renderer,
     camera,
     input,
-    player: { legend: 'warrior', team: 'light' },
     logger: new NullLogger(),
     onCrash: () => undefined,
     bridge: {
@@ -77,7 +83,7 @@ describe('Match free view', () => {
     const { match, input, map, shown } = setUp();
     const following = shown();
 
-    match.overview();
+    match.controls.overview();
     const overview = shown();
 
     expect(overview.width).toBeGreaterThanOrEqual(map.width);
@@ -91,9 +97,9 @@ describe('Match free view', () => {
     const { match, shown } = setUp();
     const before = shown();
 
-    match.panBy(0, 0);
+    match.controls.panBy(0, 0);
     const start = shown();
-    match.panBy(-SCREEN.width / 2, 0);
+    match.controls.panBy(-SCREEN.width / 2, 0);
     const panned = shown();
 
     expect(start.x).toBeCloseTo(before.x);
@@ -104,39 +110,39 @@ describe('Match free view', () => {
   it('zooms the following camera, and the free view once exploring', () => {
     const { match, camera, shown } = setUp();
 
-    match.zoomBy(2);
+    match.controls.zoomBy(2);
     expect(camera.zoom).toBe(2);
 
-    match.overview();
+    match.controls.overview();
     const overview = shown();
-    match.zoomBy(2);
+    match.controls.zoomBy(2);
     expect(shown().width).toBeCloseTo(overview.width / 2);
     expect(camera.zoom).toBe(2);
   });
 
   it('leaves the explorer with every developer roof back and the following camera at base zoom', () => {
     const { match, camera, shown, cathedral, toScreen } = setUp();
-    match.zoomBy(2);
-    match.overview();
+    match.controls.zoomBy(2);
+    match.controls.overview();
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, shown());
-    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.controls.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
 
-    match.leaveExplorer();
+    match.controls.leaveExplorer();
 
-    expect(match.hasDeveloperRoofs).toBe(false);
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
     expect(camera.zoom).toBe(1);
     expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
   });
 
   it('toggles the cathedral roof in the same world and restores it on overview', () => {
     const { match, input, renderer, shown, cathedral, toScreen } = setUp();
-    match.overview();
+    match.controls.overview();
     const view = shown();
 
-    expect(match.toggleRoofAt(0, 0)).toBe(false);
+    expect(match.controls.toggleRoofAt(0, 0)).toBe(false);
     const onCathedral = toScreen(cathedral ?? { x: -1, y: -1 }, view);
-    expect(match.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
-    expect(match.hasDeveloperRoofs).toBe(true);
+    expect(match.controls.toggleRoofAt(onCathedral.x, onCathedral.y)).toBe(true);
+    expect(match.controls.hasDeveloperRoofs).toBe(true);
     const inside = shown();
     expect(inside).toEqual(view);
     expect(
@@ -147,9 +153,9 @@ describe('Match free view', () => {
     input.move = { x: 1, y: 0 };
     match.tick();
     expect(shown().width).toBeCloseTo(FOLLOW_VIEW_WIDTH);
-    expect(match.hasDeveloperRoofs).toBe(true);
+    expect(match.controls.hasDeveloperRoofs).toBe(true);
 
-    match.overview();
-    expect(match.hasDeveloperRoofs).toBe(false);
+    match.controls.overview();
+    expect(match.controls.hasDeveloperRoofs).toBe(false);
   });
 });
