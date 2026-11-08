@@ -69,6 +69,8 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   team,
   transform: { ...at, radius: 1, facing: { x: 1, y: 0 } },
   health: { current: 10, max: 10 },
+  area: null,
+  capture: null,
 });
 /** The player's Legend, away from the point the camera looks at. */
 const PLAYER: EntitySnapshot = { ...unit(ACTOR, 'light', OPEN_GROUND), family: 'legend' };

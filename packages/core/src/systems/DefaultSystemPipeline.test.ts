@@ -138,6 +138,7 @@ describe('DefaultSystemPipeline', () => {
       'spawn',
       'enraged',
       'death',
+      'capture',
       'match-director',
       'invariants',
     ]);

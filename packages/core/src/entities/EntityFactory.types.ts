@@ -2,7 +2,7 @@ import type { AiMemory, ControllerId } from '../content/ai/ai.types';
 import type { WeaponDefinition } from '../content/weapons/weapons.types';
 import type { EntityDefinitionBase } from '../content/EntityDefinition.types';
 import type { Team } from '../teams/teams.types';
-import type { Vec2 } from '../utils/geometry.types';
+import type { Polygon, Vec2 } from '../utils/geometry.types';
 
 /**
  * Where the factory finds the definition named by a `definitionId`. A `ContentCatalogue`
@@ -39,6 +39,8 @@ export type Placement = {
    * unit given none, or a zero one, starts at `INITIAL_FACING`.
    */
   readonly facing?: Vec2;
+  /** The ground a zone covers, as polygons in world units (zones only, `ZoneArea`). */
+  readonly area?: readonly Polygon[];
 };
 
 /**

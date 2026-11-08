@@ -91,7 +91,12 @@ export type {
 } from './state/GameEvents.types';
 export type { MatchResult, Verdict } from './state/MatchResult.types';
 export type { ScheduledMark } from './state/MatchState.types';
-export type { EntitySnapshot, MatchSnapshot, Snapshot } from './state/Snapshot.types';
+export type {
+  CaptureSnapshot,
+  EntitySnapshot,
+  MatchSnapshot,
+  Snapshot,
+} from './state/Snapshot.types';
 export { StateHasher } from './state/StateHasher';
 // DEC-178: the client uses core's "other team" rule instead of a copy.
 export { opponentOf } from './teams/playableTeams';

@@ -114,6 +114,8 @@ describe('Simulation', () => {
         team: 'light',
         transform: { x: 10, y: 20, radius: 0.5, facing: INITIAL_FACING },
         health: { current: 600, max: 600 },
+        area: null,
+        capture: null,
       },
     ]);
   });

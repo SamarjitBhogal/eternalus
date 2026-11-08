@@ -1,6 +1,7 @@
 import type { EntitySnapshot } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
+import { CapturePointView } from './CapturePointView';
 import { DefaultEntityView } from './DefaultEntityView';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { LegendView } from './LegendView';
@@ -16,6 +17,8 @@ const entity = (kind: string, family: string): EntitySnapshot => ({
   team: 'light',
   transform: { x: 0, y: 0, radius: 0.5, facing: { x: 1, y: 0 } },
   health: null,
+  area: null,
+  capture: null,
 });
 
 describe('createDefaultViewRegistry', () => {
@@ -30,6 +33,7 @@ describe('createDefaultViewRegistry', () => {
     expect(registry.viewFor(entity('gate', 'structure'))).toBeInstanceOf(StructureView);
     expect(registry.viewFor(entity('pillar', 'obstacle'))).toBeInstanceOf(DefaultEntityView);
     expect(registry.viewFor(entity('pillar', 'obstacle'))).not.toBeInstanceOf(MobView);
+    expect(registry.viewFor(entity('capture-point', 'zone'))).toBeInstanceOf(CapturePointView);
   });
 
   it('passes unknown kinds to the reporter it is given', () => {

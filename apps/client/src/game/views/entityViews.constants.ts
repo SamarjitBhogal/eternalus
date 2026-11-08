@@ -23,6 +23,30 @@ export const MOB_OUTLINE_COLOR = '#1b1b1b';
 /** How much wider than the mob its outline is. */
 export const MOB_OUTLINE_SCALE = 1.35;
 
+/** Width of a capture point's outline, in screen pixels. */
+export const CAPTURE_OUTLINE_WIDTH = 2;
+
+/** Width of a capture point's bars, in world units (the old radius-35 ring's width). */
+export const CAPTURE_BAR_WIDTH = 70;
+
+/** Height of a capture point's progress bar, in world units. */
+export const CAPTURE_BAR_HEIGHT = 5;
+
+/** Height of the presence bar under the progress bar (each side's share), in world units. */
+export const CAPTURE_PRESENCE_BAR_HEIGHT = 2;
+
+/** Gap between the top of a capture point's area and its bars, in world units. */
+export const CAPTURE_BAR_GAP = 4;
+
+/** Colour behind a capture point's progress bar. */
+export const CAPTURE_BAR_BACKGROUND_COLOR = '#1b1b1b';
+
+/** Colour of the checkpoint marks on a capture point's progress bar. */
+export const CAPTURE_CHECKPOINT_MARK_COLOR = '#ffffff';
+
+/** Width of a checkpoint mark, in screen pixels. */
+export const CAPTURE_CHECKPOINT_MARK_WIDTH = 1;
+
 /**
  * The facing chevron in front of every Legend and mob (DEC-192), main view only: two arms from a
  * `tip` back to a base arc around the unit's centre. `base` and `tip` are distances from the centre
