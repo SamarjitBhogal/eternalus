@@ -2302,6 +2302,11 @@ Reply inline (`Decision: …`).
 create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySystem`,
     `OutOfCombatHealingSystem`). (10) One production map-object factory for `Simulation` and the
     test fixtures (extends (4)).
+  - Critic on the #64 merge (2026-11-08) adds: (11) One fort geometry for heal and capture. The
+    heal `fort-box` zone is the tower's `Footprint` box (walls and gateways, DEC-215 (4)); the
+    capture zone's `zoneAreaOf` rebuilds the fort court from `BUILDING_GEOMETRY.fort` (court
+    only, DEC-145 (a)). The extents differ on purpose, but a fort size change in one place would
+    not reach the other; derive the capture court as an inset of the same fort box.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

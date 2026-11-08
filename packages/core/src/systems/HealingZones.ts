@@ -4,7 +4,7 @@ import type { MapDefinition, MapFeatureKind } from '../content/maps/maps.types';
 import type { Entity } from '../entities/Entity';
 import { strongholdEnclosure } from '../map/strongholdEnclosure';
 import type { Team } from '../teams/teams.types';
-import { isPointInPolygon } from '../utils/geometry';
+import { isPointInAnyPolygon, isPointInPolygon } from '../utils/geometry';
 import type { HealingZone } from './HealingZones.types';
 
 /**
@@ -73,8 +73,7 @@ export class HealingZones {
       this.interiors.set(stronghold.team, {
         outline,
         contains: (point) =>
-          isPointInPolygon(point, outline) &&
-          !shield.some((piece) => isPointInPolygon(point, piece)),
+          isPointInPolygon(point, outline) && !isPointInAnyPolygon(point, shield),
       });
     }
   }

@@ -6060,3 +6060,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0, core "Tests 1414 passed (1414)", client "Tests 1778 passed (1778)", "Documentation check
   passed.".
 - Next step: critic, push after #85; retarget #86 to phase/3 once #85 merges.
+
+### 2026-11-08 — Phase 3 / out-of-combat healing, critic on the #64 merge — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: critic on `835b6cc5` + `57a68305`: APPROVE, 0 blockers, 0 should-fix
+  (`eternalus-agent-work/playtest-2026-11-04/critic-heal-merge-8c5febc4.md`). Nit applied:
+  `HealingZones`' Stronghold interior uses #64's `isPointInAnyPolygon` (same expression). The
+  better-than-design item (one fort geometry for the heal `fort-box` and the capture court) is
+  INBOX item (11) under the heal branch's list, for the owner.
+- Checks run: `npm run check` (log
+  `merge-2026-11-07/out-of-combat-heal.anypolygon.check.log`): EXIT=0, core "Tests 1414 passed
+  (1414)", client "Tests 1778 passed (1778)", "Documentation check passed.".
+- Next step: push after #85; retarget #86 to phase/3 once #85 merges.
