@@ -23,7 +23,10 @@ import type { BotRosterDefinition } from './teams/botRoster.types';
 import { TEAM_DISPLAY_NAMES } from './teams/teamDisplayNames';
 import { ContentValidator } from './validation/ContentValidator';
 
-/** Display data the client's selection screens and HUD show (read-only definitions). */
+/**
+ * Display data the client's selection screens, HUD and results screen show (read-only
+ * definitions): the results screen's verdict lines and each team's sovereign name among them.
+ */
 export type DisplayContent = {
   readonly legends: readonly LegendDefinition[];
   readonly specs: readonly LegendSpecDefinition[];

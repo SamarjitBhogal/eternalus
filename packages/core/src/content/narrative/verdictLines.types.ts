@@ -4,7 +4,7 @@ import type { VictoryConditionId } from '../../config/VictoryConditionId.types';
  * The line under the verdict for each way one side sees the end of a match. `{name}` stands for
  * the display name of the fallen side's objective (architecture 12 §8's placeholder convention).
  */
-export type VerdictLineSet = {
+type VerdictLineSet = {
   readonly victory: string;
   readonly defeat: string;
   readonly draw: string;
