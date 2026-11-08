@@ -17,31 +17,41 @@ import type { MatchBridgeDeps } from './MatchBridge.types';
  * publishes only what the simulation has today (DEC-17, HC-F6: no made-up values):
  * - `match-clock` and `hud-state` (the player's health; every other value `null`) every
  *   `publishEveryTicks`;
- * - the team structures and the capture points from the map's features (health `null`, owner
- *   `neutral`) every `ROSTER_PUBLISH_EVERY_TICKS`;
+ * - the team structures and the capture points from the map's features every
+ *   `ROSTER_PUBLISH_EVERY_TICKS`: each structure with the live health of the structure core built
+ *   from its feature (DEC-212), each capture point owned by `neutral`;
  * - `match-ended` once, after the tick whose step ended the match: the result is latched inside
  *   the simulation's event and published from `afterTick`, never mid-step.
- * `publishAll` sends everything once, before the first tick. The rosters are built once, so each
- * re-send carries the same arrays and the store sees no change. Its subscriptions to the
- * simulation's events are one listener table (`listen`): each announcement 12 §8 plans is one line.
+ * `publishAll` sends everything once, before the first tick. The capture roster is built once, so
+ * each re-send carries the same array and the store sees no change. Its subscriptions to the
+ * simulation's events are one listener table (`listen`): each announcement 12 §8 plans is one
+ * line.
  */
 export class MatchBridge {
   private readonly structures: readonly StructureStatus[];
+  /** The max health of each structure tile bound to a structure at match start, by feature id. */
+  private readonly boundMaxHealth: ReadonlyMap<string, number>;
   private readonly capturePoints: readonly CapturePointStatus[];
   private readonly listeners: readonly Unsubscribe[];
   private result: MatchResult | null = null;
   private wasEndPublished = false;
 
-  /** Builds the two rosters from the map and subscribes its listener table; publishes nothing yet. */
+  /**
+   * Builds the two rosters from the map, binds each structure tile to the structure the first
+   * snapshot names for its feature, and subscribes its listener table; publishes nothing yet.
+   */
   public constructor(private readonly deps: MatchBridgeDeps) {
     this.structures = MatchBridge.structuresOf(deps.map);
+    this.boundMaxHealth = new Map(
+      [...MatchBridge.healthByFeature(deps.firstSnapshot)].map(([id, { max }]) => [id, max]),
+    );
     this.capturePoints = MatchBridge.capturePointsOf(deps.map, deps.captureKinds);
     this.listeners = this.listen(deps.events);
   }
 
   /** Publishes both rosters, the clock and the HUD once, before the first tick. */
   public publishAll(snapshot: Snapshot, playerId: EntityId | null): void {
-    this.publishRosters();
+    this.publishRosters(snapshot);
     this.publishFast(snapshot, playerId);
   }
 
@@ -54,7 +64,7 @@ export class MatchBridge {
       this.publishFast(snapshot, playerId);
     }
     if (snapshot.tick % ROSTER_PUBLISH_EVERY_TICKS === 0) {
-      this.publishRosters();
+      this.publishRosters(snapshot);
     }
     if (this.result === null || this.wasEndPublished) return false;
     this.wasEndPublished = true;
@@ -89,9 +99,37 @@ export class MatchBridge {
     bus.emit('hud-state', { player: MatchBridge.playerOf(snapshot, playerId) });
   }
 
-  private publishRosters(): void {
-    this.deps.bus.emit('structure-state', { structures: this.structures });
+  private publishRosters(snapshot: Snapshot): void {
+    this.deps.bus.emit('structure-state', { structures: this.structuresAt(snapshot) });
     this.deps.bus.emit('capture-state', { points: this.capturePoints });
+  }
+
+  /**
+   * The structure roster with live health (DEC-212): a tile bound at match start takes its
+   * structure's health from `snapshot`, and 0 once the structure is gone from it (`DeathSystem`
+   * removes a structure only when it dies; DEC-69). A feature core built no structure for (walls
+   * and turrets, 07 §13) keeps `null`: the HUD shows "no data", never a made-up value.
+   */
+  private structuresAt(snapshot: Snapshot): readonly StructureStatus[] {
+    const live = MatchBridge.healthByFeature(snapshot);
+    return this.structures.map((structure) => {
+      const max = this.boundMaxHealth.get(structure.structureId);
+      if (max === undefined) return structure;
+      return { ...structure, health: live.get(structure.structureId) ?? { current: 0, max } };
+    });
+  }
+
+  /** The health of each structure in `snapshot` that names its map feature, by feature id. */
+  private static healthByFeature(
+    snapshot: Snapshot,
+  ): ReadonlyMap<string, NonNullable<StructureStatus['health']>> {
+    const health = new Map<string, NonNullable<StructureStatus['health']>>();
+    for (const entity of snapshot.entities) {
+      if (entity.mapFeatureId !== undefined && entity.health !== null) {
+        health.set(entity.mapFeatureId, entity.health);
+      }
+    }
+    return health;
   }
 
   /**
@@ -119,7 +157,10 @@ export class MatchBridge {
     };
   }
 
-  /** Every team-owned feature is a team structure (07 §1); camps, objectives and scenery are neutral. */
+  /**
+   * Every team-owned feature is a team structure (07 §1); camps, objectives and scenery are
+   * neutral. Health starts `null`; `structuresAt` fills it for the features bound to a structure.
+   */
   private static structuresOf(map: MapDefinition): readonly StructureStatus[] {
     return map.features.flatMap((feature) =>
       feature.team === 'neutral'

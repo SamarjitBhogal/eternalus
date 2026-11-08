@@ -1,4 +1,4 @@
-import type { MapDefinition, MapFeatureKind, Simulation } from '@eternalus/core';
+import type { MapDefinition, MapFeatureKind, Simulation, Snapshot } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
@@ -19,4 +19,9 @@ export type MatchBridgeDeps = {
    * subscribes (12 §8, 13 §5).
    */
   readonly events: Pick<Simulation, 'on'>;
+  /**
+   * The simulation's snapshot before the first tick: core builds every structure from the map
+   * before it, so the bridge binds each structure tile here, by `EntitySnapshot.mapFeatureId`.
+   */
+  readonly firstSnapshot: Snapshot;
 };

@@ -4,6 +4,7 @@ import {
   type GameEventHandler,
   type GameEventMap,
   type GameEventType,
+  type MapFeature,
   type MapFeatureKind,
   type Simulation,
   type Snapshot,
@@ -68,7 +69,32 @@ const snapshotAt = (tick: number, entities: readonly EntitySnapshot[] = []): Sna
   },
 });
 
-function setUp(numLanes = createDefaultGameConfig().map.numLanes) {
+/** The structure core built from `feature`, with `current` of `max` health. */
+const structureOf = (feature: MapFeature, current: number, max: number): EntitySnapshot => ({
+  id: `structure-${feature.id}`,
+  kind: feature.kind,
+  family: 'structure',
+  definitionId: feature.definitionId,
+  team: feature.team,
+  transform: { ...feature.position, radius: 3 },
+  health: { current, max },
+  mapFeatureId: feature.id,
+});
+
+const MAP = prepareMatchWorld(createDefaultGameConfig(), 1).map;
+/** The first light feature of `kind` on the shipped map. */
+const lightFeature = (kind: MapFeatureKind): MapFeature => {
+  const feature = MAP.features.find(
+    (candidate) => candidate.kind === kind && candidate.team === 'light',
+  );
+  if (feature === undefined) throw new Error(`The map has no light ${kind}.`);
+  return feature;
+};
+
+function setUp(
+  numLanes = createDefaultGameConfig().map.numLanes,
+  firstSnapshot: Snapshot = snapshotAt(0),
+) {
   const defaults = createDefaultGameConfig();
   const { map } = prepareMatchWorld({ map: { ...defaults.map, numLanes } }, 1);
   const bus = new TypedEventBus<BridgeEventMap>();
@@ -106,6 +132,7 @@ function setUp(numLanes = createDefaultGameConfig().map.numLanes) {
     map,
     captureKinds: CAPTURE_KINDS,
     events: simulation,
+    firstSnapshot,
   });
   return { map, bridge, order, clocks, huds, structures, captures, endings, simulation };
 }
@@ -157,7 +184,7 @@ describe('MatchBridge', () => {
     ]);
   });
 
-  it('lists every team feature once as a structure, with its lane and no health', () => {
+  it('lists every team feature once as a structure, with its lane and, with no structure built, no health', () => {
     const { map, bridge, structures: published } = setUp();
     bridge.publishAll(snapshotAt(0), null);
     const structures = published[0]?.structures ?? [];
@@ -207,15 +234,73 @@ describe('MatchBridge', () => {
     }
   });
 
-  it('re-sends the same roster arrays, so the store sees no change', () => {
-    const { bridge, structures, captures } = setUp();
+  it('re-sends the same capture array, so the store sees no change (capture is not simulated)', () => {
+    const { bridge, captures } = setUp();
     bridge.publishAll(snapshotAt(0), null);
     bridge.afterTick(snapshotAt(30), null);
 
-    const [first, second] = structures;
     const [firstPoints, secondPoints] = captures;
-    expect(second?.structures).toBe(first?.structures);
     expect(secondPoints?.points).toBe(firstPoints?.points);
+  });
+
+  it("gives each structure tile its live structure's health, bound by feature id (DEC-212)", () => {
+    const stronghold = lightFeature('stronghold');
+    const gate = lightFeature('gate');
+    const start = snapshotAt(0, [
+      structureOf(stronghold, 10_000, 10_000),
+      structureOf(gate, 3_000, 3_000),
+    ]);
+    const { bridge, structures: published } = setUp(undefined, start);
+    bridge.publishAll(start, null);
+    bridge.afterTick(
+      snapshotAt(30, [structureOf(stronghold, 7_500, 10_000), structureOf(gate, 1_200, 3_000)]),
+      null,
+    );
+    const healthOf = (index: number, id: string) =>
+      published[index]?.structures.find(({ structureId }) => structureId === id)?.health;
+
+    expect([healthOf(0, stronghold.id), healthOf(0, gate.id)]).toEqual([
+      { current: 10_000, max: 10_000 },
+      { current: 3_000, max: 3_000 },
+    ]);
+    expect([healthOf(1, stronghold.id), healthOf(1, gate.id)]).toEqual([
+      { current: 7_500, max: 10_000 },
+      { current: 1_200, max: 3_000 },
+    ]);
+  });
+
+  it('shows a structure at 0 once it is destroyed and gone from the snapshot (DEC-69)', () => {
+    const tower = lightFeature('buff-tower');
+    const start = snapshotAt(0, [structureOf(tower, 2_500, 2_500)]);
+    const { bridge, structures: published } = setUp(undefined, start);
+    bridge.afterTick(snapshotAt(30), null);
+
+    expect(
+      published[0]?.structures.find(({ structureId }) => structureId === tower.id)?.health,
+    ).toEqual({ current: 0, max: 2_500 });
+  });
+
+  it('keeps null for a feature core built no structure for, and never binds by position', () => {
+    const wall = lightFeature('wall-segment');
+    const tower = lightFeature('spawner-tower');
+    // An entity standing on the tower's spot that names no feature is not the tower's structure.
+    const bystander: EntitySnapshot = {
+      id: 'bystander',
+      kind: tower.kind,
+      family: 'structure',
+      definitionId: tower.definitionId,
+      team: tower.team,
+      transform: { ...tower.position, radius: 3 },
+      health: { current: 1, max: 3_000 },
+    };
+    const start = snapshotAt(0, [bystander]);
+    const { bridge, structures: published } = setUp(undefined, start);
+    bridge.publishAll(start, null);
+    const healthOf = (id: string) =>
+      published[0]?.structures.find(({ structureId }) => structureId === id)?.health;
+
+    expect(healthOf(wall.id)).toBeNull();
+    expect(healthOf(tower.id)).toBeNull();
   });
 
   it("publishes match-ended once, after the ending tick's other events, with its length", () => {

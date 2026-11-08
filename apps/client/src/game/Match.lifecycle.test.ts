@@ -257,6 +257,26 @@ describe('Match lifecycle', () => {
     expect(clocks.map((clock) => clock.tick)).toEqual([0, 6, 12, 18, 24, 30]);
   });
 
+  it("shows each structure tile with its real structure's health from the start (DEC-212)", () => {
+    const { deps } = matchDeps();
+    const published: BridgeEventMap['structure-state'][] = [];
+    deps.bridge.bus.on('structure-state', (event) => published.push(event));
+    new Match(deps).start();
+    const live = new Map(
+      deps.simulation
+        .snapshot()
+        .entities.flatMap(({ mapFeatureId, health }) =>
+          mapFeatureId === undefined ? [] : [[mapFeatureId, health] as const],
+        ),
+    );
+    const shown = published[0]?.structures ?? [];
+
+    expect(shown.filter(({ health }) => health !== null).length).toBeGreaterThan(0);
+    for (const { structureId, health } of shown) {
+      expect(health).toEqual(live.get(structureId) ?? null);
+    }
+  });
+
   it('plays the same way twice for the same seed and intents (deterministic)', () => {
     const play = (): number => {
       let move = { x: 1, y: 0 };
