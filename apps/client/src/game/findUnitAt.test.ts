@@ -18,6 +18,8 @@ const entity = (
   team,
   transform: { x, y, radius },
   health: { current: 5, max: 5 },
+  area: null,
+  capture: null,
 });
 
 const PLAYER = entity('player', 'legend', 'light', 100);

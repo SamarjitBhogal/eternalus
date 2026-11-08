@@ -25,6 +25,8 @@ describe('StructureView', () => {
         team: 'light' as const,
         transform: { x: 0, y: 0, radius: 3 },
         health: { current: 3000, max: 3000 },
+        area: null,
+        capture: null,
       },
       position: { x: 0, y: 0 },
       isFocused: false,

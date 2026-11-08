@@ -336,6 +336,8 @@ describe('MiniMapView unit markers (DEC-187)', () => {
       team: 'light',
       transform: { x: CENTRE.x + 10, y: CENTRE.y, radius: 0.4 },
       health: { current: 150, max: 150 },
+      area: null,
+      capture: null,
     };
     const counters = { unitsRequested: 0, unitsSuppressed: 0, towersLostByLane: {} };
     const snapshot: Snapshot = {
