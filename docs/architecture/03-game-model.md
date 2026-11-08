@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-08
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -78,6 +78,9 @@ export class MatchRecord implements MatchState {
   public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
   public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
   public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
+  // the scoring data's only writer (DEC-211): written by Scoring only, in its fold (12 §5)
+  public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, recordHit, takeAssists
+  public get scoring(): ScoringState; // the book's data, read-only at every depth
 }
 ```
 
@@ -186,7 +189,7 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                              |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage) |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                  |
-| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields)                       |
+| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)  |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                                      |
 | `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                                       |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                               |
