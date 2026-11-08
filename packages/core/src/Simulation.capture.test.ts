@@ -10,7 +10,11 @@ import { zoneAreaOf } from './map/zoneArea';
 import { Simulation } from './Simulation';
 import type { EntitySnapshot } from './state/Snapshot.types';
 
-const CONFIG = createDefaultGameConfig({ match: { countdownSeconds: 600 } });
+// The long countdown keeps the waves away. The timeline must stay in tick order, so the planned
+// length puts the quarter mark (a quarter of it) after the countdown.
+const CONFIG = createDefaultGameConfig({
+  match: { countdownSeconds: 600, plannedMatchSeconds: 3600 },
+});
 const MAP = new MapGenerator().generate(CONFIG, 1);
 
 const match = (withMap = true) =>
