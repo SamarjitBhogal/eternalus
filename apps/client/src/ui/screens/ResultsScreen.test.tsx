@@ -31,7 +31,11 @@ const render = (winner: PlayableTeam | null | 'none', resultsMs = 30_000): strin
       result: winner === 'none' ? null : matchResultFixture({ winner }),
       durationSeconds: winner === 'none' ? null : 872,
     },
-    matchSetup: { ...matchSetupSlice.getInitialState(), playerTeam: 'light', resultsMs },
+    matchSetup: {
+      ...matchSetupSlice.getInitialState(),
+      playerTeam: 'light',
+      countdownsMs: { select: 0, reveal: 0, results: resultsMs },
+    },
   });
 
 const heading = (html: string): string | undefined => /<h1[^>]*>([^<]*)<\/h1>/.exec(html)?.[1];

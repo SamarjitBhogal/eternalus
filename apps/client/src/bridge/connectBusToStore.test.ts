@@ -113,9 +113,7 @@ describe('connectBusToStore', () => {
       selection: { classId: 'magus', specId: null },
       allies: DRAFT.allies,
       enemies: DRAFT.enemies,
-      countdownMs: 59_000,
-      revealMs: 9_000,
-      resultsMs: 29_000,
+      countdownsMs: { select: 59_000, reveal: 9_000, results: 29_000 },
       isLockedIn: false,
     });
     bus.emit('match-setup', null);

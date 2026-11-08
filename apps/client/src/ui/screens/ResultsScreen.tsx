@@ -40,10 +40,7 @@ export function ResultsScreen(): ReactElement {
           title={verdict === null ? STRINGS.results.title : STRINGS.results.verdicts[verdict]}
           bannerAssetId={bannerAssetId}
         />
-        <SessionCountdown
-          seconds={matchSetupSlice.selectors.selectResultsSeconds}
-          label={STRINGS.results.countdownLabel}
-        />
+        <SessionCountdown kind="results" label={STRINGS.results.countdownLabel} />
         <div className={styles.summary}>
           {status !== null && (
             <p className={styles.line} role="status">

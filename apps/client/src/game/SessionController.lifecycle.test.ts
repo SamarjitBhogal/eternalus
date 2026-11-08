@@ -323,7 +323,7 @@ describe('SessionController match lifetime', () => {
     expect(selectMatchVerdict(atResults)).toBe('victory');
     // The shipped verdict line, the sovereign named from shipped content (DEC-83, DEC-74).
     expect(selectVerdictLine(atResults)).toBe('The enemy Emperor has fallen.');
-    expect(atResults.matchSetup.resultsMs).toBe(RESULTS_COUNTDOWN_MS);
+    expect(atResults.matchSetup.countdownsMs.results).toBe(RESULTS_COUNTDOWN_MS);
     session.clock.advance(RESULTS_COUNTDOWN_MS - 1);
     expect(session.controller.phase).toBe('results');
     session.clock.advance(1);

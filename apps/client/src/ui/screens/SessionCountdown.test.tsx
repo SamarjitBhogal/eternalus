@@ -7,22 +7,24 @@ import { SessionCountdown } from './SessionCountdown';
 
 const render = (countdownMs: number): string =>
   renderWithStore(
-    <SessionCountdown
-      seconds={matchSetupSlice.selectors.selectCountdownSeconds}
-      label={STRINGS.characterSelect.countdownLabel}
-    />,
-    { matchSetup: { ...matchSetupSlice.getInitialState(), countdownMs } },
+    <SessionCountdown kind="select" label={STRINGS.characterSelect.countdownLabel} />,
+    {
+      matchSetup: {
+        ...matchSetupSlice.getInitialState(),
+        countdownsMs: { select: countdownMs, reveal: 0, results: 0 },
+      },
+    },
   );
 
 describe('SessionCountdown', () => {
-  it('reads the countdown its selector names, under its label (the win/lose screen)', () => {
+  it('reads the countdown its kind names, under its label (the win/lose screen)', () => {
     const html = renderWithStore(
-      <SessionCountdown
-        seconds={matchSetupSlice.selectors.selectResultsSeconds}
-        label={STRINGS.results.countdownLabel}
-      />,
+      <SessionCountdown kind="results" label={STRINGS.results.countdownLabel} />,
       {
-        matchSetup: { ...matchSetupSlice.getInitialState(), countdownMs: 42_000, resultsMs: 7_000 },
+        matchSetup: {
+          ...matchSetupSlice.getInitialState(),
+          countdownsMs: { select: 42_000, reveal: 3_000, results: 7_000 },
+        },
       },
     );
     expect(html).toMatch(/role="timer"[^>]*>7</);

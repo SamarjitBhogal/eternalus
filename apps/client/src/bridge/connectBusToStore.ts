@@ -1,6 +1,4 @@
-import type { ActionCreatorWithPayload } from '@reduxjs/toolkit';
-
-import type { BridgeEventMap, CountdownKind } from './events';
+import type { BridgeEventMap } from './events';
 import { assetsSlice } from './slices/assetsSlice';
 import { contentSlice } from './slices/contentSlice';
 import { hudSlice } from './slices/hudSlice';
@@ -14,13 +12,6 @@ import type { TypedEventBus } from './TypedEventBus';
 
 const setup = matchSetupSlice.actions;
 const match = matchSlice.actions;
-
-/** Where each session countdown's remaining time is kept (a new kind is one entry). */
-const COUNTDOWN_ACTIONS: Readonly<Record<CountdownKind, ActionCreatorWithPayload<number>>> = {
-  select: setup.setCountdown,
-  reveal: setup.setReveal,
-  results: setup.setResultsCountdown,
-};
 
 /**
  * Copies every game → UI event into its slice: the only path from the bus to the store.
@@ -54,7 +45,7 @@ export function connectBusToStore(
     }),
     bus.on('class-selection', (selection) => dispatch(setup.select(selection))),
     bus.on('selection-locked', (rosters) => dispatch(setup.lockIn(rosters))),
-    bus.on('countdown', ({ kind, remainingMs }) => dispatch(COUNTDOWN_ACTIONS[kind](remainingMs))),
+    bus.on('countdown', (countdown) => dispatch(setup.countdownChanged(countdown))),
     bus.on('match-clock', (clock) => dispatch(match.clockChanged(clock))),
     bus.on('match-ended', (event) => dispatch(match.ended(event))),
     bus.on('hud-state', ({ player }) => dispatch(hudSlice.actions.hudStateChanged(player))),

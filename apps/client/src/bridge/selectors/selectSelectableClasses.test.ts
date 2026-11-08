@@ -28,7 +28,9 @@ describe('selectSelectableClasses', () => {
 
   it('returns the same array after an unrelated dispatch', () => {
     const before = selectSelectableClasses(store.getState());
-    store.dispatch(matchSetupSlice.actions.setCountdown(41_000));
+    store.dispatch(
+      matchSetupSlice.actions.countdownChanged({ kind: 'select', remainingMs: 41_000 }),
+    );
     expect(selectSelectableClasses(store.getState())).toBe(before);
   });
 });
