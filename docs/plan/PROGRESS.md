@@ -5806,3 +5806,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `npm run check:quick` exit 0 and the eight affected client test files pass; the
   full `npm run check` follows on this entry.
 - Next step: full check; push; PR #76 merges after #78 once Samarjit re-approves.
+
+### 2026-11-08 — Phase 3 / playtest fixes: click attack, merge of phase/3 after PR #64 — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: #75, #74 and #78 merged into phase/3, then #64 (capture zones, `b02ef47`).
+  Merged phase/3 `b02ef47` into this branch (`a7fd3a3`). Only `PROGRESS.md` conflicted
+  (append-only; both sides kept, #64's entries first; line count ours + theirs − base = merged,
+  5808). #64 added `area` and `capture` to `EntitySnapshot`, so the unit fixtures in
+  `findUnitAt.test.ts`, `MatchViewControls.test.ts` and `PlayerCommands.test.ts` set both to
+  `null`, as #64's own fixtures do (typecheck found them; git did not flag them).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-76-post64.log`): exit 0, Prettier passed, core
+  `Tests 1298 passed (1298)`, client `Tests 1789 passed (1789)`, docs check passed.
+- Next step: push; PR #76 merges once Samarjit re-approves; then #77.
