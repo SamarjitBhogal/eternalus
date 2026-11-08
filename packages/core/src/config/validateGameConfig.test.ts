@@ -116,6 +116,23 @@ describe('validateGameConfig', () => {
     ['match.hordeSizes.medium', { match: { hordeSizes: { medium: 0.5 } } }],
     ['match.hordeSizes.heavy', { match: { hordeSizes: { heavy: Number.NaN } } }],
     ['match.plannedMatchSeconds', { match: { plannedMatchSeconds: 0 } }],
+    ['match.capturePoints.checkpoints', { match: { capturePoints: { checkpoints: 0 } } }],
+    ['match.capturePoints.checkpoints', { match: { capturePoints: { checkpoints: 2.5 } } }],
+    ['match.capturePoints.captureSeconds', { match: { capturePoints: { captureSeconds: 0 } } }],
+    ['match.capturePoints.revertSeconds', { match: { capturePoints: { revertSeconds: -1 } } }],
+    ['match.capturePoints.maxMargin', { match: { capturePoints: { maxMargin: Infinity } } }],
+    [
+      'match.capturePoints.weights.legend',
+      { match: { capturePoints: { weights: { legend: 0 } } } },
+    ],
+    [
+      'match.capturePoints.weights.unit',
+      { match: { capturePoints: { weights: { unit: Number.NaN } } } },
+    ],
+    [
+      'match.capturePoints.weights.legend',
+      { match: { capturePoints: { weights: { legend: 1, unit: 1 } } } },
+    ],
     ['match.countdownSeconds', { match: { countdownSeconds: 1801 } }],
     ['limits.maxUnitsPerTeam', { limits: { maxUnitsPerTeam: 47 } }],
     ['limits.maxUnitsPerTeam', { match: { hordeSizes: { light: 101 } } }],

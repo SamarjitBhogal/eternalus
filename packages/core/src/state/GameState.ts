@@ -1,6 +1,8 @@
+import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
 import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
+import { ZoneArea } from '../components/ZoneArea';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { Entity } from '../entities/Entity';
 import type { PlayableTeam } from '../teams/teams.types';
@@ -250,8 +252,9 @@ export class GameState {
   /** The current state as a structured-clone-safe snapshot. */
   public snapshot(): Snapshot {
     const entities: EntitySnapshot[] = [];
+    const { checkpoints } = this.config.match.capturePoints;
     this.entities.forEach((entity) => {
-      entities.push(GameState.snapshotOf(entity));
+      entities.push(GameState.snapshotOf(entity, checkpoints));
     });
     const { phase, phaseEnteredTick, timelineCursor, schedule, humanLegendId } = this.match;
     const hordes: HordeSnapshot[] = [];
@@ -277,9 +280,10 @@ export class GameState {
     };
   }
 
-  private static snapshotOf(entity: Entity): EntitySnapshot {
+  private static snapshotOf(entity: Entity, checkpoints: number): EntitySnapshot {
     const transform = entity.findComponent(Transform);
     const health = entity.findComponent(Health);
+    const capture = entity.findComponent(Capturable);
     return {
       id: entity.id,
       kind: entity.kind,
@@ -294,6 +298,18 @@ export class GameState {
           ? null
           : { x: transform.position.x, y: transform.position.y, radius: transform.radius },
       health: health === undefined ? null : { current: health.current, max: health.max },
+      area: entity.findComponent(ZoneArea)?.polygons ?? null,
+      capture:
+        capture === undefined
+          ? null
+          : {
+              owner: capture.owner,
+              progress: capture.progress,
+              checkpoint: capture.checkpoint,
+              checkpoints,
+              lockedBy: capture.lockedBy,
+              presence: capture.presence,
+            },
     };
   }
 }
