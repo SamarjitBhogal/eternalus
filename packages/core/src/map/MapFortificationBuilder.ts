@@ -1,4 +1,5 @@
 import type { MapDecoration, MapFeature } from '../content/maps/maps.types';
+import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import { MAP_PALETTE as P, SKETCH_HEIGHT } from '../content/maps/map1Scenery';
 import { MapDecorationBuilder } from './MapDecorationBuilder';
 
@@ -9,14 +10,14 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     const isCapturePoint = feature.kind === 'capture-point';
     const north = isCapturePoint && feature.position.y < SKETCH_HEIGHT / 2;
     const south = isCapturePoint && !north;
-    const size = isCapturePoint ? 88 : feature.kind === 'stronghold' ? 58 : 32;
+    const size = isCapturePoint ? G.fort.capturePointSize : feature.kind === 'stronghold' ? 58 : 32;
     const stone = north ? P.snowLight : south ? P.basalt : P.stone;
     const roof = north ? P.snowShadow : south ? P.volcanicRoof : P.stoneDark;
     const accent = feature.team === 'light' ? P.light : feature.team === 'dark' ? P.dark : P.gold;
     const { x, y } = feature.position;
     const left = x - size / 2;
     const top = y - size / 2;
-    const wall = size / 10;
+    const wall = size / G.fort.wallDivisor;
     const tower = size / 5;
     const id = feature.id;
     this.beginObject(id, 'fort');

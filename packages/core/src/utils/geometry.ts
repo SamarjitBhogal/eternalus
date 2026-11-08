@@ -51,6 +51,13 @@ export const isPointInPolygon = (point: Vec2, polygon: Polygon): boolean => {
   return isInside;
 };
 
+/**
+ * Whether `point` lies inside any of `polygons`: the one point-in-footprint test shared by a
+ * capture zone's floor (`ZoneArea.contains`) and the building at a point (`findBuildingAt`).
+ */
+export const isPointInAnyPolygon = (point: Vec2, polygons: readonly Polygon[]): boolean =>
+  polygons.some((polygon) => isPointInPolygon(point, polygon));
+
 /** The point of the segment from `a` to `b` nearest to `point`. */
 export const closestPointOnSegment = (point: Vec2, a: Vec2, b: Vec2): Vec2 => {
   const lengthSquared = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;

@@ -14,6 +14,7 @@ import { createDefaultStrategyRegistry } from '../entities/strategies/defaultStr
 import { LaneFlowFields } from '../map/LaneFlowFields';
 import type { GameState } from '../state/GameState';
 import type { Rect } from '../utils/geometry.types';
+import { CaptureSystem } from './CaptureSystem';
 import { CombatSystem } from './CombatSystem';
 import { MapDestructionSystem } from './MapDestructionSystem';
 import { DeathSystem } from './DeathSystem';
@@ -41,11 +42,11 @@ import { SystemPipeline } from './SystemPipeline';
  * progress, statuses, movement, collision (DEC-121 (c): every later reader sees resolved
  * positions), the neighbour index, stuck detection (DEC-193), steering, combat, map destruction,
  * progression (kill XP), minion veterancy, structure losses and breakability, spawning, enraging,
- * death, the match director, then invariants last. This is the one place a system is added, at
- * its position in the tick (architecture 02 §9). It builds the match's one `DamagePipeline` and one
- * `StatusEffectApplier` (with the status effects loaded for this match's config) and hands them to
- * the systems that need them, so a damage step applies to every hit and every status event comes
- * from one place.
+ * death, capture points, the match director, then invariants last. This is the one place a system
+ * is added, at its position in the tick (architecture 02 §9). It builds the match's one
+ * `DamagePipeline` and one `StatusEffectApplier` (with the status effects loaded for this match's
+ * config) and hands them to the systems that need them, so a damage step applies to every hit and
+ * every status event comes from one place.
  */
 export class DefaultSystemPipeline extends SystemPipeline {
   /** Creates the pipeline from its injected parts (`DefaultSystemPipelineOptions`). */
@@ -128,6 +129,7 @@ export class DefaultSystemPipeline extends SystemPipeline {
             new EnragedSystem(state, statuses, ENRAGING_STRUCTURES),
           ]),
       new DeathSystem(),
+      new CaptureSystem(state.config.match.capturePoints, tickRate),
       // After death, so an objective lost this tick can end the match this tick (12 §1).
       new MatchDirectorSystem(director),
       new InvariantSystem(invariants),

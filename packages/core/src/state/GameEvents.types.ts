@@ -87,6 +87,15 @@ export type GameEventMap = {
     readonly progress: number;
     readonly checkpoint: number;
   };
+  /**
+   * A side's capture passed checkpoint 1, 2 or 3 (FR-031, DEC-145 (b)); never on a drain, a revert
+   * or an owner refilling its own zone, and once per side until the zone changes owner (DEC-145 (g)).
+   */
+  readonly 'checkpoint-reached': {
+    readonly pointId: string;
+    readonly team: Team;
+    readonly checkpoint: number;
+  };
   readonly 'capture-point-owner-changed': {
     readonly pointId: string;
     readonly from: Team;
