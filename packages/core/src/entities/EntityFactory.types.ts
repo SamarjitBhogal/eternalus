@@ -32,6 +32,8 @@ export type Placement = {
   readonly team?: Team;
   /** The lane a lane structure stands on (`MapLane.id`). */
   readonly laneId?: string;
+  /** The map feature a structure is built from (`MapFeature.id`). */
+  readonly mapFeatureId?: string;
   /** A controller for this entity alone, in place of its definition's (a bot Legend). */
   readonly controller?: ControllerSpawn;
 };

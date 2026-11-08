@@ -288,10 +288,15 @@ export class Simulation {
     const features = [...(state.world?.definition.features ?? [])].sort((a, b) =>
       compareById(a.id, b.id),
     );
-    for (const { definitionId, position, team, laneId } of features) {
+    for (const { id, definitionId, position, team, laneId } of features) {
       if (STRUCTURE_DEFINITIONS.has(definitionId)) {
         const { kind } = STRUCTURE_DEFINITIONS.get(definitionId);
-        const placement = { position, team, ...(laneId !== undefined && { laneId }) };
+        const placement = {
+          position,
+          team,
+          mapFeatureId: id,
+          ...(laneId !== undefined && { laneId }),
+        };
         state.entities.add(factory.create(kind, definitionId, placement));
       }
     }

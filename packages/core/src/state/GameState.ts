@@ -3,6 +3,7 @@ import { TeamMembership } from '../components/TeamMembership';
 import { Transform } from '../components/Transform';
 import type { GameConfig } from '../config/GameConfig.types';
 import type { Entity } from '../entities/Entity';
+import { Structure } from '../entities/structures/Structure';
 import type { PlayableTeam } from '../teams/teams.types';
 import { RingBuffer } from '../utils/RingBuffer';
 import { SeededRandom } from '../utils/SeededRandom';
@@ -288,6 +289,8 @@ export class GameState {
       ...(entity.findComponent(MapObjectBody) === undefined
         ? {}
         : { mapObjectId: entity.getComponent(MapObjectBody).object.id }),
+      ...(entity instanceof Structure &&
+        entity.mapFeatureId !== null && { mapFeatureId: entity.mapFeatureId }),
       team: entity.findComponent(TeamMembership)?.team ?? null,
       transform:
         transform === undefined

@@ -12,6 +12,11 @@ import type { MapObjectSnapshot } from '../content/maps/mapObjects.types';
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
+  /**
+   * A structure built from a map feature: the feature's id (`MapFeature.id`), so a HUD tile binds
+   * to its structure by identity, never by position.
+   */
+  readonly mapFeatureId?: string;
   readonly id: EntityId;
   readonly kind: string;
   readonly family: string;
