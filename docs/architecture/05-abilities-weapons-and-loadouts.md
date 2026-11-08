@@ -4,7 +4,7 @@ description: How abilities, ultimates, artifacts, weapons, status effects, loado
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-05
 tags: [architecture, abilities, weapons, artifacts, loadout, progression, status-effects, combat]
 paths:
   [
@@ -922,11 +922,13 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   the store (a mob's own `xpValue`; a Legend by victim level, `xpSources.ts`), pays nothing for a
   self or ally kill (O5), and in its own pass emits `xp-gained` and gives the XP to the killer
   only. A level-up raises max health by the class's share of base health and max aether, and heals
-  and refills by the raise only while the Legend is alive (O3, O4). Not built yet: the share radius
-  and damage bias, assists, structure, checkpoint, camp and boss XP (their systems do not exist),
+  and refills by the raise only while the Legend is alive (O3, O4). Structure XP is built (DEC-186: every
+  Legend on the destroying team; a dead Legend is skipped until respawn, GL-12). Not built yet:
+  the share radius and damage bias, assists, checkpoint, camp and boss XP (their systems do not exist),
   basic-attack and ability potency per level, `upgradeIds`, the ultimate charge rules, and keeping
   dead Legends in the store until respawn (FR-051), which O4's posthumous XP needs. Numbers are
-  `TUNE`; the curve is derived from an income estimate in `INBOX.md`.
+  `TUNE`; the curve and the Legend kill and structure XP follow DEC-190 (not final; the
+  soak metric can change them) and live in `content/progression/`.
 - **HUD (`feat/hud-and-character-select`, 2026-10-24).** §15's `PlayerSnapshot` does not exist
   in core yet: `Snapshot` holds `tick`, `phase` and `entities` only. Until `SnapshotSystem` fills
   `Snapshot.player` (Phase 4, sprints 4.5 and 4.7), the client's `MatchBridge` projects the HUD

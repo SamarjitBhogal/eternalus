@@ -5534,3 +5534,51 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `eternalus-agent-work/pr-merge-74-79/check-74-merge.log`): exit 0, Prettier passed, core
   `Tests 1233 passed (1233)`, client `Tests 1769 passed (1769)`, docs check passed.
 - Next step: push; PR #74 merges after #75.
+
+### 2026-11-05 — Phase 3 / Legend XP rework (code and docs) — feat/structure-xp — sholtzman + Claude Code
+
+- What was done: code, in two commits. 77a999e (DEC-186): a destroyed structure pays XP to every
+  living Legend of the destroying team, event-driven by `structure-destroyed` in
+  `ProgressionSystem`, audited by the `level-matches-xp` invariant (structure must be gone, no
+  ally or double award). b44714e (DEC-190): new Legend XP curve and sources in `content/progression`
+  so no same-level kill or structure gives several levels; not final. Critic round 1 follow-ups:
+  `Award` union tagged with `kind`; `xp-gained.cause` required (`'kill' | 'structure-destroyed'`);
+  one `legendOf` helper. Docs follow: INBOX income-estimate item marked superseded plus a new
+  update; `balancing.md` XP recommendations marked superseded with a pointer; architecture 05 §20
+  status note and phase 4 plan status updated. The DEC-186 and DEC-190 rows are on the docs
+  branch, not this one.
+- Tests: `ProgressionSystem.test.ts` (structure award, team filter, level-up, neutral, buildings),
+  `LevelMatchesXpInvariant.test.ts`, `xpSources.test.ts` (all 49 levels, curve sum 7,742), and a
+  pipeline test in `DefaultSystemPipeline.test.ts`: a real tower destroyed through the default
+  pipeline pays 120 XP to each living Legend of the other team one tick later, once, with no
+  invariant violation. Red line (structure branch disabled): "expected [ +0, +0 ] to deeply equal
+  [ 120, 120 ]".
+- Checks run: `npm run check` → `exit 0`: "All matched files use Prettier code style!"; core
+  "Tests 1066 passed (1066)"; client "Tests 1736 passed (1736)"; "✓ built in 717ms";
+  "Documentation check passed." Log: `eternalus-agent-work/xp-rework/check-xp-r2.log`. This
+  entry was added after that run.
+- Next step: add the DEC rows on the docs branch; build "pay on respawn" with GL-12.
+
+### 2026-11-06 — Phase 3 / Legend XP rework, merge of phase/3 (PR #71) — feat/structure-xp — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2dc2b35` (phase/3 (PR #71)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/structure-xp.check.log`): EXIT=0, core
+  1089 passed, client 1754 passed, docs check passed.
+- Next step: push.
+
+### 2026-11-07 — Phase 3 / structure XP, merge of feat/match-director (PR #74) — feat/structure-xp — sholtzman + Claude Code
+
+- What was done: merged `feat/match-director` (PR #74, which holds #75 and phase/3 at `ed10145`),
+  so this PR merges after #74 with no conflicts (merge chain #75, #74, #78, #76, #77).
+  `docs/plan/PROGRESS.md` and the phase 4 plan conflicted; the plan keeps both sides (this
+  branch's DEC-184 hit model note and #74's structure XP status). One semantic conflict: the
+  DEC-186 test in `DefaultSystemPipeline.test.ts` now builds the pipeline and the runner from
+  options objects (#74, DEC-174). The review nit on #78 is in the same merge commit:
+  `ProgressionSystem` finds the structure XP team with `opponentOf` (DEC-171).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-78-merge.log`): exit 0, Prettier passed, core
+  `Tests 1243 passed (1243)`, client `Tests 1769 passed (1769)`, docs check passed.
+- Next step: push; PR #78 merges after #74.

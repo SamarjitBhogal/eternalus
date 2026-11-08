@@ -4,7 +4,7 @@ description: Sprint checklists for the three Legend classes, the ability framewo
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-05
 tags: [plan, phase-4, legends, abilities, loadouts, progression, hud]
 paths:
   ['packages/core/src/abilities/**', 'packages/core/src/loadout/**', 'apps/client/src/ui/hud/**']
@@ -174,7 +174,11 @@ Owner: _ (sim lane). Week 8.
 
 **Status (2026-10-16, PR #31, Claudio):** `Progression` + `ProgressionSystem` started early (S2,
 SCRUM-426): level curve and per-level health and aether from content, kill XP to the killer. Shared,
-assist, structure, checkpoint, camp and boss XP and potency scaling remain, so the box stays open.
+assist, checkpoint, camp and boss XP and potency scaling remain, so the box stays open.
+**Status (2026-11-05, `feat/structure-xp`):** structure XP is built (DEC-186: every Legend on the
+destroying team; a dead Legend is paid on respawn once GL-12 exists). The curve and the Legend
+kill and structure numbers follow DEC-190. They are not final and can change after the soak
+metric "Legend level at 10 and 20 minutes".
 
 **Success metric:** a bot-vs-bot match ends with every Legend at a level consistent with its
 XP events (asserted by an invariant), and loadout validation rejects 100% of a fixture set of

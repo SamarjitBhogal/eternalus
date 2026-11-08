@@ -98,12 +98,16 @@ export type GameEventMap = {
   readonly 'horde-spawned': HordePayload;
   readonly 'horde-dissolved': HordePayload;
   readonly 'level-up': { readonly entityId: EntityId; readonly level: number };
-  /** A kill's XP reaching its killer; one per award, so the invariant can audit every award. */
+  /**
+   * XP reaching a Legend; one per award, so the invariant can audit every award. A kill pays its
+   * killer; `cause: 'structure-destroyed'` pays a Legend of the team that destroyed `victimId`.
+   */
   readonly 'xp-gained': {
     readonly entityId: EntityId;
     readonly amount: number;
     readonly victimId: EntityId;
     readonly victimTeam: Team;
+    readonly cause: 'kill' | 'structure-destroyed';
   };
   readonly 'team-changed': {
     readonly entityId: EntityId;
