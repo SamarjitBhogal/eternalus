@@ -5739,3 +5739,47 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   statements 99.13 %; client "Tests 1769 passed (1769)", statements 96.93 %; "✓ built in 282ms";
   "Documentation check passed." (127 files).
 - Next step: merge `feat/match-scoring` into `feat/results-flow`; then the pre-PR gate for both.
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 critic round 2: the `ScoreBook` and structure points (DEC-211, DEC-212) — feat/match-scoring — sholtzman + Claude Code
+
+- What: built the owner's calls on the GL-4 pre-PR critic, round 2
+  (`eternalus-agent-work/game-loop-plan/arch-review-gl4-round-2.md`).
+  - DEC-211 (1), finding 1, BTD-1: `state/ScoreBook.ts` holds the scoring data (plain data, so
+    `StateHasher` hashes it) and is its only writer: `addRow`, `award`, `awardTeam`, `recordHit`,
+    `takeAssists`. `MatchRecord` holds it as `scoreBook`; `MatchState.scoring` (and
+    `MatchRecord.scoring`) is its read-only view: `LegendStats`, `TeamStats`, `RecentHit` and
+    `ScoringState` are read-only at every depth, so `state.match.scoring.teams.light.score = 99`
+    no longer compiles. `Scoring` keeps the rules and writes through `state.match.scoreBook` in its
+    fold. The tests that wrote scoring directly (`MatchDirector.test.ts`, `StateHasher.test.ts`,
+    `Simulation.scoring.test.ts`) use the writers; each keeps its assertions and adds one.
+  - DEC-211 (3), BTD-2: the target's or victim's family picks its rule from a registry in `Scoring`
+    (one for hits: Legend, structure; one for deaths: Legend, mob); no entry scores nothing.
+  - DEC-211 (4), BTD-3: `match/ScoreKeeper.types.ts` (`fold`), which `Scoring` implements;
+    `MatchDirectorOptions.scoring` takes it.
+  - DEC-212, finding 2: `Scoring` listens to `structure-destroyed`; a fallen structure of a
+    playable team gives the opposing team `SCORING_WEIGHTS.structureDestroyed` (5, `TUNE`,
+    DEC-131) as team-only points and `structuresDestroyed + 1` (new `TeamStats` counter); a neutral
+    camp gives nothing. The `ponytail:` note in `content/match/scoring.ts` now covers capture and
+    hold points only and cites PR #64 (merged into the phase branch at `b02ef47`, not yet in this
+    branch). No plan task or `INBOX.md` item schedules capture and hold scoring.
+  - Findings 4 to 6: the assist window uses `TickRate.toTicks`; `ScoreBook.addRow` keeps one row
+    per Legend (a second `entity-spawned` adds none); `minionKills` names "enemy team mobs (Host
+    units and tower guards)" and a guard-kill test covers it (DEC-211 (2)).
+  - Docs: architecture 03 §2 (`MatchRecord` sketch) and §4 (`structure-destroyed` listeners), 12
+    §4 (`MatchState` sketch), §5 (rules and data apart, registry, `ScoreKeeper`, structure row,
+    guards, FR-007 weights as design), §12, §13 (status; "wait for the owner's values" dropped), 02
+    (state listings), 17 R3 (a scoring rule is a registry entry plus a `ScoreBook` writer),
+    `packages/core/AGENTS.md` (`state/` row).
+  - Hash: no fixture changed. A non-empty scoring now serialises `structuresDestroyed` per team;
+    no recorded replay or checkpoint holds a non-empty scoring (the golden replay runs no
+    director), and the empty check uses the new empty state, so an untouched match hashes as
+    before.
+- Fail-first breaks: 21, all red then restored (`cmp` equal), listed with test names and red
+  messages in `eternalus-agent-work/game-loop-plan/gl4-r2-breaks.md` (b1 to b16 vitest, b17 to b21
+  `tsc -b` "Unused '@ts-expect-error' directive" for the read-only view).
+- Checks run: `npm run check` → `EXIT=0` (`gl4-r2-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): "All matched files use Prettier code style!"; core "Tests
+  1304 passed (1304)", statements 99.14 %; client "Tests 1769 passed (1769)", statements 96.93 %;
+  "✓ built in 251ms"; "Documentation check passed." (127 files).
+- Next step: the GL-4 critic re-checks this diff; `feat/results-flow` takes it with its next merge
+  (its `MatchResult` literals need `structuresDestroyed: 0` per team).
