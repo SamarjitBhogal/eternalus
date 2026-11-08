@@ -5885,3 +5885,17 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "Tests 1319 passed (1319)", client "Tests 1769 passed (1769)", "Documentation check passed.".
 - Next step: critic on the merge and the doc commit, then push; merge the new head into
   `feat/out-of-combat-heal` (#86).
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 (PR #64) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `b02ef47e` (#64 capture points) in
+  `42463596`. Conflicts kept both sides: `StateHasher` hashes `Capturable` and `ChaseWatch`;
+  `DefaultSystemPipeline` imports the fort-box types and `CaptureSystem`, and its TSDoc names stuck
+  detection and capture points (after death, before the match director); PROGRESS keeps every
+  entry. Doc 18 §3 and the minion plan's §3 stand-in no longer say `CaptureSystem` is off the phase
+  branch; checkpoint defenders are still not built.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.b02ef47e.check.log`):
+  EXIT=0, core "Tests 1372 passed (1372)", client "Tests 1778 passed (1778)", "Documentation check
+  passed.".
+- Next step: critic, push; merge this head into `feat/out-of-combat-heal` (#86).
