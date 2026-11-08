@@ -104,12 +104,7 @@ export class Match implements LoopTarget {
       tickMs,
       maxFrameMs: MAX_TICKS_PER_FRAME * tickMs,
     });
-    this.bridge = new MatchBridge({
-      ...bridge,
-      tickRate,
-      map,
-      onMatchEnded: (handler) => simulation.on('match-ended', handler),
-    });
+    this.bridge = new MatchBridge({ ...bridge, tickRate, map, events: simulation });
     this.current = simulation.snapshot();
     this.playerId = this.current.match.humanLegendId;
     this.controls = new MatchViewControls({

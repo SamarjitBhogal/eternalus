@@ -2,8 +2,12 @@ import {
   createDefaultGameConfig,
   type EntitySnapshot,
   type GameEventHandler,
+  type GameEventMap,
+  type GameEventType,
   type MapFeatureKind,
+  type Simulation,
   type Snapshot,
+  type Unsubscribe,
 } from '@eternalus/core';
 import { describe, expect, it } from 'vitest';
 
@@ -24,6 +28,34 @@ const PLAYER: EntitySnapshot = {
   transform: { x: 1, y: 2, radius: 0.5 },
   health: { current: 600, max: 600 },
 };
+
+/** The simulation's side of the bridge's listener table: who listens to what, and a way to emit. */
+class FakeSimulationEvents implements Pick<Simulation, 'on'> {
+  private readonly handlers = new Map<GameEventType, GameEventHandler<never>[]>();
+
+  public on<K extends GameEventType>(type: K, handler: GameEventHandler<K>): Unsubscribe {
+    this.handlers.set(type, [...this.listenersOf(type), handler]);
+    return () => {
+      this.handlers.set(
+        type,
+        this.listenersOf(type).filter((candidate) => candidate !== handler),
+      );
+    };
+  }
+
+  public emit<K extends GameEventType>(type: K, payload: GameEventMap[K]): void {
+    for (const handler of this.listenersOf(type)) (handler as GameEventHandler<K>)(payload);
+  }
+
+  /** How many handlers listen across every event type. */
+  public get listenerCount(): number {
+    return [...this.handlers.values()].reduce((sum, list) => sum + list.length, 0);
+  }
+
+  private listenersOf(type: GameEventType): readonly GameEventHandler<never>[] {
+    return this.handlers.get(type) ?? [];
+  }
+}
 
 const snapshotAt = (tick: number, entities: readonly EntitySnapshot[] = []): Snapshot => ({
   tick,
@@ -66,20 +98,14 @@ function setUp(numLanes = createDefaultGameConfig().map.numLanes) {
     order.push('match-ended');
     endings.push(event);
   });
-  /** The simulation side of `match-ended`: the handler the bridge gave, `null` once dropped. */
-  const simulation: { handler: GameEventHandler<'match-ended'> | null } = { handler: null };
+  const simulation = new FakeSimulationEvents();
   const bridge = new MatchBridge({
     bus,
     publishEveryTicks: HUD_PUBLISH_EVERY_TICKS,
     tickRate: defaults.tickRate,
     map,
     captureKinds: CAPTURE_KINDS,
-    onMatchEnded: (handler) => {
-      simulation.handler = handler;
-      return () => {
-        simulation.handler = null;
-      };
-    },
+    events: simulation,
   });
   return { map, bridge, order, clocks, huds, structures, captures, endings, simulation };
 }
@@ -197,21 +223,25 @@ describe('MatchBridge', () => {
     const result = matchResultFixture({ durationTicks: 3600 });
     expect(bridge.afterTick(snapshotAt(5), null)).toBe(false);
 
-    simulation.handler?.({ result });
+    simulation.emit('match-ended', { result });
     expect(endings).toEqual([]);
     expect(bridge.afterTick(snapshotAt(6), null)).toBe(true);
     expect(bridge.afterTick(snapshotAt(7), null)).toBe(false);
-    simulation.handler?.({ result });
+    simulation.emit('match-ended', { result });
     expect(bridge.afterTick(snapshotAt(8), null)).toBe(false);
 
     expect(endings).toEqual([{ result, durationSeconds: 120 }]);
     expect(order.slice(-3)).toEqual(['match-clock', 'hud-state', 'match-ended']);
   });
 
-  it('stops listening for the end on destroy', () => {
-    const { bridge, simulation } = setUp();
-    expect(simulation.handler).not.toBeNull();
+  it('unsubscribes its whole listener table on destroy; a later end is never latched', () => {
+    const { bridge, simulation, endings } = setUp();
+    expect(simulation.listenerCount).toBe(1);
     bridge.destroy();
-    expect(simulation.handler).toBeNull();
+    expect(simulation.listenerCount).toBe(0);
+
+    simulation.emit('match-ended', { result: matchResultFixture() });
+    expect(bridge.afterTick(snapshotAt(6), null)).toBe(false);
+    expect(endings).toEqual([]);
   });
 });
