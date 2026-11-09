@@ -5002,3 +5002,38 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   the test on the side-step branch. Still red with the lean rule put back. The remaining shuffle
   (round 1: 27.9 to 35.4 reversals per minion-minute, full match) is listed in the PR for owner
   acceptance; 10 §9 already allows it for the MVP.
+
+### 2026-11-09 — Phase 3 / corner camp boss (interim), critic round 1 — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: the PM approved pulling the corner camp boss (FR-033, cut 4) into Phase 3 as an
+  **interim** version, which resolves critic F5. The boss is a `heavy-mob` (`corner-boss`) held
+  over the corner camp's ring by `GuardController`, respawned 5 minutes after it dies. It has no
+  `BossController` moves, no support units and no team-wide reward yet. Critic fixes: F1 stats
+  now come from `balancing.md` "Mini-boss and Greater Boss relative to Legends", MiniBoss row
+  (health 8,200, 205 per hit every 1.5 s, 500 XP; the XP goes through the ordinary kill path until
+  the team-wide reward lands); F4 doc 07 §6 table restored, the interim note moved to §13
+  "Implementation status", `last-reviewed` bumped; F6 the boss keeps the camp mob's target
+  priority order; F8 the corner camp plan activates at `match-start` (game doc "from the start");
+  F9 the test asserts every boss has a transform instead of a `NaN` fallback and an id filter;
+  F10 the aggro rule id is `corner-boss` (file `content/ai/aggro/cornerBoss.ts`), apart from the
+  planned `boss` controller kind.
+- Follow-up (left for later): **F7** the leash (21.5 m), acquisition radius (26 m) and the test's
+  `45 / 2` derive from the client's drawn ring size (`MapView.constants.ts`); put the camp's zone
+  radius in core content and derive them from it. **B1** `leashRadius` lives in both the aggro rule
+  and the guard plan (as for camp mobs); give each leash one home. **B2** store boss stats as
+  multiples of `refHealth(level)` as `balancing.md` recommends, instead of absolute numbers. B1 and
+  B2 are better-than-design items awaiting sign-off.
+- Critic round 2: FAIL with one blocker, now fixed. N1: a stray line had replaced the blank line
+  under doc 07's `## 6. Spawners` and failed Prettier; it is removed, so doc 07's diff against the
+  base is only the `last-reviewed` bump and the "Implementation status" note. N2: this line is
+  refreshed with the run below. N3 (acceptable, for the PR): `balancing.md` has no corner-camp
+  stat row, so the corner boss borrows the MiniBoss (outer lanes) row, which describes the
+  capture-point mini-boss.
+- ponytail: 1 should-fix applied (test now covers match-start), net 0 lines. The corner boss
+  scenario test runs with `countdownSeconds: 10`, so it checks the bosses while the countdown is
+  still running; with the plan set back to `countdown-end` both seeds fail.
+- Checks run: `npm run check` on the post-ponytail tree → exit 0: "All matched files use
+  Prettier code style!"; core "Tests 1081 passed (1081)"; client "Tests 1754 passed (1754)";
+  "✓ built in 2.85s"; "Documentation check passed." This line was filled in after that run
+  (docs-only).
+- Next step: PR into phase/3-sprint-3-work.

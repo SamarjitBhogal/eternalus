@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-02
+last-reviewed: 2026-11-09
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -419,6 +419,16 @@ only living `structure` / `buff-tower` entities with the owning team's membershi
 Decorative obstacle proxies never grant King immunity. The King's victory and immunity damage
 step remain owned by the game-loop work. The hall's throne anchor and room bounds are content
 in `buildingGeometry.ts`; the hall rotates toward the middle entrance before ring scaling.
+
+**2026-11-09 (`feat/bosses-p3`, corner camp boss, interim).** The PM approved pulling the corner
+camp (§6) into Phase 3 as an interim version. `corner-camp` is a `Camp` structure definition like
+the forest camps (rule `never`, circle radius 1 `TUNE`), and its guard plan `corner-camp`
+(`content/structures/guardPlans.ts`) spawns one `corner-boss` at match start: a `heavy-mob` with
+the MiniBoss row's stats from `balancing.md`, held over the camp's ring by `GuardController` and
+respawned 5 minutes after it dies. Not built yet: the `MiniBoss` entity and its `BossController`
+moves, the support units, the team-wide reward, the crystal, the heavy side wave on a kill and the
+GreaterBoss buffs. The leash and acquisition radius are derived from the client's drawn ring size
+until the camp's zone radius moves into core content.
 
 ## Related
 
