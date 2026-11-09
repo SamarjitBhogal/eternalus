@@ -17,6 +17,7 @@ paths:
     'packages/core/src/state/MatchState.types.ts',
     'packages/core/src/state/MatchRecord.ts',
     'packages/core/src/state/ScoreBook.ts',
+    'packages/core/src/state/ScoringState.types.ts',
     'packages/core/src/state/MatchResult.types.ts',
     'packages/core/src/components/WinObjective.ts',
     'packages/core/src/diagnostics/invariants/PhaseMonotonicInvariant.ts',
@@ -44,12 +45,12 @@ sources is `TUNE`; §13 says what is built.
 
 ## 1. Where it sits
 
-- Folder `packages/core/src/match/`; may import `state/`, `config/`, `components/`, `utils/`, `teams/`, content
-  types and the `Logger` port, `makeLogRecord` and `DebugConfig` of `diagnostics/`, so `diagnostics/` never imports `match/` ([02-code-structure.md](02-code-structure.md) §2). Files: `MatchDirector.ts`,
+- Folder `packages/core/src/match/`; may import `state/`, `config/`, `components/`, `entities/` (types,
+  DEC-221), `utils/`, `teams/`, content types and the `Logger` port, `makeLogRecord` and `DebugConfig` of `diagnostics/`, so `diagnostics/` never imports `match/` ([02-code-structure.md](02-code-structure.md) §2). Files: `MatchDirector.ts`,
   `phases/<Name>Phase.ts` + `defaultMatchPhases.ts`, `MatchTimeline.ts`,
   `TimelineActionRegistry.types.ts` + `actions/<Kind>Action.ts` + `defaultTimelineActions.ts`,
   `defaultMatchDirector.ts` (the director with the default phases, actions and conditions),
-  `Scoring.ts`, `VictoryCondition.types.ts` + `conditions/<Name>Condition.ts` +
+  `Scoring.ts` + `ScoreKeeper.types.ts`, `VictoryCondition.types.ts` + `conditions/<Name>Condition.ts` +
   `defaultVictoryConditions.ts`, `rewards/BossRewardHandler.ts`. `MatchResult` and `Verdict`
   (`state/MatchResult.types.ts`) live in `state/` and `VictoryConditionId`
   (`config/VictoryConditionId.types.ts`) in `config/`, for the same reason as `MatchPhase`: `state/`
@@ -237,7 +238,8 @@ a team's total cannot drift from its Legends' points plus its team-only points. 
 sees the data as `MatchState.scoring`, read-only at every depth. The family of a hit's target or a
 death's victim picks its rule from a registry in `Scoring` (DEC-211 (3)); a family with no entry
 (bosses, the sovereign) scores nothing, and a new scored family, such as team boss kills, is one
-entry plus a `ScoreBook` writer for a new counter. The `MatchDirector` drives scoring through a
+entry plus, for a new counter, a field and its counter name; a `ScoreBook` writer only if the
+rule is not a plain award. The `MatchDirector` drives scoring through a
 one-method interface, `ScoreKeeper` (`fold`), that `Scoring` implements (DEC-211 (4)).
 
 Points are content, not code: `content/match/scoring.ts` holds `SCORING_WEIGHTS` (`TUNE`, the

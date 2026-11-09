@@ -2296,6 +2296,11 @@ Reply inline (`Decision: …`).
       time) at DEC-131's values; present Legends' `checkpointsWon`. The owner approved a separate
       PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
       Close this item when that PR merges.
+- [ ] **GL-16 map-feature link (DEC-221 (3); GL-5 critic round 3, B1)** — Owner: sholtzman,
+      `refactor/map-feature-link` (base: the phase branch after GL-5 merges). A `MapFeatureLink`
+      component, set from a placement's map feature id, on structures and capture zones. The
+      snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
+      to its zone by that id, not by position. Close this item when its PR merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
