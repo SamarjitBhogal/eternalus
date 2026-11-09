@@ -29,8 +29,8 @@ export class HealthBarView {
     const width = transform.radius * 2 * HEALTH_BAR_WIDTH_SCALE;
     const x = position.x - width / 2;
     const y = position.y - transform.radius - HEALTH_BAR_GAP - HEALTH_BAR_HEIGHT;
-    const left = (health.current / health.max) * width;
+    const filled = (health.current / health.max) * width;
     renderer.fillPolygon(rectangle(x, y, width, HEALTH_BAR_HEIGHT), HEALTH_BAR_TRACK_COLOR);
-    renderer.fillPolygon(rectangle(x, y, left, HEALTH_BAR_HEIGHT), HEALTH_BAR_FILL_COLORS[side]);
+    renderer.fillPolygon(rectangle(x, y, filled, HEALTH_BAR_HEIGHT), HEALTH_BAR_FILL_COLORS[side]);
   }
 }

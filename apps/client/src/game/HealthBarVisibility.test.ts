@@ -155,10 +155,21 @@ describe('HealthBarVisibility (DEC-195)', () => {
     expect(bars.healthBarOf(ALLY)).toBe('ally');
   });
 
-  it('forgets a unit removed for any cause, also after a late hit in the same tick', () => {
+  it('forgets a unit removed for any cause', () => {
     const { events, bars, damage } = setUp();
     damage('pal', 'foe');
     events.emit('entity-removed', { entityId: 'foe', cause: 'dev-removed' });
+
+    expect(bars.healthBarOf(ENEMY)).toBeNull();
+  });
+
+  it('forgets a dead unit also after a late hit in the tick it died', () => {
+    // In one tick: the unit dies, another system still hits it, then `DeathSystem` removes it.
+    const { events, bars, damage } = setUp();
+    damage('foe', 'pal');
+    events.emit('entity-died', { entityId: 'foe', killer: hit('pal') });
+    damage('foe', 'pal');
+    events.emit('entity-removed', { entityId: 'foe', cause: 'died' });
 
     expect(bars.healthBarOf(ENEMY)).toBeNull();
   });

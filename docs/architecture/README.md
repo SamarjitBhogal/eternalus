@@ -4,7 +4,7 @@ description: The index of the eighteen architecture docs with the layered model 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-10-28
+last-reviewed: 2026-11-09
 tags: [architecture, index]
 related:
   [

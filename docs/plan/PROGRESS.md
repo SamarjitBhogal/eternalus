@@ -5941,3 +5941,26 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   only) 2 red; restored 11/11. Client `src/game` 677 passed; `check:quick` passed.
 - Checks run: full `npm run check` not yet run on this commit.
 - Next step: full check, critic round 2 on this diff, push, PR into `phase/3-sprint-3-work`.
+
+### 2026-11-09 — Phase 3 / combat sprint: health bars critic round 2 — feat/combat-health-bars — sholtzman + Claude Code
+
+- What was done: round-1 nits (commit `918e85d8`): `EntityLayer.test` bar geometry computed from
+  `HEALTH_BAR_*`; new `HealthBarView.test.ts` covers the no-health / no-place guard;
+  `Match.lifecycle.test.ts` lists which subscription each unsubscribe drops (`dropped`), not a
+  count. Then architecture-reviewer round 2 on `743e1fef..918e85d8`: **APPROVE**, no blockers,
+  all 8 round-1 findings resolved; BTD-2 rejection upheld. Its nits, all applied: N1 the "late hit"
+  test now emits `entity-died`, a hit, then `entity-removed`; N2 `left` → `filled` in
+  `HealthBarView`; N3 bar geometry asserts moved to `HealthBarView.test.ts` (`EntityLayer.test`
+  keeps order, colour, after-all-units and "centred over its unit"); N4 architecture README
+  `last-reviewed` bumped; N5 this entry. Optional future item (not built, no consumer yet): when
+  structure bars come (DEC-195 (4)), let each `EntityView` give the bar's anchor so
+  `HealthBarView` needs no family branch.
+- Tests fail first: guard break (`health` or `transform` check dropped) 1 red each; no-gap break
+  1 red (`EntityLayer.test`, then `HealthBarView.test`); destroy dropping one handle twice 1 red
+  (the old count assert stayed green); clear on `entity-died` only 3 red (incl. N1's test);
+  bar off-centre 2 red; restored, client `src/game` 681 passed.
+- Checks run: `npm run check` at `918e85d8` (log `eternalus-agent-work/combat-health-bars/check-3.log`):
+  exit 0, core `Tests 1298 passed (1298)`, client `Tests 1814 passed (1814)`, docs check passed.
+  Final run after the round-2 nits: see `check-4.log`.
+- Next step: push, PR into `phase/3-sprint-3-work`; then task 2, the HUD aether bar (owner
+  2026-11-09: bar only, no regen, OQ-56 stays open), stacked on `feat/hud-level-xp`.

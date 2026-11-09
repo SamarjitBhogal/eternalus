@@ -6,13 +6,7 @@ import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
 import type { HealthBarSide } from './HealthBarView.types';
 import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
-import {
-  HEALTH_BAR_FILL_COLORS,
-  HEALTH_BAR_GAP,
-  HEALTH_BAR_HEIGHT,
-  HEALTH_BAR_TRACK_COLOR,
-  HEALTH_BAR_WIDTH_SCALE,
-} from './HealthBarView.constants';
+import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';
@@ -168,9 +162,9 @@ describe('EntityLayer', () => {
     expect(minimapGlyphs(layer).map(([, x]) => x)).toEqual([5, 5]);
   });
 
-  it('draws the bars the injected rule picks, in their side colour, filled by health left', () => {
-    // 'foe', 0.5 in radius at (10, 20) with 3 of 10 health: its bar is centred over it and sits
-    // HEALTH_BAR_GAP above its footprint. 'pal' is an ally; 'calm' draws no bar.
+  it('draws the bars the injected rule picks, in their side colour, over their units', () => {
+    // 'foe' is an enemy at (10, 20), 'pal' an ally; 'calm' draws no bar. HealthBarView.test checks
+    // the bar's shape.
     const sides: Readonly<Record<string, HealthBarSide>> = { foe: 'enemy', pal: 'ally' };
     const layer = new EntityLayer(
       createDefaultViewRegistry(),
@@ -196,14 +190,10 @@ describe('EntityLayer', () => {
       HEALTH_BAR_TRACK_COLOR,
       HEALTH_BAR_FILL_COLORS.enemy,
     ]);
-    const [track, fill] = polygons.slice(2).map(([points]) => points);
-    const width = 2 * 0.5 * HEALTH_BAR_WIDTH_SCALE;
-    const bottom = 20 - 0.5 - HEALTH_BAR_GAP;
-    expect(track?.[0]?.x).toBeCloseTo(10 - width / 2);
-    expect(track?.[0]?.y).toBeCloseTo(bottom - HEALTH_BAR_HEIGHT);
-    expect(track?.[2]?.x).toBeCloseTo(10 + width / 2);
-    expect(track?.[2]?.y).toBeCloseTo(bottom);
-    expect(fill?.[2]?.x).toBeCloseTo(10 - width / 2 + width * 0.3);
+    // The foe's bar is centred over the foe, just above it.
+    const track = polygons[2]?.[0];
+    expect(((track?.[0]?.x ?? 0) + (track?.[1]?.x ?? 0)) / 2).toBeCloseTo(10);
+    expect(track?.[2]?.y).toBeLessThan(20);
     // The bars come after all three units, so no unit hides one.
     expect(calls.findIndex((call) => call.op === 'fillPolygon')).toBe(calls.length - 4);
   });
