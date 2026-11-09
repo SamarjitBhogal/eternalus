@@ -78,3 +78,28 @@ export const MINI_MAP_OUTLINE_COLORS: Readonly<Record<Team, string>> = {
 
 /** Mini map layer of Legends' markers: above the mobs' (layer 0), so a Legend stays on top. */
 export const MINI_MAP_LEGEND_LAYER = 1;
+
+/**
+ * A unit's world health bar (owner, 2026-11-09): its width as a share of the unit's footprint
+ * diameter, so a Legend's bar is wider than a minion's.
+ */
+// TUNE: placeholder look; no Figma frame draws a world health bar
+export const HEALTH_BAR_WIDTH_SCALE = 1.6;
+
+/** Height of a unit's world health bar, in world units. */
+// TUNE: placeholder look
+export const HEALTH_BAR_HEIGHT = 0.25;
+
+/**
+ * Gap between the top of a unit's footprint and its health bar, in world units. It clears the
+ * Legend and mob outlines (`LEGEND_OUTLINE_SCALE`, `MOB_OUTLINE_SCALE`).
+ */
+// TUNE: placeholder look
+export const HEALTH_BAR_GAP = 0.5;
+
+/** Colour of the empty part of a unit's world health bar. */
+export const HEALTH_BAR_TRACK_COLOR = '#1b1b1b';
+
+/** Colour of the health left on an enemy unit's world health bar. */
+// TUNE: placeholder look
+export const HEALTH_BAR_FILL_COLOR = '#c8423b';

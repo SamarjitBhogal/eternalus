@@ -280,8 +280,8 @@ describe('Match lifecycle', () => {
 
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
-    // The match subscribes to nothing (core spawns the player from the roster), so nothing to drop.
-    expect(on).not.toHaveBeenCalled();
-    expect(unsubscribes.count).toBe(0);
+    // The match subscribes only to the health bars' events, and drops every subscription.
+    expect(on.mock.calls.map(([type]) => type)).toEqual(['damage-applied', 'entity-died']);
+    expect(unsubscribes.count).toBe(on.mock.calls.length);
   });
 });
