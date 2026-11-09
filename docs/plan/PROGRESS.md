@@ -5970,5 +5970,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Tests fail first (`EntitySnapshotter.test.ts`): break 1 (`checkpoints` from the zone, not the
   constructor) 1 red; break 2 (`mapObjectId` key always present) 1 red; break 3 (`area` always
   null) 1 red; restored byte-identical, green. `GameState.test.ts` unchanged and green.
-- Checks run: see `eternalus-agent-work/hud-aether-bar/check-2.log`.
-- Next step: critic round 2 on `14c8365d..HEAD`, ponytail review, push, PR after #88.
+- Checks run: `npm run check` passed (exit 0): Prettier passed, core `Tests 1305 passed (1305)`,
+  client `Tests 1801 passed (1801)`, docs check passed
+  (`eternalus-agent-work/hud-aether-bar/check-2.log`).
+- Critic round 2 (architecture-reviewer, `14c8365d..cb45cd6d`): APPROVE WITH NOTES, no blockers;
+  the move is the old behaviour. Fixed: the stale phase-4 plan note (aether and level do not wait
+  for `Snapshot.player`), 03 §5 wording (a new group changes `EntitySnapshotter` and the type,
+  never `GameState`), forward pointers to DEC-232 in the DEC-224 and DEC-230 rows, the
+  `ProgressionSnapshot` citation (03 §5), the `mapObjectId` note in the `EntitySnapshotter` TSDoc,
+  this entry's check result. Better-than-design: none (a projector registry and one snapshotter per
+  `GameState` were weighed and rejected). Ponytail: one optional cut (a function instead of the
+  class, about 8 lines) not applied, because 03 §5 names the class (DEC-232).
+- Next step: final check, push, PR after #88.

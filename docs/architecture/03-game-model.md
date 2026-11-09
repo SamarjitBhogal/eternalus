@@ -266,7 +266,7 @@ export type EntitySnapshot = {
 
 `SnapshotSystem` builds each `EntitySnapshot` through `EntitySnapshotter`
 (`state/EntitySnapshotter.ts`), one group per component, so a new component group changes that
-class only (DEC-232).
+class and the `EntitySnapshot` type, never `GameState` (DEC-232).
 
 `Match` keeps the two latest snapshots (`previous`, `current`); `SceneView.draw(previous, current,
 alpha)` pairs the entities of both by id (both arrays are in store order; an entity spawned or

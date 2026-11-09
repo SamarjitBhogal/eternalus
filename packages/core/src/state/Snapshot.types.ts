@@ -32,7 +32,7 @@ export type EntitySnapshot = {
   readonly capture: CaptureSnapshot | null;
 };
 
-/** A Legend's level and XP as the client sees it (architecture 05 §15, the HUD's XP ring). */
+/** A Legend's level and XP as the client sees it (architecture 03 §5, the HUD's XP ring). */
 type ProgressionSnapshot = LevelProgress & {
   /** From 1 to the curve's cap. */
   readonly level: number;

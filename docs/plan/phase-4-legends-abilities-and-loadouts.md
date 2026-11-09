@@ -206,7 +206,7 @@ recorded as cut in [PROGRESS.md](PROGRESS.md).
 
 Owner: _ (client lane). Weeks 7–8.
 
-- [ ] _(feat/hud-and-character-select: `HealthBar`, `AetherBar` and the ability and gadget slots read store selectors only (`hudSlice`, `selectHudSlotView`), with server-render tests of the cooldown and ready looks (register CD-28); cooldowns, aether, charge and level stay `null` until core publishes `Snapshot.player`, architecture 05 §18)_ **`AbilityBar`, `AetherBar`, `HealthBar` HUD** fed by a throttled `legendSlice` in the
+- [ ] _(feat/hud-and-character-select: `HealthBar`, `AetherBar` and the ability and gadget slots read store selectors only (`hudSlice`, `selectHudSlotView`), with server-render tests of the cooldown and ready looks (register CD-28); cooldowns and charge stay `null` until core publishes `Snapshot.player`; health, aether, level and XP come from the Legend's `EntitySnapshot` (DEC-232), architecture 05 §18)_ **`AbilityBar`, `AetherBar`, `HealthBar` HUD** fed by a throttled `legendSlice` in the
       bridge (cooldowns, aether, charge, level). Owner: _. Test: `react-dom/server` render
       snapshots for cooldown and ready states. Done when: the HUD reads store selectors only.
 - [ ] **`<KeyGlyph action="…"/>`** renders the current binding for an `InputAction` (1–4

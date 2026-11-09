@@ -13,7 +13,7 @@ import type { EntitySnapshot } from './Snapshot.types';
 
 /**
  * Projects one entity into its `EntitySnapshot` (architecture 03 §5): one group per component,
- * `null` when the entity has no such component (DEC-17). A new component group is added here,
+ * `null` when the entity has no such component (DEC-17); `mapObjectId` is left out instead. A new component group is added here,
  * never in `GameState` (DEC-232).
  */
 export class EntitySnapshotter {
