@@ -1,5 +1,9 @@
+import type { EntitySnapshot } from '@eternalus/core';
+
+import type { HealthBarSide } from './HealthBarView.types';
+
 /**
- * Whose side a unit's world health bar shows (DEC-195): the player's team (`ally`) or any other
- * team (`enemy`, camps too). `EntityLayer` picks the bar's fill colour by it.
+ * The world health bar rule `EntityLayer` is given (DEC-195): the side of `entity`'s bar, or
+ * `null` when it draws none. `HealthBarVisibility` implements it from the simulation's events.
  */
-export type HealthBarSide = 'ally' | 'enemy';
+export type HealthBarRule = (entity: EntitySnapshot) => HealthBarSide | null;

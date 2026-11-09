@@ -4,13 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { RecordingRenderer } from '../engine/render/RecordingRenderer';
 import { createDefaultViewRegistry } from './defaultViewRegistry';
 import { EntityLayer } from './EntityLayer';
-import type { HealthBarSide } from './EntityLayer.types';
-import {
-  HEALTH_BAR_FILL_COLORS,
-  HEALTH_BAR_TRACK_COLOR,
-  MINI_MAP_LEGEND_GLYPH,
-  MINI_MAP_MOB_GLYPH,
-} from './entityViews.constants';
+import type { HealthBarSide } from './HealthBarView.types';
+import { MINI_MAP_LEGEND_GLYPH, MINI_MAP_MOB_GLYPH } from './entityViews.constants';
+import { HEALTH_BAR_FILL_COLORS, HEALTH_BAR_TRACK_COLOR } from './HealthBarView.constants';
 import type { WorldLayer } from './SceneView.types';
 import type { EntityDrawState, EntityView } from './EntityView.types';
 import { ViewRegistry } from './ViewRegistry';

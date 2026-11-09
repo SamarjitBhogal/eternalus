@@ -18,8 +18,8 @@ import { FOLLOW_VIEW_HEIGHT, FOLLOW_VIEW_WIDTH } from './Match.constants';
 import type { IntentSource } from './Match.types';
 import { HUD_PUBLISH_EVERY_TICKS } from './MatchBridge.constants';
 import { prepareMatchWorld } from './prepareMatchWorld';
-import { HEALTH_BAR_FILL_COLORS } from './views/entityViews.constants';
-import type { HealthBarSide } from './views/EntityLayer.types';
+import { HEALTH_BAR_FILL_COLORS } from './views/HealthBarView.constants';
+import type { HealthBarSide } from './views/HealthBarView.types';
 
 const SEED = 1;
 const PLAYER: PlayerChoice = { legend: 'warrior', team: 'light' };

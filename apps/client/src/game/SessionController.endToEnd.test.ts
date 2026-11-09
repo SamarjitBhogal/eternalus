@@ -249,7 +249,7 @@ describe('SessionController with the real match, end to end', () => {
     expect(first?.scheduler.hasPendingFrame).toBe(false);
     expect(session.listeners(first, firstCanvas)).toBe(0);
     // The match's only simulation subscriptions are the health bars' two (damage-applied,
-    // entity-died, DEC-195); its teardown drops each exactly once.
+    // entity-removed, DEC-195); its teardown drops each exactly once.
     expect(first?.unsubscribed).toEqual([1, 1]);
     expect(session.bus.listenerCount()).toBe(busWithOne);
 

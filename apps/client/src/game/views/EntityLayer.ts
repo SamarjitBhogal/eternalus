@@ -2,15 +2,9 @@ import type { EntitySnapshot, Snapshot } from '@eternalus/core';
 
 import type { Renderer } from '../engine/render/Renderer';
 import type { WorldPoint } from '../engine/render/Renderer.types';
-import type { HealthBarSide } from './EntityLayer.types';
+import type { HealthBarRule } from './EntityLayer.types';
 import type { EntityDrawState } from './EntityView.types';
-import {
-  HEALTH_BAR_FILL_COLORS,
-  HEALTH_BAR_GAP,
-  HEALTH_BAR_HEIGHT,
-  HEALTH_BAR_TRACK_COLOR,
-  HEALTH_BAR_WIDTH_SCALE,
-} from './entityViews.constants';
+import { HealthBarView } from './HealthBarView';
 import type { WorldLayer } from './SceneView.types';
 import type { ViewRegistry } from './ViewRegistry';
 
@@ -24,6 +18,8 @@ import type { ViewRegistry } from './ViewRegistry';
 export class EntityLayer implements WorldLayer {
   private states: readonly EntityDrawState[] = [];
 
+  private readonly healthBars = new HealthBarView();
+
   /**
    * Creates the layer over a view registry. `isDead` is the one dead rule (DEC-151 (2)), injected
    * by `Match`, because views import nothing from `bridge/`. `healthBarOf` is the world health
@@ -32,7 +28,7 @@ export class EntityLayer implements WorldLayer {
   public constructor(
     private readonly views: ViewRegistry,
     private readonly isDead: (health: EntitySnapshot['health']) => boolean,
-    private readonly healthBarOf: (entity: EntitySnapshot) => HealthBarSide | null,
+    private readonly healthBarOf: HealthBarRule,
   ) {}
 
   /**
@@ -59,7 +55,7 @@ export class EntityLayer implements WorldLayer {
 
   /**
    * Draws every entity, back to front by `y`, so lower entities overlap higher ones. The health
-   * bars come after all the entities, so no entity hides a bar.
+   * bars (`HealthBarView`) come after every entity of this layer, so no entity hides a bar.
    */
   public draw(renderer: Renderer): void {
     const ordered = [...this.states].sort((a, b) => a.position.y - b.position.y);
@@ -69,7 +65,7 @@ export class EntityLayer implements WorldLayer {
     for (const state of ordered) {
       const side = this.healthBarOf(state.entity);
       if (side !== null) {
-        EntityLayer.drawHealthBar(state, HEALTH_BAR_FILL_COLORS[side], renderer);
+        this.healthBars.draw(state, side, renderer);
       }
     }
   }
@@ -90,40 +86,6 @@ export class EntityLayer implements WorldLayer {
         view.drawMinimap({ ...state, position: { x: at.x, y: at.y } }, renderer);
       }
     }
-  }
-
-  /**
-   * Draws a bar centred over the unit: the track, then the health left in `fill`, filled from the
-   * left (`health.current / health.max`).
-   */
-  private static drawHealthBar(
-    { entity, position }: EntityDrawState,
-    fill: string,
-    renderer: Renderer,
-  ): void {
-    const { health, transform } = entity;
-    if (health === null || transform === null) {
-      return;
-    }
-    const width = transform.radius * 2 * HEALTH_BAR_WIDTH_SCALE;
-    const x = position.x - width / 2;
-    const y = position.y - transform.radius - HEALTH_BAR_GAP - HEALTH_BAR_HEIGHT;
-    EntityLayer.fillBar(renderer, { x, y }, width, HEALTH_BAR_TRACK_COLOR);
-    EntityLayer.fillBar(renderer, { x, y }, (width * health.current) / health.max, fill);
-  }
-
-  /** Fills a bar `HEALTH_BAR_HEIGHT` high and `width` wide from its top-left corner `at`. */
-  private static fillBar(renderer: Renderer, at: WorldPoint, width: number, color: string): void {
-    const bottom = at.y + HEALTH_BAR_HEIGHT;
-    renderer.fillPolygon(
-      [
-        { x: at.x, y: at.y },
-        { x: at.x + width, y: at.y },
-        { x: at.x + width, y: bottom },
-        { x: at.x, y: bottom },
-      ],
-      color,
-    );
   }
 
   private static positionOf(

@@ -131,7 +131,7 @@ describe('HealthBarVisibility (DEC-195)', () => {
     expect(bars.healthBarOf({ ...ENEMY, health: { current: 10, max: 10 } })).toBe('enemy');
     expect(bars.healthBarOf({ ...ENEMY, health: { current: 0, max: 10 } })).toBeNull();
 
-    events.emit('entity-died', { entityId: 'foe', killer: hit('me') });
+    events.emit('entity-removed', { entityId: 'foe', cause: 'died', killer: hit('me') });
 
     expect(bars.healthBarOf(ENEMY)).toBeNull();
   });
@@ -144,6 +144,23 @@ describe('HealthBarVisibility (DEC-195)', () => {
     damage('tower', 'me');
 
     expect([PLAYER, ALLY, TOWER].map(bars.healthBarOf)).toEqual([null, 'ally', null]);
+  });
+
+  it("keeps allies on the ally side after the player's Legend dies and leaves the snapshot", () => {
+    const { bars, damage } = setUp();
+    damage('pal', 'foe');
+
+    bars.observe(snapshotOf([ENEMY, ALLY]));
+
+    expect(bars.healthBarOf(ALLY)).toBe('ally');
+  });
+
+  it('forgets a unit removed for any cause, also after a late hit in the same tick', () => {
+    const { events, bars, damage } = setUp();
+    damage('pal', 'foe');
+    events.emit('entity-removed', { entityId: 'foe', cause: 'dev-removed' });
+
+    expect(bars.healthBarOf(ENEMY)).toBeNull();
   });
 
   it('shows the bars of both teams on the enemy side when no human plays (sim mode)', () => {

@@ -281,7 +281,7 @@ describe('Match lifecycle', () => {
     expect(scheduler.hasPendingFrame).toBe(false);
     expect(simulation.tick).toBe(0);
     // The match subscribes only to the health bars' events, and drops every subscription.
-    expect(on.mock.calls.map(([type]) => type)).toEqual(['damage-applied', 'entity-died']);
+    expect(on.mock.calls.map(([type]) => type)).toEqual(['damage-applied', 'entity-removed']);
     expect(unsubscribes.count).toBe(on.mock.calls.length);
   });
 });
