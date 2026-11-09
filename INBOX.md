@@ -591,8 +591,9 @@ Reply inline (`Decision: …`).
   - Since `feat/hud-aether-bar` (2026-11-09), the entity snapshot also carries a Legend's aether
     (left and full), so the HUD's aether bar is live. Answered 2026-11-09 (question dialog): the
     bar only, no regeneration until the first ability spends aether ("Bar only, no regen
-    (Recommended)"; OQ-56 stays open); the per-Legend aether group becomes the design ("choose the
-    best long-term design with the least tech-debt"). Recorded in DEC-230. Nothing waits.
+    (Recommended)"; OQ-56 stays open); the owner left the data path to the session ("choose the
+    best long-term design with the least tech-debt"), which made the per-Legend aether group the
+    design. Recorded in DEC-230. Nothing waits.
   - Answered 2026-10-28 (the non-blocking decision page, in chat): "Keep", with: "Keep. Empty frames
     for abilities that do not yet exist. Wuuthrad was used as weapon reference, so that artwork
     exists, as well as some ability artwork (not associated with real abilities yet). Empty frames,

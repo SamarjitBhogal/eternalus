@@ -940,9 +940,9 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   core type. Core now has the `Aether` and `Progression` components (the bullet above), and
   `EntitySnapshot` (`state/Snapshot.types.ts`) carries `health` and `progression` (`level`, the
   XP inside that level and `xpToNext`, `null` at the cap; `feat/hud-level-xp`, 2026-11-09), so
-  the HUD's level and XP are live; aether stays `null` until `Snapshot.player` exists (INBOX
-  HC-F6). Since `feat/hud-aether-bar` (2026-11-09), `EntitySnapshot` also carries `aether`
-  (`current`, `max`) for every entity with `Aether`, and the HUD's aether bar is live (DEC-230).
+  the HUD's level and XP are live (INBOX HC-F6). Since `feat/hud-aether-bar` (2026-11-09),
+  `EntitySnapshot` also carries `aether` (`current`, `max`) for every entity with `Aether`, and
+  the HUD's aether bar is live (DEC-230).
   Aether regeneration is not built: no ability spends aether yet, and the rate and whether
   structures refill it stay open (OQ-56, DEC-230 (2)). The record lands in
   `hudSlice`, not `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`.

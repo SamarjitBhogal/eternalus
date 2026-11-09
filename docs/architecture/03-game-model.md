@@ -258,7 +258,7 @@ export type EntitySnapshot = {
   readonly aether: {
     readonly current: number;
     readonly max: number;
-  } | null; // any entity with Aether (every Legend), not only the player (DEC-230)
+  } | null; // any entity with an aether pool (every Legend), not only the player (DEC-230)
   readonly statusIds: readonly StatusEffectId[];
   readonly anim: AnimState;
 };
@@ -472,8 +472,8 @@ each closed by the session or phase named:
   (`x`, `y`, `radius`), `health` (`current`, `max`), `progression` (a Legend's `level`, the `xp`
   inside that level and its `xpToNext`, `null` at the cap; `snapshot(curves)` takes the level
   curves `ProgressionSystem` uses), `aether` (a Legend's `current` and `max` aether, DEC-230),
-  `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only. `MatchPhase` lives in
-  `config/matchPhases.ts`; the match director is built (12 §13).
+  `area` (a zone's polygons) and `capture` (a capture point's state and presence) groups only.
+  `MatchPhase` lives in `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
   fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters

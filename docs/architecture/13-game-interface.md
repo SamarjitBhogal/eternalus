@@ -667,11 +667,11 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
 - **HUD data.** `MatchBridge` publishes `match-clock` and `hud-state` every 6 ticks and
   `structure-state` and `capture-state` every 30, from `Match`'s tick. Core's `Snapshot` has no
   `player`, so it projects the HUD player from the player's `EntitySnapshot` (health, maximum
-  health, level and XP live, the slot list empty, every other value `null`, DEC-17) and the
+  health, aether, level and XP live, the slot list empty, every other value `null`, DEC-17) and the
   structure and capture rosters from the `MapDefinition` (structure health `null`, capture owner
   `neutral`).
   Each field becomes live when core publishes it: structure health (Phase 2, sprint 2.1), capture
-  state (sprint 2.6), aether and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
+  state (sprint 2.6), abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
   [05](05-abilities-weapons-and-loadouts.md) §15). (2026-11-03, PR #64: capture state is live.
   `MatchBridge` takes each point's owner and progress from the zone that stands on its feature's
   position, and re-sends the last array while they do not change. 2026-11-09,
