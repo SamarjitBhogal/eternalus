@@ -17,6 +17,7 @@ paths:
     'packages/core/src/state/MatchState.types.ts',
     'packages/core/src/state/MatchRecord.ts',
     'packages/core/src/state/ScoreBook.ts',
+    'packages/core/src/state/ScoringState.types.ts',
     'packages/core/src/state/MatchResult.types.ts',
     'packages/core/src/components/WinObjective.ts',
     'packages/core/src/diagnostics/invariants/PhaseMonotonicInvariant.ts',
@@ -49,7 +50,7 @@ sources is `TUNE`; §13 says what is built.
   `phases/<Name>Phase.ts` + `defaultMatchPhases.ts`, `MatchTimeline.ts`,
   `TimelineActionRegistry.types.ts` + `actions/<Kind>Action.ts` + `defaultTimelineActions.ts`,
   `defaultMatchDirector.ts` (the director with the default phases, actions and conditions),
-  `Scoring.ts`, `VictoryCondition.types.ts` + `conditions/<Name>Condition.ts` +
+  `Scoring.ts` + `ScoreKeeper.types.ts`, `VictoryCondition.types.ts` + `conditions/<Name>Condition.ts` +
   `defaultVictoryConditions.ts`, `rewards/BossRewardHandler.ts`. `MatchResult` and `Verdict`
   (`state/MatchResult.types.ts`) live in `state/` and `VictoryConditionId`
   (`config/VictoryConditionId.types.ts`) in `config/`, for the same reason as `MatchPhase`: `state/`
