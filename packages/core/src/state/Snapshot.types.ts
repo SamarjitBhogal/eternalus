@@ -10,8 +10,8 @@ import type { Polygon } from '../utils/geometry.types';
 
 /**
  * One entity as the client sees it. A field is `null` when the entity has no component behind it
- * (no `Transform`, `Health`, `Progression`, `TeamMembership`, `ZoneArea` or `Capturable`), never a
- * made-up default.
+ * (no `Transform`, `Health`, `Progression`, `Aether`, `TeamMembership`, `ZoneArea` or
+ * `Capturable`), never a made-up default.
  */
 export type EntitySnapshot = {
   readonly mapObjectId?: string;
@@ -24,6 +24,8 @@ export type EntitySnapshot = {
   readonly health: { readonly current: number; readonly max: number } | null;
   /** A Legend's level and XP (`Progression`, DEC-224); `null` for every entity that does not level. */
   readonly progression: ProgressionSnapshot | null;
+  /** A Legend's aether pool (`Aether`, DEC-230); `null` for every entity without one. */
+  readonly aether: { readonly current: number; readonly max: number } | null;
   /** The ground a zone covers (`ZoneArea`), as polygons in world units; `null` for non-zones. */
   readonly area: readonly Polygon[] | null;
   /** A capture point's state (`Capturable`, architecture 07 §7); `null` for every other entity. */

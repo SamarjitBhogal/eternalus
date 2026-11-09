@@ -1,3 +1,4 @@
+import { Aether } from '../components/Aether';
 import { Capturable } from '../components/Capturable';
 import { Health } from '../components/Health';
 import { Progression } from '../components/Progression';
@@ -296,6 +297,7 @@ export class GameState {
     const transform = entity.findComponent(Transform);
     const health = entity.findComponent(Health);
     const progression = entity.findComponent(Progression);
+    const aether = entity.findComponent(Aether);
     const capture = entity.findComponent(Capturable);
     return {
       id: entity.id,
@@ -318,6 +320,7 @@ export class GameState {
               level: progression.level,
               ...progression.levelProgress(curves.get(progression.curveId)),
             },
+      aether: aether === undefined ? null : { current: aether.current, max: aether.max },
       area: entity.findComponent(ZoneArea)?.polygons ?? null,
       capture:
         capture === undefined
