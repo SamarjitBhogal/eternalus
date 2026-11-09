@@ -4,7 +4,7 @@ description: The domain model of a running match, from GameState and the Command
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-08
+last-reviewed: 2026-11-09
 tags: [architecture, game-model, state, commands, events, determinism, config]
 paths:
   [
@@ -79,7 +79,7 @@ export class MatchRecord implements MatchState {
   public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
   public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
   // the scoring data's only writer (DEC-211): written by Scoring only, in its fold (12 §5)
-  public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, awardTeamPoints, countOwnedPoints, recordHit, takeAssists
+  public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, recordHit, takeAssists
   public get scoring(): ScoringState; // the book's data, read-only at every depth
 }
 ```
@@ -194,8 +194,8 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                                       |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                               |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                                       |
-| `checkpoint-reached`                | `{ pointId, team, checkpoint }`                        | `CaptureSystem`                                                 | `Scoring` (DEC-214), checkpoint spawners (Phase 3)                                       |
-| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `Scoring`, `MatchDirector`, `StatusEffectSystem`                                         |
+| `checkpoint-reached`                | `{ pointId, team, checkpoint, presentLegendIds }`      | `CaptureSystem`                                                 | `Scoring` (DEC-214, DEC-223), checkpoint spawners (Phase 3)                              |
+| `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `MatchDirector`, `StatusEffectSystem`                                                    |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                                              |
 | `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                                  |
 | `ability-cast`                      | `{ casterId, abilityId, slot }`                        | `AbilitySystem`                                                 | views (VFX), `Announcer`                                                                 |
