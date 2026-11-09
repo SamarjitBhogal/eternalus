@@ -5950,3 +5950,25 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
 - Checks run: `check:quick` passed; full `npm run check` in
   `eternalus-agent-work/hud-aether-bar/check-1.log`.
 - Next step: critic, ponytail review, push, PR into `phase/3-sprint-3-work` after #88.
+
+### 2026-11-09 — Phase 3 / combat sprint: aether critic's better-than-design items built (DEC-232) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: the owner's answer to critic round 1's two better-than-design items ("A only if
+  there is an assurance that B will be done in the near-future. no tech-debt if possible, when
+  possible."); no plan schedules them, so both are built here (DEC-232). (A) 05 §15's
+  `PlayerSnapshot` holds only `entityId` and the ability `slots`; the Legend's definition, health,
+  aether, level, XP and status effects stay in its `EntitySnapshot` groups and `MatchBridge` joins
+  them by id (docs and TSDoc only: core has no `Snapshot.player` yet, and the bridge already
+  joins). The XP-ring comments move from 05 §15 to 03 §5's `progression` group. (B)
+  `state/EntitySnapshotter.ts` builds each `EntitySnapshot`; `GameState.snapshot()` uses it
+  (`GameState.ts` 338 → 286 lines), and 03 §5 names it as the piece `SnapshotSystem` uses. Docs:
+  DEC-232 batch, 03 §5 and status, 05 §15 and §18 status, 13 §5 (`hud-state` sketch, slice
+  types) and §10 status, INBOX HC-F6 line, `hud.types.ts` and `MatchBridge` TSDoc.
+- Correction to the entry above: critic round 1 left OQ-56's Decision cell blank
+  (`12-open-questions.md` is back to its base content), so "OQ-56's Decision cell" there is not
+  in the branch.
+- Tests fail first (`EntitySnapshotter.test.ts`): break 1 (`checkpoints` from the zone, not the
+  constructor) 1 red; break 2 (`mapObjectId` key always present) 1 red; break 3 (`area` always
+  null) 1 red; restored byte-identical, green. `GameState.test.ts` unchanged and green.
+- Checks run: see `eternalus-agent-work/hud-aether-bar/check-2.log`.
+- Next step: critic round 2 on `14c8365d..HEAD`, ponytail review, push, PR after #88.

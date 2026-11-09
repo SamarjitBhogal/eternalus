@@ -21,6 +21,19 @@ overridden by the product owner. Decisions arrive through `INBOX.md`; once imple
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
 
+## Batch 2026-11-09 (chat: the aether bar critic's better-than-design items)
+
+The owner's answer of 2026-11-09, in chat (session COMBAT-WEAPONS-ABILITIES-4), to the two
+better-than-design items the critic found on `feat/hud-aether-bar`: "A only if there is an assurance
+that B will be done in the near-future. no tech-debt if possible, when possible." No plan schedules
+the work, so both are built in that branch. The owner's words are kept verbatim outside the
+repository in `eternalus-agent-work/hud-aether-bar/owner-answers-2026-11-09.md`. DEC-232 is this
+batch (DEC-231 is another session's).
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DEC-232 | **Each value is in the snapshot once: the player snapshot holds only what the player alone has, and one class builds each entity's snapshot.** (1) Core's `PlayerSnapshot` holds only player-only data: `entityId` and the ability `slots`. The Legend's definition, health, aether, level, XP and status effects stay in its `EntitySnapshot` groups (`statusIds` is already one, 03 §5), and `MatchBridge` joins them by `entityId` into the HUD's player record; this replaces the last clause of DEC-224 (1) and of DEC-230 (1), that the player snapshot copies those groups. (2) `state/EntitySnapshotter.ts` builds each `EntitySnapshot`, one group per component; `GameState.snapshot()` uses it, so a new component group no longer changes `GameState`. Built on `feat/hud-aether-bar`. Changes `03-game-model.md` §5, `05-abilities-weapons-and-loadouts.md` §15 and §18, `13-game-interface.md` §5 and §10. |
+
 ## Batch 2026-11-09 (question dialog: the HUD's aether bar)
 
 The owner's answers of 2026-11-09 to two questions from the `feat/hud-aether-bar` work, given

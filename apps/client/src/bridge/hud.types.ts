@@ -2,7 +2,7 @@
  * Display types of the match HUD (architecture 05 §15, 13 §3, §5): what `hud-state`,
  * `structure-state` and `capture-state` carry, and the view vocabulary several HUD files share.
  * A value the simulation cannot supply yet is `null` (core has no `Snapshot.player` yet, and
- * structures and capture are not simulated) and the HUD draws its "no data yet" state. Types only:
+ * structure health is not simulated) and the HUD draws its "no data yet" state. Types only:
  * imports no slice and not events.ts (events.ts imports this file). A type is exported once a file
  * outside this one reads it (knip).
  */
@@ -42,11 +42,11 @@ export type AbilitySlotStatus = {
 };
 
 /**
- * The human Legend as the HUD shows it: 05 §15 `PlayerSnapshot` with every value nullable,
- * because core has no `Snapshot.player` yet. Differences a later core `PlayerSnapshot` maps over:
- * core's fields are non-null, so the bridge mirror maps them 1:1 and drops the nulls; `statusIds`,
- * shield bars and the slots' `varietyId` are added here with their first reader;
- * `weaponProgress`/`ultimatePips` exist only here.
+ * The human Legend as the HUD shows it: `MatchBridge` joins the Legend's `EntitySnapshot` groups
+ * (definition, health, aether, progression) with core's `Snapshot.player` (the slots) by
+ * `entityId` (05 §15, DEC-232). A value is `null` while core has no group for it; the slots stay
+ * `[]` until core has `Snapshot.player`. `statusIds`, shield bars and the slots' `varietyId` are
+ * added here with their first reader; `weaponProgress`/`ultimatePips` exist only here.
  */
 export type PlayerHudSnapshot = {
   readonly entityId: string;
