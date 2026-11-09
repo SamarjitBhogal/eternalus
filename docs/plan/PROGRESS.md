@@ -5894,3 +5894,14 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs check passed.
 - Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
   once Samarjit re-approves.
+
+### 2026-11-08 — Phase 3 / INBOX: PR #69 critic item (Stronghold feature type) — docs/inbox-stronghold-feature-type — sholtzman + Claude Code
+
+- What was done: Sam chose to record the PR #69 round-3 critic's optional better-than-design item
+  in `INBOX.md` ("Decisions needed from Sam"): a Stronghold feature type with `wallBoundary`
+  required, so the type checker catches what `strongholdRing` checks at run time today. No code
+  changed.
+- Checks run: `npm run check` (log `eternalus-agent-work/pr-merge-74-79/check-inbox.log`): exit
+  0, Prettier passed, core `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs
+  check passed. Critic (`architecture-reviewer`): approve, 3 nits fixed. Ponytail: 1 cut taken.
+- Next step: Sam approves the item for a follow-up PR, or drops it.
