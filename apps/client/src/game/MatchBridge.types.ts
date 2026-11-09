@@ -1,6 +1,7 @@
-import type { MapDefinition, MapFeatureKind, Simulation, Snapshot } from '@eternalus/core';
+import type { MapDefinition, MapFeatureKind, Simulation, Snapshot, Vec2 } from '@eternalus/core';
 
 import type { BridgeEventMap } from '../bridge/events';
+import type { CapturePointStatus } from '../bridge/hud.types';
 import type { TypedEventBus } from '../bridge/TypedEventBus';
 
 /** What `Match` builds its `MatchBridge` from. */
@@ -24,4 +25,12 @@ export type MatchBridgeDeps = {
    * before it, so the bridge binds each structure tile here, by `EntitySnapshot.mapFeatureId`.
    */
   readonly firstSnapshot: Snapshot;
+};
+
+/** A capture point the HUD lists, and where its zone stands. */
+export type CaptureSite = {
+  /** The map feature's position, where `Simulation.spawnZones` puts the zone. */
+  readonly position: Vec2;
+  /** The point's status while no zone stands there: neutral, no progress. */
+  readonly withoutZone: CapturePointStatus;
 };

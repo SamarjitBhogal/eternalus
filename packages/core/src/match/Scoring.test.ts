@@ -11,7 +11,7 @@ import type { EntityId } from '../state/EntityStore.types';
 import { GameState } from '../state/GameState';
 import type { LegendStats } from '../state/ScoringState.types';
 import { DeathSystem } from '../systems/DeathSystem';
-import type { Team } from '../teams/teams.types';
+import type { PlayableTeam, Team } from '../teams/teams.types';
 import { Scoring } from './Scoring';
 
 /** 30 s at 30 ticks per second (DEC-79). */
@@ -23,8 +23,9 @@ class TestUnit extends Entity {
     id: string,
     public readonly family: string,
     public readonly kind: string,
+    definitionId: string,
   ) {
-    super(id, family === 'legend' ? 'warrior' : `${kind}-definition`);
+    super(id, definitionId);
   }
 
   protected installComponents(): void {
@@ -44,18 +45,21 @@ const EMPTY_ROW = {
   score: 0,
 } as const;
 
-const setUp = () => {
+const setUp = (assistWindowSeconds = ASSIST_WINDOW_SECONDS) => {
   const state = new GameState(createDefaultGameConfig(), 1);
-  const scoring = new Scoring(state, {
-    weights: SCORING_WEIGHTS,
-    assistWindowSeconds: ASSIST_WINDOW_SECONDS,
-  });
+  const scoring = new Scoring(state, { weights: SCORING_WEIGHTS, assistWindowSeconds });
   const damage = new DamagePipeline();
   let next = 0;
   /** Adds a unit and announces it with `entity-spawned`, as a spawn does. */
-  const spawn = (family: string, kind: string, team: Team, health = 100): EntityId => {
+  const spawn = (
+    family: string,
+    kind: string,
+    team: Team,
+    health = 100,
+    definitionId = family === 'legend' ? 'warrior' : `${kind}-definition`,
+  ): EntityId => {
     next += 1;
-    const unit = new TestUnit(`entity-${String(next)}`, family, kind);
+    const unit = new TestUnit(`entity-${String(next)}`, family, kind, definitionId);
     unit.addComponent(new Health(health));
     unit.addComponent(new TeamMembership(team));
     state.entities.add(unit);
@@ -83,7 +87,13 @@ const setUp = () => {
   };
   const rowOf = (entityId: EntityId): LegendStats | undefined =>
     state.match.scoring.legends.find((row) => row.entityId === entityId);
-  return { state, spawn, legend, hit, kill, endTick, runTo, rowOf };
+  /** Announces a fallen structure, as `StructureSystem` does. */
+  const destroy = (kind: string, team: Team): void => {
+    next += 1;
+    const entityId = `entity-${String(next)}`;
+    state.events.emit('structure-destroyed', { entityId, kind, team, lane: null });
+  };
+  return { state, spawn, legend, hit, kill, endTick, runTo, rowOf, destroy };
 };
 
 describe('Scoring', () => {
@@ -137,6 +147,21 @@ describe('Scoring', () => {
     });
   });
 
+  describe('one row per Legend', () => {
+    it('adds no second row when a Legend is announced again, and the first keeps its data', () => {
+      const { state, spawn, legend, kill, endTick, rowOf } = setUp();
+      const farmer = legend('light');
+      kill(farmer, spawn('mob', 'medium-mob', 'dark'));
+      endTick();
+
+      state.events.emit('entity-spawned', { entityId: farmer, kind: 'warrior', team: 'light' });
+      endTick();
+
+      expect(state.match.scoring.legends).toHaveLength(1);
+      expect(rowOf(farmer)).toMatchObject({ minionKills: 1, score: 4 });
+    });
+  });
+
   describe('Legend kills, deaths and assists (DEC-79)', () => {
     it('gives the killer a kill worth 15', () => {
       const { state, legend, kill, endTick, rowOf } = setUp();
@@ -147,7 +172,10 @@ describe('Scoring', () => {
       endTick();
 
       expect(rowOf(killer)).toMatchObject({ kills: 1, score: 15 });
-      expect(state.match.scoring.teams).toEqual({ light: { score: 15 }, dark: { score: 0 } });
+      expect(state.match.scoring.teams).toEqual({
+        light: { score: 15, structuresDestroyed: 0 },
+        dark: { score: 0, structuresDestroyed: 0 },
+      });
     });
 
     it('counts a death and takes no points for it: the victim keeps what it earned', () => {
@@ -209,6 +237,21 @@ describe('Scoring', () => {
       endTick();
 
       expect(rowOf(helper)).toMatchObject({ assists: 0, score: 0 });
+    });
+
+    it('rounds the assist window to whole ticks as TickRate does (0.05 s is 2 ticks at 30/s)', () => {
+      const { legend, hit, kill, endTick, rowOf } = setUp(0.05);
+      const killer = legend('light');
+      const helper = legend('light');
+      const victim = legend('dark');
+      hit(helper, victim);
+      endTick();
+      endTick();
+
+      kill(killer, victim);
+      endTick();
+
+      expect(rowOf(helper)).toMatchObject({ assists: 1, score: 7 });
     });
 
     it('gives the killer the kill and no assist for its own earlier hits', () => {
@@ -361,6 +404,23 @@ describe('Scoring', () => {
       expect(state.match.scoring.teams.light.score).toBe(0);
     });
 
+    it.each<[string, string, number]>([
+      ['light-guard', 'light-mob', 1],
+      ['heavy-guard', 'heavy-mob', 12],
+    ])(
+      'scores an enemy tower guard (%s, a %s on a team) as a minion kill worth %d (DEC-211 (2))',
+      (definitionId, kind, points) => {
+        const { state, spawn, legend, kill, endTick, rowOf } = setUp();
+        const killer = legend('light');
+
+        kill(killer, spawn('mob', kind, 'dark', 100, definitionId));
+        endTick();
+
+        expect(rowOf(killer)).toMatchObject({ minionKills: 1, neutralKills: 0, score: points });
+        expect(state.match.scoring.teams.light.score).toBe(points);
+      },
+    );
+
     it('counts a neutral mob as a neutral kill, scored by its kind', () => {
       const { spawn, legend, kill, endTick, rowOf } = setUp();
       const killer = legend('dark');
@@ -383,6 +443,45 @@ describe('Scoring', () => {
 
       expect(rowOf(killer)).toEqual({ ...EMPTY_ROW, entityId: killer, team: 'light' });
       expect(state.match.scoring.teams.light.score).toBe(0);
+    });
+
+    it.each<[string, PlayableTeam, PlayableTeam]>([
+      ['stronghold', 'dark', 'light'],
+      ['spawner-tower', 'dark', 'light'],
+      ['buff-tower', 'light', 'dark'],
+      ['gate', 'light', 'dark'],
+    ])(
+      'gives the team opposing a fallen %s of team %s 5 team-only points and a structure (DEC-212)',
+      (kind, team, destroyer) => {
+        const { state, legend, destroy, endTick } = setUp();
+        const light = legend('light');
+        const dark = legend('dark');
+
+        destroy(kind, team);
+        endTick();
+
+        expect(state.match.scoring.teams[destroyer]).toEqual({ score: 5, structuresDestroyed: 1 });
+        expect(state.match.scoring.teams[team]).toEqual({
+          score: 0,
+          structuresDestroyed: 0,
+        });
+        expect(state.match.scoring.legends).toEqual([
+          { ...EMPTY_ROW, entityId: light, team: 'light' },
+          { ...EMPTY_ROW, entityId: dark, team: 'dark' },
+        ]);
+      },
+    );
+
+    it('gives nothing for a neutral camp that falls (DEC-212)', () => {
+      const { state, destroy, endTick } = setUp();
+
+      destroy('camp', 'neutral');
+      endTick();
+
+      expect(state.match.scoring.teams).toEqual({
+        light: { score: 0, structuresDestroyed: 0 },
+        dark: { score: 0, structuresDestroyed: 0 },
+      });
     });
 
     it("counts a Legend's damage to a structure as structureDamage, with no points", () => {
@@ -429,9 +528,24 @@ describe('Scoring', () => {
       state.match.scoring.legends
         .filter((row) => row.team === team)
         .reduce((sum, row) => sum + row.score, 0);
-    expect(state.match.scoring.teams).toEqual({ light: { score: 34 }, dark: { score: 4 } });
+    expect(state.match.scoring.teams).toEqual({
+      light: { score: 34, structuresDestroyed: 0 },
+      dark: { score: 4, structuresDestroyed: 0 },
+    });
     expect(state.match.scoring.teams.light.score).toBe(sumOf('light'));
     expect(state.match.scoring.teams.dark.score).toBe(sumOf('dark'));
+  });
+
+  it("makes each team's total its Legends' scores plus its team-only points (DEC-212)", () => {
+    const { state, legend, kill, destroy, endTick } = setUp();
+    const killer = legend('light');
+    kill(killer, legend('dark'));
+    destroy('spawner-tower', 'dark');
+    destroy('buff-tower', 'dark');
+    endTick();
+
+    expect(state.match.scoring.legends.map((row) => row.score)).toEqual([15, 0]);
+    expect(state.match.scoring.teams.light).toEqual({ score: 25, structuresDestroyed: 2 });
   });
 
   it('ignores a death announced for an entity that is not in the store', () => {
@@ -451,7 +565,7 @@ describe('Scoring', () => {
   });
 
   it('counts nothing once the match has a result', () => {
-    const { state, legend, kill, endTick, rowOf } = setUp();
+    const { state, legend, kill, destroy, endTick, rowOf } = setUp();
     const killer = legend('light');
     const victim = legend('dark');
     endTick();
@@ -464,15 +578,20 @@ describe('Scoring', () => {
       seed: 1,
       configHash: 0,
       legends: [],
-      teams: { light: { score: 0 }, dark: { score: 0 } },
+      teams: {
+        light: { score: 0, structuresDestroyed: 0 },
+        dark: { score: 0, structuresDestroyed: 0 },
+      },
       finalHash: 0,
     });
     const late = legend('light');
 
     kill(killer, victim);
+    destroy('spawner-tower', 'dark');
     endTick();
 
     expect(rowOf(killer)).toMatchObject({ kills: 0, score: 0 });
     expect(rowOf(late)).toBeUndefined();
+    expect(state.match.scoring.teams.light).toEqual({ score: 0, structuresDestroyed: 0 });
   });
 });

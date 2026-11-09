@@ -78,6 +78,9 @@ export class MatchRecord implements MatchState {
   public endMatch(result: MatchResult): void; // MatchDirector only, once; a second call throws
   public seatHuman(legendId: EntityId): void; // Simulation only, once, when the human slot's Legend spawns
   public advanceTimeline(): void; // MatchDirector only, once per fired timeline entry
+  // the scoring data's only writer (DEC-211): written by Scoring only, in its fold (12 §5)
+  public readonly scoreBook: ScoreBook; // addRow, award, awardTeam, recordHit, takeAssists
+  public get scoring(): ScoringState; // the book's data, read-only at every depth
 }
 ```
 
@@ -186,11 +189,12 @@ high-frequency events (`damage-applied`) may be pooled (Recommendation, profile 
 | `entity-removed`                    | `{ entityId, cause: RemovalCause, killer? }`           | `DeathSystem` only                                              | `HordeSystem`, `ProjectilePool`, invariants                                              |
 | `damage-applied`                    | `{ targetId, amount, absorbed, source: DamageSource }` | `DamagePipeline`                                                | `ProgressionSystem` (assists), `AiSystem` (aggro), `Scoring` (assists, structure damage) |
 | `entity-died`                       | `{ entityId, killer: DamageSource }`                   | `DeathResolver`                                                 | `DeathSystem`, `ProgressionSystem`, `Scoring`, `ObjectiveLostCondition`                  |
-| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields)                       |
+| `structure-destroyed`               | `{ entityId, kind, team, lane }`                       | `StructureSystem`                                               | `EnragedSystem` (enraged lane), `StructureSystem` (walls, shields), `Scoring` (DEC-212)  |
 | `structure-breakability-changed`    | `{ entityId, isBreakable, lane }`                      | `StructureSystem`                                               | `HordeSystem` (gate holding), views                                                      |
 | `camp-cleared`                      | `{ entityId }`                                         | `SpawnSystem`                                                   | `ProgressionSystem` (camp reward), `MatchDirector`                                       |
 | `shield-bars-changed`               | `{ entityId, bars }`                                   | `StructureSystem`                                               | HUD, views                                                                               |
 | `capture-progress`                  | `{ pointId, team, progress, checkpoint }`              | `CaptureSystem`                                                 | HUD, `MinimapView`                                                                       |
+| `checkpoint-reached`                | `{ pointId, team, checkpoint }`                        | `CaptureSystem`                                                 | checkpoint spawners (Phase 3)                                                            |
 | `capture-point-owner-changed`       | `{ pointId, from, to }`                                | `CaptureSystem`                                                 | `Scoring`, `MatchDirector`, `StatusEffectSystem`                                         |
 | `phase-changed`                     | `{ from, to }`                                         | `MatchRecord.setPhase` (called by `MatchDirector`)              | `Announcer`                                                                              |
 | `match-ended`                       | `{ result: MatchResult }`                              | `MatchDirector`                                                 | client `MatchBridge` (the results flow)                                                  |
@@ -460,14 +464,15 @@ each closed by the session or phase named:
 - `GameState.snapshot()` builds the snapshot until `SnapshotSystem` exists; `Snapshot` carries
   `tick`, `match`, `entities`, `hordes` and `teams` (the team counters, since minion plan M1),
   and `EntitySnapshot` its identity, `team`, `transform`
-  (`x`, `y`, `radius`) and `health` (`current`, `max`) groups only. `MatchPhase` lives in
+  (`x`, `y`, `radius`), `health` (`current`, `max`), `area` (a zone's polygons) and `capture` (a
+  capture point's state and presence) groups only. `MatchPhase` lives in
   `config/matchPhases.ts`; the match director is built (12 §13).
 - `GameState.world` is a `MatchWorld` (the generated definition, its lane `routes` and the
   `WorldMap` grid) with no structures index yet (minion plan M2c), and the grid keeps no flow
   fields (`PathingSystem` caches them); `GameState` has `hordes` and `teams` (the spawn counters
   only) since minion plan M1, and `ai`, `space` and `hordeRequests` since M2a (11, 18); `EntityFactory` keeps its
   own id counter until session C switches it to `IdGenerator`. `MatchConfig` has no
-  `hordeSpawnIntervalSeconds`, `capturePoints` or `timeline` yet (they arrive with their systems).
+  `hordeSpawnIntervalSeconds` or `timeline` yet (they arrive with their systems).
 - `Simulation.step()` applies the queued commands itself, before the pipeline (Sprint 1 brief),
   until `CommandApplySystem` heads the default `SystemPipeline` (§1).
 - `Replay` has no `versions` yet (they arrive with the content catalogue).

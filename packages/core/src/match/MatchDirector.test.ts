@@ -17,7 +17,7 @@ import type { MatchPhaseRegistry, MatchPhaseState } from './MatchPhaseState.type
 import type { MatchDirectorOptions } from './MatchDirector.types';
 import { MatchTimeline } from './MatchTimeline';
 import type { ResolvedTimelineEntry } from './MatchTimeline.types';
-import type { Scoring } from './Scoring';
+import type { ScoreKeeper } from './ScoreKeeper.types';
 import type { VictoryCondition } from './VictoryCondition.types';
 
 /** A phase double: records every call as `"<call> <phase>"`. */
@@ -86,7 +86,7 @@ const setUp = (
     readonly conditions?: readonly VictoryCondition[];
     readonly config?: GameConfig;
     /** Builds the scoring double from the phase log. */
-    readonly scoring?: (log: string[]) => Pick<Scoring, 'fold'>;
+    readonly scoring?: (log: string[]) => ScoreKeeper;
     readonly hasher?: MatchDirectorOptions['hasher'];
     readonly terminal?: readonly MatchPhase[];
   } = {},
@@ -293,7 +293,10 @@ describe('MatchDirector', () => {
         seed: 1,
         configHash: expect.any(Number) as number,
         legends: [],
-        teams: { light: { score: 0 }, dark: { score: 0 } },
+        teams: {
+          light: { score: 0, structuresDestroyed: 0 },
+          dark: { score: 0, structuresDestroyed: 0 },
+        },
         finalHash: condition.hashAtVerdict,
       });
       // Taken before the result is stored and the terminal phase entered: the hash moved since.
@@ -341,22 +344,35 @@ describe('MatchDirector', () => {
         scoring: () => ({
           fold: ({ state: folded }) => {
             if (folded.tick === 12) {
-              folded.match.scoring.legends.push({ ...row });
-              folded.match.scoring.teams.light.score += row.score;
+              const book = folded.match.scoreBook;
+              book.addRow({
+                entityId: 'entity-1',
+                team: 'light',
+                classId: 'warrior',
+                controller: 'bot',
+              });
+              book.award('entity-1', { counter: 'kills', by: 1, points: 15 });
+              book.awardTeam('light', { counter: 'structuresDestroyed', by: 1, points: 5 });
             }
           },
         }),
       });
 
       stepTo(12);
-      const [kept] = state.match.scoring.legends;
-      if (kept !== undefined) {
-        kept.kills = 9;
-      }
-      state.match.scoring.teams.light.score = 99;
+      state.match.scoreBook.award('entity-1', { counter: 'kills', by: 8, points: 84 });
+      state.match.scoreBook.awardTeam('light', {
+        counter: 'structuresDestroyed',
+        by: 1,
+        points: 5,
+      });
 
+      expect(state.match.scoring.legends).toEqual([{ ...row, kills: 9, score: 99 }]);
+      expect(state.match.scoring.teams.light).toEqual({ score: 109, structuresDestroyed: 2 });
       expect(state.match.result?.legends).toEqual([row]);
-      expect(state.match.result?.teams).toEqual({ light: { score: 15 }, dark: { score: 0 } });
+      expect(state.match.result?.teams).toEqual({
+        light: { score: 20, structuresDestroyed: 1 },
+        dark: { score: 0, structuresDestroyed: 0 },
+      });
     });
 
     it('takes finalHash from the injected hasher', () => {

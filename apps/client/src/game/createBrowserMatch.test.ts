@@ -150,6 +150,21 @@ describe('createBrowserMatch', () => {
     expect(bus.listenerCount()).toBe(busBefore + 1);
   });
 
+  it('links each capture point the HUD lists to its zone in the simulation (PR #64)', () => {
+    const { bus, factory, viewport, request } = setUp();
+    const published: BridgeEventMap['capture-state'][] = [];
+    bus.on('capture-state', (event) => published.push(event));
+
+    const running = factory(request(), viewport);
+    const points = published.at(-1)?.points ?? [];
+    running.destroy();
+
+    expect(points.length).toBeGreaterThan(0);
+    for (const point of points) {
+      expect(point).toMatchObject({ ownerTeam: 'neutral', progress: 0 });
+    }
+  });
+
   it("gives the simulation's replay and history and the match's TRACE ring as evidence (ADR 0025 §3)", () => {
     // The human slot's ERROR comes while the match is built, before `evidence()` can be read, so
     // the ring is watched at its own `write`.
@@ -216,11 +231,12 @@ describe('createBrowserMatch', () => {
     };
 
     const running = factory(withBots, viewport);
-    const spawned = running
-      .evidence()
-      .match.recentEvents.flatMap((event) =>
-        event.type === 'entity-spawned' ? [[event.payload.kind, event.payload.team]] : [],
-      );
+    const spawned = running.evidence().match.recentEvents.flatMap((event) =>
+      // The map's capture points (PR #64) spawn too; this test is about the roster.
+      event.type === 'entity-spawned' && event.payload.kind !== 'capture-point'
+        ? [[event.payload.kind, event.payload.team]]
+        : [],
+    );
 
     // Core spawns the lane bots first, then the Rovers at their Stronghold in roster order: the
     // human slot first, then the bot Rover.

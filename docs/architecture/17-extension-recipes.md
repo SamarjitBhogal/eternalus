@@ -4,7 +4,7 @@ description: One recipe per kind of addition, from a Legend class to a port and 
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-04
+last-reviewed: 2026-11-08
 tags: [architecture, recipes, extension-points, ocp, registries]
 paths:
   [
@@ -114,7 +114,10 @@ R14 "new view" and R16 "new command".
   data, `controller`) + `mobCatalogue.ts` line; a new weight class adds a `GameConfig.match.hordeSizes`
   key (validated) and a `minionKill` value in `core/content/match/scoring.ts` (keyed by `MobKind`,
   so it fails to compile without one) and, only if lifecycle differs,
-  `core/entities/mobs/<Name>.ts` + `.test.ts`.
+  `core/entities/mobs/<Name>.ts` + `.test.ts`. Scoring needs no code: the mob family's death rule
+  scores every `MobKind` by its weight. A new scoring rule (another victim family, such as team
+  boss kills, or a new counter) is one entry in a rule registry in `core/match/Scoring.ts` plus, for
+  a new counter, a `TeamStats` or `LegendStats` field and a `ScoreBook` writer (DEC-211; 12 §5).
 - **Registry line:** none for a flavour; `defaultEntityRegistry.ts` for a class.
 - **Tests:** content validation; a `SpawnSystem` scenario spawns a horde of it at the configured
   size; a `MinionController` scenario (attacks within N ticks); determinism.

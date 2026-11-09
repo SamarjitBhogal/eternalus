@@ -4,7 +4,7 @@ import type { Logger } from '../diagnostics/Logger.types';
 import type { StateHasher } from '../state/StateHasher';
 import type { MatchPhaseRegistry } from './MatchPhaseState.types';
 import type { MatchTimeline } from './MatchTimeline';
-import type { Scoring } from './Scoring';
+import type { ScoreKeeper } from './ScoreKeeper.types';
 import type { TimelineActionRegistry } from './TimelineActionRegistry.types';
 import type { VictoryCondition } from './VictoryCondition.types';
 
@@ -28,6 +28,6 @@ export type MatchDirectorOptions = {
   readonly logger: Logger;
   /** The victory conditions in check order (`defaultVictoryConditions.ts`); the first verdict wins. */
   readonly conditions: readonly VictoryCondition[];
-  /** Folds the tick's buffered scoring events, after the phase update and before the verdict. */
-  readonly scoring: Pick<Scoring, 'fold'>;
+  /** Folds the tick's buffered scoring events, after the phase update and before the verdict (`Scoring`). */
+  readonly scoring: ScoreKeeper;
 };

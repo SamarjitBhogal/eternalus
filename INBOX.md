@@ -1973,7 +1973,9 @@ Reply inline (`Decision: …`).
       loop: (a) BD-C, Phase 5: nest a replay's setup (`{ setup: S; commands; checkpoints }`)
       instead of spreading it (noted on the Phase 5 replay task, with DEC-152); (b) a map validation rule
       against overlapping building footprints before #64's capture zones reuse `findBuildingAt`
-      (told to the #64 lane; noted in the HUD PR).
+      (told to the #64 lane; noted in the HUD PR). (2026-11-03, #64 lane: zones share the point
+      test `isPointInAnyPolygon`, not `findBuildingAt`, so (b) does not gate #64; it still holds
+      for the roofs.)
   - Built 2026-11-04 (`feat/match-director`, after the phase/3 merge): `MatchViewControls` holds
     the nine members; `Match` builds it and exposes it as `controls`, and `MatchHost` gives
     `match.controls` to `CanvasPointerControls`. Architecture 06 §10 names the new owner. (a) and
@@ -2222,6 +2224,16 @@ Reply inline (`Decision: …`).
       and stops deploying once its body stands wholly on walkable ground, or at its exit;
       architecture 18 §3.2/§5.2 still say the lane field leads it out. Edit and apply the rest of
       Draft 2 in the same file.
+- [ ] **PR #64 better than the design? (critic round 6, 2026-11-03)** — `MatchBridge` finds each
+      capture point's zone by position: core's `Simulation.spawnZones` puts a zone on its map
+      feature's position, and the client relies on that (a whole-match test in
+      `createBrowserMatch.test.ts` guards it). The critic suggests that a zone's `EntitySnapshot`
+      carries its map feature id, as a map object carries `mapObjectId`. Then the link is a field,
+      not an unwritten contract between the packages. It also settles two meanings of `pointId`:
+      core's capture events name the zone's entity id, the HUD's `CapturePointStatus.pointId` is
+      the feature id; they meet when architecture 12 §8 turns `capture-point-owner-changed` into
+      `point-taken`. It is a core API change (`EntitySnapshot`). Build it on #64, or later with the
+      `point-taken` wiring?
 - [ ] **FR-071 still names the `returning` state (PR #56, DEC-155)** (owner: sholtzman,
       `docs/requirements/06-mvp-requirements.md`). FR-071 gives the minion FSM as
       `marching → engaging → returning`. Since DEC-155 it is `marching ⇄ engaging`: a leash break
@@ -2268,6 +2280,22 @@ Reply inline (`Decision: …`).
       left-click roof toggles against the attack binding after PR #30 merges.
 - [ ] **PR #22 toolbar follow-up** — Owner: sholtzman, HUD/character-select branch. Move map
       toolbar state from game/useMatch into the bridge after PR #30 merges.
+- [ ] **PR #64 density follow-up** — Owner: sholtzman, HUD/character-select branch, after PR #64
+      merges. Show each team's density % (its share of `CaptureSnapshot.presence`) in
+      `ObjectiveTracker` while the player's Legend stands in a zone (DEC-145 (c), owner answer A).
+      The HUD branch's snapshot fixtures also need the new fields: `EntitySnapshot.area` and
+      `CaptureSnapshot.presence`. Whichever of PR #64 and the HUD PR lands second makes
+      `ZoneArea.contains` and the HUD PR's `findBuildingAt` (its DEC-149 (6)) share one
+      point-in-footprint predicate (`footprint.some(isPointInPolygon)`). Share the predicate, not
+      `findBuildingAt` itself: a zone asks whether a point is on its own floor, and `find` returns
+      only the first of two overlapping footprints. (2026-11-03: done on #64 after the HUD PR
+      merged into it: `isPointInAnyPolygon` in `utils/geometry.ts`. The density % part is open.)
+- [ ] **GL-15 capture and hold points (DEC-214)** — Owner: sholtzman, `feat/capture-scoring`
+      (base `feat/match-scoring`). FR-007's capture points (3 team-only points per checkpoint a
+      team's push reaches) and hold points (1 team-only point per full minute of pooled held
+      time) at DEC-131's values; present Legends' `checkpointsWon`. The owner approved a separate
+      PR only if it is assured to happen: its PR opens after GL-4's and merges right after it.
+      Close this item when that PR merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Aether } from '../components/Aether';
+import { Capturable } from '../components/Capturable';
 import { Collider } from '../components/Collider';
 import { Health } from '../components/Health';
 import { Movement } from '../components/Movement';
@@ -10,7 +11,9 @@ import { Transform } from '../components/Transform';
 import { Veterancy } from '../components/Veterancy';
 import { Vision } from '../components/Vision';
 import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { CAPTURE_POINT } from '../content/zones/capturePoint';
 import { Entity } from '../entities/Entity';
+import { CapturePoint } from '../entities/zones/CapturePoint';
 import { SeededRandom } from '../utils/SeededRandom';
 import { fnv1a } from '../utils/fnv1a';
 import { GameState } from './GameState';
@@ -221,25 +224,38 @@ describe('StateHasher', () => {
     [
       'the scoring (a Legend row)',
       (state) => {
-        state.match.scoring.legends.push({
+        state.match.scoreBook.addRow({
           entityId: 'entity-1',
           team: 'light',
           classId: 'warrior',
           controller: 'bot',
-          kills: 0,
-          deaths: 0,
-          assists: 0,
-          minionKills: 0,
-          neutralKills: 0,
-          structureDamage: 0,
-          score: 0,
         });
       },
     ],
     [
       'the scoring (a team total)',
       (state) => {
-        state.match.scoring.teams.dark.score = 4;
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 0,
+          points: 4,
+        });
+      },
+    ],
+    [
+      'the scoring (a team counter)',
+      (state) => {
+        state.match.scoreBook.awardTeam('dark', {
+          counter: 'structuresDestroyed',
+          by: 1,
+          points: 0,
+        });
+      },
+    ],
+    [
+      'the scoring (a recent hit)',
+      (state) => {
+        state.match.scoreBook.recordHit('entity-2', 'entity-1', 0);
       },
     ],
   ])('changes when %s of the match changes', (_, change) => {
@@ -448,6 +464,37 @@ describe('StateHasher', () => {
         expect(new Set([withRequest(2, 2), withRequest(3, 3), withRequest(2, 1)]).size).toBe(3);
       },
     );
+  });
+
+  it('hashes a capture point: owner, progress, checkpoint and reached marks each change the hash', () => {
+    const state = new GameState(createDefaultGameConfig(), 1);
+    const point = new CapturePoint('entity-1', CAPTURE_POINT.id);
+    point.spawn({
+      definition: CAPTURE_POINT,
+      position: { x: 5, y: 5 },
+      team: 'neutral',
+      area: [
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 5, y: 10 },
+        ],
+      ],
+    });
+    state.entities.add(point);
+    const zone = point.getComponent(Capturable);
+    const untouched = hasher.hash(state);
+
+    zone.setProgress(0.5, 1);
+    const progressed = hasher.hash(state);
+    zone.setProgress(0.5, 2);
+    const checkpoint = hasher.hash(state);
+    zone.markReached('light', 2);
+    const reached = hasher.hash(state);
+    zone.setOwner('light');
+    const owned = hasher.hash(state);
+
+    expect(new Set([untouched, progressed, checkpoint, reached, owned]).size).toBe(5);
   });
 
   describe('ally damage (DEC-89)', () => {

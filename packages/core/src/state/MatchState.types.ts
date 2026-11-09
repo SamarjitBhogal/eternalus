@@ -37,7 +37,10 @@ export interface MatchState {
    * `Simulation` from the roster's human slot, when the match is built.
    */
   readonly humanLegendId: EntityId | null;
-  /** The Legends' counters and points, and the teams' totals; written by `Scoring` (12 §5). */
+  /**
+   * The Legends' counters and points, and the teams' totals (12 §5), read-only at every depth.
+   * Written only through the `ScoreBook` that `MatchRecord` holds, by `Scoring` (DEC-211).
+   */
   readonly scoring: ScoringState;
   /**
    * How the match ended; `null` until a verdict. Set once, only through `MatchRecord.endMatch`, by the

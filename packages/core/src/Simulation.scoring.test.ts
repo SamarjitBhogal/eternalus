@@ -145,7 +145,10 @@ describe('Simulation: scoring', () => {
       .entities.filter(({ definitionId }) => definitionId === 'training-dummy');
     expect(dummies).toEqual([]);
     expect(foldedState().match.scoring.legends[0]).toMatchObject({ minionKills: 1, score: 1 });
-    expect(foldedState().match.scoring.teams).toEqual({ light: { score: 1 }, dark: { score: 0 } });
+    expect(foldedState().match.scoring.teams).toEqual({
+      light: { score: 1, structuresDestroyed: 0 },
+      dark: { score: 0, structuresDestroyed: 0 },
+    });
   });
 
   it('is deterministic with scoring in the hash: a replay reproduces every checkpoint', () => {
@@ -166,10 +169,12 @@ describe('Simulation: scoring', () => {
 
     expect(new StateHasher().hash(foldedState())).toBe(before);
     if (row !== undefined) {
-      row.score += 1;
+      // Only the score moves: a 1-point award with no counter step.
+      foldedState().match.scoreBook.award(row.entityId, { counter: 'kills', by: 0, points: 1 });
     }
 
     expect(row).toBeDefined();
+    expect(foldedState().match.scoring.legends[0]?.score).toBe(2);
     expect(sim.hash()).not.toBe(before);
   });
 });
