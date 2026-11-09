@@ -187,7 +187,7 @@ export type EntityDefinitionBase = {
   readonly displayName: string; // the name players see; lives here, not in code
   readonly extends?: string; // single parent, same family
   readonly sprite: SpriteRef;
-  readonly minimapGlyph?: MinimapGlyph; // 06 §8; absent = DEFAULT_MINIMAP_GLYPH
+  readonly minimapGlyph?: MinimapGlyph; // 06 §8; the map layers draw it; units' markers are on their EntityView
 };
 
 export type LegendDefinition = EntityDefinitionBase & {

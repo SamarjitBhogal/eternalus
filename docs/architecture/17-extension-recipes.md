@@ -77,7 +77,7 @@ R14 "new view" and R16 "new command".
   needs an altitude layer). Numbers, abilities or a skin alone: R2 or plain content.
   `Entity → Unit → Legend → <Name>` is the last allowed level (04 §9).
 - **Files:** `core/content/legends/<id>.ts` (`LegendDefinition` with `kind`, stats, ability
-  ids, `pickUp`, `defaultLoadout`, `minimapGlyph`) + `legendCatalogue.ts` line; its abilities
+  ids, `pickUp`, `defaultLoadout`) + `legendCatalogue.ts` line; its abilities
   (R8); `core/entities/legends/<Name>.ts` (`extends Legend`, overrides `attachComponents`) +
   `.test.ts`; a strategy if movement or pick-up is new (R13); sprites in its asset group's manifest
   file (concatenated by `AssetManifest.ts`).
@@ -311,8 +311,8 @@ AbilityAuthoring`: `classId`, `slot`, `targeting`, `effects[]`, `varieties[]`, `
 - **Registry line:** `defaultEntityRegistry.ts`: `EntityFactory.fromFeature` is the only reader
   of feature kinds and asks the registry for `definition.kind`.
 - **Tests:** `MapGenerator.test.ts` (mirror, counts follow config, determinism, containment);
-  `MinimapView.test.ts`: the glyph count rises by the placed count and the `'beacon'` test draws
-  it with **no `EntityView` registered** (the base `EntityView.drawGlyph` reads the glyph). A
+  `MiniMapView.test.ts`: the glyph count rises by the placed count and the `'beacon'` test draws
+  it with **no `EntityView` registered** (`MapView.drawMinimap` reads the feature's glyph). A
   bespoke main-canvas look is optional: `client/game/views/<Name>View.ts` plus a
   `defaultViewRegistry.ts` line.
 - **Docs:** the kind table in 06 §4; `../reference/game-design/05-map.md`.

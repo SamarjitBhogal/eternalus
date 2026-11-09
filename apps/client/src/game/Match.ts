@@ -4,7 +4,7 @@ import { isDead } from '../bridge/selectors/isDead';
 import { BuildingRoofs } from './BuildingRoofs';
 import { GameLoop } from './engine/loop/GameLoop';
 import type { LoopTarget } from './engine/loop/GameLoop.types';
-import type { WorldRect } from './engine/render/Renderer.types';
+import type { WorldPoint, WorldRect } from './engine/render/Renderer.types';
 import {
   BACKGROUND_COLOR,
   HUD_MINIMAP_RING,
@@ -83,6 +83,7 @@ export class Match implements LoopTarget {
           ),
         );
       }),
+      isDead,
     );
     this.camera = new MatchCamera(camera, map);
     this.commands = new PlayerCommands(input, simulation, this.camera, mapObjects);
@@ -98,7 +99,8 @@ export class Match implements LoopTarget {
       this.objects,
       this.entities,
     ]);
-    this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING) };
+    const centre = (): WorldPoint => this.miniMapCentre();
+    this.world = { scene, miniMap: new MiniMapView(map, scene, HUD_MINIMAP_RING, centre) };
     const tickMs = MS_PER_SECOND / tickRate;
     this.loop = new GameLoop(scheduler, this, {
       tickMs,
@@ -113,7 +115,7 @@ export class Match implements LoopTarget {
       commands: this.commands,
       miniMap: this.world.miniMap,
       playerId: this.playerId,
-      mapObjects: () => this.current.mapObjects ?? [],
+      snapshot: () => this.current,
     });
     camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
   }
@@ -160,7 +162,7 @@ export class Match implements LoopTarget {
    */
   public tick(): void {
     if (this.playerId !== null) {
-      const isMoving = this.commands.apply(this.playerId, this.current.mapObjects ?? []);
+      const isMoving = this.commands.apply(this.playerId, this.current);
       if (isMoving) {
         this.camera.playerMoved();
       }
@@ -168,8 +170,7 @@ export class Match implements LoopTarget {
     this.deps.simulation.step();
     this.previous = this.current;
     this.current = this.deps.simulation.snapshot();
-    const player = this.playerEntity();
-    this.roofs.playerAt(isDead(player?.health ?? null) ? null : (player?.transform ?? null));
+    this.roofs.playerAt(this.livingPlayerAt());
     this.bridge.afterTick(this.current, this.playerId);
   }
 
@@ -184,7 +185,7 @@ export class Match implements LoopTarget {
     this.entities.show(this.previous, this.current, alpha, this.playerId);
     this.objects.show(this.current.mapObjects ?? []);
     scene.draw(renderer);
-    miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight, view);
+    miniMap.draw(renderer, this.camera.screenWidth, this.camera.screenHeight);
   }
 
   /**
@@ -201,6 +202,21 @@ export class Match implements LoopTarget {
    */
   public destroy(): void {
     this.loop.destroy();
+  }
+
+  /**
+   * Where the player's Legend stands while it lives (the open roof and the minimap's centre);
+   * `null` before it spawns, once dead or gone. The minimap then centres on the camera (DEC-182).
+   */
+  private livingPlayerAt(): WorldPoint | null {
+    const player = this.playerEntity();
+    return isDead(player?.health ?? null) ? null : (player?.transform ?? null);
+  }
+
+  /** The minimap's centre: the living player's Legend, else the camera's centre (DEC-182). */
+  private miniMapCentre(): WorldPoint {
+    const view = this.camera.visibleArea();
+    return this.livingPlayerAt() ?? { x: view.x + view.width / 2, y: view.y + view.height / 2 };
   }
 
   /** The player's Legend in the latest snapshot; `undefined` before it spawns or once removed. */

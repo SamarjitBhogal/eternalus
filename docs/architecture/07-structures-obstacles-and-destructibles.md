@@ -372,8 +372,9 @@ These are the requirements doc's runtime checks ("entity passes through an unbre
 Every `StructureDefinition` and `ObstacleDefinition` carries an optional `minimapGlyph`
 (`06-map-and-minimap.md` §8). `WallSegment`s and towers use team-coloured glyphs; camps neutral
 dots; capture points the glyph of the map feature that places them, coloured by
-`Capturable.owner`. No view code per kind: the
-default `EntityView.drawGlyph` handles all.
+`Capturable.owner`. No view code per kind: `MapView.drawMinimap` draws every feature's glyph. The
+default entity view draws no minimap marker; only Legends and mobs have one, from their own views
+(06 §8, DEC-187).
 
 ## 13. Extension recipe: a new structure type
 

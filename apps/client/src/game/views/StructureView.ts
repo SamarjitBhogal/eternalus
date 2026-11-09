@@ -10,4 +10,9 @@ export class StructureView implements EntityView {
   public draw(): void {
     // ponytail: the map draws structures until sprint 2.8 gives them health bars.
   }
+
+  /** Draws nothing; the map layer draws each building's mini map glyph. */
+  public drawMinimap(): void {
+    // Intentionally empty: `MapView.drawMinimap` already marks every structure feature.
+  }
 }
