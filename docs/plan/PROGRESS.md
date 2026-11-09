@@ -6176,3 +6176,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `Tests 1302 passed (1302)`, client `Tests 1800 passed (1800)`, docs check passed.
 - Next step: push and open the PR into phase/3; whichever of this PR and the aether PR lands
   second resolves the adjacent `Snapshot.types.ts` lines.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#88) — feat/match-scoring — sholtzman + Claude Code
+
+- What: merged `phase/3-sprint-3-work` (`089617e6`, PR #88 HUD level and XP) into GL-4 (`7ddc20e0`),
+  so PR #93 merges again. Conflicts: 03 and the decisions log `last-reviewed` (took 2026-11-09);
+  the decisions log batches (DEC-224's batch first, newest first, then GL-4's); this file (both, in
+  date order). No code conflict.
+- Checks run: `npm run check` on `7ddc20e0` → `EXIT=0` (`gl4-merge-88-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1363 passed (1363)", statements 99.15 %; client "Tests 1800 passed (1800)",
+  statements 97.04 %; "Documentation check passed."
+- Next step: merge this head into GL-5 (`feat/results-flow`) and GL-15 (`feat/capture-scoring`),
+  then GL-5 into GL-16 (`refactor/map-feature-link`); push all four.
