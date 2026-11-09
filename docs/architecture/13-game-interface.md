@@ -694,11 +694,11 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   core's `MapFeatureLink`; PR #64, DEC-231), never from where the zone stands. One feature may
   back several entities (the Cathedral's zone and its planned structure), so the bridge indexes
   the snapshot by feature id through the group each roster reads: health for a tile, capture for
-  a point (DEC-233). For
-  either roster, the bridge re-sends each unchanged tile or point, and the last array while nothing
-  in it changes, so the roster selectors return the same value (DEC-221 (3)); one
-  `PublishedRoster` (`game/PublishedRoster.ts`) per roster holds the last array and that rule (DEC-222). Each other field becomes live when
-  core publishes it: XP and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
+  a point (DEC-233). For either roster, the bridge re-sends each unchanged tile or point, and the
+  last array while nothing in it changes, so the roster selectors return the same value
+  (DEC-221 (3)); one `PublishedRoster` (`game/PublishedRoster.ts`) per roster holds the last array
+  and that rule (DEC-222). Each other field becomes live when core publishes it: XP and abilities
+  (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
   [05](05-abilities-weapons-and-loadouts.md) §15).
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
   (the weapon art at its manifest draw box, and the weapon-level bar, OQ-63), `GadgetBar` (the
