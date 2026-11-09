@@ -7,7 +7,7 @@ import type { ScoringWeights } from './scoring.types';
  * ponytail: capture and hold points (FR-007; the owner's values: DEC-131, 3 per checkpoint and 1
  * per minute) are not here yet. They are plan task GL-15 (DEC-214), built on
  * `feat/capture-scoring`, stacked on this branch: each joins as a new line here (`TUNE`), a
- * listener and rule in `match/Scoring.ts`, a `ScoreBook` writer and a `TeamStats` counter.
+ * listener and rule in `match/Scoring.ts`, and a `TeamStats` counter (a field and its counter name).
  */
 export const SCORING_WEIGHTS = {
   legendKill: 15, // TUNE: DEC-79

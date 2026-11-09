@@ -5953,3 +5953,34 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "✓ built in 251ms"; "Documentation check passed." (127 files).
 - Next step: the GL-4 critic re-checks this diff; `feat/results-flow` takes it with its next merge
   (its `MatchResult` literals need `structuresDestroyed: 0` per team).
+
+### 2026-11-08 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / phase/3 merge (#64), DEC-214, GL-4 critic round 3, DEC-221 — feat/match-scoring — sholtzman + Claude Code
+
+- What: the work on this branch after the round-2 entry above.
+  - `58e66bc`: merged `origin/phase/3-sprint-3-work` at `b02ef47` (PR #64, capture points) into
+    this branch. Architecture 03 §4 keeps both new event rows (`structure-destroyed` from this
+    branch, `checkpoint-reached` from #64). Check: `EXIT=0`, core "Tests 1357 passed (1357)",
+    client "Tests 1778 passed (1778)", "Documentation check passed."
+    (`ms-merge-b02ef47-check-2026-11-08.log` in `eternalus-agent-work/game-loop-plan/`).
+  - `0009ed9`: DEC-214 (owner, 2026-11-08). Capture and hold points (DEC-131) are plan task GL-15,
+    built on `feat/capture-scoring`, stacked on this branch, with its PR opened after this one's
+    (game-loop plan §7, `INBOX.md` GL-15). This supersedes the round-2 entry's "No plan task or
+    `INBOX.md` item schedules capture and hold scoring". The `ponytail:` note in
+    `content/match/scoring.ts` and the 12 §13 status note name GL-15.
+  - Pre-PR critic round 3, the last (`critic-log.md`): architecture approve (0 blocker, 0 major,
+    3 minor, 3 nit, 3 better-than-design; `arch-review-gl4-round-3.md`); ponytail PASS
+    (`ponytail-gl4-prepr-round-3.md`).
+  - `00bb99e`: minor 2 (the GL-15 plan row has all seven cells), nit 5 (`ScoreKeeper.types.ts`
+    in 12 §1 and 02 §2; `state/ScoringState.types.ts` in 12 `paths:`), nit 6 (`Readonly<>`
+    dropped in `MatchResult.types.ts`; the `PLAYABLE_TEAMS` map is rejected: the `{ light, dark }`
+    literal is compile-checked against `Record<PlayableTeam, …>`).
+  - This commit: DEC-221 (owner, 2026-11-08). Minor 1: `match/` may import the types of
+    `entities/` (02 §2, 12 §1, `packages/core/AGENTS.md`). Nit 4: a new counter needs a field and
+    its counter name, and a `ScoreBook` writer only if its rule is not a plain award (12 §5, 17
+    R3, `scoring.ts`). The critic's BTD-1 to BTD-3 go to GL-15. The GL-5 critic's B1 is plan task
+    GL-16 and an `INBOX.md` item. Minor 3 is this entry.
+- Checks run: `npm run check` → `EXIT=0` (`ms-dec221-check-2026-11-08.log` in
+  `eternalus-agent-work/game-loop-plan/`): core "Tests 1357 passed (1357)", client "Tests 1778
+  passed (1778)", "Documentation check passed." (127 files).
+- Next step: merge this branch into `feat/results-flow` (GL-5 B2, B3 and its minors) and into
+  `feat/capture-scoring` (GL-4 BTD-1 to BTD-3, then the GL-15 pre-PR gate); push; open the PRs.
