@@ -381,15 +381,14 @@ describe('Simulation with a roster and map objects (as the client builds a match
     const ringRadius = 45 / 2;
     const transforms = bosses.map(({ transform }) => transform);
     expect(transforms).not.toContain(null);
-    const outsideARing = transforms.filter(
-      (at) =>
-        at !== null &&
-        !cornerCamps.some(
-          ({ position }) => Math.hypot(at.x - position.x, at.y - position.y) <= ringRadius,
-        ),
+    const bossesPerCamp = cornerCamps.map(
+      ({ position }) =>
+        transforms.filter(
+          (at) => at !== null && Math.hypot(at.x - position.x, at.y - position.y) <= ringRadius,
+        ).length,
     );
     expect(cornerCamps.length).toBeGreaterThan(0);
     expect(bosses).toHaveLength(cornerCamps.length);
-    expect(outsideARing).toEqual([]);
+    expect(bossesPerCamp).toEqual(cornerCamps.map(() => 1));
   });
 });

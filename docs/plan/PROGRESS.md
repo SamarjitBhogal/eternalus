@@ -5988,3 +5988,16 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   "✓ built in 2.85s"; "Documentation check passed." This line was filled in after that run
   (docs-only).
 - Next step: PR into phase/3-sprint-3-work.
+
+### 2026-11-09 — Phase 3 / corner camp boss (interim), PR #91 follow-ups — feat/bosses-p3 — Aryan Walanj + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` into this branch (a merge, no force push).
+  Doc 07 kept the newer `last-reviewed` (2026-11-09) and both "Implementation status" notes
+  (capture points, then the corner boss); this file kept every entry from both sides. Answered
+  CodeRabbit on `Simulation.mapObjects.test.ts`: the corner boss test now counts the bosses inside
+  each corner camp's ring and expects exactly one per camp, so two bosses in one camp and none in
+  another fails.
+- Checks run: `npm run check` → exit 0: "All matched files use Prettier code style!"; core
+  "Tests 1304 passed (1304)"; client "Tests 1800 passed (1800)"; "✓ built in 4.06s";
+  "Documentation check passed."
+- Next step: push and re-request review on PR #91.
