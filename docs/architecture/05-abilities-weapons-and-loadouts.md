@@ -841,7 +841,7 @@ export type PlayerSnapshot = {
   readonly definitionId: LegendId;
   readonly health: number;
   readonly maxHealth: number;
-  readonly aether: number;
+  readonly aether: number; // aether and maxAether copy the Legend's EntitySnapshot.aether (DEC-230)
   readonly maxAether: number;
   readonly level: number; // level, xp and xpToNext copy the Legend's EntitySnapshot.progression (DEC-224)
   readonly xp: number; // XP earned inside the current level (resets on level-up)
@@ -941,7 +941,10 @@ by a selector (`selectHudKit`), never from entities; there is no `hud-kit` event
   `EntitySnapshot` (`state/Snapshot.types.ts`) carries `health` and `progression` (`level`, the
   XP inside that level and `xpToNext`, `null` at the cap; `feat/hud-level-xp`, 2026-11-09), so
   the HUD's level and XP are live; aether stays `null` until `Snapshot.player` exists (INBOX
-  HC-F6). The record lands in
+  HC-F6). Since `feat/hud-aether-bar` (2026-11-09), `EntitySnapshot` also carries `aether`
+  (`current`, `max`) for every entity with `Aether`, and the HUD's aether bar is live (DEC-230).
+  Aether regeneration is not built: no ability spends aether yet, and the rate and whether
+  structures refill it stay open (OQ-56, DEC-230 (2)). The record lands in
   `hudSlice`, not `matchSlice`; each slot is drawn by `AbilitySlot` through `selectHudSlotView`.
   The kit's display names and icons come from the display catalogue the client builds at boot
   (core's `loadDisplayContent()` plus its own presentation data, `game/content/hudPresentation.ts`,

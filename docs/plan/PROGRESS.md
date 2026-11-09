@@ -5932,3 +5932,21 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `Tests 1302 passed (1302)`, client `Tests 1800 passed (1800)`, docs check passed.
 - Next step: push and open the PR into phase/3; whichever of this PR and the aether PR lands
   second resolves the adjacent `Snapshot.types.ts` lines.
+
+### 2026-11-09 — Phase 3 / combat sprint: live HUD aether bar (DEC-230) — feat/hud-aether-bar — sholtzman + Claude Code
+
+- What was done: owner answers 2026-11-09 (DEC-230): the aether bar only, no regeneration until
+  the first ability spends aether (OQ-56 stays open); the design call delegated ("choose the best
+  long-term design with the least tech-debt"), so every Legend's `EntitySnapshot` carries an
+  `aether` group (`current`, `max`) for every entity with `Aether`, as health and DEC-224's
+  `progression` do. `GameState.snapshotOf` fills it; `MatchBridge` copies it into the HUD
+  player's `aether` and `maxAether`; the existing `AetherBar`/`ResourceBar` show it. Every
+  hand-built `EntitySnapshot` in the tests gains `aether: null`. Docs: DEC-230 batch, 03 §5
+  sketch and §12 status, 05 §15 sketch comment and §18 status, 13 §10 status, INBOX HC-F6 status
+  line, OQ-56's Decision cell. Branch stacked on `feat/hud-level-xp` (PR #88, `27319382`).
+- Tests fail first: break 1 (snapshot leaves `aether` null) 3 red (the caster test, the
+  structuredClone test, the Warrior spawn test); break 2 (`current` and `max` swapped) 1 red;
+  break 3 (`MatchBridge` leaves aether null) 1 red; restored green.
+- Checks run: `check:quick` passed; full `npm run check` in
+  `eternalus-agent-work/hud-aether-bar/check-1.log`.
+- Next step: critic, ponytail review, push, PR into `phase/3-sprint-3-work` after #88.

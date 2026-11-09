@@ -677,7 +677,8 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   position, and re-sends the last array while they do not change. 2026-11-09,
   `feat/hud-level-xp`: level and XP are live; `MatchBridge` reads them from the Legend's
   `EntitySnapshot.progression`; `xpToNext` is `null` at the level cap, where the XP ring is full,
-  DEC-224.)
+  DEC-224. 2026-11-09, `feat/hud-aether-bar`: aether is live; `MatchBridge` reads it from the
+  Legend's `EntitySnapshot.aether`, DEC-230.)
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
   (the weapon art at its manifest draw box, and the weapon-level bar, OQ-63), `GadgetBar` (the
   gadget slots, each with `<KeyGlyph>`), `UltimateChargeBar` and `ChargePips` (OQ-64),
