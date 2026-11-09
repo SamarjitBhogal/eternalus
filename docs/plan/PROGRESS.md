@@ -6228,3 +6228,22 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   client "Tests 1799 passed (1799)", statements 97.03 %; "Documentation check passed."
 - Next step: the GL-15 critic round 2 and ponytail, then push and open the PR into
   `feat/match-scoring` after GL-4's PR.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-15 critic round 2 and DEC-229 — feat/capture-scoring — sholtzman + Claude Code
+
+- What: the GL-15 pre-PR gate, round 2 (base `98e285c`, head `e6bee16`). Architecture critic:
+  approve, 0 blocker, 0 major, 1 minor, 2 nit, 2 better-than-design; it judged the deleted
+  `ScoreBook.test.ts` test acceptable (the test and its method were both added on this branch).
+  Ponytail: one optional cut (the `rowOf` guard in `CheckpointRule`), not taken: `ScoreBook.award`
+  throws for an id with no row, and its contract is that callers check `rowOf` first.
+  - `953cb85`: minor 1, architecture 07 §7 says `checkpoint-reached` names the Legends on the zone,
+    and its status note says capture scoring is built; nit 2, DEC-223's wording; nit 3, 12 §12's
+    test wording.
+  - This commit: DEC-229 (the owner's call on the two better-than-design items: one entity query
+    on `EntityStore`, plan task GL-17, its own PR after #79 and #85), the GL-17 plan row and
+    `INBOX.md` item, and the plan's GL-15 row as built (DEC-223 file names). The plan table now
+    differs from `feat/results-flow`'s (its GL-16 row, DEC-222): when the branches meet, keep this
+    branch's GL-15 and GL-17 rows and that branch's GL-16 row.
+- Checks run: `npm run docs:check` → "Documentation check passed."; Prettier on the changed files
+  passed. Full `npm run check` on the PR head: in the PR description.
+- Next step: push and open the PR into `feat/match-scoring` after GL-4's PR exists.

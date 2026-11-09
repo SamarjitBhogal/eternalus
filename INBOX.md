@@ -2310,6 +2310,13 @@ Reply inline (`Decision: …`).
       component, set from a placement's map feature id, on structures and capture zones. The
       snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
       to its zone by that id, not by position. Close this item when its PR merges.
+- [ ] **GL-17 entity component query (DEC-229; GL-15 critic round 2, better than the design)** —
+      Owner: sholtzman, `refactor/entity-component-query` (base: the phase branch after #79 and
+      #85 merge; they change `EntityStore`). A read-only query port on `EntityStore` for the
+      entities that carry a given component, beside `SpaceQuery` and `PathQuery`.
+      `CaptureHoldRule` takes it instead of the whole `GameState`, and the capture-point lookups
+      of `CaptureHoldRule`, `CaptureProgressBoundsInvariant` and `CaptureSystem` move to it. Close
+      this item when its PR merges.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`
