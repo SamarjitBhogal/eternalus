@@ -113,7 +113,7 @@ export class Match implements LoopTarget {
       commands: this.commands,
       miniMap: this.world.miniMap,
       playerId: this.playerId,
-      mapObjects: () => this.current.mapObjects ?? [],
+      snapshot: () => this.current,
     });
     camera.lookAt(this.playerEntity()?.transform ?? { x: map.width / 2, y: map.height / 2 });
   }
@@ -160,7 +160,7 @@ export class Match implements LoopTarget {
    */
   public tick(): void {
     if (this.playerId !== null) {
-      const isMoving = this.commands.apply(this.playerId, this.current.mapObjects ?? []);
+      const isMoving = this.commands.apply(this.playerId, this.current);
       if (isMoving) {
         this.camera.playerMoved();
       }

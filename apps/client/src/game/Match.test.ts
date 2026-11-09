@@ -211,7 +211,7 @@ describe('Match', () => {
     const attacks = () =>
       enqueue.mock.calls.filter(([command]) => command.type === 'attack-target');
     match.tick();
-    match.controls.attackAt(onHouse.x, onHouse.y);
+    match.controls.clickAt(onHouse.x, onHouse.y);
 
     const targetId = match.snapshot.mapObjects?.find(({ id }) => id === house?.id)?.entityId;
     expect(targetId).toEqual(expect.any(String));
@@ -225,9 +225,9 @@ describe('Match', () => {
     const { match } = setUp();
     // The following camera initially centres on the light stronghold.
     expect(match.controls.hasDeveloperRoofs).toBe(false);
-    expect(match.controls.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.controls.clickAt(640, 360)).toBe(true);
     expect(match.controls.hasDeveloperRoofs).toBe(true);
-    expect(match.controls.toggleRoofAt(640, 360)).toBe(true);
+    expect(match.controls.clickAt(640, 360)).toBe(true);
     expect(match.controls.hasDeveloperRoofs).toBe(false);
     match.destroy();
   });

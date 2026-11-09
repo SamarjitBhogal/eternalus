@@ -5569,6 +5569,32 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   1089 passed, client 1754 passed, docs check passed.
 - Next step: push.
 
+### 2026-11-05 — Phase 3 / playtest fixes: click attack — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: a click and the held attack button now target a living enemy unit under the
+  cursor, not only map objects (ddc41ce). Critic round 1 fixes (d06de14): `Match.clickAt` resolves
+  a click as unit, then roof, then map object; when units overlap the one drawn on top (largest y)
+  wins, and an exact tie goes to the later snapshot entity (DEC-183); the click resolver gets the
+  snapshot as a parameter and core owns the unit families list (`isUnitFamily`), both signed off as
+  better than the design (DEC-191). Architecture 06 §10 describes the new click order. Critic
+  round 2: no blockers. Each new test was turned red by a deliberate break first (runner report
+  `report-click-attack-r2.md` in the work folder).
+- Checks run: `npm run check` (log `check-click-docs.log` in the work folder) → `exit 0`: "All
+  matched files use Prettier code style!"; core "Tests 1058 passed (1058)"; client "Tests 1746
+  passed (1746)"; "✓ built in 300ms"; "Documentation check passed."
+- Next step: ponytail review, then the PR into `phase/3-sprint-3-work` after the rulings PR
+  (DEC-183 and DEC-191 rows).
+
+### 2026-11-06 — Phase 3 / playtest fixes: click attack, merge of phase/3 (PR #71) — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `2dc2b35d` (phase/3 (PR #71)). Only `docs/plan/PROGRESS.md` conflicted
+  (both sides appended entries); every entry is kept, the merged-in side's first. No line of either
+  side was removed (`git diff` against both parents shows only additions).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-06/click-attack-units.check.log`): EXIT=0, core
+  1081 passed, client 1764 passed, docs check passed.
+- Next step: push.
+
 ### 2026-11-07 — Phase 3 / structure XP, merge of feat/match-director (PR #74) — feat/structure-xp — sholtzman + Claude Code
 
 - What was done: merged `feat/match-director` (PR #74, which holds #75 and phase/3 at `ed10145`),
@@ -5752,3 +5778,44 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   passed (1778)"; "✓ built in 275ms"; "Documentation check passed.".
 - Next step: push to #64; done only when CI is green on both runners; then Sam merges it and
   PR-38-HELPER-25 merges phase 3 into #76 and #77.
+
+### 2026-11-07 — Phase 3 / playtest fixes: click attack, merge of feat/structure-xp (PR #78) and review blocker — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: merged `feat/structure-xp` (PR #78, which holds #74, #75 and phase/3 at
+  `ed10145`), so this PR merges after #78 with no conflicts (merge chain #75, #74, #78, #76,
+  #77). #74 moved the canvas gestures from `Match` to `MatchViewControls`, so the click order of
+  this branch (unit, then roof, then map object; DEC-183, DEC-150) now lives in
+  `MatchViewControls.clickAt`. It replaces `toggleRoofAt` and `attackAt`; its `snapshot`
+  dependency gives the units and the map objects (was `mapObjects`). The tests call
+  `match.controls.clickAt`; architecture 06 §10 keeps both sides. The explorer tests find the
+  spawned dummy by `definitionId`, because #74 gives the test simulation the map and the map's
+  guard posts hold other dark light mobs. Review blocker (a roof click must queue no attack):
+  the `MatchViewControls` roof test puts a house under the roof and asserts that no
+  `attack-target` is queued; `Match.explorer.test.ts` asserts one command after the roof click.
+- Red proof: break = `clickAt` also calls `attackObjectAt` after it toggles a roof. The
+  `MatchViewControls` test "clickAt cuts away the roof under the point and puts it back,
+  attacking nothing (DEC-150)" went red. The new `Match.explorer.test.ts` assertion stays green
+  under that break, because nothing attackable is under that roof point; the unit test is the
+  guard.
+- Critic loop (correctness and ponytail critics on this PR's diff over `feat/structure-xp`): no
+  blockers. Fixed: the merge had dropped the line "Next step: push." from the structure-xp entry
+  of 2026-11-06 (restored); comments and a test label named `Match.clickAt`, now
+  `MatchViewControls.clickAt`. Not changed: `findUnitAt` treats every unit as an enemy when the
+  attacker is gone from the snapshot (a test pins it; core rejects the command, so no state
+  changes); `UNIT_FAMILIES` stays exported (its test reads it).
+- Checks run: `npm run check:quick` exit 0 and the eight affected client test files pass; the
+  full `npm run check` follows on this entry.
+- Next step: full check; push; PR #76 merges after #78 once Samarjit re-approves.
+
+### 2026-11-08 — Phase 3 / playtest fixes: click attack, merge of phase/3 after PR #64 — fix/click-attack-units — sholtzman + Claude Code
+
+- What was done: #75, #74 and #78 merged into phase/3, then #64 (capture zones, `b02ef47`).
+  Merged phase/3 `b02ef47` into this branch (`a7fd3a3`). Only `PROGRESS.md` conflicted
+  (append-only; both sides kept, #64's entries first; line count ours + theirs − base = merged,
+  5808). #64 added `area` and `capture` to `EntitySnapshot`, so the unit fixtures in
+  `findUnitAt.test.ts`, `MatchViewControls.test.ts` and `PlayerCommands.test.ts` set both to
+  `null`, as #64's own fixtures do (typecheck found them; git did not flag them).
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/pr-merge-74-79/check-76-post64.log`): exit 0, Prettier passed, core
+  `Tests 1298 passed (1298)`, client `Tests 1789 passed (1789)`, docs check passed.
+- Next step: push; PR #76 merges once Samarjit re-approves; then #77.
