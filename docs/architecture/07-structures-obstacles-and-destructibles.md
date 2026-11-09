@@ -4,7 +4,7 @@ description: The Structure entity family (strongholds, towers, walls, gates, tur
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-09
 tags: [architecture, structures, obstacles, destructibles, combat]
 paths:
   [
@@ -450,6 +450,16 @@ so a replay or a match without map objects rebuilds the same zones. Interim diff
   does not follow the owner yet (the minimap entity markers, SCRUM-151).
 - The density numbers on the HUD arrive with the HUD work (`feat/hud-and-character-select`, its
   capture tracker); this PR publishes the presence and draws the split bar in the world.
+
+**2026-11-09 (`feat/bosses-p3`, corner camp boss, interim).** The PM approved pulling the corner
+camp (§6) into Phase 3 as an interim version. `corner-camp` is a `Camp` structure definition like
+the forest camps (rule `never`, circle radius 1 `TUNE`), and its guard plan `corner-camp`
+(`content/structures/guardPlans.ts`) spawns one `corner-boss` at match start: a `heavy-mob` with
+the MiniBoss row's stats from `balancing.md`, held over the camp's ring by `GuardController` and
+respawned 5 minutes after it dies. Not built yet: the `MiniBoss` entity and its `BossController`
+moves, the support units, the team-wide reward, the crystal, the heavy side wave on a kill and the
+GreaterBoss buffs. The leash and acquisition radius are derived from the client's drawn ring size
+until the camp's zone radius moves into core content.
 
 ## Related
 

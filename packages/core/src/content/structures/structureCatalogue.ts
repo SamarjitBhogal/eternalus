@@ -64,4 +64,13 @@ export const STRUCTURE_DEFINITIONS: ContentCatalogue<StructureDefinition> =
       footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
       breakability: { kind: 'never' },
     })),
+    {
+      // The corner camp is a `Camp` too: the home of its boss (guard plan `corner-camp`).
+      id: 'corner-camp',
+      kind: 'camp',
+      displayName: 'Corner Camp',
+      baseHealth: 1, // never damaged: a camp is only its group's home
+      footprintRadius: 1, // TUNE: no reference value; the map gives camps no footprint
+      breakability: { kind: 'never' },
+    },
   ]);
