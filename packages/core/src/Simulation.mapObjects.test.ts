@@ -57,8 +57,14 @@ const laneTowers = (map: MapDefinition): LaneTower[] =>
   );
 
 /** A tower's walls, as the box around its collider polygons: its hollow core and doorways. */
+/** A tower's body: its own object and its fort's wall pieces (`partOf`, DEC-217 (12)). */
+const bodyOf = (mapObjects: readonly MapObject[], id: string) =>
+  mapObjects
+    .filter((object) => object.id === id || object.partOf === id)
+    .flatMap((o) => o.footprints);
+
 const wallBox = (mapObjects: readonly MapObject[], id: string) => {
-  const points = mapObjects.find((object) => object.id === id)?.footprints.flat() ?? [];
+  const points = bodyOf(mapObjects, id).flat();
   const xs = points.map(({ x }) => x);
   const ys = points.map(({ y }) => y);
   return {
@@ -519,7 +525,7 @@ describe('Simulation with a roster and map objects (as the client builds a match
       const ax = isAlongX ? Math.sign(forward.x) : 0;
       const ay = isAlongX ? 0 : Math.sign(forward.y);
       const half = (right - left) / 2;
-      const footprints = mapObjects.find(({ id }) => id === tower.id)?.footprints ?? [];
+      const footprints = bodyOf(mapObjects, tower.id);
       return Array.from({ length: 21 }, (_, step) => half * (0.6 + step * 0.03)).some((along) =>
         footprints.some((footprint) =>
           isPointInPolygon(

@@ -6,9 +6,9 @@ import type { Rect } from '../utils/geometry.types';
 
 /**
  * Dresses existing square anchors with masonry, towers, battlements and faction banners. A lane
- * tower's fort walls are each their own `wall` object, part of the tower's body (`partOf`), so
- * each can fall or stand on its own once the tower is gone (DEC-217 (12)); a capture point's fort
- * stays one object.
+ * tower's fort has 11 wall pieces, its 7 walls and its 4 corner towers (DEC-227 (Q-C)); each is
+ * its own `wall` object, part of the tower's body (`partOf`), so each can fall or stand on its own
+ * once the tower is gone (DEC-217 (12)). A capture point's fort stays one object.
  */
 export class MapFortificationBuilder extends MapDecorationBuilder {
   private fortId = '';
@@ -54,13 +54,10 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     for (const dx of [0, size - tower]) {
       for (const dy of [0, size - tower]) {
         const suffix = String(dx) + '-' + String(dy);
-        this.blockRect(`${id}-fort-tower-${suffix}`, left + dx, top + dy, tower, tower, stone);
-        this.rect(
-          `${id}-fort-tower-roof-${suffix}`,
-          left + dx + 3,
-          top + dy + 3,
-          tower - 6,
-          tower - 6,
+        this.wall(
+          `${id}-fort-tower-${suffix}`,
+          { x: left + dx, y: top + dy, width: tower, height: tower },
+          stone,
           roof,
         );
       }
@@ -84,12 +81,14 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
   }
 
   /**
-   * One fort wall: on a lane tower's fort its own `wall` object, part of the tower (`partOf`);
-   * otherwise a block of the fort's one object.
+   * One fort wall piece: on a lane tower's fort its own `wall` object, part of the tower
+   * (`partOf`); otherwise a block of the fort's one object. A corner tower passes `roof`, so its
+   * roof belongs to the same object and is hidden when that piece falls.
    */
-  private wall(id: string, { x, y, width, height }: Rect, color: string): void {
+  private wall(id: string, { x, y, width, height }: Rect, color: string, roof?: string): void {
     if (this.hasOwnWalls) this.beginObject(id, 'wall', this.fortId);
     this.blockRect(id, x, y, width, height, color);
+    if (roof !== undefined) this.rect(`${id}-roof`, x + 3, y + 3, width - 6, height - 6, roof);
     if (this.hasOwnWalls) this.beginObject(this.fortId, 'fort');
   }
 }
