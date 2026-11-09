@@ -4,7 +4,7 @@ description: The planned folder tree of packages/core and apps/client with one l
 audience: [humans, agents]
 status: draft
 owner: sholtzman
-last-reviewed: 2026-11-05
+last-reviewed: 2026-11-08
 tags: [architecture, code-structure, conventions, registries]
 paths: ['packages/core/src/**', 'apps/client/src/**', 'eslint.config.js', 'knip.json']
 related:
@@ -49,7 +49,7 @@ core/src/
   commands/            Command union, CommandQueue, applyCommand() and its handler registry
   entities/            Entity root + families, EntityFactory, EntityRegistry, strategies, ProjectilePool
   components/          Transform, Health, Movement, Combat, Abilities, Progression, Team, Collider, StatusEffects (+ StatusEffectRuntime), ...
-  systems/             System interface, one class per system, SystemPipeline, defaultSystemPipeline
+  systems/             System interface, one class per system, SystemPipeline, DefaultSystemPipeline
   map/                 MapGenerator (+ MapBuilder), WorldMap, LaneGeometry, symmetry (types: content/maps)
   physics/             SpatialHash, Circle, ConvexPolygon, sat, sweptTests, Kinematics, CollisionResolver
   ai/                  Controller interface + controllers, Perception queries, aggro rules (data)
@@ -78,7 +78,7 @@ core/src/
 | `ai/`           | Controllers that read state and emit `Command`s; perception; aggro data                                   | `state/` (read), `commands/`, `config/`, `content/` (types), `teams/`, `utils/`             | `Controller`, `PlayerController`, `BotLegendController`, `MinionController`, `GuardController`, `TurretController`, `BossController`, `RoverController`, `Perception`                                                             |
 | `match/`        | Phases, timeline, scoring, victory                                                                        | `state/`, `config/`, `components/`, `utils/`, `teams/`, content types, some `diagnostics/`  | `MatchDirector`, `phases/*Phase.ts`, `MatchTimeline`, `Scoring`, `VictoryCondition.types.ts`, `defaultVictoryConditions.ts`                                                                                                       |
 | `diagnostics/`  | Invariants, the runner, the `Logger` port, diagnostic event types, the replay and property-test harnesses | `state/`, `utils/`; types of `commands/` and `config/` (DEC-20)                             | `Invariant`, `InvariantRunner`, `invariants/*Invariant.ts`, `Logger.types.ts`, `DiagnosticEvent.types.ts`, `replay.ts`, `Replay.types.ts`, `randomCommands.ts`                                                                    |
-| `systems/`      | Per-tick logic; one class per system; the ordered pipeline                                                | Everything below it except another system                                                   | `System`, `SystemContext.types.ts`, `SystemPipeline`, `defaultSystemPipeline.ts`, `*System.ts`                                                                                                                                    |
+| `systems/`      | Per-tick logic; one class per system; the ordered pipeline                                                | Everything below it except another system                                                   | `System`, `SystemContext.types.ts`, `SystemPipeline`, `DefaultSystemPipeline.ts`, `*System.ts`                                                                                                                                    |
 | `Simulation.ts` | Composes the above; the only thing the client drives                                                      | Everything                                                                                  | `Simulation`                                                                                                                                                                                                                      |
 
 Every folder may import `teams/`, which imports nothing (DEC-171), whether or not its "May
@@ -229,7 +229,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | Content catalogues          | `core/src/content/<family>/<family>Catalogue.ts`                                     | A definition (legend, mob, ability, weapon, ...)                                                                               |
 | Breakability rules          | `core/src/content/structures/breakability.ts` (`BREAKABILITY_EVALUATORS`)            | An evaluator for a `BreakabilityRule` kind                                                                                     |
 | Guard respawn rules         | `core/src/systems/GuardRoster.ts` (`respawns`)                                       | A `GuardRespawnRule` for a guard plan's `respawn` kind                                                                         |
-| `SystemPipeline` order      | `core/src/systems/defaultSystemPipeline.ts`                                          | A system, at its position in the tick                                                                                          |
+| `SystemPipeline` order      | `core/src/systems/DefaultSystemPipeline.ts`                                          | A system, at its position in the tick                                                                                          |
 | `GameEventMap`              | `core/src/state/GameEvents.types.ts`                                                 | An event name and payload type                                                                                                 |
 | `Command` union             | `core/src/commands/Command.types.ts`                                                 | A command (the handler registry then demands its handler)                                                                      |
 | Command handlers            | `core/src/commands/defaultCommandHandlers.ts`                                        | A handler for a command type                                                                                                   |
@@ -257,7 +257,7 @@ changes the shape of the world, it is config. If a player may change it, it is a
 | A new legend, mob, structure, boss class        | `core/entities/<family>/<Name>.ts` + a definition in `content/`                 | `defaultEntityRegistry.ts` line                                                                |
 | A variant of an existing kind (new mob flavour) | `core/content/mobs/<id>.ts` only                                                | catalogue line                                                                                 |
 | Per-entity state                                | `core/components/<Name>.ts`                                                     | attach it in the family's `attachComponents()`                                                 |
-| Per-tick behaviour                              | `core/systems/<Name>System.ts`                                                  | `defaultSystemPipeline.ts` line                                                                |
+| Per-tick behaviour                              | `core/systems/<Name>System.ts`                                                  | `DefaultSystemPipeline.ts` line                                                                |
 | Behaviour that varies by kind                   | `core/entities/strategies/<Name><Family>Strategy.ts`                            | `defaultStrategyRegistry.ts` line, strategy id in content                                      |
 | A rule that changes every hit (05 §9)           | `core/combat/<Name>Step.ts` (a `DamageStep`)                                    | `defaultDamageSteps.ts` line, at its position in the order                                     |
 | An ability, effect, restriction                 | `core/content/abilities/<id>.ts`; `core/abilities/effects                       | restrictions/<Name>.ts`                                                                        | `defaultAbilityRegistry.ts` line for a new class |

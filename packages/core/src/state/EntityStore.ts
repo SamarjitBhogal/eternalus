@@ -9,11 +9,17 @@ import { Movement } from '../components/Movement';
 import { Transform } from '../components/Transform';
 import { TeamMembership } from '../components/TeamMembership';
 import type { Team } from '../teams/teams.types';
-import { distance, isPointInPolygon, nearestPointOnPolygons } from '../utils/geometry';
+import { distance, isPointInAnyPolygon, nearestPointOnPolygons } from '../utils/geometry';
 import type { Polygon, Vec2 } from '../utils/geometry.types';
 import type { MutableVec2 } from '../utils/vec2.types';
 import type { Entity } from '../entities/Entity';
-import type { EntityClass, EntityId, RemovalCause, RemovalRecord } from './EntityStore.types';
+import type {
+  AimedAt,
+  EntityClass,
+  EntityId,
+  RemovalCause,
+  RemovalRecord,
+} from './EntityStore.types';
 
 /**
  * Every live entity of a match, kept in insertion order. Systems iterate with `forEach`, so the
@@ -149,10 +155,7 @@ export class EntityStore {
       const gap = distance(from.position, this.aim);
       return gap - from.radius - to.radius <= combat.attack.reach;
     }
-    return (
-      distance(from.position, this.aim) <= from.radius + combat.attack.reach ||
-      aimed.some((shape) => isPointInPolygon(from.position, shape))
-    );
+    return distance(from.position, this.aim) <= from.radius + combat.attack.reach;
   }
 
   /**
@@ -170,22 +173,25 @@ export class EntityStore {
 
   /**
    * Writes into `out` the point of `targetId` that attack reach from `from` is measured to, which a
-   * chase heads for (`StuckSystem`, `PathingSystem`): the point of its outline (`outlineOf`)
-   * nearest `from`, else its centre (reach then also spans its collider radius). An attacker
-   * faces it from outside an outline (`facingPointOf`). Returns what it aimed at: the outline
-   * (so a caller needs no second `outlineOf`), `'centre'`, or `null`, leaving `out` as it was,
-   * when the target is unknown, has no position, or its outline has no corners.
+   * chase heads for (`StuckSystem`, `PathingSystem`): `from` itself when it stands inside the
+   * target's outline (`outlineOf`), so it is in reach and a chase holds there (DEC-234); else the
+   * point of the outline nearest `from`; else the target's centre (reach then also spans its
+   * collider radius). An attacker outside the outline faces this point (`facingPointOf`, DEC-216
+   * (11)). Returns what it aimed at (`AimedAt`), so the inside test runs only here, or
+   * `null`, leaving `out` as it was, when the target is unknown, has no position, or its outline
+   * has no corners.
    */
-  public aimPointOf(
-    targetId: EntityId,
-    from: Vec2,
-    out: MutableVec2,
-  ): readonly Polygon[] | 'centre' | null {
+  public aimPointOf(targetId: EntityId, from: Vec2, out: MutableVec2): AimedAt {
     const outline = this.outlineOf(targetId);
     if (outline !== undefined) {
+      if (isPointInAnyPolygon(from, outline)) {
+        out.x = from.x;
+        out.y = from.y;
+        return 'inside';
+      }
       return nearestPointOnPolygons(from, outline, out) === Number.POSITIVE_INFINITY
         ? null
-        : outline;
+        : 'outline';
     }
     const at = this.entities.get(targetId)?.findComponent(Transform)?.position;
     if (at === undefined) {
@@ -198,11 +204,11 @@ export class EntityStore {
 
   /**
    * Writes into `out` the point `attackerId` faces while it attacks `targetId`: the aim point
-   * (`aimPointOf`, DEC-216 (11)), except that an attacker standing inside the target's outline
-   * faces the target's centre, not the nearest edge behind it (DEC-220 (1)). A fort's court is
-   * outside its outline, so a unit there faces the aim point (DEC-226). Reach and chase keep
-   * `aimPointOf`. `false`, leaving `out` as it was, when either has no position or the target
-   * has no aim point.
+   * (`aimPointOf`, DEC-216 (11)), except that an attacker standing inside the target's outline,
+   * whose aim point is where it stands (DEC-234), faces the target's centre (DEC-220 (1)). A
+   * fort's court is outside its outline, so a unit there faces the aim point (DEC-226). Reach and
+   * chase keep `aimPointOf`. `false`, leaving `out` as it was, when either has no position or the
+   * target has no aim point.
    */
   public facingPointOf(attackerId: EntityId, targetId: EntityId, out: MutableVec2): boolean {
     const from = this.entities.get(attackerId)?.findComponent(Transform)?.position;
@@ -211,7 +217,7 @@ export class EntityStore {
       return false;
     }
     const aimed = this.aimPointOf(targetId, from, out);
-    if (aimed !== 'centre' && aimed?.some((shape) => isPointInPolygon(from, shape)) === true) {
+    if (aimed === 'inside') {
       out.x = centre.x;
       out.y = centre.y;
     }

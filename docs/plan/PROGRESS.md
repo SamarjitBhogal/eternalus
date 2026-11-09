@@ -6181,3 +6181,95 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0; core "Tests 1407 passed (1407)"; client "Tests 1806 passed (1806)"; "Documentation
   check passed.".
 - Next step: push (script); merge after #85, then rebase-free merge of phase/3 if it moves.
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 (PRs #75, #74, #78) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `85b67816` (#75, #74, #78) in
+  `33037572`, resolved as the chevron merge `f115e35b` was (critic APPROVE): one countdown-end
+  helper, `config/countdownTicks` (DEC-170), so `state/countdownEndTick` and its test go and their
+  assertions move to `countdownTicks.test.ts`; `GameState` keeps #74's phase listener plus
+  `AllyDamageTally` (DEC-171); `DefaultSystemPipeline` and `Simulation` take #74's options object
+  plus this branch's injected `structures`; PROGRESS keeps every entry of both sides. With #75 on
+  the branch, two doc edits the follow-ups report left for later:
+  `minion-system-plan.md` M6 row says camps spawn and wake when the match countdown ends
+  (DEC-167, no camp cooldown of their own), and its §3 stand-in "a bot's last leg to a structure
+  goes straight at it" is removed (bots take A\* to the footprint edge since `67fb042`/`a83bf85`).
+  02, 17 and the glossary name the pipeline file `DefaultSystemPipeline.ts`, as it is spelled.
+- Checks run: `npm run check` on `33037572` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.85b67816.check.log`):
+  EXIT=0, core 1319 passed, client 1769 passed. After the doc edits (log
+  `merge-2026-11-07/minion-stack-followups.docs-2026-11-08.check.log`): EXIT=0, core
+  "Tests 1319 passed (1319)", client "Tests 1769 passed (1769)", "Documentation check passed.".
+- Next step: critic on the merge and the doc commit, then push; merge the new head into
+  `feat/out-of-combat-heal` (#86).
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 (PR #64) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged `origin/phase/3-sprint-3-work` at `b02ef47e` (#64 capture points) in
+  `42463596`. Conflicts kept both sides: `StateHasher` hashes `Capturable` and `ChaseWatch`;
+  `DefaultSystemPipeline` imports the fort-box types and `CaptureSystem`, and its TSDoc names stuck
+  detection and capture points (after death, before the match director); PROGRESS keeps every
+  entry. Doc 18 §3 and the minion plan's §3 stand-in no longer say `CaptureSystem` is off the phase
+  branch; checkpoint defenders are still not built.
+- Checks run: `npm run check` on the merge (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.b02ef47e.check.log`):
+  EXIT=0, core "Tests 1372 passed (1372)", client "Tests 1778 passed (1778)", "Documentation check
+  passed.".
+- Next step: critic, push; merge this head into `feat/out-of-combat-heal` (#86).
+
+### 2026-11-08 — Phase 3 / minion-stack follow-ups, merge of phase/3 after #76 and #77 — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: merged phase/3 at `120653b2` (PR #76 as `6c1c3272`, PR #77 as `120653b2`) in
+  `13a6cbbb`. Conflicts: 17 (`last-reviewed` only) and this file (phase/3's file plus this
+  branch's appended entries; no-loss guard: no line of either side or the base missing). 07
+  auto-merged. No code file changed on both sides.
+- Critic: `architecture-reviewer` on `git show --remerge-diff 13a6cbbb` (report
+  `eternalus-agent-work/playtest-2026-11-04/critic-85-86-merge-120653b2.md`): APPROVE, no
+  blocker or should-fix; one nit on phase/3's own text, left as is.
+- Checks run: `npm run check` at `13a6cbbb` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/minion-stack-followups.120653b2.check.log`):
+  EXIT=0; core "Tests 1374 passed (1374)"; client "Tests 1799 passed (1799)"; "Documentation
+  check passed.". This entry was added after it.
+- Next step: push; PR #86 merges this head.
+
+### 2026-11-09 — Phase 3 / minion-stack follow-ups, PR #85 review: a chaser inside an outline holds (DEC-234) — fix/minion-stack-followups — sholtzman + Claude Code
+
+- What was done: Gurshaan's change request on #85 ("Minions already inside a building's attackable
+  outline keep walking toward its boundary, although combat considers them in reach.") was real:
+  `isInReach` counted an attacker inside the outline as in reach, but `PathingSystem`'s chase
+  aimed at the nearest edge. `EntityStore.aimPointOf` now gives the attacker's own position when
+  it stands inside the outline and returns what it aimed at as a tag (`AimedAt`), so the inside
+  test runs once and reach, chase and stuck detection read one point. New test in
+  `PathingSystem.chase.test.ts` ("holds a chaser that stands inside its target's outline …"); it
+  failed before the fix with heading `{ x: -1, y: 0 }`. `EntityStore.test.ts` pins the inside aim
+  and the tags. Doc 18 §5, `PathingSystem` and `Footprint` TSDoc state the hold; DEC-234 records
+  it.
+- Critic: `architecture-reviewer` on `9b776ed5`: APPROVE, no blocker; two should-fix (this entry;
+  an `aimPointOf` unit test) and four nits, all applied; its better-than-design item (the `AimedAt`
+  tag) built here under the owner's no-tech-debt rule (DEC-223), recorded as DEC-234.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-85-2.log`): EXIT=0, core "Tests 1375 passed
+  (1375)", client "Tests 1799 passed (1799)", "Documentation check passed.".
+- Next step: push; merge this head into `feat/out-of-combat-heal` (#86) and
+  `feat/unit-facing-chevron` (#79, where `facingPointOf` reads the `'inside'` tag); reply on #85,
+  #86 and #79.
+
+### 2026-11-09 — Phase 3 / unit facing chevron, merge of fix/minion-stack-followups (PR #85 review fix, DEC-234) — feat/unit-facing-chevron — sholtzman + Claude Code
+
+- What was done: merged `fix/minion-stack-followups` at `a049db6d` (the #85 review fix: a chaser
+  inside its target's outline holds; `EntityStore.aimPointOf` returns an `AimedAt` tag; DEC-234).
+  Conflicts: the `aimPointOf` TSDoc (#85's text, naming `facingPointOf`), the
+  `DefaultSystemPipeline` TSDoc (this branch's DEC-192 sentence kept), architecture 02 (#85's
+  side: `DefaultSystemPipeline.ts`), 18 (`last-reviewed`), PROGRESS and the decisions log (both
+  sides kept; the DEC-234 batch first, newest batch first). `facingPointOf` now reads the
+  `'inside'` tag instead of testing the outline itself. Its TSDoc and architecture 04 §3 say an
+  inside attacker's aim point is where it stands (DEC-234); 04 no longer says that reach and chase
+  measure to the outline edge from inside.
+- Fail-first: with the `'inside'` branch of `facingPointOf` turned off, `EntityStore.test.ts`
+  "faces the aim point from outside an outline and the centre from inside it (DEC-220 (1))"
+  failed with `expected { x: 11, y: 4 } to deeply equal { x: 15, y: +0 }`; restored, green.
+- Checks run: `npm run check` with this entry in place (log
+  `eternalus-agent-work/pr-review-2026-10-29/pr85/check-79-merge.log`): EXIT=0, core "Tests 1408
+  passed (1408)", client "Tests 1806 passed (1806)", "Documentation check passed.". The first run
+  failed on Prettier (one doubled blank line from the conflict resolution), fixed before this run.
+- Next step: critic on the merge (`git show --remerge-diff`); push; reply on #79.

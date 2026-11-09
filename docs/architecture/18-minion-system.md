@@ -4,7 +4,7 @@ description: The owning design for lane hordes, tower guards, camp mobs, checkpo
 audience: [humans, agents]
 status: draft
 owner: SamarjitBhogal
-last-reviewed: 2026-11-07
+last-reviewed: 2026-11-09
 tags: [architecture, minions, hordes, guards, camps, spawning, ai, core]
 paths:
   [
@@ -127,8 +127,8 @@ get no aura (DEC-165). Pull request M6 adds the forest camps: a `Camp`
 structure per camp feature, the camp groups in `content/structures/guardPlans.ts` (a `group` plan
 activated when the countdown ends), camp mobs held by `GuardController`, and `camp-cleared`
 emitted by `SpawnSystem`'s `GuardRoster`; `GuardWithinLeashInvariant` covers camp mobs, since it
-checks every post. Checkpoint defenders wait for `CaptureSystem` (PR #64) to reach the phase
-branch. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
+checks every post. Checkpoint defenders are not built yet, though `CaptureSystem` (PR #64) is
+merged. The minion-stack follow-ups (`fix/minion-stack-followups`) add the shared leash decision
 `ai/decideLeashed.ts` (DEC-168 B1), the guard respawn rules `systems/EachGuardRespawn.ts` and
 `GroupGuardRespawn.ts` (B4), the ally-damage listener `state/AllyDamageTally.ts` (B6), and
 `StuckSystem` with its `ChaseWatch` component (§5.2, DEC-193). A unit that chases a lane tower or
@@ -429,7 +429,9 @@ called by `PathingSystem` (10 §9). `PathingSystem` reads the mob's `Combat.targ
   plans a tick, are `STUCK_DETECTION` in `content/ai/stuckDetection.ts`). A chase of a target
   with an outline (a map object, or a structure with a `Footprint`: a lane tower's fort, the
   Stronghold's palace, 07 §13) aims at the nearest point of its outline, the point attack reach
-  is measured to (`EntityStore.aimPointOf`). The blocked
+  is measured to (`EntityStore.aimPointOf`); a mob that stands inside the outline is in reach
+  already, so it holds there, as every chase stops at reach (§5.2; it faces the building's centre,
+  DEC-220 (1); DEC-234). The blocked
   ground under the target (a fort's cells, under the structure or under a unit inside its court,
   or a map object's cells)
   never holds or turns a chase: the mob closes in until collision stops it at a wall, in reach
