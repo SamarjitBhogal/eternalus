@@ -4,7 +4,7 @@ description: Dated record of every product-owner decision taken through INBOX.md
 audience: [humans, agents]
 status: active
 owner: sholtzman
-last-reviewed: 2026-11-08
+last-reviewed: 2026-11-09
 tags: [reference, decisions, game-design, inbox]
 related:
   [
@@ -20,6 +20,17 @@ related:
 overridden by the product owner. Decisions arrive through `INBOX.md`; once implemented they are
 recorded here (newest batch first) and the affected docs are updated or linked. Precedence:
 ADRs > this log > the reference docs > the source transcriptions.
+
+## Batch 2026-11-09 (GL-16 critic round 1, better than the design)
+
+The owner's answer of 2026-11-09, in chat to the game-loop session, to the two better-than-design
+items of the GL-16 pre-PR critic (round 1). The words are kept verbatim outside the repository, in
+`eternalus-agent-work/game-loop-plan/owner-answers-2026-11-08-prepr.md`, section "GL-16 critic
+round 1, better than the design". DEC-233 is this batch.
+
+| ID      | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Docs changed                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| DEC-233 | **One map feature may back several entities, and `MatchBridge` reads the snapshot by feature through one helper** (GL-16 critic round 1, better-than-design items 1 and 2; DEC-139). (1) The Cathedral capture zone is built from the `cathedral` feature, and a Cathedral structure is planned from the same feature, so two entities will carry one `mapFeatureId`. `MapFeatureLink`, `EntitySnapshot.mapFeatureId`, architecture 04 §3 and 13 §10 state it: a consumer selects by feature id and by the group it reads, never one entity per feature. A `MatchBridge` test pins it with a structure and a zone that share the Cathedral's feature. (2) `MatchBridge.healthByFeature` and `captureByFeature` were the same loop; one static `byFeature(snapshot, pick)` replaces both (DRY). Owner: "A: build both (Recommended)". | `refactor/map-feature-link`: architecture 04 §3, 13 §10; `INBOX.md` (GL-16 item) |
 
 ## Batch 2026-11-09 (the map-feature link is built now, GL-16)
 

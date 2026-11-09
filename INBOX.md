@@ -2322,6 +2322,9 @@ Reply inline (`Decision: …`).
       component, set from a placement's map feature id, on structures and capture zones. The
       snapshots read it instead of `instanceof Structure`, and `MatchBridge` binds a capture site
       to its zone by that id, not by position. Close this item when its PR merges.
+      Its critic round 1 better-than-design items (one feature may back several entities; one
+      `MatchBridge.byFeature` helper) were answered 2026-11-09 (DEC-233): "A: build both
+      (Recommended)", built in GL-16.
 
 - [ ] **Session C → Sam (2026-10-08, `feat/player-input`):** the keyboard now produces an
       `InputIntent`, but core's `intent` command is still `UnsupportedCommandHandler`

@@ -691,10 +691,13 @@ DEC-55). The owner approved the text above on 2026-10-28 (`INBOX.md` HC-T1), exc
   is known, today its gates, and shows no data only while none is (DEC-214 (B)); a destroyed gate
   still marks it destroyed (DEC-108). Breakability on the strip is plan task GL-7. Each capture point
   takes its owner and progress from the zone that names its feature (`EntitySnapshot.mapFeatureId`,
-  core's `MapFeatureLink`; PR #64, DEC-231), never from where the zone stands. For
+  core's `MapFeatureLink`; PR #64, DEC-231), never from where the zone stands. One feature may
+  back several entities (the Cathedral's zone and its planned structure), so the bridge indexes
+  the snapshot by feature id through the group each roster reads: health for a tile, capture for
+  a point (DEC-233). For
   either roster, the bridge re-sends each unchanged tile or point, and the last array while nothing
   in it changes, so the roster selectors return the same value (DEC-221 (3)); one
-  `game/PublishedRoster.ts` per roster holds the last array and that rule (DEC-222). Each other field becomes live when
+  `PublishedRoster` (`game/PublishedRoster.ts`) per roster holds the last array and that rule (DEC-222). Each other field becomes live when
   core publishes it: XP and abilities (Phase 4, sprints 4.5 and 4.7, through `Snapshot.player`,
   [05](05-abilities-weapons-and-loadouts.md) §15).
 - **HUD elements beyond §3's table.** `LevelBadge` (class emblem, XP ring, level), `WeaponPanel`
