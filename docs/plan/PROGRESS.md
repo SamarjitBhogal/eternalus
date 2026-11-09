@@ -5894,3 +5894,31 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   `Tests 1298 passed (1298)`, client `Tests 1799 passed (1799)`, docs check passed.
 - Next step: push; tell eternalus-121 the new head (#79 merges it); PR #77 merges after #76
   once Samarjit re-approves.
+
+### 2026-11-09 — Phase 3 / combat sprint: world health bars (DEC-195) — feat/combat-health-bars — sholtzman + Claude Code
+
+- What was done: a unit's world health bar is hidden from its spawn until the unit takes damage
+  or deals damage to a living unit (not a map object or structure), then shows until it dies
+  (DEC-195, the owner's brief of 2026-11-09 and his dialog answers). Enemies (camps included)
+  fill red, allies green; the player's own Legend has none (the HUD shows it); towers and the
+  Stronghold wait for the structure-views task. `game/HealthBarVisibility` reads
+  `damage-applied` and `entity-died` through `Simulation.on` (as `SoundView`, 08 §6) and gives
+  `EntityLayer` one injected rule, `healthBarOf(entity)` → `'ally' | 'enemy' | null`
+  (`views/EntityLayer.types.ts`); the layer draws the bars after all entities, colours by side in
+  `entityViews.constants.ts` (`HEALTH_BAR_*`, `TUNE` placeholders). `Match` builds it, observes
+  each snapshot and destroys it. `Match.lifecycle.test.ts`: "subscribes to nothing" became
+  "subscribes exactly to damage-applied and entity-died and drops each". Docs: DEC-195 row (first
+  of the abilities block DEC-195..209, grep of all refs, worktrees, agent-work and handoffs found
+  it unused), architecture 08 §8 names the rule's home.
+- Tests fail first: commit 1 — break 1 (an attacker counts on any target) 2 red, break 2 (death
+  keeps the bar) 1 red, break 3 (layer draws no bars) 2 red. Commit 2 (sides) — break 1 (every
+  bar on the enemy side) 2 red, break 2 (player not excluded) 2 red (incl. the whole-match test),
+  break 3 (layer ignores the side colour) 1 red; restored 16/16 green.
+- Checks run: `npm run check` (log `eternalus-agent-work/combat-health-bars/check-2.log`):
+  exit 0, Prettier passed, core `Tests 1298 passed (1298)`, client `Tests 1810 passed (1810)`,
+  docs check passed. The first run (`check-1.log`) failed one test: commit 1 left
+  `SessionController.endToEnd.test.ts` asserting the match subscribes to nothing; it now asserts
+  each of the two subscriptions is dropped exactly once (`[1, 1]`; a break that skips
+  `healthBars.destroy()` turns it red).
+- Next step: pre-PR gate (architecture-reviewer, /ponytail-review), push, PR into
+  `phase/3-sprint-3-work`; then task 2, the HUD aether bar.
