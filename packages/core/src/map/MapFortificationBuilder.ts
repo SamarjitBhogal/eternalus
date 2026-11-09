@@ -19,7 +19,11 @@ export class MapFortificationBuilder extends MapDecorationBuilder {
     const isCapturePoint = feature.kind === 'capture-point';
     const north = isCapturePoint && feature.position.y < SKETCH_HEIGHT / 2;
     const south = isCapturePoint && !north;
-    const size = isCapturePoint ? G.fort.capturePointSize : feature.kind === 'stronghold' ? 58 : 32;
+    const size = isCapturePoint
+      ? G.fort.capturePointSize
+      : feature.kind === 'stronghold'
+        ? 58
+        : G.fort.laneTowerSize;
     const stone = north ? P.snowLight : south ? P.basalt : P.stone;
     const roof = north ? P.snowShadow : south ? P.volcanicRoof : P.stoneDark;
     const accent = feature.team === 'light' ? P.light : feature.team === 'dark' ? P.dark : P.gold;

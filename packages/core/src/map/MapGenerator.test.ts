@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { BUILDING_GEOMETRY } from '../content/maps/buildingGeometry';
 import { DEFAULT_MAP_CONFIG } from '../content/maps/defaultMapConfig';
 import { DEFAULT_MAP_LAYOUT } from '../content/maps/defaultMapLayout';
 import type {
@@ -200,6 +201,35 @@ describe('MapGenerator', () => {
       }
     }
   });
+
+  it.each([2, 3])(
+    'keeps every lane tower fort apart with %i towers of each kind per lane (DEC-227, DEC-215 (1))',
+    (count) => {
+      const side = BUILDING_GEOMETRY.fort.laneTowerSize;
+      const overlaps: string[] = [];
+      for (const ground of GROUNDS) {
+        for (const numLanes of [3, 5]) {
+          const map = generate(
+            { numLanes, spawnTowersPerLane: count, buffTowersPerLane: count },
+            SEED,
+            ground,
+          );
+          const towers = [...ofKind(map, 'spawner-tower'), ...ofKind(map, 'buff-tower')];
+          towers.forEach((a, index) => {
+            for (const b of towers.slice(index + 1)) {
+              // Two upright fort boxes of one side overlap when both axes are closer than it.
+              const dx = Math.abs(a.position.x - b.position.x);
+              const dy = Math.abs(a.position.y - b.position.y);
+              if (dx < side && dy < side)
+                overlaps.push(`${ground} ${String(numLanes)}: ${a.id} ${b.id}`);
+            }
+          });
+        }
+      }
+
+      expect(overlaps).toEqual([]);
+    },
+  );
 
   it('starts every lane at its Light gate and ends it at its Dark gate', () => {
     const map = generate();

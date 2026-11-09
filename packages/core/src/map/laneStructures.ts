@@ -1,3 +1,4 @@
+import { BUILDING_GEOMETRY as G } from '../content/maps/buildingGeometry';
 import type { MapLane, MapLayout } from '../content/maps/maps.types';
 import { LaneGeometry } from './LaneGeometry';
 import type { MirroredFeatureSpec, WallRingInput } from './MapBuilder.types';
@@ -5,14 +6,30 @@ import { MapGenerationError } from './MapGenerationError';
 import type { MapConfig } from './MapGenerator.types';
 import { buildWallRing } from './wallRing';
 
-/** `count` evenly spaced positions inside a `[from, to]` band, never on its edges. */
-const bandPositions = (count: number, [from, to]: readonly [number, number]): number[] =>
-  Array.from({ length: count }, (_, slot) => from + ((slot + 1) / (count + 1)) * (to - from));
+/**
+ * `count` evenly spaced positions inside a `[from, to]` band, never on its edges. A band too
+ * narrow to keep neighbours `minGap` apart widens round its middle until it does (DEC-227).
+ */
+const bandPositions = (
+  count: number,
+  [from, to]: readonly [number, number],
+  minGap: number,
+): number[] => {
+  const isWideEnough = count < 2 || (to - from) / (count + 1) >= minGap;
+  const half = ((count + 1) * minGap) / 2;
+  const [start, end] = isWideEnough ? [from, to] : [(from + to) / 2 - half, (from + to) / 2 + half];
+  return Array.from(
+    { length: count },
+    (_, slot) => start + ((slot + 1) / (count + 1)) * (end - start),
+  );
+};
 
 /**
  * One lane's Light towers: `spawnTowersPerLane` SpawnerTowers on the front band, then
  * `buffTowersPerLane` BuffTowers on the second band, at fractions of the lane's length from
- * the Light gate. "Front" and "second line" are bands, so any count per lane works.
+ * the Light gate. "Front" and "second line" are bands, so any count per lane works. Towers of
+ * one kind stand at least a fort box's diagonal apart along the lane, so their forts never
+ * overlap whatever the lane's heading (DEC-227, DEC-215 (1)).
  */
 export const laneTowerSpecs = (
   lane: MapLane,
@@ -20,16 +37,17 @@ export const laneTowerSpecs = (
   layout: MapLayout,
 ): readonly MirroredFeatureSpec[] => {
   const geometry = new LaneGeometry(lane.path);
+  const minGap = (G.fort.laneTowerSize * Math.SQRT2) / geometry.length;
   const towers = [
     {
       name: 'spawner-tower',
       definitionId: layout.definitionIds.spawnerTower,
-      ts: bandPositions(config.spawnTowersPerLane, layout.laneBands.spawner),
+      ts: bandPositions(config.spawnTowersPerLane, layout.laneBands.spawner, minGap),
     },
     {
       name: 'buff-tower',
       definitionId: layout.definitionIds.buffTower,
-      ts: bandPositions(config.buffTowersPerLane, layout.laneBands.buff),
+      ts: bandPositions(config.buffTowersPerLane, layout.laneBands.buff, minGap),
     },
   ];
   return towers.flatMap((tower) =>
