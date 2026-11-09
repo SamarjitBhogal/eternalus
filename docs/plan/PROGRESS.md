@@ -6298,3 +6298,15 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   statements 97.04 %; "Documentation check passed."
 - Next step: merge this head into GL-5 (`feat/results-flow`) and GL-15 (`feat/capture-scoring`),
   then GL-5 into GL-16 (`refactor/map-feature-link`); push all four.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-4 merge (phase/3 after #88) — feat/capture-scoring — sholtzman + Claude Code
+
+- What: merged `feat/match-scoring` (`b0a48167`, GL-4 with phase/3 after PR #88) into GL-15
+  (`6bd828be`), so PR #95 holds its base again. Conflicts: the decisions log (the 2026-11-09
+  batches by number, newest first: DEC-229, DEC-224, DEC-223); this file (both, in date order).
+  No code conflict, and no snapshot literal needed `progression`.
+- Checks run: `npm run check` on `6bd828be` → `EXIT=0` (`gl15-merge-88-check-2026-11-09.log` in
+  `eternalus-agent-work/game-loop-plan/`): Prettier "All matched files use Prettier code style!";
+  core "Tests 1388 passed (1388)", statements 99.17 %; client "Tests 1800 passed (1800)",
+  statements 97.04 %; "Documentation check passed."
+- Next step: push; PR #95 waits for review.
