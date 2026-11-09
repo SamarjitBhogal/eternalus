@@ -11,12 +11,15 @@ import type { System, SystemContext } from './System.types';
 
 /**
  * Heals every living Legend and mob over time once it is out of combat (DEC-188, amended by
- * DEC-215). A unit is in combat from the tick it deals or takes damage (`damage-applied`, attacker
- * and target, kept in its `CombatClock`) until `delaySeconds` pass. Out of combat it regains a flat
- * share of its max health per second. While its centre point is in the zone (`HealingZones`) of a
- * living friendly structure that `structureBonuses` lists and that has taken no damage for
+ * DEC-215 and DEC-225). A unit is in combat from the tick it deals or takes damage
+ * (`damage-applied`, attacker and target, kept in its `CombatClock`) until `delaySeconds` pass. A
+ * blocked or zero-damage hit emits no `damage-applied`, so it puts neither side in combat (DEC-225
+ * Q-F) and does not mark a structure as under attack (DEC-225 Q-D). Out of combat a unit regains a
+ * flat share of its max health per second. While its centre point is in the zone (`HealingZones`)
+ * of a living friendly structure that `structureBonuses` lists and that has taken no damage for
  * `structureQuietSeconds`, that structure's bonus is added. Only hits on the structure itself
- * count: a hit on a Stronghold's walls, gates or turrets has its own target id (DEC-215 (2)).
+ * count: a hit on a Stronghold's walls, gates or turrets, or on its palace map object, has its own
+ * target id (DEC-215 (2), DEC-225 Q-G).
  * Two zones never overlap (DEC-215 (1)), so the first zone that holds the unit gives its bonus.
  * This heal only adds to health, so a heal from another source (an allied Legend's) in the same
  * tick adds to it (DEC-215 (1)). Structures are never healed, nor the dead, and health never

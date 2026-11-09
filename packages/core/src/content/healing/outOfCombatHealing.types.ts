@@ -23,8 +23,9 @@ export type OutOfCombatHealing = {
   readonly healthFractionPerSecond: number;
   /**
    * A structure is under attack until it has taken no damage for this many seconds. Only hits on
-   * the structure itself count: a hit on a Stronghold's walls, gates or turrets does not (DEC-215
-   * (2)); a lane tower's fort walls are the tower (one pool, DEC-185 B).
+   * the structure itself count: a hit on a Stronghold's walls, gates, turrets or palace map object
+   * does not (DEC-215 (2), DEC-225 Q-G), nor a blocked or zero-damage hit (DEC-225 Q-D); a lane
+   * tower's fort walls are the tower (one pool, DEC-185 B).
    */
   readonly structureQuietSeconds: number;
   /**

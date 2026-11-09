@@ -6245,3 +6245,22 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   EXIT=0; core "Tests 1416 passed (1416)"; client "Tests 1799 passed (1799)"; "Documentation
   check passed.". `96867f11` and this entry change only this file.
 - Next step: push; retarget PR #86 to phase/3 after #85 merges.
+
+### 2026-11-09 — Phase 3 / out-of-combat healing, owner answers (DEC-225) — feat/out-of-combat-heal — sholtzman + Claude Code
+
+- What was done: the owner's answers on decision page 2 and in the question dialog (verbatim in
+  `eternalus-agent-work/playtest-2026-11-04/OWNER-ANSWERS-2026-11-09.md`) are recorded as the
+  batch DEC-225 to DEC-227 in the owner decisions log. The same batch text goes on #79 and on
+  `feat/tower-ruins-and-routes`, so the merges stay clean. DEC-225: Q-D, Q-F, Q-G and Q-H stay as built. Q-E
+  ("only the area inside the stronghold ... at least half the entity, as other areas are also
+  done") is the centre-point rule that every zone and capture use, so the code does not change.
+  Heal tidy items (2) to (11) are approved for the tidy PR; (11) is the "One source" fort
+  geometry. DEC-225 is cited in the `HealingZones`, `OutOfCombatHealingSystem` and
+  `outOfCombatHealing.types` TSDoc, in architecture 04 (heal paragraph) and 06 (Stronghold
+  enclosure), and in `balancing.md`. The two heal INBOX items are ticked with their answers.
+  Only comments and docs change.
+- Checks run: `npm run check` (log
+  `eternalus-agent-work/playtest-2026-11-04/merge-2026-11-07/out-of-combat-heal.dec225.check.log`):
+  EXIT=0; core "Tests 1416 passed (1416)"; client "Tests 1799 passed (1799)"; "Documentation
+  check passed.".
+- Next step: push after #85; retarget PR #86 to phase/3 after #85 merges.

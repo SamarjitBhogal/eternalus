@@ -2272,7 +2272,7 @@ Reply inline (`Decision: …`).
   - Decision (2026-10-31): (1) "C1: INBOX + post on #56 (Recommended)": the comment goes on PR
     #56. (3) "Yes, match 12 (Recommended)": DEC-136, which also covers 07 §11's event list.
     **Open:** Samarjit's answer on #56. Tick this item when it is recorded here.
-- [ ] **Out-of-combat healing — five rules DEC-188 and DEC-215 leave open (2026-11-07,
+- [x] **Out-of-combat healing — five rules DEC-188 and DEC-215 leave open (2026-11-07,
       `feat/out-of-combat-heal`, critic r1).** Each stays as built until you answer. Reply per
       question (`Q-D: A`).
   - **Q-D:** A blocked or zero-damage hit on a structure (an unbreakable gate or Stronghold):
@@ -2288,7 +2288,11 @@ Reply inline (`Decision: …`).
   - **Q-H:** The heal zone is read once from the map, so the ground of a destroyed shield wall
     stays outside the zone. (A) keep **[built]**; (B) the ground joins the zone when the wall
     falls.
-- [ ] **Out-of-combat healing — better than the design, not built, for sign-off (DEC-139;
+  - **Answered 2026-11-09 by DEC-225** (decision page 2): Q-D, Q-F, Q-G and Q-H (A), as built.
+    Q-E: "only the area inside the stronghold. doors/gates not included. must be inside the
+    structure (at least half the entity, as other areas are also done)": the centre-point rule
+    of every zone, as built; no code change.
+- [x] **Out-of-combat healing — better than the design, not built, for sign-off (DEC-139;
       2026-11-07, `feat/out-of-combat-heal`, critic r1 items (2) to (6)).** Approve each to
       schedule it, or say no.
   - (2) Inject `HealingZones` (or its shape strategies) from `DefaultSystemPipeline`; today
@@ -2316,6 +2320,9 @@ create)` for the find-or-add pattern (three copies: `StuckSystem`, `VeterancySys
     capture zone's `zoneAreaOf` rebuilds the fort court from `BUILDING_GEOMETRY.fort` (court
     only, DEC-145 (a)). The extents differ on purpose, but a fort size change in one place would
     not reach the other; derive the capture court as an inset of the same fort box.
+  - **Answered 2026-11-09 by DEC-225:** (2) to (10) approved for the tidy PR (decision page 2);
+    (11) approved, "One source" (question dialog): the capture court comes from the capture
+    fort's drawn wall box, inset by the wall thickness, in the tidy PR.
 
 ## Requests for the agent - THESE SESSIONS ARE NO LONGER AROUND; THESE DECISIONS MUST BE MADE BY UPCOMING SESSIONS
 

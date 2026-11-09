@@ -8,16 +8,17 @@ import { isPointInAnyPolygon, isPointInPolygon } from '../utils/geometry';
 import type { HealingZone } from './HealingZones.types';
 
 /**
- * The heal zone of each structure that gives a healing bonus (DEC-188, amended by DEC-215), one
- * strategy per `HealingZoneShape`. A unit is in a zone when its centre point is (DEC-215 (3)).
+ * The heal zone of each structure that gives a healing bonus (DEC-188, amended by DEC-215 and
+ * DEC-225), one strategy per `HealingZoneShape`. A unit is in a zone when its centre point is
+ * (DEC-215 (3)): one rule for every zone, the capture zones included (DEC-225 Q-E).
  *
  * - `fort-box`: the box round a lane tower's fort walls, its `Footprint` box (the fort box that
  *   `PathingWorld.forts` also holds), so the court, the walls and the gateways count (DEC-215 (4)).
  * - `stronghold-interior`: the ground inside the team's shield (DEC-215 (2)), which the shield arc
  *   and the cliffs enclose (`strongholdEnclosure`), less the ground of the shield's wall segments,
- *   gates and turrets. A unit on the wall or on a turret is outside, and so are the turret tips
- *   past the ends of the arc (DEC-215 (5)). Read from the map once: the ground of a fallen wall
- *   stays outside.
+ *   gates and turrets (DEC-225 Q-E). A unit on the wall or on a turret is outside, and so are the
+ *   turret tips past the ends of the arc (DEC-215 (5)). Read from the map once: the ground of a
+ *   fallen wall stays outside (DEC-225 Q-H).
  *
  * Nothing here resolves an overlap: two zones never overlap (DEC-215 (1)); `HealingZones.test.ts`
  * checks that over the generated maps.
