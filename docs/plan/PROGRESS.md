@@ -6596,3 +6596,13 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
   `392ad70e` (an entry above) holds for the code.
 - Next step: merge this head into GL-16 (`refactor/map-feature-link`); push.
+
+### 2026-11-09 — Game loop plan (Phase 3 sprint 3.5, pulled forward) / GL-5 merge (phase/3 after #87) — refactor/map-feature-link — sholtzman + Claude Code
+
+- What: merged `feat/results-flow` (`463c4f15`, GL-5 with GL-4 and phase/3 after PR #87: one
+  `INBOX.md` item and its PROGRESS entries) into GL-16 (`04af6887`). Conflict: this file (both, in date
+  order). Docs only: `git diff --stat 76d04cff 04af6887` lists only `INBOX.md` and this file.
+- Checks run: `npx prettier --check INBOX.md docs/plan/PROGRESS.md` → "All matched files use
+  Prettier code style!"; `npm run docs:check` → "Documentation check passed." The full check of
+  `76d04cff` (an entry above) holds for the code.
+- Next step: push; the GL-16 PR opens after GL-5 merges (DEC-231).
