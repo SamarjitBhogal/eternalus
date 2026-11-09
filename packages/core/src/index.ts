@@ -82,6 +82,7 @@ export { MapGenerator } from './map/MapGenerator';
 export type { MapGeneratorConfig } from './map/MapGenerator.types';
 export { Simulation } from './Simulation';
 export type { Replay, ReplaySetup, ReplayTargetFactory, RosterSlot } from './Simulation.types';
+export { isUnitFamily } from './entities/unitFamilies';
 export type { EntityId, RemovalCause } from './state/EntityStore.types';
 export type {
   GameEventHandler,

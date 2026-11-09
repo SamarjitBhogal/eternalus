@@ -1457,6 +1457,11 @@ Reply inline (`Decision: …`).
   - **Update 2026-11-04 by DEC-182:** default (4) is replaced by the local minimap view (400 world
     units across, north up, clipped to the ring; `feat/local-minimap`). DEC-187: it shows Legends
     and minions.
+  - Superseded 2026-11-05 (default (4) only; the answer above stays as written): the owner's local
+    minimap ruling DEC-182 replaces "the whole map inscribed". The minimap shows the circle of 200
+    world units around the player, north up, clipped to the ring, with a centre marker, and it
+    follows the camera while the player is dead. DEC-187 adds Legends and all mobs (minions, tower
+    guards, camp mobs; not bosses or the dead) as team-outlined dots. Built on `feat/local-minimap`.
 - [ ] **HC-Q7 — Scope and docs questions from this branch.** (1) Your Figma art ships now (DEC-51),
       but 10-art-and-lore and 11-mvp-scope list "High-quality character art on the selection screen"
       as post-MVP, and the MVP requirements' FR-111 says that art "is not built"; the branch treats
@@ -2150,6 +2155,10 @@ Reply inline (`Decision: …`).
     panel of a Magus player: your HUD frame draws only the Vanguard's battle axe, so the build shows
     the staff from your alternate class layout; your HC-F6 note ("empty weapon container") may mean
     it should stay empty (asked in HC-F6).
+  - Note 1 superseded 2026-11-05 (the note above stays as written): DEC-182 sets the local minimap
+    view at radius 200 world units (not 400), with a centre marker (a white ring) in place of the
+    red chevron, and a click that moves the camera. DEC-187 adds the unit dots. Built on
+    `feat/local-minimap`. Notes 2 to 4 are unchanged.
 
 - [ ] **Combat — friendly fire (PR #34, `feat/combat-damage-pipeline`).** No reference doc says
       whether allies can hurt each other. The combat pipeline ships `FriendlyFireStep` as the

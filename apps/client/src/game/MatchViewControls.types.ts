@@ -1,4 +1,4 @@
-import type { EntityId, MapObjectSnapshot } from '@eternalus/core';
+import type { EntityId, Snapshot } from '@eternalus/core';
 
 import type { BuildingRoofs } from './BuildingRoofs';
 import type { MatchCamera } from './MatchCamera';
@@ -13,6 +13,6 @@ export type MatchViewControlsDeps = {
   readonly miniMap: MiniMapView;
   /** The player's Legend; `null` when its spawn failed (no Legend, no attack). */
   readonly playerId: EntityId | null;
-  /** The map objects of the match's latest snapshot: what a click can attack. */
-  readonly mapObjects: () => readonly MapObjectSnapshot[];
+  /** The match's latest snapshot: its units and map objects are what a click can attack. */
+  readonly snapshot: () => Pick<Snapshot, 'entities' | 'mapObjects'>;
 };

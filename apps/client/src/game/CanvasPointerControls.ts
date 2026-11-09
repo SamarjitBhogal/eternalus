@@ -8,12 +8,13 @@ import { EXPLORER_SETTINGS } from './MapExplorer.constants';
  * camera there (the minimap is player HUD, DEC-143). With the developer explorer only (on at the
  * start with `?dev=1`, then shown or hidden by DEC-105's hotkey; demo-only by DEC-32, INBOX
  * HC-F8): drag to pan, the wheel to zoom, a short click on a building to cut its roof away or put
- * it back, and the toolbar's world overview, which also puts those roofs back. In normal play a
- * roof opens only while the player's Legend is inside (DEC-143). A press these gestures own (a
- * minimap click, or any press with the explorer) is claimed until its release, so the held attack
- * button does not act on it. With the explorer, a click (a release within the click slop) that is
- * no roof click attacks once at the release point (`MatchViewControls.attackAt`); a drag does
- * neither (06 §10, DEC-150). Positions arrive in CSS pixels and reach the match in device pixels.
+ * it back (a unit under the click is attacked instead), and the toolbar's world overview, which
+ * also puts those roofs back. In normal play a roof opens only while the player's Legend is inside
+ * (DEC-143). A press these gestures own (a minimap click, or any press with the explorer) is
+ * claimed until its release, so the held attack button does not act on it. With the explorer, a
+ * click (a release within the click slop) that is no unit or roof click attacks once at the
+ * release point (`MatchViewControls.clickAt`: unit, roof, map object; DEC-150, DEC-183); a drag
+ * does neither (06 §10). Positions arrive in CSS pixels and reach the match in device pixels.
  */
 export class CanvasPointerControls {
   private press: { x: number; y: number; distance: number } | null = null;
@@ -150,10 +151,8 @@ export class CanvasPointerControls {
     }
     const point = this.devicePoint(pointer);
     const { controls } = this.deps;
-    if (controls.toggleRoofAt(point.x, point.y)) {
+    if (controls.clickAt(point.x, point.y)) {
       chrome.onDeveloperRoofsChanged(controls.hasDeveloperRoofs);
-    } else {
-      controls.attackAt(point.x, point.y);
     }
   };
 

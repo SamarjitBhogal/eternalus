@@ -58,4 +58,15 @@ describe('DefaultEntityView', () => {
       { op: 'drawWorldGlyph', args: [{ shape: 'dot', size: 0.8 }, AT, NEUTRAL_ENTITY_COLOR] },
     ]);
   });
+
+  it('puts nothing on the minimap: only Legends and mobs have markers (DEC-187)', () => {
+    const renderer = new RecordingRenderer();
+
+    new DefaultEntityView().drawMinimap(
+      { entity: dummy('dark'), position: AT, isFocused: false },
+      renderer,
+    );
+
+    expect(renderer.calls).toEqual([]);
+  });
 });
