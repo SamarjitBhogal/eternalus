@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { createDefaultGameConfig } from '../config/defaultGameConfig';
+import { MAP_FEATURE_DEFINITIONS } from '../content/maps/mapFeatureDefinitions';
 import type { Polygon } from '../utils/geometry.types';
 import { BLOCKED_LANE_MAP } from './__fixtures__/blockedLaneMap';
 import { AStarPathfinder } from './AStarPathfinder';
+import { MapGenerator } from './MapGenerator';
 import { WorldMap } from './WorldMap';
 
 /** An open 120 x 40 map on 2 m cells: the blocked-lane map without its rift. */
@@ -97,5 +100,27 @@ describe('AStarPathfinder (A* for Legends, 10 §9)', () => {
         out,
       ),
     ).toBe(false);
+  });
+
+  it("with the default config, steps out of a Stronghold's blocked footprint on a generated map without map objects (DEC-227 (Q-A))", () => {
+    const config = createDefaultGameConfig();
+    const map = new MapGenerator().generate(config, 1);
+    const grid = WorldMap.fromDefinition(
+      map,
+      config.map.navCellSize,
+      (definitionId) => MAP_FEATURE_DEFINITIONS[definitionId]?.isBlocking ?? false,
+    );
+    const finder = new AStarPathfinder(grid, {
+      maxExpansions: config.map.pathMaxExpansions,
+      snapCells: config.map.pathSnapCells,
+    });
+    const home = map.features.find(({ id }) => id === 'light-stronghold')?.position ?? {
+      x: 0,
+      y: 0,
+    };
+    const out = { x: 0, y: 0 };
+
+    expect(grid.isWalkableAt(home.x, home.y)).toBe(false);
+    expect(finder.waypoint(home, { x: home.x + 60, y: home.y }, out)).toBe(true);
   });
 });

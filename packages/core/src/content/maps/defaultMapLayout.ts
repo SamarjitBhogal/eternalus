@@ -46,7 +46,7 @@ export const DEFAULT_MAP_LAYOUT: MapLayout = {
     ],
   },
   footprintSides: 12,
-  navCellSize: 5,
+  navCellSize: 2.5, // TUNE: DEC-227 (Q-A), as `config.map.navCellSize`
   definitionIds: {
     stronghold: 'stronghold',
     spawnerTower: 'spawner-tower',
