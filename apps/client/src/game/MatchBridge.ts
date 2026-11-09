@@ -24,7 +24,8 @@ import type { CaptureSite, MatchBridgeDeps } from './MatchBridge.types';
  * - `match-ended` once, after the tick whose step ended the match: the result is latched inside
  *   the simulation's event and published from `afterTick`, never mid-step.
  * `publishAll` sends everything once, before the first tick. A roster re-send with no change
- * carries the same array, so the store sees no change. Its subscriptions to the simulation's
+ * carries the same array, so the roster selectors return the same value and the HUD does not
+ * re-render. Its subscriptions to the simulation's
  * events are one listener table (`listen`): each announcement 12 §8 plans is one line.
  */
 export class MatchBridge {
@@ -33,7 +34,7 @@ export class MatchBridge {
   /** The max health of each structure tile bound to a structure at match start, by feature id. */
   private readonly boundMaxHealth: ReadonlyMap<string, number>;
   private readonly captureSites: readonly CaptureSite[];
-  private capturePoints: readonly CapturePointStatus[];
+  private publishedCapturePoints: readonly CapturePointStatus[];
   private readonly listeners: readonly Unsubscribe[];
   private result: MatchResult | null = null;
   private wasEndPublished = false;
@@ -61,7 +62,7 @@ export class MatchBridge {
         progress: null,
       },
     }));
-    this.capturePoints = this.captureSites.map(({ withoutZone }) => withoutZone);
+    this.publishedCapturePoints = this.captureSites.map(({ withoutZone }) => withoutZone);
     this.listeners = this.listen(deps.events);
   }
 
@@ -117,9 +118,9 @@ export class MatchBridge {
 
   private publishRosters(snapshot: Snapshot): void {
     this.publishedStructures = this.structuresAt(snapshot);
-    this.capturePoints = this.liveCapturePoints(snapshot);
+    this.publishedCapturePoints = this.liveCapturePoints(snapshot);
     this.deps.bus.emit('structure-state', { structures: this.publishedStructures });
-    this.deps.bus.emit('capture-state', { points: this.capturePoints });
+    this.deps.bus.emit('capture-state', { points: this.publishedCapturePoints });
   }
 
   /**
@@ -147,7 +148,7 @@ export class MatchBridge {
   /**
    * `next`, with each item that `isSame` as the item at its index in `last` replaced by that
    * last object; `last` itself when every item is. So a roster re-send with no change carries
-   * the same array and the store sees no change (DEC-221 (3), B2).
+   * the same array, so the roster selectors return the same value (DEC-221 (3), B2).
    */
   private static keepUnchanged<T>(
     last: readonly T[],
@@ -189,7 +190,7 @@ export class MatchBridge {
         : { ...withoutZone, ownerTeam: capture.owner, progress: capture.progress };
     });
     return MatchBridge.keepUnchanged(
-      this.capturePoints,
+      this.publishedCapturePoints,
       points,
       (last, next) => last.ownerTeam === next.ownerTeam && last.progress === next.progress,
     );

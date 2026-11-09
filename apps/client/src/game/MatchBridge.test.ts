@@ -310,6 +310,10 @@ describe('MatchBridge', () => {
       snapshotAt(60, [structureOf(stronghold, 10_000, 10_000), structureOf(gate, 1_200, 3_000)]),
       null,
     );
+    bridge.afterTick(
+      snapshotAt(90, [structureOf(stronghold, 10_000, 12_000), structureOf(gate, 1_200, 3_000)]),
+      null,
+    );
     const tileOf = (index: number, id: string) =>
       published[index]?.structures.find(({ structureId }) => structureId === id);
 
@@ -317,6 +321,8 @@ describe('MatchBridge', () => {
     expect(published[2]?.structures).not.toBe(published[1]?.structures);
     expect(tileOf(2, stronghold.id)).toBe(tileOf(1, stronghold.id));
     expect(tileOf(2, gate.id)?.health).toEqual({ current: 1_200, max: 3_000 });
+    expect(tileOf(3, stronghold.id)?.health).toEqual({ current: 10_000, max: 12_000 });
+    expect(tileOf(3, gate.id)).toBe(tileOf(2, gate.id));
   });
 
   it("gives each structure tile its live structure's health, bound by feature id (DEC-212)", () => {

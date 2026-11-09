@@ -2015,6 +2015,14 @@ Reply inline (`Decision: …`).
 - [ ] **HC-Q46 — Only the match code can reach the match writers (match-director critic round 3, better than the design; DEC-139).** `GameState.match` is a `MatchRecord` (DEC-177), so every system, command handler and bot controller that holds `GameState` can call `endMatch`, `holdIdle` and the other writers. Only review keeps DEC-172's "one caller each" (today the calls are only in `match/` and `Simulation.ts`). Options: (a) type the public `GameState.match` as the read-only `MatchState` and give the `MatchRecord` only to `DirectorContext` and `Simulation` (the compiler stops other callers; changes the 03 §2 sketch); (b) an ESLint `no-restricted-syntax` rule that refuses `.match.<writer>(` outside `match/`, `Simulation.ts` and tests; (c) leave it to review. Agent's recommendation: (a), in its own PR with the HC-S7 split, not in the match-director PR (its critic rounds are used up, and round 2 had the same exposure).
   - Answered 2026-11-05 in chat (DEC-210): "(a) Read-only type". To build: its own PR from the phase
     branch after the match-director PR (#74) merges, with the HC-S7 split.
+- [ ] **HC-Q47 — One small roster type for the HUD's "re-send if unchanged" rule (GL-5 targeted critic
+      after DEC-221, better than the design; DEC-139).** `MatchBridge.keepUnchanged` keeps each
+      unchanged HUD roster item and the last array (DEC-221 (3), B2). The critic proposes moving it
+      out of `MatchBridge` to `game/keepUnchanged.ts` (a function), or to a small `PublishedRoster`
+      class that holds the last array and the check, with its own unit test, the length-change
+      branch included. `MatchBridge` (257 lines) would then only publish, and GL-16 and GL-7 add to
+      it. The critic called today's form acceptable. Answer: build it (in GL-16, or now on GL-5), or
+      keep it as it is.
 - [ ] **HC-Q42 — Where do Legends spawn at tick 0: all at their Citadel (DEC-80), or as built (match-director critic).** DEC-80 says "All Legends spawn at their Citadel at tick 0." As built (architecture 18 §8, MS-20), each bot laner spawns at its team's end of its assigned lane, and only the Rovers (the bot Rover and the human's Legend, DEC-173) spawn at their team's Stronghold. Keep the as-built lane start for laners and narrow DEC-80 to respawns, or spawn every Legend at its Citadel and let laners walk to their lanes?
 - [ ] **HC-S7 — Scheduled: split `Simulation.ts` and `SessionController.ts` below the ~300-line
       guide (PR #68 review, follow-up 3).** `Simulation.ts` (461 lines) holds start-up helpers
