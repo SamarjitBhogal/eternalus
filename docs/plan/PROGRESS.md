@@ -5907,3 +5907,18 @@ docs:check`, Prettier on the touched files and `git apply --check` of the D2b pa
   (433)"; "Documentation check passed."
 - Next step: PR into `phase/3-sprint-3-work`; the custom check flags `.coderabbit.yaml` changes,
   so the product owner signs it off.
+
+### 2026-11-09 — Phase 3 / sprint 3.1 — chore/coderabbit-config — sholtzman + Claude Code
+
+- What was done: the product owner keeps CodeRabbit, so PR #73 is finished for merge. `e24a62c`
+  merges `phase/3-sprint-3-work` at `120653b`; only this file conflicted (both sides appended),
+  and both sides are kept. ADR 0018 gets a dated note in its implementation status: CodeRabbit's
+  validator rejects an override with neither `teams` nor `paths`, so the never-approve override
+  lists paths that match every file; the intent of amendment item 2 is unchanged. This answers
+  CodeRabbit's one blocker on #73. The fix is needed now: CodeRabbit skips every PR into
+  phase 3 (#87: "Validation error: An override must specify teams, paths, or both", "Review
+  skipped"). On #73's own head, CodeRabbit parsed the config and ran a full review.
+- Checks run: `npm run check` on the merge with the ADR note → exit 0: core "Tests 1298 passed
+  (1298)"; client "Tests 1799 passed (1799)"; "✓ built in 483ms"; "Documentation check passed."
+- Next step: push; the product owner approves (his sign-off on the guardrail change); merge
+  when CI is green on both runners.
