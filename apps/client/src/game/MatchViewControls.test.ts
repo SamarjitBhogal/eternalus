@@ -69,6 +69,7 @@ const unit = (id: string, team: 'light' | 'dark', at: Vec2): EntitySnapshot => (
   team,
   transform: { ...at, radius: 1 },
   health: { current: 10, max: 10 },
+  progression: null,
   area: null,
   capture: null,
 });
